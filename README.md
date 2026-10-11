@@ -92,8 +92,8 @@
 ### Варіант 1: Повне автоматичне встановлення (Рекомендовано)
 Клонуйте репозиторій або розпакуйте архів і запустіть інсталятор з прапорцем `--all`:
 ```bash
-git clone https://github.com/<YOUR-USERNAME>/<YOUR-REPO>.git
-cd <YOUR-REPO>
+git clone https://github.com/w1nyear/macW1Y-GTK-Theme.git
+cd macW1Y-GTK-Theme
 ./install.sh --all
 ```
 
