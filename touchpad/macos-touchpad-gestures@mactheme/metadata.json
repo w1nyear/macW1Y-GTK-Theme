@@ -1,0 +1,6 @@
+{
+  "name": "macOS Touchpad Gestures",
+  "description": "Full macOS touchpad gesture suite: 3-finger drag, 3-finger Alt+Tab swipe, 4-finger workspace swipe, 3-finger pinch in (Copy) / pinch out (Paste), 4-finger tap (Mission Control) / double-tap (Launchpad).",
+  "uuid": "macos-touchpad-gestures@mactheme",
+  "shell-version": ["45", "46", "47", "48", "49", "50"]
+}

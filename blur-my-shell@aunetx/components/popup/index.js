@@ -1,0 +1,627 @@
+import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
+import Meta from 'gi://Meta';
+import St from 'gi://St';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+
+import {
+    POPUP_BACKGROUND_STYLES,
+    POPUP_SURFACE_STYLES,
+    PopupBlurTargets,
+} from './targets.js';
+import { PopupBlurSurface } from './blur_surface.js';
+import { PopupBlurMessageStacks } from './message_stacks.js';
+
+const POPUP_INTERNAL_STYLE_CLASSES = ['bms-popup-blurred-widget', 'bms-popup-backgroundgroup'];
+const POPUP_INTERNAL_NAMES = ['bms-popup-blurred-widget', 'bms-popup-backgroundgroup'];
+const KEYBOARD_STYLE_CLASS = 'bms-keyboard-surface';
+
+export const PopupBlur = class PopupBlur {
+    constructor(connections, settings, effects_manager) {
+        this.connections = connections;
+        this.settings = settings;
+        this.effects_manager = effects_manager;
+        this.surfaces = new Map();
+        this.containers = new Set();
+        this.queued_actors = new Set();
+        this.watched_actors = new WeakSet();
+        this.destroyed_actors = new WeakSet();
+        this.interface_settings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        this.message_stacks = new PopupBlurMessageStacks(connections);
+        this.targets = new PopupBlurTargets(this);
+        this.queue_id = 0;
+        this.follow_up_queue_id = 0;
+        this.follow_up_actors = new Set();
+        this.reset_id = 0;
+        this.enabled = false;
+    }
+
+    enable() {
+        if (this.enabled) {
+            this._log("blur already enabled");
+            return;
+        }
+
+        this._log("blurring popup surfaces");
+        this.enabled = true;
+
+        this.update_background();
+        this.message_stacks.enable();
+        this.connections.connect(
+            this.interface_settings,
+            'changed::color-scheme',
+            () => this.update_background()
+        );
+        this.connections.connect(
+            this.interface_settings,
+            'changed::gtk-theme',
+            () => this.update_background()
+        );
+        this.connections.connect(
+            Main.sessionMode,
+            'updated',
+            () => this.update_background()
+        );
+        this.connections.connect(
+            St.Settings.get(),
+            'notify::color-scheme',
+            () => this.update_background()
+        );
+
+        this.track_container(Main.uiGroup);
+        (Main.osdWindowManager?._osdWindows ?? []).forEach(window => this.track_container(window));
+        this.track_container(Main.layoutManager?.modalDialogGroup);
+        this.track_container(Main.layoutManager?.screenShieldGroup);
+        this.track_container(Main.layoutManager?.unlockDialogGroup);
+        this.track_container(Main.messageTray?._bannerBin);
+        this.track_quick_settings();
+        this.track_container(global.window_group);
+        this.track_keyboard();
+        this.track_container(Main.keyboard?.keyboardActor);
+    }
+
+    track_container(container) {
+        if (!container || this.containers.has(container))
+            return;
+        if (!this.watch_actor(container))
+            return;
+
+        this.containers.add(container);
+        this.message_stacks.track_container(container);
+
+        this.get_children(container).forEach(child => this.try_blur(child));
+
+        this.connections.connect(
+            container,
+            'child-added',
+            (_, child) => this.queue_try_blur(child)
+        );
+    }
+
+    is_quick_settings(actor) {
+        if (!actor || this.destroyed_actors.has(actor))
+            return false;
+        try {
+            // 1. Direct class check
+            if (actor.has_style_class_name && (
+                actor.has_style_class_name('quick-settings') ||
+                actor.has_style_class_name('quick-settings-menu') ||
+                actor.has_style_class_name('quick-toggle-menu') ||
+                actor.has_style_class_name('quick-settings-grid') ||
+                actor.has_style_class_name('mac-control-center-button')
+            )) return true;
+
+            const qs = Main.panel?.statusArea?.quickSettings;
+            if (qs) {
+                if (actor === qs || actor === qs.container || actor === qs.menu?.actor ||
+                    actor === qs.menu?.box || actor === qs.menu?._boxPointer ||
+                    actor === qs.menu?._grid || actor === qs.menu?._overlay)
+                    return true;
+                if (qs.menu?._boxPointer && (
+                    actor === qs.menu._boxPointer.bin ||
+                    (qs.menu._boxPointer.contains && qs.menu._boxPointer.contains(actor))
+                )) return true;
+                if (qs.menu?.actor && (
+                    actor === qs.menu.actor ||
+                    (qs.menu.actor.contains && qs.menu.actor.contains(actor))
+                )) return true;
+                if (actor.contains && (
+                    (qs.menu?.actor && actor.contains(qs.menu.actor)) ||
+                    (qs.menu?.box && actor.contains(qs.menu.box)) ||
+                    (qs.menu?._boxPointer && actor.contains(qs.menu._boxPointer))
+                )) return true;
+            }
+
+            // 2. Ancestor check
+            let cur = actor.get_parent ? actor.get_parent() : null;
+            while (cur) {
+                if (cur.has_style_class_name && (
+                    cur.has_style_class_name('quick-settings') ||
+                    cur.has_style_class_name('quick-settings-menu') ||
+                    cur.has_style_class_name('quick-toggle-menu')
+                )) return true;
+                if (qs && (
+                    cur === qs || cur === qs.container ||
+                    cur === qs.menu?.actor || cur === qs.menu?.box || cur === qs.menu?._boxPointer
+                )) return true;
+                cur = cur.get_parent ? cur.get_parent() : null;
+            }
+
+            // 3. Descendant check
+            if (actor.get_children) {
+                const stack = actor.get_children().slice();
+                let depth = 0;
+                while (stack.length > 0 && depth < 40) {
+                    depth++;
+                    const child = stack.pop();
+                    if (!child) continue;
+                    if (child.has_style_class_name && (
+                        child.has_style_class_name('quick-settings') ||
+                        child.has_style_class_name('quick-settings-menu') ||
+                        child.has_style_class_name('quick-settings-grid')
+                    )) return true;
+                    if (child.get_children)
+                        stack.push(...child.get_children());
+                }
+            }
+        } catch (_e) {}
+        return false;
+    }
+
+    track_quick_settings() {
+        // Quick Settings is blurred per-item by QuickSettingsBlur
+    }
+
+    track_keyboard() {
+        const keyboard_box = Main.layoutManager?.keyboardBox;
+        this.track_container(keyboard_box);
+        if (!keyboard_box)
+            return;
+
+        this.connections.connect(
+            keyboard_box,
+            'child-added',
+            (_, child) => this.update_keyboard_style(child)
+        );
+    }
+
+    try_blur(actor) {
+        if (this.is_internal_actor(actor) || !this.watch_actor(actor) || this.is_quick_settings(actor))
+            return;
+
+        this.message_stacks.scan(actor);
+        this.track_container(this.get_actor_overlay(actor));
+
+        const targets = this.get_blur_targets(actor);
+
+        if (this.targets.is_blur_target_actor(actor))
+            this.track_container(actor);
+
+        if (this.has_style_class(actor, 'switcher-popup'))
+            this.track_container(actor);
+
+        if (this.is_window_actor(actor))
+            this.track_container(actor);
+
+        targets.forEach(target => this.blur_actor(target, actor));
+    }
+
+    queue_try_blur(actor) {
+        if (this.is_internal_actor(actor) || !this.watch_actor(actor))
+            return;
+
+        this.queued_actors.add(actor);
+        if (this.queue_id)
+            return;
+
+        this.queue_id = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, () => {
+            this.queue_id = 0;
+            const actors = [...this.queued_actors];
+            this.queued_actors.clear();
+
+            this.try_blur_actors(actors);
+            this.queue_follow_up_blurs(actors);
+
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    queue_follow_up_blurs(actors) {
+        actors.forEach(actor => this.follow_up_actors.add(actor));
+
+        if (this.follow_up_queue_id || this.follow_up_actors.size === 0)
+            return;
+
+        this.follow_up_queue_id = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            this.follow_up_queue_id = 0;
+            const actors = [...this.follow_up_actors];
+            this.follow_up_actors.clear();
+
+            this.try_blur_actors(actors);
+
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    try_blur_actors(actors) {
+        if (!this.enabled)
+            return;
+
+        actors.forEach(actor => {
+            if (!this.destroyed_actors.has(actor) && !this.is_internal_actor(actor))
+                this.try_blur(actor);
+        });
+    }
+
+    cancel_queued_blurs() {
+        if (this.queue_id) {
+            global.compositor.get_laters().remove(this.queue_id);
+            this.queue_id = 0;
+        }
+        if (this.follow_up_queue_id) {
+            GLib.source_remove(this.follow_up_queue_id);
+            this.follow_up_queue_id = 0;
+        }
+        this.queued_actors.clear();
+        this.follow_up_actors.clear();
+    }
+
+    blur_actor(target, root_actor) {
+        if (
+            this.is_internal_actor(target)
+            || this.is_internal_actor(root_actor)
+            || !this.watch_actor(target)
+            || !this.watch_actor(root_actor)
+            || this.is_quick_settings(target)
+            || this.is_quick_settings(root_actor)
+        )
+            return;
+
+        if (this.surfaces.has(target))
+            return;
+
+        this.destroy_blurred_ancestors(target);
+
+        const { parent, sibling } = this.get_overlay_parent(root_actor, target);
+        const surface = new PopupBlurSurface(
+            this.connections,
+            this.settings,
+            this.effects_manager,
+            target,
+            root_actor,
+            parent,
+            sibling,
+            this.get_corner_radius(target, root_actor),
+            () => this.enabled && this.surfaces.has(target)
+        );
+
+        this.surfaces.set(target, surface);
+
+        if (surface.enable())
+            return this.connect_surface(target, root_actor);
+
+        this.surfaces.delete(target);
+        surface.destroy();
+    }
+
+    connect_surface(target, root_actor) {
+        this.connections.connect(
+            target,
+            'destroy',
+            () => this.destroy_blur(target)
+        );
+
+        if (root_actor !== target) {
+            this.connections.connect(
+                root_actor,
+                'destroy',
+                () => this.destroy_blur(target)
+            );
+        }
+    }
+
+    destroy_blurred_ancestors(actor) {
+        actor = actor ? actor.get_parent() : null;
+
+        while (actor && !this.destroyed_actors.has(actor)) {
+            if (this.surfaces.has(actor) && this.targets.prefers_descendant_targets(actor)) {
+                this.destroy_blur(actor);
+            }
+
+            actor = actor.get_parent();
+        }
+    }
+
+    get_overlay_parent(root_actor, target) {
+        if (this.has_any_style_class(target, ['screenshot-ui-panel'])) {
+            const parent = Main.screenshotUI ?? Main.uiGroup;
+            let sibling = target;
+            while (sibling && sibling.get_parent() && sibling.get_parent() !== parent) {
+                sibling = sibling.get_parent();
+            }
+            return {
+                parent,
+                sibling: sibling ?? target,
+            };
+        }
+
+        let actor = root_actor;
+        let child = null;
+        while (actor && !this.destroyed_actors.has(actor)) {
+            let parent = null;
+            parent = actor.get_parent();
+
+            if (!parent)
+                break;
+
+            if (parent === Main.layoutManager.unlockDialogGroup ||
+                parent === Main.layoutManager.screenShieldGroup ||
+                parent === Main.uiGroup || 
+                parent === Main.layoutManager.uiGroup)
+                return { parent, sibling: actor };
+
+            if (parent === global.window_group)
+                return { parent: actor, sibling: child ?? actor.get_last_child() };
+
+            child = actor;
+            actor = parent;
+        }
+
+        return { parent: Main.uiGroup, sibling: null };
+    }
+
+    get_corner_radius(target, root_actor) {
+        return this.targets.get_corner_radius(target, root_actor);
+    }
+
+    get_blur_targets(actor) {
+        return this.targets.find(actor);
+    }
+
+    has_any_style_class(actor, style_classes) {
+        if (!actor || this.destroyed_actors.has(actor))
+            return false;
+
+        if (actor.get_style_class_name) {
+            const class_names = actor.get_style_class_name();
+            if (typeof class_names === 'string') {
+                const normalized = ` ${class_names.trim().replace(/\s+/g, ' ')} `;
+                return style_classes.some(style_class => normalized.includes(` ${style_class} `));
+            }
+        }
+
+        return style_classes.some(style => this.has_style_class(actor, style));
+    }
+
+    has_style_class(actor, style_class) {
+        if (!actor || this.destroyed_actors.has(actor))
+            return false;
+
+        if (actor.has_style_class_name)
+            return actor.has_style_class_name(style_class);
+
+        if (actor.get_style_class_name)
+            return (actor.get_style_class_name() ?? '').split(/\s+/).includes(style_class);
+
+        return false;
+    }
+
+    is_window_actor(actor) {
+        if (!actor || this.destroyed_actors.has(actor))
+            return false;
+        return actor.get_parent() === global.window_group;
+    }
+
+    is_internal_actor(actor) {
+        if (!actor)
+            return false;
+
+        if (this.has_any_style_class(actor, POPUP_INTERNAL_STYLE_CLASSES))
+            return true;
+
+        if (this.destroyed_actors.has(actor))
+            return false;
+
+        return POPUP_INTERNAL_NAMES.includes(actor.name ?? actor.get_name());
+    }
+
+    watch_actor(actor) {
+        if (!actor || this.destroyed_actors.has(actor))
+            return false;
+        if (this.watched_actors.has(actor))
+            return true;
+
+        this.connections.connect(actor, 'destroy', () => {
+            this.destroyed_actors.add(actor);
+            this.containers.delete(actor);
+        });
+
+        this.watched_actors.add(actor);
+        return true;
+    }
+
+    get_children(actor) {
+        if (!this.watch_actor(actor))
+            return [];
+
+        return actor.get_children();
+    }
+
+    get_actor_delegate(actor) {
+        if (!this.watch_actor(actor))
+            return null;
+
+        return actor._delegate || null;
+    }
+
+    get_actor_overlay(actor) {
+        const delegate = this.get_actor_delegate(actor);
+        return (delegate && delegate._overlay) || null;
+    }
+
+    get_actor_dialog_layout(actor) {
+        if (!this.watch_actor(actor))
+            return null;
+
+        return actor.dialogLayout || null;
+    }
+
+    destroy_blur(actor) {
+        const surface = this.surfaces.get(actor);
+        if (!surface)
+            return;
+
+        this.surfaces.delete(actor);
+        surface.destroy();
+    }
+
+    reset() {
+        if (!this.enabled)
+            return;
+
+        this.cancel_queued_blurs();
+
+        this.disable();
+        this.reset_id = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            this.reset_id = 0;
+
+            if (this.settings.popup.BLUR)
+                this.enable();
+
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    update_pipeline() {
+        this.surfaces.forEach(surface => surface.update_pipeline());
+    }
+
+    _get_keyboard_actors() {
+        const actors = new Set();
+        if (Main.keyboard && Main.keyboard.keyboardActor)
+            actors.add(Main.keyboard.keyboardActor);
+        if (Main.keyboard && Main.keyboard._keyboard)
+            actors.add(Main.keyboard._keyboard);
+        if (Main.layoutManager.keyboardBox)
+            Main.layoutManager.keyboardBox.get_children().forEach(child => actors.add(child));
+        return [...actors];
+    }
+
+    update_background() {
+        [...POPUP_BACKGROUND_STYLES, ...POPUP_SURFACE_STYLES]
+            .forEach(style => Main.uiGroup.remove_style_class_name(style));
+
+        const keyboard_actors = this._get_keyboard_actors();
+        keyboard_actors.forEach(actor => this.clear_keyboard_style(actor));
+        [...POPUP_BACKGROUND_STYLES, ...POPUP_SURFACE_STYLES]
+            .forEach(style =>  keyboard_actors.forEach(actor => actor.remove_style_class_name(style)));
+
+        let background_style = null;
+        if (this.settings.popup.OVERRIDE_BACKGROUND) {
+            const style = this.get_background_style();
+            background_style = this.settings.popup.PRESERVE_SHELL_THEME ?
+                POPUP_SURFACE_STYLES[style] :
+                POPUP_BACKGROUND_STYLES[style];
+            Main.uiGroup.add_style_class_name(
+                background_style
+            );
+        }
+        keyboard_actors.forEach(actor => this.update_keyboard_style(actor, background_style));
+        this.surfaces.forEach(surface => surface.update_settings());
+    }
+
+    clear_keyboard_style(actor, remove_marker = false) {
+        if (!actor)
+            return;
+
+        if (remove_marker)
+            actor.remove_style_class_name(KEYBOARD_STYLE_CLASS);
+
+        if (!this.settings.popup.OVERRIDE_BACKGROUND)
+            return;
+
+        [...POPUP_BACKGROUND_STYLES, ...POPUP_SURFACE_STYLES]
+            .forEach(style => actor.remove_style_class_name(style));
+    }
+
+    update_keyboard_style(actor, background_style = null) {
+        if (!actor)
+            return;
+
+        this.clear_keyboard_style(actor);
+        actor.add_style_class_name(KEYBOARD_STYLE_CLASS);
+        if (!this.settings.popup.OVERRIDE_BACKGROUND)
+            return;
+
+        const style = background_style ?? (
+            this.settings.popup.PRESERVE_SHELL_THEME ?
+                POPUP_SURFACE_STYLES[this.get_background_style()] :
+                POPUP_BACKGROUND_STYLES[this.get_background_style()]
+        );
+        actor.add_style_class_name(style);
+    }
+
+    get_background_style() {
+        const style = this.settings.popup.STYLE_POPUP;
+
+        if (style >= 0 && style < POPUP_BACKGROUND_STYLES.length)
+            return style;
+
+        const theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
+        let uri = theme?.default_stylesheet?.get_uri();
+        if (theme?.application_stylesheet)
+            uri = theme?.application_stylesheet?.get_uri();
+        const lower_uri = typeof uri === 'string' ? uri.toLowerCase() : '';
+        if (lower_uri.includes('yaru'))
+            return lower_uri.includes('dark') ? 2 : 1;
+
+        const shell_style = Main.getStyleVariant();
+        if (shell_style === 'light')
+            return 1;
+
+        if (shell_style === 'dark')
+            return 2;
+
+        return this.interface_settings.get_string('color-scheme') === 'prefer-dark' ? 2 : 1;
+    }
+
+    disable() {
+        if (this.reset_id) {
+            GLib.source_remove(this.reset_id);
+            this.reset_id = 0;
+        }
+
+        this.cancel_queued_blurs();
+
+        if (!this.enabled) {
+            this._log("blur already removed");
+            return;
+        }
+
+        this._log("removing blur from popup surfaces");
+        this.enabled = false;
+
+        const keyboard_actors = this._get_keyboard_actors();
+        keyboard_actors.forEach(actor => this.clear_keyboard_style(actor, true));
+        [...POPUP_BACKGROUND_STYLES, ...POPUP_SURFACE_STYLES]
+            .forEach(style =>  keyboard_actors.forEach(actor => actor.remove_style_class_name(style)));
+
+        [...POPUP_BACKGROUND_STYLES, ...POPUP_SURFACE_STYLES]
+            .forEach(style => Main.uiGroup.remove_style_class_name(style));
+
+        const actors = [...this.surfaces.keys()];
+        actors.forEach(actor => this.destroy_blur(actor));
+        this.surfaces.clear();
+        this.containers.clear();
+        this.watched_actors = new WeakSet();
+        this.destroyed_actors = new WeakSet();
+        this.message_stacks.disable();
+
+        this.connections.disconnect_all();
+    }
+
+    _log(str) {
+        if (this.settings.DEBUG)
+            console.log(`[Blur my Shell > popup blur]        ${str}`);
+    }
+};

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.appmenu" path="/org/gnome/shell/extensions/appmenu/">
+    <!-- Core -->
+    <key name="app-blacklist" type="as">
+      <default>['gjs', 'org.gnome.gjs', 'gnome-shell', 'mutter', 'org.gnome.nautilus']</default>
+      <summary>Application Blacklist</summary>
+      <description>List of app names, IDs, or WM classes to hide from the menu bar.</description>
+    </key>
+    <key name="menu-icon" type="s">
+      <default>''</default>
+      <summary>Menu Icon</summary>
+      <description>Icon for the system menu (position 0). Leave empty to auto-detect from your distro. Select "Apple" to use the Apple logo.</description>
+    </key>
+    <key name="lock-to-focused-app" type="b">
+      <default>true</default>
+      <summary>Lock Menu to Focused App</summary>
+      <description>When enabled, the app menu stays locked to the currently focused app even when hovering over the panel.</description>
+    </key>
+    <key name="show-os-icon" type="b">
+      <default>true</default>
+      <summary>Show OS Icon</summary>
+      <description>Show the Apple or distribution logo button in the top panel.</description>
+    </key>
+    <key name="show-user-switcher" type="b">
+      <default>true</default>
+      <summary>Show User Switcher</summary>
+      <description>Show the user switcher button in the top panel for fast user switching.</description>
+    </key>
+    <key name="debug-logging" type="b">
+      <default>false</default>
+      <summary>Debug Logging</summary>
+      <description>Write AppMenu diagnostic logs to the GNOME Shell journal. Keep disabled for normal use.</description>
+    </key>
+    <key name="show-workspace-indicator" type="b">
+      <default>false</default>
+      <summary>Show Workspace Indicator</summary>
+      <description>Show workspace navigation dots in the top panel.</description>
+    </key>
+    <key name="workspace-indicator-position" type="s">
+      <default>'right'</default>
+      <summary>Workspace Indicator Position</summary>
+      <description>Panel side for the workspace indicator. Supported values: left, right.</description>
+    </key>
+    <key name="search-shortcut" type="as">
+      <default>['&lt;Control&gt;space']</default>
+      <summary>Search Shortcut</summary>
+      <description>Keyboard shortcut used to open AppMenu Search.</description>
+    </key>
+    <key name="use-real-menus" type="b">
+      <default>true</default>
+      <summary>Use Real Application Menus</summary>
+      <description>When available, import real exported application menus over D-Bus.</description>
+    </key>
+    <key name="prefer-macos-style" type="b">
+      <default>false</default>
+      <summary>Unused compatibility key</summary>
+      <description>Retained for dconf compatibility. No longer used by AppMenu.</description>
+    </key>
+    <key name="icon-size" type="i">
+      <default>22</default>
+      <range min="12" max="36"/>
+      <summary>Icon Size</summary>
+      <description>Panel icon size in pixels (12–36).</description>
+    </key>
+
+    <!-- Overview button -->
+    <key name="hide-overview-button" type="b">
+      <default>false</default>
+      <summary>Hide Overview Button</summary>
+      <description>Hide the GNOME Shell Activities/Overview button from the top panel.</description>
+    </key>
+
+    <!-- Custom menus -->
+    <key name="custom-app-menus" type="s">
+      <default>'[]'</default>
+      <summary>Custom Application Menus</summary>
+      <description>JSON array of {label, enabled, items: [{label, kind: "command"|"shortcut", value}]} for custom top-level menus.</description>
+    </key>
+  </schema>
+</schemalist>

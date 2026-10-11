@@ -1,0 +1,17 @@
+[Unit]
+Description=macOS Verbose Boot Logger for Plymouth
+ConditionPathExists=/usr/share/plymouth/themes/apple-mac/verbose_on.png
+DefaultDependencies=no
+After=plymouth-start.service
+Before=plymouth-quit.service
+Requires=plymouth-start.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/plymouth-verbose-logger
+Restart=no
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=sysinit.target

@@ -1,0 +1,4 @@
+#!/bin/bash
+export G_RESOURCE_OVERLAYS="/org/gnome/control-center/system/cc-system-panel.ui=/home/vitaliy/.local/share/gnome-control-center-overlay/cc-system-panel.ui:/org/gnome/control-center/power/cc-power-panel.ui=/home/vitaliy/.local/share/gnome-control-center-overlay/cc-power-panel.ui:/org/gnome/control-center/mouse/cc-mouse-panel.ui=/home/vitaliy/.local/share/gnome-control-center-overlay/cc-mouse-panel.ui"
+export LD_PRELOAD="/home/vitaliy/.local/lib/libmac_settings.so${LD_PRELOAD:+:$LD_PRELOAD}"
+exec /usr/bin/gnome-control-center "$@"

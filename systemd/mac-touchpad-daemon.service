@@ -1,0 +1,14 @@
+[Unit]
+Description=macOS Touchpad Gestures Daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/mac-touchpad-daemon
+Restart=always
+RestartSec=2
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

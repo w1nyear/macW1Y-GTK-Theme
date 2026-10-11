@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Apple macOS Boot
+Description=Authentic macOS boot splash with white Apple logo and progress bar
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/apple-mac
+ScriptFile=/usr/share/plymouth/themes/apple-mac/apple-mac.script

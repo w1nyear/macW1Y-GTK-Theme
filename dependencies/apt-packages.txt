@@ -1,0 +1,25 @@
+# Core System Dependencies for Ubuntu macOS Modpack
+gcc
+make
+pkg-config
+libglib2.0-dev
+libjson-glib-dev
+libjson-glib-1.0-0
+libadwaita-1-dev
+libgtk-4-dev
+libinput-tools
+evemu-tools
+gamemode
+plymouth
+plymouth-themes
+grub2-common
+grub-pc-bin
+grub-efi-amd64-bin
+os-prober
+dconf-cli
+gnome-tweaks
+gnome-shell-extension-manager
+gnome-shell-extensions
+gir1.2-adw-1
+mesa-utils
+nvidia-prime

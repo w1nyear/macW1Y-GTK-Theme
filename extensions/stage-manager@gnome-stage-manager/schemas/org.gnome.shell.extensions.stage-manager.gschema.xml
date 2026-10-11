@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="stage-manager">
+    <schema id="org.gnome.shell.extensions.stage-manager"
+            path="/org/gnome/shell/extensions/stage-manager/">
+
+        <key name="maximize-behavior" type="s">
+            <default>'none'</default>
+            <choices>
+                <choice value="none"/>
+                <choice value="workspace"/>
+                <choice value="stage"/>
+            </choices>
+            <summary>Maximize Behaviour</summary>
+            <description>What happens when a window is maximized. "none" leaves it in place; "workspace" moves it to a new empty workspace; "stage" gives it a stage of its own on the current workspace (Stack layout, Groups mode). Unmaximizing always returns the window, whatever this is set to now.</description>
+        </key>
+
+        <!-- Superseded by maximize-behavior; kept so an existing profile can be
+             migrated once on upgrade. Not shown in preferences. -->
+        <key name="enable-maximize-to-workspace" type="b">
+            <default>false</default>
+            <summary>Enable Maximize to Workspace (deprecated)</summary>
+            <description>Deprecated, replaced by maximize-behavior. Read only to migrate an existing setting.</description>
+        </key>
+
+        <!-- Superseded by maximize-behavior; see the note above. -->
+        <key name="maximize-to-new-group" type="b">
+            <default>false</default>
+            <summary>Enable Maximize to New Stage (deprecated)</summary>
+            <description>Deprecated, replaced by maximize-behavior. Read only to migrate an existing setting.</description>
+        </key>
+
+        <key name="maximize-migrated" type="b">
+            <default>false</default>
+            <summary>Maximize Settings Migrated</summary>
+            <description>Internal. Set once the two deprecated maximize switches have been folded into maximize-behavior, so the migration never runs twice.</description>
+        </key>
+
+        <key name="sidebar-width" type="i">
+            <default>220</default>
+            <range min="120" max="400"/>
+            <summary>Sidebar Width</summary>
+            <description>Width of the stage manager sidebar in pixels.</description>
+        </key>
+
+        <key name="animation-duration" type="i">
+            <default>250</default>
+            <range min="0" max="1000"/>
+            <summary>Animation Duration</summary>
+            <description>Duration of sidebar show/hide animations in milliseconds.</description>
+        </key>
+
+        <key name="sidebar-auto-hide" type="b">
+            <default>false</default>
+            <summary>Auto-hide Sidebar</summary>
+            <description>When off (default): the sidebar stays visible, drawn over your windows; the empty space around the cards passes clicks through to whatever is underneath. When on: the sidebar stays off screen and is revealed by moving the pointer to the screen edge it is attached to.</description>
+        </key>
+
+        <key name="show-on-empty-workspace" type="b">
+            <default>true</default>
+            <summary>Show on Empty Desktop</summary>
+            <description>When enabled, always show the sidebar when all windows on the current workspace are minimized (desktop is empty). Auto-hide resumes once the user interacts with a card and windows become visible again.</description>
+        </key>
+
+        <key name="sidebar-reserve-space" type="b">
+            <default>false</default>
+            <summary>Reserve Space for the Sidebar</summary>
+            <description>Shrink the work area so maximized windows stop underneath the sidebar instead of being covered by it, the way macOS shifts the stage across. Only applies when auto-hide is off, because a reserved strut cannot animate.</description>
+        </key>
+
+        <key name="auto-hide-delay" type="i">
+            <default>800</default>
+            <range min="100" max="5000"/>
+            <summary>Auto-hide Delay</summary>
+            <description>Delay in milliseconds before hiding the sidebar after the pointer leaves.</description>
+        </key>
+
+        <key name="edge-trigger-width" type="i">
+            <default>4</default>
+            <range min="1" max="20"/>
+            <summary>Edge Trigger Width</summary>
+            <description>Width of the invisible hot zone at the screen edge to trigger the sidebar.</description>
+        </key>
+
+        <key name="edge-trigger-delay" type="i">
+            <default>250</default>
+            <range min="0" max="1000"/>
+            <summary>Edge Trigger Delay</summary>
+            <description>How long in milliseconds the pointer must rest on the screen edge before the sidebar appears. Stops the sidebar opening when you brush past the edge on the way to an app's own left-edge UI, such as a vertical tab bar. Set to 0 to open instantly.</description>
+        </key>
+
+        <key name="show-app-icons" type="b">
+            <default>true</default>
+            <summary>Show Application Icons</summary>
+            <description>Show application icons below window thumbnails in the sidebar.</description>
+        </key>
+
+        <key name="sidebar-mode" type="s">
+            <default>'groups'</default>
+            <summary>Sidebar Mode</summary>
+            <description>What to show in sidebar cards. 'groups' = stage manager (swap groups), 'apps' = per-app (just focus), 'workspaces' = other workspaces, 'all-windows' = every window on every workspace (click to activate).</description>
+        </key>
+
+        <key name="card-base-scale" type="i">
+            <default>70</default>
+            <range min="40" max="100"/>
+            <summary>Card Base Scale</summary>
+            <description>Default card scale percentage (40-100). Cards grow on hover with a bell curve effect.</description>
+        </key>
+
+        <key name="perspective-angle" type="i">
+            <default>22</default>
+            <range min="0" max="45"/>
+            <summary>Perspective Angle</summary>
+            <description>Y-axis rotation in degrees for the 3D perspective effect on cards.</description>
+        </key>
+
+        <key name="show-group-count" type="b">
+            <default>true</default>
+            <summary>Show Group Window Count</summary>
+            <description>Show a window count badge on thumbnails when a group has multiple windows.</description>
+        </key>
+
+        <key name="show-workspace-current" type="b">
+            <default>true</default>
+            <summary>Show Current Workspace</summary>
+            <description>In workspace mode, also show the current workspace card in the sidebar.</description>
+        </key>
+
+        <key name="toggle-sidebar" type="as">
+            <default>[]</default>
+            <summary>Toggle Sidebar Shortcut</summary>
+            <description>Keyboard shortcut to toggle the stage sidebar visibility. Empty array means no shortcut is bound.</description>
+        </key>
+
+        <key name="sidebar-layout" type="s">
+            <default>'stack'</default>
+            <choices>
+                <choice value="stack"/>
+                <choice value="arc"/>
+            </choices>
+            <summary>Sidebar Layout</summary>
+            <description>Vertical stack (default) or a full carousel arc layout — see arc-panel-position for which edge it attaches to.</description>
+        </key>
+
+        <key name="arc-angle-step" type="i">
+            <default>16</default>
+            <range min="8" max="30"/>
+            <summary>Arc Angle Step</summary>
+            <description>Degrees between adjacent cards when sidebar-layout is 'arc'. Smaller values show more cards at once.</description>
+        </key>
+
+        <key name="app-merge-map" type="s">
+            <default>'{}'</default>
+            <summary>App Merge Map (internal)</summary>
+            <description>Internal JSON map of appId to merge-group key, used by the 'apps' sidebar-mode's drag-to-merge feature. Not intended for manual editing.</description>
+        </key>
+
+        <key name="stack-panel-position" type="s">
+            <default>'left'</default>
+            <choices>
+                <choice value="left"/>
+                <choice value="right"/>
+                <choice value="bottom"/>
+            </choices>
+            <summary>Stack Panel Position</summary>
+            <description>Screen edge the Stack sidebar is attached to. On "bottom" the cards lay out as a horizontal strip and sidebar-width becomes the strip's height.</description>
+        </key>
+
+        <key name="arc-panel-position" type="s">
+            <default>'left'</default>
+            <choices>
+                <choice value="left"/>
+                <choice value="right"/>
+                <choice value="bottom"/>
+            </choices>
+            <summary>Arc Panel Position</summary>
+            <description>Screen edge the arc sidebar carousel is attached to.</description>
+        </key>
+
+        <key name="arc-persistent-mode" type="b">
+            <default>false</default>
+            <summary>Arc Persistent Mode</summary>
+            <description>Keep the arc sidebar shown whenever no window overlaps its area, instead of only on hover.</description>
+        </key>
+
+        <key name="arc-card-scale" type="i">
+            <default>100</default>
+            <range min="50" max="150"/>
+            <summary>Arc Card Scale</summary>
+            <description>Card size percentage for the arc sidebar carousel.</description>
+        </key>
+
+        <key name="arc-scroll-speed" type="i">
+            <default>10</default>
+            <range min="1" max="20"/>
+            <summary>Arc Scroll Speed</summary>
+            <description>Momentum-scroll speed for the arc sidebar carousel.</description>
+        </key>
+
+        <key name="arc-merge-map" type="s">
+            <default>'{}'</default>
+            <summary>Arc Merge Map (internal)</summary>
+            <description>Internal JSON map of appId to merge-group key for the arc sidebar's drag-to-merge gesture. Not intended for manual editing.</description>
+        </key>
+
+        <key name="arc-order-map" type="s">
+            <default>'{}'</default>
+            <summary>Arc Order Map (internal)</summary>
+            <description>Internal JSON map of merge-group key to display order for the arc sidebar's drag-to-reorder gesture. Not intended for manual editing.</description>
+        </key>
+
+        <key name="keybinding-arc-next" type="as">
+            <default>[]</default>
+            <summary>Arc: Next Card</summary>
+            <description>Keyboard shortcut to move the arc carousel to the next card.</description>
+        </key>
+
+        <key name="keybinding-arc-prev" type="as">
+            <default>[]</default>
+            <summary>Arc: Previous Card</summary>
+            <description>Keyboard shortcut to move the arc carousel to the previous card.</description>
+        </key>
+
+        <key name="keybinding-arc-activate" type="as">
+            <default>[]</default>
+            <summary>Arc: Activate Card</summary>
+            <description>Keyboard shortcut to activate the front card of the arc carousel.</description>
+        </key>
+
+        <key name="keybinding-arc-close" type="as">
+            <default>[]</default>
+            <summary>Arc: Close Front Window</summary>
+            <description>Keyboard shortcut to close the front window of the arc carousel's front card.</description>
+        </key>
+
+    </schema>
+</schemalist>

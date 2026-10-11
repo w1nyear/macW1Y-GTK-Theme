@@ -1,0 +1,16 @@
+{
+  "uuid": "appmenu@ChathurangaBW.github.io",
+  "name": "AppMenu",
+  "description": "A zero-dependency macOS-style global menu bar for GNOME Shell with app-aware menus, shortcuts, recent items, workspaces, and fast user switching.",
+  "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48",
+    "49",
+    "50"
+  ],
+  "url": "https://github.com/ChathurangaBW/AppMenu",
+  "gettext-domain": "appmenu",
+  "version": 15
+}

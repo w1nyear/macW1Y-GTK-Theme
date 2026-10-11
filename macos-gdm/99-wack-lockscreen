@@ -1,0 +1,27 @@
+[org/gnome/shell]
+disable-user-extensions=false
+enabled-extensions=['wack-lockscreen-clock@rinzler69-wastaken.github.com', 'user-theme@gnome-shell-extensions.gcampax.github.com']
+
+[org/gnome/shell/extensions/user-theme]
+name='MacTahoe-Dark'
+
+[org/gnome/desktop/interface]
+gtk-theme='MacTahoe-Dark'
+icon-theme='MacTahoe-Dark'
+
+[org/gnome/login-screen]
+logo=''
+disable-user-list=false
+
+[org/gnome/desktop/background]
+picture-uri='file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+picture-uri-dark='file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+picture-options='zoom'
+
+[org/gnome/shell/extensions/wack-lockscreen-clock]
+lockscreen-mode='cupertino'
+lockscreen-wallpaper-enable=false
+date-style='full'
+clock-animation='scale-down'
+prompt-animation='shell'
+cupertino-unlock-fade=true

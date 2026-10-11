@@ -1,0 +1,30 @@
+#!/usr/bin/env -S gjs -m
+import { unpack_pipelines, pack_pipelines } from "file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/conveniences/pipeline_settings.js";
+import Gio from "gi://Gio";
+import system from "system";
+
+const top_blur = parseFloat(system.programArgs[0] || "5.0");
+const settings = new Gio.Settings({ schema_id: "org.gnome.shell.extensions.blur-my-shell" });
+const current_val = settings.get_value("pipelines");
+const pipelines = unpack_pipelines(current_val);
+
+pipelines["pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc"] = {
+    name: "MenuBar",
+    effects: [
+        {
+            type: "gradient_panel",
+            id: "effect_00680760882466",
+            params: {
+                top_darkness: 0.0,
+                bottom_darkness: 0.0,
+                top_blur: top_blur,
+                bottom_blur: 0.0,
+            }
+        }
+    ]
+};
+
+const packed = pack_pipelines(pipelines);
+settings.set_value("pipelines", packed);
+Gio.Settings.sync();
+print(`Updated menubar pipeline: top_blur = ${top_blur}`);

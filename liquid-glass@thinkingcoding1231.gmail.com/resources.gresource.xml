@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/com/example/my-app/icons">
+    <file alias="dock-bottom-symbolic.svg">icons/dock-bottom-symbolic.svg</file>
+    <file alias="shapes-large-symbolic.svg">icons/shapes-large-symbolic.svg</file>
+    <file alias="audio-volume-medium-symbolic.svg">icons/audio-volume-medium-symbolic.svg</file>
+    <file alias="image-adjust-shadows-symbolic.svg">icons/image-adjust-shadows-symbolic.svg</file>
+  </gresource>
+</gresources>

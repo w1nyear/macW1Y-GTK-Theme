@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+import sys, os, time, glob, subprocess, re
+
+STATE_FILE = '/etc/mac-gamemode.state'
+P_CORES = {0, 1, 2, 3, 4, 5, 6, 7}
+E_CORES = {8, 9, 10, 11}
+ALL_CORES = set(range(12))
+
+GAME_KEYWORDS = [
+    'wine', 'wineserver', 'winedevice.exe', '.exe',
+    'steam_app_', 'gamescope', 'pressure-vessel', 'reaper',
+    'lutris', 'heroic', 'rpcs3', 'yuzu', 'ryujinx', 'cemu',
+    'dolphin-emu', 'pcsx2', 'retroarch', 'dota2', 'cs2', 'hl2_linux'
+]
+
+BG_KEYWORDS = [
+    'tracker-miner', 'tracker-extract', 'updatedb', 'mandb'
+]
+
+def is_game_process(comm, cmdline):
+    full = (comm + ' ' + cmdline).lower()
+    for kw in GAME_KEYWORDS:
+        if kw in full:
+            return True
+    return False
+
+def is_bg_process(comm, cmdline):
+    full = (comm + ' ' + cmdline).lower()
+    for kw in BG_KEYWORDS:
+        if kw in full:
+            return True
+    return False
+
+def apply_sysctl(params):
+    for k, v in params.items():
+        try:
+            subprocess.run(['sysctl', '-w', f'{k}={v}'], capture_output=True, check=False)
+        except Exception:
+            pass
+
+def set_cpu_freq(governor, epp, min_freq):
+    for cpu in glob.glob('/sys/devices/system/cpu/cpu[0-9]*'):
+        gov_path = os.path.join(cpu, 'cpufreq', 'scaling_governor')
+        epp_path = os.path.join(cpu, 'cpufreq', 'energy_performance_preference')
+        min_path = os.path.join(cpu, 'cpufreq', 'scaling_min_freq')
+        if os.path.exists(gov_path):
+            try:
+                with open(gov_path, 'w') as f:
+                    f.write(f'{governor}\n')
+            except Exception:
+                pass
+        if os.path.exists(epp_path):
+            try:
+                with open(epp_path, 'w') as f:
+                    f.write(f'{epp}\n')
+            except Exception:
+                pass
+        if os.path.exists(min_path):
+            try:
+                with open(min_path, 'w') as f:
+                    f.write(f'{min_freq}\n')
+            except Exception:
+                pass
+
+def set_wifi_powersave(enable):
+    try:
+        val = 'on' if enable else 'off'
+        out = subprocess.check_output(['iw', 'dev'], text=True)
+        for line in out.splitlines():
+            line = line.strip()
+            if line.startswith('Interface '):
+                iface = line.split()[1]
+                subprocess.run(['iw', 'dev', iface, 'set', 'power_save', val], capture_output=True)
+    except Exception:
+        pass
+
+def set_gpu_performance(enable):
+    try:
+        if enable:
+            subprocess.run(['nvidia-smi', '-pm', '1'], capture_output=True)
+            subprocess.run(['nvidia-settings', '-a', '[gpu:0]/GPUPowerMizerMode=1'], capture_output=True)
+        else:
+            subprocess.run(['nvidia-settings', '-a', '[gpu:0]/GPUPowerMizerMode=0'], capture_output=True)
+    except Exception:
+        pass
+
+def optimize_processes():
+    for pid_dir in glob.glob('/proc/[0-9]*'):
+        try:
+            pid = int(os.path.basename(pid_dir))
+            comm_path = os.path.join(pid_dir, 'comm')
+            cmd_path = os.path.join(pid_dir, 'cmdline')
+            if not os.path.exists(comm_path):
+                continue
+            with open(comm_path, 'r', errors='ignore') as f:
+                comm = f.read().strip()
+            with open(cmd_path, 'r', errors='ignore') as f:
+                cmdline = f.read().replace('\x00', ' ').strip()
+            
+            if is_game_process(comm, cmdline):
+                # Pin to P-cores
+                try:
+                    os.sched_setaffinity(pid, P_CORES)
+                except Exception:
+                    pass
+                # Set MMCSS priority (-20)
+                try:
+                    os.setpriority(os.PRIO_PROCESS, pid, -20)
+                except Exception:
+                    pass
+                # Set Realtime / High I/O priority
+                try:
+                    subprocess.run(['ionice', '-c', '2', '-n', '0', '-p', str(pid)], capture_output=True)
+                except Exception:
+                    pass
+            elif is_bg_process(comm, cmdline):
+                # Move background tasks to E-cores
+                try:
+                    os.sched_setaffinity(pid, E_CORES)
+                except Exception:
+                    pass
+                try:
+                    os.setpriority(os.PRIO_PROCESS, pid, 19)
+                except Exception:
+                    pass
+        except Exception:
+            continue
+
+def get_state():
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, 'r') as f:
+                return f.read().strip() == '1'
+        except Exception:
+            pass
+    return False
+
+def set_state(val):
+    with open(STATE_FILE, 'w') as f:
+        f.write('1\n' if val else '0\n')
+
+def any_game_running():
+    for pid_dir in glob.glob('/proc/[0-9]*'):
+        try:
+            comm_path = os.path.join(pid_dir, 'comm')
+            cmd_path = os.path.join(pid_dir, 'cmdline')
+            if not os.path.exists(comm_path):
+                continue
+            with open(comm_path, 'r', errors='ignore') as f:
+                comm = f.read().strip()
+            with open(cmd_path, 'r', errors='ignore') as f:
+                cmdline = f.read().replace('\x00', ' ').strip()
+            if is_game_process(comm, cmdline):
+                return True
+        except Exception:
+            continue
+    return False
+
+def turn_on():
+    set_state(True)
+    set_cpu_freq('performance', 'performance', 2400000)
+    apply_sysctl({
+        'vm.max_map_count': '2147483642',
+        'vm.swappiness': '10',
+        'vm.vfs_cache_pressure': '50',
+        'vm.compaction_proactiveness': '0',
+        'net.ipv4.tcp_slow_start_after_idle': '0',
+        'net.ipv4.tcp_notsent_lowat': '16384'
+    })
+    set_gpu_performance(True)
+    set_wifi_powersave(False)
+    optimize_processes()
+    print('mac-gamemode: ON (P-cores pinned, nice -20, sysctl & GPU max perf applied)')
+
+def turn_off():
+    set_state(False)
+    set_cpu_freq('powersave', 'balance_performance', 800000)
+    apply_sysctl({
+        'vm.swappiness': '60',
+        'vm.vfs_cache_pressure': '100',
+        'vm.compaction_proactiveness': '20',
+        'net.ipv4.tcp_slow_start_after_idle': '1'
+    })
+    set_gpu_performance(False)
+    set_wifi_powersave(True)
+    print('mac-gamemode: OFF (Restored standard desktop power profile)')
+
+def daemon_loop():
+    print('mac-gamemode: daemon started')
+    while True:
+        try:
+            manual_on = get_state()
+            game_active = any_game_running()
+            if manual_on or game_active:
+                set_cpu_freq('performance', 'performance', 2400000)
+                apply_sysctl({
+                    'vm.max_map_count': '2147483642',
+                    'vm.swappiness': '10',
+                    'vm.vfs_cache_pressure': '50',
+                    'vm.compaction_proactiveness': '0',
+                    'net.ipv4.tcp_slow_start_after_idle': '0',
+                    'net.ipv4.tcp_notsent_lowat': '16384'
+                })
+                set_gpu_performance(True)
+                set_wifi_powersave(False)
+                optimize_processes()
+            else:
+                set_cpu_freq('powersave', 'balance_performance', 800000)
+        except Exception:
+            pass
+        time.sleep(2)
+
+if __name__ == '__main__':
+    cmd = sys.argv[1] if len(sys.argv) > 1 else 'status'
+    if cmd == 'on':
+        turn_on()
+    elif cmd == 'off':
+        turn_off()
+    elif cmd == 'status':
+        is_on = get_state()
+        print('ON' if is_on else 'OFF')
+        sys.exit(0 if is_on else 1)
+    elif cmd == 'daemon':
+        daemon_loop()
+    elif cmd == 'optimize':
+        optimize_processes()
+    else:
+        print('Usage: mac-gamemode [on|off|status|daemon|optimize]')

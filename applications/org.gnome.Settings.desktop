@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Settings
+Name[uk]=Параметри
+Icon=org.gnome.Settings
+Exec=/home/vitaliy/.local/bin/gnome-control-center
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=GNOME;GTK;Settings;
+OnlyShowIn=GNOME;
+Keywords=Preferences;Settings;Параметри;Налаштування;
+X-Purism-FormFactor=Workstation;Mobile;
+X-Ubuntu-Gettext-Domain=gnome-control-center-2.0

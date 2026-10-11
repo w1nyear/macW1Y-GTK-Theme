@@ -1,0 +1,278 @@
+const POPUP_STYLE_CLASSES = ['popup-menu', 'candidate-popup-boxpointer'];
+const POPUP_TARGET_STYLE_CLASSES = [
+    'popup-menu-content',
+    'notification-banner',
+    'mac-notification-banner',
+    'candidate-popup-content',
+    'screenshot-ui-panel',
+    'datemenu-calendar-column',
+    'message'
+];
+const POPUP_CHILD_STYLE_CLASSES = ['osd-window', 'resize-popup', 'switcher-list', 'workspace-switcher', 'modal-dialog', 'run-dialog'];
+const POPUP_TARGET_STYLE_CLASSES_OSK = ['bms-keyboard-surface'];
+const POPUP_DESCENDANT_TARGET_STYLE_CLASSES = ['switcher-list', 'datemenu-popover'];
+
+export const POPUP_BACKGROUND_STYLES = ['bms-popup-background-transparent', 'bms-popup-background-light', 'bms-popup-background-dark'];
+export const POPUP_SURFACE_STYLES = POPUP_BACKGROUND_STYLES.map(
+    style => style.replace('bms-popup-background-', 'bms-popup-surface-')
+);
+export const DEFAULT_CORNER_RADIUS = { key: 'corner-radius', property: 'CORNER_RADIUS' };
+export const POPUP_CORNER_RADII = [
+    {
+        key: 'quick-settings-corner-radius',
+        property: 'QUICK_SETTINGS_CORNER_RADIUS',
+        style_classes: ['quick-settings', 'datemenu-popover', 'datemenu-calendar-column', 'message-list', 'screenshot-ui-panel'],
+    },
+    {
+        key: 'notification-corner-radius',
+        property: 'NOTIFICATION_CORNER_RADIUS',
+        style_classes: ['notification-banner', 'mac-notification-banner', 'message', 'message-view', 'message-list'],
+    },
+    {
+        key: 'menu-corner-radius',
+        property: 'MENU_CORNER_RADIUS',
+        style_classes: ['popup-menu-content', 'popup-menu', 'candidate-popup-content', 'candidate-popup-boxpointer'],
+    },
+    {
+        key: 'osd-corner-radius',
+        property: 'OSD_CORNER_RADIUS',
+        style_classes: ['osd-window', 'resize-popup', 'switcher-list', 'workspace-switcher'],
+    },
+    {
+        key: 'dialog-corner-radius',
+        property: 'DIALOG_CORNER_RADIUS',
+        style_classes: ['modal-dialog', 'run-dialog'],
+    },
+    {
+        key: 'osk-corner-radius',
+        property: 'OSK_CORNER_RADIUS',
+        style_classes: ['bms-keyboard-surface'],
+    },
+];
+
+export const PopupBlurTargets = class PopupBlurTargets {
+    constructor(actor) {
+        this.actor = actor;
+        this.style_cache = null;
+    }
+
+    find(actor) {
+        return this.with_style_cache(() => this.find_actor(actor));
+    }
+
+    find_actor(actor) {
+        if (this.actor.is_internal_actor(actor) || !this.actor.watch_actor(actor))
+            return [];
+
+        if (this.actor?.is_quick_settings && this.actor.is_quick_settings(actor))
+            return [];
+
+        const delegate = this.actor.get_actor_delegate(actor);
+
+        if (this.has_any_style_class(actor, ['quick-settings']) ||
+            (delegate?.box && this.has_any_style_class(delegate.box, ['quick-settings'])))
+            return [];
+
+        const targets = this.create_targets();
+
+        if (this.prefers_descendant_targets(actor)) {
+            this.find_target_children(actor, targets);
+            if (targets.actors.length > 0)
+                return targets.actors;
+        }
+
+        if (this.actor.watch_actor(delegate?.box) && (this.has_any_style_class(delegate.box, POPUP_TARGET_STYLE_CLASSES) || this.has_any_style_class(delegate.box, POPUP_TARGET_STYLE_CLASSES_OSK)))
+            this.add(targets, delegate.box);
+
+        if (this.has_any_style_class(actor, POPUP_TARGET_STYLE_CLASSES))
+            this.add(targets, actor);
+
+        if (this.has_any_style_class(actor, POPUP_TARGET_STYLE_CLASSES_OSK))
+            this.add(targets, actor);
+
+        if (this.has_any_style_class(actor, POPUP_CHILD_STYLE_CLASSES))
+            this.add(targets, actor);
+
+        const dialog_layout = this.actor.get_actor_dialog_layout(actor);
+        if (this.actor.watch_actor(dialog_layout) && this.has_any_style_class(dialog_layout, POPUP_CHILD_STYLE_CLASSES))
+            this.add(targets, dialog_layout);
+
+        if (targets.actors.length === 0)
+            this.find_target_children(actor, targets);
+
+        if (
+            targets.actors.length === 0
+            && this.has_any_style_class(actor, POPUP_STYLE_CLASSES)
+            && !(this.actor?.is_quick_settings && this.actor.is_quick_settings(actor))
+        )
+            this.add(targets, actor);
+
+        return targets.actors;
+    }
+
+    find_target_children(actor, targets, seen = new WeakSet()) {
+        const stack = this.get_children(actor)
+            .slice()
+            .reverse()
+            .map(child => ({ actor: child, fallback_count: null }));
+
+        while (stack.length > 0) {
+            const { actor: child, fallback_count } = stack.pop();
+            if (
+                !child
+                || this.actor.is_internal_actor(child)
+            )
+                continue;
+
+            if (fallback_count !== null) {
+                if (
+                    targets.actors.length === fallback_count
+                    && this.is_blur_target_actor(child)
+                )
+                    this.add(targets, child);
+                continue;
+            }
+
+            if (seen.has(child))
+                continue;
+
+            seen.add(child);
+
+            if (this.prefers_descendant_targets(child)) {
+                const children = this.get_children(child);
+                if (children.length > 0) {
+                    stack.push({
+                        actor: child,
+                        fallback_count: targets.actors.length,
+                    });
+                    this.push_children(stack, children);
+                    continue;
+                }
+            }
+
+            if (this.is_blur_target_actor(child)) {
+                this.add(targets, child);
+                continue;
+            }
+
+            this.push_children(stack, this.get_children(child));
+        }
+    }
+
+    prefers_descendant_targets(actor) {
+        return this.has_any_style_class(actor, POPUP_DESCENDANT_TARGET_STYLE_CLASSES);
+    }
+
+    is_blur_target_actor(actor) {
+        if (!actor)
+            return false;
+        if (this.actor?.is_quick_settings && this.actor.is_quick_settings(actor))
+            return false;
+        if (this.has_any_style_class(actor, ['quick-settings', 'quick-settings-menu']))
+            return false;
+        return (
+            this.has_any_style_class(actor, POPUP_TARGET_STYLE_CLASSES)
+            || this.has_any_style_class(actor, POPUP_TARGET_STYLE_CLASSES_OSK)
+            || this.has_any_style_class(actor, POPUP_CHILD_STYLE_CLASSES)
+        );
+    }
+
+    get_corner_radius(target, root_actor) {
+        return POPUP_CORNER_RADII.find(radius =>
+            this.has_any_style_class(target, radius.style_classes)
+            || this.has_any_style_class(root_actor, radius.style_classes)
+        ) ?? DEFAULT_CORNER_RADIUS;
+    }
+
+    with_style_cache(callback) {
+        const previous_cache = this.style_cache;
+        this.style_cache = new WeakMap();
+
+        try {
+            return callback();
+        } finally {
+            this.style_cache = previous_cache;
+        }
+    }
+
+    has_any_style_class(actor, style_classes) {
+        if (!actor)
+            return false;
+
+        const classes = this.get_style_classes(actor);
+        if (classes)
+            return style_classes.some(style_class => classes.has(style_class));
+
+        return style_classes.some(style_class => this.has_style_class(actor, style_class));
+    }
+
+    has_style_class(actor, style_class) {
+        return has_style_class(actor, style_class);
+    }
+
+    get_style_classes(actor) {
+        if (!actor || !this.style_cache)
+            return null;
+
+        if (this.style_cache.has(actor))
+            return this.style_cache.get(actor);
+
+        if (!actor.get_style_class_name) {
+            this.style_cache.set(actor, null);
+            return null;
+        }
+
+        const class_names = actor.get_style_class_name();
+        if (typeof class_names !== 'string') {
+            this.style_cache.set(actor, null);
+            return null;
+        }
+
+        const classes = new Set(class_names.split(/\s+/).filter(Boolean));
+        this.style_cache.set(actor, classes);
+        return classes;
+    }
+
+    create_targets() {
+        return {
+            actors: [],
+            seen: new WeakSet(),
+        };
+    }
+
+    get_children(actor) {
+        return actor ? actor.get_children() : [];
+    }
+
+    push_children(stack, children) {
+        children
+            .slice()
+            .reverse()
+            .forEach(child => stack.push({ actor: child, fallback_count: null }));
+    }
+
+    add(targets, target) {
+        if (
+            this.actor.is_internal_actor(target)
+            || !this.actor.watch_actor(target)
+            || targets.seen.has(target)
+        )
+            return;
+
+        targets.seen.add(target);
+        targets.actors.push(target);
+    }
+};
+
+export function has_style_class(actor, style_class) {
+    if (!actor || !style_class)
+        return false;
+
+    if (actor.has_style_class_name)
+        return actor.has_style_class_name(style_class);
+
+    if (actor.get_style_class_name)
+        return (actor.get_style_class_name() ?? '').split(/\s+/).includes(style_class);
+
+    return false;
+}

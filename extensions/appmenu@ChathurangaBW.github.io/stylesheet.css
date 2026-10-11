@@ -1,0 +1,210 @@
+/* AppMenu panel button label */
+.panel-button-label {
+    font-weight: bold;
+    font-size: 10pt;
+    padding: 0 6px;
+}
+
+/* Tighter panel spacing for AppMenu buttons */
+.appmenu-panel-button {
+    -natural-hpadding: 3px;
+    -minimum-hpadding: 3px;
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+/* Distro icon — use panel foreground color for currentColor in SVGs */
+.system-status-icon {
+    icon-size: 22px;
+    padding: 0 4px;
+}
+
+/* Section headers in popup menus (e.g. "Open Windows") */
+.popup-subtitle-menu-item {
+    font-weight: bold;
+    font-size: 9pt;
+    color: -st-dim-text;
+}
+
+/* Recent items submenu */
+.appmenu-recent-menu {
+    min-width: 280px;
+}
+
+/* Document tooltip for recent file paths */
+.appmenu-document-tooltip {
+    font-size: 9pt;
+    padding: 4px 8px;
+    border-radius: 4px;
+    max-width: 400px;
+}
+
+/*###############################################*/
+/*          User Switcher Styles                 */
+/*###############################################*/
+.appmenu-user-switcher-button {
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+.appmenu-user-switcher-menu {
+    min-width: 300px;
+    padding: 6px 0;
+}
+
+.appmenu-user-grid {
+    min-width: 100%;
+    margin: 0 auto;
+}
+
+.appmenu-user-item {
+    border-radius: 12px;
+    padding: 12px;
+    margin: 0 12px 0 12px;
+}
+
+.appmenu-user-item:hover {
+    background-color: rgba(128, 128, 128, 0.15);
+}
+
+.appmenu-user-item-content {
+    align-items: center;
+}
+
+.appmenu-user-card-avatar-frame {
+    width: 64px;
+    height: 64px;
+    border-radius: 32px;
+    overflow: hidden;
+    border: 2px solid transparent;
+}
+
+.appmenu-user-card-avatar-frame.current-user {
+    border-color: -st-accent-color;
+}
+
+.appmenu-user-card-avatar-frame.logged-in {
+    border-color: rgba(128, 128, 128, 0.4);
+}
+
+.appmenu-user-card-avatar {
+    border-radius: 999px;
+    background-size: cover;
+    background-position: center;
+}
+
+.appmenu-user-card-name {
+    font-weight: bold;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.appmenu-user-avatar-container {
+    width: 68px;
+    height: 68px;
+}
+
+.appmenu-user-session-badge {
+    background-color: -st-accent-color;
+    border-radius: 99px;
+    padding: 3px;
+    font-weight: bold;
+    color: -st-accent-fg-color;
+    border: 1px solid;
+    border-color: lightgray;
+}
+
+.appmenu-user-session-badge.current-user {
+    background-color: darkgoldenrod;
+    color: -st-accent-fg-color;
+    border: 1px solid;
+    border-color: lightgray;
+}
+
+
+/* Workspace indicator */
+.appmenu-workspace-indicator-button {
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+.appmenu-workspace-indicator-label {
+    font-size: 10pt;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding: 0 6px;
+}
+
+
+/* AppMenu Search */
+.appmenu-search-dialog {
+    width: 540px;
+}
+
+.appmenu-search-entry {
+    min-height: 42px;
+    border-radius: 14px;
+    padding: 8px 14px;
+    font-size: 14pt;
+}
+
+.appmenu-search-results {
+    margin-top: 10px;
+    spacing: 6px;
+}
+
+.appmenu-search-section-title {
+    font-size: 9pt;
+    font-weight: bold;
+    color: -st-dim-text;
+    margin: 8px 0 2px 4px;
+}
+
+.appmenu-search-result {
+    border-radius: 10px;
+    padding: 9px 12px;
+}
+
+.appmenu-search-result:hover,
+.appmenu-search-result:focus,
+.appmenu-search-result.selected {
+    background-color: rgba(128, 128, 128, 0.18);
+}
+
+.appmenu-search-result-content {
+    spacing: 10px;
+}
+
+.appmenu-search-result-icon {
+    icon-size: 22px;
+    color: -st-dim-text;
+}
+
+.appmenu-search-result-text {
+    spacing: 2px;
+}
+
+.appmenu-search-result-title {
+    font-weight: bold;
+}
+
+.appmenu-search-empty-state {
+    padding: 18px 12px;
+    spacing: 8px;
+    text-align: center;
+}
+
+.appmenu-search-empty-icon {
+    icon-size: 32px;
+    color: -st-dim-text;
+}
+
+.appmenu-search-empty-title {
+    font-weight: bold;
+}
+
+.appmenu-search-result-subtitle,
+.appmenu-search-empty {
+    color: -st-dim-text;
+    font-size: 9pt;
+}

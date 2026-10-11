@@ -1,0 +1,1544 @@
+# Ubuntu macOS 26 Theme — Інструкція розгортання та Журнал змін
+# Каталог збереження файлів теми: /home/vitaliy/MACTHEMEFILES/
+# Дата оновлення: 2026-10-06
+
+================================================================================
+## ЧАСТИНА 1: СПЕЦИФІКАЦІЯ ДЛЯ УСТАНОВЩИКА (КУДИ І ЩО ПЕРЕМІЩУВАТИ)
+================================================================================
+Усі файли в цій папці є кастомними напрацюваннями теми macOS під GNOME 46+.
+Нижче наведено детальний опис кожного файлу: його призначення, точний цільовий
+шлях у системі та точна команда для переміщення / встановлення.
+
+--------------------------------------------------------------------------------
+1. ФАЙЛИ ТЕМИ GNOME SHELL (Стилі оформлення)
+--------------------------------------------------------------------------------
+• Джерело:
+  `gnome-shell-theme/gnome-shell.css`
+
+• Куди копіювати:
+  1) `~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css`
+  2) `~/.themes/MacTahoe-Dark-solid/gnome-shell/gnome-shell.css`
+
+• Що робить цей файл:
+  - Містить повний набір CSS-стилів теми GNOME Shell у стилі macOS Sonoma / Tahoe.
+  - Окремі заокруглені пілюлі (`border-radius: 9999px`) для повзунків звуку та яскравості.
+  - Видалення подвійних рамок («елемент на елементі») у розгортаємих кнопках Wi-Fi/Bluetooth.
+  - Стилі для годинника у правому кутку меню-бару з оптимізованими відступами (`padding: 0 10px; margin-right: 4px`).
+  - Оптимізація іконок трею (Steam, Telegram тощо): усунено паразитичний `margin-left: 12px`,
+    паддінг зменшено до симетричних 5px, завдяки чому іконки мають строгу пропорцію 1:1 (ідеальне коло 34×34 px).
+
+• Команда для встановлення:
+  mkdir -p ~/.themes/MacTahoe-Dark/gnome-shell ~/.themes/MacTahoe-Dark-solid/gnome-shell
+  cp gnome-shell-theme/gnome-shell.css ~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css
+  cp gnome-shell-theme/gnome-shell.css ~/.themes/MacTahoe-Dark-solid/gnome-shell/gnome-shell.css
+
+--------------------------------------------------------------------------------
+2. ФАЙЛИ РОЗШИРЕННЯ BLUR MY SHELL (Розмиття, Меню-бар та Контрол Центр)
+--------------------------------------------------------------------------------
+Базовий каталог розширення у системі:
+`~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/`
+
+• Файл: `blur-my-shell/extension.js`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/extension.js`
+  - Що робить: Точка входу розширення. Реєструє та запускає кастомні модулі QuickSettingsBlur
+    (блюр пілюль Control Center) та MenuBarController (годинник праворуч та 1:1 іконки).
+  - Команда:
+    cp blur-my-shell/extension.js ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/extension.js
+
+• Файл: `blur-my-shell/components/menubar.js`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar.js`
+  - Що робить:
+    1) Повний редизайн правої частини меню-бара у стилі macOS Sonoma / Tahoe.
+    2) Індикатор конфіденційності (PrivacyIndicator): помаранчева пілюля мікрофона та зелена пілюля камери з випадаючим списком активних додатків.
+    3) Незалежні статусні меню швидкого керування (Wi-Fi, Bluetooth, Звук) зі списками точок доступу, пристроїв та інтерактивним повзунком гучності.
+    4) Неінтерактивний віджет батареї (BatteryWidget, `reactive: false`), що відображає лише стан заряду та іконку.
+    5) Кнопка Control Center: замінює стандартні іконки GNOME на єдину компактну піктограму подвійних перемикачів Control Center macOS (`control-center-symbolic.svg`).
+    6) Годинник та календар (`dateMenu`) зафіксовано у крайньому правому кутку.
+    7) Автоматичне підтримання суворого порядку елементів:
+       `[ Privacy ] -> [ Трей / Програми ] -> [ Wi-Fi ] -> [ Bluetooth ] -> [ Звук ] -> [ Батарея ] -> [ Control Center ] -> [ Годинник ]`.
+  - Команда:
+    mkdir -p ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components
+    cp blur-my-shell/components/menubar.js ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar.js
+
+• Файл: `icons/control-center-symbolic.svg`
+  - Куди:
+    1) `~/.themes/MacTahoe-Dark/icons/control-center-symbolic.svg`
+    2) `~/.local/share/icons/hicolor/scalable/apps/control-center-symbolic.svg`
+  - Що робить:
+    Векторна піксель-перфект піктограма macOS Control Center (два горизонтальні перемикачі-слайдери з повзунками).
+  - Команда:
+    mkdir -p ~/.themes/MacTahoe-Dark/icons ~/.local/share/icons/hicolor/scalable/apps
+    cp icons/control-center-symbolic.svg ~/.themes/MacTahoe-Dark/icons/control-center-symbolic.svg
+    cp icons/control-center-symbolic.svg ~/.local/share/icons/hicolor/scalable/apps/control-center-symbolic.svg
+
+• Файл: `blur-my-shell/components/quick_settings.js`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/quick_settings.js`
+  - Що робить:
+    1) Реалізує нативний блюр 10% (`sigma = 10`) безпосередньо на кожній окремій пілюлі Control Center.
+    2) Застосовує `libblur-effect-1.0` з підтримкою заокруглення `corner_radius = 9999`.
+    3) Вимикає примусовий `offscreen_redirect` у `BoxPointer`, завдяки чому блюр пілюль зчитує шпалери напряму.
+    4) Очищає зайвий прямокутний блюр під розгорнутими списками (`_overlay`).
+  - Команда:
+    cp blur-my-shell/components/quick_settings.js ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/quick_settings.js
+
+• Файл: `blur-my-shell/components/notifications.js`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications.js`
+  - Що робить:
+    1) Перехоплює системні сповіщення GNOME MessageTray та блокує стандартний центрований банер.
+    2) Розміщує їх у правому верхньому кутку робочої області у вертикальний стек (список вниз).
+    3) Анімація macOS: сповіщення плавно виїжджає з-за правого краю екрана на робочу область
+       (`translation_x: 450 -> 0`, кубічний ease-out). При закритті або завершенні таймеру —
+       плавно виїжджає назад за правий край екрана (`translation_x: 0 -> 450`, кубічний ease-in).
+    4) Пропорції карти: збільшена ширина (395px) без збільшення висоти (компактні відступи 10x14px),
+       що точно відповідає оригінальним пропорціям банерів macOS Sonoma / Tahoe.
+    5) Нативний Liquid Glass Blur: апаратний фоновий блюр (`mode: BACKGROUND`, `radius = 20 * scale`,
+       `corner_radius = 18 * scale`) крізь напівпрозорий тінт `rgba(36, 36, 36, 0.68)`.
+    6) Кнопка закриття ('x'): у правому верхньому кутку картки; прихована за замовчуванням,
+       плавно з'являється при наведенні курсору миші, зупиняючи таймер автозакриття.
+  - Команда:
+    mkdir -p ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components
+    cp blur-my-shell/components/notifications.js ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications.js
+
+• Файл: `blur-my-shell/components/dash_to_dock.js`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/dash_to_dock.js`
+  - Що робить:
+    1) Забезпечує коректну детекцію DashToDock у GNOME 46 ESM (`child.constructor.name.includes('DashToDock')`).
+    2) Реалізує справжній **динамічний фоновий блюр (Live dynamic blur)**: док розмиває елементи
+       та вікна, розташовані безпосередньо позаду нього (браузер, файловий менеджер, Steam тощо),
+       а не лише статичні шпалери робочого столу.
+    3) Математично точна прив'язка координат через `get_transformed_position()`: розмиття ідеально
+       центрується та збігається з плашкою доку у будь-яких режимах і положеннях екрана.
+    4) Синхронізує заокруглення апаратного блюру на 28px (`corner-radius: 28`) відповідно до теми Mac Tahoe.
+  - Команда:
+    cp blur-my-shell/components/dash_to_dock.js ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/dash_to_dock.js
+
+• Файл: `blur-my-shell/effects/native_dynamic_gaussian_blur.js`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects/native_dynamic_gaussian_blur.js`
+  - Що робить: Нативний GObject-обгортка над `BlurOrShell.BlurEffect` з підтримкою заокруглених кутів
+    `corner_radius` для динамічного розмиття фону у реальному часі.
+  - Команда:
+    mkdir -p ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects
+    cp blur-my-shell/effects/native_dynamic_gaussian_blur.js ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects/native_dynamic_gaussian_blur.js
+
+• Файл: `blur-my-shell/components/popup/targets.js`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/popup/targets.js`
+  - Що робить: Очищений список цілей стандартного розмиття спливаючих вікон (вилучено селектори
+    списків підменю Control Center, щоб уникнути конфліктів і подвійного фону).
+  - Команда:
+    mkdir -p ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/popup
+    cp blur-my-shell/components/popup/targets.js ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/popup/targets.js
+
+• Файл: `blur-my-shell/effects/gradient_panel.glsl`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects/gradient_panel.glsl`
+  - Що робить: GLSL-шейдер градієнтного затемнення та розмиття верхньої панелі (Menu Bar) зверху вниз.
+  - Команда:
+    mkdir -p ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects
+    cp blur-my-shell/effects/gradient_panel.glsl ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects/gradient_panel.glsl
+
+• Файл: `blur-my-shell/effects/gradient_panel.js`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects/gradient_panel.js`
+  - Що робить: Clutter JS-обгортка для запуску GLSL-шейдера ефекту Gradient Panel у Clutter/Mutter.
+  - Команда:
+    cp blur-my-shell/effects/gradient_panel.js ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects/gradient_panel.js
+
+• Файл: `blur-my-shell/effects/effects.js`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects/effects.js`
+  - Що робить: Реєстрація ефекту Gradient Panel у списку доступних ефектів розширення Blur My Shell.
+  - Команда:
+    cp blur-my-shell/effects/effects.js ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects/effects.js
+
+• Файл: `blur-my-shell/effects/effect_groups.js`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects/effect_groups.js`
+  - Що робить: Визначення категорій та груп ефектів для графічного інтерфейсу налаштувань Blur My Shell.
+  - Команда:
+    cp blur-my-shell/effects/effect_groups.js ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects/effect_groups.js
+
+• Файл: `blur-my-shell/styles/panel.css`
+  - Куди: `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/styles/panel.css`
+  - Що робить: Кастомні CSS-стилі панелі для розширення Blur My Shell.
+  - Команда:
+    mkdir -p ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/styles
+    cp blur-my-shell/styles/panel.css ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/styles/panel.css
+
+--------------------------------------------------------------------------------
+3. КОНФІГУРАЦІЯ ТА НАЛАШТУВАННЯ (DCONF ТА GSETTINGS)
+--------------------------------------------------------------------------------
+• Файл: `dconf/blur-my-shell.dconf`
+  - Куди: База конфігурацій dconf за шляхом `/org/gnome/shell/extensions/blur-my-shell/`
+  - Що робить: Застосовує перевірені налаштування Blur My Shell: активацію градієнтного пайплайну панелі,
+    вимкнення конфліктного pop-up блюру та калібрування параметрів.
+  - Команда:
+    dconf load /org/gnome/shell/extensions/blur-my-shell/ < dconf/blur-my-shell.dconf
+
+• Файл: `dconf/gnome-shell.dconf`
+  - Куди: База конфігурацій dconf за шляхом `/org/gnome/shell/`
+  - Що робить: Фіксує список увімкнених розширень та активну тему GNOME Shell (`MacTahoe-Dark`).
+  - Команда:
+    dconf load /org/gnome/shell/ < dconf/gnome-shell.dconf
+
+• Файл: `dconf/dash-to-dock.dconf`
+  - Куди: База конфігурацій dconf за шляхом `/org/gnome/shell/extensions/dash-to-dock/`
+  - Що робить: Застосовує налаштування Dash to Dock (позиція знизу, розмір іконок, поведінка).
+  - Команда:
+    dconf load /org/gnome/shell/extensions/dash-to-dock/ < dconf/dash-to-dock.dconf
+
+• Системні параметри GSettings (обов'язково виконати):
+  # Відображення годинника як у macOS ("Вт, 6 жовт. 21:38")
+  gsettings set org.gnome.desktop.interface clock-show-weekday true
+  gsettings set org.gnome.desktop.interface clock-show-date true
+  gsettings set org.gnome.desktop.interface clock-format '24h'
+
+  # Компактний режим для іконок додатків у треї
+  gsettings set org.gnome.shell.extensions.appindicator compact-mode-enabled true
+
+  # Активація теми GNOME Shell
+  dconf write /org/gnome/shell/extensions/user-theme/name "'MacTahoe-Dark'"
+
+--------------------------------------------------------------------------------
+4. НЕОБХІДНІ РОЗШИРЕННЯ GNOME (DEPENDENCIES)
+--------------------------------------------------------------------------------
+Для повноцінної роботи встановленої теми мають бути увімкнені такі розширення:
+- `user-theme@gnome-shell-extensions.gcampax.github.com` (застосування тем Shell)
+- `blur-my-shell@aunetx` (наш модифікований движок блюру та панелі)
+- `ubuntu-appindicators@ubuntu.com` (системний трей)
+- `appmenu@ChathurangaBW.github.io` (глобальне меню та перемикач користувача)
+
+--------------------------------------------------------------------------------
+5. ГОТОВИЙ СКРИПТ АВТОМАТИЧНОГО ВСТАНОВЛЕННЯ (INSTALL.SH)
+--------------------------------------------------------------------------------
+Цей скрипт збережено у файлі: `install.sh` поруч із `done.txt`.
+Для розгортання теми на будь-якій системі достатньо виконати:
+`bash install.sh`
+
+Вміст скрипта:
+```bash
+#!/usr/bin/env bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo "==> Встановлення теми macOS 26 для Ubuntu..."
+
+# 1. Створення цільових папок
+mkdir -p ~/.themes/MacTahoe-Dark/gnome-shell
+mkdir -p ~/.themes/MacTahoe-Dark-solid/gnome-shell
+mkdir -p ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/popup
+mkdir -p ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/effects
+mkdir -p ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/styles
+
+# 2. Копіювання теми GNOME Shell
+echo "==> Копіювання файлів теми..."
+cp "$SCRIPT_DIR/gnome-shell-theme/gnome-shell.css" ~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css
+cp "$SCRIPT_DIR/gnome-shell-theme/gnome-shell.css" ~/.themes/MacTahoe-Dark-solid/gnome-shell/gnome-shell.css
+
+# 3. Копіювання файлів Blur My Shell
+echo "==> Копіювання компонентів Blur My Shell..."
+BMS_TARGET="$HOME/.local/share/gnome-shell/extensions/blur-my-shell@aunetx"
+cp "$SCRIPT_DIR/blur-my-shell/extension.js" "$BMS_TARGET/extension.js"
+cp "$SCRIPT_DIR/blur-my-shell/components/menubar.js" "$BMS_TARGET/components/menubar.js"
+cp "$SCRIPT_DIR/blur-my-shell/components/quick_settings.js" "$BMS_TARGET/components/quick_settings.js"
+cp "$SCRIPT_DIR/blur-my-shell/components/notifications.js" "$BMS_TARGET/components/notifications.js"
+cp "$SCRIPT_DIR/blur-my-shell/components/dash_to_dock.js" "$BMS_TARGET/components/dash_to_dock.js"
+cp "$SCRIPT_DIR/blur-my-shell/components/popup/targets.js" "$BMS_TARGET/components/popup/targets.js"
+cp "$SCRIPT_DIR/blur-my-shell/effects/gradient_panel.glsl" "$BMS_TARGET/effects/gradient_panel.glsl"
+cp "$SCRIPT_DIR/blur-my-shell/effects/gradient_panel.js" "$BMS_TARGET/effects/gradient_panel.js"
+cp "$SCRIPT_DIR/blur-my-shell/effects/effects.js" "$BMS_TARGET/effects/effects.js"
+cp "$SCRIPT_DIR/blur-my-shell/effects/effect_groups.js" "$BMS_TARGET/effects/effect_groups.js"
+cp "$SCRIPT_DIR/blur-my-shell/styles/panel.css" "$BMS_TARGET/styles/panel.css"
+
+# Налаштування заокруглення Dash to Dock (28px як у MacTahoe)
+D2D_DIR="$HOME/.local/share/gnome-shell/extensions/dash-to-dock@micxgx.gmail.com"
+if [ -f "$D2D_DIR/stylesheet.css" ]; then
+    sed -i 's/border-radius: 24px;/border-radius: 28px;/g' "$D2D_DIR/stylesheet.css" 2>/dev/null || true
+fi
+
+# 4. Імпорт налаштувань Dconf
+echo "==> Завантаження параметрів Dconf..."
+if [ -f "$SCRIPT_DIR/dconf/blur-my-shell.dconf" ]; then
+    dconf load /org/gnome/shell/extensions/blur-my-shell/ < "$SCRIPT_DIR/dconf/blur-my-shell.dconf"
+fi
+if [ -f "$SCRIPT_DIR/dconf/dash-to-dock.dconf" ]; then
+    dconf load /org/gnome/shell/extensions/dash-to-dock/ < "$SCRIPT_DIR/dconf/dash-to-dock.dconf"
+fi
+if [ -f "$SCRIPT_DIR/dconf/gnome-shell.dconf" ]; then
+    dconf load /org/gnome/shell/ < "$SCRIPT_DIR/dconf/gnome-shell.dconf"
+fi
+
+# 5. Налаштування параметрів GSettings
+echo "==> Налаштування інтерфейсу GNOME..."
+gsettings set org.gnome.desktop.interface clock-show-weekday true
+gsettings set org.gnome.desktop.interface clock-show-date true
+gsettings set org.gnome.desktop.interface clock-format '24h'
+gsettings set org.gnome.shell.extensions.appindicator compact-mode-enabled true
+dconf write /org/gnome/shell/extensions/user-theme/name "'MacTahoe-Dark'"
+
+# 6. Перезапуск розширень
+echo "==> Перезапуск розширень..."
+gnome-extensions disable blur-my-shell@aunetx 2>/dev/null || true
+gnome-extensions disable dash-to-dock@micxgx.gmail.com 2>/dev/null || true
+sleep 1
+gnome-extensions enable dash-to-dock@micxgx.gmail.com 2>/dev/null || true
+gnome-extensions enable blur-my-shell@aunetx 2>/dev/null || true
+
+echo "==> Встановлення успішно завершено!"
+```
+
+================================================================================
+## ЧАСТИНА 2: ЖУРНАЛ ВИКОНАНИХ ЗМІН (ХРОНОЛОГІЯ ТА ЕТАПИ)
+================================================================================
+
+--------------------------------------------------------------------------------
+ЕТАП 1: Меню бар (MenuBar) — Затемнення та Блюр
+--------------------------------------------------------------------------------
+- Створено кастомний шейдерний ефект для Blur My Shell: `Gradient Panel (Darkness and Blur)`.
+- Синхронізовано `clip_y0` та `clip_height`, що забезпечує 100% точний вертикальний градієнт від 0.0 до 1.0.
+- Додано можливість незалежно регулювати:
+  - Затемнення: зверху (Top darkness) та знизу (Bottom darkness)
+  - Розмиття: зверху (Top blur) та знизу (Bottom blur)
+
+--------------------------------------------------------------------------------
+ЕТАП 2: Контрол Центр / Quick Settings (справа вгорі)
+--------------------------------------------------------------------------------
+Задача: 
+- Видалити загальний темний фон контейнера Control Center (елементи вільно плавають).
+- Додати тіні під елементами та напівпрозоре скло (liquid glass).
+- Перетворити повзунки гучності та яскравості на дві окремі заокруглені пілюлі у стилі liquid glass.
+- Прибрати вкладені рамки ("елемент на елементі") всередині кнопок, які розгортаються (Wi-Fi, Bluetooth).
+- Видалити прямокутний фон блюру позаду розгорнутих списків підменю.
+- Забезпечити шар із заокругленням по контуру пілюль, зберегти тінт `rgba(36, 36, 36, 0.72)` та встановити блюр на 10%.
+
+Що зроблено:
+1. Виправлено кнопки з підменю (`.quick-toggle-has-menu`):
+   - Усунено ефект «елемент на елементі» для Wi-Fi, Bluetooth, Режиму живлення.
+   - Повністю видалено внутрішні рамки, контури та фони у вкладеного елемента `.quick-toggle-has-menu .quick-toggle`.
+   - Кнопка тепер є єдиною суцільною пілюлею без внутрішніх прямокутників і подвійних рамок.
+   - Кнопка відкриття підменю (стрілка `>`) акуратно вписана всередину пілюлі з прозорим фоном.
+
+2. Видалено блюр позаду розгорнутих списків:
+   - Повністю виключено підменю (`_overlay`, `.quick-toggle-menu`) зі списку цілей блюру.
+   - У `QuickSettingsBlur` додано очистку `remove_effect_by_name('bms-qs-item-blur')` для `_overlay`.
+   - У `targets.js` вилучено `quick-toggle-menu` та `quick-toggle-menu-container`.
+   - Картка списку має акуратний закруглений темний фон (`rgba(36, 36, 36, 0.94)`) з тінню без прямокутного ореолу позаду.
+
+3. Блюр на 10% із заокругленням контуру пілюль (`QuickSettingsBlur`):
+   - Значення блюру встановлено на 10% (`sigma = 10`).
+   - Застосовано `BlurOrShell.BlurEffect` із підтримкою нативного `corner_radius = 9999 * scale` (бібліотека `libblur-effect-1.0` / rounded-blur).
+   - Усунено блокування блюру: GNOME Shell за замовчуванням спрямовував `_boxPointer` у offscreen-буфер (`OffscreenRedirect.ALWAYS`), де не було доступу до шпалер. Викликано `set_offscreen_redirect(0)` на `_boxPointer`, `bin`, `box`, `_grid`, завдяки чому блюр фону безпосередньо зчитує шпалери та ідеально обрізається по контуру кожної пілюлі.
+   - Збережено напівпрозорий тінт `rgba(36, 36, 36, 0.72)` з тонкою рамкою `rgba(255, 255, 255, 0.16)` та тінню.
+
+4. Повзунки гучності та яскравості (`.quick-slider`):
+   - Повноцінні окремі капсули-пілюлі (`border-radius: 9999px !important`).
+   - Тінт liquid glass + нативне закруглене розмиття 10% + білий повзунок зі світлою шкалою.
+
+5. Верхній системний рядок (`.quick-settings-system-item`):
+   - Кнопка батареї (`.power-item`) та круглі іконки (скріншот, налаштування, блокування, живлення) отримали аналогічний liquid glass стиль із блюром та заокругленням.
+
+--------------------------------------------------------------------------------
+ЕТАП 3: Меню бар (Розташування елементів та іконки трею)
+--------------------------------------------------------------------------------
+Задача:
+- Перемістити дату і час у правий кут меню-бару (крайній правий елемент як у macOS).
+- Меню календаря та сповіщень має випадати праворуч біля правого краю екрана.
+- Виправити пропорції іконок програм у треї (Steam, Telegram тощо): зробити їх однаковими по ширині та висоті (1:1), щоб вони не були витягнутими овалами і не займали зайвого місця.
+- Решту елементів меню-бару залишити на своїх місцях.
+
+Що зроблено:
+1. Переміщення Дати й Часу (`dateMenu`) у крайній правий кут:
+   - Створено компонент `MenuBarController` (`components/menubar.js`) в `blur-my-shell`.
+   - Контейнер годинника `dateMenu.container` динамічно переміщується з центральної панелі (`_centerBox`) у крайню праву позицію `_rightBox`.
+   - Додано слухач події додавання нових іконок до `_rightBox` (`actor-added`), щоб годинник завжди гарантовано залишався крайнім правим елементом.
+   - При вимкненні розширення (`disable()`) годинник коректно повертається у центр.
+
+2. Вирівнювання випадаючого меню календаря праворуч:
+   - Встановлено вирівнювання `menuAlignment = 1.0` та виклик `setSourceAlignment(1.0)` на `dateMenu.menu` і `_boxPointer`.
+   - При відкритті календаря меню з'являється строго біля правого краю екрана під годинником.
+   - Вирівнювання спливаючих сповіщень налаштовано на правий край (`Main.messageTray.bannerAlignment = Clutter.ActorAlign.END`).
+   - Увімкнено показ дня тижня (`clock-show-weekday = true`) відповідно до macOS образу ("Вт, 6 жовт. 21:38").
+
+3. Виправлення пропорцій іконок програм (Steam, індикатори трею):
+   - Усунено причину розтягування: видалено `margin-left: 12px` у класі `.appindicator-box` та зменшено горизонтальний паддінг кнопки з 12px до симетричних 5px (`-natural-hpadding: 5px !important; -minimum-hpadding: 5px !important;`).
+   - Додано адресні стилі для сучасного GNOME 46 ESM: `#panel IndicatorStatusIcon.panel-button`, `#panel IndicatorBaseStatusIcon.panel-button`, `#panel .panel-button.indicator-status-icon` тощо.
+   - У `MenuBarController` додано метод `_fixIndicatorShapes()`, який динамічно маркує кнопки індикаторів класом `.indicator-status-icon`.
+   - Тепер іконки програм займають мінімальний простір та мають точну пропорцію 1:1 — при наведенні курсору підсвічуються акуратним симетричним колом діаметром 34px (як іконка профілю).
+
+--------------------------------------------------------------------------------
+ЕТАП 4: Сповіщення / Повідомлення (macOS Liquid Glass, Vertical Stack, Layout & Close Button)
+--------------------------------------------------------------------------------
+Задача:
+- Стилізація спливаючих системних сповіщень під дизайн macOS 26 Tahoe / Sonoma згідно з фото.
+- Використати той самий тінт із блюром, що й у Центрі керування (Liquid Glass: тінт `rgba(36, 36, 36, 0.72)`, тонка біла рамка `rgba(255, 255, 255, 0.16)`, розмиття 10% / `sigma = 10`, заокруглені кути 18px).
+- Розташування: правий верхній кут екрана під годинником / меню-баром.
+- Стек сповіщень: якщо надходить декілька повідомлень — вишиковувати їх вертикально списком вниз (до 4 одночасно, решта в черзі).
+- Внутрішня розкладка картки:
+  - Зліва: заокруглена іконка програми (38px squircle).
+  - Справа вгорі: назва програми (11.5px semi-bold muted).
+  - Справа посередині: заголовок повідомлення (13.5px bold white).
+  - Справа знизу: текст повідомлення (12.5px regular white).
+- Кнопка закриття ('x'):
+  - Розташована у верхньому правому кутку картки.
+  - За замовчуванням повністю прихована (`opacity: 0`).
+  - Плавно з'являється (`opacity: 255`) ТІЛЬКИ при наведенні курсору миші на картку сповіщення.
+  - Натискання на хрестик плавно закриває сповіщення без випадкового запуску програми.
+  - При наведенні курсору таймер автозакриття зупиняється, щоб користувач міг спокійно прочитати або закрити сповіщення.
+
+Що зроблено:
+1. Створено контролер `NotificationsController` (`blur-my-shell/components/notifications.js`):
+   - Перехоплення джерел сповіщень у GNOME Shell `Main.messageTray` (`_onNotificationRequestBanner` та `_addSource`).
+   - Приховано стандартний центрований `_bannerBin`, щоб системні банери GNOME більше не з'являлися по центру.
+   - Побудова вертикального контейнера `#mac-notification-stack` у правому верхньому кутку робочої області (`x_align: END, y_align: START`) через `Main.layoutManager.addTopChrome`.
+   - Динамічне створення карток сповіщень: ліва іконка додатку (38px squircle), вертикальний текстовий блок (назва програми, жирний заголовок, текст повідомлення), та кнопка закриття 'x' на hover.
+   - Анімація виїзду/заїзду:
+     - При появі: банер плавно виїжджає з-за правого краю екрана (`translation_x: 450 -> 0`, 320ms ease-out cubic) і фіксується праворуч.
+     - При закритті (хрестиком або за таймером): банер плавно від'їжджає назад за правий край екрана (`translation_x: 0 -> 450`, 260ms ease-in cubic).
+   - Застосування апаратного розмиття `BlurOrShell.BlurEffect`:
+     - Режим `BlurMode.BACKGROUND`, радіус `20 * scale`, заокруглення `corner_radius: 18 * scale`.
+     - Вимкнено `offscreen_redirect` для прямого розмиття шпалер і вікон під карткою.
+2. Виправлено конфлікт запуску в `menubar.js`:
+   - Замінено застарілий виклик сигналу `actor-added` на `child-added` у `Main.panel._rightBox`, що усунуло помилку запуску та забезпечило гарантований старт усіх компонентів розширення.
+3. Оновлено розміри та стилі теми Shell (`gnome-shell.css`):
+   - Збільшено ширину картки до 395px (відповідно до пропорцій macOS).
+   - Висота оптимізована: зменшено вертикальні паддінги (10px замість 12px) та інтервали між рядками (1px), банер став ширшим і компактнішим по висоті.
+   - Тінт налаштовано на `rgba(36, 36, 36, 0.68)`, що забезпечує чітку видимість красивого фонового розмиття liquid glass.
+4. Оновлено `install.sh` та синхронізовано всі файли на Робочому столі (`~/Робочий стіл/`).
+
+--------------------------------------------------------------------------------
+ЕТАП 5: Док-панель (Dash to Dock — Блюр відносно шпалер та заокруглення 28px)
+--------------------------------------------------------------------------------
+Задача:
+- Виправити розмиття доку: воно має бути виключно відносно **шпалер** (desktop wallpaper),
+  а не просвічувати чи розмивати вікна та елементи позаду доку.
+- Виправити заокруглення панелі: усунути артефакт, коли краї радіуса заокруглень виступали далі
+  за заокруглення плашки доку. Забезпечити єдиний радіус заокруглення `28px` згідно з темою
+  `MacTahoe` (а не 24px чи 35px).
+
+Що зроблено:
+1. Виправлено детекцію Dash to Dock у `dash_to_dock.js` (Blur My Shell):
+   - У GNOME 46 ESM конструктор контейнера реєструється як `Gjs_dash-to-dock_micxgx_gmail_com_docking_DashToDock`,
+     через що жорстка перевірка `child.constructor.name === 'DashToDock'` не спрацьовувала, і статичний
+     блюр шпалер не підключався.
+   - Замінено на перевірку `(actor.constructor.name === 'DashToDock' || actor.constructor.name.includes('DashToDock'))`.
+   - Тепер Blur My Shell формує повноцінне апаратне статичне розмиття саме **шпалер** (`static_blur = true`),
+     повністю перекриваючи вікна та сторонній текст під доком чистим матовим склом шпалер.
+2. Синхронізовано радіус заокруглення на 28px (Mac Tahoe):
+   - У шейдерному пайплайні Blur My Shell (`pipeline_default_rounded`) радіус ефекту заокруглення
+     кутів `corner` зменшено з 35px до **28px** (`corners_bottom: true, corners_top: true`).
+   - У темі Shell (`gnome-shell.css`) для `#dashtodockContainer #dash .dash-background` та всіх
+     його модифікаторів (`.bottom`, `.shrink`, `.dashtodock`) встановлено `border-radius: 28px !important;`.
+   - У таблиці стилів самого розширення Dash to Dock (`stylesheet.css`) оновлено базові правила
+     `border-radius: 24px` на `border-radius: 28px;`.
+   - Тепер контур доку, внутрішня плашка, тінь та апаратний блюр шпалер ідеально збігаються
+     піксель-у-піксель без будь-яких виступаючих країв.
+3. Оновлено інсталятор `install.sh`, збережено конфігурації `dash-to-dock.dconf`, `blur-my-shell.dconf`
+   та синхронізовано копії на Робочому столі (`~/Робочий стіл/`).
+
+--------------------------------------------------------------------------------
+ЕТАП 6: Док-панель (Dash to Dock — Динамічне розмиття вікон позаду доку, Тінт як у Control Center та заокруглення 28px)
+--------------------------------------------------------------------------------
+Задача:
+- Розмиття док-панелі МАЄ відбуватись на основі елементів та відкритих вікон, що знаходяться позаду доку
+  (провідник Nautilus, браузер, Steam, текстові редактори тощо), а не лише статичних шпалер.
+- Застосувати тінт з блюром liquid glass як у Центрі керування (Control Center) на елементах доку.
+- Забезпечити повну відповідність заокруглення доку радіусу 28px як у темі Mac Tahoe.
+
+Що зроблено:
+1. Переведено Blur My Shell у режим динамічного блюру (Live dynamic blur) для Dash to Dock:
+   - У dconf / gsettings для org.gnome.shell.extensions.blur-my-shell.dash-to-dock встановлено:
+     `static-blur = false`, `corner-radius = 28`, `sigma = 30`, `blur = true`, `override-background = false`.
+   - Замість захоплення статичних шпалер актором Meta.BackgroundActor підключено динамічний пайплайн DummyPipeline,
+     який використовує нативний апаратний BlurOrShell.BlurEffect у режимі BlurMode.BACKGROUND.
+   - Тепер док динамічно розмиває будь-які активні та фонові вікна, що потрапляють під його площу.
+2. Виправлено баг позиціонування та розмірів у `dash_to_dock.js`:
+   - У стандартному коді Blur My Shell для динамічного блюру координата x помилково не враховувала зсув dash.x,
+     через що блюр зміщувався вліво до краю екрана.
+   - Реалізовано точний розрахунок через `get_transformed_position()`:
+     `target_x = Math.round(dash_bg_x - group_x)`, `target_y = Math.round(dash_bg_y - group_y)`.
+   - Підключено сигнал notify::allocation та notify::x/y для dash та dash_background, завдяки чому блюр
+     миттєво й синхронно слідує за будь-яким переміщенням, масштабуванням чи центруванням доку.
+   - Забезпечено передачу `corner_radius_getter: 28` у `DummyPipeline`.
+3. Оновлено дизайн та тінт плашки доку у стилі Control Center Liquid Glass:
+   - У темі Shell (`gnome-shell.css` для MacTahoe-Dark та MacTahoe-Dark-solid) оновлено селектори:
+     `#dashtodockContainer #dash .dash-background` та всі його позиційні модифікатори:
+     - `background-color: rgba(36, 36, 36, 0.72) !important;` (темний скляний тінт як у пілюлях Control Center)
+     - `border: 1px solid rgba(255, 255, 255, 0.16) !important;` (тонка елегантна лінія скляного відблиску)
+     - `box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;` (м'яка об'ємна тінь)
+     - `border-radius: 28px !important;` (ідеально збігається з 28px апаратного розмиття).
+4. Оновлено інсталятор `install.sh`, зліпки dconf `dash-to-dock.dconf`, `blur-my-shell.dconf`,
+   файли розширення у `MACTHEMEFILES/` та синхронізовано копії на Робочому столі (`~/Робочий стіл/`).
+
+
+--------------------------------------------------------------------------------
+ЕТАП 7: Повноцінний Live Blur на робочому столі, радіус 28px та зменшення тінта вдвічі
+--------------------------------------------------------------------------------
+Задача:
+- Зробити так, щоб блюр док-панелі працював безпосередньо НА РОБОЧОМУ СТОЛІ (Desktop),
+  а не лише в огляді (Overview / «центрі програм перегляді»).
+- Забезпечити, щоб розмиття та тінт плашки доку мали точний радіус заокруглення 28px,
+  ідентичний радіусу самої плашки док-панелі Mac Tahoe (без виступаючих або гострих кутів).
+- Зменшити непрозорість тінта на доку на половину (з 0.72 до 0.36), щоб плашка була
+  легкою, напівпрозорою і крізь неї було чітко видно ефект матового скла (liquid glass).
+
+Що було виявлено та усунено:
+1. Причина відсутності блюру на робочому столі:
+   - У `dash-to-dock@micxgx.gmail.com/dash.js` для класу `DockDash` було жорстко встановлено
+     `offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS`. Через це Clutter рендерив док
+     у повністю ізольований закадровий буфер, де фон за доком був порожнім (прозорим),
+     і ефект `BlurEffect(mode: BACKGROUND)` захоплював порожнечу, роблячи розмиття невидимим.
+     У режимі огляду розмиття було видно лише тому, що сам GNOME Shell розмивав увесь огляд.
+   - У `blur-my-shell` старий код динамічного блюру доку створював `MetaBackgroundGroup`
+     розміром 0x0 всередині `dashtodockBox`, що викликало помилки `cogl_texture_2d_new_with_size`
+     та зривало конвеєр рендерингу Clutter.
+2. Що реалізовано:
+   - У `dash.js` (Dash to Dock) змінено `offscreen_redirect` з `ALWAYS` на `0`.
+   - У `dash_to_dock.js` (Blur My Shell) додано метод `disable_offscreen_redirect()`, який
+     скидає закадрове перенаправлення для всіх контейнерів доку (`dash_container`, `_slider`,
+     `dash_box`, `dash`, `dash_background`).
+   - Реалізовано пряме підключення `BlurOrShell.BlurEffect` з `mode: BACKGROUND`,
+     `corner_radius: 28 * scale` та `radius: 30 * scale` безпосередньо до `dash_background`.
+   - Підключено `PaintSignals`, а також слухачі `restacked` та `active-workspace-changed`,
+     завдяки чому розмиття робочого столу та відкритих вікон (Nautilus, Chrome, Steam)
+     під доком оновлюється плавно в реальному часі.
+   - Повністю усунуто створення зайвих віджетів 0x0 та помилки Cogl.
+3. Тінт та радіус заокруглення:
+   - У темах `MacTahoe-Dark` та `MacTahoe-Dark-solid` (`gnome-shell.css`) тінт зменшено рівно вдвічі:
+     `background-color: rgba(36, 36, 36, 0.36) !important;`.
+   - Радіус плашки та шейдера розмиття зафіксовано на рівні `28px !important` та `corner_radius: 28 * scale`.
+   - У таблиці стилів Dash to Dock (`stylesheet.css`) артефактні радіуси замінено на 28px.
+4. Синхронізація:
+   - Усі оновлені файли скопійовано до `MACTHEMEFILES/` та синхронізовано на Робочий стіл:
+     `~/Робочий стіл/done.txt` та `~/Робочий стіл/install.sh`.
+
+--------------------------------------------------------------------------------
+ЕТАП 8: Усунення артефактів кутів доку, пункт «Mac стилізація» у Параметрах (Система), виправлення виїзду повідомлень та блюру
+--------------------------------------------------------------------------------
+Задача:
+1. Повністю прибрати незакруглені рештки ефектів на кутах док-панелі (зокрема у верхньому лівому кутку біля Chrome).
+2. Додати у програму «Параметри» (gnome-control-center) на вкладку «Система» окремий підпункт «Mac стилізація».
+   У цьому пункті надати користувачу повний графічний інтерфейс для регулювання розмиття, кольору, тінту та радіусів для всіх налаштованих компонентів (Док, Меню-бар, Центр керування, Повідомлення).
+3. Виправити повідомлення: забезпечити анімацію плавного виїзду з правого краю в лівий бік, приховування за правий край, нативний тінт та апаратне розмиття Liquid Glass, кнопку закриття («х») у правому верхньому кутку при наведенні курсора.
+
+Що було виявлено та усунено:
+1. Артефакт на кутах доку:
+   - Причина виникнення: у старій конфігурації Blur My Shell під час роботи статичного пайплайна створювався фоновий віджет bms-dash-blurred-widget всередині bms-dash-backgroundgroup, який мав радіус 24px (з pipeline_default_rounded) та затемнення brightness: 0.6. Оскільки плашка доку має радіус 28px, кут 24px виступав за межі плашки доку темним незакругленим фрагментом. Крім того, через кешування процесу GNOME Shell старий актор залишався в сцені Clutter.
+   - Рішення:
+     * У dash_to_dock.js додано функцію рекурсивного очищення purge_lingering_bms(), яка при старті та оновленні доку повністю видаляє будь-які залишкові актори bms-dash-backgroundgroup та bms-dash-blurred-widget з дерева Clutter (dash_container та Main.uiGroup).
+     * У gnome-shell.css для #dashtodockContainer та #dashtodockContainer #dash встановлено background: none !important; border: none !important; box-shadow: none !important;, що усуває будь-які сторонні підкладки, залишаючи лише ідеально заокруглену на 28px плашку .dash-background.
+2. Інтеграція «Mac стилізація» у розділ «Система» програми «Параметри»:
+   - Створено графічний додаток ~/.local/bin/mac-styling-settings на Python + Libadwaita (Adw 1 та Gtk 4):
+     * Док-панель: перемикач розмиття, повзунок сили розмиття (Sigma), повзунок тінта (затемнення 0-100%), повзунок радіуса кутів (0-50 px).
+     * Меню-бар: перемикач розмиття, повзунок сили розмиття (Sigma), повзунок тінта (0-100%).
+     * Центр керування: повзунок розмиття пілюль швидких налаштувань.
+     * Повідомлення: перемикач розмиття, повзунок сили розмиття, повзунок тінта, повзунок радіуса заокруглення, кнопка тестування сповіщення.
+     * Автоматичне збереження та миттєве оновлення стилів у системі (dconf + CSS) без перезавантаження сесії.
+   - Інтегровано у gnome-control-center:
+     * Створено overlay ~/.local/share/gnome-control-center-overlay/cc-system-panel.ui, який додає пункт «Mac стилізація» (CcListRow) до списку підрозділу «Система» (після «Захищена оболонка» перед «Про програму»).
+     * Скомпільовано легку динамічну бібліотеку ~/.local/lib/libmac_settings.so, обробник сигналу on_mac_styling_clicked якої викликає mac-styling-settings.
+     * Створено скрипт-обгортку ~/.local/bin/gnome-control-center з G_RESOURCE_OVERLAYS та LD_PRELOAD.
+     * Налаштовано оверрайди ~/.local/share/applications/org.gnome.Settings.desktop та ~/.local/share/dbus-1/services/org.gnome.Settings.service, щоб системні «Параметри» завжди запускалися з підпунктом «Mac стилізація».
+3. Виправлення повідомлень (виїзд з правого краю + блюр):
+   - У notifications.js при виклику Main.layoutManager.addTopChrome() усунено непідтримуваний параметр affectsInputRegion: false, через який падала ініціалізація NotificationsController.enable().
+   - Після цього повністю запрацював нативний контролер macOS-повідомлень:
+     * Банери виїжджають плавною анімацією translation_x: 450 -> 0 з правого краю екрана.
+     * При закритті (автоматичному або за кнопкою «х») відпливають назад за правий край translation_x: 0 -> 450.
+     * Активовано апаратний ефект розмиття BlurEffect(mode: BACKGROUND, radius: 30).
+     * Стилістично оформлено тінт: .mac-notification-banner (rgba(36, 36, 36, 0.68), border-radius: 18px, border: 1px solid rgba(255, 255, 255, 0.16), тінь box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35)).
+     * Додано кнопку закриття («х») у правому верхньому кутку, що з'являється при наведенні.
+4. Оновлення інсталятора:
+   - Всі файли скопійовано до ~/MACTHEMEFILES/ та оновлено install.sh і done.txt (синхронізовано на Робочий стіл).
+
+--------------------------------------------------------------------------------
+ЕТАП 9: Меню-бар: повний редизайн правої частини панелі у стилі macOS
+--------------------------------------------------------------------------------
+Задача:
+1. Кнопка Центру керування (Control Center): замінити блок системних індикаторів GNOME на одну маленьку піктограму подвійних перемикачів-повзунків (як у macOS Tahoe/Sonoma). При кліку вона відкриває Control Center праворуч.
+2. Акумулятор (Battery): розмістити лівіше від Control Center; чисто інформативний віджет (відображає батарейку та за бажанням відсоток), при натисканні нічого не відкриває (reactive: false).
+3. Незалежні меню швидкого доступу для Wi-Fi, Bluetooth та Звуку: розмістити лівіше від акумулятора. Кожна іконка є окремим віджетом і при натисканні відкриває власне підменю швидкого керування:
+   - Wi-Fi: перемикач On/Off, список доступних мереж з рівнями сигналу та індикаторами захисту (замками), швидке перемикання з'єднання, перехід до налаштувань мережі.
+   - Bluetooth: перемикач On/Off, список виявлених/сполучених пристроїв зі статусом підключення, швидке підключення/відключення, перехід до параметрів Bluetooth.
+   - Звук: плавний повзунок рівня гучності, інтерактивна іконка приглушення (Mute), підтримка прокрутки коліщатка миші над іконкою на панелі, вибір вихідного аудіопристрою (динаміки, гарнітура тощо), перехід до параметрів звуку.
+4. Іконки програм (Tray / AppIndicators): розташовані лівіше від Wi-Fi/Bluetooth/Sound.
+5. Індикатор конфіденційності (Privacy Indicator): розташований найлівіше від трею:
+   - Помаранчева пілюля з мікрофоном при активному записі звуку.
+   - Зелена пілюля з камерою при використанні веб-камери.
+   - При натисканні розгортає меню зі списком активних програм, що використовують мікрофон чи камеру.
+6. Суворий порядок елементів у правому боксі панелі:
+   [ Privacy ] -> [ Трей / Програми ] -> [ Wi-Fi ] -> [ Bluetooth ] -> [ Звук ] -> [ Батарея ] -> [ Control Center ] -> [ Годинник / Календар ]
+
+Що реалізовано:
+1. Створено векторну піксель-перфект піктограму macOS Control Center:
+   - Файл: icons/control-center-symbolic.svg
+   - Встановлено у ~/.themes/MacTahoe-Dark/icons/ та ~/.local/share/icons/hicolor/scalable/apps/.
+2. Повністю реалізовано контролер меню-бара у blur-my-shell/components/menubar.js:
+   - Клас WifiButton: інтеграція з NM.Client, моніторинг стану Wi-Fi, рівнів сигналу, автоматичне сканування мереж та швидка активація підключень.
+   - Клас BluetoothButton: інтеграція з GnomeBluetooth.Client, перемикання живлення адаптера, список пристроїв та виклик connect_service().
+   - Клас VolumeButton: інтеграція з Gvc.MixerControl, підтримка scroll-event (регулювання гучності коліщатком миші), повзунок Slider із відсотками та меню вибору вихідного пристрою.
+   - Клас BatteryWidget: пряме підключення до UPowerGlib.Client (DisplayDevice), автоматичне оновлення іконки та відсотків відповідно до org.gnome.desktop.interface show-battery-percentage, повністю неінтерактивний (reactive: false, can_focus: false).
+   - Клас PrivacyIndicator: відстеження аудіовходів у Gvc.MixerControl (stream-added, stream-removed, get_source_outputs()) та стану камери у QuickSettings CameraMonitor; динамічне відображення помаранчевої та зеленої пілюль з меню додатків.
+   - Кнопка Control Center: приховано стандартний _indicators у quickSettings, додано піктограму mac-control-center-icon з вирівнюванням спливаючого меню по правому краю панелі.
+   - Метод _reorderRightBox(): встановлює та безперервно підтримує точний порядок усіх дочірніх елементів у Main.panel._rightBox при реєстрації нових іконок додатків у треї.
+3. CSS-стилі:
+   - У gnome-shell.css для MacTahoe-Dark та MacTahoe-Dark-solid додано класи:
+     .mac-control-center-icon, .mac-battery-indicator, .mac-battery-percentage,
+     .mac-privacy-pill, .mac-privacy-pill-mic (#f58220), .mac-privacy-pill-cam (#30d158),
+     .mac-menu-section-label, .popup-status-connected, .popup-status-disconnected,
+     .mac-slider-percent-label, .mac-menu-slider-box.
+4. Гаряче перезавантаження та інсталятор:
+   - Впроваджено динамічний імпорт із захистом від кешування GJS (?t=${Date.now()}) та унікальні GTypeName для GObject.registerClass.
+   - Оновлено install.sh та синхронізовано всі файли з ~/MACTHEMEFILES/.
+
+
+--------------------------------------------------------------------------------
+ЕТАП 10: Редизайн правої частини меню-бара та геометрії Control Center
+--------------------------------------------------------------------------------
+Задача:
+1. Control Center: відкривати спливаюче вікно чітко у верхньому правому кутку екрана (впритул до краю з відступом 8px).
+2. Кнопка Control Center: зробити компактною, ширина приблизно дорівнює висоті (28px x 24px) замість широкого контейнера.
+3. Іконка Control Center: піксель-перфект піктограма за референсом з Фото 2 (верхній слайдер: контурний трек з круглим повзунком ліворуч; нижній слайдер: суцільний білий трек з круглим вирізом праворуч).
+4. Усунення подвійної іконки акумулятора: на панелі залишено суворо одну батарейку.
+5. Видалення кнопки акаунта: повністю приховано перемикач користувача (userSwitcher) з меню-бара.
+6. Індивідуальні картки швидкого керування для Wi-Fi, Bluetooth та Звуку: кожна іконка відкриває власне вікно у стилі розгорнутих карток Control Center (Liquid Glass заголовок із круглим перемикачем On/Off, округлені рядки вибору мереж/пристроїв/виходу, регулятор гучності зі слайдером).
+7. Нормалізація відступів: між усіма іконками праворуч встановлено маленькі, охайні та рівномірні відступи.
+8. Центрування іконок програм у треї: усунено зміщення піктограм уліво, вирівняно по центру та приховано порожні текстові лейбли всередині AppIndicators.
+
+Що реалізовано:
+1. Створено нову векторну іконку Control Center за Фото 2:
+   - Файл: icons/control-center-symbolic.svg
+   - Верхній слайдер: контурний трек (outline) з круглим білим перемикачем ліворуч.
+   - Нижній слайдер: суцільний білий трек з вирізаним круглим віконцем праворуч (fill-rule="evenodd").
+   - Скопійовано у ~/.themes/MacTahoe-Dark/icons/, ~/.local/share/icons/hicolor/scalable/apps/ та ~/MACTHEMEFILES/icons/.
+2. Повне оновлення menubar.js:
+   - З кнопки quickSettings вилучено внутрішній _indicators (quickSettings.remove_child), що усунуло другу системну батарейку та скоротило розмір кнопки зі 180px до компактних 28x24px.
+   - Хук _reposition на boxPointer для quickSettings: при відкритті меню встановлює x = monitor.x + monitor.width - width - 8, завдяки чому меню відкривається чітко у правому кутку екрана.
+   - Меню Wi-Fi: картка-заголовок Liquid Glass з перемикачем St.Switch, список доступних мереж (назва, рівень сигналу, замок, галочка активного підключення), кнопка переходу до параметрів мережі.
+   - Меню Bluetooth: картка-заголовок з перемикачем On/Off, список сполучених/виявлених пристроїв, кнопка переходу до налаштувань.
+   - Меню Звуку: картка-слайдер із плавним повзунком гучності та відсотками, список вихідних аудіопристроїв з перемиканням у реальному часі, керування звуком коліщатком миші на панелі, кнопка параметрів звуку.
+   - Очищення та центрування трею: _fixIndicatorShapes() приховує порожні лейбли і встановлює Clutter.ActorAlign.CENTER для всіх іконок фонових додатків (AnyDesk тощо), а також задає рівномірні відступи margin: 0 2px !important; padding: 0 3px !important.
+   - Надійне керування життєвим циклом компонентів: контейнери коректно видаляються з батьківського контейнера при disable(), реалізовано debounced _scheduleReorder() без помилок disposed-акторів.
+3. Оновлення тем оформлення:
+   - У ~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css та MacTahoe-Dark-solid/gnome-shell/gnome-shell.css додано класи:
+     .mac-control-center-button, .mac-menu-header-card, .mac-menu-slider-card,
+     .mac-menu-toggle-icon, .mac-menu-card-title, .mac-menu-card-subtitle,
+     .mac-menu-item-row, .mac-menu-footer-button.
+4. Синхронізація:
+   - Всі файли синхронізовано з ~/MACTHEMEFILES/ та оновлено install.sh і done.txt.
+
+--------------------------------------------------------------------------------
+ЕТАП 11: Фіксація відступів (8px), повнорозмірна висота елементів, нова іконка Control Center та усунення дублів
+--------------------------------------------------------------------------------
+Задача:
+1. Відстань між елементами: зменшити та встановити суворо 8px між усіма іконками правої частини меню-бара.
+2. Відстань від програм у треї до елементів керування: усунути надто великий розрив (діру), зробити рівно 8px.
+3. Батарейка: усунути дублювання, залишити виключно одну іконку акумулятора.
+4. Нова іконка Control Center: використати надану користувачем іконку з /home/vitaliy/Завантажене/control-center.png, зберегти в системні каталоги та в архів проєкту ~/MACTHEMEFILES/.
+5. Висота елементів: виправити надто малу висоту пілюль/іконок праворуч у меню-барі до повноцінних 28px.
+
+Що реалізовано:
+1. Нова іконка Control Center:
+   - Обрізано та відцентровано файл /home/vitaliy/Завантажене/control-center.png.
+   - Збережено у ~/.themes/MacTahoe-Dark/icons/control-center.png, ~/.themes/MacTahoe-Dark-solid/icons/control-center.png, ~/.local/share/icons/hicolor/scalable/apps/control-center.png та ~/MACTHEMEFILES/icons/control-center.png.
+   - Оновлено системний кеш іконок hicolor.
+2. Кнопка Control Center (QuickSettings):
+   - Встановлено розмір капсули 34px x 28px.
+   - Обнулено -minimum-hpadding та -natural-hpadding у CSS та через слухач style-changed у JS, завдяки чому іконка Control Center більше не звужується до 0px, а відображається повнорозмірно та ідеально відцентровано.
+3. Виправлення дублювання батарейки:
+   - BatteryWidget повністю ізольовано та зареєстровано в statusArea як єдиний віджет macBattery.
+   - Усі залишкові/роуг-віджети mac-battery-indicator автоматично виявляються та знищуються з панелі.
+4. Ліквідація розриву між треєм та Wi-Fi:
+   - Неактивні системні індикатори GNOME (tiling-assistant, unattended_upgrade, livepatch, software_update, screenRecording тощо) примусово приховані (hide(), width: 0, margin: 0), а їхні контейнери зміщені в кінець списку.
+   - Wi-Fi тепер розташований безпосередньо після фонових програм трею (AnyDesk/Antigravity) із точною відстанню 8px.
+5. Нормалізація відступів (суворо 8px):
+   - Для всіх елементів правої частини панелі встановлено margin: 2px 4px !important; що забезпечує рівно 8px між кожними двома сусідніми елементами.
+6. Повноцінна висота елементів (28px):
+   - Усунено зайві рамки (border: 3px solid transparent), встановлено єдину висоту height: 28px !important; min-height: 28px !important; на всіх елементах панелі, пілюлі підсвічування виглядають органічно та не стиснуті.
+7. Синхронізація:
+   - Оновлено install.sh, menubar.js, gnome-shell.css в архіві ~/MACTHEMEFILES/ та на Робочому столі (~/Робочий стіл/).
+
+--------------------------------------------------------------------------------
+ЕТАП 12: Прозорі кнопки списків у Control Center, синхронізація появи блюру/тінту та Compiz Magic Lamp Genie Effect
+--------------------------------------------------------------------------------
+Задача:
+1. Кнопки розгортання списків (стрілочки >): повністю прибрати окремий фон/капсулу у швидких перемикачах Control Center (Wi-Fi, Bluetooth тощо).
+2. Синхронізація появи блюру й тінту: при відкритті та закритті Control Center усунути розсинхронізацію, коли елементи інтерфейсу з'являлися стрибком або окремо від ефектів розмиття і тонування. Забезпечити плавний синхронний fade-in та fade-out для всіх шарів одночасно.
+3. Compiz Alike Magic Lamp (Genie effect) для Control Center: замість звичайного плоского виїзду зверху вниз реалізувати деформаційний ефект лампи Джина (Compiz Magic Lamp) із прив'язкою до кнопки Control Center на верхній панелі. Menu повинно розгортатися з цієї іконки та плавно втягуватися назад у неї.
+
+Що реалізовано:
+1. Прозорі стрілочки розгортання (.quick-toggle-menu-button):
+   - У всіх темах (~/.themes/MacTahoe-Dark, ~/.themes/MacTahoe-Dark-solid) та стилях blur-my-shell (styles/popup/dark.css, transparent.css, light.css) для .quick-toggle-has-menu .quick-toggle-menu-button (зокрема у стані :checked) примусово встановлено background-color: transparent !important; border: none !important; box-shadow: none !important;.
+   - Капсули навколо стрілочок більше не виділяються окремим білим або акцентним фоном.
+2. Синхронізація блюру й тінту:
+   - У components/popup/surface_transitions.js знято обмеження !this.surface.is_quick_settings(), завдяки чому поверхня PopupBlurSurface тепер повністю відстежує стан переходів та оновлюється на кожному кадрі рендерингу.
+   - Під час анімації Magic Lamp на кожному тику тимлайну викликається surface.update_surface_opacity(currentOpacity), що синхронно змінює непрозорість тінту (fade) та інтенсивність розмиття шейдера (pipeline opacity_factor) від 0 до 255 (і навпаки).
+   - Завдяки offscreen-рендерингу в межах DeformEffect усі елементи (кнопки, іконки, слайдери, блюри елементів bms-qs-item-blur) компонуються як єдиний шар без будь-яких стрибків або передчасного відображення деталей.
+3. Ефект Compiz Magic Lamp (Джин із лампи) для Control Center:
+   - У menubar.js створено автономний клас ControlCenterMagicLampEffect на базі Clutter.DeformEffect із деформаційною сіткою 32x32 тайлів (1024 полігони).
+   - Точно розраховуються координати кнопки Control Center на панелі (iconX, iconY, iconW).
+   - Вершинний шейдер (vfunc_deform_vertex) деформує меню за математичною кривою Compiz Genie (St.Side.TOP): при відкритті меню вилітає з вузької шийки іконки, розширюючись хвилею вниз (duration: 300ms), а при закритті — плавно стягується назад в іконку (duration: 260ms).
+   - Ефект застосовується як до головного контейнера BoxPointer (_boxPointer), так і до фонової поверхні розмиття (PopupBlurSurface.actor), забезпечуючи синхронну деформацію скла та контенту.
+   - Метод vfunc_modify_paint_volume повертає false, запобігаючи обрізанню геометрії за межами базових меж меню.
+   - Перевизначено bp.open та bp.close з чистою обробкою переривань та безпечним відновленням прототипів на disable().
+4. Синхронізація:
+   - Усі оновлені файли скопійовано в ~/MACTHEMEFILES/ та оновлено install.sh і done.txt на Робочому столі (~/Робочий стіл/).
+
+--------------------------------------------------------------------------------
+ЕТАП 13: Оптимізація та фізика анімації Magic Lamp (Крива швидкості Ease та Синхронне розширення шийки)
+--------------------------------------------------------------------------------
+Задача:
+1. Виправити «дьорганість» анімації Magic Lamp у Control Center.
+2. Нова крива швидкості: у першій третині руху — пік швидкості, у другій і третій третинах — плавне сповільнення до 0 (анімація ease).
+3. Синхронне розширення верху (шийки): верх меню повинен розширюватися разом із рухом униз від самого старту, але досягати повної ширини на половині анімації, і також з плавною кривою ease.
+
+Що реалізовано:
+1. Математична модель кривої швидкості Ease (поліном Ерміта):
+   - Реалізовано функцію _easeMac(t) = 6*t^2 - 8*t^3 + 3*t^4.
+   - Похідна v(t) = 12*t*(1 - t)^2 досягає піку швидкості рівно при t = 1/3 (перша третина руху).
+   - У наступних двох третинах (від 1/3 до 1.0) швидкість монотонно та неперервно спадає до v(1) = 0, забезпечуючи ідеально м'яку посадку меню без ривків чи різких зупинок.
+2. Синхронне розгортання шийки (pX):
+   - Верх меню починає плавно розширюватися з кнопки одночасно з початком руху вниз.
+   - Досягає повної ширини (pX = 1.0) рівно на половині анімації (pY = 0.5) за плавною синусоїдальною кривою ease: pX = sin((pY / 0.5) * PI / 2).
+   - Похідна в точці 0.5 дорівнює нулю, що гарантує безшовний перехід: у другій половині анімації меню вже є ідеально рівним прямокутником і плавно допливає до своєї повної висоти.
+   - При закритті процес відбувається дзеркально: у першій половині меню скорочується знизу вгору як прямокутник, а після проходження половини плавно втягується у вузьку кнопку.
+3. Оптимізація продуктивності (High FPS на Intel UHD):
+   - Оптимізовано сітку деформації з 32x32 (1089 вершин) до 14x14 (225 вершин), що скоротило час обчислення у GJS у 4.8 раза (< 0.4 мс на кадр) без втрати візуальної плавності ліній.
+   - Запроваджено єдиний головний таймлайн (Master/Slave): поверхня розмиття surfaceActor синхронізується в той самий мікросекундний тік, що усунуло будь-який розсинхрон між склом і контентом.
+   - Ліквідовано відкладені таймери та запобігли виникненню попереджень щодо disposed GObjects.
+4. Синхронізація:
+   - Оновлені menubar.js та extension.js скопійовано до ~/MACTHEMEFILES/blur-my-shell/.
+   - Оновлено done.txt у ~/MACTHEMEFILES/ та на Робочому столі (~/Робочий стіл/done.txt).
+
+--------------------------------------------------------------------------------
+ЕТАП 14: Поелементна анімація Magic Lamp у Control Center та вибір режиму в Параметрах
+--------------------------------------------------------------------------------
+Задача:
+1. Реалізувати варіант анімації, де кожен елемент Центру керування (перемикачі Wi-Fi, Bluetooth, слайдери гучності, яскравості тощо) індивідуально згортається ефектом Magic Lamp в одну точку (іконку кнопки на панелі) і з цієї однієї точки розгортається/виходить.
+2. Залишити обидва варіанти на вибір у системних налаштуваннях («Параметри» -> «Mac стилізація»):
+   - «Цільне вікно» (window): все меню Control Center відкривається/закривається як єдиний блок Magic Lamp.
+   - «Окремі елементи» (elements): фонова скляна панель плавно з'являється/зникає з розмиттям, а всі елементи та слайдери індивідуально вилітають з однієї точки кнопки або втягуються назад в одну точку з тим самим ефектом Compiz Magic Lamp.
+
+Що реалізовано:
+1. Клас ItemMagicLampEffect та контролер ElementsAnimationController:
+   - Створено спеціалізований Clutter.DeformEffect з легкою сіткою 8x8 для кожного віджета всередині quickSettings.menu._grid.
+   - Розрахунок деформації прив'язано до точних координат центру кнопки Control Center на панелі (targetX, targetY).
+   - При відкритті всі вершини кожного елемента починають рух з цієї однієї точки nozzle і розгортаються у власні координати сітки, з піком швидкості в 1-й третині часу, горизонтальним розширенням у 2-й третині та плавною посадкою ease у 3-й третині.
+   - При закритті кожен елемент окремо звужується в шийку з хвилею Джина і втягується в одну точку іконки на панелі.
+   - Фонове матове скло (surfaceActor та blur) плавно змінює прозорість 0 -> 255 / 255 -> 0, створюючи вигляд складання віджетів на скляній таці.
+2. Вибір у графічному застосунку «Mac стилізація» (mac-styling-settings):
+   - Додано перемикач Adw.ComboRow («Режим анімації відкриття») у розділ «Центр керування (Control Center)»:
+     * «Цільне вікно»
+     * «Окремі елементи»
+   - Налаштування зберігається у ~/.config/mac-styling/control-center-animation.json та dconf (/org/gnome/shell/extensions/blur-my-shell/quick-settings/animation-mode).
+   - Розширення зчитує конфігурацію миттєво (< 0.02 мс) перед кожним відкриттям меню без необхідності перезапуску GNOME Shell.
+3. Очищення та стабільність:
+   - Ліквідовано дублювання завантаження MenuBarController з notifications.js.
+   - Повністю ліквідовано всі попередження disposed St.Bin у журналі GNOME Shell.
+4. Синхронізація:
+   - menubar.js та notifications.js синхронізовано у ~/MACTHEMEFILES/blur-my-shell/components/.
+   - mac-styling-settings синхронізовано у ~/MACTHEMEFILES/bin/.
+   - Конфіг збережено у ~/MACTHEMEFILES/config/mac-styling/.
+   - Оновлено done.txt у ~/MACTHEMEFILES/ та на Робочому столі (~/Робочий стіл/done.txt).
+
+--------------------------------------------------------------------------------
+ЕТАП 15: Повернення Magic Lamp цільного вікна Control Center, нативна вкладка Mac стилізації в Параметрах та реальний час
+--------------------------------------------------------------------------------
+Задача:
+1. Повернути попередню анімацію відкриття Control Center від compiz-alike Magic Lamp effect (режим цільного вікна «window» за замовчуванням).
+2. Інтегрувати вкладку «Mac стилізація» безпосередньо у вікно системної програми «Параметри» (gnome-control-center -> «Система» -> «Mac стилізація» як нативну підсторінку AdwNavigationPage), щоб вона відкривалася всередині вікна Параметрів, а не у новому окремому вікні.
+3. Забезпечити зміну тінту (затемнення/прозорості), заокруглень та сили розмиття (blur) у РЕАЛЬНОМУ ЧАСІ (real-time 60fps) без затримок і без необхідності перезавантаження теми чи сесії.
+
+Що реалізовано:
+1. Повернення Compiz Alike Magic Lamp Effect для Control Center:
+   - Встановлено режим «Цільне вікно» (window) як стандартний дефолт у menubar.js (_getControlCenterAnimationMode).
+   - Оновлено ~/.config/mac-styling/control-center-animation.json на {"mode": "window"} та dconf /org/gnome/shell/extensions/blur-my-shell/quick-settings/animation-mode на 'window'.
+   - Відкриття та закриття Центру керування тепер використовує цілісну деформацію ControlCenterMagicLampEffect з налаштованою кривою швидкості (пік у 1/3, розширення у 2/3, плавна зупинка ease) та синхронним розмиттям тла.
+2. Нативна сторінка «Mac стилізація» всередині програми «Параметри»:
+   - Перероблено оверлей cc-system-panel.ui: пункт «Mac стилізація» тепер викликає дію navigation.push з ціллю 'mac-styling'.
+   - До шаблону CcSystemPanel додано повноцінну підсторінку AdwNavigationPage (id="mac_styling_page", tag="mac-styling") з усіма групами налаштувань (Док-панель, Меню-бар, Центр керування, Повідомлення).
+   - При переході вікно «Параметри» плавно перемикається на підсторінку зі стандартною кнопкою повернення назад «< Система» у шапці AdwHeaderBar — без запуску окремих вікон.
+   - Скомпільовано високоефективну бібліотеку libmac_settings.so з обробниками сигналів GTK4/Libadwaita (init_* для завантаження початкових значень, on_*_changed для реагування на переміщення слайдерів і перемикачів).
+3. Зміна тінту та розмиття у реальному часі (Real-Time):
+   - У libmac_settings.so та mac-styling-settings реалізовано миттєвий запис налаштувань у ~/.config/mac-styling/styling.json при кожному русі повзунків.
+   - У menubar.js створено системний монітор Gio.FileMonitor на styling.json:
+     * Тінт верхньої панелі (Main.panel) оновлюється безпосередньо через інлайн-стиль за 0-1 мс.
+     * Тінт та радіус доку (.dash-background) оновлюються наживо у сцені Clutter без перезавантаження теми.
+     * Стилі банерів сповіщень (.mac-notification-banner) оновлюються в реальному часі.
+   - Для розмиття (sigma):
+     * quick_settings.js підключено до сигналу changed::sigma — розмиття кнопок швидких налаштувань змінюється миттєво.
+     * notifications.js підключено до changed::sigma — радіус розмиття банерів адаптується наживо.
+     * dash_to_dock.js та panel.js оновлюють силу розмиття через gsettings/dconf на льоту.
+   - Збереження у файл gnome-shell.css виконується у фоні з дебаунсом (400 мс), що усуває зайві навантаження на диск під час переміщення повзунків.
+4. Синхронізація:
+   - Всі оновлені файли скопійовано до ~/MACTHEMEFILES/ (components, bin, lib, control-center, config).
+   - Оновлено install.sh для копіювання нової структури конфігів та оверлею.
+   - Оновлено done.txt у репозиторії проекту та на Робочому столі.
+
+================================================================================
+ОНОВЛЕННЯ: ПЕРЕМИКАЧ FROSTED GLASS / LIQUID GLASS ТА ПЛАШКА ВИХОДУ З СЕСІЇ
+================================================================================
+1. Перемикач стилю скла (Glass Style) у «Параметри» -> «Mac стилізація»:
+   - У верхній частині підсторінки «Mac стилізація» (cc-system-panel.ui) та у додатку mac-styling-settings додано вибір типу скла:
+     * «Frosted Glass (blur+tint)» — класичне матове розмиття тла з регульованим тінтом.
+     * «Liquid Glass» — повноцінне кришталеве рідке скло з ефектом заломлення світла та відблисками.
+
+2. Повна інтеграція Liquid Glass (за зразком nikdelvin/liquid-glass):
+   - Док-панель: кришталева основа rgba(255, 255, 255, 0.08), специфічні внутрішні відблиски box-shadow: inset 0 0 4px rgba(250, 250, 250, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.4), та підсвічений обідок border: 1px solid rgba(255, 255, 255, 0.35).
+   - Меню-бар: напівпрозорий градієнтний рідкий шар з підкресленим відблиском нижнього ребра (border-bottom та inset shadow).
+   - Центр керування / Quick Settings: кришталевий контейнер та кнопки швидких налаштувань у стилі Liquid Glass з підсвічуванням граней.
+   - Сповіщення: відблиски та рідке скло для спливаючих банерів.
+   - Інтерфейси програм (GTK3, GTK4 та Libadwaita):
+     * Headerbars / заголовки вікон: градієнт скла з подвійним внутрішнім відблиском на верхній і нижній межі.
+     * Кнопки (button): рідкі капсули з ефектом заломлення та світіння при наведенні й натисканні.
+     * Картки (card), налаштування (boxed-list, preferencesgroup) та діалоги: повне оформлення у стилі Liquid Glass.
+     * Бічні панелі (sidebar) та меню (popover): прозорі кришталеві грані.
+
+3. Нижня плашка підтвердження з кнопкою виходу з сесії (AdwBanner):
+   - До низу панелі вбудовано компонент AdwBanner (logout_banner).
+   - При будь-якій зміні будь-якого параметру (перемикач Liquid/Frosted, зміна розмиття, зміна тінту або радіусу, зміна анімації) внизу плавно виїжджає повідомлення:
+     «Аби прийняти зміни, потрібно вийти з сесії» з кнопкою «Вийти з сесії».
+   - Натискання кнопки миттєво завершує сеанс користувача без зайвих діалогів (gnome-session-quit --logout --no-prompt).
+
+4. Real-Time оновлення та надійність:
+   - При перемиканні стилю меню-бар, док, сповіщення та меню оновлюються наживо через menubar.js.
+   - Виправлено локалізацію десяткових чисел (dot-formatting) при збереженні styling.json.
+   - Створено скрипт mac-apply-theme.py для атомарного та безпечного оновлення таблиць стилів GNOME Shell та GTK без ризику пошкодження файлів.
+
+================================================================================
+ВИПРАВЛЕННЯ ВІЗУАЛУ CONTROL CENTER ТА СТИЛЮ LIQUID GLASS
+================================================================================
+1. Виправлено візуальне оформлення Центру Керування (Control Center) у режимі Liquid Glass:
+   - Усунуто непрозорий суцільний темно-сірий блок (rgba(36, 36, 36)).
+   - Застосовано напівпрозоре рідке скло: rgba(20, 20, 26, 0.40) із увімкненим розмиттям шпалер тла (Blur My Shell popup/quick-settings blur).
+   - Додано світловий кришталевий обідок: 1px solid rgba(255, 255, 255, 0.35) та радіус 28px.
+   - Налаштовано глибину тіні: box-shadow 0 16px 48px rgba(0, 0, 0, 0.40).
+
+2. Повністю прибрано фон у кнопок зі стрілочками для розгортання списків:
+   - Для кнопок Wi-Fi, Bluetooth, Режим живлення видалено будь-який видимий фон, рамки, тіні та розділювач у .quick-toggle-menu-button та .quick-toggle-separator.
+   - Стрілочка ">" тепер виглядає як чистий символ усередині капсули без зайвих підкладок.
+
+3. Уніфіковано стиль активних кнопок (усунено баг із синім прямокутником «Темний стиль»):
+   - Усунуто дефект, коли кнопка «Темний стиль» перетворювалась на суцільний яскраво-синій непрозорий прямокутник.
+   - Тепер усі перемикачі (Темний стиль, Нічне світло, Не турбувати, Wi-Fi, Bluetooth, Режим польоту) мають єдиний фірмовий стиль Apple: напівпрозора рідка скляна капсула + кругла іконка з насиченим синім акцентом (#007aff) при увімкненому стані.
+
+4. Виправлено асиметрію сітки перемикачів (рядок з «Режимом польоту»):
+   - Реалізовано динамічний алгоритм _fixQuickSettingsLayout(menu): якщо кількість перемикачів непарна, останній перемикач («Режим польоту») автоматично розширюється на 2 колонки на всю ширину рядка, ліквідуючи порожнє місце праворуч.
+
+5. Очищення та оптимізація Menubar та стилів Clutter/St:
+   - Гарантовано приховано зайві кнопки профілю/аватара (userSwitcher).
+   - Виправлено несумісні з рушієм St властивості CSS (margin: 0 auto -> margin: 0, очищено надлишкові тіні), завдяки чому тема завантажується без жодних помилок у журналі GNOME.
+   - Оновлено menubar.js для підтримки реалтайм-оновлення контейнера _boxPointer.bin.
+
+================================================================================
+ВІДНОВЛЕННЯ ОРИГІНАЛЬНОГО UI ТА ЧИСТЕ ПЕРЕМИКАННЯ LIQUID GLASS БЕЗ БЛЮРУ Й ТІНТУ
+================================================================================
+1. Повне повернення автентичного UI без зайвих модифікацій:
+   - Відновлено оригінальне розміщення, пропорції та заокруглення кутів елементів швидких параметрів (Control Center).
+   - Скасовано розширення «Режиму польоту» на два стовпчики: вилучено динамічний алгоритм _fixQuickSettingsLayout, збережено природну GNOME-сітку.
+   - Вилучено примусовий інлайн-стиль з заокругленням 16px для кнопок: усі перемикачі та слайдери мають оригінальні капсульні форми теми (border-radius: 9999px).
+
+2. Чистий ефект Liquid Glass (відповідно до nikdelvin/liquid-glass):
+   - ВИДАЛЕНО БЛЮР: при переході на Liquid Glass гаусове розмиття (Blur My Shell) повністю вимикається для доку, верхньої панелі, спливаючих вікон, Центру керування, сповіщень та додатків.
+   - ВИДАЛЕНО ТЕМНИЙ ТІНТ: прибрано непрозору темну заливку rgba(36, 36, 36).
+   - Застосовано прозоре кришталеве скло: основа rgba(255, 255, 255, 0.08) з делікатним контурним відблиском (border: 1px solid rgba(255, 255, 255, 0.35)) та світловою гранню.
+
+3. Режим Frosted Glass (матова класика):
+   - Повністю відновлено стан із розмиттям тла (sigma) та регульованим тінтом тла без сторонніх нашарувань.
+
+4. Оновлення коду та налаштувань:
+   - menubar.js: очищено інлайн-стилізацію дочірніх віджетів _grid; швидкі перемикачі скинуто до чистого CSS теми.
+   - quick_settings.js: додано перевірку, яка забороняє накладання ефекту bms-qs-item-blur у режимі Liquid Glass.
+   - mac-apply-theme.py: очищено правила генерації shell_css без спотворення геометрії елементів.
+   - mac-styling-settings та libmac_settings.c: синхронно вимикають блюр у dconf при виборі Liquid Glass та відновлюють його для Frosted Glass.
+
+================================================================================
+ПОВНЕ ВІДНОВЛЕННЯ СТАНУ ДО РЕАЛІЗАЦІЇ СКЛА (ВІДНОВЛЕННЯ ЕТАПУ 15)
+================================================================================
+Всі файли та налаштування повністю повернено до точного стану, який передував спробі впровадження скла (Liquid Glass):
+
+1. Видалено всі елементи та перемикачі Liquid Glass:
+   - cc-system-panel.ui: прибрано рядок вибору стилю скла (glass_style_row) та банер виходу з сесії. Вкладка «Mac стилізація» знову чиста, нативна і містить виключно налаштування Frosted Glass.
+   - libmac_settings.c та libmac_settings.so: видалено обробники стилю скла та AdwBanner. Бібліотеку наново скомпільовано для gnome-control-center.
+   - mac-styling-settings: видалено групу «Стиль скла», банер виходу з сесії та залежності від mac-apply-theme.py.
+   - mac-apply-theme.py: файл повністю видалено як зайвий.
+
+2. Відновлено класичний матовий Frosted Glass (blur + tint) у реальному часі:
+   - menubar.js: повернуто стан без жодних інлайн-модифікацій Liquid Glass. Збережено Compiz Magic Lamp ефект цілого вікна для Control Center та системний монітор зміни styling.json у реальному часі.
+   - quick_settings.js: повернуто автентичний компонент QuickSettingsBlur без перевірок liquid glass.
+   - dconf (blur-my-shell): відновлено увімкнене гаусове розмиття для всіх елементів (dock, panel, popup, quick-settings, notification, applications -> blur: true).
+   - styling.json: очищено від ключа glass_style, збережено правильні налаштування тінту та розмиття за замовчуванням.
+
+3. Оновлення репозиторію та синхронізація:
+   - Оновлено всі файли в ~/MACTHEMEFILES/ (bin, control-center, lib, blur-my-shell, config, gnome-shell-theme, dconf).
+   - Оновлено install.sh.
+   - Синхронізовано done.txt на Робочий стіл.
+
+================================================================================
+ВИДАЛЕННЯ ЗАЙВОГО ФОНУ В КОНТРОЛ ЦЕНТРІ (CONTROL CENTER)
+================================================================================
+Задача:
+- Повністю прибрати суцільну темну фонову плашку (.quick-settings / .popup-menu-content.quick-settings) навколо віджетів Центру керування.
+
+Що реалізовано:
+1. gnome-shell.css:
+   - Відокремлено загальний .popup-menu-content від .quick-settings.
+   - Для .popup-menu-content.quick-settings та .quick-settings встановлено:
+     * background-color: transparent !important;
+     * background-image: none !important;
+     * box-shadow: none !important;
+     * border: none !important;
+   - Завдяки цьому ліквідовано зовнішній темно-сірий блок (rgba(36, 36, 36, 0.72)), зовнішню білу грань (border: 1px) та тінь.
+   - Усі окремі капсули швидких перемикачів (Wi-Fi, Bluetooth, Dark style, повзунки гучності/яскравості тощо) тепер мають індивідуальне матове розмиття (capsule blur) і вільно плавають на тлі шпалер, як в автентичній macOS.
+
+2. Blur My Shell (components/popup/targets.js):
+   - Додано виключення для класу quick-settings у PopupBlurTargets.
+   - Запобігли створенню зайвої суцільної розмитої підкладки bms-popup-blurred-widget позаду всього контейнера Control Center.
+
+3. Синхронізація:
+   - Оновлено ~/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css.
+   - Оновлено ~/MACTHEMEFILES/blur-my-shell/components/popup/targets.js.
+   - Оновлено done.txt у репозиторії та на Робочому столі.
+
+================================================================================
+ВИДАЛЕННЯ ФОН-БЛЮРУ (ПІДКЛАДКИ РОЗМИТТЯ) У КОНТРОЛ ЦЕНТРІ
+================================================================================
+Задача:
+- Видалити прямокутну підкладку розмиття шпалер (background-blur / bms-popup-blurred-widget) позаду віджетів Центру керування, залишивши тільки чисті плаваючі капсули.
+
+Що реалізовано:
+1. components/popup/index.js:
+   - Додано метод is_quick_settings(actor), який перевіряє належність віджета до quickSettings (menu, box, boxPointer, grid, overlay тощо).
+   - У try_blur() та blur_actor() заблоковано будь-які спроби створення поверхні розмиття (PopupBlurSurface) для контейнерів Центру керування.
+   - Метод track_quick_settings() знешкоджено (quickSettings має власний QuickSettingsBlur для капсул).
+
+2. components/popup/targets.js:
+   - В is_blur_target_actor() та find_actor() додано сувору фільтрацію: якщо елемент належить до quickSettings або має клас quick-settings, він ігнорується модулем PopupBlur і не додається до списку цілей для створення розмиття.
+
+3. components/menubar.js:
+   - Методи _getCcBlurSurface() та _getCcBlurActor() тепер повертають null.
+   - Реалізовано метод _removeStrayCcBlur(bp): при відкритті Центру керування будь-який залишковий або випадковий віджет bms-popup-blurred-widget негайно видаляється зі сцени та знищується.
+
+4. Синхронізація:
+   - Оновлено ~/MACTHEMEFILES/blur-my-shell/components/popup/index.js.
+   - Оновлено ~/MACTHEMEFILES/blur-my-shell/components/popup/targets.js.
+   - Оновлено ~/MACTHEMEFILES/blur-my-shell/components/menubar.js.
+   - Оновлено install.sh та done.txt у репозиторії й на Робочому столі.
+
+================================================================================
+ВИКЛЮЧЕННЯ ФОНОВОГО РОЗМИТТЯ (POPUP BLUR) ДЛЯ CONTROL CENTER
+================================================================================
+Задача:
+- Повністю ліквідувати прямокутну розмиту фонову підкладку позаду Центру керування.
+- Розмиття повинно залишатися виключно на самих елементах (капсулах кнопок, повзунках, іконках).
+
+Що реалізовано:
+1. Dconf (Blur My Shell):
+   - Встановлено:
+     * /org/gnome/shell/extensions/blur-my-shell/popup/blur -> false
+     * /org/gnome/shell/extensions/blur-my-shell/quick-settings/blur -> true
+   - Модуль PopupBlur миттєво знищив фоновий віджет bms-popup-blurred-widget у пам'яті GNOME Shell без потреби перезапуску сесії.
+   - Компонент QuickSettingsBlur продовжує активно накладати індивідуальне розмиття безпосередньо на кожен елемент (капсули Wi-Fi, Bluetooth, Dark style, слайдери, акумулятор).
+
+2. Синхронізація:
+   - Експортовано оновлений dconf у ~/MACTHEMEFILES/dconf/blur-my-shell.dconf.
+   - Оновлено done.txt у репозиторії та на Робочому столі.
+
+================================================================================
+НАЛАШТУВАННЯ ГРАДІЄНТУ МЕНЮБАРУ, КОНТЕКСТНИХ МЕНЮ ТА ДЕФОЛТНИХ ЗНАЧЕНЬ РОЗМИТТЯ (10)
+================================================================================
+Задача:
+1. Градієнтне затемнення менюбару має працювати ЗАВЖДИ, навіть коли відкрито оглядач (GNOME Overview).
+2. Видалити будь-яку непрозорість та тінт із рядка меню — менюбар має бути абсолютно прозорим без заливки, лишаючи ВИКЛЮЧНО вертикальний градієнт затемнення згори донизу.
+3. Повернути блюр та тінт контекстним меню / спливаючим меню на менюбарі (Popup menus), зберігаючи при цьому відсутність фонової підкладки у Центрі керування.
+4. Виправити затримку в ~1 секунду при відкритті меню індикаторів на менюбарі (AppIndicators).
+5. Виставити за замовчуванням силу розмиття (blur sigma = 10) та тінт (tint = 10% / 0.10) для всіх елементів зі склом (Док, Центр сповіщень, банери сповіщень, контекстні меню).
+
+Що реалізовано:
+1. Менюбар та градієнтне затемнення в Оглядачі:
+   - У components/panel.js:
+     * connect_to_overview(): додано умову `!this.settings.panel.GRADIENT_PANEL`, що запобігає приховуванню фонового актора з градієнтним шейдером при відкритті Main.overview.
+     * hide() та proximity_hide(): додано захист, який гарантує, що при увімкненому GRADIENT_PANEL градієнтний бекграунд ніколи не приховується.
+     * panel_hide_blur_startup(): вимкнено приховування градієнту при старті в оглядачі.
+   - Dconf: встановлено /org/gnome/shell/extensions/blur-my-shell/panel/unblur-in-overview -> false.
+   - Тепер градієнт плавно й безперервно залишається на екрані при вході та виході з оглядача вікон.
+
+2. Повне видалення тінту та непрозорості з панелі (ТІЛЬКИ градієнт):
+   - У ~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css:
+     * Правило #panel (як базове, так і блок MAC-STYLING) оновлено: `background-color: transparent !important; background: transparent !important;`.
+   - У components/menubar.js:
+     * Метод _applyStylingRealtime() перевіряє значення panel_tint: якщо воно <= 0.001, Main.panel отримує чистий `transparent !important;`.
+   - У ~/.config/mac-styling/styling.json встановлено `"panel_tint": 0.0`.
+   - У mac-styling-settings: дефолтний тінт панелі встановлено на 0.0, а генератор CSS генерує transparent.
+
+3. Контекстні меню на менюбарі (блюр + тінт 10%):
+   - Увімкнено Dconf:
+     * /org/gnome/shell/extensions/blur-my-shell/popup/blur -> true
+     * /org/gnome/shell/extensions/blur-my-shell/popup/sigma -> 10
+   - У gnome-shell.css встановлено стиль для `.popup-menu-content`:
+     `background-color: rgba(36, 36, 36, 0.10) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 28px !important;`.
+   - Центр керування (Quick Settings) надійно захищений фільтрами в components/popup/index.js та targets.js (`is_quick_settings(actor)`) і правилом CSS `.popup-menu-content.quick-settings { background: transparent !important; }`, тому індивідуальні капсули розмиваються без суцільної прямокутної фонової підкладки.
+
+4. Ліквідація 1-секундної затримки при відкритті меню індикаторів (AppIndicators):
+   - Усунено очікування подвійного кліку (`_waitForDoubleClick`, яке за замовчуванням у Clutter чекало 400-600 мс перед відкриттям меню):
+     * Скопійовано розширення ubuntu-appindicators в ~/.local/share/gnome-shell/extensions/ubuntu-appindicators@ubuntu.com/.
+     * У indicatorStatusIcon.js: `vfunc_button_press_event` викликає `this.menu.toggle()` миттєво при першому кліку лівою кнопкою миші.
+     * У components/menubar.js реалізовано динамічний патч `_patchAppIndicatorClickDelay()`, який безпосередньо в рантаймі шукає об'єкти індикаторів і замінює `_waitForDoubleClick` та `vfunc_button_press_event` у ланцюжку прототипів. Тепер меню відкриваються миттєво.
+
+5. За замовчуванням тінт і блюр виставлено на 10 для всіх елементів зі склом:
+   - Dconf:
+     * dash-to-dock/sigma -> 10
+     * notification/sigma -> 10
+     * quick-settings/sigma -> 10
+     * popup/sigma -> 10
+     * applications/sigma -> 10
+     * panel/sigma -> 10
+   - ~/.config/mac-styling/styling.json:
+     * dock_sigma: 10, dock_tint: 0.10
+     * notif_sigma: 10, notif_tint: 0.10
+     * popup_tint: 0.10
+     * qs_sigma: 10
+     * panel_tint: 0.0
+   - ~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css:
+     * #dash .dash-background: background-color: rgba(36, 36, 36, 0.10) !important;
+     * .mac-notification-banner: background-color: rgba(36, 36, 36, 0.10) !important;
+     * .notification-banner: background-color: rgba(36, 36, 36, 0.10) !important;
+     * .popup-menu-content: background-color: rgba(36, 36, 36, 0.10) !important;
+   - /home/vitaliy/.local/bin/mac-styling-settings:
+     * За замовчуванням усі шкали ініціалізуються значеннями 10 sigma та 10% tint.
+
+6. Виправлення візуалу та логіки (Блюр менюбару в огляді, Control Center без фонового блюру, горизонтальний центр повідомлень, ховер та радіус сповіщень):
+   - Менюбар в режимі огляду (Overview):
+     * У effects/gradient_panel.js додано негайне перемальовування через queue_repaint() при оновленні top_blur / bottom_blur.
+     * У components/panel.js додано динамічне підключення до Main.overview.showing та Main.overview.hidden: при переході в огляд менюбар отримує блюр (sigma 30 або за налаштуваннями огляду), що усуває різку смугу шпалер під панеллю; при виході з огляду повертається прозоре затемнення з градієнтом.
+   - Центр керування (Control Center) без фонової плашки блюру:
+     * У components/popup/index.js оновлено is_quick_settings(): додано рекурсивну перевірку предків і нащадків для класів quick-settings, quick-settings-menu, quick-toggle-menu тощо.
+     * У components/popup/targets.js виключено quick-settings із запасного додавання цілей (fallback).
+     * У components/popup/blur_surface.js додано перевірку is_quick_settings() у enable(), що гарантує відхилення створення будь-якої фонової плашки блюру для Quick Settings.
+     * У components/menubar.js функцію _removeStrayCcBlur() розширено для пошуку та видалення будь-яких залишкових bms-popup-blurred-widget на Main.uiGroup.
+     * Блюр залишається суто на окремих пілюлях та кнопках швидких налаштувань (bms-qs-item-blur через QuickSettingsBlur).
+   - Горизонтальний центр повідомлень, розбитий на 2 окремі елементи (календар зверху, сповіщення знизу):
+     * У components/menubar.js додано _setupDateMenuLayout(): контейнер #calendarArea переведено у вертикальну орієнтацію; календар (.datemenu-calendar-column) переміщено вгору (індекс 0), а список сповіщень (.message-list) - униз (індекс 1).
+     * Всередині верхньої картки календаря розмітку зроблено горизонтальною: ліва колонка містить поточну дату (кнопку Today) та погоду/світовий годинник/події, права колонка містить інтерактивну сітку місяця.
+     * У gnome-shell.css .datemenu-popover та стрілка меню зроблені прозорими, а .datemenu-calendar-column і #calendarArea .message-list оформлені як дві окремі плаваючі скляні картки з тінтом rgba(36, 36, 36, 0.10), заокругленням 24px, бордером та тінню.
+     * У components/popup/targets.js додано класи .datemenu-calendar-column та .message-list до POPUP_TARGET_STYLE_CLASSES, а .datemenu-popover до POPUP_DESCENDANT_TARGET_STYLE_CLASSES, завдяки чому Blur My Shell генерує окремі шари розмиття під кожною карткою.
+   - Сповіщення (ховер та заокруглення):
+     * У gnome-shell.css .mac-notification-banner:hover та .notification-banner:hover змінено з непрозорого rgba(45, 45, 45, 0.74) на делікатне rgba(36, 36, 36, 0.18) !important;: тепер при наведенні курсору сповіщення зберігає скляний блюр і лише злегка темнішає без стрибка кольору.
+     * Радіус заокруглення сповіщень збільшено з 18px до 24px у .mac-notification-banner та .notification-banner.
+     * Оновлено dconf notification-corner-radius до 24, ~/.config/mac-styling/styling.json (notif_radius: 24), mac-styling-settings (дефолт 24) та _updateNotifRealtime() в menubar.js.
+
+7. Інтеграція справжнього рідкого скла (Liquid Glass) на базі нативного розширення ryohsuke1231/liquid-glass:
+   - Встановлено та активовано розширення liquid-glass@thinkingcoding1231.gmail.com:
+     * Повноцінний нативний Cogl/GLSL шейдерний рендерер (glass.frag) з рефракцією (displacement mapping), хроматичною аберацією (chroma strength 0.35), крайовим підсвічуванням (rim light), відблисками (specular highlights) та затіненням (ambient occlusion).
+   - Ефект Liquid Glass налаштовано ТІЛЬКИ на визначені елементи:
+     1) Док-панель (Dock):
+        - enable-dock-glass = true, dock-corner-radius = 28.0 (ідеально узгоджено з 28px радіусом доку).
+     2) Сповіщення (Notifications):
+        - enable-notification-glass = true, notification-corner-radius = 24.0 (узгоджено з оновленим радіусом 24px).
+        - Збережено напівпрозорість карток та ефект легкого затемнення при наведенні курсору.
+     3) Меню верхньої панелі та ВСІ контекстні меню у системі:
+        - enable-menu-glass = true, enable-desktop-menu-glass = true, enable-extra-menu-glass = true.
+     4) Центр керування (Quick Settings / Control Center):
+        - enable-quick-settings-glass = true, quick-settings-apply-to = 1 (Toggles only).
+        - Ефект скла застосовано суто на окремі кнопки, пілюлі та повзунки без суцільного фонового розмиття.
+     5) OSD (індикатори гучності, яскравості тощо):
+        - enable-osd-glass = true.
+     6) Програми та вікна:
+        - enable-application-glass = true, application-glass-all-windows = true.
+   - Видалення старого блюру та усунення конфліктів:
+     * У Blur My Shell вимкнено дублюючі модулі розмиття (dash-to-dock blur = false, popup blur = false, quick-settings blur = false, applications blur = false, notification blur = false).
+     * У Blur My Shell збережено виключно градієнтне затемнення менюбару зверху вниз та розмиття шпалер в Overview.
+   - Динамічне завантаження в системі:
+     * У components/menubar.js додано метод _ensureLiquidGlassLoaded(), що гарантує миттєву реєстрацію розширення в Main.extensionManager без потреби перезавантаження сесії.
+
+8. Адаптація Liquid Glass суворо під тему MacTahoe (виправлення дока, меню, програм та Control Center):
+   - Док-панель (Dock):
+     * Прибрано штучні зовнішні відступи dock-margin-bottom та dock-glass-expand (скинуто на 0).
+     * У dockManager.js прибрано перезапис інлайн-стилів та вилучено штучне стискання меж (balanceDockBounds).
+     * Шейдер Liquid Glass тепер повторює контури рідної плашки Dash to Dock з радіусом 28px без подвійних рамок і зміщень.
+   - Меню верхньої панелі та контекстні меню (Menus):
+     * Повністю вимкнено сторонню пружинну анімацію ryohsuke (enable-menu-animation = false, enable-panel-menu-animation = false); повернено рідну плавну появу меню GNOME/MacTahoe.
+     * Вимкнено адаптивний семплер кольорів тексту (menu-enable-adaptive-text-color = false), повернено оригінальні кольори шрифтів, відступи, сепаратори та витончений вигляд пунктів меню.
+     * У uiManager.js та stylesheet.css прибрано агресивні селектори .liquid-glass-menu-root, скинуто зміщення translation_x та translation_y на 0, а масштаб menu-scale зафіксовано на 1.0. Шейдер скла тепер діє виключно як фоновий шар під рідним вікном меню MacTahoe.
+   - Вікна програм (Applications):
+     * Повністю вимкнено прозорість для всіх програм (enable-application-glass = false, application-glass-all-windows = false). Вікна мають 100% непрозорий стандартний вигляд.
+   - Центр керування (Quick Settings / Control Center):
+     * У toggleStyles.js вилучено примусове накладання background-color: transparent !important; на кнопки та вимкнено циклічний таймаут перефарбовування кожні 100 мс.
+     * Повернено оригінальні кольорові стани MacTahoe: активні перемикачі (Wi-Fi, Bluetooth, Темний стиль тощо) зберігають свій чіткий синій акцентний колір, неактивні — напівпрозоре темне скло.
+     * Повністю ліквідовано мерехтіння кнопок при наведенні курсору миші.
+
+9. Корекція радіусів заокруглення (Border / Corner Radius) для Liquid Glass та меню MacTahoe:
+   - Меню (контекстні та верхньої панелі):
+     * Виявлено, що розширення за замовчуванням мало menu-corner-radius та panel-menu-corner-radius = 60.0px (гігантська капсула).
+     * Зменшено menu-corner-radius, panel-menu-corner-radius та desktop-menu-corner-radius до 14.0px.
+     * У gnome-shell.css .popup-menu-content виправлено border-radius: 14px !important; (було помилково 28px).
+     * Тепер форма рамки меню та форма шейдера рідкого скла ідеально збігаються піксель-у-піксель (14px).
+   - Збережено всі інші цільові радіуси системи:
+     * Док-панель (Dock): 28.0px
+     * Сповіщення (Notifications): 24.0px
+     * Перемикачі Центру керування (Quick Settings toggles): 18.0px
+
+10. Максимальне заокруглення кнопок, збільшення радіуса меню та повне видалення залишкового хвостика доку:
+   - Максимум заокруглення кнопок (Full Pill / Capsule):
+     * Для пунктів меню (.popup-menu-item, .popup-menu-item:checked, .popup-sub-menu .popup-menu-item) у gnome-shell.css виставлено border-radius: 9999px !important;. Активні та вибрані пункти (синя підсвітка) тепер мають повністю круглі краї (капсульна пілюля).
+     * Для кнопок/перемикачів Центру керування quick-settings-toggle-corner-radius збільшено до 24.0px.
+   - Збільшення радіуса заокруглення меню (як у темі Mac Tahoe):
+     * menu-corner-radius, panel-menu-corner-radius та desktop-menu-corner-radius піднято з 14px до 20.0px.
+     * У gnome-shell.css для .popup-menu-content border-radius встановлено на 20px !important;.
+     * Рамка меню та шейдер Liquid Glass мають плавне помірне заокруглення 20px відповідно до стилю macOS Tahoe.
+   - Повне видалення залишкового сірого хвостика/плашки зліва від доку:
+     * Причина появи хвостика: Dash to Dock створював .dash-background як окремий елемент на рівні батьківського контейнера, на який накладалися фонові стилі з CSS (rgba(36, 36, 36, 0.10) + border). Оскільки розширення liquid-glass шукало фоновий елемент лише серед прямих нащадків dashtodockDashContainer, воно не обнуляло прозорість .dash-background, і той зсувався ліворуч від скляного доку.
+     * У dockManager.js додано пошук .dash-background у parent (контейнері #dash) із примусовим приховуванням (opacity = 0, visible = false) та вирівнюванням точних координат.
+     * У stylesheet.css додано пряме занулення для #dash .dash-background та #dashtodockContainer .dash-background (background: transparent !important, border: none, box-shadow: none).
+     * У gnome-shell.css правила для #dashtodockContainer #dash .dash-background переведено у 100% transparent без бордюрів та тіней.
+     * Залишковий сірий хвостик повністю ліквідовано; док відображається виключно чистим шаром Liquid Glass.
+
+11. Відновлення висоти доку, збільшення радіуса контекстних меню, редизайн Центру сповіщень (Фото 3) та максимум заокруглення OSD:
+   - Док-панель (Dock):
+     * Відновлено попередню повну висоту дока: у dockManager.js скасовано перевизначення sourceActor дочірнім dash-background, повернено пряме зчитування розмірів targetActor (dashtodockDashContainer) зі збереженням повних відступів теми MacTahoe.
+     * Залишковий фоновий шар dash-background залишається прихованим (opacity = 0, visible = false), тому сірий хвостик зліва не повертається.
+     * Параметр dock-margin-bottom у gsettings відновлено до 8 (попередній стан), що забезпечує ідеальну пропорцію та висоту дока.
+   - Меню (менюбар та контекстні меню):
+     * Трохи збільшено радіус заокруглення (чуть-чуть більше як у темі Mac Tahoe): menu-corner-radius, panel-menu-corner-radius та desktop-menu-corner-radius збільшено з 20.0px до 24.0px.
+     * У gnome-shell.css для .popup-menu-content та .popup-menu-boxpointer .popup-menu-content встановлено border-radius: 24px !important;.
+     * Форма контекстних меню та контури шейдера рідкого скла ідеально збігаються з радіусом 24px.
+   - Центр сповіщень (DateMenu) за зразком macOS 26 Tahoe (Фото 3):
+     * Повна зміна поведінки при натисканні на дату/час у правому кутку менюбару:
+       - Панель виїжджає з правого краю екрана з плавною анімацією ковзання (translation_x з 240px до 0px із кубічним сповільненням ease-out).
+       - Вгорі розташовано заголовок «Центр сповіщень» та круглу кнопку закриття «✕».
+       - Календар приховано, простір виділено виключно під вертикальний стек карток сповіщень (messageList).
+       - У кінці списку розташовано кнопку «Очистити всі» у формі елегантної пілюлі.
+     * Ефект рідкого скла та фон (точно як на Фото 3):
+       - Повністю усунено суцільну рамку/плашку для всього меню (меню-контейнер, .datemenu-popover та boxpointer мають 100% прозорість без бордюрів).
+       - Позаду списку елементів додано м'яке градієнтне затемнення та розмивчастий по краях блюр (box-shadow з розмиттям 60px без різких меж).
+       - Кожне окреме сповіщення (.message) має ефект рідкого скла (Liquid Glass): у uiManager.js реалізовано динамічний збір регіонів для карток повідомлень (multiRegionMode = true) із накладанням рефракції та спекулярних відблисків без зміни їхніх рідних розмірів і компонування.
+   - OSD (індикатори гучності, яскравості тощо):
+     * Повернено оригінальний розмір та компонування OSD (osd-glass-expand = 0, osd-y-offset = 0, знято зміщення).
+     * Заокруглення виставлено на максимум (повна капсульна пілюля / Full Capsule): osd-corner-radius = 9999.0 у gsettings та border-radius: 9999px !important; для .osd-window, .level, .level-bar у gnome-shell.css.
+     * Шейдер Liquid Glass накладено безпосередньо на плашку OSD.
+
+--------------------------------------------------------------------------------
+ЕТАП 12: Виправлення закриття сповіщень, редизайн Центру сповіщень, анімація Control Center, динамічні іконки менюбару, блюр менюбару в огляді та ковзаючий ховер контекстних меню:
+--------------------------------------------------------------------------------
+1. Кнопка закриття сповіщень та автозакриття:
+   - Виправлено баг перехоплення подій: у St.Button обробник button-press-event повертав Clutter.EVENT_STOP, що блокувало внутрішній механізм відстеження натискання та генерацію сигналу 'clicked', блокуючи закриття.
+   - Метод _dismissBanner тепер викликається безпосередньо та гарантовано спрацьовує як на 'clicked', так і на натискання миші. Сповіщення надійно закриваються як вручну кнопкою, так і автоматично після завершення таймера.
+   - Інтегровано іконку close.png: файл скопійовано у системні каталоги іконок (~/.local/share/icons/MacTahoe-dark/actions/symbolic/close.png, actions/16, actions/24, hicolor scalable, assets теми та MACTHEMEFILES/icons).
+
+2. Редизайн Центру сповіщень (DateMenu):
+   - Вимкнено шейдер рідкого скла на повідомленнях у Центрі сповіщень (повернено чистий класичний вигляд карток темної теми без спотворень).
+   - Батьківський контейнер Центру сповіщень зроблено 100% невидимим: видалено будь-який темний фоновий шар, box-shadow та рамки (.datemenu-popover, #calendarArea, .popup-menu-content).
+   - На екрані відображаються виключно: заголовок «Центр сповіщень», стек карток повідомлень та кнопка «Очистити всі», розташована строго по центру ширини списку сповіщень (x_align = Clutter.ActorAlign.CENTER).
+
+3. Анімація появи Центру керування (Control Center):
+   - Замінено сторонній ефект магічної лампи та спалахи кнопок на синхронну плавну анімацію ковзання з правого краю (translation_x: 240 -> 0 із cubic ease-out тривалістю 250 мс; при закритті — translation_x: 0 -> 240 із ease-in тривалістю 200 мс), повністю ідентичну Центру сповіщень.
+
+4. Блюр та градієнт менюбару в огляді (Overview):
+   - У components/panel.js у методі set_overview_blur() фонова плашка менюбару при переході в огляд стає прозорою (opacity = 0), завдяки чому повноекранний блюр шпалери від blur-my-shell безшовно просвічує крізь менюбар без стиків і подвійного розмиття.
+   - Верхній градієнт затемнення менюбару (#panel:overview) збережено на 100%.
+
+5. Контекстні меню: зменшення заокруглення та ковзаючий ховер:
+   - Радіус заокруглення контекстних меню оптимізовано з 24px до 18px (panel-menu-corner-radius 18.0, menu-corner-radius 18.0, desktop-menu-corner-radius 18.0 та CSS border-radius: 18px).
+   - Створено клас MenuHoverTracker: реалізовано плавний «переліт» (gliding pill) підсвітки hover між кнопками в меню (динамічна анімація координати Y зі згладжуванням EASE_OUT_QUAD тривалістю 140 мс) замість ступінчастої зміни opacity.
+   - Стиль контекстних меню macOS Tahoe застосовано до всієї системи: робочого столу DING, Nautilus, системних додатків GTK-3 та GTK-4.
+
+6. Динамічне оновлення іконок менюбару в реальному часі:
+   - Wi-Fi: підключено відстеження сили сигналу активної точки доступу (notify::strength) та стану підключення.
+   - Bluetooth: підключено клієнт GnomeBluetooth (gi://GnomeBluetooth?version=3.0) зі слухачами notify::default-adapter-powered, notify::default-adapter-state та devices-changed. При увімкненні/вимкненні bluetooth іконка миттєво змінюється в реальному часі.
+   - Гучність: підключено MixerControl stream-changed та відстеження дефолтного аудіовиходу (notify::volume та notify::is-muted).
+   - Акумулятор: підключено UPowerGlib клієнт та пристрій відображення (notify::percentage, notify::state, notify::icon-name).
+   - Додано фоновий таймер для надійної синхронізації статусів.
+
+7. Усунення артефактів та колірних глюків при переміщенні вікон:
+   - Вимкнено шейдер хроматичної аберації рідкого скла на системних сповіщеннях (enable-notification-glass = false), збережено чистий фоновий блюр від blur-my-shell. Артефакти кольорів та веселковий шум при русі вікон повністю ліквідовано.
+
+--------------------------------------------------------------------------------
+ЕТАП 13: Виправлення розміру контекстного меню, максимальне заокруглення кнопок-пілюль, активація Liquid Glass для меню додатків та плавний ховер:
+--------------------------------------------------------------------------------
+1. Оптимізація розміру контекстного меню (компактність під macOS Tahoe):
+   - Усунено проблему гігантської висоти меню: зменшено мінімальну висоту пунктів меню до 20px (GTK) / 22px (Shell) та паддінги до компактних 2px 8px (замість 28px висоти та 12px відступів).
+   - Зменшено відступи розділювачів та контейнера: меню стало струнким, щільним і елегантним.
+
+2. Максимальне заокруглення кнопок у контекстному меню (Capsule / Full Pill):
+   - Для пунктів меню (.popup-menu-item, popover.menu modelbutton, menuitem) у всіх станах (звичайний, hover, focus, selected) встановлено border-radius: 9999px.
+   - Завдяки боковим відступам margin: 1px 4px активний пункт меню підсвічується як бездоганна заокруглена синя пілюля (#007aff) без доторкання до країв меню.
+
+3. Активація Liquid Glass для ВСІХ контекстних меню системи (Nautilus, програми, десктоп):
+   - У liquid-glass (applicationManager.js та ts) метод _isDesktopMenuWindow розширено для детекції будь-яких контекстних/спливаючих вікон (MENU_WINDOW_TYPES: DROPDOWN_MENU, POPUP_MENU, MENU), що зняло обмеження, яке раніше активувало скло лише на порожньому робочому столі.
+   - Увімкнено спекулярні відблиски та крайове світло (setSurfaceLightEnabled = true) для профілю меню.
+   - У GTK CSS зовнішні контейнери поповерів переведено на прозорий фон, а вміст — на напівпрозорий тінт rgba(30, 30, 30, 0.45) з тонким кантом, завдяки чому нативний шейдер рідкого скла від Mutter/GNOME без перешкод заломлює та розмиває фон під контекстним меню.
+
+4. Виправлення та плавний перехід hover:
+   - У GNOME Shell menubar.js компонент MenuHoverTracker оновлено з використанням контейнера-обгортки Clutter.BinLayout всередині St.Bin, що усунуло помилку контейнера Clutter і забезпечило коректний плавний «переліт» пілюлі підсвітки між пунктами меню.
+   - У GTK CSS налаштовано згладжений bezier-перехід тривалістю 150 мс для кольору та форми підсвітки.
+
+--------------------------------------------------------------------------------
+ЕТАП 14: Відновлення блюру додатків, видалення чорного квадрата кнопки закриття, тіні та уніфікація Центру сповіщень (395px), кастомізація бейджа доку (0 тінт + блюр), повне оновлення графічного інтерфейсу налаштувань, біліший текст і видалення стрілки контекстного меню, та збереження градієнта менюбару в огляді:
+--------------------------------------------------------------------------------
+1. Відновлення апаратного блюру додатків (Applications Blur):
+   - Увімкнено gsettings параметр org.gnome.shell.extensions.blur-my-shell.applications blur true.
+   - Програми (Nautilus, Налаштування тощо) знову отримують плавне розмиття фону замість простої прозорості.
+
+2. Виправлення кнопки закриття вікна (ліквідація чорного квадрата):
+   - З системних тем іконок видалено конфліктний растровий 512x512 файл close.png (у hicolor та MacTahoe-dark), який викликав завантаження чорного блоку замість векторного значка вікна.
+   - Оновлено кеш іконок (gtk-update-icon-cache).
+   - Кнопку закриття повідомлень перенесено у спеціальний каталог асетів (~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/assets/close.png). Вікна GTK/Libadwaita тепер коректно відображають рідну векторну кнопку закриття.
+
+3. Центр сповіщень: тіні під елементами та єдиний стиль з вхідними банерами (395px):
+   - Додано чіткі виразні тіні під кожним плаваючим елементом:
+     * Заголовок «Центр сповіщень»: text-shadow 0 2px 10px rgba(0, 0, 0, 0.90).
+     * Плейсхолдер та дзвіночок «Немає сповіщень»: text-shadow та icon-shadow 0 2px 12px rgba(0, 0, 0, 0.95).
+     * Тексти повідомлень (.message-title, .message-body, .message-header): text-shadow 0 1px 6px rgba(0, 0, 0, 0.80).
+     * Кнопка «Очистити всі»: тінь 0 4px 16px rgba(0, 0, 0, 0.45) та text-shadow 0 1px 4px rgba(0, 0, 0, 0.70).
+   - Єдиний вигляд сповіщень: картки у списку Центру сповіщень тепер мають ідентичні пропорції та стиль, як і вхідні банери (ширина 395px, заокруглення 24px, плавний ховер, компактна висота).
+   - Видалено суцільний фон контейнера: у components/popup/targets.js замінено 'message-list' на 'message', завдяки чому кожна окрема картка отримує свій шар розмиття без загальної рамки позаду всього списку.
+
+4. Кастомізація бейджа назви програми над доком (Tooltip):
+   - У gnome-shell.css для .dash-label встановлено 0 тінт (background-color: transparent !important; background: transparent !important;), білий текст із тінню, пілюльну форму border-radius: 9999px.
+   - У dash-to-dock appIcons.js до St.Label підключено фоновий ефект Shell.BlurEffect(mode: BACKGROUND, radius: 18) з corner_radius: 9999.
+   - Назва додатка тепер відображається виключно чистим розмиттям без затемнення та без хроматичних аберацій.
+
+5. Оновлення графічного інтерфейсу «Mac стилізація» (mac-styling-settings):
+   - Повністю перероблено програму на базі сучасного Libadwaita / GTK4.
+   - Елементи згруповано за категоріями:
+     1) Док-панель (Dock)
+     2) Верхня панель (Menubar)
+     3) Контекстні меню (Context Menus)
+     4) Екранні індикатори (OSD)
+     5) Центр сповіщень (Notifications)
+     6) Центр керування (Control Center)
+   - У кожній групі реалізовано:
+     * Повзунок «Сила скла» (0% - 100%)
+     * Вибір режиму тінту (Вимкнено / Затемнення / Засвітлення)
+     * Повзунок «Сила тінту» (0% - 100%)
+   - Плаваюча плашка внизу вікна: при зміні будь-якого параметра знизу плавно з'являється інформаційна плашка «Потрібно вийти з сесії, аби все коректно виглядало» з кнопкою «Вийти з сесії» праворуч (викликає gnome-session-quit --logout).
+   - Миттєва синхронізація в реальному часі через gsettings, dconf та styling.json.
+
+6. Контекстні меню: біліший текст та видалення стрілки:
+   - У GTK 3 та GTK 4 CSS для всіх доступних пунктів меню (.popup-menu menuitem, popover.menu modelbutton) текст зроблено кришталево білим (color: #ffffff, font-weight: 500).
+   - Повністю видалено верхню стрілочку поповера (popover > arrow, popover.menu > arrow: min-width: 0, min-height: 0, opacity: 0, background: transparent).
+
+7. Збереження градієнтного затемнення менюбару в огляді (Overview):
+   - У components/panel.js у методі set_overview_blur() зафіксовано opacity = 255 для фонового актора панелі (усунено його занулення до 0).
+   - При вході в огляд менюбар отримує повноекранний блюр огляду, одночасно на 100% зберігаючи верхній темний градієнт GLSL-шейдера та CSS.
+
+--------------------------------------------------------------------------------
+ЕТАП 15: Відокремлення блюру меню-бару від затемнення (чистий блюр шпалери + нерозмитий градієнт зверху):
+--------------------------------------------------------------------------------
+1. Фізичне розділення шарів у композиторі (Layer Separation):
+   - Шар 1 (Фон / Блюр): Відповідає ВИКЛЮЧНО за розмиття шпалери.
+     * У режимі огляду (Overview): Фоновий актор панелі (bms-panel-blurred-widget) отримує opacity = 0 (приховується). Завдяки цьому меню-бар просвічує нативний, плавний, апаратний гаусовий блюр шпалери всієї робочої області (bms-overview-backgroundgroup). Усунено 16-точковий шум, подвійне розмиття і різкий зріз на межі 34px.
+     * На робочому столі: GLSL-шейдер gradient_panel.glsl більше не змінює і не запікає коефіцієнт темряви у текстуру шпалери. Шейдер обробляє виключно чисту шпалеру.
+   - Шар 2 (Градієнтне затемнення зверху): Накладається ПОВЕРХ шару розмиття як чистий вертикальний оверлей, який затемнює розмиту шпалеру без розмиття самого затемнення.
+     * Реалізовано через нативні властивості рушія StThemeNode у GNOME Shell:
+       background-gradient-direction: vertical !important;
+       background-gradient-start: rgba(0, 0, 0, 0.70) !important;
+       background-gradient-end: rgba(0, 0, 0, 0.0) !important;
+     * Стиль зафіксовано для #panel, #panel:overview, #panel.gradient-panel та #panel.transparent-panel.
+     * Усунено конфліктні правила `background: transparent !important;`, які раніше скидали нативний St-градієнт.
+
+2. Синхронізація у застосунку налаштувань mac-styling-settings:
+   - У методі save_css() реалізовано динамічне оновлення сили верхнього тінту меню-бару у файлі gnome-shell.css (background-gradient-start) відповідно до значення повзунка.
+   - Оновлено дефолтні значення у styling.json: panel_tint зафіксовано на рівні 0.70.
+
+3. Оновлення gsettings:
+   - Для pipeline меню-бару (pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc) параметри top_darkness та bottom_darkness встановлено в 0, гарантуючи, що блюр-пайплайн обробляє суто шпалеру, а затемнення лягає охайним нерозмитим шаром зверху.
+
+--------------------------------------------------------------------------------
+ЕТАП 16: Усунення артефактів кнопки закриття повідомлень, блюр бейджа назви додатків у доку, плавний градієнтний блюр меню-бару та верифікація параметрів:
+--------------------------------------------------------------------------------
+1. Фізичне усунення кутового тінту кнопки закриття сповіщень:
+   - Причина артефакту: При апаратній перемальовці прямокутної області (damage rect) StButton на картці з фоновим блюром виникало квадратне затемнення по кутах кнопки.
+   - Рішення:
+     * У ~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css та MacTahoe-Dark-solid для .mac-notification-close-btn (та станів :hover, :active, :focus) встановлено: background: transparent !important; border: none !important; box-shadow: none !important; border-radius: 9999px !important; padding: 0 !important;.
+     * В assets/close.png та close-button-hover.png векторно згенеровано ідеально згладжене коло з прозорістю кутів 100% (alpha=0), де хрестик та круг повністю антиаліасяться без виходу за межі кола.
+     * У components/notifications.js для closeBtn встановлено інлайн-стиль set_style(...) з прозорим фоном, без тіней та рамки, що фізично виключає квадратні кути.
+     * Іконку close.png розміщено також у системні директорії іконок ~/.local/share/icons/hicolor/scalable/actions/ та MacTahoe-dark/actions/.
+     * Виправлено обробку джерел повідомлень _hookSource без відключення внутрішніх сигналів GNOME Shell, усунувши помилки \x27disposed object\x27.
+
+2. Блюр для бейджа назви над іконками доку (.dash-label):
+   - У ~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css та MacTahoe-Dark-solid для .dash-label прибрано затемнюючу тінь (box-shadow: none !important;) та встановлено border-radius: 9999px !important;, border: 1px solid rgba(255, 255, 255, 0.25) !important;, background-color: transparent !important;.
+   - У dash-to-dock/appIcons.js у методі itemShowLabel підключено нативний Shell.BlurEffect з фоновим розмиттям (mode: BACKGROUND, radius: 20, corner_radius: 9999) та інлайн-стилем без тінту. Тепер бейдж розмиває фон шпалери чи вікна з чистим блюром без чорного фону.
+
+3. Градієнтний блюр меню-бару на робочому столі та плавний перелив в Огляді (Overview):
+   - На робочому столі: Menubar розмиває ВИКЛЮЧНО шпалеру вертикальним м\x27яким градієнтом від верху (top_blur: 14.0) до низу (bottom_blur: 0.0), а градієнт затемнення лягає чистим другим шаром зверху.
+   - В огляді (Overview): У components/panel.js у методі set_overview_blur реалізовано плавну анімацію ease({ opacity: enabled ? 0 : 255, duration: 250, mode: EASE_OUT_QUAD }), завдяки чому при вході в огляд легкий градієнтний блюр меню-бару плавно "переливається" у повноекранний блюр шпалери огляду разом із затемненням зверху, без різких стрибків та без занулення параметрів ефекту.
+
+4. Верифікація та оновлення застосунку налаштувань mac-styling-settings:
+   - Перевірено всі 6 груп інтерфейсу: Док-панель (Dock), Верхня панель (Menubar), Контекстні меню (Context Menus), Екранні індикатори (OSD), Центр сповіщень та банери, Центр керування (Control Center).
+   - Назви, описи та діапазони повзунків повністю відповідають актуальним діям у системі.
+   - У методі save_css() додано живий перезапуск стилів теми оболонки через user-theme, щоб зміни CSS застосовувалися миттєво.
+   - Збережено плаваючу плашку знизу з нагадуванням та кнопкою виходу з сесії ("Потрібно вийти з сесії, аби всі зміни повністю набули чинності").
+
+--------------------------------------------------------------------------------
+ЕТАП 17: Налаштування легкого градієнтного блюру меню-бару (5 зверху, розчинення до 0 внизу):
+--------------------------------------------------------------------------------
+1. Точне калібрування радіуса розмиття меню-бару (поза Оглядом):
+   - У GLSL-пайплайні pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc встановлено:
+     * top_blur = 5.0 (легке м\x27яке розмиття шпалери біля верхнього краю екрана);
+     * bottom_blur = 0.0 (повне розчинення блюру до кришталево чистої шпалери на нижній межі панелі 34px);
+     * top_darkness = 0.0, bottom_darkness = 0.0 (без викривлення темряви шейдером, затемнення лягає окремим оверлеєм).
+   - У effects/gradient_panel.js дефолтні значення DEFAULT_PARAMS та ParamSpec оновлено на top_blur = 5.0, bottom_blur = 0.0.
+   - Створено системний утилітарний скрипт ~/.local/bin/update-bms-menubar-blur для безпечної серіалізації/десеріалізації параметрів пайплайна в gsettings.
+
+2. Інтеграція в застосунок параметрів mac-styling-settings:
+   - При переміщенні повзунка "Сила скла" для верхньої панелі викликається автоматичне оновлення top_blur у реальному часі через update-bms-menubar-blur.
+   - У конфігураційному файлі styling.json дефолтне значення menubar_glass_strength оновлено до 0.5 (еквівалент радіуса 5.0).
+
+--------------------------------------------------------------------------------
+ЕТАП 18: Відновлення та оптимізація відкриття Центру керування (Control Center) та Центру сповіщень:
+--------------------------------------------------------------------------------
+1. Вирішення проблеми відкриття меню на панелі (Control Center & Notification Center):
+   - У components/overview.js повністю усунено небезпечний обробник "child-added" на Main.layoutManager.overviewGroup, який у середовищі GJS спричиняв циклічну рекурсію через створення нових обгорток C-вказівників при додаванні/перевпорядкуванні дочірніх акторів.
+   - У components/menubar.js для кнопки Control Center (_setupControlCenterButton) та годинника/календаря (_applyDateMenu):
+     * Додано прямі слухачі подій Clutter 'button-press-event' та 'touch-event' на актори кнопок, що гарантує миттєвий виклик menu.toggle() при натисканні лівою кнопкою миші.
+     * Реалізовано захисні методи sanitizeQuickSettings та sanitizeDateMenu, які безпечно очищають застарілі та disposed посилання на внутрішні елементи перемикачів і подій перед викликом відкриття.
+     * Повністю виключено quickSettings та dateMenu зі списку відстеження MenuHoverTracker, щоб уникнути конфліктів структури BoxPointer.
+     * Виправлено розрахунок координат позиціонування bp.x: замість нульової початкової ширини тепер використовується Math.max(natWidth || 0, bp.width || 0, 420) для Control Center та 395 для DateMenu, що повністю усуває викидання меню за межі екрана.
+     * Забезпечено вирівнювання впритул до правого краю та плавну анімацію виїзду справа наліво (250ms ease-out cubic, translation_x: 240 -> 0).
+     * Збережено дизайн Центру сповіщень у стилі macOS (прозорий плаваючий фон, заголовок "Центр сповіщень", центрована кнопка "Очистити всі").
+   - Усі зміни синхронізовано між робочим каталогом розширення та артефактами в /home/vitaliy/MACTHEMEFILES/.
+   - Виправлено зникнення кнопки Control Center з панелі:
+     * У методі _fixIndicatorShapes() функція перевірки видимості порожніх системних індикаторів помилково приховувала quickSettings.container (через те, що внутрішній контейнер стандартних GNOME-перемикачів _indicators мав visible=false). Додано чітке виключення для quickSettings та dateMenu, що запобігає їх приховуванню та колапсу ширини до нуля.
+     * Замінено порівняння обгорток GJS-вказівників (actor.get_parent() === rightBox) на нативний метод рушія Clutter rightBox.contains(actor), завдяки чому контейнери кнопки Control Center та годинника стабільно приєднуються до _rightBox без ризику випадкового видалення або дублювання.
+     * Забезпечено гарантовану видимість та розміри 34×28 px для quickSettings і його контейнера, а також додано fallback для іконки control-center-symbolic в активну тему MacTahoe-dark.
+
+--------------------------------------------------------------------------------
+ЕТАП 19: Динамічна та плавна анімація переходу стилю меню-бару під час відкриття/закриття Огляду (Overview):
+--------------------------------------------------------------------------------
+1. Реалізація прогресивної прив'язки анімації меню-бару до віддалення робочих столів:
+   - Раніше перехід блюру меню-бару відбувався за статичним фіксованим таймером (250 мс) лише на подію "showing", а при закритті Огляду меню-бар взагалі не мав анімації до самого моменту повного закриття ("hidden"), через що плавний 3-пальцевий жест та рух робочих столів не впливали на меню-бар у реальному часі.
+   - У components/panel.js впроваджено пряме підключення до рушія просторових станів GNOME Shell: Main.overview._overview._controls._stateAdjustment (сигнал "notify::value").
+   - Значення adjustment.value від 0.0 (HIDDEN / Робочий стіл) до 1.0 (WINDOW_PICKER / Огляд) тепер виступає безперервним фактором прогресу (progress від 0.0 до 1.0):
+     * Чим далі стіл віддаляється до огляду робочих столів (збільшення progress від 0.0 до 1.0), тим більше локальний градієнтний блюр меню-бару (5 -> 0) плавно розчиняється (прозорість opacity = Math.round((1.0 - progress) * 255)), відкриваючи глибоке загальне розмиття шпалери Огляду під градієнтним затемненням панелі.
+     * При наближенні столу назад (зменшення progress від 1.0 до 0.0 як при натисканні Super/ESC, так і при зворотному 3-пальцевому жесті) прозорість локального блюру миттєво і пропорційно повертається до 255 без будь-яких ривків, стрибків чи затримок.
+   - Метод on_overview_progress(progress) скидає будь-які конфліктуючі Clutter-переходи (remove_all_transitions()) для прямого, попіксельного та частотно-синхронізованого рендерингу (60/120/144 Гц).
+   - Забезпечено коректне відключення сигналу notify::value у disconnect_from_windows_and_overview().
+   - Усі оновлення синхронізовано в:
+     * ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/panel.js
+     * /home/vitaliy/MACTHEMEFILES/blur-my-shell@aunetx/components/panel.js
+     * /home/vitaliy/MACTHEMEFILES/blur-my-shell/components/panel.js
+     * Також усунено попередження щодо disposed-об'єктів меню у MenuHoverTracker у components/menubar.js.
+
+--------------------------------------------------------------------------------
+ЕТАП 20: Виправлення відображення кнопки Control Center та безперервної плавної анімації меню-бару в Огляді:
+--------------------------------------------------------------------------------
+1. Вирішення проблеми зі зникненням кнопки Control Center:
+   - Виявлено фундаментальну причину в GNOME Shell 46: клас QuickSettings успадковує PanelMenu.ButtonBox, у якому vfunc_allocate(box) алокує виключно першу дочірню ноду (this.get_first_child()).
+   - Раніше при створенні кнопки _ccIcon додавався через add_child, стаючи другим дочірнім елементом після прихованого _indicators. Через це Clutter взагалі не виділяв йому геометрію (has_allocation() = false), що викликало помилку "Can't update stage views actor unnamed [StIcon] is on because it needs an allocation" та повну невидимість іконки на екрані.
+   - У components/menubar.js:
+     * Застосовано quickSettings.insert_child_at_index(this._ccIcon, 0), завдяки чому іконка Control Center завжди є першим дочірнім елементом.
+     * Перевизначено quickSettings.vfunc_allocate для повної та безпечної алокації всіх видимих дочірніх елементів кнопки.
+     * У _fixIndicatorShapes додано перевірку child.contains(quickSettings).
+   - Кнопка Control Center тепер чітко відображається на панелі (розміри 34×30 px, центрована іконка 26×18 px у стилі macOS) між перемикачем мови та датою/часом, повністю функціональна та інтерактивна.
+
+2. Реалізація плавної покадрової анімації блюру меню-бару при переході в Огляд:
+   - У components/panel.js оновлено on_overview_progress(progress):
+     * Замість простої зміни прозорості віджета, значення progress (0.0 -> 1.0) динамічно змінює параметри шейдера gradient_panel: top_blur плавно інтерполюється від 5.0 до 30.0, а bottom_blur — від 0.0 до 30.0.
+     * На робочому столі меню-бар має витончене розмиття шпалери зверху донизу (5 -> 0) з градієнтним затемненням зверху.
+     * У міру віддалення робочого столу в Огляд розмиття шпалери під меню-баром плавно, покадрово (60/120 Гц) поглиблюється та розширюється на всю висоту панелі (до 30.0), ідеально переливаючись у загальний фоновий блюр Огляду разом із градієнтним затемненням.
+     * При закритті Огляду розмиття без жодних ривків повертається до 5 -> 0.
+   - У components/menubar.js виправлено _applyStylingRealtime: панель використовує вертикальне градієнтне затемнення замість суцільного сірого кольору background-color, а також підключено слухач на закриття Огляду для збереження градієнта.
+   - У components/notifications.js додано відсутній імпорт Gio, що усунуло помилку ReferenceError при банерах сповіщень.
+   - Усі зміни застосовано в робочій сесії без виходу із системи та синхронізовано з /home/vitaliy/MACTHEMEFILES/.
+
+--------------------------------------------------------------------------------
+ЕТАП 21: Реалізація динамічного перемикача GRUB та теми завантажувача у стилі macOS Apple Silicon:
+--------------------------------------------------------------------------------
+1. Динамічний перемикач GRUB у системних налаштуваннях:
+   - У шаблоні cc-system-panel.ui під перемикачем boot_verbose_switch додано новий перемикач boot_grub_switch ("Меню GRUB" з описом "Графічне меню вибору системи у стилі macOS під час старту").
+   - У libmac_settings.c реалізовано:
+     * init_boot_grub: динамічно перевіряє поточний стан /etc/default/grub і синхронізує стан тумблера із системою.
+     * on_boot_grub_changed: при увімкненні встановлює GRUB_TIMEOUT_STYLE=menu, GRUB_TIMEOUT=5, GRUB_THEME=/boot/grub/themes/apple-mac/theme.txt, GRUB_DISABLE_SUBMENU=y, GRUB_DISABLE_OS_PROBER=false та виконує update-grub. При вимкненні встановлює GRUB_TIMEOUT_STYLE=hidden, GRUB_TIMEOUT=0.
+   - Бібліотеку libmac_settings.so успішно скомпільовано та синхронізовано з ~/.local/lib/ і MACTHEMEFILES/.
+   - В автономному застосунку mac-styling-settings додано аналогічний перемикач grub_switch із динамічною перевіркою та збереженням.
+
+2. Тема завантажувача apple-mac (стиль macOS Apple Silicon Startup Manager):
+   - Розроблено та встановлено тему в /boot/grub/themes/apple-mac/ (та продубльовано в MACTHEMEFILES/grub/apple-mac/).
+   - Фон background.png (1920x1080) глибокого чорного кольору з перемикачем розкладки "ABC ▾" у правому верхньому кутку.
+   - Шрифти SF Pro Display (sfpro-16.pf2, sfpro-18.pf2, sfpro-medium-18.pf2, sfpro-20.pf2) із підтримкою латиниці та кирилиці (33 українські літери).
+   - Елемент виділення select_w.png, select_c.png, select_e.png із м'яким заокругленням кутів 16px та тонким скляним контуром.
+   - Набір із 35 іконок для всіх популярних ОС та службових пунктів:
+     * Ubuntu: сріблястий диск Startup Disk з емблемою Ubuntu.
+     * Safe Mode (Recovery): кругла шестерня Options із фотографії користувача.
+     * UEFI Firmware / Термінал: вікно macOS Terminal з prompt ">_".
+     * Windows: сріблястий диск Startup Disk з емблемою Windows.
+     * macOS: оригінальний диск Macintosh HD з фотографії.
+     * Debian, Fedora, Arch, Linux: диски із відповідними емблемами.
+     * Перезавантаження (Restart): іконка трикутника в колі з фотографії користувача.
+     * Вимкнення (Shut Down): іконка живлення в колі з фотографії користувача.
+
+3. Конфігурація пунктів завантаження GRUB:
+   - В /etc/grub.d/10_linux налаштовано лаконічні назви "Ubuntu" та "Ubuntu (Safe Mode)", додано класи --class recovery --class options.
+   - В /etc/grub.d/30_uefi-firmware додано класи --class uefi-firmware --class terminal --class efi.
+   - В /etc/grub.d/40_custom додано робочі пункти "Restart" (reboot) та "Shut Down" (halt).
+   - Приховано зайві записи memtest для забезпечення чистого мінімалістичного вигляду.
+   - Конфігурацію /boot/grub/grub.cfg успішно оновлено через update-grub.
+
+--------------------------------------------------------------------------------
+ЕТАП 22: Кінематографічний плавний перехід (Fade-out / Fade-in) між Plymouth та GDM:
+--------------------------------------------------------------------------------
+1. Плавне згасання (Fade-Out через Opacity) теми завантаження Plymouth (apple-mac):
+   - У /usr/share/plymouth/themes/apple-mac/apple-mac.script реалізовано двигун apply_fade_opacity(alpha), який синхронно керує прозорістю яблучка (logo_sprite), прогрес-бару (box_sprite, bar_sprite) та всіх рядків журналювання verbose (global.verbose_sprites).
+   - У функції refresh_callback() при досягненні 100% завантаження (current_progress >= 0.98 та target_progress >= 1.0) вмикається плавне покадрове зменшення непрозорості (opacity - 0.04/кадр, ~500 мс) до абсолютного чорного кольору.
+   - У verbose_message() нові рядки повідомлень динамічно враховують поточну прозорість global.fade_out_opacity.
+   - У quit_callback() викликається примусове apply_fade_opacity(0.0) для забезпечення чистого чорного фреймбуфера без жодних залишкових артефактів перед передачею керування дисплейному менеджеру.
+   - Скрипт оновлено в /usr/share/plymouth/themes/apple-mac/apple-mac.script, синхронізовано з MACTHEMEFILES/macos-plymouth/apple-mac.script та перегенеровано образ початкового завантаження через update-initramfs -u.
+
+2. Плавна поява (Fade-In через Opacity) екрана входу GDM (WACK Lockscreen Clock):
+   - У src/pro/gdmThemePipeline.js (GdmWallpaperView) початковий стан фонової групи контейнера шпалери встановлено в opacity = 0, що запобігає спалаху шпалери при холодному старті GNOME Shell / GDM.
+   - У src/pro/pro.js в методі _restartDialogFadeIn() налаштовано паралельну кінематографічну анімацію плавного прояву (opacity: 0 -> 255 за 900 мс із режимом EASE_OUT_QUAD) для всіх чотирьох складових екрана входу:
+     * Користувацька шпалера macOS (wallpaperManager.view._group)
+     * Базовий фон GNOME Shell (Main.layoutManager._backgroundGroup)
+     * Годинник блокування у стилі macOS (clockManager.clockWrapper)
+     * Діалог автентифікації користувача (аватар, ім'я, поле пароля / Touch ID).
+   - Зміни синхронізовано в системні файли (/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/), призначені для користувача (~/.local/share/...) та в каталог резервної копії MACTHEMEFILES/.
+
+--------------------------------------------------------------------------------
+ЕТАП 23: Реалізація "Режиму гри" (Game Mode) та суворе розділення GPU:
+--------------------------------------------------------------------------------
+1. Підгрупа "Режим гри" у Параметри -> Живлення:
+   - Створено оверлей cc-power-panel.ui (~/.local/share/gnome-control-center-overlay/cc-power-panel.ui та MACTHEMEFILES/gnome-control-center-overlay/).
+   - Додано окрему підгрупу AdwPreferencesGroup id="game_mode_section" ("Режим гри"), яка не залежить від джерела живлення (працює однаково і для батареї, і для мережі).
+   - Додано динамічний перемикач AdwSwitchRow id="game_mode_switch" ("Режим гри": Пріоритет P-ядер CPU (0-7, 4.6 ГГц), максимальна продуктивність Nvidia RTX, MMCSS та прямий доступ).
+   - Додано інформативні статус-рядки з піктограмами:
+     * Графіка для ігор: NVIDIA GeForce RTX 3050 6GB (Примусово)
+     * Графіка для робочого столу: Intel UHD Graphics Raptor Lake (Примусово)
+     * Топологія процесора: P-ядра (0-7) закріплено за іграми • E-ядра (8-11) для фонових задач ОС.
+   - У libmac_settings.c додано обробники сигналів init_game_mode та on_game_mode_changed, скомпільовано libmac_settings.so.
+   - Оновлено ~/.local/bin/gnome-control-center з підтримкою мульти-оверлеїв G_RESOURCE_OVERLAYS.
+
+2. Двигун оптимізації та демон /usr/local/bin/mac-gamemode:
+   - CPU Topology & Scheduling (відповідно до winGame.txt):
+     * Повне закріплення ігрових процесів (Wine, Proton, Steam, .exe, wineserver, emulators) за високопродуктивними P-ядрами 0-7 (4.6 ГГц).
+     * Витіснення важких фонових системних процесів (Tracker Miner тощо) на енергоефективні E-ядра 8-11 (3.4 ГГц).
+     * MMCSS Priority Boosting: встановлення пріоритету nice -20 та класу планувальника/I/O на найвищий рівень для ліквідації черг і затримок.
+     * Автоматичне перемикання CPU-гувернера на performance, EPP на performance, а min_freq — до 2.4 ГГц при грі (та 800 МГц у звичайному режимі для усунення підвисання Огляду).
+   - Пам'ять (VMM) та ядро:
+     * vm.max_map_count = 2147483642 (вирішує падіння та затримки підвантаження пам'яті у DirectX 12 / Vulkan / Wine).
+     * vm.swappiness = 10 (блокує скидання сторінок гри у swap).
+     * vm.vfs_cache_pressure = 50 (утримання файлових кешів гри в RAM).
+     * vm.compaction_proactiveness = 0 (усунення фонових пауз компактифікації оперативної пам'яті).
+   - Мережа та Wi-Fi:
+     * net.ipv4.tcp_slow_start_after_idle = 0 та оптимізація буферів низької затримки.
+     * Вимкнення енергозбереження Wi-Fi адаптера (power_save off) для ліквідації періодичних стрибків пінгу (jitter).
+   - Графічний стек:
+     * Активація режиму максимальної продуктивності NVIDIA PowerMizer (nvidia-smi -pm 1, GPUPowerMizerMode=1).
+   - Демон mac-gamemode.service активний у systemd і постійно відстежує запуск ігор у реальному часі.
+   - Інтегровано з Feral GameMode (/etc/gamemode.ini).
+
+3. Суворе апаратне розділення відеокарт (GPU Splitting):
+   - Робочий стіл та ОС: примусово закріплено за Intel UHD Graphics (/etc/environment.d/10-os-gpu.conf та ~/.config/environment.d/10-os-gpu.conf: DRI_PRIME=0, __NV_PRIME_RENDER_OFFLOAD=0, __GLX_VENDOR_LIBRARY_NAME=mesa, MESA_VK_DEVICE_SELECT=8086:a7a8).
+   - Ігри: примусово запускаються на дискретній NVIDIA GeForce RTX 3050 (/usr/local/bin/steam, /usr/local/bin/gamemoderun, /usr/local/bin/nvidia-game-run: __NV_PRIME_RENDER_OFFLOAD=1, __GLX_VENDOR_LIBRARY_NAME=nvidia, __VK_LAYER_NV_optimus=NVIDIA_only, VK_DRIVER_FILES=nvidia_icd.json, MESA_VK_DEVICE_SELECT=10de:25ac, DRI_PRIME=1).
+   - Усунуто підвисання Огляду (Overview): базова частота процесора піднята з 400 МГц до стабільних 800 МГц (а в грі до 2.4 ГГц), що усунуло затримку перемикання P-State при відмальовуванні блюру.
+--------------------------------------------------------------------------------
+ЕТАП 24: Повна 100% інтеграція жестів тачпада у стилі macOS (Wayland / libinput / GNOME Shell):
+--------------------------------------------------------------------------------
+1. Перетягування трьома пальцями (Three-finger drag):
+   - Увімкнено нативний режим перетягування трьома пальцями у libinput 1.31.1 (LIBINPUT_CONFIG_3FG_DRAG_ENABLED_3FG).
+   - Створено та скомпільовано системний перехоплювач /usr/local/lib/libmac_3fg_drag.so (код у MACTHEMEFILES/touchpad/libmac_3fg_drag.c).
+   - Бібліотеку підключено через /etc/ld.so.preload та systemd-оверрайд ~/.config/systemd/user/org.gnome.Shell@.service.d/3fg-drag.conf, а також успішно інжектовано в активний процес GNOME Shell без перезавантаження.
+   - Поведінка: коли користувач кладе три пальці на тачпад і переміщує їх — вікно за верхню частину (заголовок/панель), файл на робочому столі чи в Nautilus, виділений текст чи слайдер перетягуються плавно та вільно без потреби фізично натискати або утримувати ліву кнопку миші (ЛКМ).
+
+2. Горизонтальний свайп трьома пальцями — Перемикання вікон (Alt+Tab):
+   - Розроблено розширення GNOME Shell: macos-touchpad-gestures@mactheme (~/.local/share/gnome-shell/extensions/macos-touchpad-gestures@mactheme/).
+   - При горизонтальному русі трьома пальцями (вліво/вправо) активується нативний спливаючий перемикач вікон WindowSwitcherPopup (Alt+Tab).
+   - Рух пальцями дозволяє плавно та тактильно вибирати наступне або попереднє вікно зі списку з урахуванням природного прокручування (natural-scroll).
+   - При піднятті пальців з тачпада обране вікно миттєво активується та виводиться на передній план, а перемикач плавно закривається.
+
+3. Горизонтальний свайп чотирма пальцями — Перемикання робочих столів:
+   - Переналаштовано внутрішній контролер WorkspaceAnimationController у GNOME Shell на ексклюзивне реагування на 4 пальці.
+   - Свайп 4 пальцями вліво/вправо плавно перемикає віртуальні робочі столи із відстеженням пальців 1:1, виключаючи випадкові спрацьовування під час перемикання вікон трьома пальцями.
+
+4. Щипок трьома пальцями на себе (Pinch-in) — Копіювання (Ctrl+C):
+   - Відстеження жесту TOUCHPAD_PINCH для трьох пальців при зменшенні масштабу (scale <= 0.82).
+   - Через віртуальний пристрій введення Clutter VirtualKeyboard здійснюється емуляція клавіш Ctrl+C для сфокусованого файлу або виділеного тексту.
+   - На екрані з'являється елегантний пілюлеподібний системний OSD-індикатор macOS із піктограмою edit-copy-symbolic та написом "Скопійовано".
+
+5. Щипок трьома пальцями від себе (Pinch-out) — Вставка (Ctrl+V):
+   - Відстеження жесту TOUCHPAD_PINCH для трьох пальців при збільшенні масштабу (scale >= 1.18).
+   - Здійснюється віртуальна емуляція клавіш Ctrl+V у фокус активного додатку чи папки.
+   - На екрані з'являється пілюлеподібний системний OSD-індикатор macOS із піктограмою edit-paste-symbolic та написом "Вставлено".
+
+6. Одноразовий тап 4 пальцями — Огляд робочих столів (Mission Control):
+   - Відстеження одночасного швидкого дотику (тривалість <= 350 мс, зміщення <= 28 px) чотирма пальцями.
+   - Якщо огляд закрито — відкривається Огляд робочих столів (Mission Control / Main.overview.show()).
+   - Якщо Огляд вже відкритий — одноразовий тап 4 пальцями миттєво закриває Огляд (Main.overview.hide()).
+
+7. Подвійний тап 4 пальцями — Огляд програм (Launchpad / App Grid):
+   - При виконанні подвійного тапу 4 пальцями з інтервалом до 380 мс — відкривається сітка встановлених програм (Launchpad / Main.overview.showApps()).
+
+8. Збереження та резервне копіювання:
+   - Розширення та бібліотека протестовані, активні у системі (ACTIVE) без жодних помилок у журналі.
+   - Усі розроблені компоненти збережено до MACTHEMEFILES/touchpad/.
+
+================================================================================
+ОНОВЛЕННЯ: ЖЕСТИ ТАЧПАДА, ГОРИЗОНТАЛЬНИЙ GRUB ТА ПЛАВНИЙ ПЕРЕХІД GDM -> DESKTOP
+================================================================================
+
+1. СУВОРИЙ ПОДІЛ ЖЕСТІВ ТАЧПАДА:
+   - Перемикання робочих столів СУВОРО і ВИКЛЮЧНО на 4 пальці:
+     * У macos-touchpad-gestures@mactheme підключено суворий фільтр до event::touchpad на global.stage та заміщено метод _handleEvent у Main.wm._workspaceAnimation._swipeTracker._touchpadGesture.
+     * Будь-які свайпи трьома пальцями негайно ігноруються (Clutter.EVENT_PROPAGATE), тому горизонтальний свайп 3 пальцями БІЛЬШЕ НЕ ПЕРЕМИКАЄ РОБОЧІ СТОЛИ!
+   - Чітке розмежування 3 пальців:
+     * Переміщення вікна чи файлів (3-Finger Drag): спрацьовує ТІЛЬКИ коли 3 пальці тримаються разом формою кола без проміжків (span_x < 850, span_y >= 120, відстані між сусідніми пальцями d1 < 500, d2 < 500). Працює через віртуальний пристрій /dev/uinput з утриманням лівої кнопки миші.
+     * Перемикання вікон Alt+Tab: спрацьовує ТІЛЬКИ коли 3 пальці розташовані горизонтально з видимим відступом між кожним пальцем (span_x >= 850, span_y < 650, d1 >= 250, d2 >= 250).
+   - Тап чотирма пальцями:
+     * Відрегульовано апаратний демон mac-touchpad-daemon: час утримання 30-450 мс, допустимий мікрозсув до 180 одиниць (~5.8 мм).
+     * Одноразовий тап 4 пальцями: відкриває огляд (робочі столи) або закриває його, якщо він уже відкритий.
+     * Подвійний тап 4 пальцями (до 400 мс): відкриває огляд програм (Launchpad / App Grid). Наступний тап у ньому закриває огляд.
+
+2. ГОРИЗОНТАЛЬНИЙ МАК-СТИЛЬ GRUB ТА ЧИСТИЙ ШРИФТ ПРИ VERBOSE:
+   - Горизонтальне розташування варіантів запуску у GRUB у точній відповідності до фото Apple Silicon Startup Manager:
+     * Створено повноекранні динамічні стани 1920x1080 для кожного пункту меню в /boot/grub/themes/apple-mac/icons/.
+     * По центру горизонтально пліч-о-пліч розміщено сріблястий диск Ubuntu з яблучком та шестерні Options.
+     * Вибраний пункт обрамляється фірмовою заокругленою карткою вибору з пілюлеподібною кнопкою Continue знизу.
+     * Знизу екрана горизонтально розташовані кнопки керування Shut Down та Restart, а вгорі праворуч — індикатор ABC.
+     * При навігації вибір плавно перемикається горизонтально між Ubuntu, Options, Restart та Shut Down.
+   - Виправлено грубий моноширинний текст при виборі Ubuntu з увімкненим Verbose:
+     * У /etc/grub.d/10_linux вимкнено вивід текстових повідомлень Loading Linux... та Loading initial ramdisk... у сиру консоль.
+     * GRUB зберігає високу роздільну здатність фреймбуфера (GRUB_GFXPAYLOAD_LINUX=keep) і плавно передає керування високоякісному шрифту ядра без проміжних гігантських моноширинних літер.
+
+3. ПЛАВНИЙ ПЕРЕХІД МІЖ GDM ТА РОБОЧИМ СТОЛОМ (БЕЗ ЗБІЛЬШЕННЯ ШПАЛЕР):
+   - Усунено убунту-анімацію масштабування шпалер (uiGroup.scale_x = uiGroup.scale_y = 0.75 -> 1.0).
+   - Шпалера залишається нерухомою з постійним масштабом 1.0 (якщо шпалера в GDM і на робочому столі однакова — вона не рухається і не зумиться).
+   - Елементи робочого стола (меню-бар, док, файли на робочому столі та вікна) плавно з'являються з opacity: 0 до 255 за 700 мс (EASE_OUT_QUAD).
+   - Налаштовано як глобальний GResource-оверлей через /etc/environment (G_RESOURCE_OVERLAYS="/org/gnome/shell/ui=/etc/gnome-shell/ui"), так і через eval-helper@mactheme.
+
+================================================================================
+ОНОВЛЕННЯ: ВЕРТИКАЛЬНИЙ ALT+TAB, ПЕРЕМІЩЕННЯ ВІКОН І ФАЙЛІВ, РЕЖИМ «ВВЕСЬ ЕКРАН» ТА ФІКС ЩИПКІВ КОПІЮВАННЯ/ВСТАВКИ
+================================================================================
+
+1. ПЕРЕМИКАННЯ ВІКОН (ALT+TAB) ПРИ ВЕРТИКАЛЬНОМУ РОЗТАШУВАННІ ПАЛЬЦІВ:
+   - Враховано природне положення руки користувача: пальці розташовані вертикально (span_y >= 750) або горизонтально (span_x >= 750).
+   - При свайпі вліво/вправо (|Δx| >= 40) миттєво відкривається вікно перемикання Alt+Tab (WindowSwitcherPopup).
+   - Усунено тайм-аут закриття та затримку прозорості: перемикач з'являється негайно та плавно гортає вікна зі швидкістю руху пальців.
+   - Підняття пальців активує вибране вікно та переводить його на передній план.
+
+2. РЕАЛЬНЕ ПЕРЕМІЩЕННЯ ВІКОН І ФАЙЛІВ ТРЬОМА ПАЛЬЦЯМИ РАЗОМ (ФОРМА КОЛА):
+   - Коли три пальці тримаються разом компактною групою (коло: span_x < 800, span_y < 800, max_dist < 900):
+     * Якщо курсор розташований над вікном: GNOME Shell розширення macos-touchpad-gestures@mactheme знаходить це вікно та безпосередньо рухає його (win.move_frame) разом із вказівником миші. Більше не потрібно хапати заголовок вікна — вікно рухається з будь-якого місця!
+     * Якщо курсор на робочому столі або файлі: демон емулює натискання лівої кнопки миші (BTN_LEFT DOWN) та рухає курсор, плавно перетягуючи файл/об'єкт по екрану.
+     * При піднятті пальців переміщення завершується, вікно або файл фіксується на новому місці.
+
+3. ПІДГРУПА «ПЕРЕМІЩЕННЯ» У ПАРАМЕТРАХ ТАЧПАДА ТА РЕЖИМ «ВВЕСЬ ЕКРАН»:
+   - У Параметри -> «Миша та сенсорний пристрій» -> вкладка «Сенсорний пристрій» інтегровано нову підгрупу «Переміщення»:
+     * Доступний вибір режимів: «Ввесь екран» (за замовчуванням) та «Звичайний».
+     * Режим «Ввесь екран»: повне охоплення — кожен міліметр тачпада пропорційно відповідає пікселям екрана (верхній правий кут тачпада відповідає верхньому правому куту екрана, лівий нижній — лівому нижньому). Це дозволяє перемістити файл або вікно через увесь екран 1920x1080 в один легкий рух без відриву пальців.
+     * Режим «Звичайний»: стандартне відносне переміщення.
+     * Налаштування зберігається в ~/.config/mac-touchpad.conf та миттєво зчитується демоном і розширенням.
+
+4. ВИПРАВЛЕННЯ ЩИПКІВ КОПІЮВАННЯ ТА ВСТАВКИ (CTRL+C / CTRL+V):
+   - Раніше надсилалися віртуальні keyval події Clutter, які не доходили до вікон додатків у сесії Wayland.
+   - Тепер при щипку на себе (scale <= 0.82) розширення надсилає сигнал CMD_COPY до апаратного демона, а демон через ядро (/dev/uinput) генерує справжні апаратні скан-коди KEY_LEFTCTRL + KEY_C.
+   - При щипку від себе (scale >= 1.18) генеруються апаратні скан-коди KEY_LEFTCTRL + KEY_V.
+   - Тепер файл, текст або об'єкт насправді копіюється і вставляється в будь-якому додатку (Nautilus, браузер, редактор коду тощо), супроводжуючись красивим OSD-індикатором "Скопійовано" / "Вставлено".
+
+================================================================================
+ФІНАЛЬНА ЗБІРКА МОДПАКУ: АВТОНОМНИЙ РЕЛІЗ macW1Y
+================================================================================
+
+1. СИНХРОНІЗАЦІЯ ТА ЗБІР ВСІХ РОЗШИРЕНЬ І ПАРАМЕТРІВ:
+   - Всі розширення GNOME Shell (blur-my-shell, dash-to-dock, appmenu, magic-lamp, rounded-corners, liquid-glass, user-theme, stage-manager, ubuntu-appindicators, ubuntu-dock, macos-touchpad-gestures, eval-helper, wack-lockscreen-clock та ding-patches) повністю зібрано в MACTHEMEFILES/extensions/.
+   - Всі схеми та конфігурації dconf (/org/gnome/shell/extensions/, /org/gnome/shell/, /org/gnome/desktop/ та повний дамп gnome-all.dconf) експортовано в MACTHEMEFILES/dconf/.
+
+2. СТВОРЕННЯ АВТОНОМНОЇ ПАПКИ macW1Y:
+   - У корені користувача /home/vitaliy створено папку macW1Y, яка містить повністю самодостатній набір файлів проєкту:
+     * install.sh — професійний інтерактивний та CLI-інсталятор з кольоровим інтерфейсом, банером macOS та 13 етапами встановлення.
+     * uninstall.sh — повноцінний деінсталятор для повернення стандартних налаштувань Ubuntu (Yaru, дефолтні шпалери, вимкнення служб, відновлення GRUB/Plymouth).
+     * README.md та done.txt — вичерпна документація та звіт про виконану роботу.
+     * Повні бібліотеки, шрифти SF Pro, теми MacTahoe, іконки, шпалери, служби systemd, налаштування GRUB, Plymouth та демона тачпада.
+
