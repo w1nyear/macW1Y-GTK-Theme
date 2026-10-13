@@ -3,7 +3,6 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![GNOME](https://img.shields.io/badge/GNOME-46%20Wayland-4a86cf?style=for-the-badge&logo=gnome&logoColor=white)](https://www.gnome.org/)
 [![macOS](https://img.shields.io/badge/macOS-Sequoia%20%2F%20Tahoe-000000?style=for-the-badge&logo=apple&logoColor=white)](https://apple.com)
-[![Release](https://img.shields.io/badge/Release-macW1Y%20v1.0-brightgreen?style=for-the-badge)](#)
 
 <p align="center">
   <video src="screen.webm" width="100%" controls autoplay loop muted playsinline>
