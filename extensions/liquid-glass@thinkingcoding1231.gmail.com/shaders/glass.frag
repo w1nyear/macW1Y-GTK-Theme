@@ -194,16 +194,18 @@ void findActiveRegion(vec2 pixel_coord, float pad, out vec2 outLocalPos, out vec
         // Picking the region needs no continuous corners; main() measures the
         // chosen one with them.
         float r_eff = corner_radius;
-        if (abs(rBox.x - rBox.y) <= 4.0 && min(rBox.x, rBox.y) <= 40.0) {
+        if (isDock > 0.5 && corner_radius > 0.0) {
+            r_eff = min(corner_radius, min(rBox.x, rBox.y));
+        } else if (abs(rBox.x - rBox.y) <= 4.0 && min(rBox.x, rBox.y) <= 40.0) {
             r_eff = min(rBox.x, rBox.y);
         } else if (abs(rBox.x - 91.0) <= 20.0 && abs(rBox.y - 76.0) <= 20.0) {
             r_eff = 35.0;
         } else if (rBox.x < 130.0 && abs(min(rBox.x, rBox.y) - 35.0) <= 6.0) {
             r_eff = 35.0;
         } else if (rBox.x >= 130.0 && abs(min(rBox.x, rBox.y) - 35.0) <= 6.0) {
-            r_eff = 25.0;
+            r_eff = (corner_radius > 0.0) ? min(corner_radius, min(rBox.x, rBox.y)) : 25.0;
         } else if (min(rBox.x, rBox.y) > 30.0) {
-            r_eff = 25.0;
+            r_eff = (corner_radius > 0.0) ? min(corner_radius, min(rBox.x, rBox.y)) : 25.0;
         }
         float d = sdCircleRoundRect(rLocal, rBox, r_eff);
         if (d < bestD) {
@@ -537,18 +539,20 @@ void main() {
     if (isDock > 0.5) {
         corner = vec2(min(corner_radius, min(box_size.x, box_size.y)), 2.0);
     } else if (multi_region_mode > 0.5) {
-        if (abs(box_size.x - box_size.y) <= 4.0 && min(box_size.x, box_size.y) <= 40.0) {
+        if (corner_radius > 0.0 && min(box_size.x, box_size.y) > 30.0) {
+            corner = vec2(min(corner_radius, min(box_size.x, box_size.y)), 2.0);
+        } else if (abs(box_size.x - box_size.y) <= 4.0 && min(box_size.x, box_size.y) <= 40.0) {
             corner = vec2(min(box_size.x, box_size.y), 2.0);
         } else if (abs(box_size.x - 91.0) <= 20.0 && abs(box_size.y - 76.0) <= 20.0) {
             corner = vec2(35.0, 2.0);
         } else if (box_size.x < 130.0 && abs(min(box_size.x, box_size.y) - 35.0) <= 6.0) {
             corner = vec2(35.0, 2.0);
         } else if (box_size.x >= 130.0 && abs(min(box_size.x, box_size.y) - 35.0) <= 6.0) {
-            corner = vec2(25.0, 2.0);
+            corner = vec2((corner_radius > 0.0) ? min(corner_radius, min(box_size.x, box_size.y)) : 25.0, 2.0);
         } else if (min(box_size.x, box_size.y) > 30.0) {
-            corner = vec2(25.0, 2.0);
+            corner = vec2((corner_radius > 0.0) ? min(corner_radius, min(box_size.x, box_size.y)) : 25.0, 2.0);
         } else {
-            corner = cornerShape(box_size, 25.0);
+            corner = cornerShape(box_size, (corner_radius > 0.0) ? corner_radius : 25.0);
         }
     } else {
         corner = cornerShape(box_size, corner_radius);

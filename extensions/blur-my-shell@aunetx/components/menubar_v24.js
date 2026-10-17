@@ -2090,6 +2090,7 @@ export const MenuBarController = class MenuBarController {
         this._notifCenterActor = null;
         this._notifCenterLabel = null;
         this._notifCenterOpen = false;
+        this._isNotifCenterClosing = false;
         this._notifOutsideClickId = null;
         this._notifEscapeKeyId = null;
         this._macInputSwitcher = null;
@@ -2283,8 +2284,8 @@ export const MenuBarController = class MenuBarController {
             this._updateDockRealtime(dTint, dRad);
 
             // 3. Notification tint and radius
-            const nTint = (typeof data.notif_tint === 'number') ? data.notif_tint : 0.10;
-            const nRad = (typeof data.notif_radius === 'number') ? data.notif_radius : 18;
+            const nTint = (typeof data.notif_tint === 'number') ? data.notif_tint : 0.15;
+            const nRad = (typeof data.notif_radius === 'number') ? data.notif_radius : 24;
             this._updateNotifRealtime(nTint, nRad);
 
             // 4. Popup menus tint
@@ -2410,7 +2411,7 @@ export const MenuBarController = class MenuBarController {
         }
     }
 
-    _updateNotifRealtime(tint, radius = 24) {
+    _updateNotifRealtime(tint = 0.15, radius = 24) {
         try {
             const style = `background-color: transparent !important; background: transparent !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; box-shadow: none !important;`;
             const found = [];
@@ -2432,7 +2433,7 @@ export const MenuBarController = class MenuBarController {
                 banner.set_style(style);
             }
             if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
-                this._notifGlass.setTintStrength(typeof tint === 'number' ? tint : 0.05);
+                this._notifGlass.setTintStrength(typeof tint === 'number' ? tint : 0.15);
                 this._notifGlass.setCornerRadius(radius);
             }
         } catch (e) {
@@ -3642,6 +3643,26 @@ export const MenuBarController = class MenuBarController {
             x_align: Clutter.ActorAlign.END,
             visible: false,
         });
+        try {
+            let BlurModule = null;
+            try {
+                BlurModule = globalThis.imports?.gi?.Blur;
+            } catch (_) {}
+            if (BlurModule?.BlurEffect) {
+                clearBtn.add_effect(new BlurModule.BlurEffect({
+                    mode: BlurModule.BlurMode?.BACKGROUND ?? 1,
+                    radius: 3,
+                    corner_radius: 9999,
+                }));
+            } else {
+                clearBtn.add_effect(new Shell.BlurEffect({
+                    mode: Shell.BlurMode.BACKGROUND,
+                    radius: 3,
+                }));
+            }
+        } catch (e) {
+            console.warn(`[MenuBarController] Error adding blur to clearBtn: ${e}`);
+        }
         clearBtn.connect('clicked', () => {
             this._clearAllNotifications();
         });
@@ -3720,7 +3741,7 @@ export const MenuBarController = class MenuBarController {
         Main.layoutManager.uiGroup.add_child(container);
 
         container.connect('notify::translation-x', () => {
-            if (this._notifCenterOpen) this._syncNotifGlassRegions();
+            if (this._notifCenterOpen || this._isNotifCenterClosing) this._syncNotifGlassRegions();
         });
         container.connect('notify::opacity', () => {
             if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
@@ -3729,7 +3750,7 @@ export const MenuBarController = class MenuBarController {
         });
         if (scrollView?.vadjustment) {
             scrollView.vadjustment.connect('notify::value', () => {
-                if (this._notifCenterOpen) this._syncNotifGlassRegions();
+                if (this._notifCenterOpen || this._isNotifCenterClosing) this._syncNotifGlassRegions();
             });
         }
 
@@ -3772,7 +3793,7 @@ export const MenuBarController = class MenuBarController {
             this._notifGlass.setMultiRegionMode(true);
             this._notifGlass.setCornerRadius(24.0);
             this._notifGlass.setBlurRadius(3.0);
-            this._notifGlass.setTintStrength(0.05);
+            this._notifGlass.setTintStrength(0.15);
             this._notifGlass.setTintColor(0.0, 0.0, 0.0);
             this._notifGlass.setBrightness(1.0);
             this._notifGlass.setSaturation(1.0);
@@ -3794,7 +3815,7 @@ export const MenuBarController = class MenuBarController {
     }
 
     _syncNotifGlassRegions() {
-        if (!this._notifGlass || this._notifGlass.is_finalized?.() || !this._notifCenterOpen) {
+        if (!this._notifGlass || this._notifGlass.is_finalized?.() || (!this._notifCenterOpen && !this._isNotifCenterClosing)) {
             if (this._notifGlass && !this._notifGlass.is_finalized?.() && this._notifGlass.visible)
                 this._notifGlass.hide();
             return;
@@ -3835,10 +3856,10 @@ export const MenuBarController = class MenuBarController {
                 y: visibleTop - monitor.y,
                 w: cardW,
                 h: visibleH,
-                tintR: 0.0,
-                tintG: 0.0,
-                tintB: 0.0,
-                baseStrength: 0.05,
+                tintR: 0.05,
+                tintG: 0.05,
+                tintB: 0.06,
+                baseStrength: 0.15,
             });
         }
 
@@ -3868,19 +3889,19 @@ export const MenuBarController = class MenuBarController {
         if (!card || card._geoTrackConnected) return;
         card._geoTrackConnected = true;
         card.connect('notify::height', () => {
-            if (this._notifCenterOpen && !this._isCardAnimating) {
+            if ((this._notifCenterOpen || this._isNotifCenterClosing) && !this._isCardAnimating) {
                 this._updateNotificationCenterGeometry();
                 this._syncNotifGlassRegions();
             }
         });
         card.connect('notify::translation-x', () => {
-            if (this._notifCenterOpen) this._syncNotifGlassRegions();
+            if (this._notifCenterOpen || this._isNotifCenterClosing) this._syncNotifGlassRegions();
         });
         card.connect('notify::translation-y', () => {
-            if (this._notifCenterOpen) this._syncNotifGlassRegions();
+            if (this._notifCenterOpen || this._isNotifCenterClosing) this._syncNotifGlassRegions();
         });
         card.connect('notify::opacity', () => {
-            if (this._notifCenterOpen) this._syncNotifGlassRegions();
+            if (this._notifCenterOpen || this._isNotifCenterClosing) this._syncNotifGlassRegions();
         });
     }
 
@@ -4351,6 +4372,7 @@ export const MenuBarController = class MenuBarController {
         const container = this._createNotificationCenterActor();
         if (!container) return;
 
+        this._isNotifCenterClosing = false;
         this._notifCenterOpen = true;
 
         const reservedCards = this._populateNotificationCards(activeBanners);
@@ -4439,6 +4461,7 @@ export const MenuBarController = class MenuBarController {
         if (!this._notifCenterActor || !this._notifCenterOpen) return;
 
         this._notifCenterOpen = false;
+        this._isNotifCenterClosing = true;
         this._lastCenterW = null;
         this._lastCenterH = null;
         this._lastBlurW = null;
@@ -4457,10 +4480,13 @@ export const MenuBarController = class MenuBarController {
             duration: 260,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
             onComplete: () => {
+                this._isNotifCenterClosing = false;
                 if (!this._notifCenterOpen) {
                     container.hide();
                     container.translation_x = 0;
-                    if (this._notifGlass) this._notifGlass.hide();
+                    if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
+                        this._notifGlass.hide();
+                    }
                 }
             },
         });
