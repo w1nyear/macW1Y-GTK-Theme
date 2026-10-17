@@ -15,6 +15,7 @@ import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
 import { getMixerControl } from 'resource:///org/gnome/shell/ui/status/volume.js';
 import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 import { buildNotificationCard } from './notifications.js';
+import { MacControlCenter } from './control_center_v4.js';
 
 const CC_PNG_PATH = '/home/vitaliy/.themes/MacTahoe-Dark/icons/control-center.png';
 const _UID = Math.floor(Math.random() * 100000000);
@@ -1570,6 +1571,9 @@ function sanitizeQuickSettings(qs) {
     try {
         const grid = qs.menu?._grid;
         if (grid) {
+            grid.visible = false;
+            grid.hide();
+            grid.style = 'margin: 0 !important; padding: 0 !important; width: 0px !important; min-width: 0px !important; height: 0px !important; min-height: 0px !important;';
             for (const child of grid.get_children()) {
                 if (!child) continue;
                 try {
@@ -1829,7 +1833,7 @@ export const MenuBarController = class MenuBarController {
 
     _updatePopupRealtime(tint) {
         try {
-            const style = `background-color: rgba(36, 36, 36, ${tint.toFixed(2)}) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important; border-radius: 28px !important;`;
+            const style = `background-color: transparent !important; background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important; border-radius: 24px !important;`;
             const found = [];
             const walk = (actor) => {
                 if (!actor) return;
@@ -2075,6 +2079,7 @@ export const MenuBarController = class MenuBarController {
         }
 
         this.enabled = true;
+        globalThis._macNotificationCenter = this;
 
         // Setup real-time styling monitor
         this._setupStylingMonitor();
@@ -2275,7 +2280,42 @@ export const MenuBarController = class MenuBarController {
             });
         }
 
-        // Right-align Control Center menu flush to top-right corner and install smooth animation
+        // Setup macOS Tahoe Control Center inside quickSettings.menu
+        if (quickSettings.menu?.box) {
+            // Clean up any pre-existing or duplicate mac-control-center-root or toggle host actors
+            const toRemove = [];
+            for (const child of quickSettings.menu.box.get_children()) {
+                if (child.has_style_class_name && child.has_style_class_name('mac-control-center-root')) {
+                    toRemove.push(child);
+                } else if (child.name === 'liquid-glass-toggle-host') {
+                    toRemove.push(child);
+                }
+            }
+            for (const c of toRemove) {
+                quickSettings.menu.box.remove_child(c);
+                try { c.destroy(); } catch (_) {}
+            }
+            if (this._macControlCenter) {
+                try { this._macControlCenter.destroy(); } catch (_) {}
+                this._macControlCenter = null;
+            }
+
+            try {
+                this._macControlCenter = new MacControlCenter(quickSettings.menu);
+                if (quickSettings.menu._grid) {
+                    quickSettings.menu._grid.visible = false;
+                    quickSettings.menu._grid.hide();
+                    quickSettings.menu._grid.style = 'margin: 0 !important; padding: 0 !important; width: 0px !important; min-width: 0px !important; height: 0px !important; min-height: 0px !important; opacity: 0 !important;';
+                }
+                quickSettings.menu.box.insert_child_at_index(this._macControlCenter.container, 0);
+                this._macControlCenter.container.visible = true;
+                this._macControlCenter.container.show();
+            } catch (e) {
+                console.error(`[MenuBar] Error initializing MacControlCenter: ${e}`);
+            }
+        }
+
+        // Right-align Control Center menu flush to top-right corner and install smooth slide-in animation
         if (quickSettings.menu?._boxPointer) {
             const bp = quickSettings.menu._boxPointer;
             bp._arrowAlignment = 1.0;
@@ -2291,8 +2331,8 @@ export const MenuBarController = class MenuBarController {
                 if (monitor && allocationBox) {
                     try {
                         const [, natWidth] = this.get_preferred_width(-1);
-                        const w = Math.max(natWidth || 0, this.width || 0, 420);
-                        const targetX = monitor.x + monitor.width - w - 8;
+                        const w = Math.max(natWidth || 0, this.width || 0, 404);
+                        const targetX = monitor.x + monitor.width - w - 12;
                         const curOrigin = allocationBox.get_origin();
                         allocationBox.set_origin(Math.floor(targetX), Math.floor(curOrigin[1]));
                     } catch (_e) {}
@@ -2302,19 +2342,32 @@ export const MenuBarController = class MenuBarController {
             const self = this;
 
             this.connections.connect(quickSettings.menu, 'open-state-changed', (_m, open) => {
+                if (open) {
+                    if (self._macControlCenter) {
+                        self._macControlCenter.syncAll();
+                        if (self._macControlCenter._currentSubmenu) {
+                            self._macControlCenter.closeSubmenu();
+                        }
+                    }
+                    if (quickSettings.menu._grid) {
+                        quickSettings.menu._grid.visible = false;
+                        quickSettings.menu._grid.hide();
+                    }
+                }
                 if (open && bp) {
                     sanitizeQuickSettings(quickSettings);
                     const monitor = Main.layoutManager.primaryMonitor;
                     if (monitor) {
                         const [, natWidth] = bp.get_preferred_width(-1);
-                        const w = Math.max(natWidth || 0, bp.width || 0, 420);
-                        bp.x = monitor.x + monitor.width - w - 8;
+                        const w = Math.max(natWidth || 0, bp.width || 0, 404);
+                        bp.x = monitor.x + monitor.width - w - 12;
                         bp.y = monitor.y + 36;
                     }
                 }
                 self._removeStrayCcBlur(bp);
             });
 
+            // Smooth Slide-in from Right Side Animation
             bp.open = function(animate, onComplete) {
                 sanitizeQuickSettings(quickSettings);
                 const isAnimated = (animate !== false && animate !== 0);
@@ -2324,8 +2377,8 @@ export const MenuBarController = class MenuBarController {
                 const monitor = Main.layoutManager.primaryMonitor;
                 if (monitor) {
                     const [, natWidth] = bp.get_preferred_width(-1);
-                    const w = Math.max(natWidth || 0, bp.width || 0, 420);
-                    bp.x = monitor.x + monitor.width - w - 8;
+                    const w = Math.max(natWidth || 0, bp.width || 0, 404);
+                    bp.x = monitor.x + monitor.width - w - 12;
                     bp.y = monitor.y + 36;
                 }
 
@@ -2346,11 +2399,11 @@ export const MenuBarController = class MenuBarController {
                     surfaceActor.opacity = 255;
                 }
                 if (surfaceActor && surfaceActor !== bp) {
-                    surfaceActor.translation_x = 240;
+                    surfaceActor.translation_x = 320;
                     surfaceActor.remove_all_transitions();
                     surfaceActor.ease({
                         translation_x: 0,
-                        duration: 250,
+                        duration: 280,
                         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                     });
                 }
@@ -2362,13 +2415,13 @@ export const MenuBarController = class MenuBarController {
                     return;
                 }
 
-                bp.translation_x = 240;
+                bp.translation_x = 320;
                 bp.opacity = 0;
                 bp.remove_all_transitions();
                 bp.ease({
                     translation_x: 0,
                     opacity: 255,
-                    duration: 250,
+                    duration: 280,
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                     onComplete: () => {
                         bp.translation_x = 0;
@@ -2378,6 +2431,7 @@ export const MenuBarController = class MenuBarController {
                 });
             };
 
+            // Smooth Slide-out to Right Side Animation
             bp.close = function(animate, onComplete) {
                 if (!bp.visible) {
                     onComplete?.();
@@ -2395,13 +2449,13 @@ export const MenuBarController = class MenuBarController {
 
                 if (!isAnimated) {
                     bp.opacity = 0;
-                    bp.translation_x = 240;
+                    bp.translation_x = 320;
                     if (surface) {
                         surface.update_surface_opacity(0);
                         surface.hide_actors();
                     } else if (surfaceActor) {
                         surfaceActor.opacity = 0;
-                        surfaceActor.translation_x = 240;
+                        surfaceActor.translation_x = 320;
                         surfaceActor.hide();
                     }
                     bp.hide();
@@ -2412,8 +2466,8 @@ export const MenuBarController = class MenuBarController {
                 if (surfaceActor && surfaceActor !== bp) {
                     surfaceActor.remove_all_transitions();
                     surfaceActor.ease({
-                        translation_x: 240,
-                        duration: 200,
+                        translation_x: 320,
+                        duration: 220,
                         mode: Clutter.AnimationMode.EASE_IN_CUBIC,
                         onComplete: () => {
                             if (surface) surface.update_surface_opacity(0);
@@ -2424,9 +2478,9 @@ export const MenuBarController = class MenuBarController {
 
                 bp.remove_all_transitions();
                 bp.ease({
-                    translation_x: 240,
+                    translation_x: 320,
                     opacity: 0,
-                    duration: 200,
+                    duration: 220,
                     mode: Clutter.AnimationMode.EASE_IN_CUBIC,
                     onComplete: () => {
                         bp.hide();
@@ -2481,20 +2535,15 @@ export const MenuBarController = class MenuBarController {
             });
         }
 
-        // Mutual exclusion & hover switching between Control Center (QuickSettings) and Notification Center
+        // Mutual exclusion: opening one closes the other.
+        // Hover switching between Control Center (QuickSettings) and Notification Center is strictly DISABLED.
+        // Switching is only permitted upon click.
         const qs = Main.panel?.statusArea?.quickSettings;
         if (qs) {
             if (this._qsHoverSwitchId) {
                 try { qs.disconnect(this._qsHoverSwitchId); } catch (_) {}
+                this._qsHoverSwitchId = null;
             }
-            this._qsHoverSwitchId = qs.connect('notify::hover', () => {
-                if (qs.hover && this._notifCenterOpen) {
-                    this._closeNotificationCenter();
-                    if (qs.menu && !qs.menu.isOpen) {
-                        qs.menu.open();
-                    }
-                }
-            });
 
             if (qs.menu && !qs.menu._macNotifCloseConn) {
                 qs.menu._macNotifCloseConn = qs.menu.connect('open-state-changed', (_m, open) => {
@@ -2507,26 +2556,30 @@ export const MenuBarController = class MenuBarController {
 
         if (this._dmHoverSwitchId) {
             try { dateMenu.disconnect(this._dmHoverSwitchId); } catch (_) {}
+            this._dmHoverSwitchId = null;
         }
-        this._dmHoverSwitchId = dateMenu.connect('notify::hover', () => {
-            const qsMenu = Main.panel?.statusArea?.quickSettings?.menu;
-            if (dateMenu.hover && qsMenu?.isOpen) {
-                qsMenu.close();
-                this._openNotificationCenter();
-            }
-        });
 
         if (container && container !== dateMenu) {
             if (this._dmContainerHoverSwitchId) {
                 try { container.disconnect(this._dmContainerHoverSwitchId); } catch (_) {}
+                this._dmContainerHoverSwitchId = null;
             }
-            this._dmContainerHoverSwitchId = container.connect('notify::hover', () => {
+        }
+
+        // Prevent GNOME Shell PopupMenuManager from hover-switching strictly between QuickSettings and DateMenu
+        if (Main.panel?.menuManager && !Main.panel.menuManager._macOrigChangeMenu) {
+            Main.panel.menuManager._macOrigChangeMenu = Main.panel.menuManager._changeMenu;
+            Main.panel.menuManager._changeMenu = function(newMenu) {
+                const active = this.activeMenu;
                 const qsMenu = Main.panel?.statusArea?.quickSettings?.menu;
-                if (container.hover && qsMenu?.isOpen) {
-                    qsMenu.close();
-                    this._openNotificationCenter();
+                const dmMenu = Main.panel?.statusArea?.dateMenu?.menu;
+
+                if ((active === qsMenu && newMenu === dmMenu) || (active === dmMenu && newMenu === qsMenu)) {
+                    return;
                 }
-            });
+
+                return this._macOrigChangeMenu(newMenu);
+            };
         }
 
         const menu = dateMenu.menu;
@@ -2551,6 +2604,9 @@ export const MenuBarController = class MenuBarController {
 
             Object.defineProperty(menu, 'isOpen', {
                 get: () => this._notifCenterOpen,
+                set: (val) => {
+                    this._notifCenterOpen = !!val;
+                },
                 configurable: true,
             });
 
@@ -2584,15 +2640,33 @@ export const MenuBarController = class MenuBarController {
         const monitor = Main.layoutManager.primaryMonitor;
         const availableHeight = monitor ? monitor.height - 70 : 800;
 
-        const container = new St.BoxLayout({
+        const container = new St.Widget({
             name: 'macNotificationCenterRoot',
             style_class: 'mac-notif-center-root',
+            layout_manager: new Clutter.BinLayout(),
             style: 'background-color: transparent !important; background: transparent !important; box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 460px !important;',
-            orientation: Clutter.Orientation.VERTICAL,
             reactive: true,
             can_focus: false,
             visible: false,
         });
+
+        // 1. Background gradient blur (10px fade on all 4 edges, dynamic height)
+        const bgContainer = new St.Widget({
+            name: 'macNotificationCenterGradientBlurBg',
+            style_class: 'mac-notif-center-bg',
+            reactive: false,
+        });
+        container.add_child(bgContainer);
+
+        // 2. Foreground content box
+        const contentBox = new St.BoxLayout({
+            name: 'macNotificationCenterContentBox',
+            orientation: Clutter.Orientation.VERTICAL,
+            x_expand: true,
+            y_expand: false,
+            reactive: true,
+        });
+        container.add_child(contentBox);
 
         // Top Header Row
         const headerBox = new St.BoxLayout({
@@ -2606,7 +2680,7 @@ export const MenuBarController = class MenuBarController {
         const label = new St.Label({
             text: 'Центр повідомлень',
             style_class: 'mac-notif-center-title',
-            style: 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 20px !important; font-weight: 700 !important; color: #ffffff !important; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7) !important; background: transparent !important; margin: 0 !important; padding: 0 !important;',
+            style: 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 20px !important; font-weight: 700 !important; color: #ffffff !important; text-shadow: 0 0 14px rgba(255, 255, 255, 0.55), 0 0 24px rgba(0, 0, 0, 0.8), 0 2px 12px rgba(0, 0, 0, 0.9) !important; background: transparent !important; margin: 0 !important; padding: 0 !important;',
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
         });
@@ -2625,33 +2699,34 @@ export const MenuBarController = class MenuBarController {
             this._clearAllNotifications();
         });
         headerBox.add_child(clearBtn);
-        container.add_child(headerBox);
+        contentBox.add_child(headerBox);
 
         // Scrollable list wrapper with edge darkening gradients
         const scrollWrapper = new St.Widget({
             name: 'macNotificationCenterScrollWrapper',
             layout_manager: new Clutter.BinLayout(),
             x_expand: true,
-            y_expand: true,
+            y_expand: false,
             clip_to_allocation: true,
-        });
-
-        // Scrollable list of cards (without visible scrollbars)
-        const scrollView = new St.ScrollView({
-            style_class: 'mac-notif-center-scroll',
-            style: `background: transparent !important; border: none !important; padding: 0 !important; max-height: ${availableHeight}px !important;`,
-            hscrollbar_policy: St.PolicyType.NEVER,
-            vscrollbar_policy: St.PolicyType.NEVER,
-            x_expand: true,
-            y_expand: true,
         });
 
         const cardsBox = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
             style: 'spacing: 10px; padding: 0 6px 16px 6px; background: transparent !important;',
             x_expand: true,
+            y_expand: false,
         });
-        scrollView.add_child(cardsBox);
+
+        // Scrollable list of cards (without visible scrollbars)
+        const scrollView = new St.ScrollView({
+            style_class: 'mac-notif-center-scroll',
+            style: `background: transparent !important; border: none !important; padding: 0 !important; max-height: ${availableHeight - 65}px !important;`,
+            hscrollbar_policy: St.PolicyType.NEVER,
+            vscrollbar_policy: St.PolicyType.NEVER,
+            x_expand: true,
+            y_expand: false,
+        });
+        scrollView.set_child(cardsBox);
         scrollWrapper.add_child(scrollView);
 
         // Top vignette darkening overlay (smooth fade when overflow at top)
@@ -2680,7 +2755,7 @@ export const MenuBarController = class MenuBarController {
 
         scrollWrapper.add_child(topFade);
         scrollWrapper.add_child(bottomFade);
-        container.add_child(scrollWrapper);
+        contentBox.add_child(scrollWrapper);
 
         const updateFades = () => {
             const vAdj = scrollView.vadjustment;
@@ -2712,19 +2787,23 @@ export const MenuBarController = class MenuBarController {
         scrollView.vadjustment.connect('notify::value', updateFades);
         scrollView.vadjustment.connect('changed', updateFades);
 
-        // Empty state label
+        // Empty state label with soft diffuse text blur
         const emptyLabel = new St.Label({
             text: 'Немає нових повідомлень',
-            style: 'font-family: "SF Pro Text", -apple-system, sans-serif !important; font-size: 13.5px !important; color: rgba(255, 255, 255, 0.45) !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important; text-align: center; padding: 30px 10px !important; margin: 0 !important;',
+            style_class: 'mac-notif-empty-label',
+            style: 'font-family: "SF Pro Text", -apple-system, sans-serif !important; font-size: 14px !important; color: rgba(255, 255, 255, 0.6) !important; text-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 0 18px rgba(0, 0, 0, 0.85), 0 2px 10px rgba(0, 0, 0, 0.7) !important; text-align: center; padding: 36px 10px !important; margin: 0 !important;',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
             visible: false,
         });
-        container.add_child(emptyLabel);
+        contentBox.add_child(emptyLabel);
 
         Main.layoutManager.uiGroup.add_child(container);
 
         this._notifCenterActor = container;
+        this._notifCenterBg = bgContainer;
+        this._notifContentBox = contentBox;
+        this._notifHeaderBox = headerBox;
         this._notifCenterLabel = label;
         this._notifClearBtn = clearBtn;
         this._notifScrollWrapper = scrollWrapper;
@@ -2738,6 +2817,10 @@ export const MenuBarController = class MenuBarController {
         return container;
     }
 
+    get isOpen() {
+        return !!this._notifCenterOpen;
+    }
+
     _toggleNotificationCenter() {
         if (this._notifCenterOpen) {
             this._closeNotificationCenter();
@@ -2746,30 +2829,46 @@ export const MenuBarController = class MenuBarController {
         }
     }
 
-    _populateNotificationCards() {
-        if (!this._notifCardsBox) return;
+    _populateNotificationCards(activeBanners = []) {
+        if (!this._notifCardsBox) return [];
 
         this._notifCardsBox.destroy_all_children();
 
         const sources = Main.messageTray ? Main.messageTray.getSources() : [];
         const allItems = [];
 
+        // Track notifications from active banners
+        const activeNotifs = new Set(activeBanners.map(b => b.notification));
+
+        // 1. Place all active floating banners at the very front of the list (newest)
+        for (const b of activeBanners) {
+            allItems.push({ source: b.source, notification: b.notification, activeBanner: b });
+        }
+
+        // 2. Add existing notifications from tray sources (avoiding duplicates)
         for (const source of sources) {
             for (const notification of (source.notifications || [])) {
-                allItems.push({ source, notification });
+                if (!activeNotifs.has(notification)) {
+                    allItems.push({ source, notification });
+                }
             }
         }
 
-        // Newest first
-        allItems.sort((a, b) => {
+        // Sort regular items by time (newest first)
+        const regularItems = allItems.slice(activeBanners.length);
+        regularItems.sort((a, b) => {
             const timeA = a.notification.datetime?.to_unix ? a.notification.datetime.to_unix() : 0;
             const timeB = b.notification.datetime?.to_unix ? b.notification.datetime.to_unix() : 0;
             return timeB - timeA;
         });
 
-        for (const item of allItems) {
-            const { source, notification } = item;
-            const cardData = buildNotificationCard(source, notification, {
+        const sortedItems = [...allItems.slice(0, activeBanners.length), ...regularItems];
+        const reservedCards = [];
+
+        for (const item of sortedItems) {
+            const { source, notification, activeBanner } = item;
+            const builder = globalThis._macBuildNotificationCard || buildNotificationCard;
+            const cardData = builder(source, notification, {
                 sigma: 30,
                 isBanner: false,
                 onClose: (data) => {
@@ -2786,6 +2885,7 @@ export const MenuBarController = class MenuBarController {
                             card.destroy();
                             try { notification.destroy(2); } catch (_) {}
                             this._updateEmptyState(this._notifCardsBox.get_children().length);
+                            this._updateNotificationCenterGeometry();
                         },
                     });
                 },
@@ -2795,15 +2895,216 @@ export const MenuBarController = class MenuBarController {
                 },
             });
 
+            cardData.banner._notification = notification;
+            cardData.banner._titleLabel = cardData.titleLabel;
+            cardData.banner._bodyLabel = cardData.bodyLabel;
+
+            if (activeBanner) {
+                // Reserve space: card is fully laid out in the list to reserve its slot, initially transparent
+                cardData.banner.opacity = 0;
+                reservedCards.push({ card: cardData.banner, activeBanner });
+            }
+
             this._notifCardsBox.add_child(cardData.banner);
         }
 
-        this._updateEmptyState(allItems.length);
+        this._updateEmptyState(sortedItems.length);
+        this._updateNotificationCenterGeometry();
         if (this._updateNotifFades) {
             GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
                 if (this._updateNotifFades) this._updateNotifFades();
                 return GLib.SOURCE_REMOVE;
             });
+        }
+
+        return reservedCards;
+    }
+
+    addNotificationAnimated(source, notification) {
+        if (!this._notifCardsBox || !this._notifCenterOpen)
+            return;
+
+        const existingCards = this._notifCardsBox.get_children();
+        for (const child of existingCards) {
+            if (child._notification === notification) {
+                if (child._titleLabel) child._titleLabel.text = notification.title || '';
+                if (child._bodyLabel) child._bodyLabel.text = notification.bannerBodyText || notification.body || '';
+                return;
+            }
+        }
+
+        const builder = globalThis._macBuildNotificationCard || buildNotificationCard;
+        const cardData = builder(source, notification, {
+            sigma: 30,
+            isBanner: false,
+            onClose: (data) => {
+                const card = data.banner;
+                card.remove_all_transitions();
+                card.ease({
+                    translation_x: 480,
+                    opacity: 0,
+                    duration: 220,
+                    mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+                    onComplete: () => {
+                        if (card.get_parent() === this._notifCardsBox)
+                            this._notifCardsBox.remove_child(card);
+                        card.destroy();
+                        try { notification.destroy(2); } catch (_) {}
+                        this._updateEmptyState(this._notifCardsBox.get_children().length);
+                        this._updateNotificationCenterGeometry();
+                    },
+                });
+            },
+            onClick: () => {
+                try { notification.activate(); } catch (e) { logError(e); }
+                this._closeNotificationCenter();
+            },
+        });
+
+        cardData.banner._notification = notification;
+        cardData.banner._titleLabel = cardData.titleLabel;
+        cardData.banner._bodyLabel = cardData.bodyLabel;
+
+        // Insert at the top of the list into newest items (reserves space immediately)
+        this._notifCardsBox.insert_child_at_index(cardData.banner, 0);
+        this._updateEmptyState(this._notifCardsBox.get_children().length);
+        this._updateNotificationCenterGeometry();
+
+        // Smooth sliding down entrance animation into the reserved slot
+        cardData.banner.opacity = 0;
+        cardData.banner.translation_y = -55;
+        cardData.banner.scale_x = 0.98;
+        cardData.banner.scale_y = 0.98;
+        cardData.banner.remove_all_transitions();
+        cardData.banner.ease({
+            opacity: 255,
+            translation_y: 0,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            duration: 320,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+
+        if (this._notifScrollView?.vadjustment) {
+            this._notifScrollView.vadjustment.value = 0;
+        }
+
+        if (this._updateNotifFades) {
+            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                if (this._updateNotifFades) this._updateNotifFades();
+                return GLib.SOURCE_REMOVE;
+            });
+        }
+    }
+
+    _rebuildGradientBlur(w, h) {
+        if (!this._notifCenterBg) return;
+        if (this._lastBlurW === w && this._lastBlurH === h && this._notifCenterBg.get_n_children() > 0) return;
+        this._lastBlurW = w;
+        this._lastBlurH = h;
+        this._notifCenterBg.destroy_all_children();
+
+        const steps = 5;
+        const stepSize = 2; // 5 steps * 2px = 10px fade on all edges!
+
+        // Outer concentric rings (0 to 10px from edges)
+        for (let k = 0; k < steps; k++) {
+            const offset = k * stepSize;
+            const rad = k + 1; // radii: 1, 2, 3, 4, 5
+
+            const ringW = w - 2 * offset;
+            const ringH = h - 2 * offset;
+            if (ringW <= 0 || ringH <= 0) continue;
+
+            // Top slice
+            const top = new St.Widget({
+                x: offset,
+                y: offset,
+                width: ringW,
+                height: stepSize,
+                reactive: false,
+            });
+            top.add_effect(new Shell.BlurEffect({ mode: Shell.BlurMode.BACKGROUND, radius: rad }));
+            this._notifCenterBg.add_child(top);
+
+            // Bottom slice
+            if (ringH > stepSize) {
+                const bottom = new St.Widget({
+                    x: offset,
+                    y: h - offset - stepSize,
+                    width: ringW,
+                    height: stepSize,
+                    reactive: false,
+                });
+                bottom.add_effect(new Shell.BlurEffect({ mode: Shell.BlurMode.BACKGROUND, radius: rad }));
+                this._notifCenterBg.add_child(bottom);
+            }
+
+            // Left slice
+            if (ringH > 2 * stepSize) {
+                const left = new St.Widget({
+                    x: offset,
+                    y: offset + stepSize,
+                    width: stepSize,
+                    height: ringH - 2 * stepSize,
+                    reactive: false,
+                });
+                left.add_effect(new Shell.BlurEffect({ mode: Shell.BlurMode.BACKGROUND, radius: rad }));
+                this._notifCenterBg.add_child(left);
+            }
+
+            // Right slice
+            if (ringH > 2 * stepSize && ringW > stepSize) {
+                const right = new St.Widget({
+                    x: w - offset - stepSize,
+                    y: offset + stepSize,
+                    width: stepSize,
+                    height: ringH - 2 * stepSize,
+                    reactive: false,
+                });
+                right.add_effect(new Shell.BlurEffect({ mode: Shell.BlurMode.BACKGROUND, radius: rad }));
+                this._notifCenterBg.add_child(right);
+            }
+        }
+
+        // Inner center (beyond 10px from all edges): full 5px blur!
+        const centerW = w - 20;
+        const centerH = h - 20;
+        if (centerW > 0 && centerH > 0) {
+            const center = new St.Widget({
+                x: 10,
+                y: 10,
+                width: centerW,
+                height: centerH,
+                reactive: false,
+            });
+            center.add_effect(new Shell.BlurEffect({ mode: Shell.BlurMode.BACKGROUND, radius: 5 }));
+            this._notifCenterBg.add_child(center);
+        }
+    }
+
+    _updateNotificationCenterGeometry() {
+        if (!this._notifCenterActor || !this._notifContentBox) return;
+
+        const targetW = 460;
+        const monitor = Main.layoutManager.primaryMonitor;
+        const availableHeight = monitor ? monitor.height - 70 : 800;
+
+        const [minH, natH] = this._notifContentBox.get_preferred_height(targetW);
+        const actualH = Math.min(availableHeight, Math.max(90, Math.round(natH)));
+
+        if (this._lastCenterW === targetW && this._lastCenterH === actualH && this._notifCenterActor.height === actualH) {
+            return;
+        }
+        this._lastCenterW = targetW;
+        this._lastCenterH = actualH;
+
+        this._notifCenterActor.width = targetW;
+        this._notifCenterActor.height = actualH;
+        if (this._notifCenterBg) {
+            this._notifCenterBg.width = targetW;
+            this._notifCenterBg.height = actualH;
+            this._rebuildGradientBlur(targetW, actualH);
         }
     }
 
@@ -2817,6 +3118,7 @@ export const MenuBarController = class MenuBarController {
             this._notifScrollWrapper.hide();
             this._notifClearBtn.hide();
         }
+        this._updateNotificationCenterGeometry();
     }
 
     _clearAllNotifications() {
@@ -2827,11 +3129,21 @@ export const MenuBarController = class MenuBarController {
                 try { notif.destroy(2); } catch (_) {}
             }
         }
-        this._notifCardsBox.destroy_all_children();
-        this._updateEmptyState(0);
+        if (this._notifCardsBox)
+            this._notifCardsBox.destroy_all_children();
+        if (this._notifEmptyLabel)
+            this._updateEmptyState(0);
+        this._updateNotificationCenterGeometry();
     }
 
     _openNotificationCenter() {
+        // Take any active floating banners so we can dock them smoothly into the center
+        const notifCtrl = globalThis._macNotificationsController ||
+            Main.extensionManager?.lookup?.('blur-my-shell@aunetx')?.stateObj?._notifications_controller;
+        const activeBanners = (notifCtrl && typeof notifCtrl.takeActiveBanners === 'function')
+            ? notifCtrl.takeActiveBanners()
+            : [];
+
         // Mutual exclusion: close QuickSettings if open
         const qs = Main.panel?.statusArea?.quickSettings;
         if (qs?.menu?.isOpen) {
@@ -2843,7 +3155,7 @@ export const MenuBarController = class MenuBarController {
 
         this._notifCenterOpen = true;
 
-        this._populateNotificationCards();
+        const reservedCards = this._populateNotificationCards(activeBanners);
 
         const dateMenu = Main.panel?.statusArea?.dateMenu;
         const [dmX, dmY] = dateMenu ? dateMenu.get_transformed_position() : [0, 0];
@@ -2854,6 +3166,7 @@ export const MenuBarController = class MenuBarController {
         container.width = targetW;
         container.x = monitor.x + monitor.width - targetW - 12;
         container.y = (dmY || 0) + (dmH || 32) + 8;
+        this._updateNotificationCenterGeometry();
         container.translation_x = 480;
         container.opacity = 0;
         container.visible = true;
@@ -2866,6 +3179,48 @@ export const MenuBarController = class MenuBarController {
             duration: 320,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         });
+
+        // Animate floating banner(s) sliding down into the reserved slot(s)
+        if (reservedCards && reservedCards.length > 0) {
+            const headerH = this._notifHeaderBox
+                ? (this._notifHeaderBox.get_preferred_height(targetW)[1] || 42)
+                : 42;
+            const slotTargetX = container.x + Math.round((targetW - 395) / 2);
+
+            let accumulatedSlotY = container.y + headerH + 4;
+            for (let k = 0; k < reservedCards.length; k++) {
+                const { card, activeBanner } = reservedCards[k];
+                const bannerActor = activeBanner.banner;
+                const slotTargetY = accumulatedSlotY;
+                const cardH = card.get_preferred_height(395)[1] || 70;
+                accumulatedSlotY += cardH + 10;
+
+                const [bannerCurX, bannerCurY] = bannerActor.get_transformed_position();
+                const startY = Number.isFinite(bannerCurY) ? bannerCurY : (container.y - 10);
+                const startX = Number.isFinite(bannerCurX) ? bannerCurX : slotTargetX;
+
+                const deltaY = slotTargetY - startY;
+                const deltaX = slotTargetX - startX;
+
+                bannerActor.remove_all_transitions();
+                bannerActor.ease({
+                    translation_y: deltaY,
+                    translation_x: deltaX,
+                    duration: 320,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    onComplete: () => {
+                        card.opacity = 255;
+                        if (bannerActor.get_parent()) {
+                            bannerActor.get_parent().remove_child(bannerActor);
+                        }
+                        bannerActor.destroy();
+                        if (notifCtrl && typeof notifCtrl._updateVisibility === 'function') {
+                            notifCtrl._updateVisibility();
+                        }
+                    },
+                });
+            }
+        }
 
         this._notifOpenedAt = Date.now();
         this._connectNotifCenterListeners();
@@ -2880,6 +3235,10 @@ export const MenuBarController = class MenuBarController {
         if (!this._notifCenterActor || !this._notifCenterOpen) return;
 
         this._notifCenterOpen = false;
+        this._lastCenterW = null;
+        this._lastCenterH = null;
+        this._lastBlurW = null;
+        this._lastBlurH = null;
         this._disconnectNotifCenterListeners();
 
         const container = this._notifCenterActor;
@@ -3242,6 +3601,9 @@ export const MenuBarController = class MenuBarController {
         if (!this.enabled)
             return;
         this.enabled = false;
+        if (globalThis._macNotificationCenter === this) {
+            globalThis._macNotificationCenter = null;
+        }
 
         if (this._reorderTimeoutId) {
             GLib.source_remove(this._reorderTimeoutId);
@@ -3278,6 +3640,15 @@ export const MenuBarController = class MenuBarController {
         // Restore Control Center
         const quickSettings = Main.panel?.statusArea?.quickSettings;
         if (quickSettings) {
+            if (this._macControlCenter) {
+                try { this._macControlCenter.destroy(); } catch (_) {}
+                this._macControlCenter = null;
+            }
+            if (quickSettings.menu?._grid) {
+                quickSettings.menu._grid.visible = true;
+                quickSettings.menu._grid.show();
+                quickSettings.menu._grid.style = null;
+            }
             if (this._ccIcon) {
                 try {
                     quickSettings.remove_child(this._ccIcon);
@@ -3368,6 +3739,11 @@ export const MenuBarController = class MenuBarController {
         if (this._dmContainerHoverSwitchId && Main.panel?.statusArea?.dateMenu?.container) {
             try { Main.panel.statusArea.dateMenu.container.disconnect(this._dmContainerHoverSwitchId); } catch (_) {}
             this._dmContainerHoverSwitchId = null;
+        }
+
+        if (Main.panel?.menuManager?._macOrigChangeMenu) {
+            Main.panel.menuManager._changeMenu = Main.panel.menuManager._macOrigChangeMenu;
+            delete Main.panel.menuManager._macOrigChangeMenu;
         }
 
         if (this._stylingMonitor) {

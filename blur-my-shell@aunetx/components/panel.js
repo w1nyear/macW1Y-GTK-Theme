@@ -37,12 +37,7 @@ export const PanelBlur = class PanelBlur {
 
     enable() {
         console.log('=== TEST_PANEL_RELOAD ===');
-        try {
-            global.context.unsafe_mode = true;
-            console.log('=== UNSAFE_MODE_ENABLED_SUCCESSFULLY ===');
-        } catch (_e) {
-            console.error('=== UNSAFE_MODE_FAILED ===', _e);
-        }
+        
         if (this.enabled) {
             this._log("blur already enabled");
             return;
@@ -452,125 +447,227 @@ export const PanelBlur = class PanelBlur {
             ?? null;
     }
 
-    /// Connect when overview if opened/closed to hide/show the blur accordingly
+    /// Connect when overview is opened/closed using fixed 0.3s animation
     connect_to_overview() {
-        if (!this.settings.panel.BLUR) return;
-
-        const tryConnectAdjustment = () => {
-            if (this._adjustmentConnected) return;
-            const stateAdjustment = this._getStateAdjustment();
-            if (stateAdjustment) {
-                this.connections.connect(
-                    stateAdjustment,
-                    'notify::value',
-                    () => this._on_overview_adjustment_changed(stateAdjustment)
-                );
-                this._adjustmentConnected = true;
-                this._on_overview_adjustment_changed(stateAdjustment);
-            }
-        };
-
-        tryConnectAdjustment();
-
         this.connections.connect(
             Main.overview, 'showing', () => {
-                tryConnectAdjustment();
-                const adj = this._getStateAdjustment();
-                if (adj) {
-                    this._on_overview_adjustment_changed(adj);
-                } else {
-                    this.on_overview_progress(1.0);
-                }
+                this.animate_overview_transition(true, 300);
+            }
+        );
+        this.connections.connect(
+            Main.overview, 'hiding', () => {
+                this.animate_overview_transition(false, 300);
             }
         );
         this.connections.connect(
             Main.overview, 'hidden', () => {
-                const adj = this._getStateAdjustment();
-                if (adj) {
-                    this._on_overview_adjustment_changed(adj);
-                } else {
-                    this.on_overview_progress(0.0);
-                }
+                this.set_appfolder_open(false);
+                this.animate_overview_transition(false, 0);
             }
         );
 
         if (Main.overview.visible) {
-            this.set_overview_blur(true);
+            this.animate_overview_transition(true, 0);
         } else {
-            this.on_overview_progress(0.0);
+            this.animate_overview_transition(false, 0);
         }
     }
 
-    _on_overview_adjustment_changed(stateAdjustment) {
-        try {
-            const val = stateAdjustment.value;
-            // ControlsState: HIDDEN = 0, WINDOW_PICKER = 1, APP_GRID = 2
-            // Progress represents zoom distance from Desktop (0.0) to Workspace Overview (1.0).
-            const progress = Math.min(Math.max(val, 0.0), 1.0);
-            this.on_overview_progress(progress);
-        } catch (e) {
-            this._log(`Error in overview progress update: ${e}`);
-        }
+    _on_overview_adjustment_changed(_stateAdjustment) {
+        // Disabled dynamic gesture tracking to eliminate system/GPU stutter
     }
 
     _ensure_overview_effects_configured(bg) {
-        if (!bg || bg._bms_effects_configured) return;
-        bg._bms_effects_configured = true;
+        // In overview, the full-screen overview wallpaper blur (bms-overview-backgroundgroup)
+        // already covers the entire screen, including behind the top panel.
+    }
+
+    set_appfolder_open(isOpen) {
+        this._appfolder_is_open = !!isOpen;
 
         const overviewRadius = (this.settings.overview?.SIGMA ?? 30.0);
         const overviewBrightness = (this.settings.overview?.BRIGHTNESS ?? 0.60);
-        const effects = bg.get_effects?.() || [];
-        for (const eff of effects) {
-            if (!eff) continue;
-            if (typeof eff.unscaled_radius !== 'undefined') {
-                eff.unscaled_radius = overviewRadius;
-            } else if (typeof eff.radius !== 'undefined') {
-                eff.radius = overviewRadius;
+        const folderSigma = (this.settings.appfolder?.SIGMA ?? 30.0);
+        const targetRadius = isOpen
+            ? Math.round(overviewRadius + folderSigma * 1.5)
+            : overviewRadius;
+        const targetBrightness = isOpen
+            ? 0.48
+            : overviewBrightness;
+
+        // Animate the full-screen overview wallpaper blur effects so the entire background,
+        // including behind the panel, deepens its blur and dims smoothly in unison with the folder
+        const ov = global.blur_my_shell?._overview_blur;
+        if (ov && ov.overview_background_group) {
+            const children = ov.overview_background_group.get_children();
+            for (let widget of children) {
+                const effs = widget.get_effects?.() || [];
+                effs.forEach((e, idx) => {
+                    const name = e.name || `bms-ov-eff-${idx}`;
+                    if (!e.name) e.name = name;
+                    try {
+                        widget.remove_transition(`@effects.${name}.radius`);
+                        widget.remove_transition(`@effects.${name}.brightness`);
+                        widget.ease_property(`@effects.${name}.radius`, targetRadius, {
+                            duration: 220,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                        widget.ease_property(`@effects.${name}.brightness`, targetBrightness, {
+                            duration: 220,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                    } catch (_) {
+                        if (typeof e.radius !== 'undefined') e.radius = targetRadius;
+                        if (typeof e.brightness !== 'undefined') e.brightness = targetBrightness;
+                    }
+                });
             }
-            if (typeof eff.brightness !== 'undefined') {
-                eff.brightness = overviewBrightness;
-            }
-            if (typeof eff.top_blur !== 'undefined') {
-                eff.top_blur = overviewRadius;
-                eff.bottom_blur = overviewRadius;
-            }
+        }
+
+        // In app folder, ensure panel is completely transparent with no shadow
+        // so the unified overview wallpaper blur behind it shows through smoothly
+        if (Main.panel) {
+            Main.panel.set_style(
+                `background-color: transparent !important; ` +
+                `background-gradient-start: transparent !important; ` +
+                `background-gradient-end: transparent !important; ` +
+                `box-shadow: none !important; ` +
+                `border-bottom: none !important; ` +
+                `transition-duration: 220ms !important;`
+            );
         }
     }
 
-    on_overview_progress(progress) {
-        const p = Math.min(Math.max(progress, 0.0), 1.0);
-        const bgOpacity = Math.round(255 * p);
+    animate_overview_transition(isOverview, durationMs = 300) {
+        try {
+            const duration = durationMs;
+            const overviewRadius = (this.settings.overview?.SIGMA ?? 30.0);
 
-        this.actors_list.forEach(actors => {
-            const bg = actors.widgets?.background;
-            if (bg) {
-                this._ensure_overview_effects_configured(bg);
-                bg.opacity = bgOpacity;
-                if (bgOpacity > 0) {
-                    if (!bg.visible) bg.show();
+            let baseDesktopTint = 0.35;
+            if (this._baseDesktopTint !== undefined) {
+                baseDesktopTint = this._baseDesktopTint;
+            } else {
+                try {
+                    const configPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+                    if (GLib.file_test(configPath, GLib.FileTest.EXISTS)) {
+                        const [ok, content] = GLib.file_get_contents(configPath);
+                        if (ok) {
+                            const data = JSON.parse(new TextDecoder().decode(content));
+                            if (typeof data.panel_tint === 'number') {
+                                baseDesktopTint = Math.min(Math.max(data.panel_tint * 0.6, 0.25), 0.50);
+                            }
+                        }
+                    }
+                } catch (_) {}
+                this._baseDesktopTint = baseDesktopTint;
+            }
+
+            // 1. Panel Blur Actors
+            // Animate shader properties from the bottom of the menubar to the top:
+            // Entering overview:
+            // bottom_blur transitions 0.0 -> overviewRadius (30.0) first,
+            // top_blur transitions 5.0 -> overviewRadius (30.0).
+            // bg smoothly fades opacity out to 0 over durationMs, seamlessly revealing
+            // the full-screen overview wallpaper blur (bms-overview-backgroundgroup).
+            this.actors_list?.forEach(actors => {
+                const bg = actors.widgets?.background;
+                if (!bg) return;
+
+                // Ensure shader effect has a name for property easing
+                let eff = null;
+                const effs = bg.get_effects ? bg.get_effects() : [];
+                for (let e of effs) {
+                    if (e.top_blur !== undefined) {
+                        eff = e;
+                        if (!e.name) e.name = 'gradEff';
+                        break;
+                    }
+                }
+
+                bg.remove_all_transitions();
+                if (eff) {
+                    try {
+                        bg.remove_transition('@effects.gradEff.top_blur');
+                        bg.remove_transition('@effects.gradEff.bottom_blur');
+                    } catch (_) {}
+                }
+
+                if (isOverview) {
+                    if (duration > 0) {
+                        if (eff) {
+                            bg.ease_property('@effects.gradEff.bottom_blur', overviewRadius, {
+                                duration: Math.round(duration * 0.75),
+                                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                            });
+                            bg.ease_property('@effects.gradEff.top_blur', overviewRadius, {
+                                duration: duration,
+                                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                            });
+                        }
+                        bg.ease_property('opacity', 0, {
+                            duration: duration,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                            onComplete: () => {
+                                if (bg.visible) bg.hide();
+                                if (eff) {
+                                    eff.top_blur = 5.0;
+                                    eff.bottom_blur = 0.0;
+                                }
+                            }
+                        });
+                    } else {
+                        bg.opacity = 0;
+                        if (bg.visible) bg.hide();
+                        if (eff) {
+                            eff.top_blur = 5.0;
+                            eff.bottom_blur = 0.0;
+                        }
+                    }
                 } else {
+                    // Returning to desktop:
+                    // Hide background blur actor completely so desktop has NO muddy blur!
+                    bg.opacity = 0;
                     if (bg.visible) bg.hide();
                 }
+            });
+
+            // 2. Main.panel gradient:
+            // Overview: subtle/transparent, NO box-shadow, perfectly continuing overview background!
+            // Desktop: top-to-bottom darkening with baseDesktopTint at top, 0.0 at bottom, no shadow.
+            if (Main.panel) {
+                Main.panel.opacity = 255;
+                if (isOverview) {
+                    Main.panel.set_style(
+                        `background-color: transparent !important; ` +
+                        `background-gradient-start: rgba(0, 0, 0, 0.12) !important; ` +
+                        `background-gradient-end: transparent !important; ` +
+                        `box-shadow: none !important; ` +
+                        `border-bottom: none !important; ` +
+                        `transition-duration: ${duration}ms !important;`
+                    );
+                } else {
+                    Main.panel.set_style(
+                        `background-color: transparent !important; ` +
+                        `background-gradient-direction: vertical !important; ` +
+                        `background-gradient-start: rgba(0, 0, 0, ${baseDesktopTint.toFixed(3)}) !important; ` +
+                        `background-gradient-end: rgba(0, 0, 0, 0.0) !important; ` +
+                        `box-shadow: none !important; ` +
+                        `border-bottom: none !important; ` +
+                        `transition-duration: ${duration}ms !important;`
+                    );
+                }
             }
-            const panel = actors.widgets?.panel;
-            if (panel && panel.get_style()) {
-                panel.set_style(null);
-            }
-        });
+        } catch (e) {
+            this._log(`Error animating overview transition: ${e}`);
+        }
+    }
+
+    on_overview_progress(_progress) {
+        // Disabled per-frame polling to eliminate GPU/CPU lag
     }
 
     set_overview_blur(enabled) {
-        try {
-            const stateAdjustment = this._getStateAdjustment();
-            if (stateAdjustment) {
-                this._on_overview_adjustment_changed(stateAdjustment);
-                return;
-            }
-
-            this.on_overview_progress(enabled ? 1.0 : 0.0);
-        } catch (e) {
-            this._log(`Error toggling overview blur on panel: ${e}`);
-        }
+        this.animate_overview_transition(enabled, 300);
     }
 
     /// Connect to windows disable transparency when a window is too close

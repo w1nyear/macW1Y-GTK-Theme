@@ -2,52 +2,97 @@
 /* macOS Tahoe Context Menus (System GTK Applications Only) */
 menu,
 .popup-menu,
-.context-menu {
-  background-color: rgba(30, 30, 32, 0.96);
+.context-menu,
+.desktopmenu,
+window.desktopmenu,
+.desktopmenu menu,
+.background.csd > menu,
+.background.popup > menu {
+  background-color: rgba(28, 28, 32, 0.65);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 12px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
-  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 24px;
+  box-shadow: none;
+  padding: 6px 4px;
+}
+
+window.desktopmenu decoration,
+.popup decoration,
+.csd.popup decoration {
+  border-radius: 24px;
 }
 
 menu menuitem,
 .popup-menu menuitem,
-.context-menu menuitem {
-  min-height: 22px;
-  padding: 4px 10px;
-  margin: 1px 2px;
-  border-radius: 8px;
+.context-menu menuitem,
+.desktopmenu menuitem,
+window.desktopmenu menuitem {
+  min-height: 24px;
+  padding: 4px 12px;
+  margin: 2px 6px;
+  border-radius: 9999px;
   color: #ffffff;
   background-color: transparent;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition: background-color 100ms ease, color 100ms ease;
 }
 
 menu menuitem label,
 .popup-menu menuitem label,
-.context-menu menuitem label {
+.context-menu menuitem label,
+.desktopmenu menuitem label,
+window.desktopmenu menuitem label {
   color: #ffffff;
   font-weight: 500;
 }
 
 menu menuitem:disabled,
-menu menuitem:disabled label {
+menu menuitem:disabled label,
+.desktopmenu menuitem:disabled,
+.desktopmenu menuitem:disabled label {
   color: rgba(255, 255, 255, 0.35);
 }
 
 menu menuitem:hover,
-menu menuitem:focus {
+menu menuitem:focus,
+menu menuitem:selected,
+.popup-menu menuitem:hover,
+.popup-menu menuitem:focus,
+.popup-menu menuitem:selected,
+.context-menu menuitem:hover,
+.context-menu menuitem:focus,
+.context-menu menuitem:selected,
+.desktopmenu menuitem:hover,
+.desktopmenu menuitem:focus,
+.desktopmenu menuitem:selected,
+window.desktopmenu menuitem:hover,
+window.desktopmenu menuitem:focus,
+window.desktopmenu menuitem:selected {
   background-color: #007aff;
   color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
 }
 
 menu menuitem:hover label,
-menu menuitem:focus label {
+menu menuitem:focus label,
+menu menuitem:selected label,
+.desktopmenu menuitem:hover label,
+.desktopmenu menuitem:focus label,
+.desktopmenu menuitem:selected label,
+window.desktopmenu menuitem:hover label,
+window.desktopmenu menuitem:focus label,
+window.desktopmenu menuitem:selected label {
   color: #ffffff;
+}
+
+menu menuitem:active,
+.desktopmenu menuitem:active,
+window.desktopmenu menuitem:active {
+  background-color: #0062cc;
+  color: #ffffff;
+  border-radius: 9999px;
 }
 
 menu separator {
@@ -78,16 +123,16 @@ popover arrow,
 popover.menu > contents,
 popover.menu contents,
 popover > contents {
-  border-radius: 12px;
+  border-radius: 24px;
 }
 
 popover.menu > contents,
 popover.menu contents {
-  background-color: rgba(30, 30, 32, 0.96);
+  background-color: rgba(28, 28, 32, 0.65);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
-  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+  padding: 4px;
 }
 
 popover.menu modelbutton {
@@ -132,4 +177,24 @@ popover.menu separator {
   background-color: rgba(255, 255, 255, 0.12);
   margin: 4px 6px;
 }
+
+/* Glass Tooltips */
+tooltip,
+tooltip.background,
+tooltip.background.csd {
+  background-color: rgba(30, 30, 32, 0.75);
+  color: #ffffff;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  padding: 4px 12px;
+}
+
+tooltip.background label,
+tooltip label {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 12px;
+}
+
 /* --- MAC-STYLING-END --- */

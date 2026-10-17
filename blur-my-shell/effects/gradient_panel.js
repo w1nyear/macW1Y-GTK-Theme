@@ -11,7 +11,7 @@ const SHADER_SOURCE = utils.get_shader_source(Shell, SHADER_FILENAME, import.met
 const DEFAULT_PARAMS = {
     top_darkness: 0.0,
     bottom_darkness: 0.0,
-    top_blur: 0.0,
+    top_blur: 5.0,
     bottom_blur: 0.0,
     width: 0.0,
     height: 0.0,
@@ -43,7 +43,7 @@ const GRADIENT_PANEL_EFFECT_META = {
             'Blur radius at the top',
             GObject.ParamFlags.READWRITE,
             0.0, 100.0,
-            20.0,
+            5.0,
         ),
         'bottom_blur': GObject.ParamSpec.double(
             'bottom_blur',

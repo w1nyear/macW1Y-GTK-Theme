@@ -110,8 +110,12 @@ export class ClockLayoutManager {
 
         const topY = monitorY + Math.floor(monitorHeight * DATETIME_TOP_FRACTION);
 
+        const [, dateHeight] = dateLabel.get_preferred_height(-1) || [0, 24];
+        const effectiveDateH = Math.max(20, Math.ceil(dateHeight));
+        const timeY = effectiveDateH - 4;
+
         dateLabel.set_position(0, 0);
-        timeLabel.set_position(0, DATE_LABEL_HEIGHT);
+        timeLabel.set_position(0, timeY);
 
         wrapper.set_position(monitorX, topY);
         wrapper.set_width(monitorWidth);

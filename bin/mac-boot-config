@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+import sys
+import os
+import re
+import subprocess
+
+if os.geteuid() != 0:
+    os.execvp("sudo", ["sudo", sys.executable] + sys.argv)
+
+def notify_user(title, msg):
+    try:
+        user = os.environ.get("SUDO_USER") or "vitaliy"
+        uid = subprocess.check_output(["id", "-u", user], text=True).strip()
+        bus = f"unix:path=/run/user/{uid}/bus"
+        cmd = [
+            "sudo", "-u", user,
+            f"DBUS_SESSION_BUS_ADDRESS={bus}",
+            "gdbus", "call", "--session",
+            "--dest", "org.freedesktop.Notifications",
+            "--object-path", "/org/freedesktop/Notifications",
+            "--method", "org.freedesktop.Notifications.Notify",
+            "Параметри", "0", "", title, msg, "[]", "{}", "5000"
+        ]
+        env = {**os.environ, "DBUS_SESSION_BUS_ADDRESS": bus, "XDG_RUNTIME_DIR": f"/run/user/{uid}"}
+        subprocess.run(["sudo", "-u", user, "env", f"DBUS_SESSION_BUS_ADDRESS={bus}", "gdbus", "call", "--session", "--dest", "org.freedesktop.Notifications", "--object-path", "/org/freedesktop/Notifications", "--method", "org.freedesktop.Notifications.Notify", "Параметри", "0", "", title, msg, "[]", "{}", "5000"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+def update_grub():
+    # 1. Back up current working grub.cfg
+    if os.path.exists("/boot/grub/grub.cfg") and os.path.getsize("/boot/grub/grub.cfg") > 1000:
+        subprocess.run(["cp", "-a", "/boot/grub/grub.cfg", "/boot/grub/grub.cfg.bak"], check=False)
+
+    # 2. Generate new config to a safe temporary file
+    temp_cfg = "/boot/grub/grub.cfg.tmp"
+    res = subprocess.run(["grub-mkconfig", "-o", temp_cfg], capture_output=True, text=True)
+    if res.returncode != 0:
+        print("grub-mkconfig failed:", res.stderr)
+        if os.path.exists(temp_cfg):
+            os.remove(temp_cfg)
+        return False
+
+    # 3. Validate syntax with grub-script-check
+    check = subprocess.run(["grub-script-check", temp_cfg], capture_output=True, text=True)
+    if check.returncode != 0:
+        print("grub-script-check failed:", check.stderr)
+        if os.path.exists(temp_cfg):
+            os.remove(temp_cfg)
+        return False
+
+    # 4. Verify that menuentry exists in the generated config
+    with open(temp_cfg, "r") as f:
+        cfg_str = f.read()
+    if "menuentry " not in cfg_str:
+        print("Validation error: no menuentry found in generated grub config!")
+        if os.path.exists(temp_cfg):
+            os.remove(temp_cfg)
+        return False
+
+    # 5. Atomic replace on ext4: guaranteed never corrupt or half-written
+    os.replace(temp_cfg, "/boot/grub/grub.cfg")
+    os.chmod("/boot/grub/grub.cfg", 0o600)
+    subprocess.run(["sync"], check=False)
+    notify_user("Параметри завантаження", "Конфігурацію GRUB успішно збережено!")
+    return True
+
+def read_grub_default():
+    with open("/etc/default/grub", "r") as f:
+        return f.read()
+
+def write_grub_default(content):
+    with open("/etc/default/grub", "w") as f:
+        f.write(content)
+
+def set_grub(enable):
+    c = read_grub_default()
+    if enable:
+        # 1. Timeout Style
+        if re.search(r"^#?GRUB_TIMEOUT_STYLE=.*", c, re.M):
+            c = re.sub(r"^#?GRUB_TIMEOUT_STYLE=.*", "GRUB_TIMEOUT_STYLE=menu", c, flags=re.M)
+        else:
+            c += "\nGRUB_TIMEOUT_STYLE=menu\n"
+
+        # 2. Timeout (5s)
+        if re.search(r"^#?GRUB_TIMEOUT=.*", c, re.M):
+            c = re.sub(r"^#?GRUB_TIMEOUT=.*", "GRUB_TIMEOUT=5", c, flags=re.M)
+        else:
+            c += "\nGRUB_TIMEOUT=5\n"
+
+        # 3. Theme (Enable Apple theme)
+        if re.search(r"^#?GRUB_THEME=.*", c, re.M):
+            c = re.sub(r"^#?GRUB_THEME=.*", 'GRUB_THEME="/boot/grub/themes/apple-mac/theme.txt"', c, flags=re.M)
+        else:
+            c += '\nGRUB_THEME="/boot/grub/themes/apple-mac/theme.txt"\n'
+
+        # 4. Recordfail timeout
+        if re.search(r"^#?GRUB_RECORDFAIL_TIMEOUT=.*", c, re.M):
+            c = re.sub(r"^#?GRUB_RECORDFAIL_TIMEOUT=.*", "GRUB_RECORDFAIL_TIMEOUT=5", c, flags=re.M)
+        else:
+            c += "\nGRUB_RECORDFAIL_TIMEOUT=5\n"
+    else:
+        # Disable GRUB menu (fast direct boot)
+        # 1. Timeout Style hidden
+        if re.search(r"^#?GRUB_TIMEOUT_STYLE=.*", c, re.M):
+            c = re.sub(r"^#?GRUB_TIMEOUT_STYLE=.*", "GRUB_TIMEOUT_STYLE=hidden", c, flags=re.M)
+        else:
+            c += "\nGRUB_TIMEOUT_STYLE=hidden\n"
+
+        # 2. Timeout 0
+        if re.search(r"^#?GRUB_TIMEOUT=.*", c, re.M):
+            c = re.sub(r"^#?GRUB_TIMEOUT=.*", "GRUB_TIMEOUT=0", c, flags=re.M)
+        else:
+            c += "\nGRUB_TIMEOUT=0\n"
+
+        # 3. Comment out theme so gfxmenu doesn't force menu display
+        if re.search(r"^GRUB_THEME=.*", c, re.M):
+            c = re.sub(r"^GRUB_THEME=.*", '#GRUB_THEME="/boot/grub/themes/apple-mac/theme.txt"', c, flags=re.M)
+
+        # 4. Recordfail timeout 0
+        if re.search(r"^#?GRUB_RECORDFAIL_TIMEOUT=.*", c, re.M):
+            c = re.sub(r"^#?GRUB_RECORDFAIL_TIMEOUT=.*", "GRUB_RECORDFAIL_TIMEOUT=0", c, flags=re.M)
+        else:
+            c += "\nGRUB_RECORDFAIL_TIMEOUT=0\n"
+
+    write_grub_default(c)
+    update_grub()
+
+def set_verbose(enable):
+    c = read_grub_default()
+    if enable:
+        try:
+            subprocess.run(["cp", "-f", "/usr/share/plymouth/themes/apple-mac/1x1.png", "/usr/share/plymouth/themes/apple-mac/verbose_on.png"], check=False)
+        except Exception:
+            pass
+        if re.search(r"^GRUB_CMDLINE_LINUX_DEFAULT=.*", c, re.M):
+            c = re.sub(r"^GRUB_CMDLINE_LINUX_DEFAULT=.*", 'GRUB_CMDLINE_LINUX_DEFAULT="splash systemd.show_status=1 loglevel=4 bgrt.disable=1 vt.global_cursor_default=0"', c, flags=re.M)
+        else:
+            c += '\nGRUB_CMDLINE_LINUX_DEFAULT="splash systemd.show_status=1 loglevel=4 bgrt.disable=1 vt.global_cursor_default=0"\n'
+    else:
+        try:
+            if os.path.exists("/usr/share/plymouth/themes/apple-mac/verbose_on.png"):
+                os.remove("/usr/share/plymouth/themes/apple-mac/verbose_on.png")
+        except Exception:
+            pass
+        if re.search(r"^GRUB_CMDLINE_LINUX_DEFAULT=.*", c, re.M):
+            c = re.sub(r"^GRUB_CMDLINE_LINUX_DEFAULT=.*", 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash bgrt.disable=1 vt.global_cursor_default=0 loglevel=3"', c, flags=re.M)
+        else:
+            c += '\nGRUB_CMDLINE_LINUX_DEFAULT="quiet splash bgrt.disable=1 vt.global_cursor_default=0 loglevel=3"\n'
+
+    write_grub_default(c)
+    update_grub()
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Usage: mac-boot-config [set-grub|set-verbose] [enable|disable]")
+        sys.exit(1)
+    action = sys.argv[1]
+    val = sys.argv[2].lower() in ["enable", "true", "1", "yes"]
+    if action == "set-grub":
+        set_grub(val)
+    elif action == "set-verbose":
+        set_verbose(val)
+    else:
+        print(f"Unknown action: {action}")
+        sys.exit(1)

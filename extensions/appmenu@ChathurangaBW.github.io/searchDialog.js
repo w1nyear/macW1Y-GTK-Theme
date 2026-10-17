@@ -4,437 +4,877 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
-import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Util from 'resource:///org/gnome/shell/misc/util.js';
+import { _ } from './i18n.js';
+import { t, tf } from './mac_i18n.js';
 
 const RECENT_ITEMS_FILE = GLib.build_filenamev([GLib.get_user_data_dir(), 'recently-used.xbel']);
-const SEARCH_DEBOUNCE_MS = 200;
-const MAX_RESULTS = 8;
-const MAX_RESULTS_PER_SECTION = 4;
-
-const RESULT_TYPE_ICONS = {
-    app: 'application-x-executable-symbolic',
-    file: 'text-x-generic-symbolic',
-    settings: 'preferences-system-symbolic',
-};
-
-// Async-loaded recent items cache — avoids synchronous file IO in shell code (EGO-X-004).
-// The cache populates shortly after module import; consumers see an empty list in the
-// few-ms window before the load completes, which is acceptable for a recent-items feature.
-const _recentCache = [];
-let _recentCacheLoading = false;
-let _recentCacheLoadRequested = false;
-
-function _ensureRecentCacheLoading() {
-    if (_recentCacheLoading || _recentCacheLoadRequested)
-        return;
-    _recentCacheLoadRequested = true;
-    const file = Gio.File.new_for_path(RECENT_ITEMS_FILE);
-    file.load_contents_async(null, (_src, res) => {
-        _recentCacheLoading = true;
-        try {
-            const [ok, bytes] = file.load_contents_finish(res);
-            if (ok) {
-                const xml = new TextDecoder().decode(bytes);
-                const matches = [...xml.matchAll(/<bookmark href="([^"]+)"[\s\S]*?<title>([^<]*)<\/title>/g)];
-                matches.forEach(match => _recentCache.push({
-                    type: 'file',
-                    title: match[2] || decodeURIComponent(match[1].split('/').pop() || match[1]),
-                    subtitle: decodeURIComponent(match[1]),
-                    uri: match[1],
-                }));
-                _recentCache.length = Math.min(_recentCache.length, 80);
-            }
-        } catch (_e) { /* empty cache on parse failure */ }
-    });
-}
-
-function _getCachedRecent() {
-    _ensureRecentCacheLoading();
-    return _recentCache;
-}
-
-import { _ } from './i18n.js';
+const SEARCH_DEBOUNCE_MS = 50;
+const MAX_RESULTS_PER_SECTION = 5;
+const PILL_HEIGHT = 54;
+const DIALOG_WIDTH = 660;
 
 const SETTINGS_PANELS = [
-    ['Wi-Fi', 'wifi'],
-    ['Network', 'network'],
-    ['Bluetooth', 'bluetooth'],
-    ['Appearance', 'appearance'],
-    ['Notifications', 'notifications'],
-    ['Search', 'search'],
-    ['Applications', 'applications'],
-    ['Privacy & Security', 'privacy'],
-    ['Online Accounts', 'online-accounts'],
-    ['Sharing', 'sharing'],
-    ['Sound', 'sound'],
-    ['Power', 'power'],
-    ['Displays', 'display'],
-    ['Mouse & Touchpad', 'mouse'],
-    ['Keyboard', 'keyboard'],
-    ['Printers', 'printers'],
-    ['Users', 'users'],
-    ['Default Apps', 'default-apps'],
-    ['Date & Time', 'datetime'],
-    ['About', 'about'],
+    { key: 'panel_wifi', fallback: 'Wi-Fi', match: ['wifi', 'вайфай', 'вай-фай', 'мережа', 'wi-fi', 'wlan', 'internet'], panel: 'wifi' },
+    { key: 'panel_network', fallback: 'Мережа', match: ['network', 'мережа', 'сеть', 'ethernet', 'інтернет', 'lan', 'sieć', 'red'], panel: 'network' },
+    { key: 'panel_bluetooth', fallback: 'Bluetooth', match: ['bluetooth', 'блютуз', 'bt'], panel: 'bluetooth' },
+    { key: 'panel_appearance', fallback: 'Зовнішній вигляд', match: ['appearance', 'зовнішній вигляд', 'внешний вид', 'тема', 'шпалери', 'обои', 'background', 'dark', 'wygląd', 'aspecto'], panel: 'appearance' },
+    { key: 'panel_notifications', fallback: 'Сповіщення', match: ['notifications', 'сповіщення', 'уведомления', 'alerts', 'powiadomienia', 'notificaciones'], panel: 'notifications' },
+    { key: 'panel_search', fallback: 'Пошук', match: ['search', 'пошук', 'поиск', 'spotlight', 'szukaj', 'buscar'], panel: 'search' },
+    { key: 'panel_applications', fallback: 'Програми', match: ['applications', 'програми', 'приложения', 'apps', 'aplikacje', 'aplicaciones'], panel: 'applications' },
+    { key: 'panel_privacy', fallback: 'Конфіденційність', match: ['privacy', 'конфіденційність', 'конфиденциальность', 'безпека', 'безопасность', 'security', 'prywatność', 'privacidad'], panel: 'privacy' },
+    { key: 'panel_sound', fallback: 'Звук', match: ['sound', 'audio', 'звук', 'гучність', 'громкость', 'мікрофон', 'volume', 'dźwięk', 'sonido'], panel: 'sound' },
+    { key: 'panel_power', fallback: 'Живлення', match: ['power', 'живлення', 'питание', 'акумулятор', 'батарея', 'енергозбереження', 'энергосбережение', 'battery', 'zasilanie', 'batería'], panel: 'power' },
+    { key: 'panel_displays', fallback: 'Дисплеї', match: ['displays', 'display', 'дисплей', 'екран', 'экран', 'монітор', 'монитор', 'роздільність', 'screen', 'ekrany', 'pantallas'], panel: 'display' },
+    { key: 'panel_mouse', fallback: 'Миша та трекпад', match: ['mouse', 'touchpad', 'миша', 'мышь', 'трекпад', 'тачпад', 'cursor', 'mysz', 'ratón'], panel: 'mouse' },
+    { key: 'panel_keyboard', fallback: 'Клавіатура', match: ['keyboard', 'клавіатура', 'клавиатура', 'мова', 'язык', 'розкладка', 'input', 'klawiatura', 'teclado'], panel: 'keyboard' },
+    { key: 'panel_printers', fallback: 'Принтери', match: ['printers', 'принтери', 'принтеры', 'друк', 'печать', 'print', 'drukarki', 'impresoras'], panel: 'printers' },
+    { key: 'panel_accessibility', fallback: 'Спеціальні можливості', match: ['accessibility', 'спеціальні можливості', 'специальные возможности', 'доступність', 'a11y', 'dostępność', 'accesibilidad'], panel: 'universal-access' },
+    { key: 'panel_datetime', fallback: 'Дата й час', match: ['datetime', 'date', 'time', 'дата', 'час', 'время', 'годинник', 'clock', 'data', 'fecha'], panel: 'datetime' },
+    { key: 'panel_about', fallback: 'Про систему', match: ['about', 'про систему', 'о системе', 'характеристики', 'система', 'info', 'informacje', 'sistema'], panel: 'about' },
 ];
 
-const SearchDialog = GObject.registerClass(
-class SearchDialog extends ModalDialog.ModalDialog {
-    constructor() {
-        super({ styleClass: 'appmenu-search-dialog' });
-        this._timeoutId = 0;
+let _cachedRecent = [];
+let _recentLoaded = false;
+
+function _ensureRecentLoaded() {
+    if (_recentLoaded) return;
+    _recentLoaded = true;
+    try {
+        const file = Gio.File.new_for_path(RECENT_ITEMS_FILE);
+        file.load_contents_async(null, (_src, res) => {
+            try {
+                const [ok, bytes] = file.load_contents_finish(res);
+                if (ok) {
+                    const xml = new TextDecoder('utf-8').decode(bytes);
+                    const matches = [...xml.matchAll(/<bookmark href="([^"]+)"[\s\S]*?<title>([^<]*)<\/title>/g)];
+                    _cachedRecent = matches.map(m => {
+                        const uri = m[1];
+                        const title = m[2] || decodeURIComponent(uri.split('/').pop() || uri);
+                        return {
+                            type: 'file',
+                            title,
+                            subtitle: decodeURIComponent(uri).replace('file://', ''),
+                            uri,
+                        };
+                    }).slice(0, 50);
+                }
+            } catch (_) {}
+        });
+    } catch (_) {}
+}
+
+export const MacSpotlightDialog = GObject.registerClass({
+    GTypeName: `MacSpotlightDialog_${Math.floor(Math.random() * 1000000)}`,
+}, class MacSpotlightDialog extends Clutter.Actor {
+    _init() {
+        super._init({
+            name: 'mac-spotlight-wrapper',
+            reactive: true,
+            visible: false,
+        });
+
+        this._isOpen = false;
+        this._isAnimating = false;
         this._appSystem = Shell.AppSystem.get_default();
-        this._recentCache = null;
         this._resultButtons = [];
         this._selectedIndex = -1;
+        this._debounceId = 0;
         this._lastQuery = '';
-        this._clutterTextSignalIds = [];
-        this._destroyed = false;
+        this._modalGrab = null;
 
-        this._entry = new St.Entry({
-            style_class: 'appmenu-search-entry',
-            hint_text: _('Search apps, recent files, and settings'),
+        // 1. Transparent Backdrop Click-Catcher (No screen dimming!)
+        this._backdrop = new Clutter.Actor({
+            name: 'mac-spotlight-backdrop',
+            reactive: true,
+            visible: false,
+        });
+        this._backdrop.connect('button-press-event', () => {
+            this.close();
+            return Clutter.EVENT_STOP;
+        });
+        this.add_child(this._backdrop);
+
+        // 2. Main Floating Spotlight Container (Pure Glass overlay)
+        this._box = new St.BoxLayout({
+            name: 'mac-spotlight-box',
+            style_class: 'mac-spotlight-box',
+            vertical: true,
+            reactive: true,
             can_focus: true,
             track_hover: true,
+            clip_to_allocation: true,
         });
-        this.contentLayout.add_child(this._entry);
+        const SPOTLIGHT_RADIUS = 27;
+        this._box.set_style(
+            'background-color: transparent !important; ' +
+            'background: none !important; ' +
+            `border-radius: ${SPOTLIGHT_RADIUS}px !important; ` +
+            'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
+            'box-shadow: none !important;'
+        );
+        this.add_child(this._box);
+
+        this._glass = null;
+        this._stageSignalId = 0;
+        this._initGlass();
+
+        // 3. Top Search Pill Row (54px tall)
+        this._searchRow = new St.BoxLayout({
+            vertical: false,
+            y_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+            style: 'height: 54px; min-height: 54px; padding: 0 16px;',
+        });
+        this._box.add_child(this._searchRow);
+
+        this._searchIcon = new St.Icon({
+            icon_name: 'system-search-symbolic',
+            icon_size: 22,
+            style: 'color: rgba(255, 255, 255, 0.60); margin-left: 6px; margin-right: 12px;',
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._searchRow.add_child(this._searchIcon);
+
+        this._entry = new St.Entry({
+            style_class: 'mac-spotlight-entry',
+            style: 'font-size: 19px !important; color: #ffffff !important; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; outline: none !important;',
+            hint_text: t('spotlight_search', 'Пошук Spotlight'),
+            can_focus: true,
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        if (this._entry.clutter_text?.set_single_line_mode) {
+            this._entry.clutter_text.set_single_line_mode(true);
+        }
+        this._searchRow.add_child(this._entry);
+
+        // 4. Results Section (hidden by default)
+        this._resultsWrapper = new St.BoxLayout({
+            vertical: true,
+            x_expand: true,
+            visible: false,
+            opacity: 0,
+        });
+        this._box.add_child(this._resultsWrapper);
+
+        // Thin subtle divider
+        this._divider = new St.Widget({
+            style_class: 'mac-spotlight-divider',
+            style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.12); margin: 2px 20px 8px 20px;',
+        });
+        this._resultsWrapper.add_child(this._divider);
+
+        // Scrollable results container
+        this._scrollView = new St.ScrollView({
+            overlay_scrollbars: true,
+            vscrollbar_policy: St.PolicyType.AUTOMATIC,
+            hscrollbar_policy: St.PolicyType.NEVER,
+            x_expand: true,
+            style: 'max-height: 420px;',
+        });
+        this._resultsWrapper.add_child(this._scrollView);
 
         this._resultsBox = new St.BoxLayout({
             vertical: true,
-            style_class: 'appmenu-search-results',
+            x_expand: true,
+            style: 'padding: 0 10px 14px 10px;',
         });
-        this.contentLayout.add_child(this._resultsBox);
+        this._scrollView.add_child(this._resultsBox);
 
-        const clutterText = this._entry.clutter_text;
-        this._clutterTextSignalIds.push(
-            clutterText.connect('text-changed', () => {
-                if (!this._destroyed)
-                    this._scheduleSearch();
-            }));
-        this._clutterTextSignalIds.push(
-            clutterText.connect('key-press-event', (_actor, event) => {
-            if (this._destroyed)
-                return Clutter.EVENT_PROPAGATE;
-            const key = event.get_key_symbol();
-            if (key === Clutter.KEY_Escape) {
+        // 5. Connect Input & Keyboard Signals
+        const ct = this._entry.clutter_text;
+        ct.connect('text-changed', () => {
+            this._scheduleSearch();
+        });
+        ct.connect('key-press-event', (_actor, event) => {
+            const symbol = event.get_key_symbol();
+            const state = event.get_state();
+            const isCtrl = (state & Clutter.ModifierType.CONTROL_MASK) !== 0;
+
+            if (symbol === Clutter.KEY_Escape || (isCtrl && symbol === Clutter.KEY_space)) {
                 this.close();
                 return Clutter.EVENT_STOP;
             }
-            if (key === Clutter.KEY_Down) {
+
+            if (symbol === Clutter.KEY_Down) {
                 this._moveSelection(1);
                 return Clutter.EVENT_STOP;
             }
-            if (key === Clutter.KEY_Up) {
+            if (symbol === Clutter.KEY_Up) {
                 this._moveSelection(-1);
                 return Clutter.EVENT_STOP;
             }
-            if (key === Clutter.KEY_Return || key === Clutter.KEY_KP_Enter) {
-                const selected = this._resultButtons[this._selectedIndex] ?? this._resultButtons[0];
-                selected?.activate?.();
+            if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
+                this._activateCurrent();
                 return Clutter.EVENT_STOP;
             }
+
             return Clutter.EVENT_PROPAGATE;
-        }));
+        });
+
+        _ensureRecentLoaded();
     }
 
-    destroy() {
-        if (this._destroyed)
-            return;
-        this._destroyed = true;
-
-        if (this._timeoutId) {
-            GLib.source_remove(this._timeoutId);
-            this._timeoutId = 0;
-        }
-
-        // Disconnect clutter text signals (EGO-L-003)
-        const entry = this._entry;
-        const signalIds = this._clutterTextSignalIds ?? [];
-        if (entry && signalIds.length > 0) {
-            try {
-                const ct = entry.clutter_text;
-                signalIds.forEach(id => {
-                    try { ct.disconnect(id); } catch (_e) {}
-                });
-            } catch (_e) {
-                // The actor may already be disposed during GNOME Shell reload.
-            }
-        }
-
-        this._clutterTextSignalIds = [];
-        this._resultButtons = [];
-        this._resultsBox = null;
-        this._entry = null;
-        // Release owned references (EGO-L-005)
-        this._recentCache = null;
-        this._appSystem = null;
-        this._selectedIndex = -1;
-        this._lastQuery = '';
+    async _initGlass() {
+        if (this._glass) return;
         try {
-            super.destroy();
-        } catch (_e) {
-            // Ignore duplicate destroy during extension reload. Child actors are
-            // owned by ModalDialog and may already have been released by Shell.
+            const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
+            const path = ext?.path || `${GLib.get_user_data_dir()}/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`;
+            const mod = await import(`file://${path}/dist/rendering/backdropGlass.js`);
+            const BackdropGlass = mod.BackdropGlass;
+
+            this._glass = new BackdropGlass({
+                extensionPath: path,
+                settings: ext?.stateObj?._settings || null,
+                logger: console,
+                owner: 'spotlight',
+            });
+            this._glass.setIsDock(true); // Simple circular arcs (matching CSS border-radius)
+            this._glass.setCornerSmoothingEnabled(0.0);
+            this._glass.setCornerRadius(27.0); // Exact radius matching Spotlight
+            this._glass.setTintColor(0.0, 0.0, 0.0);
+            this._glass.setTintStrength(0.05); // Exact 5% darkening requested
+            this._glass.setBrightness(1.0);
+            this._glass.setSaturation(1.0);
+            this._glass.setContrast(1.0);
+            this._glass.setBlurRadius(2.0); // 2px subtle blur requested
+            this._glass.setPadding(0);
+            try {
+                this._glass._renderer.uniforms.set('shadow_intensity', 0.0);
+                this._glass._renderer.uniforms.set('shadow_radius', 0.0);
+                this._glass._renderer.uniforms.set('shadow_max_radius', 0.0);
+            } catch (_) {}
+            this._glass.hide();
+
+            if (this._isOpen) {
+                if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
+                    Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
+                }
+                this._syncGlass();
+            }
+        } catch (e) {
+            console.error(`[Spotlight] Error initializing BackdropGlass: ${e}`);
         }
+    }
+
+    _syncGlass() {
+        if (!this._glass || !this._isOpen) {
+            if (this._glass?.visible) this._glass.hide();
+            return;
+        }
+
+        const box = this._box;
+        if (!box.visible) {
+            if (this._glass?.visible) this._glass.hide();
+            return;
+        }
+
+        const opacity = box.get_paint_opacity();
+        if (opacity <= 0) {
+            if (this._glass?.visible) this._glass.hide();
+            return;
+        }
+
+        const mon = Main.layoutManager.primaryMonitor;
+        const scaleX = box.scale_x ?? 1.0;
+        const scaleY = box.scale_y ?? 1.0;
+        const rawW = box.width > 0 ? box.width : DIALOG_WIDTH;
+        const rawH = box.height > 0 ? box.height : PILL_HEIGHT;
+
+        const w = rawW * scaleX;
+        const h = rawH * scaleY;
+        const bx = box.x + (rawW - w) * 0.5;
+        const by = box.y;
+
+        const localBgX = Math.round(bx - mon.x);
+        const localBgY = Math.round(by - mon.y);
+        const bgW = Math.round(w);
+        const bgH = Math.round(h);
+
+        if (this._glass.opacity !== opacity) {
+            this._glass.opacity = opacity;
+        }
+        if (!this._glass.visible) {
+            this._glass.show();
+        }
+
+        this._glass.set_position(mon.x, mon.y);
+        this._glass.set_size(mon.width, mon.height);
+        this._glass.setResolution(mon.width, mon.height);
+        this._glass.setCornerRadius(27.0);
+        this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
+        this._glass.set_clip(localBgX, localBgY, bgW, bgH);
+        this._glass.syncSources();
     }
 
     open() {
-        if (this._destroyed)
-            return;
-        super.open(global.get_current_time());
-        this._entry.set_text('');
-        this._renderResults(this._defaultResults());
+        if (this._isOpen) return;
+        this._isOpen = true;
+
+        const mon = Main.layoutManager.primaryMonitor;
+        this.set_position(0, 0);
+        this.set_size(mon.width, mon.height);
+
+        this._backdrop.set_position(mon.x, mon.y);
+        this._backdrop.set_size(mon.width, mon.height);
+        this._backdrop.visible = true;
+
+        const x = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
+        const y = mon.y + Math.round(mon.height * 0.19);
+
+        this._box.set_position(x, y);
+        this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
+        this._box.set_pivot_point(0.5, 0.0);
+        this._box.scale_x = 0.94;
+        this._box.scale_y = 0.94;
+        this._box.opacity = 0;
+
+        this._resultsWrapper.visible = false;
+        this._resultsWrapper.opacity = 0;
+        this._entry.text = '';
+        this._entry.hint_text = t('spotlight_search', 'Пошук Spotlight');
+        this._lastQuery = '';
+        this._resultsBox.destroy_all_children();
+        this._resultButtons = [];
+        this._selectedIndex = -1;
+
+        if (!this.get_parent()) {
+            Main.layoutManager.uiGroup.add_child(this);
+        }
+        this.visible = true;
+
+        if (this._glass) {
+            if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
+                Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
+            }
+            this._syncGlass();
+        } else {
+            this._initGlass();
+        }
+
+        if (!this._stageSignalId) {
+            this._stageSignalId = global.stage.connect('before-update', () => {
+                this._syncGlass();
+            });
+        }
+
+        try {
+            if (global.stage.grab) {
+                this._modalGrab = global.stage.grab(this);
+            } else {
+                Main.pushModal(this);
+            }
+        } catch (_) {}
+
         this._entry.grab_key_focus();
+
+        this._box.ease({
+            opacity: 255,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            duration: 220,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+    }
+
+    close() {
+        if (!this._isOpen) return;
+        this._isOpen = false;
+
+        if (this._modalGrab) {
+            try { this._modalGrab.dismiss(); } catch (_) {}
+            this._modalGrab = null;
+        } else {
+            try { Main.popModal(this); } catch (_) {}
+        }
+
+        if (this._glass && this._glass.visible) {
+            this._glass.ease({
+                opacity: 0,
+                duration: 180,
+                mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                onComplete: () => {
+                    if (this._glass) this._glass.hide();
+                    if (!this._isOpen && this._stageSignalId) {
+                        global.stage.disconnect(this._stageSignalId);
+                        this._stageSignalId = 0;
+                    }
+                },
+            });
+        } else {
+            if (this._stageSignalId) {
+                global.stage.disconnect(this._stageSignalId);
+                this._stageSignalId = 0;
+            }
+        }
+
+        this._box.ease({
+            opacity: 0,
+            scale_x: 0.94,
+            scale_y: 0.94,
+            duration: 180,
+            mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            onComplete: () => {
+                this.visible = false;
+                this._backdrop.visible = false;
+                this._entry.text = '';
+                this._resultsWrapper.visible = false;
+                this._resultsBox.destroy_all_children();
+                this._resultButtons = [];
+                this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
+            },
+        });
     }
 
     toggle() {
-        if (this._destroyed)
-            return;
-        if (this.state === ModalDialog.State.OPENED || this.state === ModalDialog.State.OPENING)
-            this.close(global.get_current_time());
+        if (this._isOpen)
+            this.close();
         else
             this.open();
     }
 
     _scheduleSearch() {
-        if (this._destroyed || !this._entry)
-            return;
-        if (this._timeoutId)
-            GLib.source_remove(this._timeoutId);
-        this._timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SEARCH_DEBOUNCE_MS, () => {
-            this._timeoutId = 0;
-            if (this._destroyed || !this._entry)
-                return GLib.SOURCE_REMOVE;
-            this._search(this._entry.get_text());
+        if (this._debounceId) {
+            GLib.source_remove(this._debounceId);
+            this._debounceId = 0;
+        }
+        this._debounceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SEARCH_DEBOUNCE_MS, () => {
+            this._debounceId = 0;
+            this._performSearch();
             return GLib.SOURCE_REMOVE;
         });
     }
 
-    _defaultResults() {
-        return [
-            { type: 'settings', title: _('System Settings'), subtitle: _('Open GNOME Settings'), panel: '' },
-            ...this._apps().slice(0, 4),
-            ...this._recent().slice(0, 3),
-        ];
-    }
+    _performSearch() {
+        const raw = this._entry.get_text();
+        const query = raw.trim();
+        this._lastQuery = query;
 
-    _apps() {
-        return this._appSystem.get_installed().map(app => ({
-            type: 'app',
-            title: app.get_name(),
-            subtitle: app.get_description() || app.get_id(),
-            app,
-        })).filter(item => item.title);
-    }
-
-    _settings() {
-        return SETTINGS_PANELS.map(([title, panel]) => ({
-            type: 'settings',
-            title,
-            subtitle: `Open ${title} settings`,
-            panel,
-        }));
-    }
-
-    _recent() {
-        if (!this._recentCache)
-            this._recentCache = _getCachedRecent();
-        return this._recentCache;
-    }
-
-    _search(query) {
-        const q = query.trim().toLowerCase();
-        this._lastQuery = query.trim();
-        if (!q) {
-            this._renderResults(this._defaultResults());
+        // If empty: smoothly collapse to pill (54px)
+        if (query.length === 0) {
+            this._resultsWrapper.ease({
+                opacity: 0,
+                duration: 140,
+                mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                onComplete: () => {
+                    this._resultsWrapper.visible = false;
+                },
+            });
+            this._box.ease({
+                height: PILL_HEIGHT,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
             return;
         }
 
-        const sources = [...this._apps(), ...this._settings(), ...this._recent()];
-        const results = sources
-            .map(item => {
-                const haystack = `${item.title} ${item.subtitle || ''}`.toLowerCase();
-                let score = 99;
-                if (haystack.startsWith(q))
-                    score = 0;
-                else if (haystack.includes(q))
-                    score = 2;
-                if (item.type === 'app')
-                    score -= 0.5;
-                else if (item.type === 'settings')
-                    score += 0.25;
-                return { item, score };
-            })
-            .filter(entry => entry.score < 99)
-            .sort((a, b) => a.score - b.score || a.item.title.localeCompare(b.item.title))
-            .slice(0, MAX_RESULTS)
-            .map(entry => entry.item);
+        // Gather search items
+        const results = [];
 
-        this._renderResults(results);
-    }
+        // A. Directory browse if starts with ~ or /
+        if (query.startsWith('~') || query.startsWith('/')) {
+            const dirResults = this._searchDirectory(query);
+            results.push(...dirResults);
+        }
 
-    _groupResults(results) {
-        const groups = [
-            [_('Applications'), results.filter(item => item.type === 'app').slice(0, MAX_RESULTS_PER_SECTION)],
-            [_('Recent Files'), results.filter(item => item.type === 'file').slice(0, MAX_RESULTS_PER_SECTION)],
-            [_('Settings'), results.filter(item => item.type === 'settings').slice(0, MAX_RESULTS_PER_SECTION)],
+        // B. Installed Applications
+        results.push(...this._searchApps(query));
+
+        // C. System Settings
+        results.push(...this._searchSettings(query));
+
+        // D. Recent Files
+        results.push(...this._searchRecent(query));
+
+        // E. Fallback / Search actions (Always available or if no items)
+        const fallbacks = [
+            {
+                type: 'fallback-nautilus',
+                title: t('search_in_nautilus', 'Шукати в Nautilus'),
+                subtitle: tf('find_in_file_manager', { query }, `Знайти «${query}» у файловому менеджері`),
+                iconName: 'org.gnome.Nautilus',
+                query,
+            },
+            {
+                type: 'fallback-web',
+                title: t('search_the_web', 'Шукати в інтернеті'),
+                subtitle: tf('find_via_google', { query }, `Google: «${query}»`),
+                iconName: 'web-browser',
+                query,
+            },
+            {
+                type: 'fallback-gemini',
+                title: t('ask_gemini', 'Запит у Gemini'),
+                subtitle: tf('ask_ai_about', { query }, `Запитати штучний інтелект про «${query}»`),
+                iconName: 'star-new-symbolic',
+                query,
+            },
         ];
 
-        return groups.filter(([, items]) => items.length > 0);
+        let finalItems = [];
+        if (results.length > 0) {
+            finalItems = results.slice(0, 6).concat(fallbacks);
+        } else {
+            finalItems = fallbacks;
+        }
+
+        this._renderResults(finalItems);
     }
 
-    _moveSelection(delta) {
-        if (this._resultButtons.length === 0)
-            return;
-        const nextIndex = this._selectedIndex < 0
-            ? 0
-            : (this._selectedIndex + delta + this._resultButtons.length) % this._resultButtons.length;
-        this._setSelectedIndex(nextIndex);
-    }
+    _searchApps(query) {
+        const q = query.toLowerCase();
+        const apps = this._appSystem.get_installed();
+        const hits = [];
 
-    _setSelectedIndex(index) {
-        this._selectedIndex = index;
-        this._resultButtons.forEach((button, idx) => {
-            if (idx === index) {
-                button.add_style_class_name('selected');
-                button.add_style_pseudo_class('focus');
-                button.grab_key_focus();
-            } else {
-                button.remove_style_class_name('selected');
-                button.remove_style_pseudo_class('focus');
+        for (const app of apps) {
+            const name = app.get_name() || '';
+            const desc = app.get_description() || '';
+            const id = app.get_id() || '';
+            const exec = (app.get_app_info ? app.get_app_info()?.get_executable?.() : null) || '';
+            const text = `${name} ${desc} ${id} ${exec}`.toLowerCase();
+
+            let score = 99;
+            if (name.toLowerCase().startsWith(q) || exec.toLowerCase().startsWith(q)) score = 1;
+            else if (text.includes(q)) score = 2;
+
+            if (score < 99) {
+                hits.push({
+                    type: 'app',
+                    title: name,
+                    subtitle: desc || id,
+                    app,
+                    score,
+                    category: t('category_app', 'Програма'),
+                });
             }
-        });
-    }
-
-    _iconForItem(item) {
-        if (item.type === 'app') {
-            const appIcon = item.app?.get_icon?.();
-            if (appIcon)
-                return new St.Icon({gicon: appIcon, style_class: 'appmenu-search-result-icon'});
         }
 
-        return new St.Icon({
-            icon_name: RESULT_TYPE_ICONS[item.type] ?? 'system-search-symbolic',
-            style_class: 'appmenu-search-result-icon',
-        });
+        return hits.sort((a, b) => a.score - b.score || a.title.localeCompare(b.title)).slice(0, MAX_RESULTS_PER_SECTION);
     }
 
-    _emptyState() {
-        const box = new St.BoxLayout({
-            vertical: true,
-            style_class: 'appmenu-search-empty-state',
-        });
-        box.add_child(new St.Icon({
-            icon_name: 'system-search-symbolic',
-            style_class: 'appmenu-search-empty-icon',
-        }));
-        box.add_child(new St.Label({
-            text: _('No results found'),
-            style_class: 'appmenu-search-empty-title',
-        }));
-        box.add_child(new St.Label({
-            text: this._lastQuery
-                ? _('Try a different app, setting, or recent file name.')
-                : _('Start typing to search apps, settings, and recent files.'),
-            style_class: 'appmenu-search-empty',
-        }));
-        return box;
+    _searchSettings(query) {
+        const q = query.toLowerCase();
+        const hits = [];
+
+        for (const s of SETTINGS_PANELS) {
+            const title = t(s.key, s.fallback);
+            let matched = false;
+            if (title.toLowerCase().includes(q)) matched = true;
+            else {
+                for (const m of s.match) {
+                    if (m.toLowerCase().includes(q)) { matched = true; break; }
+                }
+            }
+
+            if (matched) {
+                hits.push({
+                    type: 'settings',
+                    title,
+                    subtitle: tf('system_settings_arrow', { title }, `Параметри системи → ${title}`),
+                    panel: s.panel,
+                    iconName: 'preferences-system-symbolic',
+                    category: t('category_settings', 'Параметри'),
+                });
+            }
+        }
+
+        return hits.slice(0, 3);
     }
 
-    _renderResults(results) {
-        if (this._destroyed || !this._resultsBox)
-            return;
+    _searchRecent(query) {
+        const q = query.toLowerCase();
+        const hits = [];
+
+        for (const item of _cachedRecent) {
+            if (item.title.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q)) {
+                hits.push({
+                    type: 'file',
+                    title: item.title,
+                    subtitle: item.subtitle,
+                    uri: item.uri,
+                    iconName: 'text-x-generic-symbolic',
+                    category: t('category_file', 'Файл'),
+                });
+            }
+        }
+
+        return hits.slice(0, 3);
+    }
+
+    _searchDirectory(query) {
+        let path = query;
+        if (path.startsWith('~')) {
+            path = GLib.get_home_dir() + path.slice(1);
+        }
+
+        const hits = [];
+        try {
+            let dirPath = path;
+            let filterPrefix = '';
+            if (!GLib.file_test(dirPath, GLib.FileTest.IS_DIR)) {
+                dirPath = GLib.path_get_dirname(path);
+                filterPrefix = GLib.path_get_basename(path).toLowerCase();
+            }
+
+            if (GLib.file_test(dirPath, GLib.FileTest.IS_DIR)) {
+                const dir = Gio.File.new_for_path(dirPath);
+                const enumerator = dir.enumerate_children('standard::name,standard::type,standard::icon', Gio.FileQueryInfoFlags.NONE, null);
+                let info;
+                while ((info = enumerator.next_file(null)) !== null) {
+                    const name = info.get_name();
+                    if (filterPrefix && !name.toLowerCase().startsWith(filterPrefix))
+                        continue;
+                    const isDir = info.get_file_type() === Gio.FileType.DIRECTORY;
+                    const child = dir.get_child(name);
+                    hits.push({
+                        type: isDir ? 'dir' : 'file',
+                        title: name,
+                        subtitle: child.get_path(),
+                        uri: child.get_uri(),
+                        iconName: isDir ? 'folder-symbolic' : 'text-x-generic-symbolic',
+                        category: isDir ? t('category_folder', 'Папка') : t('category_file', 'Файл'),
+                    });
+                    if (hits.length >= 8) break;
+                }
+            }
+        } catch (_) {}
+
+        return hits;
+    }
+
+    _renderResults(items) {
         this._resultsBox.destroy_all_children();
         this._resultButtons = [];
         this._selectedIndex = -1;
-        if (results.length === 0) {
-            this._resultsBox.add_child(this._emptyState());
-            return;
-        }
 
-        for (const [sectionTitle, sectionItems] of this._groupResults(results)) {
-            this._resultsBox.add_child(new St.Label({
-                text: sectionTitle,
-                style_class: 'appmenu-search-section-title',
-                x_align: Clutter.ActorAlign.START,
-            }));
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const btn = new St.Button({
+                style_class: 'mac-spotlight-item',
+                style: 'padding: 6px 12px; margin: 2px 4px; border-radius: 10px; background-color: transparent !important;',
+                reactive: true,
+                can_focus: true,
+                track_hover: true,
+                x_expand: true,
+            });
 
-            for (const item of sectionItems) {
-                const button = new St.Button({
-                    style_class: 'appmenu-search-result',
-                    can_focus: true,
-                    track_hover: true,
-                });
-                button.activate = () => this._activate(item);
-                button.connect('clicked', () => this._activate(item));
-                button.connect('notify::hover', () => {
-                    if (this._destroyed)
-                        return;
-                    if (button.hover) {
-                        const idx = this._resultButtons.indexOf(button);
-                        if (idx >= 0)
-                            this._setSelectedIndex(idx);
-                    }
-                });
+            const row = new St.BoxLayout({
+                vertical: false,
+                y_align: Clutter.ActorAlign.CENTER,
+                x_expand: true,
+            });
+            btn.add_child(row);
 
-                const box = new St.BoxLayout({
-                    vertical: false,
-                    style_class: 'appmenu-search-result-content',
-                });
-                box.add_child(this._iconForItem(item));
+            // Icon Slot (transparent, no grey background, properly centered)
+            const iconSlot = new St.BoxLayout({
+                style_class: 'mac-spotlight-icon-slot mac-spotlight-icon-squircle',
+                style: 'width: 36px; height: 36px; min-width: 36px; min-height: 36px; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; margin-right: 14px;',
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
 
-                const textBox = new St.BoxLayout({
-                    vertical: true,
-                    style_class: 'appmenu-search-result-text',
+            let iconActor = null;
+            if (item.type === 'app' && item.app?.get_icon?.()) {
+                iconActor = new St.Icon({
+                    gicon: item.app.get_icon(),
+                    icon_size: 32,
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
                 });
-                textBox.add_child(new St.Label({
-                    text: item.title,
-                    style_class: 'appmenu-search-result-title',
-                    x_align: Clutter.ActorAlign.START,
-                }));
-                textBox.add_child(new St.Label({
-                    text: item.subtitle || item.type,
-                    style_class: 'appmenu-search-result-subtitle',
-                    x_align: Clutter.ActorAlign.START,
-                }));
-                box.add_child(textBox);
-                button.add_child(box);
-                this._resultButtons.push(button);
-                this._resultsBox.add_child(button);
+            } else {
+                iconActor = new St.Icon({
+                    icon_name: item.iconName || 'system-search-symbolic',
+                    icon_size: 24,
+                    style: item.type === 'fallback-gemini' ? 'color: #388bfd;' : 'color: rgba(255, 255, 255, 0.90);',
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
             }
+            iconSlot.add_child(iconActor);
+            row.add_child(iconSlot);
+
+            // Text column
+            const textBox = new St.BoxLayout({
+                vertical: true,
+                x_expand: true,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            row.add_child(textBox);
+
+            const titleLbl = new St.Label({
+                text: item.title,
+                style_class: 'mac-spotlight-item-title',
+                style: 'font-size: 14px; font-weight: 500; color: #ffffff;',
+                x_align: Clutter.ActorAlign.START,
+            });
+            textBox.add_child(titleLbl);
+
+            if (item.subtitle) {
+                const subLbl = new St.Label({
+                    text: item.subtitle,
+                    style_class: 'mac-spotlight-item-subtitle',
+                    style: 'font-size: 11px; color: rgba(255, 255, 255, 0.55);',
+                    x_align: Clutter.ActorAlign.START,
+                });
+                textBox.add_child(subLbl);
+            }
+
+            // Category badge on right
+            if (item.category) {
+                const badge = new St.Label({
+                    text: item.category,
+                    style_class: 'mac-spotlight-item-badge',
+                    style: 'font-size: 11px; color: rgba(255, 255, 255, 0.40); padding: 2px 8px; border-radius: 6px; background-color: rgba(255, 255, 255, 0.08); margin-left: 8px;',
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
+                row.add_child(badge);
+            }
+
+            btn.itemData = item;
+            btn.connect('clicked', () => {
+                this._activate(item);
+            });
+            btn.connect('notify::hover', () => {
+                if (btn.hover) {
+                    this._setSelectedIndex(i);
+                }
+            });
+
+            this._resultButtons.push(btn);
+            this._resultsBox.add_child(btn);
         }
+
+        // Expand downwards with animation!
+        if (!this._resultsWrapper.visible) {
+            this._resultsWrapper.visible = true;
+            this._resultsWrapper.opacity = 0;
+        }
+
+        const visibleCount = Math.min(items.length, 7);
+        const targetHeight = PILL_HEIGHT + 10 + visibleCount * 52;
+
+        this._box.ease({
+            height: targetHeight,
+            duration: 220,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+
+        this._resultsWrapper.ease({
+            opacity: 255,
+            duration: 180,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
 
         this._setSelectedIndex(0);
     }
 
+    _moveSelection(delta) {
+        if (this._resultButtons.length === 0) return;
+        const count = this._resultButtons.length;
+        const next = this._selectedIndex < 0 ? 0 : (this._selectedIndex + delta + count) % count;
+        this._setSelectedIndex(next);
+    }
+
+    _setSelectedIndex(index) {
+        this._selectedIndex = index;
+        this._resultButtons.forEach((btn, idx) => {
+            if (idx === index) {
+                btn.set_style('padding: 6px 12px; margin: 2px 4px; border-radius: 10px; background-color: rgba(255, 255, 255, 0.16) !important;');
+                try { Util.ensureActorVisibleInScrollView?.(this._scrollView, btn); } catch (_) {}
+            } else {
+                btn.set_style('padding: 6px 12px; margin: 2px 4px; border-radius: 10px; background-color: transparent !important;');
+            }
+        });
+    }
+
+    _activateCurrent() {
+        if (this._selectedIndex >= 0 && this._resultButtons[this._selectedIndex]) {
+            this._activate(this._resultButtons[this._selectedIndex].itemData);
+        } else if (this._resultButtons[0]) {
+            this._activate(this._resultButtons[0].itemData);
+        }
+    }
+
     _activate(item) {
-        this.close(global.get_current_time());
-        if (item.type === 'app') {
-            item.app.open_new_window(-1);
-        } else if (item.type === 'file') {
-            Gio.AppInfo.launch_default_for_uri(item.uri, null);
-        } else if (item.type === 'settings') {
-            try {
+        if (!item) return;
+        this.close();
+
+        try {
+            if (item.type === 'app') {
+                item.app.open_new_window(-1);
+            } else if (item.type === 'settings') {
                 const argv = item.panel ? ['gnome-control-center', item.panel] : ['gnome-control-center'];
                 Gio.Subprocess.new(argv, Gio.SubprocessFlags.NONE);
-            } catch (_e) {
-                // Ignore missing Settings app or invalid panel names.
+            } else if (item.type === 'file' || item.type === 'dir') {
+                Gio.AppInfo.launch_default_for_uri(item.uri, null);
+            } else if (item.type === 'fallback-nautilus') {
+                // Open Nautilus
+                Util.spawnCommandLine(`nautilus --new-window`);
+            } else if (item.type === 'fallback-web') {
+                // Web search
+                const url = `https://www.google.com/search?q=${encodeURIComponent(item.query)}`;
+                Gio.AppInfo.launch_default_for_uri(url, null);
+            } else if (item.type === 'fallback-gemini') {
+                // Gemini query: copy to clipboard and open Gemini
+                St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, item.query);
+                const geminiUrl = `https://gemini.google.com/app?q=${encodeURIComponent(item.query)}`;
+                Gio.AppInfo.launch_default_for_uri(geminiUrl, null);
             }
+        } catch (e) {
+            console.error(`[Spotlight] activation error: ${e}`);
         }
+    }
+
+    destroy() {
+        if (this._debounceId) {
+            GLib.source_remove(this._debounceId);
+            this._debounceId = 0;
+        }
+        if (this._stageSignalId) {
+            try {
+                global.stage.disconnect(this._stageSignalId);
+            } catch (_) {}
+            this._stageSignalId = 0;
+        }
+        if (this._glass) {
+            try {
+                this._glass.destroy();
+            } catch (_) {}
+            this._glass = null;
+        }
+        if (this._modalGrab) {
+            try { this._modalGrab.dismiss(); } catch (_) {}
+            this._modalGrab = null;
+        }
+        super.destroy();
     }
 });
 
-let _dialog = null;
-
 export function toggleSearchDialog() {
-    if (!_dialog || _dialog._destroyed)
-        _dialog = new SearchDialog();
-    _dialog.toggle();
+    if (globalThis._macSpotlightGlobalInstance) {
+        if (!globalThis._macSpotlightGlobalInstance.get_parent()) {
+            try { globalThis._macSpotlightGlobalInstance.destroy(); } catch (_) {}
+            globalThis._macSpotlightGlobalInstance = null;
+        }
+    }
+    if (!globalThis._macSpotlightGlobalInstance) {
+        try {
+            const strays = Main.layoutManager.uiGroup.get_children().filter(c => c.name === 'mac-spotlight-wrapper');
+            strays.forEach(s => { try { s.destroy(); } catch (_) {} });
+        } catch (_) {}
+        globalThis._macSpotlightGlobalInstance = new MacSpotlightDialog();
+    }
+    globalThis._macSpotlightGlobalInstance.toggle();
 }
 
 export function destroySearchDialog() {
-    const dialog = _dialog;
-    _dialog = null;
-    if (dialog)
-        dialog.destroy();
+    if (globalThis._macSpotlightGlobalInstance) {
+        try { globalThis._macSpotlightGlobalInstance.destroy(); } catch (_) {}
+        globalThis._macSpotlightGlobalInstance = null;
+    }
 }
+
+globalThis.toggleMacSpotlight = toggleSearchDialog;
+globalThis.destroyMacSpotlight = destroySearchDialog;

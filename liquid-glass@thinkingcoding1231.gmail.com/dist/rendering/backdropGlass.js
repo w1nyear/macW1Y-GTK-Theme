@@ -7,6 +7,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
+import Mtk from 'gi://Mtk';
 import { GlassRenderer } from './glassRenderer.js';
 import { StageCopier } from './stageCopy.js';
 import { coglContext, paintNodeWithContext } from '../shellVersion.js';
@@ -133,6 +134,8 @@ export const GlassActor = GObject.registerClass(class GlassActor extends Clutter
     }
 
     _beginPaint() {
+        if (!this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+            return null;
         this._paints++;
         this._runLiveGeometryHook();
         if (!this._shadersLoaded)
@@ -189,6 +192,8 @@ export const GlassActor = GObject.registerClass(class GlassActor extends Clutter
     }
 
     _queueRepaint() {
+        if (!this.visible || this.opacity === 0)
+            return;
         // Repainting from inside this paint would request a new frame every frame.
         if (this._inLiveGeometry)
             return;
@@ -369,6 +374,8 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
      * its children, so moving the window does not redraw the area by itself.
      */
     syncSources(moved = false) {
+        if (!this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+            return;
         const area = this._sampleAreaRect();
         if (!area)
             return;
@@ -383,6 +390,8 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
     }
 
     vfunc_paint_node(root, paintContext) {
+        if (!this.mapped || !this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+            return;
         const ctx = this._beginPaint();
         if (!ctx)
             return;
@@ -390,8 +399,22 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
         const s = this._sampleShaderRect();
         if (!scale || !s)
             return;
-        const { kx, ky, resW, resH } = scale;
         const stageRect = localToStage(this, s[0] * kx, s[1] * ky, (s[0] + s[2]) * kx, (s[1] + s[3]) * ky);
+
+        // Skip rendering if current redraw clip does not intersect the glass area
+        const clip = paintContext.get_redraw_clip ? paintContext.get_redraw_clip() : null;
+        if (clip) {
+            const rx0 = Math.floor(stageRect[0]);
+            const ry0 = Math.floor(stageRect[1]);
+            const rw = Math.ceil(stageRect[2]) - rx0;
+            const rh = Math.ceil(stageRect[3]) - ry0;
+            if (rw > 0 && rh > 0) {
+                const overlap = clip.contains_rectangle(new Mtk.Rectangle({ x: rx0, y: ry0, width: rw, height: rh }));
+                if (overlap === Mtk.RegionOverlap.OUT)
+                    return;
+            }
+        }
+
         const { copy, missed } = this._copier.take(this, root, paintContext, stageRect);
         // Nothing to draw with yet; the next frame redraws the whole area.
         if (missed)

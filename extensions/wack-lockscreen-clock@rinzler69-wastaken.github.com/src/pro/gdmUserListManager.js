@@ -55,15 +55,9 @@ export class GdmUserListManager {
 
         const targetX = startX + Math.floor((w - effectiveW) / 2);
 
-        const powerActor = this._gdm._powerButtons?.actor;
-        let powerTopY = h - 28;
-        if (powerActor && powerActor.visible) {
-            const [, , , powerH] = powerActor.get_preferred_size();
-            const effPowerH = powerH > 0 ? powerH : 78;
-            powerTopY = h - effPowerH - 28;
-        }
-
-        const targetY = Math.max(100, powerTopY - 24 - effectiveH);
+        // Anchor user avatar and name near bottom edge (~65px bottom margin) matching user reference photo
+        const bottomMargin = 65;
+        const targetY = Math.max(50, Math.floor(h - effectiveH - bottomMargin));
 
         const currentX = box.x || 0;
         const currentY = box.y || 0;

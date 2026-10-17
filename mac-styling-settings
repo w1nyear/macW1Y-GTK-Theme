@@ -376,14 +376,21 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 print("Error reading styling.json:", e)
 
         # Verbose boot mode
-        self.verbose_mode = os.path.exists("/usr/share/plymouth/themes/apple-mac/verbose_on.png")
+        self.verbose_mode = False
+        try:
+            with open("/etc/default/grub", "r") as f:
+                c = f.read()
+                if "systemd.show_status=1" in c or os.path.exists("/usr/share/plymouth/themes/apple-mac/verbose_on.png"):
+                    self.verbose_mode = True
+        except Exception:
+            pass
 
         # GRUB boot menu mode
         self.grub_mode = False
         try:
             with open("/etc/default/grub", "r") as f:
                 c = f.read()
-                if "GRUB_TIMEOUT_STYLE=menu" in c or ("GRUB_TIMEOUT=" in c and "GRUB_TIMEOUT=0" not in c):
+                if re.search(r"^GRUB_TIMEOUT_STYLE=menu", c, re.M) or re.search(r"^GRUB_TIMEOUT=[1-9]", c, re.M):
                     self.grub_mode = True
         except Exception:
             pass
@@ -393,76 +400,28 @@ class MacStylingWindow(Adw.ApplicationWindow):
             return
         is_active = self.verbose_switch.get_active()
         self.revealer.set_reveal_child(True)
-        try:
-            if is_active:
-                subprocess.run("sudo cp /usr/share/plymouth/themes/apple-mac/1x1.png /usr/share/plymouth/themes/apple-mac/verbose_on.png", shell=True)
-                subprocess.run("""sudo python3 -c '
-with open("/etc/default/grub", "r") as f:
-    c = f.read()
-import re
-c = re.sub(r"^GRUB_CMDLINE_LINUX_DEFAULT=.*", "GRUB_CMDLINE_LINUX_DEFAULT=\\"splash systemd.show_status=1 loglevel=4 bgrt.disable=1 vt.global_cursor_default=0\\"", c, flags=re.M)
-with open("/etc/default/grub", "w") as f:
-    f.write(c)
-' && sudo update-grub""", shell=True)
-            else:
-                subprocess.run("sudo rm -f /usr/share/plymouth/themes/apple-mac/verbose_on.png", shell=True)
-                subprocess.run("""sudo python3 -c '
-with open("/etc/default/grub", "r") as f:
-    c = f.read()
-import re
-c = re.sub(r"^GRUB_CMDLINE_LINUX_DEFAULT=.*", "GRUB_CMDLINE_LINUX_DEFAULT=\\"quiet splash bgrt.disable=1 vt.global_cursor_default=0 loglevel=3\\"", c, flags=re.M)
-with open("/etc/default/grub", "w") as f:
-    f.write(c)
-' && sudo update-grub""", shell=True)
-        except Exception as e:
-            print("Error toggling verbose boot mode:", e)
+        def _run():
+            try:
+                cmd = "sudo /usr/local/bin/mac-boot-config set-verbose enable" if is_active else "sudo /usr/local/bin/mac-boot-config set-verbose disable"
+                subprocess.run(cmd, shell=True)
+            except Exception as e:
+                print("Error toggling verbose boot mode:", e)
+        import threading
+        threading.Thread(target=_run, daemon=True).start()
 
     def on_grub_toggled(self, *args):
         if self._initializing:
             return
         is_active = self.grub_switch.get_active()
         self.revealer.set_reveal_child(True)
-        try:
-            if is_active:
-                subprocess.run("""sudo python3 -c '
-with open("/etc/default/grub", "r") as f:
-    c = f.read()
-import re
-if "GRUB_TIMEOUT_STYLE=" in c:
-    c = re.sub(r"^#?GRUB_TIMEOUT_STYLE=.*", "GRUB_TIMEOUT_STYLE=menu", c, flags=re.M)
-else:
-    c += "\\nGRUB_TIMEOUT_STYLE=menu\\n"
-if "GRUB_TIMEOUT=" in c:
-    c = re.sub(r"^#?GRUB_TIMEOUT=.*", "GRUB_TIMEOUT=5", c, flags=re.M)
-else:
-    c += "\\nGRUB_TIMEOUT=5\\n"
-if "GRUB_THEME=" in c:
-    c = re.sub(r"^#?GRUB_THEME=.*", "GRUB_THEME=\\"/boot/grub/themes/apple-mac/theme.txt\\"", c, flags=re.M)
-else:
-    c += "\\nGRUB_THEME=\\"/boot/grub/themes/apple-mac/theme.txt\\"\\n"
-if "GRUB_DISABLE_SUBMENU=" in c:
-    c = re.sub(r"^#?GRUB_DISABLE_SUBMENU=.*", "GRUB_DISABLE_SUBMENU=y", c, flags=re.M)
-else:
-    c += "\\nGRUB_DISABLE_SUBMENU=y\\n"
-if "GRUB_DISABLE_OS_PROBER=" in c:
-    c = re.sub(r"^#?GRUB_DISABLE_OS_PROBER=.*", "GRUB_DISABLE_OS_PROBER=false", c, flags=re.M)
-else:
-    c += "\\nGRUB_DISABLE_OS_PROBER=false\\n"
-with open("/etc/default/grub", "w") as f:
-    f.write(c)
-' && sudo update-grub""", shell=True)
-            else:
-                subprocess.run("""sudo python3 -c '
-with open("/etc/default/grub", "r") as f:
-    c = f.read()
-import re
-c = re.sub(r"^#?GRUB_TIMEOUT_STYLE=.*", "GRUB_TIMEOUT_STYLE=hidden", c, flags=re.M)
-c = re.sub(r"^#?GRUB_TIMEOUT=.*", "GRUB_TIMEOUT=0", c, flags=re.M)
-with open("/etc/default/grub", "w") as f:
-    f.write(c)
-' && sudo update-grub""", shell=True)
-        except Exception as e:
-            print("Error toggling grub mode:", e)
+        def _run():
+            try:
+                cmd = "sudo /usr/local/bin/mac-boot-config set-grub enable" if is_active else "sudo /usr/local/bin/mac-boot-config set-grub disable"
+                subprocess.run(cmd, shell=True)
+            except Exception as e:
+                print("Error toggling grub mode:", e)
+        import threading
+        threading.Thread(target=_run, daemon=True).start()
 
     def on_setting_changed(self, *args):
         if self._initializing:

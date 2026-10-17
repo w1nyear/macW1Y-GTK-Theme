@@ -517,6 +517,20 @@ export const DockAbstractAppIcon = GObject.registerClass({
     }
 
     _activate({button, modifiers, clickCount = 1}) {
+        if (this.app?.get_id() === 'launchpad.desktop') {
+            if (typeof globalThis.toggleMacApplications === 'function') {
+                globalThis.toggleMacApplications();
+            } else {
+                const appMenuPath = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js`;
+                import(`file://${appMenuPath}`)
+                    .then(mod => {
+                        globalThis.toggleMacApplications = mod.toggleApplicationsDialog;
+                        mod.toggleApplicationsDialog();
+                    }).catch(() => {});
+            }
+            return;
+        }
+
         // Only consider SHIFT and CONTROL as modifiers (exclude SUPER, CAPS-LOCK, etc.)
         modifiers &= Clutter.ModifierType.SHIFT_MASK | Clutter.ModifierType.CONTROL_MASK;
 
@@ -1200,7 +1214,7 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
                 (this.sourceActor instanceof DockAppIcon) &&
                 ParentalControlsManager.getDefault().shouldShowApp(app.appInfo);
 
-            if (canFavorite) {
+            if (canFavorite && app.get_id() !== 'launchpad.desktop') {
                 this._appendSeparator();
 
                 const isFavorite = AppFavorites.getAppFavorites().isFavorite(app.get_id());

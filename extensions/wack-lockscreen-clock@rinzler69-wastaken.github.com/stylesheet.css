@@ -3,31 +3,32 @@
 }
 
 .wack-date {
-    font-family: 'SF Pro Display';
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 30px;
+    font-family: 'SF Pro Display', -apple-system, sans-serif;
+    color: rgba(255, 255, 255, 0.98);
+    font-size: 28px;
     font-weight: 600;
     letter-spacing: 0px;
     margin: 0;
+    margin-bottom: -4px;
     padding: 0;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75);
 }
 
 .wack-time,
 .unlock-dialog-clock-time.wack-time {
-    font-family: 'SF Pro Display', '.SF Soft Numeric';
-    color: rgba(255, 255, 255, 0.85);
+    font-family: 'SF Pro Rounded', 'SF Pro Display', -apple-system, sans-serif;
+    color: #ffffff;
     font-size: 128px;
-    font-weight: 600;
+    font-weight: 700;
     font-feature-settings: "pnum" 1, "tnum" 0;
-    letter-spacing: -4px;
+    letter-spacing: -2px;
     padding: 0;
     padding-top: 0;
     padding-bottom: 0;
     margin: 0;
     margin-top: 0;
     margin-bottom: 0;
-    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85);
 }
 
 .wack-gdm-auth-subtitle {
@@ -122,7 +123,8 @@
 
 .unlock-dialog .user-widget.vertical .user-widget-label {
     font-weight: 600;
-    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.275);
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85) !important;
 }
 
 .wack-avatar-well {
@@ -133,10 +135,13 @@
     padding: 0;
 }
 
-.wack-avatar-well .user-icon {
+.wack-avatar-well .user-icon,
+.unlock-dialog .user-icon,
+.unlock-dialog .user-avatar {
     transition-duration: 150ms;
-    border-radius: 999px;
+    border-radius: 999px !important;
     background-color: rgba(236, 236, 236, 0.175);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8) !important;
 }
 
 .wack-avatar-well.wack-avatar-clickable:hover .user-icon {
@@ -192,7 +197,7 @@
     font-weight: 600 !important;
     letter-spacing: 0 !important;
     color: rgba(255, 255, 255, 0.95) !important;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4) !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85) !important;
 }
 
 /* Prompt state: label suppressed */

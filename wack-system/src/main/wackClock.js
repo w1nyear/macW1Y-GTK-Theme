@@ -178,16 +178,14 @@ export const WackClock = GObject.registerClass(
         }
 
         _applyTextStyle() {
-            const alpha = this._alpha ?? 0.85;
-            let timeColor = `rgba(255, 255, 255, ${alpha})`;
-            let dateColor = `rgba(255, 255, 255, ${Math.min(1.0, alpha + 0.08)})`;
-            if (this._promptColor && this._tint) {
-                timeColor = `rgba(${this._promptColor}, ${alpha})`;
-                dateColor = `rgba(${this._promptColor}, ${Math.min(1.0, alpha + 0.08)})`;
-            }
-            const weight = this._weight ? `font-weight: ${this._weight};` : '';
-            this._time.set_style((`color: ${timeColor};` + (weight ? ' ' + weight : '')).trim() || null);
-            this._dateOutput.set_style(`color: ${dateColor};`);
+            const timeColor = '#ffffff';
+            const dateColor = 'rgba(255, 255, 255, 0.98)';
+            const font = 'font-family: "SF Pro Rounded", "SF Pro Display", sans-serif;';
+            const weight = 'font-weight: bold;';
+            const timeShadow = 'text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85);';
+            const dateShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75);';
+            this._time.set_style(`color: ${timeColor} !important; ${font} ${weight} ${timeShadow}`);
+            this._dateOutput.set_style(`color: ${dateColor} !important; font-family: "SF Pro Display", sans-serif !important; font-weight: 600 !important; margin-bottom: -4px !important; ${dateShadow}`);
         }
 
 

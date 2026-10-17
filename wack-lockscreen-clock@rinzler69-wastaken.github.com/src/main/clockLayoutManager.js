@@ -31,7 +31,12 @@ export class ClockLayoutManager {
         dialog._clock.remove_child(dateLabel);
         dialog._clock.remove_child(timeLabel);
 
-        this.clockWrapper = new Clutter.Actor();
+        this.clockWrapper = new St.BoxLayout({
+            style_class: 'wack-lockscreen-clock-wrapper',
+            vertical: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            reactive: false,
+        });
         this.clockWrapper.set_pivot_point(0.5, 0.5);
         this.clockWrapper.add_child(dateLabel);
         this.clockWrapper.add_child(timeLabel);
@@ -41,8 +46,6 @@ export class ClockLayoutManager {
         this.timeLabel = timeLabel;
 
         timeLabel.connectObject('notify::text', () => this.positionClock(), this);
-        centerClockLabel(timeLabel, this.clockWrapper);
-        centerClockLabel(dateLabel, this.clockWrapper);
 
         this.positionClock();
 
@@ -110,12 +113,13 @@ export class ClockLayoutManager {
 
         const topY = monitorY + Math.floor(monitorHeight * DATETIME_TOP_FRACTION);
 
-        dateLabel.set_position(0, 0);
-        timeLabel.set_position(0, DATE_LABEL_HEIGHT);
-
         wrapper.set_position(monitorX, topY);
         wrapper.set_width(monitorWidth);
         wrapper.set_pivot_point(0.5, 0.5);
+
+        if (wrapper.get_parent()) {
+            wrapper.get_parent().set_child_above_sibling(wrapper, null);
+        }
     }
 
     positionHint() {

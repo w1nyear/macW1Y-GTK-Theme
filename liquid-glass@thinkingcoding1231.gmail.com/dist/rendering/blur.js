@@ -189,6 +189,8 @@ export class BlurRenderer {
      * down one more step.
      */
     resize(ctx, w, h) {
+        if (!w || w < 1 || !h || h < 1 || !Number.isFinite(w) || !Number.isFinite(h))
+            return;
         this._destroyTexturePool();
         const shift = this._blurDownscale >= 4 ? 2 : 1;
         let pw = Math.max(w >> shift, 1);

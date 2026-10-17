@@ -48,6 +48,10 @@ function animate_blur(dialog, target, mode) {
 }
 
 let _zoomAndFadeIn = function () {
+    try {
+        global.blur_my_shell?._panel_blur?.set_appfolder_open?.(true);
+    } catch (_e) {}
+
     let [sourceX, sourceY] =
         this._source.get_transformed_position();
     let [dialogX, dialogY] =
@@ -92,6 +96,10 @@ let _zoomAndFadeIn = function () {
 };
 
 let _zoomAndFadeOut = function () {
+    try {
+        global.blur_my_shell?._panel_blur?.set_appfolder_open?.(false);
+    } catch (_e) {}
+
     if (!this._isOpen)
         return;
 
@@ -122,6 +130,9 @@ let _zoomAndFadeOut = function () {
         duration: FOLDER_DIALOG_ANIMATION_TIME,
         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         onComplete: () => {
+            try {
+                global.blur_my_shell?._panel_blur?.set_appfolder_open?.(false);
+            } catch (_e) {}
             this.child.set({
                 translation_x: 0,
                 translation_y: 0,
@@ -209,6 +220,14 @@ export const AppFoldersBlur = class AppFoldersBlur {
             icon._dialog._zoomAndFadeIn = _zoomAndFadeIn;
             icon._dialog._zoomAndFadeOut = _zoomAndFadeOut;
 
+            if (!icon._dialog._bmsPanelOpenStateId) {
+                icon._dialog._bmsPanelOpenStateId = icon._dialog.connect('open-state-changed', (_dlg, isOpen) => {
+                    try {
+                        global.blur_my_shell?._panel_blur?.set_appfolder_open?.(isOpen);
+                    } catch (_e) {}
+                });
+            }
+
 
             // HACK
             //
@@ -255,6 +274,10 @@ export const AppFoldersBlur = class AppFoldersBlur {
     disable() {
         this._log("removing blur from appfolders");
 
+        try {
+            global.blur_my_shell?._panel_blur?.set_appfolder_open?.(false);
+        } catch (_e) {}
+
         let appDisplay = Main.overview._overview.controls._appDisplay;
         this.paint_signals.disconnect_all();
 
@@ -274,6 +297,12 @@ export const AppFoldersBlur = class AppFoldersBlur {
 
         appDisplay._folderIcons.forEach(icon => {
             if (icon._dialog) {
+                if (icon._dialog._bmsPanelOpenStateId) {
+                    try {
+                        icon._dialog.disconnect(icon._dialog._bmsPanelOpenStateId);
+                    } catch (_e) {}
+                    delete icon._dialog._bmsPanelOpenStateId;
+                }
                 stop_blur_animation(icon._dialog);
                 icon._dialog.remove_effect_by_name("appfolder-blur");
                 DIALOGS_STYLES.forEach(

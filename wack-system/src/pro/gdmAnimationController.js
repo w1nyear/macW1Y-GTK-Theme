@@ -2,6 +2,7 @@ import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { WackCupertinoRestPrompt } from '../main/cupertinoPrompt.js';
+import { getAuthSubtitleText } from '../main/mainUtils.js';
 import { _log, _setActorVisible, GDM_CROSSFADE_DURATION } from './gdmUtils.js';
 
 export class GdmAnimationController {
@@ -407,6 +408,22 @@ export class GdmAnimationController {
             this._gdm._promptStyling.applyTheme(theme);
         }
 
+        if (authPrompt._inputWell) {
+            if (!authPrompt._wackHintLabel) {
+                authPrompt._wackHintLabel = new St.Label({
+                    style_class: 'wack-gdm-auth-subtitle',
+                    text: getAuthSubtitleText(selectedUser),
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
+                authPrompt._inputWell.add_child(authPrompt._wackHintLabel);
+            } else {
+                authPrompt._wackHintLabel.text = getAuthSubtitleText(selectedUser);
+                authPrompt._wackHintLabel.visible = true;
+                authPrompt._wackHintLabel.opacity = 255;
+            }
+        }
+
         this._gdm._updateLockscreenMessage();
         this._gdm._positionAuthPrompt();
         this._gdm._startCursorBlink();
@@ -422,6 +439,11 @@ export class GdmAnimationController {
 
         const authPrompt = this._gdm._dialog?._authPrompt;
         if (!authPrompt) return;
+
+        if (authPrompt._wackHintLabel) {
+            authPrompt._wackHintLabel.destroy();
+            delete authPrompt._wackHintLabel;
+        }
 
         this._gdm._setPromptBackgroundBlur(false, false);
         if (this._gdm._selectedPromptMode === 'wack') {

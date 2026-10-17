@@ -1,5 +1,6 @@
 import Meta from 'gi://Meta';
 import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 
@@ -23,8 +24,8 @@ import { ApplicationsBlur } from './components/applications.js';
 import { ScreenshotBlur } from './components/screenshot.js';
 import { PopupBlur } from './components/popup.js';
 import { QuickSettingsBlur } from './components/quick_settings.js';
-import { MenuBarController } from './components/menubar.js';
-import { NotificationsController } from './components/notifications.js';
+import { MenuBarController } from './components/menubar_v24.js';
+import { NotificationsController } from './components/notifications_v2.js';
 import { NativeDynamicBlurEffect } from './effects/native_dynamic_gaussian_blur.js';
 
 
@@ -79,8 +80,8 @@ export default class BlurMyShell extends Extension {
         this._screenshot_blur = new ScreenshotBlur(...init());
         this._popup = new PopupBlur(...init());
         this._quick_settings_blur = new QuickSettingsBlur(...init());
-        this._menubar_controller = null;
-        this._notifications_controller = null;
+        this._menubar_controller = new MenuBarController(...init(), this._popup);
+        this._notifications_controller = new NotificationsController(...init());
 
         // connect each component to preferences change
         this._connect_to_settings();
@@ -123,11 +124,15 @@ export default class BlurMyShell extends Extension {
 
         // try to enable the components as soon as possible anyway, this way the
         // overview may load before the user sees it
-        if (this._settings.overview.BLUR && !this._overview_blur.enabled)
-            this._overview_blur.enable();
+        try {
+            if (this._settings.overview.BLUR && !this._overview_blur?.enabled)
+                this._overview_blur?.enable();
+        } catch (e) { console.error('[Blur my Shell] early overview error:', e); }
 
-        if (this._settings.panel.BLUR && !this._panel_blur.enabled)
-            this._panel_blur.enable();
+        try {
+            if (this._settings.panel.BLUR && !this._panel_blur?.enabled)
+                this._panel_blur?.enable();
+        } catch (e) { console.error('[Blur my Shell] early panel error:', e); }
 
         // tells the extension we have enabled the user session components, so that we do not
         // disable them later if they were not even enabled to begin with
@@ -170,6 +175,9 @@ export default class BlurMyShell extends Extension {
         this._applications_blur = null;
         this._screenshot_blur = null;
         this._popup = null;
+        this._quick_settings_blur?.disable();
+        this._menubar_controller?.disable();
+        this._notifications_controller?.disable();
         this._quick_settings_blur = null;
         this._menubar_controller = null;
         this._notifications_controller = null;
@@ -204,17 +212,17 @@ export default class BlurMyShell extends Extension {
         this._log("disabling user session mode...");
 
         // disable every component except lockscreen blur and popup blur
-        this._panel_blur.disable();
-        this._dash_to_dock_blur.disable();
-        this._overview_blur.disable();
-        this._appfolder_blur.disable();
-        this._window_list_blur.disable();
-        this._coverflow_alt_tab_blur.disable();
-        this._applications_blur.disable();
-        this._screenshot_blur.disable();
-        this._quick_settings_blur.disable();
-        this._menubar_controller.disable();
-        this._notifications_controller.disable();
+        this._panel_blur?.disable();
+        this._dash_to_dock_blur?.disable();
+        this._overview_blur?.disable();
+        this._appfolder_blur?.disable();
+        this._window_list_blur?.disable();
+        this._coverflow_alt_tab_blur?.disable();
+        this._applications_blur?.disable();
+        this._screenshot_blur?.disable();
+        this._quick_settings_blur?.disable();
+        this._menubar_controller?.disable();
+        this._notifications_controller?.disable();
 
         // remove the clipped redraws flag
         this._reenable_clipped_redraws();
@@ -271,18 +279,11 @@ export default class BlurMyShell extends Extension {
             this._reenable_clipped_redraws();
     }
 
-    /// Add the Clutter debug flag.
+    /// Add the Clutter debug flag (disabled to prevent severe GPU waste).
     _disable_clipped_redraws() {
-        let gnome_shell_major_version = parseInt(Config.PACKAGE_VERSION.split('.')[0]);
-        if (gnome_shell_major_version >= 48)
-            Clutter.add_debug_flags(
-                null, Clutter.DrawDebugFlag.DISABLE_CLIPPED_REDRAWS, null
-            );
-        else
-            Meta.add_clutter_debug_flags(
-                null, Clutter.DrawDebugFlag.DISABLE_CLIPPED_REDRAWS, null
-            );
+        // Disabled: forcing unclipped redraws wastes up to 70% GPU on high-refresh displays
     }
+
 
     /// Remove the Clutter debug flag.
     _reenable_clipped_redraws() {
@@ -299,78 +300,69 @@ export default class BlurMyShell extends Extension {
 
     /// Enables every component from the user session needed, should be called when the shell is
     /// entirely loaded as the `enable` methods interact with it.
-    async _enable_components() {
-        // dynamically re-import dash_to_dock and notifications to bypass GJS module caching
-        try {
-            const dockMod = await import(`./components/dash_to_dock.js?t=${Date.now()}`);
-            if (dockMod.DashBlur) {
-                if (this._dash_to_dock_blur) {
-                    try { this._dash_to_dock_blur.disable(); } catch (_e) {}
-                }
-                let connection = new Connections;
-                this._connections.push(connection);
-                this._dash_to_dock_blur = new dockMod.DashBlur(connection, this._settings, this._effects_manager);
-            }
-        } catch (e) {
-            console.error('[Blur my Shell] Error dynamic import dash_to_dock:', e);
+    _enable_components() {
+        if (!this._dash_to_dock_blur) {
+            let connection = new Connections;
+            this._connections.push(connection);
+            this._dash_to_dock_blur = new DashBlur(connection, this._settings, this._effects_manager);
         }
-
-        try {
-            const notifMod = await import(`./components/notifications.js?t=${Date.now()}`);
-            if (notifMod.NotificationsController) {
-                if (this._notifications_controller) {
-                    try { this._notifications_controller.disable(); } catch (_e) {}
-                }
-                let connection = new Connections;
-                this._connections.push(connection);
-                this._notifications_controller = new notifMod.NotificationsController(connection, this._settings, this._effects_manager);
-            }
-        } catch (e) {
-            console.error('[Blur my Shell] Error dynamic import notifications:', e);
+        if (!this._notifications_controller) {
+            let connection = new Connections;
+            this._connections.push(connection);
+            this._notifications_controller = new NotificationsController(connection, this._settings, this._effects_manager);
         }
-
-        try {
-            const menubarMod = await import(`./components/menubar.js?t=${Date.now()}`);
-            if (menubarMod.MenuBarController) {
-                if (this._menubar_controller) {
-                    try { this._menubar_controller.disable(); } catch (_e) {}
-                }
-                let connection = new Connections;
-                this._connections.push(connection);
-                this._menubar_controller = new menubarMod.MenuBarController(connection, this._settings, this._effects_manager, this._popup);
-            }
-        } catch (e) {
-            console.error('[Blur my Shell] Error dynamic import menubar:', e);
+        if (!this._menubar_controller) {
+            let connection = new Connections;
+            this._connections.push(connection);
+            this._menubar_controller = new MenuBarController(connection, this._settings, this._effects_manager, this._popup);
         }
 
         // enable each component if needed, and if it is not already enabled
 
-        if (this._settings.panel.BLUR && !this._panel_blur.enabled)
-            this._panel_blur.enable();
+        try {
+            if (this._settings.panel.BLUR && !this._panel_blur.enabled)
+                this._panel_blur.enable();
+        } catch (e) { console.error('[Blur my Shell] panel error:', e); }
 
-        if (this._settings.dash_to_dock.BLUR && !this._dash_to_dock_blur.enabled)
-            this._dash_to_dock_blur.enable();
+        try {
+            if (this._settings.dash_to_dock.BLUR && !this._dash_to_dock_blur.enabled)
+                this._dash_to_dock_blur.enable();
+        } catch (e) { console.error('[Blur my Shell] dash_to_dock error:', e); }
 
-        if (this._settings.overview.BLUR && !this._overview_blur.enabled)
-            this._overview_blur.enable();
+        try {
+            if (this._settings.overview.BLUR && !this._overview_blur?.enabled)
+                this._overview_blur?.enable();
+        } catch (e) { console.error('[Blur my Shell] overview error:', e); }
 
-        if (this._settings.appfolder.BLUR)
-            this._appfolder_blur.enable();
+        try {
+            if (this._settings.appfolder.BLUR)
+                this._appfolder_blur.enable();
+        } catch (e) { console.error('[Blur my Shell] appfolder error:', e); }
 
-        if (this._settings.applications.BLUR)
-            this._applications_blur.enable();
+        try {
+            if (this._settings.applications.BLUR)
+                this._applications_blur.enable();
+        } catch (e) { console.error('[Blur my Shell] applications error:', e); }
 
-        if (this._settings.window_list.BLUR)
-            this._window_list_blur.enable();
+        try {
+            if (this._settings.window_list.BLUR)
+                this._window_list_blur.enable();
+        } catch (e) { console.error('[Blur my Shell] window_list error:', e); }
 
-        if (this._settings.coverflow_alt_tab.BLUR)
-            this._coverflow_alt_tab_blur.enable();
+        try {
+            if (this._settings.coverflow_alt_tab.BLUR)
+                this._coverflow_alt_tab_blur.enable();
+        } catch (e) { console.error('[Blur my Shell] coverflow error:', e); }
 
-        if (this._settings.screenshot.BLUR)
-            this._screenshot_blur.enable();
+        try {
+            if (this._settings.screenshot.BLUR)
+                this._screenshot_blur.enable();
+        } catch (e) { console.error('[Blur my Shell] screenshot error:', e); }
 
-        if (this._settings.popup.BLUR)
-            this._popup.enable();
+        try {
+            if (this._settings.popup.BLUR)
+                this._popup.enable();
+        } catch (e) { console.error('[Blur my Shell] popup error:', e); }
 
         try {
             this._quick_settings_blur.enable();
@@ -378,12 +370,11 @@ export default class BlurMyShell extends Extension {
             console.error('[Blur my Shell] quick_settings error:', e);
         }
 
-        if (this._menubar_controller) {
-            try {
+        try {
+            if (this._menubar_controller && !this._menubar_controller?.enabled)
                 this._menubar_controller.enable();
-            } catch (e) {
-                console.error('[Blur my Shell] menubar error:', e);
-            }
+        } catch (e) {
+            console.error('[Blur my Shell] menubar error:', e);
         }
 
         if (this._notifications_controller) {

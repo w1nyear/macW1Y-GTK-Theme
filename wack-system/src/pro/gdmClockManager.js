@@ -147,15 +147,14 @@ export class GdmClockManager {
         let startX = (alloc && alloc.x1 >= 0 && alloc.x1 < 32768) ? alloc.x1 : monitor.x;
 
         const topY = monitor.y + Math.floor(h * GDM_DATETIME_TOP_FRACTION);
-        const preferredDateH = this.clock._dateOutput.get_preferred_height(-1)[1] || 36;
-        const effectiveDateH = Math.max(36, Math.ceil(preferredDateH));
-        const dateGap = 6;
-        const timeY = effectiveDateH + dateGap;
+        const preferredDateH = this.clock._dateOutput.get_preferred_height(-1)[1] || 28;
+        const effectiveDateH = Math.max(22, Math.ceil(preferredDateH));
+        const timeY = effectiveDateH - 6;
 
-        const preferredTimeH = this.clock._time.get_preferred_height(-1)[1] || 160;
-        const effectiveTimeH = Math.max(160, Math.ceil(preferredTimeH));
+        const preferredTimeH = this.clock._time.get_preferred_height(-1)[1] || 150;
+        const effectiveTimeH = Math.max(140, Math.ceil(preferredTimeH));
 
-        this.clockWrapper.set_size(w, timeY + effectiveTimeH + 30);
+        this.clockWrapper.set_size(w, timeY + effectiveTimeH + 20);
         this.clockWrapper.set_position(startX, topY);
         this.clockWrapper.set_pivot_point(0.5, 0.5);
 

@@ -10,6 +10,11 @@
   "shell-version": [
     "50"
   ],
+  "session-modes": [
+    "user",
+    "unlock-dialog",
+    "gdm"
+  ],
   "url": "https://gitlab.gnome.org/GNOME/gnome-shell-extensions",
   "uuid": "user-theme@gnome-shell-extensions.gcampax.github.com",
   "version": 79,

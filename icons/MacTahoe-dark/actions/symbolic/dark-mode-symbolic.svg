@@ -1,5 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="16px" height="16px" version="1.1" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
- <path d="m8 0a8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8 8 8 0 0 0-8-8zm0 1a7 7 0 0 1 7 7 7 7 0 0 1-7 7 7 7 0 0 1-7-7 7 7 0 0 1 7-7z" fill="#dedede" fill-rule="evenodd" stop-color="#000000"/>
- <path d="m8 2a6 6 0 0 0-6 6 6 6 0 0 0 6 6v-12z" fill="#dedede" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Left half outer arc ring (between r=7 and r=9) -->
+  <path d="M 12 3 A 9 9 0 0 0 12 21 L 12 19 A 7 7 0 0 1 12 5 Z" fill="currentColor"/>
+  <!-- Right half outer band (between r=4.5 and r=9) -->
+  <path d="M 12 3 A 9 9 0 0 1 12 21 L 12 16.5 A 4.5 4.5 0 0 0 12 7.5 Z" fill="currentColor"/>
+  <!-- Left half inner circle (radius 4.5) -->
+  <path d="M 12 7.5 A 4.5 4.5 0 0 0 12 16.5 Z" fill="currentColor"/>
 </svg>

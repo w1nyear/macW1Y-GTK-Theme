@@ -3,13 +3,14 @@ disable-user-extensions=false
 enabled-extensions=['wack-lockscreen-clock@rinzler69-wastaken.github.com', 'user-theme@gnome-shell-extensions.gcampax.github.com']
 
 [org/gnome/shell/extensions/user-theme]
-name='MacTahoe-Dark'
+name='macW1Y-Dark'
 
 [org/gnome/desktop/interface]
-gtk-theme='MacTahoe-Dark'
-icon-theme='MacTahoe-Dark'
+gtk-theme='macW1Y-Dark'
+icon-theme='MacTahoe-dark'
 
 [org/gnome/login-screen]
+enable-fingerprint-authentication=false
 logo=''
 disable-user-list=false
 
@@ -18,8 +19,13 @@ picture-uri='file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.j
 picture-uri-dark='file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
 picture-options='zoom'
 
+[org/gnome/desktop/screensaver]
+picture-uri='file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+picture-options='zoom'
+
 [org/gnome/shell/extensions/wack-lockscreen-clock]
 lockscreen-mode='cupertino'
+cupertino-always-show-user=true
 lockscreen-wallpaper-enable=false
 date-style='full'
 clock-animation='scale-down'

@@ -451,7 +451,7 @@
       <description>How strongly each toggle's own original color is applied, independently of quick-settings-tint-strength. 0 applies none of it, 1 applies it fully. Only used when quick-settings-apply-to is Toggles.</description>
     </key>
     <key name="quick-settings-toggle-corner-radius" type="d">
-      <default>18.0</default>
+      <default>9999.0</default>
       <summary>Toggle corner radius</summary>
       <description>Corner radius applied to each individual toggle's glass shape. Only used when quick-settings-apply-to is Toggles.</description>
     </key>
@@ -590,11 +590,11 @@
       <summary>Blur radius</summary>
     </key>
     <key name="desktop-menu-corner-radius" type="d">
-      <default>12.0</default>
+      <default>24.0</default>
       <summary>Corner radius</summary>
     </key>
     <key name="desktop-menu-content-opacity" type="d">
-      <default>0.90</default>
+      <default>1.0</default>
       <summary>Menu content opacity</summary>
       <description>Opacity of the menu's own content layer to let the glass effect show through (0.0 to 1.0).</description>
     </key>

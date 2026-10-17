@@ -1,4 +1,7 @@
 [/]
-icon-size=22
-show-os-icon=false
+hide-overview-button=true
+icon-size=16
+menu-icon='apple-logo'
+search-shortcut=['<Control>space', '<Primary>space']
+show-os-icon=true
 show-user-switcher=false

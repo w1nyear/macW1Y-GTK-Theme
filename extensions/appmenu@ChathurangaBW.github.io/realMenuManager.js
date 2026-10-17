@@ -198,11 +198,14 @@ function _humanizeActionName(name) {
 
 // ── dbusmenu helpers ──────────────────────────────────────────────────────
 function _normalizeLabel(label) {
-    return String(label ?? '')
+    const raw = String(label ?? '')
         .replace(/_/g, '')
         .replace(/\.\.\.$/g, '…')
         .replace(/\s+/g, ' ')
         .trim();
+    if (!raw)
+        return '';
+    return _(raw);
 }
 
 function _isVisible(item) {
@@ -282,7 +285,9 @@ function _isAppMenuLabel(label, appName) {
     return normalized === normalizedAppName
         || normalized === 'application'
         || normalized === 'app'
-        || normalized === 'menu';
+        || normalized === 'menu'
+        || normalized === _('Application').toLowerCase()
+        || normalized === _('Menu').toLowerCase();
 }
 
 function _desktopIdToBusName(appId) {
@@ -577,12 +582,12 @@ export class RealMenuManager {
 
         // Assemble top-level menus
         const topLevelMenus = [];
-        if (fileItems.length > 0) topLevelMenus.push({ label: 'File', children: fileItems });
-        if (editItems.length > 0) topLevelMenus.push({ label: 'Edit', children: editItems });
-        if (viewItems.length > 0) topLevelMenus.push({ label: 'View', children: viewItems });
-        if (formatItems.length > 0) topLevelMenus.push({ label: 'Format', children: formatItems });
-        if (toolsItems.length > 0) topLevelMenus.push({ label: 'Tools', children: toolsItems });
-        if (helpItems.length > 0) topLevelMenus.push({ label: 'Help', children: helpItems });
+        if (fileItems.length > 0) topLevelMenus.push({ label: _('File'), children: fileItems });
+        if (editItems.length > 0) topLevelMenus.push({ label: _('Edit'), children: editItems });
+        if (viewItems.length > 0) topLevelMenus.push({ label: _('View'), children: viewItems });
+        if (formatItems.length > 0) topLevelMenus.push({ label: _('Format'), children: formatItems });
+        if (toolsItems.length > 0) topLevelMenus.push({ label: _('Tools'), children: toolsItems });
+        if (helpItems.length > 0) topLevelMenus.push({ label: _('Help'), children: helpItems });
 
         if (appChildren.length === 0 && topLevelMenus.length === 0)
             return null;

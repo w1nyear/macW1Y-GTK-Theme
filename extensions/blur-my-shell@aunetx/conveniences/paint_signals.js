@@ -1,7 +1,8 @@
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 
-const PAINTS_BETWEEN_REPAINTS = 2;
+const MIN_INTERVAL_US = 100000; // 100ms throttle (~10 FPS max update rate)
 
 export const PaintSignals = class PaintSignals {
     constructor(connections) {
@@ -12,15 +13,15 @@ export const PaintSignals = class PaintSignals {
     connect(actor, blur_effect) {
         this.disconnect_all_for_actor(actor);
 
-        let paints_to_skip = 0;
+        let last_repaint_us = 0;
         const paint_effect = new PaintCallbackEffect();
         paint_effect.set_callback(() => {
-            if (paints_to_skip > 0) {
-                paints_to_skip--;
+            const now = GLib.get_monotonic_time();
+            if (now - last_repaint_us < MIN_INTERVAL_US) {
                 return;
             }
 
-            paints_to_skip = PAINTS_BETWEEN_REPAINTS;
+            last_repaint_us = now;
             blur_effect.queue_repaint();
         });
 

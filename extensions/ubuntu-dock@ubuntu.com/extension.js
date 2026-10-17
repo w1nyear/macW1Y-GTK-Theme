@@ -9,10 +9,6 @@ export let dockManager;
 
 export default class DashToDockExtension extends Extension.Extension {
     enable() {
-        try {
-            global.context.unsafe_mode = true;
-            console.log('[UBUNTU_DOCK] set unsafe_mode = true');
-        } catch (_e) {}
         this._extensionListenerId = Main.extensionManager.connect(
             'extension-state-changed', () => this._conditionallyEnableDock());
         this._conditionallyEnableDock();

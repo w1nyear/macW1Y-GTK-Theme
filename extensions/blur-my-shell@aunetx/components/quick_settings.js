@@ -1,11 +1,6 @@
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as utils from '../conveniences/utils.js';
-
-const BlurModule = await utils.import_in_shell_only('gi://Blur');
-const Shell = await utils.import_in_shell_only('gi://Shell');
-const BlurOrShell = utils.is_usable_blur_module(BlurModule) ? BlurModule : Shell;
 
 export const QuickSettingsBlur = class QuickSettingsBlur {
     constructor(connections, settings, effects_manager) {
@@ -13,10 +8,8 @@ export const QuickSettingsBlur = class QuickSettingsBlur {
         this.settings = settings;
         this.effects_manager = effects_manager;
         this.enabled = false;
-        this.blurred_actors = new Set();
-        this.sigma = 10; // Blur at 10% as requested by user
         this._waiting_startup = false;
-        this._grid_connected = false;
+        this._origSetDimmed = null;
     }
 
     enable() {
@@ -38,207 +31,91 @@ export const QuickSettingsBlur = class QuickSettingsBlur {
         this.enabled = true;
         const menu = quickSettings.menu;
 
-        // Disable offscreen redirect on parent containers so BACKGROUND blur can capture wallpaper
-        this.disable_offscreen_redirect(menu);
+        // 1. Remove all old blur effects from Quick Settings items
+        this.clean_all_blur(menu);
 
-        // Clean any blur from submenus (e.g. Wi-Fi/Bluetooth dropdowns in overlay)
-        this.clean_overlay(menu);
+        // 2. Ensure BoxPointer maintains native ALWAYS offscreen redirect so Liquid Glass shader renders
+        this.ensure_boxpointer_redirect(menu);
 
-        // Blur existing elements
-        this.blur_all(menu);
+        // 3. Remove dimming effect when submenus open
+        this.remove_dim_effect(menu);
 
-        // When menu is opened or open state changes, re-apply
+        // 4. Hook menu open-state-changed to maintain these guarantees
         this.connections.connect(menu, 'open-state-changed', (_, open) => {
             if (open) {
-                this.disable_offscreen_redirect(menu);
-                this.clean_overlay(menu);
-                this.blur_all(menu);
+                this.clean_all_blur(menu);
+                this.ensure_boxpointer_redirect(menu);
+                this.remove_dim_effect(menu);
             }
         });
-
-        // Real-time sigma change listener
-        if (this.settings?.quick_settings?.settings) {
-            this.connections.connect(
-                this.settings.quick_settings.settings,
-                'changed::sigma',
-                () => {
-                    const s = this.settings.quick_settings.SIGMA ?? 30;
-                    this.set_sigma(s);
-                }
-            );
-        }
     }
 
-    disable_offscreen_redirect(menu) {
-        if (!menu)
-            return;
-
-        try {
-            if (menu.actor)
-                menu.actor.set_offscreen_redirect(0);
-            if (menu.box)
-                menu.box.set_offscreen_redirect(0);
-            if (menu._grid)
-                menu._grid.set_offscreen_redirect(0);
-            if (menu._boxPointer) {
-                menu._boxPointer.set_offscreen_redirect(0);
-                if (menu._boxPointer.bin)
-                    menu._boxPointer.bin.set_offscreen_redirect(0);
-            }
-        } catch (e) {
-            console.error(`[BlurMyShell] QuickSettingsBlur: error disabling offscreen redirect: ${e}`);
-        }
-    }
-
-    clean_overlay(menu) {
-        if (!menu?._overlay)
-            return;
-
-        try {
-            menu._overlay.get_children().forEach(child => {
-                try {
-                    child.remove_effect_by_name('bms-qs-item-blur');
-                } catch (e) {}
-            });
-        } catch (e) {}
-    }
-
-    set_sigma(sigma) {
-        this.sigma = sigma;
-        const theme_context = St.ThemeContext.get_for_stage(global.stage);
-        const scale = theme_context ? theme_context.scale_factor : 1;
-        const radius = Math.max(1, sigma * scale);
-
-        this.blurred_actors.forEach(actor => {
+    clean_all_blur(menu) {
+        if (!menu) return;
+        const cleanActor = (actor) => {
+            if (!actor) return;
             try {
-                const effect = actor.get_effect('bms-qs-item-blur');
-                if (effect)
-                    effect.radius = radius;
-            } catch (e) {}
-        });
-    }
-
-    blur_all(menu) {
-        if (!menu)
-            return;
-
-        // 1. Grid items (all toggles, sliders, and system items)
-        if (menu._grid) {
-            menu._grid.get_children().forEach(child => this.blur_grid_item(child));
-
-            if (!this._grid_connected) {
-                this._grid_connected = true;
-                this.connections.connect(menu._grid, 'child-added', (_, child) => {
-                    this.blur_grid_item(child);
-                });
-            }
-        }
-
-        // Submenus in overlay: do NOT blur (user requested removing blur under expanded lists)
-        this.clean_overlay(menu);
-    }
-
-    blur_grid_item(item) {
-        if (!item || typeof item.has_style_class_name !== 'function')
-            return;
-
-        // Check if item is the top system buttons container
-        if (item.has_style_class_name('quick-settings-system-item')) {
-            // Blur each individual button inside the system item box
-            let box = item.child || (item.get_first_child ? item.get_first_child() : null) || (item.get_child_at_index ? item.get_child_at_index(0) : null);
-            if (box?.get_children) {
-                box.get_children().forEach(btn => this.blur_system_button(btn));
-                if (!box._bms_qs_connected) {
-                    box._bms_qs_connected = true;
-                    this.connections.connect(box, 'child-added', (_, btn) => this.blur_system_button(btn));
+                actor.remove_effect_by_name('bms-qs-item-blur');
+                actor.remove_effect_by_name('bms-popup-blur');
+            } catch (_) {}
+            if (actor.get_children) {
+                for (const child of actor.get_children()) {
+                    cleanActor(child);
                 }
-            } else {
-                this.blur_actor(item);
             }
-            return;
-        }
+        };
 
-        // Regular quick toggle or slider pill
-        this.blur_actor(item);
+        if (menu.box) cleanActor(menu.box);
+        if (menu._grid) cleanActor(menu._grid);
+        if (menu._overlay) cleanActor(menu._overlay);
+        if (menu._boxPointer) cleanActor(menu._boxPointer);
     }
 
-    blur_system_button(btn) {
-        if (!btn || typeof btn.has_style_class_name !== 'function')
-            return;
-
-        // Only blur actual buttons, skip spacers
-        if (btn.has_style_class_name('icon-button') ||
-            btn.has_style_class_name('quick-toggle') ||
-            btn.has_style_class_name('power-item') ||
-            btn.has_style_class_name('button')) {
-            this.blur_actor(btn);
-        }
+    ensure_boxpointer_redirect(menu) {
+        if (!menu?._boxPointer) return;
+        try {
+            menu._boxPointer.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
+            if (!this._origSetOffscreenRedirect) {
+                this._origSetOffscreenRedirect = menu._boxPointer.set_offscreen_redirect.bind(menu._boxPointer);
+                const self = this;
+                menu._boxPointer.set_offscreen_redirect = function(mode) {
+                    if (menu.isOpen) {
+                        return self._origSetOffscreenRedirect(Clutter.OffscreenRedirect.ALWAYS);
+                    }
+                    return self._origSetOffscreenRedirect(mode);
+                };
+            }
+        } catch (_) {}
     }
 
-    blur_actor(actor) {
-        if (!actor || this.blurred_actors.has(actor) || !BlurOrShell?.BlurEffect)
-            return;
-
-        // Skip non-widgets
-        if (typeof actor.has_style_class_name !== 'function')
-            return;
-
-        // EXCLUDE submenus and general containers from blur
-        if (actor.has_style_class_name('quick-toggle-menu') ||
-            actor.has_style_class_name('quick-toggle-menu-container') ||
-            actor.has_style_class_name('popup-menu-content') ||
-            actor.has_style_class_name('quick-settings')) {
-            return;
-        }
-
-        this.blurred_actors.add(actor);
-
-        const theme_context = St.ThemeContext.get_for_stage(global.stage);
-        const scale = theme_context ? theme_context.scale_factor : 1;
-        const radius = Math.max(1, this.sigma * scale);
-
-        let blur_effect = actor.get_effect('bms-qs-item-blur');
-        if (!blur_effect) {
-            const has_corner_radius = Boolean(
-                BlurOrShell?.BlurEffect?.list_properties()
-                    .some(property => property.name === 'corner-radius')
-            );
-
-            const params = {
-                name: 'bms-qs-item-blur',
-                radius: radius,
-                mode: BlurOrShell.BlurMode.BACKGROUND,
+    remove_dim_effect(menu) {
+        if (!menu) return;
+        try {
+            if (menu._dimEffect) {
+                menu._dimEffect.enabled = false;
+            }
+            if (!this._origSetDimmed && typeof menu._setDimmed === 'function') {
+                this._origSetDimmed = menu._setDimmed;
+            }
+            menu._setDimmed = function(dim) {
+                if (this._dimEffect) {
+                    this._dimEffect.enabled = false;
+                }
             };
-            if (has_corner_radius) {
-                params.corner_radius = 9999 * scale;
-            }
-
-            try {
-                blur_effect = new BlurOrShell.BlurEffect(params);
-                actor.add_effect(blur_effect);
-            } catch (err) {
-                console.error(`[BlurMyShell] QuickSettingsBlur error adding blur to actor: ${err}`);
-            }
-        } else {
-            blur_effect.radius = radius;
-            if ('corner_radius' in blur_effect)
-                blur_effect.corner_radius = 9999 * scale;
-        }
-
-        this.connections.connect(actor, 'destroy', () => {
-            this.blurred_actors.delete(actor);
-        });
+        } catch (_) {}
     }
 
     disable() {
         this.enabled = false;
-        this.blurred_actors.forEach(actor => {
-            try {
-                actor.remove_effect_by_name('bms-qs-item-blur');
-            } catch (e) {}
-        });
-        this.blurred_actors.clear();
-        this._grid_connected = false;
+        const quickSettings = Main.panel?.statusArea?.quickSettings;
+        const menu = quickSettings?.menu;
+        if (menu) {
+            this.clean_all_blur(menu);
+            if (this._origSetDimmed) {
+                menu._setDimmed = this._origSetDimmed;
+                this._origSetDimmed = null;
+            }
+        }
         this._waiting_startup = false;
     }
 };

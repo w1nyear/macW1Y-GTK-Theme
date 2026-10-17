@@ -5,13 +5,17 @@
 // is taken only when the clip contains the whole rect, and reused otherwise.
 import Clutter from 'gi://Clutter';
 import Cogl from 'gi://Cogl';
+import GLib from 'gi://GLib';
 import Mtk from 'gi://Mtk';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { coglContext, newRootNode, offscreenFormat } from '../shellVersion.js';
 
 // An offscreen texture to render or blit into. A blit needs both sides fixed
 // point or both floating point, so `format` follows the source when that is
 // an offscreen (rotated or HDR views); null is the default RGBA8888_PRE.
 export function createTarget(width, height, format = null, logger) {
+    if (!width || width < 1 || !height || height < 1 || !Number.isFinite(width) || !Number.isFinite(height))
+        return null;
     const ctx = coglContext();
     const texture = format === null
         ? Cogl.Texture2D.new_with_size(ctx, width, height)
@@ -102,6 +106,21 @@ export class StageCopier {
         const inClip = !clip || clip.contains_rectangle(new Mtk.Rectangle({
             x: clipX, y: clipY, width: Math.ceil(rect[2]) - clipX, height: Math.ceil(rect[3]) - clipY,
         })) === Mtk.RegionOverlap.IN;
+        const nowUs = GLib.get_monotonic_time();
+        const sameGeometry = copy?.rect &&
+            Math.abs(copy.rect[0] - rect[0]) < 1.0 &&
+            Math.abs(copy.rect[1] - rect[1]) < 1.0 &&
+            Math.abs(copy.rect[2] - rect[2]) < 1.0 &&
+            Math.abs(copy.rect[3] - rect[3]) < 1.0;
+
+        const isOverviewAnimating = Boolean(Main?.overview?._animationInProgress);
+        const minIntervalUs = isOverviewAnimating ? 16666 : 50000;
+
+        if (sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < minIntervalUs)) {
+            this.reuseCount++;
+            return { copy, missed: false };
+        }
+
         if (!inClip) {
             if (copy?.rect) {
                 this.reuseCount++;
@@ -117,6 +136,7 @@ export class StageCopier {
         addBlit(root, fb, copy.framebuffer, view.color_state, [fx0, fy0, fx1 - fx0, fy1 - fy0]);
         copy.rect = rect;
         copy.serial = ++this._serial;
+        copy.lastTimeUs = nowUs;
         this.lastCopy = copy;
         this.copyCount++;
         return { copy, missed: false };

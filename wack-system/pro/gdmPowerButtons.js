@@ -11,7 +11,7 @@ const shellDomain = Gettext.domain('gnome-shell');
 const actionName = name => shellDomain.pgettext('search-result', name);
 
 // Gap between the bottom of the user list and the buttons.
-const CSA_TOP_GAP = 35;
+const CSA_TOP_GAP = 28;
 
 /**
  * Reports no width to its parent and lays its child out centred. Inside the
@@ -60,73 +60,35 @@ export class GdmPowerButtons {
         this._userEnabled = true;
     }
 
-    setup(dialog) {
-        const userSelectionBox = dialog?._userSelectionBox;
-        if (!userSelectionBox || this.actor)
-            return;
+    setup(_dialog) {
+        // Disabled per user request
+    }
 
-        const actions = SystemActions.getDefault();
-        const row = new St.BoxLayout({ style_class: 'wack-gdm-power-buttons' });
+    positionPowerButtons(dialogBox = null) {
+        if (!this.actor) return;
+        const dialog = this._gdm?._dialog;
+        const alloc = dialogBox || (dialog ? dialog.get_allocation_box() : null);
+        const monitor = Main.layoutManager?.primaryMonitor || { x: 0, y: 0, width: 1920, height: 1080 };
+        let w = alloc ? (alloc.x2 - alloc.x1) : monitor.width;
+        let h = alloc ? (alloc.y2 - alloc.y1) : monitor.height;
+        if (w <= 0 || w > 32768) w = monitor.width;
+        if (h <= 0 || h > 32768) h = monitor.height;
+        let startX = (alloc && alloc.x1 >= 0 && alloc.x1 < 32768) ? alloc.x1 : monitor.x;
 
-        const buttons = [
-            ['powerOff', 'can-power-off', 'system-shutdown-symbolic', actionName('Power Off'), () => actions.activatePowerOff()],
-            ['restart', 'can-restart', 'system-reboot-symbolic', actionName('Restart'), () => actions.activateRestart()],
-            ['suspend', 'can-suspend', 'media-playback-pause-symbolic', actionName('Suspend'), () => actions.activateSuspend()],
-        ];
+        const [, , natW, natH] = this.actor.get_preferred_size();
+        const effectiveW = natW > 0 ? natW : 320;
+        const effectiveH = natH > 0 ? natH : 78;
+        const x = startX + Math.floor((w - effectiveW) / 2);
+        const y = h - effectiveH - 28;
+        this.actor.set_position(x, y);
 
-        this._items = {};
-
-        for (const [key, property, iconName, label, activate] of buttons) {
-            const icon = new St.Icon({
-                icon_name: iconName,
-                style_class: 'wack-gdm-power-icon',
-                x_align: Clutter.ActorAlign.CENTER,
-            });
-            const labelWidget = new St.Label({
-                text: label,
-                style_class: 'wack-gdm-power-label',
-                x_align: Clutter.ActorAlign.CENTER,
-            });
-            const content = new St.BoxLayout({ vertical: true });
-            content.add_child(icon);
-            content.add_child(labelWidget);
-
-            const button = new St.Button({
-                style_class: 'wack-gdm-power-button',
-                can_focus: true,
-                accessible_name: label,
-                child: content,
-            });
-            button.connect('clicked', activate);
-            actions.bind_property(property, button, 'visible', GObject.BindingFlags.SYNC_CREATE);
-            row.add_child(button);
-
-            this._items[key] = {
-                button,
-                icon,
-                label: labelWidget,
-                content,
-                activate,
-            };
-        }
-
-        this.actor = new OverflowBin({ child: row });
-        this.actor.visible = this._userEnabled;
-        userSelectionBox.add_child(this.actor);
-
-        // The shell changes this actor asynchronously as it moves between the
-        // picker and an authentication prompt. Observe the actor itself so the
-        // Quick Settings action is never left in the previous state's mode.
-        userSelectionBox.connectObject(
-            'notify::visible', () => this.syncQuickSettingsVisibility(),
-            'notify::opacity', () => this.syncQuickSettingsVisibility(),
-            this
-        );
-
-        if (this._lastPromptColor) {
-            this.updateVibrancy(this._lastPromptColor);
-        }
-        this.syncQuickSettingsVisibility();
+        const actorBox = new Clutter.ActorBox({
+            x1: x,
+            y1: y,
+            x2: x + effectiveW,
+            y2: y + effectiveH,
+        });
+        this.actor.allocate(actorBox);
     }
 
     getPowerIcons() {
@@ -286,12 +248,14 @@ export class GdmPowerButtons {
         let overlayStyle = '';
         if (isHovered) {
             overlayStyle += ` color: #ffffff !important;`;
+        } else {
+            overlayStyle += ` color: rgba(255, 255, 255, 0.95) !important;`;
         }
         if (isFocused) {
             overlayStyle += ` border: 1px solid rgba(255, 255, 255, 0.8) !important;`;
         }
 
-        const bgStyle = ` background-image: none !important; background-gradient-direction: none !important; background-color: rgb(${curR}, ${curG}, ${curB}) !important;${overlayStyle}`;
+        const bgStyle = ` background-color: rgba(${curR}, ${curG}, ${curB}, 0.25) !important;${overlayStyle}`;
 
         icon.set_style(`${icon._wackOriginalStyle ?? ''}${bgStyle}`);
 

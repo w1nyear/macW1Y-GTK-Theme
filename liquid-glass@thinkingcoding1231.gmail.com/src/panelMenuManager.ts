@@ -46,6 +46,32 @@ export class PanelMenuManager {
     watch(Main.extensionManager, 'extension-state-changed');
     for (const key of ['enable-extra-menu-glass', 'disabled-extra-menus', ...Object.values(LEGACY_KEYS)])
       watch(this._settings, `changed::${key}`);
+
+    const anyPM = PopupMenu.PopupMenu.prototype as any;
+    if (!anyPM._origOpenWithGlass) {
+      anyPM._origOpenWithGlass = PopupMenu.PopupMenu.prototype.open;
+      const self = this;
+      anyPM.open = function(this: any, animate: any) {
+        if (this._glassManager === undefined && this.actor && this.box && isActorValid(this.actor) && isActorValid(this.box)) {
+          const reserved = new Set([Main.panel?.statusArea?.quickSettings?.menu]);
+          if (!reserved.has(this) && this.constructor.name !== 'QuickSettingsMenu') {
+            try {
+              const manager = new UIManager(self._path, self._settings, self._logger, { menu: this }, false, 'enable-extra-menu-glass', PANEL_MENU_PREFIX, 'menu:popup', false);
+              manager.setup();
+              this._glassManager = manager;
+              this.connectObject('destroy', () => {
+                manager.cleanup();
+                this._glassManager = null;
+              }, this);
+            } catch (e) {
+              this._glassManager = null;
+            }
+          }
+        }
+        return anyPM._origOpenWithGlass.call(this, animate);
+      };
+    }
+
     this._scheduleScan();
   }
 
@@ -78,14 +104,25 @@ export class PanelMenuManager {
     const reserved = new Set([panel.statusArea.dateMenu?.menu, panel.statusArea.quickSettings?.menu]);
 
     for (const [name, button] of Object.entries<any>(panel.statusArea)) {
-      if (!button || !panel.contains(button.container ?? button)) continue;
-      buttons.add(button);
-      this._watchButton(button);
+      try {
+        const c = button?.container ?? button;
+        if (!button || !c || !panel.contains(c)) continue;
+        buttons.add(button);
+        this._watchButton(button);
+      } catch (_e) {
+        continue;
+      }
       for (const [menuName, menu] of menusOf(name, button)) {
         // Dummy menus and custom non-popup actors cannot use UIManager.
         // Calendar and Quick Settings already have their own managers.
         if (!(menu instanceof PopupMenu.PopupMenu) || reserved.has(menu) || !menu.actor || !menu.box)
           continue;
+        try {
+          if (!menu.actor.get_parent() || !menu.box.get_parent())
+            continue;
+        } catch (_e) {
+          continue;
+        }
         detected.push(menuName);
         const allowed = LEGACY_KEYS[menuName]
           ? this._settings.get_boolean(LEGACY_KEYS[menuName]) : !disabled.has(menuName);
@@ -159,6 +196,12 @@ export class PanelMenuManager {
     for (const { manager } of this._menus.values())
       manager.cleanup();
     this._menus.clear();
+
+    const anyPM = PopupMenu.PopupMenu.prototype as any;
+    if (anyPM._origOpenWithGlass) {
+      anyPM.open = anyPM._origOpenWithGlass;
+      delete anyPM._origOpenWithGlass;
+    }
 
     this._settings.set_strv('detected-extra-menus', []);
   }

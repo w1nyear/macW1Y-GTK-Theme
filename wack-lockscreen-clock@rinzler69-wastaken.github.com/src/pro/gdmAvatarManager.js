@@ -116,68 +116,89 @@ export class GdmAvatarManager {
     }
 
     _setupUserListItem(item) {
-        const avatar = item?._userWidget?._avatar;
-        if (!avatar) return;
+        if (!item) return;
 
-        if (!avatar._wackOrigUpdate) {
-            avatar._wackOrigUpdate = avatar.update.bind(avatar);
-            avatar.update = () => {
-                if (avatar._wackSettingStyle || avatar._wackUpdating)
-                    return;
-                avatar._wackUpdating = true;
-                avatar._wackOrigUpdate();
-                avatar._wackUpdating = false;
+        item.x_align = Clutter.ActorAlign.CENTER;
+        item.clip_to_allocation = false;
+        if (item.child) {
+            item.child.x_align = Clutter.ActorAlign.CENTER;
+            item.child.x_expand = true;
+            item.child.clip_to_allocation = false;
+        }
 
-                this._applyStyleToUserListItemAvatar(avatar);
-            };
+        const userWidget = item._userWidget;
+        if (userWidget) {
+            userWidget.remove_style_class_name('horizontal');
+            userWidget.add_style_class_name('vertical');
+            userWidget.vertical = true;
+            try {
+                if (typeof userWidget.set_vertical === 'function')
+                    userWidget.set_vertical(true);
+            } catch (_) {}
+            userWidget.orientation = Clutter.Orientation.VERTICAL;
+            userWidget.x_align = Clutter.ActorAlign.CENTER;
+            userWidget.x_expand = true;
+            userWidget.clip_to_allocation = false;
 
-            const user = avatar._user || item?._userWidget?._user;
-            if (user && !user.is_loaded) {
-                user.connectObject(
-                    'notify::is-loaded', () => this._applyStyleToUserListItemAvatar(avatar),
-                    'changed', () => this._applyStyleToUserListItemAvatar(avatar),
-                    this
-                );
+            if (userWidget._wackSubtitle) {
+                userWidget._wackSubtitle.destroy();
+                delete userWidget._wackSubtitle;
             }
         }
 
-        const label = item?._userWidget?._label;
-        if (label) {
-            label.set_style(this._lastAvatarColor ? getUserLabelStyle(this._lastAvatarColor) : null);
-        }
+        const avatar = userWidget?._avatar;
+        if (avatar) {
+            avatar.x_align = Clutter.ActorAlign.CENTER;
+            avatar.x_expand = false;
+            avatar.clip_to_allocation = false;
 
-        if (item?._userWidget) {
-            try {
-                if (typeof item._userWidget.set_vertical === 'function')
-                    item._userWidget.set_vertical(true);
-            } catch (_) {}
-            try {
-                item._userWidget.orientation = Clutter.Orientation.VERTICAL;
-                item._userWidget.x_align = Clutter.ActorAlign.CENTER;
-                item._userWidget.style_class = 'user-widget vertical';
-                if (avatar) {
-                    avatar.x_align = Clutter.ActorAlign.CENTER;
+            if (!avatar._wackOrigUpdate) {
+                avatar._wackOrigUpdate = avatar.update.bind(avatar);
+                avatar.update = () => {
+                    if (avatar._wackSettingStyle || avatar._wackUpdating)
+                        return;
+                    avatar._wackUpdating = true;
+                    avatar._wackOrigUpdate();
+                    avatar._wackUpdating = false;
+
+                    this._applyStyleToUserListItemAvatar(avatar);
+                };
+
+                const user = avatar._user || item?._userWidget?._user;
+                if (user && !user.is_loaded) {
+                    user.connectObject(
+                        'notify::is-loaded', () => this._applyStyleToUserListItemAvatar(avatar),
+                        'changed', () => this._applyStyleToUserListItemAvatar(avatar),
+                        this
+                    );
                 }
-            } catch (_) {}
-
-            const user = avatar?._user || item?._userWidget?._user;
-            const userName = user ? user.get_user_name() : (GLib.get_user_name() || 'vitaliy');
-            const subtitleText = getAuthSubtitleText(userName);
-
-            if (!item._userWidget._wackSubtitle) {
-                item._userWidget._wackSubtitle = new St.Label({
-                    style_class: 'wack-gdm-auth-subtitle',
-                    text: subtitleText,
-                    x_align: Clutter.ActorAlign.CENTER,
-                    y_align: Clutter.ActorAlign.CENTER,
-                });
-                item._userWidget.add_child(item._userWidget._wackSubtitle);
-            } else {
-                item._userWidget._wackSubtitle.text = subtitleText;
             }
+
+            this._applyStyleToUserListItemAvatar(avatar);
         }
 
-        this._applyStyleToUserListItemAvatar(avatar);
+        const label = userWidget?._label;
+        if (label) {
+            label.x_align = Clutter.ActorAlign.CENTER;
+            label.x_expand = true;
+            label.clip_to_allocation = false;
+            for (const l of [label._realNameLabel, label._userNameLabel]) {
+                if (l) {
+                    l.x_align = Clutter.ActorAlign.CENTER;
+                    l.clip_to_allocation = false;
+                    if (l.clutter_text) {
+                        try {
+                            const Pango = imports.gi.Pango;
+                            l.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+                        } catch (_) {}
+                    }
+                    l.set_style('text-align: center !important;');
+                }
+            }
+            if (label.set_style) {
+                label.set_style(this._lastAvatarColor ? getUserLabelStyle(this._lastAvatarColor) : null);
+            }
+        }
     }
 
     _applyStyleToUserListItemAvatar(avatar) {
@@ -186,6 +207,7 @@ export class GdmAvatarManager {
         // Never touch picture avatars! GNOME Shell sets their photo via background-image on avatar.style.
         if (this._hasImageAvatar(avatar)) {
             delete avatar._wackHasVibrancy;
+            avatar.clip_to_allocation = false;
             return;
         }
 
@@ -208,7 +230,7 @@ export class GdmAvatarManager {
             else
                 delete avatar._wackHasVibrancy;
         }
-        avatar.clip_to_allocation = true;
+        avatar.clip_to_allocation = false;
         const child = avatar.get_child();
         if (child) {
             const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
@@ -252,6 +274,8 @@ export class GdmAvatarManager {
                     avatarButton.set_style(null);
                 // Never clear or overwrite avatar.style for picture avatars!
                 delete avatar._wackHasVibrancy;
+                if (avatar) avatar.clip_to_allocation = false;
+                if (avatarButton) avatarButton.clip_to_allocation = false;
             } else {
                 if (avatarButton.get_style() !== buttonStyle)
                     avatarButton.set_style(buttonStyle);
@@ -266,7 +290,7 @@ export class GdmAvatarManager {
                         else
                             delete avatar._wackHasVibrancy;
                     }
-                    avatar.clip_to_allocation = true;
+                    avatar.clip_to_allocation = false;
                     const child = avatar.get_child();
                     if (child) {
                         const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
@@ -275,7 +299,7 @@ export class GdmAvatarManager {
                     }
                 }
                 if (avatarButton)
-                    avatarButton.clip_to_allocation = true;
+                    avatarButton.clip_to_allocation = false;
             }
         };
 
@@ -327,7 +351,10 @@ export class GdmAvatarManager {
                 can_focus: false,
                 child: avatar,
                 reactive: false,
+                clip_to_allocation: false,
             });
+            uw.clip_to_allocation = false;
+            if (avatar) avatar.clip_to_allocation = false;
             uw.insert_child_at_index(uw._avatarButton, 0);
 
             if (avatar && !avatar._wackOrigUpdate) {
@@ -358,6 +385,19 @@ export class GdmAvatarManager {
                     childBox.set_size(availWidth, availHeight);
                     this._userNameLabel.allocate(childBox);
                 };
+            }
+            for (const l of [label?._realNameLabel, label?._userNameLabel]) {
+                if (l) {
+                    l.x_align = Clutter.ActorAlign.CENTER;
+                    l.clip_to_allocation = false;
+                    if (l.clutter_text) {
+                        try {
+                            const Pango = imports.gi.Pango;
+                            l.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+                        } catch (_) {}
+                    }
+                    l.set_style('text-align: center !important;');
+                }
             }
             if (this._connectedUser) {
                 this._connectedUser.disconnectObject(this);

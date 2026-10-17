@@ -1,0 +1,8 @@
+# Compression algorithm selection
+ALGO=zstd
+
+# Specifies the amount of RAM that should be used for zram
+PERCENT=100
+
+# Specifies the priority for the swap devices
+PRIORITY=100

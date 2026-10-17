@@ -1,0 +1,2 @@
+SUBSYSTEM=="power_supply", ATTR{online}=="0", RUN+="/usr/local/bin/cpu-power-manager battery"
+SUBSYSTEM=="power_supply", ATTR{online}=="1", RUN+="/usr/local/bin/cpu-power-manager ac"

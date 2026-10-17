@@ -1,0 +1,86 @@
+[org.gnome.desktop.interface]
+gtk-theme = 'macW1Y-Dark'
+icon-theme = 'MacTahoe-dark'
+cursor-theme = 'macOS'
+
+[org.gnome.desktop.interface:ubuntu]
+gtk-theme = 'macW1Y-Dark'
+icon-theme = 'MacTahoe-dark'
+cursor-theme = 'macOS'
+
+[org.gnome.desktop.interface:GNOME-Greeter]
+gtk-theme = 'macW1Y-Dark'
+icon-theme = 'MacTahoe-dark'
+cursor-theme = 'macOS'
+
+[org.gnome.shell.extensions.user-theme]
+name = 'macW1Y-Dark'
+
+[org.gnome.shell.extensions.user-theme:ubuntu]
+name = 'macW1Y-Dark'
+
+[org.gnome.shell.extensions.user-theme:GNOME-Greeter]
+name = 'macW1Y-Dark'
+
+[org.gnome.desktop.background]
+picture-uri = 'file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+picture-uri-dark = 'file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+
+[org.gnome.desktop.background:ubuntu]
+picture-uri = 'file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+picture-uri-dark = 'file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+
+[org.gnome.desktop.background:GNOME-Greeter]
+picture-uri = 'file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+picture-uri-dark = 'file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+
+[org.gnome.desktop.screensaver]
+picture-uri = 'file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+
+[org.gnome.desktop.screensaver:ubuntu]
+picture-uri = 'file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+
+[org.gnome.desktop.screensaver:GNOME-Greeter]
+picture-uri = 'file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+
+[org.gnome.shell.extensions.wack-lockscreen-clock]
+lockscreen-mode = 'cupertino'
+cupertino-always-show-user = true
+lockscreen-wallpaper-enable = false
+date-style = 'full'
+clock-animation = 'scale-down'
+prompt-animation = 'shell'
+cupertino-unlock-fade = true
+
+[org.gnome.shell.extensions.wack-lockscreen-clock:ubuntu]
+lockscreen-mode = 'cupertino'
+cupertino-always-show-user = true
+lockscreen-wallpaper-enable = false
+date-style = 'full'
+clock-animation = 'scale-down'
+prompt-animation = 'shell'
+cupertino-unlock-fade = true
+
+[org.gnome.shell.extensions.wack-lockscreen-clock:GNOME-Greeter]
+lockscreen-mode = 'cupertino'
+cupertino-always-show-user = true
+lockscreen-wallpaper-enable = false
+date-style = 'full'
+clock-animation = 'scale-down'
+prompt-animation = 'shell'
+cupertino-unlock-fade = true
+
+[org.gnome.login-screen]
+enable-fingerprint-authentication = false
+logo = ''
+disable-user-list = false
+
+[org.gnome.login-screen:ubuntu]
+enable-fingerprint-authentication = false
+logo = ''
+disable-user-list = false
+
+[org.gnome.login-screen:GNOME-Greeter]
+enable-fingerprint-authentication = false
+logo = ''
+disable-user-list = false

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Outer circle stroke -->
+  <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+  <!-- Right half: outer ring filled (between r=4.5 and r=9) -->
+  <path d="M 12 3 A 9 9 0 0 1 12 21 A 4.5 4.5 0 0 0 12 12 A 4.5 4.5 0 0 0 12 3 Z" fill="currentColor"/>
+  <!-- Left half: inner disc filled (r=4.5) -->
+  <path d="M 12 7.5 A 4.5 4.5 0 0 0 12 16.5 Z" fill="currentColor"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Small upward triangle at bottom -->
+  <polygon points="12,12 7.5,19 16.5,19" fill="currentColor"/>
+  <!-- Concentric speaker waves radiating upward above triangle -->
+  <path d="M 8.5 11 A 4.5 4.5 0 0 1 15.5 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M 5.8 8.2 A 8 8 0 0 1 18.2 8.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M 3.2 5.5 A 11.5 11.5 0 0 1 20.8 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

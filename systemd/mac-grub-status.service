@@ -1,0 +1,12 @@
+[Unit]
+Description=Update GRUB status icons (Battery and Time) before reboot/shutdown
+DefaultDependencies=no
+Before=shutdown.target reboot.target halt.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/vitaliy/MACTHEMEFILES/grub/generate_icons.py
+TimeoutStartSec=10
+
+[Install]
+WantedBy=shutdown.target reboot.target halt.target

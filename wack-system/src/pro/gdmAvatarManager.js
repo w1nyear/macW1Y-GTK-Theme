@@ -154,26 +154,17 @@ export class GdmAvatarManager {
             try {
                 item._userWidget.orientation = Clutter.Orientation.VERTICAL;
                 item._userWidget.x_align = Clutter.ActorAlign.CENTER;
-                item._userWidget.style_class = 'user-widget vertical';
+                item._userWidget.clip_to_allocation = false;
+                item.clip_to_allocation = false;
                 if (avatar) {
                     avatar.x_align = Clutter.ActorAlign.CENTER;
+                    avatar.clip_to_allocation = false;
                 }
             } catch (_) {}
 
-            const user = avatar?._user || item?._userWidget?._user;
-            const userName = user ? user.get_user_name() : (GLib.get_user_name() || 'vitaliy');
-            const subtitleText = getAuthSubtitleText(userName);
-
-            if (!item._userWidget._wackSubtitle) {
-                item._userWidget._wackSubtitle = new St.Label({
-                    style_class: 'wack-gdm-auth-subtitle',
-                    text: subtitleText,
-                    x_align: Clutter.ActorAlign.CENTER,
-                    y_align: Clutter.ActorAlign.CENTER,
-                });
-                item._userWidget.add_child(item._userWidget._wackSubtitle);
-            } else {
-                item._userWidget._wackSubtitle.text = subtitleText;
+            if (item._userWidget._wackSubtitle) {
+                item._userWidget._wackSubtitle.destroy();
+                delete item._userWidget._wackSubtitle;
             }
         }
 
@@ -186,6 +177,7 @@ export class GdmAvatarManager {
         // Never touch picture avatars! GNOME Shell sets their photo via background-image on avatar.style.
         if (this._hasImageAvatar(avatar)) {
             delete avatar._wackHasVibrancy;
+            avatar.clip_to_allocation = false;
             return;
         }
 
@@ -208,7 +200,7 @@ export class GdmAvatarManager {
             else
                 delete avatar._wackHasVibrancy;
         }
-        avatar.clip_to_allocation = true;
+        avatar.clip_to_allocation = false;
         const child = avatar.get_child();
         if (child) {
             const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
@@ -252,6 +244,8 @@ export class GdmAvatarManager {
                     avatarButton.set_style(null);
                 // Never clear or overwrite avatar.style for picture avatars!
                 delete avatar._wackHasVibrancy;
+                if (avatar) avatar.clip_to_allocation = false;
+                if (avatarButton) avatarButton.clip_to_allocation = false;
             } else {
                 if (avatarButton.get_style() !== buttonStyle)
                     avatarButton.set_style(buttonStyle);
@@ -266,7 +260,7 @@ export class GdmAvatarManager {
                         else
                             delete avatar._wackHasVibrancy;
                     }
-                    avatar.clip_to_allocation = true;
+                    avatar.clip_to_allocation = false;
                     const child = avatar.get_child();
                     if (child) {
                         const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
@@ -275,7 +269,7 @@ export class GdmAvatarManager {
                     }
                 }
                 if (avatarButton)
-                    avatarButton.clip_to_allocation = true;
+                    avatarButton.clip_to_allocation = false;
             }
         };
 
@@ -327,7 +321,10 @@ export class GdmAvatarManager {
                 can_focus: false,
                 child: avatar,
                 reactive: false,
+                clip_to_allocation: false,
             });
+            uw.clip_to_allocation = false;
+            if (avatar) avatar.clip_to_allocation = false;
             uw.insert_child_at_index(uw._avatarButton, 0);
 
             if (avatar && !avatar._wackOrigUpdate) {

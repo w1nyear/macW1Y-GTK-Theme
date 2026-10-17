@@ -312,13 +312,11 @@ corresponding .blp file and regenerate this file with blueprint-compiler.
                         </child>
                         <child>
                           <object class="AdwPreferencesGroup">
-                        <child>
-                          <object class="AdwPreferencesGroup">
-                            <property name="title" translatable="yes">Переміщення</property>
+                            <property name="title" translatable="yes">Жести трьома пальцями</property>
                             <property name="sensitive" bind-source="touchpad_toggle_row" bind-property="active" bind-flags="sync-create"/>
                             <child>
                               <object class="AdwComboRow" id="touchpad_drag_mode_row">
-                                <property name="title" translatable="yes">Режим</property>
+                                <property name="title" translatable="yes">Режим переміщення</property>
                                 <property name="subtitle" translatable="yes">Ввесь екран — повне охоплення екрана тачпадом</property>
                                 <property name="model">
                                   <object class="GtkStringList">
@@ -332,8 +330,35 @@ corresponding .blp file and regenerate this file with blueprint-compiler.
                                 <signal name="realize" handler="init_touchpad_drag_mode"/>
                               </object>
                             </child>
+                            <child>
+                              <object class="AdwSwitchRow" id="touchpad_copy_paste_row">
+                                <property name="title" translatable="yes">Копіювання та вставка щипком</property>
+                                <property name="subtitle" translatable="yes">Щипок трьома пальцями до центру — копіювання, розведення — вставка</property>
+                                <signal name="notify::active" handler="on_touchpad_copy_paste_changed"/>
+                                <signal name="realize" handler="init_touchpad_copy_paste"/>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwSpinRow" id="touchpad_gesture_delay_row">
+                                <property name="title" translatable="yes">Затримка розпізнавання жестів</property>
+                                <property name="subtitle" translatable="yes">Час очікування перед початком переміщення (мс)</property>
+                                <property name="adjustment">
+                                  <object class="GtkAdjustment">
+                                    <property name="lower">100</property>
+                                    <property name="upper">600</property>
+                                    <property name="step-increment">25</property>
+                                    <property name="page-increment">50</property>
+                                    <property name="value">250</property>
+                                  </object>
+                                </property>
+                                <signal name="notify::value" handler="on_touchpad_gesture_delay_changed"/>
+                                <signal name="realize" handler="init_touchpad_gesture_delay"/>
+                              </object>
+                            </child>
                           </object>
                         </child>
+                        <child>
+                          <object class="AdwPreferencesGroup">
                             <child>
                               <object class="AdwButtonRow">
                                 <property name="title" translatable="yes">Test _Settings</property>

@@ -1,0 +1,299 @@
+#!/usr/bin/env python3
+import sys
+import os
+import time
+import json
+import signal
+import subprocess
+from pathlib import Path
+
+# Ensure user site-packages are in sys.path
+sys.path.insert(0, '/home/vitaliy/.local/lib/python3.14/site-packages')
+sys.path.insert(0, '/home/vitaliy/.local/lib/python3.13/site-packages')
+sys.path.insert(0, '/home/vitaliy/.local/lib/python3.12/site-packages')
+
+CONFIG_DIR = Path.home() / '.config' / 'mac-airdrop'
+CONFIG_FILE = CONFIG_DIR / 'config.json'
+PID_FILE = CONFIG_DIR / 'daemon.pid'
+DEFAULT_DROP_DIR = Path.home() / 'Завантажене' / 'AirDrop'
+if not DEFAULT_DROP_DIR.parent.exists():
+    DEFAULT_DROP_DIR = Path.home() / 'Downloads' / 'AirDrop'
+
+def get_wifi_interface():
+    try:
+        res = subprocess.run(['ip', '-br', 'addr', 'show'], capture_output=True, text=True, check=True)
+        for line in res.stdout.strip().split('\n'):
+            parts = line.split()
+            if not parts:
+                continue
+            name = parts[0]
+            if name.startswith('wl') or name.startswith('wlan') or name.startswith('wifi'):
+                return name
+    except Exception:
+        pass
+    return 'wlp63s0'
+
+def load_config():
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    DEFAULT_DROP_DIR.mkdir(parents=True, exist_ok=True)
+    if CONFIG_FILE.exists():
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    cfg = {
+        'mode': 'everyone',  # 'off', 'contacts', 'everyone'
+        'interface': get_wifi_interface(),
+        'save_dir': str(DEFAULT_DROP_DIR),
+        'name': 'Vitaliy (MacBook Pro)'
+    }
+    save_config(cfg)
+    return cfg
+
+def save_config(cfg):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
+
+def is_daemon_running():
+    if not PID_FILE.exists():
+        return False, None
+    try:
+        pid = int(PID_FILE.read_text().strip())
+        os.kill(pid, 0)
+        return True, pid
+    except (ValueError, OSError):
+        try:
+            PID_FILE.unlink(missing_ok=True)
+        except Exception:
+            pass
+        return False, None
+
+def notify(title, message):
+    icon = '/home/vitaliy/.themes/MacTahoe-Dark/icons/airdrop-symbolic.svg'
+    try:
+        subprocess.run(['notify-send', '-a', 'AirDrop', '-i', icon, title, message], check=False)
+    except Exception:
+        pass
+    try:
+        sound = '/usr/share/sounds/freedesktop/stereo/complete.oga'
+        if os.path.exists(sound):
+            subprocess.Popen(['pw-play', sound], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+def start_daemon():
+    running, pid = is_daemon_running()
+    if running:
+        return True, pid
+    cfg = load_config()
+    if cfg.get('mode') == 'off':
+        return False, None
+
+    iface = cfg.get('interface', get_wifi_interface())
+    save_dir = Path(cfg.get('save_dir', str(DEFAULT_DROP_DIR)))
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    log_path = CONFIG_DIR / 'receiver.log'
+
+    # Daemon runner script
+    daemon_script = f"""
+import sys, os, time, subprocess
+from pathlib import Path
+sys.path.insert(0, '/home/vitaliy/.local/lib/python3.14/site-packages')
+sys.path.insert(0, '/home/vitaliy/.local/lib/python3.13/site-packages')
+
+save_dir = Path(r'{save_dir}')
+icon = r'/home/vitaliy/.themes/MacTahoe-Dark/icons/airdrop-symbolic.svg'
+sound = r'/usr/share/sounds/freedesktop/stereo/complete.oga'
+
+def alert(title, msg):
+    try:
+        subprocess.run(['notify-send', '-a', 'AirDrop', '-i', icon, title, msg])
+        if os.path.exists(sound):
+            subprocess.Popen(['pw-play', sound], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except:
+        pass
+
+cmd = [sys.executable, '-m', 'opendrop', 'receive', '-i', '{iface}', '-n', '{cfg.get("name", "Nitro")}']
+with open(r'{log_path}', 'a') as log_f:
+    p = subprocess.Popen(cmd, cwd=str(save_dir), stdout=log_f, stderr=log_f)
+    initial_files = set(os.listdir(save_dir)) if save_dir.exists() else set()
+    while p.poll() is None:
+        time.sleep(1)
+        if save_dir.exists():
+            cur = set(os.listdir(save_dir))
+            diff = cur - initial_files
+            for fn in diff:
+                if not fn.startswith('.'):
+                    alert('AirDrop', f'Отримано файл: {{fn}}')
+            initial_files = cur
+"""
+    proc = subprocess.Popen(
+        [sys.executable, '-c', daemon_script],
+        cwd=str(save_dir),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True
+    )
+    PID_FILE.write_text(str(proc.pid))
+    return True, proc.pid
+
+def stop_daemon():
+    running, pid = is_daemon_running()
+    if running and pid:
+        try:
+            os.kill(pid, signal.SIGTERM)
+            time.sleep(0.3)
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except Exception:
+                pass
+        except Exception:
+            pass
+    try:
+        subprocess.run(['pkill', '-f', 'opendrop receive'], check=False)
+    except Exception:
+        pass
+    try:
+        PID_FILE.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+def set_mode(mode):
+    cfg = load_config()
+    mode = mode.lower().strip()
+    if mode not in ('off', 'contacts', 'everyone'):
+        mode = 'off'
+    cfg['mode'] = mode
+    save_config(cfg)
+    if mode == 'off':
+        stop_daemon()
+        notify('AirDrop', 'AirDrop вимкнено')
+    else:
+        stop_daemon()
+        start_daemon()
+        mode_label = 'Усі' if mode == 'everyone' else 'Тільки контакти'
+        notify('AirDrop', f'AirDrop увімкнено ({mode_label})')
+    return cfg
+
+def toggle_mode():
+    cfg = load_config()
+    cur = cfg.get('mode', 'off')
+    if cur == 'off':
+        new_mode = 'everyone'
+    else:
+        new_mode = 'off'
+    return set_mode(new_mode)
+
+def open_folder():
+    cfg = load_config()
+    save_dir = cfg.get('save_dir', str(DEFAULT_DROP_DIR))
+    os.makedirs(save_dir, exist_ok=True)
+    subprocess.Popen(['xdg-open', save_dir])
+
+def send_file(file_path=None):
+    if not file_path or not os.path.exists(file_path):
+        res = subprocess.run(
+            ['zenity', '--file-selection', '--title=AirDrop: Оберіть файл для надсилання'],
+            capture_output=True, text=True
+        )
+        if res.returncode != 0 or not res.stdout.strip():
+            return
+        file_path = res.stdout.strip()
+
+    file_name = Path(file_path).name
+    cfg = load_config()
+    iface = cfg.get('interface', get_wifi_interface())
+
+    notify('AirDrop', f'Пошук пристроїв для надсилання {file_name}...')
+    
+    # Run opendrop find with zenity progress / picker
+    script = f"""
+import sys, os, subprocess, json, time
+sys.path.insert(0, '/home/vitaliy/.local/lib/python3.14/site-packages')
+from opendrop.cli import AirDropBrowser, AirDropConfig
+
+cfg = AirDropConfig(interface='{iface}', computer_name='Nitro')
+browser = AirDropBrowser(cfg)
+receivers = []
+
+def on_add(info):
+    try:
+        addr = info.parsed_addresses()[0]
+        name = info.name.split('.')[0]
+        receivers.append((name, str(addr), str(info.port)))
+    except:
+        pass
+
+browser.start(callback_add=on_add)
+# Wait up to 5 seconds for devices
+for _ in range(5):
+    time.sleep(1)
+    if receivers:
+        break
+browser.stop()
+
+if not receivers:
+    subprocess.run(['zenity', '--info', '--title=AirDrop', '--text=Пристроїв Apple поблизу не знайдено.\\nПереконайтеся, що на пристрої AirDrop увімкнено для Усіх (Everyone).'])
+    sys.exit(0)
+
+# Build zenity list
+cmd = ['zenity', '--list', '--title=AirDrop: Оберіть одержувача', '--column=Ім’я пристрою', '--column=IP', '--column=Порт']
+for r in receivers:
+    cmd.extend([r[0], r[1], r[2]])
+p = subprocess.run(cmd, capture_output=True, text=True)
+if p.returncode == 0 and p.stdout.strip():
+    selected = p.stdout.strip()
+    subprocess.run(['opendrop', 'send', '-i', '{iface}', '-r', selected, '-f', r'{file_path}'])
+    subprocess.run(['notify-send', '-a', 'AirDrop', 'AirDrop', f'Файл {file_name} успішно надіслано!'])
+"""
+    subprocess.Popen([sys.executable, '-c', script], start_new_session=True)
+
+def print_status():
+    cfg = load_config()
+    running, pid = is_daemon_running()
+    info = {
+        'mode': cfg.get('mode', 'off'),
+        'running': running,
+        'pid': pid,
+        'interface': cfg.get('interface', get_wifi_interface()),
+        'save_dir': cfg.get('save_dir', str(DEFAULT_DROP_DIR)),
+        'name': cfg.get('name', 'Vitaliy (MacBook Pro)')
+    }
+    print(json.dumps(info, ensure_ascii=False))
+
+def main():
+    if len(sys.argv) < 2:
+        print_status()
+        return
+
+    cmd = sys.argv[1].lower()
+    if cmd == 'status':
+        print_status()
+    elif cmd == 'set-mode':
+        if len(sys.argv) >= 3:
+            set_mode(sys.argv[2])
+        else:
+            set_mode('everyone')
+        print_status()
+    elif cmd == 'toggle':
+        toggle_mode()
+        print_status()
+    elif cmd == 'start':
+        start_daemon()
+        print_status()
+    elif cmd == 'stop':
+        stop_daemon()
+        print_status()
+    elif cmd == 'send':
+        target = sys.argv[2] if len(sys.argv) >= 3 else None
+        send_file(target)
+    elif cmd == 'open' or cmd == 'open-folder':
+        open_folder()
+    else:
+        print_status()
+
+if __name__ == '__main__':
+    main()

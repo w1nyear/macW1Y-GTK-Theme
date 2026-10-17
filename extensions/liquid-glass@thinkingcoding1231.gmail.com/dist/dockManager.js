@@ -116,6 +116,7 @@ export class DashManager {
         connectSetting('dock-corner-radius', () => {
             if (this.glass && this._isEffectActive) {
                 this.glass.setCornerRadius(this._settings.get_double('dock-corner-radius'));
+                this.glass.setCornerSmoothingEnabled(false);
             }
         });
         connectSetting('dock-brightness', () => {
@@ -233,6 +234,7 @@ export class DashManager {
         glass.setSaturation(saturation);
         glass.setBlurRadius(blurRadius);
         glass.setIsDock(true);
+        glass.setCornerSmoothingEnabled(false);
         // Dash to Dock slides by relayout, so the frame tick sees last frame's
         // position; the paint-time hook corrects it.
         glass.setLiveGeometryHook(() => this._syncGlassGeometryLive());
@@ -266,19 +268,59 @@ export class DashManager {
         };
         // The glass is the dock's sibling, so it stays up when the dock is
         // hidden as a whole (for instance over a fullscreen window).
-        let mapSignalId = this.targetActor.connect('notify::mapped', () => {
-            if (this.targetActor.mapped) {
+        const updateDockSync = () => {
+            if (this.targetActor.mapped && this.targetActor.visible && this.targetActor.opacity > 0) {
                 startFrameSync();
             }
             else {
                 this._stopFrameSync();
                 this._hideGlass();
             }
+        };
+        this._signalCleanups = [];
+        const safeConnect = (obj, sig, fn) => {
+            if (!obj) return;
+            try {
+                const id = obj.connect(sig, fn);
+                this._signalCleanups.push(() => {
+                    try { obj.disconnect(id); } catch (_) {}
+                });
+            } catch (_) {}
+        };
+
+        safeConnect(this.targetActor, 'notify::mapped', updateDockSync);
+        safeConnect(this.targetActor, 'notify::visible', updateDockSync);
+        safeConnect(this.targetActor, 'notify::opacity', updateDockSync);
+        safeConnect(global.display, 'notify::focus-window', () => {
+            if (this.glass && this._isEffectActive) {
+                this.glass.syncSources(true);
+            }
         });
-        this._signals.push(mapSignalId);
-        if (this.targetActor.mapped) {
-            startFrameSync();
+
+        // Keep dock glass seamlessly updated during overview transitions
+        const triggerDockSync = () => {
+            if (this.glass && this._isEffectActive) {
+                this.glass.syncSources(true);
+                this.glass.queue_redraw();
+            }
+        };
+        safeConnect(Main.overview, 'showing', triggerDockSync);
+        safeConnect(Main.overview, 'hiding', triggerDockSync);
+        safeConnect(Main.overview, 'shown', triggerDockSync);
+        safeConnect(Main.overview, 'hidden', triggerDockSync);
+
+        const stateAdjustment = Main.overview?._controls?._stateAdjustment
+            ?? Main.overview?._overview?._controls?._stateAdjustment;
+        if (stateAdjustment) {
+            safeConnect(stateAdjustment, 'notify::value', () => {
+                if (this.glass && this._isEffectActive) {
+                    const p = Math.max(0, Math.min(1, stateAdjustment.value));
+                    const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
+                    this.glass.setBrightness(baseBrightness - p * 0.15);
+                }
+            });
         }
+        updateDockSync();
     }
 
     // Runs at paint time (see GlassActor.setLiveGeometryHook()), when the
@@ -399,6 +441,7 @@ export class DashManager {
         }
         this._lastAbsX = absX;
         this._lastAbsY = absY;
+        this._isMoving = isMoving;
         let [tW, tH] = this.targetActor.get_size();
         if (this._stableDeltaW === undefined || this._lastTW !== tW) {
             this._stableDeltaW = baseW - tW;
@@ -483,7 +526,11 @@ export class DashManager {
             rect: [localBgX, localBgY, bgW, bgH],
         } : null;
         // After the geometry setters, so the relays cover this frame's rect.
-        this.glass.syncSources();
+        const now = GLib.get_monotonic_time();
+        if (this._isMoving || !this._lastSyncSourcesUs || (now - this._lastSyncSourcesUs > 100000)) {
+            this._lastSyncSourcesUs = now;
+            this.glass.syncSources();
+        }
     }
 
     get _frameSlot() {
@@ -513,11 +560,11 @@ export class DashManager {
         this._isEffectActive = false;
         this._currentMarginStyle = undefined;
         this._stopFrameSync();
-        // The dock may already have been destroyed by Dash to Dock.
-        const dockAlive = isActorValid(this.targetActor);
-        for (const id of this._signals) {
-            if (dockAlive)
-                this.targetActor.disconnect(id);
+        if (this._signalCleanups) {
+            for (const cleanup of this._signalCleanups) {
+                try { cleanup(); } catch (_) {}
+            }
+            this._signalCleanups = [];
         }
         this._signals = [];
         if (dockAlive) {

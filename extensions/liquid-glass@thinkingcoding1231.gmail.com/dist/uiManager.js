@@ -656,6 +656,7 @@ export class UIManager {
         glass.setTintColor(...hexToColorArray(tintColorStr));
         glass.setTintStrength(tintStrength);
         glass.setCornerRadius(this._cornerRadius);
+        glass.setCornerSmoothingEnabled(false);
         glass.setIsDock(false);
         glass.setBrightness(brightness);
         glass.setContrast(contrast);
@@ -771,10 +772,10 @@ export class UIManager {
                     y: relY,
                     w: w,
                     h: h,
-                    tintR: 1.0,
-                    tintG: 1.0,
-                    tintB: 1.0,
-                    baseStrength: 0.12
+                    tintR: 0.0,
+                    tintG: 0.0,
+                    tintB: 0.0,
+                    baseStrength: 0.05
                 });
             }
 
@@ -786,13 +787,23 @@ export class UIManager {
             if (!this.glass.visible) this.glass.show();
             this.glass.opacity = this.targetActor.opacity;
             this.glass.setMultiRegionMode(true);
-            this.glass.setCornerRadius(22.0);
+            this.glass.setCornerRadius(24.0);
+            this.glass.setIsDock(true);
+            this.glass.setTintColor(0.0, 0.0, 0.0);
+            this.glass.setTintStrength(0.05);
+            this.glass.setBlurRadius(3.0);
+            this.glass.setPadding(0);
+            try {
+                this.glass._renderer.uniforms.set('shadow_intensity', 0.0);
+                this.glass._renderer.uniforms.set('shadow_radius', 0.0);
+                this.glass._renderer.uniforms.set('shadow_max_radius', 0.0);
+            } catch (_) {}
             this.glass.setGlassRegions(regions);
 
-            let bgW = (maxX - minX) + (SHADER_PADDING * 2);
-            let bgH = (maxY - minY) + (SHADER_PADDING * 2);
-            let bgX = minX - SHADER_PADDING;
-            let bgY = minY - SHADER_PADDING;
+            let bgW = (maxX - minX);
+            let bgH = (maxY - minY);
+            let bgX = minX;
+            let bgY = minY;
             this._applyGlassBounds(this.glass, bgX + monitorX, bgY + monitorY, bgW, bgH, monitorX, monitorY, screenW, screenH);
             this.glass.syncSources();
             return;
@@ -813,7 +824,17 @@ export class UIManager {
             this._applyGlassBounds(this.glass, bgX, bgY, bgW, bgH, monitorX, monitorY, screenW, screenH);
         this._applyGlassScale(scaleX, scaleY);
         // After the geometry setters, so the relays cover this frame's rect.
-        this.glass.syncSources();
+        const now = GLib.get_monotonic_time();
+        const geomChanged = (this._lastSyncBgX !== bgX || this._lastSyncBgY !== bgY ||
+                             this._lastSyncBgW !== bgW || this._lastSyncBgH !== bgH);
+        if (geomChanged || !this._lastMenuSyncUs || (now - this._lastMenuSyncUs > 100000)) {
+            this._lastSyncBgX = bgX;
+            this._lastSyncBgY = bgY;
+            this._lastSyncBgW = bgW;
+            this._lastSyncBgH = bgH;
+            this._lastMenuSyncUs = now;
+            this.glass.syncSources();
+        }
     }
 
     _syncBgVisibility() {

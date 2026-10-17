@@ -39,14 +39,9 @@ import {Extension} from './dependencies/shell/extensions/extension.js';
 
 // Use __ () and N__() for the extension gettext domain, and reuse
 // the shell domain with the default _() and N_()
-const {gettext: __, ngettext} = Extension;
+const {gettext: __, ngettext: N__} = Extension;
 
 const DBusMenu = await DBusMenuUtils.haveDBusMenu();
-
-let BlurModule = null;
-try {
-    BlurModule = (await import('gi://Blur')).default;
-} catch (_) {}
 
 const Labels = Object.freeze({
     ISOLATE_MONITORS: Symbol('isolate-monitors'),
@@ -256,10 +251,6 @@ export const DockAbstractAppIcon = GObject.registerClass({
     _onDestroy() {
         super._onDestroy();
 
-        // This is necessary due to an upstream bug
-        // https://bugzilla.gnome.org/show_bug.cgi?id=757556
-        // It can be safely removed once it get solved upstream.
-        this._menu?.close(false);
         delete this._menu;
 
         this._doubleClickGesture?.cancel();
@@ -526,6 +517,20 @@ export const DockAbstractAppIcon = GObject.registerClass({
     }
 
     _activate({button, modifiers, clickCount = 1}) {
+        if (this.app?.get_id() === 'launchpad.desktop') {
+            if (typeof globalThis.toggleMacApplications === 'function') {
+                globalThis.toggleMacApplications();
+            } else {
+                const appMenuPath = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js`;
+                import(`file://${appMenuPath}`)
+                    .then(mod => {
+                        globalThis.toggleMacApplications = mod.toggleApplicationsDialog;
+                        mod.toggleApplicationsDialog();
+                    }).catch(() => {});
+            }
+            return;
+        }
+
         // Only consider SHIFT and CONTROL as modifiers (exclude SUPER, CAPS-LOCK, etc.)
         modifiers &= Clutter.ModifierType.SHIFT_MASK | Clutter.ModifierType.CONTROL_MASK;
 
@@ -1146,7 +1151,7 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
 
             if (windows.length > 0) {
                 this.addMenuItem(
-                    /* Translators: This is the heading of a list of open windows */
+                    /* TRANSLATORS: This is the heading of a list of open windows */
                     new PopupMenu.PopupSeparatorMenuItem(_('Open Windows')));
             }
 
@@ -1209,7 +1214,7 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
                 (this.sourceActor instanceof DockAppIcon) &&
                 ParentalControlsManager.getDefault().shouldShowApp(app.appInfo);
 
-            if (canFavorite) {
+            if (canFavorite && app.get_id() !== 'launchpad.desktop') {
                 this._appendSeparator();
 
                 const isFavorite = AppFavorites.getAppFavorites().isFavorite(app.get_id());
@@ -1296,14 +1301,16 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
     // update menu content when application windows change. This is desirable as actions
     // acting on windows (closing) are performed while the menu is shown.
     update() {
+        const {windowsCount} = this.sourceActor;
+
         // update, show or hide the quit menu
-        if (this.sourceActor.windowsCount > 0) {
-            if (this.sourceActor.windowsCount === 1) {
+        if (windowsCount > 0) {
+            if (windowsCount === 1) {
                 this._quitMenuItem.label.set_text(_('Quit'));
             } else {
-                this._quitMenuItem.label.set_text(ngettext(
-                    'Quit %d Window', 'Quit %d Windows', this.sourceActor.windowsCount).format(
-                    this.sourceActor.windowsCount));
+                this._quitMenuItem.label.set_text(N__(
+                    'Quit %d Window', 'Quit %d Windows', windowsCount).format(
+                    windowsCount));
             }
 
             this._quitMenuItem.actor.show();
@@ -1608,25 +1615,6 @@ export function itemShowLabel() {
     this.label.set_text(this._labelText);
     this.label.opacity = 0;
     this.label.show();
-
-    if (!this.label._dockLabelBlur) {
-        this.label._dockLabelBlur = true;
-        try {
-            this.label.set_style('background-color: transparent !important; background: transparent !important; box-shadow: none !important; border-radius: 9999px !important;');
-            if (Shell.BlurEffect) {
-                const blurEff = new Shell.BlurEffect({
-                    mode: Shell.BlurMode.BACKGROUND,
-                    radius: 20,
-                });
-                try {
-                    if ('corner_radius' in blurEff) blurEff.corner_radius = 9999;
-                } catch (_) {}
-                this.label.add_effect_with_name('dash-label-blur', blurEff);
-            }
-        } catch (_e) {
-            console.error(`[DashToDock] dash-label blur error: ${_e}`);
-        }
-    }
 
     const [stageX, stageY] = this.get_transformed_position();
     const node = this.label.get_theme_node();

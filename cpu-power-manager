@@ -1,0 +1,29 @@
+#!/bin/bash
+# CPU Power Manager - AC vs Battery optimization matching Windows Power Plan
+# On both AC and Battery: Maximum CPU state is 100% (allows full turbo frequency up to max GHz)
+# On Battery: Minimum CPU state is 5%, balanced energy performance preference
+# On AC: Minimum CPU state is 10%, performance governor & EPP, HWP dynamic boost
+
+AC_ONLINE=$(cat /sys/class/power_supply/ACAD/online 2>/dev/null || cat /sys/class/power_supply/AC/online 2>/dev/null || echo 1)
+
+if [ "$1" = "battery" ] || { [ -z "$1" ] && [ "$AC_ONLINE" = "0" ]; }; then
+    # Battery Mode: Min 5%, Max 100%
+    [ -f /sys/devices/system/cpu/intel_pstate/min_perf_pct ] && echo 5 > /sys/devices/system/cpu/intel_pstate/min_perf_pct
+    [ -f /sys/devices/system/cpu/intel_pstate/max_perf_pct ] && echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+    [ -f /sys/devices/system/cpu/intel_pstate/no_turbo ] && echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo
+    [ -f /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost ] && echo 0 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost
+    for gov in /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference; do
+        [ -f "$gov" ] && echo balance_performance > "$gov" 2>/dev/null || true
+    done
+    logger -t cpu-power-manager "Switched to Battery mode: Min 5%, Max 100%, EPP balance_performance"
+else
+    # AC Mode (Charging): Min 10%, Max 100%
+    [ -f /sys/devices/system/cpu/intel_pstate/min_perf_pct ] && echo 10 > /sys/devices/system/cpu/intel_pstate/min_perf_pct
+    [ -f /sys/devices/system/cpu/intel_pstate/max_perf_pct ] && echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
+    [ -f /sys/devices/system/cpu/intel_pstate/no_turbo ] && echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo
+    [ -f /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost ] && echo 1 > /sys/devices/system/cpu/intel_pstate/hwp_dynamic_boost
+    for gov in /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference; do
+        [ -f "$gov" ] && echo performance > "$gov" 2>/dev/null || true
+    done
+    logger -t cpu-power-manager "Switched to AC mode: Min 10%, Max 100%, EPP performance, Dynamic Boost"
+fi

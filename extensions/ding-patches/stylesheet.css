@@ -39,3 +39,57 @@ window.rename-popup {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
     padding: 10px 14px;
 }
+
+/* Desktop Context Menu styling */
+.desktopmenu,
+window.desktopmenu,
+window.desktopmenu decoration,
+menu.desktopmenu,
+.desktopmenu menu,
+menu {
+    border-radius: 24px !important;
+    background-color: transparent !important;
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.20) !important;
+    box-shadow: none !important;
+}
+
+.desktopmenu menuitem,
+window.desktopmenu menuitem,
+menu.desktopmenu menuitem,
+.desktopmenu menu menuitem,
+menu menuitem {
+    border-radius: 9999px;
+    margin: 2px 6px;
+    padding: 4px 12px;
+    min-height: 24px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.desktopmenu menuitem:hover,
+.desktopmenu menuitem:focus,
+.desktopmenu menuitem:selected,
+window.desktopmenu menuitem:hover,
+window.desktopmenu menuitem:focus,
+window.desktopmenu menuitem:selected,
+menu.desktopmenu menuitem:hover,
+menu.desktopmenu menuitem:focus,
+menu.desktopmenu menuitem:selected,
+menu menuitem:hover,
+menu menuitem:focus,
+menu menuitem:selected {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 9999px;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+}
+
+.desktopmenu menuitem:active,
+window.desktopmenu menuitem:active,
+menu menuitem:active {
+    background-color: #0062cc;
+    color: #ffffff;
+    border-radius: 9999px;
+}

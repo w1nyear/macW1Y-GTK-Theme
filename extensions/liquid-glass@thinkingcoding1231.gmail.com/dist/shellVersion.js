@@ -68,7 +68,7 @@ export function undoCloneScale(clone, volume) {
 
 // The Quick Settings toggle with a menu arrow: `.quick-menu-toggle` until
 // GNOME 47, `.quick-toggle-has-menu` from 48 on.
-export const QS_MENU_TOGGLE_CLASS = SHELL_MAJOR >= 48 ? 'quick-toggle-has-menu' : 'quick-menu-toggle';
+export const QS_MENU_TOGGLE_CLASS = 'quick-toggle-has-menu';
 // On GNOME 46 a notification banner with a zero-width border is stretched
 // across the monitor and its content gets no width, so there the banner's
 // border is only made transparent.

@@ -54,10 +54,11 @@ export const DummyPipeline = class DummyPipeline {
         );
 
         // add the effect to the actor
-        if (this.actor)
+        if (this.actor) {
             this.actor.add_effect(this.effect);
-        else
+        } else {
             this._warn(`could not add effect to actor, actor does not exist anymore`);
+        }
     }
 
     remove_pipeline_from_actor() {
@@ -97,6 +98,9 @@ export const DummyPipeline = class DummyPipeline {
         this.effect.unscaled_radius = this.get_unscaled_radius();
         this.effect.brightness = this.get_brightness();
         this.effect.unscaled_corner_radius = this.corner_radius_getter();
+        if (this.corner_effect) {
+            this.corner_effect.radius = this.corner_radius_getter() || 15;
+        }
     }
 
     get_unscaled_radius() {

@@ -5,7 +5,7 @@ import { QS_MENU_TOGGLE_CLASS } from '../shellVersion.js';
 // glass. This finds the pods, samples each pod's own colour (it changes with
 // ON/OFF and hover) for the glass's base colour, and makes the pod's own
 // backgrounds transparent so the glass shows through.
-const TRANSPARENT_OVERRIDE = 'background-color: transparent !important;';
+const TRANSPARENT_OVERRIDE = 'background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;';
 
 function _withOverride(origStyle) {
     return origStyle ? `${origStyle} ${TRANSPARENT_OVERRIDE}` : TRANSPARENT_OVERRIDE;
@@ -31,8 +31,21 @@ export class ToggleStyles {
 
     sync(root) {
         const toggles = this._findAllToggleContainers(root);
+        this._collectActiveSubmenus(root, toggles);
         this._ensureToggleStyles(toggles);
         return toggles;
+    }
+
+    _collectActiveSubmenus(actor, found) {
+        if (!actor) return;
+        if (actor instanceof St.Widget && actor.has_style_class_name('quick-toggle-menu')) {
+            if (actor.visible && actor.mapped && !found.includes(actor)) {
+                found.push(actor);
+            }
+        }
+        for (let child of actor.get_children()) {
+            this._collectActiveSubmenus(child, found);
+        }
     }
 
     colorFor(actor) {
@@ -71,48 +84,63 @@ export class ToggleStyles {
     _findAllToggleContainers(actor, found = [], inSystemItem = false) {
         if (!actor)
             return found;
-        const leaf = this._toggleLeafKind(actor, inSystemItem);
-        if (leaf === 'slider') {
-            if (actor.visible && this._paintsOwnBackground(actor))
-                found.push(actor);
-            return found;
-        }
-        if (leaf === 'toggle') {
-            if (actor.visible)
-                found.push(actor);
-            return found;
-        }
-        let entersSystemItem = inSystemItem ||
-            (actor instanceof St.Widget && actor.has_style_class_name('quick-settings-system-item'));
-        for (let child of actor.get_children())
-            this._findAllToggleContainers(child, found, entersSystemItem);
+        try {
+            const leaf = this._toggleLeafKind(actor, inSystemItem);
+            if (leaf === 'slider') {
+                if (actor.visible)
+                    found.push(actor);
+                return found;
+            }
+            if (leaf === 'toggle') {
+                if (actor.visible)
+                    found.push(actor);
+                return found;
+            }
+            if (leaf === 'submenu') {
+                if (actor.visible && actor.mapped)
+                    found.push(actor);
+                return found;
+            }
+            let entersSystemItem = inSystemItem ||
+                (actor instanceof St.Widget && actor.has_style_class_name('quick-settings-system-item'));
+            for (let child of actor.get_children())
+                this._findAllToggleContainers(child, found, entersSystemItem);
+        } catch (_) {}
         return found;
     }
 
     _toggleLeafKind(actor, inSystemItem) {
         if (!(actor instanceof St.Widget))
             return null;
+        if (actor.has_style_class_name('mac-cc-submenu-header') ||
+            actor.has_style_class_name('mac-cc-submenu-item') ||
+            actor.has_style_class_name('mac-cc-back-btn'))
+            return null;
+        if (actor.has_style_class_name('mac-cc-submenu-card') ||
+            actor.has_style_class_name('mac-cc-sound-drawer'))
+            return 'toggle';
         if (actor.has_style_class_name(QS_MENU_TOGGLE_CLASS))
             return 'toggle';
         if (actor.has_style_class_name('quick-toggle'))
+            return 'toggle';
+        if (actor.has_style_class_name('mac-cc-pill'))
+            return 'toggle';
+        if (actor.has_style_class_name('mac-cc-circle-btn-large'))
+            return 'toggle';
+        if (actor.has_style_class_name('mac-cc-card'))
             return 'toggle';
         // Screenshot, settings, lock and power.
         if (inSystemItem && actor.has_style_class_name('icon-button'))
             return 'toggle';
         if (actor.has_style_class_name('quick-slider'))
             return 'slider';
+        if (actor.has_style_class_name('quick-toggle-menu'))
+            return 'submenu';
         return null;
     }
 
-    // Whether a slider row paints its own pill. An adopted pod carries our
-    // transparency override, so its theme node would say no; it keeps its
-    // verdict here, and _releaseIfSliderLostPill() re-checks it while the
-    // override is lifted.
-    _paintsOwnBackground(actor) {
-        if (this._toggleRegions.has(actor))
-            return true;
-        let bg = this._readThemeBg(actor);
-        return !!(bg && bg.a > 0.02);
+    _paintsOwnBackground(_actor) {
+        return true;
     }
 
     // Every St.Widget in the pod, at any depth. All of them get the
@@ -121,8 +149,25 @@ export class ToggleStyles {
     _getStylableSubActors(pod) {
         const found = [];
         const walk = (actor) => {
-            if (actor instanceof St.Widget)
+            if (actor instanceof St.Widget) {
+                if (actor !== pod && (
+                    actor.has_style_class_name('mac-cc-pill-icon-btn') ||
+                    actor.has_style_class_name('mac-cc-slider-track') ||
+                    actor.has_style_class_name('mac-cc-media-art') ||
+                    actor.has_style_class_name('mac-cc-airplay-btn') ||
+                    actor.has_style_class_name('slider') ||
+                    actor.has_style_class_name('mac-cc-transport-btn') ||
+                    actor.has_style_class_name('mac-cc-back-btn') ||
+                    actor.has_style_class_name('mac-cc-route-btn') ||
+                    actor.has_style_class_name('mac-cc-switch-track') ||
+                    actor.has_style_class_name('mac-cc-switch-thumb') ||
+                    actor.has_style_class_name('mac-cc-switch-btn') ||
+                    actor.has_style_class_name('toggle-switch')
+                )) {
+                    return;
+                }
                 found.push(actor);
+            }
             for (let child of actor.get_children())
                 walk(child);
         };
@@ -268,14 +313,8 @@ export class ToggleStyles {
                 continue;
             const entry = this._ensureEntry(pod);
             const primary = this._getPrimaryToggleButton(pod);
-            if (primary instanceof St.Widget)
-                this._updateBaseColor(entry, pod, primary);
-            // Remove any leftover transparency overrides
-            for (let sub of this._getStylableSubActors(pod)) {
-                if (sub instanceof St.Widget && this._hasOverride(sub)) {
-                    sub.set_style(null);
-                }
-            }
+            this._updateBaseColor(entry, pod, primary);
+            this._overrideSubStyles(entry, pod);
         }
     }
 
@@ -283,30 +322,72 @@ export class ToggleStyles {
         let entry = this._toggleRegions.get(pod);
         if (entry)
             return entry;
-        entry = { destroyId: 0, baseColor: [1.0, 1.0, 1.0], baseAlpha: 0, styledSubs: [], stateKey: '' };
+        entry = { destroyId: 0, checkedId: 0, baseColor: [1.0, 1.0, 1.0], baseAlpha: 0, styledSubs: [], stateKey: '' };
         this._toggleRegions.set(pod, entry);
         entry.destroyId = pod.connect('destroy', () => {
+            if (entry.checkedId && primary && primary.disconnect) {
+                try { primary.disconnect(entry.checkedId); } catch (_) {}
+            }
             this._toggleRegions.delete(pod);
         });
+
+        const primary = this._getPrimaryToggleButton(pod);
+        const updateCheckedState = () => {
+            const isChecked = (primary && primary.has_style_pseudo_class && primary.has_style_pseudo_class('checked')) ||
+                              (pod.has_style_pseudo_class && pod.has_style_pseudo_class('checked')) ||
+                              (primary && primary.checked);
+            if (isChecked) {
+                entry.baseColor = [0.21, 0.52, 0.89];
+                entry.baseAlpha = 1.0;
+            } else {
+                entry.baseColor = [1.0, 1.0, 1.0];
+                entry.baseAlpha = 0.0;
+            }
+        };
+        updateCheckedState();
+
+        if (primary && primary.connect) {
+            try {
+                entry.checkedId = primary.connect('notify::checked', updateCheckedState);
+            } catch (_) {}
+        }
         return entry;
     }
 
     _hasOverride(actor) {
         const style = actor.get_style();
-        return !!style && style.includes(TRANSPARENT_OVERRIDE);
+        return !!style && style.includes('transparent !important');
     }
 
     _updateBaseColor(entry, pod, primary) {
-        const sampled = this._samplePodColor(pod, primary);
-        if (sampled.a > 0.02) {
-            entry.baseColor = [sampled.r, sampled.g, sampled.b];
-            entry.baseAlpha = sampled.a;
+        const isChecked = (primary && primary.has_style_pseudo_class && primary.has_style_pseudo_class('checked')) ||
+                          (pod.has_style_pseudo_class && pod.has_style_pseudo_class('checked')) ||
+                          (primary && primary.checked) ||
+                          (pod.has_style_class_name && pod.has_style_class_name('active')) ||
+                          (pod.style && pod.style.includes('#007aff'));
+        if (isChecked) {
+            entry.baseColor = [0.0, 0.48, 1.0];
+            entry.baseAlpha = 1.0;
+        } else {
+            entry.baseColor = [1.0, 1.0, 1.0];
+            entry.baseAlpha = 0.0;
         }
-        return sampled;
     }
 
     _overrideSubStyles(entry, pod) {
-        // Do not force transparent override on widgets: keep theme colors and states
+        const known = new Set(entry.styledSubs.map(s => s.actor));
+        for (let sub of this._getStylableSubActors(pod)) {
+            if (!(sub instanceof St.Widget))
+                continue;
+            if (sub.has_style_class_name && sub.has_style_class_name('active'))
+                continue;
+            if (this._hasOverride(sub))
+                continue;
+            const origStyle = sub.get_style() || '';
+            sub.set_style(_withOverride(origStyle));
+            if (!known.has(sub))
+                entry.styledSubs.push({ actor: sub, origStyle });
+        }
     }
 
     // Re-samples each pod's colour

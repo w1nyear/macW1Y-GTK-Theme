@@ -14,6 +14,8 @@ extern int adw_switch_row_get_active(void *row);
 extern void adw_switch_row_set_active(void *row, int active);
 extern unsigned int adw_combo_row_get_selected(void *row);
 extern void adw_combo_row_set_selected(void *row, unsigned int position);
+extern double adw_spin_row_get_value(void *row);
+extern void adw_spin_row_set_value(void *row, double value);
 
 typedef struct {
     int dock_blur;
@@ -407,27 +409,9 @@ void init_boot_verbose(void *widget, gpointer data) {
 void on_boot_verbose_changed(void *widget, void *pspec, gpointer data) {
     if (in_init) return;
     int active = adw_switch_row_get_active(widget);
-    if (active) {
-        g_spawn_command_line_async("sudo cp /usr/share/plymouth/themes/apple-mac/1x1.png /usr/share/plymouth/themes/apple-mac/verbose_on.png", NULL);
-        g_spawn_command_line_async("sudo python3 -c '\n"
-            "with open(\"/etc/default/grub\", \"r\") as f:\n"
-            "    c = f.read()\n"
-            "import re\n"
-            "c = re.sub(r\"^GRUB_CMDLINE_LINUX_DEFAULT=.*\", \"GRUB_CMDLINE_LINUX_DEFAULT=\\\"splash systemd.show_status=1 loglevel=4 bgrt.disable=1 vt.global_cursor_default=0\\\"\", c, flags=re.M)\n"
-            "with open(\"/etc/default/grub\", \"w\") as f:\n"
-            "    f.write(c)\n"
-            "' && sudo update-grub", NULL);
-    } else {
-        g_spawn_command_line_async("sudo rm -f /usr/share/plymouth/themes/apple-mac/verbose_on.png", NULL);
-        g_spawn_command_line_async("sudo python3 -c '\n"
-            "with open(\"/etc/default/grub\", \"r\") as f:\n"
-            "    c = f.read()\n"
-            "import re\n"
-            "c = re.sub(r\"^GRUB_CMDLINE_LINUX_DEFAULT=.*\", \"GRUB_CMDLINE_LINUX_DEFAULT=\\\"quiet splash bgrt.disable=1 vt.global_cursor_default=0 loglevel=3\\\"\", c, flags=re.M)\n"
-            "with open(\"/etc/default/grub\", \"w\") as f:\n"
-            "    f.write(c)\n"
-            "' && sudo update-grub", NULL);
-    }
+    const char *cmd = active ? "sudo /usr/local/bin/mac-boot-config set-verbose enable"
+                             : "sudo /usr/local/bin/mac-boot-config set-verbose disable";
+    g_spawn_command_line_async(cmd, NULL);
 }
 
 void init_boot_grub(void *widget, gpointer data) {
@@ -452,45 +436,9 @@ void init_boot_grub(void *widget, gpointer data) {
 void on_boot_grub_changed(void *widget, void *pspec, gpointer data) {
     if (in_init) return;
     int active = adw_switch_row_get_active(widget);
-    if (active) {
-        g_spawn_command_line_async("sudo python3 -c '\n"
-            "with open(\"/etc/default/grub\", \"r\") as f:\n"
-            "    c = f.read()\n"
-            "import re\n"
-            "if \"GRUB_TIMEOUT_STYLE=\" in c:\n"
-            "    c = re.sub(r\"^#?GRUB_TIMEOUT_STYLE=.*\", \"GRUB_TIMEOUT_STYLE=menu\", c, flags=re.M)\n"
-            "else:\n"
-            "    c += \"\\nGRUB_TIMEOUT_STYLE=menu\\n\"\n"
-            "if \"GRUB_TIMEOUT=\" in c:\n"
-            "    c = re.sub(r\"^#?GRUB_TIMEOUT=.*\", \"GRUB_TIMEOUT=5\", c, flags=re.M)\n"
-            "else:\n"
-            "    c += \"\\nGRUB_TIMEOUT=5\\n\"\n"
-            "if \"GRUB_THEME=\" in c:\n"
-            "    c = re.sub(r\"^#?GRUB_THEME=.*\", \"GRUB_THEME=\\\"/boot/grub/themes/apple-mac/theme.txt\\\"\", c, flags=re.M)\n"
-            "else:\n"
-            "    c += \"\\nGRUB_THEME=\\\"/boot/grub/themes/apple-mac/theme.txt\\\"\\n\"\n"
-            "if \"GRUB_DISABLE_SUBMENU=\" in c:\n"
-            "    c = re.sub(r\"^#?GRUB_DISABLE_SUBMENU=.*\", \"GRUB_DISABLE_SUBMENU=y\", c, flags=re.M)\n"
-            "else:\n"
-            "    c += \"\\nGRUB_DISABLE_SUBMENU=y\\n\"\n"
-            "if \"GRUB_DISABLE_OS_PROBER=\" in c:\n"
-            "    c = re.sub(r\"^#?GRUB_DISABLE_OS_PROBER=.*\", \"GRUB_DISABLE_OS_PROBER=false\", c, flags=re.M)\n"
-            "else:\n"
-            "    c += \"\\nGRUB_DISABLE_OS_PROBER=false\\n\"\n"
-            "with open(\"/etc/default/grub\", \"w\") as f:\n"
-            "    f.write(c)\n"
-            "' && sudo update-grub", NULL);
-    } else {
-        g_spawn_command_line_async("sudo python3 -c '\n"
-            "with open(\"/etc/default/grub\", \"r\") as f:\n"
-            "    c = f.read()\n"
-            "import re\n"
-            "c = re.sub(r\"^#?GRUB_TIMEOUT_STYLE=.*\", \"GRUB_TIMEOUT_STYLE=hidden\", c, flags=re.M)\n"
-            "c = re.sub(r\"^#?GRUB_TIMEOUT=.*\", \"GRUB_TIMEOUT=0\", c, flags=re.M)\n"
-            "with open(\"/etc/default/grub\", \"w\") as f:\n"
-            "    f.write(c)\n"
-            "' && sudo update-grub", NULL);
-    }
+    const char *cmd = active ? "sudo /usr/local/bin/mac-boot-config set-grub enable"
+                             : "sudo /usr/local/bin/mac-boot-config set-grub disable";
+    g_spawn_command_line_async(cmd, NULL);
 }
 
 /* Fallback in case on_mac_styling_clicked is ever invoked directly */
@@ -523,37 +471,86 @@ void on_game_mode_changed(void *widget, void *pspec, gpointer data) {
     }
 }
 
-void init_touchpad_drag_mode(void *widget, gpointer data) {
-    in_init = 1;
-    int mode_idx = 0; // 0 = "Ввесь екран" (default), 1 = "Звичайний"
+static void load_touchpad_conf_full(int *drag_mode, int *copy_paste, int *delay_ms) {
+    *drag_mode = 0;
+    *copy_paste = 1;
+    *delay_ms = 250;
     const char *home = g_get_home_dir();
     char *conf_path = g_build_filename(home, ".config", "mac-touchpad.conf", NULL);
     FILE *f = fopen(conf_path, "r");
     if (f) {
         char line[256];
         while (fgets(line, sizeof(line), f)) {
-            if (strstr(line, "drag_mode=normal")) mode_idx = 1;
-            else if (strstr(line, "drag_mode=fullscreen")) mode_idx = 0;
+            if (strstr(line, "drag_mode=normal")) *drag_mode = 1;
+            else if (strstr(line, "drag_mode=fullscreen")) *drag_mode = 0;
+            else if (strstr(line, "copy_paste_enabled=0")) *copy_paste = 0;
+            else if (strstr(line, "copy_paste_enabled=1")) *copy_paste = 1;
+            else if (sscanf(line, "gesture_delay_ms=%d", delay_ms) == 1) {}
         }
         fclose(f);
     }
     g_free(conf_path);
-    adw_combo_row_set_selected(widget, mode_idx);
+}
+
+static void save_touchpad_conf_full(int drag_mode, int copy_paste, int delay_ms) {
+    const char *home = g_get_home_dir();
+    char *conf_path = g_build_filename(home, ".config", "mac-touchpad.conf", NULL);
+    FILE *f = fopen(conf_path, "w");
+    if (f) {
+        fprintf(f, "drag_mode=%s\n", drag_mode == 1 ? "normal" : "fullscreen");
+        fprintf(f, "copy_paste_enabled=%d\n", copy_paste ? 1 : 0);
+        fprintf(f, "gesture_delay_ms=%d\n", delay_ms);
+        fclose(f);
+    }
+    g_free(conf_path);
+}
+
+void init_touchpad_drag_mode(void *widget, gpointer data) {
+    in_init = 1;
+    int drag_mode, copy_paste, delay_ms;
+    load_touchpad_conf_full(&drag_mode, &copy_paste, &delay_ms);
+    adw_combo_row_set_selected(widget, drag_mode);
     in_init = 0;
 }
 
 void on_touchpad_drag_mode_changed(void *widget, void *pspec, gpointer data) {
     if (in_init) return;
-    unsigned int selected = adw_combo_row_get_selected(widget);
-    const char *mode_str = (selected == 1) ? "normal" : "fullscreen";
-    const char *home = g_get_home_dir();
-    char *conf_path = g_build_filename(home, ".config", "mac-touchpad.conf", NULL);
-    FILE *f = fopen(conf_path, "w");
-    if (f) {
-        fprintf(f, "drag_mode=%s\n", mode_str);
-        fclose(f);
-    }
-    g_free(conf_path);
+    int drag_mode, copy_paste, delay_ms;
+    load_touchpad_conf_full(&drag_mode, &copy_paste, &delay_ms);
+    drag_mode = adw_combo_row_get_selected(widget);
+    save_touchpad_conf_full(drag_mode, copy_paste, delay_ms);
+}
+
+void init_touchpad_copy_paste(void *widget, gpointer data) {
+    in_init = 1;
+    int drag_mode, copy_paste, delay_ms;
+    load_touchpad_conf_full(&drag_mode, &copy_paste, &delay_ms);
+    adw_switch_row_set_active(widget, copy_paste);
+    in_init = 0;
+}
+
+void on_touchpad_copy_paste_changed(void *widget, void *pspec, gpointer data) {
+    if (in_init) return;
+    int drag_mode, copy_paste, delay_ms;
+    load_touchpad_conf_full(&drag_mode, &copy_paste, &delay_ms);
+    copy_paste = adw_switch_row_get_active(widget);
+    save_touchpad_conf_full(drag_mode, copy_paste, delay_ms);
+}
+
+void init_touchpad_gesture_delay(void *widget, gpointer data) {
+    in_init = 1;
+    int drag_mode, copy_paste, delay_ms;
+    load_touchpad_conf_full(&drag_mode, &copy_paste, &delay_ms);
+    adw_spin_row_set_value(widget, (double)delay_ms);
+    in_init = 0;
+}
+
+void on_touchpad_gesture_delay_changed(void *widget, void *pspec, gpointer data) {
+    if (in_init) return;
+    int drag_mode, copy_paste, delay_ms;
+    load_touchpad_conf_full(&drag_mode, &copy_paste, &delay_ms);
+    delay_ms = (int)adw_spin_row_get_value(widget);
+    save_touchpad_conf_full(drag_mode, copy_paste, delay_ms);
 }
 
 

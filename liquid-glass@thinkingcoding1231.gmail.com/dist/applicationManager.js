@@ -31,6 +31,7 @@ const MENU_WINDOW_TYPES = [
     Meta.WindowType.DROPDOWN_MENU,
     Meta.WindowType.POPUP_MENU,
     Meta.WindowType.MENU,
+    Meta.WindowType.TOOLTIP,
 ];
 // Bound on the transient_for walk, so a cycle cannot hang the first-frame
 // handler. A desktop menu is one hop from the desktop, submenus a few more.
@@ -127,13 +128,19 @@ export class ApplicationManager {
     }
 
     _getContentOpacity(profile = 'application') {
+        if (profile === 'desktop-menu')
+            return 1.0;
         return this._settings.get_double(this._profileKey(profile, 'content-opacity'));
     }
 
     _updateWindowOpacities() {
         for (const state of this._states.values()) {
-            if (isActorValid(state.surfaceActor))
-                state.surfaceActor.opacity = Math.round(this._getContentOpacity(state.profile) * 255);
+            if (isActorValid(state.surfaceActor)) {
+                if (state.profile === 'desktop-menu')
+                    state.surfaceActor.opacity = 255;
+                else
+                    state.surfaceActor.opacity = Math.round(this._getContentOpacity(state.profile) * 255);
+            }
         }
     }
 
@@ -176,6 +183,23 @@ export class ApplicationManager {
         return this._listContainsClass(blacklist, metaWindow.get_wm_class());
     }
 
+    _isExcludedMenuWindow(metaWindow) {
+        if (!metaWindow)
+            return false;
+        let cur = metaWindow;
+        for (let depth = 0; cur && depth < MAX_TRANSIENT_DEPTH; depth++) {
+            const wmClass = (cur.get_wm_class() || '').toLowerCase();
+            const sandboxed = (cur.get_sandboxed_app_id() || '').toLowerCase();
+            const title = (cur.get_title() || '').toLowerCase();
+            if (wmClass.includes('telegram') || sandboxed.includes('telegram') || title.includes('telegram'))
+                return true;
+            if (this._windowMatchesBlacklist(cur))
+                return true;
+            cur = cur.get_transient_for ? cur.get_transient_for() : null;
+        }
+        return false;
+    }
+
     /**
      * Whether this is the menu the desktop itself puts up (right-click on the
      * wallpaper). On GNOME 50 / Wayland with Desktop Icons NG it is a
@@ -188,6 +212,8 @@ export class ApplicationManager {
         if (!metaWindow)
             return false;
         if (metaWindow.is_override_redirect())
+            return false;
+        if (this._isExcludedMenuWindow(metaWindow))
             return false;
         if (MENU_WINDOW_TYPES.includes(metaWindow.get_window_type()))
             return true;
@@ -209,6 +235,8 @@ export class ApplicationManager {
     _profileForWindow(windowActor) {
         const metaWindow = windowActor.get_meta_window();
         if (!metaWindow)
+            return null;
+        if (this._isExcludedMenuWindow(metaWindow))
             return null;
         // Checked first so a desktop menu can never fall through to "apply to
         // all windows" and pick up the application settings.
@@ -338,7 +366,7 @@ export class ApplicationManager {
         if (!surfaceActor || !windowActor.get_parent())
             return;
         const originalOpacity = surfaceActor.opacity;
-        surfaceActor.opacity = Math.round(this._getContentOpacity(profile) * 255);
+        surfaceActor.opacity = profile === 'desktop-menu' ? 255 : Math.round(this._getContentOpacity(profile) * 255);
         // Inside the window actor and below its surface: it moves, scales and
         // fades with the window, and it reads the stage after everything below
         // the window and before the window itself.

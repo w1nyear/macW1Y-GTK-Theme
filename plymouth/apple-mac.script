@@ -1,0 +1,305 @@
+# ---------------------------------------------------------
+# macOS Boot Theme for Plymouth
+# Authentic Apple startup screen with white logo & progress bar
+# Supports Verbose terminal logging behind logo & flicker-free mode
+# ---------------------------------------------------------
+
+Window.SetBackgroundTopColor(0.0, 0.0, 0.0);
+Window.SetBackgroundBottomColor(0.0, 0.0, 0.0);
+
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+screen_x = Window.GetX();
+screen_y = Window.GetY();
+
+# In macOS, Apple logo is centered vertically and horizontally
+logo_h = Math.Int(screen_height * 0.092);
+if (logo_h < 50)
+    logo_h = 50;
+logo_w = Math.Int(logo_h * 0.8125); # 416 / 512
+
+logo_raw = Image("logo.png");
+logo_image = logo_raw.Scale(logo_w, logo_h);
+logo_sprite = Sprite(logo_image);
+
+logo_x = screen_x + (screen_width / 2) - (logo_w / 2);
+logo_y = screen_y + (screen_height / 2) - (logo_h / 2);
+
+logo_sprite.SetPosition(logo_x, logo_y, 20);
+logo_sprite.SetOpacity(1.0);
+
+box_sprite = null;
+bar_sprite = null;
+global.fade_out_started = 0;
+global.fade_out_opacity = 1.0;
+
+fun apply_fade_opacity(alpha)
+{
+    logo_sprite.SetOpacity(alpha);
+    if (box_sprite)
+        box_sprite.SetOpacity(alpha);
+    if (bar_sprite)
+        bar_sprite.SetOpacity(alpha);
+
+    if (global.verbose_enabled)
+    {
+        i = 0;
+        while (i < global.verbose_count)
+        {
+            if (global.verbose_sprites[i])
+                global.verbose_sprites[i].SetOpacity(alpha * 0.95);
+            i = i + 1;
+        }
+    }
+}
+
+
+# Verbose terminal logs buffer
+global.verbose_enabled = 1;
+verbose_img = Image("verbose_on.png");
+if (verbose_img && verbose_img.GetWidth() > 0)
+    global.verbose_enabled = 1;
+
+fun root_mounted_cb()
+{
+    v_img = Image("verbose_on.png");
+    if (v_img && v_img.GetWidth() > 0)
+        global.verbose_enabled = 1;
+}
+Plymouth.SetRootMountedFunction(root_mounted_cb);
+
+global.verbose_line_h = 13;
+global.verbose_start_x = 0;
+global.verbose_start_y = 0;
+global.max_verbose_lines = Math.Int(screen_height / global.verbose_line_h);
+if (global.max_verbose_lines < 40)
+    global.max_verbose_lines = 40;
+global.verbose_count = 0;
+
+fun verbose_message(text)
+{
+    if (!global.verbose_enabled || !text)
+        return;
+
+    txt_img = Image.Text(text, 0.92, 0.92, 0.92, 0.95, "Monospace 8");
+    if (!txt_img)
+        return;
+
+    sp = Sprite(txt_img);
+
+    if (global.verbose_count < global.max_verbose_lines)
+    {
+        cur = global.verbose_count;
+        global.verbose_sprites[cur] = sp;
+        sp.SetPosition(global.verbose_start_x, global.verbose_start_y + (cur * global.verbose_line_h), 4);
+        line_alpha = 0.95;
+        if (global.fade_out_started)
+            line_alpha = global.fade_out_opacity * 0.95;
+        sp.SetOpacity(line_alpha);
+        global.verbose_count = global.verbose_count + 1;
+    }
+    else
+    {
+        # Screen full: scroll existing lines up
+        if (global.verbose_sprites[0])
+            global.verbose_sprites[0].SetOpacity(0.0);
+        i = 0;
+        while (i < (global.max_verbose_lines - 1))
+        {
+            next_i = i + 1;
+            global.verbose_sprites[i] = global.verbose_sprites[next_i];
+            if (global.verbose_sprites[i])
+                global.verbose_sprites[i].SetPosition(global.verbose_start_x, global.verbose_start_y + (i * global.verbose_line_h), 4);
+            i = i + 1;
+        }
+        last_i = global.max_verbose_lines - 1;
+        global.verbose_sprites[last_i] = sp;
+        sp.SetPosition(global.verbose_start_x, global.verbose_start_y + (last_i * global.verbose_line_h), 4);
+        line_alpha = 0.95;
+        if (global.fade_out_started)
+            line_alpha = global.fade_out_opacity * 0.95;
+        sp.SetOpacity(line_alpha);
+    }
+}
+
+Plymouth.SetMessageFunction(verbose_message);
+Plymouth.SetUpdateStatusFunction(verbose_message);
+
+# Progress bar dimensions (only in boot mode)
+mode = Plymouth.GetMode();
+is_boot = (mode == "boot" || mode == "");
+
+if (is_boot)
+{
+    bar_w = Math.Int(screen_width * 0.130);
+    if (bar_w < 180)
+        bar_w = 180;
+    if (bar_w > 400)
+        bar_w = 400;
+
+    bar_h = Math.Int(screen_height * 0.0056);
+    if (bar_h < 4)
+        bar_h = 4;
+    if (bar_h > 12)
+        bar_h = 12;
+
+    # Vertical position: centered below Apple logo
+    bar_x = screen_x + (screen_width / 2) - (bar_w / 2);
+    bar_y = logo_y + logo_h + 50;
+
+    # Track sprite (background capsule) - initially HIDDEN until boot progresses
+    box_raw = Image("progress_box.png");
+    box_image = box_raw.Scale(bar_w, bar_h);
+    box_sprite = Sprite(box_image);
+    box_sprite.SetPosition(bar_x, bar_y, 25);
+    box_sprite.SetOpacity(0.0);
+
+    # Fill sprite (foreground white capsule)
+    bar_raw = Image("progress_bar.png");
+    bar_sprite = Sprite();
+    bar_sprite.SetPosition(bar_x, bar_y, 26);
+    bar_sprite.SetOpacity(0.0);
+
+    # Track progress and easing
+    global.target_progress = 0.0;
+    global.current_progress = 0.0;
+    global.last_rendered_w = 0;
+    global.box_shown = 0;
+
+    fun update_bar(p)
+    {
+        # In authentic macOS, progress bar does not appear immediately.
+        # Only when system initialization begins (p >= 0.04), track fades in.
+        if (p < 0.04)
+        {
+            bar_sprite.SetOpacity(0.0);
+            box_sprite.SetOpacity(0.0);
+            return;
+        }
+
+        if (!global.box_shown)
+        {
+            global.box_shown = 1;
+            box_sprite.SetOpacity(1.0);
+        }
+
+        cur_w = Math.Int(bar_w * p);
+        if (cur_w < bar_h)
+            cur_w = bar_h;
+        if (cur_w > bar_w)
+            cur_w = bar_w;
+
+        if (cur_w != global.last_rendered_w)
+        {
+            global.last_rendered_w = cur_w;
+            scaled_bar = bar_raw.Scale(cur_w, bar_h);
+            bar_sprite.SetImage(scaled_bar);
+            bar_sprite.SetOpacity(1.0);
+        }
+    }
+
+    fun boot_progress_callback(duration, progress)
+    {
+        if (progress > global.target_progress)
+        {
+            global.target_progress = progress;
+            if (global.target_progress > 1.0)
+                global.target_progress = 1.0;
+        }
+    }
+
+    fun refresh_callback()
+    {
+        if (global.fade_out_started)
+        {
+            global.fade_out_opacity = global.fade_out_opacity - 0.04;
+            if (global.fade_out_opacity < 0.0)
+                global.fade_out_opacity = 0.0;
+
+            apply_fade_opacity(global.fade_out_opacity);
+            return;
+        }
+
+        if (global.current_progress < global.target_progress)
+        {
+            diff = global.target_progress - global.current_progress;
+            step = diff * 0.12;
+            if (step < 0.0015)
+                step = 0.0015;
+            global.current_progress += step;
+            if (global.current_progress > global.target_progress)
+                global.current_progress = global.target_progress;
+
+            update_bar(global.current_progress);
+        }
+
+        # Once progress completes (100%), smoothly fade out logo, bar, and verbose text to black
+        if (global.current_progress >= 0.98 && global.target_progress >= 1.0)
+        {
+            global.fade_out_started = 1;
+        }
+    }
+
+    Plymouth.SetBootProgressFunction(boot_progress_callback);
+    Plymouth.SetRefreshFunction(refresh_callback);
+}
+
+fun quit_callback()
+{
+    global.fade_out_started = 1;
+    global.fade_out_opacity = 0.0;
+    apply_fade_opacity(0.0);
+}
+Plymouth.SetQuitFunction(quit_callback);
+
+# Password dialog (LUKS / decryption support)
+fun dialog_setup()
+{
+    dialog_box = Sprite(Image("box.png"));
+    dialog_box.SetPosition(screen_x + (screen_width / 2) - 180, screen_y + Math.Int(screen_height * 0.68), 100);
+
+    dialog_entry = Sprite(Image("entry.png"));
+    dialog_entry.SetPosition(screen_x + (screen_width / 2) - 160, screen_y + Math.Int(screen_height * 0.68) + 20, 101);
+
+    global.dialog.box = dialog_box;
+    global.dialog.entry = dialog_entry;
+    global.dialog.bullet_image = Image("bullet.png");
+}
+
+fun display_password_callback(prompt, bullets)
+{
+    if (!global.dialog.box)
+        dialog_setup();
+
+    global.dialog.box.SetOpacity(1.0);
+    global.dialog.entry.SetOpacity(1.0);
+
+    for (i = 0; global.dialog.bullet[i] || i < bullets; i++)
+    {
+        if (!global.dialog.bullet[i])
+        {
+            global.dialog.bullet[i] = Sprite(global.dialog.bullet_image);
+            bx = screen_x + (screen_width / 2) - 140 + (i * 16);
+            by = screen_y + Math.Int(screen_height * 0.68) + 30;
+            global.dialog.bullet[i].SetPosition(bx, by, 102);
+        }
+        if (i < bullets)
+            global.dialog.bullet[i].SetOpacity(1.0);
+        else
+            global.dialog.bullet[i].SetOpacity(0.0);
+    }
+}
+
+fun display_normal_callback()
+{
+    if (global.dialog.box)
+    {
+        global.dialog.box.SetOpacity(0.0);
+        global.dialog.entry.SetOpacity(0.0);
+        for (i = 0; global.dialog.bullet[i]; i++)
+            global.dialog.bullet[i].SetOpacity(0.0);
+    }
+}
+
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+Plymouth.SetDisplayNormalFunction(display_normal_callback);

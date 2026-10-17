@@ -346,7 +346,10 @@ export const ApplicationsBlur = class ApplicationsBlur {
             else // I've never seen this happen, but just in case
                 this._warn(`no bg_manager on blur creation for pid ${pid}`);
         } else {
-            const pipeline = new DummyPipeline(this.effects_manager, this.settings.applications);
+            const pipeline = new DummyPipeline(
+                this.effects_manager,
+                this.settings.applications
+            );
             [blur_actor, meta_window.bg_manager] = pipeline.create_background_with_effect(
                 window_actor, 'bms-application-blurred-widget'
             );
@@ -448,8 +451,9 @@ export const ApplicationsBlur = class ApplicationsBlur {
                     effect.straight_corners = use_0_radius;
             })
         } else {
-            if (meta_window.bg_manager?._bms_pipeline?.effect)
-                meta_window.bg_manager._bms_pipeline.effect.unscaled_corner_radius = use_0_radius ?
+            const pipeline = meta_window.bg_manager?._bms_pipeline;
+            if (pipeline?.effect)
+                pipeline.effect.unscaled_corner_radius = use_0_radius ?
                     0 : this.settings.applications.CORNER_RADIUS;
         }
     }

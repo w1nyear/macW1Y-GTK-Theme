@@ -1,26 +1,28 @@
 [/]
 debug=true
-hacks-level=2
-pipelines={'pipeline_default': {'name': <'Default'>, 'effects': <[<{'type': <'gaussian_blur'>, 'id': <'effect_000000000000'>, 'params': <{'radius': <30>, 'brightness': <0.59999999999999998>}>}>]>}, 'pipeline_default_rounded': {'name': <'Default rounded'>, 'effects': <[<{'type': <'gaussian_blur'>, 'id': <'effect_000000000001'>, 'params': <{'radius': <30>, 'brightness': <0.59999999999999998>}>}>, <{'type': <'corner'>, 'id': <'effect_000000000002'>, 'params': <{'radius': <24>}>}>]>}, 'pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc': {'name': <'MenuBar'>, 'effects': <[<{'type': <'gradient_panel'>, 'id': <'effect_00680760882466'>, 'params': <{'top_darkness': <0>, 'bottom_darkness': <0>, 'top_blur': <5>, 'bottom_blur': <0>}>}>]>}}
+hacks-level=1
+pipelines={'pipeline_default': {'name': <'Default'>, 'effects': <[<{'type': <'native_static_gaussian_blur'>, 'id': <'effect_000000000000'>, 'params': <{'unscaled_radius': <30.0>, 'brightness': <0.59999999999999998>}>}>]>}, 'pipeline_default_rounded': {'name': <'Default rounded'>, 'effects': <[<{'type': <'native_static_gaussian_blur'>, 'id': <'effect_000000000001'>, 'params': <{'unscaled_radius': <30.0>, 'brightness': <0.59999999999999998>}>}>, <{'type': <'corner'>, 'id': <'effect_000000000002'>, 'params': <{'radius': <24.0>}>}>]>}, 'pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc': {'name': <'MenuBar'>, 'effects': <[<{'type': <'gradient_panel'>, 'id': <'effect_00680760882466'>, 'params': <{'top_darkness': <0>, 'bottom_darkness': <0>, 'top_blur': <5>, 'bottom_blur': <0>}>}>]>}}
 rounded-blur-found=true
 settings-version=2
 
 [appfolder]
+blur=false
 brightness=1.0
 sigma=30
-style-dialogs=2
+style-dialogs=1
 
 [applications]
-blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegram-desktop', 'telegram-desktop', 'TelegramDesktop', 'Telegram', 'org.telegram.desktop']
+blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegram-desktop', 'telegram-desktop', 'TelegramDesktop', 'Telegram', 'org.telegram.desktop', 'antigravity', 'Antigravity', 'google-chrome', 'Google-chrome', 'steam', 'Steam', 'net.nokyan.Resources']
 blur=true
 blur-on-overview=true
 brightness=1.0
 corner-when-maximized=false
 dynamic-opacity=false
 enable-all=true
-opacity=255
+opacity=215
 pipeline='pipeline_default'
 sigma=10
+static-blur=false
 
 [coverflow-alt-tab]
 pipeline='pipeline_default'
@@ -37,6 +39,7 @@ style-dash-to-dock=0
 unblur-in-overview=true
 
 [lockscreen]
+blur=false
 pipeline='pipeline_default'
 
 [notification]
@@ -44,28 +47,33 @@ blur=false
 sigma=10
 
 [overview]
+blur=true
 pipeline='pipeline_default'
 style-components=0
 
 [panel]
-blur=true
+blur=false
 brightness=0.59999999999999998
 corner-radius=0
+customize=true
 force-light-text=false
 gradient-panel=true
 gradient-panel-mode=0
 override-background=true
-pipeline='pipeline_default'
+pipeline='pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc'
 sigma=10
 static-blur=true
 unblur-in-overview=false
 
 [popup]
-blur=true
+blur=false
 brightness=0.52000000000000002
-menu-corner-radius=28
+corner-radius=24
+dialog-corner-radius=24
+menu-corner-radius=12
 notification-corner-radius=24
 pipeline='pipeline_default_rounded'
+quick-settings-corner-radius=24
 sigma=10
 
 [quick-settings]
@@ -74,8 +82,10 @@ blur=false
 sigma=10
 
 [screenshot]
+blur=false
 pipeline='pipeline_default'
 
 [window-list]
+blur=false
 brightness=0.59999999999999998
 sigma=30

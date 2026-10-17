@@ -63,14 +63,16 @@ const TopLevelMenuButton = GObject.registerClass(
     _init(label, children, appInstance = null, menuManagerInstance = null) {
       super._init(0.0, label);
       this.add_style_class_name('appmenu-panel-button');
+      this.menu.actor.add_style_class_name('appmenu-popup-menu');
+      this.menu.box.add_style_class_name('appmenu-popup-menu-content');
       this._appInstance = appInstance;
       this._menuManagerInstance = menuManagerInstance;
       this._isIcon = false;
 
       // Determine if label is an icon name (e.g. distributor-logo-ubuntu)
-       if (label && (label.includes('distributor-logo') || label.includes('-logo') || label === DEFAULT_ICON)) {
+       if (label && (label.includes('distributor-logo') || label.includes('-logo') || label.toLowerCase().includes('apple') || label === DEFAULT_ICON)) {
         this._isIcon = true;
-        this._iconSize = this._menuManagerInstance?._cachedIconSize ?? 22;
+        this._iconSize = this._menuManagerInstance?._cachedIconSize ?? 16;
         this._titleWidget = new St.Icon({
             icon_size: this._iconSize,
             style_class: 'system-status-icon',
@@ -151,20 +153,45 @@ const TopLevelMenuButton = GObject.registerClass(
     }
 
     updateLabel(label) {
+        const isIconName = label && (label.includes('distributor-logo') || label.includes('-logo') || label.toLowerCase().includes('apple') || label === DEFAULT_ICON);
+        if (isIconName && !this._isIcon) {
+            this._isIcon = true;
+            if (this._titleWidget) {
+                this.remove_child(this._titleWidget);
+                this._titleWidget.destroy();
+            }
+            this._iconSize = this._menuManagerInstance?._cachedIconSize ?? 16;
+            this._titleWidget = new St.Icon({
+                icon_size: this._iconSize,
+                style_class: 'system-status-icon',
+            });
+            this.add_child(this._titleWidget);
+        }
         if (this._isIcon) {
             this._loadIcon(label);
             return;
         }
-        this._titleWidget.set_text(label);
+        this._titleWidget.set_text(_(label));
     }
 
     _loadIcon(label) {
         if (!this._titleWidget || !label) return;
 
+        if (label === 'Apple' || label === 'apple-logo' || label.toLowerCase().includes('apple')) {
+            const appleFile = Gio.File.new_for_path(
+                GLib.build_filenamev([EXTENSION_ICONS_DIR, 'apple-logo.svg']));
+            if (appleFile.query_exists(null)) {
+                this._titleWidget.set_icon_name(null);
+                this._titleWidget.set_gicon(Gio.FileIcon.new(appleFile));
+                this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 16);
+                return;
+            }
+        }
+
         if (label === DEFAULT_ICON) {
             this._titleWidget.set_gicon(null);
             this._titleWidget.set_icon_name(label);
-            this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 22);
+            this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 16);
             return;
         }
 
@@ -173,11 +200,11 @@ const TopLevelMenuButton = GObject.registerClass(
         if (iconFile.query_exists(null)) {
             this._titleWidget.set_icon_name(null);
             this._titleWidget.set_gicon(Gio.FileIcon.new(iconFile));
-            this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 22);
+            this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 16);
         } else {
             this._titleWidget.set_gicon(null);
             this._titleWidget.set_icon_name(label);
-            this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 22);
+            this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 16);
         }
     }
 
@@ -220,6 +247,8 @@ const TopLevelMenuButton = GObject.registerClass(
             // Do not rebuild a popup whose actor was disposed during reload.
             return;
         }
+        this.menu.actor.add_style_class_name('appmenu-popup-menu');
+        this.menu.box.add_style_class_name('appmenu-popup-menu-content');
         this._setMenuOpenHandler(openHandler);
         this._buildSubMenu(children, this.menu);
     }
@@ -237,15 +266,22 @@ const TopLevelMenuButton = GObject.registerClass(
         _buildSubMenu(menuItems, parentMenu) {
       for (let idx = 0; idx < menuItems.length; idx++) {
         const item = menuItems[idx];
+        const label = _(item.label);
         if (item.type === "separator") {
-          parentMenu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+          const sep = new PopupMenu.PopupSeparatorMenuItem();
+          sep.add_style_class_name('appmenu-separator-menu-item');
+          parentMenu.addMenuItem(sep);
         } else if (item.type === "section-header") {
-          let headerItem = new PopupMenu.PopupMenuItem(item.label, { activate: false });
+          let headerItem = new PopupMenu.PopupMenuItem(label, { activate: false });
           headerItem.setSensitive(false);
           headerItem.label.add_style_class_name('popup-subtitle-menu-item');
+          headerItem.add_style_class_name('appmenu-popup-menu-item');
           parentMenu.addMenuItem(headerItem);
         } else if (item.type === "submenu") {
-          const subMenu = new PopupMenu.PopupSubMenuMenuItem(item.label);
+          const subMenu = new PopupMenu.PopupSubMenuMenuItem(label);
+          subMenu.menu.actor.add_style_class_name('appmenu-popup-menu');
+          subMenu.menu.box.add_style_class_name('appmenu-popup-menu-content');
+          subMenu.add_style_class_name('appmenu-popup-menu-item');
           if (typeof item.onOpen === 'function') {
               const sid = subMenu.menu.connect('open-state-changed', (_menu, isOpen) => {
                   if (isOpen)
@@ -257,10 +293,12 @@ const TopLevelMenuButton = GObject.registerClass(
           parentMenu.addMenuItem(subMenu);
         } else if (item.type === "recent-submenu") {
           const recentMenuManager = this._menuManagerInstance?._recentMenuManager ?? null;
-          const recentSubmenu = new RecentItemsSubmenu(item.label, parentMenu, recentMenuManager);
+          const recentSubmenu = new RecentItemsSubmenu(label, parentMenu, recentMenuManager);
+          recentSubmenu.add_style_class_name('appmenu-popup-menu-item');
           parentMenu.addMenuItem(recentSubmenu);
         } else {
-          const menuItem = new PopupMenu.PopupMenuItem(item.label);
+          const menuItem = new PopupMenu.PopupMenuItem(label);
+          menuItem.add_style_class_name('appmenu-popup-menu-item');
           if (item.sensitive === false)
             menuItem.setSensitive(false);
           if (item.ornament) {
@@ -347,7 +385,7 @@ export class MenuManager {
         // Cached settings values (updated via signals, not read per focus change)
         this._cachedMenuIcon = this._settings ? this._settings.get_string('menu-icon') : '';
         this._cachedShowOsIcon = this._settings ? this._settings.get_boolean('show-os-icon') : true;
-        this._cachedIconSize = this._settings ? Math.max(12, Math.min(36, this._settings.get_int('icon-size') || 22)) : 22;
+        this._cachedIconSize = this._settings ? Math.max(12, Math.min(36, this._settings.get_int('icon-size') || 16)) : 16;
 
         // Cached singletons (avoid repeated get_default() calls)
         this._windowTracker = Shell.WindowTracker.get_default();
@@ -372,7 +410,7 @@ export class MenuManager {
                     this.updateMenuForWindow(global.display.get_focus_window(), true);
                 }),
                 this._settings.connect('changed::icon-size', () => {
-                    this._cachedIconSize = Math.max(12, Math.min(36, this._settings.get_int('icon-size') || 22));
+                    this._cachedIconSize = Math.max(12, Math.min(36, this._settings.get_int('icon-size') || 16));
                     if (this._buttons.length > 0) {
                         const btn0 = this._buttons[0];
                         if (btn0._isIcon && btn0._titleWidget) {
@@ -647,7 +685,11 @@ export class MenuManager {
             : _getStaticMenus().slice(0, 4).concat([{ label: _('Window'), children: windowChildren }], [_getStaticMenus()[4]]);
 
         if (realMenuData?.topLevelMenus?.length) {
-            const hasWindowMenu = topLevelMenus.some(menu => menu.label.toLowerCase() === 'window');
+            const winTrans = _('Window').toLowerCase();
+            const hasWindowMenu = topLevelMenus.some(menu => {
+                const l = String(menu.label || '').toLowerCase();
+                return l === 'window' || l === winTrans;
+            });
             if (!hasWindowMenu)
                 topLevelMenus.push({ label: _('Window'), children: windowChildren });
         }

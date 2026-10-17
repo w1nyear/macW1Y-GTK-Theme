@@ -1,0 +1,1 @@
+/home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js

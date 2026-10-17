@@ -1,8 +1,6 @@
 const POPUP_STYLE_CLASSES = ['popup-menu', 'candidate-popup-boxpointer'];
 const POPUP_TARGET_STYLE_CLASSES = [
     'popup-menu-content',
-    'notification-banner',
-    'mac-notification-banner',
     'candidate-popup-content',
     'screenshot-ui-panel',
     'datemenu-calendar-column',

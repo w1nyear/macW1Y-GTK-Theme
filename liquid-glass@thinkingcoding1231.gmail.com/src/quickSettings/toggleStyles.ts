@@ -9,7 +9,7 @@ import { QS_MENU_TOGGLE_CLASS } from '../shellVersion.js';
 // ON/OFF and hover) for the glass's base colour, and makes the pod's own
 // backgrounds transparent so the glass shows through.
 
-const TRANSPARENT_OVERRIDE = 'background-color: transparent !important;';
+const TRANSPARENT_OVERRIDE = 'background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;';
 
 type ToggleEntry = {
   destroyId: number;
@@ -41,8 +41,21 @@ export class ToggleStyles {
 
   sync(root: Clutter.Actor): Clutter.Actor[] {
     const toggles = this._findAllToggleContainers(root);
+    this._collectActiveSubmenus(root, toggles);
     this._ensureToggleStyles(toggles);
     return toggles;
+  }
+
+  private _collectActiveSubmenus(actor: Clutter.Actor, found: Clutter.Actor[]): void {
+    if (!actor) return;
+    if (actor instanceof St.Widget && actor.has_style_class_name('quick-toggle-menu')) {
+      if (actor.visible && actor.mapped && !found.includes(actor)) {
+        found.push(actor);
+      }
+    }
+    for (let child of actor.get_children()) {
+      this._collectActiveSubmenus(child, found);
+    }
   }
 
   colorFor(actor: Clutter.Actor): { readonly baseColor: readonly number[]; readonly baseAlpha: number } | undefined {
@@ -92,11 +105,15 @@ export class ToggleStyles {
 
     const leaf = this._toggleLeafKind(actor, inSystemItem);
     if (leaf === 'slider') {
-      if (actor.visible && this._paintsOwnBackground(actor)) found.push(actor);
+      if (actor.visible) found.push(actor);
       return found;
     }
     if (leaf === 'toggle') {
       if (actor.visible) found.push(actor);
+      return found;
+    }
+    if (leaf === 'submenu') {
+      if (actor.visible && actor.mapped) found.push(actor);
       return found;
     }
 
@@ -107,24 +124,24 @@ export class ToggleStyles {
     return found;
   }
 
-  private _toggleLeafKind(actor: Clutter.Actor, inSystemItem: boolean): 'toggle' | 'slider' | null {
+  private _toggleLeafKind(actor: Clutter.Actor, inSystemItem: boolean): 'toggle' | 'slider' | 'submenu' | null {
     if (!(actor instanceof St.Widget)) return null;
+    if (actor.has_style_class_name('mac-cc-submenu-header') ||
+        actor.has_style_class_name('mac-cc-submenu-item') ||
+        actor.has_style_class_name('mac-cc-back-btn') ||
+        actor.has_style_class_name('mac-cc-submenu-card'))
+      return null;
     if (actor.has_style_class_name(QS_MENU_TOGGLE_CLASS)) return 'toggle';
     if (actor.has_style_class_name('quick-toggle')) return 'toggle';
     // Screenshot, settings, lock and power.
     if (inSystemItem && actor.has_style_class_name('icon-button')) return 'toggle';
     if (actor.has_style_class_name('quick-slider')) return 'slider';
+    if (actor.has_style_class_name('quick-toggle-menu')) return 'submenu';
     return null;
   }
 
-  // Whether a slider row paints its own pill. An adopted pod carries our
-  // transparency override, so its theme node would say no; it keeps its
-  // verdict here, and _releaseIfSliderLostPill() re-checks it while the
-  // override is lifted.
-  private _paintsOwnBackground(actor: Clutter.Actor): boolean {
-    if (this._toggleRegions.has(actor)) return true;
-    let bg = this._readThemeBg(actor);
-    return !!(bg && bg.a > 0.02);
+  private _paintsOwnBackground(_actor: Clutter.Actor): boolean {
+    return true;
   }
 
   // Every St.Widget in the pod, at any depth. All of them get the
@@ -292,25 +309,48 @@ export class ToggleStyles {
     // baseAlpha 0 until a real colour has been sampled.
     entry = { destroyId: 0, baseColor: [1.0, 1.0, 1.0], baseAlpha: 0, styledSubs: [], stateKey: '' };
     this._toggleRegions.set(pod, entry);
+    const primary = this._getPrimaryToggleButton(pod);
     entry.destroyId = pod.connect('destroy', () => {
       this._toggleRegions.delete(pod);
     });
+
+    const updateCheckedState = () => {
+      const isChecked = (primary instanceof St.Widget && (primary.has_style_pseudo_class('checked') || (primary as any).checked)) ||
+                        (pod instanceof St.Widget && pod.has_style_pseudo_class('checked'));
+      if (isChecked) {
+        entry.baseColor = [0.21, 0.52, 0.89];
+        entry.baseAlpha = 1.0;
+      } else {
+        entry.baseColor = [1.0, 1.0, 1.0];
+        entry.baseAlpha = 0.0;
+      }
+    };
+    updateCheckedState();
+
+    if (primary && (primary as any).connect) {
+      try {
+        (primary as any).connect('notify::checked', updateCheckedState);
+      } catch (_) {}
+    }
     return entry;
   }
 
   private _hasOverride(actor: St.Widget): boolean {
     const style = actor.get_style();
-    return !!style && style.includes(TRANSPARENT_OVERRIDE);
+    return !!style && style.includes('transparent !important');
   }
 
   private _updateBaseColor(entry: ToggleEntry, pod: Clutter.Actor, primary: St.Widget) {
-    const sampled = this._samplePodColor(pod, primary);
-    // A near-transparent sample says nothing about the colour.
-    if (sampled.a > 0.02) {
-      entry.baseColor = [sampled.r, sampled.g, sampled.b];
-      entry.baseAlpha = sampled.a;
+    const isChecked = (primary.has_style_pseudo_class && primary.has_style_pseudo_class('checked')) ||
+                      (pod instanceof St.Widget && pod.has_style_pseudo_class('checked')) ||
+                      ((primary as any).checked);
+    if (isChecked) {
+      entry.baseColor = [0.21, 0.52, 0.89];
+      entry.baseAlpha = 1.0;
+    } else {
+      entry.baseColor = [1.0, 1.0, 1.0];
+      entry.baseAlpha = 0.0;
     }
-    return sampled;
   }
 
   private _overrideSubStyles(entry: ToggleEntry, pod: Clutter.Actor) {

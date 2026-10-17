@@ -1,0 +1,96 @@
+/* Clears the shell's own background from a surface that gets glass. */
+.liquid-glass-transparent,
+.liquid-glass-transparent-keep-border {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    background-image: none !important;
+
+    /* The open and close animations are driven from JavaScript. */
+    transition: none !important;
+    transition-duration: 0ms !important;
+}
+
+.liquid-glass-transparent {
+    border: none !important;
+}
+
+.liquid-glass-transparent-keep-border {
+    border-color: transparent !important;
+}
+
+/* Dash to Dock's own background, only while it has glass. */
+#dash .dash-background,
+#dashtodockContainer .dash-background,
+#dashtodockDashContainer.liquid-glass-transparent,
+.liquid-glass-transparent #dashtodockContainer,
+.liquid-glass-transparent .dash-background {
+    background-color: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Plain calendar days; today and interactive states keep their theme style. */
+.liquid-glass-transparent .calendar-day:not(.calendar-today):not(:hover):not(:active):not(:focus):not(:checked) {
+    background-color: transparent !important;
+    background-image: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Calendar menu: the calendar sits on a translucent rounded card. */
+.liquid-glass-menu-root .calendar {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    border-radius: 24px !important;
+    padding: 12px !important;
+    margin: 4px !important;
+}
+
+/* Today is drawn as a circle in every state. */
+.liquid-glass-menu-root .calendar-today,
+.liquid-glass-menu-root .calendar-today:hover,
+.liquid-glass-menu-root .calendar-today:active,
+.liquid-glass-menu-root .calendar-today:checked,
+.liquid-glass-menu-root .calendar-today:focus {
+    border-radius: 99px !important;
+}
+
+/* Notification, events and world clock cards. These come after the rules
+   above so they win over the transparent buttons. */
+.liquid-glass-menu-root .events-button,
+.liquid-glass-menu-root .world-clocks-button {
+    background-color: rgba(36, 36, 36, 0.10) !important;
+    border-radius: 16px !important;
+    margin-bottom: 6px !important;
+}
+
+.liquid-glass-menu-root .message {
+    background-color: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.20) !important;
+    border-radius: 24px !important;
+    box-shadow: none !important;
+    margin-bottom: 6px !important;
+}
+
+.liquid-glass-menu-root .message:hover,
+.liquid-glass-menu-root .message:focus {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    box-shadow: none !important;
+}
+
+.liquid-glass-menu-root .events-button:hover,
+.liquid-glass-menu-root .events-button:focus,
+.liquid-glass-menu-root .world-clocks-button:hover,
+.liquid-glass-menu-root .world-clocks-button:focus {
+    background-color: rgba(36, 36, 36, 0.18) !important;
+}
+
+/* Quick Settings sliders sit on a translucent card. */
+.liquid-glass-qs-root .quick-slider {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 20px !important;
+    padding: 24px 24px !important;
+    margin-bottom: 8px !important;
+    box-shadow: none !important;
+}

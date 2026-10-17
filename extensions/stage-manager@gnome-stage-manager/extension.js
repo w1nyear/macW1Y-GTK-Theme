@@ -3335,7 +3335,6 @@ class ArcSidebar {
 
 export default class StageManagerExtension extends Extension {
     enable() {
-        global.context.unsafe_mode = true;
         this._sigSources = new Set();
         this._settings = this.getSettings();
         this._migrateMaximize();

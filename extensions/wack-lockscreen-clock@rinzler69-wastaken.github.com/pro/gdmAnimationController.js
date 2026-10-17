@@ -2,6 +2,7 @@ import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { WackCupertinoRestPrompt } from '../main/cupertinoPrompt.js';
+import { getAuthSubtitleText } from '../main/mainUtils.js';
 import { _log, _setActorVisible, GDM_CROSSFADE_DURATION } from './gdmUtils.js';
 
 export class GdmAnimationController {
@@ -15,21 +16,12 @@ export class GdmAnimationController {
         const dateMenu = Main.panel?.statusArea?.dateMenu;
         this._gdm._legacyPromptChromeVisible = visible;
 
-        if (clock && !this._gdm._verificationSucceeded) {
+        if (clock) {
             clock.remove_all_transitions();
-            if (animate) {
-                clock.ease({
-                    opacity: visible ? 0 : 255,
-                    scale_x: visible ? 0.7 : 1.0,
-                    scale_y: visible ? 0.7 : 1.0,
-                    duration: GDM_CROSSFADE_DURATION,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                });
-            } else {
-                clock.opacity = visible ? 0 : 255;
-                clock.scale_x = visible ? 0.7 : 1.0;
-                clock.scale_y = visible ? 0.7 : 1.0;
-            }
+            clock.opacity = 255;
+            clock.visible = true;
+            clock.scale_x = 1.0;
+            clock.scale_y = 1.0;
         }
 
         if (!dateMenu)
@@ -338,10 +330,8 @@ export class GdmAnimationController {
         const selectedUser = this._gdm._dialog._user ? this._gdm._dialog._user.get_user_name() : null;
         this._gdm._applyWallpaper(selectedUser, true, true);
 
-        this._gdm._selectedPromptMode = this._gdm._currentWallpaperMetadata?.lockscreenMode === 'wack'
-            ? 'wack'
-            : 'cupertino';
-        this._gdm._setPromptBackgroundBlur(this._gdm._selectedPromptMode === 'wack');
+        this._gdm._selectedPromptMode = 'cupertino';
+        this._gdm._setPromptBackgroundBlur(false);
 
         if (this._gdm._selectedPromptMode === 'wack') {
             this._gdm._teardownGdmAvatarOverride();
@@ -362,6 +352,12 @@ export class GdmAnimationController {
         }
 
         this.setLegacyPromptChrome(false);
+        if (this._gdm._clockManager?.clockWrapper) {
+            this._gdm._clockManager.clockWrapper.remove_all_transitions();
+            this._gdm._clockManager.clockWrapper.opacity = 255;
+            this._gdm._clockManager.clockWrapper.visible = true;
+            this._gdm._clockManager.positionClock();
+        }
         this._gdm._setupGdmAvatarOverride();
         if (this._gdm._avatarManager)
             this._gdm._avatarManager.wrapGdmAvatar();
@@ -412,6 +408,22 @@ export class GdmAnimationController {
             this._gdm._promptStyling.applyTheme(theme);
         }
 
+        if (authPrompt._inputWell) {
+            if (!authPrompt._wackHintLabel) {
+                authPrompt._wackHintLabel = new St.Label({
+                    style_class: 'wack-gdm-auth-subtitle',
+                    text: getAuthSubtitleText(selectedUser),
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
+                authPrompt._inputWell.add_child(authPrompt._wackHintLabel);
+            } else {
+                authPrompt._wackHintLabel.text = getAuthSubtitleText(selectedUser);
+                authPrompt._wackHintLabel.visible = true;
+                authPrompt._wackHintLabel.opacity = 255;
+            }
+        }
+
         this._gdm._updateLockscreenMessage();
         this._gdm._positionAuthPrompt();
         this._gdm._startCursorBlink();
@@ -427,6 +439,11 @@ export class GdmAnimationController {
 
         const authPrompt = this._gdm._dialog?._authPrompt;
         if (!authPrompt) return;
+
+        if (authPrompt._wackHintLabel) {
+            authPrompt._wackHintLabel.destroy();
+            delete authPrompt._wackHintLabel;
+        }
 
         this._gdm._setPromptBackgroundBlur(false, false);
         if (this._gdm._selectedPromptMode === 'wack') {
@@ -470,5 +487,12 @@ export class GdmAnimationController {
         this._gdm._legacyPromptAnimationState = 'idle';
         this._gdm._skipLegacyPromptEntryAnimation = false;
         this._gdm._verificationSucceeded = false;
+
+        if (this._gdm._clockManager?.clockWrapper) {
+            this._gdm._clockManager.clockWrapper.remove_all_transitions();
+            this._gdm._clockManager.clockWrapper.opacity = 255;
+            this._gdm._clockManager.clockWrapper.visible = true;
+            this._gdm._clockManager.positionClock();
+        }
     }
 }

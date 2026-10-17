@@ -118,8 +118,11 @@ restore_ui() {
     rm -rf "$TARGET_HOME/.local/share/gnome-control-center-overlay"
     rm -f "$TARGET_HOME/.local/bin/gnome-control-center"
     rm -f "$TARGET_HOME/.local/lib/libmac_settings.so"
+    rm -f "$TARGET_HOME/.local/lib/libmac_extension_manager.so"
+    rm -f "$TARGET_HOME/.local/bin/extension-manager"
     rm -f "$TARGET_HOME/.local/share/applications/mac-styling-settings.desktop"
     rm -f "$TARGET_HOME/.local/share/applications/org.gnome.Settings.desktop"
+    rm -f "$TARGET_HOME/.local/share/applications/com.mattjakeman.ExtensionManager.desktop"
     rm -f "$TARGET_HOME/.local/share/dbus-1/services/org.gnome.Settings.service"
     run_as_user update-desktop-database "$TARGET_HOME/.local/share/applications" 2>/dev/null || true
     

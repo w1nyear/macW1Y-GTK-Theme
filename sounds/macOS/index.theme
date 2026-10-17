@@ -1,0 +1,8 @@
+[Sound Theme]
+Name=macOS
+Comment=macOS High-Definition Sound Theme
+Inherits=freedesktop
+Directories=stereo
+
+[stereo]
+OutputProfile=stereo

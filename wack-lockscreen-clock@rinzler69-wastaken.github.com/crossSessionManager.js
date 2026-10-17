@@ -580,14 +580,14 @@ export class CrossSessionManager {
         };
 
         if (activeColorScheme === 1) {
-            darkVariant.clockAlpha = this._clockAlpha ?? 0.6;
+            darkVariant.clockAlpha = this._clockAlpha ?? 1.0;
             darkVariant.promptColor = this._promptColor;
             if (lightVariant && lightVariant.source_uri === darkVariant.source_uri) {
                 lightVariant.clockAlpha = darkVariant.clockAlpha;
                 lightVariant.promptColor = darkVariant.promptColor;
             } else if (existingLight && existingLight.promptColor && _isPromptColorLive(existingLight.promptColor) &&
                        existingLight.source_uri === lightVariant?.source_uri && existingLight.source_mtime === lightVariant?.source_mtime) {
-                lightVariant.clockAlpha = existingLight.clockAlpha ?? 0.6;
+                lightVariant.clockAlpha = existingLight.clockAlpha ?? 1.0;
                 lightVariant.promptColor = existingLight.promptColor;
             } else if (lightVariant && this._inactivePromptColor && _isPromptColorLive(this._inactivePromptColor)) {
                 // Pre-warmed by extension.js for the inactive URI — use it directly.
@@ -598,14 +598,14 @@ export class CrossSessionManager {
                 lightVariant.promptColor = null;
             }
         } else {
-            lightVariant.clockAlpha = this._clockAlpha ?? 0.6;
+            lightVariant.clockAlpha = this._clockAlpha ?? 1.0;
             lightVariant.promptColor = this._promptColor;
             if (darkVariant && darkVariant.source_uri === lightVariant.source_uri) {
                 darkVariant.clockAlpha = lightVariant.clockAlpha;
                 darkVariant.promptColor = lightVariant.promptColor;
             } else if (existingDark && existingDark.promptColor && _isPromptColorLive(existingDark.promptColor) &&
                        existingDark.source_uri === darkVariant?.source_uri && existingDark.source_mtime === darkVariant?.source_mtime) {
-                darkVariant.clockAlpha = existingDark.clockAlpha ?? 0.6;
+                darkVariant.clockAlpha = existingDark.clockAlpha ?? 1.0;
                 darkVariant.promptColor = existingDark.promptColor;
             } else if (darkVariant && this._inactivePromptColor && _isPromptColorLive(this._inactivePromptColor)) {
                 // Pre-warmed by extension.js for the inactive URI — use it directly.
@@ -651,7 +651,7 @@ export class CrossSessionManager {
                 : false,
             dateStyle: this._settings ? (this._settings.get_string('date-style') || 'full') : 'full',
             userLocale: GLib.getenv('LC_TIME') || GLib.getenv('LANG') || Intl.DateTimeFormat().resolvedOptions().locale || null,
-            clockAlpha: this._clockAlpha ?? 0.6,
+            clockAlpha: this._clockAlpha ?? 1.0,
             promptColor: this._promptColor,
             promptVibrancy: true,
             promptVibrancyMode: this._settings ? (this._settings.get_string('prompt-vibrancy') || 'tonal') : 'tonal',

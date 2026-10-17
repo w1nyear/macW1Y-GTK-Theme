@@ -1,4 +1,5 @@
 import Meta from 'gi://Meta';
+import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { WorkspaceAnimationController } from 'resource:///org/gnome/shell/ui/workspaceAnimation.js';
@@ -46,6 +47,83 @@ export const OverviewBlur = class OverviewBlur {
         this.connections.connect(Main.layoutManager, 'monitors-changed',
             _ => this.update_backgrounds()
         );
+
+        // Smooth cross-fade between desktop and overview at native display refresh rate
+        this.overview_background_group.opacity = Main.overview.visible ? 255 : 0;
+        this.overview_background_group.visible = Main.overview.visible;
+
+        const baseRadius = (this.settings.overview?.SIGMA ?? 30.0);
+        const baseBrightness = (this.settings.overview?.BRIGHTNESS ?? 0.60);
+
+        const configureEffects = () => {
+            const children = this.overview_background_group.get_children();
+            for (const widget of children) {
+                const effs = widget.get_effects ? widget.get_effects() : [];
+                for (const eff of effs) {
+                    if (eff.radius !== undefined) {
+                        eff.radius = Math.max(0.5, baseRadius);
+                    }
+                    if (eff.brightness !== undefined) {
+                        eff.brightness = baseBrightness;
+                    }
+                }
+            }
+        };
+        configureEffects();
+
+        const stateAdjustment = Main.overview?._controls?._stateAdjustment
+            ?? Main.overview?._overview?._controls?._stateAdjustment;
+
+        const updateOpacity = (progress) => {
+            const p = Math.max(0, Math.min(1, progress));
+            this.overview_background_group.opacity = Math.round(p * 255);
+            if (p > 0 && !this.overview_background_group.visible) {
+                this.overview_background_group.show();
+            } else if (p === 0 && this.overview_background_group.visible) {
+                this.overview_background_group.hide();
+            }
+        };
+
+        if (stateAdjustment) {
+            this.connections.connect(stateAdjustment, 'notify::value', () => {
+                updateOpacity(stateAdjustment.value);
+            });
+        }
+
+        this.connections.connect(Main.overview, 'showing', () => {
+            configureEffects();
+            this.overview_background_group.show();
+            if (!stateAdjustment) {
+                this.overview_background_group.remove_all_transitions();
+                this.overview_background_group.ease({
+                    opacity: 255,
+                    duration: 250,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+            }
+        });
+
+        this.connections.connect(Main.overview, 'shown', () => {
+            this.overview_background_group.show();
+            this.overview_background_group.opacity = 255;
+        });
+
+        this.connections.connect(Main.overview, 'hiding', () => {
+            if (!stateAdjustment) {
+                this.overview_background_group.remove_all_transitions();
+                this.overview_background_group.ease({
+                    opacity: 0,
+                    duration: 250,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+            }
+        });
+
+        this.connections.connect(Main.overview, 'hidden', () => {
+            this.overview_background_group.remove_all_transitions();
+            this.overview_background_group.opacity = 0;
+            this.overview_background_group.hide();
+        });
 
         // part for the workspace animation switch
 
@@ -174,14 +252,8 @@ export const OverviewBlur = class OverviewBlur {
         }
         // add the container widget for the overview only to the overview group
         Main.layoutManager.overviewGroup.insert_child_at_index(this.overview_background_group, 0);
-        // make sure it stays below
-        this.connections.connect(Main.layoutManager.overviewGroup, "child-added", (_, child) => {
-            if (child !== this.overview_background_group) {
-                if (this.overview_background_group.get_parent())
-                    Main.layoutManager.overviewGroup.remove_child(this.overview_background_group);
-                Main.layoutManager.overviewGroup.insert_child_at_index(this.overview_background_group, 0);
-            }
-        });
+        this.overview_background_group.opacity = Main.overview.visible ? 255 : 0;
+        // background group is placed at index 0
     }
 
     /// Updates the classname to style overview components with semi-transparent

@@ -65,13 +65,20 @@
 }
 
 .liquid-glass-menu-root .message {
-    background-color: rgba(36, 36, 36, 0.10) !important;
+    background-color: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.20) !important;
     border-radius: 24px !important;
+    box-shadow: none !important;
     margin-bottom: 6px !important;
 }
 
 .liquid-glass-menu-root .message:hover,
-.liquid-glass-menu-root .message:focus,
+.liquid-glass-menu-root .message:focus {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    box-shadow: none !important;
+}
+
 .liquid-glass-menu-root .events-button:hover,
 .liquid-glass-menu-root .events-button:focus,
 .liquid-glass-menu-root .world-clocks-button:hover,

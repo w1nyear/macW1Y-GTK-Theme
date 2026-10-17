@@ -23,52 +23,14 @@ export const PowerProfilesIface = `<node>
 </interface>
 </node>`;
 
-export function hasFingerprint(userName) {
-    if (!userName)
-        userName = GLib.get_user_name();
-    if (!userName)
-        return false;
-    try {
-        const bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, null);
-        const reply = bus.call_sync(
-            'net.reactivated.Fprint',
-            '/net/reactivated/Fprint/Manager',
-            'net.reactivated.Fprint.Manager',
-            'GetDefaultDevice',
-            null,
-            null,
-            Gio.DBusCallFlags.NONE,
-            1000,
-            null
-        );
-        const [devPath] = reply.recursiveUnpack();
-        if (!devPath)
-            return false;
-        const devReply = bus.call_sync(
-            'net.reactivated.Fprint',
-            devPath,
-            'net.reactivated.Fprint.Device',
-            'ListEnrolledFingers',
-            new GLib.Variant('(s)', [userName]),
-            null,
-            Gio.DBusCallFlags.NONE,
-            1000,
-            null
-        );
-        const [fingers] = devReply.recursiveUnpack();
-        return Array.isArray(fingers) && fingers.length > 0;
-    } catch (_) {
-        return false;
-    }
+export function hasFingerprint(_userName) {
+    // Never probe or query fprintd over DBus: querying another user's fingerprints from GDM
+    // triggers Polkit's "Privileges are required to manage fingerprints for other users" modal prompt!
+    return false;
 }
 
-export function getAuthSubtitleText(userName) {
-    const hasFp = hasFingerprint(userName);
+export function getAuthSubtitleText(_userName) {
     const locale = GLib.getenv('LANG') || '';
     const isUk = locale.startsWith('uk');
-    if (hasFp) {
-        return isUk ? 'Touch ID або введіть пароль' : 'Touch ID or Enter Password';
-    } else {
-        return isUk ? 'Введіть пароль' : 'Enter Password';
-    }
+    return isUk ? 'TouchID або пароль' : 'TouchID or Password';
 }

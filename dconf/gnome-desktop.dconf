@@ -1,5 +1,12 @@
+[a11y/magnifier]
+cross-hairs-length=58
+
 [app-folders]
-folder-children=['System', 'Utilities', 'YaST', 'Pardus']
+folder-children=['System', 'Utilities', 'YaST', 'Pardus', '1022cd65-504d-4627-8076-7d978edb89a4', 'df8a314e-89f6-4c7f-ad4a-eec3eaef93e5']
+
+[app-folders/folders/1022cd65-504d-4627-8076-7d978edb89a4]
+apps=['libreoffice_impress.desktop', 'libreoffice_draw.desktop', 'libreoffice_math.desktop', 'libreoffice_writer.desktop', 'libreoffice_calc.desktop', 'libreoffice_base.desktop', 'libreoffice_libreoffice.desktop']
+name='Офіс'
 
 [app-folders/folders/Pardus]
 categories=['X-Pardus-Apps']
@@ -7,7 +14,7 @@ name='X-Pardus-Apps.directory'
 translate=true
 
 [app-folders/folders/System]
-apps=['nm-connection-editor.desktop', 'org.gnome.baobab.desktop', 'org.gnome.DiskUtility.desktop', 'im-config.desktop', 'org.gnome.Logs.desktop', 'org.gnome.Sysprof.desktop']
+apps=['nm-connection-editor.desktop', 'org.gnome.baobab.desktop', 'org.gnome.DiskUtility.desktop', 'im-config.desktop', 'org.gnome.Logs.desktop', 'org.gnome.Sysprof.desktop', 'desktop-security-center_desktop-security-center.desktop', 'com.github.FontManager.FontManager.desktop', 'org.gnome.GTK4ThemeSwitcher.desktop', 'com.github.FontManager.FontViewer.desktop', 'org.gnome.Yelp.desktop', 'firefox_firefox.desktop', 'org.gnome.Characters.desktop']
 name='X-GNOME-Shell-System.directory'
 translate=true
 
@@ -21,6 +28,10 @@ categories=['X-SuSE-YaST']
 name='suse-yast.directory'
 translate=true
 
+[app-folders/folders/df8a314e-89f6-4c7f-ad4a-eec3eaef93e5]
+apps=['Counter-Strike 2.desktop', 'Watch_Dogs 2.desktop', 'Euro Truck Simulator 2.desktop', 'Lossless Scaling.desktop']
+name='Ігри'
+
 [background]
 color-shading-type='solid'
 picture-options='zoom'
@@ -29,8 +40,16 @@ picture-uri-dark='file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_T
 primary-color='#000000000000'
 secondary-color='#000000000000'
 
+[break-reminders/eyesight]
+play-sound=true
+
+[break-reminders/movement]
+duration-seconds=uint32 300
+interval-seconds=uint32 1800
+play-sound=true
+
 [input-sources]
-mru-sources=[('xkb', 'ua'), ('xkb', 'us')]
+mru-sources=[('xkb', 'us'), ('xkb', 'ua')]
 sources=[('xkb', 'us'), ('xkb', 'ua')]
 
 [interface]
@@ -38,14 +57,16 @@ accent-color='blue'
 clock-show-weekday=true
 color-scheme='prefer-dark'
 document-font-name='SF Pro Text 11'
+font-antialiasing='rgba'
 font-name='SF Pro Text 11'
-gtk-theme='MacTahoe-Dark-solid'
+gtk-theme='macW1Y-Dark'
 icon-theme='MacTahoe-dark'
 monospace-font-name='SF Mono 11'
 show-battery-percentage=false
 
 [notifications]
-application-children=['update-manager', 'org-gnome-ptyxis', 'firefox-firefox', 'antigravity-antigravity', 'telegram-desktop-telegram-desktop', 'zoom-client-zoom-client', 'snapd-desktop-integration-snapd-desktop-integration', 'org-gnome-settings', 'google-chrome', 'com-teamviewer-teamviewer', 'com-mattjakeman-extensionmanager', 'org-gnome-nautilus', 'steam', 'apport-gtk']
+application-children=['update-manager', 'org-gnome-ptyxis', 'firefox-firefox', 'antigravity-antigravity', 'telegram-desktop-telegram-desktop', 'zoom-client-zoom-client', 'snapd-desktop-integration-snapd-desktop-integration', 'org-gnome-settings', 'google-chrome', 'com-teamviewer-teamviewer', 'com-mattjakeman-extensionmanager', 'org-gnome-nautilus', 'steam', 'apport-gtk', 'firmware-updater-firmware-updater', 'rustdesk']
+show-banners=true
 
 [notifications/application/antigravity-antigravity]
 application-id='antigravity_antigravity.desktop'
@@ -65,6 +86,9 @@ application-id='com.teamviewer.TeamViewer.desktop'
 [notifications/application/firefox-firefox]
 application-id='firefox_firefox.desktop'
 
+[notifications/application/firmware-updater-firmware-updater]
+application-id='firmware-updater_firmware-updater.desktop'
+
 [notifications/application/google-chrome]
 application-id='google-chrome.desktop'
 
@@ -76,6 +100,9 @@ application-id='org.gnome.Ptyxis.desktop'
 
 [notifications/application/org-gnome-settings]
 application-id='org.gnome.Settings.desktop'
+
+[notifications/application/rustdesk]
+application-id='rustdesk.desktop'
 
 [notifications/application/snapd-desktop-integration-snapd-desktop-integration]
 application-id='snapd-desktop-integration_snapd-desktop-integration.desktop'
@@ -98,6 +125,9 @@ two-finger-scrolling-enabled=true
 [privacy]
 report-technical-problems=false
 
+[screen-time-limits]
+daily-limit-seconds=uint32 28800
+
 [screensaver]
 color-shading-type='solid'
 picture-options='zoom'
@@ -105,8 +135,19 @@ picture-uri='file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.j
 primary-color='#000000000000'
 secondary-color='#000000000000'
 
+[search-providers]
+sort-order=['org.gnome.Settings.desktop', 'org.gnome.Contacts.desktop', 'org.gnome.Nautilus.desktop']
+
 [session]
 idle-delay=uint32 0
 
+[sound]
+allow-volume-above-100-percent=true
+event-sounds=true
+input-feedback-sounds=true
+theme-name='macOS'
+
 [wm/preferences]
+button-layout=':minimize,maximize,close'
+theme='macW1Y-Dark'
 titlebar-font='SF Pro Text Bold 11'

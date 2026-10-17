@@ -206,9 +206,9 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
                 if (avatar && avatar.get_style() !== avOverlayStyle)
                     avatar.set_style(avOverlayStyle);
                 if (avatar)
-                    avatar.clip_to_allocation = true;
+                    avatar.clip_to_allocation = false;
                 if (this._avatarButton)
-                    this._avatarButton.clip_to_allocation = true;
+                    this._avatarButton.clip_to_allocation = false;
                 const child = avatar?.get_child();
                 if (child) {
                     const iconStyle = 'background-color: transparent !important; border-radius: 999px !important;';

@@ -4,6 +4,7 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 import { _log } from './gdmUtils.js';
 import { getUserLabelStyle } from '../main/colorUtils.js';
+import { getAuthSubtitleText } from '../main/mainUtils.js';
 
 export class GdmAvatarManager {
     constructor(gdmManager) {
@@ -89,6 +90,10 @@ export class GdmAvatarManager {
                     const user = avatar?._user || item._userWidget?._user;
                     if (user)
                         user.disconnectObject(this);
+                    if (item._userWidget?._wackSubtitle) {
+                        item._userWidget._wackSubtitle.destroy();
+                        delete item._userWidget._wackSubtitle;
+                    }
                     if (avatar) {
                         if (avatar._wackOrigUpdate) {
                             avatar.update = avatar._wackOrigUpdate;
@@ -143,13 +148,22 @@ export class GdmAvatarManager {
 
         if (item?._userWidget) {
             try {
-                item._userWidget.set_vertical(true);
+                if (typeof item._userWidget.set_vertical === 'function')
+                    item._userWidget.set_vertical(true);
+            } catch (_) {}
+            try {
+                item._userWidget.orientation = Clutter.Orientation.VERTICAL;
                 item._userWidget.x_align = Clutter.ActorAlign.CENTER;
                 item._userWidget.style_class = 'user-widget vertical';
                 if (avatar) {
                     avatar.x_align = Clutter.ActorAlign.CENTER;
                 }
             } catch (_) {}
+
+            if (item._userWidget._wackSubtitle) {
+                item._userWidget._wackSubtitle.destroy();
+                delete item._userWidget._wackSubtitle;
+            }
         }
 
         this._applyStyleToUserListItemAvatar(avatar);

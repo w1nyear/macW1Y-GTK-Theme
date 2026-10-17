@@ -1,0 +1,1392 @@
+import { stepMenuSpring, applyMenuFrame, showMenuAtRest } from './animation/menuSpring.js';
+import { addFrameTicker, removeFrameTicker, normalizeAnimationIntervalMs } from './animation/frameTicker.js';
+import { Spring, SwiftSpring } from './animation/spring.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import Clutter from 'gi://Clutter';
+import St from 'gi://St';
+import GLib from 'gi://GLib';
+import Meta from 'gi://Meta';
+import Gio from 'gi://Gio';
+import { BackdropGlass } from './rendering/backdropGlass.js';
+import { StageContrastSampler, AdaptiveContrastConfig, sanitizeColorPreference } from './contrastSampler.js';
+import { UnpickableWidget } from './actors/unpickable.js';
+import { ensureGlassAllocated } from './actors/allocation.js';
+import { resolveMonitorGeometry, getAllocatedSize } from './actors/geometry.js';
+import { isActorValid } from './actors/lifecycle.js';
+import { startSyncLoop, stopStageLoop } from './animation/frameLoops.js';
+import { placeScreenGlass, resolveGlassOrigin, applyGlassScale, GLASS_SHADOW_MAX_RADIUS } from './actors/glassBounds.js';
+import { resolveCrossFade, adaptiveColorTweener, hexToColorArray, hexToRgb, rgbToHex } from './animation/colors.js';
+import { MENU_NO_ANIMATION, accentColors } from './shellVersion.js';
+// Room around the glass rect for the shader's edge effects.
+const SHADER_PADDING = 20;
+const SAMPLE_PER_ELEMENT = false;
+const MIN_MENU_SCALE = 0.5;
+const MENU_MEASURE_FRAMES = 30;
+const MENU_MEASURE_STABLE_FRAMES = 3;
+// Quick Settings' open height, measured once for every menu that matches it,
+// and the callbacks waiting for a measurement in progress.
+let _quickSettingsHeight = 0;
+let _quickSettingsWaiting = null;
+
+export class UIManager {
+    _enableKey;
+    _keyPrefix;
+    _label;
+    _ownsSettingsNamespace;
+    extensionPath;
+    _settings;
+    _logger;
+    targetActor;
+    menu;
+    animActor;
+    // Monitor-sized; see _applyGlassBounds().
+    glass;
+    _signals;
+    _animSignalId = 0;
+    _destroySignalId = 0;
+    _actorDestroyed = false;
+    _frameSyncId;
+
+    get _frameSlot() {
+        return { get: () => this._frameSyncId, set: (id) => { this._frameSyncId = id; } };
+    }
+
+    _frameSignalId = 0;
+
+    get _frameSignalSlot() {
+        return { get: () => this._frameSignalId, set: (id) => { this._frameSignalId = id; } };
+    }
+
+    _glassExpand;
+    _menuXoffset;
+    _menuYoffset;
+    _menuScale = 1.0;
+    _ownsAccentCss = true;
+    _matchQuickSettingsHeight = false;
+    _settledHeightScale = null;
+    _measuringHeights = false;
+    _ownOpenHeight = 0;
+    _measureLaterIds = new Set();
+    _restoreQuickSettings = null;
+    _tickId;
+    _contrastSampler;
+    _adaptiveTimerId;
+    _adaptiveInFlight;
+    _styledActors;
+    _hoverSignals = new Map();
+    _pendingBackdropRoots = new Set();
+    _backdropColored = new Set();
+    // The last sampled colour of each text, which a row's text returns to when
+    // its highlight goes.
+    _sampleColors = new Map();
+    // Set on open until the first sample has coloured the text; see
+    // _startAdaptiveColorSampling().
+    _awaitingOpenColors = false;
+    _openSampleId = 0;
+    // The colour the last merged sample gave every text, for text added since.
+    _sharedColor = null;
+    _newTextId = 0;
+    _newTextPending = false;
+    _applyingColors = false;
+    _backdropRefreshId = 0;
+    _settingsSignals;
+    _isEffectActive;
+    _adaptiveConfig;
+    _stableBaseW;
+    _stableBaseH;
+    _lastValidAnimAbsX;
+    _lastValidAnimAbsY;
+    _lastBgW;
+    _lastBgH;
+    _lastBgX;
+    _lastBgY;
+    _springScale;
+    _springStiffness;
+    _springDamping;
+    _springMass;
+    // The alternative SwiftUI-style spring; not exposed in the preferences.
+    _swiftAnimation = false;
+    _swiftResponse = 0.3;
+    _swiftDampingFraction = 0.65;
+    _swiftSpringScale;
+    _enableAnimation;
+    _interfaceSettings = null;
+    _accentColorSignalId = 0;
+    _accentColorTimeoutId = 0;
+    _dynamicCssFile = null;
+    _cornerRadius = 0;
+    _animationInterval = 16;
+    _lastScreenW;
+    _lastScreenH;
+    // The menu's ancestor that is a direct child of uiGroup; see _restackGlass().
+    _menuRoot = null;
+
+    constructor(extensionPath, settings, logger, panelButton = Main.panel.statusArea.dateMenu, ownsAccentCss = true, _enableKey = 'enable-menu-glass',
+    // Settings prefix: `menu` for the calendar, `panel-menu` for the
+    // other panel menus (see PanelMenuManager).
+    _keyPrefix = 'menu',
+    // Names this glass in logs, dumps and actor names.
+    _label = 'menu', _ownsSettingsNamespace = true) {
+        this._enableKey = _enableKey;
+        this._keyPrefix = _keyPrefix;
+        this._label = _label;
+        this._ownsSettingsNamespace = _ownsSettingsNamespace;
+        this.extensionPath = extensionPath;
+        this._settings = settings;
+        this._logger = logger;
+        this._ownsAccentCss = ownsAccentCss;
+        this.targetActor = panelButton.menu.actor;
+        this.menu = panelButton.menu;
+        this.animActor = panelButton.menu.box;
+        this.glass = null;
+        this._signals = [];
+        this._frameSyncId = 0;
+        this._glassExpand = 0;
+        this._menuXoffset = 0;
+        this._menuYoffset = 0;
+        this._springScale = new Spring(120, 22, 1.0);
+        this._springStiffness = 120;
+        this._springDamping = 22;
+        this._springMass = 1.0;
+        this._swiftSpringScale = new SwiftSpring(this._swiftResponse, this._swiftDampingFraction);
+        this._enableAnimation = false;
+        this._tickId = 0;
+        this._contrastSampler = new StageContrastSampler();
+        this._adaptiveTimerId = 0;
+        this._adaptiveInFlight = false;
+        this._styledActors = new Map();
+        this._settingsSignals = [];
+        this._isEffectActive = false;
+        this._animSignalId = this.menu.connect('open-state-changed', (menu, isOpen) => {
+            if (!this._isEffectActive)
+                return;
+            if (isOpen) {
+                this._applyMenuScale();
+                this._startAnimation(1);
+            }
+            else {
+                this._startAnimation(0);
+            }
+        });
+        this._destroySignalId = this.targetActor.connect('destroy', () => {
+            this._actorDestroyed = true;
+            this._destroySignalId = 0;
+            this.cleanup();
+        });
+    }
+
+    setup() {
+        if (!this._settings)
+            return;
+        this._bindSettings();
+        this._enableAnimation = this._settings.get_boolean(this._animationKey());
+        this._menuScale = this._settings.get_double(this._key('scale'));
+        this._matchQuickSettingsHeight = this._settings.get_boolean(this._key('match-quick-settings-height'));
+        const remembered = this._ownsSettingsNamespace
+            ? this._settings.get_double(this._key('settled-height-scale')) : 0;
+        this._settledHeightScale = remembered > 0 ? remembered : null;
+        this._applyMenuScale();
+        this._springStiffness = this._settings.get_double(this._key('spring-stiffness'));
+        this._springDamping = this._settings.get_double(this._key('spring-damping'));
+        this._springMass = this._settings.get_double(this._key('spring-mass'));
+        this._springScale.updateParams(this._springStiffness, this._springDamping, this._springMass);
+        this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        // The theme context picks up the new accent colour a moment later.
+        this._accentColorSignalId = this._interfaceSettings.connect('changed::accent-color', () => {
+            if (this._accentColorTimeoutId)
+                GLib.Source.remove(this._accentColorTimeoutId);
+            this._accentColorTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, () => {
+                this._accentColorTimeoutId = 0;
+                this._applySystemAccentColor();
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+        this._applySystemAccentColor();
+        if (this._settings.get_boolean(this._enableKey)) {
+            this._applyEffect();
+        }
+    }
+
+    /**
+     * The accent colour and its foreground as [background, foreground] hex.
+     * Asked of St rather than read off a themed dummy widget, because themes
+     * such as MacTahoe only paint today's date in the accent while selected.
+     * The dummy (marked :selected) remains the fallback when St has no accent
+     * (GNOME 46).
+     */
+    _resolveAccentColors() {
+        const accent = accentColors();
+        if (accent)
+            return [rgbToHex(accent[0].red, accent[0].green, accent[0].blue),
+                rgbToHex(accent[1].red, accent[1].green, accent[1].blue)];
+        // The theme's selectors need the calendar ancestry.
+        const parent = new UnpickableWidget({ style_class: 'calendar' });
+        const child = new UnpickableWidget({ style_class: 'calendar-day calendar-today' });
+        child.add_style_pseudo_class('selected');
+        parent.add_child(child);
+        Main.layoutManager.uiGroup.add_child(parent);
+        child.ensure_style();
+        const bgColor = child.get_theme_node().get_background_color();
+        Main.layoutManager.uiGroup.remove_child(parent);
+        parent.destroy();
+        return [rgbToHex(bgColor.red, bgColor.green, bgColor.blue), '#ffffff'];
+    }
+
+    _applySystemAccentColor() {
+        if (!this._ownsAccentCss || !this.targetActor)
+            return;
+        const [colorStr, fgStr] = this._resolveAccentColors();
+        // St loads stylesheets only from files, so the rule goes through the cache
+        // directory.
+        const cssContent = `
+      .liquid-glass-menu-root .calendar-today,
+      .liquid-glass-menu-root .calendar-today:hover,
+      .liquid-glass-menu-root .calendar-today:active,
+      .liquid-glass-menu-root .calendar-today:checked,
+      .liquid-glass-menu-root .calendar-today:selected,
+      .liquid-glass-menu-root .calendar-today:focus {
+        background-color: ${colorStr} !important;
+        color: ${fgStr} !important;
+      }
+    `;
+        // Writing the file and parsing the stylesheet both throw a GError on failure.
+        try {
+            const cacheDir = GLib.get_user_cache_dir();
+            const filePath = GLib.build_filenamev([cacheDir, 'liquid-glass-accent.css']);
+            GLib.file_set_contents(filePath, cssContent);
+            const themeContext = St.ThemeContext.get_for_stage(global.stage);
+            const theme = themeContext.get_theme();
+            if (this._dynamicCssFile) {
+                theme.unload_stylesheet(this._dynamicCssFile);
+            }
+            this._dynamicCssFile = Gio.File.new_for_path(filePath);
+            theme.load_stylesheet(this._dynamicCssFile);
+            this._logger.log(`[Liquid Glass] [UIManager] System accent color applied: ${colorStr}`);
+        }
+        catch (e) {
+            this._logger.error(`[Liquid Glass] [UIManager] Failed to apply system accent color: ${e}`);
+        }
+    }
+
+    _allocatedHeightOf(actor) {
+        if (!actor || !isActorValid(actor) || !actor.has_allocation())
+            return 0;
+        const [, allocated] = getAllocatedSize(actor);
+        return allocated > 1 ? allocated : 0;
+    }
+
+    _firstHeight(actors, measure) {
+        for (const actor of actors) {
+            const height = measure(actor);
+            if (height > 0)
+                return height;
+        }
+        return 0;
+    }
+
+    // Measures a menu's height once it has stopped changing for a few frames
+    // (it grows while its content lays out), within MENU_MEASURE_FRAMES.
+    _settleHeight(menu, done) {
+        const actor = menu?.actor;
+        if (!actor || !isActorValid(actor)) {
+            done(0);
+            return;
+        }
+        let framesLeft = MENU_MEASURE_FRAMES;
+        let tallest = 0;
+        let repeats = 0;
+        const tick = () => {
+            const height = this._firstHeight([actor, menu.box], a => this._allocatedHeightOf(a));
+            repeats = height > 0 && height === tallest ? repeats + 1 : 0;
+            if (height > tallest)
+                tallest = height;
+            if (repeats < MENU_MEASURE_STABLE_FRAMES && --framesLeft > 0)
+                this._addMeasureLater(tick);
+            else
+                done(tallest);
+        };
+        this._addMeasureLater(tick);
+    }
+
+    _addMeasureLater(callback) {
+        const id = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, () => {
+            this._measureLaterIds.delete(id);
+            callback();
+            return GLib.SOURCE_REMOVE;
+        });
+        this._measureLaterIds.add(id);
+    }
+
+    _cancelHeightMeasurement() {
+        for (const id of this._measureLaterIds)
+            global.compositor.get_laters().remove(id);
+        this._measureLaterIds.clear();
+        // This menu was measuring Quick Settings: close it again, and drop the
+        // waiting callbacks, which would otherwise never be called.
+        const restore = this._restoreQuickSettings;
+        this._restoreQuickSettings = null;
+        if (restore) {
+            restore();
+            _quickSettingsWaiting = null;
+        }
+    }
+
+    _withQuickSettingsHeight(done) {
+        if (_quickSettingsHeight > 0) {
+            done(_quickSettingsHeight);
+            return;
+        }
+        if (_quickSettingsWaiting) {
+            _quickSettingsWaiting.push(done);
+            return;
+        }
+        const menu = Main.panel.statusArea.quickSettings?.menu;
+        const actor = menu?.actor;
+        if (!menu || !actor || !isActorValid(actor)) {
+            done(0);
+            return;
+        }
+        _quickSettingsWaiting = [done];
+        const settle = (height) => {
+            _quickSettingsHeight = height;
+            const waiting = _quickSettingsWaiting ?? [];
+            _quickSettingsWaiting = null;
+            for (const callback of waiting)
+                callback(height);
+        };
+        if (menu.isOpen) {
+            this._settleHeight(menu, settle);
+            return;
+        }
+        // Opened invisibly, measured, and closed again.
+        const opacity = actor.opacity;
+        let restored = false;
+        const restore = () => {
+            if (restored)
+                return;
+            restored = true;
+            menu.close(MENU_NO_ANIMATION);
+            actor.opacity = opacity;
+        };
+        menu.open(MENU_NO_ANIMATION);
+        actor.opacity = 0;
+        this._restoreQuickSettings = restore;
+        this._settleHeight(menu, height => {
+            this._restoreQuickSettings = null;
+            restore();
+            settle(height);
+        });
+    }
+
+    _measureHeightScale() {
+        if (!this.menu)
+            return;
+        _quickSettingsHeight = 0;
+        this._ownOpenHeight = 0;
+        this._withQuickSettingsHeight(() => this._rememberRatioWhenBothKnown());
+    }
+
+    _noteOwnOpenedHeight() {
+        if (!this._matchQuickSettingsHeight)
+            return;
+        if (this._measuringHeights || _quickSettingsHeight <= 0)
+            return;
+        this._measuringHeights = true;
+        this._settleHeight(this.menu, height => {
+            this._measuringHeights = false;
+            if (height > 0) {
+                this._ownOpenHeight = height;
+                this._rememberRatioWhenBothKnown();
+            }
+        });
+    }
+
+    _rememberRatioWhenBothKnown() {
+        if (_quickSettingsHeight <= 0 || this._ownOpenHeight <= 0)
+            return;
+        const ratio = _quickSettingsHeight / this._ownOpenHeight;
+        if (!Number.isFinite(ratio) || ratio <= 0 || ratio >= 1)
+            return;
+        this._rememberHeightScale(ratio);
+        this._applyMenuScale();
+    }
+
+    _quickSettingsHeightScale() {
+        const quickSettings = Main.panel.statusArea.quickSettings?.menu;
+        if (!quickSettings)
+            return this._settledHeightScale;
+        const targetHeight = this._firstHeight([quickSettings.actor, quickSettings.box], actor => this._allocatedHeightOf(actor));
+        const ownHeight = this._firstHeight([this.targetActor, this.animActor], actor => this._allocatedHeightOf(actor));
+        if (targetHeight <= 0 || ownHeight <= 0)
+            return this._settledHeightScale;
+        const ratio = targetHeight / ownHeight;
+        if (!Number.isFinite(ratio) || ratio <= 0)
+            return this._settledHeightScale;
+        this._rememberHeightScale(ratio);
+        return ratio;
+    }
+
+    _rememberHeightScale(ratio) {
+        if (this._settledHeightScale !== null && Math.abs(this._settledHeightScale - ratio) < 0.005)
+            return;
+        this._settledHeightScale = ratio;
+        if (!this._ownsSettingsNamespace)
+            return;
+        this._settings.set_double(this._key('settled-height-scale'), ratio);
+    }
+
+    _applyMenuScale() {
+        if (!this.targetActor || !isActorValid(this.targetActor))
+            return;
+        let requested = this._menuScale;
+        if (this._matchQuickSettingsHeight) {
+            const matched = this._quickSettingsHeightScale();
+            if (matched !== null)
+                requested = matched;
+        }
+        const scale = Number.isFinite(requested)
+            ? Math.min(1.0, Math.max(MIN_MENU_SCALE, requested))
+            : 1.0;
+        this.targetActor.set_pivot_point(0.5, 0.0);
+        this.targetActor.set_scale(scale, scale);
+    }
+
+    _getMenuMonitorGeometry() {
+        return resolveMonitorGeometry([this.menu?.sourceActor, this.targetActor]);
+    }
+
+    /**
+     * Keeps the glass directly beneath the menu it backs, as the other surfaces
+     * do; placed anywhere lower, a dock between the two would cover the glass
+     * but not the menu. Re-asserted on every open, because other extensions
+     * and dock rebuilds change uiGroup's order.
+     */
+    _restackGlass() {
+        const uiGroup = Main.layoutManager.uiGroup;
+        const root = this._menuRoot;
+        if (!this.glass || !root)
+            return;
+        if (!isActorValid(root) || root.get_parent() !== uiGroup)
+            return;
+        if (this.glass.get_parent() !== uiGroup)
+            return;
+        const children = uiGroup.get_children();
+        const rootIndex = children.indexOf(root);
+        if (rootIndex < 0)
+            return;
+        if (children.indexOf(this.glass) === rootIndex - 1)
+            return;
+        uiGroup.set_child_below_sibling(this.glass, root);
+    }
+
+    // A key in this instance's settings namespace; see _keyPrefix.
+    _key(suffix) {
+        return `${this._keyPrefix}-${suffix}`;
+    }
+
+    // The animation switch is named `enable-<prefix>-animation`.
+    _animationKey() {
+        return `enable-${this._keyPrefix}-animation`;
+    }
+
+    _bindSettings() {
+        const connectSetting = (key, callback) => {
+            let id = this._settings.connect(`changed::${key}`, callback.bind(this));
+            this._settingsSignals.push(id);
+        };
+        connectSetting(this._enableKey, () => {
+            let enabled = this._settings.get_boolean(this._enableKey);
+            if (enabled && !this._isEffectActive)
+                this._applyEffect();
+            else if (!enabled && this._isEffectActive)
+                this._removeEffect();
+        });
+        connectSetting(this._animationKey(), () => {
+            this._enableAnimation = this._settings.get_boolean(this._animationKey());
+        });
+        connectSetting(this._key('spring-stiffness'), () => {
+            this._springStiffness = this._settings.get_double(this._key('spring-stiffness'));
+            if (this._springScale)
+                this._springScale.updateParams(this._springStiffness, this._springDamping, this._springMass);
+        });
+        connectSetting(this._key('spring-damping'), () => {
+            this._springDamping = this._settings.get_double(this._key('spring-damping'));
+            if (this._springScale)
+                this._springScale.updateParams(this._springStiffness, this._springDamping, this._springMass);
+        });
+        connectSetting(this._key('spring-mass'), () => {
+            this._springMass = this._settings.get_double(this._key('spring-mass'));
+            if (this._springScale)
+                this._springScale.updateParams(this._springStiffness, this._springDamping, this._springMass);
+        });
+        connectSetting(this._key('animation-interval-ms'), () => {
+            this._animationInterval = this._settings.get_int(this._key('animation-interval-ms'));
+        });
+        connectSetting(this._key('tint-color'), () => {
+            if (this.glass) {
+                let colorArray = hexToColorArray(this._settings.get_string(this._key('tint-color')));
+                this.glass.setTintColor(...colorArray);
+            }
+        });
+        connectSetting(this._key('tint-strength'), () => {
+            if (this.glass) {
+                this.glass.setTintStrength(this._settings.get_double(this._key('tint-strength')));
+            }
+        });
+        connectSetting(this._key('blur-radius'), () => {
+            if (this.glass) {
+                this.glass.setBlurRadius(this._settings.get_int(this._key('blur-radius')));
+            }
+        });
+        connectSetting(this._key('brightness'), () => {
+            if (this.glass) {
+                this.glass.setBrightness(this._settings.get_double(this._key('brightness')));
+            }
+        });
+        connectSetting(this._key('contrast'), () => {
+            if (this.glass) {
+                this.glass.setContrast(this._settings.get_double(this._key('contrast')));
+            }
+        });
+        connectSetting(this._key('saturation'), () => {
+            if (this.glass) {
+                this.glass.setSaturation(this._settings.get_double(this._key('saturation')));
+            }
+        });
+        connectSetting(this._key('corner-radius'), () => {
+            if (this.glass) {
+                this._cornerRadius = this._settings.get_double(this._key('corner-radius'));
+                this.glass.setCornerRadius(this._cornerRadius);
+            }
+        });
+        connectSetting(this._key('glass-expand'), () => {
+            if (this.glass) {
+                this._glassExpand = this._settings.get_int(this._key('glass-expand'));
+            }
+        });
+        connectSetting(this._key('x-offset'), () => {
+            if (this.animActor) {
+                this._menuXoffset = this._settings.get_int(this._key('x-offset'));
+                this.animActor.translation_x = this._menuXoffset;
+            }
+        });
+        connectSetting(this._key('scale'), () => {
+            this._menuScale = this._settings.get_double(this._key('scale'));
+            this._applyMenuScale();
+        });
+        connectSetting(this._key('match-quick-settings-height'), () => {
+            this._matchQuickSettingsHeight = this._settings.get_boolean(this._key('match-quick-settings-height'));
+            this._applyMenuScale();
+            if (this._matchQuickSettingsHeight)
+                this._measureHeightScale();
+        });
+        connectSetting(this._key('y-offset'), () => {
+            if (this.animActor) {
+                this._menuYoffset = this._settings.get_int(this._key('y-offset'));
+                this.animActor.translation_y = this._menuYoffset;
+            }
+        });
+        connectSetting(this._key('enable-adaptive-text-color'), () => {
+            this._adaptiveConfig.enabled = this._settings.get_boolean(this._key('enable-adaptive-text-color'));
+        });
+        connectSetting(this._key('sample-interval-ms'), () => {
+            this._adaptiveConfig.sampleIntervalMs = this._settings.get_int(this._key('sample-interval-ms'));
+        });
+        connectSetting(this._key('adaptive-text-preference'), () => {
+            this._adaptiveConfig.preference = sanitizeColorPreference(this._settings.get_string(this._key('adaptive-text-preference')));
+        });
+    }
+
+    _applyEffect() {
+        if (this._isEffectActive)
+            return;
+        if (!isActorValid(this.targetActor) || !isActorValid(this.animActor))
+            return;
+        this._isEffectActive = true;
+        // The menu's own background is made transparent over the glass.
+        this.targetActor.add_style_class_name('liquid-glass-transparent');
+        this.animActor.add_style_class_name('liquid-glass-transparent');
+        this._menuXoffset = 0;
+        this._menuYoffset = 0;
+        this.animActor.translation_x = 0;
+        this.animActor.translation_y = 0;
+        this._glassExpand = this._settings.get_int(this._key('glass-expand'));
+        this._animationInterval = this._settings.get_int(this._key('animation-interval-ms'));
+        this._adaptiveConfig = {
+            ...AdaptiveContrastConfig,
+            enabled: this._settings.get_boolean(this._key('enable-adaptive-text-color')),
+            samplePerElement: SAMPLE_PER_ELEMENT,
+            sampleIntervalMs: this._settings.get_int(this._key('sample-interval-ms')),
+            preference: sanitizeColorPreference(this._settings.get_string(this._key('adaptive-text-preference'))),
+        };
+        // Sized to the monitor by _syncGeometry().
+        const glass = new BackdropGlass({
+            extensionPath: this.extensionPath, settings: this._settings, logger: this._logger, owner: this._label,
+        });
+        this.glass = glass;
+        glass.set_size(1.0, 1.0);
+        // The menu scales from its top centre; the glass follows it by geometry.
+        this.animActor.set_pivot_point(0.5, 0.0);
+        glass.set_pivot_point(0.0, 0.0);
+        let menuRoot = this.menu.actor;
+        while (menuRoot.get_parent() && menuRoot.get_parent() !== Main.layoutManager.uiGroup) {
+            const p = menuRoot.get_parent();
+            if (!p)
+                break;
+            menuRoot = p;
+        }
+        // Below the menu, so the glass reads the stage before the menu is drawn.
+        // Not inside the menu: its BoxPointer is always drawn through an
+        // offscreen.
+        this._menuRoot = menuRoot;
+        if (menuRoot.get_parent() === Main.layoutManager.uiGroup) {
+            Main.layoutManager.uiGroup.insert_child_below(glass, menuRoot);
+        }
+        else {
+            Main.layoutManager.uiGroup.add_child(glass);
+        }
+        let blurRadius = this._settings.get_int(this._key('blur-radius'));
+        let tintColorStr = this._settings.get_string(this._key('tint-color'));
+        let tintStrength = this._settings.get_double(this._key('tint-strength'));
+        let brightness = this._settings.get_double(this._key('brightness'));
+        let contrast = this._settings.get_double(this._key('contrast'));
+        let saturation = this._settings.get_double(this._key('saturation'));
+        this._cornerRadius = this._settings.get_double(this._key('corner-radius'));
+        glass.setPadding(SHADER_PADDING);
+        glass.setTintColor(...hexToColorArray(tintColorStr));
+        glass.setTintStrength(tintStrength);
+        glass.setCornerRadius(this._cornerRadius);
+        glass.setCornerSmoothingEnabled(false);
+        glass.setIsDock(false);
+        glass.setBrightness(brightness);
+        glass.setContrast(contrast);
+        glass.setSaturation(saturation);
+        glass.setBlurRadius(blurRadius);
+        glass.hide();
+        // Follows the stage's frames while the menu is shown; an open menu that
+        // does not change costs no frames.
+        const stopFrameSync = () => stopStageLoop(this._frameSignalSlot, this._frameSlot);
+        const startFrameSync = () => {
+            if (this._frameSignalId !== 0)
+                return;
+            this._restackGlass();
+            startSyncLoop(this._frameSignalSlot, this._frameSlot, {
+                alive: () => !!this.glass && this.targetActor.mapped,
+                honourFreeze: true,
+                errorTag: 'UIManager',
+                step: () => {
+                    // Checked before this frame's sync dirties anything.
+                    ensureGlassAllocated(this.glass);
+                    this._syncGeometry();
+                },
+            });
+        };
+        // The cached size is dropped on every open; the content may have changed.
+        this._signals.push({
+            target: this.menu,
+            id: this.menu.connect('open-state-changed', (menu, isOpen) => {
+                if (isOpen) {
+                    this._queueBackdropRefresh(this.menu?.actor);
+                    this._noteOwnOpenedHeight();
+                    this._stableBaseW = undefined;
+                    this._stableBaseH = undefined;
+                    startFrameSync();
+                    this._sampleColors.clear();
+                    this._sharedColor = null;
+                    this._startAdaptiveColorSampling(true);
+                }
+                else {
+                    this._stopAdaptiveColorSampling();
+                }
+            })
+        });
+        this._signals.push({
+            target: this.menu.box,
+            id: this.menu.box.connect('child-added', () => this._queueNewTextColors()),
+        });
+        this._signals.push({
+            target: this.menu.actor,
+            id: this.menu.actor.connect('notify::mapped', () => {
+                if (!this.menu.actor.mapped) {
+                    stopFrameSync();
+                    if (this.glass) {
+                        this.glass.hide();
+                        this.glass.opacity = 0;
+                    }
+                    if (this.animActor) {
+                        this.animActor.opacity = 0;
+                    }
+                }
+            })
+        });
+        this._updateResolution();
+        if (this.targetActor.mapped) {
+            startFrameSync();
+        }
+    }
+
+    _syncGeometry() {
+        if (!this._syncBgVisibility())
+            return;
+        if (this._label === 'menu') {
+            let monitor = this._getMenuMonitorGeometry();
+            let monitorX = monitor?.x ?? 0;
+            let monitorY = monitor?.y ?? 0;
+            let screenW = Math.max(1, monitor?.width ?? 1);
+            let screenH = Math.max(1, monitor?.height ?? 1);
+
+            let messages = [];
+            let collectMessages = (actor) => {
+                if (!actor || !actor.visible || !actor.mapped) return;
+                if (actor.has_style_class_name && actor.has_style_class_name('message')) {
+                    messages.push(actor);
+                    return;
+                }
+                if (actor.get_children) {
+                    for (let child of actor.get_children()) {
+                        collectMessages(child);
+                    }
+                }
+            };
+            collectMessages(this.menu.box);
+
+            if (messages.length === 0) {
+                this.glass.hide();
+                return;
+            }
+
+            let regions = [];
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (let msg of messages) {
+                let [absX, absY] = msg.get_transformed_position();
+                let [w, h] = msg.get_size();
+                if (Number.isNaN(absX) || Number.isNaN(absY) || w <= 0 || h <= 0) continue;
+                let relX = absX - monitorX;
+                let relY = absY - monitorY;
+                minX = Math.min(minX, relX);
+                minY = Math.min(minY, relY);
+                maxX = Math.max(maxX, relX + w);
+                maxY = Math.max(maxY, relY + h);
+                regions.push({
+                    x: relX,
+                    y: relY,
+                    w: w,
+                    h: h,
+                    tintR: 0.0,
+                    tintG: 0.0,
+                    tintB: 0.0,
+                    baseStrength: 0.05
+                });
+            }
+
+            if (regions.length === 0) {
+                this.glass.hide();
+                return;
+            }
+
+            if (!this.glass.visible) this.glass.show();
+            this.glass.opacity = this.targetActor.opacity;
+            this.glass.setMultiRegionMode(true);
+            this.glass.setCornerRadius(24.0);
+            this.glass.setIsDock(true);
+            this.glass.setTintColor(0.0, 0.0, 0.0);
+            this.glass.setTintStrength(0.05);
+            this.glass.setBlurRadius(3.0);
+            this.glass.setPadding(0);
+            try {
+                this.glass._renderer.uniforms.set('shadow_intensity', 0.0);
+                this.glass._renderer.uniforms.set('shadow_radius', 0.0);
+                this.glass._renderer.uniforms.set('shadow_max_radius', 0.0);
+            } catch (_) {}
+            this.glass.setGlassRegions(regions);
+
+            let bgW = (maxX - minX);
+            let bgH = (maxY - minY);
+            let bgX = minX;
+            let bgY = minY;
+            this._applyGlassBounds(this.glass, bgX + monitorX, bgY + monitorY, bgW, bgH, monitorX, monitorY, screenW, screenH);
+            this.glass.syncSources();
+            return;
+        }
+
+        const { w, h, scaleX, scaleY } = this._measureMenu();
+        const [animAbsX, animAbsY] = this._resolveMenuOrigin(w);
+        let bgW = w + (this._glassExpand * 2) + (SHADER_PADDING * 2);
+        let bgH = h + (this._glassExpand * 2) + (SHADER_PADDING * 2);
+        let bgX = animAbsX - this._glassExpand - SHADER_PADDING;
+        let bgY = animAbsY - this._glassExpand - SHADER_PADDING;
+        let monitor = this._getMenuMonitorGeometry();
+        let monitorX = monitor?.x ?? 0;
+        let monitorY = monitor?.y ?? 0;
+        let screenW = Math.max(1, monitor?.width ?? 1);
+        let screenH = Math.max(1, monitor?.height ?? 1);
+        if (!Number.isNaN(bgX) && !Number.isNaN(bgY) && w >= 1.0 && h >= 1.0)
+            this._applyGlassBounds(this.glass, bgX, bgY, bgW, bgH, monitorX, monitorY, screenW, screenH);
+        this._applyGlassScale(scaleX, scaleY);
+        // After the geometry setters, so the relays cover this frame's rect.
+        const now = GLib.get_monotonic_time();
+        const geomChanged = (this._lastSyncBgX !== bgX || this._lastSyncBgY !== bgY ||
+                             this._lastSyncBgW !== bgW || this._lastSyncBgH !== bgH);
+        if (geomChanged || !this._lastMenuSyncUs || (now - this._lastMenuSyncUs > 100000)) {
+            this._lastSyncBgX = bgX;
+            this._lastSyncBgY = bgY;
+            this._lastSyncBgW = bgW;
+            this._lastSyncBgH = bgH;
+            this._lastMenuSyncUs = now;
+            this.glass.syncSources();
+        }
+    }
+
+    _syncBgVisibility() {
+        if (!this.glass || !this.targetActor || !this.targetActor.mapped) {
+            if (this.glass && this.glass.visible) {
+                this.glass.hide();
+            }
+            return false;
+        }
+        if (!this.glass.visible) {
+            this.glass.show();
+        }
+        if (!this._enableAnimation) {
+            this.glass.opacity = this.targetActor.opacity;
+        }
+        return true;
+    }
+
+    _measureMenu() {
+        // The allocation: a hover restyle leaves a relayout pending, during
+        // which get_size() reports the preferred size including CSS margins.
+        let [inW, inH] = getAllocatedSize(this.animActor);
+        let [scaleX, scaleY] = this.animActor.get_scale();
+        inW = Number.isNaN(inW) || inW <= 0 ? (this._stableBaseW || 1) : inW;
+        inH = Number.isNaN(inH) || inH <= 0 ? (this._stableBaseH || 1) : inH;
+        scaleX = Number.isNaN(scaleX) ? 1.0 : scaleX;
+        scaleY = Number.isNaN(scaleY) ? 1.0 : scaleY;
+        scaleX *= this.targetActor.get_scale()[0];
+        scaleY *= this.targetActor.get_scale()[1];
+        this._stableBaseW = Math.round(inW);
+        this._stableBaseH = Math.round(inH);
+        return {
+            w: Math.max(1, this._stableBaseW * scaleX),
+            h: Math.max(1, this._stableBaseH * scaleY),
+            scaleX,
+            scaleY,
+        };
+    }
+
+    _resolveMenuOrigin(w) {
+        return resolveGlassOrigin(this.animActor, this, () => {
+            const monitor = Main.layoutManager.primaryMonitor;
+            if (!monitor)
+                return [0, 0];
+            return [(monitor.width / 2) - (w / 2) + this._menuXoffset, (Main.panel.height || 27) + this._menuYoffset];
+        });
+    }
+
+    _applyGlassBounds(glass, bgX, bgY, bgW, bgH, monitorX, monitorY, screenW, screenH) {
+        if (this._lastBgW === bgW && this._lastBgH === bgH &&
+            this._lastBgX === bgX && this._lastBgY === bgY &&
+            this._lastScreenW === screenW && this._lastScreenH === screenH)
+            return;
+        // Monitor-local, as the shader uses them.
+        let localBgX = bgX - monitorX;
+        let localBgY = bgY - monitorY;
+        placeScreenGlass(glass, monitorX, monitorY, screenW, screenH, { x: localBgX, y: localBgY, w: bgW, h: bgH });
+        glass.setShadowMaxRadius(GLASS_SHADOW_MAX_RADIUS);
+        glass.setResolution(screenW, screenH);
+        glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
+        this._lastBgW = bgW;
+        this._lastBgH = bgH;
+        this._lastBgX = bgX;
+        this._lastBgY = bgY;
+        this._lastScreenW = screenW;
+        this._lastScreenH = screenH;
+    }
+
+    _applyGlassScale(scaleX, scaleY) {
+        applyGlassScale(this.glass, this._cornerRadius, scaleX, scaleY);
+    }
+
+    _updateResolution() {
+        if (!this.glass)
+            return;
+        let [width, height] = this.glass.get_size();
+        if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+            this.glass.setResolution(width, height);
+        }
+    }
+
+    _hasStyleClass(actor, className) {
+        return actor instanceof St.Widget &&
+            actor.has_style_class_name(className);
+    }
+
+    _collectAdaptiveTextTargets(actor = this.menu?.actor, targets = []) {
+        if (!actor)
+            return targets;
+        return this._findAllTextActors(this.menu?.actor);
+    }
+
+    _findAllTextActors(actor, foundActors = []) {
+        if (!actor)
+            return foundActors;
+        if (actor instanceof St.Label || actor instanceof Clutter.Text || actor instanceof St.Button || actor instanceof St.Icon) {
+            if (actor.visible) {
+                foundActors.push(actor);
+            }
+        }
+        for (const child of actor.get_children())
+            this._findAllTextActors(child, foundActors);
+        return foundActors;
+    }
+
+    _setActorColor(actor, color, skipAnimations = false, batchStart) {
+        // Clutter.Text targets have no St style.
+        if (!(actor instanceof St.Widget))
+            return;
+        if (!this._styledActors.has(actor)) {
+            this._styledActors.set(actor, actor.get_style() || '');
+            actor.connect('destroy', () => {
+                adaptiveColorTweener.cancel(actor);
+                this._styledActors.delete(actor);
+                this._sampleColors.delete(actor);
+            });
+        }
+        let isInsensitive = false;
+        if (actor instanceof St.Button) {
+            isInsensitive = !actor.reactive || actor.has_style_pseudo_class('insensitive');
+        }
+        if (actor._currentTargetColor === color && actor._currentInsensitiveState === isInsensitive)
+            return;
+        actor._currentTargetColor = color;
+        actor._currentInsensitiveState = isInsensitive;
+        this._animateActorColor(actor, color, isInsensitive, 380, skipAnimations, batchStart);
+    }
+
+    _clearAdaptiveStyles() {
+        for (const [actor, originalStyle] of this._styledActors.entries()) {
+            adaptiveColorTweener.cancel(actor);
+            actor._currentTargetColor = undefined;
+            actor._currentInsensitiveState = undefined;
+            actor.set_style(originalStyle || null);
+        }
+        this._styledActors.clear();
+        this._backdropColored.clear();
+        this._sampleColors.clear();
+        this._sharedColor = null;
+        this._disconnectHoverWatchers();
+    }
+
+    _disconnectHoverWatchers() {
+        this._pendingBackdropRoots.clear();
+        if (this._backdropRefreshId !== 0) {
+            global.compositor.get_laters().remove(this._backdropRefreshId);
+            this._backdropRefreshId = 0;
+        }
+        for (const [actor, id] of this._hoverSignals.entries()) {
+            if (isActorValid(actor))
+                actor.disconnect(id);
+        }
+        this._hoverSignals.clear();
+    }
+
+    // A hovered row restyles its parent (the highlight); watching that lets the
+    // text colours follow the highlight instead of the glass behind it.
+    _watchHoverFor(targets) {
+        const restyled = new Set(targets);
+        for (const target of targets) {
+            const holder = target.get_parent();
+            if (!holder || restyled.has(holder) || this._hoverSignals.has(holder))
+                continue;
+            // Only St widgets emit style-changed.
+            if (!(holder instanceof St.Widget))
+                continue;
+            this._hoverSignals.set(holder, holder.connect('style-changed', () => {
+                if (this._applyingColors)
+                    return;
+                this._queueBackdropRefresh(holder);
+            }));
+        }
+        // Forget holders that have been destroyed; their handlers went with them.
+        for (const actor of [...this._hoverSignals.keys()]) {
+            if (!isActorValid(actor))
+                this._hoverSignals.delete(actor);
+        }
+    }
+
+    _queueBackdropRefresh(root) {
+        if (!this._adaptiveConfig.enabled || !this._isEffectActive || this._actorDestroyed)
+            return;
+        this._pendingBackdropRoots.add(root);
+        if (this._backdropRefreshId !== 0)
+            return;
+        this._backdropRefreshId = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, () => {
+            this._backdropRefreshId = 0;
+            const roots = [...this._pendingBackdropRoots];
+            this._pendingBackdropRoots.clear();
+            const targets = [];
+            for (const actor of roots) {
+                if (isActorValid(actor))
+                    this._findAllTextActors(actor, targets);
+            }
+            this._applyBackdropColorsTo(targets);
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _applyBackdropColorsTo(targets) {
+        if (!targets || targets.length === 0)
+            return;
+        const root = this.menu?.actor ?? null;
+        const batchStart = GLib.get_monotonic_time();
+        // Our own restyles emit style-changed too; see _watchHoverFor().
+        this._applyingColors = true;
+        for (const actor of new Set(targets)) {
+            const color = this._contrastSampler._backdropColorFor(actor, this._adaptiveConfig, root);
+            if (color) {
+                this._backdropColored.add(actor);
+                this._setActorColor(actor, color, true, batchStart);
+                continue;
+            }
+            // Off the highlight, the text goes straight back to the colour the rest
+            // of the menu has, so moving along the rows never leaves two colours.
+            const sampled = this._sampleColors.get(actor);
+            if (this._backdropColored.delete(actor) && sampled)
+                this._setActorColor(actor, sampled, true, batchStart);
+        }
+        this._applyingColors = false;
+    }
+
+    // Iterates through the color map and applies the new target colors to the respective actors
+    _applyAdaptiveColorMap(colorMap, skipAnimations = false) {
+        if (!colorMap || colorMap.size === 0)
+            return;
+        // One timestamp for the whole map, so a row of labels flips together.
+        const batchStart = GLib.get_monotonic_time();
+        this._applyingColors = true;
+        for (const [actor, color] of colorMap.entries()) {
+            this._sampleColors.set(actor, color);
+            if (this._backdropColored.has(actor))
+                continue;
+            this._setActorColor(actor, color, skipAnimations, batchStart);
+        }
+        this._applyingColors = false;
+    }
+
+    /**
+     * @param skipAnimations Set on open. The first sample is taken before the
+     *   first frame, before the glass is drawn: the screen then shows the bare
+     *   backdrop where the menu will be, and the glass's tone predicts the rest.
+     *   Its colours are applied without a tween and kept while the open
+     *   animation runs, during which the glass is still growing over the
+     *   backdrop. The last open's decision is forgotten: the menu may be over
+     *   something else now.
+     */
+    _startAdaptiveColorSampling(skipAnimations = false) {
+        if (!this._adaptiveConfig.enabled)
+            return;
+        if (skipAnimations) {
+            this._contrastSampler.reset();
+            this._awaitingOpenColors = true;
+            // From GNOME 51 on, open-state-changed comes before the menu is shown
+            // and placed; an idle of high priority runs once open() has returned,
+            // still ahead of the frame.
+            if (this._openSampleId === 0) {
+                this._openSampleId = GLib.idle_add(GLib.PRIORITY_HIGH, () => {
+                    this._openSampleId = 0;
+                    this._updateAdaptiveTextColors(true);
+                    return GLib.SOURCE_REMOVE;
+                });
+            }
+        }
+        else {
+            this._updateAdaptiveTextColors(false);
+        }
+        if (this._adaptiveTimerId !== 0)
+            return;
+        this._adaptiveTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, this._adaptiveConfig.sampleIntervalMs, () => {
+            if (!this.menu?.isOpen) {
+                this._adaptiveTimerId = 0;
+                return GLib.SOURCE_REMOVE;
+            }
+            const opening = this._tickId !== 0;
+            if (!opening || this._awaitingOpenColors)
+                this._updateAdaptiveTextColors(this._awaitingOpenColors);
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+
+    _stopAdaptiveColorSampling() {
+        if (this._adaptiveTimerId !== 0) {
+            GLib.source_remove(this._adaptiveTimerId);
+            this._adaptiveTimerId = 0;
+        }
+        if (this._openSampleId !== 0) {
+            GLib.source_remove(this._openSampleId);
+            this._openSampleId = 0;
+        }
+        if (this._newTextId !== 0) {
+            global.compositor.get_laters().remove(this._newTextId);
+            this._newTextId = 0;
+        }
+        this._newTextPending = false;
+    }
+
+    // Some menus add their items as they open (Kiwi Menu rebuilds them every
+    // time), after the open sample. Their text takes the menu's colour before it
+    // is drawn, rather than the theme's until the next sample; before the first
+    // sample has a colour, the items are what it waits for.
+    _queueNewTextColors() {
+        if (!this._adaptiveConfig.enabled || !this.menu?.isOpen || this._newTextId !== 0)
+            return;
+        this._newTextId = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, () => {
+            this._newTextId = 0;
+            if (this._adaptiveInFlight)
+                this._newTextPending = true;
+            else if (this._sharedColor !== null)
+                this._colorNewText();
+            else if (this._awaitingOpenColors)
+                this._updateAdaptiveTextColors(true);
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _colorNewText() {
+        const color = this._sharedColor;
+        if (color === null)
+            return;
+        const fresh = this._collectAdaptiveTextTargets().filter(actor => !this._sampleColors.has(actor));
+        if (fresh.length === 0)
+            return;
+        this._watchHoverFor(fresh);
+        this._applyBackdropColorsTo(fresh);
+        this._applyAdaptiveColorMap(new Map(fresh.map(actor => [actor, color])), true);
+    }
+
+    _updateAdaptiveTextColors(skipAnimations = false) {
+        if (!this._adaptiveConfig.enabled || this._adaptiveInFlight)
+            return;
+        let targets = this._collectAdaptiveTextTargets();
+        // A menu still empty when it opens is measured all the same, through its
+        // box, so the text it gets next can take the colour straight away.
+        const placeholder = targets.length === 0 && this._awaitingOpenColors && !this._adaptiveConfig.samplePerElement
+            ? this.menu?.box ?? null : null;
+        if (placeholder)
+            targets = [placeholder];
+        if (targets.length === 0)
+            return;
+        if (!placeholder)
+            this._watchHoverFor(targets);
+        this._adaptiveInFlight = true;
+        // A menu that rebuilds its items can destroy text while it is measured.
+        const gone = new Set();
+        const destroyIds = targets.map(actor => actor.connect('destroy', () => gone.add(actor)));
+        const unwatch = () => targets.forEach((actor, i) => {
+            if (!gone.has(actor))
+                actor.disconnect(destroyIds[i]);
+        });
+        this._contrastSampler
+            .chooseColorsForActors(targets, this._adaptiveConfig, this.menu?.actor, () => this.glass?.paintCount ?? NaN, () => this.glass ? [this.glass] : [])
+            .then(colorMap => {
+            for (const actor of gone)
+                colorMap.delete(actor);
+            if (!this._isEffectActive || this._actorDestroyed)
+                return;
+            if (placeholder) {
+                this._sharedColor = colorMap.get(placeholder) ?? null;
+                if (this._sharedColor !== null) {
+                    this._awaitingOpenColors = false;
+                    this._colorNewText();
+                }
+                return;
+            }
+            this._applyAdaptiveColorMap(colorMap, skipAnimations);
+            if (colorMap.size > 0) {
+                this._awaitingOpenColors = false;
+                if (!this._adaptiveConfig.samplePerElement)
+                    this._sharedColor = colorMap.values().next().value ?? null;
+            }
+        })
+            .catch(e => {
+            this._logger.error(`[Liquid Glass] Menu adaptive color update failed: ${e}`);
+        })
+            .finally(() => {
+            unwatch();
+            this._adaptiveInFlight = false;
+            if (this._newTextPending) {
+                this._newTextPending = false;
+                this._queueNewTextColors();
+            }
+        });
+    }
+
+    _animateActorColor(actor, targetHexColor, isInsensitive, durationMs = 380, skipAnimations = false, batchStart) {
+        // An existing tween is not cancelled: add() restarts from the colour it
+        // last applied.
+        const originalStyle = (this._styledActors.get(actor) || '').trim();
+        const stylePrefix = originalStyle ? `${originalStyle.replace(/;$/, '')}; ` : '';
+        let themeNode = actor.get_theme_node();
+        let startColor = themeNode.get_foreground_color();
+        let targetRgb = hexToRgb(targetHexColor);
+        // Insensitive items keep their dimmed look.
+        let targetAlpha = isInsensitive ? 0.5 : 1.0;
+        let startAlpha = startColor.alpha / 255.0;
+        const apply = (r, g, b, a) => {
+            const rgba = `rgba(${r}, ${g}, ${b}, ${a.toFixed(3)})`;
+            actor.set_style(`${stylePrefix}color: ${rgba}; -st-icon-foreground-color: ${rgba};`);
+        };
+        if (skipAnimations) {
+            adaptiveColorTweener.cancel(actor);
+            apply(targetRgb.r, targetRgb.g, targetRgb.b, targetAlpha);
+            return;
+        }
+        const startRgb = { r: startColor.red, g: startColor.green, b: startColor.blue };
+        adaptiveColorTweener.add(actor, {
+            startRgb, startAlpha,
+            targetRgb, targetAlpha,
+            crossFade: resolveCrossFade(startRgb, targetRgb),
+            durationMs,
+            apply,
+        }, batchStart);
+    }
+
+    // The spring open/close animation.
+    _startAnimation(targetValue) {
+        if (this._tickId !== 0) {
+            removeFrameTicker(this._tickId);
+            this._tickId = 0;
+        }
+        if (!this._enableAnimation) {
+            showMenuAtRest(this.glass, this.animActor);
+            return;
+        }
+        if (this.animActor)
+            this.animActor.remove_all_transitions();
+        if (this.glass)
+            this.glass.remove_all_transitions();
+        if (this._swiftAnimation) {
+            this._swiftSpringScale.updateParams(this._swiftResponse, this._swiftDampingFraction);
+            this._swiftSpringScale.target = targetValue;
+            if (Number.isNaN(this._swiftSpringScale.value))
+                this._swiftSpringScale.value = 0;
+        }
+        else {
+            this._springScale.target = targetValue;
+        }
+        if (this._tickId === 0) {
+            let lastTime = GLib.get_monotonic_time();
+            this._tickId = addFrameTicker(() => {
+                if (!this.glass || !this.targetActor) {
+                    this._tickId = 0;
+                    return GLib.SOURCE_REMOVE;
+                }
+                let currentTime = GLib.get_monotonic_time();
+                let elapsedMs = (currentTime - lastTime) / 1000;
+                lastTime = currentTime;
+                const frame = stepMenuSpring(this._swiftAnimation ? this._swiftSpringScale : this._springScale, elapsedMs);
+                if (frame.stopped)
+                    this._tickId = 0;
+                applyMenuFrame(frame, this.animActor, this.glass, this.menu.actor, () => this._syncGeometry());
+                return frame.stopped ? GLib.SOURCE_REMOVE : GLib.SOURCE_CONTINUE;
+            }, normalizeAnimationIntervalMs(this._animationInterval));
+        }
+    }
+
+    _removeEffect() {
+        if (!this._isEffectActive)
+            return;
+        this._isEffectActive = false;
+        this._stopAdaptiveColorSampling();
+        this._clearAdaptiveStyles();
+        this._disconnectEffectSources();
+        this._restoreMenuActors();
+        this._releaseGlass();
+    }
+
+    _disconnectEffectSources() {
+        for (let sig of this._signals)
+            sig.target.disconnect(sig.id);
+        this._signals = [];
+        if (this._tickId) {
+            removeFrameTicker(this._tickId);
+            this._tickId = 0;
+        }
+        stopStageLoop(this._frameSignalSlot, this._frameSlot);
+        this._disconnectAccentColor();
+    }
+
+    _disconnectAccentColor() {
+        if (this._accentColorTimeoutId) {
+            GLib.Source.remove(this._accentColorTimeoutId);
+            this._accentColorTimeoutId = 0;
+        }
+        if (this._interfaceSettings && this._accentColorSignalId) {
+            this._interfaceSettings.disconnect(this._accentColorSignalId);
+            this._accentColorSignalId = 0;
+            this._interfaceSettings = null;
+        }
+    }
+
+    _restoreMenuActors() {
+        if (!this._actorDestroyed)
+            this.targetActor.remove_style_class_name('liquid-glass-transparent');
+        if (!this._actorDestroyed && this.animActor) {
+            this.animActor.remove_style_class_name('liquid-glass-transparent');
+            this.animActor.remove_style_class_name('liquid-glass-menu-root');
+            this.animActor.translation_x = 0;
+            this.animActor.translation_y = 0;
+            this.animActor.set_scale(1.0, 1.0);
+            this.animActor.opacity = 255;
+        }
+        if (this._dynamicCssFile) {
+            const themeContext = St.ThemeContext.get_for_stage(global.stage);
+            const theme = themeContext.get_theme();
+            theme.unload_stylesheet(this._dynamicCssFile);
+            this._dynamicCssFile = null;
+        }
+        if (!this._actorDestroyed) {
+            this.targetActor.translation_y = 0;
+            this.targetActor.set_scale(1.0, 1.0);
+            this.targetActor.opacity = 255;
+        }
+        if (!this._actorDestroyed && this.menu.actor) {
+            this.menu.actor.opacity = 255;
+            if (this.menu.isOpen) {
+                this.menu.close(MENU_NO_ANIMATION);
+            }
+        }
+    }
+
+    _releaseGlass() {
+        const glass = this.glass;
+        this.glass = null;
+        if (glass) {
+            glass.cleanup();
+            // At shell shutdown the stage may have destroyed it already.
+            if (isActorValid(glass))
+                glass.destroy();
+        }
+        this._menuRoot = null;
+        this._stableBaseW = undefined;
+        this._stableBaseH = undefined;
+    }
+
+    cleanup() {
+        this._cancelHeightMeasurement();
+        stopStageLoop(this._frameSignalSlot, this._frameSlot);
+        for (let sigId of this._settingsSignals)
+            this._settings.disconnect(sigId);
+        this._settingsSignals = [];
+        // These exist even while the effect is off.
+        if (this._animSignalId) {
+            this.menu.disconnect(this._animSignalId);
+            this._animSignalId = 0;
+        }
+        if (this._destroySignalId) {
+            this.targetActor.disconnect(this._destroySignalId);
+            this._destroySignalId = 0;
+        }
+        this._disconnectAccentColor();
+        this._removeEffect();
+    }
+}

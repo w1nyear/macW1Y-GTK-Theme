@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=macOS Startup Chime
+Comment=Plays the authentic macOS boot chime upon user login
+Exec=canberra-gtk-play -i desktop-login
+Terminal=false
+Hidden=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

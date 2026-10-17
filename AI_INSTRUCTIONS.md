@@ -21,7 +21,7 @@
    - Висота всіх кнопок панелі: суворо 28px; відступи між елементами: суворо 8px (`margin: 2px 4px !important`).
    - Усі неактивні системні індикатори GNOME (`tiling-assistant`, `unattended_upgrade` тощо) примусово приховані (`width: 0`), щоб між треєм і Wi-Fi не було порожніх дірок.
 3. **Dock-панель (Dash to Dock):**
-   - Заокруглення радіуса панелі: суворо 28px (як у темі MacTahoe).
+   - Заокруглення радіуса панелі: суворо 28px (як у темі macW1Y).
    - Усунено всі артефакти прямих кутів і розривів фону.
    - Живе розмиття елементів позаду дока як на робочому столі, так і у віконному режимі.
 4. **Спливаючі сповіщення (Notifications):**
@@ -69,7 +69,7 @@
 │   ├── dash-to-dock.dconf
 │   └── gnome-shell.dconf
 ├── gnome-shell-theme/          # Кастомний CSS теми оболонки
-│   └── gnome-shell.css         # Тема MacTahoe-Dark з нашими виправленнями (відступи 8px, висота 28px)
+│   └── gnome-shell.css         # Тема macW1Y-Dark з нашими виправленнями (відступи 8px, висота 28px)
 ├── icons/                      # Системні іконки проекту
 │   ├── control-center.png      # Оптимізована растрова іконка Control Center (із Завантажень користувача)
 │   └── control-center-symbolic.svg
@@ -84,15 +84,15 @@
 ## 3. Де ці файли працюють у реальній системі (Цільові шляхи)
 Коли система працює, файли розгорнуті у таких системних місцях користувача:
 1. **Теми GNOME Shell:**
-   - `~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css`
-   - `~/.themes/MacTahoe-Dark-solid/gnome-shell/gnome-shell.css`
+   - `~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css`
+   - `~/.themes/macW1Y-Dark-solid/gnome-shell/gnome-shell.css`
 2. **Розширення Blur My Shell:**
    - `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/`
 3. **Розширення Dash to Dock:**
    - `~/.local/share/gnome-shell/extensions/dash-to-dock@micxgx.gmail.com/`
 4. **Іконки Control Center:**
-   - `~/.themes/MacTahoe-Dark/icons/control-center.png`
-   - `~/.themes/MacTahoe-Dark-solid/icons/control-center.png`
+   - `~/.themes/macW1Y-Dark/icons/control-center.png`
+   - `~/.themes/macW1Y-Dark-solid/icons/control-center.png`
    - `~/.local/share/icons/hicolor/scalable/apps/control-center.png`
 5. **Бінарники та скрипти:**
    - `~/.local/bin/mac-styling-settings`

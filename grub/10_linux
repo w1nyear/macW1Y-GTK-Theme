@@ -168,7 +168,7 @@ linux_entry ()
   if [ x$type != xsimple ] ; then
       case $type in
 	  recovery)
-	      title="${os} (Safe Mode)" ;;
+	      title="Options" ;;
 	  *)
 	      if [ "x$GRUB_DISABLE_SUBMENU" = "xtrue" ] && [ "x$is_top_level" = "xtrue" ]; then
 	          title="${os}"

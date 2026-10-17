@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Left half outer arc ring (between r=7 and r=9) -->
+  <path d="M 12 3 A 9 9 0 0 0 12 21 L 12 19 A 7 7 0 0 1 12 5 Z" fill="#ffffff"/>
+  <!-- Right half outer band (between r=4.5 and r=9) -->
+  <path d="M 12 3 A 9 9 0 0 1 12 21 L 12 16.5 A 4.5 4.5 0 0 0 12 7.5 Z" fill="#ffffff"/>
+  <!-- Left half inner circle (radius 4.5) -->
+  <path d="M 12 7.5 A 4.5 4.5 0 0 0 12 16.5 Z" fill="#ffffff"/>
+</svg>

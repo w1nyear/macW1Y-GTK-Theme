@@ -50,6 +50,11 @@ class DockDashItemContainer extends Dash.DashItemContainer {
     _init(position) {
         super._init();
 
+        if (position === St.Side.TOP || position === St.Side.BOTTOM)
+            this.xExpand = false;
+        else
+            this.yExpand = false;
+
         this.label?.add_style_class_name(Theming.PositionStyleClass[position]);
         if (Docking.DockManager.settings.customThemeShrink)
             this.label?.add_style_class_name('shrink');
@@ -140,7 +145,7 @@ export const DockDash = GObject.registerClass({
         // Initialize icon variables and size
         super._init({
             name: 'dash',
-            offscreen_redirect: 0,
+            offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
             layout_manager: new Clutter.BinLayout(),
         });
 
@@ -650,7 +655,8 @@ export const DockDash = GObject.registerClass({
                    !actor.animatingOut;
         });
 
-        iconChildren.push(this._showAppsIcon);
+        if (Docking.DockManager.settings.showShowAppsButton && this._showAppsIcon?.visible)
+            iconChildren.push(this._showAppsIcon);
 
         if (this._maxWidth === -1 && this._maxHeight === -1)
             return;
@@ -1082,6 +1088,8 @@ export const DockDash = GObject.registerClass({
 
     hideShowAppsButton() {
         this._showAppsIcon.visible = false;
+        if (this._showAppsIcon.get_parent())
+            this._showAppsIcon.get_parent().remove_child(this._showAppsIcon);
     }
 
     get maxWidth() {
@@ -1111,10 +1119,13 @@ export const DockDash = GObject.registerClass({
     }
 
     updateShowAppsButton() {
-        if (this._showAppsIcon.get_parent() && !this._showAppsIcon.visible)
-            return;
-
         const {settings} = Docking.DockManager;
+        if (!settings.showShowAppsButton || !this._showAppsIcon.visible) {
+            this._showAppsIcon.visible = false;
+            if (this._showAppsIcon.get_parent())
+                this._showAppsIcon.get_parent().remove_child(this._showAppsIcon);
+            return;
+        }
         const notifiedProperties = [];
         const showAppsContainer = settings.showAppsAlwaysInTheEdge || !settings.dockExtended
             ? this._dashContainer : this._boxContainer;

@@ -588,12 +588,16 @@ export class QuickSettingsManager {
         let sy = 1.0;
         let node = actor;
         while (node) {
-            let [nsx, nsy] = node.get_scale();
-            if (Number.isFinite(nsx) && nsx !== 0)
-                sx *= nsx;
-            if (Number.isFinite(nsy) && nsy !== 0)
-                sy *= nsy;
-            node = node.get_parent();
+            try {
+                let [nsx, nsy] = node.get_scale();
+                if (Number.isFinite(nsx) && nsx !== 0)
+                    sx *= nsx;
+                if (Number.isFinite(nsy) && nsy !== 0)
+                    sy *= nsy;
+                node = node.get_parent();
+            } catch (_) {
+                break;
+            }
         }
         return [sx || 1.0, sy || 1.0];
     }
@@ -662,15 +666,19 @@ export class QuickSettingsManager {
     // for the same value, and the sync runs in before-update, so each write
     // would ask for another frame.
     _placeToggleHost(glass, monitorX, monitorY) {
-        if (this.animActor.get_first_child() !== this._toggleGlassHost)
-            this.animActor.set_child_below_sibling(this._toggleGlassHost, null);
-        let [hostAbsX, hostAbsY] = this._toggleGlassHost.get_transformed_position();
-        let [accScaleX, accScaleY] = this._getAccumulatedScale(this._toggleGlassHost);
-        if (!Number.isFinite(hostAbsX) || !Number.isFinite(hostAbsY))
+        try {
+            if (this.animActor.get_first_child() !== this._toggleGlassHost)
+                this.animActor.set_child_below_sibling(this._toggleGlassHost, null);
+            let [hostAbsX, hostAbsY] = this._toggleGlassHost.get_transformed_position();
+            let [accScaleX, accScaleY] = this._getAccumulatedScale(this._toggleGlassHost);
+            if (!Number.isFinite(hostAbsX) || !Number.isFinite(hostAbsY))
+                return [monitorX, monitorY];
+            // The pivot is (0, 0), so the scale does not move the origin.
+            setScaleIfChanged(glass, 1.0 / accScaleX, 1.0 / accScaleY);
+            return [(monitorX - hostAbsX) / accScaleX, (monitorY - hostAbsY) / accScaleY];
+        } catch (_) {
             return [monitorX, monitorY];
-        // The pivot is (0, 0), so the scale does not move the origin.
-        setScaleIfChanged(glass, 1.0 / accScaleX, 1.0 / accScaleY);
-        return [(monitorX - hostAbsX) / accScaleX, (monitorY - hostAbsY) / accScaleY];
+        }
     }
 
     _collectToggleRegions(toggles, monitorX, monitorY) {

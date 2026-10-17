@@ -1,0 +1,11 @@
+[Unit]
+Description=CPU Power Manager Windows Plan Alignment
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/cpu-power-manager
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

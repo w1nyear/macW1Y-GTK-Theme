@@ -1,0 +1,6 @@
+#!/bin/bash
+LIB_DIR="${HOME}/.local/lib"
+if [ -f "$LIB_DIR/libmac_extension_manager.so" ]; then
+    export LD_PRELOAD="$LIB_DIR/libmac_extension_manager.so${LD_PRELOAD:+:$LD_PRELOAD}"
+fi
+exec /usr/bin/extension-manager "$@"

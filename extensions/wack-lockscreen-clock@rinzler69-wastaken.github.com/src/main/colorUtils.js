@@ -492,8 +492,9 @@ export function getPromptShadowAlpha(visualStateOrLightness) {
 }
 
 export function getUserLabelStyle(visualStateOrLightness) {
-    const shadowAlpha = getUserLabelShadowAlpha(visualStateOrLightness);
-    return `text-shadow: 0 1px 10px rgba(0, 0, 0, ${shadowAlpha.toFixed(3)}) !important;`;
+    const rawAlpha = getUserLabelShadowAlpha(visualStateOrLightness);
+    const shadowAlpha = Math.max(0.75, rawAlpha);
+    return `text-shadow: 0 2px 10px rgba(0, 0, 0, ${shadowAlpha.toFixed(3)}) !important;`;
 }
 
 /**
@@ -574,8 +575,9 @@ export function getHintTextColorAlpha(visualStateOrLightness, wallpaperAlpha = n
 
 export function getHintTextStyle(visualStateOrLightness, wallpaperAlpha = null) {
     const colorAlpha = getHintTextColorAlpha(visualStateOrLightness, wallpaperAlpha);
-    const shadowAlpha = getHintTextShadowAlpha(visualStateOrLightness);
-    return `color: rgba(255, 255, 255, ${colorAlpha.toFixed(3)}) !important; text-shadow: 0 1px 7px rgba(0, 0, 0, ${shadowAlpha.toFixed(3)}) !important;`;
+    const rawAlpha = getHintTextShadowAlpha(visualStateOrLightness);
+    const shadowAlpha = Math.max(0.70, rawAlpha);
+    return `color: rgba(255, 255, 255, ${colorAlpha.toFixed(3)}) !important; text-shadow: 0 2px 8px rgba(0, 0, 0, ${shadowAlpha.toFixed(3)}) !important;`;
 }
 
 export function getPromptMessageStyle(visualStateOrLightness, wallpaperAlpha = null) {

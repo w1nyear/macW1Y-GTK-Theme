@@ -108,6 +108,8 @@ export const ToggleBackdropGlass = GObject.registerClass(paintNodeWithContext(cl
 
     /** See BackdropGlass.syncSources(); also places the reader. */
     syncSources() {
+        if (!this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+            return;
         const area = this._sampleAreaRect();
         if (!area)
             return;
@@ -121,6 +123,8 @@ export const ToggleBackdropGlass = GObject.registerClass(paintNodeWithContext(cl
     }
 
     vfunc_paint_node(root, paintContext) {
+        if (!this.mapped || !this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+            return;
         const ctx = this._beginPaint();
         if (!ctx)
             return;

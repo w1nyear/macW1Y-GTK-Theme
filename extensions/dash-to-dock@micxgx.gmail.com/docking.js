@@ -2415,7 +2415,14 @@ export class DockManager {
             spacing = spacing ?? 0;
 
             if (state === OverviewControls.ControlsState.WINDOW_PICKER) {
-                const searchBox = this.overviewControls._searchEntry.get_allocation_box();
+                let searchHeight = 0;
+                try {
+                    const searchBox = this.overviewControls._searchEntry?.get_allocation_box?.();
+                    const h = searchBox?.get_height?.();
+                    if (Number.isFinite(h) && h > 0)
+                        searchHeight = h;
+                } catch (_) {}
+
                 const {shouldShow: wsThumbnails} = this.overviewControls._thumbnailsBox;
 
                 if (!wsThumbnails) {
@@ -2423,13 +2430,16 @@ export class DockManager {
                     box.y2 -= spacing;
                 }
 
-                box.y2 -= searchBox.get_height() + 2 * spacing;
+                box.y2 -= searchHeight + 2 * spacing;
             }
 
             return box;
         };
 
         const maybeLimitWorkspaceBoxSize = (box, monitorIndex) => {
+            if (!box || !Number.isFinite(box.y1) || !Number.isFinite(box.y2) || !Number.isFinite(box.x1) || !Number.isFinite(box.x2))
+                return box;
+
             if (!Meta.prefs_get_dynamic_workspaces() &&
                 Meta.prefs_get_num_workspaces() <= 1)
                 return box;
@@ -2547,7 +2557,8 @@ export class DockManager {
         function workspaceBoxOriginFixer(originalFunction, state, workAreaBox, ...args) {
             /* eslint-disable no-invalid-this */
             const workspaceBox = originalFunction.call(this, state, workAreaBox, ...args);
-            workspaceBox.set_origin(workAreaBox.x1, workspaceBox.y1);
+            if (workspaceBox && workAreaBox && Number.isFinite(workAreaBox.x1) && Number.isFinite(workspaceBox.y1))
+                workspaceBox.set_origin(workAreaBox.x1, workspaceBox.y1);
             return workspaceBox;
             /* eslint-enable no-invalid-this */
         }
@@ -2569,12 +2580,17 @@ export class DockManager {
                 const spacing = this.spacing ?? this._spacing;
                 const adjustedBox = maybeAdjustBoxSize(state, box, spacing);
 
+                let result = adjustedBox;
                 if (state === OverviewControls.ControlsState.WINDOW_PICKER) {
-                    return maybeLimitWorkspaceBoxSize(
+                    result = maybeLimitWorkspaceBoxSize(
                         adjustedBox, Main.layoutManager.primaryIndex);
                 }
 
-                return adjustedBox;
+                if (result && (!Number.isFinite(result.y1) || !Number.isFinite(result.y2))) {
+                    result.y1 = box?.y1 ?? 0;
+                    result.y2 = box?.y2 ?? 0;
+                }
+                return result;
                 /* eslint-enable no-invalid-this */
             },
         ], [

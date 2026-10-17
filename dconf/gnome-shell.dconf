@@ -1,41 +1,47 @@
 [/]
-app-picker-layout=[{'org.gnome.Calculator.desktop': <{'position': <0>}>, 'com.mattjakeman.ExtensionManager.desktop': <{'position': <1>}>, 'org.gnome.tweaks.desktop': <{'position': <2>}>, 'org.gnome.clocks.desktop': <{'position': <3>}>, 'update-manager.desktop': <{'position': <4>}>, 'firmware-updater_firmware-updater.desktop': <{'position': <5>}>, 'gnome-language-selector.desktop': <{'position': <6>}>, 'net.nokyan.Resources.desktop': <{'position': <7>}>, 'org.gnome.TextEditor.desktop': <{'position': <8>}>, 'org.gnome.Characters.desktop': <{'position': <9>}>, 'org.gnome.Ptyxis.desktop': <{'position': <10>}>, 'Utilities': <{'position': <11>}>, 'System': <{'position': <12>}>, 'desktop-security-center_desktop-security-center.desktop': <{'position': <13>}>, 'com.github.FontManager.FontManager.desktop': <{'position': <14>}>, 'org.gnome.GTK4ThemeSwitcher.desktop': <{'position': <15>}>, 'steam.desktop': <{'position': <16>}>, 'com.github.FontManager.FontViewer.desktop': <{'position': <17>}>, 'zoom-client_zoom-client.desktop': <{'position': <18>}>, 'org.gnome.Yelp.desktop': <{'position': <19>}>, 'anydesk.desktop': <{'position': <20>}>, 'firefox_firefox.desktop': <{'position': <21>}>, 'Watch_Dogs 2.desktop': <{'position': <22>}>}]
+app-picker-layout=[{'org.gnome.clocks.desktop': <{'position': <0>}>, 'org.gnome.Calculator.desktop': <{'position': <1>}>, 'com.mattjakeman.ExtensionManager.desktop': <{'position': <2>}>, 'org.gnome.tweaks.desktop': <{'position': <3>}>, 'update-manager.desktop': <{'position': <4>}>, 'firmware-updater_firmware-updater.desktop': <{'position': <5>}>, 'gnome-language-selector.desktop': <{'position': <6>}>, 'net.nokyan.Resources.desktop': <{'position': <7>}>, 'org.gnome.TextEditor.desktop': <{'position': <8>}>, 'Utilities': <{'position': <9>}>, 'System': <{'position': <10>}>, 'snap-store_snap-store.desktop': <{'position': <11>}>, 'zoom-client_zoom-client.desktop': <{'position': <12>}>, 'df8a314e-89f6-4c7f-ad4a-eec3eaef93e5': <{'position': <13>}>, 'discord_discord.desktop': <{'position': <14>}>}]
 command-history=['killall -3 gnome-shell', 'logout', 'r']
 disable-extension-version-validation=true
-disabled-extensions=['apps-menu@gnome-shell-extensions.gcampax.github.com', 'ubuntu-dock@ubuntu.com']
-enabled-extensions=['compiz-alike-magic-lamp-effect@hermes83.github.com', 'user-theme@gnome-shell-extensions.gcampax.github.com', 'ding@rastersoft.com', 'tiling-assistant@ubuntu.com', 'appmenu@ChathurangaBW.github.io', 'spotlight@nin', 'Rounded_Corners@lennart-k', 'ubuntu-appindicators@ubuntu.com', 'liquid-glass@thinkingcoding1231.gmail.com', 'stage-manager@gnome-stage-manager', 'eval-helper@mactheme', 'blur-my-shell@aunetx', 'dash-to-dock@micxgx.gmail.com', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'macos-touchpad-gestures@mactheme']
-favorite-apps=['google-chrome.desktop', 'org.gnome.Nautilus.desktop', 'snap-store_snap-store.desktop', 'antigravity_antigravity.desktop', 'telegram-desktop_telegram-desktop.desktop', 'spotify_spotify.desktop', 'org.gnome.Settings.desktop']
+disable-user-extensions=false
+disabled-extensions=['apps-menu@gnome-shell-extensions.gcampax.github.com', 'ubuntu-dock@ubuntu.com', 'snapd-prompting@canonical.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'tiling-assistant@ubuntu.com', 'stage-manager@gnome-stage-manager']
+enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'spotlight@nin', 'ubuntu-appindicators@ubuntu.com', 'macos-touchpad-gestures@mactheme', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'eval-helper@mactheme', 'dash-to-dock@micxgx.gmail.com', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'appmenu@ChathurangaBW.github.io', 'ding@rastersoft.com', 'Rounded_Corners@lennart-k', 'liquid-glass@thinkingcoding1231.gmail.com', 'blur-my-shell@aunetx']
+favorite-apps=['org.gnome.Nautilus.desktop', 'launchpad.desktop', 'google-chrome.desktop', 'antigravity_antigravity.desktop', 'org.gnome.Ptyxis.desktop', 'telegram-desktop_telegram-desktop.desktop', 'steam_steam.desktop', 'org.gnome.Settings.desktop']
 last-selected-power-profile='performance'
 welcome-dialog-last-shown-version='50.1'
 
 [extensions/appmenu]
-icon-size=22
-show-os-icon=false
+hide-overview-button=true
+icon-size=16
+menu-icon='apple-logo'
+search-shortcut=['<Control>space', '<Primary>space']
+show-os-icon=true
 show-user-switcher=false
 
 [extensions/blur-my-shell]
 debug=true
-hacks-level=2
-pipelines={'pipeline_default': {'name': <'Default'>, 'effects': <[<{'type': <'gaussian_blur'>, 'id': <'effect_000000000000'>, 'params': <{'radius': <30>, 'brightness': <0.59999999999999998>}>}>]>}, 'pipeline_default_rounded': {'name': <'Default rounded'>, 'effects': <[<{'type': <'gaussian_blur'>, 'id': <'effect_000000000001'>, 'params': <{'radius': <30>, 'brightness': <0.59999999999999998>}>}>, <{'type': <'corner'>, 'id': <'effect_000000000002'>, 'params': <{'radius': <24>}>}>]>}, 'pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc': {'name': <'MenuBar'>, 'effects': <[<{'type': <'gradient_panel'>, 'id': <'effect_00680760882466'>, 'params': <{'top_darkness': <0>, 'bottom_darkness': <0>, 'top_blur': <5>, 'bottom_blur': <0>}>}>]>}}
+hacks-level=1
+pipelines={'pipeline_default': {'name': <'Default'>, 'effects': <[<{'type': <'native_static_gaussian_blur'>, 'id': <'effect_000000000000'>, 'params': <{'unscaled_radius': <30.0>, 'brightness': <0.59999999999999998>}>}>]>}, 'pipeline_default_rounded': {'name': <'Default rounded'>, 'effects': <[<{'type': <'native_static_gaussian_blur'>, 'id': <'effect_000000000001'>, 'params': <{'unscaled_radius': <30.0>, 'brightness': <0.59999999999999998>}>}>, <{'type': <'corner'>, 'id': <'effect_000000000002'>, 'params': <{'radius': <24.0>}>}>]>}, 'pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc': {'name': <'MenuBar'>, 'effects': <[<{'type': <'gradient_panel'>, 'id': <'effect_00680760882466'>, 'params': <{'top_darkness': <0>, 'bottom_darkness': <0>, 'top_blur': <5>, 'bottom_blur': <0>}>}>]>}}
 rounded-blur-found=true
 settings-version=2
 
 [extensions/blur-my-shell/appfolder]
+blur=false
 brightness=1.0
 sigma=30
-style-dialogs=2
+style-dialogs=1
 
 [extensions/blur-my-shell/applications]
-blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegram-desktop', 'telegram-desktop', 'TelegramDesktop', 'Telegram', 'org.telegram.desktop']
+blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegram-desktop', 'telegram-desktop', 'TelegramDesktop', 'Telegram', 'org.telegram.desktop', 'antigravity', 'Antigravity', 'google-chrome', 'Google-chrome', 'steam', 'Steam', 'net.nokyan.Resources']
 blur=true
 blur-on-overview=true
 brightness=1.0
 corner-when-maximized=false
 dynamic-opacity=false
 enable-all=true
-opacity=255
+opacity=215
 pipeline='pipeline_default'
 sigma=10
+static-blur=false
 
 [extensions/blur-my-shell/coverflow-alt-tab]
 pipeline='pipeline_default'
@@ -52,6 +58,7 @@ style-dash-to-dock=0
 unblur-in-overview=true
 
 [extensions/blur-my-shell/lockscreen]
+blur=false
 pipeline='pipeline_default'
 
 [extensions/blur-my-shell/notification]
@@ -59,28 +66,33 @@ blur=false
 sigma=10
 
 [extensions/blur-my-shell/overview]
+blur=true
 pipeline='pipeline_default'
 style-components=0
 
 [extensions/blur-my-shell/panel]
-blur=true
+blur=false
 brightness=0.59999999999999998
 corner-radius=0
+customize=true
 force-light-text=false
 gradient-panel=true
 gradient-panel-mode=0
 override-background=true
-pipeline='pipeline_default'
+pipeline='pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc'
 sigma=10
 static-blur=true
 unblur-in-overview=false
 
 [extensions/blur-my-shell/popup]
-blur=true
+blur=false
 brightness=0.52000000000000002
-menu-corner-radius=28
+corner-radius=24
+dialog-corner-radius=24
+menu-corner-radius=12
 notification-corner-radius=24
 pipeline='pipeline_default_rounded'
+quick-settings-corner-radius=24
 sigma=10
 
 [extensions/blur-my-shell/quick-settings]
@@ -89,22 +101,30 @@ blur=false
 sigma=10
 
 [extensions/blur-my-shell/screenshot]
+blur=false
 pipeline='pipeline_default'
 
 [extensions/blur-my-shell/window-list]
+blur=false
 brightness=0.59999999999999998
 sigma=30
 
 [extensions/dash-to-dock]
+autohide=false
 background-opacity=0.80000000000000004
 click-action='focus-minimize-or-appspread'
 custom-theme-shrink=false
 dash-max-icon-size=48
+dock-fixed=true
 dock-position='BOTTOM'
 extend-height=false
 height-fraction=0.90000000000000002
+intellihide=false
 preferred-monitor=-2
 preferred-monitor-by-connector='eDP-1'
+show-mounts=false
+show-mounts-network=false
+show-show-apps-button=false
 
 [extensions/ding]
 check-x11wayland=true
@@ -114,39 +134,78 @@ corner-radius=16
 
 [extensions/liquid-glass]
 application-glass-all-windows=false
-blur-my-shell-popup-blur=true
-desktop-menu-blur-radius=12
-desktop-menu-content-opacity=0.68000000000000005
-desktop-menu-corner-radius=18.0
-detected-extra-menus=['a11y', 'appindicator-:1.119@/StatusNotifierItem', 'appindicator-:1.294@/StatusNotifierItem', 'appindicator-:1.48@/org/ayatana/NotificationItem/livepatch', 'appindicator-:1.48@/org/ayatana/NotificationItem/software_update_available', 'appindicator-:1.48@/org/ayatana/NotificationItem/unattended_upgrade', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'appmenu@ChathurangaBW.github.io-7', 'dwellClick', 'keyboard', 'macBluetooth', 'macPrivacy', 'macVolume', 'macWifi', 'tiling-assistant@leleat-on-github']
+blur-my-shell-popup-blur=false
+desktop-menu-blur-radius=3
+desktop-menu-brightness=1.0
+desktop-menu-content-opacity=1.0
+desktop-menu-contrast=1.0
+desktop-menu-corner-radius=24.0
+desktop-menu-saturation=1.0
+desktop-menu-tint-color='#000000'
+desktop-menu-tint-strength=0.050000000000000003
+detected-extra-menus=['a11y', 'appindicator-:1.112@/StatusNotifierItem', 'appindicator-:1.126@/StatusNotifierItem', 'appindicator-:1.53@/org/ayatana/NotificationItem/livepatch', 'appindicator-:1.53@/org/ayatana/NotificationItem/software_update_available', 'appindicator-:1.53@/org/ayatana/NotificationItem/unattended_upgrade', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'appmenu@ChathurangaBW.github.io-7', 'dwellClick', 'keyboard', 'macBattery', 'macBluetooth', 'macPrivacy', 'macVolume', 'macWifi']
+dock-blur-radius=1
 dock-corner-radius=28.0
 dock-glass-expand=0
 dock-margin-bottom=8
+dock-tint-color='#ffffff'
+dock-tint-strength=0.10000000000000001
 enable-application-glass=false
 enable-desktop-menu-glass=true
 enable-dock-glass=true
 enable-extra-menu-glass=true
 enable-menu-animation=false
-enable-menu-glass=false
-enable-notification-glass=false
+enable-menu-glass=true
+enable-notification-glass=true
 enable-osd-glass=true
 enable-panel-menu-animation=false
+enable-quick-settings-animation=false
 enable-quick-settings-glass=true
+glass-backdrop-highlights=true
 glass-chroma-strength=0.34999999999999998
-menu-corner-radius=18.0
+glass-displacement-scale=12.0
+glass-light-angle-deg=270.0
+glass-rim-intensity=1.1000000000000001
+glass-rim-width=2.2999999999999998
+glass-sheen-intensity=0.0
+glass-specular-intensity=0.0
+menu-blur-radius=3
+menu-brightness=1.0
+menu-contrast=1.0
+menu-corner-radius=24.0
 menu-enable-adaptive-text-color=false
 menu-glass-expand=0
+menu-saturation=1.0
 menu-scale=1.0
+menu-tint-color='#000000'
+menu-tint-strength=0.050000000000000003
+notification-blur-radius=3
+notification-brightness=1.0
+notification-contrast=1.0
 notification-corner-radius=24.0
+notification-saturation=1.0
+notification-tint-color='#000000'
+notification-tint-strength=0.050000000000000003
 osd-corner-radius=9999.0
 osd-glass-expand=0
 osd-y-offset=0
-panel-menu-corner-radius=18.0
+panel-menu-blur-radius=3
+panel-menu-brightness=1.0
+panel-menu-contrast=1.0
+panel-menu-corner-radius=24.0
 panel-menu-enable-adaptive-text-color=false
 panel-menu-glass-expand=0
+panel-menu-saturation=1.0
 panel-menu-scale=1.0
+panel-menu-tint-color='#000000'
+panel-menu-tint-strength=0.050000000000000003
 quick-settings-apply-to=1
-quick-settings-toggle-corner-radius=24.0
+quick-settings-blur-radius=3
+quick-settings-corner-radius=26.0
+quick-settings-glass-expand=0
+quick-settings-tint-strength=0.050000000000000003
+quick-settings-toggle-corner-radius=28.0
+quick-settings-toggle-tint-strength=0.59999999999999998
 
 [extensions/spotlight]
 theme-preference='dark'
@@ -162,10 +221,14 @@ overridden-settings={'org.gnome.mutter.edge-tiling': <@mb nothing>, 'org.gnome.m
 tiling-popup-all-workspace=true
 
 [extensions/user-theme]
-name='MacTahoe-Dark'
+name='macW1Y-Dark-solid'
 
 [extensions/wack-lockscreen-clock]
+cupertino-always-show-user=true
 lockscreen-mode='cupertino'
+
+[ubuntu]
+startup-sound=''
 
 [world-clocks]
 locations=@av []

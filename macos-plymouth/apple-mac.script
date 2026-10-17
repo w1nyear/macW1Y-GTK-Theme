@@ -55,7 +55,7 @@ fun apply_fade_opacity(alpha)
 
 
 # Verbose terminal logs buffer
-global.verbose_enabled = 0;
+global.verbose_enabled = 1;
 verbose_img = Image("verbose_on.png");
 if (verbose_img && verbose_img.GetWidth() > 0)
     global.verbose_enabled = 1;

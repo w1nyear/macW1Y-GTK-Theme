@@ -23,3 +23,13 @@ gnome-shell-extensions
 gir1.2-adw-1
 mesa-utils
 nvidia-prime
+python3-pip
+python3-zeroconf
+libarchive-dev
+git
+curl
+meson
+ninja-build
+patch
+gobject-introspection
+libmutter-18-dev

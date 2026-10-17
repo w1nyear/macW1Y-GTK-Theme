@@ -17,7 +17,7 @@ import { Logger } from './logger.js';
 import { BANNER_TRANSPARENT_CLASS } from './shellVersion.js';
 
 // Room around the glass rect for the shader's edge effects.
-const SHADER_PADDING = 20;
+const SHADER_PADDING = 0;
 
 interface CustomBannerActor extends St.Widget {
   _colorTweenId?: number;
@@ -297,15 +297,20 @@ export class NotificationManager {
     let contrast = this._settings.get_double('notification-contrast');
     this._baseTint = tintStrength;
 
-    glass.setPadding(SHADER_PADDING);
-    glass.setTintColor(...hexToColorArray(tintColorStr));
-    glass.setTintStrength(this._baseTint);
-    glass.setCornerRadius(cornerRadius);
-    glass.setIsDock(false);
-    glass.setBrightness(brightness);
-    glass.setSaturation(saturation);
-    glass.setContrast(contrast);
-    glass.setBlurRadius(blurRadius);
+    glass.setPadding(0);
+    glass.setTintColor(0.0, 0.0, 0.0);
+    glass.setTintStrength(0.05); // LQ-Visual: 5% tint
+    glass.setCornerRadius(24.0);
+    glass.setIsDock(true); // Disable drop shadow completely
+    glass.setBrightness(1.0);
+    glass.setSaturation(1.0);
+    glass.setContrast(1.0);
+    glass.setBlurRadius(3.0); // LQ-Visual: 3px blur
+    try {
+      (glass as any)._renderer.uniforms.set('shadow_intensity', 0.0);
+      (glass as any)._renderer.uniforms.set('shadow_radius', 0.0);
+      (glass as any)._renderer.uniforms.set('shadow_max_radius', 0.0);
+    } catch (_) {}
 
     // The banner slides in by relayout, so the frame tick sees last frame's
     // position; the paint-time hook corrects it.

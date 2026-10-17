@@ -945,7 +945,9 @@ export class GdmManager {
         const userWell = restPrompt?._userWell;
         const wellH = userWell ? (userWell.get_preferred_size()[3] || 0) : 0;
         const [, , promptW, promptH] = authPrompt.get_preferred_size();
-        const targetTopY = Math.floor(h * 0.65);
+        const bottomMargin = 55;
+        const effPromptH = promptH > 0 ? promptH : 160;
+        const targetTopY = Math.max(50, Math.floor(h - effPromptH - bottomMargin));
         const currentY = authPrompt.y || 0;
         authPrompt.translation_x = Math.floor(w / 2 - promptW / 2) - (authPrompt.x || 0);
         authPrompt.translation_y = targetTopY - currentY;

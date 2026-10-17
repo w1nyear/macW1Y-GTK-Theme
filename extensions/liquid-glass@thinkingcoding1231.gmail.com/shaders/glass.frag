@@ -100,7 +100,7 @@ uniform float dock_h;
 // Multi-region mode, for Quick Settings' toggle-button glass: up to
 // MAX_GLASS_REGIONS separate rounded rects drawn from the same blurred
 // texture. The regions must not overlap, and they get no drop shadow.
-#define MAX_GLASS_REGIONS 16
+#define MAX_GLASS_REGIONS 32
 uniform float multi_region_mode; // 0 = the single dock_* rect, 1 = regions
 uniform float region_count;
 uniform float region_x[MAX_GLASS_REGIONS]; // includes the padding
@@ -116,6 +116,7 @@ uniform float region_base_strength[MAX_GLASS_REGIONS];
 
 // Signed distance to a circular-cornered rounded rectangle.
 float sdCircleRoundRect(vec2 p, vec2 b, float r) {
+    r = min(r, min(b.x, b.y));
     vec2 d = abs(p) - b + vec2(r);
     return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - r;
 }
@@ -130,6 +131,9 @@ float sdCircleRoundRect(vec2 p, vec2 b, float r) {
 vec2 cornerShape(vec2 b, float r) {
     r = min(r, min(b.x, b.y));
     float s = clamp(corner_smoothing, 0.0, 1.0) * corner_smoothing_enabled;
+    if (s <= 1.0e-4) {
+        return vec2(r, 2.0);
+    }
     float k = min(1.0 + s, max(min(b.x, b.y) / max(r, 1.0e-3), 1.0));
     // From the midpoint condition sqrt(2) * k * (1 - 2^(-1/n)) = sqrt(2) - 1.
     float n = -1.0 / log2(1.0 - 0.29289322 / k);
@@ -189,7 +193,19 @@ void findActiveRegion(vec2 pixel_coord, float pad, out vec2 outLocalPos, out vec
 
         // Picking the region needs no continuous corners; main() measures the
         // chosen one with them.
-        float d = sdCircleRoundRect(rLocal, rBox, corner_radius);
+        float r_eff = corner_radius;
+        if (abs(rBox.x - rBox.y) <= 4.0 && min(rBox.x, rBox.y) <= 40.0) {
+            r_eff = min(rBox.x, rBox.y);
+        } else if (abs(rBox.x - 91.0) <= 20.0 && abs(rBox.y - 76.0) <= 20.0) {
+            r_eff = 35.0;
+        } else if (rBox.x < 130.0 && abs(min(rBox.x, rBox.y) - 35.0) <= 6.0) {
+            r_eff = 35.0;
+        } else if (rBox.x >= 130.0 && abs(min(rBox.x, rBox.y) - 35.0) <= 6.0) {
+            r_eff = 25.0;
+        } else if (min(rBox.x, rBox.y) > 30.0) {
+            r_eff = 25.0;
+        }
+        float d = sdCircleRoundRect(rLocal, rBox, r_eff);
         if (d < bestD) {
             bestD = d;
             outLocalPos = rLocal;
@@ -517,7 +533,26 @@ void main() {
         activeTint = vec3(tint_r, tint_g, tint_b);
     }
 
-    vec2 corner = cornerShape(box_size, corner_radius);
+    vec2 corner;
+    if (isDock > 0.5) {
+        corner = vec2(min(corner_radius, min(box_size.x, box_size.y)), 2.0);
+    } else if (multi_region_mode > 0.5) {
+        if (abs(box_size.x - box_size.y) <= 4.0 && min(box_size.x, box_size.y) <= 40.0) {
+            corner = vec2(min(box_size.x, box_size.y), 2.0);
+        } else if (abs(box_size.x - 91.0) <= 20.0 && abs(box_size.y - 76.0) <= 20.0) {
+            corner = vec2(35.0, 2.0);
+        } else if (box_size.x < 130.0 && abs(min(box_size.x, box_size.y) - 35.0) <= 6.0) {
+            corner = vec2(35.0, 2.0);
+        } else if (box_size.x >= 130.0 && abs(min(box_size.x, box_size.y) - 35.0) <= 6.0) {
+            corner = vec2(25.0, 2.0);
+        } else if (min(box_size.x, box_size.y) > 30.0) {
+            corner = vec2(25.0, 2.0);
+        } else {
+            corner = cornerShape(box_size, 25.0);
+        }
+    } else {
+        corner = cornerShape(box_size, corner_radius);
+    }
     float d = sdRoundRect(local_pos, box_size, corner);
 
     float lensBand = lensBandFor(min(box_size.x, box_size.y));

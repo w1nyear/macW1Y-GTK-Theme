@@ -8,7 +8,8 @@ import { UserSwitcherController } from './userSwitcher.js';
 import { setLoggerSettings, debug } from './logger.js';
 import { disposeViewActions } from './actions/viewActions.js';
 import { WorkspaceIndicatorController } from './workspaceIndicator.js';
-import { toggleSearchDialog, destroySearchDialog } from './searchDialog.js';
+import { toggleSearchDialog, destroySearchDialog } from './searchDialog_v4.js';
+import { toggleApplicationsDialog, destroyApplicationsDialog } from './applications_menu.js';
 import { initI18n } from './i18n.js';
 
 const FOCUS_DEBOUNCE_MS = 50;
@@ -59,6 +60,7 @@ export default class AppMenuExtension extends Extension {
         this._userSwitcherController = new UserSwitcherController(this, this._settings);
         this._workspaceIndicatorController = new WorkspaceIndicatorController(this._settings);
         this._addSearchKeybinding();
+        globalThis.toggleMacApplications = toggleApplicationsDialog;
     }
 
     _removeStalePanelButtons(uuid) {
@@ -155,6 +157,8 @@ export default class AppMenuExtension extends Extension {
         global.display.disconnectObject(this);
         this._removeSearchKeybinding();
         destroySearchDialog();
+        destroyApplicationsDialog();
+        globalThis.toggleMacApplications = null;
 
         if (this._focusTimeoutId) {
             GLib.source_remove(this._focusTimeoutId);

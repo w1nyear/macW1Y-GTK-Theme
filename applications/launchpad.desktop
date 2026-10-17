@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Launchpad
+Name[uk]=Програми
+Comment=Show Applications
+Comment[uk]=Показати всі програми
+Exec=/home/vitaliy/.local/bin/toggle-launchpad.sh
+Icon=launchpad
+Terminal=false
+Categories=System;Utility;
+StartupNotify=false
+NoDisplay=false

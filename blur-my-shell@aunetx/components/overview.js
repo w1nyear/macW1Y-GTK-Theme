@@ -1,4 +1,5 @@
 import Meta from 'gi://Meta';
+import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { WorkspaceAnimationController } from 'resource:///org/gnome/shell/ui/workspaceAnimation.js';
@@ -46,6 +47,43 @@ export const OverviewBlur = class OverviewBlur {
         this.connections.connect(Main.layoutManager, 'monitors-changed',
             _ => this.update_backgrounds()
         );
+
+        // Smooth cross-fade transition between desktop and overview blurred background
+        this.overview_background_group.opacity = Main.overview.visible ? 255 : 0;
+
+        this.connections.connect(Main.overview, 'showing', () => {
+            this.overview_background_group.remove_all_transitions();
+            this.overview_background_group.ease({
+                opacity: 255,
+                duration: 300,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        });
+
+        this.connections.connect(Main.overview, 'hiding', () => {
+            this.overview_background_group.remove_all_transitions();
+            this.overview_background_group.ease({
+                opacity: 0,
+                duration: 300,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        });
+
+        this.connections.connect(Main.overview, 'hidden', () => {
+            this.overview_background_group.remove_all_transitions();
+            this.overview_background_group.opacity = 0;
+        });
+
+        const stateAdjustment = Main.overview?._controls?._stateAdjustment
+            ?? Main.overview?._overview?._controls?._stateAdjustment;
+        if (stateAdjustment) {
+            this.connections.connect(stateAdjustment, 'notify::value', () => {
+                if (stateAdjustment.gestureInProgress) {
+                    const progress = Math.max(0, Math.min(1, stateAdjustment.value));
+                    this.overview_background_group.opacity = Math.round(progress * 255);
+                }
+            });
+        }
 
         // part for the workspace animation switch
 
@@ -174,6 +212,7 @@ export const OverviewBlur = class OverviewBlur {
         }
         // add the container widget for the overview only to the overview group
         Main.layoutManager.overviewGroup.insert_child_at_index(this.overview_background_group, 0);
+        this.overview_background_group.opacity = Main.overview.visible ? 255 : 0;
         // background group is placed at index 0
     }
 

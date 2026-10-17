@@ -15,8 +15,13 @@
 
 /* Distro icon — use panel foreground color for currentColor in SVGs */
 .system-status-icon {
-    icon-size: 22px;
+    icon-size: 16px !important;
     padding: 0 4px;
+}
+
+.appmenu-panel-button .system-status-icon,
+.appmenu-panel-button StIcon {
+    icon-size: 16px !important;
 }
 
 /* Section headers in popup menus (e.g. "Open Windows") */
@@ -207,4 +212,81 @@
 .appmenu-search-empty {
     color: -st-dim-text;
     font-size: 9pt;
+}
+
+/* AppMenu Menubar Popup Menus */
+.appmenu-popup-menu-content,
+.appmenu-popup-menu .popup-menu-content,
+.appmenu-popup-menu.popup-menu-boxpointer .popup-menu-content {
+    border-radius: 24px !important;
+    padding: 6px 0 !important;
+}
+
+.appmenu-popup-menu .popup-sub-menu {
+    border-radius: 24px !important;
+}
+
+.appmenu-popup-menu-item,
+.appmenu-popup-menu .popup-menu-item,
+.appmenu-popup-menu-content .popup-menu-item {
+    min-height: 22px !important;
+    padding: 3px 12px !important;
+    margin: 1px 6px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    border-radius: 9999px !important;
+    spacing: 6px !important;
+    color: #dedede !important;
+    transition: background-color 100ms ease, color 100ms ease !important;
+}
+
+.appmenu-popup-menu-item:focus,
+.appmenu-popup-menu-item:hover,
+.appmenu-popup-menu-item:selected,
+.appmenu-popup-menu .popup-menu-item:focus,
+.appmenu-popup-menu .popup-menu-item:hover,
+.appmenu-popup-menu .popup-menu-item:selected,
+.appmenu-popup-menu-content .popup-menu-item:focus,
+.appmenu-popup-menu-content .popup-menu-item:hover,
+.appmenu-popup-menu-content .popup-menu-item:selected {
+    background-color: #007aff !important;
+    color: #ffffff !important;
+    border-radius: 9999px !important;
+    box-shadow: none !important;
+}
+
+.appmenu-popup-menu-item:active,
+.appmenu-popup-menu-item.selected:active,
+.appmenu-popup-menu .popup-menu-item:active,
+.appmenu-popup-menu-content .popup-menu-item:active {
+    background-color: #0062cc !important;
+    color: #ffffff !important;
+    border-radius: 9999px !important;
+}
+
+.popup-menu-item.popup-separator-menu-item,
+.popup-separator-menu-item,
+.appmenu-popup-menu .popup-menu-item.popup-separator-menu-item,
+.appmenu-popup-menu-content .popup-menu-item.popup-separator-menu-item,
+.appmenu-separator-menu-item,
+.appmenu-popup-menu .popup-separator-menu-item,
+.appmenu-popup-menu-content .popup-separator-menu-item {
+    min-height: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: 3px 8px !important;
+    border: none !important;
+    background-color: transparent !important;
+}
+
+.popup-menu-item.popup-separator-menu-item .popup-separator-menu-item-separator,
+.popup-separator-menu-item .popup-separator-menu-item-separator,
+.appmenu-separator-menu-item .popup-separator-menu-item-separator,
+.appmenu-popup-menu .popup-separator-menu-item-separator,
+.appmenu-popup-menu-content .popup-separator-menu-item-separator {
+    min-height: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
 }

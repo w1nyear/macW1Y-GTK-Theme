@@ -1178,7 +1178,7 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
                 (this.sourceActor instanceof DockAppIcon) &&
                 ParentalControlsManager.getDefault().shouldShowApp(app.appInfo);
 
-            if (canFavorite) {
+            if (canFavorite && app.get_id() !== 'launchpad.desktop') {
                 this._appendSeparator();
 
                 const isFavorite = AppFavorites.getAppFavorites().isFavorite(app.get_id());

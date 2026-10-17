@@ -1,0 +1,24 @@
+[Desktop Entry]
+X-SnapInstanceName=telegram-desktop
+Name=Telegram
+Comment=New era of messaging
+X-SnapAppName=telegram-desktop
+X-SnapCommonID=org.telegram.desktop
+Exec=/snap/bin/telegram-desktop -- %U
+Icon=telegram-desktop
+Terminal=false
+StartupWMClass=TelegramDesktop
+Type=Application
+Categories=Chat;Network;InstantMessaging;Qt;
+MimeType=x-scheme-handler/tg;x-scheme-handler/tonsite;x-scheme-handler/ton;
+Keywords=tg;chat;im;messaging;messenger;sms;tdesktop;
+Actions=quit;
+SingleMainWindow=true
+
+[Desktop Action quit]
+X-SnapAppName=telegram-desktop
+X-SnapCommonID=org.telegram.desktop
+Exec=/snap/bin/telegram-desktop -quit
+Name=Quit Telegram
+Icon=telegram-desktop
+
