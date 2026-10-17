@@ -102,7 +102,7 @@ interval-seconds=uint32 1800
 play-sound=true
 
 [org/gnome/desktop/input-sources]
-mru-sources=[('xkb', 'us'), ('xkb', 'ua')]
+mru-sources=[('xkb', 'ua'), ('xkb', 'us')]
 sources=[('xkb', 'us'), ('xkb', 'ua')]
 
 [org/gnome/desktop/interface]
@@ -219,7 +219,7 @@ toggle-tiled-left=@as []
 toggle-tiled-right=@as []
 
 [org/gnome/nautilus/compression]
-default-compression-format='zip'
+default-compression-format='tar.xz'
 
 [org/gnome/nautilus/icon-view]
 default-zoom-level='small'
@@ -232,6 +232,26 @@ migrated-gtk-settings=true
 initial-size=(890, 550)
 initial-size-file-chooser=(890, 550)
 
+[org/gnome/portal/filechooser/Counter-Strike 2]
+last-folder-path='/run/media/vitaliy/Games'
+
+[org/gnome/portal/filechooser/antigravity_antigravity]
+last-folder-path='/home/vitaliy/MACTHEMEFILES'
+
+[org/gnome/portal/filechooser/com.google.Chrome]
+last-folder-path='/home/vitaliy/Завантажене'
+
+[org/gnome/portal/filechooser/firefox_firefox]
+last-folder-path='/home/vitaliy/Завантажене'
+
+[org/gnome/portal/filechooser/org.gnome.Settings]
+last-folder-path='/home/vitaliy/Завантажене'
+
+[org/gnome/portal/filechooser/org.gnome.Zenity]
+last-folder-path='/home/vitaliy/Завантажене'
+
+[org/gnome/portal/filechooser/telegram-desktop_telegram-desktop]
+last-folder-path='/home/vitaliy/Десктоп'
 
 [org/gnome/settings-daemon/plugins/color]
 night-light-schedule-automatic=false
@@ -248,7 +268,7 @@ command-history=['killall -3 gnome-shell', 'logout', 'r']
 disable-extension-version-validation=true
 disable-user-extensions=false
 disabled-extensions=['apps-menu@gnome-shell-extensions.gcampax.github.com', 'ubuntu-dock@ubuntu.com', 'snapd-prompting@canonical.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'tiling-assistant@ubuntu.com', 'stage-manager@gnome-stage-manager']
-enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'spotlight@nin', 'ubuntu-appindicators@ubuntu.com', 'macos-touchpad-gestures@mactheme', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'eval-helper@mactheme', 'dash-to-dock@micxgx.gmail.com', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'appmenu@ChathurangaBW.github.io', 'ding@rastersoft.com', 'Rounded_Corners@lennart-k', 'liquid-glass@thinkingcoding1231.gmail.com', 'blur-my-shell@aunetx']
+enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'spotlight@nin', 'ubuntu-appindicators@ubuntu.com', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'dash-to-dock@micxgx.gmail.com', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'appmenu@ChathurangaBW.github.io', 'ding@rastersoft.com', 'Rounded_Corners@lennart-k', 'eval-helper@mactheme', 'macos-touchpad-gestures@mactheme', 'blur-my-shell@aunetx', 'liquid-glass@thinkingcoding1231.gmail.com']
 favorite-apps=['org.gnome.Nautilus.desktop', 'launchpad.desktop', 'google-chrome.desktop', 'antigravity_antigravity.desktop', 'org.gnome.Ptyxis.desktop', 'telegram-desktop_telegram-desktop.desktop', 'steam_steam.desktop', 'org.gnome.Settings.desktop']
 last-selected-power-profile='performance'
 welcome-dialog-last-shown-version='50.1'
@@ -387,11 +407,12 @@ desktop-menu-corner-radius=24.0
 desktop-menu-saturation=1.0
 desktop-menu-tint-color='#000000'
 desktop-menu-tint-strength=0.050000000000000003
-detected-extra-menus=['a11y', 'appindicator-:1.112@/StatusNotifierItem', 'appindicator-:1.126@/StatusNotifierItem', 'appindicator-:1.53@/org/ayatana/NotificationItem/livepatch', 'appindicator-:1.53@/org/ayatana/NotificationItem/software_update_available', 'appindicator-:1.53@/org/ayatana/NotificationItem/unattended_upgrade', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'appmenu@ChathurangaBW.github.io-7', 'dwellClick', 'keyboard', 'macBattery', 'macBluetooth', 'macPrivacy', 'macVolume', 'macWifi']
+detected-extra-menus=['a11y', 'appindicator-:1.112@/StatusNotifierItem', 'appindicator-:1.286@/StatusNotifierItem', 'appindicator-:1.53@/org/ayatana/NotificationItem/livepatch', 'appindicator-:1.53@/org/ayatana/NotificationItem/software_update_available', 'appindicator-:1.53@/org/ayatana/NotificationItem/unattended_upgrade', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'appmenu@ChathurangaBW.github.io-7', 'dwellClick', 'keyboard', 'macBattery', 'macBluetooth', 'macPrivacy', 'macVolume', 'macWifi']
 dock-blur-radius=1
 dock-corner-radius=28.0
 dock-glass-expand=0
 dock-margin-bottom=8
+dock-saturation=1.0
 dock-tint-color='#ffffff'
 dock-tint-strength=0.10000000000000001
 enable-application-glass=false
@@ -405,8 +426,8 @@ enable-osd-glass=true
 enable-panel-menu-animation=false
 enable-quick-settings-animation=false
 enable-quick-settings-glass=true
-glass-backdrop-highlights=true
-glass-chroma-strength=0.34999999999999998
+glass-backdrop-highlights=false
+glass-chroma-strength=0.080000000000000002
 glass-displacement-scale=12.0
 glass-light-angle-deg=270.0
 glass-rim-intensity=1.1000000000000001

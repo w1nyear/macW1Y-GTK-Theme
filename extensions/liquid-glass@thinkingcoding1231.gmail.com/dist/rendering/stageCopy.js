@@ -113,6 +113,12 @@ export class StageCopier {
             Math.abs(copy.rect[2] - rect[2]) < 1.0 &&
             Math.abs(copy.rect[3] - rect[3]) < 1.0;
 
+        const inOverview = Boolean(Main?.overview?.visible || Main?.overview?._animationInProgress);
+        if (copy && copy.inOverview !== undefined && copy.inOverview !== inOverview) {
+            copy = null;
+            this._copies.delete(view);
+        }
+
         const isOverviewAnimating = Boolean(Main?.overview?._animationInProgress);
         const minIntervalUs = isOverviewAnimating ? 16666 : 50000;
 
@@ -137,6 +143,7 @@ export class StageCopier {
         copy.rect = rect;
         copy.serial = ++this._serial;
         copy.lastTimeUs = nowUs;
+        copy.inOverview = inOverview;
         this.lastCopy = copy;
         this.copyCount++;
         return { copy, missed: false };

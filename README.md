@@ -4,7 +4,7 @@
 [![GNOME](https://img.shields.io/badge/GNOME-50%20Wayland-4a86cf?style=for-the-badge&logo=gnome&logoColor=white)](https://www.gnome.org/)
 [![macOS](https://img.shields.io/badge/macOS-Sequoia%20%2F%20Tahoe-000000?style=for-the-badge&logo=apple&logoColor=white)](https://apple.com)
 [![Author](https://img.shields.io/badge/Author-Vitaliy%20%28w1nyear%29-blue?style=for-the-badge)](https://github.com/w1nyear)
-[![Release](https://img.shields.io/badge/Release-macW1Y%20v0.2-brightgreen?style=for-the-badge)](https://github.com/w1nyear/macW1Y-GTK-Theme)
+[![Release](https://img.shields.io/badge/Release-macW1Y%20v0.3-brightgreen?style=for-the-badge)](https://github.com/w1nyear/macW1Y-GTK-Theme)
 
 <p align="center">
   <video src="screen.webm" width="100%" controls autoplay loop muted playsinline>
@@ -12,7 +12,7 @@
   </video>
 </p>
 
-> **macW1Y** — це авторський, високопродуктивний комплексний модпак глибокої трансформації дистрибутива **Ubuntu (GNOME Shell 50+ на Wayland)** у досконалий вигляд, ергономіку та поведінку **macOS 27** (реліз **v0.2**).
+> **macW1Y** — це авторський, високопродуктивний комплексний модпак глибокої трансформації дистрибутива **Ubuntu (GNOME Shell 50+ на Wayland)** у досконалий вигляд, ергономіку та поведінку **macOS 27** (реліз **v0.3**).
 > 
 > **Автор проєкту:** **Vitaliy ([w1nyear](https://github.com/w1nyear))**  
 > **Офіційний репозиторій:** [https://github.com/w1nyear/macW1Y-GTK-Theme](https://github.com/w1nyear/macW1Y-GTK-Theme)
@@ -57,6 +57,16 @@
 ### 6. 💻 Ідеальне плаваюче контекстне меню термінала Ptyxis / GTK4
 * Повністю усунено подвійні контури, фантомні рамки та «підборіддя» навколо контекстного меню.
 * Скляний фон `rgba(30, 30, 32, 0.96)`, витончена рамка 1px, радіус заокруглення 24px та пілюлеподібні пункти 9999px із синім виділенням `#007aff`.
+
+### 7. 🪟 Mission Control (чистий огляд робочих столів без сітки програм)
+* **Повне видалення сітки програм (`ControlsState.APP_GRID`):** З меню огляду GNOME Shell назавжди видалено непотрібний повноекранний список додатків.
+* **Відкриття лише робочих столів та вікон:** При вході в огляд (через клавішу Super, жести 3 пальцями вгору або активний кут) завжди відкривається виключно витончений Mission Control із мініатюрами вікон та перемикачем стільниць.
+* **Суворе обмеження переходів:** Жести змахування вгору або подвійне натискання більше ніколи не відкривають сітку програм. Для запуску додатків використовується нативний плаваючий macOS Launchpad із дока або жест 4 пальців.
+
+### 8. 💎 Кришталеве скло Liquid Glass у Доку без мерехтіння та артефактів
+* **Миттєве оновлення текстури під час виходу з огляду:** Усунено ефект мерехтіння та затримку кадрів при закритті огляду — `StageCopier` миттєво відкидає старий кеш буфера та захоплює чистий зріз шпалер робочого столу.
+* **Природне відображення світла:** Вимкнено штучне кольорове підсвічування (`glass-backdrop-highlights`), усунено кислотні вогняні спалахи, а хроматичну дисперсію відкалібровано до природного значення 0.08.
+* **LQ-Visual чіткість:** Док зберігає надчітке, прозоре кришталеве скло з ледь помітним розмиттям 1px та білим відблиском, як у macOS Tahoe.
 
 ---
 

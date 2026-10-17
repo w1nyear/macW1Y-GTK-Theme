@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
 #   macOS Sequoia / Tahoe Transformation Modpack (macW1Y Release)
-#  Installer & Maintenance System - Version 0.2
+#  Installer & Maintenance System - Version 0.3
 # ==============================================================================
 
 set -e
 
 # Version Constants
-NEW_VERSION="0.2"
+NEW_VERSION="0.3"
 
 # ANSI Color Codes
 C_RESET="\033[0m"
@@ -1205,7 +1205,7 @@ EOF
     sudo systemctl daemon-reload 2>/dev/null || true
     sudo systemctl restart mac-touchpad-daemon.service 2>/dev/null || true
     
-    # Збереження версії 0.2
+    # Збереження версії
     save_version "$new_ver"
     
     # Перезавантаження розширення

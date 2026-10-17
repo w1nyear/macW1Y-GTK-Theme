@@ -19,6 +19,34 @@ export default class GestureImpl {
     }
 
     enable() {
+        try {
+            const EvalIface = `
+            <node>
+              <interface name="org.gnome.Shell.Extensions.EvalHelper">
+                <method name="Eval">
+                  <arg type="s" direction="in" name="code"/>
+                  <arg type="s" direction="out" name="result"/>
+                </method>
+              </interface>
+            </node>`;
+            this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(EvalIface, {
+                Eval: async (code) => {
+                    try {
+                        let res = eval(code);
+                        if (res && typeof res.then === 'function')
+                            res = await res;
+                        return JSON.stringify(res !== undefined ? res : null) ?? 'null';
+                    } catch (e) {
+                        return `ERROR: ${e?.name}: ${e?.message}\n${e?.stack || e}`;
+                    }
+                }
+            });
+            this._dbusImpl.export(Gio.DBus.session, '/org/gnome/Shell/Extensions/EvalHelper');
+            log('[EvalHelper] DBus interface registered at /org/gnome/Shell/Extensions/EvalHelper');
+        } catch (e) {
+            log(`[EvalHelper] DBus registration error: ${e}`);
+        }
+
         // 1. Strict 4-finger restriction for Workspace Horizontal Animation
         this._setupStrictWorkspaceSwipe();
 
@@ -31,10 +59,17 @@ export default class GestureImpl {
             this._handlePinchEvent.bind(this)
         );
 
+        // 4. Restrict Overview to Mission Control (Workspace/Window picker only)
+        this._setupOverviewAppGridRestriction();
+
         log('[macOS Gestures v2] GestureImpl enabled with topmost window targeting & cursor auto-hide.');
     }
 
     disable() {
+        if (this._dbusImpl) {
+            try { this._dbusImpl.unexport(); } catch (_) {}
+            this._dbusImpl = null;
+        }
         if (this._stageEventId) {
             global.stage.disconnect(this._stageEventId);
             this._stageEventId = 0;
@@ -443,4 +478,110 @@ export default class GestureImpl {
             );
         } catch (osdErr) {}
     }
+
+    _setupOverviewAppGridRestriction() {
+        try {
+            const ov = Main.overview;
+            const ctrl = ov._overview?._controls ?? ov._controls;
+            if (!ctrl) return;
+
+            if (ctrl._stateAdjustment) {
+                ctrl._stateAdjustment.upper = 1;
+                if (ctrl._stateAdjustment.value > 1)
+                    ctrl._stateAdjustment.value = 1;
+            }
+
+            if (ctrl._appDisplay) {
+                ctrl._appDisplay.visible = false;
+                ctrl._appDisplay.opacity = 0;
+                ctrl._appDisplay.reactive = false;
+            }
+
+            ctrl._shiftState = function(direction) {
+                let {currentState, finalState} = this._stateAdjustment.getStateTransitionParams();
+                if (direction === Meta.MotionDirection.DOWN)
+                    finalState = Math.max(finalState - 1, 0);
+                else if (direction === Meta.MotionDirection.UP)
+                    finalState = Math.min(finalState + 1, 1);
+
+                if (finalState === currentState)
+                    return;
+
+                if (currentState === 0 && finalState === 1) {
+                    Main.overview.show();
+                } else if (finalState === 0) {
+                    Main.overview.hide();
+                } else {
+                    this._stateAdjustment.ease(finalState, {
+                        duration: 250,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    });
+                }
+            };
+
+            ctrl.gestureBegin = function(tracker) {
+                const baseDistance = global.screen_height;
+                const progress = Math.min(1.0, this._stateAdjustment.value);
+                const points = [0, 1];
+                const transition = this._stateAdjustment.get_transition('value');
+                const cancelProgress = transition
+                    ? Math.min(1.0, transition.get_interval().peek_final_value())
+                    : Math.min(1.0, Math.round(progress));
+                this._stateAdjustment.remove_transition('value');
+                tracker.confirmSwipe(baseDistance, points, progress, cancelProgress);
+                this.prepareToEnterOverview();
+                this._stateAdjustment.gestureInProgress = true;
+            };
+
+            ctrl.gestureProgress = function(progress) {
+                this._stateAdjustment.value = Math.min(1.0, progress);
+            };
+
+            ctrl.gestureEnd = function(target, duration, onComplete) {
+                target = Math.min(1.0, target);
+                if (target === 0)
+                    this.prepareToLeaveOverview();
+                if (this.dash?.showAppsButton)
+                    this.dash.showAppsButton.checked = false;
+                this._stateAdjustment.remove_transition('value');
+                this._stateAdjustment.ease(target, {
+                    duration,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    onComplete,
+                });
+                this._stateAdjustment.gestureInProgress = false;
+            };
+
+            ctrl._updateAppDisplayVisibility = function() {
+                if (this._appDisplay) {
+                    this._appDisplay.visible = false;
+                    this._appDisplay.opacity = 0;
+                    this._appDisplay.reactive = false;
+                }
+            };
+
+            ctrl._toggleAppsPage = function() {
+                if (typeof globalThis.toggleMacApplications === 'function') {
+                    globalThis.toggleMacApplications();
+                }
+            };
+
+            ov.showApps = function() {
+                if (typeof globalThis.toggleMacApplications === 'function') {
+                    globalThis.toggleMacApplications();
+                } else {
+                    Main.overview.show(1);
+                }
+            };
+
+            if (!ov._macOrigShow) {
+                ov._macOrigShow = ov.show.bind(ov);
+                ov.show = function(state = 1) {
+                    if (state > 1) state = 1;
+                    return ov._macOrigShow(state);
+                };
+            }
+        } catch (_) {}
+    }
 }
+

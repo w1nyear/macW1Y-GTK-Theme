@@ -307,7 +307,37 @@ export class DashManager {
         safeConnect(Main.overview, 'showing', triggerDockSync);
         safeConnect(Main.overview, 'hiding', triggerDockSync);
         safeConnect(Main.overview, 'shown', triggerDockSync);
-        safeConnect(Main.overview, 'hidden', triggerDockSync);
+
+        const onOverviewHidden = () => {
+            if (this.glass && this._isEffectActive) {
+                this.glass._copier?.clear();
+                this._lastSyncSourcesUs = 0;
+                const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
+                this.glass.setBrightness(baseBrightness);
+                this.glass.syncSources(true);
+                this.glass.queue_redraw();
+
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60, () => {
+                    if (this.glass && this._isEffectActive && !Main.overview.visible) {
+                        this.glass._copier?.clear();
+                        this._lastSyncSourcesUs = 0;
+                        this.glass.syncSources(true);
+                        this.glass.queue_redraw();
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 160, () => {
+                    if (this.glass && this._isEffectActive && !Main.overview.visible) {
+                        this.glass._copier?.clear();
+                        this._lastSyncSourcesUs = 0;
+                        this.glass.syncSources(true);
+                        this.glass.queue_redraw();
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
+            }
+        };
+        safeConnect(Main.overview, 'hidden', onOverviewHidden);
 
         const stateAdjustment = Main.overview?._controls?._stateAdjustment
             ?? Main.overview?._overview?._controls?._stateAdjustment;
