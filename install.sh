@@ -570,6 +570,8 @@ install_extensions() {
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com menu-tint-strength 0.08 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com menu-brightness 1.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com menu-blur-radius 20 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super>m']" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.appmenu clipboard-shortcut "['<Super>v']" 2>/dev/null || true
     log_success "Розширення GNOME Shell успішно налаштовано!"
 }
 
@@ -682,7 +684,7 @@ install_gamemode() {
     log_step "Етап 9/13: Встановлення Game Mode та утиліт перемикання GPU"
     require_root
     
-    for bin_file in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config; do
+    for bin_file in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config mac-clipboard; do
         if [ -f "$SCRIPT_DIR/bin/$bin_file" ]; then
             sudo cp "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
             sudo chmod +x "/usr/local/bin/$bin_file"
@@ -1276,7 +1278,8 @@ run_clean_update() {
     
     sudo systemctl stop mac-gamemode.service 2>/dev/null || true
     sudo systemctl disable mac-gamemode.service 2>/dev/null || true
-    sudo rm -f /etc/systemd/system/mac-gamemode.service /usr/local/bin/mac-gamemode /usr/local/bin/gamemoderun /usr/local/bin/nvidia-game-run /usr/local/bin/prime-run /etc/mac-gamemode.state
+    sudo rm -f /etc/systemd/system/mac-gamemode.service /usr/local/bin/mac-gamemode /usr/local/bin/gamemoderun /usr/local/bin/nvidia-game-run /usr/local/bin/prime-run /usr/local/bin/mac-clipboard /etc/mac-gamemode.state
+    rm -rf "$TARGET_HOME/.cache/mac-clipboard"
     
     sudo rm -f /etc/gnome-shell/ui/layout.js
     

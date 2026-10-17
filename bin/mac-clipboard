@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# macOS-style Clipboard Manager trigger for GNOME Shell macW1Y
+gdbus call --session \
+  --dest org.gnome.Shell \
+  --object-path /org/gnome/Shell/Extensions/EvalHelper \
+  --method org.gnome.Shell.Extensions.EvalHelper.Eval \
+  "globalThis.toggleMacClipboard ? globalThis.toggleMacClipboard() : 'not loaded'" > /dev/null 2>&1

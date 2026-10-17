@@ -249,6 +249,10 @@ export default class GestureImpl {
             } else if (typeof Main.overview.showApps === 'function') {
                 Main.overview.showApps();
             }
+        } else if (cmd === 'CLIPBOARD_TOGGLE') {
+            if (typeof globalThis.toggleMacClipboard === 'function') {
+                globalThis.toggleMacClipboard();
+            }
         } else if (cmd === 'OVERVIEW_OPEN') {
             if (!Main.overview.visible) {
                 Main.overview.show();

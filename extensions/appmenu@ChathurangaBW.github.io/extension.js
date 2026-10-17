@@ -10,6 +10,7 @@ import { disposeViewActions } from './actions/viewActions.js';
 import { WorkspaceIndicatorController } from './workspaceIndicator.js';
 import { toggleSearchDialog, destroySearchDialog } from './searchDialog_v4.js';
 import { toggleApplicationsDialog, destroyApplicationsDialog } from './applications_menu.js';
+import { toggleClipboardDialog, destroyClipboardDialog } from './clipboardDialog.js';
 import { initI18n } from './i18n.js';
 
 const FOCUS_DEBOUNCE_MS = 50;
@@ -25,6 +26,7 @@ export default class AppMenuExtension extends Extension {
         this._userSwitcherController = null;
         this._workspaceIndicatorController = null;
         this._searchShortcutInstalled = false;
+        this._clipboardShortcutInstalled = false;
         this._overviewHidden = false;
         this._overviewWasVisible = false;
     }
@@ -60,7 +62,9 @@ export default class AppMenuExtension extends Extension {
         this._userSwitcherController = new UserSwitcherController(this, this._settings);
         this._workspaceIndicatorController = new WorkspaceIndicatorController(this._settings);
         this._addSearchKeybinding();
+        this._addClipboardKeybinding();
         globalThis.toggleMacApplications = toggleApplicationsDialog;
+        globalThis.toggleMacClipboard = toggleClipboardDialog;
     }
 
     _removeStalePanelButtons(uuid) {
@@ -117,6 +121,28 @@ export default class AppMenuExtension extends Extension {
         this._searchShortcutInstalled = false;
     }
 
+    _addClipboardKeybinding() {
+        if (!this._settings || this._clipboardShortcutInstalled)
+            return;
+
+        Main.wm.addKeybinding(
+            'clipboard-shortcut',
+            this._settings,
+            Meta.KeyBindingFlags.NONE,
+            Shell.ActionMode.NORMAL,
+            () => toggleClipboardDialog()
+        );
+        this._clipboardShortcutInstalled = true;
+    }
+
+    _removeClipboardKeybinding() {
+        if (!this._clipboardShortcutInstalled)
+            return;
+
+        Main.wm.removeKeybinding('clipboard-shortcut');
+        this._clipboardShortcutInstalled = false;
+    }
+
     _updateMenu(window) {
         if (!this._menuManager) return;
 
@@ -156,9 +182,12 @@ export default class AppMenuExtension extends Extension {
 
         global.display.disconnectObject(this);
         this._removeSearchKeybinding();
+        this._removeClipboardKeybinding();
         destroySearchDialog();
         destroyApplicationsDialog();
+        destroyClipboardDialog();
         globalThis.toggleMacApplications = null;
+        globalThis.toggleMacClipboard = null;
 
         if (this._focusTimeoutId) {
             GLib.source_remove(this._focusTimeoutId);
