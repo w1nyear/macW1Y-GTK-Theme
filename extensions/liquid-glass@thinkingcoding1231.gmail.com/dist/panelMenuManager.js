@@ -55,7 +55,7 @@ export class PanelMenuManager {
             PopupMenu.PopupMenu.prototype._origOpenWithGlass = PopupMenu.PopupMenu.prototype.open;
             const self = this;
             PopupMenu.PopupMenu.prototype.open = function(animate) {
-                if (this._glassManager === undefined && this.actor && this.box && isActorValid(this.actor) && isActorValid(this.box)) {
+                if (!this._glassManager && !self._menus.has(this) && this.actor && this.box && isActorValid(this.actor) && isActorValid(this.box)) {
                     const reserved = new Set([Main.panel?.statusArea?.quickSettings?.menu]);
                     if (!reserved.has(this) && this.constructor.name !== 'QuickSettingsMenu') {
                         try {
@@ -155,6 +155,9 @@ export class PanelMenuManager {
             if (wanted.has(menu))
                 continue;
             this._menus.delete(menu);
+            if (menu._glassManager === entry.manager) {
+                menu._glassManager = null;
+            }
             entry.manager.cleanup();
         }
     }
@@ -169,6 +172,7 @@ export class PanelMenuManager {
             try {
                 manager.setup();
                 this._menus.set(menu, { name, manager });
+                menu._glassManager = manager;
             }
             catch (e) {
                 manager.cleanup();
@@ -189,8 +193,12 @@ export class PanelMenuManager {
             for (const id of ids)
                 button.disconnect(id);
         }
-        for (const { manager } of this._menus.values())
+        for (const [menu, { manager }] of this._menus.entries()) {
+            if (menu._glassManager === manager) {
+                menu._glassManager = null;
+            }
             manager.cleanup();
+        }
         this._menus.clear();
         if (PopupMenu.PopupMenu.prototype._origOpenWithGlass) {
             PopupMenu.PopupMenu.prototype.open = PopupMenu.PopupMenu.prototype._origOpenWithGlass;

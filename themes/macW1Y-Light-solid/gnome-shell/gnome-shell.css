@@ -2516,7 +2516,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-content {
   padding: 5px;
-  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: none !important;
   margin: 4px 12px 17px 12px;
   background-color: transparent !important;
   background: transparent !important;

@@ -5140,5 +5140,39 @@ echo "==> Встановлення успішно завершено!"
       * Оновлено конфігурації GTK4: `~/.config/gtk-4.0/gtk-Dark.css`, `~/.config/gtk-4.0/gtk-Light.css`.
       * Оновлено файли репозиторію: `config/gtk-4.0/gtk-Dark.css`, `gtk-4.0/gtk-Dark.css`, `gtk-4.0/gtk-Light.css`, `themes/macW1Y-Dark/`, `themes/macW1Y-Dark-solid/`, `themes/macW1Y-Light/`, `themes/macW1Y-Light-solid/`.
       * Оновлено теми у `~/.themes/` та системні у `/usr/share/themes/`.
-      * Синхронізовано з резервним репозиторієм `~/macW1Y/` та задокументовано в `done.txt` і на робочому столі (`~/Робочий стіл/done.txt`).
+78. Виправлення потемніння та артефактів фону контекстного меню у меню-барі при hover:
+    - Проблема:
+      * При відкритті контекстного меню у верхньому меню-барі та переміщенні курсора миші по пунктах меню ("hover") фон меню ставав темнішим, з'являлися темні ореоли за текстом, розмиті залишки попередньо виділених пунктів (синій ореол за попереднім ховером), а прозорість виглядала брудною та неоднорідною.
+      * Причини бага:
+        1) Подвійне нашарування Glass Manager (Duplicate Glass Actor Stacking):
+           - У розширенні `liquid-glass@thinkingcoding1231.gmail.com` метод `_attachWanted` у `panelMenuManager.ts` створював менеджер скла `UIManager` для кожного меню верхньої панелі при старті, але не зберігав посилання у `menu._glassManager = manager`.
+           - Через це при відкритті меню метод `PopupMenu.prototype.open` помилково вважав, що скла немає, і створював ДРУГИЙ екземпляр `UIManager` та ДРУГИЙ шейдерний актор `BackdropGlass` на тих самих координатах. Це подвоювало затлумлення (ambient occlusion: 0.65 -> 1.3), тіні та тинт, різко затемнюючи фон меню при першому ж відкритті/наведенні.
+        2) Чорний прямокутник тіні St CSS `box-shadow`:
+           - У `menubar_v24.js` (метод `_updatePopupRealtime`) інлайн-стиль `.popup-menu-content` задавав `box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;`.
+           - У темах `macW1Y-Dark`, `macW1Y-Dark-solid`, `macW1Y-Light`, `macW1Y-Light-solid` клас `.popup-menu-content` мав `box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.35);`.
+           - Оскільки контейнер меню прозорий, рушій Clutter рендерив прямокутну 35% чорну пляму під вмістом меню, яка проступала крізь рідке скло.
+        3) Захоплення власного вмісту меню у текстуру розмиття (Backdrop Dirty Framebuffer Capture):
+           - У `stageCopy.ts` прапорець `isForced` (`nowUs < this._forceUntilUs`) обходив перевірку `if (!inClip)` (`if (!inClip && !mustCopy)`).
+           - Через це при відкритті меню та при кожному ховері (коли викликався `syncSources()`) `StageCopier` примусово блітив кадровий буфер `fb`, навіть коли область меню не оновлювалася сценою (`!inClip`).
+           - За правилами подвійної буферизації Clutter, поза межами кліпу оновлення буфер `fb` зберігав пікселі попереднього кадру, в якому відкрите меню з текстом та синьою плашкою вже було намальовано. Шейдер захоплював це меню, розмивав його власні літери та синю плашку ховеру й малював під меню, створюючи фантомні розмиті сліди та накопичувальне потемніння при переході курсора між пунктами.
+    - Впроваджені виправлення:
+      * Усунено дублювання менеджерів скла:
+        - У `panelMenuManager.ts` та `panelMenuManager.js` закріплено `menu._glassManager = manager;` у `_attachWanted`, коректне очищення у `_detachUnwanted` та перевірку `!this._glassManager && !self._menus.has(this)` у monkeypatch `PopupMenu.prototype.open`.
+      * Повне вимкнення St CSS `box-shadow`:
+        - У `menubar_v24.js`, `extensions/blur-my-shell@aunetx/components/menubar_v24.js`, `blur-my-shell/components/menubar_v24.js` замінено `box-shadow` на `none !important;`.
+        - У темах `macW1Y-Dark`, `macW1Y-Dark-solid`, `macW1Y-Light`, `macW1Y-Light-solid` та `appmenu@ChathurangaBW.github.io/stylesheet.css` встановлено `box-shadow: none !important;` та `background-color: transparent !important;`.
+      * Ліквідація захоплення брудного буфера:
+        - У `stageCopy.ts` та `stageCopy.js` відновлено строгу перевірку `if (!inClip)`: якщо область не потрапила до кліпу оновлення Clutter, буфер ніколи не блітиться наосліп, а повертається ідеально чиста кешована копія фону (`return { copy, missed: false }`).
+        - У `clear()` прибрано паразитичний виклик `this.forceRefresh(350);`.
+        - У `backdropGlass.ts` та `backdropGlass.js`: метод `vfunc_map()` тепер викликає `this._copier.clear()` замість `forceRefresh(350)`, а `syncSources()` не запускає примусове оновлення буфера на 250 мс при кожній зміні ховеру.
+    - Результат:
+      * Фон контекстного меню залишається абсолютно чистим, стабільним і кришталево прозорим у стилі macOS Sequoia Liquid Glass.
+      * При переміщенні курсора по пунктах плашка ховеру плавно переміщується між рядками без жодної зміни яскравості фону, без потемніння, без ореолів за літерами та без залишкових фантомних смуг.
+    - Синхронізація:
+      * Оновлено файли розширення `liquid-glass@thinkingcoding1231.gmail.com`: `src/panelMenuManager.ts`, `dist/panelMenuManager.js`, `src/rendering/stageCopy.ts`, `dist/rendering/stageCopy.js`, `src/rendering/backdropGlass.ts`, `dist/rendering/backdropGlass.js` та системні копії у `~/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/`.
+      * Оновлено копії `menubar_v24.js` у `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/`, `./`, `blur-my-shell/`, `blur-my-shell@aunetx/`.
+      * Оновлено `extensions/appmenu@ChathurangaBW.github.io/stylesheet.css` та копію в `~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/`.
+      * Оновлено теми у `~/.themes/` та `/usr/share/themes/`.
+      * Усі файли синхронізовано з `~/macW1Y/`, задокументовано в `done.txt` та оновлено на робочому столі (`~/Робочий стіл/done.txt`).
+
 

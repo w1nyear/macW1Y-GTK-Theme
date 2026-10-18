@@ -2245,13 +2245,6 @@ export const MenuBarController = class MenuBarController {
             });
 
             if (Main.overview) {
-                Main.overview.connectObject('showing', () => {
-                    try {
-                        if (this._notifCenterOpen) {
-                            this._closeNotificationCenter();
-                        }
-                    } catch (_) {}
-                }, this);
                 Main.overview.connectObject('hidden', () => {
                     this._applyStylingRealtime();
                 }, this);
@@ -2319,7 +2312,7 @@ export const MenuBarController = class MenuBarController {
 
     _updatePopupRealtime(tint, radius = 24) {
         try {
-            const style = `background-color: transparent !important; background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important; border-radius: ${radius}px !important;`;
+            const style = `background-color: transparent !important; background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: none !important; border-radius: ${radius}px !important;`;
             const found = [];
             const walk = (actor) => {
                 if (!actor) return;

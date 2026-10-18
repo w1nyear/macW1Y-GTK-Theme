@@ -52,7 +52,7 @@ export class PanelMenuManager {
       anyPM._origOpenWithGlass = PopupMenu.PopupMenu.prototype.open;
       const self = this;
       anyPM.open = function(this: any, animate: any) {
-        if (this._glassManager === undefined && this.actor && this.box && isActorValid(this.actor) && isActorValid(this.box)) {
+        if (!this._glassManager && !self._menus.has(this) && this.actor && this.box && isActorValid(this.actor) && isActorValid(this.box)) {
           const reserved = new Set([Main.panel?.statusArea?.quickSettings?.menu]);
           if (!reserved.has(this) && this.constructor.name !== 'QuickSettingsMenu') {
             try {
@@ -156,6 +156,9 @@ export class PanelMenuManager {
     for (const [menu, entry] of this._menus) {
       if (wanted.has(menu)) continue;
       this._menus.delete(menu);
+      if (menu._glassManager === entry.manager) {
+        menu._glassManager = null;
+      }
       entry.manager.cleanup();
     }
   }
@@ -170,6 +173,7 @@ export class PanelMenuManager {
       try {
         manager.setup();
         this._menus.set(menu, { name, manager });
+        menu._glassManager = manager;
       } catch (e) {
         manager.cleanup();
         this._logger.log(`[Liquid Glass] Could not attach panel menu glass to "${name}": ${e}`);
@@ -193,8 +197,12 @@ export class PanelMenuManager {
     }
     this._buttons.clear();
 
-    for (const { manager } of this._menus.values())
+    for (const [menu, { manager }] of this._menus.entries()) {
+      if (menu._glassManager === manager) {
+        menu._glassManager = null;
+      }
       manager.cleanup();
+    }
     this._menus.clear();
 
     const anyPM = PopupMenu.PopupMenu.prototype as any;

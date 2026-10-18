@@ -345,7 +345,7 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
     vfunc_map() {
         super.vfunc_map();
         this._serialAtMap = this._copier.lastCopy?.serial ?? 0;
-        this._copier.forceRefresh(350);
+        this._copier.clear();
         this._relays.redrawArea();
         this.queue_redraw();
     }
@@ -393,7 +393,6 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
         // changed, so its copy is old as well.
         const painted = this.get_paint_opacity() > 0;
         if (changed || moved || (painted && !this._wasPainted)) {
-            this._copier.forceRefresh(250);
             this._relays.redrawArea();
             this.queue_redraw();
         }
