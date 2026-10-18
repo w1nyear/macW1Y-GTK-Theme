@@ -19,6 +19,7 @@ import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 import { buildNotificationCard } from './notifications_v2.js';
 import { MacControlCenter } from './control_center_v30.js';
 import { MacInputSwitcher } from './mac_input_switcher_v11.js';
+import { MacFeatheredBackdropBlur } from './mac_feathered_backdrop_blur.js';
 import { t, tf } from './mac_i18n.js';
 import {
     populateUniversalWifiContent,
@@ -2454,7 +2455,72 @@ export const MenuBarController = class MenuBarController {
     }
 
     _getCcBlurActor() {
-        return null;
+        if (!this._ccBackdropBlur) {
+            this._ccBackdropBlur = new MacFeatheredBackdropBlur('mac-control-center-feathered-blur');
+            const bp = Main.panel?.statusArea?.quickSettings?.menu?._boxPointer;
+            const parent = bp?.get_parent() || Main.layoutManager.uiGroup;
+            if (bp) {
+                parent.insert_child_below(this._ccBackdropBlur.actor, bp);
+            } else {
+                parent.add_child(this._ccBackdropBlur.actor);
+            }
+        }
+        return this._ccBackdropBlur.actor;
+    }
+
+    _syncCcBackdropBlur() {
+        if (!this._ccBackdropBlur) {
+            this._getCcBlurActor();
+        }
+        if (!this._ccBackdropBlur) return;
+        const bp = Main.panel?.statusArea?.quickSettings?.menu?._boxPointer;
+        if (!bp || bp.is_finalized?.()) return;
+
+        const [bpX, bpY] = bp.get_transformed_position();
+        const [bpW, bpH] = bp.get_transformed_size();
+        if (bpW <= 0 || bpH <= 0 || !Number.isFinite(bpX) || !Number.isFinite(bpY)) return;
+
+        this._ccBackdropBlur.updateGeometry(bpX, bpY, bpW, bpH);
+
+        const parent = bp.get_parent() || Main.layoutManager.uiGroup;
+        if (this._ccBackdropBlur.actor.get_parent() !== parent) {
+            if (this._ccBackdropBlur.actor.get_parent()) {
+                this._ccBackdropBlur.actor.get_parent().remove_child(this._ccBackdropBlur.actor);
+            }
+            parent.insert_child_below(this._ccBackdropBlur.actor, bp);
+        }
+    }
+
+    _getNotifBlurActor() {
+        if (!this._notifBackdropBlur) {
+            this._notifBackdropBlur = new MacFeatheredBackdropBlur('mac-notif-center-feathered-blur');
+            if (this._notifCenterActor) {
+                Main.layoutManager.uiGroup.insert_child_below(this._notifBackdropBlur.actor, this._notifCenterActor);
+            } else {
+                Main.layoutManager.uiGroup.add_child(this._notifBackdropBlur.actor);
+            }
+        }
+        return this._notifBackdropBlur.actor;
+    }
+
+    _syncNotifBackdropBlur() {
+        if (!this._notifBackdropBlur) {
+            this._getNotifBlurActor();
+        }
+        if (!this._notifBackdropBlur || !this._notifCenterActor || this._notifCenterActor.is_finalized?.()) return;
+
+        const [cX, cY] = this._notifCenterActor.get_transformed_position();
+        const [cW, cH] = this._notifCenterActor.get_transformed_size();
+        if (cW <= 0 || cH <= 0 || !Number.isFinite(cX) || !Number.isFinite(cY)) return;
+
+        this._notifBackdropBlur.updateGeometry(cX, cY, cW, cH);
+
+        if (this._notifBackdropBlur.actor.get_parent() !== Main.layoutManager.uiGroup) {
+            if (this._notifBackdropBlur.actor.get_parent()) {
+                this._notifBackdropBlur.actor.get_parent().remove_child(this._notifBackdropBlur.actor);
+            }
+            Main.layoutManager.uiGroup.insert_child_below(this._notifBackdropBlur.actor, this._notifCenterActor);
+        }
     }
 
     _removeStrayCcBlur(bp) {
@@ -3197,6 +3263,13 @@ export const MenuBarController = class MenuBarController {
                         if (quickSettings.menu?.box)
                             quickSettings.menu.box.style = 'background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important;';
 
+                        self._syncCcBackdropBlur();
+                        if (self._ccBackdropBlur) {
+                            self._ccBackdropBlur.show();
+                            self._ccBackdropBlur.actor.opacity = 255;
+                            self._ccBackdropBlur.actor.translation_x = 0;
+                        }
+
                         // Instant slide-in from right side animation
                         bp.remove_all_transitions();
                         bp.translation_x = 220;
@@ -3207,6 +3280,9 @@ export const MenuBarController = class MenuBarController {
                             duration: 240,
                             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                         });
+                        if (self._ccBackdropBlur) {
+                            self._ccBackdropBlur.animateSlideIn(220, 240);
+                        }
                     }
 
                     // Run heavy syncs in idle to eliminate opening lag!
@@ -3220,6 +3296,9 @@ export const MenuBarController = class MenuBarController {
                         return GLib.SOURCE_REMOVE;
                     });
                 } else {
+                    if (self._ccBackdropBlur) {
+                        self._ccBackdropBlur.hide();
+                    }
                     if (bp) {
                         GLib.timeout_add(GLib.PRIORITY_DEFAULT, 210, () => {
                             if (!quickSettings.menu.isOpen && bp) {
@@ -3233,6 +3312,14 @@ export const MenuBarController = class MenuBarController {
                 }
                 self._removeStrayCcBlur(bp);
             });
+
+            if (bp && !bp._ccAllocConnId) {
+                bp._ccAllocConnId = bp.connect('notify::allocation', () => {
+                    if (quickSettings.menu?.isOpen) {
+                        self._syncCcBackdropBlur();
+                    }
+                });
+            }
 
             // Smooth Slide-in from Right Side Animation
             bp.open = function(animate, onComplete) {
@@ -3258,6 +3345,7 @@ export const MenuBarController = class MenuBarController {
 
                 const surface = self._getCcBlurSurface();
                 const surfaceActor = surface?.actor || self._getCcBlurActor();
+                self._syncCcBackdropBlur();
                 if (surface) {
                     try { surface.show_actors(); } catch (_e) {}
                     surface.update_surface_opacity(255);
@@ -3750,11 +3838,29 @@ export const MenuBarController = class MenuBarController {
         Main.layoutManager.uiGroup.add_child(container);
 
         container.connect('notify::translation-x', () => {
-            if (this._notifCenterOpen || this._isNotifCenterClosing) this._syncNotifGlassRegions();
+            if (this._notifCenterOpen || this._isNotifCenterClosing) {
+                this._syncNotifGlassRegions();
+                if (this._notifBackdropBlur?.actor) {
+                    this._notifBackdropBlur.actor.translation_x = container.translation_x;
+                }
+            }
         });
         container.connect('notify::opacity', () => {
             if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
                 this._notifGlass.opacity = container.opacity;
+            }
+            if (this._notifBackdropBlur?.actor) {
+                this._notifBackdropBlur.actor.opacity = container.opacity;
+            }
+        });
+        container.connect('notify::allocation', () => {
+            if (this._notifCenterOpen) {
+                this._syncNotifBackdropBlur();
+            }
+        });
+        container.connect('notify::height', () => {
+            if (this._notifCenterOpen) {
+                this._syncNotifBackdropBlur();
             }
         });
         if (scrollView?.vadjustment) {
@@ -4359,6 +4465,7 @@ export const MenuBarController = class MenuBarController {
         }
 
         if (this._notifCenterOpen) {
+            this._syncNotifBackdropBlur();
             this._syncNotifGlassRegions();
         }
     }
@@ -4434,6 +4541,11 @@ export const MenuBarController = class MenuBarController {
         container.x = monitor.x + monitor.width - targetW - 12;
         container.y = (dmY || 0) + (dmH || 32) + 8;
         this._updateNotificationCenterGeometry();
+        this._getNotifBlurActor();
+        this._syncNotifBackdropBlur();
+        if (this._notifBackdropBlur) {
+            this._notifBackdropBlur.animateSlideIn(480, 320);
+        }
         container.translation_x = 480;
         container.opacity = 0;
         container.visible = true;
@@ -4518,6 +4630,9 @@ export const MenuBarController = class MenuBarController {
             this._blurRebuildTimeout = 0;
         }
         this._disconnectNotifCenterListeners();
+        if (this._notifBackdropBlur) {
+            this._notifBackdropBlur.animateSlideOut(480, 260);
+        }
 
         const container = this._notifCenterActor;
         container.remove_all_transitions();
@@ -5091,6 +5206,14 @@ export const MenuBarController = class MenuBarController {
         if (this._notifCenterActor) {
             try { this._notifCenterActor.destroy(); } catch (_) {}
             this._notifCenterActor = null;
+        }
+        if (this._ccBackdropBlur) {
+            try { this._ccBackdropBlur.destroy(); } catch (_) {}
+            this._ccBackdropBlur = null;
+        }
+        if (this._notifBackdropBlur) {
+            try { this._notifBackdropBlur.destroy(); } catch (_) {}
+            this._notifBackdropBlur = null;
         }
 
         if (this._qsHoverSwitchId && Main.panel?.statusArea?.quickSettings) {

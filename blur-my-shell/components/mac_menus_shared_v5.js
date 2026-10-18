@@ -18,6 +18,7 @@ const ACCENT_COLOR_MAP = {
     'pink': '#ff2d55',
     'purple': '#af52de',
     'slate': '#8e8e93',
+    'brown': '#a27447',
 };
 
 export function getSystemAccentColor() {
