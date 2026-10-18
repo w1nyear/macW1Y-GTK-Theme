@@ -5327,3 +5327,38 @@ echo "==> Встановлення успішно завершено!"
       5) Синхронізація та верифікація:
          - Зміни збережено в усіх копіях розширень та в робочому просторі ~/MACTHEMEFILES.
          - Перевірено знятими скріншотами після прокручування: дублікати іконок та ореоли сяйва повністю відсутні, скло кришталево чисте.
+85. Позиціонування Меню Програм на місці пошукача Spotlight, усунення зависання темного фонового скла, відновлення сяючих рамок (border-top/border-bottom) та динамічний 3% тінт/засвітлення LQ-Visual:
+    - Що вимагалося:
+      1) Якщо відкрити Spotlight і натиснути кнопку «Програми» ('A'), системне меню програм (Launchpad) повинно відкриватися безпосередньо на місці рядка пошуку Spotlight (y = 205), а не знизу екрана, плавно трансформуючись без стрибків позиції.
+      2) На місці пошукача Spotlight більше не повинен залишатися або зависати темний елемент зі старим фоном.
+      3) Усі елементи LQ-Visual (Док, Spotlight, Меню Програм, Буфер обміну, Центр сповіщень, банери) повинні мати динамічний тінт або засвітлення у 3% (0.03) залежно від обраної системної теми (org.gnome.desktop.interface color-scheme):
+         - Для темної теми (prefer-dark): 3% темного тінту (tintVal = 0.0, baseStrength = 0.03).
+         - Для світлої теми (prefer-light): 3% висвітлення (tintVal = 1.0, baseStrength = 0.03).
+      4) Відновити втрачені сяючі рамки (border-top та border-bottom), що забезпечують характерний об'ємний скляний відблиск Apple glass:
+         - border-top: 1px solid rgba(255, 255, 255, 0.40...0.48) !important (верхній світловий спекуляр);
+         - border-bottom: 1px solid rgba(255, 255, 255, 0.18...0.24) !important (нижній рефлекс);
+         - Відновлено в stylesheet.css розширення liquid-glass (де був конфліктуючий border: none !important), у gnome-shell.css для #dashtodockContainer .dash-background, а також у діалогах Spotlight, Меню Програм та Буфері обміну.
+    - Виправлення та реалізація:
+      1) Безшовна трансформація Spotlight -> Меню Програм (applications_menu_v5.js, searchDialog_v5.js):
+         - У MacApplicationsDialog.open({ fromRect }): якщо передано fromRect від Spotlight, координата targetY встановлюється рівною fromRect.y (205px) замість дефолтного центрування (mon.y + mon.height * 0.16).
+         - Виправлено порядок операцій: геометрія контейнера _box встановлюється у fromRect до первинної синхронізації скла _syncGlass(), що усунуло розсинхронізацію між Clutter-актором та шейдерною геометрією.
+      2) Повне знищення та запобігання дублюванню скляних підкладок (BackdropGlass lifecycle):
+         - Виявлено та усунено стан гонки (race condition) у _initGlass(): при одночасному виклику з конструктора та open() BackdropGlass ініціалізувався двічі, залишаючи перший екземпляр вічно завислим у Main.layoutManager.uiGroup.
+         - Додано блокування _initializingGlass та захист від подвійної ініціалізації.
+         - Видалено передчасний виклик _initGlass() із конструктора — скло тепер створюється суворо за вимогою в open().
+         - При закритті діалогів (як миттєвому close(true), так і плавному close(false) в onComplete) викликається повне знищення скла: this._glass.destroy() і this._glass = null.
+         - Під час переходу Spotlight -> Launchpad старе скло знищується миттєво ще до запуску цільового діалогу.
+      3) Динамічний 3% тінт теми:
+         - Реалізовано читання схеми org.gnome.desktop.interface color-scheme у dockManager.js, searchDialog_v5.js, applications_menu_v5.js, clipboardDialog_v2.js, notifications_v3.js та menubar_v27.js.
+         - Строго виставлено tintStrength = 0.03 (3%) та динамічний колір (0.0 для темної теми, 1.0 для світлої).
+      4) Відновлення сяючих рамок:
+         - У liquid-glass/stylesheet.css та gnome-shell.css відновлено border-top: 1px solid rgba(255, 255, 255, 0.40) !important та border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important для дока.
+         - Додано аналогічні правила для карток сповіщень, пілюль Spotlight та вікна Launchpad.
+    - Верифікація:
+      - У живому середовищі Wayland GNOME Shell перевірено автоматичними тестами:
+        * strayCount: 0 (жодного завислого скляного актора після відкриття та закриття);
+        * spotGlassDestroyed: true (скло Spotlight повністю знищено при переході);
+        * appsInfo.boxPos: [603, 205] (меню програм відкрилося точно на висоті пошукача Spotlight);
+        * appsGlassDestroyed: true (після закриття меню програм скло повністю вивантажене).
+      - Знято підтверджуючі знімки: spotlight_full_verified_task85.png, apps_verified_task85.png та dock_verified_task85.png.
+

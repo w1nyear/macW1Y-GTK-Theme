@@ -189,6 +189,13 @@ export class MacControlCenter {
         this._currentSubmenu = null;
 
         this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        try {
+            this._interfaceSettings.connectObject(
+                'changed::accent-color', () => this.syncAll(),
+                'changed::color-scheme', () => this._syncDarkMode(),
+                this
+            );
+        } catch (_) {}
         this._notificationSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.notifications' });
 
         try {
@@ -853,7 +860,7 @@ export class MacControlCenter {
         this.syncAll();
     }
 
-    _setCircleBtnActive(circleBtn, icon, isActive, accentColor = '#007aff') {
+    _setCircleBtnActive(circleBtn, icon, isActive, accentColor = getSystemAccentColor()) {
         if (!circleBtn || this._isDestroyed) return;
         try {
             circleBtn._lastIsActive = isActive;
@@ -947,7 +954,7 @@ export class MacControlCenter {
         try {
             if (isActive) {
                 btn.add_style_class_name('active');
-                btn.style = `background-color: ${accentColor} !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; box-shadow: 0 0 12px rgba(0, 122, 255, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important; width: 70px !important; height: 70px !important; min-width: 70px !important; min-height: 70px !important; border-radius: 9999px !important; padding: 0 !important; color: #ffffff !important;`;
+                btn.style = `background-color: ${accentColor} !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; box-shadow: 0 0 12px ${accentColor}8c, inset 0 1px 1px rgba(255, 255, 255, 0.5) !important; width: 70px !important; height: 70px !important; min-width: 70px !important; min-height: 70px !important; border-radius: 9999px !important; padding: 0 !important; color: #ffffff !important;`;
                 if (icon) icon.style = 'color: #ffffff !important;';
             } else {
                 btn.remove_style_class_name('active');
@@ -1183,7 +1190,7 @@ export class MacControlCenter {
     _syncWifi() {
         const isEnabled = Boolean(this._nmClient?.wireless_enabled);
         if (isEnabled) {
-            this._setCircleBtnActive(this.wifiPill.circleBtn, this.wifiPill.icon, true, '#007aff');
+            this._setCircleBtnActive(this.wifiPill.circleBtn, this.wifiPill.icon, true, getSystemAccentColor());
             const activeAp = this._wifiDevice?.get_active_access_point();
             const ssid = activeAp?.get_ssid() ? NM.utils_ssid_to_utf8(activeAp.get_ssid().get_data()) : null;
             this.wifiPill.subLbl.text = ssid || t('connected', 'Підключено');
@@ -1210,7 +1217,7 @@ export class MacControlCenter {
             isPowered = Boolean(this.btPill?.circleBtn?._lastIsActive);
         }
         if (isPowered) {
-            this._setCircleBtnActive(this.btPill.circleBtn, this.btPill.icon, true, '#007aff');
+            this._setCircleBtnActive(this.btPill.circleBtn, this.btPill.icon, true, getSystemAccentColor());
             this.btPill.subLbl.text = t('on', 'Увімкнено');
         } else {
             this._setCircleBtnActive(this.btPill.circleBtn, this.btPill.icon, false);
@@ -1235,7 +1242,7 @@ export class MacControlCenter {
     _syncDarkMode() {
         const scheme = this._interfaceSettings.get_string('color-scheme');
         const isDark = (scheme === 'prefer-dark');
-        this._setStandaloneBtnActive(this.darkModeBtn, this.darkModeIcon, isDark, '#007aff');
+        this._setStandaloneBtnActive(this.darkModeBtn, this.darkModeIcon, isDark, getSystemAccentColor());
     }
 
     _toggleDarkMode() {
@@ -1792,8 +1799,9 @@ export class MacControlCenter {
         if (!this.soundDrawer) return;
         this._soundDrawerOpen = true;
         if (this.airplayBtn) {
+            const accent = getSystemAccentColor();
             this.airplayBtn.add_style_class_name('active');
-            this.airplayBtn.style = 'background-color: #007aff !important; border-color: #007aff !important; width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; border-radius: 9999px !important; padding: 0 !important; color: #ffffff !important;';
+            this.airplayBtn.style = `background-color: ${accent} !important; border-color: ${accent} !important; width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; border-radius: 9999px !important; padding: 0 !important; color: #ffffff !important;`;
         }
         this._refreshSoundDrawer();
         this.soundDrawer.visible = true;
@@ -1917,10 +1925,11 @@ export class MacControlCenter {
             };
             sinkRow.connect('notify::hover', updateSinkHover);
 
+            const accent = getSystemAccentColor();
             const badgeBox = new St.Widget({
                 layout_manager: new Clutter.BinLayout(),
                 style: sink.isDefault
-                    ? 'background-color: #007aff !important; width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; border-radius: 13px !important; margin-right: 10px !important;'
+                    ? `background-color: ${accent} !important; width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; border-radius: 13px !important; margin-right: 10px !important;`
                     : 'background-color: rgba(255, 255, 255, 0.14) !important; width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; border-radius: 13px !important; margin-right: 10px !important;',
                 y_align: Clutter.ActorAlign.CENTER,
             });

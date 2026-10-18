@@ -38,6 +38,10 @@ export const GlassActor = GObject.registerClass(class GlassActor extends Clutter
         this._blurSkips = 0;
         this._diagLast = null;
         this._diagLastSnapshotAt = 0;
+        (this as any)._cleanedUp = false;
+        this.connect('destroy', () => {
+            this.cleanup();
+        });
         this._renderer = new GlassRenderer({
             settings: params.settings,
             logger: params.logger,
@@ -191,16 +195,20 @@ export const GlassActor = GObject.registerClass(class GlassActor extends Clutter
     }
 
     _queueRepaint() {
-        if (!this.visible || this.opacity === 0)
+        if (!this || (this as any)._cleanedUp)
             return;
-        // Repainting from inside this paint would request a new frame every frame.
-        if (this._inLiveGeometry)
-            return;
-        if (this._batchDepth) {
-            this._batchDirty = true;
-            return;
-        }
-        this.queue_redraw();
+        try {
+            if (!this.visible || this.opacity === 0)
+                return;
+            // Repainting from inside this paint would request a new frame every frame.
+            if (this._inLiveGeometry)
+                return;
+            if (this._batchDepth) {
+                this._batchDirty = true;
+                return;
+            }
+            this.queue_redraw();
+        } catch (_) {}
     }
 
     // The state behind global._lgGlass.dump(): every paint with diagnostics
@@ -264,6 +272,9 @@ export const GlassActor = GObject.registerClass(class GlassActor extends Clutter
     }
 
     cleanup() {
+        if ((this as any)._cleanedUp)
+            return;
+        (this as any)._cleanedUp = true;
         this._shaderLoad.cancel();
         // The hook's closure holds the manager and its actors.
         this._liveGeometryHook = null;
@@ -344,7 +355,7 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
     vfunc_map() {
         super.vfunc_map();
         this._serialAtMap = this._copier.lastCopy?.serial ?? 0;
-        this._copier.forceRefresh(350);
+        this._copier.clear();
         this._relays.redrawArea();
         this.queue_redraw();
     }
@@ -382,58 +393,65 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
      * its children, so moving the window does not redraw the area by itself.
      */
     syncSources(moved = false) {
-        if (!this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+        if (!this || (this as any)._cleanedUp)
             return;
-        const area = this._sampleAreaRect();
-        if (!area)
-            return;
-        const changed = this._relays.sync(area);
-        // A glass that was fully transparent was not painted when the backdrop
-        // changed, so its copy is old as well.
-        const painted = this.get_paint_opacity() > 0;
-        if (changed || moved || (painted && !this._wasPainted)) {
-            this._copier.forceRefresh(250);
-            this._relays.redrawArea();
-            this.queue_redraw();
-        }
-        this._wasPainted = painted;
-        this._copier.prune(this.peek_stage_views());
+        try {
+            if (!this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+                return;
+            const area = this._sampleAreaRect();
+            if (!area)
+                return;
+            const changed = this._relays.sync(area);
+            // A glass that was fully transparent was not painted when the backdrop
+            // changed, so its copy is old as well.
+            const painted = this.get_paint_opacity() > 0;
+            if (changed || moved || (painted && !this._wasPainted)) {
+                this._relays.redrawArea();
+                this.queue_redraw();
+            }
+            this._wasPainted = painted;
+            this._copier.prune(this.peek_stage_views());
+        } catch (_) {}
     }
 
-    vfunc_paint_node(root, paintContext) {
-        if (!this.mapped || !this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+    vfunc_paint_node(root: any, paintContext: any) {
+        if (!this || (this as any)._cleanedUp)
             return;
-        const scale = this._paintScale();
-        const s = this._sampleShaderRect();
-        if (!scale || !s)
-            return;
-        const { kx, ky, resW, resH } = scale;
-        const stageRect = localToStage(this, s[0] * kx, s[1] * ky, (s[0] + s[2]) * kx, (s[1] + s[3]) * ky);
-        const ctx = this._beginPaint();
-        if (!ctx)
-            return;
+        try {
+            if (!this.mapped || !this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+                return;
+            const scale = this._paintScale();
+            const s = this._sampleShaderRect();
+            if (!scale || !s)
+                return;
+            const { kx, ky, resW, resH } = scale;
+            const stageRect = localToStage(this, s[0] * kx, s[1] * ky, (s[0] + s[2]) * kx, (s[1] + s[3]) * ky);
+            const ctx = this._beginPaint();
+            if (!ctx)
+                return;
 
-        const { copy, missed } = this._copier.take(this, root, paintContext, stageRect);
-        // Nothing to draw with yet; the next frame redraws the whole area.
-        if (missed)
-            this._relays.redrawArea();
-        if (!copy?.rect)
-            return;
-        const blurRect = this._stageToShader(copy.rect, kx, ky);
-        if (!blurRect)
-            return;
-        this._runBlur(root, ctx, copy.texture, blurRect, [copy.texture, copy.serial]);
-        const compositeRect = this._composite(root, copy.texture, blurRect, kx, ky, resW, resH);
-        this._snapshot(() => {
-            const round = (v) => +v.toFixed(2);
-            return {
-                mode: 'backdrop',
-                copy: `${copy.width}x${copy.height}${copy.format === null ? '' : ` fmt=${copy.format}`}`,
-                copyStageRect: copy.rect?.map(round) ?? null,
-                blurRect: blurRect.map(round),
-                compositeRect: compositeRect.map(round),
-            };
-        });
+            const { copy, missed } = this._copier.take(this, root, paintContext, stageRect);
+            // Nothing to draw with yet; the next frame redraws the whole area.
+            if (missed)
+                this._relays.redrawArea();
+            if (!copy?.rect)
+                return;
+            const blurRect = this._stageToShader(copy.rect, kx, ky);
+            if (!blurRect)
+                return;
+            this._runBlur(root, ctx, copy.texture, blurRect, [copy.texture, copy.serial]);
+            const compositeRect = this._composite(root, copy.texture, blurRect, kx, ky, resW, resH);
+            this._snapshot(() => {
+                const round = (v: number) => +v.toFixed(2);
+                return {
+                    mode: 'backdrop',
+                    copy: `${copy.width}x${copy.height}${copy.format === null ? '' : ` fmt=${copy.format}`}`,
+                    copyStageRect: copy.rect?.map(round) ?? null,
+                    blurRect: blurRect.map(round),
+                    compositeRect: compositeRect.map(round),
+                };
+            });
+        } catch (_) {}
     }
 
     /** Counters for the test driver and the dump. */

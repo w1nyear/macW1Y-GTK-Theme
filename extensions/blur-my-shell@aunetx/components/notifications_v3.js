@@ -21,16 +21,22 @@ const ANIM_OUT_DURATION = 260;
 
 /**
  * Sanitizes and converts markdown and HTML tags into valid Pango markup.
- * If markup parsing fails, completely strips formatting tags so raw tags like </b> are never shown.
+ * Properly decodes HTML entities, strips orphan/malformed tags (like </b>),
+ * balances open/close tags, and ensures formatting characters are never leaked into notification text.
  */
 export function safePangoMarkup(rawText) {
     if (!rawText || typeof rawText !== 'string') return '';
-    let text = rawText;
+    let text = rawText.replace(/\r\n/g, '\n');
 
-    // Normalize newlines
-    text = text.replace(/\r\n/g, '\n');
+    // 1. Unescape HTML tags if entity-encoded (e.g. &lt;b&gt; or &lt;/b&gt; from Telegram/Discord/browsers)
+    text = text.replace(/&lt;(\/?[a-zA-Z0-9]+(?:\s+[^&>]*)?)&gt;/gi, '<$1>');
+    text = text.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#39;/g, "'");
 
-    // Convert rich-text HTML tags to valid Pango tags
+    // 2. Normalize <br> and <p>
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+    text = text.replace(/<p\b[^>]*>/gi, '').replace(/<\/p>/gi, '\n');
+
+    // 3. Convert rich-text HTML tags to valid Pango tags
     text = text.replace(/<strong\b[^>]*>(.*?)<\/strong>/gi, '<b>$1</b>');
     text = text.replace(/<em\b[^>]*>(.*?)<\/em>/gi, '<i>$1</i>');
     text = text.replace(/<code\b[^>]*>(.*?)<\/code>/gi, '<tt>$1</tt>');
@@ -39,7 +45,7 @@ export function safePangoMarkup(rawText) {
     text = text.replace(/<del\b[^>]*>(.*?)<\/del>/gi, '<s>$1</s>');
     text = text.replace(/<a\b[^>]*>(.*?)<\/a>/gi, '<u>$1</u>');
 
-    // Markdown conversions:
+    // 4. Markdown conversions:
     // **bold** or __bold__
     text = text.replace(/(\*\*|__)(.*?)\1/g, '<b>$2</b>');
     // ~~strikethrough~~
@@ -49,39 +55,72 @@ export function safePangoMarkup(rawText) {
     // *italic* or _italic_ (not inside word identifiers)
     text = text.replace(/(^|[^\w])(\*|_)([^\*_]+?)\2([^\w]|$)/g, '$1<i>$3</i>$4');
 
-    // Remove any remaining unsupported HTML tags, keeping only allowed pango tags
+    // 5. Remove any remaining unsupported HTML tags, keeping only allowed pango tags
     text = text.replace(/<\/?(?!b\b|i\b|u\b|s\b|tt\b|span\b|sub\b|sup\b|big\b|small\b)[a-zA-Z0-9_-]+(?:\s+[^>]*)?>/gi, '');
 
-    // Escape stray & that is not an existing XML entity
+    // 6. Balance allowed tags and strip orphan closing tags (e.g. </b> without <b>)
+    const allowedTags = ['b', 'i', 'u', 's', 'tt', 'span', 'sub', 'sup', 'big', 'small'];
+    for (const tag of allowedTags) {
+        const openMatches = text.match(new RegExp('<' + tag + '(?:\\s+[^>]*)?>', 'gi')) || [];
+        const closeMatches = text.match(new RegExp('<\/' + tag + '>', 'gi')) || [];
+        const openCount = openMatches.length;
+        const closeCount = closeMatches.length;
+
+        if (closeCount > openCount) {
+            let excess = closeCount - openCount;
+            text = text.replace(new RegExp('<\/' + tag + '>', 'gi'), (match) => {
+                if (excess > 0) {
+                    excess--;
+                    return '';
+                }
+                return match;
+            });
+        } else if (openCount > closeCount) {
+            const deficit = openCount - closeCount;
+            for (let d = 0; d < deficit; d++) {
+                text += '</' + tag + '>';
+            }
+        }
+    }
+
+    // 7. Escape stray & that is not an existing XML entity
     text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;');
 
     try {
         Pango.parse_markup(text, -1, '');
         return text;
     } catch (e) {
-        // Fallback: strip tags and markdown markers so formatting tags never leak to user
-        let stripped = rawText.replace(/<[^>]+>/g, '').replace(/(\*\*|__|\*|_|~~|`)/g, '');
+        // Fallback: completely strip tags, entity-tags, and markdown markers so formatting tokens never leak to user
+        let stripped = rawText
+            .replace(/&lt;(\/?[a-zA-Z0-9_-]+(?:\s+[^&>]*)?)&gt;/gi, '')
+            .replace(/<[^>]+>/g, '')
+            .replace(/(\*\*|__|\*|_|~~|`)/g, '');
         return GLib.markup_escape_text(stripped, -1);
     }
 }
 
 export function setLabelMarkup(label, rawText) {
     if (!label || !label.clutter_text) return;
-    const markup = safePangoMarkup(rawText);
-    label.clutter_text.use_markup = true;
     try {
+        const markup = safePangoMarkup(rawText);
+        label.clutter_text.use_markup = true;
         label.clutter_text.set_markup(markup);
     } catch (_) {
-        label.clutter_text.set_text(rawText ? rawText.replace(/<[^>]+>/g, '') : '');
+        label.clutter_text.use_markup = false;
+        let clean = (rawText || '')
+            .replace(/&lt;(\/?[a-zA-Z0-9_-]+(?:\s+[^&>]*)?)&gt;/gi, '')
+            .replace(/<[^>]+>/g, '')
+            .replace(/(\*\*|__|\*|_|~~|`)/g, '');
+        label.clutter_text.set_text(clean);
     }
 }
 
 /**
  * Formats notification timestamp:
  * - Today: HH:mm (e.g. "14:31")
- * - Yesterday: "Вчора 14:31"
- * - Older within 7 days: "16 жов 14:31"
- * - Older: "10.10.2026"
+ * - Yesterday: "Вчора, 14:31"
+ * - Older (same year): "16.10, 14:31"
+ * - Older (previous year): "16.10.2025, 14:31"
  */
 export function formatNotificationTimestamp(datetime) {
     let dt = datetime;
@@ -103,13 +142,14 @@ export function formatNotificationTimestamp(datetime) {
     if (diffDays <= 0) {
         return timeStr;
     } else if (diffDays === 1) {
-        return `Вчора ${timeStr}`;
-    } else if (diffDays < 7) {
-        return dt.format('%d %b %H:%M');
+        return `Вчора, ${timeStr}`;
+    } else if (dt.get_year() === now.get_year()) {
+        return `${dt.format('%d.%m')}, ${timeStr}`;
     } else {
-        return dt.format('%d.%m.%Y');
+        return `${dt.format('%d.%m.%Y')}, ${timeStr}`;
     }
 }
+
 
 export function buildNotificationCard(source, notification, options = {}) {
     const {
@@ -171,12 +211,29 @@ export function buildNotificationCard(source, notification, options = {}) {
     });
     topRow.add_child(contentBox);
 
-    // App Name on top
-    const appLabel = new St.Label({
-        text: source?.title || _('Notification'),
-        style_class: 'mac-notification-app-name',
+    // App Header: App Name + Count Badge (for grouped stacks)
+    const appHeaderBox = new St.BoxLayout({
+        orientation: Clutter.Orientation.HORIZONTAL,
+        x_expand: true,
+        y_align: Clutter.ActorAlign.CENTER,
     });
-    contentBox.add_child(appLabel);
+    contentBox.add_child(appHeaderBox);
+
+    const appLabel = new St.Label({
+        text: source?.title || 'Notification',
+        style_class: 'mac-notification-app-name',
+        y_align: Clutter.ActorAlign.CENTER,
+    });
+    appHeaderBox.add_child(appLabel);
+
+    const countBadge = new St.Label({
+        text: '',
+        style_class: 'mac-notification-count-badge',
+        style: 'color: rgba(255, 255, 255, 0.75); background-color: rgba(255, 255, 255, 0.16); font-size: 10px; font-weight: 600; border-radius: 9999px; padding: 1px 7px; margin-left: 6px;',
+        y_align: Clutter.ActorAlign.CENTER,
+        visible: false,
+    });
+    appHeaderBox.add_child(countBadge);
 
     // Title
     const titleLabel = new St.Label({
@@ -276,6 +333,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         timeLabel,
         titleLabel,
         bodyLabel,
+        countBadge,
         actionsBox,
         isClosing: false,
     };
@@ -415,25 +473,39 @@ export class MacNotificationGroup {
             x_expand: true,
             y_expand: false,
             visible: false,
-            reactive: false,
+            reactive: true,
             style: 'margin-top: -6px;',
         });
         this.actor.add_child(this.stackLayersBox);
 
+        // Click to expand from stack layers
+        const handleExpandClick = () => {
+            if (!this.isExpanded && this.items.length > 1) {
+                this.expand();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        };
+        this.stackLayersBox.connect('button-press-event', handleExpandClick);
+
         // Layer 1 (immediately below top card)
         this.layer1 = new St.Widget({
-            style: 'background-color: rgba(36, 36, 36, 0.65); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 20px; margin-left: 10px; margin-right: 10px; height: 10px;',
+            style: 'background-color: rgba(36, 36, 36, 0.70); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 20px; margin-left: 10px; margin-right: 10px; height: 10px;',
             x_expand: true,
             visible: false,
+            reactive: true,
         });
+        this.layer1.connect('button-press-event', handleExpandClick);
         this.stackLayersBox.add_child(this.layer1);
 
         // Layer 2 (bottom layer for 3+ items)
         this.layer2 = new St.Widget({
-            style: 'background-color: rgba(26, 26, 26, 0.65); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 18px; margin-left: 20px; margin-right: 20px; height: 8px; margin-top: -4px;',
+            style: 'background-color: rgba(26, 26, 26, 0.70); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 18px; margin-left: 20px; margin-right: 20px; height: 8px; margin-top: -4px;',
             x_expand: true,
             visible: false,
+            reactive: true,
         });
+        this.layer2.connect('button-press-event', handleExpandClick);
         this.stackLayersBox.add_child(this.layer2);
 
         // Expanded cards box
@@ -450,10 +522,16 @@ export class MacNotificationGroup {
         this.collapseBtn = new St.Button({
             style_class: 'mac-notification-collapse-btn',
             label: 'Згорнути',
-            style: 'background-color: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.85); font-size: 11px; font-weight: 500; border-radius: 9999px; padding: 4px 16px; margin: 4px auto 0 auto;',
+            style: 'background-color: rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.85); font-size: 11px; font-weight: 500; border-radius: 9999px; padding: 4px 18px; margin: 6px auto 2px auto; border: 1px solid rgba(255, 255, 255, 0.18);',
             x_align: Clutter.ActorAlign.CENTER,
             reactive: true,
             can_focus: true,
+            track_hover: true,
+        });
+        this.collapseBtn.connect('notify::hover', () => {
+            this.collapseBtn.set_style(this.collapseBtn.hover
+                ? 'background-color: rgba(255, 255, 255, 0.24); color: #ffffff; font-size: 11px; font-weight: 500; border-radius: 9999px; padding: 4px 18px; margin: 6px auto 2px auto; border: 1px solid rgba(255, 255, 255, 0.30);'
+                : 'background-color: rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.85); font-size: 11px; font-weight: 500; border-radius: 9999px; padding: 4px 18px; margin: 6px auto 2px auto; border: 1px solid rgba(255, 255, 255, 0.18);');
         });
         this.collapseBtn.connect('clicked', () => {
             this.collapse();
@@ -505,6 +583,15 @@ export class MacNotificationGroup {
         const [removed] = this.items.splice(idx, 1);
 
         try {
+            if (removed?.banner) {
+                removed.banner.remove_all_transitions();
+                const parent = removed.banner.get_parent();
+                if (parent) parent.remove_child(removed.banner);
+                removed.banner.destroy();
+            }
+        } catch (_) {}
+
+        try {
             if (userDismissed) {
                 notification.destroy(2); // DISMISSED
             } else if (notification.isTransient) {
@@ -539,10 +626,10 @@ export class MacNotificationGroup {
 
     _renderCollapsed() {
         this.expandedCardsBox.visible = false;
-        this.expandedCardsBox.destroy_all_children();
+        this.expandedCardsBox.remove_all_children();
 
         this.topCardBox.visible = true;
-        this.topCardBox.destroy_all_children();
+        this.topCardBox.remove_all_children();
 
         const topItem = this.items[0];
         if (topItem) {
@@ -552,6 +639,15 @@ export class MacNotificationGroup {
             topItem.banner.translation_y = 0;
             topItem.banner.scale_x = 1.0;
             topItem.banner.scale_y = 1.0;
+
+            if (topItem.cardData?.countBadge) {
+                if (this.items.length > 1) {
+                    topItem.cardData.countBadge.text = `${this.items.length}`;
+                    topItem.cardData.countBadge.visible = true;
+                } else {
+                    topItem.cardData.countBadge.visible = false;
+                }
+            }
         }
 
         if (this.items.length >= 2) {
@@ -572,17 +668,26 @@ export class MacNotificationGroup {
 
     _renderExpanded() {
         this.topCardBox.visible = false;
-        this.topCardBox.destroy_all_children();
+        this.topCardBox.remove_all_children();
         this.stackLayersBox.visible = false;
 
         this.expandedCardsBox.visible = true;
-        this.expandedCardsBox.destroy_all_children();
+        this.expandedCardsBox.remove_all_children();
 
         for (const item of this.items) {
+            if (item.cardData?.countBadge) {
+                item.cardData.countBadge.visible = false;
+            }
             this.expandedCardsBox.add_child(item.banner);
             item.banner.visible = true;
+            item.banner.opacity = 255;
+            item.banner.translation_y = 0;
+            item.banner.scale_x = 1.0;
+            item.banner.scale_y = 1.0;
         }
         this.expandedCardsBox.add_child(this.collapseBtn);
+        this.collapseBtn.visible = true;
+        this.collapseBtn.opacity = 255;
 
         if (this.options.onGeometryChanged) {
             this.options.onGeometryChanged();
@@ -603,15 +708,18 @@ export class MacNotificationGroup {
         });
 
         this.topCardBox.visible = false;
-        this.topCardBox.destroy_all_children();
+        this.topCardBox.remove_all_children();
 
         this.expandedCardsBox.visible = true;
-        this.expandedCardsBox.destroy_all_children();
+        this.expandedCardsBox.remove_all_children();
 
         // Cascading waterfall entrance
         for (let i = 0; i < this.items.length; i++) {
             const item = this.items[i];
             const banner = item.banner;
+            if (item.cardData?.countBadge) {
+                item.cardData.countBadge.visible = false;
+            }
             this.expandedCardsBox.add_child(banner);
             banner.visible = true;
 
@@ -693,13 +801,13 @@ export class MacNotificationGroup {
             if (topItem && topItem.banner.visible) {
                 const [absX, absY] = topItem.banner.get_transformed_position();
                 const [w, h] = topItem.banner.get_transformed_size();
-                if (w > 0 && h > 0 && Number.isFinite(absX) && Number.isFinite(absY)) {
+                if (w > 0 && h > 0 && Number.isFinite(absX) && Number.isFinite(absY) && Number.isFinite(w) && Number.isFinite(h)) {
                     const extraBottom = (this.items.length >= 3) ? 14 : (this.items.length >= 2 ? 8 : 0);
                     regions.push({
-                        x: absX - monitor.x,
-                        y: absY - monitor.y,
-                        w: w,
-                        h: h + extraBottom,
+                        x: Math.round(absX - monitor.x),
+                        y: Math.round(absY - monitor.y),
+                        w: Math.max(1, Math.round(w)),
+                        h: Math.max(1, Math.round(h + extraBottom)),
                         tintR: 0.0,
                         tintG: 0.0,
                         tintB: 0.0,
@@ -713,12 +821,12 @@ export class MacNotificationGroup {
                 if (!b.visible) continue;
                 const [absX, absY] = b.get_transformed_position();
                 const [w, h] = b.get_transformed_size();
-                if (w > 0 && h > 0 && Number.isFinite(absX) && Number.isFinite(absY)) {
+                if (w > 0 && h > 0 && Number.isFinite(absX) && Number.isFinite(absY) && Number.isFinite(w) && Number.isFinite(h)) {
                     regions.push({
-                        x: absX - monitor.x,
-                        y: absY - monitor.y,
-                        w: w,
-                        h: h,
+                        x: Math.round(absX - monitor.x),
+                        y: Math.round(absY - monitor.y),
+                        w: Math.max(1, Math.round(w)),
+                        h: Math.max(1, Math.round(h)),
                         tintR: 0.0,
                         tintG: 0.0,
                         tintB: 0.0,
@@ -734,12 +842,21 @@ export class MacNotificationGroup {
         this.isClosing = true;
         this.items.forEach(it => {
             try { it.notification.disconnectObject(it.banner); } catch (_) {}
-            try { it.banner.destroy(); } catch (_) {}
+            try {
+                it.banner.remove_all_transitions();
+                it.cardData?.closeBtn?.remove_all_transitions();
+                it.cardData?.timeLabel?.remove_all_transitions();
+                it.banner.destroy();
+            } catch (_) {}
         });
         this.items = [];
+        this.collapseBtn.remove_all_transitions();
+        this.stackLayersBox.remove_all_transitions();
+        this.actor.remove_all_transitions();
         this.actor.destroy();
     }
 }
+
 globalThis._MacNotificationGroup = MacNotificationGroup;
 
 export const NotificationsController = class NotificationsController {
@@ -858,8 +975,8 @@ export const NotificationsController = class NotificationsController {
         }
 
         const tintVal = isDark ? 0.0 : 1.0;
-        const baseStrength = isDark ? 0.05 : 0.06;
-        const tintStrength = isDark ? 0.05 : 0.06;
+        const baseStrength = 0.03; // Exactly 3% as requested by user
+        const tintStrength = 0.03; // Exactly 3% as requested by user
         return { isDark, tintVal, baseStrength, tintStrength };
     }
 
@@ -1072,10 +1189,13 @@ export const NotificationsController = class NotificationsController {
         if (this._glass) {
             this._glass._backdropLocked = false;
             if (typeof this._glass.forceRefresh === 'function') {
-                this._glass.forceRefresh(350);
+                this._glass.forceRefresh(1);
             }
+            this._syncGlass();
+            this._glass._backdropLocked = true;
+        } else {
+            this._syncGlass();
         }
-        this._syncGlass();
 
         group.actor.opacity = 0;
         group.actor.translation_x = SLIDE_DISTANCE;

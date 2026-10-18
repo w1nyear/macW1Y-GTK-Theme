@@ -1,5 +1,6 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import { BackdropGlass } from './rendering/backdropGlass.js';
 import { reportFrameLoopError } from './diagnostics/logging.js';
 import { ensureGlassAllocated } from './actors/allocation.js';
@@ -246,15 +247,27 @@ export class DashManager {
         else {
             Main.layoutManager.uiGroup.add_child(glass);
         }
-        let blurRadius = this._settings.get_int('dock-blur-radius');
-        let tintColorStr = this._settings.get_string('dock-tint-color');
-        let tintStrength = this._settings.get_double('dock-tint-strength');
+        let isDark = true;
+        try {
+            const iface = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            const scheme = iface.get_string('color-scheme');
+            if (scheme === 'prefer-dark') isDark = true;
+            else if (scheme === 'prefer-light') isDark = false;
+            else {
+                const gtk = iface.get_string('gtk-theme') || '';
+                isDark = gtk.toLowerCase().includes('dark');
+            }
+        } catch (_) {
+            isDark = true;
+        }
+        let tintVal = isDark ? 0.0 : 1.0;
+        let tintStrength = 0.03; // Exactly 3% as requested by user
         let cornerRadius = this._settings.get_double('dock-corner-radius');
         let brightness = this._settings.get_double('dock-brightness');
         let contrast = this._settings.get_double('dock-contrast');
         let saturation = this._settings.get_double('dock-saturation');
         glass.setPadding(SHADER_PADDING);
-        glass.setTintColor(...hexToColorArray(tintColorStr));
+        glass.setTintColor(tintVal, tintVal, tintVal);
         glass.setTintStrength(tintStrength);
         glass.setCornerRadius(cornerRadius);
         glass.setBrightness(brightness);
@@ -328,11 +341,6 @@ export class DashManager {
         // Keep dock glass seamlessly updated during overview transitions
         const triggerDockSync = () => {
             if (this.glass && this._isEffectActive) {
-                this.glass._copier?.clear();
-                this._lastSyncSourcesUs = 0;
-                if (typeof this.glass.forceRefresh === 'function') {
-                    this.glass.forceRefresh(500);
-                }
                 this.glass.syncSources(true);
                 this.glass.queue_redraw();
             }
@@ -348,35 +356,10 @@ export class DashManager {
                 const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
                 this.glass.setBrightness(baseBrightness);
                 if (typeof this.glass.forceRefresh === 'function') {
-                    this.glass.forceRefresh(500);
+                    this.glass.forceRefresh(1);
                 }
                 this.glass.syncSources(true);
                 this.glass.queue_redraw();
-
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60, () => {
-                    if (this.glass && this._isEffectActive && !Main.overview.visible) {
-                        this.glass._copier?.clear();
-                        this._lastSyncSourcesUs = 0;
-                        if (typeof this.glass.forceRefresh === 'function') {
-                            this.glass.forceRefresh(300);
-                        }
-                        this.glass.syncSources(true);
-                        this.glass.queue_redraw();
-                    }
-                    return GLib.SOURCE_REMOVE;
-                });
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 160, () => {
-                    if (this.glass && this._isEffectActive && !Main.overview.visible) {
-                        this.glass._copier?.clear();
-                        this._lastSyncSourcesUs = 0;
-                        if (typeof this.glass.forceRefresh === 'function') {
-                            this.glass.forceRefresh(300);
-                        }
-                        this.glass.syncSources(true);
-                        this.glass.queue_redraw();
-                    }
-                    return GLib.SOURCE_REMOVE;
-                });
             }
         };
         safeConnect(Main.overview, 'hidden', onOverviewHidden);
@@ -389,10 +372,6 @@ export class DashManager {
                     const p = Math.max(0, Math.min(1, stateAdjustment.value));
                     const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
                     this.glass.setBrightness(baseBrightness - p * 0.15);
-                    if (typeof this.glass.forceRefresh === 'function') {
-                        this.glass.forceRefresh(150);
-                    }
-                    this.glass.syncSources(true);
                     this.glass.queue_redraw();
                 }
             });

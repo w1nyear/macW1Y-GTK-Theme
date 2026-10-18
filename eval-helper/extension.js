@@ -5,6 +5,7 @@ import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Clutter from 'gi://Clutter';
+import Mtk from 'gi://Mtk';
 
 const EvalIface = `
 <node>
@@ -23,6 +24,7 @@ export default class EvalHelper extends Extension {
         globalThis.GLib = GLib;
         globalThis.Meta = Meta;
         globalThis.Main = Main;
+        globalThis.Mtk = Mtk;
         try {
             const nodeInfo = Gio.DBusNodeInfo.new_for_xml(EvalIface);
             this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(nodeInfo.interfaces[0], {
@@ -166,7 +168,14 @@ export default class EvalHelper extends Extension {
                                     this.offStageCount++;
                                     return { copy: this.lastCopy, missed: false };
                                 }
-                                const copy = this._copies.get(view) ?? null;
+                                let copy = this._copies.get(view) ?? null;
+
+                                // 1. Strict backdrop lock: If locked and we already have a backdrop, NEVER re-blit
+                                if (actor._backdropLocked && copy?.texture) {
+                                    this.reuseCount++;
+                                    return { copy, missed: false };
+                                }
+
                                 const layout = view.layout;
                                 const x0 = Math.max(stageRect[0], layout.x);
                                 const y0 = Math.max(stageRect[1], layout.y);
@@ -185,9 +194,13 @@ export default class EvalHelper extends Extension {
                                 const rect = [(fx0 - ox) / scale, (fy0 - oy) / scale, (fx1 - ox) / scale, (fy1 - oy) / scale];
 
                                 const inOverview = Boolean(Main?.overview?.visible || Main?.overview?._animationInProgress);
-                                if (copy && copy.inOverview !== undefined && copy.inOverview !== inOverview) {
+                                const overviewChanged = copy && copy.inOverview !== undefined && copy.inOverview !== inOverview;
+                                if (overviewChanged) {
                                     copy = null;
                                     this._copies.delete(view);
+                                    if (typeof this.forceRefresh === 'function') {
+                                        this.forceRefresh(500);
+                                    }
                                 }
 
                                 const nowUs = GLib.get_monotonic_time();
@@ -197,8 +210,27 @@ export default class EvalHelper extends Extension {
                                     Math.abs(copy.rect[2] - rect[2]) < 1.0 &&
                                     Math.abs(copy.rect[3] - rect[3]) < 1.0;
 
-                                const minIntervalUs = inOverview ? 16666 : 50000;
-                                if (sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < minIntervalUs)) {
+                                const isForced = nowUs < (this._forceUntilUs || 0);
+                                const mustCopy = !copy?.texture || !copy?.rect || overviewChanged;
+
+                                // 2. If we already have a valid texture with identical geometry and not forced, REUSE IT.
+                                // Do NOT periodically re-blit every 50ms while UI is on screen!
+                                if (!mustCopy && !isForced && sameGeometry && copy?.texture) {
+                                    this.reuseCount++;
+                                    return { copy, missed: false };
+                                }
+
+                                // 3. Redraw clip check: if clip doesn't contain the whole rect and we already have a copy,
+                                // Mutter only redrew partial dirty UI in fb; do NOT blit partial stale framebuffer!
+                                const clip = paintContext.get_redraw_clip();
+                                const clipX = Math.floor(rect[0]);
+                                const clipY = Math.floor(rect[1]);
+                                const _Mtk = globalThis.Mtk || (typeof Mtk !== 'undefined' ? Mtk : imports.gi.Mtk);
+                                const inClip = !clip || !_Mtk || clip.contains_rectangle(new _Mtk.Rectangle({
+                                    x: clipX, y: clipY, width: Math.max(1, Math.ceil(rect[2]) - clipX), height: Math.max(1, Math.ceil(rect[3]) - clipY),
+                                })) === _Mtk.RegionOverlap.IN;
+
+                                if (copy?.texture && !inClip) {
                                     this.reuseCount++;
                                     return { copy, missed: false };
                                 }
@@ -399,13 +431,14 @@ export default class EvalHelper extends Extension {
         // Ensure Notification Center and Notification Banners use LQ-Visual glass
         const patchNotificationLQVisual = async () => {
             try {
-                const notifMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v2.js');
-                const menubarMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v24.js');
+                const notifMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v3.js');
+                const menubarMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v27.js');
 
-                // 1. Update global card builder
+                // 1. Update global card builder and group class
                 globalThis._macBuildNotificationCard = notifMod.buildNotificationCard;
+                globalThis._MacNotificationGroup = notifMod.MacNotificationGroup;
 
-                // 2. Patch active MenuBarController prototype and instance
+                // 2. Patch active MenuBarController prototype and instance if needed
                 const mbProto = menubarMod.MenuBarController.prototype;
                 const nc = globalThis._macNotificationCenter;
                 if (nc) {
@@ -440,12 +473,9 @@ export default class EvalHelper extends Extension {
                     }
                 }
 
-                // 3. Hot-swap NotificationsController for floating banners if needed
+                // 3. Hot-swap NotificationsController for floating banners ONLY if missing
                 const extBms = Main.extensionManager.lookup('blur-my-shell@aunetx');
-                if (extBms?.stateObj && (!globalThis._macNotificationsController || !globalThis._macNotificationsController._glass)) {
-                    if (globalThis._macNotificationsController) {
-                        try { globalThis._macNotificationsController.disable(); } catch (_) {}
-                    }
+                if (extBms?.stateObj && !extBms.stateObj._notifications_controller) {
                     const newNotifCtrl = new notifMod.NotificationsController(
                         extBms.stateObj._connections?.[0] || extBms.stateObj._connection,
                         extBms.stateObj._settings,

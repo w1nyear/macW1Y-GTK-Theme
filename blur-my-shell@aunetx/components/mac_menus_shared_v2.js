@@ -312,12 +312,12 @@ export function populateUniversalWifiContent(container, options = {}) {
     headerItem.add_child(headerBox);
 
     if (isControlCenter) {
-        // Left: Back button (fixed 70px)
+        // Left: Back button (fixed 82px)
         const leftSlot = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.START,
-            style: 'width: 70px; min-width: 70px; max-width: 70px;',
+            style: 'width: 82px; min-width: 82px; max-width: 82px;',
         });
         const backBtn = new St.Button({
             style_class: 'mac-cc-back-btn',
@@ -325,12 +325,12 @@ export function populateUniversalWifiContent(container, options = {}) {
             reactive: true,
             can_focus: true,
             track_hover: true,
-            style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;',
+            style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;',
         });
         const updateBackHover = () => {
             backBtn.style = backBtn.hover
-                ? 'font-size: 12px !important; font-weight: 600 !important; color: #ffffff !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.22) !important;'
-                : 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;';
+                ? 'font-size: 12px !important; font-weight: 600 !important; color: #ffffff !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.22) !important;'
+                : 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;';
         };
         backBtn.connect('notify::hover', updateBackHover);
         backBtn.connect('clicked', () => { if (onBack) onBack(); });
@@ -352,12 +352,12 @@ export function populateUniversalWifiContent(container, options = {}) {
         });
         headerBox.add_child(titleLbl);
 
-        // Right: Toggle Switch (fixed 70px)
+        // Right: Toggle Switch (fixed 82px)
         const rightSlot = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.END,
-            style: 'width: 70px; min-width: 70px; max-width: 70px;',
+            style: 'width: 82px; min-width: 82px; max-width: 82px;',
         });
         const sw = createMacToggleSwitch(isEnabled, onToggle);
         rightSlot.add_child(sw.actor);
@@ -574,12 +574,12 @@ export function populateUniversalBluetoothContent(container, options = {}) {
     headerItem.add_child(headerBox);
 
     if (isControlCenter) {
-        // Left: Back button (fixed 70px)
+        // Left: Back button (fixed 82px)
         const leftSlot = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.START,
-            style: 'width: 70px; min-width: 70px; max-width: 70px;',
+            style: 'width: 82px; min-width: 82px; max-width: 82px;',
         });
         const backBtn = new St.Button({
             style_class: 'mac-cc-back-btn',
@@ -587,12 +587,12 @@ export function populateUniversalBluetoothContent(container, options = {}) {
             reactive: true,
             can_focus: true,
             track_hover: true,
-            style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;',
+            style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;',
         });
         const updateBackHover = () => {
             backBtn.style = backBtn.hover
-                ? 'font-size: 12px !important; font-weight: 600 !important; color: #ffffff !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.22) !important;'
-                : 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;';
+                ? 'font-size: 12px !important; font-weight: 600 !important; color: #ffffff !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.22) !important;'
+                : 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;';
         };
         backBtn.connect('notify::hover', updateBackHover);
         backBtn.connect('clicked', () => { if (onBack) onBack(); });
@@ -614,12 +614,12 @@ export function populateUniversalBluetoothContent(container, options = {}) {
         });
         headerBox.add_child(titleLbl);
 
-        // Right: Toggle Switch (fixed 70px)
+        // Right: Toggle Switch (fixed 82px)
         const rightSlot = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.END,
-            style: 'width: 70px; min-width: 70px; max-width: 70px;',
+            style: 'width: 82px; min-width: 82px; max-width: 82px;',
         });
         const sw = createMacToggleSwitch(isPowered, onToggle);
         rightSlot.add_child(sw.actor);

@@ -2282,40 +2282,33 @@ export const MenuBarController = class MenuBarController {
 
         // Setup macOS Tahoe Control Center inside quickSettings.menu
         if (quickSettings.menu?.box) {
-            // Clean up any pre-existing or duplicate mac-control-center-root or toggle host actors
-            const toRemove = [];
-            for (const child of quickSettings.menu.box.get_children()) {
-                if (child.has_style_class_name && child.has_style_class_name('mac-control-center-root')) {
-                    toRemove.push(child);
-                } else if (child.name === 'liquid-glass-toggle-host') {
-                    toRemove.push(child);
+            if (!this._macControlCenter) {
+                try {
+                    this._macControlCenter = new MacControlCenter(quickSettings.menu);
+                    if (quickSettings.menu._grid) {
+                        quickSettings.menu._grid.visible = false;
+                        quickSettings.menu._grid.hide();
+                    }
+                    quickSettings.menu.box.insert_child_at_index(this._macControlCenter.container, 0);
+                    this._macControlCenter.container.visible = true;
+                    this._macControlCenter.container.show();
+                } catch (e) {
+                    console.error(`[MenuBar] Error initializing MacControlCenter: ${e}`);
                 }
-            }
-            for (const c of toRemove) {
-                quickSettings.menu.box.remove_child(c);
-                try { c.destroy(); } catch (_) {}
-            }
-            if (this._macControlCenter) {
-                try { this._macControlCenter.destroy(); } catch (_) {}
-                this._macControlCenter = null;
-            }
-
-            try {
-                this._macControlCenter = new MacControlCenter(quickSettings.menu);
+            } else {
                 if (quickSettings.menu._grid) {
                     quickSettings.menu._grid.visible = false;
                     quickSettings.menu._grid.hide();
-                    quickSettings.menu._grid.style = 'margin: 0 !important; padding: 0 !important; width: 0px !important; min-width: 0px !important; height: 0px !important; min-height: 0px !important; opacity: 0 !important;';
                 }
-                quickSettings.menu.box.insert_child_at_index(this._macControlCenter.container, 0);
+                if (this._macControlCenter.container.get_parent() !== quickSettings.menu.box) {
+                    quickSettings.menu.box.insert_child_at_index(this._macControlCenter.container, 0);
+                }
                 this._macControlCenter.container.visible = true;
                 this._macControlCenter.container.show();
-            } catch (e) {
-                console.error(`[MenuBar] Error initializing MacControlCenter: ${e}`);
             }
         }
 
-        // Right-align Control Center menu flush to top-right corner and install smooth slide-in animation
+        // Right-align Control Center menu flush to top-right corner and install smooth animation
         if (quickSettings.menu?._boxPointer) {
             const bp = quickSettings.menu._boxPointer;
             bp._arrowAlignment = 1.0;
@@ -2331,8 +2324,8 @@ export const MenuBarController = class MenuBarController {
                 if (monitor && allocationBox) {
                     try {
                         const [, natWidth] = this.get_preferred_width(-1);
-                        const w = Math.max(natWidth || 0, this.width || 0, 384);
-                        const targetX = monitor.x + monitor.width - w - 12;
+                        const w = Math.max(natWidth || 0, this.width || 0, 420);
+                        const targetX = monitor.x + monitor.width - w - 8;
                         const curOrigin = allocationBox.get_origin();
                         allocationBox.set_origin(Math.floor(targetX), Math.floor(curOrigin[1]));
                     } catch (_e) {}
@@ -2359,15 +2352,14 @@ export const MenuBarController = class MenuBarController {
                     const monitor = Main.layoutManager.primaryMonitor;
                     if (monitor) {
                         const [, natWidth] = bp.get_preferred_width(-1);
-                        const w = Math.max(natWidth || 0, bp.width || 0, 384);
-                        bp.x = monitor.x + monitor.width - w - 12;
+                        const w = Math.max(natWidth || 0, bp.width || 0, 420);
+                        bp.x = monitor.x + monitor.width - w - 8;
                         bp.y = monitor.y + 36;
                     }
                 }
                 self._removeStrayCcBlur(bp);
             });
 
-            // Smooth Slide-in from Right Side Animation
             bp.open = function(animate, onComplete) {
                 sanitizeQuickSettings(quickSettings);
                 const isAnimated = (animate !== false && animate !== 0);
@@ -2377,8 +2369,8 @@ export const MenuBarController = class MenuBarController {
                 const monitor = Main.layoutManager.primaryMonitor;
                 if (monitor) {
                     const [, natWidth] = bp.get_preferred_width(-1);
-                    const w = Math.max(natWidth || 0, bp.width || 0, 384);
-                    bp.x = monitor.x + monitor.width - w - 12;
+                    const w = Math.max(natWidth || 0, bp.width || 0, 420);
+                    bp.x = monitor.x + monitor.width - w - 8;
                     bp.y = monitor.y + 36;
                 }
 
@@ -2399,11 +2391,11 @@ export const MenuBarController = class MenuBarController {
                     surfaceActor.opacity = 255;
                 }
                 if (surfaceActor && surfaceActor !== bp) {
-                    surfaceActor.translation_x = 300;
+                    surfaceActor.translation_x = 240;
                     surfaceActor.remove_all_transitions();
                     surfaceActor.ease({
                         translation_x: 0,
-                        duration: 280,
+                        duration: 250,
                         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                     });
                 }
@@ -2415,13 +2407,13 @@ export const MenuBarController = class MenuBarController {
                     return;
                 }
 
-                bp.translation_x = 300;
+                bp.translation_x = 240;
                 bp.opacity = 0;
                 bp.remove_all_transitions();
                 bp.ease({
                     translation_x: 0,
                     opacity: 255,
-                    duration: 280,
+                    duration: 250,
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                     onComplete: () => {
                         bp.translation_x = 0;
@@ -2431,7 +2423,6 @@ export const MenuBarController = class MenuBarController {
                 });
             };
 
-            // Smooth Slide-out to Right Side Animation
             bp.close = function(animate, onComplete) {
                 if (!bp.visible) {
                     onComplete?.();
@@ -2449,13 +2440,13 @@ export const MenuBarController = class MenuBarController {
 
                 if (!isAnimated) {
                     bp.opacity = 0;
-                    bp.translation_x = 300;
+                    bp.translation_x = 240;
                     if (surface) {
                         surface.update_surface_opacity(0);
                         surface.hide_actors();
                     } else if (surfaceActor) {
                         surfaceActor.opacity = 0;
-                        surfaceActor.translation_x = 300;
+                        surfaceActor.translation_x = 240;
                         surfaceActor.hide();
                     }
                     bp.hide();
@@ -2466,8 +2457,8 @@ export const MenuBarController = class MenuBarController {
                 if (surfaceActor && surfaceActor !== bp) {
                     surfaceActor.remove_all_transitions();
                     surfaceActor.ease({
-                        translation_x: 300,
-                        duration: 220,
+                        translation_x: 240,
+                        duration: 200,
                         mode: Clutter.AnimationMode.EASE_IN_CUBIC,
                         onComplete: () => {
                             if (surface) surface.update_surface_opacity(0);
@@ -2478,9 +2469,9 @@ export const MenuBarController = class MenuBarController {
 
                 bp.remove_all_transitions();
                 bp.ease({
-                    translation_x: 300,
+                    translation_x: 240,
                     opacity: 0,
-                    duration: 220,
+                    duration: 200,
                     mode: Clutter.AnimationMode.EASE_IN_CUBIC,
                     onComplete: () => {
                         bp.hide();

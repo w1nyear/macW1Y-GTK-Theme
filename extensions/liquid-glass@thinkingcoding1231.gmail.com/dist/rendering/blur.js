@@ -189,12 +189,12 @@ export class BlurRenderer {
      * down one more step.
      */
     resize(ctx, w, h) {
-        if (!w || w < 1 || !h || h < 1 || !Number.isFinite(w) || !Number.isFinite(h))
+        if (!ctx || !w || w < 1 || !h || h < 1 || !Number.isFinite(w) || !Number.isFinite(h))
             return;
         this._destroyTexturePool();
         const shift = this._blurDownscale >= 4 ? 2 : 1;
-        let pw = Math.max(w >> shift, 1);
-        let ph = Math.max(h >> shift, 1);
+        let pw = Math.max(1, Math.floor(w >> shift));
+        let ph = Math.max(1, Math.floor(h >> shift));
         for (let i = 0; i < this.PASS_COUNT; i++) {
             const tex = Cogl.Texture2D.new_with_size(ctx, pw, ph);
             this._blurTextures.push(tex);
@@ -205,8 +205,8 @@ export class BlurRenderer {
             const upTex = Cogl.Texture2D.new_with_size(ctx, pw, ph);
             this._upTextures.push(upTex);
             this._upFbos.push(Cogl.Offscreen.new_with_texture(upTex));
-            pw = Math.max(pw >> 1, 1);
-            ph = Math.max(ph >> 1, 1);
+            pw = Math.max(1, Math.floor(pw >> 1));
+            ph = Math.max(1, Math.floor(ph >> 1));
         }
         this._poolWidth = w;
         this._poolHeight = h;

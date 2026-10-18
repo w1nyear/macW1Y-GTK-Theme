@@ -328,11 +328,6 @@ export class DashManager {
         // Keep dock glass seamlessly updated during overview transitions
         const triggerDockSync = () => {
             if (this.glass && this._isEffectActive) {
-                (this.glass as any)._copier?.clear();
-                this._lastSyncSourcesUs = 0;
-                if (typeof (this.glass as any).forceRefresh === 'function') {
-                    (this.glass as any).forceRefresh(500);
-                }
                 this.glass.syncSources(true);
                 this.glass.queue_redraw();
             }
@@ -348,35 +343,10 @@ export class DashManager {
                 const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
                 this.glass.setBrightness(baseBrightness);
                 if (typeof (this.glass as any).forceRefresh === 'function') {
-                    (this.glass as any).forceRefresh(500);
+                    (this.glass as any).forceRefresh(1);
                 }
                 this.glass.syncSources(true);
                 this.glass.queue_redraw();
-
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60, () => {
-                    if (this.glass && this._isEffectActive && !Main.overview.visible) {
-                        this.glass._copier?.clear();
-                        this._lastSyncSourcesUs = 0;
-                        if (typeof (this.glass as any).forceRefresh === 'function') {
-                            (this.glass as any).forceRefresh(300);
-                        }
-                        this.glass.syncSources(true);
-                        this.glass.queue_redraw();
-                    }
-                    return GLib.SOURCE_REMOVE;
-                });
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 160, () => {
-                    if (this.glass && this._isEffectActive && !Main.overview.visible) {
-                        this.glass._copier?.clear();
-                        this._lastSyncSourcesUs = 0;
-                        if (typeof (this.glass as any).forceRefresh === 'function') {
-                            (this.glass as any).forceRefresh(300);
-                        }
-                        this.glass.syncSources(true);
-                        this.glass.queue_redraw();
-                    }
-                    return GLib.SOURCE_REMOVE;
-                });
             }
         };
         safeConnect(Main.overview, 'hidden', onOverviewHidden);
@@ -389,10 +359,6 @@ export class DashManager {
                     const p = Math.max(0, Math.min(1, stateAdjustment.value));
                     const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
                     this.glass.setBrightness(baseBrightness - p * 0.15);
-                    if (typeof (this.glass as any).forceRefresh === 'function') {
-                        (this.glass as any).forceRefresh(150);
-                    }
-                    this.glass.syncSources(true);
                     this.glass.queue_redraw();
                 }
             });

@@ -19,7 +19,7 @@ import {
     populateUniversalWifiContent,
     populateUniversalBluetoothContent,
     getSystemAccentColor,
-} from './mac_menus_shared_v2.js';
+} from './mac_menus_shared_v3.js';
 
 function resolveThemeIcon(filename) {
     const home = GLib.get_home_dir();
@@ -1687,7 +1687,7 @@ export class MacControlCenter {
                 vertical: false,
                 y_align: Clutter.ActorAlign.CENTER,
                 x_align: Clutter.ActorAlign.START,
-                style: 'width: 70px; min-width: 70px; max-width: 70px;',
+                style: 'width: 82px; min-width: 82px; max-width: 82px;',
             });
             const backBtn = new St.Button({
                 style_class: 'mac-cc-back-btn',
@@ -1695,12 +1695,12 @@ export class MacControlCenter {
                 reactive: true,
                 can_focus: true,
                 track_hover: true,
-                style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;',
+                style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;',
             });
             const updateBackHover = () => {
                 backBtn.style = backBtn.hover
-                    ? 'font-size: 12px !important; font-weight: 600 !important; color: #ffffff !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.22) !important;'
-                    : 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;';
+                    ? 'font-size: 12px !important; font-weight: 600 !important; color: #ffffff !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.22) !important;'
+                    : 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;';
             };
             backBtn.connect('notify::hover', updateBackHover);
             backBtn.connect('clicked', () => this.closeSubmenu());
@@ -1722,7 +1722,7 @@ export class MacControlCenter {
             headerBox.add_child(headerTitle);
 
             const rightSlot = new St.BoxLayout({
-                style: 'width: 70px; min-width: 70px; max-width: 70px;',
+                style: 'width: 82px; min-width: 82px; max-width: 82px;',
             });
             headerBox.add_child(rightSlot);
 

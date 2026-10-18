@@ -280,10 +280,10 @@ export const PopupBlurMessageStacks = class PopupBlurMessageStacks {
             return;
 
         const base_edge = (index === 1) ? 10 : (index === 2 ? 7 : 0);
-        const visible_edge = Math.round(base_edge + (height - base_edge) * expansion);
+        const visible_edge = Math.max(1, Math.round(base_edge + (height - base_edge) * expansion));
         const clip_y = Math.max(0, height - visible_edge);
 
-        message.set_clip(0, clip_y, width, visible_edge);
+        message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
         this.bms_clipped.add(message);
 
         // Staggered opacity progress for cards so they smoothly fade in as they unravel
@@ -316,24 +316,25 @@ export const PopupBlurMessageStacks = class PopupBlurMessageStacks {
             // 2nd card: tight visible strip of 10px (matches exact 10px bottom offset below card 1)
             const visible_edge = 10;
             const clip_y = Math.max(0, height - visible_edge);
-            message.set_clip(0, clip_y, width, visible_edge);
+            message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
             this.bms_clipped.add(message);
         } else if (index === 2) {
             // 3rd card: tight visible strip of 7px (matches exact 7px bottom offset below card 2)
             const visible_edge = 7;
             const clip_y = Math.max(0, height - visible_edge);
-            message.set_clip(0, clip_y, width, visible_edge);
+            message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
             this.bms_clipped.add(message);
         } else if (index >= 3) {
             // 4th+ cards: hidden when collapsed so they don't stack behind card 3
-            message.set_clip(0, height, width, 0);
-            this.bms_clipped.add(message);
+            message.opacity = 0;
+            message.remove_clip();
+            this.bms_clipped.delete(message);
         } else {
             // Fallback by pseudo class
             const is_second = this.has_pseudo_class(message, 'second-in-stack');
             const visible_edge = is_second ? 10 : 6;
             const clip_y = Math.max(0, height - visible_edge);
-            message.set_clip(0, clip_y, width, visible_edge);
+            message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
             this.bms_clipped.add(message);
         }
     }

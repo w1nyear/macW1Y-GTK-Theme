@@ -89,6 +89,7 @@ uniform float debug_view;
 uniform float brightness;
 uniform float contrast;
 uniform float saturation;
+uniform float is_light_style;
 
 // The glass rect in the actor's pixel space, which for the monitor-sized
 // surfaces is monitor-local. Includes the padding on every side.
@@ -194,16 +195,18 @@ void findActiveRegion(vec2 pixel_coord, float pad, out vec2 outLocalPos, out vec
         // Picking the region needs no continuous corners; main() measures the
         // chosen one with them.
         float r_eff = corner_radius;
-        if (abs(rBox.x - rBox.y) <= 4.0 && min(rBox.x, rBox.y) <= 40.0) {
+        if (isDock > 0.5 && corner_radius > 0.0) {
+            r_eff = min(corner_radius, min(rBox.x, rBox.y));
+        } else if (abs(rBox.x - rBox.y) <= 4.0 && min(rBox.x, rBox.y) <= 45.0) {
+            // 1x1 buttons (theme, power): maximum rounding -> perfect circle
+            r_eff = min(rBox.x, rBox.y);
+        } else if (rBox.x > rBox.y && min(rBox.x, rBox.y) <= 42.0 && rBox.x <= 120.0) {
+            // 1x2 buttons (wi-fi, bluetooth, do not disturb): maximum rounding -> stadium capsule pill
             r_eff = min(rBox.x, rBox.y);
         } else if (abs(rBox.x - 91.0) <= 20.0 && abs(rBox.y - 76.0) <= 20.0) {
-            r_eff = 35.0;
-        } else if (rBox.x < 130.0 && abs(min(rBox.x, rBox.y) - 35.0) <= 6.0) {
-            r_eff = 35.0;
-        } else if (rBox.x >= 130.0 && abs(min(rBox.x, rBox.y) - 35.0) <= 6.0) {
-            r_eff = 25.0;
+            r_eff = 26.0;
         } else if (min(rBox.x, rBox.y) > 30.0) {
-            r_eff = 25.0;
+            r_eff = (corner_radius > 0.0) ? min(corner_radius, min(rBox.x, rBox.y)) : 26.0;
         }
         float d = sdCircleRoundRect(rLocal, rBox, r_eff);
         if (d < bestD) {
@@ -537,18 +540,19 @@ void main() {
     if (isDock > 0.5) {
         corner = vec2(min(corner_radius, min(box_size.x, box_size.y)), 2.0);
     } else if (multi_region_mode > 0.5) {
-        if (abs(box_size.x - box_size.y) <= 4.0 && min(box_size.x, box_size.y) <= 40.0) {
+        if (abs(box_size.x - box_size.y) <= 4.0 && min(box_size.x, box_size.y) <= 45.0) {
+            // 1x1 buttons (Theme, Power): maximum rounding -> perfect circle
+            corner = vec2(min(box_size.x, box_size.y), 2.0);
+        } else if (box_size.x > box_size.y && min(box_size.x, box_size.y) <= 42.0 && box_size.x <= 120.0) {
+            // 1x2 buttons (Wi-Fi, Bluetooth, Do Not Disturb): maximum rounding -> stadium capsule pill
             corner = vec2(min(box_size.x, box_size.y), 2.0);
         } else if (abs(box_size.x - 91.0) <= 20.0 && abs(box_size.y - 76.0) <= 20.0) {
-            corner = vec2(35.0, 2.0);
-        } else if (box_size.x < 130.0 && abs(min(box_size.x, box_size.y) - 35.0) <= 6.0) {
-            corner = vec2(35.0, 2.0);
-        } else if (box_size.x >= 130.0 && abs(min(box_size.x, box_size.y) - 35.0) <= 6.0) {
-            corner = vec2(25.0, 2.0);
+            // 2x2 cards (Music / Now Playing card)
+            corner = cornerShape(box_size, 26.0);
         } else if (min(box_size.x, box_size.y) > 30.0) {
-            corner = vec2(25.0, 2.0);
+            corner = vec2((corner_radius > 0.0) ? min(corner_radius, min(box_size.x, box_size.y)) : 26.0, 2.0);
         } else {
-            corner = cornerShape(box_size, 25.0);
+            corner = cornerShape(box_size, (corner_radius > 0.0) ? corner_radius : 25.0);
         }
     } else {
         corner = cornerShape(box_size, corner_radius);
@@ -597,8 +601,22 @@ void main() {
         ) * 0.25;
 
         flatRgb = applySCB(flatRgb, brightness, contrast, saturation);
-        flatRgb = mix(flatRgb, activeTint, activeBaseStrength);
-        flatRgb = mix(flatRgb, vec3(tint_r, tint_g, tint_b), tint_strength);
+
+        vec3 activeBaseTintFlat = activeTint;
+        if (is_light_style > 0.5) {
+            if (max(activeTint.r, max(activeTint.g, activeTint.b)) < 0.1) {
+                activeBaseTintFlat = vec3(1.0, 1.0, 1.0);
+            }
+        }
+        flatRgb = mix(flatRgb, activeBaseTintFlat, activeBaseStrength);
+
+        vec3 effectiveUserTintFlat = vec3(tint_r, tint_g, tint_b);
+        if (is_light_style > 0.5) {
+            if (max(tint_r, max(tint_g, tint_b)) < 0.1) {
+                effectiveUserTintFlat = vec3(1.0, 1.0, 1.0);
+            }
+        }
+        flatRgb = mix(flatRgb, effectiveUserTintFlat, tint_strength);
 
         // Specular and sheen at N = (0, 0, 1): both reduce to the light's z,
         // and specMask to 0.65.
@@ -764,8 +782,21 @@ void main() {
 
     // Two tint layers: the element's own colour (multi-region mode only),
     // then the user's tint.
-    vec3 insideBaseColor = mix(refracted, activeTint, activeBaseStrength);
-    insideBaseColor = mix(insideBaseColor, vec3(tint_r, tint_g, tint_b), tint_strength);
+    vec3 activeBaseTintRefracted = activeTint;
+    if (is_light_style > 0.5) {
+        if (max(activeTint.r, max(activeTint.g, activeTint.b)) < 0.1) {
+            activeBaseTintRefracted = vec3(1.0, 1.0, 1.0);
+        }
+    }
+    vec3 insideBaseColor = mix(refracted, activeBaseTintRefracted, activeBaseStrength);
+
+    vec3 effectiveUserTintRefracted = vec3(tint_r, tint_g, tint_b);
+    if (is_light_style > 0.5) {
+        if (max(tint_r, max(tint_g, tint_b)) < 0.1) {
+            effectiveUserTintRefracted = vec3(1.0, 1.0, 1.0);
+        }
+    }
+    insideBaseColor = mix(insideBaseColor, effectiveUserTintRefracted, tint_strength);
 
     // Not multiplied by insideMask: the final composite applies the coverage
     // once, and applying it twice darkens the antialiased edge.

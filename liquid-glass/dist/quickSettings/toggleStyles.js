@@ -1,6 +1,58 @@
 import St from 'gi://St';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import { QS_MENU_TOGGLE_CLASS } from '../shellVersion.js';
+
+const ACCENT_COLOR_MAP = {
+    'blue':   [0.0, 0.48, 1.0],      // #007aff
+    'teal':   [0.19, 0.69, 0.78],    // #30b0c7
+    'green':  [0.20, 0.78, 0.35],    // #34c759
+    'yellow': [1.0, 0.80, 0.0],      // #ffcc00
+    'orange': [1.0, 0.58, 0.0],      // #ff9500
+    'red':    [1.0, 0.23, 0.19],     // #ff3b30
+    'pink':   [1.0, 0.18, 0.33],     // #ff2d55
+    'purple': [0.69, 0.32, 0.87],    // #af52de
+    'slate':  [0.56, 0.56, 0.58],    // #8e8e93
+    'brown':  [0.64, 0.45, 0.28],    // #a27447
+};
+
+const ACCENT_COLOR_HEX_MAP = {
+    'blue':   '#007aff',
+    'teal':   '#30b0c7',
+    'green':  '#34c759',
+    'yellow': '#ffcc00',
+    'orange': '#ff9500',
+    'red':    '#ff3b30',
+    'pink':   '#ff2d55',
+    'purple': '#af52de',
+    'slate':  '#8e8e93',
+    'brown':  '#a27447',
+};
+
+let _interfaceSettings = null;
+function getSystemAccentColorRgb() {
+    try {
+        if (!_interfaceSettings) {
+            _interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        }
+        const name = _interfaceSettings.get_string('accent-color');
+        if (ACCENT_COLOR_MAP[name])
+            return ACCENT_COLOR_MAP[name];
+    } catch (_) {}
+    return [0.0, 0.48, 1.0];
+}
+
+function getSystemAccentColorHex() {
+    try {
+        if (!_interfaceSettings) {
+            _interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        }
+        const name = _interfaceSettings.get_string('accent-color');
+        if (ACCENT_COLOR_HEX_MAP[name])
+            return ACCENT_COLOR_HEX_MAP[name];
+    } catch (_) {}
+    return '#007aff';
+}
 // Quick Settings' toggle-button mode: every toggle pod gets its own piece of
 // glass. This finds the pods, samples each pod's own colour (it changes with
 // ON/OFF and hover) for the glass's base colour, and makes the pod's own
@@ -337,7 +389,7 @@ export class ToggleStyles {
                               (pod.has_style_pseudo_class && pod.has_style_pseudo_class('checked')) ||
                               (primary && primary.checked);
             if (isChecked) {
-                entry.baseColor = [0.21, 0.52, 0.89];
+                entry.baseColor = getSystemAccentColorRgb();
                 entry.baseAlpha = 1.0;
             } else {
                 entry.baseColor = [1.0, 1.0, 1.0];
@@ -360,13 +412,14 @@ export class ToggleStyles {
     }
 
     _updateBaseColor(entry, pod, primary) {
+        const accentHex = getSystemAccentColorHex();
         const isChecked = (primary && primary.has_style_pseudo_class && primary.has_style_pseudo_class('checked')) ||
                           (pod.has_style_pseudo_class && pod.has_style_pseudo_class('checked')) ||
                           (primary && primary.checked) ||
                           (pod.has_style_class_name && pod.has_style_class_name('active')) ||
-                          (pod.style && pod.style.includes('#007aff'));
+                          (pod.style && (pod.style.includes('#007aff') || pod.style.includes('-st-accent-color') || pod.style.includes(accentHex)));
         if (isChecked) {
-            entry.baseColor = [0.0, 0.48, 1.0];
+            entry.baseColor = getSystemAccentColorRgb();
             entry.baseAlpha = 1.0;
         } else {
             entry.baseColor = [1.0, 1.0, 1.0];

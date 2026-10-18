@@ -278,12 +278,6 @@ export const ApplicationsBlur = class ApplicationsBlur {
                     blur_actor.y = allocation.y;
                     blur_actor.width = allocation.width;
                     blur_actor.height = allocation.height;
-
-                    const pipeline = meta_window.bg_manager?._bms_pipeline;
-                    if (pipeline?.corner_effect) {
-                        pipeline.corner_effect.width = allocation.width;
-                        pipeline.corner_effect.height = allocation.height;
-                    }
                 }
             }
         } else
@@ -354,9 +348,7 @@ export const ApplicationsBlur = class ApplicationsBlur {
         } else {
             const pipeline = new DummyPipeline(
                 this.effects_manager,
-                this.settings.applications,
-                null,
-                { add_corner_effect: true }
+                this.settings.applications
             );
             [blur_actor, meta_window.bg_manager] = pipeline.create_background_with_effect(
                 window_actor, 'bms-application-blurred-widget'
@@ -463,11 +455,6 @@ export const ApplicationsBlur = class ApplicationsBlur {
             if (pipeline?.effect)
                 pipeline.effect.unscaled_corner_radius = use_0_radius ?
                     0 : this.settings.applications.CORNER_RADIUS;
-            if (pipeline?.corner_effect) {
-                pipeline.corner_effect.radius = use_0_radius ?
-                    0 : (this.settings.applications.CORNER_RADIUS || 15);
-                pipeline.corner_effect.straight_corners = use_0_radius;
-            }
         }
     }
 

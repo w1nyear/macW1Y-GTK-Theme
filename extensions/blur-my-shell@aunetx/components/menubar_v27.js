@@ -3910,8 +3910,8 @@ export const MenuBarController = class MenuBarController {
         }
 
         const tintVal = isDark ? 0.0 : 1.0;
-        const baseStrength = isDark ? 0.05 : 0.06;
-        const tintStrength = isDark ? 0.05 : 0.06;
+        const baseStrength = 0.03; // Exactly 3% as requested by user
+        const tintStrength = 0.03; // Exactly 3% as requested by user
         return { isDark, tintVal, baseStrength, tintStrength };
     }
 
@@ -3981,14 +3981,14 @@ export const MenuBarController = class MenuBarController {
         const regions = [];
         const { tintVal, baseStrength, tintStrength } = this._getNotifThemeParams();
 
-        const addRegionForCard = (cardActor) => {
+        const addRegionForCard = (cardActor, extraBottom = 0) => {
             if (!cardActor.visible || cardActor.opacity === 0) return;
             const [cardX, cardY] = cardActor.get_transformed_position();
             const [cardW, cardH] = cardActor.get_transformed_size();
             if (cardW <= 0 || cardH <= 0 || !Number.isFinite(cardX) || !Number.isFinite(cardY)) return;
 
             const visibleTop = Math.max(cardY, scrollY);
-            const visibleBottom = Math.min(cardY + cardH, scrollY + scrollH);
+            const visibleBottom = Math.min(cardY + cardH + extraBottom, scrollY + scrollH);
             const visibleH = visibleBottom - visibleTop;
 
             if (visibleH < 6) return;
@@ -4006,7 +4006,20 @@ export const MenuBarController = class MenuBarController {
         };
 
         for (const child of cards) {
-            if (typeof child.getGlassSubcards === 'function') {
+            if (child._macGroup) {
+                const grp = child._macGroup;
+                if (!grp.isExpanded) {
+                    const top = grp.items[0];
+                    if (top && top.banner.visible) {
+                        const extraBottom = (grp.items.length >= 3) ? 14 : (grp.items.length >= 2 ? 8 : 0);
+                        addRegionForCard(top.banner, extraBottom);
+                    }
+                } else {
+                    for (const it of grp.items) {
+                        if (it.banner.visible) addRegionForCard(it.banner);
+                    }
+                }
+            } else if (typeof child.getGlassSubcards === 'function') {
                 for (const sub of child.getGlassSubcards()) {
                     addRegionForCard(sub);
                 }
@@ -4066,7 +4079,15 @@ export const MenuBarController = class MenuBarController {
     _populateNotificationCards(activeBanners = []) {
         if (!this._notifCardsBox) return [];
 
-        this._notifCardsBox.destroy_all_children();
+        for (const child of this._notifCardsBox.get_children()) {
+            if (child._macGroup) {
+                child._macGroup.destroy();
+            } else {
+                child.remove_all_transitions();
+                try { child.destroy(); } catch (_) {}
+            }
+        }
+        this._notifCardsBox.remove_all_children();
 
         const sources = Main.messageTray ? Main.messageTray.getSources() : [];
         const allItems = [];
@@ -4111,7 +4132,7 @@ export const MenuBarController = class MenuBarController {
             if (groupItems.length === 1) {
                 const item = groupItems[0];
                 const { source, notification, activeBanner } = item;
-                const builder = globalThis._macBuildNotificationCard || buildNotificationCard;
+                const builder = buildNotificationCard;
                 const cardData = builder(source, notification, {
                     sigma: 30,
                     isBanner: false,
@@ -4155,7 +4176,7 @@ export const MenuBarController = class MenuBarController {
                 this._notifCardsBox.add_child(cardData.banner);
             } else {
                 // Group of 2 or more notifications: use MacNotificationGroup stack!
-                const GroupClass = globalThis._MacNotificationGroup || MacNotificationGroup;
+                const GroupClass = MacNotificationGroup;
                 const group = new GroupClass(groupKey, {
                     sigma: 30,
                     isBanner: false,
@@ -4228,7 +4249,7 @@ export const MenuBarController = class MenuBarController {
             this._notifCardsBox.remove_child(singleCard);
             singleCard.destroy();
 
-            const GroupClass = globalThis._MacNotificationGroup || MacNotificationGroup;
+            const GroupClass = MacNotificationGroup;
             const group = new GroupClass(groupKey, {
                 sigma: 30,
                 isBanner: false,
@@ -4268,7 +4289,7 @@ export const MenuBarController = class MenuBarController {
         }
 
         // 3. Otherwise add as single card
-        const builder = globalThis._macBuildNotificationCard || buildNotificationCard;
+        const builder = buildNotificationCard;
         const cardData = builder(source, notification, {
             sigma: 30,
             isBanner: false,
@@ -4360,7 +4381,7 @@ export const MenuBarController = class MenuBarController {
             this._notifCardsBox.remove_child(singleCard);
             singleCard.destroy();
 
-            const GroupClass = globalThis._MacNotificationGroup || MacNotificationGroup;
+            const GroupClass = MacNotificationGroup;
             const group = new GroupClass(groupKey, {
                 sigma: 30,
                 isBanner: false,
@@ -4399,7 +4420,7 @@ export const MenuBarController = class MenuBarController {
             return;
         }
 
-        const builder = globalThis._macBuildNotificationCard || buildNotificationCard;
+        const builder = buildNotificationCard;
         const cardData = builder(source, notification, {
             sigma: 30,
             isBanner: false,
@@ -4646,8 +4667,17 @@ export const MenuBarController = class MenuBarController {
                 try { notif.destroy(2); } catch (_) {}
             }
         }
-        if (this._notifCardsBox)
-            this._notifCardsBox.destroy_all_children();
+        if (this._notifCardsBox) {
+            for (const child of this._notifCardsBox.get_children()) {
+                if (child._macGroup) {
+                    child._macGroup.destroy();
+                } else {
+                    child.remove_all_transitions();
+                    try { child.destroy(); } catch (_) {}
+                }
+            }
+            this._notifCardsBox.remove_all_children();
+        }
         if (this._notifEmptyLabel)
             this._updateEmptyState(0);
         this._updateNotificationCenterGeometry();
@@ -4709,8 +4739,9 @@ export const MenuBarController = class MenuBarController {
             if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
                 this._notifGlass._backdropLocked = false;
                 if (typeof this._notifGlass.forceRefresh === 'function') {
-                    this._notifGlass.forceRefresh(350);
+                    this._notifGlass.forceRefresh(1);
                 }
+                this._notifGlass._backdropLocked = true;
             }
             if (this._notifCenterOpen) this._syncNotifGlassRegions();
         });

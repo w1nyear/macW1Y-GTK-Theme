@@ -31,6 +31,7 @@ const ACCENT_COLOR_MAP = {
     'pink': '#ff2d55',
     'purple': '#af52de',
     'slate': '#8e8e93',
+    'brown': '#a27447',
 };
 
 function getSystemAccentColor() {
@@ -112,30 +113,53 @@ function getActiveCaret() {
     // 2. Wayland / X11 application text focus via Main.inputMethod
     const im = Main.inputMethod;
     const focusWin = global.display.focus_window;
-    if (im && im._currentFocus && im._cursorRect && focusWin && !focusWin.minimized && !focusWin.is_override_redirect()) {
-        const fr = focusWin.get_frame_rect();
-        const r = im._cursorRect;
-        const now = GLib.get_monotonic_time();
-        const age = im._cursorRectTime ? (now - im._cursorRectTime) : Infinity;
+    if (!focusWin || focusWin.minimized || focusWin.is_override_redirect())
+        return null;
 
-        // Freshness check: cursor must have been updated recently (within 3 seconds)
-        const isFresh = age < 3000000; // 3 seconds in microseconds
+    const winType = focusWin.get_window_type();
+    const isValidApp = (
+        winType === Meta.WindowType.NORMAL ||
+        winType === Meta.WindowType.DIALOG ||
+        winType === Meta.WindowType.MODAL_DIALOG
+    );
+    if (!isValidApp)
+        return null;
 
-        // Strict boundary check: must be inside client area (not titlebar or out-of-bounds)
-        const isInsideClient = (
-            r.x >= fr.x + 10 && r.x <= fr.x + fr.width - 10 &&
-            r.y >= fr.y + 36 && r.y <= fr.y + fr.height - 10
-        );
+    const wmClass = (focusWin.get_wm_class() || '').toLowerCase();
+    const title = (focusWin.get_title() || '').toLowerCase();
+    if (wmClass === 'gjs' && title.includes('desktop icons'))
+        return null;
 
-        if (isFresh && isInsideClient && r.x > 0 && r.y > 0) {
-            return {
-                type: 'app',
-                x: Math.round(r.x),
-                y: Math.round(r.y),
-                w: Math.max(1, Math.round(r.width || 1)),
-                h: Math.max(16, Math.round(r.height || 18))
-            };
-        }
+    if (!im || !im._currentFocus || !im._cursorRect)
+        return null;
+
+    if (typeof im._currentFocus.is_focused === 'function') {
+        if (!im._currentFocus.is_focused())
+            return null;
+    }
+
+    const fr = focusWin.get_frame_rect();
+    const r = im._cursorRect;
+    const now = GLib.get_monotonic_time();
+    const age = im._cursorRectTime ? (now - im._cursorRectTime) : Infinity;
+
+    // Freshness check: cursor rect must have been updated recently (within 2.5 seconds)
+    const isFresh = age < 2500000;
+
+    // Strict boundary check: must be inside client area (not titlebar or out-of-bounds)
+    const isInsideClient = (
+        r.x >= fr.x + 8 && r.x <= fr.x + fr.width - 8 &&
+        r.y >= fr.y + 32 && r.y <= fr.y + fr.height - 8
+    );
+
+    if (isFresh && isInsideClient && r.x > 0 && r.y > 0) {
+        return {
+            type: 'app',
+            x: Math.round(r.x),
+            y: Math.round(r.y),
+            w: Math.max(1, Math.round(r.width || 1)),
+            h: Math.max(16, Math.round(r.height || 18))
+        };
     }
 
     return null;
@@ -179,7 +203,11 @@ export const MacInputSourcePopup = GObject.registerClass({
 
         Main.uiGroup.add_child(this);
 
-        this._buildCaretUI();
+        if (this._caretInfo) {
+            this._buildCaretUI();
+        } else {
+            this._buildOsdUI();
+        }
 
         // Dismiss on click outside
         this.connect('button-press-event', (actor, event) => {
@@ -201,6 +229,11 @@ export const MacInputSourcePopup = GObject.registerClass({
     }
 
     _buildCaretUI() {
+        if (!this._caretInfo) {
+            this._buildOsdUI();
+            return;
+        }
+
         const N = this._items.length;
         const M = 3;            // 3px margin from capsule edge on all 4 sides
         const W_pill = 32;      // Width of each language pill/slot
@@ -212,36 +245,15 @@ export const MacInputSourcePopup = GObject.registerClass({
         const W_capsule = 2 * M + N * W_pill + (N - 1) * G;
 
         const monitor = Main.layoutManager.currentMonitor || Main.layoutManager.primaryMonitor;
-        let pillScreenX = 0;
+        const caretCenterX = this._caretInfo.x + Math.round(this._caretInfo.w / 2);
+        let pillScreenX = Math.round(caretCenterX - W_pill / 2);
+
+        const caretY = this._caretInfo.y;
         let capsuleY = 0;
-
-        if (this._caretInfo) {
-            // Case 1: Fresh active text caret
-            const caretCenterX = this._caretInfo.x + Math.round(this._caretInfo.w / 2);
-            pillScreenX = Math.round(caretCenterX - W_pill / 2);
-
-            const caretY = this._caretInfo.y;
-            if (caretY - H_capsule - 8 >= monitor.y + 35) {
-                capsuleY = caretY - H_capsule - 8;
-            } else {
-                capsuleY = caretY + this._caretInfo.h + 8;
-            }
+        if (caretY - H_capsule - 8 >= monitor.y + 35) {
+            capsuleY = caretY - H_capsule - 8;
         } else {
-            // Case 2: No caret or inaccurate/stale coords -> Center in active window (or screen)
-            const focusWin = global.display.focus_window;
-            let targetCenterX = monitor.x + Math.round(monitor.width / 2);
-            let targetCenterY = monitor.y + Math.round(monitor.height / 2);
-
-            if (focusWin && !focusWin.minimized && !focusWin.is_override_redirect()) {
-                const fr = focusWin.get_frame_rect();
-                if (fr.width > 120 && fr.height > 100) {
-                    targetCenterX = Math.round(fr.x + fr.width / 2);
-                    targetCenterY = Math.round(fr.y + fr.height / 2);
-                }
-            }
-
-            pillScreenX = Math.round(targetCenterX - W_pill / 2);
-            capsuleY = Math.round(targetCenterY - H_capsule / 2);
+            capsuleY = caretY + this._caretInfo.h + 8;
         }
 
         // Clamp pillScreenX and capsuleY so capsule stays fully within monitor bounds
@@ -357,7 +369,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._padding = 8;
         const osdH = this._items.length * this._itemH + 2 * this._padding;
 
-        const monitor = Main.layoutManager.primaryMonitor;
+        const monitor = Main.layoutManager.currentMonitor || Main.layoutManager.primaryMonitor;
         this._osdX = monitor.x + Math.round((monitor.width - this._osdW) / 2);
         this._osdY = monitor.y + Math.round((monitor.height - osdH) / 2);
 
@@ -443,13 +455,18 @@ export const MacInputSourcePopup = GObject.registerClass({
         if (this._items.length === 0)
             return false;
 
-        const grab = Main.pushModal(this);
-        this._grab = grab;
-        this._haveModal = true;
-        this._modifierMask = primaryModifier(mask);
-
         this.opacity = 255;
         this.visible = true;
+
+        try {
+            const grab = Main.pushModal(this);
+            this._grab = grab;
+            this._haveModal = !!grab;
+        } catch (_) {
+            this._grab = null;
+            this._haveModal = false;
+        }
+        this._modifierMask = primaryModifier(mask);
 
         if (this._glass && this._targetBox) {
             try {
@@ -481,7 +498,7 @@ export const MacInputSourcePopup = GObject.registerClass({
                     ty = this._targetBox.y;
                 }
 
-                const monitor = Main.layoutManager.primaryMonitor;
+                const monitor = Main.layoutManager.currentMonitor || Main.layoutManager.primaryMonitor;
                 const localX = Math.round(tx - monitor.x);
                 const localY = Math.round(ty - monitor.y);
                 const bgW = Math.round(w);
@@ -678,7 +695,9 @@ export const MacInputSourcePopup = GObject.registerClass({
 
     _popModal() {
         if (this._haveModal && this._grab) {
-            Main.popModal(this._grab);
+            try {
+                Main.popModal(this._grab);
+            } catch (_) {}
             this._grab = null;
             this._haveModal = false;
         }
@@ -747,7 +766,6 @@ export class MacInputSwitcher {
         this._cursorHooked = false;
         this._glass = null;
         this._focusWindowId = 0;
-        this._origFocusOut = null;
     }
 
     async enable() {
@@ -869,18 +887,10 @@ export class MacInputSwitcher {
         this._focusWindowId = global.display.connect('notify::focus-window', () => {
             currentRect = null;
             im._cursorRectTime = 0;
+            if (this._activePopup && this._activePopup._capsuleBox && !this._activePopup._haveModal) {
+                this._activePopup.fadeAndDestroy();
+            }
         });
-
-        // Wrap vfunc_focus_out on inputMethod to clear cursor on focus loss
-        const origFocusOut = im.vfunc_focus_out ? im.vfunc_focus_out.bind(im) : null;
-        if (origFocusOut) {
-            this._origFocusOut = origFocusOut;
-            im.vfunc_focus_out = function() {
-                currentRect = null;
-                im._cursorRectTime = 0;
-                return origFocusOut();
-            };
-        }
     }
 
     _handleSwitch(display, window, event, binding) {
@@ -993,11 +1003,6 @@ export class MacInputSwitcher {
         if (this._focusWindowId) {
             try { global.display.disconnect(this._focusWindowId); } catch (_) {}
             this._focusWindowId = 0;
-        }
-
-        if (this._origFocusOut && Main.inputMethod) {
-            try { Main.inputMethod.vfunc_focus_out = this._origFocusOut; } catch (_) {}
-            this._origFocusOut = null;
         }
     }
 }

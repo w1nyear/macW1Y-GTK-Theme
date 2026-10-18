@@ -422,12 +422,18 @@ export const MacClipboardDialog = GObject.registerClass({
         this._box.set_style(
             'background-color: transparent !important; background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
+            'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
+            'border-top: 1px solid rgba(255, 255, 255, 0.45) !important; ' +
+            'border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
             'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
         );
         this.add_child(this._box);
 
-        this._initGlass();
+        this.connect('destroy', () => {
+            this.destroy();
+        });
+
+        this._initializingGlass = false;
 
         // 3. Top Header / Search Row
         this._headerRow = new St.BoxLayout({
@@ -534,8 +540,28 @@ export const MacClipboardDialog = GObject.registerClass({
         });
     }
 
+    _getThemeParams() {
+        let isDark = true;
+        try {
+            const iface = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            const scheme = iface.get_string('color-scheme');
+            if (scheme === 'prefer-dark') isDark = true;
+            else if (scheme === 'prefer-light') isDark = false;
+            else {
+                const gtk = iface.get_string('gtk-theme') || '';
+                isDark = gtk.toLowerCase().includes('dark');
+            }
+        } catch (_) {
+            isDark = true;
+        }
+        const tintVal = isDark ? 0.0 : 1.0;
+        const tintStrength = 0.03; // Exactly 3% as requested by user
+        return { isDark, tintVal, tintStrength };
+    }
+
     async _initGlass() {
-        if (this._glass) return;
+        if (this._glass || this._initializingGlass) return;
+        this._initializingGlass = true;
         try {
             const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
             const path = ext?.path || `${GLib.get_user_data_dir()}/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`;
@@ -548,11 +574,12 @@ export const MacClipboardDialog = GObject.registerClass({
                 logger: console,
                 owner: 'clipboard',
             });
+            const { tintVal, tintStrength } = this._getThemeParams();
             this._glass.setIsDock(true);
             this._glass.setCornerSmoothingEnabled(0.0);
             this._glass.setCornerRadius(CORNER_RADIUS);
-            this._glass.setTintColor(0.0, 0.0, 0.0);
-            this._glass.setTintStrength(0.03); // Strictly 3% darkening for LQ-Visual
+            this._glass.setTintColor(tintVal, tintVal, tintVal);
+            this._glass.setTintStrength(tintStrength);
             this._glass.setBrightness(1.0);
             this._glass.setSaturation(1.0);
             this._glass.setContrast(1.0);
@@ -565,19 +592,30 @@ export const MacClipboardDialog = GObject.registerClass({
             } catch (_) {}
             this._glass.hide();
 
-            if (this._isOpen) {
-                if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
-                    Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
+            if (!this._isOpen) {
+                if (this._glass) {
+                    try { this._glass.destroy(); } catch (_) {}
+                    this._glass = null;
                 }
-                this._box.set_style(
-                    'background-color: transparent !important; background: none !important; ' +
-                    `border-radius: ${CORNER_RADIUS}px !important; ` +
-                    'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
-                    'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
-                );
-                this._syncGlass();
+                return;
             }
-        } catch (_) {}
+
+            if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
+                Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
+            }
+            this._box.set_style(
+                'background-color: transparent !important; background: none !important; ' +
+                `border-radius: ${CORNER_RADIUS}px !important; ` +
+                'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
+                'border-top: 1px solid rgba(255, 255, 255, 0.40) !important; ' +
+                'border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important; ' +
+                'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
+            );
+            this._syncGlass();
+        } catch (_) {
+        } finally {
+            this._initializingGlass = false;
+        }
     }
 
     _syncGlass() {
@@ -610,6 +648,9 @@ export const MacClipboardDialog = GObject.registerClass({
         this._glass.set_position(mon.x, mon.y);
         this._glass.set_size(mon.width, mon.height);
         this._glass.setResolution(mon.width, mon.height);
+        const { tintVal, tintStrength } = this._getThemeParams();
+        this._glass.setTintColor(tintVal, tintVal, tintVal);
+        this._glass.setTintStrength(tintStrength);
         this._glass.setCornerRadius(CORNER_RADIUS);
         this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
         this._glass.set_clip(localBgX, localBgY, bgW, bgH);
@@ -653,7 +694,9 @@ export const MacClipboardDialog = GObject.registerClass({
             this._box.set_style(
                 'background-color: transparent !important; background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
-                'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
+                'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
+                'border-top: 1px solid rgba(255, 255, 255, 0.45) !important; ' +
+                'border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
                 'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
             );
             this._syncGlass();
@@ -661,7 +704,9 @@ export const MacClipboardDialog = GObject.registerClass({
             this._box.set_style(
                 'background-color: transparent !important; background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
-                'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
+                'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
+                'border-top: 1px solid rgba(255, 255, 255, 0.45) !important; ' +
+                'border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
                 'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
             );
             this._initGlass();
@@ -754,11 +799,17 @@ export const MacClipboardDialog = GObject.registerClass({
         }
 
         if (immediate) {
-            if (this._glass) {
-                this._glass.remove_all_transitions();
-                this._glass.hide();
-            }
             this._box.remove_all_transitions();
+            this._box.opacity = 0;
+            if (this._glass) {
+                try {
+                    this._glass.remove_all_transitions();
+                    this._glass.opacity = 0;
+                    this._glass.hide();
+                    this._glass.destroy();
+                } catch (_) {}
+                this._glass = null;
+            }
             this.visible = false;
             this._backdrop.visible = false;
             return;
@@ -770,7 +821,14 @@ export const MacClipboardDialog = GObject.registerClass({
                 duration: 160,
                 mode: Clutter.AnimationMode.EASE_IN_QUAD,
                 onComplete: () => {
-                    if (this._glass) this._glass.hide();
+                    if (this._glass) {
+                        try {
+                            this._glass.remove_all_transitions();
+                            this._glass.hide();
+                            this._glass.destroy();
+                        } catch (_) {}
+                        this._glass = null;
+                    }
                 },
             });
         }
@@ -784,6 +842,14 @@ export const MacClipboardDialog = GObject.registerClass({
             onComplete: () => {
                 this.visible = false;
                 this._backdrop.visible = false;
+                if (this._glass) {
+                    try {
+                        this._glass.remove_all_transitions();
+                        this._glass.hide();
+                        this._glass.destroy();
+                    } catch (_) {}
+                    this._glass = null;
+                }
             },
         });
     }
@@ -1006,6 +1072,10 @@ export const MacClipboardDialog = GObject.registerClass({
 });
 
 export function toggleClipboardDialog(options = {}) {
+    try {
+        const strayGlasses = Main.layoutManager.uiGroup.get_children().filter(c => c._owner === 'clipboard' || (c.name === 'liquid-glass-bg-actor' && c._owner === 'clipboard'));
+        strayGlasses.forEach(g => { try { g.destroy(); } catch (_) {} });
+    } catch (_) {}
     if (globalThis._macClipboardGlobalInstance) {
         if (!globalThis._macClipboardGlobalInstance.get_parent()) {
             try { globalThis._macClipboardGlobalInstance.destroy(); } catch (_) {}

@@ -213,10 +213,16 @@ export const MacApplicationsDialog = GObject.registerClass({
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
             'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
+            'border-top: 1px solid rgba(255, 255, 255, 0.45) !important; ' +
+            'border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
             'padding: 16px 2px 14px 2px; ' +
             'box-shadow: none !important;'
         );
         this.add_child(this._box);
+
+        this.connect('destroy', () => {
+            this._onDestroy();
+        });
 
         this._initGlass();
 
@@ -318,11 +324,11 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         this._scrollView.add_child(this._gridContainer);
 
-        // Subtle gradient blur and darkening at the bottom (like the menubar)
+        // Subtle gradient darkening at the bottom without blur overlay over icons
         this._bottomFade = new St.Widget({
             style: 'background-gradient-direction: vertical; ' +
                    'background-gradient-start: rgba(18, 18, 18, 0.0); ' +
-                   'background-gradient-end: rgba(18, 18, 18, 0.85); ' +
+                   'background-gradient-end: rgba(18, 18, 18, 0.75); ' +
                    'border-bottom-left-radius: 24px; ' +
                    'border-bottom-right-radius: 24px;',
             height: 36,
@@ -330,9 +336,6 @@ export const MacApplicationsDialog = GObject.registerClass({
             y_align: Clutter.ActorAlign.END,
             reactive: false,
         });
-        try {
-            this._bottomFade.add_effect(new Shell.BlurEffect({ mode: Shell.BlurMode.BACKGROUND, radius: 8 }));
-        } catch (_) {}
         this._scrollWrapper.add_child(this._bottomFade);
 
         // 6. Connect Input & Keyboard Navigation
@@ -444,6 +447,25 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
     }
 
+    _getThemeParams() {
+        let isDark = true;
+        try {
+            const iface = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            const scheme = iface.get_string('color-scheme');
+            if (scheme === 'prefer-dark') isDark = true;
+            else if (scheme === 'prefer-light') isDark = false;
+            else {
+                const gtk = iface.get_string('gtk-theme') || '';
+                isDark = gtk.toLowerCase().includes('dark');
+            }
+        } catch (_) {
+            isDark = true;
+        }
+        const tintVal = isDark ? 0.0 : 1.0;
+        const tintStrength = 0.03; // Exactly 3% as requested by user
+        return { isDark, tintVal, tintStrength };
+    }
+
     async _initGlass() {
         if (this._glass) return;
         try {
@@ -458,11 +480,12 @@ export const MacApplicationsDialog = GObject.registerClass({
                 logger: console,
                 owner: 'applications',
             });
+            const { tintVal, tintStrength } = this._getThemeParams();
             this._glass.setIsDock(true);
             this._glass.setCornerSmoothingEnabled(0.0);
             this._glass.setCornerRadius(CORNER_RADIUS);
-            this._glass.setTintColor(0.0, 0.0, 0.0);
-            this._glass.setTintStrength(TINT_STRENGTH);
+            this._glass.setTintColor(tintVal, tintVal, tintVal);
+            this._glass.setTintStrength(tintStrength);
             this._glass.setBrightness(1.0);
             this._glass.setSaturation(1.0);
             this._glass.setContrast(1.0);
@@ -530,6 +553,9 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._glass.set_position(mon.x, mon.y);
         this._glass.set_size(mon.width, mon.height);
         this._glass.setResolution(mon.width, mon.height);
+        const { tintVal, tintStrength } = this._getThemeParams();
+        this._glass.setTintColor(tintVal, tintVal, tintVal);
+        this._glass.setTintStrength(tintStrength);
         this._glass.setCornerRadius(CORNER_RADIUS);
         this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
         this._glass.set_clip(localBgX, localBgY, bgW, bgH);
@@ -946,8 +972,9 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._backdrop.set_size(mon.width, mon.height);
         this._backdrop.visible = true;
 
+        const fromRect = options?.fromRect;
         const targetX = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
-        const targetY = mon.y + Math.round((mon.height - DIALOG_HEIGHT) / 2);
+        const targetY = fromRect ? fromRect.y : mon.y + Math.round(mon.height * 0.16);
 
         this._currentQuery = '';
         this._entry.text = '';
@@ -957,6 +984,30 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._box.remove_all_transitions();
         this.remove_all_transitions();
+
+        if (fromRect) {
+            // Smooth morphing transformation from Spotlight capsule position and size
+            this._box.set_position(fromRect.x, fromRect.y);
+            this._box.set_size(fromRect.width, fromRect.height);
+            this._box.set_pivot_point(0.5, 0.0);
+            this._box.scale_x = 1.0;
+            this._box.scale_y = 1.0;
+            this._box.opacity = 255;
+
+            this._headerRow.opacity = 0;
+            this._categoryRow.opacity = 0;
+            this._scrollWrapper.opacity = 0;
+        } else {
+            this._box.set_position(targetX, targetY);
+            this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);
+            this._box.set_pivot_point(0.5, 0.5);
+            this._box.scale_x = 0.94;
+            this._box.scale_y = 0.94;
+            this._box.opacity = 0;
+            this._headerRow.opacity = 255;
+            this._categoryRow.opacity = 255;
+            this._scrollWrapper.opacity = 255;
+        }
 
         if (!this.get_parent()) {
             Main.layoutManager.uiGroup.add_child(this);
@@ -969,6 +1020,12 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
             Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
             Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
+            this._glass.show();
+            this._glass.opacity = 255;
+            this._glass._backdropLocked = false;
+            if (typeof this._glass.forceRefresh === 'function') {
+                this._glass.forceRefresh(1);
+            }
             this._syncGlass();
         } else {
             this._initGlass();
@@ -983,20 +1040,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._entry.grab_key_focus();
 
-        const fromRect = options?.fromRect;
         if (fromRect) {
-            // Smooth morphing transformation from Spotlight capsule position and size
-            this._box.set_position(fromRect.x, fromRect.y);
-            this._box.set_size(fromRect.width, fromRect.height);
-            this._box.set_pivot_point(0.5, 0.0);
-            this._box.scale_x = 1.0;
-            this._box.scale_y = 1.0;
-            this._box.opacity = 255;
-
-            this._headerRow.opacity = 0;
-            this._categoryRow.opacity = 0;
-            this._scrollWrapper.opacity = 0;
-
             this._box.ease({
                 x: targetX,
                 y: targetY,
@@ -1004,6 +1048,16 @@ export const MacApplicationsDialog = GObject.registerClass({
                 height: DIALOG_HEIGHT,
                 duration: 250,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                onComplete: () => {
+                    this._syncGlass();
+                    if (this._glass) {
+                        this._glass._backdropLocked = true;
+                    }
+                    if (this._stageSignalId) {
+                        try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
+                        this._stageSignalId = 0;
+                    }
+                },
             });
 
             this._headerRow.ease({
@@ -1025,22 +1079,22 @@ export const MacApplicationsDialog = GObject.registerClass({
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             });
         } else {
-            this._box.set_position(targetX, targetY);
-            this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);
-            this._box.set_pivot_point(0.5, 0.5);
-            this._box.scale_x = 0.94;
-            this._box.scale_y = 0.94;
-            this._box.opacity = 0;
-            this._headerRow.opacity = 255;
-            this._categoryRow.opacity = 255;
-            this._scrollWrapper.opacity = 255;
-
             this._box.ease({
                 opacity: 255,
                 scale_x: 1.0,
                 scale_y: 1.0,
                 duration: 200,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                onComplete: () => {
+                    this._syncGlass();
+                    if (this._glass) {
+                        this._glass._backdropLocked = true;
+                    }
+                    if (this._stageSignalId) {
+                        try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
+                        this._stageSignalId = 0;
+                    }
+                },
             });
         }
     }
@@ -1048,6 +1102,10 @@ export const MacApplicationsDialog = GObject.registerClass({
     close(immediate = false) {
         if (!this._isOpen) return;
         this._isOpen = false;
+
+        if (this._glass) {
+            this._glass._backdropLocked = false;
+        }
 
         this._backdrop.visible = false;
         if (this._stageSignalId) {
@@ -1059,8 +1117,13 @@ export const MacApplicationsDialog = GObject.registerClass({
             this._box.remove_all_transitions();
             this._box.opacity = 0;
             if (this._glass) {
-                this._glass.remove_all_transitions();
-                this._glass.hide();
+                try {
+                    this._glass.remove_all_transitions();
+                    this._glass.opacity = 0;
+                    this._glass.hide();
+                    this._glass.destroy();
+                } catch (_) {}
+                this._glass = null;
             }
             this.visible = false;
             return;
@@ -1097,12 +1160,12 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
     }
 
-    destroy() {
+    _onDestroy() {
         if (Main.overview) {
             try { Main.overview.disconnectObject(this); } catch (_) {}
         }
         if (this._searchTimeoutId) {
-            GLib.source_remove(this._searchTimeoutId);
+            try { GLib.source_remove(this._searchTimeoutId); } catch (_) {}
             this._searchTimeoutId = 0;
         }
         if (this._stageSignalId) {
@@ -1113,11 +1176,19 @@ export const MacApplicationsDialog = GObject.registerClass({
             try { this._glass.destroy(); } catch (_) {}
             this._glass = null;
         }
+    }
+
+    destroy() {
+        this._onDestroy();
         super.destroy();
     }
 });
 
 export function toggleApplicationsDialog(options = {}) {
+    try {
+        const strayGlasses = Main.layoutManager.uiGroup.get_children().filter(c => c._owner === 'applications' || (c.name === 'liquid-glass-bg-actor' && c._owner === 'applications'));
+        strayGlasses.forEach(g => { try { g.destroy(); } catch (_) {} });
+    } catch (_) {}
     if (globalThis._macApplicationsGlobalInstance) {
         if (!globalThis._macApplicationsGlobalInstance.get_parent()) {
             try { globalThis._macApplicationsGlobalInstance.destroy(); } catch (_) {}

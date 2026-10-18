@@ -5,6 +5,7 @@ import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Clutter from 'gi://Clutter';
+import Mtk from 'gi://Mtk';
 
 const EvalIface = `
 <node>
@@ -23,6 +24,7 @@ export default class EvalHelper extends Extension {
         globalThis.GLib = GLib;
         globalThis.Meta = Meta;
         globalThis.Main = Main;
+        globalThis.Mtk = Mtk;
         try {
             const nodeInfo = Gio.DBusNodeInfo.new_for_xml(EvalIface);
             this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(nodeInfo.interfaces[0], {
@@ -223,9 +225,10 @@ export default class EvalHelper extends Extension {
                                 const clip = paintContext.get_redraw_clip();
                                 const clipX = Math.floor(rect[0]);
                                 const clipY = Math.floor(rect[1]);
-                                const inClip = !clip || clip.contains_rectangle(new Mtk.Rectangle({
-                                    x: clipX, y: clipY, width: Math.ceil(rect[2]) - clipX, height: Math.ceil(rect[3]) - clipY,
-                                })) === Mtk.RegionOverlap.IN;
+                                const _Mtk = globalThis.Mtk || (typeof Mtk !== 'undefined' ? Mtk : imports.gi.Mtk);
+                                const inClip = !clip || !_Mtk || clip.contains_rectangle(new _Mtk.Rectangle({
+                                    x: clipX, y: clipY, width: Math.max(1, Math.ceil(rect[2]) - clipX), height: Math.max(1, Math.ceil(rect[3]) - clipY),
+                                })) === _Mtk.RegionOverlap.IN;
 
                                 if (copy?.texture && !inClip) {
                                     this.reuseCount++;
@@ -428,13 +431,14 @@ export default class EvalHelper extends Extension {
         // Ensure Notification Center and Notification Banners use LQ-Visual glass
         const patchNotificationLQVisual = async () => {
             try {
-                const notifMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v2.js');
-                const menubarMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v24.js');
+                const notifMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v3.js');
+                const menubarMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v27.js');
 
-                // 1. Update global card builder
+                // 1. Update global card builder and group class
                 globalThis._macBuildNotificationCard = notifMod.buildNotificationCard;
+                globalThis._MacNotificationGroup = notifMod.MacNotificationGroup;
 
-                // 2. Patch active MenuBarController prototype and instance
+                // 2. Patch active MenuBarController prototype and instance if needed
                 const mbProto = menubarMod.MenuBarController.prototype;
                 const nc = globalThis._macNotificationCenter;
                 if (nc) {
@@ -469,12 +473,9 @@ export default class EvalHelper extends Extension {
                     }
                 }
 
-                // 3. Hot-swap NotificationsController for floating banners if needed
+                // 3. Hot-swap NotificationsController for floating banners ONLY if missing
                 const extBms = Main.extensionManager.lookup('blur-my-shell@aunetx');
-                if (extBms?.stateObj && (!globalThis._macNotificationsController || !globalThis._macNotificationsController._glass)) {
-                    if (globalThis._macNotificationsController) {
-                        try { globalThis._macNotificationsController.disable(); } catch (_) {}
-                    }
+                if (extBms?.stateObj && !extBms.stateObj._notifications_controller) {
                     const newNotifCtrl = new notifMod.NotificationsController(
                         extBms.stateObj._connections?.[0] || extBms.stateObj._connection,
                         extBms.stateObj._settings,

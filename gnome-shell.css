@@ -5466,8 +5466,11 @@ StWidget.focused .app-grid-running-dot {
 #dashtodockContainer.right #dash .dash-background,
 #dashtodockContainer.shrink #dash .dash-background,
 #dashtodockContainer.dashtodock #dash .dash-background {
-  background-color: rgba(36, 36, 36, 0.04) !important;
+  background-color: transparent !important;
+  background: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
   border-radius: 28px !important;
 }
@@ -6094,8 +6097,11 @@ StWidget.focused .app-grid-running-dot {
 #dashtodockContainer.dashtodock #dash .dash-background {
   background-color: transparent !important;
   background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
+  border-radius: 28px !important;
 }
 
 #panel,

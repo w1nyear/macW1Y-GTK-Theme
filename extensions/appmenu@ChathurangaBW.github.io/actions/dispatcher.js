@@ -3,7 +3,7 @@ import { fileActions } from './fileActions.js';
 import { viewActions } from './viewActions.js';
 import { executeKeyboardAction } from './keyboardActions.js';
 import * as Logger from '../logger.js';
-import { toggleSearchDialog } from '../searchDialog_v4.js';
+import { toggleSearchDialog } from '../searchDialog_v5.js';
 
 /**
  * Action dispatcher — registry of all named actions.
@@ -25,7 +25,11 @@ const registry = { ...windowActions, ...fileActions, ...viewActions };
  */
 export function dispatch(actionStr, ctx, manager) {
     if (actionStr === 'open-search') {
-        toggleSearchDialog();
+        if (typeof globalThis._macSpotlightToggle === 'function') {
+            globalThis._macSpotlightToggle();
+        } else {
+            toggleSearchDialog();
+        }
         return true;
     }
     const colonIdx = actionStr.indexOf(':');

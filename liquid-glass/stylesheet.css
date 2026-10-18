@@ -26,8 +26,11 @@
 .liquid-glass-transparent .dash-background {
     background-color: transparent !important;
     background-image: none !important;
-    border: none !important;
-    box-shadow: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
+    border-radius: 28px !important;
 }
 
 /* Plain calendar days; today and interactive states keep their theme style. */
@@ -93,4 +96,12 @@
     padding: 24px 24px !important;
     margin-bottom: 8px !important;
     box-shadow: none !important;
+}
+
+/* Modal dialog with Liquid Glass */
+.liquid-glass-dialog-box {
+    background-color: rgba(30, 30, 30, 0.40) !important;
+    border-radius: 35px !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.60) !important;
 }

@@ -11,15 +11,13 @@ import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
 import { getMixerControl } from 'resource:///org/gnome/shell/ui/status/volume.js';
 
-const AIRDROP_ICON_PATH = '/home/vitaliy/.themes/MacTahoe-Dark/icons/airdrop-v2-symbolic.svg';
+const AIRDROP_ICON_PATH = '/home/vitaliy/.themes/MacTahoe-Dark/icons/airdrop-symbolic.svg';
 const STAGE_MANAGER_ICON_PATH = '/home/vitaliy/.themes/MacTahoe-Dark/icons/stage-manager-symbolic.svg';
 const MIRRORING_ICON_PATH = '/home/vitaliy/.themes/MacTahoe-Dark/icons/screen-mirroring-symbolic.svg';
 const DARK_MODE_ICON_PATH = '/home/vitaliy/.themes/MacTahoe-Dark/icons/dark-mode-symbolic.svg';
-const SCREENSHOT_ICON_PATH = '/home/vitaliy/.themes/MacTahoe-Dark/icons/screenshot-viewfinder-symbolic.svg';
 const AIRPLAY_ICON_PATH = '/home/vitaliy/.themes/MacTahoe-Dark/icons/audio-airplay-symbolic.svg';
-const MOON_ICON_PATH = '/home/vitaliy/.themes/MacTahoe-Dark/icons/moon-symbolic.svg';
 
-function createIcon(pathOrName, size = 18) {
+function createIcon(pathOrName, size = 16) {
     if (pathOrName.startsWith('/')) {
         const file = Gio.File.new_for_path(pathOrName);
         return new St.Icon({
@@ -120,10 +118,10 @@ export class MacControlCenter {
                 (conn, res) => {
                     try {
                         const reply = conn.call_finish(res);
-                        const [names] = reply.recursiveUnpack();
-                        const mpris = names.find(n => n.startsWith('org.mpris.MediaPlayer2.'));
-                        if (mpris) {
-                            this._connectMprisPlayer(mpris);
+                        const [names] = reply.deep_unpack();
+                        const mprisName = names.find(n => n.startsWith('org.mpris.MediaPlayer2.'));
+                        if (mprisName) {
+                            this._connectMprisPlayer(mprisName);
                         } else {
                             this._syncMedia(null);
                         }
@@ -187,9 +185,7 @@ export class MacControlCenter {
         });
         this.viewStack.add_child(this.submenuView);
 
-        // =====================================================================
-        // ROW 1 & 2: Left (Wi-Fi & Bluetooth Pills) + Right (Now Playing Card)
-        // =====================================================================
+        // --- TOP ROW (Connectivity Card + Media & Circles) ---
         const topRow = new St.BoxLayout({
             vertical: false,
             x_expand: true,
@@ -197,52 +193,65 @@ export class MacControlCenter {
         });
         this.mainView.add_child(topRow);
 
-        // LEFT COLUMN (Wi-Fi and Bluetooth Pills)
-        const leftCol12 = new St.BoxLayout({
+        // LEFT COLUMN: Connectivity Card (Wi-Fi, Bluetooth, AirDrop)
+        const connCard = new St.BoxLayout({
             vertical: true,
-            style: 'width: 185px; min-width: 185px; spacing: 10px;',
+            style_class: 'mac-cc-card',
+            x_expand: true,
+            style: 'width: 154px; min-width: 154px; spacing: 10px; padding: 10px;',
         });
-        topRow.add_child(leftCol12);
+        topRow.add_child(connCard);
 
-        // 1. Wi-Fi Pill
-        this.wifiPill = this._createConnPill(
+        // Wi-Fi Row
+        this.wifiRow = this._createConnRow(
             'network-wireless-signal-excellent-symbolic',
             'Wi-Fi',
             'Вимкнено',
             () => this._toggleWifi(),
             () => this.openSubmenu('wifi')
         );
-        leftCol12.add_child(this.wifiPill.actor);
+        connCard.add_child(this.wifiRow.actor);
 
-        // 2. Bluetooth Pill
-        this.btPill = this._createConnPill(
+        // Bluetooth Row
+        this.btRow = this._createConnRow(
             'bluetooth-active-symbolic',
             'Bluetooth',
             'Вимкнено',
             () => this._toggleBluetooth(),
             () => this.openSubmenu('bluetooth')
         );
-        leftCol12.add_child(this.btPill.actor);
+        connCard.add_child(this.btRow.actor);
 
-        // RIGHT COLUMN (Now Playing Media Card - Spans full height of Wi-Fi + BT + gap = 114px)
-        const rightCol12 = new St.BoxLayout({
+        // AirDrop Row
+        this.airdropRow = this._createConnRow(
+            AIRDROP_ICON_PATH,
+            'AirDrop',
+            'Everyone',
+            () => this._toggleAirDrop(),
+            () => this.openSubmenu('airdrop')
+        );
+        connCard.add_child(this.airdropRow.actor);
+
+        // RIGHT COLUMN: Media Player Card + Stage Manager & Mirroring Circles
+        const rightCol = new St.BoxLayout({
             vertical: true,
-            style: 'width: 185px; min-width: 185px;',
+            style: 'width: 154px; min-width: 154px; spacing: 10px;',
         });
-        topRow.add_child(rightCol12);
+        topRow.add_child(rightCol);
 
+        // Media Player Card
         this.mediaCard = new St.BoxLayout({
             vertical: true,
             style_class: 'mac-cc-card mac-cc-media-card',
             x_expand: true,
             style: 'spacing: 8px;',
         });
-        rightCol12.add_child(this.mediaCard);
+        rightCol.add_child(this.mediaCard);
 
         const mediaHeader = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'spacing: 10px;',
+            style: 'spacing: 8px;',
         });
         this.mediaCard.add_child(mediaHeader);
 
@@ -252,7 +261,6 @@ export class MacControlCenter {
             style_class: 'mac-cc-media-art',
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'width: 36px !important; height: 36px !important; min-width: 36px !important; min-height: 36px !important; border-radius: 10px !important; background-color: rgba(255, 255, 255, 0.16) !important; border: 1px solid rgba(255, 255, 255, 0.18) !important;',
         });
         mediaHeader.add_child(this.mediaArt);
 
@@ -264,7 +272,7 @@ export class MacControlCenter {
         this.mediaTitle = new St.Label({
             text: 'Не відтворюється',
             style_class: 'mac-cc-title',
-            style: 'font-size: 11px; font-weight: 700;',
+            style: 'font-size: 11.5px;',
         });
         this.mediaArtist = new St.Label({
             text: '',
@@ -279,149 +287,140 @@ export class MacControlCenter {
         const transportRow = new St.BoxLayout({
             vertical: false,
             x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
-            style: 'spacing: 18px; margin-top: 6px;',
+            style: 'spacing: 12px;',
         });
         this.mediaCard.add_child(transportRow);
 
         const prevBtn = new St.Button({
             style_class: 'mac-cc-transport-btn',
-            child: createIcon('media-skip-backward-symbolic', 16),
+            child: createIcon('media-skip-backward-symbolic', 14),
             reactive: true,
-            can_focus: true,
         });
         prevBtn.connect('clicked', () => this._mprisCmd('Previous'));
         transportRow.add_child(prevBtn);
 
         this.playBtn = new St.Button({
             style_class: 'mac-cc-transport-btn',
-            child: createIcon('media-playback-start-symbolic', 18),
+            child: createIcon('media-playback-start-symbolic', 16),
             reactive: true,
-            can_focus: true,
         });
         this.playBtn.connect('clicked', () => this._mprisCmd('PlayPause'));
         transportRow.add_child(this.playBtn);
 
         const nextBtn = new St.Button({
             style_class: 'mac-cc-transport-btn',
-            child: createIcon('media-skip-forward-symbolic', 16),
+            child: createIcon('media-skip-forward-symbolic', 14),
             reactive: true,
-            can_focus: true,
         });
         nextBtn.connect('clicked', () => this._mprisCmd('Next'));
         transportRow.add_child(nextBtn);
 
-        // =====================================================================
-        // ROW 3: Left (AirDrop Pill) + Right (Stage Manager & Screen Mirroring)
-        // =====================================================================
-        const row3 = new St.BoxLayout({
+        // Below Media Player: 2 Circular Buttons (Stage Manager & Screen Mirroring)
+        const circlesRow = new St.BoxLayout({
             vertical: false,
-            x_expand: true,
             style: 'spacing: 10px;',
-        });
-        this.mainView.add_child(row3);
-
-        // AirDrop Pill (matches Wi-Fi & BT width and height)
-        this.airdropPill = this._createConnPill(
-            AIRDROP_ICON_PATH,
-            'AirDrop',
-            'Everyone',
-            () => this._toggleAirDrop(),
-            () => this.openSubmenu('airdrop')
-        );
-        row3.add_child(this.airdropPill.actor);
-
-        // Stage Manager and Screen Mirroring Circular Buttons
-        const row3Right = new St.BoxLayout({
-            vertical: false,
-            style: 'width: 185px; min-width: 185px; spacing: 20px;',
             x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
         });
-        row3.add_child(row3Right);
+        rightCol.add_child(circlesRow);
 
-        this.stageManagerIcon = createIcon(STAGE_MANAGER_ICON_PATH, 22);
         this.stageManagerBtn = new St.Button({
             style_class: 'mac-cc-circle-btn-large',
-            child: this.stageManagerIcon,
+            child: createIcon(STAGE_MANAGER_ICON_PATH, 20),
             reactive: true,
-            can_focus: true,
         });
         this.stageManagerBtn.connect('clicked', () => this._toggleStageManager());
-        row3Right.add_child(this.stageManagerBtn);
+        circlesRow.add_child(this.stageManagerBtn);
 
-        this.mirroringIcon = createIcon(MIRRORING_ICON_PATH, 22);
         this.mirroringBtn = new St.Button({
             style_class: 'mac-cc-circle-btn-large',
-            child: this.mirroringIcon,
+            child: createIcon(MIRRORING_ICON_PATH, 20),
             reactive: true,
-            can_focus: true,
         });
-        this._setStandaloneBtnActive(this.mirroringBtn, this.mirroringIcon, false);
         this.mirroringBtn.connect('clicked', () => {
             this.menu.close();
             Util.spawnCommandLine('gnome-control-center display');
         });
-        row3Right.add_child(this.mirroringBtn);
+        circlesRow.add_child(this.mirroringBtn);
 
-        // =====================================================================
-        // ROW 4: Left (Dark Mode & Screenshot Circles) + Right (Do Not Disturb Pill)
-        // =====================================================================
-        const row4 = new St.BoxLayout({
+        // --- MIDDLE ROW: Dark Style, Screenshot, Do Not Disturb ---
+        const midRow = new St.BoxLayout({
             vertical: false,
             x_expand: true,
             style: 'spacing: 10px;',
         });
-        this.mainView.add_child(row4);
+        this.mainView.add_child(midRow);
 
-        // Dark Mode and Screenshot Circular Buttons
-        const row4Left = new St.BoxLayout({
-            vertical: false,
-            style: 'width: 185px; min-width: 185px; spacing: 20px;',
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        row4.add_child(row4Left);
-
-        this.darkModeIcon = createIcon(DARK_MODE_ICON_PATH, 22);
         this.darkModeBtn = new St.Button({
             style_class: 'mac-cc-circle-btn-large',
-            child: this.darkModeIcon,
+            child: createIcon(DARK_MODE_ICON_PATH, 20),
             reactive: true,
-            can_focus: true,
         });
         this.darkModeBtn.connect('clicked', () => this._toggleDarkMode());
-        row4Left.add_child(this.darkModeBtn);
+        midRow.add_child(this.darkModeBtn);
 
-        this.screenshotIcon = createIcon(SCREENSHOT_ICON_PATH, 22);
-        this.screenshotBtn = new St.Button({
+        const screenshotBtn = new St.Button({
             style_class: 'mac-cc-circle-btn-large',
-            child: this.screenshotIcon,
+            child: createIcon('camera-photo-symbolic', 20),
             reactive: true,
-            can_focus: true,
         });
-        this._setStandaloneBtnActive(this.screenshotBtn, this.screenshotIcon, true);
-        this.screenshotBtn.connect('clicked', () => {
+        screenshotBtn.connect('clicked', () => {
             this.menu.close();
             GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
                 if (Main.screenshotUI) Main.screenshotUI.open();
                 return GLib.SOURCE_REMOVE;
             });
         });
-        row4Left.add_child(this.screenshotBtn);
+        midRow.add_child(screenshotBtn);
 
-        // Do Not Disturb Pill (Apple Crescent Moon Icon!)
-        this.dndPill = this._createDndPill();
-        row4.add_child(this.dndPill.actor);
+        // Do Not Disturb Pill
+        this.dndCard = new St.Button({
+            style_class: 'mac-cc-dnd-card',
+            x_expand: true,
+            reactive: true,
+        });
+        const dndBox = new St.BoxLayout({
+            vertical: false,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: 'spacing: 8px;',
+        });
+        this.dndCard.set_child(dndBox);
 
-        // =====================================================================
-        // ROW 5: Display Brightness Slider Card (Full Width)
-        // =====================================================================
+        this.dndMoonIcon = new St.Icon({
+            icon_name: 'notifications-disabled-symbolic',
+            icon_size: 16,
+            style_class: 'mac-cc-circle-btn',
+            style: 'width: 32px !important; height: 32px !important; min-width: 32px !important; min-height: 32px !important;',
+        });
+        dndBox.add_child(this.dndMoonIcon);
+
+        const dndTextCol = new St.BoxLayout({
+            vertical: true,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        const dndTitle = new St.Label({
+            text: 'Do Not Disturb',
+            style_class: 'mac-cc-title',
+            style: 'font-size: 11.5px;',
+        });
+        this.dndSubtitle = new St.Label({
+            text: 'Off',
+            style_class: 'mac-cc-subtitle',
+            style: 'font-size: 10px;',
+        });
+        dndTextCol.add_child(dndTitle);
+        dndTextCol.add_child(this.dndSubtitle);
+        dndBox.add_child(dndTextCol);
+
+        this.dndCard.connect('clicked', () => this._toggleDnd());
+        midRow.add_child(this.dndCard);
+
+        // --- BOTTOM CARDS: Display Slider & Sound Slider ---
+        // Display Brightness Card
         const displayCard = new St.BoxLayout({
             vertical: true,
             style_class: 'mac-cc-card mac-cc-slider-card',
             x_expand: true,
-            style: 'spacing: 8px;',
+            style: 'spacing: 6px;',
         });
         this.mainView.add_child(displayCard);
 
@@ -435,7 +434,7 @@ export class MacControlCenter {
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
-            style: 'spacing: 12px;',
+            style: 'spacing: 10px;',
         });
         displayCard.add_child(dispSliderRow);
 
@@ -443,20 +442,17 @@ export class MacControlCenter {
         this.brightnessSlider = new Slider(0.5);
         const bActor = this.brightnessSlider.actor || this.brightnessSlider;
         bActor.add_style_class_name('mac-cc-slider-track');
-        bActor.style = 'height: 20px !important; min-height: 20px !important; -barlevel-height: 18px !important; -barlevel-background-color: rgba(255, 255, 255, 0.22) !important; -barlevel-active-background-color: #ffffff !important; -slider-handle-radius: 0px !important; border-radius: 9999px !important;';
         bActor.x_expand = true;
         this.brightnessSlider.connect('notify::value', () => this._setBrightness(this.brightnessSlider.value));
         dispSliderRow.add_child(bActor);
         dispSliderRow.add_child(createIcon('display-brightness-symbolic', 18));
 
-        // =====================================================================
-        // ROW 6: Sound Volume Slider Card + AirPlay Button (Full Width)
-        // =====================================================================
+        // Sound Volume Card
         const soundCard = new St.BoxLayout({
             vertical: true,
             style_class: 'mac-cc-card mac-cc-slider-card',
             x_expand: true,
-            style: 'spacing: 8px;',
+            style: 'spacing: 6px;',
         });
         this.mainView.add_child(soundCard);
 
@@ -470,7 +466,7 @@ export class MacControlCenter {
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
-            style: 'spacing: 12px;',
+            style: 'spacing: 10px;',
         });
         soundCard.add_child(soundSliderRow);
 
@@ -478,23 +474,21 @@ export class MacControlCenter {
         this.volumeSlider = new Slider(0.5);
         const vActor = this.volumeSlider.actor || this.volumeSlider;
         vActor.add_style_class_name('mac-cc-slider-track');
-        vActor.style = 'height: 20px !important; min-height: 20px !important; -barlevel-height: 18px !important; -barlevel-background-color: rgba(255, 255, 255, 0.22) !important; -barlevel-active-background-color: #ffffff !important; -slider-handle-radius: 0px !important; border-radius: 9999px !important;';
         vActor.x_expand = true;
         this.volumeSlider.connect('notify::value', () => this._setVolume(this.volumeSlider.value));
         soundSliderRow.add_child(vActor);
         soundSliderRow.add_child(createIcon('audio-volume-high-symbolic', 18));
 
         const airplayBtn = new St.Button({
-            style_class: 'mac-cc-airplay-btn',
-            style: 'background-color: rgba(255, 255, 255, 0.18) !important; border: 1px solid rgba(255, 255, 255, 0.24) !important; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.30), 0 2px 6px rgba(0, 0, 0, 0.20) !important; width: 34px !important; height: 34px !important; border-radius: 9999px !important; padding: 0 !important; color: #ffffff !important;',
+            style_class: 'mac-cc-circle-btn',
+            style: 'width: 32px !important; height: 32px !important; min-width: 32px !important; min-height: 32px !important;',
             child: createIcon(AIRPLAY_ICON_PATH, 16),
             reactive: true,
-            can_focus: true,
         });
         airplayBtn.connect('clicked', () => this.openSubmenu('sound'));
         soundSliderRow.add_child(airplayBtn);
 
-        // Right click on Sound card also opens Sound output switcher
+        // Right-click on Sound card also opens Sound submenu
         soundCard.reactive = true;
         soundCard.connect('button-press-event', (_actor, event) => {
             if (event.get_button() === 3) {
@@ -513,56 +507,22 @@ export class MacControlCenter {
         this.syncAll();
     }
 
-    _setCircleBtnActive(circleBtn, icon, isActive, accentColor = '#007aff') {
-        if (isActive) {
-            circleBtn.style = 'background-color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.95) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important; width: 38px !important; height: 38px !important; min-width: 38px !important; min-height: 38px !important; border-radius: 9999px !important; padding: 0 !important;';
-            if (icon) {
-                icon.style = `color: ${accentColor} !important;`;
-            }
-        } else {
-            circleBtn.style = 'background-color: rgba(255, 255, 255, 0.16) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25) !important; width: 38px !important; height: 38px !important; min-width: 38px !important; min-height: 38px !important; border-radius: 9999px !important; padding: 0 !important;';
-            if (icon) {
-                icon.style = 'color: rgba(255, 255, 255, 0.85) !important;';
-            }
-        }
-    }
-
-    _setStandaloneBtnActive(btn, icon, isActive, accentColor = '#007aff') {
-        if (isActive) {
-            btn.style = `background-color: ${accentColor} !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; box-shadow: 0 0 16px rgba(0, 122, 255, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important; width: 52px !important; height: 52px !important; min-width: 52px !important; min-height: 52px !important; border-radius: 9999px !important; padding: 0 !important; color: #ffffff !important;`;
-            if (icon) icon.style = 'color: #ffffff !important;';
-        } else {
-            btn.style = 'background-color: rgba(38, 38, 38, 0.55) !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.22) !important; width: 52px !important; height: 52px !important; min-width: 52px !important; min-height: 52px !important; border-radius: 9999px !important; padding: 0 !important; color: #ffffff !important;';
-            if (icon) icon.style = 'color: #ffffff !important;';
-        }
-    }
-
-    // Creates an Apple-style Stadium Pill button (Wi-Fi, Bluetooth, AirDrop)
-    _createConnPill(iconPathOrName, title, subtitle, onCircleClick, onPillClick) {
-        const pill = new St.Button({
-            style_class: 'mac-cc-pill',
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-        });
-
-        const box = new St.BoxLayout({
+    _createConnRow(iconPathOrName, title, subtitle, onCircleClick, onRowRightClick) {
+        const row = new St.BoxLayout({
             vertical: false,
+            style_class: 'mac-cc-row',
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'spacing: 10px;',
-        });
-        pill.set_child(box);
-
-        const icon = createIcon(iconPathOrName, 18);
-        const circleBtn = new St.Button({
-            style_class: 'mac-cc-pill-icon-btn',
-            child: icon,
             reactive: true,
             can_focus: true,
         });
-        this._setCircleBtnActive(circleBtn, icon, false);
+
+        const circleBtn = new St.Button({
+            style_class: 'mac-cc-circle-btn',
+            child: createIcon(iconPathOrName, 18),
+            reactive: true,
+        });
         circleBtn.connect('clicked', () => onCircleClick());
-        box.add_child(circleBtn);
+        row.add_child(circleBtn);
 
         const textCol = new St.BoxLayout({
             vertical: true,
@@ -579,68 +539,22 @@ export class MacControlCenter {
         });
         textCol.add_child(titleLbl);
         textCol.add_child(subLbl);
-        box.add_child(textCol);
+        row.add_child(textCol);
 
-        // Clicking text/pill or right-clicking anywhere opens submenu
-        pill.connect('clicked', () => onPillClick());
-        pill.connect('button-press-event', (_actor, event) => {
-            if (event.get_button() === 3) {
-                onPillClick();
+        // Click on text or row opens submenu; right click anywhere on row opens submenu
+        row.connect('button-press-event', (_actor, event) => {
+            const btn = event.get_button();
+            if (btn === 3) {
+                onRowRightClick();
+                return Clutter.EVENT_STOP;
+            } else if (btn === 1 && event.get_source() !== circleBtn) {
+                onRowRightClick();
                 return Clutter.EVENT_STOP;
             }
             return Clutter.EVENT_PROPAGATE;
         });
 
-        return { actor: pill, circleBtn, icon, titleLbl, subLbl };
-    }
-
-    // Creates the Apple Do Not Disturb Pill with Crescent Moon Icon
-    _createDndPill() {
-        const pill = new St.Button({
-            style_class: 'mac-cc-pill',
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-        });
-
-        const box = new St.BoxLayout({
-            vertical: false,
-            y_align: Clutter.ActorAlign.CENTER,
-            style: 'spacing: 10px;',
-        });
-        pill.set_child(box);
-
-        const moonIcon = createIcon(MOON_ICON_PATH, 18);
-        const circleBtn = new St.Button({
-            style_class: 'mac-cc-pill-icon-btn',
-            child: moonIcon,
-            reactive: true,
-            can_focus: true,
-        });
-        this._setCircleBtnActive(circleBtn, moonIcon, false, '#5856d6');
-        circleBtn.connect('clicked', () => this._toggleDnd());
-        box.add_child(circleBtn);
-
-        const textCol = new St.BoxLayout({
-            vertical: true,
-            x_expand: true,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        const titleLbl = new St.Label({
-            text: 'Do Not Disturb',
-            style_class: 'mac-cc-title',
-        });
-        const subLbl = new St.Label({
-            text: 'Off',
-            style_class: 'mac-cc-subtitle',
-        });
-        textCol.add_child(titleLbl);
-        textCol.add_child(subLbl);
-        box.add_child(textCol);
-
-        pill.connect('clicked', () => this._toggleDnd());
-
-        return { actor: pill, circleBtn, icon: moonIcon, titleLbl, subLbl };
+        return { actor: row, circleBtn, titleLbl, subLbl };
     }
 
     syncAll() {
@@ -657,13 +571,13 @@ export class MacControlCenter {
     _syncWifi() {
         const isEnabled = Boolean(this._nmClient?.wireless_enabled);
         if (isEnabled) {
-            this._setCircleBtnActive(this.wifiPill.circleBtn, this.wifiPill.icon, true, '#007aff');
+            this.wifiRow.circleBtn.add_style_class_name('active');
             const activeAp = this._wifiDevice?.get_active_access_point();
             const ssid = activeAp?.get_ssid() ? NM.utils_ssid_to_utf8(activeAp.get_ssid().get_data()) : null;
-            this.wifiPill.subLbl.text = ssid || 'Підключено';
+            this.wifiRow.subLbl.text = ssid || 'Підключено';
         } else {
-            this._setCircleBtnActive(this.wifiPill.circleBtn, this.wifiPill.icon, false);
-            this.wifiPill.subLbl.text = 'Вимкнено';
+            this.wifiRow.circleBtn.remove_style_class_name('active');
+            this.wifiRow.subLbl.text = 'Вимкнено';
         }
     }
 
@@ -684,11 +598,11 @@ export class MacControlCenter {
                     const [, stdout] = p.communicate_utf8_finish(res);
                     const isPowered = stdout && stdout.includes('Powered: yes');
                     if (isPowered) {
-                        this._setCircleBtnActive(this.btPill.circleBtn, this.btPill.icon, true, '#007aff');
-                        this.btPill.subLbl.text = 'Увімкнено';
+                        this.btRow.circleBtn.add_style_class_name('active');
+                        this.btRow.subLbl.text = 'Увімкнено';
                     } else {
-                        this._setCircleBtnActive(this.btPill.circleBtn, this.btPill.icon, false);
-                        this.btPill.subLbl.text = 'Вимкнено';
+                        this.btRow.circleBtn.remove_style_class_name('active');
+                        this.btRow.subLbl.text = 'Вимкнено';
                     }
                 } catch (_) {}
             });
@@ -696,15 +610,15 @@ export class MacControlCenter {
     }
 
     _toggleBluetooth() {
-        const isPowered = this.btPill.circleBtn.style?.includes('#ffffff');
+        const isPowered = this.btRow.circleBtn.has_style_class_name('active');
         const cmd = isPowered ? 'bluetoothctl power off' : 'bluetoothctl power on';
         Util.spawnCommandLine(cmd);
         if (isPowered) {
-            this._setCircleBtnActive(this.btPill.circleBtn, this.btPill.icon, false);
-            this.btPill.subLbl.text = 'Вимкнено';
+            this.btRow.circleBtn.remove_style_class_name('active');
+            this.btRow.subLbl.text = 'Вимкнено';
         } else {
-            this._setCircleBtnActive(this.btPill.circleBtn, this.btPill.icon, true, '#007aff');
-            this.btPill.subLbl.text = 'Увімкнено';
+            this.btRow.circleBtn.add_style_class_name('active');
+            this.btRow.subLbl.text = 'Увімкнено';
         }
     }
 
@@ -721,14 +635,14 @@ export class MacControlCenter {
                         const status = JSON.parse(stdout.trim());
                         const mode = status.mode || 'off';
                         if (mode === 'everyone') {
-                            this._setCircleBtnActive(this.airdropPill.circleBtn, this.airdropPill.icon, true, '#007aff');
-                            this.airdropPill.subLbl.text = 'Everyone';
+                            this.airdropRow.circleBtn.add_style_class_name('active');
+                            this.airdropRow.subLbl.text = 'Everyone';
                         } else if (mode === 'contacts') {
-                            this._setCircleBtnActive(this.airdropPill.circleBtn, this.airdropPill.icon, true, '#007aff');
-                            this.airdropPill.subLbl.text = 'Contacts Only';
+                            this.airdropRow.circleBtn.add_style_class_name('active');
+                            this.airdropRow.subLbl.text = 'Contacts Only';
                         } else {
-                            this._setCircleBtnActive(this.airdropPill.circleBtn, this.airdropPill.icon, false);
-                            this.airdropPill.subLbl.text = 'Off';
+                            this.airdropRow.circleBtn.remove_style_class_name('active');
+                            this.airdropRow.subLbl.text = 'Off';
                         }
                     }
                 } catch (_) {}
@@ -746,8 +660,12 @@ export class MacControlCenter {
 
     _syncStageManager() {
         const ext = Main.extensionManager?.lookup('stage-manager@gnome-stage-manager');
-        const isEnabled = ext && ext.state === 1;
-        this._setStandaloneBtnActive(this.stageManagerBtn, this.stageManagerIcon, isEnabled, '#007aff');
+        const isEnabled = ext && ext.state === 1; // 1 = ExtensionState.ENABLED
+        if (isEnabled) {
+            this.stageManagerBtn.add_style_class_name('active');
+        } else {
+            this.stageManagerBtn.remove_style_class_name('active');
+        }
     }
 
     _toggleStageManager() {
@@ -755,17 +673,20 @@ export class MacControlCenter {
         const isEnabled = ext && ext.state === 1;
         if (isEnabled) {
             Main.extensionManager.disableExtension('stage-manager@gnome-stage-manager');
-            this._setStandaloneBtnActive(this.stageManagerBtn, this.stageManagerIcon, false);
+            this.stageManagerBtn.remove_style_class_name('active');
         } else {
             Main.extensionManager.enableExtension('stage-manager@gnome-stage-manager');
-            this._setStandaloneBtnActive(this.stageManagerBtn, this.stageManagerIcon, true, '#007aff');
+            this.stageManagerBtn.add_style_class_name('active');
         }
     }
 
     _syncDarkMode() {
         const scheme = this._interfaceSettings.get_string('color-scheme');
-        const isDark = (scheme === 'prefer-dark');
-        this._setStandaloneBtnActive(this.darkModeBtn, this.darkModeIcon, isDark, '#007aff');
+        if (scheme === 'prefer-dark') {
+            this.darkModeBtn.add_style_class_name('active');
+        } else {
+            this.darkModeBtn.remove_style_class_name('active');
+        }
     }
 
     _toggleDarkMode() {
@@ -779,11 +700,13 @@ export class MacControlCenter {
         const showBanners = this._notificationSettings.get_boolean('show-banners');
         const isDnd = !showBanners;
         if (isDnd) {
-            this._setCircleBtnActive(this.dndPill.circleBtn, this.dndPill.icon, true, '#5856d6');
-            this.dndPill.subLbl.text = 'On';
+            this.dndCard.add_style_class_name('active');
+            this.dndMoonIcon.add_style_class_name('active');
+            this.dndSubtitle.text = 'On';
         } else {
-            this._setCircleBtnActive(this.dndPill.circleBtn, this.dndPill.icon, false, '#5856d6');
-            this.dndPill.subLbl.text = 'Off';
+            this.dndCard.remove_style_class_name('active');
+            this.dndMoonIcon.remove_style_class_name('active');
+            this.dndSubtitle.text = 'Off';
         }
     }
 
@@ -795,16 +718,17 @@ export class MacControlCenter {
 
     _syncSound() {
         if (!this._mixerControl) return;
-        this._mixerSink = this._mixerControl.get_default_sink();
-        if (this._mixerSink) {
-            const vol = this._mixerSink.get_volume();
+        const sink = this._mixerControl.get_default_sink();
+        if (sink) {
+            this._mixerSink = sink;
             const max = this._mixerControl.get_vol_max_norm();
+            const vol = sink.get_volume();
             this.volumeSlider.value = Math.min(1.0, Math.max(0.0, vol / max));
         }
     }
 
     _setVolume(val) {
-        if (!this._mixerSink || !this._mixerControl) return;
+        if (!this._mixerControl || !this._mixerSink) return;
         const max = this._mixerControl.get_vol_max_norm();
         this._mixerSink.set_volume(val * max);
         this._mixerSink.push_volume();
@@ -832,7 +756,7 @@ export class MacControlCenter {
         if (!proxy) {
             this.mediaTitle.text = 'Не відтворюється';
             this.mediaArtist.text = '';
-            this.playBtn.child = createIcon('media-playback-start-symbolic', 18);
+            this.playBtn.child = createIcon('media-playback-start-symbolic', 16);
             return;
         }
 
@@ -847,9 +771,9 @@ export class MacControlCenter {
 
         const status = proxy.PlaybackStatus;
         if (status === 'Playing') {
-            this.playBtn.child = createIcon('media-playback-pause-symbolic', 18);
+            this.playBtn.child = createIcon('media-playback-pause-symbolic', 16);
         } else {
-            this.playBtn.child = createIcon('media-playback-start-symbolic', 18);
+            this.playBtn.child = createIcon('media-playback-start-symbolic', 16);
         }
     }
 
@@ -889,7 +813,6 @@ export class MacControlCenter {
             style_class: 'mac-cc-back-btn',
             label: '◀ Назад',
             reactive: true,
-            can_focus: true,
         });
         backBtn.connect('clicked', () => this.closeSubmenu());
         header.add_child(backBtn);
@@ -935,11 +858,11 @@ export class MacControlCenter {
             vertical: false,
             style_class: 'mac-cc-submenu-item',
             y_align: Clutter.ActorAlign.CENTER,
-            reactive: true,
         });
         toggleRow.add_child(new St.Label({ text: 'Увімкнути Wi-Fi', style_class: 'mac-cc-title', x_expand: true }));
         const sw = new PopupMenu.Switch(isEnabled);
         toggleRow.add_child(sw);
+        toggleRow.reactive = true;
         toggleRow.connect('button-press-event', () => {
             this._toggleWifi();
             this.openSubmenu('wifi');
@@ -981,21 +904,23 @@ export class MacControlCenter {
                     reactive: true,
                 });
                 netRow.add_child(createIcon('network-wireless-signal-excellent-symbolic', 14));
-                netRow.add_child(new St.Label({
+                const nameLbl = new St.Label({
                     text: item.ssid,
                     style_class: 'mac-cc-title',
                     style: 'margin-left: 8px;',
                     x_expand: true,
-                }));
-                if (item.isSecure) {
-                    netRow.add_child(createIcon('channel-secure-symbolic', 12));
-                }
+                });
+                netRow.add_child(nameLbl);
+
                 if (item.ssid === activeSsid) {
                     netRow.add_child(createIcon('emblem-ok-symbolic', 14));
+                } else if (item.isSecure) {
+                    netRow.add_child(createIcon('channel-secure-symbolic', 12));
                 }
+
                 netRow.connect('button-press-event', () => {
-                    this.menu.close();
-                    Util.spawnCommandLine(`nmcli device wifi connect "${item.ssid}"`);
+                    Util.spawnCommandLine(`nmcli dev wifi connect "${item.ssid}"`);
+                    this.closeSubmenu();
                     return Clutter.EVENT_STOP;
                 });
                 card.add_child(netRow);
@@ -1003,7 +928,7 @@ export class MacControlCenter {
         }
 
         const settingsBtn = new St.Button({
-            label: 'Параметри Wi-Fi...',
+            label: 'Параметри мережі...',
             style_class: 'mac-cc-back-btn',
             style: 'margin-top: 10px;',
             reactive: true,
@@ -1016,14 +941,13 @@ export class MacControlCenter {
     }
 
     _buildBluetoothSubmenu(card) {
-        const isPowered = this.btPill.circleBtn.style?.includes('#ffffff');
-
         const toggleRow = new St.BoxLayout({
             vertical: false,
             style_class: 'mac-cc-submenu-item',
             y_align: Clutter.ActorAlign.CENTER,
             reactive: true,
         });
+        const isPowered = this.btRow.circleBtn.has_style_class_name('active');
         toggleRow.add_child(new St.Label({ text: 'Увімкнути Bluetooth', style_class: 'mac-cc-title', x_expand: true }));
         const sw = new PopupMenu.Switch(isPowered);
         toggleRow.add_child(sw);
@@ -1050,12 +974,11 @@ export class MacControlCenter {
                 try {
                     const [, stdout] = p.communicate_utf8_finish(res);
                     if (stdout) {
-                        const lines = stdout.trim().split('\n');
-                        for (const line of lines.slice(0, 5)) {
-                            const match = line.match(/^Device\s+([0-9A-Fa-f:]+)\s+(.+)$/);
-                            if (match) {
-                                const mac = match[1];
-                                const name = match[2];
+                        for (const line of stdout.trim().split('\n')) {
+                            const parts = line.split(' ');
+                            if (parts.length >= 3) {
+                                const mac = parts[1];
+                                const name = parts.slice(2).join(' ');
                                 const devRow = new St.BoxLayout({
                                     vertical: false,
                                     style_class: 'mac-cc-submenu-item',
@@ -1103,6 +1026,7 @@ export class MacControlCenter {
         });
         card.add_child(secLbl);
 
+        // Fetch sinks with wpctl status
         try {
             const proc = Gio.Subprocess.new(
                 ['wpctl', 'status'],
@@ -1189,10 +1113,10 @@ export class MacControlCenter {
         ];
 
         for (const m of modes) {
-            const isCur = this.airdropPill.subLbl.text.toLowerCase().includes(m.id) ||
-                         (m.id === 'everyone' && this.airdropPill.subLbl.text === 'Everyone') ||
-                         (m.id === 'contacts' && this.airdropPill.subLbl.text === 'Contacts Only') ||
-                         (m.id === 'off' && this.airdropPill.subLbl.text === 'Off');
+            const isCur = this.airdropRow.subLbl.text.toLowerCase().includes(m.id) ||
+                         (m.id === 'everyone' && this.airdropRow.subLbl.text === 'Everyone') ||
+                         (m.id === 'contacts' && this.airdropRow.subLbl.text === 'Contacts Only') ||
+                         (m.id === 'off' && this.airdropRow.subLbl.text === 'Off');
 
             const row = new St.BoxLayout({
                 vertical: false,

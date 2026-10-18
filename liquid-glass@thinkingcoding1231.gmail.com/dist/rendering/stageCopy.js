@@ -16,7 +16,11 @@ import { coglContext, newRootNode, offscreenFormat } from '../shellVersion.js';
 export function createTarget(width, height, format = null, logger) {
     if (!width || width < 1 || !height || height < 1 || !Number.isFinite(width) || !Number.isFinite(height))
         return null;
+    width = Math.max(1, Math.round(width));
+    height = Math.max(1, Math.round(height));
     const ctx = coglContext();
+    if (!ctx)
+        return null;
     const texture = format === null
         ? Cogl.Texture2D.new_with_size(ctx, width, height)
         : Cogl.Texture2D.new_with_format(ctx, width, height, format);
@@ -108,9 +112,18 @@ export class StageCopier {
         const clip = paintContext.get_redraw_clip();
         const clipX = Math.floor(rect[0]);
         const clipY = Math.floor(rect[1]);
-        const inClip = !clip || clip.contains_rectangle(new Mtk.Rectangle({
-            x: clipX, y: clipY, width: Math.ceil(rect[2]) - clipX, height: Math.ceil(rect[3]) - clipY,
-        })) === Mtk.RegionOverlap.IN;
+        const clipW = Math.max(1, Math.ceil(rect[2]) - clipX);
+        const clipH = Math.max(1, Math.ceil(rect[3]) - clipY);
+        let inClip = true;
+        if (clip) {
+            try {
+                inClip = clip.contains_rectangle(new Mtk.Rectangle({
+                    x: clipX, y: clipY, width: clipW, height: clipH,
+                })) === Mtk.RegionOverlap.IN;
+            } catch (_) {
+                inClip = true;
+            }
+        }
         const nowUs = GLib.get_monotonic_time();
         const sameGeometry = copy?.rect &&
             Math.abs(copy.rect[0] - rect[0]) < 1.0 &&
@@ -164,6 +177,7 @@ export class StageCopier {
         copy.inOverview = inOverview;
         this.lastCopy = copy;
         this.copyCount++;
+        this._forceUntilUs = 0; // One-shot: prevent animations from repeatedly re-blitting themselves
         return { copy, missed: false };
     }
 

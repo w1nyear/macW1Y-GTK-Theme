@@ -125,6 +125,116 @@ export const OverviewBlur = class OverviewBlur {
             this.overview_background_group.hide();
         });
 
+        // Permanently lock Overview to Workspace/Window Picker (Mission Control), completely removing App Grid
+        const patchOverviewControls = () => {
+            try {
+                const ov = Main.overview;
+                const ctrl = ov._overview?._controls ?? ov._controls;
+                if (!ctrl) return;
+
+                if (ctrl._stateAdjustment) {
+                    ctrl._stateAdjustment.upper = 1;
+                    if (ctrl._stateAdjustment.value > 1)
+                        ctrl._stateAdjustment.value = 1;
+                }
+
+                if (ctrl._appDisplay) {
+                    ctrl._appDisplay.visible = false;
+                    ctrl._appDisplay.opacity = 0;
+                    ctrl._appDisplay.reactive = false;
+                }
+
+                ctrl._shiftState = function(direction) {
+                    let {currentState, finalState} = this._stateAdjustment.getStateTransitionParams();
+                    if (direction === Meta.MotionDirection.DOWN)
+                        finalState = Math.max(finalState - 1, 0);
+                    else if (direction === Meta.MotionDirection.UP)
+                        finalState = Math.min(finalState + 1, 1);
+
+                    if (finalState === currentState)
+                        return;
+
+                    if (currentState === 0 && finalState === 1) {
+                        Main.overview.show();
+                    } else if (finalState === 0) {
+                        Main.overview.hide();
+                    } else {
+                        this._stateAdjustment.ease(finalState, {
+                            duration: 250,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                    }
+                };
+
+                ctrl.gestureBegin = function(tracker) {
+                    const baseDistance = global.screen_height;
+                    const progress = Math.min(1.0, this._stateAdjustment.value);
+                    const points = [0, 1];
+                    const transition = this._stateAdjustment.get_transition('value');
+                    const cancelProgress = transition
+                        ? Math.min(1.0, transition.get_interval().peek_final_value())
+                        : Math.min(1.0, Math.round(progress));
+                    this._stateAdjustment.remove_transition('value');
+                    tracker.confirmSwipe(baseDistance, points, progress, cancelProgress);
+                    this.prepareToEnterOverview();
+                    this._stateAdjustment.gestureInProgress = true;
+                };
+
+                ctrl.gestureProgress = function(progress) {
+                    this._stateAdjustment.value = Math.min(1.0, progress);
+                };
+
+                ctrl.gestureEnd = function(target, duration, onComplete) {
+                    target = Math.min(1.0, target);
+                    if (target === 0)
+                        this.prepareToLeaveOverview();
+                    if (this.dash?.showAppsButton)
+                        this.dash.showAppsButton.checked = false;
+                    this._stateAdjustment.remove_transition('value');
+                    this._stateAdjustment.ease(target, {
+                        duration,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        onComplete,
+                    });
+                    this._stateAdjustment.gestureInProgress = false;
+                };
+
+                ctrl._updateAppDisplayVisibility = function() {
+                    if (this._appDisplay) {
+                        this._appDisplay.visible = false;
+                        this._appDisplay.opacity = 0;
+                        this._appDisplay.reactive = false;
+                    }
+                };
+
+                ctrl._toggleAppsPage = function() {
+                    if (typeof globalThis.toggleMacApplications === 'function') {
+                        globalThis.toggleMacApplications();
+                    }
+                };
+
+                ov.showApps = function() {
+                    if (typeof globalThis.toggleMacApplications === 'function') {
+                        globalThis.toggleMacApplications();
+                    } else {
+                        Main.overview.show(1);
+                    }
+                };
+
+                if (!ov._macOrigShow) {
+                    ov._macOrigShow = ov.show.bind(ov);
+                    ov.show = function(state = 1) {
+                        if (state > 1) state = 1;
+                        return ov._macOrigShow(state);
+                    };
+                }
+            } catch (_) {}
+        };
+        patchOverviewControls();
+        this.connections.connect(Main.overview, 'showing', () => {
+            patchOverviewControls();
+        });
+
         // part for the workspace animation switch
 
         // make sure not to do this part if the functions were patched prior, as

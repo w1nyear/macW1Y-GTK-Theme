@@ -144,7 +144,7 @@ export default class AppMenuExtension extends Extension {
             this._settings,
             Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL,
-            () => toggleClipboardDialog()
+            () => (globalThis.toggleMacClipboard ? globalThis.toggleMacClipboard() : toggleClipboardDialog())
         );
         this._clipboardShortcutInstalled = true;
     }
