@@ -124,16 +124,28 @@ export class StageCopier {
             this.forceRefresh(500);
         }
 
-        const isForced = nowUs < this._forceUntilUs;
-        const mustCopy = isForced || overviewChanged || !copy?.texture || !copy?.rect;
-
-        const minIntervalUs = isForced ? 16666 : 50000;
-        if (!mustCopy && sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < minIntervalUs)) {
+        // 1. Strict backdrop lock: If locked and we already have a backdrop, NEVER re-blit
+        if (actor._backdropLocked && copy?.texture) {
             this.reuseCount++;
             return { copy, missed: false };
         }
 
-        if (!mustCopy && !inClip) {
+        const isForced = nowUs < this._forceUntilUs;
+        const mustCopy = !copy?.texture || !copy?.rect || overviewChanged;
+
+        // 2. If we have a valid copy with identical geometry and not forced, reuse it
+        if (!mustCopy && !isForced && sameGeometry && copy?.texture) {
+            this.reuseCount++;
+            return { copy, missed: false };
+        }
+
+        // 3. Partial clip protection: if clip doesn't contain the whole rect, reuse existing copy
+        if (copy?.texture && !inClip) {
+            this.reuseCount++;
+            return { copy, missed: false };
+        }
+
+        if (!mustCopy && !isForced && !inClip) {
             if (copy?.rect) {
                 this.reuseCount++;
                 return { copy, missed: false };

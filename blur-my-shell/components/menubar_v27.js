@@ -4021,7 +4021,9 @@ export const MenuBarController = class MenuBarController {
             this._notifGlass.setBrightness(1.0);
             this._notifGlass.setIsDock(true);
             this._notifGlass.setGlassRegions(regions);
-            this._notifGlass.syncSources();
+            if (!this._notifGlass._backdropLocked) {
+                this._notifGlass.syncSources();
+            }
             if (!this._notifGlass.visible)
                 this._notifGlass.show();
         } else {
@@ -4704,6 +4706,12 @@ export const MenuBarController = class MenuBarController {
         container.visible = true;
         container.show();
         this._initNotifGlass().then(() => {
+            if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
+                this._notifGlass._backdropLocked = false;
+                if (typeof this._notifGlass.forceRefresh === 'function') {
+                    this._notifGlass.forceRefresh(350);
+                }
+            }
             if (this._notifCenterOpen) this._syncNotifGlassRegions();
         });
 
@@ -4715,6 +4723,9 @@ export const MenuBarController = class MenuBarController {
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
                 this._syncNotifGlassRegions();
+                if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
+                    this._notifGlass._backdropLocked = true;
+                }
             },
         });
 
@@ -4774,6 +4785,9 @@ export const MenuBarController = class MenuBarController {
 
         this._notifCenterOpen = false;
         this._isNotifCenterClosing = true;
+        if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
+            this._notifGlass._backdropLocked = false;
+        }
         this._lastCenterW = null;
         this._lastCenterH = null;
         this._lastBlurW = null;

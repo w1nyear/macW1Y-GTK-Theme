@@ -946,11 +946,9 @@ export const NotificationsController = class NotificationsController {
                 this._glass.show();
                 this._glass.opacity = 255;
             }
-            if (typeof this._glass.forceRefresh === 'function') {
-                this._glass.forceRefresh(400);
+            if (!this._glass._backdropLocked) {
+                this._glass.syncSources();
             }
-            this._glass.syncSources(true);
-            this._glass.queue_redraw();
 
             if (!this._bannerStageLoopId) {
                 this._bannerStageLoopId = global.stage.connect('before-update', () => {
@@ -1071,8 +1069,11 @@ export const NotificationsController = class NotificationsController {
         this._stackBox.add_child(group.actor);
         this._updateVisibility();
 
-        if (this._glass && typeof this._glass.forceRefresh === 'function') {
-            this._glass.forceRefresh(500);
+        if (this._glass) {
+            this._glass._backdropLocked = false;
+            if (typeof this._glass.forceRefresh === 'function') {
+                this._glass.forceRefresh(350);
+            }
         }
         this._syncGlass();
 
@@ -1085,6 +1086,9 @@ export const NotificationsController = class NotificationsController {
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
                 this._syncGlass();
+                if (this._glass) {
+                    this._glass._backdropLocked = true;
+                }
             },
         });
 

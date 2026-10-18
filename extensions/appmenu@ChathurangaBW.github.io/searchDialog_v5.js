@@ -407,9 +407,6 @@ export const MacSpotlightDialog = GObject.registerClass({
             y_align: Clutter.ActorAlign.END,
             reactive: false,
         });
-        try {
-            this._bottomFade.add_effect(new Shell.BlurEffect({ mode: Shell.BlurMode.BACKGROUND, radius: 10 }));
-        } catch (_) {}
         this._scrollWrapper.add_child(this._bottomFade);
 
         // 4B. Files View (Image 2 Redesign)
@@ -1030,6 +1027,10 @@ export const MacSpotlightDialog = GObject.registerClass({
             }
             Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
             Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
+            this._glass._backdropLocked = false;
+            if (typeof this._glass.forceRefresh === 'function') {
+                this._glass.forceRefresh(300);
+            }
             this._syncGlass();
         } else {
             this._initGlass();
@@ -1058,12 +1059,26 @@ export const MacSpotlightDialog = GObject.registerClass({
             scale_y: 1.0,
             duration: 220,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                this._syncGlass();
+                if (this._glass) {
+                    this._glass._backdropLocked = true;
+                }
+                if (this._stageSignalId) {
+                    try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
+                    this._stageSignalId = 0;
+                }
+            },
         });
     }
 
     close(immediate = false) {
         if (!this._isOpen) return;
         this._isOpen = false;
+
+        if (this._glass) {
+            this._glass._backdropLocked = false;
+        }
 
         if (this._modalGrab) {
             try { this._modalGrab.dismiss(); } catch (_) {}
@@ -2060,6 +2075,7 @@ export function toggleSearchDialog() {
         } catch (_) {}
         _spotlightDialog = new MacSpotlightDialog();
     }
+    globalThis._macSpotlightGlobalInstance = _spotlightDialog;
     if (_spotlightDialog._isOpen) {
         _spotlightDialog.close();
     } else {

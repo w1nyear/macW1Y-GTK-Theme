@@ -121,23 +121,37 @@ export class StageCopier {
         const inOverview = Boolean(Main?.overview?.visible || Main?.overview?._animationInProgress);
         const overviewChanged = copy && copy.inOverview !== undefined && copy.inOverview !== inOverview;
         if (overviewChanged) {
-            this.forceRefresh(350);
+            this.forceRefresh(500);
         }
 
-        const isForced = nowUs < this._forceUntilUs;
-        const mustCopy = isForced || overviewChanged || !copy?.texture || !copy?.rect;
-
-        const minIntervalUs = isForced ? 16666 : 50000;
-        if (!mustCopy && sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < minIntervalUs)) {
+        // 1. Strict backdrop lock: If locked and we already have a backdrop, NEVER re-blit
+        if (actor._backdropLocked && copy?.texture) {
             this.reuseCount++;
             return { copy, missed: false };
         }
 
-        if (!inClip && !mustCopy) {
+        const isForced = nowUs < this._forceUntilUs;
+        const mustCopy = !copy?.texture || !copy?.rect || overviewChanged;
+
+        // 2. If we have a valid copy with identical geometry and not forced, reuse it
+        if (!mustCopy && !isForced && sameGeometry && copy?.texture) {
+            this.reuseCount++;
+            return { copy, missed: false };
+        }
+
+        // 3. Partial clip protection: if clip doesn't contain the whole rect, reuse existing copy
+        if (copy?.texture && !inClip) {
+            this.reuseCount++;
+            return { copy, missed: false };
+        }
+
+        if (!mustCopy && !isForced && !inClip) {
             if (copy?.rect) {
                 this.reuseCount++;
                 return { copy, missed: false };
             }
+            this.missCount++;
+            return { copy: null, missed: true };
         }
         const format = fb instanceof Cogl.Offscreen ? offscreenFormat(fb) : null;
         copy = this._target(view, copy, fx1 - fx0, fy1 - fy0, format);
@@ -175,6 +189,5 @@ export class StageCopier {
     clear() {
         this._copies.clear();
         this.lastCopy = null;
-        this.forceRefresh(350);
     }
 }
