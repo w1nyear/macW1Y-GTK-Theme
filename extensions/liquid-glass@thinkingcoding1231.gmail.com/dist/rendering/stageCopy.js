@@ -121,7 +121,7 @@ export class StageCopier {
         const inOverview = Boolean(Main?.overview?.visible || Main?.overview?._animationInProgress);
         const overviewChanged = copy && copy.inOverview !== undefined && copy.inOverview !== inOverview;
         if (overviewChanged) {
-            this.forceRefresh(350);
+            this.forceRefresh(500);
         }
 
         const isForced = nowUs < this._forceUntilUs;
@@ -133,7 +133,7 @@ export class StageCopier {
             return { copy, missed: false };
         }
 
-        if (!inClip) {
+        if (!mustCopy && !inClip) {
             if (copy?.rect) {
                 this.reuseCount++;
                 return { copy, missed: false };

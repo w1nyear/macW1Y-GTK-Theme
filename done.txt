@@ -5242,3 +5242,28 @@ echo "==> Встановлення успішно завершено!"
       * Файли синхронізовано між `blur-my-shell/components/`, `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/`, `~/MACTHEMEFILES/` та `~/macW1Y/`.
       * Оновлено `done.txt` та скопійовано на робочий стіл (`~/Робочий стіл/done.txt`).
 
+81. Відновлення та накладання Liquid Glass (LQ-Visual шейдера) для панелі Dock в режимі огляду (GNOME Overview) та додавання повноцінного Liquid Glass для панелі створення скріншотів (Screenshot UI):
+    - Що вимагалося:
+      * Усунути проблему, коли при відкритті огляду (список робочих столів / Overview) Dock-панель втрачає шар Liquid Glass (іконки ставали «голими» без скляної капсули-підкладки, оскільки шейдер брав знімок тільки зі статичного робочого столу).
+      * Додати підтримку повноцінного шейдера Liquid Glass (LQ-Visual) до меню скріншотів (`Main.screenshotUI._panel`), щоб воно мало автентичний вигляд рідкого матового скла з бліками на краях, рефракцією, розмиттям фону та заокругленням 28px замість плаского темного прямокутника.
+    - Архітектура та вирішення:
+      1) Виправлення Dock у режимі Overview (`stageCopy.ts` / `stageCopy.js`):
+         - Виявлено корінь проблеми: при вимкнених релеях Clutter redraw clip під час відкриття огляду не охоплював статичні координати дока. Коли стан змінювався на огляд (`mustCopy: true`), умова `if (!inClip)` перевірялася раніше, ніж відбувалося копіювання, через що копіювальник вічно повторно використовував старий кеш робочого столу або повертав `missed: true`.
+         - Змінено перевірку на `if (!mustCopy && !inClip)` — при зміні стану огляду гарантовано робиться свіжий знімок буфера сцени (`stage`).
+         - У `dockManager.ts` / `dockManager.js` додано очищення кешу копіювальника (`this.glass._copier?.clear()`) при сигналах огляду (`showing`, `shown`, `hiding`, `hidden`) та виклик `forceRefresh(500)`.
+      2) Створення менеджера скляного інтерфейсу скріншотів `ScreenshotGlassManager` (`screenshotGlassManager.ts` / `screenshotGlassManager.js`):
+         - Створено клас `ScreenshotGlassManager` у розширенні `liquid-glass@thinkingcoding1231.gmail.com`.
+         - При показі `Main.screenshotUI` динамічно створюється екземпляр `BackdropGlass` із параметрами: `isDock: false` (активує повний набір відблисків rim light, спекулярів та об'ємної рефракції), `cornerRadius: 28px`, `padding: 20px`, `blurRadius: 24`, білий тинт 12%.
+         - Актор скла вставляється в дерево `Main.screenshotUI` безпосередньо під `_primaryMonitorBin` (`ui.insert_child_below(glass, ui._primaryMonitorBin)`), що дозволяє склу малюватися прямо поверх збереженого замороженого кадру сцени (`_stageScreenshotContainer`) і під капсулою кнопок меню, без візуальних артефактів.
+         - Синхронізовано геометрію та прозорість за допомогою `notify::allocation`, `notify::position`, `notify::size` та циклу кадрової синхронізації `startStageLoop`.
+      3) Оновлення CSS теми GNOME Shell для Screenshot UI:
+         - У `.screenshot-ui-panel` замінено грубу темну рамку `1px solid rgba(0, 0, 0, 0.75)` на витончений macOS Sequoia/Tahoe напівпрозорий білий кант: `border: 1px solid rgba(255, 255, 255, 0.12) !important; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4) !important;`.
+         - Оновлено у `macW1Y-Dark-solid`, `macW1Y-Dark`, `gnome-shell.css` та `gnome-shell-solid.css`.
+    - Результати тестування та перевірки:
+      * У живому сеансі GNOME Shell підтверджено:
+        - При відкритті огляду (`Main.overview.show()`) док тепер відображає кришталево чисту капсулу Liquid Glass, що динамічно семплює розмитий фон огляду (`dock_overview_live_verified.png`).
+        - При виклику меню скріншотів (`Main.screenshotUI.open()`) панель перемикання режимів має ефект Liquid Glass LQ-Visual з м'яким блюром, красивим світловим кантом та рефракцією (`screenshot_ui_live_verified.png`).
+    - Синхронізація:
+      * Файли синхронізовано між `~/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/`, `MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/` та `MACTHEMEFILES/liquid-glass@thinkingcoding1231.gmail.com/`.
+      * Оновлено `done.txt` та скопійовано на робочий стіл.
+

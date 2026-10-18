@@ -328,6 +328,8 @@ export class DashManager {
         // Keep dock glass seamlessly updated during overview transitions
         const triggerDockSync = () => {
             if (this.glass && this._isEffectActive) {
+                this.glass._copier?.clear();
+                this._lastSyncSourcesUs = 0;
                 if (typeof this.glass.forceRefresh === 'function') {
                     this.glass.forceRefresh(500);
                 }

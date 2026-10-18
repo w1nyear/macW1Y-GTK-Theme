@@ -15,6 +15,7 @@ import {OsdManager} from './dist/osdManager.js';
 import {ApplicationManager} from './dist/applicationManager.js';
 import {TooltipManager} from './dist/tooltipManager.js';
 import {SearchGlassManager} from './dist/searchGlassManager.js';
+import {ScreenshotGlassManager} from './dist/screenshotGlassManager.js';
 import {ModalDialogManager} from './dist/modalDialogManager.js';
 import {WindowListService} from './dist/windowListService.js';
 import {Logger} from './dist/logger.js';
@@ -64,6 +65,9 @@ export default class LiquidGlassExtension extends Extension {
 
     this._searchGlassManager = new SearchGlassManager(path, this._settings, this._logger);
     this._searchGlassManager.setup();
+
+    this._screenshotGlassManager = new ScreenshotGlassManager(path, this._settings, this._logger);
+    this._screenshotGlassManager.setup();
 
     this._modalDialogManager = new ModalDialogManager(path, this._settings, this._logger);
     this._modalDialogManager.setup();
@@ -164,6 +168,9 @@ export default class LiquidGlassExtension extends Extension {
 
     this._searchGlassManager?.cleanup();
     this._searchGlassManager = null;
+
+    this._screenshotGlassManager?.cleanup();
+    this._screenshotGlassManager = null;
 
     this._modalDialogManager?.cleanup();
     this._modalDialogManager = null;

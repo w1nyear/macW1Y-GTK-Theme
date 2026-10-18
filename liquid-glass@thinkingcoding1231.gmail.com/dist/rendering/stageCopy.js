@@ -121,7 +121,7 @@ export class StageCopier {
         const inOverview = Boolean(Main?.overview?.visible || Main?.overview?._animationInProgress);
         const overviewChanged = copy && copy.inOverview !== undefined && copy.inOverview !== inOverview;
         if (overviewChanged) {
-            this.forceRefresh(350);
+            this.forceRefresh(500);
         }
 
         const isForced = nowUs < this._forceUntilUs;
@@ -133,11 +133,13 @@ export class StageCopier {
             return { copy, missed: false };
         }
 
-        if (!inClip && !mustCopy) {
+        if (!mustCopy && !inClip) {
             if (copy?.rect) {
                 this.reuseCount++;
                 return { copy, missed: false };
             }
+            this.missCount++;
+            return { copy: null, missed: true };
         }
         const format = fb instanceof Cogl.Offscreen ? offscreenFormat(fb) : null;
         copy = this._target(view, copy, fx1 - fx0, fy1 - fy0, format);
@@ -175,6 +177,5 @@ export class StageCopier {
     clear() {
         this._copies.clear();
         this.lastCopy = null;
-        this.forceRefresh(350);
     }
 }
