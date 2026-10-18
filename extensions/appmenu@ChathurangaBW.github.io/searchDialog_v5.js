@@ -320,10 +320,6 @@ export const MacSpotlightDialog = GObject.registerClass({
                 height: this._box.height,
             };
             this.close(true);
-            if (this._glass) {
-                try { this._glass.destroy(); } catch (_) {}
-                this._glass = null;
-            }
             if (typeof globalThis.toggleMacApplications === 'function') {
                 globalThis.toggleMacApplications({ fromRect });
             }
@@ -337,10 +333,6 @@ export const MacSpotlightDialog = GObject.registerClass({
         // Button 2: Файли (Folder icon) - opens existing system Files (Nautilus)
         this._btnFiles = this._createCircleButton('mac-spotlight-files', t('files', 'Файли'), () => {
             this.close(true);
-            if (this._glass) {
-                try { this._glass.destroy(); } catch (_) {}
-                this._glass = null;
-            }
             const app = Shell.AppSystem.get_default().lookup_app('org.gnome.Nautilus.desktop');
             if (app) {
                 app.activate();
@@ -362,10 +354,6 @@ export const MacSpotlightDialog = GObject.registerClass({
                 height: this._box.height,
             };
             this.close(true);
-            if (this._glass) {
-                try { this._glass.destroy(); } catch (_) {}
-                this._glass = null;
-            }
             if (typeof globalThis.toggleMacClipboard === 'function') {
                 globalThis.toggleMacClipboard({ fromRect });
             }
@@ -736,10 +724,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._glass.hide();
 
             if (!this._isOpen) {
-                if (this._glass) {
-                    try { this._glass.destroy(); } catch (_) {}
-                    this._glass = null;
-                }
+                try { this._glass.hide(); } catch (_) {}
                 return;
             }
 
@@ -755,20 +740,32 @@ export const MacSpotlightDialog = GObject.registerClass({
     }
 
     _syncGlass() {
-        if (!this._glass || !this._isOpen) {
-            if (this._glass?.visible) this._glass.hide();
+        if (!this._glass || this._glass.is_finalized?.() || !this._isOpen) {
+            try {
+                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
+                    this._glass.hide();
+                }
+            } catch (_) {}
             return;
         }
 
         const box = this._box;
-        if (!box.visible) {
-            if (this._glass?.visible) this._glass.hide();
+        if (!box || box.is_finalized?.() || !box.visible) {
+            try {
+                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
+                    this._glass.hide();
+                }
+            } catch (_) {}
             return;
         }
 
-        const opacity = box.get_paint_opacity();
+        const opacity = box.get_paint_opacity ? box.get_paint_opacity() : box.opacity;
         if (opacity <= 0) {
-            if (this._glass?.visible) this._glass.hide();
+            try {
+                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
+                    this._glass.hide();
+                }
+            } catch (_) {}
             return;
         }
 
@@ -1078,12 +1075,26 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
         this.visible = true;
 
-        if (this._glass) {
+        let glassValid = false;
+        try {
+            if (this._glass && !this._glass.is_finalized?.()) {
+                this._glass.get_parent();
+                glassValid = true;
+            }
+        } catch (_) {
+            glassValid = false;
+            this._glass = null;
+        }
+
+        if (glassValid) {
+            try { this._glass.remove_all_transitions(); } catch (_) {}
             if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
                 Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
             }
             Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
             Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
+            this._glass.show();
+            this._glass.opacity = 255;
             this._glass._backdropLocked = false;
             if (typeof this._glass.forceRefresh === 'function') {
                 this._glass.forceRefresh(1);
@@ -1091,6 +1102,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._syncGlass();
             this._glass._backdropLocked = true;
         } else {
+            this._glass = null;
             this._initGlass();
             Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
         }
@@ -1134,10 +1146,6 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (!this._isOpen) return;
         this._isOpen = false;
 
-        if (this._glass) {
-            this._glass._backdropLocked = false;
-        }
-
         if (this._modalGrab) {
             try { this._modalGrab.dismiss(); } catch (_) {}
             this._modalGrab = null;
@@ -1146,20 +1154,24 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
 
         if (this._stageSignalId) {
-            global.stage.disconnect(this._stageSignalId);
+            try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
             this._stageSignalId = 0;
         }
 
-        if (immediate) {
-            if (this._glass) {
-                try {
+        const hideGlass = () => {
+            try {
+                if (this._glass && !this._glass.is_finalized?.()) {
                     this._glass.remove_all_transitions();
                     this._glass.opacity = 0;
+                    this._glass.visible = false;
                     this._glass.hide();
-                    this._glass.destroy();
-                } catch (_) {}
-                this._glass = null;
-            }
+                    this._glass._backdropLocked = false;
+                }
+            } catch (_) {}
+        };
+
+        if (immediate) {
+            hideGlass();
             this._box.remove_all_transitions();
             this._box.opacity = 0;
             this.visible = false;
@@ -1172,24 +1184,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             return;
         }
 
-        if (this._glass && this._glass.visible) {
-            this._glass.ease({
-                opacity: 0,
-                duration: 180,
-                mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                onComplete: () => {
-                    if (this._glass) {
-                        try {
-                            this._glass.remove_all_transitions();
-                            this._glass.hide();
-                            this._glass.destroy();
-                        } catch (_) {}
-                        this._glass = null;
-                    }
-                },
-            });
-        }
-
+        hideGlass();
+        this._backdrop.visible = false;
         this._box.ease({
             opacity: 0,
             scale_x: 0.94,
@@ -1198,20 +1194,12 @@ export const MacSpotlightDialog = GObject.registerClass({
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {
                 this.visible = false;
-                this._backdrop.visible = false;
                 this._entry.text = '';
                 this._resultsWrapper.visible = false;
                 this._resultsBox.destroy_all_children();
                 this._resultButtons = [];
                 this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
-                if (this._glass) {
-                    try {
-                        this._glass.remove_all_transitions();
-                        this._glass.hide();
-                        this._glass.destroy();
-                    } catch (_) {}
-                    this._glass = null;
-                }
+                hideGlass();
             },
         });
     }
@@ -2145,12 +2133,8 @@ export const MacSpotlightDialog = GObject.registerClass({
 let _spotlightDialog = null;
 
 export function toggleSearchDialog() {
-    try {
-        const strayGlasses = Main.layoutManager.uiGroup.get_children().filter(c => c._owner === 'spotlight' || (c.name === 'liquid-glass-bg-actor' && c._owner === 'spotlight'));
-        strayGlasses.forEach(g => { try { g.destroy(); } catch (_) {} });
-    } catch (_) {}
     if (_spotlightDialog) {
-        if (!_spotlightDialog.get_parent()) {
+        if (!_spotlightDialog.get_parent() || _spotlightDialog.is_finalized?.()) {
             try { _spotlightDialog.destroy(); } catch (_) {}
             _spotlightDialog = null;
         }
@@ -2159,6 +2143,8 @@ export function toggleSearchDialog() {
         try {
             const strays = Main.layoutManager.uiGroup.get_children().filter(c => c.name === 'mac-spotlight-wrapper');
             strays.forEach(s => { try { s.destroy(); } catch (_) {} });
+            const strayGlasses = Main.layoutManager.uiGroup.get_children().filter(c => c._owner === 'spotlight' || (c.name === 'liquid-glass-bg-actor' && c._owner === 'spotlight'));
+            strayGlasses.forEach(g => { try { g.destroy(); } catch (_) {} });
         } catch (_) {}
         _spotlightDialog = new MacSpotlightDialog();
     }

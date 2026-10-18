@@ -266,6 +266,7 @@ export class DashManager {
         let brightness = this._settings.get_double('dock-brightness');
         let contrast = this._settings.get_double('dock-contrast');
         let saturation = this._settings.get_double('dock-saturation');
+        let blurRadius = this._settings.get_int('dock-blur-radius');
         glass.setPadding(SHADER_PADDING);
         glass.setTintColor(tintVal, tintVal, tintVal);
         glass.setTintStrength(tintStrength);

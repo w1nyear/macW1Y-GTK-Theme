@@ -667,8 +667,24 @@ export class QuickSettingsManager {
     // would ask for another frame.
     _placeToggleHost(glass, monitorX, monitorY) {
         try {
-            if (this.animActor.get_first_child() !== this._toggleGlassHost)
+            if (!this._toggleGlassHost) {
+                this._toggleGlassHost = new LayoutOpaqueActor();
+                this._toggleGlassHost.set_name('liquid-glass-toggle-host');
+            }
+            if (this._toggleGlassHost.get_parent() !== this.animActor) {
+                if (this._toggleGlassHost.get_parent()) {
+                    this._toggleGlassHost.get_parent().remove_child(this._toggleGlassHost);
+                }
+                this.animActor.insert_child_at_index(this._toggleGlassHost, 0);
+            } else if (this.animActor.get_first_child() !== this._toggleGlassHost) {
                 this.animActor.set_child_below_sibling(this._toggleGlassHost, null);
+            }
+            if (!this._toggleGlassHost.contains(glass)) {
+                if (glass.get_parent()) {
+                    glass.get_parent().remove_child(glass);
+                }
+                this._toggleGlassHost.add_child(glass);
+            }
             let [hostAbsX, hostAbsY] = this._toggleGlassHost.get_transformed_position();
             let [accScaleX, accScaleY] = this._getAccumulatedScale(this._toggleGlassHost);
             if (!Number.isFinite(hostAbsX) || !Number.isFinite(hostAbsY))
