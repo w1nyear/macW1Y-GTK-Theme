@@ -5119,3 +5119,26 @@ echo "==> Встановлення успішно завершено!"
       * Оновлено `extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js` та системну копію в `~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/`.
       * Усі файли синхронізовано з репозиторієм резервних копій `~/macW1Y/` та оновлено `done.txt` на робочому столі (`~/Робочий стіл/done.txt`).
 
+77. Виправлення візуального бага hover у лівій бічній панелі (sidebar) Nautilus (GNOME Files 50+ / GTK4):
+    - Проблема:
+      * При швидкому переміщенні курсора миші по рядках лівої панелі (sidebar) провідника Nautilus фон підсвічування (hover) на частки секунди показувався з грубими прямими (квадратними 90°) кутами замість фірмової заокругленої форми macOS-капсули.
+      * Причини бага:
+        1) У CSS-селекторах блоку MAC-NAUTILUS-SIDEBAR було вказано застарілий та невалідний для GTK4 селектор `listbox.navigation-sidebar row` (у GTK4 вузол GtkListBox має назву `list`, а не `listbox`). Через це правила `border-radius: 8px` та плавні `transition: background-color 120ms ease` на ховер ніколи не застосовувалися до рядків Nautilus.
+        2) У глобальному правилі `row:not(:hover)` діяла надмірно широка анімація `transition: all 300ms cubic-bezier(...)`. Через директиву `all` рушій GTK4 анімував усі властивості, включаючи `border-radius`. Оскільки базовий generic `row` має нульове заокруглення (`border-radius: 0px`), при швидкому вході/виході курсора рушій GTK4 починав інтерполяцію радіуса з 0px, через що в перші мілісекунди ховер спалахував абсолютно квадратним прямокутником.
+        3) Відсутність явного закріплення `border-radius: 8px !important` для станів `:hover`, `row.activatable:hover` та `:not(:hover)`.
+        4) Відсутність повної стилізації бічної панелі у файлі світлої теми `gtk-Light.css`.
+    - Впроваджені виправлення:
+      * Заміна селекторів на нативні для GTK4: `list.navigation-sidebar row`, `.navigation-sidebar row`, `placessidebar row`, `.nautilus-window .sidebar-pane placessidebar row`.
+      * Жорстке закріплення форми заокругленої пігулки: для всіх станів рядків (звичайний, hover, active, selected, not(:hover), activatable) встановлено `border-radius: 8px !important;` та `background-clip: padding-box !important;`.
+      * Безпечні анімації:
+        - У глобальному `row:not(:hover)` прибрано небезпечне `transition: all 300ms`, замінено на точні `transition: background-color 150ms ease, color 150ms ease;`.
+        - Для рядків бічної панелі закріплено `transition-property: background-color, color !important;` та `transition: background-color 120ms ease, color 120ms ease !important;`, що фізично унеможливлює інтерполяцію радіуса з нуля при будь-якій швидкості переміщення курсора.
+      * Оптимізовано відступи рядків: встановлено акуратні `margin: 1px 6px !important;` та `padding: 4px 8px !important;` у стилі macOS Finder.
+      * Виправлено колір тексту активного рядка: встановлено чистий білий колір `#ffffff !important` для тексту та підписів замість випадкового блакитного тинту `color: @accent_bg_color`.
+      * Додано симетричну реалізацію для світлої теми (`gtk-Light.css` та світлих варіантів теми macW1Y).
+    - Синхронізація:
+      * Оновлено конфігурації GTK4: `~/.config/gtk-4.0/gtk-Dark.css`, `~/.config/gtk-4.0/gtk-Light.css`.
+      * Оновлено файли репозиторію: `config/gtk-4.0/gtk-Dark.css`, `gtk-4.0/gtk-Dark.css`, `gtk-4.0/gtk-Light.css`, `themes/macW1Y-Dark/`, `themes/macW1Y-Dark-solid/`, `themes/macW1Y-Light/`, `themes/macW1Y-Light-solid/`.
+      * Оновлено теми у `~/.themes/` та системні у `/usr/share/themes/`.
+      * Синхронізовано з резервним репозиторієм `~/macW1Y/` та задокументовано в `done.txt` і на робочому столі (`~/Робочий стіл/done.txt`).
+
