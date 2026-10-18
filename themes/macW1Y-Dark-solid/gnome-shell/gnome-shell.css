@@ -5441,14 +5441,14 @@ StWidget.focused .app-grid-running-dot {
   background-color: rgba(36, 36, 36, 0.04) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
-  border-radius: 28px !important;
+  border-radius: 24px !important;
 }
 
 #dashtodockContainer.bottom #dash #dashtodockDashContainer {
-  padding: 10px 10px !important;
-  padding-top: 10px !important;
-  padding-bottom: 10px !important;
-  margin-bottom: 10px !important;
+  padding: 3px 8px !important;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+  margin-bottom: 4px !important;
 }
 
 #dashtodockContainer.bottom.fixed #dash .dash-item-container .app-well-app,
@@ -5456,8 +5456,8 @@ StWidget.focused .app-grid-running-dot {
 #dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
 #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
 #dashtodockContainer.bottom #dash .dash-item-container .overview-tile {
-  padding-top: 4px !important;
-  padding-bottom: 7px !important;
+  padding-top: 1px !important;
+  padding-bottom: 3px !important;
 }
 
 #dashtodockContainer #dash .dash-separator {

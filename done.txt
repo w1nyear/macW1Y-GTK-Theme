@@ -5077,3 +5077,27 @@ echo "==> Встановлення успішно завершено!"
       * Відступ кнопки доступності: встановлено translation_x = -24 та translation_y = -24 для dialog._bottomButtonGroup і додано відступи у CSS.
       * Меню-бар macOS у GDM: додано логотип Apple () у Main.panel._leftBox, вертикальний градієнт, шрифт SF Pro Text, висоту 32px та стиль Quick Settings. Оновлено системний dconf GDM ([org/gnome/desktop/interface] font-name='SF Pro Text 10') та виконано dconf update.
       * Повна перезбірка та синхронізація: скомпільовано новий системний gresource /usr/share/gnome-shell/theme/macW1Y-Dark/gnome-shell-theme.gresource через glib-compile-resources, оновлено install.sh (додано прапорець --sourcedir та автопідстановку default-avatar.png). Усі розширення та теми синхронізовано.
+
+75. Зменшення висоти док-панелі (Dock) та оптимізація пропорцій macOS Sequoia:
+    - Проблема:
+      * Висота док-панелі була надмірно великою (87 px) порівняно з розміром іконок (48 px) через надлишкові внутрішні та зовнішні відступи (padding-top/bottom по 10 px на контейнері доку та padding 4px/7px на плитках іконок).
+      * Док виглядав масивно, з великим порожнім простором зверху та знизу від іконок, а форма країв через радіус 28px втрачала компактні пропорції нативного macOS Sequoia Dock.
+    - Впроваджені виправлення:
+      * Оптимізовано розмір іконок: встановлено dash-max-icon-size = 42 px (було 48 px).
+      * Зменшено відступи контейнера #dashtodockDashContainer:
+        - padding: 3px 8px !important; padding-top: 3px !important; padding-bottom: 3px !important;
+        - margin-bottom: 4px !important; (було padding 10px і margin-bottom 10px).
+      * Зменшено вертикальні відступи всередині елементів іконок (.dash-item-container .overview-tile, .app-well-app, .show-apps):
+        - padding-top: 1px !important;
+        - padding-bottom: 3px !important; (було padding-top 4px і padding-bottom 7px).
+      * Зменшено радіус заокруглення док-панелі та Liquid Glass:
+        - Встановлено border-radius: 24px !important у стилях тем macW1Y-Dark та macW1Y-Dark-solid (#dash .dash-background).
+        - Встановлено dock-corner-radius = 24.0 у gsettings розширення liquid-glass (надає доку форми елегантного скругленого прямокутника squircle замість витягнутої капсули).
+      * Підсумкова загальна висота доку зменшилась з 87 px до компактних та гармонійних 60 px (~31% зменшення висоти).
+      * Індикатори запущених застосунків (крапки app-grid-running-dot) зберегли ідеальне центрування та чітку видимість під іконками без обрізань.
+    - Синхронізація та фіксація:
+      * Оновлено стилі теми: themes/macW1Y-Dark/gnome-shell/gnome-shell.css, themes/macW1Y-Dark-solid/gnome-shell/gnome-shell.css, а також системні копії в ~/.themes та /usr/share/themes/.
+      * Оновлено стилі розширення: extensions/dash-to-dock@micxgx.gmail.com/stylesheet.css та ~/.local/share/gnome-shell/extensions/dash-to-dock@micxgx.gmail.com/stylesheet.css.
+      * Оновлено дампи конфігурацій dconf (dash-to-dock.dconf, gnome-all.dconf, gnome-extensions.dconf, gnome-shell.dconf, liquid-glass.dconf).
+      * Додано налаштування gsettings в інсталяційний скрипт install.sh.
+      * Усі зміни синхронізовано з ~/macW1Y/ та оновлено done.txt на робочому столі (~/Робочий стіл/done.txt).
