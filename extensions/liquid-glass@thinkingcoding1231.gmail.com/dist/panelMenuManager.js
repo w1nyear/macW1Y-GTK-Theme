@@ -71,6 +71,14 @@ export class PanelMenuManager {
                         }
                     }
                 }
+                const glass = this._glassManager?.glass || self._menus.get(this)?.manager?.glass;
+                if (glass) {
+                    glass._copier?.clear();
+                    if (typeof glass.forceRefresh === 'function') {
+                        glass.forceRefresh(400);
+                    }
+                    glass.queue_redraw();
+                }
                 return this._origOpenWithGlass(animate);
             };
         }

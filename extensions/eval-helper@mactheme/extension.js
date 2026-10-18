@@ -213,29 +213,40 @@ export default class EvalHelper extends Extension {
                                 const isForced = nowUs < (this._forceUntilUs || 0);
                                 const mustCopy = !copy?.texture || !copy?.rect || overviewChanged;
 
-                                // 2. If we already have a valid texture with identical geometry and not forced, REUSE IT.
-                                // Do NOT periodically re-blit every 50ms while UI is on screen!
-                                if (!mustCopy && !isForced && sameGeometry && copy?.texture) {
+                                // 2. Throttle blits to ~60 FPS (16ms interval) when geometry is stable and not forced.
+                                // If less than 16ms has elapsed since the last blit, reuse existing copy to avoid excessive blits.
+                                if (!mustCopy && !isForced && sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < 16000)) {
                                     this.reuseCount++;
                                     return { copy, missed: false };
                                 }
 
-                                // 3. Redraw clip check: if clip doesn't contain the whole rect and we already have a copy,
-                                // Mutter only redrew partial dirty UI in fb; do NOT blit partial stale framebuffer!
+                                // 3. Redraw clip check: if clip doesn't touch our glass rect and we have a copy,
+                                // Mutter only redrew an unrelated area on the screen; reuse existing copy.
                                 const clip = paintContext.get_redraw_clip();
                                 const clipX = Math.floor(rect[0]);
                                 const clipY = Math.floor(rect[1]);
                                 const _Mtk = globalThis.Mtk || (typeof Mtk !== 'undefined' ? Mtk : imports.gi.Mtk);
-                                const inClip = !clip || !_Mtk || clip.contains_rectangle(new _Mtk.Rectangle({
-                                    x: clipX, y: clipY, width: Math.max(1, Math.ceil(rect[2]) - clipX), height: Math.max(1, Math.ceil(rect[3]) - clipY),
-                                })) === _Mtk.RegionOverlap.IN;
+                                let touchesClip = true;
+                                if (clip && _Mtk) {
+                                    try {
+                                        const overlap = clip.contains_rectangle(new _Mtk.Rectangle({
+                                            x: clipX, y: clipY, width: Math.max(1, Math.ceil(rect[2]) - clipX), height: Math.max(1, Math.ceil(rect[3]) - clipY),
+                                        }));
+                                        touchesClip = (overlap !== _Mtk.RegionOverlap.OUT);
+                                    } catch (_) {
+                                        touchesClip = true;
+                                    }
+                                }
 
-                                if (copy?.texture && !inClip) {
+                                if (!mustCopy && !isForced && copy?.texture && !touchesClip) {
                                     this.reuseCount++;
                                     return { copy, missed: false };
                                 }
 
+                                const savedForce = this._forceUntilUs;
+                                this._forceUntilUs = nowUs + 10000000;
                                 const res = origTake.call(this, actor, root, paintContext, stageRect);
+                                this._forceUntilUs = savedForce;
                                 if (res.copy) {
                                     res.copy.lastTimeUs = nowUs;
                                     res.copy.inOverview = inOverview;
@@ -244,6 +255,39 @@ export default class EvalHelper extends Extension {
                             };
                         }
                     }
+                }
+                // Connect window movement and overview signals to immediately refresh dock glass
+                const triggerAllDocks = (durationMs = 500) => {
+                    if (!global._lgGlass?.glassObjects) return;
+                    for (const g of global._lgGlass.glassObjects()) {
+                        if (g._owner === 'dock' && g.mapped && g.visible && g.width > 10) {
+                            g._copier?.clear();
+                            if (typeof g.forceRefresh === 'function') g.forceRefresh(durationMs);
+                            if (typeof g.syncSources === 'function') g.syncSources(true);
+                            g.queue_redraw();
+                        }
+                    }
+                };
+
+                if (!this._macDockSignalsConnected) {
+                    this._macDockSignalsConnected = true;
+                    this._dockSignals = [
+                        global.display.connect('restacked', () => triggerAllDocks(400)),
+                        global.display.connect('grab-op-begin', () => triggerAllDocks(1000)),
+                        global.display.connect('grab-op-end', () => triggerAllDocks(500)),
+                    ];
+                    if (global.window_manager) {
+                        this._dockSignals.push(
+                            global.window_manager.connect('size-change', () => triggerAllDocks(500)),
+                            global.window_manager.connect('switch-workspace', () => triggerAllDocks(600))
+                        );
+                    }
+                    this._dockSignals.push(
+                        Main.overview.connect('showing', () => triggerAllDocks(600)),
+                        Main.overview.connect('hiding', () => triggerAllDocks(600)),
+                        Main.overview.connect('shown', () => triggerAllDocks(400)),
+                        Main.overview.connect('hidden', () => triggerAllDocks(600))
+                    );
                 }
             } catch (_) {}
         };
@@ -1125,6 +1169,16 @@ export default class EvalHelper extends Extension {
                 });
             } catch (_) {}
             this._origUpdateFavoriteItem = null;
+        }
+
+        if (this._dockSignals) {
+            for (const id of this._dockSignals) {
+                try { global.display.disconnect(id); } catch (_) {}
+                try { global.window_manager.disconnect(id); } catch (_) {}
+                try { Main.overview.disconnect(id); } catch (_) {}
+            }
+            this._dockSignals = null;
+            this._macDockSignalsConnected = false;
         }
     }
 }

@@ -133,7 +133,7 @@ export class StageCopier {
             this.forceRefresh(500);
         }
 
-        // 1. Strict backdrop lock: If locked and we already have a backdrop, NEVER re-blit
+        // 1. Strict backdrop lock: If explicitly locked by modal dialog and we have a texture, reuse it
         if ((actor as any)._backdropLocked && copy?.texture) {
             this.reuseCount++;
             return { copy, missed: false };
@@ -142,19 +142,33 @@ export class StageCopier {
         const isForced = nowUs < this._forceUntilUs;
         const mustCopy = !copy?.texture || !copy?.rect || overviewChanged;
 
-        // 2. If we have a valid copy with identical geometry and not forced, reuse it
-        if (!mustCopy && !isForced && sameGeometry && copy?.texture) {
+        // 2. Throttle blits to ~60 FPS (16ms interval) when geometry is stable and not forced.
+        // If less than 16ms has elapsed since the last blit, reuse existing copy to avoid excessive blits.
+        if (!mustCopy && !isForced && sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < 16000)) {
             this.reuseCount++;
             return { copy, missed: false };
         }
 
-        // 3. Partial clip protection: if clip doesn't contain the whole rect, reuse existing copy
-        if (copy?.texture && !inClip) {
+        // 3. Redraw clip check: if clip doesn't touch our glass rect and we have a copy,
+        // Mutter only redrew an unrelated area on the screen; reuse existing copy.
+        let touchesClip = true;
+        if (clip) {
+            try {
+                const overlap = clip.contains_rectangle(new Mtk.Rectangle({
+                    x: clipX, y: clipY, width: clipW, height: clipH,
+                }));
+                touchesClip = (overlap !== Mtk.RegionOverlap.OUT);
+            } catch (_) {
+                touchesClip = true;
+            }
+        }
+
+        if (!mustCopy && !isForced && copy?.texture && !touchesClip) {
             this.reuseCount++;
             return { copy, missed: false };
         }
 
-        if (!mustCopy && !isForced && !inClip) {
+        if (!mustCopy && !isForced && !inClip && !touchesClip) {
             if (copy?.rect) {
                 this.reuseCount++;
                 return { copy, missed: false };
@@ -173,7 +187,6 @@ export class StageCopier {
         (copy as any).inOverview = inOverview;
         this.lastCopy = copy;
         this.copyCount++;
-        this._forceUntilUs = 0; // One-shot: prevent animations from repeatedly re-blitting themselves
         return { copy, missed: false };
     }
 

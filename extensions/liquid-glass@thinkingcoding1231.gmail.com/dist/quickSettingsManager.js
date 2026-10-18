@@ -411,6 +411,13 @@ export class QuickSettingsManager {
         this._signals = [];
         this._animSignalId = this.menu.connect('open-state-changed', (menu, isOpen) => {
             if (isOpen) {
+                if (this.glass) {
+                    this.glass._copier?.clear();
+                    if (typeof this.glass.forceRefresh === 'function') {
+                        this.glass.forceRefresh(400);
+                    }
+                    this.glass.queue_redraw();
+                }
                 this._cachedSubmenus = null;
                 this._applyClassStyles();
                 this._applyMenuOffsets();
@@ -533,6 +540,13 @@ export class QuickSettingsManager {
         // panel keeps its own look, and ToggleStyles owns the toggles' styles.
         this._animSignalId = this.menu.connect('open-state-changed', (menu, isOpen) => {
             if (isOpen) {
+                if (this.glass) {
+                    this.glass._copier?.clear();
+                    if (typeof this.glass.forceRefresh === 'function') {
+                        this.glass.forceRefresh(400);
+                    }
+                    this.glass.queue_redraw();
+                }
                 this._cachedSubmenus = null;
                 startFrameSync();
                 this._startAdaptiveColorSampling(true);

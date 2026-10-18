@@ -333,22 +333,28 @@ export class DashManager {
         safeConnect(this.targetActor, 'notify::mapped', updateDockSync);
         safeConnect(this.targetActor, 'notify::visible', updateDockSync);
         safeConnect(this.targetActor, 'notify::opacity', updateDockSync);
-        safeConnect(global.display, 'notify::focus-window', () => {
+        const triggerDockSync = (durationMs = 500) => {
             if (this.glass && this._isEffectActive) {
-                this.glass.syncSources(true);
-            }
-        });
-
-        // Keep dock glass seamlessly updated during overview transitions
-        const triggerDockSync = () => {
-            if (this.glass && this._isEffectActive) {
+                this.glass._copier?.clear();
+                this.glass.forceRefresh(durationMs);
                 this.glass.syncSources(true);
                 this.glass.queue_redraw();
             }
         };
-        safeConnect(Main.overview, 'showing', triggerDockSync);
-        safeConnect(Main.overview, 'hiding', triggerDockSync);
-        safeConnect(Main.overview, 'shown', triggerDockSync);
+
+        safeConnect(global.display, 'notify::focus-window', () => triggerDockSync(400));
+        safeConnect(global.display, 'restacked', () => triggerDockSync(400));
+        safeConnect(global.display, 'grab-op-begin', () => triggerDockSync(1000));
+        safeConnect(global.display, 'grab-op-end', () => triggerDockSync(500));
+        if (global.window_manager) {
+            safeConnect(global.window_manager, 'size-change', () => triggerDockSync(500));
+            safeConnect(global.window_manager, 'switch-workspace', () => triggerDockSync(600));
+        }
+
+        // Keep dock glass seamlessly updated during overview transitions
+        safeConnect(Main.overview, 'showing', () => triggerDockSync(600));
+        safeConnect(Main.overview, 'hiding', () => triggerDockSync(600));
+        safeConnect(Main.overview, 'shown', () => triggerDockSync(400));
 
         const onOverviewHidden = () => {
             if (this.glass && this._isEffectActive) {
@@ -356,9 +362,7 @@ export class DashManager {
                 this._lastSyncSourcesUs = 0;
                 const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
                 this.glass.setBrightness(baseBrightness);
-                if (typeof this.glass.forceRefresh === 'function') {
-                    this.glass.forceRefresh(1);
-                }
+                this.glass.forceRefresh(600);
                 this.glass.syncSources(true);
                 this.glass.queue_redraw();
             }
@@ -373,6 +377,7 @@ export class DashManager {
                     const p = Math.max(0, Math.min(1, stateAdjustment.value));
                     const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
                     this.glass.setBrightness(baseBrightness - p * 0.15);
+                    this.glass.forceRefresh(100);
                     this.glass.queue_redraw();
                 }
             });

@@ -686,6 +686,13 @@ export class UIManager {
             target: this.menu,
             id: this.menu.connect('open-state-changed', (menu, isOpen) => {
                 if (isOpen) {
+                    if (this.glass) {
+                        this.glass._copier?.clear();
+                        if (typeof this.glass.forceRefresh === 'function') {
+                            this.glass.forceRefresh(400);
+                        }
+                        this.glass.queue_redraw();
+                    }
                     this._queueBackdropRefresh(this.menu?.actor);
                     this._noteOwnOpenedHeight();
                     this._stableBaseW = undefined;

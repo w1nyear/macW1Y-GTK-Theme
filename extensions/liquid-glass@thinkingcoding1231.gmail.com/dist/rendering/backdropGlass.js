@@ -357,6 +357,7 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
         super.vfunc_map();
         this._serialAtMap = this._copier.lastCopy?.serial ?? 0;
         this._copier.clear();
+        this._copier.forceRefresh(400);
         this._relays.redrawArea();
         this.queue_redraw();
     }
