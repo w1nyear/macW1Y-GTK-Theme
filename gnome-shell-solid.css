@@ -4102,6 +4102,33 @@ StWidget.focused .app-grid-running-dot {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
+.mac-notification-time {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.50) !important;
+  margin-top: 1px !important;
+  margin-right: 2px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
+}
+
+.mac-notification-collapse-btn {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  border-radius: 9999px !important;
+  padding: 4px 16px !important;
+  margin: 4px auto 0 auto !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  transition-duration: 150ms !important;
+}
+
+.mac-notification-collapse-btn:hover {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+}
+
 .mac-notification-close-btn {
   background: transparent !important;
   background-color: transparent !important;

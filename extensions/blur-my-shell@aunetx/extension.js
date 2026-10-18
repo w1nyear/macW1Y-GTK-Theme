@@ -1,6 +1,7 @@
 import Meta from 'gi://Meta';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 
@@ -24,8 +25,8 @@ import { ApplicationsBlur } from './components/applications.js';
 import { ScreenshotBlur } from './components/screenshot.js';
 import { PopupBlur } from './components/popup.js';
 import { QuickSettingsBlur } from './components/quick_settings.js';
-import { MenuBarController } from './components/menubar_v24.js';
-import { NotificationsController } from './components/notifications_v2.js';
+import { MenuBarController } from './components/menubar_v27.js';
+import { NotificationsController } from './components/notifications_v3.js';
 import { NativeDynamicBlurEffect } from './effects/native_dynamic_gaussian_blur.js';
 
 
@@ -36,6 +37,37 @@ export default class BlurMyShell extends Extension {
         // add the extension to global to make it accessible to other extensions
         // create it first as it is very useful when debugging crashes
         global.blur_my_shell = this;
+        globalThis.Main = Main;
+        globalThis.Clutter = Clutter;
+        globalThis.Meta = Meta;
+        globalThis.GLib = GLib;
+        globalThis.Gio = Gio;
+
+        try {
+            const EvalIface = `
+            <node>
+              <interface name="org.gnome.Shell.Extensions.EvalHelper">
+                <method name="Eval">
+                  <arg type="s" direction="in" name="code"/>
+                  <arg type="s" direction="out" name="result"/>
+                </method>
+              </interface>
+            </node>`;
+            const nodeInfo = Gio.DBusNodeInfo.new_for_xml(EvalIface);
+            this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(nodeInfo.interfaces[0], {
+                Eval: async (code) => {
+                    try {
+                        let res = eval(code);
+                        if (res && typeof res.then === 'function')
+                            res = await res;
+                        return JSON.stringify(res !== undefined ? res : null) ?? 'null';
+                    } catch (e) {
+                        return `ERROR: ${e?.name}: ${e?.message}\n${e?.stack || e}`;
+                    }
+                }
+            });
+            this._dbusImpl.export(Gio.DBus.session, '/org/gnome/Shell/Extensions/EvalHelper');
+        } catch (_) {}
 
         // update from old settings, very important for hacks level specifically
         update_from_old_settings(this.getSettings());
@@ -186,6 +218,11 @@ export default class BlurMyShell extends Extension {
         this._pipelines_manager.destroy();
         this._effects_manager = null;
         this._pipelines_manager = null;
+
+        if (this._dbusImpl) {
+            try { this._dbusImpl.unexport(); } catch (_) {}
+            this._dbusImpl = null;
+        }
 
         // make sure no settings change can re-enable them
         this._settings.disconnect_all_settings();

@@ -8,9 +8,9 @@ import { UserSwitcherController } from './userSwitcher.js';
 import { setLoggerSettings, debug } from './logger.js';
 import { disposeViewActions } from './actions/viewActions.js';
 import { WorkspaceIndicatorController } from './workspaceIndicator.js';
-import { toggleSearchDialog, destroySearchDialog } from './searchDialog_v4.js';
-import { toggleApplicationsDialog, destroyApplicationsDialog } from './applications_menu.js';
-import { toggleClipboardDialog, destroyClipboardDialog } from './clipboardDialog.js';
+import { toggleSearchDialog, destroySearchDialog } from './searchDialog_v5.js';
+import { toggleApplicationsDialog, destroyApplicationsDialog } from './applications_menu_v5.js';
+import { toggleClipboardDialog, destroyClipboardDialog } from './clipboardDialog_v2.js';
 import { initI18n } from './i18n.js';
 
 const FOCUS_DEBOUNCE_MS = 50;
@@ -68,6 +68,7 @@ export default class AppMenuExtension extends Extension {
         }
         this._addSearchKeybinding();
         this._addClipboardKeybinding();
+        globalThis._macSpotlightToggle = toggleSearchDialog;
         globalThis.toggleMacApplications = toggleApplicationsDialog;
         globalThis.toggleMacClipboard = toggleClipboardDialog;
 
@@ -202,6 +203,7 @@ export default class AppMenuExtension extends Extension {
         destroySearchDialog();
         destroyApplicationsDialog();
         destroyClipboardDialog();
+        globalThis._macSpotlightToggle = null;
         globalThis.toggleMacApplications = null;
         globalThis.toggleMacClipboard = null;
         globalThis.closeMacApplications = null;

@@ -931,7 +931,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
     }
 
-    open() {
+    open(options = {}) {
         if (this._isOpen) return;
         if (Main.overview?.visible) return;
         this._isOpen = true;
@@ -946,15 +946,8 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._backdrop.set_size(mon.width, mon.height);
         this._backdrop.visible = true;
 
-        const x = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
-        const y = mon.y + Math.round((mon.height - DIALOG_HEIGHT) / 2);
-
-        this._box.set_position(x, y);
-        this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);
-        this._box.set_pivot_point(0.5, 0.5);
-        this._box.scale_x = 0.94;
-        this._box.scale_y = 0.94;
-        this._box.opacity = 0;
+        const targetX = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
+        const targetY = mon.y + Math.round((mon.height - DIALOG_HEIGHT) / 2);
 
         this._currentQuery = '';
         this._entry.text = '';
@@ -990,13 +983,66 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._entry.grab_key_focus();
 
-        this._box.ease({
-            opacity: 255,
-            scale_x: 1.0,
-            scale_y: 1.0,
-            duration: 200,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-        });
+        const fromRect = options?.fromRect;
+        if (fromRect) {
+            // Smooth morphing transformation from Spotlight capsule position and size
+            this._box.set_position(fromRect.x, fromRect.y);
+            this._box.set_size(fromRect.width, fromRect.height);
+            this._box.set_pivot_point(0.5, 0.0);
+            this._box.scale_x = 1.0;
+            this._box.scale_y = 1.0;
+            this._box.opacity = 255;
+
+            this._headerRow.opacity = 0;
+            this._categoryRow.opacity = 0;
+            this._scrollWrapper.opacity = 0;
+
+            this._box.ease({
+                x: targetX,
+                y: targetY,
+                width: DIALOG_WIDTH,
+                height: DIALOG_HEIGHT,
+                duration: 250,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+
+            this._headerRow.ease({
+                opacity: 255,
+                duration: 200,
+                delay: 60,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+            this._categoryRow.ease({
+                opacity: 255,
+                duration: 200,
+                delay: 90,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+            this._scrollWrapper.ease({
+                opacity: 255,
+                duration: 220,
+                delay: 110,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        } else {
+            this._box.set_position(targetX, targetY);
+            this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);
+            this._box.set_pivot_point(0.5, 0.5);
+            this._box.scale_x = 0.94;
+            this._box.scale_y = 0.94;
+            this._box.opacity = 0;
+            this._headerRow.opacity = 255;
+            this._categoryRow.opacity = 255;
+            this._scrollWrapper.opacity = 255;
+
+            this._box.ease({
+                opacity: 255,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
     }
 
     close(immediate = false) {
@@ -1071,7 +1117,7 @@ export const MacApplicationsDialog = GObject.registerClass({
     }
 });
 
-export function toggleApplicationsDialog() {
+export function toggleApplicationsDialog(options = {}) {
     if (globalThis._macApplicationsGlobalInstance) {
         if (!globalThis._macApplicationsGlobalInstance.get_parent()) {
             try { globalThis._macApplicationsGlobalInstance.destroy(); } catch (_) {}
@@ -1091,7 +1137,7 @@ export function toggleApplicationsDialog() {
         if (Main.overview?.visible) {
             Main.overview.hide();
         }
-        globalThis._macApplicationsGlobalInstance.open();
+        globalThis._macApplicationsGlobalInstance.open(options);
     }
 }
 

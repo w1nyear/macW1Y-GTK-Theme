@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
+import Pango from 'gi://Pango';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Layout from 'resource:///org/gnome/shell/ui/layout.js';
 import * as utils from '../conveniences/utils.js';
@@ -17,6 +18,98 @@ const HIDE_TIMEOUT_MS = 3000;
 const SLIDE_DISTANCE = 450;
 const ANIM_IN_DURATION = 320;
 const ANIM_OUT_DURATION = 260;
+
+/**
+ * Sanitizes and converts markdown and HTML tags into valid Pango markup.
+ * If markup parsing fails, completely strips formatting tags so raw tags like </b> are never shown.
+ */
+export function safePangoMarkup(rawText) {
+    if (!rawText || typeof rawText !== 'string') return '';
+    let text = rawText;
+
+    // Normalize newlines
+    text = text.replace(/\r\n/g, '\n');
+
+    // Convert rich-text HTML tags to valid Pango tags
+    text = text.replace(/<strong\b[^>]*>(.*?)<\/strong>/gi, '<b>$1</b>');
+    text = text.replace(/<em\b[^>]*>(.*?)<\/em>/gi, '<i>$1</i>');
+    text = text.replace(/<code\b[^>]*>(.*?)<\/code>/gi, '<tt>$1</tt>');
+    text = text.replace(/<pre\b[^>]*>(.*?)<\/pre>/gi, '<tt>$1</tt>');
+    text = text.replace(/<strike\b[^>]*>(.*?)<\/strike>/gi, '<s>$1</s>');
+    text = text.replace(/<del\b[^>]*>(.*?)<\/del>/gi, '<s>$1</s>');
+    text = text.replace(/<a\b[^>]*>(.*?)<\/a>/gi, '<u>$1</u>');
+
+    // Markdown conversions:
+    // **bold** or __bold__
+    text = text.replace(/(\*\*|__)(.*?)\1/g, '<b>$2</b>');
+    // ~~strikethrough~~
+    text = text.replace(/(~~)(.*?)\1/g, '<s>$2</s>');
+    // `inline code`
+    text = text.replace(/`([^`]+)`/g, '<tt>$1</tt>');
+    // *italic* or _italic_ (not inside word identifiers)
+    text = text.replace(/(^|[^\w])(\*|_)([^\*_]+?)\2([^\w]|$)/g, '$1<i>$3</i>$4');
+
+    // Remove any remaining unsupported HTML tags, keeping only allowed pango tags
+    text = text.replace(/<\/?(?!b\b|i\b|u\b|s\b|tt\b|span\b|sub\b|sup\b|big\b|small\b)[a-zA-Z0-9_-]+(?:\s+[^>]*)?>/gi, '');
+
+    // Escape stray & that is not an existing XML entity
+    text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;');
+
+    try {
+        Pango.parse_markup(text, -1, '');
+        return text;
+    } catch (e) {
+        // Fallback: strip tags and markdown markers so formatting tags never leak to user
+        let stripped = rawText.replace(/<[^>]+>/g, '').replace(/(\*\*|__|\*|_|~~|`)/g, '');
+        return GLib.markup_escape_text(stripped, -1);
+    }
+}
+
+export function setLabelMarkup(label, rawText) {
+    if (!label || !label.clutter_text) return;
+    const markup = safePangoMarkup(rawText);
+    label.clutter_text.use_markup = true;
+    try {
+        label.clutter_text.set_markup(markup);
+    } catch (_) {
+        label.clutter_text.set_text(rawText ? rawText.replace(/<[^>]+>/g, '') : '');
+    }
+}
+
+/**
+ * Formats notification timestamp:
+ * - Today: HH:mm (e.g. "14:31")
+ * - Yesterday: "Вчора 14:31"
+ * - Older within 7 days: "16 жов 14:31"
+ * - Older: "10.10.2026"
+ */
+export function formatNotificationTimestamp(datetime) {
+    let dt = datetime;
+    if (!dt) {
+        dt = GLib.DateTime.new_now_local();
+    } else if (typeof dt.to_local === 'function') {
+        dt = dt.to_local();
+    }
+
+    const now = GLib.DateTime.new_now_local();
+    const today = GLib.DateTime.new_local(now.get_year(), now.get_month(), now.get_day_of_month(), 0, 0, 0);
+    const notifDay = GLib.DateTime.new_local(dt.get_year(), dt.get_month(), dt.get_day_of_month(), 0, 0, 0);
+
+    const diffSeconds = today.to_unix() - notifDay.to_unix();
+    const diffDays = Math.round(diffSeconds / 86400);
+
+    const timeStr = dt.format('%H:%M');
+
+    if (diffDays <= 0) {
+        return timeStr;
+    } else if (diffDays === 1) {
+        return `Вчора ${timeStr}`;
+    } else if (diffDays < 7) {
+        return dt.format('%d %b %H:%M');
+    } else {
+        return dt.format('%d.%m.%Y');
+    }
+}
 
 export function buildNotificationCard(source, notification, options = {}) {
     const {
@@ -43,7 +136,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     });
     banner.set_child(mainBox);
 
-    // Top Row: [ Icon ] [ Texts ] [ CloseButton ]
+    // Top Row: [ Icon ] [ Texts ] [ TopRightArea: TimeLabel / CloseButton ]
     const topRow = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,
         x_expand: true,
@@ -87,22 +180,22 @@ export function buildNotificationCard(source, notification, options = {}) {
 
     // Title
     const titleLabel = new St.Label({
-        text: notification.title || '',
         style_class: 'mac-notification-title',
     });
+    setLabelMarkup(titleLabel, notification.title || '');
     contentBox.add_child(titleLabel);
 
     // Body
     const bodyText = notification.bannerBodyText || notification.body || '';
     const bodyLabel = new St.Label({
-        text: bodyText,
         style_class: 'mac-notification-body',
     });
+    setLabelMarkup(bodyLabel, bodyText);
     bodyLabel.clutter_text.line_wrap = false;
     bodyLabel.clutter_text.ellipsize = 3; // END
     contentBox.add_child(bodyLabel);
 
-    // 3. Close Button ('x')
+    // 3. Top-Right Bin (Time + Close button)
     const extDir = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/blur-my-shell@aunetx`;
     const closeIconPath = `${extDir}/assets/close.png`;
     const closeHoverIconPath = `${extDir}/assets/close-button-hover.png`;
@@ -121,12 +214,30 @@ export function buildNotificationCard(source, notification, options = {}) {
         can_focus: true,
     });
     closeBtn.set_style('background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important; border-radius: 9999px !important; padding: 0 !important; width: 22px !important; height: 22px !important;');
-    closeBtn.opacity = 0; // Hidden by default, shown on hover
+    closeBtn.opacity = 0;
     closeBtn.visible = false;
     closeBtn.connect('notify::hover', () => {
         closeIcon.gicon = closeBtn.hover ? giconHover : giconNormal;
     });
-    topRow.add_child(closeBtn);
+
+    const timeLabel = new St.Label({
+        text: formatNotificationTimestamp(notification.datetime),
+        style_class: 'mac-notification-time',
+        y_align: Clutter.ActorAlign.START,
+        x_align: Clutter.ActorAlign.END,
+        style: 'color: rgba(255, 255, 255, 0.45); font-size: 11px; margin-top: 1px; margin-right: 2px;',
+    });
+    timeLabel.opacity = 255;
+    timeLabel.visible = true;
+
+    const topRightBin = new St.Widget({
+        layout_manager: new Clutter.BinLayout(),
+        y_align: Clutter.ActorAlign.START,
+        x_align: Clutter.ActorAlign.END,
+    });
+    topRightBin.add_child(timeLabel);
+    topRightBin.add_child(closeBtn);
+    topRow.add_child(topRightBin);
 
     // 4. Action Buttons (if notification has actions)
     let actionsBox = null;
@@ -162,6 +273,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         notification,
         source,
         closeBtn,
+        timeLabel,
         titleLabel,
         bodyLabel,
         actionsBox,
@@ -203,6 +315,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         const hovered = isCardHovered();
 
         closeBtn.remove_all_transitions();
+        timeLabel.remove_all_transitions();
+
         if (hovered) {
             closeBtn.visible = true;
             closeBtn.ease({
@@ -210,7 +324,21 @@ export function buildNotificationCard(source, notification, options = {}) {
                 duration: 150,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             });
+            timeLabel.ease({
+                opacity: 0,
+                duration: 150,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => {
+                    if (isCardHovered()) timeLabel.visible = false;
+                },
+            });
         } else {
+            timeLabel.visible = true;
+            timeLabel.ease({
+                opacity: 255,
+                duration: 150,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
             closeBtn.ease({
                 opacity: 0,
                 duration: 150,
@@ -246,6 +374,374 @@ export function buildNotificationCard(source, notification, options = {}) {
 }
 globalThis._macBuildNotificationCard = buildNotificationCard;
 
+/**
+ * MacNotificationGroup:
+ * Manages multiple notifications belonging to the same application or conversation.
+ * In collapsed state: shows top card with macOS layered card stack underneath.
+ * On click: cascades downwards to show all notifications with smooth staggered animation.
+ */
+export class MacNotificationGroup {
+    constructor(groupKey, options = {}) {
+        this.groupKey = groupKey;
+        this.options = options;
+        this.isExpanded = false;
+        this.items = []; // [{ source, notification, cardData, banner }] newest first
+        this.isClosing = false;
+        this.hovered = false;
+        this.timeoutId = 0;
+
+        this.actor = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            x_expand: true,
+            y_expand: false,
+            clip_to_allocation: false,
+            reactive: false,
+        });
+        this.actor._macGroup = this;
+        this.actor.getGlassSubcards = () => this.getGlassSubcards();
+        this.actor.getGlassRegions = (mon) => this.getGlassRegions(mon);
+
+        // Top card container
+        this.topCardBox = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            x_expand: true,
+            reactive: false,
+        });
+        this.actor.add_child(this.topCardBox);
+
+        // Stack layers box (positioned right below the top card)
+        this.stackLayersBox = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            x_expand: true,
+            y_expand: false,
+            visible: false,
+            reactive: false,
+            style: 'margin-top: -6px;',
+        });
+        this.actor.add_child(this.stackLayersBox);
+
+        // Layer 1 (immediately below top card)
+        this.layer1 = new St.Widget({
+            style: 'background-color: rgba(36, 36, 36, 0.65); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 20px; margin-left: 10px; margin-right: 10px; height: 10px;',
+            x_expand: true,
+            visible: false,
+        });
+        this.stackLayersBox.add_child(this.layer1);
+
+        // Layer 2 (bottom layer for 3+ items)
+        this.layer2 = new St.Widget({
+            style: 'background-color: rgba(26, 26, 26, 0.65); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 18px; margin-left: 20px; margin-right: 20px; height: 8px; margin-top: -4px;',
+            x_expand: true,
+            visible: false,
+        });
+        this.stackLayersBox.add_child(this.layer2);
+
+        // Expanded cards box
+        this.expandedCardsBox = new St.BoxLayout({
+            orientation: Clutter.Orientation.VERTICAL,
+            x_expand: true,
+            y_expand: false,
+            style: 'spacing: 8px;',
+            visible: false,
+        });
+        this.actor.add_child(this.expandedCardsBox);
+
+        // Collapse button
+        this.collapseBtn = new St.Button({
+            style_class: 'mac-notification-collapse-btn',
+            label: 'Згорнути',
+            style: 'background-color: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.85); font-size: 11px; font-weight: 500; border-radius: 9999px; padding: 4px 16px; margin: 4px auto 0 auto;',
+            x_align: Clutter.ActorAlign.CENTER,
+            reactive: true,
+            can_focus: true,
+        });
+        this.collapseBtn.connect('clicked', () => {
+            this.collapse();
+        });
+    }
+
+    addNotification(source, notification, isPrepend = true) {
+        const cardData = buildNotificationCard(source, notification, {
+            sigma: this.options.sigma || 3,
+            isBanner: this.options.isBanner ?? true,
+            onClose: () => {
+                this.removeNotification(notification, true);
+            },
+            onClick: () => {
+                if (this.isExpanded) {
+                    try { notification.activate(); } catch (e) { logError(e); }
+                    this.removeNotification(notification, false);
+                } else {
+                    if (this.items.length > 1) {
+                        this.expand();
+                    } else {
+                        try { notification.activate(); } catch (e) { logError(e); }
+                        this.removeNotification(notification, false);
+                    }
+                }
+            },
+        });
+
+        const item = { source, notification, cardData, banner: cardData.banner };
+
+        if (isPrepend) {
+            this.items.unshift(item);
+        } else {
+            this.items.push(item);
+        }
+
+        notification.connectObject('destroy', () => {
+            this.removeNotification(notification, false);
+        }, cardData.banner);
+
+        this._updateView();
+        return item;
+    }
+
+    removeNotification(notification, userDismissed = false) {
+        const idx = this.items.findIndex(it => it.notification === notification);
+        if (idx === -1) return;
+
+        const [removed] = this.items.splice(idx, 1);
+
+        try {
+            if (userDismissed) {
+                notification.destroy(2); // DISMISSED
+            } else if (notification.isTransient) {
+                notification.destroy(1); // EXPIRED
+            }
+        } catch (_) {}
+
+        if (this.items.length === 0) {
+            this.destroy();
+            if (this.options.onEmpty) this.options.onEmpty(this);
+        } else {
+            if (this.isExpanded && this.items.length === 1) {
+                this.collapse();
+            } else {
+                this._updateView();
+            }
+        }
+    }
+
+    _updateView() {
+        if (this.items.length === 0) {
+            if (this.options.onEmpty) this.options.onEmpty(this);
+            return;
+        }
+
+        if (this.isExpanded) {
+            this._renderExpanded();
+        } else {
+            this._renderCollapsed();
+        }
+    }
+
+    _renderCollapsed() {
+        this.expandedCardsBox.visible = false;
+        this.expandedCardsBox.destroy_all_children();
+
+        this.topCardBox.visible = true;
+        this.topCardBox.destroy_all_children();
+
+        const topItem = this.items[0];
+        if (topItem) {
+            this.topCardBox.add_child(topItem.banner);
+            topItem.banner.visible = true;
+            topItem.banner.opacity = 255;
+            topItem.banner.translation_y = 0;
+            topItem.banner.scale_x = 1.0;
+            topItem.banner.scale_y = 1.0;
+        }
+
+        if (this.items.length >= 2) {
+            this.stackLayersBox.visible = true;
+            this.stackLayersBox.opacity = 255;
+            this.layer1.visible = true;
+            this.layer2.visible = (this.items.length >= 3);
+        } else {
+            this.stackLayersBox.visible = false;
+            this.layer1.visible = false;
+            this.layer2.visible = false;
+        }
+
+        if (this.options.onGeometryChanged) {
+            this.options.onGeometryChanged();
+        }
+    }
+
+    _renderExpanded() {
+        this.topCardBox.visible = false;
+        this.topCardBox.destroy_all_children();
+        this.stackLayersBox.visible = false;
+
+        this.expandedCardsBox.visible = true;
+        this.expandedCardsBox.destroy_all_children();
+
+        for (const item of this.items) {
+            this.expandedCardsBox.add_child(item.banner);
+            item.banner.visible = true;
+        }
+        this.expandedCardsBox.add_child(this.collapseBtn);
+
+        if (this.options.onGeometryChanged) {
+            this.options.onGeometryChanged();
+        }
+    }
+
+    expand() {
+        if (this.isExpanded || this.items.length <= 1) return;
+        this.isExpanded = true;
+
+        this.stackLayersBox.ease({
+            opacity: 0,
+            duration: 120,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            onComplete: () => {
+                this.stackLayersBox.visible = false;
+            }
+        });
+
+        this.topCardBox.visible = false;
+        this.topCardBox.destroy_all_children();
+
+        this.expandedCardsBox.visible = true;
+        this.expandedCardsBox.destroy_all_children();
+
+        // Cascading waterfall entrance
+        for (let i = 0; i < this.items.length; i++) {
+            const item = this.items[i];
+            const banner = item.banner;
+            this.expandedCardsBox.add_child(banner);
+            banner.visible = true;
+
+            banner.opacity = 0;
+            banner.translation_y = -20 * (i + 1);
+            banner.scale_x = 0.96;
+            banner.scale_y = 0.96;
+
+            banner.ease({
+                opacity: 255,
+                translation_y: 0,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                duration: 240 + i * 40,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                onComplete: () => {
+                    if (this.options.onGeometryChanged) this.options.onGeometryChanged();
+                }
+            });
+        }
+
+        this.collapseBtn.opacity = 0;
+        this.expandedCardsBox.add_child(this.collapseBtn);
+        this.collapseBtn.ease({
+            opacity: 255,
+            duration: 280,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
+
+        if (this.options.onExpand) this.options.onExpand(this);
+        if (this.options.onGeometryChanged) this.options.onGeometryChanged();
+    }
+
+    collapse() {
+        if (!this.isExpanded) return;
+        this.isExpanded = false;
+
+        const count = this.items.length;
+        for (let i = 1; i < count; i++) {
+            const item = this.items[i];
+            item.banner.ease({
+                opacity: 0,
+                translation_y: -16 * i,
+                duration: 160,
+                mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            });
+        }
+        this.collapseBtn.ease({
+            opacity: 0,
+            duration: 140,
+            mode: Clutter.AnimationMode.EASE_IN_QUAD,
+        });
+
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 160, () => {
+            this._renderCollapsed();
+            return GLib.SOURCE_REMOVE;
+        });
+
+        if (this.options.onCollapse) this.options.onCollapse(this);
+        if (this.options.onGeometryChanged) this.options.onGeometryChanged();
+    }
+
+    getGlassSubcards() {
+        if (!this.actor.visible || this.isClosing) return [];
+        if (!this.isExpanded) {
+            const top = this.items[0];
+            return top && top.banner.visible ? [top.banner] : [];
+        } else {
+            return this.items.map(it => it.banner).filter(b => b.visible);
+        }
+    }
+
+    getGlassRegions(monitor) {
+        if (!this.actor.visible || this.isClosing) return [];
+        const regions = [];
+
+        if (!this.isExpanded) {
+            const topItem = this.items[0];
+            if (topItem && topItem.banner.visible) {
+                const [absX, absY] = topItem.banner.get_transformed_position();
+                const [w, h] = topItem.banner.get_transformed_size();
+                if (w > 0 && h > 0 && Number.isFinite(absX) && Number.isFinite(absY)) {
+                    const extraBottom = (this.items.length >= 3) ? 14 : (this.items.length >= 2 ? 8 : 0);
+                    regions.push({
+                        x: absX - monitor.x,
+                        y: absY - monitor.y,
+                        w: w,
+                        h: h + extraBottom,
+                        tintR: 0.0,
+                        tintG: 0.0,
+                        tintB: 0.0,
+                        baseStrength: 0.06,
+                    });
+                }
+            }
+        } else {
+            for (const item of this.items) {
+                const b = item.banner;
+                if (!b.visible) continue;
+                const [absX, absY] = b.get_transformed_position();
+                const [w, h] = b.get_transformed_size();
+                if (w > 0 && h > 0 && Number.isFinite(absX) && Number.isFinite(absY)) {
+                    regions.push({
+                        x: absX - monitor.x,
+                        y: absY - monitor.y,
+                        w: w,
+                        h: h,
+                        tintR: 0.0,
+                        tintG: 0.0,
+                        tintB: 0.0,
+                        baseStrength: 0.06,
+                    });
+                }
+            }
+        }
+        return regions;
+    }
+
+    destroy() {
+        this.isClosing = true;
+        this.items.forEach(it => {
+            try { it.notification.disconnectObject(it.banner); } catch (_) {}
+            try { it.banner.destroy(); } catch (_) {}
+        });
+        this.items = [];
+        this.actor.destroy();
+    }
+}
+globalThis._MacNotificationGroup = MacNotificationGroup;
+
 export const NotificationsController = class NotificationsController {
     constructor(connections, settings, effects_manager) {
         this.connections = connections;
@@ -254,7 +750,7 @@ export const NotificationsController = class NotificationsController {
         this.enabled = false;
         this._stackBox = null;
         this._glass = null;
-        this._activeBanners = [];
+        this._activeGroups = new Map(); // groupKey -> MacNotificationGroup
         this._pendingQueue = [];
         this._origOnRequestBanner = null;
         this._origAddSource = null;
@@ -276,14 +772,12 @@ export const NotificationsController = class NotificationsController {
         this.enabled = true;
         globalThis._macNotificationsController = this;
 
-
-
         // Create the vertical stack box in top-right of primary monitor work area
         this._stackBox = new St.BoxLayout({
             name: 'mac-notification-stack',
             style_class: 'mac-notification-stack',
             orientation: Clutter.Orientation.VERTICAL,
-            style: 'spacing: 10px;',
+            style: 'spacing: 12px;',
             y_align: Clutter.ActorAlign.START,
             x_align: Clutter.ActorAlign.END,
             x_expand: true,
@@ -411,7 +905,7 @@ export const NotificationsController = class NotificationsController {
 
     _syncGlass() {
         if (!this._glass || this._glass.is_finalized?.()) return;
-        if (!this.enabled || !this._activeBanners || this._activeBanners.length === 0) {
+        if (!this.enabled || !this._activeGroups || this._activeGroups.size === 0) {
             if (this._glass.visible) this._glass.hide();
             if (this._bannerStageLoopId) {
                 try { global.stage.disconnect(this._bannerStageLoopId); } catch (_) {}
@@ -430,23 +924,16 @@ export const NotificationsController = class NotificationsController {
         const regions = [];
         const { tintVal, baseStrength, tintStrength } = this._getNotifThemeParams();
 
-        for (const b of this._activeBanners) {
-            const banner = b.banner;
-            if (!banner.visible) continue;
-            const [absX, absY] = banner.get_transformed_position();
-            const [w, h] = banner.get_transformed_size();
-            if (w <= 0 || h <= 0 || !Number.isFinite(absX) || !Number.isFinite(absY)) continue;
-
-            regions.push({
-                x: absX - monitor.x,
-                y: absY - monitor.y,
-                w: w,
-                h: h,
-                tintR: tintVal,
-                tintG: tintVal,
-                tintB: tintVal,
-                baseStrength: baseStrength,
-            });
+        for (const [key, group] of this._activeGroups) {
+            if (!group.actor.visible) continue;
+            const groupRegions = group.getGlassRegions(monitor);
+            for (const r of groupRegions) {
+                r.tintR = tintVal;
+                r.tintG = tintVal;
+                r.tintB = tintVal;
+                r.baseStrength = baseStrength;
+                regions.push(r);
+            }
         }
 
         if (regions.length > 0) {
@@ -467,7 +954,7 @@ export const NotificationsController = class NotificationsController {
 
             if (!this._bannerStageLoopId) {
                 this._bannerStageLoopId = global.stage.connect('before-update', () => {
-                    if (this._activeBanners && this._activeBanners.length > 0) {
+                    if (this._activeGroups && this._activeGroups.size > 0) {
                         this._syncGlass();
                     }
                 });
@@ -509,7 +996,6 @@ export const NotificationsController = class NotificationsController {
         } catch (_) {}
 
         if (!showBanners) {
-            // DND active: quietly transfer to Notification Center, no popups, no sounds, no animations
             notification.acknowledged = true;
             if (notifCenter && typeof notifCenter.addNotificationQuiet === 'function') {
                 notifCenter.addNotificationQuiet(source, notification);
@@ -517,8 +1003,7 @@ export const NotificationsController = class NotificationsController {
             return;
         }
 
-        // If Notification Center is currently open, don't overlap floating banners onto it!
-        // Animate the notification directly into the top of the open Notification Center.
+        // If Notification Center is open, animate into Notification Center directly
         const isCenterOpen = (notifCenter?.isOpen ?? false) || (Main.panel?.statusArea?.dateMenu?.menu?.isOpen ?? false);
         if (isCenterOpen) {
             notification.acknowledged = true;
@@ -542,68 +1027,48 @@ export const NotificationsController = class NotificationsController {
         if (Main.layoutManager.primaryMonitor?.inFullscreen && notification.urgency !== 2)
             return;
 
-        // Play sound and mark acknowledged so default tray doesn't re-show
         notification.acknowledged = true;
         try { notification.playSound(); } catch (_e) { /* ignore */ }
 
-        // If banner for this notification is already displayed, update it
-        const existing = this._activeBanners.find(b => b.notification === notification);
-        if (existing) {
-            this._updateBanner(existing);
-            return;
-        }
+        // Grouping key: by application / source
+        const groupKey = source?.id || source?.title || 'app';
+        let group = this._activeGroups.get(groupKey);
 
-        // Display or queue
-        if (this._activeBanners.length < MAX_VISIBLE_BANNERS) {
-            this._showBanner(source, notification);
+        if (group) {
+            // Group already active: add new notification to group
+            group.addNotification(source, notification, true);
+            this._startGroupTimer(group, DEFAULT_TIMEOUT_MS);
+            this._syncGlass();
         } else {
-            this._pendingQueue.push({ source, notification });
+            if (this._activeGroups.size < MAX_VISIBLE_BANNERS) {
+                this._showNewGroup(source, notification, groupKey);
+            } else {
+                this._pendingQueue.push({ source, notification });
+            }
         }
     }
 
-    _showBanner(source, notification) {
-        const bannerData = buildNotificationCard(source, notification, {
+    _showNewGroup(source, notification, groupKey) {
+        const group = new MacNotificationGroup(groupKey, {
             sigma: this.sigma,
-            onClose: () => {
-                this._dismissBanner(bannerData, true);
+            isBanner: true,
+            onGeometryChanged: () => this._syncGlass(),
+            onExpand: (grp) => {
+                this._pauseGroupTimer(grp);
+                this._syncGlass();
             },
-            onClick: () => {
-                try { notification.activate(); } catch (e) { logError(e); }
-                this._dismissBanner(bannerData, false);
+            onCollapse: (grp) => {
+                this._startGroupTimer(grp, DEFAULT_TIMEOUT_MS);
+                this._syncGlass();
+            },
+            onEmpty: (grp) => {
+                this._dismissGroup(grp);
             },
         });
 
-        bannerData.timeoutId = 0;
-        bannerData.hovered = false;
-
-        const updateHoverState = () => {
-            if (bannerData.isClosing)
-                return;
-            const isHovered = bannerData.banner.hover || bannerData.closeBtn.hover;
-            if (isHovered && !bannerData.hovered) {
-                bannerData.hovered = true;
-                this._pauseTimer(bannerData);
-            } else if (!isHovered && bannerData.hovered) {
-                bannerData.hovered = false;
-                this._startTimer(bannerData, HIDE_TIMEOUT_MS);
-            }
-        };
-
-        bannerData.banner.connect('notify::hover', updateHoverState);
-        bannerData.closeBtn.connect('notify::hover', updateHoverState);
-
-        notification.connectObject('destroy', () => {
-            this._dismissBanner(bannerData, false);
-        }, bannerData.banner);
-
-        bannerData.banner.connect('notify::translation-x', () => this._syncGlass());
-        bannerData.banner.connect('notify::opacity', () => this._syncGlass());
-        bannerData.banner.connect('notify::height', () => this._syncGlass());
-        bannerData.banner.connect('notify::width', () => this._syncGlass());
-        bannerData.banner.connect('notify::allocation', () => this._syncGlass());
-
-        this._activeBanners.push(bannerData);
-        this._stackBox.add_child(bannerData.banner);
+        group.addNotification(source, notification, true);
+        this._activeGroups.set(groupKey, group);
+        this._stackBox.add_child(group.actor);
         this._updateVisibility();
 
         if (this._glass && typeof this._glass.forceRefresh === 'function') {
@@ -611,9 +1076,9 @@ export const NotificationsController = class NotificationsController {
         }
         this._syncGlass();
 
-        bannerData.banner.opacity = 0;
-        bannerData.banner.translation_x = SLIDE_DISTANCE;
-        bannerData.banner.ease({
+        group.actor.opacity = 0;
+        group.actor.translation_x = SLIDE_DISTANCE;
+        group.actor.ease({
             opacity: 255,
             translation_x: 0,
             duration: ANIM_IN_DURATION,
@@ -624,73 +1089,45 @@ export const NotificationsController = class NotificationsController {
         });
 
         if (notification.urgency !== 2) {
-            this._startTimer(bannerData, DEFAULT_TIMEOUT_MS);
+            this._startGroupTimer(group, DEFAULT_TIMEOUT_MS);
         }
     }
 
-    _updateBanner(bannerData) {
-        const { banner, notification, titleLabel, bodyLabel } = bannerData;
-        titleLabel.text = notification.title || '';
-        bodyLabel.text = notification.bannerBodyText || notification.body || '';
+    _startGroupTimer(group, ms) {
+        this._pauseGroupTimer(group);
+        if (group.isExpanded) return;
 
-        // Reset timer
-        if (!bannerData.hovered && notification.urgency !== 2) {
-            this._startTimer(bannerData, DEFAULT_TIMEOUT_MS);
-        }
-    }
-
-    _startTimer(bannerData, ms) {
-        this._pauseTimer(bannerData);
-        bannerData.timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
-            bannerData.timeoutId = 0;
-            this._dismissBanner(bannerData, false);
+        group.timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+            group.timeoutId = 0;
+            this._dismissGroup(group);
             return GLib.SOURCE_REMOVE;
         });
     }
 
-    _pauseTimer(bannerData) {
-        if (bannerData.timeoutId) {
-            GLib.source_remove(bannerData.timeoutId);
-            bannerData.timeoutId = 0;
+    _pauseGroupTimer(group) {
+        if (group.timeoutId) {
+            GLib.source_remove(group.timeoutId);
+            group.timeoutId = 0;
         }
     }
 
-    _dismissBanner(bannerData, userDismissed) {
-        const idx = this._activeBanners.indexOf(bannerData);
-        if (idx === -1 || bannerData.isClosing)
-            return;
+    _dismissGroup(group) {
+        if (!this._activeGroups.has(group.groupKey) || group.isClosing) return;
+        group.isClosing = true;
+        this._pauseGroupTimer(group);
 
-        bannerData.isClosing = true;
-        this._pauseTimer(bannerData);
-
-        const banner = bannerData.banner;
-        banner.remove_all_transitions();
-
-        // Slide back out past the right edge of the screen
-        banner.ease({
+        group.actor.remove_all_transitions();
+        group.actor.ease({
             opacity: 0,
             translation_x: SLIDE_DISTANCE,
             duration: ANIM_OUT_DURATION,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
             onComplete: () => {
-                const curIdx = this._activeBanners.indexOf(bannerData);
-                if (curIdx !== -1) {
-                    this._activeBanners.splice(curIdx, 1);
+                this._activeGroups.delete(group.groupKey);
+                if (group.actor.get_parent() === this._stackBox) {
+                    this._stackBox.remove_child(group.actor);
                 }
-                if (banner.get_parent() === this._stackBox)
-                    this._stackBox.remove_child(banner);
-                banner.destroy();
-
-                try {
-                    if (userDismissed) {
-                        bannerData.notification.destroy(2); // DISMISSED
-                    } else if (bannerData.notification.isTransient) {
-                        bannerData.notification.destroy(1); // EXPIRED
-                    }
-                } catch (e) {
-                    console.error(`[BlurMyShell] Notification destroy error: ${e}`);
-                }
-
+                group.destroy();
                 this._updateVisibility();
                 this._checkPendingQueue();
             },
@@ -698,134 +1135,130 @@ export const NotificationsController = class NotificationsController {
     }
 
     _checkPendingQueue() {
-        if (this._pendingQueue.length > 0 && this._activeBanners.length < MAX_VISIBLE_BANNERS) {
+        if (this._pendingQueue.length > 0 && this._activeGroups.size < MAX_VISIBLE_BANNERS) {
             const next = this._pendingQueue.shift();
-            this._showBanner(next.source, next.notification);
+            const groupKey = next.source?.id || next.source?.title || 'app';
+            let existing = this._activeGroups.get(groupKey);
+            if (existing) {
+                existing.addNotification(next.source, next.notification, true);
+            } else {
+                this._showNewGroup(next.source, next.notification, groupKey);
+            }
         }
     }
 
     _updateVisibility() {
-        const hasBanners = this._activeBanners.length > 0;
+        const hasBanners = this._activeGroups.size > 0;
         this._stackBox.visible = hasBanners;
         this._syncGlass();
     }
 
     getActiveBanners() {
-        return this._activeBanners ? [...this._activeBanners] : [];
+        const all = [];
+        for (const [k, group] of this._activeGroups) {
+            for (const item of group.items) {
+                all.push({ source: item.source, notification: item.notification, banner: item.banner });
+            }
+        }
+        return all;
     }
 
     takeActiveBanners() {
-        if (!this._activeBanners || this._activeBanners.length === 0)
-            return [];
-        const list = [...this._activeBanners];
-        this._activeBanners = [];
-        this._pendingQueue = [];
-        for (const b of list) {
-            this._pauseTimer(b);
+        const all = this.getActiveBanners();
+        for (const [k, group] of this._activeGroups) {
+            this._pauseGroupTimer(group);
+            if (group.actor.get_parent() === this._stackBox) {
+                this._stackBox.remove_child(group.actor);
+            }
+            group.destroy();
         }
-        return list;
+        this._activeGroups.clear();
+        this._pendingQueue = [];
+        this._updateVisibility();
+        return all;
     }
 
     dismissAllBanners(immediate = false) {
-        if (!this._activeBanners || this._activeBanners.length === 0)
+        if (!this._activeGroups || this._activeGroups.size === 0)
             return;
 
-        const bannersToDismiss = [...this._activeBanners];
-        this._activeBanners = [];
+        const groups = Array.from(this._activeGroups.values());
+        this._activeGroups.clear();
         this._pendingQueue = [];
 
-        for (const bannerData of bannersToDismiss) {
-            this._pauseTimer(bannerData);
-            const banner = bannerData.banner;
-            banner.remove_all_transitions();
+        for (const group of groups) {
+            this._pauseGroupTimer(group);
+            group.actor.remove_all_transitions();
 
             if (immediate) {
-                if (banner.get_parent() === this._stackBox)
-                    this._stackBox.remove_child(banner);
-                banner.destroy();
+                if (group.actor.get_parent() === this._stackBox)
+                    this._stackBox.remove_child(group.actor);
+                group.destroy();
             } else {
-                banner.ease({
+                group.actor.ease({
                     opacity: 0,
                     translation_x: SLIDE_DISTANCE,
                     duration: 180,
                     mode: Clutter.AnimationMode.EASE_IN_CUBIC,
                     onComplete: () => {
-                        if (banner.get_parent() === this._stackBox)
-                            this._stackBox.remove_child(banner);
-                        banner.destroy();
+                        if (group.actor.get_parent() === this._stackBox)
+                            this._stackBox.remove_child(group.actor);
+                        group.destroy();
                     },
                 });
             }
         }
+
         this._updateVisibility();
     }
 
     disable() {
         if (!this.enabled)
             return;
+
         this.enabled = false;
-        if (globalThis._macNotificationsController === this) {
-            globalThis._macNotificationsController = null;
+        globalThis._macNotificationsController = null;
+
+        if (this._bannerStageLoopId) {
+            try { global.stage.disconnect(this._bannerStageLoopId); } catch (_) {}
+            this._bannerStageLoopId = 0;
         }
 
-        // Restore GNOME default banner bin
-        if (Main.messageTray?._bannerBin) {
-            Main.messageTray._bannerBin.visible = true;
-        }
-
-        // Restore original handlers
         if (this._origOnRequestBanner && Main.messageTray) {
             Main.messageTray._onNotificationRequestBanner = this._origOnRequestBanner;
             this._origOnRequestBanner = null;
         }
+
         if (this._origAddSource && Main.messageTray) {
             Main.messageTray._addSource = this._origAddSource;
             this._origAddSource = null;
         }
 
-        // Restore source connections
-        for (const source of Main.messageTray.getSources()) {
-            source.disconnectObject(this);
-            delete source._macBannerHooked;
-            source.disconnectObject(Main.messageTray);
-            source.connectObject(
-                'notification-request-banner', Main.messageTray._onNotificationRequestBanner.bind(Main.messageTray),
-                'notification-removed', Main.messageTray._onNotificationRemoved.bind(Main.messageTray),
-                'destroy', () => Main.messageTray._removeSource(source),
-                Main.messageTray
-            );
-        }
-
-        // Dismiss all active banners immediately
-        for (const b of [...this._activeBanners]) {
-            this._pauseTimer(b);
-            b.banner.destroy();
-        }
-        this._activeBanners = [];
-        this._pendingQueue = [];
-
-        // Remove stack box
-        if (this._stackBox) {
-            Main.layoutManager.untrackChrome(this._stackBox);
-            if (this._stackBox.get_parent() === Main.layoutManager.uiGroup)
-                Main.layoutManager.uiGroup.remove_child(this._stackBox);
-            this._stackBox = null;
-        }
-
-        // Remove glass
-        if (this._bannerStageLoopId) {
-            try { global.stage.disconnect(this._bannerStageLoopId); } catch (_) {}
-            this._bannerStageLoopId = 0;
-        }
-        if (this._glass) {
-            this._glass.cleanup();
-            if (this._glass.get_parent()) {
-                this._glass.get_parent().remove_child(this._glass);
+        for (const source of (Main.messageTray?.getSources() || [])) {
+            if (source._macBannerHooked) {
+                source._macBannerHooked = false;
+                source.disconnectObject(this);
             }
-            this._glass.destroy();
+        }
+
+        this.dismissAllBanners(true);
+
+        if (this._glass) {
+            try {
+                this._glass.hide();
+                this._glass.destroy();
+            } catch (_) {}
             this._glass = null;
         }
 
-        this.connections.disconnect_all();
+        if (this._stackBox) {
+            Main.layoutManager.removeChrome(this._stackBox);
+            this._stackBox.destroy();
+            this._stackBox = null;
+        }
+
+        if (Main.messageTray?._bannerBin) {
+            Main.messageTray._bannerBin.visible = true;
+        }
     }
 };

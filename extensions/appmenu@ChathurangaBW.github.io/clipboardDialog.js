@@ -616,7 +616,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._glass.syncSources();
     }
 
-    open() {
+    open(options = {}) {
         if (this._isOpen) return;
         if (Main.overview?.visible) return;
         this._isOpen = true;
@@ -630,15 +630,8 @@ export const MacClipboardDialog = GObject.registerClass({
         this._backdrop.visible = true;
 
         const h = Math.min(DIALOG_MAX_HEIGHT, Math.round(mon.height * 0.75));
-        const x = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
-        const y = mon.y + Math.round((mon.height - h) / 2);
-
-        this._box.set_position(x, y);
-        this._box.set_size(DIALOG_WIDTH, h);
-        this._box.set_pivot_point(0.5, 0.5);
-        this._box.scale_x = 0.95;
-        this._box.scale_y = 0.95;
-        this._box.opacity = 0;
+        const targetX = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
+        const targetY = mon.y + Math.round((mon.height - h) / 2);
 
         this._searchEntry.text = '';
         this._refreshList();
@@ -691,13 +684,57 @@ export const MacClipboardDialog = GObject.registerClass({
 
         this._searchEntry.grab_key_focus();
 
-        this._box.ease({
-            opacity: 255,
-            scale_x: 1.0,
-            scale_y: 1.0,
-            duration: 200,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-        });
+        const fromRect = options?.fromRect;
+        if (fromRect) {
+            this._box.set_position(fromRect.x, fromRect.y);
+            this._box.set_size(fromRect.width, fromRect.height);
+            this._box.set_pivot_point(0.5, 0.0);
+            this._box.scale_x = 1.0;
+            this._box.scale_y = 1.0;
+            this._box.opacity = 255;
+
+            this._headerBox.opacity = 0;
+            this._scrollWrapper.opacity = 0;
+
+            this._box.ease({
+                x: targetX,
+                y: targetY,
+                width: DIALOG_WIDTH,
+                height: h,
+                duration: 250,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+
+            this._headerBox.ease({
+                opacity: 255,
+                duration: 200,
+                delay: 60,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+            this._scrollWrapper.ease({
+                opacity: 255,
+                duration: 220,
+                delay: 100,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        } else {
+            this._box.set_position(targetX, targetY);
+            this._box.set_size(DIALOG_WIDTH, h);
+            this._box.set_pivot_point(0.5, 0.5);
+            this._box.scale_x = 0.95;
+            this._box.scale_y = 0.95;
+            this._box.opacity = 0;
+            this._headerBox.opacity = 255;
+            this._scrollWrapper.opacity = 255;
+
+            this._box.ease({
+                opacity: 255,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
     }
 
     close(immediate = false) {
@@ -968,7 +1005,7 @@ export const MacClipboardDialog = GObject.registerClass({
     }
 });
 
-export function toggleClipboardDialog() {
+export function toggleClipboardDialog(options = {}) {
     if (globalThis._macClipboardGlobalInstance) {
         if (!globalThis._macClipboardGlobalInstance.get_parent()) {
             try { globalThis._macClipboardGlobalInstance.destroy(); } catch (_) {}
@@ -988,18 +1025,18 @@ export function toggleClipboardDialog() {
         if (Main.overview?.visible) {
             Main.overview.hide();
         }
-        globalThis._macClipboardGlobalInstance.open();
+        globalThis._macClipboardGlobalInstance.open(options);
     }
 }
 
-export function openClipboardDialog() {
+export function openClipboardDialog(options = {}) {
     if (!globalThis._macClipboardGlobalInstance) {
         globalThis._macClipboardGlobalInstance = new MacClipboardDialog();
     }
     if (Main.overview?.visible) {
         Main.overview.hide();
     }
-    globalThis._macClipboardGlobalInstance.open();
+    globalThis._macClipboardGlobalInstance.open(options);
 }
 
 export function closeClipboardDialog(immediate = true) {
