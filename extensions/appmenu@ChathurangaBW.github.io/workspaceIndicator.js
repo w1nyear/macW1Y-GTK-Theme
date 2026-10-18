@@ -11,8 +11,8 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 const INDICATOR_NAME = 'appmenu@ChathurangaBW.github.io-workspace-indicator';
 const PANEL_NORMAL_HEIGHT = 34;
 const PANEL_EXPANDED_HEIGHT = 114;
-const DEFAULT_THUMB_WIDTH = 114;
-const DEFAULT_THUMB_HEIGHT = 64;
+const DEFAULT_THUMB_WIDTH = 128;
+const DEFAULT_THUMB_HEIGHT = 72;
 
 const ACCENT_COLOR_MAP = {
     'blue':   '#007aff',
