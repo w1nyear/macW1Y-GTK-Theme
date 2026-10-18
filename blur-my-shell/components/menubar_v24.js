@@ -18,7 +18,7 @@ import { getMixerControl } from 'resource:///org/gnome/shell/ui/status/volume.js
 import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 import { buildNotificationCard } from './notifications_v2.js';
 import { MacControlCenter } from './control_center_v30.js';
-import { MacInputSwitcher } from './mac_input_switcher_v8.js';
+import { MacInputSwitcher } from './mac_input_switcher_v11.js';
 import { t, tf } from './mac_i18n.js';
 import {
     populateUniversalWifiContent,
