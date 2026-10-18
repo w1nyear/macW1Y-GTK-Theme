@@ -365,6 +365,21 @@ export class DashManager {
                 this.glass.forceRefresh(600);
                 this.glass.syncSources(true);
                 this.glass.queue_redraw();
+
+                // Multi-pulse refresh sequence after overview closes to ensure the dock
+                // samples the true full-screen desktop frame immediately after Mutter reveals window_group
+                const pulseDelays = [16, 40, 80, 160, 300, 500];
+                pulseDelays.forEach(delay => {
+                    GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+                        if (this.glass && this._isEffectActive) {
+                            this.glass._copier?.clear();
+                            this.glass.forceRefresh?.(200);
+                            this.glass.syncSources(true);
+                            this.glass.queue_redraw();
+                        }
+                        return GLib.SOURCE_REMOVE;
+                    });
+                });
             }
         };
         safeConnect(Main.overview, 'hidden', onOverviewHidden);
@@ -374,9 +389,8 @@ export class DashManager {
         if (stateAdjustment) {
             safeConnect(stateAdjustment, 'notify::value', () => {
                 if (this.glass && this._isEffectActive) {
-                    const p = Math.max(0, Math.min(1, stateAdjustment.value));
                     const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
-                    this.glass.setBrightness(baseBrightness - p * 0.15);
+                    this.glass.setBrightness(baseBrightness);
                     this.glass.forceRefresh(100);
                     this.glass.queue_redraw();
                 }

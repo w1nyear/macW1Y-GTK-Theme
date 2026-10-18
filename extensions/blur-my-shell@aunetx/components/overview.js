@@ -53,7 +53,7 @@ export const OverviewBlur = class OverviewBlur {
         this.overview_background_group.visible = Main.overview.visible;
 
         const baseRadius = (this.settings.overview?.SIGMA ?? 30.0);
-        const baseBrightness = (this.settings.overview?.BRIGHTNESS ?? 0.60);
+        const baseBrightness = (this.settings.overview?.BRIGHTNESS ?? 1.0);
 
         const configureEffects = () => {
             const children = this.overview_background_group.get_children();
