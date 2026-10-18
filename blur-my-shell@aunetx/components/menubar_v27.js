@@ -2457,12 +2457,11 @@ export const MenuBarController = class MenuBarController {
     _getCcBlurActor() {
         if (!this._ccBackdropBlur) {
             this._ccBackdropBlur = new MacFeatheredBackdropBlur('mac-control-center-feathered-blur');
-            const bp = Main.panel?.statusArea?.quickSettings?.menu?._boxPointer;
-            const parent = bp?.get_parent() || Main.layoutManager.uiGroup;
-            if (bp) {
-                parent.insert_child_below(this._ccBackdropBlur.actor, bp);
+            const qsMenuActor = Main.panel?.statusArea?.quickSettings?.menu?.actor;
+            if (qsMenuActor) {
+                Main.layoutManager.uiGroup.insert_child_below(this._ccBackdropBlur.actor, qsMenuActor);
             } else {
-                parent.add_child(this._ccBackdropBlur.actor);
+                Main.layoutManager.uiGroup.add_child(this._ccBackdropBlur.actor);
             }
         }
         return this._ccBackdropBlur.actor;
@@ -2484,12 +2483,16 @@ export const MenuBarController = class MenuBarController {
 
         this._ccBackdropBlur.updateGeometry(bpX, bpY, bpW, bpH);
 
-        const parent = bp.get_parent() || Main.layoutManager.uiGroup;
-        if (this._ccBackdropBlur.actor.get_parent() !== parent) {
+        const qsMenuActor = Main.panel?.statusArea?.quickSettings?.menu?.actor;
+        if (this._ccBackdropBlur.actor.get_parent() !== Main.layoutManager.uiGroup) {
             if (this._ccBackdropBlur.actor.get_parent()) {
                 this._ccBackdropBlur.actor.get_parent().remove_child(this._ccBackdropBlur.actor);
             }
-            parent.insert_child_below(this._ccBackdropBlur.actor, bp);
+            if (qsMenuActor) {
+                Main.layoutManager.uiGroup.insert_child_below(this._ccBackdropBlur.actor, qsMenuActor);
+            } else {
+                Main.layoutManager.uiGroup.add_child(this._ccBackdropBlur.actor);
+            }
         }
     }
 
@@ -4586,8 +4589,25 @@ export const MenuBarController = class MenuBarController {
                 this._notifScrollWrapper.show();
             }
             const maxScrollH = Math.max(120, maxCenterH - headerH - 16);
-            const [cardsMinH, cardsNatH] = this._notifCardsBox ? this._notifCardsBox.get_preferred_height(targetW) : [0, 0];
-            const cardsH = Math.round(cardsNatH);
+            let cardsH = 0;
+            if (this._notifCardsBox) {
+                for (const c of this._notifCardsBox.get_children()) {
+                    if (!c.visible) continue;
+                    let chH = 0;
+                    if (c._macGroup && c._macGroup.topCardBox) {
+                        let [_, tNat] = c._macGroup.topCardBox.get_preferred_height(targetW);
+                        chH = (tNat > 0 && tNat < 10000) ? tNat : (c._macGroup.topCardBox.height || 78);
+                        if (c._macGroup.isExpanded && c._macGroup.expandedCardsBox) {
+                            let [_, eNat] = c._macGroup.expandedCardsBox.get_preferred_height(targetW);
+                            if (eNat > 0 && eNat < 10000) chH += eNat + 8;
+                        }
+                    } else {
+                        let [_, cNat] = c.get_preferred_height(targetW);
+                        chH = (cNat > 0 && cNat < 10000) ? cNat : (c.height || 78);
+                    }
+                    cardsH += Math.round(chH) + 10;
+                }
+            }
             const actualScrollH = Math.min(maxScrollH, Math.max(50, cardsH));
 
             if (this._notifScrollView) {

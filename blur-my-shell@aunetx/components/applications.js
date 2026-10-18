@@ -42,17 +42,29 @@ function compilePatterns(patterns, cache) {
 }
 
 
-/// Tests if a value matches any of the compiled patterns.
-///
-/// @param {string} value - The value to test (e.g., wm_class)
-/// @param {RegExp[]} patterns - Array of compiled regex patterns
-/// @returns {boolean} True if value matches any pattern
 function matchesAnyPattern(value, patterns) {
     if (!value || patterns.length === 0) {
         return false;
     }
     return patterns.some(pattern => pattern.test(value));
 }
+
+const SYSTEM_SIDEBAR_WIDTHS = {
+    'org.gnome.Settings': 260,
+    'gnome-control-center': 260,
+    'org.gnome.Nautilus': 240,
+    'nautilus': 240,
+    'org.gnome.DiskUtility': 260,
+    'gnome-disks': 260,
+    'org.gnome.baobab': 260,
+    'baobab': 260,
+    'org.gnome.tweaks': 240,
+    'gnome-tweaks': 240,
+    'org.gnome.Logs': 260,
+    'gnome-logs': 260,
+    'org.gnome.seahorse.Application': 260,
+    'seahorse': 260,
+};
 
 export const ApplicationsBlur = class ApplicationsBlur {
     constructor(connections, settings, effects_manager) {
@@ -270,14 +282,27 @@ export const ApplicationsBlur = class ApplicationsBlur {
                     blur_actor.x = monitor.x - buffer.x;
                     blur_actor.y = monitor.y - buffer.y;
 
+                    const wm_class = meta_window.get_wm_class();
+                    const sidebarWidth = SYSTEM_SIDEBAR_WIDTHS[wm_class];
+                    const clipW = sidebarWidth ? Math.min(sidebarWidth, frame.width) : frame.width;
+
                     // set_clip(x-offset, y-offset, width, height)
-                    blur_actor.set_clip(frame.x - monitor.x, frame.y - monitor.y, frame.width, frame.height);
+                    blur_actor.set_clip(frame.x - monitor.x, frame.y - monitor.y, clipW, frame.height);
                 } else {
                     const allocation = this.compute_allocation(meta_window);
                     blur_actor.x = allocation.x;
                     blur_actor.y = allocation.y;
                     blur_actor.width = allocation.width;
                     blur_actor.height = allocation.height;
+
+                    const wm_class = meta_window.get_wm_class();
+                    const sidebarWidth = SYSTEM_SIDEBAR_WIDTHS[wm_class];
+                    if (sidebarWidth) {
+                        const maxSidebar = Math.min(sidebarWidth, allocation.width);
+                        blur_actor.set_clip(0, 0, maxSidebar, allocation.height);
+                    } else {
+                        blur_actor.remove_clip();
+                    }
                 }
             }
         } else
@@ -480,9 +505,11 @@ export const ApplicationsBlur = class ApplicationsBlur {
         else
             blur_actor.hide();
 
-        this.set_window_opacity(window_actor, show_blur
-            ? this.settings.applications.OPACITY
-            : 255);
+        const wm_class = meta_window.get_wm_class();
+        const is_sidebar_system_app = Boolean(wm_class && SYSTEM_SIDEBAR_WIDTHS[wm_class]);
+        const target_opacity = is_sidebar_system_app ? 255 : (show_blur ? this.settings.applications.OPACITY : 255);
+
+        this.set_window_opacity(window_actor, target_opacity);
     }
 
     /// Update all corners, to use when the setting has been changed.
