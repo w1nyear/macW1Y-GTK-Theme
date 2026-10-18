@@ -147,12 +147,14 @@ export class GdmClockManager {
         let startX = (alloc && alloc.x1 >= 0 && alloc.x1 < 32768) ? alloc.x1 : monitor.x;
 
         const topY = monitor.y + Math.floor(h * GDM_DATETIME_TOP_FRACTION);
-        const preferredDateH = this.clock._dateOutput.get_preferred_height(-1)[1] || 28;
-        const effectiveDateH = Math.max(22, Math.ceil(preferredDateH));
-        const timeY = effectiveDateH - 6;
+        const rawDateH = this.clock._dateOutput.get_preferred_height(-1)[1];
+        const preferredDateH = (rawDateH > 0 && rawDateH < 500) ? rawDateH : 30;
+        const effectiveDateH = Math.max(22, Math.min(60, Math.ceil(preferredDateH)));
+        const timeY = effectiveDateH - 4;
 
-        const preferredTimeH = this.clock._time.get_preferred_height(-1)[1] || 150;
-        const effectiveTimeH = Math.max(140, Math.ceil(preferredTimeH));
+        const rawTimeH = this.clock._time.get_preferred_height(-1)[1];
+        const preferredTimeH = (rawTimeH > 0 && rawTimeH < 1000) ? rawTimeH : 150;
+        const effectiveTimeH = Math.max(120, Math.min(250, Math.ceil(preferredTimeH)));
 
         this.clockWrapper.set_size(w, timeY + effectiveTimeH + 20);
         this.clockWrapper.set_position(startX, topY);
@@ -160,6 +162,8 @@ export class GdmClockManager {
 
         this.clock._dateOutput.set_position(0, 0);
         this.clock._time.set_position(0, timeY);
+        this.clockWrapper.opacity = 255;
+        this.clockWrapper.visible = true;
 
 
     }

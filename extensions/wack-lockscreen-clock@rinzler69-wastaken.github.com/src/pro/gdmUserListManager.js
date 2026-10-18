@@ -61,7 +61,7 @@ export class GdmUserListManager {
 
         const currentX = box.x || 0;
         const currentY = box.y || 0;
-        box.translation_x = targetX - currentX;
+        box.translation_x = 0;
         box.translation_y = targetY - currentY;
     }
 

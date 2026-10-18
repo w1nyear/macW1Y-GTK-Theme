@@ -403,6 +403,12 @@ export const MacClipboardDialog = GObject.registerClass({
         });
         this.add_child(this._backdrop);
 
+        if (Main.overview) {
+            Main.overview.connectObject('showing', () => {
+                this.close(true);
+            }, this);
+        }
+
         // 2. Main Floating Box (Liquid Glass Overlay)
         this._box = new St.BoxLayout({
             name: 'mac-clipboard-box',
@@ -414,10 +420,10 @@ export const MacClipboardDialog = GObject.registerClass({
             clip_to_allocation: true,
         });
         this._box.set_style(
-            'background-color: rgba(28, 28, 30, 0.90) !important; ' +
+            'background-color: transparent !important; background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
             'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
-            'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65) !important;'
+            'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
         );
         this.add_child(this._box);
 
@@ -488,7 +494,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._listContainer = new St.BoxLayout({
             vertical: true,
             x_expand: true,
-            style: 'padding: 4px 8px;',
+            style: 'padding: 4px 18px 4px 8px;',
         });
         this._scrollView.set_child(this._listContainer);
 
@@ -501,6 +507,11 @@ export const MacClipboardDialog = GObject.registerClass({
             const symbol = event.get_key_symbol();
             if (symbol === Clutter.KEY_Escape) {
                 this.close();
+                return Clutter.EVENT_STOP;
+            }
+            if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
+                this.close(true);
+                Main.overview.show();
                 return Clutter.EVENT_STOP;
             }
             if (symbol === Clutter.KEY_Down) {
@@ -540,8 +551,8 @@ export const MacClipboardDialog = GObject.registerClass({
             this._glass.setIsDock(true);
             this._glass.setCornerSmoothingEnabled(0.0);
             this._glass.setCornerRadius(CORNER_RADIUS);
-            this._glass.setTintColor(0.05, 0.05, 0.06);
-            this._glass.setTintStrength(0.50);
+            this._glass.setTintColor(0.0, 0.0, 0.0);
+            this._glass.setTintStrength(0.03); // Strictly 3% darkening for LQ-Visual
             this._glass.setBrightness(1.0);
             this._glass.setSaturation(1.0);
             this._glass.setContrast(1.0);
@@ -562,7 +573,7 @@ export const MacClipboardDialog = GObject.registerClass({
                     'background-color: transparent !important; background: none !important; ' +
                     `border-radius: ${CORNER_RADIUS}px !important; ` +
                     'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
-                    'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65) !important;'
+                    'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
                 );
                 this._syncGlass();
             }
@@ -607,6 +618,7 @@ export const MacClipboardDialog = GObject.registerClass({
 
     open() {
         if (this._isOpen) return;
+        if (Main.overview?.visible) return;
         this._isOpen = true;
 
         const mon = Main.layoutManager.primaryMonitor;
@@ -649,10 +661,16 @@ export const MacClipboardDialog = GObject.registerClass({
                 'background-color: transparent !important; background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
                 'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
-                'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65) !important;'
+                'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
             );
             this._syncGlass();
         } else {
+            this._box.set_style(
+                'background-color: transparent !important; background: none !important; ' +
+                `border-radius: ${CORNER_RADIUS}px !important; ` +
+                'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
+                'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
+            );
             this._initGlass();
             Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
         }
@@ -682,7 +700,7 @@ export const MacClipboardDialog = GObject.registerClass({
         });
     }
 
-    close() {
+    close(immediate = false) {
         if (!this._isOpen) return;
         this._isOpen = false;
 
@@ -693,6 +711,22 @@ export const MacClipboardDialog = GObject.registerClass({
             try { Main.popModal(this); } catch (_) {}
         }
 
+        if (this._stageSignalId) {
+            global.stage.disconnect(this._stageSignalId);
+            this._stageSignalId = 0;
+        }
+
+        if (immediate) {
+            if (this._glass) {
+                this._glass.remove_all_transitions();
+                this._glass.hide();
+            }
+            this._box.remove_all_transitions();
+            this.visible = false;
+            this._backdrop.visible = false;
+            return;
+        }
+
         if (this._glass && this._glass.visible) {
             this._glass.ease({
                 opacity: 0,
@@ -700,17 +734,8 @@ export const MacClipboardDialog = GObject.registerClass({
                 mode: Clutter.AnimationMode.EASE_IN_QUAD,
                 onComplete: () => {
                     if (this._glass) this._glass.hide();
-                    if (!this._isOpen && this._stageSignalId) {
-                        global.stage.disconnect(this._stageSignalId);
-                        this._stageSignalId = 0;
-                    }
                 },
             });
-        } else {
-            if (this._stageSignalId) {
-                global.stage.disconnect(this._stageSignalId);
-                this._stageSignalId = 0;
-            }
         }
 
         this._box.ease({
@@ -721,6 +746,7 @@ export const MacClipboardDialog = GObject.registerClass({
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {
                 this.visible = false;
+                this._backdrop.visible = false;
             },
         });
     }
@@ -923,6 +949,9 @@ export const MacClipboardDialog = GObject.registerClass({
     }
 
     destroy() {
+        if (Main.overview) {
+            try { Main.overview.disconnectObject(this); } catch (_) {}
+        }
         if (this._stageSignalId) {
             try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
             this._stageSignalId = 0;
@@ -953,19 +982,29 @@ export function toggleClipboardDialog() {
         } catch (_) {}
         globalThis._macClipboardGlobalInstance = new MacClipboardDialog();
     }
-    globalThis._macClipboardGlobalInstance.toggle();
+    if (globalThis._macClipboardGlobalInstance._isOpen) {
+        globalThis._macClipboardGlobalInstance.close();
+    } else {
+        if (Main.overview?.visible) {
+            Main.overview.hide();
+        }
+        globalThis._macClipboardGlobalInstance.open();
+    }
 }
 
 export function openClipboardDialog() {
     if (!globalThis._macClipboardGlobalInstance) {
         globalThis._macClipboardGlobalInstance = new MacClipboardDialog();
     }
+    if (Main.overview?.visible) {
+        Main.overview.hide();
+    }
     globalThis._macClipboardGlobalInstance.open();
 }
 
-export function closeClipboardDialog() {
+export function closeClipboardDialog(immediate = true) {
     if (globalThis._macClipboardGlobalInstance) {
-        globalThis._macClipboardGlobalInstance.close();
+        globalThis._macClipboardGlobalInstance.close(immediate);
     }
 }
 
@@ -977,5 +1016,6 @@ export function destroyClipboardDialog() {
 }
 
 globalThis.toggleMacClipboard = toggleClipboardDialog;
+globalThis.closeMacClipboard = closeClipboardDialog;
 globalThis.destroyMacClipboard = destroyClipboardDialog;
 globalThis.macClipboardStore = clipboardStore;

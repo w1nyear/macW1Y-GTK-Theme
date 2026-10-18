@@ -47,7 +47,7 @@ export function ensureWindowActorAllocated(
   relayoutFrames: number,
   remapFrames: number
 ): '' | 'relayout' | 'remap' {
-  if (!actor) return '';
+  if (!actor || !isActorValid(actor)) return '';
   if (_windowActorRescueMode === 'off') return '';
 
   if (!actor.visible || !actor.mapped || actor.has_allocation()) {
@@ -89,7 +89,7 @@ export function ensureGlassAllocated(
   actor: Clutter.Actor | null,
   framesBeforeRescue: number = STRANDED_FRAMES_BEFORE_RESCUE
 ): boolean {
-  if (!actor) return false;
+  if (!actor || !isActorValid(actor)) return false;
 
   // An unmapped actor is merely waiting; real_map() will fix it on its own.
   if (!actor.visible || !actor.mapped || actor.has_allocation()) {
@@ -115,7 +115,7 @@ export function ensureGlassAllocated(
  * and its parent; otherwise it keeps painting from its old position.
  */
 export function setActorVisible(actor: Clutter.Actor, visible: boolean): void {
-  if (!actor) return;
+  if (!actor || !isActorValid(actor)) return;
   if (actor.visible === visible) return;
   actor.visible = visible;
   if (visible) {

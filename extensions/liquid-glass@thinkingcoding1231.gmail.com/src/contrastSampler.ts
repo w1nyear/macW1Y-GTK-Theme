@@ -18,7 +18,7 @@ const SWITCH_ADVANTAGE_TOWARD_PREFERRED = 1.02;
 const SWITCH_ADVANTAGE_AGAINST_PREFERRED = 1.6;
 // Contrast ratios this close mean the background favours neither colour; a
 // preferred colour then applies outright (see decideTextColor()).
-const AMBIGUOUS_RATIO = 1.15;
+const AMBIGUOUS_RATIO = 1.40;
 // Measurements are ignored this long after a flip: the samples cover the text
 // itself, and the colour tween (about 380ms) would be measured as a change.
 const SWITCH_SETTLE_MS = 600;
@@ -421,6 +421,11 @@ export class StageContrastSampler {
   reset(): void {
     this.invalidate();
     this._lastRect = null;
+    this._lastLuma = null;
+    this._lastIsBright = null;
+    this._lastRawLuma = null;
+    this._lastSwitchAt = null;
+    this._roundsSinceFlip = READABILITY_FLIP_COOLDOWN;
   }
 
   /**
@@ -459,9 +464,9 @@ export class StageContrastSampler {
     }
 
     // A screenshot contains the text itself, whose colour is what is being
-    // decided. Trimming 30% from each end (an interquartile mean) keeps the
-    // glyphs from moving the result, so a flip cannot flip itself back.
-    return _trimmedMean(values, 0.30);
+    // decided. Trimming 10% from each end keeps the
+    // glyphs from moving the result while keeping 80% of pixels stable across split backgrounds.
+    return _trimmedMean(values, 0.10);
   }
 
   /**
@@ -505,15 +510,39 @@ export class StageContrastSampler {
     const rawLight = contrast(luminance, light);
     const rawDark = contrast(luminance, dark);
     const preference = config.preference ?? 'auto';
+    let effectivePreferDark = preference === 'dark';
+    if (preference === 'auto') {
+      try {
+        const ifaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        const scheme = ifaceSettings.get_string('color-scheme');
+        // In dark mode ('prefer-dark'), HUD uses light/white text (effectivePreferDark = false).
+        // In light mode ('default'), HUD uses dark text (effectivePreferDark = true).
+        effectivePreferDark = (scheme !== 'prefer-dark');
+      } catch (_) {
+        effectivePreferDark = false;
+      }
+    }
     const hasPreference = preference !== 'auto';
-    const preferDark = preference === 'dark';
+    const preferDark = effectivePreferDark;
     // From the raw contrasts, so it reflects what is on screen now.
     const ambiguous = Math.max(rawLight, rawDark) < Math.min(rawLight, rawDark) * AMBIGUOUS_RATIO;
     // Per-element decisions keep no history, so the preference is the only
     // stabiliser.
     if (config.samplePerElement) {
-      if (ambiguous && hasPreference) return preferDark ? config.darkTextColor : config.lightTextColor;
+      if (ambiguous) return preferDark ? config.darkTextColor : config.lightTextColor;
       return rawDark > rawLight ? config.darkTextColor : config.lightTextColor;
+    }
+
+    if (ambiguous) {
+      // Decided decisively by system-aware preference alone on split/mid-range backgrounds:
+      // never oscillate or flip between light and dark!
+      let isBright = preferDark;
+      this._lastLuma = luminance;
+      this._lastRawLuma = luminance;
+      this._lastIsBright = isBright;
+      this._lastSwitchAt = null;
+      this._roundsSinceFlip = 0;
+      return isBright ? config.darkTextColor : config.lightTextColor;
     }
 
     // Hold the decision for SWITCH_SETTLE_MS after a flip, unless the held
@@ -539,17 +568,14 @@ export class StageContrastSampler {
     const lightContrast = contrast(smoothed, light);
     const darkContrast = contrast(smoothed, dark);
     let isBright: boolean;
-    if (ambiguous && hasPreference) {
-      // Decided by the measurement alone, so it cannot oscillate.
-      isBright = preferDark;
-    } else if (this._lastIsBright === null) {
+    if (this._lastIsBright === null) {
       // First decision for this surface.
       isBright = darkContrast > lightContrast;
     } else {
       isBright = this._lastIsBright;
       const current = isBright ? darkContrast : lightContrast;
       const alternative = isBright ? lightContrast : darkContrast;
-      const towardPreferred = hasPreference && preferDark !== isBright;
+      const towardPreferred = preferDark !== isBright;
       const advantage = !hasPreference ? SWITCH_ADVANTAGE
         : (towardPreferred ? SWITCH_ADVANTAGE_TOWARD_PREFERRED : SWITCH_ADVANTAGE_AGAINST_PREFERRED);
       if (alternative > current * advantage) isBright = !isBright;
@@ -565,7 +591,7 @@ export class StageContrastSampler {
 
     const wasBright = isBright;
     if (rawCurrent < MIN_READABLE_CONTRAST && rawAlternative >= MIN_READABLE_CONTRAST &&
-        (jumped || this._roundsSinceFlip >= READABILITY_FLIP_COOLDOWN))
+        (jumped || (rawAlternative > rawCurrent * 1.4 && this._roundsSinceFlip >= READABILITY_FLIP_COOLDOWN)))
       isBright = !isBright;
 
     this._roundsSinceFlip = isBright === wasBright ? this._roundsSinceFlip + 1 : 0;

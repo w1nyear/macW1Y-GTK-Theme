@@ -192,6 +192,12 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         this.add_child(this._backdrop);
 
+        if (Main.overview) {
+            Main.overview.connectObject('showing', () => {
+                this.close(true);
+            }, this);
+        }
+
         // 2. Main Floating Applications Container (LQ-Visual Glass)
         this._box = new St.BoxLayout({
             name: 'mac-applications-box',
@@ -207,7 +213,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
             'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
-            'padding: 16px 16px 14px 16px; ' +
+            'padding: 16px 2px 14px 2px; ' +
             'box-shadow: none !important;'
         );
         this.add_child(this._box);
@@ -219,7 +225,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
-            style: 'height: 44px; margin-bottom: 12px;',
+            style: 'height: 44px; margin-bottom: 12px; margin-left: 18px; margin-right: 18px;',
         });
         this._box.add_child(this._headerRow);
 
@@ -279,7 +285,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._categoryRow = new St.BoxLayout({
             vertical: false,
             x_expand: true,
-            style: 'height: 32px; margin-bottom: 14px;',
+            style: 'height: 32px; margin-bottom: 14px; margin-left: 18px; margin-right: 18px;',
         });
         this._box.add_child(this._categoryRow);
         this._buildCategoryButtons();
@@ -294,12 +300,13 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._box.add_child(this._scrollWrapper);
 
         this._scrollView = new St.ScrollView({
+            style_class: 'mac-launchpad-scroll',
             overlay_scrollbars: true,
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'height: 382px; padding-right: 2px; padding-bottom: 4px;',
+            style: 'height: 382px; padding-bottom: 4px;',
         });
         this._scrollWrapper.add_child(this._scrollView);
 
@@ -307,6 +314,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             vertical: true,
             x_expand: true,
             y_expand: true,
+            style: 'padding: 0;',
         });
         this._scrollView.add_child(this._gridContainer);
 
@@ -315,8 +323,8 @@ export const MacApplicationsDialog = GObject.registerClass({
             style: 'background-gradient-direction: vertical; ' +
                    'background-gradient-start: rgba(18, 18, 18, 0.0); ' +
                    'background-gradient-end: rgba(18, 18, 18, 0.85); ' +
-                   'border-bottom-left-radius: 20px; ' +
-                   'border-bottom-right-radius: 20px;',
+                   'border-bottom-left-radius: 24px; ' +
+                   'border-bottom-right-radius: 24px;',
             height: 36,
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.END,
@@ -345,6 +353,11 @@ export const MacApplicationsDialog = GObject.registerClass({
             const symbol = event.get_key_symbol();
             if (symbol === Clutter.KEY_Escape) {
                 this.close();
+                return Clutter.EVENT_STOP;
+            }
+            if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
+                this.close(true);
+                Main.overview.show();
                 return Clutter.EVENT_STOP;
             }
             if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
@@ -805,6 +818,11 @@ export const MacApplicationsDialog = GObject.registerClass({
                 this.close();
                 return Clutter.EVENT_STOP;
             }
+            if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
+                this.close(true);
+                Main.overview.show();
+                return Clutter.EVENT_STOP;
+            }
             if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
                 this._launchApp(app);
                 return Clutter.EVENT_STOP;
@@ -915,6 +933,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
     open() {
         if (this._isOpen) return;
+        if (Main.overview?.visible) return;
         this._isOpen = true;
 
         _hookDockIconsForDrag();
@@ -980,7 +999,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
     }
 
-    close() {
+    close(immediate = false) {
         if (!this._isOpen) return;
         this._isOpen = false;
 
@@ -990,8 +1009,26 @@ export const MacApplicationsDialog = GObject.registerClass({
             this._stageSignalId = 0;
         }
 
-        if (this._glass?.visible) {
-            this._glass.hide();
+        if (immediate) {
+            this._box.remove_all_transitions();
+            this._box.opacity = 0;
+            if (this._glass) {
+                this._glass.remove_all_transitions();
+                this._glass.hide();
+            }
+            this.visible = false;
+            return;
+        }
+
+        if (this._glass && this._glass.visible) {
+            this._glass.ease({
+                opacity: 0,
+                duration: 160,
+                mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+                onComplete: () => {
+                    if (this._glass) this._glass.hide();
+                },
+            });
         }
 
         this._box.ease({
@@ -1015,6 +1052,9 @@ export const MacApplicationsDialog = GObject.registerClass({
     }
 
     destroy() {
+        if (Main.overview) {
+            try { Main.overview.disconnectObject(this); } catch (_) {}
+        }
         if (this._searchTimeoutId) {
             GLib.source_remove(this._searchTimeoutId);
             this._searchTimeoutId = 0;
@@ -1045,7 +1085,20 @@ export function toggleApplicationsDialog() {
         } catch (_) {}
         globalThis._macApplicationsGlobalInstance = new MacApplicationsDialog();
     }
-    globalThis._macApplicationsGlobalInstance.toggle();
+    if (globalThis._macApplicationsGlobalInstance._isOpen) {
+        globalThis._macApplicationsGlobalInstance.close();
+    } else {
+        if (Main.overview?.visible) {
+            Main.overview.hide();
+        }
+        globalThis._macApplicationsGlobalInstance.open();
+    }
+}
+
+export function closeApplicationsDialog(immediate = true) {
+    if (globalThis._macApplicationsGlobalInstance) {
+        globalThis._macApplicationsGlobalInstance.close(immediate);
+    }
 }
 
 export function destroyApplicationsDialog() {
@@ -1056,4 +1109,5 @@ export function destroyApplicationsDialog() {
 }
 
 globalThis.toggleMacApplications = toggleApplicationsDialog;
+globalThis.closeMacApplications = closeApplicationsDialog;
 globalThis.destroyMacApplications = destroyApplicationsDialog;

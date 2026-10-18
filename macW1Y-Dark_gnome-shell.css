@@ -2515,7 +2515,7 @@ StEntry StLabel.hint-text {
 
 /* Popovers/Menus */
 .popup-menu-boxpointer {
-  -arrow-border-radius: 14px !important;
+  -arrow-border-radius: 24px !important;
   -arrow-background-color: transparent;
   -arrow-border-width: 0;
   -arrow-border-color: transparent;
@@ -2557,7 +2557,7 @@ StEntry StLabel.hint-text {
   margin: 4px 12px 17px 12px;
   background-color: transparent !important;
   background: transparent !important;
-  border-radius: 14px !important;
+  border-radius: 24px !important;
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
@@ -2585,7 +2585,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:checked:focus, .popup-menu-item:checked:hover, .popup-menu-item:checked:selected {
   color: #ffffff !important;
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   background-gradient-direction: none !important;
   border-radius: 9999px !important;
   transition-duration: 150ms;
@@ -2593,7 +2593,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:checked:active {
   color: #ffffff !important;
-  background-color: #0062cc !important;
+  background-color: -st-accent-color !important;
 }
 
 .popup-menu-item:checked:insensitive {
@@ -2602,7 +2602,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:focus, .popup-menu-item:hover, .popup-menu-item:selected {
   color: #ffffff !important;
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
   transition: background-color 100ms ease, color 100ms ease;
@@ -2611,7 +2611,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:active, .popup-menu-item.selected:active {
   color: #ffffff !important;
-  background-color: #0062cc !important;
+  background-color: -st-accent-color !important;
   border-radius: 9999px !important;
 }
 
@@ -2813,31 +2813,35 @@ StScrollView.hfade {
 
 StScrollBar {
   padding: 0;
-  margin: 6px;
+  margin: 2px 1px 2px 0;
 }
 
 StScrollView StScrollBar {
-  min-width: 8px;
-  min-height: 8px;
+  min-width: 6px;
+  min-height: 6px;
+  margin-right: 1px;
 }
 
 StScrollBar StBin#trough {
   border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: transparent;
 }
 
 StScrollBar StButton#vhandle, StScrollBar StButton#hhandle {
   border-radius: 9999px;
-  background-color: #999999;
-  border: 4px solid transparent;
+  background-color: rgba(255, 255, 255, 0.35);
+  border: none;
+  min-width: 5px;
+  margin-right: 1px;
+  transition-duration: 150ms;
 }
 
 StScrollBar StButton#vhandle:hover, StScrollBar StButton#hhandle:hover {
-  background-color: #afafaf;
+  background-color: rgba(255, 255, 255, 0.70);
 }
 
 StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
-  background-color: #dedede;
+  background-color: rgba(255, 255, 255, 0.90);
 }
 
 .app-folder-dialog .folder-name-container .folder-name-entry {
@@ -3446,87 +3450,87 @@ StWidget.focused .app-grid-running-dot {
 .audio-device-selection-dialog,
 .access-dialog,
 .run-dialog {
-  background-color: rgba(36, 36, 36, 0.96) !important;
-  border-radius: 24px !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+  background-color: rgba(30, 30, 30, 0.40) !important;
+  border-radius: 35px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.60) !important;
 }
 
 .modal-dialog .modal-dialog-button:last-child,
 .modal-dialog .modal-dialog-linked-button:last-child {
   color: white !important;
-  background-color: -st-accent-color;
+  background-color: -st-accent-color !important;
   background-gradient-direction: none !important;
+  border-radius: 9999px !important;
 }
 
 .modal-dialog .modal-dialog-button:hover:last-child,
 .modal-dialog .modal-dialog-linked-button:hover:last-child {
   color: white !important;
   background-gradient-direction: none !important;
-  background-color: st-lighten(-st-accent-color, 9%);
+  background-color: -st-accent-color !important;
 }
 
 .modal-dialog .modal-dialog-button:active:last-child,
 .modal-dialog .modal-dialog-linked-button:active:last-child {
   color: white !important;
   background-gradient-direction: none !important;
-  background-color: st-darken(-st-accent-color, 5%);
+  background-color: -st-accent-color !important;
 }
 
 .modal-dialog .modal-dialog-button:insensitive:last-child,
 .modal-dialog .modal-dialog-linked-button:insensitive:last-child {
   background-gradient-direction: none !important;
-  background-color: st-transparentize(-st-accent-color, 0.9);
-  color: st-transparentize(-st-accent-color, 0.65) !important;
+  background-color: rgba(0, 122, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 
 .modal-dialog {
   color: #dedede;
-  padding: 12px;
+  padding: 16px;
 }
 
 .modal-dialog .modal-dialog-content-box {
-  padding: 16px 32px 6px;
+  padding: 16px 32px 10px;
   spacing: 12px;
   max-width: 28em;
 }
 
 .modal-dialog .modal-dialog-button-box {
-  padding-top: 4px;
-  spacing: 4px;
+  padding-top: 8px;
+  spacing: 8px;
 }
 
 .modal-dialog .modal-dialog-button,
 .modal-dialog .modal-dialog-linked-button {
-  min-height: 48px;
-  padding: 0 8px;
+  min-height: 44px;
+  padding: 0 22px;
   margin: 0;
   border: none !important;
-  border-radius: 24px;
-  font-weight: bold;
-  color: #dedede;
-  background-color: #313131;
-  border: none;
+  border-radius: 9999px !important;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.12) !important;
   text-shadow: none;
   icon-shadow: none;
 }
 
 .modal-dialog .modal-dialog-button:hover,
 .modal-dialog .modal-dialog-linked-button:hover {
-  color: #dedede;
+  color: #ffffff;
   border: none;
   text-shadow: none;
   icon-shadow: none;
-  background-color: st-mix(#dedede, #313131, 6%);
+  background-color: rgba(255, 255, 255, 0.20) !important;
 }
 
 .modal-dialog .modal-dialog-button:active,
 .modal-dialog .modal-dialog-linked-button:active {
-  color: #dedede;
+  color: #ffffff;
   border: none;
   text-shadow: none;
   icon-shadow: none;
-  background-color: st-mix(#dedede, #313131, 12%);
+  background-color: rgba(255, 255, 255, 0.28) !important;
 }
 
 .modal-dialog .modal-dialog-button:checked,
@@ -4259,7 +4263,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #overviewGroup {
-  background-color: #2a2a2a;
+  background-color: transparent !important;
 }
 
 .osd-window {
@@ -4723,13 +4727,13 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .quick-toggle-menu .popup-menu-item:focus, .quick-toggle-menu .popup-menu-item:hover, .quick-toggle-menu .popup-menu-item:selected {
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
 }
 
 .quick-toggle-menu .popup-menu-item:active {
-  background-color: #0062cc !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
 }
@@ -4898,7 +4902,7 @@ StWidget.focused .app-grid-running-dot {
   margin-bottom: 4em;
   spacing: 12px;
   color: #d3d7df;
-  background-color: rgba(42, 42, 42, 0.96);
+  background-color: transparent !important;
   border: 1px solid rgba(0, 0, 0, 0.75);
   box-shadow: 0 3px 8px 0 rgba(0, 0, 0, 0.25);
 }
@@ -5027,7 +5031,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .screenshot-ui-window-selector {
-  background-color: rgba(42, 42, 42, 0.96);
+  background-color: transparent !important;
 }
 
 .screenshot-ui-window-selector .screenshot-ui-window-selector-window-container {
@@ -5086,7 +5090,7 @@ StWidget.focused .app-grid-running-dot {
 
 .screenshot-ui-tooltip {
   color: #d3d7df;
-  background-color: rgba(42, 42, 42, 0.96);
+  background-color: transparent !important;
   border-radius: 9999px;
   padding: 4px 8px;
   text-align: center;
@@ -5197,35 +5201,47 @@ StWidget.focused .app-grid-running-dot {
 
 .workspace-background {
   border-radius: 30px;
-  background-color: rgba(42, 42, 42, 0.96);
+  background-color: transparent !important;
   box-shadow: 0 4px 16px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Workspace pager */
-.workspace-thumbnails {
-  visible-width: 32px;
-  spacing: 4px;
-  padding: 4px;
+/* Workspace pager - hidden in favor of macOS Mission Control Spaces Bar */
+.workspace-thumbnails,
+#overviewControls .workspace-thumbnails,
+.overview-controls .workspace-thumbnails {
+  visible-width: 0px !important;
+  spacing: 0px !important;
+  padding: 0px !important;
+  margin: 0px !important;
+  height: 0px !important;
+  min-height: 0px !important;
+  max-height: 0px !important;
+  width: 0px !important;
+  min-width: 0px !important;
+  max-width: 0px !important;
+  opacity: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  background: transparent !important;
 }
 
-.workspace-thumbnails .workspace-thumbnail {
-  color: rgba(255, 255, 255, 0.85);
-  background-color: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 6px;
-}
-
-.workspace-thumbnails .placeholder {
-  background-image: url("assets/dash-placeholder.svg");
-  background-size: contain;
-  width: 18px;
-  height: 24px;
-}
-
+.workspace-thumbnails .workspace-thumbnail,
+.workspace-thumbnails .placeholder,
 .workspace-thumbnail-indicator {
-  border: 3px solid -st-accent-color;
-  border-radius: 9px;
-  padding: 0px;
+  height: 0px !important;
+  min-height: 0px !important;
+  max-height: 0px !important;
+  width: 0px !important;
+  min-width: 0px !important;
+  max-width: 0px !important;
+  opacity: 0 !important;
+  margin: 0px !important;
+  padding: 0px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  background: transparent !important;
 }
 
 .bottom #dashtodockDashScrollview,
@@ -5418,8 +5434,19 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #dashtodockContainer.bottom #dash #dashtodockDashContainer {
+  padding: 10px 10px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 10px !important;
+}
+
+#dashtodockContainer.bottom.fixed #dash .dash-item-container .app-well-app,
+#dashtodockContainer.bottom.fixed #dash .dash-item-container .show-apps,
+#dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
+#dashtodockContainer.bottom #dash .dash-item-container .show-apps,
+#dashtodockContainer.bottom #dash .dash-item-container .overview-tile {
   padding-top: 4px !important;
-  padding-bottom: 4px !important;
+  padding-bottom: 7px !important;
 }
 
 #dashtodockContainer #dash .dash-separator {
@@ -5449,9 +5476,10 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #dashtodockContainer:overview #dash .dash-background {
-  background-color: rgba(255, 255, 255, 0.1);
-  border: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 #dashtodockContainer:overview #dash .app-grid-running-dot {
@@ -5847,13 +5875,16 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .popup-menu-item.mac-menu-item-row,
-.mac-menu-item-row {
-  border-radius: 9999px !important;
-  padding: 4px 10px 4px 4px !important;
-  margin: 1px 4px !important;
+.mac-menu-item-row,
+.mac-cc-submenu-row,
+.mac-cc-submenu-item {
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  margin: 1px 2px !important;
   min-height: 26px !important;
   box-shadow: none !important;
   transition-duration: 100ms !important;
+  background-color: transparent !important;
 }
 
 .popup-menu-item.mac-menu-item-row:hover,
@@ -5867,27 +5898,30 @@ StWidget.focused .app-grid-running-dot {
 .mac-menu-item-row:selected,
 .mac-menu-item-row:selected:hover,
 .mac-menu-item-active:hover,
-.mac-menu-item-active:selected {
-  background-color: #007aff !important;
+.mac-menu-item-active:selected,
+.mac-cc-submenu-row:hover,
+.mac-cc-submenu-item:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
   color: #ffffff !important;
-  border-radius: 9999px !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
 }
 
 .popup-menu-item.mac-menu-item-row:active,
-.mac-menu-item-row:active {
-  background-color: #0062cc !important;
+.mac-menu-item-row:active,
+.mac-cc-submenu-row:active,
+.mac-cc-submenu-item:active {
+  background-color: rgba(255, 255, 255, 0.18) !important;
   color: #ffffff !important;
-  border-radius: 9999px !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
 }
 
 .popup-menu-item.mac-menu-item-row.mac-menu-item-active,
 .mac-menu-item-active {
-  background-color: #007aff !important;
+  background-color: transparent !important;
   color: #ffffff !important;
-  border-radius: 9999px !important;
-  font-weight: 600 !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
 }
 
@@ -5915,7 +5949,7 @@ StWidget.focused .app-grid-running-dot {
   width: 26px !important;
   height: 26px !important;
   border-radius: 13px !important;
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   margin-right: 10px !important;
   color: #ffffff !important;
 }
@@ -5950,45 +5984,52 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .popup-menu-item.mac-menu-footer-button,
-.mac-menu-footer-button {
-  border-radius: 9999px !important;
-  padding: 6px 12px !important;
-  margin: 2px 4px !important;
-  color: rgba(255, 255, 255, 0.85) !important;
+.mac-menu-footer-button,
+.mac-cc-footer-btn {
+  border-radius: 8px !important;
+  padding: 7px 12px !important;
+  margin: 8px 2px 2px 2px !important;
+  color: rgba(255, 255, 255, 0.90) !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   box-shadow: none !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  transition-duration: 100ms !important;
 }
 
 .popup-menu-item.mac-menu-footer-button:focus,
-.mac-menu-footer-button:focus {
-  background-color: transparent !important;
-  color: rgba(255, 255, 255, 0.85) !important;
-  border-radius: 9999px !important;
+.mac-menu-footer-button:focus,
+.mac-cc-footer-btn:focus {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
 }
 
 .popup-menu-item.mac-menu-footer-button:selected,
-.mac-menu-footer-button:selected {
-  background-color: transparent !important;
-  color: rgba(255, 255, 255, 0.85) !important;
-  border-radius: 9999px !important;
+.mac-menu-footer-button:selected,
+.mac-cc-footer-btn:selected {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
 }
 
 .popup-menu-item.mac-menu-footer-button:hover,
-.mac-menu-footer-button:hover {
-  background-color: #007aff !important;
+.mac-menu-footer-button:hover,
+.mac-cc-footer-btn:hover {
+  background-color: rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
-  border-radius: 9999px !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
 }
 
 .popup-menu-item.mac-menu-footer-button:active,
-.mac-menu-footer-button:active {
-  background-color: #0062cc !important;
+.mac-menu-footer-button:active,
+.mac-cc-footer-btn:active {
+  background-color: rgba(255, 255, 255, 0.22) !important;
   color: #ffffff !important;
-  border-radius: 9999px !important;
+  border-radius: 8px !important;
   box-shadow: none !important;
 }
 
@@ -6068,24 +6109,16 @@ StWidget.focused .app-grid-running-dot {
   background: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.20) !important;
   box-shadow: none !important;
-  border-radius: 20px !important;
+  border-radius: 24px !important;
   padding: 6px !important;
 }
 
 .popup-menu-boxpointer .popup-menu-content {
-  border-radius: 20px !important;
+  border-radius: 24px !important;
 }
 
 .popup-sub-menu {
-  border-radius: 20px !important;
-}
-
-.popup-menu-boxpointer .popup-menu-content {
-  border-radius: 14px !important;
-}
-
-.popup-sub-menu {
-  border-radius: 14px !important;
+  border-radius: 24px !important;
 }
 
 
@@ -6101,7 +6134,7 @@ StWidget.focused .app-grid-running-dot {
 .popup-menu-item:focus,
 .popup-menu-item:hover,
 .popup-menu-item:selected {
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
@@ -6109,7 +6142,7 @@ StWidget.focused .app-grid-running-dot {
 
 .popup-menu-item:active,
 .popup-menu-item.selected:active {
-  background-color: #0062cc !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
 }
@@ -6118,7 +6151,7 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-content,
 .appmenu-popup-menu .popup-menu-content,
 .appmenu-popup-menu.popup-menu-boxpointer .popup-menu-content {
-  border-radius: 20px !important;
+  border-radius: 24px !important;
   padding: 6px !important;
   border: 1px solid rgba(255, 255, 255, 0.20) !important;
   background-color: transparent !important;
@@ -6127,7 +6160,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .appmenu-popup-menu .popup-sub-menu {
-  border-radius: 20px !important;
+  border-radius: 24px !important;
 }
 
 .appmenu-popup-menu-item,
@@ -6153,7 +6186,7 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-content .popup-menu-item:focus,
 .appmenu-popup-menu-content .popup-menu-item:hover,
 .appmenu-popup-menu-content .popup-menu-item:selected {
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
@@ -6163,7 +6196,7 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-item.selected:active,
 .appmenu-popup-menu .popup-menu-item:active,
 .appmenu-popup-menu-content .popup-menu-item:active {
-  background-color: #0062cc !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
 }
@@ -6525,23 +6558,53 @@ StWidget.focused .app-grid-running-dot {
   border-color: rgba(255, 255, 255, 0.18) !important;
 }
 
-.mac-notif-center-scroll StScrollBar {
+.mac-notif-center-scroll StScrollBar,
+.mac-launchpad-scroll StScrollBar,
+.mac-spotlight-scroll StScrollBar,
+.mac-clipboard-scroll StScrollBar {
   padding: 0 !important;
-  margin: 0 !important;
+  margin: 2px 1px 2px 0 !important;
 }
 
-.mac-notif-center-scroll StScrollBar .vhandle {
-  background-color: rgba(255, 255, 255, 0.28) !important;
+.mac-notif-center-scroll StScrollBar .vhandle,
+.mac-launchpad-scroll StScrollBar .vhandle,
+.mac-spotlight-scroll StScrollBar .vhandle,
+.mac-clipboard-scroll StScrollBar .vhandle,
+.mac-notif-center-scroll StScrollBar StButton#vhandle,
+.mac-launchpad-scroll StScrollBar StButton#vhandle,
+.mac-spotlight-scroll StScrollBar StButton#vhandle,
+.mac-clipboard-scroll StScrollBar StButton#vhandle {
+  background-color: rgba(255, 255, 255, 0.35) !important;
   border-radius: 9999px !important;
-  margin-right: 2px !important;
+  border: none !important;
+  min-width: 5px !important;
+  margin-right: 1px !important;
   transition-duration: 200ms !important;
 }
 
-.mac-notif-center-scroll StScrollBar .vhandle:hover {
-  background-color: rgba(255, 255, 255, 0.50) !important;
+.mac-notif-center-scroll StScrollBar .vhandle:hover,
+.mac-launchpad-scroll StScrollBar .vhandle:hover,
+.mac-spotlight-scroll StScrollBar .vhandle:hover,
+.mac-clipboard-scroll StScrollBar .vhandle:hover,
+.mac-notif-center-scroll StScrollBar StButton#vhandle:hover,
+.mac-launchpad-scroll StScrollBar StButton#vhandle:hover,
+.mac-spotlight-scroll StScrollBar StButton#vhandle:hover,
+.mac-clipboard-scroll StScrollBar StButton#vhandle:hover {
+  background-color: rgba(255, 255, 255, 0.70) !important;
 }
 
-.mac-notif-center-scroll StScrollBar .hhandle {
+.mac-notif-center-scroll StScrollBar StBin#trough,
+.mac-launchpad-scroll StScrollBar StBin#trough,
+.mac-spotlight-scroll StScrollBar StBin#trough,
+.mac-clipboard-scroll StScrollBar StBin#trough {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.mac-notif-center-scroll StScrollBar .hhandle,
+.mac-launchpad-scroll StScrollBar .hhandle,
+.mac-spotlight-scroll StScrollBar .hhandle,
+.mac-clipboard-scroll StScrollBar .hhandle {
   width: 0px !important;
   height: 0px !important;
   opacity: 0 !important;
@@ -6618,7 +6681,7 @@ StWidget.focused .app-grid-running-dot {
   height: 70px !important;
   min-height: 70px !important;
   max-height: 70px !important;
-  border-radius: 35px !important;
+  border-radius: 9999px !important;
   background-color: transparent !important;
   background: none !important;
   border: none !important;
@@ -6668,7 +6731,7 @@ StWidget.focused .app-grid-running-dot {
   background: none !important;
   border: none !important;
   box-shadow: none !important;
-  color: #007aff !important;
+  color: -st-accent-color !important;
 }
 
 .mac-cc-circle-bg {
@@ -6698,7 +6761,7 @@ StWidget.focused .app-grid-running-dot {
   background: none !important;
   border: none !important;
   box-shadow: none !important;
-  color: #007aff !important;
+  color: -st-accent-color !important;
 }
 
 .mac-cc-pill-icon-btn.dnd-active {
@@ -6742,7 +6805,7 @@ StWidget.focused .app-grid-running-dot {
   height: 70px !important;
   min-width: 70px !important;
   min-height: 70px !important;
-  border-radius: 35px !important;
+  border-radius: 9999px !important;
   background-color: transparent !important;
   background: none !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
@@ -6758,9 +6821,9 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-cc-circle-btn-large.active {
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   border-color: rgba(255, 255, 255, 0.45) !important;
-  box-shadow: 0 0 12px rgba(0, 122, 255, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px -st-accent-color, inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
   color: #ffffff !important;
 }
 
@@ -6888,32 +6951,31 @@ StWidget.focused .app-grid-running-dot {
 
 .mac-cc-airplay-btn:hover,
 .mac-cc-airplay-btn.active {
-  background-color: #007aff !important;
-  border-color: #007aff !important;
+  background-color: -st-accent-color !important;
+  border-color: -st-accent-color !important;
   color: #ffffff !important;
 }
 
 .mac-cc-submenu-card {
-  width: 314px !important;
-  min-width: 314px !important;
-  max-width: 314px !important;
+  width: 338px !important;
+  min-width: 338px !important;
+  max-width: 338px !important;
   background-color: transparent !important;
   background: none !important;
   border: none !important;
   border-radius: 25px !important;
   box-shadow: none !important;
-  padding: 10px 12px !important;
+  padding: 4px 6px !important;
 }
 
 .mac-cc-sound-drawer {
-  width: 312px !important;
-  min-width: 312px !important;
-  max-width: 312px !important;
-  background-color: transparent !important;
-  background: none !important;
-  border: none !important;
-  border-radius: 25px !important;
-  box-shadow: none !important;
+  width: 310px !important;
+  min-width: 310px !important;
+  max-width: 310px !important;
+  background-color: rgba(30, 30, 30, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 2px 6px rgba(0, 0, 0, 0.4) !important;
   padding: 10px 12px !important;
   margin-top: 4px !important;
 }
@@ -6937,10 +6999,10 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-cc-route-btn.active {
-  background-color: #007aff !important;
-  border-color: #007aff !important;
+  background-color: -st-accent-color !important;
+  border-color: -st-accent-color !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.45) !important;
+  box-shadow: 0 2px 6px -st-accent-color !important;
 }
 
 .mac-cc-submenu-header {
@@ -6962,24 +7024,31 @@ StWidget.focused .app-grid-running-dot {
   background-color: rgba(255, 255, 255, 0.22) !important;
 }
 
-.mac-cc-submenu-item {
-  padding: 4px 10px 4px 4px !important;
-  border-radius: 10px !important;
+.mac-cc-submenu-item,
+.mac-cc-submenu-row {
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  margin: 1px 0px !important;
   transition-duration: 120ms !important;
+  background-color: transparent !important;
 }
 
-.mac-cc-submenu-item:hover {
+.mac-cc-submenu-item:hover,
+.mac-cc-submenu-row:hover {
   background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-.mac-cc-submenu-item.active {
-  background-color: #007aff !important;
+.mac-cc-submenu-item.active,
+.mac-cc-submenu-row.active {
+  background-color: transparent !important;
   color: #ffffff !important;
-  border-radius: 10px !important;
+  border-radius: 8px !important;
 }
 
 .mac-cc-submenu-item.active StLabel,
-.mac-cc-submenu-item.active StIcon {
+.mac-cc-submenu-item.active StIcon,
+.mac-cc-submenu-row.active StLabel,
+.mac-cc-submenu-row.active StIcon {
   color: #ffffff !important;
 }
 
@@ -7019,8 +7088,8 @@ StWidget.focused .app-grid-running-dot {
   font-size: 19px !important;
   font-weight: 400 !important;
   padding: 0 10px !important;
-  caret-color: #007aff !important;
-  selection-background-color: rgba(0, 122, 255, 0.45) !important;
+  caret-color: -st-accent-color !important;
+  selection-background-color: -st-accent-color !important;
   selected-color: #ffffff !important;
 }
 
@@ -7089,3 +7158,31 @@ StWidget.focused .app-grid-running-dot {
 }
 
 /* --- MAC-STYLING-END --- */
+
+
+/* LQ-Visual: Strict transparency for Dock icons (no gray/white highlight squares on focused/hovered apps) */
+#dashtodockContainer #dash .overview-tile .overview-icon,
+#dashtodockContainer #dash .overview-tile:focus .overview-icon,
+#dashtodockContainer #dash .overview-tile.focused .overview-icon,
+#dashtodockContainer #dash .overview-tile:hover .overview-icon,
+#dashtodockContainer #dash .overview-tile:active .overview-icon,
+#dashtodockContainer #dash .overview-tile:highlighted .overview-icon,
+#dashtodockContainer #dash .overview-tile:selected .overview-icon,
+#dashtodockContainer #dash .overview-tile:checked .overview-icon,
+#dashtodockContainer #dash .app-well-app .overview-icon,
+#dashtodockContainer #dash .app-well-app:focus .overview-icon,
+#dashtodockContainer #dash .app-well-app.focused .overview-icon,
+#dashtodockContainer #dash .app-well-app:hover .overview-icon,
+#dashtodockContainer #dash .app-well-app:active .overview-icon,
+#dashtodockContainer #dash .show-apps .overview-icon,
+#dashtodockContainer #dash .show-apps:focus .overview-icon,
+#dashtodockContainer #dash .show-apps.focused .overview-icon,
+#dashtodockContainer #dash .show-apps:hover .overview-icon,
+#dashtodockContainer #dash .show-apps:active .overview-icon,
+#dashtodockContainer #dash .show-apps:checked .overview-icon,
+#dashtodockContainer #dash .overview-icon {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}

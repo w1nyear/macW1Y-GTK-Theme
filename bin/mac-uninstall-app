@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+import sys, os, subprocess
+from gi.repository import Gio
+
+def main():
+    if len(sys.argv) < 2:
+        return
+    path = sys.argv[1]
+    if not os.path.exists(path):
+        return
+    real_path = os.path.realpath(path)
+    
+    app_info = Gio.DesktopAppInfo.new_from_filename(real_path)
+    app_name = app_info.get_name() if app_info else os.path.basename(path).replace(".desktop", "")
+    
+    pkg_type = "unknown"
+    pkg_name = ""
+    
+    if "/snap/" in real_path or "/var/lib/snapd/" in real_path:
+        pkg_type = "snap"
+        parts = real_path.split("/")
+        for i, p in enumerate(parts):
+            if p == "snap" and i + 1 < len(parts):
+                pkg_name = parts[i+1]
+                break
+    elif "/flatpak/" in real_path:
+        pkg_type = "flatpak"
+        pkg_name = os.path.basename(real_path).replace(".desktop", "")
+    elif real_path.startswith("/usr/"):
+        pkg_type = "deb"
+        try:
+            res = subprocess.run(["dpkg", "-S", real_path], capture_output=True, text=True)
+            if res.returncode == 0:
+                pkg_name = res.stdout.split(":")[0].strip()
+        except Exception:
+            pass
+    elif real_path.startswith(os.path.expanduser("~/.local/")):
+        pkg_type = "local"
+    
+    if pkg_name:
+        prompt_text = f"Ви дійсно бажаєте видалити програму \"{app_name}\" ({pkg_name}) з системи?"
+    else:
+        prompt_text = f"Ви дійсно бажаєте видалити ярлик або програму \"{app_name}\" з системи?"
+        
+    zenity_cmd = [
+        "zenity", "--question",
+        "--title=Видалення програми",
+        f"--text={prompt_text}",
+        "--ok-label=Видалити",
+        "--cancel-label=Скасувати",
+        "--icon-name=user-trash"
+    ]
+    res = subprocess.run(zenity_cmd)
+    if res.returncode != 0:
+        return
+        
+    success = False
+    if pkg_type == "deb" and pkg_name:
+        cmd = ["pkexec", "apt-get", "remove", "-y", pkg_name]
+        r = subprocess.run(cmd)
+        success = (r.returncode == 0)
+    elif pkg_type == "snap" and pkg_name:
+        cmd = ["pkexec", "snap", "remove", pkg_name]
+        r = subprocess.run(cmd)
+        success = (r.returncode == 0)
+    elif pkg_type == "flatpak" and pkg_name:
+        cmd = ["flatpak", "uninstall", "-y", pkg_name]
+        r = subprocess.run(cmd)
+        success = (r.returncode == 0)
+    else:
+        try:
+            os.remove(real_path)
+            success = True
+        except Exception:
+            pass
+            
+    if os.path.exists(path) and os.path.islink(path):
+        try:
+            os.remove(path)
+        except Exception:
+            pass
+            
+    if success:
+        subprocess.run(["zenity", "--info", "--title=Видалено", f"--text=Програму \"{app_name}\" успішно видалено з системи.", "--timeout=3"])
+        subprocess.run(["/usr/local/bin/mac-sync-applications"])
+
+if __name__ == "__main__":
+    main()

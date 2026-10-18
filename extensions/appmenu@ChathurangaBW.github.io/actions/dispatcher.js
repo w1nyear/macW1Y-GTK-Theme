@@ -3,7 +3,7 @@ import { fileActions } from './fileActions.js';
 import { viewActions } from './viewActions.js';
 import { executeKeyboardAction } from './keyboardActions.js';
 import * as Logger from '../logger.js';
-import { toggleSearchDialog } from '../searchDialog_v3.js';
+import { toggleSearchDialog } from '../searchDialog_v4.js';
 
 /**
  * Action dispatcher — registry of all named actions.

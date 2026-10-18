@@ -148,35 +148,63 @@ export class DashManager {
             }
             return;
         }
-        let [w, h] = this.targetActor.get_size();
-        let [x, y] = this.targetActor.get_transformed_position();
-        let monitorIndex = Main.layoutManager.findIndexForActor(this.targetActor);
-        if (monitorIndex < 0)
-            monitorIndex = Main.layoutManager.primaryIndex;
-        let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
-        let distLeft = x - monitor.x;
-        let distRight = (monitor.x + monitor.width) - (x + w);
-        let distTop = y - monitor.y;
-        let distBottom = (monitor.y + monitor.height) - (y + h);
-        let minEdge = Math.min(distLeft, distRight, distTop, distBottom);
+
+        // Determine edge: first inspect ancestor classes for reliable positioning
+        let posClass = 'bottom';
+        let p = this.targetActor;
+        while (p) {
+            if (p.has_style_class_name) {
+                if (p.has_style_class_name('bottom')) { posClass = 'bottom'; break; }
+                if (p.has_style_class_name('top')) { posClass = 'top'; break; }
+                if (p.has_style_class_name('left')) { posClass = 'left'; break; }
+                if (p.has_style_class_name('right')) { posClass = 'right'; break; }
+            }
+            p = p.get_parent();
+        }
+
         let marginStyle = '';
-        if (minEdge === distBottom || minEdge === distTop) {
-            if (minEdge === distBottom)
-                marginStyle = `margin-bottom: ${marginBottom}px;`;
-            else
-                marginStyle = `margin-top: ${marginBottom}px;`;
+        if (posClass === 'bottom') {
+            marginStyle = `margin-bottom: ${marginBottom}px;`;
+        } else if (posClass === 'top') {
+            marginStyle = `margin-top: ${marginBottom}px;`;
+        } else if (posClass === 'right') {
+            marginStyle = `margin-right: ${marginBottom}px;`;
+        } else if (posClass === 'left') {
+            marginStyle = `margin-left: ${marginBottom}px;`;
+        } else {
+            let [w, h] = this.targetActor.get_size();
+            let [x, y] = this.targetActor.get_transformed_position();
+            let monitorIndex = Main.layoutManager.findIndexForActor(this.targetActor);
+            if (monitorIndex < 0)
+                monitorIndex = Main.layoutManager.primaryIndex;
+            let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
+            let distLeft = x - monitor.x;
+            let distRight = (monitor.x + monitor.width) - (x + w);
+            let distTop = y - monitor.y;
+            let distBottom = (monitor.y + monitor.height) - (y + h);
+            let minEdge = Math.min(distLeft, distRight, distTop, distBottom);
+            if (minEdge === distBottom || minEdge === distTop) {
+                if (minEdge === distBottom)
+                    marginStyle = `margin-bottom: ${marginBottom}px;`;
+                else
+                    marginStyle = `margin-top: ${marginBottom}px;`;
+            } else {
+                if (minEdge === distRight)
+                    marginStyle = `margin-right: ${marginBottom}px;`;
+                else
+                    marginStyle = `margin-left: ${marginBottom}px;`;
+            }
         }
-        else {
-            if (minEdge === distRight)
-                marginStyle = `margin-right: ${marginBottom}px;`;
-            else
-                marginStyle = `margin-left: ${marginBottom}px;`;
-        }
+
         if (this._originalStyle === undefined) {
-            this._originalStyle = this.targetActor.get_style() || '';
+            let s = this.targetActor.get_style() || '';
+            this._originalStyle = s.replace(/margin-(bottom|top|left|right):\s*[^;]+;?/g, '').trim();
         }
-        this._currentMarginStyle = marginStyle;
-        this.targetActor.set_style(`${this._originalStyle} ${marginStyle}`);
+        if (this._currentMarginStyle !== marginStyle) {
+            this._currentMarginStyle = marginStyle;
+            let base = this._originalStyle ? `${this._originalStyle} ` : '';
+            this.targetActor.set_style(`${base}${marginStyle}`.trim());
+        }
     }
 
     _applyEffect() {
@@ -300,6 +328,9 @@ export class DashManager {
         // Keep dock glass seamlessly updated during overview transitions
         const triggerDockSync = () => {
             if (this.glass && this._isEffectActive) {
+                if (typeof this.glass.forceRefresh === 'function') {
+                    this.glass.forceRefresh(500);
+                }
                 this.glass.syncSources(true);
                 this.glass.queue_redraw();
             }
@@ -307,7 +338,46 @@ export class DashManager {
         safeConnect(Main.overview, 'showing', triggerDockSync);
         safeConnect(Main.overview, 'hiding', triggerDockSync);
         safeConnect(Main.overview, 'shown', triggerDockSync);
-        safeConnect(Main.overview, 'hidden', triggerDockSync);
+
+        const onOverviewHidden = () => {
+            if (this.glass && this._isEffectActive) {
+                this.glass._copier?.clear();
+                this._lastSyncSourcesUs = 0;
+                const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
+                this.glass.setBrightness(baseBrightness);
+                if (typeof this.glass.forceRefresh === 'function') {
+                    this.glass.forceRefresh(500);
+                }
+                this.glass.syncSources(true);
+                this.glass.queue_redraw();
+
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60, () => {
+                    if (this.glass && this._isEffectActive && !Main.overview.visible) {
+                        this.glass._copier?.clear();
+                        this._lastSyncSourcesUs = 0;
+                        if (typeof this.glass.forceRefresh === 'function') {
+                            this.glass.forceRefresh(300);
+                        }
+                        this.glass.syncSources(true);
+                        this.glass.queue_redraw();
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 160, () => {
+                    if (this.glass && this._isEffectActive && !Main.overview.visible) {
+                        this.glass._copier?.clear();
+                        this._lastSyncSourcesUs = 0;
+                        if (typeof this.glass.forceRefresh === 'function') {
+                            this.glass.forceRefresh(300);
+                        }
+                        this.glass.syncSources(true);
+                        this.glass.queue_redraw();
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
+            }
+        };
+        safeConnect(Main.overview, 'hidden', onOverviewHidden);
 
         const stateAdjustment = Main.overview?._controls?._stateAdjustment
             ?? Main.overview?._overview?._controls?._stateAdjustment;
@@ -317,6 +387,11 @@ export class DashManager {
                     const p = Math.max(0, Math.min(1, stateAdjustment.value));
                     const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
                     this.glass.setBrightness(baseBrightness - p * 0.15);
+                    if (typeof this.glass.forceRefresh === 'function') {
+                        this.glass.forceRefresh(150);
+                    }
+                    this.glass.syncSources(true);
+                    this.glass.queue_redraw();
                 }
             });
         }
@@ -353,6 +428,7 @@ export class DashManager {
         const edges = dockEdges(bounds, monitor);
         bounds = this._stabilizeDockBounds(bounds, edges);
         if (this._marginValue > 0) {
+            this._applyMargin();
             const refActor = this._findReferenceActor(this.targetActor);
             if (refActor)
                 bounds = balanceDockBounds(bounds, this._actorBounds(refActor), edges);
@@ -565,6 +641,11 @@ export class DashManager {
                 try { cleanup(); } catch (_) {}
             }
             this._signalCleanups = [];
+        }
+        const dockAlive = isActorValid(this.targetActor);
+        for (const id of this._signals) {
+            if (dockAlive)
+                this.targetActor.disconnect(id);
         }
         this._signals = [];
         if (dockAlive) {

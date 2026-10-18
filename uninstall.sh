@@ -147,15 +147,36 @@ restore_system() {
     sudo rm -f /etc/udev/rules.d/99-uinput.rules
     sudo udevadm control --reload-rules 2>/dev/null || true
     
-    # Режим гри
-    log_info "Вимкнення Game Mode..."
+    # Режим гри та системні оптимізації
+    log_info "Вимкнення Game Mode та очищення системних оптимізацій..."
     sudo systemctl stop mac-gamemode.service 2>/dev/null || true
     sudo systemctl disable mac-gamemode.service 2>/dev/null || true
     sudo rm -f /etc/systemd/system/mac-gamemode.service
     sudo rm -f /usr/local/bin/mac-gamemode
     sudo rm -f /usr/local/bin/gamemoderun
     sudo rm -f /usr/local/bin/nvidia-game-run
+    sudo rm -f /usr/local/bin/prime-run
+    sudo rm -f /usr/local/bin/steam
+    sudo rm -f /usr/local/bin/mac-clipboard
     sudo rm -f /etc/mac-gamemode.state
+    sudo rm -f /etc/sysctl.d/99-macw1y-performance.conf
+    sudo rm -f /etc/modprobe.d/nvidia-runtimepm.conf
+    sudo rm -f /etc/xdg/autostart/nautilus-daemon.desktop
+    rm -f "$TARGET_HOME/.config/autostart/nautilus-daemon.desktop"
+    rm -f "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop"
+    rm -f "$TARGET_HOME/.config/environment.d/20-macw1y-performance.conf"
+
+    # Nautilus
+    log_info "Відновлення стандартного Nautilus..."
+    if [ -f /usr/bin/nautilus.orig ]; then
+        sudo mv -f /usr/bin/nautilus.orig /usr/bin/nautilus
+    fi
+    sudo rm -f /usr/lib/x86_64-linux-gnu/libmac_nautilus.so
+    sudo rm -f /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so
+    sudo rm -f /usr/local/bin/mac-sync-applications
+    sudo rm -f /usr/local/bin/mac-uninstall-app
+    sudo rm -f /usr/share/applications/mac-app-launcher.desktop
+
     
     # GDM перехід
     log_info "Видалення кастомного layout.js..."

@@ -1,3 +1,5 @@
+import Gio from 'gi://Gio';
+
 export class MaterialSettings {
     _settings;
     _uniforms;
@@ -5,6 +7,8 @@ export class MaterialSettings {
     _setDiagnostics;
     _repaintIfDirty;
     _settingsIds = [];
+    _interfaceSettings = null;
+    _interfaceSettingsId = null;
 
     constructor(_settings, _uniforms, _blur, _setDiagnostics, _repaintIfDirty) {
         this._settings = _settings;
@@ -53,7 +57,9 @@ export class MaterialSettings {
         this._uniforms.set('blur_tex_w', 0.0);
         this._uniforms.set('blur_tex_h', 0.0);
         this._uniforms.set('edge_taps_enabled', 1.0);
+        this._uniforms.set('is_light_style', 0.0);
         this._settingsIds = [];
+        this._bindInterfaceSettings();
         if (this._settings) {
             this._bindSettings();
         }
@@ -87,10 +93,41 @@ export class MaterialSettings {
         }
     }
 
+    _bindInterfaceSettings() {
+        if (this._interfaceSettingsId && this._interfaceSettings) {
+            try {
+                this._interfaceSettings.disconnect(this._interfaceSettingsId);
+            } catch (_) {}
+            this._interfaceSettingsId = null;
+        }
+        try {
+            this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            const applyColorScheme = () => {
+                const scheme = this._interfaceSettings.get_string('color-scheme');
+                const isLight = scheme !== 'prefer-dark';
+                this._uniforms.set('is_light_style', isLight ? 1.0 : 0.0);
+            };
+            applyColorScheme();
+            this._interfaceSettingsId = this._interfaceSettings.connect('changed::color-scheme', () => {
+                applyColorScheme();
+                this._repaintIfDirty();
+            });
+        } catch (_) {
+            this._uniforms.set('is_light_style', 0.0);
+        }
+    }
+
     clear() {
         if (this._settings)
             this._settingsIds.forEach(id => this._settings?.disconnect(id));
         this._settingsIds = [];
+        if (this._interfaceSettings && this._interfaceSettingsId) {
+            try {
+                this._interfaceSettings.disconnect(this._interfaceSettingsId);
+            } catch (_) {}
+            this._interfaceSettingsId = null;
+        }
+        this._interfaceSettings = null;
     }
 
     _bindSettings() {

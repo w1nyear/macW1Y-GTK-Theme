@@ -201,18 +201,18 @@ export class PromptStyling {
             const imageUri = color.imagePath.startsWith('file://') ? color.imagePath : `file://${color.imagePath}`;
             if (isFocused) {
                 if (color.shadowAlpha !== undefined)
-                    shadowStyle = ` box-shadow: 0 2px 24px rgba(0, 0, 0, ${color.shadowAlpha.toFixed(3)}) !important;`;
+                    shadowStyle = ` box-shadow: 0 2px 24px rgba(0, 0, 0, ${color.shadowAlpha.toFixed(3)});`;
             } else {
                 const sAlpha = color.shadowAlpha !== undefined ? (color.shadowAlpha * (1.0 - veilAlpha)).toFixed(3) : '0';
-                shadowStyle = ` box-shadow: 0 2px 24px rgba(0, 0, 0, ${sAlpha}), inset 0 0 0 999px rgba(0, 0, 0, ${veilAlpha.toFixed(3)}) !important;`;
+                shadowStyle = ` box-shadow: 0 2px 24px rgba(0, 0, 0, ${sAlpha}), inset 0 0 0 999px rgba(0, 0, 0, ${veilAlpha.toFixed(3)});`;
             }
-            bgStyle = ` background-color: transparent !important; background-gradient-direction: none !important; background-image: url("${imageUri}") !important; background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; border: none !important;`;
+            bgStyle = ` background-color: transparent; background-gradient-direction: none; background-image: url("${imageUri}"); background-size: cover; background-position: center; background-repeat: no-repeat; border: none;`;
         } else {
             const dimFactor = isFocused ? 1.0 : (1.0 - veilAlpha);
 
             if (color.shadowAlpha !== undefined) {
                 const sAlpha = isFocused ? color.shadowAlpha : color.shadowAlpha * dimFactor;
-                shadowStyle = ` box-shadow: 0 2px 24px rgba(0, 0, 0, ${sAlpha.toFixed(3)}) !important;`;
+                shadowStyle = ` box-shadow: 0 2px 24px rgba(0, 0, 0, ${sAlpha.toFixed(3)});`;
             }
 
             if (color.start && color.end && color.direction && color.direction !== 'none') {
@@ -222,12 +222,12 @@ export class PromptStyling {
                 const eR = Math.round(color.end.r * dimFactor);
                 const eG = Math.round(color.end.g * dimFactor);
                 const eB = Math.round(color.end.b * dimFactor);
-                bgStyle = ` background-color: transparent !important; background-gradient-direction: ${color.direction} !important; background-gradient-start: rgb(${sR}, ${sG}, ${sB}) !important; background-gradient-end: rgb(${eR}, ${eG}, ${eB}) !important; background-image: none !important; border: none !important;`;
+                bgStyle = ` background-color: transparent; background-gradient-direction: ${color.direction}; background-gradient-start: rgb(${sR}, ${sG}, ${sB}); background-gradient-end: rgb(${eR}, ${eG}, ${eB}); background-image: none; border: none;`;
             } else {
                 const curR = Math.round(color.r * dimFactor);
                 const curG = Math.round(color.g * dimFactor);
                 const curB = Math.round(color.b * dimFactor);
-                bgStyle = ` background-image: none !important; background-gradient-direction: none !important; background-color: rgb(${curR}, ${curG}, ${curB}) !important; border: none !important;`;
+                bgStyle = ` background-image: none; background-gradient-direction: none; background-color: rgb(${curR}, ${curG}, ${curB}); border: none;`;
             }
         }
 
@@ -491,10 +491,10 @@ export class PromptStyling {
 
         let overlayStyle = '';
         if (isHovered) {
-            overlayStyle += ` color: #ffffff !important;`;
+            overlayStyle += ` color: #ffffff;`;
         }
         if (isFocused) {
-            overlayStyle += ` border: 1px solid rgba(255, 255, 255, 0.8) !important;`;
+            overlayStyle += ` border: 1px solid rgba(255, 255, 255, 0.8);`;
         }
 
         let shadowStyle = '';
@@ -502,11 +502,11 @@ export class PromptStyling {
             const rawShadow = colorObj.shadowAlpha ?? color.shadowAlpha ?? visualState.shadowAlpha;
             if (rawShadow !== undefined && rawShadow !== null && rawShadow > 0) {
                 const cancelShadowAlpha = rawShadow * 0.75;
-                shadowStyle = ` box-shadow: 0 2px 24px rgba(0, 0, 0, ${cancelShadowAlpha.toFixed(3)}) !important;`;
+                shadowStyle = ` box-shadow: 0 2px 24px rgba(0, 0, 0, ${cancelShadowAlpha.toFixed(3)});`;
             }
         }
 
-        const bgStyle = ` background-image: none !important; background-gradient-direction: none !important; background-color: rgb(${curR}, ${curG}, ${curB}) !important;${overlayStyle}${shadowStyle}`;
+        const bgStyle = ` background-image: none; background-gradient-direction: none; background-color: rgb(${curR}, ${curG}, ${curB});${overlayStyle}${shadowStyle}`;
 
         button.set_style(`${button._wackOriginalStyle}${bgStyle}`);
     }

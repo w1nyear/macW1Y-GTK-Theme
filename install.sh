@@ -382,6 +382,52 @@ install_themes() {
         sudo cp -f "$SCRIPT_DIR/lib/libmacpopover.so" /usr/lib/libmacpopover.so 2>/dev/null || true
     fi
     
+    # Налаштування macOS Nautilus Finder Sidebar та розділу Програми
+    log_info "Встановлення macOS Nautilus Finder Sidebar та розширень..."
+    if [ -f "$SCRIPT_DIR/lib/libmac_nautilus.so" ]; then
+        sudo cp -f "$SCRIPT_DIR/lib/libmac_nautilus.so" /usr/lib/x86_64-linux-gnu/libmac_nautilus.so 2>/dev/null || true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_nautilus.so 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" ]; then
+        sudo mkdir -p /usr/lib/x86_64-linux-gnu/nautilus/extensions-4
+        sudo cp -f "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so 2>/dev/null || true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so 2>/dev/null || true
+    fi
+    if [ -f "/usr/bin/nautilus" ] && [ ! -f "/usr/bin/nautilus.orig" ]; then
+        sudo mv /usr/bin/nautilus /usr/bin/nautilus.orig
+    fi
+    cat << 'EOF_NAUT' | sudo tee /usr/bin/nautilus >/dev/null
+#!/bin/sh
+export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_nautilus.so${LD_PRELOAD:+:$LD_PRELOAD}"
+exec /usr/bin/nautilus.orig "$@"
+EOF_NAUT
+    sudo chmod +x /usr/bin/nautilus 2>/dev/null || true
+
+    if [ -f "$SCRIPT_DIR/bin/mac-sync-applications" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/mac-sync-applications" /usr/local/bin/mac-sync-applications
+        sudo chmod 755 /usr/local/bin/mac-sync-applications
+    fi
+    if [ -f "$SCRIPT_DIR/bin/mac-uninstall-app" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/mac-uninstall-app" /usr/local/bin/mac-uninstall-app
+        sudo chmod 755 /usr/local/bin/mac-uninstall-app
+    fi
+    if [ -f "$SCRIPT_DIR/applications/mac-app-launcher.desktop" ]; then
+        sudo cp -f "$SCRIPT_DIR/applications/mac-app-launcher.desktop" /usr/share/applications/mac-app-launcher.desktop
+        run_as_user xdg-mime default mac-app-launcher.desktop application/x-desktop 2>/dev/null || true
+        run_as_user gio mime application/x-desktop mac-app-launcher.desktop 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/config/gtk-3.0/bookmarks" ]; then
+        mkdir -p "$TARGET_HOME/.config/gtk-3.0"
+        cp -f "$SCRIPT_DIR/config/gtk-3.0/bookmarks" "$TARGET_HOME/.config/gtk-3.0/bookmarks"
+        chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/gtk-3.0/bookmarks"
+    fi
+    if [ -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" ]; then
+        mkdir -p "$TARGET_HOME/.config/autostart"
+        cp -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop"
+        chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop"
+    fi
+    run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
+
     run_as_user gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark"
     run_as_user gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
     run_as_user gsettings set org.gnome.desktop.wm.preferences theme "macW1Y-Dark"
@@ -554,11 +600,13 @@ install_extensions() {
         run_as_user gnome-extensions disable "$ext_id" 2>/dev/null || true
     done
 
-    # Зупинка та маскування фонових демонів індексації та snapd інтеграції
-    run_as_user systemctl --user stop localsearch-3.service tracker-miner-fs-3.service snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
-    run_as_user systemctl --user mask localsearch-3.service tracker-miner-fs-3.service snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
-    run_as_user tracker3 reset -s -r 2>/dev/null || true
-    run_as_user localsearch reset -s -r 2>/dev/null || true
+    # Оптимізація та розблокування служб індексації (усуває зависання Nautilus та програм при запуску)
+    run_as_user systemctl --user unmask localsearch-3.service tracker-miner-fs-3.service 2>/dev/null || true
+    run_as_user systemctl --user stop snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
+    run_as_user systemctl --user mask snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
+    run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files index-recursive-directories "[]" 2>/dev/null || true
+    run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files index-single-directories "[]" 2>/dev/null || true
+    run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files throttle 20 2>/dev/null || true
 
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-corner-radius 24.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-toggle-corner-radius 9999.0 2>/dev/null || true
@@ -678,12 +726,13 @@ install_touchpad() {
 }
 
 # ------------------------------------------------------------------------------
-# 9. Режим гри та GPU Оптимізація
+# 9. Апаратні драйвери GPU, Режим гри та прискорення запуску програм
 # ------------------------------------------------------------------------------
 install_gamemode() {
-    log_step "Етап 9/13: Встановлення Game Mode та утиліт перемикання GPU"
+    log_step "Етап 9/13: Встановлення апаратних драйверів GPU, Game Mode та прискорення додатків"
     require_root
     
+    # 1. Встановлення бінарних утиліт та скриптів
     for bin_file in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config mac-clipboard; do
         if [ -f "$SCRIPT_DIR/bin/$bin_file" ]; then
             sudo cp "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
@@ -701,14 +750,123 @@ install_gamemode() {
         done
     fi
 
+    # 2. Служба фонового оптимізатора Game Mode
     if [ -f "$SCRIPT_DIR/systemd/mac-gamemode.service" ]; then
         sudo cp "$SCRIPT_DIR/systemd/mac-gamemode.service" /etc/systemd/system/
         sudo systemctl daemon-reload
         sudo systemctl enable mac-gamemode.service
     fi
-    
     sudo touch /etc/mac-gamemode.state
-    log_success "Службу Game Mode та оптимізацію GPU успішно встановлено!"
+
+    # 3. Багатоархітектурна підтримка (Multiarch i386 для Steam, Wine, Proton)
+    sudo dpkg --add-architecture i386 2>/dev/null || true
+
+    # 4. Автоматичне виявлення та встановлення відповідних драйверів GPU
+    local HAS_NVIDIA=false
+    local HAS_AMD=false
+    local HAS_INTEL=false
+
+    if lspci -nn 2>/dev/null | grep -Ei "vga|3d|display" | grep -Ei "nvidia" >/dev/null 2>&1; then
+        HAS_NVIDIA=true
+    fi
+    if lspci -nn 2>/dev/null | grep -Ei "vga|3d|display" | grep -Ei "amd|ati|radeon" >/dev/null 2>&1; then
+        HAS_AMD=true
+    fi
+    if lspci -nn 2>/dev/null | grep -Ei "vga|3d|display" | grep -Ei "intel" >/dev/null 2>&1; then
+        HAS_INTEL=true
+    fi
+
+    if [ "$HAS_NVIDIA" = true ]; then
+        log_info "Виявлено GPU NVIDIA. Перевірка наявності пропрієтарного драйвера..."
+        local NV_VER=""
+        if ! command -v nvidia-smi &>/dev/null && ! lsmod | grep -q "^nvidia"; then
+            log_info "Пошук та автоматичне встановлення рекомендованого драйвера NVIDIA..."
+            local RECOMMENDED_DRIVER=""
+            if command -v ubuntu-drivers >/dev/null 2>&1; then
+                RECOMMENDED_DRIVER=$(ubuntu-drivers devices 2>/dev/null | grep 'recommended' | awk '{print $3}' | head -n1)
+            fi
+            if [ -n "$RECOMMENDED_DRIVER" ]; then
+                log_info "Встановлення $RECOMMENDED_DRIVER та компонентів PRIME/Wayland..."
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$RECOMMENDED_DRIVER" nvidia-prime nvidia-settings libnvidia-egl-wayland1 2>/dev/null || true
+                NV_VER=$(echo "$RECOMMENDED_DRIVER" | grep -oP '\d+')
+            else
+                sudo DEBIAN_FRONTEND=noninteractive ubuntu-drivers autoinstall 2>/dev/null || true
+                NV_VER=$(dpkg -l 2>/dev/null | grep -oP 'nvidia-driver-\K\d+' | head -n1)
+            fi
+        else
+            log_info "Драйвер NVIDIA вже встановлено в системі."
+            NV_VER=$(dpkg -l 2>/dev/null | grep -oP 'nvidia-driver-\K\d+' | head -n1)
+        fi
+
+        # Встановлення 32-бітних бібліотек NVIDIA OpenGL/Vulkan для Steam та ігор
+        if [ -n "$NV_VER" ]; then
+            log_info "Встановлення 32-бітних бібліотек libnvidia-gl-$NV_VER:i386 та Vulkan для Steam/ігор..."
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "libnvidia-gl-${NV_VER}:i386" libvulkan1:i386 mesa-vulkan-drivers:i386 2>/dev/null || true
+        else
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libvulkan1:i386 mesa-vulkan-drivers:i386 2>/dev/null || true
+        fi
+
+        # Блокування nouveau та оновлення initramfs для коректного завантаження модуля nvidia
+        sudo mkdir -p /etc/modprobe.d
+        cat << 'EOF' | sudo tee /etc/modprobe.d/blacklist-nouveau.conf >/dev/null
+blacklist nouveau
+blacklist lbm-nouveau
+options nouveau modeset=0
+alias nouveau off
+alias lbm-nouveau off
+EOF
+
+        # Налаштування Dynamic Power Management (RTD3) для миттєвого виходу зі сну без лагів
+        cat << 'EOF' | sudo tee /etc/modprobe.d/nvidia-runtimepm.conf >/dev/null
+options nvidia "NVreg_DynamicPowerManagement=0x02"
+options nvidia-drm modeset=1
+options nvidia-drm fbdev=1
+EOF
+        sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service 2>/dev/null || true
+        if command -v update-initramfs >/dev/null 2>&1; then
+            sudo update-initramfs -u 2>/dev/null || true
+        fi
+    fi
+
+    if [ "$HAS_AMD" = true ]; then
+        log_info "Виявлено графіку AMD Radeon. Встановлення драйверів Mesa Vulkan/VA-API..."
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mesa-vulkan-drivers mesa-vulkan-drivers:i386 mesa-va-drivers vulkan-tools 2>/dev/null || true
+    fi
+
+    if [ "$HAS_INTEL" = true ]; then
+        log_info "Виявлено графіку Intel. Встановлення драйверів апаратного прискорення..."
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-media-va-driver-non-free mesa-vulkan-drivers mesa-vulkan-drivers:i386 vulkan-tools 2>/dev/null || \
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-media-va-driver mesa-vulkan-drivers mesa-vulkan-drivers:i386 vulkan-tools 2>/dev/null || true
+    fi
+
+    # 5. Встановлення бібліотек GameMode, Vulkan та демона Preload
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y gamemode libgamemode0 libgamemodeauto0 libvulkan1 vulkan-tools preload 2>/dev/null || true
+    sudo systemctl enable --now preload 2>/dev/null || true
+
+    # 6. Оптимізації ядра sysctl (vm.max_map_count для ігор/Proton, кешування та низька латентність)
+    if [ -f "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" ]; then
+        sudo mkdir -p /etc/sysctl.d
+        sudo cp "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" /etc/sysctl.d/
+        sudo sysctl -p /etc/sysctl.d/99-macw1y-performance.conf 2>/dev/null || true
+    fi
+
+    # 7. Очищення застарілих фонових служб nautilus (використовується системний preload)
+    rm -f "$TARGET_HOME/.config/autostart/nautilus-daemon.desktop" 2>/dev/null || true
+    sudo rm -f /etc/xdg/autostart/nautilus-daemon.desktop 2>/dev/null || true
+
+    # Кешування GPU шейдерів для усунення затримок компіляції при відкритті програм та ігор
+    mkdir -p "$TARGET_HOME/.cache/mesa_shader_cache" "$TARGET_HOME/.cache/nv_shader_cache"
+    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.cache/mesa_shader_cache" "$TARGET_HOME/.cache/nv_shader_cache" 2>/dev/null || true
+    mkdir -p "$TARGET_HOME/.config/environment.d"
+    cat << EOF > "$TARGET_HOME/.config/environment.d/20-macw1y-performance.conf"
+__GL_SHADER_DISK_CACHE=1
+__GL_SHADER_DISK_CACHE_PATH=$TARGET_HOME/.cache/nv_shader_cache
+__GL_SHADER_DISK_CACHE_SIZE=10737418240
+MESA_SHADER_CACHE_DIR=$TARGET_HOME/.cache/mesa_shader_cache
+EOF
+    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/environment.d" 2>/dev/null || true
+
+    log_success "Апаратні драйвери, ігрові бібліотеки та прискорення додатків успішно налаштовано!"
 }
 
 # ------------------------------------------------------------------------------
@@ -819,7 +977,7 @@ install_gdm_transition() {
                 echo '</gresources>'
             ) > "$BUILD_TMP/gnome-shell-theme.gresource.xml"
             
-            glib-compile-resources --target="$BUILD_TMP/gnome-shell-theme.gresource" "$BUILD_TMP/gnome-shell-theme.gresource.xml" 2>/dev/null || true
+            glib-compile-resources --sourcedir="$BUILD_TMP" --target="$BUILD_TMP/gnome-shell-theme.gresource" "$BUILD_TMP/gnome-shell-theme.gresource.xml" 2>/dev/null || true
             if [ -f "$BUILD_TMP/gnome-shell-theme.gresource" ]; then
                 sudo mkdir -p /usr/share/gnome-shell/theme/macW1Y-Dark
                 sudo cp "$BUILD_TMP/gnome-shell-theme.gresource" "$GRES_TARGET"
@@ -839,6 +997,11 @@ install_gdm_transition() {
     fi
 
     # 9. Налаштування аватара користувача в AccountsService
+    if [ ! -f "$TARGET_HOME/.face" ] && [ -f "$SCRIPT_DIR/icons/default-avatar.png" ]; then
+        cp "$SCRIPT_DIR/icons/default-avatar.png" "$TARGET_HOME/.face"
+        cp "$SCRIPT_DIR/icons/default-avatar.png" "$TARGET_HOME/.face.icon"
+        chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.face" "$TARGET_HOME/.face.icon" 2>/dev/null || true
+    fi
     if [ -f "$TARGET_HOME/.face" ]; then
         sudo mkdir -p /var/lib/AccountsService/icons /var/lib/AccountsService/users
         sudo cp "$TARGET_HOME/.face" "/var/lib/AccountsService/icons/$TARGET_USER"
@@ -861,6 +1024,12 @@ install_gdm_transition() {
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-mode 'cupertino' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock cupertino-always-show-user true 2>/dev/null || true
     run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg" 2>/dev/null || true
+
+    # 11. Вимкнення автоматичного входу для обов'язкового відображення екрана блокування GDM
+    if [ -f /etc/gdm3/custom.conf ]; then
+        sudo sed -i 's|^AutomaticLoginEnable=.*|AutomaticLoginEnable=false|' /etc/gdm3/custom.conf
+        sudo sed -i 's|^AutomaticLogin=.*|# AutomaticLogin=vitaliy|' /etc/gdm3/custom.conf
+    fi
 
     sudo dconf update 2>/dev/null || true
     log_success "Екран блокування macW1Y GDM та усунення накладань Yaru налаштовано!"
@@ -1113,8 +1282,12 @@ run_incremental_update() {
         for ext_id in "${UBUNTU_BLOAT_EXTS[@]}"; do
             run_as_user gnome-extensions disable "$ext_id" 2>/dev/null || true
         done
-        run_as_user systemctl --user stop localsearch-3.service tracker-miner-fs-3.service snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
-        run_as_user systemctl --user mask localsearch-3.service tracker-miner-fs-3.service snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
+        run_as_user systemctl --user unmask localsearch-3.service tracker-miner-fs-3.service 2>/dev/null || true
+        run_as_user systemctl --user stop snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
+        run_as_user systemctl --user mask snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
+        run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files index-recursive-directories "[]" 2>/dev/null || true
+        run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files index-single-directories "[]" 2>/dev/null || true
+        run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files throttle 20 2>/dev/null || true
     fi
 
     log_info "6/9 Перевірка компонентів Параметрів (GNOME Control Center Overlay)..."
@@ -1163,13 +1336,73 @@ run_incremental_update() {
     [ -f "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" ] && sync_or_update_file "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" "/etc/udev/rules.d/99-uinput.rules" true
     [ -f "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" "/etc/systemd/system/mac-touchpad-daemon.service" true
 
-    for gb in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config; do
+    for gb in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config mac-clipboard; do
         if [ -f "$SCRIPT_DIR/bin/$gb" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$gb" "/usr/local/bin/$gb" true
             sudo chmod +x "/usr/local/bin/$gb"
         fi
     done
     [ -f "$SCRIPT_DIR/systemd/mac-gamemode.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-gamemode.service" "/etc/systemd/system/mac-gamemode.service" true
+
+    # Системні оптимізації швидкодії та ігор у режимі оновлення
+    if [ -f "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" ]; then
+        sync_or_update_file "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" "/etc/sysctl.d/99-macw1y-performance.conf" true
+        sudo sysctl -p /etc/sysctl.d/99-macw1y-performance.conf 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/etc/modprobe.d/nvidia-runtimepm.conf" ]; then
+        sync_or_update_file "$SCRIPT_DIR/etc/modprobe.d/nvidia-runtimepm.conf" "/etc/modprobe.d/nvidia-runtimepm.conf" true
+    fi
+    if [ -f "$SCRIPT_DIR/autostart/nautilus-daemon.desktop" ]; then
+        mkdir -p "$TARGET_HOME/.config/autostart"
+        sync_or_update_file "$SCRIPT_DIR/autostart/nautilus-daemon.desktop" "$TARGET_HOME/.config/autostart/nautilus-daemon.desktop" false
+        if [ -w "/etc/xdg/autostart" ] || sudo -n true 2>/dev/null; then
+            sudo cp "$SCRIPT_DIR/autostart/nautilus-daemon.desktop" /etc/xdg/autostart/ 2>/dev/null || true
+        fi
+    fi
+
+    # Nautilus Finder Sidebar та розширення
+    log_info "Оновлення macOS Nautilus Finder Sidebar..."
+    if [ -f "$SCRIPT_DIR/lib/libmac_nautilus.so" ]; then
+        sync_or_update_file "$SCRIPT_DIR/lib/libmac_nautilus.so" "/usr/lib/x86_64-linux-gnu/libmac_nautilus.so" true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_nautilus.so 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" ]; then
+        sudo mkdir -p /usr/lib/x86_64-linux-gnu/nautilus/extensions-4
+        sync_or_update_file "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" "/usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so" true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so 2>/dev/null || true
+    fi
+    if [ -f "/usr/bin/nautilus" ] && [ ! -f "/usr/bin/nautilus.orig" ]; then
+        sudo mv /usr/bin/nautilus /usr/bin/nautilus.orig
+    fi
+    cat << 'EOF_NAUT' | sudo tee /usr/bin/nautilus >/dev/null
+#!/bin/sh
+export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_nautilus.so${LD_PRELOAD:+:$LD_PRELOAD}"
+exec /usr/bin/nautilus.orig "$@"
+EOF_NAUT
+    sudo chmod +x /usr/bin/nautilus 2>/dev/null || true
+
+    if [ -f "$SCRIPT_DIR/bin/mac-sync-applications" ]; then
+        sync_or_update_file "$SCRIPT_DIR/bin/mac-sync-applications" "/usr/local/bin/mac-sync-applications" true
+        sudo chmod 755 /usr/local/bin/mac-sync-applications
+    fi
+    if [ -f "$SCRIPT_DIR/bin/mac-uninstall-app" ]; then
+        sync_or_update_file "$SCRIPT_DIR/bin/mac-uninstall-app" "/usr/local/bin/mac-uninstall-app" true
+        sudo chmod 755 /usr/local/bin/mac-uninstall-app
+    fi
+    if [ -f "$SCRIPT_DIR/applications/mac-app-launcher.desktop" ]; then
+        sync_or_update_file "$SCRIPT_DIR/applications/mac-app-launcher.desktop" "/usr/share/applications/mac-app-launcher.desktop" true
+        run_as_user xdg-mime default mac-app-launcher.desktop application/x-desktop 2>/dev/null || true
+        run_as_user gio mime application/x-desktop mac-app-launcher.desktop 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/config/gtk-3.0/bookmarks" ]; then
+        mkdir -p "$TARGET_HOME/.config/gtk-3.0"
+        sync_or_update_file "$SCRIPT_DIR/config/gtk-3.0/bookmarks" "$TARGET_HOME/.config/gtk-3.0/bookmarks" false
+    fi
+    if [ -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" ]; then
+        mkdir -p "$TARGET_HOME/.config/autostart"
+        sync_or_update_file "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop" false
+    fi
+    run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
 
     log_info "8/9 Перевірка Plymouth та GDM переходу..."
     [ -f "$SCRIPT_DIR/etc/gnome-shell/ui/layout.js" ] && sync_or_update_file "$SCRIPT_DIR/etc/gnome-shell/ui/layout.js" "/etc/gnome-shell/ui/layout.js" true

@@ -48,8 +48,8 @@
 .login-dialog .user-widget .user-widget-label {
     font-weight: 600;
     font-size: 16px;
-    color: rgba(255, 255, 255, 0.8);
-    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.275);
+    color: #ffffff !important;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95), 0 1px 4px rgba(0, 0, 0, 0.8) !important;
 }
 
 /* Legacy GDM keeps the Cupertino picker, but its selected-account prompt uses
@@ -306,7 +306,8 @@
 }
 
 .login-dialog-user-list-item .user-widget-label {
-    color: rgba(255, 255, 255, 0.85) !important;
+    color: #ffffff !important;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95), 0 1px 4px rgba(0, 0, 0, 0.8) !important;
     transition-duration: 150ms;
 }
 
@@ -314,12 +315,13 @@
 .login-dialog-user-list-item:selected .user-widget-label,
 .login-dialog-user-list-item:focus .user-widget-label {
     color: rgba(255, 255, 255, 1.0) !important;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95) !important;
 }
 
 .login-dialog-user-list-item .user-icon {
     transition-duration: 150ms;
     border-radius: 999px !important;
-    box-shadow: inset 0 0 0 0px rgba(255, 255, 255, 0) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8) !important;
 }
 
 .login-dialog-user-list-view .login-dialog-user-list .login-dialog-user-list-item:logged-in .user-icon StIcon,
@@ -333,13 +335,13 @@
 .login-dialog-user-list-item:hover .user-icon,
 .login-dialog-user-list-item:selected .user-icon,
 .login-dialog-user-list-item:focus .user-icon {
-    opacity: 0.85 !important;
-    box-shadow: inset 0 0 15px 3px rgba(255, 255, 255, 0.275) !important;
+    opacity: 0.9 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.85), inset 0 0 15px 3px rgba(255, 255, 255, 0.275) !important;
 }
 
 .login-dialog-user-list-item:active .user-icon {
-    opacity: 0.7 !important;
-    box-shadow: inset 0 0 0px 99px rgba(255, 255, 255, 0.175) !important;
+    opacity: 0.75 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.85), inset 0 0 0px 99px rgba(255, 255, 255, 0.175) !important;
 }
 
 /* Base transparent border to match box models between prompt and list */
@@ -448,7 +450,7 @@
 }
 
 .wack-gdm-power-label {
-    font-family: 'SF Pro Text' !important;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
     font-size: 13px !important;
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.88) !important;
@@ -490,15 +492,16 @@
     max-height: 64px !important;
     margin: 0px !important;
     border-radius: 999px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8) !important;
 }
 
 .login-dialog-user-list-item .user-widget.vertical .user-widget-label {
     x-align: center !important;
     text-align: center !important;
-    font-size: 15px !important;
+    font-size: 16px !important;
     font-weight: 600 !important;
-    color: rgba(255, 255, 255, 0.9) !important;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85) !important;
 }
 
 /* ── macOS Top Menu Bar in GDM ── */
@@ -516,7 +519,7 @@
 }
 
 #panel .panel-button {
-    font-family: 'SF Pro Text' !important;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.92) !important;
     padding: 0 10px !important;
@@ -537,31 +540,31 @@
 
 /* ── Authentic macOS Sonoma Clock (WACK) ── */
 .wack-date {
-    font-family: 'SF Pro Display' !important;
-    font-size: 30px !important;
+    font-family: SF Pro Display, Cantarell, sans-serif !important;
+    font-size: 28px !important;
     font-weight: 600 !important;
-    color: rgba(255, 255, 255, 0.85) !important;
+    color: rgba(255, 255, 255, 0.98) !important;
     letter-spacing: 0px !important;
     margin: 0 !important;
+    margin-bottom: 0px !important;
     padding: 0 !important;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25) !important;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75) !important;
 }
 
 .wack-time,
 .unlock-dialog-clock-time.wack-time {
-    font-family: 'SF Pro Display' !important;
+    font-family: SF Pro Display, Cantarell, sans-serif !important;
     font-size: 128px !important;
-    font-weight: 600 !important;
-    font-feature-settings: "pnum" 1, "tnum" 0 !important;
-    letter-spacing: -4px !important;
+    font-weight: 700 !important;
+    letter-spacing: -2px !important;
     padding: 0 !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     margin: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
-    color: rgba(255, 255, 255, 0.85) !important;
-    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35) !important;
+    color: #ffffff !important;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85) !important;
 }
 
 /* ── Cupertino Auth Prompt Widget Alignment ── */
@@ -571,7 +574,12 @@
 }
 
 .login-dialog .wack-cupertino-prompt .user-widget.vertical .user-icon,
-.login-dialog-user-list-item .user-widget.vertical .user-icon {
+.login-dialog-user-list-item .user-widget.vertical .user-icon,
+.login-dialog .user-avatar,
+.login-dialog .user-icon,
+.login-dialog .wack-avatar-well .user-icon,
+.login-dialog-user-list-item .user-avatar,
+.login-dialog .wack-cupertino-prompt .user-avatar {
     min-width: 64px !important;
     max-width: 64px !important;
     min-height: 64px !important;
@@ -580,27 +588,28 @@
     border-radius: 999px !important;
     icon-size: 64px !important;
     opacity: 1 !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8) !important;
 }
 
 .login-dialog .wack-cupertino-prompt .user-widget.vertical .user-widget-label,
-.login-dialog-user-list-item .user-widget.vertical .user-widget-label {
+.login-dialog-user-list-item .user-widget.vertical .user-widget-label,
+.login-dialog .user-widget .user-widget-label {
     font-family: SF Pro Display;
     x-align: center !important;
     text-align: center !important;
     font-size: 16px !important;
     font-weight: 600 !important;
     color: rgba(255, 255, 255, 0.95) !important;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5) !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85) !important;
     margin-bottom: 2px !important;
 }
 
 .wack-gdm-auth-subtitle {
-    font-family: 'SF Pro Text' !important;
-    font-size: 11px !important;
-    font-weight: 400 !important;
-    color: rgba(255, 255, 255, 0.72) !important;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85) !important;
     margin-top: 2px !important;
     margin-bottom: 4px !important;
     text-align: center !important;
@@ -608,25 +617,31 @@
 }
 
 .login-dialog .wack-cupertino-prompt .login-dialog-prompt-entry {
-    font-family: SF Pro Text;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
     font-size: 14px !important;
     padding: 4px 14px !important;
     border-radius: 9999px !important;
     border: none !important;
-    background-color: rgba(236, 236, 236, 0.20) !important;
+    background-color: rgba(236, 236, 236, 0.22) !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25) !important;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
     min-width: 180px !important;
     height: 32px !important;
 }
 
+.login-dialog .wack-cupertino-prompt .login-dialog-prompt-entry StLabel.hint-text {
+    color: rgba(255, 255, 255, 0.70) !important;
+    font-weight: 500 !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
+}
+
 .login-dialog .wack-cupertino-prompt .wack-gdm-auth-subtitle {
-    font-family: 'SF Pro Text' !important;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
     font-size: 12px !important;
-    font-weight: 400 !important;
-    color: rgba(255, 255, 255, 0.78) !important;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
+    font-weight: 500 !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85) !important;
     margin-top: 8px !important;
     margin-bottom: 2px !important;
     text-align: center !important;

@@ -46,6 +46,16 @@ interface OsdState {
 // Room around the glass rect for the shader's edge effects.
 const SHADER_PADDING = 20;
 
+function stripTextColorProperties(style: string): string {
+  if (!style) return '';
+  return style
+    .replace(/(?:^|;)\s*color\s*:[^;]+/gi, '')
+    .replace(/(?:^|;)\s*-st-icon-foreground-color\s*:[^;]+/gi, '')
+    .replace(/(?:^|;)\s*-barlevel-active-background-color\s*:[^;]+/gi, '')
+    .replace(/(?:^|;)\s*-barlevel-background-color\s*:[^;]+/gi, '')
+    .trim();
+}
+
 export class OsdManager {
   private extensionPath: string;
   private _settings: Gio.Settings;
@@ -68,6 +78,8 @@ export class OsdManager {
   private _adaptiveInFlight: boolean;
   private _styledActors: Map<Clutter.Actor, string>;
   private _isFirstAdaptiveRun: boolean;
+  private _osdSessionLocked: boolean = false;
+  private _lastLockedColorMap: Map<Clutter.Actor, string> | null = null;
 
   constructor(extensionPath: string, settings: Gio.Settings, logger: Logger) {
     this.extensionPath = extensionPath;
@@ -360,10 +372,14 @@ export class OsdManager {
     if (isVisible && !state._wasVisible) {
       state._wasVisible = true;
       this._isFirstAdaptiveRun = true;
+      this._osdSessionLocked = false;
+      this._lastLockedColorMap = null;
       this._contrastSampler.reset();
       this._updateAdaptiveTextColors();
     } else if (!isVisible && state._wasVisible) {
       state._wasVisible = false;
+      this._osdSessionLocked = false;
+      this._lastLockedColorMap = null;
     }
     glass.opacity = currentOpacity;
 
@@ -450,6 +466,8 @@ export class OsdManager {
   _removeEffect() {
     if (!this._isEffectActive) return;
     this._isEffectActive = false;
+    this._osdSessionLocked = false;
+    this._lastLockedColorMap = null;
 
     this._stopAdaptiveColorSampling();
     this._clearAdaptiveStyles();
@@ -506,12 +524,15 @@ export class OsdManager {
 
   _collectAdaptiveTextTargets() {
     let targets: Clutter.Actor[] = [];
+    let root: Clutter.Actor | null = null;
     for (let state of this._osdStates) {
       if (state.osdWindow && state.osdWindow.opacity > 0 && state.osdWindow.visible) {
         this._findAllTextActors(state.targetBox, targets);
+        if (!root)
+          root = state.targetBox || state.osdWindow;
       }
     }
-    return targets;
+    return { targets, root };
   }
 
   _findAllTextActors(actor: St.Widget, foundActors: Clutter.Actor[] = []) {
@@ -588,8 +609,12 @@ export class OsdManager {
 
   _updateAdaptiveTextColors() {
     if (!this._adaptiveConfig.enabled || this._adaptiveInFlight) return;
+    if (this._osdSessionLocked && this._lastLockedColorMap && this._lastLockedColorMap.size > 0) {
+      this._applyAdaptiveColorMap(this._lastLockedColorMap, true);
+      return;
+    }
 
-    const targets = this._collectAdaptiveTextTargets();
+    const { targets, root } = this._collectAdaptiveTextTargets();
     if (targets.length === 0) return;
 
     this._adaptiveInFlight = true;
@@ -597,11 +622,16 @@ export class OsdManager {
     this._isFirstAdaptiveRun = false;
 
     this._contrastSampler
-      .chooseColorsForActors(targets, this._adaptiveConfig, null,
+      .chooseColorsForActors(targets, this._adaptiveConfig, root,
         () => this._osdStates.reduce((sum: number, st: OsdState) => sum + (st.glass?.paintCount ?? NaN), 0),
         () => this._osdStates.flatMap((st: OsdState) => st.glass ? [st.glass] : []))
       .then(colorMap => {
         this._applyAdaptiveColorMap(colorMap, isFirst);
+        let isAnyVisible = this._osdStates.some(s => s.osdWindow && s.osdWindow.visible && s.osdWindow.opacity > 0);
+        if (isAnyVisible && colorMap && colorMap.size > 0) {
+          this._osdSessionLocked = true;
+          this._lastLockedColorMap = colorMap;
+        }
       })
       .catch(e => {
         this._logger.error(`[Liquid Glass] OSD adaptive color update failed: ${e}`);
@@ -615,7 +645,7 @@ export class OsdManager {
     skipAnimations = false, batchStart?: number) {
     // An existing tween is not cancelled: add() restarts from the colour it
     // last applied.
-    const originalStyle = (this._styledActors.get(actor) || '').trim();
+    const originalStyle = stripTextColorProperties(this._styledActors.get(actor) || '');
     const stylePrefix = originalStyle ? `${originalStyle.replace(/;$/, '')}; ` : '';
     let themeNode = actor.get_theme_node();
     let startColor = themeNode.get_foreground_color();

@@ -249,7 +249,7 @@
 .appmenu-popup-menu-content .popup-menu-item:focus,
 .appmenu-popup-menu-content .popup-menu-item:hover,
 .appmenu-popup-menu-content .popup-menu-item:selected {
-    background-color: #007aff !important;
+    background-color: -st-accent-color !important;
     color: #ffffff !important;
     border-radius: 9999px !important;
     box-shadow: none !important;
@@ -259,7 +259,7 @@
 .appmenu-popup-menu-item.selected:active,
 .appmenu-popup-menu .popup-menu-item:active,
 .appmenu-popup-menu-content .popup-menu-item:active {
-    background-color: #0062cc !important;
+    background-color: -st-accent-color !important;
     color: #ffffff !important;
     border-radius: 9999px !important;
 }

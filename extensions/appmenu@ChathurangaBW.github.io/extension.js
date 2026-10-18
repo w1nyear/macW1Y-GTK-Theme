@@ -31,7 +31,7 @@ export default class AppMenuExtension extends Extension {
         this._overviewWasVisible = false;
     }
 
-    enable() {
+    async enable() {
         this._settings = this.getSettings('org.gnome.shell.extensions.appmenu');
         initI18n(this);
         setLoggerSettings(this._settings);
@@ -60,11 +60,24 @@ export default class AppMenuExtension extends Extension {
         });
 
         this._userSwitcherController = new UserSwitcherController(this, this._settings);
-        this._workspaceIndicatorController = new WorkspaceIndicatorController(this._settings);
+        try {
+            const wsModule = await import(`./workspaceIndicator.js?t=${Date.now()}`);
+            this._workspaceIndicatorController = new wsModule.WorkspaceIndicatorController(this._settings);
+        } catch (_) {
+            this._workspaceIndicatorController = new WorkspaceIndicatorController(this._settings);
+        }
         this._addSearchKeybinding();
         this._addClipboardKeybinding();
         globalThis.toggleMacApplications = toggleApplicationsDialog;
         globalThis.toggleMacClipboard = toggleClipboardDialog;
+
+        if (Main.overview) {
+            Main.overview.connectObject('showing', () => {
+                try { globalThis._macApplicationsGlobalInstance?.close?.(true); } catch (_) {}
+                try { globalThis.closeMacSpotlight?.(true); } catch (_) {}
+                try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
+            }, this);
+        }
     }
 
     _removeStalePanelButtons(uuid) {
@@ -108,7 +121,7 @@ export default class AppMenuExtension extends Extension {
             this._settings,
             Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL,
-            () => toggleSearchDialog()
+            () => (globalThis._macSpotlightToggle ? globalThis._macSpotlightToggle() : toggleSearchDialog())
         );
         this._searchShortcutInstalled = true;
     }
@@ -181,6 +194,9 @@ export default class AppMenuExtension extends Extension {
         debug('Disabling extension.');
 
         global.display.disconnectObject(this);
+        if (Main.overview) {
+            try { Main.overview.disconnectObject(this); } catch (_) {}
+        }
         this._removeSearchKeybinding();
         this._removeClipboardKeybinding();
         destroySearchDialog();
@@ -188,6 +204,9 @@ export default class AppMenuExtension extends Extension {
         destroyClipboardDialog();
         globalThis.toggleMacApplications = null;
         globalThis.toggleMacClipboard = null;
+        globalThis.closeMacApplications = null;
+        globalThis.closeMacSpotlight = null;
+        globalThis.closeMacClipboard = null;
 
         if (this._focusTimeoutId) {
             GLib.source_remove(this._focusTimeoutId);

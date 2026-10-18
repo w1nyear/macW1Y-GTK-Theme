@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+import os, sys, glob, subprocess, warnings
+warnings.filterwarnings("ignore")
+from gi.repository import Gio
+
+
+def resolve_icon(app_info, desktop_path, home):
+    icon = app_info.get_icon() if app_info else None
+    icon_str = icon.to_string() if icon else ""
+
+    name_hints = []
+    base_file = os.path.basename(desktop_path).replace(".desktop", "").lower()
+    name_hints.append(base_file)
+    if "_" in base_file:
+        name_hints.append(base_file.split("_")[0])
+    if app_info and app_info.get_name():
+        name_hints.append(app_info.get_name().lower())
+    if icon_str and not icon_str.startswith("/"):
+        name_hints.append(icon_str.lower())
+    elif icon_str and icon_str.startswith("/"):
+        base_icon = os.path.splitext(os.path.basename(icon_str))[0].lower()
+        if base_icon not in ("icon", "default", "default256"):
+            name_hints.append(base_icon)
+
+    # 1. Prefer macOS Tahoe themed icon if available
+    for hint in name_hints:
+        for tdir in [
+            os.path.join(home, ".local/share/icons/MacTahoe/apps/scalable"),
+            os.path.join(home, ".local/share/icons/MacTahoe-dark/apps/scalable"),
+            os.path.join(home, ".local/share/icons/MacTahoe/apps/48"),
+            "/usr/share/icons/MacTahoe-dark/apps/scalable"
+        ]:
+            cand = os.path.join(tdir, f"{hint}.svg")
+            if os.path.exists(cand):
+                return f"file://{cand}"
+
+    # 2. If icon_str is a direct path to an existing file
+    if icon_str.startswith("/"):
+        if os.path.exists(icon_str):
+            return f"file://{icon_str}"
+    if icon_str.startswith("file://"):
+        p = icon_str[7:]
+        if os.path.exists(p):
+            return icon_str
+
+    # 3. Check system and user icon dirs for icon_str or name hints
+    search_dirs = [
+        os.path.join(home, ".local/share/icons/MacTahoe/apps/scalable"),
+        os.path.join(home, ".local/share/icons/MacTahoe-dark/apps/scalable"),
+        "/usr/share/icons/hicolor/scalable/apps",
+        "/usr/share/icons/hicolor/512x512/apps",
+        "/usr/share/icons/hicolor/256x256/apps",
+        "/usr/share/icons/hicolor/128x128/apps",
+        "/usr/share/icons/hicolor/48x48/apps",
+        os.path.join(home, ".local/share/icons/hicolor/48x48/apps"),
+        os.path.join(home, ".local/share/icons/hicolor/256x256/apps"),
+        "/usr/share/pixmaps"
+    ]
+
+    all_keys = ([icon_str] if icon_str and not icon_str.startswith("/") else []) + name_hints
+    for k in all_keys:
+        for sdir in search_dirs:
+            for ext in [".svg", ".png", ".xpm"]:
+                cand = os.path.join(sdir, k + ext)
+                if os.path.exists(cand):
+                    return f"file://{cand}"
+
+    return None
+
+
+def sync():
+    home = os.path.expanduser("~")
+    apps_dir = os.path.join(home, "Applications")
+    os.makedirs(apps_dir, exist_ok=True)
+    
+    # Symlink /Applications -> ~/Applications if root or possible
+    try:
+        if not os.path.exists("/Applications"):
+            os.symlink(apps_dir, "/Applications")
+    except Exception:
+        pass
+
+    search_dirs = [
+        "/usr/share/applications",
+        "/var/lib/snapd/desktop/applications",
+        "/var/lib/flatpak/exports/share/applications",
+        os.path.join(home, ".local/share/applications")
+    ]
+    
+    seen_ids = set()
+    used_names = set()
+    active_links = set()
+    
+    for sdir in search_dirs:
+        if not os.path.isdir(sdir):
+            continue
+        for f in sorted(glob.glob(os.path.join(sdir, "*.desktop"))):
+            base = os.path.basename(f)
+            if base in seen_ids:
+                continue
+            try:
+                app_info = Gio.DesktopAppInfo.new_from_filename(f)
+                if not app_info or not app_info.should_show():
+                    continue
+                seen_ids.add(base)
+                
+                name = app_info.get_name()
+                if not name:
+                    name = base.replace(".desktop", "")
+                
+                # Sanitize filename
+                safe_name = "".join(c for c in name if c not in '/\\:*?"<>|').strip()
+                if not safe_name:
+                    safe_name = base.replace(".desktop", "")
+                    
+                target_filename = f"{safe_name}.desktop"
+                count = 1
+                while target_filename in used_names:
+                    target_filename = f"{safe_name} ({count}).desktop"
+                    count += 1
+                used_names.add(target_filename)
+                
+                dest_path = os.path.join(apps_dir, target_filename)
+                active_links.add(dest_path)
+                
+                # Create or update desktop file as regular file
+                import shutil
+                if os.path.islink(dest_path):
+                    try:
+                        os.remove(dest_path)
+                    except Exception:
+                        pass
+                try:
+                    shutil.copy2(f, dest_path)
+                    os.chmod(dest_path, 0o755)
+                    with open(dest_path, "a") as df:
+                        df.write(f"\nX-Mac-Real-Path={f}\n")
+                except Exception:
+                    pass
+                    
+                # Set icon metadata
+                res_icon = resolve_icon(app_info, f, home)
+                if res_icon:
+                    subprocess.run(["gio", "set", dest_path, "metadata::custom-icon", res_icon],
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    subprocess.run(["gio", "set", "-t", "unset", dest_path, "metadata::custom-icon-name"],
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                else:
+                    icon = app_info.get_icon()
+                    if icon:
+                        icon_str = icon.to_string()
+                        if icon_str:
+                            subprocess.run(["gio", "set", dest_path, "metadata::custom-icon-name", icon_str],
+                                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+                
+    # Remove stale symlinks
+    for f in glob.glob(os.path.join(apps_dir, "*.desktop")):
+        if f not in active_links:
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+
+    print(f"Synced {len(active_links)} applications to {apps_dir}")
+
+if __name__ == "__main__":
+    sync()

@@ -292,10 +292,32 @@ export class GdmManager {
             _logError(`[WACK/GdmManager] Sub-manager setup error: ${subErr.stack || subErr}`);
         }
 
-        // Ensure Apple logo is not present in GDM top left panel
+        // macOS Apple logo in GDM top left panel
         if (Main.panel?._leftBox) {
-            const appleBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-apple-menu");
-            if (appleBtn) appleBtn.destroy();
+            let appleBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-apple-menu");
+            if (!appleBtn) {
+                appleBtn = new St.Button({
+                    name: "gdm-apple-menu",
+                    style_class: "panel-button",
+                    reactive: false,
+                    can_focus: false,
+                    y_align: Clutter.ActorAlign.CENTER,
+                    margin_left: 12,
+                });
+                const appleIcon = new St.Icon({
+                    style_class: "system-status-icon",
+                    gicon: Gio.icon_new_for_string("/usr/share/themes/macW1Y-Dark/gnome-shell/assets/activities.svg"),
+                    icon_size: 16,
+                });
+                appleBtn.set_child(appleIcon);
+                Main.panel._leftBox.insert_child_at_index(appleBtn, 0);
+            }
+        }
+
+        // Offset accessibility button cleanly away from bottom-right corner
+        if (dialog._bottomButtonGroup) {
+            dialog._bottomButtonGroup.translation_x = -24;
+            dialog._bottomButtonGroup.translation_y = -24;
         }
 
         // Shift user selection list down
@@ -758,13 +780,9 @@ export class GdmManager {
         // 3. macOS lockscreen clock
         if (this._clockManager?.clockWrapper) {
             this._clockManager.clockWrapper.remove_all_transitions();
-            this._clockManager.clockWrapper.opacity = 0;
+            this._clockManager.clockWrapper.opacity = 255;
             this._clockManager.clockWrapper.visible = true;
-            this._clockManager.clockWrapper.ease({
-                opacity: 255,
-                duration: FADE_DURATION,
-                mode: FADE_MODE,
-            });
+            this._clockManager.positionClock();
         }
 
         // 4. Login dialog (account avatar, username, password entry)

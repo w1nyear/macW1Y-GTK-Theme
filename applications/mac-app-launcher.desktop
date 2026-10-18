@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Mac App Launcher
+Exec=gio launch %f
+NoDisplay=true
+MimeType=application/x-desktop;

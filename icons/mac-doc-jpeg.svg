@@ -1,0 +1,27 @@
+<svg width="64" height="72" viewBox="0 0 64 72" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="card-sh" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <!-- Base Sheet with Fold -->
+  <path d="M 12 4 H 42 L 54 16 V 62 A 3 3 0 0 1 51 65 H 12 A 3 3 0 0 1 9 62 V 7 A 3 3 0 0 1 12 4 Z" fill="#ffffff" filter="url(#card-sh)"/>
+  <!-- Folded Corner -->
+  <path d="M 42 4 V 13 A 3 3 0 0 0 45 16 H 54 Z" fill="#d2d2d8"/>
+  <!-- Inner Glyph -->
+  
+      <rect x="18" y="24" width="28" height="20" rx="2" stroke="#a0a0a8" stroke-width="1.8" fill="none"/>
+      <circle cx="24" cy="30" r="2.5" fill="#a0a0a8"/>
+      <path d="M20 40l6-7 5 5 5-7 8 9H20z" fill="#a0a0a8"/>
+    
+  <!-- Extension Label Text -->
+  <text x="31" y="54" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Helvetica, sans-serif" font-size="7.5" font-weight="700" fill="#8e8e93" text-anchor="middle">JPEG</text>
+  <!-- App / Format Badge -->
+  
+          <g transform="translate(44, 52)">
+            <circle cx="8" cy="8" r="8" fill="#2c2c2e" stroke="#3a3a3c" stroke-width="1"/>
+            <circle cx="8" cy="8" r="3.5" stroke="#ffffff" stroke-width="1.2" fill="none"/>
+            <rect x="6" y="3" width="4" height="1.5" rx="0.5" fill="#ffffff"/>
+          </g>
+        
+</svg>

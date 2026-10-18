@@ -52,9 +52,14 @@ export class StageCopier {
     reuseCount = 0;
     offStageCount = 0;
     missCount = 0;
+    _forceUntilUs = 0;
 
     constructor(_logger) {
         this._logger = _logger;
+    }
+
+    forceRefresh(durationMs = 250) {
+        this._forceUntilUs = Math.max(this._forceUntilUs, GLib.get_monotonic_time() + durationMs * 1000);
     }
 
     // The view a paint of `actor` draws to directly, or null for a paint that
@@ -114,26 +119,25 @@ export class StageCopier {
             Math.abs(copy.rect[3] - rect[3]) < 1.0;
 
         const inOverview = Boolean(Main?.overview?.visible || Main?.overview?._animationInProgress);
-        if (copy && copy.inOverview !== undefined && copy.inOverview !== inOverview) {
-            copy = null;
-            this._copies.delete(view);
+        const overviewChanged = copy && copy.inOverview !== undefined && copy.inOverview !== inOverview;
+        if (overviewChanged) {
+            this.forceRefresh(350);
         }
 
-        const isOverviewAnimating = Boolean(Main?.overview?._animationInProgress);
-        const minIntervalUs = isOverviewAnimating ? 16666 : 50000;
+        const isForced = nowUs < this._forceUntilUs;
+        const mustCopy = isForced || overviewChanged || !copy?.texture || !copy?.rect;
 
-        if (sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < minIntervalUs)) {
+        const minIntervalUs = isForced ? 16666 : 50000;
+        if (!mustCopy && sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < minIntervalUs)) {
             this.reuseCount++;
             return { copy, missed: false };
         }
 
-        if (!inClip) {
+        if (!inClip && !mustCopy) {
             if (copy?.rect) {
                 this.reuseCount++;
                 return { copy, missed: false };
             }
-            this.missCount++;
-            return { copy: null, missed: true };
         }
         const format = fb instanceof Cogl.Offscreen ? offscreenFormat(fb) : null;
         copy = this._target(view, copy, fx1 - fx0, fy1 - fy0, format);
@@ -171,5 +175,6 @@ export class StageCopier {
     clear() {
         this._copies.clear();
         this.lastCopy = null;
+        this.forceRefresh(350);
     }
 }

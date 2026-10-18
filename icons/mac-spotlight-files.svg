@@ -1,0 +1,5 @@
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- macOS Outline Folder icon matching reference -->
+  <path d="M4 9C4 7.9 4.9 7 6 7H10.5L12.5 9H22C23.1 9 24 9.9 24 11V19C24 20.1 23.1 21 22 21H6C4.9 21 4 20.1 4 19V9Z" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" stroke-opacity="0.88"/>
+  <line x1="7" y1="11.5" x2="21" y2="11.5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-opacity="0.88"/>
+</svg>

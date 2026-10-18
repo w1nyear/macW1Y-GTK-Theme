@@ -103,8 +103,9 @@ export function buildNotificationCard(source, notification, options = {}) {
     contentBox.add_child(bodyLabel);
 
     // 3. Close Button ('x')
-    const closeIconPath = '/home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/assets/close.png';
-    const closeHoverIconPath = '/home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/assets/close-button-hover.png';
+    const extDir = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/blur-my-shell@aunetx`;
+    const closeIconPath = `${extDir}/assets/close.png`;
+    const closeHoverIconPath = `${extDir}/assets/close-button-hover.png`;
     const giconNormal = Gio.icon_new_for_string(closeIconPath);
     const giconHover = Gio.icon_new_for_string(closeHoverIconPath);
     let closeIcon = new St.Icon({
@@ -134,8 +135,8 @@ export function buildNotificationCard(source, notification, options = {}) {
             style_class: 'mac-notification-actions-box',
             orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
-            visible: false,
-            opacity: 0,
+            visible: true,
+            opacity: 255,
         });
         for (const action of notification.actions) {
             const actBtn = new St.Button({
@@ -167,34 +168,10 @@ export function buildNotificationCard(source, notification, options = {}) {
         isClosing: false,
     };
 
-    let isExpanded = false;
-    let expandTimerId = 0;
-    let collapseTimerId = 0;
-    let baseCollapsedH = 0;
-
-    const collapsedBody = notification.bannerBodyText || notification.body || '';
-    const fullBody = notification.body || notification.bannerBodyText || '';
-
-    const hasActions = Boolean(actionsBox && actionsBox.get_children().length > 0);
-    const hasLongText = Boolean(
-        (fullBody && collapsedBody && fullBody !== collapsedBody) ||
-        (fullBody && fullBody.length > 50) ||
-        (fullBody && fullBody.includes('\n'))
-    );
-    const canExpand = hasLongText || hasActions;
-
     const dismissCardNow = () => {
         if (cardData.isClosing)
             return Clutter.EVENT_STOP;
         cardData.isClosing = true;
-        if (expandTimerId) {
-            GLib.source_remove(expandTimerId);
-            expandTimerId = 0;
-        }
-        if (collapseTimerId) {
-            GLib.source_remove(collapseTimerId);
-            collapseTimerId = 0;
-        }
         if (onClose)
             onClose(cardData);
         return Clutter.EVENT_STOP;
@@ -220,199 +197,10 @@ export function buildNotificationCard(source, notification, options = {}) {
         return false;
     };
 
-    const startExpansion = () => {
-        if (cardData.isClosing || isExpanded) return;
-
-        if (collapseTimerId) {
-            GLib.source_remove(collapseTimerId);
-            collapseTimerId = 0;
-        }
-
-        const currentH = Math.round(
-            banner.height > 0
-                ? banner.height
-                : (banner.get_transformed_size()[1] || banner.get_preferred_height(banner.width || 395)[1])
-        );
-        if (!baseCollapsedH || baseCollapsedH <= 0) {
-            baseCollapsedH = currentH;
-        }
-
-        // 1. Show action buttons if present
-        if (actionsBox) {
-            actionsBox.visible = true;
-            actionsBox.remove_all_transitions();
-            actionsBox.ease({
-                opacity: 255,
-                duration: 180,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-        }
-
-        // 2. Enable multi-line text wrapping with full text
-        if (hasLongText) {
-            bodyLabel.clutter_text.ellipsize = 0; // Pango.EllipsizeMode.NONE
-            bodyLabel.clutter_text.line_wrap = true;
-            if (fullBody && bodyLabel.text !== fullBody) {
-                bodyLabel.text = fullBody;
-            }
-        }
-
-        // Measure natural target height with actions visible and text wrapped
-        // In Clutter St.Button, explicit height overrides get_preferred_height(), so we temporarily unset to -1
-        banner.height = -1;
-        const naturalH = Math.round(banner.get_preferred_height(banner.width || 395)[1]);
-        const targetH = Math.max(currentH, naturalH);
-        banner.height = currentH;
-
-        if (globalThis._macOnCardTargetHeightChange) {
-            globalThis._macOnCardTargetHeightChange(banner, targetH, currentH, true);
-        }
-
-        if (targetH > currentH + 2) {
-            isExpanded = true;
-            banner.remove_all_transitions();
-            banner.ease({
-                height: targetH,
-                duration: 220,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                onComplete: () => {
-                    banner.height = targetH;
-                    if (globalThis._macOnCardAnimationComplete) {
-                        globalThis._macOnCardAnimationComplete(banner);
-                    }
-                    if (globalThis._macEnsureCardVisible) {
-                        globalThis._macEnsureCardVisible(banner);
-                    }
-                },
-            });
-        } else {
-            isExpanded = true;
-            if (actionsBox) {
-                banner.height = targetH;
-            }
-            if (globalThis._macOnCardAnimationComplete) {
-                globalThis._macOnCardAnimationComplete(banner);
-            }
-        }
-    };
-
-    const startCollapse = () => {
-        if (cardData.isClosing || !isExpanded) return;
-
-        if (expandTimerId) {
-            GLib.source_remove(expandTimerId);
-            expandTimerId = 0;
-        }
-
-        const currentH = Math.round(
-            banner.height > 0
-                ? banner.height
-                : (banner.get_transformed_size()[1] || banner.get_preferred_height(banner.width || 395)[1])
-        );
-
-        // 1. Fade out action buttons
-        if (actionsBox) {
-            actionsBox.remove_all_transitions();
-            actionsBox.ease({
-                opacity: 0,
-                duration: 140,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                onComplete: () => {
-                    if (!isCardHovered()) {
-                        actionsBox.visible = false;
-                    }
-                },
-            });
-        }
-
-        // 2. Reset text to 1-line ellipsized
-        bodyLabel.clutter_text.line_wrap = false;
-        bodyLabel.clutter_text.ellipsize = 3; // END
-        if (collapsedBody && bodyLabel.text !== collapsedBody) {
-            bodyLabel.text = collapsedBody;
-        }
-
-        banner.height = -1;
-        const targetH = (baseCollapsedH > 0)
-            ? baseCollapsedH
-            : Math.round(banner.get_preferred_height(banner.width || 395)[1]);
-        banner.height = currentH;
-
-        if (globalThis._macOnCardTargetHeightChange) {
-            globalThis._macOnCardTargetHeightChange(banner, targetH, currentH, false);
-        }
-
-        if (currentH > targetH + 1) {
-            banner.height = currentH;
-            banner.remove_all_transitions();
-            banner.ease({
-                height: targetH,
-                duration: 180,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                onComplete: () => {
-                    banner.height = targetH;
-                    isExpanded = false;
-                    if (actionsBox && !isCardHovered()) {
-                        actionsBox.visible = false;
-                    }
-                    if (globalThis._macOnCardAnimationComplete) {
-                        globalThis._macOnCardAnimationComplete(banner);
-                    }
-                },
-            });
-        } else {
-            banner.height = targetH;
-            isExpanded = false;
-            if (actionsBox && !isCardHovered()) {
-                actionsBox.visible = false;
-            }
-            if (globalThis._macOnCardAnimationComplete) {
-                globalThis._macOnCardAnimationComplete(banner);
-            }
-        }
-    };
-
-    const scheduleExpansion = (hovered) => {
-        if (cardData.isClosing) return;
-
-        if (hovered) {
-            if (collapseTimerId) {
-                GLib.source_remove(collapseTimerId);
-                collapseTimerId = 0;
-            }
-            if (isExpanded || expandTimerId) return;
-
-            // 110ms debounce: rapidly moving cursor over cards will NOT trigger expansion or jumping
-            expandTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 110, () => {
-                expandTimerId = 0;
-                if (isCardHovered() && canExpand) {
-                    startExpansion();
-                }
-                return GLib.SOURCE_REMOVE;
-            });
-        } else {
-            if (expandTimerId) {
-                GLib.source_remove(expandTimerId);
-                expandTimerId = 0;
-            }
-            if (!isExpanded || collapseTimerId) return;
-
-            // 70ms leave debounce: moving cursor within card doesn't prematurely collapse
-            collapseTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 70, () => {
-                collapseTimerId = 0;
-                if (!isCardHovered()) {
-                    startCollapse();
-                }
-                return GLib.SOURCE_REMOVE;
-            });
-        }
-    };
-
     const updateHoverState = () => {
         if (cardData.isClosing)
             return;
         const hovered = isCardHovered();
-        scheduleExpansion(hovered);
 
         closeBtn.remove_all_transitions();
         if (hovered) {
@@ -446,17 +234,10 @@ export function buildNotificationCard(source, notification, options = {}) {
     }
 
     banner.connect('destroy', () => {
-        if (expandTimerId) {
-            GLib.source_remove(expandTimerId);
-            expandTimerId = 0;
-        }
-        if (collapseTimerId) {
-            GLib.source_remove(collapseTimerId);
-            collapseTimerId = 0;
-        }
+        cardData.isClosing = true;
     });
 
-    cardData.updateExpansion = (hovered) => scheduleExpansion(hovered);
+    cardData.updateExpansion = () => {};
     cardData.updateHoverState = updateHoverState;
     banner._updateExpansion = cardData.updateExpansion;
     banner._updateHoverState = updateHoverState;
@@ -478,6 +259,7 @@ export const NotificationsController = class NotificationsController {
         this._origOnRequestBanner = null;
         this._origAddSource = null;
         this.sigma = 3;
+        this._bannerStageLoopId = 0;
     }
 
     enable() {
@@ -566,6 +348,27 @@ export const NotificationsController = class NotificationsController {
         }
     }
 
+    _getNotifThemeParams() {
+        let isDark = true;
+        try {
+            const iface = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
+            const scheme = iface.get_string('color-scheme');
+            if (scheme === 'prefer-dark') isDark = true;
+            else if (scheme === 'prefer-light') isDark = false;
+            else {
+                const gtk = iface.get_string('gtk-theme') || '';
+                isDark = gtk.toLowerCase().includes('dark');
+            }
+        } catch (_) {
+            isDark = true;
+        }
+
+        const tintVal = isDark ? 0.0 : 1.0;
+        const baseStrength = isDark ? 0.05 : 0.06;
+        const tintStrength = isDark ? 0.05 : 0.06;
+        return { isDark, tintVal, baseStrength, tintStrength };
+    }
+
     async _initGlass() {
         if (this._glass && !this._glass.is_finalized?.()) return;
         try {
@@ -580,12 +383,13 @@ export const NotificationsController = class NotificationsController {
                 logger: console,
                 owner: 'notification-banner',
             });
+            const { tintVal, tintStrength } = this._getNotifThemeParams();
             this._glass.setIsDock(true);
             this._glass.setMultiRegionMode(true);
             this._glass.setCornerRadius(24.0);
             this._glass.setBlurRadius(3.0);
-            this._glass.setTintStrength(0.05);
-            this._glass.setTintColor(0.0, 0.0, 0.0);
+            this._glass.setTintStrength(tintStrength);
+            this._glass.setTintColor(tintVal, tintVal, tintVal);
             this._glass.setBrightness(1.0);
             this._glass.setSaturation(1.0);
             this._glass.setContrast(1.0);
@@ -609,6 +413,10 @@ export const NotificationsController = class NotificationsController {
         if (!this._glass || this._glass.is_finalized?.()) return;
         if (!this.enabled || !this._activeBanners || this._activeBanners.length === 0) {
             if (this._glass.visible) this._glass.hide();
+            if (this._bannerStageLoopId) {
+                try { global.stage.disconnect(this._bannerStageLoopId); } catch (_) {}
+                this._bannerStageLoopId = 0;
+            }
             return;
         }
 
@@ -620,9 +428,11 @@ export const NotificationsController = class NotificationsController {
         this._glass.setResolution(monitor.width, monitor.height);
 
         const regions = [];
+        const { tintVal, baseStrength, tintStrength } = this._getNotifThemeParams();
+
         for (const b of this._activeBanners) {
             const banner = b.banner;
-            if (!banner.visible || banner.opacity === 0) continue;
+            if (!banner.visible) continue;
             const [absX, absY] = banner.get_transformed_position();
             const [w, h] = banner.get_transformed_size();
             if (w <= 0 || h <= 0 || !Number.isFinite(absX) || !Number.isFinite(absY)) continue;
@@ -632,19 +442,42 @@ export const NotificationsController = class NotificationsController {
                 y: absY - monitor.y,
                 w: w,
                 h: h,
-                tintR: 0.0,
-                tintG: 0.0,
-                tintB: 0.0,
-                baseStrength: 0.05,
+                tintR: tintVal,
+                tintG: tintVal,
+                tintB: tintVal,
+                baseStrength: baseStrength,
             });
         }
 
         if (regions.length > 0) {
+            this._glass.setTintColor(tintVal, tintVal, tintVal);
+            this._glass.setTintStrength(tintStrength);
+            this._glass.setBrightness(1.0);
+            this._glass.setIsDock(true);
             this._glass.setGlassRegions(regions);
-            this._glass.syncSources();
-            if (!this._glass.visible) this._glass.show();
+            if (!this._glass.visible) {
+                this._glass.show();
+                this._glass.opacity = 255;
+            }
+            if (typeof this._glass.forceRefresh === 'function') {
+                this._glass.forceRefresh(400);
+            }
+            this._glass.syncSources(true);
+            this._glass.queue_redraw();
+
+            if (!this._bannerStageLoopId) {
+                this._bannerStageLoopId = global.stage.connect('before-update', () => {
+                    if (this._activeBanners && this._activeBanners.length > 0) {
+                        this._syncGlass();
+                    }
+                });
+            }
         } else {
             this._glass.hide();
+            if (this._bannerStageLoopId) {
+                try { global.stage.disconnect(this._bannerStageLoopId); } catch (_) {}
+                this._bannerStageLoopId = 0;
+            }
         }
     }
 
@@ -766,10 +599,17 @@ export const NotificationsController = class NotificationsController {
         bannerData.banner.connect('notify::translation-x', () => this._syncGlass());
         bannerData.banner.connect('notify::opacity', () => this._syncGlass());
         bannerData.banner.connect('notify::height', () => this._syncGlass());
+        bannerData.banner.connect('notify::width', () => this._syncGlass());
+        bannerData.banner.connect('notify::allocation', () => this._syncGlass());
 
         this._activeBanners.push(bannerData);
         this._stackBox.add_child(bannerData.banner);
         this._updateVisibility();
+
+        if (this._glass && typeof this._glass.forceRefresh === 'function') {
+            this._glass.forceRefresh(500);
+        }
+        this._syncGlass();
 
         bannerData.banner.opacity = 0;
         bannerData.banner.translation_x = SLIDE_DISTANCE;
@@ -817,10 +657,10 @@ export const NotificationsController = class NotificationsController {
 
     _dismissBanner(bannerData, userDismissed) {
         const idx = this._activeBanners.indexOf(bannerData);
-        if (idx === -1)
+        if (idx === -1 || bannerData.isClosing)
             return;
 
-        this._activeBanners.splice(idx, 1);
+        bannerData.isClosing = true;
         this._pauseTimer(bannerData);
 
         const banner = bannerData.banner;
@@ -833,6 +673,10 @@ export const NotificationsController = class NotificationsController {
             duration: ANIM_OUT_DURATION,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
             onComplete: () => {
+                const curIdx = this._activeBanners.indexOf(bannerData);
+                if (curIdx !== -1) {
+                    this._activeBanners.splice(curIdx, 1);
+                }
                 if (banner.get_parent() === this._stackBox)
                     this._stackBox.remove_child(banner);
                 banner.destroy();
@@ -969,6 +813,10 @@ export const NotificationsController = class NotificationsController {
         }
 
         // Remove glass
+        if (this._bannerStageLoopId) {
+            try { global.stage.disconnect(this._bannerStageLoopId); } catch (_) {}
+            this._bannerStageLoopId = 0;
+        }
         if (this._glass) {
             this._glass.cleanup();
             if (this._glass.get_parent()) {

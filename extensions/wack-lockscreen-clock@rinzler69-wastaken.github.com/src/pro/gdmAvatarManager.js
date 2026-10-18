@@ -152,8 +152,13 @@ export class GdmAvatarManager {
                     item._userWidget.set_vertical(true);
             } catch (_) {}
             try {
+                item._userWidget.remove_style_class_name('horizontal');
+                item._userWidget.add_style_class_name('vertical');
                 item._userWidget.orientation = Clutter.Orientation.VERTICAL;
                 item._userWidget.x_align = Clutter.ActorAlign.CENTER;
+                item._userWidget.set_style('padding-left: 0; padding-right: 0; margin-left: 0; margin-right: 0;');
+                item.x_align = Clutter.ActorAlign.CENTER;
+                item.set_style('padding-left: 0; padding-right: 0;');
                 item._userWidget.clip_to_allocation = false;
                 item.clip_to_allocation = false;
                 if (avatar) {
@@ -189,7 +194,7 @@ export class GdmAvatarManager {
 
         const color = this._lastAvatarColor;
         const bgRgba = color ? (color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`) : null;
-        const buttonStyle = bgRgba ? `background-color: ${bgRgba} !important; border-radius: 999px !important;` : null;
+        const buttonStyle = bgRgba ? `background-color: ${bgRgba}; border-radius: 999px;` : null;
 
         if (avatar.get_style() !== buttonStyle) {
             avatar._wackSettingStyle = true;
@@ -203,7 +208,7 @@ export class GdmAvatarManager {
         avatar.clip_to_allocation = false;
         const child = avatar.get_child();
         if (child) {
-            const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
+            const iconStyle = buttonStyle ? 'background-color: transparent; border-radius: 999px;' : null;
             if (child.get_style() !== iconStyle)
                 child.set_style(iconStyle);
         }
@@ -231,7 +236,7 @@ export class GdmAvatarManager {
         const color = this._lastAvatarColor;
         this._updatingVibrancy = true;
         const bgRgba = color ? (color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`) : null;
-        const buttonStyle = bgRgba ? `background-color: ${bgRgba} !important; border-radius: 999px !important;` : null;
+        const buttonStyle = bgRgba ? `background-color: ${bgRgba}; border-radius: 999px;` : null;
 
         const applyToWell = (uw) => {
             if (!uw) return;
@@ -263,7 +268,7 @@ export class GdmAvatarManager {
                     avatar.clip_to_allocation = false;
                     const child = avatar.get_child();
                     if (child) {
-                        const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
+                        const iconStyle = buttonStyle ? 'background-color: transparent; border-radius: 999px;' : null;
                         if (child.get_style() !== iconStyle)
                             child.set_style(iconStyle);
                     }

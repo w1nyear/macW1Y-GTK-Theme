@@ -15,6 +15,7 @@ import {OsdManager} from './dist/osdManager.js';
 import {ApplicationManager} from './dist/applicationManager.js';
 import {TooltipManager} from './dist/tooltipManager.js';
 import {SearchGlassManager} from './dist/searchGlassManager.js';
+import {ModalDialogManager} from './dist/modalDialogManager.js';
 import {WindowListService} from './dist/windowListService.js';
 import {Logger} from './dist/logger.js';
 import {adaptiveColorTweener} from './dist/animation/colors.js';
@@ -63,6 +64,9 @@ export default class LiquidGlassExtension extends Extension {
 
     this._searchGlassManager = new SearchGlassManager(path, this._settings, this._logger);
     this._searchGlassManager.setup();
+
+    this._modalDialogManager = new ModalDialogManager(path, this._settings, this._logger);
+    this._modalDialogManager.setup();
 
     // Lets the preferences window, which cannot use Meta or Shell, offer a
     // picker of the open windows.
@@ -160,6 +164,9 @@ export default class LiquidGlassExtension extends Extension {
 
     this._searchGlassManager?.cleanup();
     this._searchGlassManager = null;
+
+    this._modalDialogManager?.cleanup();
+    this._modalDialogManager = null;
 
     this._windowListService.cleanup();
     this._windowListService = null;

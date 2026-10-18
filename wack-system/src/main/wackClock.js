@@ -180,12 +180,12 @@ export const WackClock = GObject.registerClass(
         _applyTextStyle() {
             const timeColor = '#ffffff';
             const dateColor = 'rgba(255, 255, 255, 0.98)';
-            const font = 'font-family: "SF Pro Rounded", "SF Pro Display", sans-serif;';
+            const font = 'font-family: SF Pro Display, Cantarell, sans-serif;';
             const weight = 'font-weight: bold;';
             const timeShadow = 'text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85);';
             const dateShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75);';
-            this._time.set_style(`color: ${timeColor} !important; ${font} ${weight} ${timeShadow}`);
-            this._dateOutput.set_style(`color: ${dateColor} !important; font-family: "SF Pro Display", sans-serif !important; font-weight: 600 !important; margin-bottom: -4px !important; ${dateShadow}`);
+            this._time.set_style(`color: ${timeColor}; ${font} ${weight} ${timeShadow}`);
+            this._dateOutput.set_style(`color: ${dateColor}; font-family: SF Pro Display, Cantarell, sans-serif; font-weight: 600; margin-bottom: 0px; ${dateShadow}`);
         }
 
 

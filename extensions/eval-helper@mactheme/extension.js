@@ -469,10 +469,10 @@ export default class EvalHelper extends Extension {
                 const controls = Main.overview?._overview?.controls;
                 if (!controls) return;
 
-                // 1. Guard layout manager against NaN or null coordinates (prevents Wayland crash)
+                // 1. Guard layout manager against NaN and reduce vertical gap between spaces bar and window list
                 const lm = controls.layout_manager;
-                if (lm && !lm._macNanGuarded) {
-                    lm._macNanGuarded = true;
+                if (lm && !lm._macOverviewSpacingPatchedV1) {
+                    lm._macOverviewSpacingPatchedV1 = true;
                     const origCompute = lm._computeWorkspacesBoxForState;
                     lm._computeWorkspacesBoxForState = function(state, box, ...rest) {
                         let res = origCompute.call(this, state, box, ...rest);
@@ -483,6 +483,18 @@ export default class EvalHelper extends Extension {
                         if (!Number.isFinite(res.y1)) res.y1 = workArea.y1 || 0;
                         if (!Number.isFinite(res.x2)) res.x2 = workArea.x2 || (res.x1 + w);
                         if (!Number.isFinite(res.y2)) res.y2 = workArea.y2 || (res.y1 + h);
+
+                        // Reduce excessive vertical gap between top workspaces bar and window preview list
+                        if (state === 1 /* OverviewControls.ControlsState.WINDOW_PICKER */) {
+                            const shift = 75;
+                            const minTop = 44; // safe margin below panel bar
+                            const newY1 = Math.max(minTop, res.y1 - shift);
+                            const actualShift = res.y1 - newY1;
+                            if (actualShift > 0) {
+                                res.y1 = newY1;
+                                res.y2 = Math.max(res.y1 + 100, res.y2 - actualShift);
+                            }
+                        }
                         return res;
                     };
                 }

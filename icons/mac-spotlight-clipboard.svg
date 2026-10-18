@@ -1,0 +1,7 @@
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- macOS Overlapping Dog-Ear Sheets (Clipboard/Copy) matching reference -->
+  <!-- Rear sheet -->
+  <path d="M12 5H18L22 9V17C22 18.1 21.1 19 20 19" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.88"/>
+  <!-- Front sheet -->
+  <path d="M7 9C7 7.9 7.9 7 9 7H14L18 11V21C18 22.1 17.1 23 16 23H9C7.9 23 7 22.1 7 21V9Z" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" stroke-opacity="0.88"/>
+</svg>

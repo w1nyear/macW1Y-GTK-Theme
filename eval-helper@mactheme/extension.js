@@ -184,6 +184,12 @@ export default class EvalHelper extends Extension {
                                 const fy1 = Math.ceil(y1 * scale) + oy;
                                 const rect = [(fx0 - ox) / scale, (fy0 - oy) / scale, (fx1 - ox) / scale, (fy1 - oy) / scale];
 
+                                const inOverview = Boolean(Main?.overview?.visible || Main?.overview?._animationInProgress);
+                                if (copy && copy.inOverview !== undefined && copy.inOverview !== inOverview) {
+                                    copy = null;
+                                    this._copies.delete(view);
+                                }
+
                                 const nowUs = GLib.get_monotonic_time();
                                 const sameGeometry = copy?.rect &&
                                     Math.abs(copy.rect[0] - rect[0]) < 1.0 &&
@@ -191,7 +197,8 @@ export default class EvalHelper extends Extension {
                                     Math.abs(copy.rect[2] - rect[2]) < 1.0 &&
                                     Math.abs(copy.rect[3] - rect[3]) < 1.0;
 
-                                if (sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < 50000)) {
+                                const minIntervalUs = inOverview ? 16666 : 50000;
+                                if (sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < minIntervalUs)) {
                                     this.reuseCount++;
                                     return { copy, missed: false };
                                 }
@@ -199,9 +206,11 @@ export default class EvalHelper extends Extension {
                                 const res = origTake.call(this, actor, root, paintContext, stageRect);
                                 if (res.copy) {
                                     res.copy.lastTimeUs = nowUs;
+                                    res.copy.inOverview = inOverview;
                                 }
                                 return res;
                             };
+                        }
                     }
                 }
             } catch (_) {}
@@ -211,6 +220,8 @@ export default class EvalHelper extends Extension {
             patchLiquidGlass();
             return GLib.SOURCE_REMOVE;
         });
+
+
         // Ensure search-shortcut Ctrl+Space connects to redesigned macOS Liquid Glass Spotlight
         const patchSpotlightKeybinding = async () => {
             try {
@@ -458,10 +469,10 @@ export default class EvalHelper extends Extension {
                 const controls = Main.overview?._overview?.controls;
                 if (!controls) return;
 
-                // 1. Guard layout manager against NaN or null coordinates (prevents Wayland crash)
+                // 1. Guard layout manager against NaN and reduce vertical gap between spaces bar and window list
                 const lm = controls.layout_manager;
-                if (lm && !lm._macNanGuarded) {
-                    lm._macNanGuarded = true;
+                if (lm && !lm._macOverviewSpacingPatchedV1) {
+                    lm._macOverviewSpacingPatchedV1 = true;
                     const origCompute = lm._computeWorkspacesBoxForState;
                     lm._computeWorkspacesBoxForState = function(state, box, ...rest) {
                         let res = origCompute.call(this, state, box, ...rest);
@@ -472,6 +483,18 @@ export default class EvalHelper extends Extension {
                         if (!Number.isFinite(res.y1)) res.y1 = workArea.y1 || 0;
                         if (!Number.isFinite(res.x2)) res.x2 = workArea.x2 || (res.x1 + w);
                         if (!Number.isFinite(res.y2)) res.y2 = workArea.y2 || (res.y1 + h);
+
+                        // Reduce excessive vertical gap between top workspaces bar and window preview list
+                        if (state === 1 /* OverviewControls.ControlsState.WINDOW_PICKER */) {
+                            const shift = 75;
+                            const minTop = 44; // safe margin below panel bar
+                            const newY1 = Math.max(minTop, res.y1 - shift);
+                            const actualShift = res.y1 - newY1;
+                            if (actualShift > 0) {
+                                res.y1 = newY1;
+                                res.y2 = Math.max(res.y1 + 100, res.y2 - actualShift);
+                            }
+                        }
                         return res;
                     };
                 }

@@ -450,7 +450,7 @@
 }
 
 .wack-gdm-power-label {
-    font-family: 'SF Pro Text' !important;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
     font-size: 13px !important;
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.88) !important;
@@ -519,7 +519,7 @@
 }
 
 #panel .panel-button {
-    font-family: 'SF Pro Text' !important;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.92) !important;
     padding: 0 10px !important;
@@ -540,23 +540,22 @@
 
 /* ── Authentic macOS Sonoma Clock (WACK) ── */
 .wack-date {
-    font-family: 'SF Pro Display', -apple-system, sans-serif !important;
+    font-family: SF Pro Display, Cantarell, sans-serif !important;
     font-size: 28px !important;
     font-weight: 600 !important;
     color: rgba(255, 255, 255, 0.98) !important;
     letter-spacing: 0px !important;
     margin: 0 !important;
-    margin-bottom: -4px !important;
+    margin-bottom: 0px !important;
     padding: 0 !important;
     text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75) !important;
 }
 
 .wack-time,
 .unlock-dialog-clock-time.wack-time {
-    font-family: 'SF Pro Rounded', 'SF Pro Display', -apple-system, sans-serif !important;
+    font-family: SF Pro Display, Cantarell, sans-serif !important;
     font-size: 128px !important;
     font-weight: 700 !important;
-    font-feature-settings: "pnum" 1, "tnum" 0 !important;
     letter-spacing: -2px !important;
     padding: 0 !important;
     padding-top: 0 !important;
@@ -606,7 +605,7 @@
 }
 
 .wack-gdm-auth-subtitle {
-    font-family: 'SF Pro Text' !important;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
     font-size: 12px !important;
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.85) !important;
@@ -618,7 +617,7 @@
 }
 
 .login-dialog .wack-cupertino-prompt .login-dialog-prompt-entry {
-    font-family: SF Pro Text;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
     font-size: 14px !important;
     padding: 4px 14px !important;
     border-radius: 9999px !important;
@@ -638,7 +637,7 @@
 }
 
 .login-dialog .wack-cupertino-prompt .wack-gdm-auth-subtitle {
-    font-family: 'SF Pro Text' !important;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
     font-size: 12px !important;
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.85) !important;

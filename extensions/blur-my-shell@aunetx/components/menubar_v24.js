@@ -17,13 +17,13 @@ import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
 import { getMixerControl } from 'resource:///org/gnome/shell/ui/status/volume.js';
 import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 import { buildNotificationCard } from './notifications_v2.js';
-import { MacControlCenter } from './control_center_v26.js';
+import { MacControlCenter } from './control_center_v30.js';
 import { MacInputSwitcher } from './mac_input_switcher_v8.js';
 import { t, tf } from './mac_i18n.js';
 import {
     populateUniversalWifiContent,
     populateUniversalBluetoothContent,
-} from './mac_menus_shared_v2.js';
+} from './mac_menus_shared_v5.js';
 
 function resolveCCIcon() {
     const home = GLib.get_home_dir();
@@ -55,6 +55,7 @@ const ACCENT_COLOR_MAP = {
     'pink': '#ff2d55',
     'purple': '#af52de',
     'slate': '#8e8e93',
+    'brown': '#a27447',
 };
 
 function getSystemAccentColor() {
@@ -2288,9 +2289,10 @@ export const MenuBarController = class MenuBarController {
             const nRad = (typeof data.notif_radius === 'number') ? data.notif_radius : 24;
             this._updateNotifRealtime(nTint, nRad);
 
-            // 4. Popup menus tint
+            // 4. Popup menus tint and radius
             const pTint = (typeof data.popup_tint === 'number') ? data.popup_tint : 0.10;
-            this._updatePopupRealtime(pTint);
+            const pRad = (typeof data.popup_radius === 'number') ? data.popup_radius : 24;
+            this._updatePopupRealtime(pTint, pRad);
 
             // 5. AppIndicators delay fix
             this._patchAppIndicatorClickDelay();
@@ -2308,9 +2310,9 @@ export const MenuBarController = class MenuBarController {
         // Handled cleanly and efficiently by panel.js via opacity crossfade.
     }
 
-    _updatePopupRealtime(tint) {
+    _updatePopupRealtime(tint, radius = 24) {
         try {
-            const style = `background-color: transparent !important; background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important; border-radius: 14px !important;`;
+            const style = `background-color: transparent !important; background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important; border-radius: ${radius}px !important;`;
             const found = [];
             const walk = (actor) => {
                 if (!actor) return;
@@ -2390,7 +2392,7 @@ export const MenuBarController = class MenuBarController {
 
     _updateDockRealtime(tint, radius) {
         try {
-            const style = `background-color: rgba(36, 36, 36, ${tint.toFixed(2)}) !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;`;
+            const style = 'background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;';
             const found = [];
             const walk = (actor) => {
                 if (!actor) return;
@@ -2405,13 +2407,15 @@ export const MenuBarController = class MenuBarController {
             walk(Main.uiGroup);
             for (const bg of found) {
                 bg.set_style(style);
+                bg.opacity = 0;
+                bg.visible = false;
             }
         } catch (e) {
             console.error('[MenuBarController] Error updating dock realtime:', e);
         }
     }
 
-    _updateNotifRealtime(tint = 0.15, radius = 24) {
+    _updateNotifRealtime(tint = 0.0, radius = 24) {
         try {
             const style = `background-color: transparent !important; background: transparent !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; box-shadow: none !important;`;
             const found = [];
@@ -2433,7 +2437,11 @@ export const MenuBarController = class MenuBarController {
                 banner.set_style(style);
             }
             if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
-                this._notifGlass.setTintStrength(typeof tint === 'number' ? tint : 0.15);
+                const { tintVal, tintStrength } = this._getNotifThemeParams();
+                this._notifGlass.setTintStrength(tintStrength);
+                this._notifGlass.setTintColor(tintVal, tintVal, tintVal);
+                this._notifGlass.setBrightness(1.0);
+                this._notifGlass.setIsDock(true);
                 this._notifGlass.setCornerRadius(radius);
             }
         } catch (e) {
@@ -3680,7 +3688,7 @@ export const MenuBarController = class MenuBarController {
 
         const cardsBox = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
-            style: 'spacing: 10px; padding: 0 6px 16px 6px; background: transparent !important;',
+            style: 'spacing: 10px; padding: 0 16px 16px 8px; background: transparent !important;',
             x_expand: true,
             y_expand: false,
         });
@@ -3718,6 +3726,7 @@ export const MenuBarController = class MenuBarController {
             this._isCardAnimating = false;
             if (this._notifCenterOpen) {
                 this._updateNotificationCenterGeometry();
+                this._syncNotifGlassRegions();
             }
         };
 
@@ -3775,6 +3784,27 @@ export const MenuBarController = class MenuBarController {
         return container;
     }
 
+    _getNotifThemeParams() {
+        let isDark = true;
+        try {
+            const iface = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
+            const scheme = iface.get_string('color-scheme');
+            if (scheme === 'prefer-dark') isDark = true;
+            else if (scheme === 'prefer-light') isDark = false;
+            else {
+                const gtk = iface.get_string('gtk-theme') || '';
+                isDark = gtk.toLowerCase().includes('dark');
+            }
+        } catch (_) {
+            isDark = true;
+        }
+
+        const tintVal = isDark ? 0.0 : 1.0;
+        const baseStrength = isDark ? 0.05 : 0.06;
+        const tintStrength = isDark ? 0.05 : 0.06;
+        return { isDark, tintVal, baseStrength, tintStrength };
+    }
+
     async _initNotifGlass() {
         if (this._notifGlass && !this._notifGlass.is_finalized?.()) return;
         try {
@@ -3789,12 +3819,13 @@ export const MenuBarController = class MenuBarController {
                 logger: console,
                 owner: 'notification-center',
             });
+            const { tintVal, tintStrength } = this._getNotifThemeParams();
             this._notifGlass.setIsDock(true);
             this._notifGlass.setMultiRegionMode(true);
             this._notifGlass.setCornerRadius(24.0);
             this._notifGlass.setBlurRadius(3.0);
-            this._notifGlass.setTintStrength(0.15);
-            this._notifGlass.setTintColor(0.0, 0.0, 0.0);
+            this._notifGlass.setTintStrength(tintStrength);
+            this._notifGlass.setTintColor(tintVal, tintVal, tintVal);
             this._notifGlass.setBrightness(1.0);
             this._notifGlass.setSaturation(1.0);
             this._notifGlass.setContrast(1.0);
@@ -3838,6 +3869,7 @@ export const MenuBarController = class MenuBarController {
 
         const cards = this._notifCardsBox.get_children();
         const regions = [];
+        const { tintVal, baseStrength, tintStrength } = this._getNotifThemeParams();
 
         for (const card of cards) {
             if (!card.visible || card.opacity === 0) continue;
@@ -3852,18 +3884,22 @@ export const MenuBarController = class MenuBarController {
             if (visibleH < 6) continue;
 
             regions.push({
-                x: cardX - monitor.x,
-                y: visibleTop - monitor.y,
-                w: cardW,
-                h: visibleH,
-                tintR: 0.05,
-                tintG: 0.05,
-                tintB: 0.06,
-                baseStrength: 0.15,
+                x: Math.round(cardX - monitor.x),
+                y: Math.round(visibleTop - monitor.y),
+                w: Math.round(cardW),
+                h: Math.round(visibleH),
+                tintR: tintVal,
+                tintG: tintVal,
+                tintB: tintVal,
+                baseStrength: baseStrength,
             });
         }
 
         if (regions.length > 0) {
+            this._notifGlass.setTintColor(tintVal, tintVal, tintVal);
+            this._notifGlass.setTintStrength(tintStrength);
+            this._notifGlass.setBrightness(1.0);
+            this._notifGlass.setIsDock(true);
             this._notifGlass.setGlassRegions(regions);
             this._notifGlass.syncSources();
             if (!this._notifGlass.visible)
@@ -3889,7 +3925,7 @@ export const MenuBarController = class MenuBarController {
         if (!card || card._geoTrackConnected) return;
         card._geoTrackConnected = true;
         card.connect('notify::height', () => {
-            if ((this._notifCenterOpen || this._isNotifCenterClosing) && !this._isCardAnimating) {
+            if (this._notifCenterOpen || this._isNotifCenterClosing) {
                 this._updateNotificationCenterGeometry();
                 this._syncNotifGlassRegions();
             }
@@ -4289,6 +4325,9 @@ export const MenuBarController = class MenuBarController {
         actualTotalH = Math.min(maxCenterH, Math.max(90, Math.round(actualTotalH)));
 
         if (this._lastCenterW === targetW && this._lastCenterH === actualTotalH && this._notifCenterActor.height === actualTotalH) {
+            if (this._notifCenterOpen) {
+                this._syncNotifGlassRegions();
+            }
             return;
         }
         this._lastCenterW = targetW;
@@ -4374,6 +4413,14 @@ export const MenuBarController = class MenuBarController {
 
         this._isNotifCenterClosing = false;
         this._notifCenterOpen = true;
+
+        if (!this._notifStageLoopId) {
+            this._notifStageLoopId = global.stage.connect('before-update', () => {
+                if (this._notifCenterOpen || this._isNotifCenterClosing) {
+                    this._syncNotifGlassRegions();
+                }
+            });
+        }
 
         const reservedCards = this._populateNotificationCards(activeBanners);
 
@@ -4481,6 +4528,10 @@ export const MenuBarController = class MenuBarController {
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
             onComplete: () => {
                 this._isNotifCenterClosing = false;
+                if (this._notifStageLoopId) {
+                    try { global.stage.disconnect(this._notifStageLoopId); } catch (_) {}
+                    this._notifStageLoopId = 0;
+                }
                 if (!this._notifCenterOpen) {
                     container.hide();
                     container.translation_x = 0;
@@ -5029,6 +5080,14 @@ export const MenuBarController = class MenuBarController {
         }
 
         this._disconnectNotifCenterListeners?.();
+        if (this._notifStageLoopId) {
+            try { global.stage.disconnect(this._notifStageLoopId); } catch (_) {}
+            this._notifStageLoopId = 0;
+        }
+        if (this._notifGlass) {
+            try { this._notifGlass.destroy(); } catch (_) {}
+            this._notifGlass = null;
+        }
         if (this._notifCenterActor) {
             try { this._notifCenterActor.destroy(); } catch (_) {}
             this._notifCenterActor = null;

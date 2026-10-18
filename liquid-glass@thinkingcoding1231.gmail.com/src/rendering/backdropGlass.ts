@@ -133,7 +133,7 @@ export const GlassActor = GObject.registerClass(class GlassActor extends Clutter
     }
 
     _beginPaint() {
-        if (!this.mapped || !this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+        if (!this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
             return null;
         this._paints++;
         this._runLiveGeometryHook();
@@ -191,7 +191,7 @@ export const GlassActor = GObject.registerClass(class GlassActor extends Clutter
     }
 
     _queueRepaint() {
-        if (!this.mapped || !this.visible || this.opacity === 0)
+        if (!this.visible || this.opacity === 0)
             return;
         // Repainting from inside this paint would request a new frame every frame.
         if (this._inLiveGeometry)
@@ -344,7 +344,14 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
     vfunc_map() {
         super.vfunc_map();
         this._serialAtMap = this._copier.lastCopy?.serial ?? 0;
+        this._copier.forceRefresh(350);
         this._relays.redrawArea();
+        this.queue_redraw();
+    }
+
+    forceRefresh(durationMs = 250) {
+        this._copier?.forceRefresh(durationMs);
+        this.queue_redraw();
     }
 
     /**
@@ -362,7 +369,9 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
 
     _onShadersLoaded() {
         super._onShadersLoaded();
+        this._copier.forceRefresh(350);
         this._relays.redrawArea();
+        this.queue_redraw();
     }
 
     /**
@@ -373,7 +382,7 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
      * its children, so moving the window does not redraw the area by itself.
      */
     syncSources(moved = false) {
-        if (!this.mapped || !this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
+        if (!this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
             return;
         const area = this._sampleAreaRect();
         if (!area)
@@ -382,8 +391,11 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
         // A glass that was fully transparent was not painted when the backdrop
         // changed, so its copy is old as well.
         const painted = this.get_paint_opacity() > 0;
-        if (changed || moved || (painted && !this._wasPainted))
+        if (changed || moved || (painted && !this._wasPainted)) {
+            this._copier.forceRefresh(250);
             this._relays.redrawArea();
+            this.queue_redraw();
+        }
         this._wasPainted = painted;
         this._copier.prune(this.peek_stage_views());
     }
@@ -391,15 +403,16 @@ export const BackdropGlass = GObject.registerClass(paintNodeWithContext(class Ba
     vfunc_paint_node(root, paintContext) {
         if (!this.mapped || !this.visible || this.opacity === 0 || this.get_paint_opacity() === 0)
             return;
-        const ctx = this._beginPaint();
-        if (!ctx)
-            return;
         const scale = this._paintScale();
         const s = this._sampleShaderRect();
         if (!scale || !s)
             return;
         const { kx, ky, resW, resH } = scale;
         const stageRect = localToStage(this, s[0] * kx, s[1] * ky, (s[0] + s[2]) * kx, (s[1] + s[3]) * ky);
+        const ctx = this._beginPaint();
+        if (!ctx)
+            return;
+
         const { copy, missed } = this._copier.take(this, root, paintContext, stageRect);
         // Nothing to draw with yet; the next frame redraws the whole area.
         if (missed)

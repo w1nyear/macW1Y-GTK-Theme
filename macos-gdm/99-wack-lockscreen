@@ -8,6 +8,9 @@ name='macW1Y-Dark'
 [org/gnome/desktop/interface]
 gtk-theme='macW1Y-Dark'
 icon-theme='MacTahoe-dark'
+font-name='SF Pro Text 10'
+document-font-name='SF Pro Text 10'
+monospace-font-name='SF Mono 10'
 
 [org/gnome/login-screen]
 enable-fingerprint-authentication=false

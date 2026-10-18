@@ -687,7 +687,7 @@ export class MacControlCenter {
             child: this.darkModeIcon,
             reactive: true,
             can_focus: true,
-            style: 'width: 70px !important; height: 70px !important; min-width: 70px !important; min-height: 70px !important; border-radius: 35px !important; padding: 0 !important;',
+            style: 'width: 70px !important; height: 70px !important; min-width: 70px !important; min-height: 70px !important; border-radius: 9999px !important; padding: 0 !important;',
         });
         this.darkModeBtn.connect('clicked', () => this._toggleDarkMode());
         this.darkModeBtn.connect('button-press-event', () => {
@@ -702,7 +702,7 @@ export class MacControlCenter {
             child: this.powerIcon,
             reactive: true,
             can_focus: true,
-            style: 'width: 70px !important; height: 70px !important; min-width: 70px !important; min-height: 70px !important; border-radius: 35px !important; padding: 0 !important;',
+            style: 'width: 70px !important; height: 70px !important; min-width: 70px !important; min-height: 70px !important; border-radius: 9999px !important; padding: 0 !important;',
         });
         this._setStandaloneBtnActive(this.powerBtn, this.powerIcon, false);
         this.powerBtn.connect('clicked', () => this.openSubmenu('power', this.powerBtn));
@@ -947,11 +947,11 @@ export class MacControlCenter {
         try {
             if (isActive) {
                 btn.add_style_class_name('active');
-                btn.style = `background-color: ${accentColor} !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; box-shadow: 0 0 12px rgba(0, 122, 255, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important; width: 70px !important; height: 70px !important; min-width: 70px !important; min-height: 70px !important; border-radius: 35px !important; padding: 0 !important; color: #ffffff !important;`;
+                btn.style = `background-color: ${accentColor} !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; box-shadow: 0 0 12px rgba(0, 122, 255, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important; width: 70px !important; height: 70px !important; min-width: 70px !important; min-height: 70px !important; border-radius: 9999px !important; padding: 0 !important; color: #ffffff !important;`;
                 if (icon) icon.style = 'color: #ffffff !important;';
             } else {
                 btn.remove_style_class_name('active');
-                btn.style = 'background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; width: 70px !important; height: 70px !important; min-width: 70px !important; min-height: 70px !important; border-radius: 35px !important; padding: 0 !important; color: #ffffff !important;';
+                btn.style = 'background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; width: 70px !important; height: 70px !important; min-width: 70px !important; min-height: 70px !important; border-radius: 9999px !important; padding: 0 !important; color: #ffffff !important;';
                 if (icon) icon.style = 'color: #ffffff !important;';
             }
         } catch (_) {}
@@ -965,7 +965,7 @@ export class MacControlCenter {
             can_focus: true,
             track_hover: true,
             x_expand: true,
-            style: 'width: 167px !important; min-width: 167px !important; max-width: 167px !important; height: 70px !important; min-height: 70px !important; max-height: 70px !important; border-radius: 35px !important; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important;',
+            style: 'width: 167px !important; min-width: 167px !important; max-width: 167px !important; height: 70px !important; min-height: 70px !important; max-height: 70px !important; border-radius: 9999px !important; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important;',
         });
 
         const box = new St.BoxLayout({
@@ -1074,7 +1074,7 @@ export class MacControlCenter {
             can_focus: true,
             track_hover: true,
             x_expand: true,
-            style: 'width: 167px !important; min-width: 167px !important; max-width: 167px !important; height: 70px !important; min-height: 70px !important; max-height: 70px !important; border-radius: 35px !important; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important;',
+            style: 'width: 167px !important; min-width: 167px !important; max-width: 167px !important; height: 70px !important; min-height: 70px !important; max-height: 70px !important; border-radius: 9999px !important; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important;',
         });
 
         const box = new St.BoxLayout({
@@ -1593,9 +1593,10 @@ export class MacControlCenter {
         const card = new St.BoxLayout({
             vertical: true,
             style_class: 'mac-cc-submenu-card',
-            x_expand: false,
+            x_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
             reactive: true,
-            style: 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; padding: 4px 2px !important;',
+            style: 'width: 338px !important; min-width: 338px !important; max-width: 338px !important; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; padding: 4px 6px !important;',
         });
         card.connect('button-press-event', (_actor, event) => {
             if (event.get_button() === 3) {
@@ -1666,7 +1667,14 @@ export class MacControlCenter {
                 can_focus: false,
                 style_class: 'mac-menu-header-row',
             });
-            headerItem.style = 'padding: 4px 6px !important; margin: 0 4px !important; min-height: 28px !important; background: transparent !important;';
+            if (headerItem._ornamentLabel) {
+                try { headerItem.remove_child(headerItem._ornamentLabel); } catch (_) {}
+                try { headerItem._ornamentLabel.destroy(); } catch (_) {}
+                headerItem._ornamentLabel = null;
+            }
+            headerItem.style = 'padding: 2px 2px 6px 2px !important; margin: 0 !important; min-height: 28px !important; background: transparent !important;';
+            headerItem.x_expand = true;
+            headerItem.x_align = Clutter.ActorAlign.FILL;
 
             const headerBox = new St.BoxLayout({
                 vertical: false,
@@ -1686,8 +1694,15 @@ export class MacControlCenter {
                 label: t('back', '◀ Назад'),
                 reactive: true,
                 can_focus: true,
-                style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.10) !important;',
+                track_hover: true,
+                style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;',
             });
+            const updateBackHover = () => {
+                backBtn.style = backBtn.hover
+                    ? 'font-size: 12px !important; font-weight: 600 !important; color: #ffffff !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.22) !important;'
+                    : 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;';
+            };
+            backBtn.connect('notify::hover', updateBackHover);
             backBtn.connect('clicked', () => this.closeSubmenu());
             backBtn.connect('button-press-event', () => {
                 this.closeSubmenu();
@@ -1716,6 +1731,7 @@ export class MacControlCenter {
             const contentBox = new St.BoxLayout({
                 vertical: true,
                 x_expand: true,
+                x_align: Clutter.ActorAlign.FILL,
             });
             card.add_child(contentBox);
             this._buildPowerSubmenu(contentBox);
@@ -1879,23 +1895,58 @@ export class MacControlCenter {
             const sinkRow = new St.BoxLayout({
                 vertical: false,
                 y_align: Clutter.ActorAlign.CENTER,
-                style_class: 'mac-cc-submenu-item' + (sink.isDefault ? ' active' : ''),
+                x_expand: true,
+                x_align: Clutter.ActorAlign.FILL,
+                style_class: 'mac-cc-submenu-row' + (sink.isDefault ? ' active' : ''),
                 style: sink.isDefault
-                    ? 'padding: 6px 12px; border-radius: 9999px !important; spacing: 8px; background-color: #007aff !important; color: #ffffff !important;'
-                    : 'padding: 6px 12px; border-radius: 9999px !important; spacing: 8px;',
+                    ? 'padding: 6px 10px; border-radius: 8px !important; margin: 1px 0px; background-color: rgba(0, 122, 255, 0.22) !important;'
+                    : 'padding: 6px 10px; border-radius: 8px !important; margin: 1px 0px; background-color: transparent;',
                 reactive: true,
+                track_hover: true,
                 can_focus: true,
             });
+            const updateSinkHover = () => {
+                if (sinkRow.hover) {
+                    sinkRow.style = 'padding: 6px 10px; border-radius: 8px !important; margin: 1px 0px; background-color: rgba(255, 255, 255, 0.14) !important;';
+                } else {
+                    sinkRow.style = sink.isDefault
+                        ? 'padding: 6px 10px; border-radius: 8px !important; margin: 1px 0px; background-color: rgba(0, 122, 255, 0.22) !important;'
+                        : 'padding: 6px 10px; border-radius: 8px !important; margin: 1px 0px; background-color: transparent;';
+                }
+            };
+            sinkRow.connect('notify::hover', updateSinkHover);
+
+            const badgeBox = new St.Widget({
+                layout_manager: new Clutter.BinLayout(),
+                style: sink.isDefault
+                    ? 'background-color: #007aff !important; width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; border-radius: 13px !important; margin-right: 10px !important;'
+                    : 'background-color: rgba(255, 255, 255, 0.14) !important; width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; border-radius: 13px !important; margin-right: 10px !important;',
+                y_align: Clutter.ActorAlign.CENTER,
+            });
             const sinkIconName = sink.name.includes('Навуш') ? 'audio-headphones-symbolic' : 'audio-speakers-symbolic';
-            sinkRow.add_child(createIcon(sinkIconName, 14));
+            const sinkIcon = new St.Icon({
+                icon_name: sinkIconName,
+                icon_size: 13,
+                style: 'color: #ffffff;',
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            badgeBox.add_child(sinkIcon);
+            sinkRow.add_child(badgeBox);
+
             sinkRow.add_child(new St.Label({
                 text: sink.name,
-                style_class: 'mac-cc-title',
-                style: 'font-size: 13px; font-weight: 600; margin-left: 6px;',
+                style: sink.isDefault ? 'font-size: 13px; font-weight: 600; color: #ffffff;' : 'font-size: 13px; font-weight: 500; color: #ffffff;',
                 x_expand: true,
+                y_align: Clutter.ActorAlign.CENTER,
             }));
             if (sink.isDefault) {
-                sinkRow.add_child(createIcon('emblem-ok-symbolic', 14));
+                sinkRow.add_child(new St.Icon({
+                    icon_name: 'emblem-ok-symbolic',
+                    icon_size: 14,
+                    style: 'color: #ffffff;',
+                    y_align: Clutter.ActorAlign.CENTER,
+                }));
             }
             sinkRow.connect('button-press-event', () => {
                 if (sink.gvcSink && this._mixerControl) {
@@ -2099,10 +2150,20 @@ export class MacControlCenter {
         // Bottom link to sound settings
         const bottomSettings = new St.Button({
             label: t('sound_settings', 'Параметри звуку...'),
-            style_class: 'mac-cc-back-btn',
-            style: 'border-radius: 9999px !important; margin-top: 6px; padding: 4px 10px;',
+            style_class: 'mac-cc-footer-btn',
             reactive: true,
+            can_focus: true,
+            track_hover: true,
+            x_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            style: 'margin-top: 10px; margin-bottom: 2px; padding: 7px 12px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.90); font-size: 12px; font-weight: 500; text-align: center;',
         });
+        const updateSoundBtnHover = () => {
+            bottomSettings.style = bottomSettings.hover
+                ? 'margin-top: 10px; margin-bottom: 2px; padding: 7px 12px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.16); color: #ffffff; font-size: 12px; font-weight: 500; text-align: center;'
+                : 'margin-top: 10px; margin-bottom: 2px; padding: 7px 12px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.90); font-size: 12px; font-weight: 500; text-align: center;';
+        };
+        bottomSettings.connect('notify::hover', updateSoundBtnHover);
         bottomSettings.connect('clicked', () => {
             this.menu.close();
             Util.spawnCommandLine('gnome-control-center sound');
@@ -2113,212 +2174,44 @@ export class MacControlCenter {
     _buildWifiSubmenu(card) {
         card.destroy_all_children();
         const isEnabled = Boolean(this._nmClient?.wireless_enabled);
-        const activeAp = this._wifiDevice?.get_active_access_point();
-        const activeSsid = activeAp?.get_ssid() ? NM.utils_ssid_to_utf8(activeAp.get_ssid().get_data()) : null;
-
-        if (isEnabled && this._wifiDevice) {
-            // 1. Known / Connected network (matching Photo 1)
-            if (activeSsid) {
-                const knownHeader = new St.Label({
-                    text: t('known_network', 'Відома мережа').toUpperCase(),
-                    style_class: 'mac-cc-subtitle',
-                    style: 'font-weight: 700; margin-top: 6px; margin-bottom: 4px; padding-left: 8px;',
-                });
-                card.add_child(knownHeader);
-
-                const activeRow = new St.BoxLayout({
-                    vertical: false,
-                    style_class: 'mac-cc-submenu-item active',
-                    y_align: Clutter.ActorAlign.CENTER,
-                    reactive: true,
-                });
-
-                // Orange circular badge with Wi-Fi icon (centered)
-                const badgeBox = createCircleBadge('network-wireless-signal-excellent-symbolic', true, 14);
-                activeRow.add_child(badgeBox);
-
-                const nameLbl = new St.Label({
-                    text: activeSsid,
-                    style_class: 'mac-cc-title',
-                    style: 'font-weight: 600; margin-left: 4px;',
-                    x_expand: true,
-                    y_align: Clutter.ActorAlign.CENTER,
-                });
-                activeRow.add_child(nameLbl);
-
-                if (activeAp && (activeAp.get_flags() !== 0 || activeAp.get_wpa_flags() !== 0 || activeAp.get_rsn_flags() !== 0)) {
-                    activeRow.add_child(createIcon('channel-secure-symbolic', 12));
-                }
-
-                activeRow.connect('button-press-event', () => {
-                    this.menu.close();
-                    Util.spawnCommandLine('gnome-control-center wifi');
-                    return Clutter.EVENT_STOP;
-                });
-                card.add_child(activeRow);
-            }
-
-            // 2. Other networks
-            const secLbl = new St.Label({
-                text: t('other_networks', 'Інші мережі').toUpperCase(),
-                style_class: 'mac-cc-subtitle',
-                style: 'font-weight: 700; margin-top: 8px; margin-bottom: 4px; padding-left: 8px;',
-            });
-            card.add_child(secLbl);
-
-            const aps = this._wifiDevice.get_access_points() || [];
-            const apMap = new Map();
-            for (const ap of aps) {
-                const s = ap.get_ssid();
-                if (!s) continue;
-                const ssid = NM.utils_ssid_to_utf8(s.get_data());
-                if (!ssid || ssid.trim() === '' || ssid === activeSsid) continue;
-                if (!apMap.has(ssid) || apMap.get(ssid).strength < ap.get_strength()) {
-                    apMap.set(ssid, { ssid, ap, strength: ap.get_strength(), isSecure: ap.get_flags() !== 0 || ap.get_wpa_flags() !== 0 || ap.get_rsn_flags() !== 0 });
-                }
-            }
-
-            const sorted = Array.from(apMap.values()).sort((a, b) => b.strength - a.strength);
-
-            for (const item of sorted.slice(0, 5)) {
-                const netRow = new St.BoxLayout({
-                    vertical: false,
-                    style_class: 'mac-cc-submenu-item',
-                    y_align: Clutter.ActorAlign.CENTER,
-                    reactive: true,
-                });
-
-                let strengthIcon = 'network-wireless-signal-excellent-symbolic';
-                if (item.strength <= 25) strengthIcon = 'network-wireless-signal-weak-symbolic';
-                else if (item.strength <= 50) strengthIcon = 'network-wireless-signal-ok-symbolic';
-                else if (item.strength <= 75) strengthIcon = 'network-wireless-signal-good-symbolic';
-
-                const badgeBox = createCircleBadge(strengthIcon, false, 13);
-                netRow.add_child(badgeBox);
-
-                netRow.add_child(new St.Label({
-                    text: item.ssid,
-                    style_class: 'mac-cc-title',
-                    style: 'margin-left: 4px;',
-                    x_expand: true,
-                }));
-                if (item.isSecure) {
-                    netRow.add_child(createIcon('channel-secure-symbolic', 12));
-                }
-                netRow.connect('button-press-event', () => {
-                    this.menu.close();
-                    Util.spawnCommandLine(`nmcli device wifi connect "${item.ssid}"`);
-                    return Clutter.EVENT_STOP;
-                });
-                card.add_child(netRow);
-            }
-        }
-
-        const settingsBtn = new St.Button({
-            label: t('wifi_settings', 'Параметри Wi-Fi...'),
-            style_class: 'mac-cc-back-btn',
-            style: 'margin-top: 10px;',
-            reactive: true,
+        populateUniversalWifiContent(card, {
+            nmClient: this._nmClient,
+            wifiDevice: this._wifiDevice,
+            isEnabled,
+            onToggle: () => this._toggleWifi(),
+            isControlCenter: true,
+            onBack: () => this.closeSubmenu(),
+            onClose: () => {
+                this.closeSubmenu();
+                this.menu.close();
+            },
+            onOpenSettings: () => {
+                this.closeSubmenu();
+                this.menu.close();
+                Util.spawnCommandLine('gnome-control-center wifi');
+            },
         });
-        settingsBtn.connect('clicked', () => {
-            this.menu.close();
-            Util.spawnCommandLine('gnome-control-center wifi');
-        });
-        card.add_child(settingsBtn);
     }
 
     _buildBluetoothSubmenu(card) {
         card.destroy_all_children();
         const isPowered = Boolean(this.btPill.circleBtn._lastIsActive ?? this.btPill.circleBtn.has_style_class_name('active')) || this.btPill.subLbl.text === t('on', 'Увімкнено');
-
-        if (isPowered) {
-            const secLbl = new St.Label({
-                text: t('devices', 'Пристрої').toUpperCase(),
-                style_class: 'mac-cc-subtitle',
-                style: 'font-weight: 700; margin-top: 6px; margin-bottom: 4px; padding-left: 8px;',
-            });
-            card.add_child(secLbl);
-
-            try {
-                // Get paired devices
-                const proc = Gio.Subprocess.new(
-                    ['bluetoothctl', 'devices'],
-                    Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE
-                );
-                proc.communicate_utf8_async(null, null, (p, res) => {
-                    try {
-                        const [, stdout] = p.communicate_utf8_finish(res);
-                        if (stdout) {
-                            const lines = stdout.trim().split('\n');
-                            for (const line of lines.slice(0, 6)) {
-                                const match = line.match(/^Device\s+([0-9A-Fa-f:]+)\s+(.+)$/);
-                                if (match) {
-                                    const mac = match[1];
-                                    const name = match[2];
-                                    const iconName = getBluetoothDeviceIcon(null, name);
-
-                                    const devRow = new St.BoxLayout({
-                                        vertical: false,
-                                        style_class: 'mac-cc-submenu-item',
-                                        y_align: Clutter.ActorAlign.CENTER,
-                                        reactive: true,
-                                    });
-
-                                    const badgeBox = createCircleBadge(iconName, false, 14);
-                                    devRow.add_child(badgeBox);
-
-                                    const devLbl = new St.Label({
-                                        text: name,
-                                        style_class: 'mac-cc-title',
-                                        style: 'margin-left: 4px;',
-                                        x_expand: true,
-                                    });
-                                    devRow.add_child(devLbl);
-
-                                    // Check connection status asynchronously
-                                    try {
-                                        const infoProc = Gio.Subprocess.new(
-                                            ['bluetoothctl', 'info', mac],
-                                            Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE
-                                        );
-                                        infoProc.communicate_utf8_async(null, null, (ip, ires) => {
-                                            try {
-                                                const [, infoOut] = ip.communicate_utf8_finish(ires);
-                                                const isConn = infoOut && infoOut.includes('Connected: yes');
-                                                if (isConn) {
-                                                    devLbl.style = 'margin-left: 4px; color: #ffffff; font-weight: 600;';
-                                                } else {
-                                                    devLbl.style = 'margin-left: 4px; color: rgba(255, 255, 255, 0.45);';
-                                                }
-                                            } catch (_) {}
-                                        });
-                                    } catch (_) {}
-
-                                    devRow.connect('button-press-event', () => {
-                                        Util.spawnCommandLine(`bluetoothctl connect ${mac}`);
-                                        this.closeSubmenu();
-                                        return Clutter.EVENT_STOP;
-                                    });
-                                    card.insert_child_at_index(devRow, Math.max(0, card.get_children().length - 1));
-                                }
-                            }
-                        }
-                    } catch (_) {}
-                });
-            } catch (_) {}
-        }
-
-        const settingsBtn = new St.Button({
-            label: t('bluetooth_settings', 'Параметри Bluetooth...'),
-            style_class: 'mac-cc-back-btn',
-            style: 'margin-top: 8px;',
-            reactive: true,
+        populateUniversalBluetoothContent(card, {
+            btClient: this._btClient,
+            isPowered,
+            onToggle: () => this._toggleBluetooth(),
+            isControlCenter: true,
+            onBack: () => this.closeSubmenu(),
+            onClose: () => {
+                this.closeSubmenu();
+                this.menu.close();
+            },
+            onOpenSettings: () => {
+                this.closeSubmenu();
+                this.menu.close();
+                Util.spawnCommandLine('gnome-control-center bluetooth');
+            },
         });
-        settingsBtn.connect('clicked', () => {
-            this.menu.close();
-            Util.spawnCommandLine('gnome-control-center bluetooth');
-        });
-        card.add_child(settingsBtn);
     }
 
     _buildSoundSubmenu(card) {
@@ -2517,8 +2410,9 @@ export class MacControlCenter {
         if (hasBattery) {
             const batBox = new St.BoxLayout({
                 vertical: true,
-                style: 'padding: 6px 10px; margin-bottom: 6px; background-color: rgba(255, 255, 255, 0.08); border-radius: 12px;',
+                style: 'padding: 8px 12px; margin-top: 4px; margin-bottom: 8px; background-color: rgba(255, 255, 255, 0.08); border-radius: 12px;',
                 x_expand: true,
+                x_align: Clutter.ActorAlign.FILL,
             });
 
             const topRow = new St.BoxLayout({
@@ -2529,7 +2423,7 @@ export class MacControlCenter {
 
             const titleLbl = new St.Label({
                 text: t('battery', 'Акумулятор'),
-                style_class: 'mac-menu-header-title',
+                style: 'font-size: 13.5px; font-weight: 700; color: #ffffff;',
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -2537,14 +2431,14 @@ export class MacControlCenter {
 
             const pctLbl = new St.Label({
                 text: `${pct} %`,
-                style_class: 'mac-menu-header-value',
+                style: 'font-size: 13.5px; font-weight: 700; color: #ffffff;',
                 y_align: Clutter.ActorAlign.CENTER,
             });
             topRow.add_child(pctLbl);
 
             const subLbl = new St.Label({
                 text: isCharging ? t('power_source_adapter', 'Джерело живлення: адаптер живлення') : t('power_source_battery', 'Джерело живлення: акумулятор'),
-                style_class: 'mac-menu-header-subtitle',
+                style: 'font-size: 11px; color: rgba(255, 255, 255, 0.55); margin-top: 2px;',
             });
             batBox.add_child(subLbl);
             card.add_child(batBox);
@@ -2553,7 +2447,7 @@ export class MacControlCenter {
             const pwrModeHeader = new St.Label({
                 text: t('energy_mode', 'Режим енергоспоживання').toUpperCase(),
                 style_class: 'mac-cc-subtitle',
-                style: 'font-weight: 700; margin-top: 4px; margin-bottom: 4px; padding-left: 8px;',
+                style: 'font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.45); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 4px; margin-bottom: 2px; padding: 2px 10px;',
             });
             card.add_child(pwrModeHeader);
 
@@ -2566,14 +2460,27 @@ export class MacControlCenter {
 
             const saverRow = new St.BoxLayout({
                 vertical: false,
-                style_class: 'mac-cc-submenu-item' + (isPowerSaver ? ' active' : ''),
+                style_class: 'mac-cc-submenu-row' + (isPowerSaver ? ' active' : ''),
                 y_align: Clutter.ActorAlign.CENTER,
+                x_expand: true,
+                x_align: Clutter.ActorAlign.FILL,
                 reactive: true,
+                track_hover: true,
+                style: 'padding: 6px 10px; margin: 1px 0px; border-radius: 8px; background-color: transparent;',
             });
 
-            const badgeBox = new St.BoxLayout({
-                style_class: isPowerSaver ? 'mac-menu-squircle-badge-dark mac-menu-squircle-badge-active' : 'mac-menu-squircle-badge-dark',
-                x_align: Clutter.ActorAlign.CENTER,
+            const updateSaverHover = () => {
+                saverRow.style = saverRow.hover
+                    ? 'padding: 6px 10px; margin: 1px 0px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.12);'
+                    : 'padding: 6px 10px; margin: 1px 0px; border-radius: 8px; background-color: transparent;';
+            };
+            saverRow.connect('notify::hover', updateSaverHover);
+
+            const badgeBox = new St.Widget({
+                layout_manager: new Clutter.BinLayout(),
+                style: isPowerSaver
+                    ? 'background-color: #ffcc00 !important; width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; border-radius: 13px !important; margin-right: 10px !important;'
+                    : 'background-color: rgba(255, 255, 255, 0.14) !important; width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; border-radius: 13px !important; margin-right: 10px !important;',
                 y_align: Clutter.ActorAlign.CENTER,
             });
             const batIcon = new St.Icon({
@@ -2588,14 +2495,20 @@ export class MacControlCenter {
 
             const saverLbl = new St.Label({
                 text: t('low_power_mode', 'Енергозбереження'),
-                style_class: 'mac-cc-title',
-                style: 'margin-left: 4px;',
+                style: 'font-size: 13px; font-weight: 500; color: #ffffff;',
                 x_expand: true,
+                y_align: Clutter.ActorAlign.CENTER,
             });
             saverRow.add_child(saverLbl);
 
             if (isPowerSaver) {
-                saverRow.add_child(createIcon('emblem-ok-symbolic', 13));
+                const okIcon = new St.Icon({
+                    icon_name: 'emblem-ok-symbolic',
+                    icon_size: 14,
+                    style: 'color: #ffffff;',
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
+                saverRow.add_child(okIcon);
             }
 
             saverRow.connect('button-press-event', () => {
@@ -2616,7 +2529,7 @@ export class MacControlCenter {
         const secLbl = new St.Label({
             text: t('power_management', 'Керування живленням').toUpperCase(),
             style_class: 'mac-cc-subtitle',
-            style: 'font-weight: 700; margin-top: 8px; margin-bottom: 4px; padding-left: 8px;',
+            style: 'font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.45); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 8px; margin-bottom: 2px; padding: 2px 10px;',
         });
         card.add_child(secLbl);
 
@@ -2651,20 +2564,45 @@ export class MacControlCenter {
         for (const act of actions) {
             const row = new St.BoxLayout({
                 vertical: false,
-                style_class: 'mac-cc-submenu-item',
+                style_class: 'mac-cc-submenu-row',
                 y_align: Clutter.ActorAlign.CENTER,
+                x_expand: true,
+                x_align: Clutter.ActorAlign.FILL,
                 reactive: true,
+                track_hover: true,
+                style: 'padding: 6px 10px; margin: 1px 0px; border-radius: 8px; background-color: transparent;',
             });
 
-            const badgeBox = createCircleBadge(act.icon, false, 14);
+            const updateRowHover = () => {
+                row.style = row.hover
+                    ? 'padding: 6px 10px; margin: 1px 0px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.12);'
+                    : 'padding: 6px 10px; margin: 1px 0px; border-radius: 8px; background-color: transparent;';
+            };
+            row.connect('notify::hover', updateRowHover);
+
+            const badgeBox = new St.Widget({
+                layout_manager: new Clutter.BinLayout(),
+                style: 'background-color: rgba(255, 255, 255, 0.14) !important; width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; border-radius: 13px !important; margin-right: 10px !important;',
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            const actIcon = new St.Icon({
+                icon_name: act.icon,
+                icon_size: 14,
+                style: 'color: #ffffff;',
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            badgeBox.add_child(actIcon);
             row.add_child(badgeBox);
 
-            row.add_child(new St.Label({
+            const actLbl = new St.Label({
                 text: act.label,
-                style_class: 'mac-cc-title',
-                style: 'margin-left: 4px;',
+                style: 'font-size: 13px; font-weight: 500; color: #ffffff;',
                 x_expand: true,
-            }));
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            row.add_child(actLbl);
+
             row.connect('button-press-event', () => {
                 this.menu.close();
                 Util.spawnCommandLine(act.cmd);
@@ -2676,10 +2614,20 @@ export class MacControlCenter {
         // 3. Settings Footer
         const settingsBtn = new St.Button({
             label: t('battery_settings', 'Параметри акумулятора...'),
-            style_class: 'mac-cc-back-btn',
-            style: 'margin-top: 10px;',
+            style_class: 'mac-cc-footer-btn',
             reactive: true,
+            can_focus: true,
+            track_hover: true,
+            x_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            style: 'margin-top: 10px; margin-bottom: 2px; padding: 7px 12px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.90); font-size: 12px; font-weight: 500; text-align: center;',
         });
+        const updateBtnHover = () => {
+            settingsBtn.style = settingsBtn.hover
+                ? 'margin-top: 10px; margin-bottom: 2px; padding: 7px 12px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.16); color: #ffffff; font-size: 12px; font-weight: 500; text-align: center;'
+                : 'margin-top: 10px; margin-bottom: 2px; padding: 7px 12px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.90); font-size: 12px; font-weight: 500; text-align: center;';
+        };
+        settingsBtn.connect('notify::hover', updateBtnHover);
         settingsBtn.connect('clicked', () => {
             this.menu.close();
             Util.spawnCommandLine('gnome-control-center power');

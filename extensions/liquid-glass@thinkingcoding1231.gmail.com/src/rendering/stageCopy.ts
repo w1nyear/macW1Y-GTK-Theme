@@ -7,12 +7,15 @@ import Clutter from 'gi://Clutter';
 import Cogl from 'gi://Cogl';
 import GLib from 'gi://GLib';
 import Mtk from 'gi://Mtk';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { coglContext, newRootNode, offscreenFormat } from '../shellVersion.js';
 
 // An offscreen texture to render or blit into. A blit needs both sides fixed
 // point or both floating point, so `format` follows the source when that is
 // an offscreen (rotated or HDR views); null is the default RGBA8888_PRE.
 export function createTarget(width, height, format = null, logger) {
+    if (!width || width < 1 || !height || height < 1 || !Number.isFinite(width) || !Number.isFinite(height))
+        return null;
     const ctx = coglContext();
     const texture = format === null
         ? Cogl.Texture2D.new_with_size(ctx, width, height)
@@ -49,9 +52,14 @@ export class StageCopier {
     reuseCount = 0;
     offStageCount = 0;
     missCount = 0;
+    _forceUntilUs = 0;
 
     constructor(_logger) {
         this._logger = _logger;
+    }
+
+    forceRefresh(durationMs = 250) {
+        this._forceUntilUs = Math.max(this._forceUntilUs, GLib.get_monotonic_time() + durationMs * 1000);
     }
 
     // The view a paint of `actor` draws to directly, or null for a paint that
@@ -110,19 +118,26 @@ export class StageCopier {
             Math.abs(copy.rect[2] - rect[2]) < 1.0 &&
             Math.abs(copy.rect[3] - rect[3]) < 1.0;
 
-        // OPTIMIZATION: If geometry hasn't changed and last copy was taken less than 50ms ago (cap ~20fps), reuse cached backdrop!
-        if (sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < 50000)) {
+        const inOverview = Boolean(Main?.overview?.visible || Main?.overview?._animationInProgress);
+        const overviewChanged = copy && (copy as any).inOverview !== undefined && (copy as any).inOverview !== inOverview;
+        if (overviewChanged) {
+            this.forceRefresh(350);
+        }
+
+        const isForced = nowUs < this._forceUntilUs;
+        const mustCopy = isForced || overviewChanged || !copy?.texture || !copy?.rect;
+
+        const minIntervalUs = isForced ? 16666 : 50000;
+        if (!mustCopy && sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < minIntervalUs)) {
             this.reuseCount++;
             return { copy, missed: false };
         }
 
-        if (!inClip) {
+        if (!inClip && !mustCopy) {
             if (copy?.rect) {
                 this.reuseCount++;
                 return { copy, missed: false };
             }
-            this.missCount++;
-            return { copy: null, missed: true };
         }
         const format = fb instanceof Cogl.Offscreen ? offscreenFormat(fb) : null;
         copy = this._target(view, copy, fx1 - fx0, fy1 - fy0, format);
@@ -132,6 +147,7 @@ export class StageCopier {
         copy.rect = rect;
         copy.serial = ++this._serial;
         copy.lastTimeUs = nowUs;
+        (copy as any).inOverview = inOverview;
         this.lastCopy = copy;
         this.copyCount++;
         return { copy, missed: false };
@@ -159,5 +175,6 @@ export class StageCopier {
     clear() {
         this._copies.clear();
         this.lastCopy = null;
+        this.forceRefresh(350);
     }
 }

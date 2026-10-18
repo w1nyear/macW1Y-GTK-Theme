@@ -54,7 +54,6 @@ function _getStaticMenus() {
         { label: _("Edit"),   children: buildEditMenu() },
         { label: _("View"),   children: buildViewMenu() },
         { label: _("Go"),     children: buildGoMenu() },
-        { label: _("Help"),   children: buildHelpMenu() },
     ];
 }
 
@@ -682,7 +681,7 @@ export class MenuManager {
 
         let topLevelMenus = realMenuData?.topLevelMenus?.length
             ? realMenuData.topLevelMenus.slice()
-            : _getStaticMenus().slice(0, 4).concat([{ label: _('Window'), children: windowChildren }], [_getStaticMenus()[4]]);
+            : _getStaticMenus().concat([{ label: _('Window'), children: windowChildren }]);
 
         if (realMenuData?.topLevelMenus?.length) {
             const winTrans = _('Window').toLowerCase();

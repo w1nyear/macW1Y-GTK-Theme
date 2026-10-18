@@ -10,6 +10,7 @@
   "qs_anim": "window",
   "notif_blur": true,
   "notif_sigma": 30,
-  "notif_tint": 0.15,
-  "notif_radius": 24
+  "notif_tint": 0.05,
+  "notif_radius": 24,
+  "popup_radius": 24
 }

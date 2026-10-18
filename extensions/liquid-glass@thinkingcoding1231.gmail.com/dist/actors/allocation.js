@@ -32,7 +32,7 @@ export function getWindowActorRescueMode() {
  * Returns which stage ran ('' for none) so the caller can log them apart.
  */
 export function ensureWindowActorAllocated(actor, relayoutFrames, remapFrames) {
-    if (!actor)
+    if (!actor || !isActorValid(actor))
         return '';
     if (_windowActorRescueMode === 'off')
         return '';
@@ -68,7 +68,7 @@ export function ensureWindowActorAllocated(actor, relayoutFrames, remapFrames) {
  * so there is no flicker. Returns true when a rescue ran.
  */
 export function ensureGlassAllocated(actor, framesBeforeRescue = STRANDED_FRAMES_BEFORE_RESCUE) {
-    if (!actor)
+    if (!actor || !isActorValid(actor))
         return false;
     // An unmapped actor is merely waiting; real_map() will fix it on its own.
     if (!actor.visible || !actor.mapped || actor.has_allocation()) {
@@ -92,7 +92,7 @@ export function ensureGlassAllocated(actor, framesBeforeRescue = STRANDED_FRAMES
  * and its parent; otherwise it keeps painting from its old position.
  */
 export function setActorVisible(actor, visible) {
-    if (!actor)
+    if (!actor || !isActorValid(actor))
         return;
     if (actor.visible === visible)
         return;

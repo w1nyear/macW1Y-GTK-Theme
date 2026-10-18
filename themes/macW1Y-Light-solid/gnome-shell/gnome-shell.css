@@ -2548,7 +2548,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:checked:focus, .popup-menu-item:checked:hover, .popup-menu-item:checked:selected {
   color: #ffffff !important;
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   background-gradient-direction: none !important;
   border-radius: 7px !important;
   transition-duration: 150ms;
@@ -2556,7 +2556,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:checked:active {
   color: #ffffff !important;
-  background-color: #0062cc !important;
+  background-color: -st-accent-color !important;
 }
 
 .popup-menu-item:checked:insensitive {
@@ -2565,7 +2565,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:focus, .popup-menu-item:hover, .popup-menu-item:selected {
   color: #ffffff !important;
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   border-radius: 7px !important;
   transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), color 150ms ease;
   transition-duration: 150ms !important;
@@ -3375,87 +3375,87 @@ StWidget.focused .app-grid-running-dot {
 .audio-device-selection-dialog,
 .access-dialog,
 .run-dialog {
-  background-color: rgba(36, 36, 36, 0.96) !important;
-  border-radius: 24px !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+  background-color: rgba(30, 30, 30, 0.40) !important;
+  border-radius: 35px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.60) !important;
 }
 
 .modal-dialog .modal-dialog-button:last-child,
 .modal-dialog .modal-dialog-linked-button:last-child {
   color: white !important;
-  background-color: -st-accent-color;
+  background-color: -st-accent-color !important;
   background-gradient-direction: none !important;
+  border-radius: 9999px !important;
 }
 
 .modal-dialog .modal-dialog-button:hover:last-child,
 .modal-dialog .modal-dialog-linked-button:hover:last-child {
   color: white !important;
   background-gradient-direction: none !important;
-  background-color: st-lighten(-st-accent-color, 9%);
+  background-color: #1a8cff !important;
 }
 
 .modal-dialog .modal-dialog-button:active:last-child,
 .modal-dialog .modal-dialog-linked-button:active:last-child {
   color: white !important;
   background-gradient-direction: none !important;
-  background-color: st-darken(-st-accent-color, 5%);
+  background-color: #0066d6 !important;
 }
 
 .modal-dialog .modal-dialog-button:insensitive:last-child,
 .modal-dialog .modal-dialog-linked-button:insensitive:last-child {
   background-gradient-direction: none !important;
-  background-color: st-transparentize(-st-accent-color, 0.9);
-  color: st-transparentize(-st-accent-color, 0.65) !important;
+  background-color: rgba(0, 122, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 
 .modal-dialog {
   color: #dedede;
-  padding: 12px;
+  padding: 16px;
 }
 
 .modal-dialog .modal-dialog-content-box {
-  padding: 16px 32px 6px;
+  padding: 16px 32px 10px;
   spacing: 12px;
   max-width: 28em;
 }
 
 .modal-dialog .modal-dialog-button-box {
-  padding-top: 4px;
-  spacing: 4px;
+  padding-top: 8px;
+  spacing: 8px;
 }
 
 .modal-dialog .modal-dialog-button,
 .modal-dialog .modal-dialog-linked-button {
-  min-height: 48px;
-  padding: 0 8px;
+  min-height: 44px;
+  padding: 0 22px;
   margin: 0;
   border: none !important;
-  border-radius: 24px;
-  font-weight: bold;
-  color: #dedede;
-  background-color: #313131;
-  border: none;
+  border-radius: 9999px !important;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.12) !important;
   text-shadow: none;
   icon-shadow: none;
 }
 
 .modal-dialog .modal-dialog-button:hover,
 .modal-dialog .modal-dialog-linked-button:hover {
-  color: #dedede;
+  color: #ffffff;
   border: none;
   text-shadow: none;
   icon-shadow: none;
-  background-color: st-mix(#dedede, #313131, 6%);
+  background-color: rgba(255, 255, 255, 0.20) !important;
 }
 
 .modal-dialog .modal-dialog-button:active,
 .modal-dialog .modal-dialog-linked-button:active {
-  color: #dedede;
+  color: #ffffff;
   border: none;
   text-shadow: none;
   icon-shadow: none;
-  background-color: st-mix(#dedede, #313131, 12%);
+  background-color: rgba(255, 255, 255, 0.28) !important;
 }
 
 .modal-dialog .modal-dialog-button:checked,
@@ -4060,19 +4060,35 @@ StWidget.focused .app-grid-running-dot {
   spacing: 8px;
 }
 
-.mac-notification-action-btn {
+.mac-notification-action-btn,
+.notification-button {
+  min-height: 22px !important;
+  padding: 3px 14px !important;
   border-radius: 9999px !important;
-  background-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: rgba(255, 255, 255, 0.10) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  color: white !important;
-  padding: 4px 14px !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  transition-duration: 150ms;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1px !important;
+  transition-duration: 100ms;
 }
 
-.mac-notification-action-btn:hover {
-  background-color: rgba(255, 255, 255, 0.22) !important;
+.mac-notification-action-btn:hover,
+.notification-button:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+.mac-notification-action-btn:active,
+.notification-button:active {
+  background-color: rgba(255, 255, 255, 0.26) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
 }
 
 .notification-banner {
@@ -4114,40 +4130,20 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .notification-buttons-bin {
-  spacing: 0;
-  padding: 0;
+  spacing: 8px !important;
+  padding: 3px 0 2px 0 !important;
 }
 
 .notification-button {
-  min-height: 32px;
-  padding: 0 8px;
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #afafaf;
-  font-weight: 500;
-  border: 1px solid transparent;
-  border-radius: 6px;
-}
-
-.notification-button:focus {
-  background-color: #242424;
-  color: #dedede;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1) !important;
-}
-
-.notification-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #dedede;
-  box-shadow: none;
-}
-
-.notification-button:active, .notification-button:checked {
-  background-color: rgba(255, 255, 255, 0.16);
-  color: #dedede;
-}
-
-.notification-button:insensitive {
-  background-color: transparent;
-  color: rgba(175, 175, 175, 0.35);
+  min-height: 22px !important;
+  padding: 3px 14px !important;
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
 }
 
 .controls-manager, .secondary-monitor-workspaces {
@@ -5095,31 +5091,43 @@ StWidget.focused .app-grid-running-dot {
   box-shadow: 0 4px 16px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Workspace pager */
-.workspace-thumbnails {
-  visible-width: 32px;
-  spacing: 4px;
-  padding: 4px;
+/* Workspace pager - hidden in favor of macOS Mission Control Spaces Bar */
+.workspace-thumbnails,
+#overviewControls .workspace-thumbnails,
+.overview-controls .workspace-thumbnails {
+  visible-width: 0px !important;
+  spacing: 0px !important;
+  padding: 0px !important;
+  margin: 0px !important;
+  height: 0px !important;
+  min-height: 0px !important;
+  max-height: 0px !important;
+  width: 0px !important;
+  min-width: 0px !important;
+  max-width: 0px !important;
+  opacity: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  background: transparent !important;
 }
 
-.workspace-thumbnails .workspace-thumbnail {
-  color: rgba(255, 255, 255, 0.85);
-  background-color: rgba(255, 255, 255, 0.1);
-  border: none;
-  border-radius: 6px;
-}
-
-.workspace-thumbnails .placeholder {
-  background-image: url("assets/dash-placeholder.svg");
-  background-size: contain;
-  width: 18px;
-  height: 24px;
-}
-
+.workspace-thumbnails .workspace-thumbnail,
+.workspace-thumbnails .placeholder,
 .workspace-thumbnail-indicator {
-  border: 3px solid -st-accent-color;
-  border-radius: 9px;
-  padding: 0px;
+  height: 0px !important;
+  min-height: 0px !important;
+  max-height: 0px !important;
+  width: 0px !important;
+  min-width: 0px !important;
+  max-width: 0px !important;
+  opacity: 0 !important;
+  margin: 0px !important;
+  padding: 0px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  background: transparent !important;
 }
 
 .bottom #dashtodockDashScrollview,
@@ -5312,8 +5320,19 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #dashtodockContainer.bottom #dash #dashtodockDashContainer {
+  padding: 10px 10px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 10px !important;
+}
+
+#dashtodockContainer.bottom.fixed #dash .dash-item-container .app-well-app,
+#dashtodockContainer.bottom.fixed #dash .dash-item-container .show-apps,
+#dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
+#dashtodockContainer.bottom #dash .dash-item-container .show-apps,
+#dashtodockContainer.bottom #dash .dash-item-container .overview-tile {
   padding-top: 4px !important;
-  padding-bottom: 4px !important;
+  padding-bottom: 7px !important;
 }
 
 #dashtodockContainer #dash .dash-separator {
@@ -5343,9 +5362,10 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #dashtodockContainer:overview #dash .dash-background {
-  background-color: rgba(255, 255, 255, 0.1);
-  border: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 #dashtodockContainer:overview #dash .app-grid-running-dot {
@@ -5722,7 +5742,7 @@ StWidget.focused .app-grid-running-dot {
   border-radius: 9999px !important;
   padding: 7px !important;
   margin-right: 10px !important;
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   color: white !important;
 }
 
@@ -5852,7 +5872,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .popup-menu-hover-pill {
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   border-radius: 9999px !important;
   box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40) !important;
 }
@@ -6095,30 +6115,53 @@ StWidget.focused .app-grid-running-dot {
   line-height: 1.35 !important;
 }
 
-/* Action buttons on cards (exact Photo 3 style) */
+/* Action buttons on cards (exact macOS pill capsule style with maximum rounding) */
 .message .message-action-button,
 .message .notification-button,
 .message StButton.notification-button,
 .message .message-actions StButton,
-.message .message-body-container StButton {
-  border-radius: 14px !important;
-  background-color: rgba(255, 255, 255, 0.12) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+.message .message-body-container StButton,
+.notification-banner .notification-button,
+.notification-banner .message-action-button {
+  border-radius: 9999px !important;
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
   color: #ffffff !important;
-  padding: 5px 16px !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  margin-top: 6px !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.20) !important;
-  transition-duration: 150ms;
+  padding: 3px 14px !important;
+  min-height: 22px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1px !important;
+  margin-top: 4px !important;
+  margin-bottom: 2px !important;
+  box-shadow: none !important;
+  transition-duration: 120ms;
 }
 
 .message .message-action-button:hover,
 .message .notification-button:hover,
 .message StButton.notification-button:hover,
 .message .message-actions StButton:hover,
-.message .message-body-container StButton:hover {
-  background-color: rgba(255, 255, 255, 0.22) !important;
+.message .message-body-container StButton:hover,
+.notification-banner .notification-button:hover,
+.notification-banner .message-action-button:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+.message .message-action-button:active,
+.message .notification-button:active,
+.message StButton.notification-button:active,
+.message .message-actions StButton:active,
+.message .message-body-container StButton:active,
+.notification-banner .notification-button:active,
+.notification-banner .message-action-button:active {
+  background-color: rgba(255, 255, 255, 0.26) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
 }
 
 .message-list-controls {
@@ -6302,7 +6345,7 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-content .popup-menu-item:focus,
 .appmenu-popup-menu-content .popup-menu-item:hover,
 .appmenu-popup-menu-content .popup-menu-item:selected {
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
   box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40) !important;
@@ -6312,7 +6355,7 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-item.selected:active,
 .appmenu-popup-menu .popup-menu-item:active,
 .appmenu-popup-menu-content .popup-menu-item:active {
-  background-color: #0062cc !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
 }

@@ -9533,10 +9533,10 @@ menu menuitem:selected,
 .context-menu menuitem:hover,
 .context-menu menuitem:focus,
 .context-menu menuitem:selected {
-  background-color: #007aff;
+  background-color: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 menu menuitem:hover label,
@@ -9546,7 +9546,7 @@ menu menuitem:selected label {
 }
 
 menu menuitem:active {
-  background-color: #0062cc;
+  background-color: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
 }
@@ -9646,10 +9646,10 @@ popover modelbutton:selected,
 .context-menu modelbutton:hover,
 .context-menu modelbutton:focus,
 .context-menu modelbutton:selected {
-  background-color: #007aff;
+  background-color: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 popover.menu modelbutton:hover label,

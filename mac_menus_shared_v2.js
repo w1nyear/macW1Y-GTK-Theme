@@ -82,17 +82,26 @@ export function createCircleBadge(iconName, isActive = false, iconSize = 14) {
 export function setupMacMenuItem(item) {
     if (!item) return;
     item.can_focus = false;
-    item.style = 'padding: 4px 10px 4px 4px !important; margin: 1px 4px !important; border-radius: 9999px !important;';
-    item.connectObject('notify::hover', () => {
-        if (!item.hover) {
-            item.remove_style_pseudo_class('selected');
-            item.remove_style_pseudo_class('focus');
-            item.remove_style_pseudo_class('active');
-            if (item.has_key_focus?.()) {
-                global.stage.set_key_focus(null);
-            }
+    item.reactive = true;
+    item.track_hover = true;
+    item.x_expand = true;
+    item.x_align = Clutter.ActorAlign.FILL;
+
+    if (item._ornamentLabel) {
+        try { item.remove_child(item._ornamentLabel); } catch (_) {}
+        try { item._ornamentLabel.destroy(); } catch (_) {}
+        item._ornamentLabel = null;
+    }
+
+    const updateVisuals = () => {
+        if (item.hover) {
+            item.style = 'padding: 6px 10px !important; margin: 1px 2px !important; border-radius: 8px !important; background-color: rgba(255, 255, 255, 0.12) !important; transition-duration: 100ms !important;';
+        } else {
+            item.style = 'padding: 6px 10px !important; margin: 1px 2px !important; border-radius: 8px !important; background-color: transparent !important; transition-duration: 100ms !important;';
         }
-    }, item);
+    };
+    item.connectObject('notify::hover', updateVisuals, item);
+    updateVisuals();
 }
 
 export function createMacSectionHeader(title) {
@@ -100,16 +109,18 @@ export function createMacSectionHeader(title) {
         reactive: false,
         can_focus: false,
     });
-    item.style = 'margin: 2px 4px !important; padding: 4px 6px 2px 4px !important; min-height: 18px !important; background: transparent !important;';
+    item.style = 'margin: 6px 0px 2px 0px !important; padding: 4px 10px 2px 10px !important; min-height: 18px !important; background: transparent !important;';
+    item.x_expand = true;
+    item.x_align = Clutter.ActorAlign.FILL;
     if (item._ornamentLabel) {
         try { item.remove_child(item._ornamentLabel); } catch (_) {}
-        item._ornamentLabel.destroy();
+        try { item._ornamentLabel.destroy(); } catch (_) {}
         item._ornamentLabel = null;
     }
     const label = new St.Label({
-        text: title,
+        text: title.toUpperCase(),
         style_class: 'mac-menu-section-label',
-        style: 'font-size: 11px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.45) !important; padding: 0 !important; margin: 0 !important;',
+        style: 'font-size: 11px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.45) !important; text-transform: uppercase !important; letter-spacing: 0.3px !important; padding: 0 !important; margin: 0 !important;',
         y_align: Clutter.ActorAlign.CENTER,
     });
     item.add_child(label);
@@ -121,16 +132,18 @@ export function createMacStatusText(text) {
         reactive: false,
         can_focus: false,
     });
-    item.style = 'margin: 2px 4px !important; padding: 4px 6px 4px 4px !important; min-height: 20px !important; background: transparent !important;';
+    item.style = 'margin: 2px 0px !important; padding: 6px 10px !important; min-height: 20px !important; background: transparent !important;';
+    item.x_expand = true;
+    item.x_align = Clutter.ActorAlign.FILL;
     if (item._ornamentLabel) {
         try { item.remove_child(item._ornamentLabel); } catch (_) {}
-        item._ornamentLabel.destroy();
+        try { item._ornamentLabel.destroy(); } catch (_) {}
         item._ornamentLabel = null;
     }
     const label = new St.Label({
         text: text,
         style_class: 'mac-menu-status-text',
-        style: 'font-size: 11px !important; font-weight: 400 !important; color: rgba(255, 255, 255, 0.45) !important; padding: 0 !important; margin: 0 !important;',
+        style: 'font-size: 12px !important; font-weight: 400 !important; color: rgba(255, 255, 255, 0.45) !important; padding: 0 !important; margin: 0 !important;',
         y_align: Clutter.ActorAlign.CENTER,
     });
     item.add_child(label);
@@ -138,10 +151,42 @@ export function createMacStatusText(text) {
 }
 
 export function createMacSeparator() {
-    return new PopupMenu.PopupSeparatorMenuItem();
+    const sep = new PopupMenu.PopupSeparatorMenuItem();
+    if (sep._ornamentLabel) {
+        try { sep.remove_child(sep._ornamentLabel); } catch (_) {}
+        try { sep._ornamentLabel.destroy(); } catch (_) {}
+        sep._ornamentLabel = null;
+    }
+    sep.style = 'margin: 4px 6px !important; padding: 0 !important; min-height: 1px !important;';
+    return sep;
 }
 
-export function createMacFooterButton(label, onClick) {
+export function createMacFooterButton(label, onClick, isControlCenter = false) {
+    if (isControlCenter) {
+        const btn = new St.Button({
+            label: label,
+            style_class: 'mac-cc-footer-btn',
+            reactive: true,
+            can_focus: true,
+            track_hover: true,
+            x_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            style: 'margin-top: 10px; margin-bottom: 2px; padding: 7px 12px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.90); font-size: 12px; font-weight: 500; text-align: center;',
+        });
+        btn.connect('clicked', () => { if (onClick) onClick(); });
+        btn.connect('button-press-event', () => {
+            if (onClick) onClick();
+            return Clutter.EVENT_STOP;
+        });
+        const updateBtnHover = () => {
+            btn.style = btn.hover
+                ? 'margin-top: 10px; margin-bottom: 2px; padding: 7px 12px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.16); color: #ffffff; font-size: 12px; font-weight: 500; text-align: center;'
+                : 'margin-top: 10px; margin-bottom: 2px; padding: 7px 12px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.90); font-size: 12px; font-weight: 500; text-align: center;';
+        };
+        btn.connect('notify::hover', updateBtnHover);
+        return btn;
+    }
+
     const item = new PopupMenu.PopupMenuItem(label, { style_class: 'mac-menu-footer-button' });
     setupMacMenuItem(item);
     item.connect('activate', () => {
@@ -250,7 +295,14 @@ export function populateUniversalWifiContent(container, options = {}) {
         can_focus: false,
         style_class: 'mac-menu-header-row',
     });
-    headerItem.style = 'padding: 4px 6px !important; margin: 0 4px !important; min-height: 28px !important; background: transparent !important;';
+    if (headerItem._ornamentLabel) {
+        try { headerItem.remove_child(headerItem._ornamentLabel); } catch (_) {}
+        try { headerItem._ornamentLabel.destroy(); } catch (_) {}
+        headerItem._ornamentLabel = null;
+    }
+    headerItem.style = 'padding: 2px 2px 6px 2px !important; margin: 0 !important; min-height: 28px !important; background: transparent !important;';
+    headerItem.x_expand = true;
+    headerItem.x_align = Clutter.ActorAlign.FILL;
 
     const headerBox = new St.BoxLayout({
         vertical: false,
@@ -272,8 +324,15 @@ export function populateUniversalWifiContent(container, options = {}) {
             label: t('back', '◀ Назад'),
             reactive: true,
             can_focus: true,
-            style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 8px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.10) !important;',
+            track_hover: true,
+            style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;',
         });
+        const updateBackHover = () => {
+            backBtn.style = backBtn.hover
+                ? 'font-size: 12px !important; font-weight: 600 !important; color: #ffffff !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.22) !important;'
+                : 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;';
+        };
+        backBtn.connect('notify::hover', updateBackHover);
         backBtn.connect('clicked', () => { if (onBack) onBack(); });
         backBtn.connect('button-press-event', () => {
             if (onBack) onBack();
@@ -341,7 +400,7 @@ export function populateUniversalWifiContent(container, options = {}) {
             const nameLbl = new St.Label({
                 text: activeSsid,
                 style_class: 'mac-menu-item-title',
-                style: 'font-weight: 600;',
+                style: 'font-size: 13px; font-weight: 600; color: #ffffff;',
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -350,12 +409,20 @@ export function populateUniversalWifiContent(container, options = {}) {
             if (activeAp && (activeAp.get_flags() !== 0 || activeAp.get_wpa_flags() !== 0 || activeAp.get_rsn_flags() !== 0)) {
                 const lockIcon = new St.Icon({
                     icon_name: 'channel-secure-symbolic',
-                    icon_size: 13,
-                    style: 'color: rgba(255, 255, 255, 0.45);',
+                    icon_size: 12,
+                    style: 'color: rgba(255, 255, 255, 0.45); margin-right: 8px;',
                     y_align: Clutter.ActorAlign.CENTER,
                 });
                 activeItem.add_child(lockIcon);
             }
+
+            const okIcon = new St.Icon({
+                icon_name: 'emblem-ok-symbolic',
+                icon_size: 14,
+                style: 'color: #ffffff;',
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            activeItem.add_child(okIcon);
 
             activeItem.connect('activate', () => {
                 if (onClose) onClose();
@@ -417,6 +484,7 @@ export function populateUniversalWifiContent(container, options = {}) {
                 const label = new St.Label({
                     text: info.ssid,
                     style_class: 'mac-menu-item-title',
+                    style: 'font-size: 13px; font-weight: 500; color: #ffffff;',
                     x_expand: true,
                     y_align: Clutter.ActorAlign.CENTER,
                 });
@@ -465,12 +533,7 @@ export function populateUniversalWifiContent(container, options = {}) {
     const settingsItem = createMacFooterButton(t('wifi_settings', 'Параметри Wi-Fi...'), () => {
         if (onClose) onClose();
         if (onOpenSettings) onOpenSettings('wifi');
-    });
-    settingsItem.connect('button-press-event', () => {
-        if (onClose) onClose();
-        if (onOpenSettings) onOpenSettings('wifi');
-        return Clutter.EVENT_STOP;
-    });
+    }, isControlCenter);
     addItemToContainer(container, settingsItem);
 }
 
@@ -494,7 +557,14 @@ export function populateUniversalBluetoothContent(container, options = {}) {
         can_focus: false,
         style_class: 'mac-menu-header-row',
     });
-    headerItem.style = 'padding: 4px 6px !important; margin: 0 4px !important; min-height: 28px !important; background: transparent !important;';
+    if (headerItem._ornamentLabel) {
+        try { headerItem.remove_child(headerItem._ornamentLabel); } catch (_) {}
+        try { headerItem._ornamentLabel.destroy(); } catch (_) {}
+        headerItem._ornamentLabel = null;
+    }
+    headerItem.style = 'padding: 2px 2px 6px 2px !important; margin: 0 !important; min-height: 28px !important; background: transparent !important;';
+    headerItem.x_expand = true;
+    headerItem.x_align = Clutter.ActorAlign.FILL;
 
     const headerBox = new St.BoxLayout({
         vertical: false,
@@ -516,8 +586,15 @@ export function populateUniversalBluetoothContent(container, options = {}) {
             label: t('back', '◀ Назад'),
             reactive: true,
             can_focus: true,
-            style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 8px !important; border-radius: 8px !important; background-color: rgba(255, 255, 255, 0.10) !important;',
+            track_hover: true,
+            style: 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;',
         });
+        const updateBackHover = () => {
+            backBtn.style = backBtn.hover
+                ? 'font-size: 12px !important; font-weight: 600 !important; color: #ffffff !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.22) !important;'
+                : 'font-size: 12px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.85) !important; padding: 4px 10px !important; border-radius: 9999px !important; background-color: rgba(255, 255, 255, 0.12) !important;';
+        };
+        backBtn.connect('notify::hover', updateBackHover);
         backBtn.connect('clicked', () => { if (onBack) onBack(); });
         backBtn.connect('button-press-event', () => {
             if (onBack) onBack();
@@ -594,7 +671,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
                     const devItem = new PopupMenu.PopupBaseMenuItem({
                         reactive: true,
                         can_focus: false,
-                        style_class: 'mac-menu-item-row',
+                        style_class: isConnected ? 'mac-menu-item-row mac-menu-item-active' : 'mac-menu-item-row',
                     });
                     setupMacMenuItem(devItem);
 
@@ -607,10 +684,21 @@ export function populateUniversalBluetoothContent(container, options = {}) {
                     const label = new St.Label({
                         text: devName,
                         style_class: isConnected ? 'mac-menu-item-title' : 'mac-menu-item-title-muted',
+                        style: isConnected ? 'font-size: 13px; font-weight: 600; color: #ffffff;' : 'font-size: 13px; font-weight: 500; color: rgba(255, 255, 255, 0.85);',
                         x_expand: true,
                         y_align: Clutter.ActorAlign.CENTER,
                     });
                     devItem.add_child(label);
+
+                    if (isConnected) {
+                        const okIcon = new St.Icon({
+                            icon_name: 'emblem-ok-symbolic',
+                            icon_size: 14,
+                            style: 'color: #ffffff;',
+                            y_align: Clutter.ActorAlign.CENTER,
+                        });
+                        devItem.add_child(okIcon);
+                    }
 
                     const connectDevice = () => {
                         if (onClose) onClose();
@@ -648,11 +736,6 @@ export function populateUniversalBluetoothContent(container, options = {}) {
     const settingsItem = createMacFooterButton(t('bluetooth_settings', 'Параметри Bluetooth...'), () => {
         if (onClose) onClose();
         if (onOpenSettings) onOpenSettings('bluetooth');
-    });
-    settingsItem.connect('button-press-event', () => {
-        if (onClose) onClose();
-        if (onOpenSettings) onOpenSettings('bluetooth');
-        return Clutter.EVENT_STOP;
-    });
+    }, isControlCenter);
     addItemToContainer(container, settingsItem);
 }
