@@ -25,8 +25,8 @@ import { ApplicationsBlur } from './components/applications.js';
 import { ScreenshotBlur } from './components/screenshot.js';
 import { PopupBlur } from './components/popup.js';
 import { QuickSettingsBlur } from './components/quick_settings.js';
-import { MenuBarController } from './components/menubar_v27.js';
-import { NotificationsController } from './components/notifications_v3.js';
+import { MenuBarController } from './components/menubar_v28.js';
+import { NotificationsController } from './components/notifications_v4.js';
 import { NativeDynamicBlurEffect } from './effects/native_dynamic_gaussian_blur.js';
 
 
