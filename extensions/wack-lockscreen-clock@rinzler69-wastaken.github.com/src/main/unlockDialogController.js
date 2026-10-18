@@ -21,6 +21,8 @@ export class UnlockDialogController {
         this.origFinish = null;
         this.origSetTransitionProgress = null;
         this.origEnsureAuthPrompt = null;
+        this.origKeyPressEvent = null;
+        this._disabledClickGestures = null;
         this.finishTimeoutId = null;
         this.finishFallbackId = null;
         this.windowFadeContainer = null;
@@ -48,6 +50,47 @@ export class UnlockDialogController {
     }
 
     install(dialog, lockDialogGroup) {
+        // Disable fullscreen ClickGesture so clicking wallpaper/clock does not reveal prompt
+        this._disabledClickGestures = [];
+        for (const action of dialog.get_actions()) {
+            if (action instanceof Clutter.ClickGesture) {
+                action.enabled = false;
+                this._disabledClickGestures.push(action);
+            }
+        }
+
+        // Intercept keypresses in rest mode: arbitrary keys must not show prompt on wake from sleep
+        if (dialog.vfunc_key_press_event) {
+            this.origKeyPressEvent = dialog.vfunc_key_press_event.bind(dialog);
+            dialog.vfunc_key_press_event = (event) => {
+                if (!this._extension._promptActive) {
+                    const keyval = event.get_key_symbol();
+                    const state = event.get_state();
+                    const shiftPressed = (state & Clutter.ModifierType.SHIFT_MASK) !== 0;
+                    if (shiftPressed && (keyval === Clutter.KEY_n || keyval === Clutter.KEY_N)) {
+                        this._extension?.triggerToggleNotifications?.();
+                        return Clutter.EVENT_STOP;
+                    }
+                    if (keyval === Clutter.KEY_Escape) {
+                        return Clutter.EVENT_PROPAGATE;
+                    }
+                    return Clutter.EVENT_PROPAGATE;
+                }
+                return this.origKeyPressEvent(event);
+            };
+        }
+
+        // Ensure no leftover menu bar items (e.g. appmenu Apple icon) appear in leftBox while locked
+        if (Main.panel?._leftBox) {
+            for (const child of Main.panel._leftBox.get_children()) {
+                const isActivities = child === Main.panel.statusArea?.activities?.container ||
+                                     child === Main.panel.statusArea?.activities;
+                if (!isActivities) {
+                    child.visible = false;
+                }
+            }
+        }
+
         // AuthPrompt lifecycle & PAM message intercept
         if (dialog._ensureAuthPrompt) {
             this.origEnsureAuthPrompt = dialog._ensureAuthPrompt.bind(dialog);
@@ -338,14 +381,8 @@ export class UnlockDialogController {
                 }
 
                 if (cupertinoMgr?.restPrompt?._avatarButton) {
-                    const shouldBeClickable = progress > 0;
-                    if (shouldBeClickable) {
-                        cupertinoMgr.restPrompt._avatarButton.add_style_class_name('wack-avatar-clickable');
-                    } else {
-                        cupertinoMgr.restPrompt._avatarButton.remove_style_class_name('wack-avatar-clickable');
-                    }
-                    cupertinoMgr.restPrompt._avatarButton.reactive = shouldBeClickable;
-                    if (!shouldBeClickable) cupertinoMgr.restPrompt._avatarButton.hover = false;
+                    cupertinoMgr.restPrompt._avatarButton.add_style_class_name('wack-avatar-clickable');
+                    cupertinoMgr.restPrompt._avatarButton.reactive = true;
                 }
 
                 if (this._extension._promptActor) {
@@ -445,6 +482,22 @@ export class UnlockDialogController {
         if (this.windowFadeContainer) {
             this.windowFadeContainer.destroy();
             this.windowFadeContainer = null;
+        }
+
+        if (this._disabledClickGestures) {
+            for (const action of this._disabledClickGestures) {
+                try { action.enabled = true; } catch (_) {}
+            }
+            this._disabledClickGestures = null;
+        }
+
+        if (dialog && this.origKeyPressEvent) {
+            dialog.vfunc_key_press_event = this.origKeyPressEvent;
+            this.origKeyPressEvent = null;
+        }
+
+        if (Main.sessionMode) {
+            try { Main.sessionMode.emit('updated'); } catch (_) {}
         }
     }
 }

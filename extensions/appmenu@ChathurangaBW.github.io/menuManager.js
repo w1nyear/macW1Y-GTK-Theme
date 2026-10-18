@@ -724,6 +724,17 @@ export class MenuManager {
             btn.rebuildMenu(data.children, data.onOpen ?? null);
         }
 
+        const isLocked = Boolean(
+            Main.sessionMode?.isLocked ||
+            Main.sessionMode?.currentMode === 'unlock-dialog' ||
+            Main.sessionMode?.currentMode === 'gdm'
+        );
+        if (isLocked) {
+            for (const b of this._buttons) {
+                if (b?.container) b.container.visible = false;
+            }
+        }
+
         // Destroy excess buttons (shouldn't happen, but defensive)
         while (this._buttons.length > newMenuData.length) {
             const extra = this._buttons.pop();

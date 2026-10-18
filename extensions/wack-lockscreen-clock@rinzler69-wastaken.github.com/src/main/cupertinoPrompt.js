@@ -108,13 +108,13 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
             if (avatar) {
                 userWidget.remove_child(avatar);
                 this._avatarButton = new St.Button({
-                    style_class: 'wack-avatar-well',
+                    style_class: 'wack-avatar-well wack-avatar-clickable',
                     x_expand: false,
                     x_align: Clutter.ActorAlign.CENTER,
                     y_align: Clutter.ActorAlign.START,
                     can_focus: false,
                     child: avatar,
-                    reactive: !!(this._extension && this._extension._promptActive),
+                    reactive: true,
                 });
                 userWidget.insert_child_at_index(this._avatarButton, 0);
 
@@ -127,11 +127,22 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
                 }
 
                 this._avatarButton.connectObject('clicked', () => {
-                    if (this._extension && this._extension._promptActive) {
-                        this._extension.triggerSwitchUser();
+                    if (!this._extension?._promptActive) {
+                        this._extension?._dialog?._showPrompt();
+                    } else {
+                        this._extension?.triggerSwitchUser();
                     }
                 }, this);
             }
+
+            this._userWell.reactive = true;
+            this._userWell.connectObject('button-press-event', (_actor, event) => {
+                if (event.get_button() === 1 && !this._extension?._promptActive) {
+                    this._extension?._dialog?._showPrompt();
+                    return Clutter.EVENT_STOP;
+                }
+                return Clutter.EVENT_PROPAGATE;
+            }, this);
 
             this._userWell.set_child(userWidget);
             this._applyUserLabelStyle();

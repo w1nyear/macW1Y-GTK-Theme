@@ -278,25 +278,10 @@ export class GdmManager {
         this._avatarManager.setup(dialog);
         this._powerButtons.setup(dialog);
 
-        // Add macOS Apple logo to top left panel
+        // Ensure no Apple logo in GDM top left panel
         if (Main.panel?._leftBox) {
-            let appleBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-apple-menu");
-            if (!appleBtn) {
-                appleBtn = new St.Button({
-                    name: "gdm-apple-menu",
-                    style_class: "panel-button",
-                    reactive: false,
-                    can_focus: false,
-                    y_align: Clutter.ActorAlign.CENTER,
-                });
-                const appleIcon = new St.Icon({
-                    style_class: "system-status-icon",
-                    gicon: Gio.icon_new_for_string("/usr/share/themes/MacTahoe-Dark/gnome-shell/assets/activities.svg"),
-                    icon_size: 18,
-                });
-                appleBtn.set_child(appleIcon);
-                Main.panel._leftBox.insert_child_at_index(appleBtn, 0);
-            }
+            const appleBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-apple-menu");
+            if (appleBtn) appleBtn.destroy();
         }
 
         // Shift user selection list down
@@ -338,6 +323,18 @@ export class GdmManager {
                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 });
             }
+        }
+
+        // Auto-select single user immediately on GDM boot
+        if (dialog._loadUserList && !dialog._wackOrigLoadUserList) {
+            this._wackOrigLoadUserList = dialog._loadUserList.bind(dialog);
+            dialog._loadUserList = () => {
+                this._wackOrigLoadUserList();
+                this._autoSelectSingleUser(dialog);
+            };
+        }
+        if (dialog._userListLoaded) {
+            this._autoSelectSingleUser(dialog);
         }
 
         // Distro logo opacity override
@@ -1002,4 +999,31 @@ export class GdmManager {
     _animateCupertinoReturnToPicker() { this._animController.animateCupertinoReturnToPicker(); }
     _onUserSelected() { this._animController.onUserSelected(); }
     _onReset() { this._animController.onReset(); }
+
+    _autoSelectSingleUser(dialog = null) {
+        const targetDialog = dialog || this._dialog;
+        if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible)
+            return;
+
+        const checkAndActivate = () => {
+            if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible)
+                return GLib.SOURCE_REMOVE;
+
+            const userList = targetDialog._userList;
+            if (!userList || !userList._items)
+                return GLib.SOURCE_REMOVE;
+
+            const items = Array.from(userList._items.values());
+            if (items.length === 1) {
+                const singleItem = items[0];
+                if (singleItem && typeof singleItem.activate === 'function') {
+                    _log('[WACK/GDM] Single user detected on boot, immediately activating password prompt');
+                    singleItem.activate();
+                }
+            }
+            return GLib.SOURCE_REMOVE;
+        };
+
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, checkAndActivate);
+    }
 }

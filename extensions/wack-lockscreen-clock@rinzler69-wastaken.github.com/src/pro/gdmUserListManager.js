@@ -128,9 +128,11 @@ export class GdmUserListManager {
         userList.enable_mouse_scrolling = true;
 
         this.applyUserListWidths(targetDialog);
+        this._gdm?._autoSelectSingleUser?.(targetDialog);
 
         this.userListItemAddedId = userList.connect('item-added', () => {
             this.applyUserListWidths(targetDialog);
+            this._gdm?._autoSelectSingleUser?.(targetDialog);
         });
     }
 

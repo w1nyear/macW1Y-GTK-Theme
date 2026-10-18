@@ -79,6 +79,31 @@ export default class AppMenuExtension extends Extension {
                 try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
             }, this);
         }
+
+        if (Main.sessionMode) {
+            Main.sessionMode.connectObject('updated', () => {
+                this._syncSessionMode();
+            }, this);
+            this._syncSessionMode();
+        }
+    }
+
+    _syncSessionMode() {
+        const isLocked = Boolean(
+            Main.sessionMode?.isLocked ||
+            Main.sessionMode?.currentMode === 'unlock-dialog' ||
+            Main.sessionMode?.currentMode === 'gdm'
+        );
+        const statusArea = Main.panel?.statusArea;
+        if (!statusArea) return;
+        for (const name of Object.keys(statusArea)) {
+            if (name.startsWith(`${this.uuid}-`)) {
+                const indicator = statusArea[name];
+                if (indicator?.container) {
+                    indicator.container.visible = !isLocked;
+                }
+            }
+        }
     }
 
     _removeStalePanelButtons(uuid) {
@@ -195,6 +220,9 @@ export default class AppMenuExtension extends Extension {
         debug('Disabling extension.');
 
         global.display.disconnectObject(this);
+        if (Main.sessionMode) {
+            try { Main.sessionMode.disconnectObject(this); } catch (_) {}
+        }
         if (Main.overview) {
             try { Main.overview.disconnectObject(this); } catch (_) {}
         }
