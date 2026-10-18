@@ -16,7 +16,7 @@ const COLUMNS = 7;
 const COLUMN_WIDTH = 94;
 const ICON_SIZE = 52;
 const CORNER_RADIUS = 24.0;
-const TINT_STRENGTH = 0.05;
+const TINT_STRENGTH = 0.0;
 const BLUR_RADIUS = 2.0;
 
 const CATEGORIES = [
@@ -213,12 +213,18 @@ export const MacApplicationsDialog = GObject.registerClass({
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
             'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
+            'border-top: 1px solid rgba(255, 255, 255, 0.45) !important; ' +
+            'border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
             'padding: 16px 2px 14px 2px; ' +
             'box-shadow: none !important;'
         );
         this.add_child(this._box);
 
-        this._initGlass();
+        this.connect('destroy', () => {
+            this._onDestroy();
+        });
+
+        this._initializingGlass = false;
 
         // 3. Header Row: App Store 'A' icon, search field "| Програми", and "..." menu button
         this._headerRow = new St.BoxLayout({
@@ -252,7 +258,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             icon_name: appIconGIcon ? null : 'applications-other-symbolic',
             icon_size: 26,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'margin-left: 4px; margin-right: 12px; opacity: 0.9;',
+            style: 'margin-left: 4px; margin-right: 12px; opacity: 0.95; icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);',
         });
         this._headerRow.add_child(this._appLogo);
 
@@ -264,6 +270,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'font-size: 18px !important; font-weight: 500 !important; color: #ffffff !important; ' +
+                   'text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important; ' +
                    'background-color: transparent !important; background: none !important; ' +
                    'border: none !important; box-shadow: none !important; outline: none !important;',
         });
@@ -277,7 +284,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             icon_name: 'view-more-symbolic',
             icon_size: 20,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'color: rgba(255, 255, 255, 0.60); margin-right: 6px;',
+            style: 'color: rgba(255, 255, 255, 0.75); margin-right: 6px; icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);',
         });
         this._headerRow.add_child(this._moreIcon);
 
@@ -318,21 +325,14 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         this._scrollView.add_child(this._gridContainer);
 
-        // Subtle gradient blur and darkening at the bottom (like the menubar)
+        // Transparent bottom spacer without darkening gradient overlay
         this._bottomFade = new St.Widget({
-            style: 'background-gradient-direction: vertical; ' +
-                   'background-gradient-start: rgba(18, 18, 18, 0.0); ' +
-                   'background-gradient-end: rgba(18, 18, 18, 0.85); ' +
-                   'border-bottom-left-radius: 24px; ' +
-                   'border-bottom-right-radius: 24px;',
-            height: 36,
+            style: 'background: none !important; background-color: transparent !important;',
+            height: 0,
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.END,
             reactive: false,
         });
-        try {
-            this._bottomFade.add_effect(new Shell.BlurEffect({ mode: Shell.BlurMode.BACKGROUND, radius: 8 }));
-        } catch (_) {}
         this._scrollWrapper.add_child(this._bottomFade);
 
         // 6. Connect Input & Keyboard Navigation
@@ -393,11 +393,15 @@ export const MacApplicationsDialog = GObject.registerClass({
                 y_align: Clutter.ActorAlign.CENTER,
             });
 
-            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)';
-            const pillColor = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.85)';
+            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.08)';
+            const pillBorder = isSelected ? 'border: 1px solid rgba(255, 255, 255, 0.25);' : 'border: 1px solid rgba(255, 255, 255, 0.12);';
+            const pillShadow = isSelected ? 'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);' : 'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20);';
+            const pillColor = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.88)';
             btn.set_style(
                 `background-color: ${pillBg}; ` +
                 `color: ${pillColor}; ` +
+                `${pillBorder} ` +
+                `${pillShadow} ` +
                 'border-radius: 10px; ' +
                 'height: 32px; ' +
                 'margin: 0 4px; ' +
@@ -407,6 +411,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
             const label = new St.Label({
                 text: cat.label,
+                style: 'text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40);',
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -427,14 +432,19 @@ export const MacApplicationsDialog = GObject.registerClass({
                 const active = (this._selectedCategory === cat.id);
                 if (active) {
                     btn.set_style(
-                        'background-color: rgba(255, 255, 255, 0.32); ' +
+                        'background-color: rgba(255, 255, 255, 0.28); ' +
+                        'border: 1px solid rgba(255, 255, 255, 0.30); ' +
+                        'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); ' +
                         'color: #ffffff; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 500;'
                     );
                 } else {
                     const bg = hover ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.08)';
+                    const border = hover ? 'border: 1px solid rgba(255, 255, 255, 0.20);' : 'border: 1px solid rgba(255, 255, 255, 0.12);';
                     btn.set_style(
                         `background-color: ${bg}; ` +
-                        'color: rgba(255, 255, 255, 0.85); border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 500;'
+                        `${border} ` +
+                        'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20); ' +
+                        'color: rgba(255, 255, 255, 0.88); border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 500;'
                     );
                 }
             });
@@ -444,8 +454,28 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
     }
 
+    _getThemeParams() {
+        let isDark = true;
+        try {
+            const iface = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            const scheme = iface.get_string('color-scheme');
+            if (scheme === 'prefer-dark') isDark = true;
+            else if (scheme === 'prefer-light') isDark = false;
+            else {
+                const gtk = iface.get_string('gtk-theme') || '';
+                isDark = gtk.toLowerCase().includes('dark');
+            }
+        } catch (_) {
+            isDark = true;
+        }
+        const tintVal = 0.0;
+        const tintStrength = 0.0; // 0% tint - pure glass without darkening or lightening
+        return { isDark, tintVal, tintStrength };
+    }
+
     async _initGlass() {
-        if (this._glass) return;
+        if (this._glass || this._initializingGlass) return;
+        this._initializingGlass = true;
         try {
             const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
             const path = ext?.path || `${GLib.get_user_data_dir()}/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`;
@@ -458,11 +488,12 @@ export const MacApplicationsDialog = GObject.registerClass({
                 logger: console,
                 owner: 'applications',
             });
+            const { tintVal, tintStrength } = this._getThemeParams();
             this._glass.setIsDock(true);
             this._glass.setCornerSmoothingEnabled(0.0);
             this._glass.setCornerRadius(CORNER_RADIUS);
-            this._glass.setTintColor(0.0, 0.0, 0.0);
-            this._glass.setTintStrength(TINT_STRENGTH);
+            this._glass.setTintColor(tintVal, tintVal, tintVal);
+            this._glass.setTintStrength(tintStrength);
             this._glass.setBrightness(1.0);
             this._glass.setSaturation(1.0);
             this._glass.setContrast(1.0);
@@ -475,32 +506,49 @@ export const MacApplicationsDialog = GObject.registerClass({
             } catch (_) {}
             this._glass.hide();
 
-            if (this._isOpen) {
-                if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
-                    Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
-                }
-                this._syncGlass();
+            if (!this._isOpen) {
+                try { this._glass.hide(); } catch (_) {}
+                return;
             }
+
+            if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
+                Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
+            }
+            this._syncGlass();
         } catch (e) {
             console.error(`[MacApplications] Error initializing BackdropGlass: ${e}`);
+        } finally {
+            this._initializingGlass = false;
         }
     }
 
     _syncGlass() {
-        if (!this._glass || !this._isOpen) {
-            if (this._glass?.visible) this._glass.hide();
+        if (!this._glass || this._glass.is_finalized?.() || !this._isOpen) {
+            try {
+                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
+                    this._glass.hide();
+                }
+            } catch (_) {}
             return;
         }
 
         const box = this._box;
-        if (!box.visible) {
-            if (this._glass?.visible) this._glass.hide();
+        if (!box || box.is_finalized?.() || !box.visible) {
+            try {
+                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
+                    this._glass.hide();
+                }
+            } catch (_) {}
             return;
         }
 
-        const opacity = box.get_paint_opacity();
+        const opacity = box.get_paint_opacity ? box.get_paint_opacity() : box.opacity;
         if (opacity <= 0) {
-            if (this._glass?.visible) this._glass.hide();
+            try {
+                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
+                    this._glass.hide();
+                }
+            } catch (_) {}
             return;
         }
 
@@ -530,6 +578,9 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._glass.set_position(mon.x, mon.y);
         this._glass.set_size(mon.width, mon.height);
         this._glass.setResolution(mon.width, mon.height);
+        const { tintVal, tintStrength } = this._getThemeParams();
+        this._glass.setTintColor(tintVal, tintVal, tintVal);
+        this._glass.setTintStrength(tintStrength);
         this._glass.setCornerRadius(CORNER_RADIUS);
         this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
         this._glass.set_clip(localBgX, localBgY, bgW, bgH);
@@ -718,14 +769,15 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
         iconActor.x_align = Clutter.ActorAlign.CENTER;
         iconActor.y_align = Clutter.ActorAlign.CENTER;
-        iconActor.set_style('margin-bottom: 5px;');
+        iconActor.set_style('margin-bottom: 5px; icon-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);');
         box.add_child(iconActor);
 
         const label = new St.Label({
             text: app.get_name() || '',
             style_class: 'mac-app-title',
-            style: `font-size: 11px !important; color: rgba(255, 255, 255, 0.90) !important; ` +
+            style: `font-size: 11px !important; color: rgba(255, 255, 255, 0.95) !important; ` +
                    `text-align: center !important; font-weight: 500 !important; ` +
+                   `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important; ` +
                    `width: ${COLUMN_WIDTH - 4}px; max-width: ${COLUMN_WIDTH - 4}px;`,
             x_align: Clutter.ActorAlign.CENTER,
         });
@@ -931,7 +983,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
     }
 
-    open() {
+    open(options = {}) {
         if (this._isOpen) return;
         if (Main.overview?.visible) return;
         this._isOpen = true;
@@ -946,15 +998,9 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._backdrop.set_size(mon.width, mon.height);
         this._backdrop.visible = true;
 
-        const x = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
-        const y = mon.y + Math.round((mon.height - DIALOG_HEIGHT) / 2);
-
-        this._box.set_position(x, y);
-        this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);
-        this._box.set_pivot_point(0.5, 0.5);
-        this._box.scale_x = 0.94;
-        this._box.scale_y = 0.94;
-        this._box.opacity = 0;
+        const fromRect = options?.fromRect;
+        const targetX = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
+        const targetY = fromRect ? fromRect.y : mon.y + Math.round(mon.height * 0.16);
 
         this._currentQuery = '';
         this._entry.text = '';
@@ -965,19 +1011,62 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._box.remove_all_transitions();
         this.remove_all_transitions();
 
+        if (fromRect) {
+            // Smooth morphing transformation from Spotlight capsule position and size
+            this._box.set_position(fromRect.x, fromRect.y);
+            this._box.set_size(fromRect.width, fromRect.height);
+            this._box.set_pivot_point(0.5, 0.0);
+            this._box.scale_x = 1.0;
+            this._box.scale_y = 1.0;
+            this._box.opacity = 255;
+
+            this._headerRow.opacity = 0;
+            this._categoryRow.opacity = 0;
+            this._scrollWrapper.opacity = 0;
+        } else {
+            this._box.set_position(targetX, targetY);
+            this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);
+            this._box.set_pivot_point(0.5, 0.5);
+            this._box.scale_x = 0.94;
+            this._box.scale_y = 0.94;
+            this._box.opacity = 0;
+            this._headerRow.opacity = 255;
+            this._categoryRow.opacity = 255;
+            this._scrollWrapper.opacity = 255;
+        }
+
         if (!this.get_parent()) {
             Main.layoutManager.uiGroup.add_child(this);
         }
         this.visible = true;
 
-        if (this._glass) {
+        let glassValid = false;
+        try {
+            if (this._glass && !this._glass.is_finalized?.()) {
+                this._glass.get_parent();
+                glassValid = true;
+            }
+        } catch (_) {
+            glassValid = false;
+            this._glass = null;
+        }
+
+        if (glassValid) {
+            try { this._glass.remove_all_transitions(); } catch (_) {}
             if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
                 Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
             }
             Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
             Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
+            this._glass.show();
+            this._glass.opacity = 255;
+            this._glass._backdropLocked = false;
+            if (typeof this._glass.forceRefresh === 'function') {
+                this._glass.forceRefresh(1);
+            }
             this._syncGlass();
         } else {
+            this._glass = null;
             this._initGlass();
             Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
         }
@@ -990,13 +1079,63 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._entry.grab_key_focus();
 
-        this._box.ease({
-            opacity: 255,
-            scale_x: 1.0,
-            scale_y: 1.0,
-            duration: 200,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-        });
+        if (fromRect) {
+            this._box.ease({
+                x: targetX,
+                y: targetY,
+                width: DIALOG_WIDTH,
+                height: DIALOG_HEIGHT,
+                duration: 250,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                onComplete: () => {
+                    this._syncGlass();
+                    if (this._glass) {
+                        this._glass._backdropLocked = true;
+                    }
+                    if (this._stageSignalId) {
+                        try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
+                        this._stageSignalId = 0;
+                    }
+                },
+            });
+
+            this._headerRow.ease({
+                opacity: 255,
+                duration: 200,
+                delay: 60,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+            this._categoryRow.ease({
+                opacity: 255,
+                duration: 200,
+                delay: 90,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+            this._scrollWrapper.ease({
+                opacity: 255,
+                duration: 220,
+                delay: 110,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        } else {
+            this._box.ease({
+                opacity: 255,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                onComplete: () => {
+                    this._syncGlass();
+                    if (this._glass) {
+                        this._glass._backdropLocked = true;
+                    }
+                    if (this._stageSignalId) {
+                        try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
+                        this._stageSignalId = 0;
+                    }
+                },
+            });
+        }
     }
 
     close(immediate = false) {
@@ -1009,28 +1148,27 @@ export const MacApplicationsDialog = GObject.registerClass({
             this._stageSignalId = 0;
         }
 
+        const hideGlass = () => {
+            try {
+                if (this._glass && !this._glass.is_finalized?.()) {
+                    this._glass.remove_all_transitions();
+                    this._glass.opacity = 0;
+                    this._glass.visible = false;
+                    this._glass.hide();
+                    this._glass._backdropLocked = false;
+                }
+            } catch (_) {}
+        };
+
         if (immediate) {
+            hideGlass();
             this._box.remove_all_transitions();
             this._box.opacity = 0;
-            if (this._glass) {
-                this._glass.remove_all_transitions();
-                this._glass.hide();
-            }
             this.visible = false;
             return;
         }
 
-        if (this._glass && this._glass.visible) {
-            this._glass.ease({
-                opacity: 0,
-                duration: 160,
-                mode: Clutter.AnimationMode.EASE_IN_CUBIC,
-                onComplete: () => {
-                    if (this._glass) this._glass.hide();
-                },
-            });
-        }
-
+        hideGlass();
         this._box.ease({
             opacity: 0,
             scale_x: 0.94,
@@ -1039,6 +1177,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
             onComplete: () => {
                 this.visible = false;
+                hideGlass();
             },
         });
     }
@@ -1051,12 +1190,12 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
     }
 
-    destroy() {
+    _onDestroy() {
         if (Main.overview) {
             try { Main.overview.disconnectObject(this); } catch (_) {}
         }
         if (this._searchTimeoutId) {
-            GLib.source_remove(this._searchTimeoutId);
+            try { GLib.source_remove(this._searchTimeoutId); } catch (_) {}
             this._searchTimeoutId = 0;
         }
         if (this._stageSignalId) {
@@ -1067,13 +1206,17 @@ export const MacApplicationsDialog = GObject.registerClass({
             try { this._glass.destroy(); } catch (_) {}
             this._glass = null;
         }
+    }
+
+    destroy() {
+        this._onDestroy();
         super.destroy();
     }
 });
 
-export function toggleApplicationsDialog() {
+export function toggleApplicationsDialog(options = {}) {
     if (globalThis._macApplicationsGlobalInstance) {
-        if (!globalThis._macApplicationsGlobalInstance.get_parent()) {
+        if (!globalThis._macApplicationsGlobalInstance.get_parent() || globalThis._macApplicationsGlobalInstance.is_finalized?.()) {
             try { globalThis._macApplicationsGlobalInstance.destroy(); } catch (_) {}
             globalThis._macApplicationsGlobalInstance = null;
         }
@@ -1082,6 +1225,8 @@ export function toggleApplicationsDialog() {
         try {
             const strays = Main.layoutManager.uiGroup.get_children().filter(c => c.name === 'mac-applications-wrapper');
             strays.forEach(s => { try { s.destroy(); } catch (_) {} });
+            const strayGlasses = Main.layoutManager.uiGroup.get_children().filter(c => c._owner === 'applications' || (c.name === 'liquid-glass-bg-actor' && c._owner === 'applications'));
+            strayGlasses.forEach(g => { try { g.destroy(); } catch (_) {} });
         } catch (_) {}
         globalThis._macApplicationsGlobalInstance = new MacApplicationsDialog();
     }
@@ -1091,7 +1236,7 @@ export function toggleApplicationsDialog() {
         if (Main.overview?.visible) {
             Main.overview.hide();
         }
-        globalThis._macApplicationsGlobalInstance.open();
+        globalThis._macApplicationsGlobalInstance.open(options);
     }
 }
 

@@ -373,7 +373,7 @@ export default class EvalHelper extends Extension {
                         glass.setCornerSmoothingEnabled(0.0);
                         glass.setCornerRadius(24.0);
                         glass.setTintColor(0.0, 0.0, 0.0);
-                        glass.setTintStrength(0.05); // LQ-Visual: 5% tint
+                        glass.setTintStrength(0.0); // 0% tint - pure glass without darkening or lightening
                         glass.setBlurRadius(3.0); // LQ-Visual: 3px blur
                         glass.setPadding(0);
                         try {

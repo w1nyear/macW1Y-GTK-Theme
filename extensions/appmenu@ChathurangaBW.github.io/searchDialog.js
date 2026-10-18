@@ -685,8 +685,8 @@ export const MacSpotlightDialog = GObject.registerClass({
         } catch (_) {
             isDark = true;
         }
-        const tintVal = isDark ? 0.0 : 1.0;
-        const tintStrength = 0.03; // Exactly 3% as requested by user
+        const tintVal = 0.0;
+        const tintStrength = 0.0; // 0% tint - pure glass without darkening or lightening
         return { isDark, tintVal, tintStrength };
     }
 

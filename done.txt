@@ -5538,3 +5538,45 @@ echo "==> Встановлення успішно завершено!"
         * `dock_overview_live.png`: перевірка стану дока після циклу відкриття/закриття огляду Mission Control — тло під капсулою кришталево чисте, без темних смуг чи артефактів застигання (вирішено проблему з фото 3).
         * `dock_window_move_live.png`: перевірка опускання вікна на док і підняття назад — док динамічно оновлюється в реальному часі без застрягання відбитків вікна.
         * `qs_realtime_test.png` та `notif_center_realtime_test.png`: перевірка відсутності залипань у Центрі керування та Центрі сповіщень.
+
+
+92. Видалення затемнення та засвітлення фону з усіх елементів Liquid Glass / LQ-Visual та додавання легкої, делікатної тіні під іконками й текстом для бездоганної читабельності:
+    - Що вимагалося:
+      1) У всіх елементах з LQ-Visual / Liquid Glass чи розмиття повністю прибрати затемнення чи засвітлення тла (чорні, сірі або білі плівки/тінти), зробивши скло на 100% чистим, прозорим та природним.
+      2) Замість затемнення/засвітлення під усіма елементами (іконками, текстом, кнопками) додати дуже легку, майже невидиму делікатну тінь (`text-shadow`, `icon-shadow`), яка забезпечує бездоганну читабельність і чіткість на будь-якому тлі (як на темних деревах, так і на яскравих квітах та світлих ділянках шпалер за референсом з фото).
+    - Реалізація:
+      1) Повне видалення затемнення та засвітлення фону (0.0 tint strength & 1.0 brightness):
+         - Встановлено `tint-strength = 0.0` у всіх схемах Liquid Glass: `dock-tint-strength`, `menu-tint-strength`, `panel-menu-tint-strength`, `quick-settings-tint-strength`, `quick-settings-toggle-tint-strength`, `notification-tint-strength`, `osd-tint-strength`, `desktop-menu-tint-strength`, `application-tint-strength`.
+         - Встановлено яскравість `brightness = 1.0` та контраст `contrast = 1.0` по всіх компонентах Liquid Glass та `blur-my-shell`.
+         - У `dockManager.js` та `dockManager.ts` прибрано фіксоване значення 3%, підключено динамічне зчитування `dock-tint-strength` (0.0).
+         - У `eval-helper@mactheme/extension.js` скинуто тінт перемикача Alt+Tab `glass.setTintStrength(0.0)`.
+         - У `searchDialog.js` (Spotlight) встановлено `tintStrength = 0.0`.
+         - У `applications_menu_v5.js` та `applications_menu.js`:
+           * Встановлено `TINT_STRENGTH = 0.0` та `tintVal = 0.0`.
+           * Повністю ліквідовано темний градієнт унизу вікна `_bottomFade` (`rgba(18, 18, 18, 0.75)` -> `transparent`, висота 0px), забезпечивши чисте кришталеве скло до самого низу без штучного затемнення.
+      2) Делікатні тіні під текстом, іконками та пігулками для читабельності:
+         - У `gnome-shell.css` додано системні стилі:
+           * `.popup-menu-item StLabel`: `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;`
+           * `.popup-menu-item StIcon`: `icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;`
+           * `.quick-toggle-title`, `.quick-toggle-subtitle`: `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;`
+           * `.quick-toggle StIcon`, `.quick-slider StIcon`: `icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;`
+           * `.message-title`, `.message-body`, `.event-time`: `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;`
+           * `.message StIcon`: `icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;`
+           * Док-панель: `#dashtodockContainer #dash .overview-icon` -> `icon-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;`, `.dash-label` -> `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;`
+           * Spotlight: `.mac-spotlight-item-title`, `.mac-spotlight-entry` -> `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;`, іконки -> `icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;`
+         - У вікні програм `applications_menu_v5.js`:
+           * Назва «Програми» в полі пошуку: `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;`
+           * Іконка App Store та кнопки дій: `icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);`
+           * Кнопки категорій («Утиліти», «Спілкування», «Продуктивність», «Інше»): витончені скляні пігулки з тонкою рамкою `border: 1px solid rgba(255, 255, 255, 0.12)`, легкою тінню `box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20)` та `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40)`.
+           * Усі іконки застосунків у сітці: `icon-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);`
+           * Підписи під іконками: `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;`
+      3) Збереження конфігурацій:
+         - Оновлено дампи dconf (`liquid-glass.dconf`, `blur-my-shell.dconf`, `gnome-extensions.dconf`, `gnome-all.dconf`).
+         - Оновлено інсталятор `install.sh`.
+         - Синхронізовано всі файли з розширеннями у `~/.local/share/gnome-shell/extensions/` та темами у `~/.themes/`.
+    - Верифікація:
+      - Зафіксовано на знімках екрана на живому сеансі:
+        * `applications_pure_glass_live.png`: вікно програм (за фото користувача) — чисте скло без жодного затемнення чи градієнта внизу, кожна іконка та напис мають делікатну тінь, що робить їх контрастними та читабельними на строкатому лісовому фоні.
+        * `dock_pure_glass_live.png`: док-панель з чистим склом без чорної плівки та іконками з делікатною тінню.
+        * `menu_pure_glass_live.png`: системне меню з чистим склом та чіткими написами.
+        * `spotlight_pill_live.png`: Spotlight-пошук на кришталево чистому склі.

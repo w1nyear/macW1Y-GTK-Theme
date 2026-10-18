@@ -18,18 +18,19 @@ blur-on-overview=true
 brightness=1.0
 corner-when-maximized=false
 dynamic-opacity=false
-enable-all=true
-opacity=215
+enable-all=false
+opacity=255
 pipeline='pipeline_default'
 sigma=10
 static-blur=false
+whitelist=['org.gnome.Settings', 'gnome-control-center', 'org.gnome.Nautilus', 'nautilus', 'org.gnome.DiskUtility', 'gnome-disks', 'org.gnome.baobab', 'baobab', 'org.gnome.tweaks', 'gnome-tweaks', 'org.gnome.Logs', 'gnome-logs', 'org.gnome.seahorse.Application', 'seahorse']
 
 [coverflow-alt-tab]
 pipeline='pipeline_default'
 
 [dash-to-dock]
 blur=false
-brightness=0.59999999999999998
+brightness=1.0
 corner-radius=28
 override-background=false
 pipeline='pipeline_default_rounded'
@@ -40,6 +41,7 @@ unblur-in-overview=true
 
 [lockscreen]
 blur=false
+brightness=1.0
 pipeline='pipeline_default'
 
 [notification]
@@ -48,12 +50,13 @@ sigma=10
 
 [overview]
 blur=true
+brightness=1.0
 pipeline='pipeline_default'
 style-components=0
 
 [panel]
 blur=false
-brightness=0.59999999999999998
+brightness=1.0
 corner-radius=0
 customize=true
 force-light-text=false
@@ -67,7 +70,7 @@ unblur-in-overview=false
 
 [popup]
 blur=false
-brightness=0.52000000000000002
+brightness=1.0
 corner-radius=24
 dialog-corner-radius=24
 menu-corner-radius=12
@@ -83,9 +86,10 @@ sigma=10
 
 [screenshot]
 blur=false
+brightness=1.0
 pipeline='pipeline_default'
 
 [window-list]
 blur=false
-brightness=0.59999999999999998
+brightness=1.0
 sigma=30

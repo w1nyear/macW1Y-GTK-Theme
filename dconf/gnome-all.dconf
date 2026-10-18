@@ -1,6 +1,6 @@
 [apps/update-manager]
 launch-count=2
-launch-time=int64 1791740061
+launch-time=int64 1792346114
 show-details=true
 window-height=626
 window-width=555
@@ -19,12 +19,15 @@ favorites=['🎃']
 
 [net/nokyan/Resources]
 is-maximized=false
-last-viewed-page='gpu-0000:01:00.0'
+last-viewed-page='applications'
 processes-sort-by=uint32 9
 processes-sort-by-ascending=false
 show-logical-cpus=false
 window-height=791
 window-width=1335
+
+[org/gnome/Loupe]
+show-properties=false
 
 [org/gnome/Ptyxis]
 default-profile-uuid='2e3d0a57697030bc1d7286ca6acea541'
@@ -48,7 +51,7 @@ view='icon-view'
 window-maximized=true
 
 [org/gnome/control-center]
-last-panel='system'
+last-panel='wifi'
 window-state=(980, 640, false)
 
 [org/gnome/desktop/a11y/magnifier]
@@ -202,8 +205,10 @@ theme-name='macOS'
 
 [org/gnome/desktop/wm/preferences]
 button-layout=':minimize,maximize,close'
+num-workspaces=2
 theme='macW1Y-Dark'
 titlebar-font='SF Pro Text Bold 11'
+workspace-names=['Робочий стіл 1', 'Робочий стіл 2', 'Робочий стіл 3']
 
 [org/gnome/evolution-data-server]
 migrated=true
@@ -212,6 +217,7 @@ migrated=true
 enable-fingerprint-authentication=false
 
 [org/gnome/mutter]
+dynamic-workspaces=false
 edge-tiling=false
 
 [org/gnome/mutter/keybindings]
@@ -229,7 +235,7 @@ default-folder-viewer='icon-view'
 migrated-gtk-settings=true
 
 [org/gnome/nautilus/window-state]
-initial-size=(890, 550)
+initial-size=(954, 555)
 initial-size-file-chooser=(890, 550)
 
 [org/gnome/portal/filechooser/Counter-Strike 2]
@@ -251,7 +257,7 @@ last-folder-path='/home/vitaliy/Завантажене'
 last-folder-path='/home/vitaliy/Завантажене'
 
 [org/gnome/portal/filechooser/telegram-desktop_telegram-desktop]
-last-folder-path='/home/vitaliy/Десктоп'
+last-folder-path='/home/vitaliy/Зображення/Знімки екрана'
 
 [org/gnome/settings-daemon/plugins/color]
 night-light-schedule-automatic=false
@@ -268,7 +274,7 @@ command-history=['killall -3 gnome-shell', 'logout', 'r']
 disable-extension-version-validation=true
 disable-user-extensions=false
 disabled-extensions=['apps-menu@gnome-shell-extensions.gcampax.github.com', 'ubuntu-dock@ubuntu.com', 'snapd-prompting@canonical.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'tiling-assistant@ubuntu.com', 'stage-manager@gnome-stage-manager']
-enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'spotlight@nin', 'ubuntu-appindicators@ubuntu.com', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'dash-to-dock@micxgx.gmail.com', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'appmenu@ChathurangaBW.github.io', 'ding@rastersoft.com', 'Rounded_Corners@lennart-k', 'eval-helper@mactheme', 'macos-touchpad-gestures@mactheme', 'blur-my-shell@aunetx', 'liquid-glass@thinkingcoding1231.gmail.com']
+enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'spotlight@nin', 'ubuntu-appindicators@ubuntu.com', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'dash-to-dock@micxgx.gmail.com', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'ding@rastersoft.com', 'Rounded_Corners@lennart-k', 'macos-touchpad-gestures@mactheme', 'eval-helper@mactheme', 'appmenu@ChathurangaBW.github.io', 'blur-my-shell@aunetx', 'liquid-glass@thinkingcoding1231.gmail.com']
 favorite-apps=['org.gnome.Nautilus.desktop', 'launchpad.desktop', 'google-chrome.desktop', 'antigravity_antigravity.desktop', 'org.gnome.Ptyxis.desktop', 'telegram-desktop_telegram-desktop.desktop', 'steam_steam.desktop', 'org.gnome.Settings.desktop']
 last-selected-power-profile='performance'
 welcome-dialog-last-shown-version='50.1'
@@ -301,18 +307,19 @@ blur-on-overview=true
 brightness=1.0
 corner-when-maximized=false
 dynamic-opacity=false
-enable-all=true
-opacity=215
+enable-all=false
+opacity=255
 pipeline='pipeline_default'
 sigma=10
 static-blur=false
+whitelist=['org.gnome.Settings', 'gnome-control-center', 'org.gnome.Nautilus', 'nautilus', 'org.gnome.DiskUtility', 'gnome-disks', 'org.gnome.baobab', 'baobab', 'org.gnome.tweaks', 'gnome-tweaks', 'org.gnome.Logs', 'gnome-logs', 'org.gnome.seahorse.Application', 'seahorse']
 
 [org/gnome/shell/extensions/blur-my-shell/coverflow-alt-tab]
 pipeline='pipeline_default'
 
 [org/gnome/shell/extensions/blur-my-shell/dash-to-dock]
 blur=false
-brightness=0.59999999999999998
+brightness=1.0
 corner-radius=28
 override-background=false
 pipeline='pipeline_default_rounded'
@@ -323,6 +330,7 @@ unblur-in-overview=true
 
 [org/gnome/shell/extensions/blur-my-shell/lockscreen]
 blur=false
+brightness=1.0
 pipeline='pipeline_default'
 
 [org/gnome/shell/extensions/blur-my-shell/notification]
@@ -331,12 +339,13 @@ sigma=10
 
 [org/gnome/shell/extensions/blur-my-shell/overview]
 blur=true
+brightness=1.0
 pipeline='pipeline_default'
 style-components=0
 
 [org/gnome/shell/extensions/blur-my-shell/panel]
 blur=false
-brightness=0.59999999999999998
+brightness=1.0
 corner-radius=0
 customize=true
 force-light-text=false
@@ -350,7 +359,7 @@ unblur-in-overview=false
 
 [org/gnome/shell/extensions/blur-my-shell/popup]
 blur=false
-brightness=0.52000000000000002
+brightness=1.0
 corner-radius=24
 dialog-corner-radius=24
 menu-corner-radius=12
@@ -366,11 +375,12 @@ sigma=10
 
 [org/gnome/shell/extensions/blur-my-shell/screenshot]
 blur=false
+brightness=1.0
 pipeline='pipeline_default'
 
 [org/gnome/shell/extensions/blur-my-shell/window-list]
 blur=false
-brightness=0.59999999999999998
+brightness=1.0
 sigma=30
 
 [org/gnome/shell/extensions/dash-to-dock]
@@ -399,7 +409,9 @@ check-x11wayland=true
 corner-radius=16
 
 [org/gnome/shell/extensions/liquid-glass]
+application-brightness=1.0
 application-glass-all-windows=false
+application-tint-strength=0.0
 blur-my-shell-popup-blur=false
 desktop-menu-blur-radius=3
 desktop-menu-brightness=1.0
@@ -408,15 +420,16 @@ desktop-menu-contrast=1.0
 desktop-menu-corner-radius=24.0
 desktop-menu-saturation=1.0
 desktop-menu-tint-color='#000000'
-desktop-menu-tint-strength=0.050000000000000003
-detected-extra-menus=['a11y', 'appindicator-:1.112@/StatusNotifierItem', 'appindicator-:1.286@/StatusNotifierItem', 'appindicator-:1.53@/org/ayatana/NotificationItem/livepatch', 'appindicator-:1.53@/org/ayatana/NotificationItem/software_update_available', 'appindicator-:1.53@/org/ayatana/NotificationItem/unattended_upgrade', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'appmenu@ChathurangaBW.github.io-7', 'dwellClick', 'keyboard', 'macBattery', 'macBluetooth', 'macPrivacy', 'macVolume', 'macWifi']
+desktop-menu-tint-strength=0.0
+detected-extra-menus=['a11y', 'appindicator-:1.180@/StatusNotifierItem', 'appindicator-:1.32@/org/ayatana/NotificationItem/livepatch', 'appindicator-:1.32@/org/ayatana/NotificationItem/software_update_available', 'appindicator-:1.32@/org/ayatana/NotificationItem/unattended_upgrade', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'dwellClick', 'keyboard', 'macBattery', 'macBluetooth', 'macPrivacy', 'macVolume', 'macWifi']
 dock-blur-radius=1
+dock-brightness=1.0
 dock-corner-radius=24.0
 dock-glass-expand=0
-dock-margin-bottom=8
+dock-margin-bottom=10
 dock-saturation=1.0
 dock-tint-color='#ffffff'
-dock-tint-strength=0.10000000000000001
+dock-tint-strength=0.0
 enable-application-glass=false
 enable-desktop-menu-glass=true
 enable-dock-glass=true
@@ -429,11 +442,11 @@ enable-panel-menu-animation=false
 enable-quick-settings-animation=false
 enable-quick-settings-glass=true
 glass-backdrop-highlights=false
-glass-chroma-strength=0.080000000000000002
-glass-displacement-scale=12.0
+glass-chroma-strength=0.0
+glass-displacement-scale=4.0
 glass-light-angle-deg=270.0
-glass-rim-intensity=1.1000000000000001
-glass-rim-width=2.2999999999999998
+glass-rim-intensity=0.34999999999999998
+glass-rim-width=1.2
 glass-sheen-intensity=0.0
 glass-specular-intensity=0.0
 menu-blur-radius=3
@@ -445,16 +458,18 @@ menu-glass-expand=0
 menu-saturation=1.0
 menu-scale=1.0
 menu-tint-color='#000000'
-menu-tint-strength=0.050000000000000003
+menu-tint-strength=0.0
 notification-blur-radius=3
 notification-brightness=1.0
 notification-contrast=1.0
 notification-corner-radius=24.0
 notification-saturation=1.0
 notification-tint-color='#000000'
-notification-tint-strength=0.050000000000000003
+notification-tint-strength=0.0
+osd-brightness=1.0
 osd-corner-radius=9999.0
 osd-glass-expand=0
+osd-tint-strength=0.0
 osd-y-offset=0
 panel-menu-blur-radius=3
 panel-menu-brightness=1.0
@@ -465,14 +480,15 @@ panel-menu-glass-expand=0
 panel-menu-saturation=1.0
 panel-menu-scale=1.0
 panel-menu-tint-color='#000000'
-panel-menu-tint-strength=0.050000000000000003
+panel-menu-tint-strength=0.0
 quick-settings-apply-to=1
 quick-settings-blur-radius=3
+quick-settings-brightness=1.0
 quick-settings-corner-radius=26.0
 quick-settings-glass-expand=0
-quick-settings-tint-strength=0.050000000000000003
-quick-settings-toggle-corner-radius=28.0
-quick-settings-toggle-tint-strength=0.59999999999999998
+quick-settings-tint-strength=0.0
+quick-settings-toggle-corner-radius=35.0
+quick-settings-toggle-tint-strength=0.0
 
 [org/gnome/shell/extensions/spotlight]
 theme-preference='dark'
@@ -493,6 +509,9 @@ name='macW1Y-Dark-solid'
 [org/gnome/shell/extensions/wack-lockscreen-clock]
 cupertino-always-show-user=true
 lockscreen-mode='cupertino'
+
+[org/gnome/shell/keybindings]
+toggle-message-tray=['<Super>m']
 
 [org/gnome/shell/ubuntu]
 startup-sound=''

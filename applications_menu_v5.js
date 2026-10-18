@@ -16,7 +16,7 @@ const COLUMNS = 7;
 const COLUMN_WIDTH = 94;
 const ICON_SIZE = 52;
 const CORNER_RADIUS = 24.0;
-const TINT_STRENGTH = 0.05;
+const TINT_STRENGTH = 0.0;
 const BLUR_RADIUS = 2.0;
 
 const CATEGORIES = [
@@ -258,7 +258,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             icon_name: appIconGIcon ? null : 'applications-other-symbolic',
             icon_size: 26,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'margin-left: 4px; margin-right: 12px; opacity: 0.9;',
+            style: 'margin-left: 4px; margin-right: 12px; opacity: 0.95; icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);',
         });
         this._headerRow.add_child(this._appLogo);
 
@@ -270,6 +270,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'font-size: 18px !important; font-weight: 500 !important; color: #ffffff !important; ' +
+                   'text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important; ' +
                    'background-color: transparent !important; background: none !important; ' +
                    'border: none !important; box-shadow: none !important; outline: none !important;',
         });
@@ -283,7 +284,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             icon_name: 'view-more-symbolic',
             icon_size: 20,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'color: rgba(255, 255, 255, 0.60); margin-right: 6px;',
+            style: 'color: rgba(255, 255, 255, 0.75); margin-right: 6px; icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);',
         });
         this._headerRow.add_child(this._moreIcon);
 
@@ -324,14 +325,10 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         this._scrollView.add_child(this._gridContainer);
 
-        // Subtle gradient darkening at the bottom without blur overlay over icons
+        // Transparent bottom spacer without darkening gradient overlay
         this._bottomFade = new St.Widget({
-            style: 'background-gradient-direction: vertical; ' +
-                   'background-gradient-start: rgba(18, 18, 18, 0.0); ' +
-                   'background-gradient-end: rgba(18, 18, 18, 0.75); ' +
-                   'border-bottom-left-radius: 24px; ' +
-                   'border-bottom-right-radius: 24px;',
-            height: 36,
+            style: 'background: none !important; background-color: transparent !important;',
+            height: 0,
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.END,
             reactive: false,
@@ -396,11 +393,15 @@ export const MacApplicationsDialog = GObject.registerClass({
                 y_align: Clutter.ActorAlign.CENTER,
             });
 
-            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.08)';
-            const pillColor = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.85)';
+            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.08)';
+            const pillBorder = isSelected ? 'border: 1px solid rgba(255, 255, 255, 0.25);' : 'border: 1px solid rgba(255, 255, 255, 0.12);';
+            const pillShadow = isSelected ? 'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);' : 'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20);';
+            const pillColor = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.88)';
             btn.set_style(
                 `background-color: ${pillBg}; ` +
                 `color: ${pillColor}; ` +
+                `${pillBorder} ` +
+                `${pillShadow} ` +
                 'border-radius: 10px; ' +
                 'height: 32px; ' +
                 'margin: 0 4px; ' +
@@ -410,6 +411,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
             const label = new St.Label({
                 text: cat.label,
+                style: 'text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40);',
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -430,14 +432,19 @@ export const MacApplicationsDialog = GObject.registerClass({
                 const active = (this._selectedCategory === cat.id);
                 if (active) {
                     btn.set_style(
-                        'background-color: rgba(255, 255, 255, 0.32); ' +
+                        'background-color: rgba(255, 255, 255, 0.28); ' +
+                        'border: 1px solid rgba(255, 255, 255, 0.30); ' +
+                        'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); ' +
                         'color: #ffffff; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 500;'
                     );
                 } else {
                     const bg = hover ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.08)';
+                    const border = hover ? 'border: 1px solid rgba(255, 255, 255, 0.20);' : 'border: 1px solid rgba(255, 255, 255, 0.12);';
                     btn.set_style(
                         `background-color: ${bg}; ` +
-                        'color: rgba(255, 255, 255, 0.85); border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 500;'
+                        `${border} ` +
+                        'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20); ' +
+                        'color: rgba(255, 255, 255, 0.88); border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 500;'
                     );
                 }
             });
@@ -461,8 +468,8 @@ export const MacApplicationsDialog = GObject.registerClass({
         } catch (_) {
             isDark = true;
         }
-        const tintVal = isDark ? 0.0 : 1.0;
-        const tintStrength = 0.03; // Exactly 3% as requested by user
+        const tintVal = 0.0;
+        const tintStrength = 0.0; // 0% tint - pure glass without darkening or lightening
         return { isDark, tintVal, tintStrength };
     }
 
@@ -762,14 +769,15 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
         iconActor.x_align = Clutter.ActorAlign.CENTER;
         iconActor.y_align = Clutter.ActorAlign.CENTER;
-        iconActor.set_style('margin-bottom: 5px;');
+        iconActor.set_style('margin-bottom: 5px; icon-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);');
         box.add_child(iconActor);
 
         const label = new St.Label({
             text: app.get_name() || '',
             style_class: 'mac-app-title',
-            style: `font-size: 11px !important; color: rgba(255, 255, 255, 0.90) !important; ` +
+            style: `font-size: 11px !important; color: rgba(255, 255, 255, 0.95) !important; ` +
                    `text-align: center !important; font-weight: 500 !important; ` +
+                   `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important; ` +
                    `width: ${COLUMN_WIDTH - 4}px; max-width: ${COLUMN_WIDTH - 4}px;`,
             x_align: Clutter.ActorAlign.CENTER,
         });

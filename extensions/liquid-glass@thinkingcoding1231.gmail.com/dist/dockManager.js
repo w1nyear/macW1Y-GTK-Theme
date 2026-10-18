@@ -261,7 +261,7 @@ export class DashManager {
             isDark = true;
         }
         let tintVal = isDark ? 0.0 : 1.0;
-        let tintStrength = 0.03; // Exactly 3% as requested by user
+        let tintStrength = this._settings.get_double('dock-tint-strength') ?? 0.0;
         let cornerRadius = this._settings.get_double('dock-corner-radius');
         let brightness = this._settings.get_double('dock-brightness');
         let contrast = this._settings.get_double('dock-contrast');
