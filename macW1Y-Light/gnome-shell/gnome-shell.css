@@ -2683,7 +2683,7 @@ StEntry StLabel.hint-text {
 }
 
 .unlock-dialog-clock-time {
-  font-family: 'Open Runde', 'SF Pro Rounded', 'SF Pro Display', -apple-system, sans-serif !important;
+  font-family: Open Runde, SF Pro Rounded, SF Pro Display, -apple-system, sans-serif !important;
   font-weight: 700 !important;
   font-size: 64pt;
   padding-top: 0px !important;

@@ -400,7 +400,7 @@ export class GdmClockManager {
         if (!this.clockGlowTime)
             return;
         const weight = this.clock?._weight || 'bold';
-        this.clockGlowTime.set_style(`font-family: 'Open Runde', 'SF Pro Rounded', SF Pro Display, Cantarell, sans-serif; font-weight: ${weight};`);
+        this.clockGlowTime.set_style(`font-family: Open Runde, SF Pro Rounded, SF Pro Display, Cantarell, sans-serif; font-weight: ${weight};`);
     }
 
     setTint(tint) {
