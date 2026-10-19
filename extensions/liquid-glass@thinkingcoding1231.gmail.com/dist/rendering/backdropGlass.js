@@ -47,7 +47,7 @@ function lgSettings() {
 export const BackdropGlass = GObject.registerClass({
     GTypeName: 'MacTahoeBackdropGlass',
 }, class BackdropGlass extends UnpickableActor {
-    _init({ extensionPath, settings, logger, owner = 'dialog' } = {}) {
+    _init({ extensionPath, settings, logger, owner = 'dialog', excludeActors = [] } = {}) {
         super._init({
             name: 'liquid-glass-bg-actor',
             visible: false,
@@ -89,7 +89,7 @@ export const BackdropGlass = GObject.registerClass({
             owner: this._owner,
         });
 
-        // Tahoe default parameters (matching friend's project)
+        // Tahoe default parameters (pure clean macOS Liquid Glass, no chromatic fringing or sheen flares)
         this._effect.setPadding(20);
         this._effect.setIsDock(false);
         this._effect.setCornerRadius(26.0);
@@ -101,16 +101,16 @@ export const BackdropGlass = GObject.registerClass({
         this._effect.setContrast(1.0);
 
         try {
-            this._effect._setFloat('displacement_scale', 85.0);
-            this._effect._setFloat('sheen_intensity', 0.08);
+            this._effect._setFloat('displacement_scale', 20.0);
+            this._effect._setFloat('sheen_intensity', 0.0);
             this._effect._setFloat('rim_intensity', 0.0);
             this._effect._setFloat('rim_width', 0.0);
             this._effect._setFloat('specular_intensity', 0.0);
             this._effect._setFloat('ior', 1.50);
-            this._effect._setFloat('chroma_strength', 0.40);
+            this._effect._setFloat('chroma_strength', 0.0);
             this._effect._setFloat('edge_smoothing', 0.99);
             this._effect._setFloat('profile_shape_n', 5.40);
-            this._effect._setFloat('max_z', 12.0);
+            this._effect._setFloat('max_z', 6.0);
         } catch (_) {}
 
         this._liquidBox.add_effect(this._effect);
@@ -120,14 +120,42 @@ export const BackdropGlass = GObject.registerClass({
             this._cloneContainer,
             `lg-${owner}`
         );
+        const baseExclusions = [this, global.windowGroup, global.window_group];
+        if (Array.isArray(excludeActors)) {
+            for (const a of excludeActors) {
+                if (a && !baseExclusions.includes(a)) baseExclusions.push(a);
+            }
+        }
+        if (owner === 'notification-banner' || owner === 'notification') {
+            if (Main.messageTray && !baseExclusions.includes(Main.messageTray)) {
+                baseExclusions.push(Main.messageTray);
+            }
+            if (Main.messageTray?._bannerBin && !baseExclusions.includes(Main.messageTray._bannerBin)) {
+                baseExclusions.push(Main.messageTray._bannerBin);
+            }
+        }
+
         this._uiSampler = new UILayerSampler(
             this,
             this._liquidBox,
-            [this, global.windowGroup, global.window_group],
+            baseExclusions,
             this._cloneContainer,
             owner,
-            [this]
+            baseExclusions
         );
+        if (Array.isArray(excludeActors)) {
+            for (const a of excludeActors) {
+                if (a) {
+                    try { this._uiSampler.addExclusion(a); } catch (_) {}
+                }
+            }
+        }
+        if (owner === 'notification-banner' || owner === 'notification') {
+            try {
+                if (Main.messageTray) this._uiSampler.addExclusion(Main.messageTray);
+                if (Main.messageTray?._bannerBin) this._uiSampler.addExclusion(Main.messageTray._bannerBin);
+            } catch (_) {}
+        }
         this._windowClones.rebuildClones();
 
         try {
@@ -204,6 +232,27 @@ export const BackdropGlass = GObject.registerClass({
             this._effect?.setResolution(w, h);
             this.set_size(w, h);
             this._liquidBox?.set_size(w, h);
+        } catch (_) {}
+    }
+
+    setGlassGeometry(x, y, w, h) {
+        try {
+            this._effect?.setGlassGeometry(x, y, w, h);
+        } catch (_) {}
+    }
+
+    addExclusion(actor) {
+        try {
+            if (actor) {
+                this._uiSampler?.addExclusion(actor);
+            }
+        } catch (_) {}
+    }
+
+    syncSources() {
+        try {
+            this._uiSampler?.refresh?.();
+            this._windowClones?.rebuildClones?.();
         } catch (_) {}
     }
 

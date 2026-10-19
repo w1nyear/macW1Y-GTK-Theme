@@ -5854,3 +5854,29 @@ echo "==> Встановлення успішно завершено!"
       - Знято скріншот Доку dock_crop_check.png.
       - Лівий дублікат повністю зник; у Доку поруч з Finder розташований виключно наш рідний macOS скруглений Launchpad з кольоровими плитками.
 
+104. Усунення небажаного світіння/бліків Liquid Glass та оновлення дизайну Spotlight:
+    - Запит користувача:
+      * "виправи те що скло сяє елементами його своїми. виправи те щоб спотлайт збільшувався і приховував іконки а меню було за рахунок от того поля вводу у спотлайті."
+    - Діагностика та усунення світіння скла («скло сяє своїми елементами»):
+      * UILayerSampler у BackdropGlass клонував весь uiGroup без виключення контейнера сповіщень (Main.messageTray, _bannerBin, _stackBox). Через це реальний текст та іконки малювалися прямо поверх власної розмитої копії в шейдері glass.frag, викликаючи райдужний ореол, хроматичну аберацію та біле дифузне світіння.
+      * У BackdropGlass (dist/rendering/backdropGlass.js) додано параметри excludeActors, метод addExclusion(actor) та автоматичне виключення Main.messageTray та _bannerBin.
+      * Додано реалізацію методів setGlassGeometry(x, y, w, h) та syncSources() у BackdropGlass.
+      * Відкалібровано уніформи шейдера під чисте автентичне скло macOS Tahoe: glass-chroma-strength: 0.0 (нульова дисперсія кольору), glass-sheen-intensity: 0.0 (нуль бліків), specular_intensity: 0.0, displacement_scale: 20.0, max_z: 6.0.
+      * Увімкнено виключення _stackBox у notifications.js (blur-my-shell).
+      * Вимкнено дублюючий шар Liquid Glass для сповіщень у liquid-glass (enable-notification-glass: false, notification-enable-adaptive-text-color: false).
+      * Вилучено білі світіння text-shadow: 0 0 14px rgba(255, 255, 255, 0.55) з усіх тем gnome-shell.css, замінено на акуратну темну тінь 0 1px 3px rgba(0, 0, 0, 0.45).
+    - Оновлення Spotlight (збільшення, приховування іконок та суцільне меню з поля вводу):
+      * У searchDialog_v5.js:
+        1) При введенні будь-якого тексту (signal 'text-changed') 3 круглі кнопки (Програми, Файли, Буфер) миттєво приховуються (visible = false, width: 0, opacity: 0).
+        2) Пошукова пігулка _searchPill миттєво розширюється на повну ширину вікна (700px, DIALOG_WIDTH).
+        3) Меню результатів пошуку випадає безпосередньо з поля вводу під тонким розділювачем 1px, утворюючи єдине суцільне вікно без відривів та проміжків.
+        4) Додано обробники notify::height та notify::width на _box, завдяки чому Liquid Glass у режимі single-region динамічно супроводжує зміну висоти вікна (від 54px до ~430px) на кожному кадрі анімації.
+        5) При очищенні пошукового запиту вікно плавно згортається назад у 480px капсулу з поверненням 3 круглих кнопок дій.
+    - Синхронізація та фіксація змін:
+      * Усі зміни перенесено до репозиторію macW1Y (MACTHEMEFILES): searchDialog_v5.js, extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js, extensions/blur-my-shell@aunetx/components/notifications.js, notifications_v4.js, dist/rendering/backdropGlass.js, теми gnome-shell.css (Dark, Light, solid) та дамп dconf/liquid-glass.dconf.
+      * Зміни збережено локально на ПК (без remote push до випуску v0.3).
+    - Верифікація:
+      * Знято скріншоти notif_crop_topright2.png, spotlight_collapsed_crop.png, spotlight_verified_crop.png.
+      * На сповіщеннях відсутні хроматичні відблиски та ореоли над іконкою та текстом.
+      * У Spotlight при введенні тексту круглі кнопки зникають, рядок стає 700px, а меню результатів утворює єдине плавне скляне вікно з Liquid Glass.
+

@@ -23,30 +23,53 @@ const BUTTON_SIZE = 50;
 const CORNER_RADIUS = 26;
 
 const PILL_COLLAPSED_STYLE =
-    'height: 54px; min-height: 54px; padding: 0 16px; ' +
+    'width: 480px; min-width: 480px; max-width: 480px; height: 54px; min-height: 54px; padding: 0 16px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    'border: 1px solid rgba(255, 255, 255, 0.20); ' +
-    'border-top: 1px solid rgba(255, 255, 255, 0.45); ' +
-    'border-bottom: 1px solid rgba(255, 255, 255, 0.22); ' +
+    'border: none !important; ' +
     'border-radius: 27px; ' +
     'box-shadow: none !important;';
 
 const PILL_EXPANDED_STYLE =
-    'height: 54px; min-height: 54px; padding: 0 16px; ' +
+    'width: 700px; min-width: 700px; max-width: 700px; height: 54px; min-height: 54px; padding: 0 20px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
     'border: none !important; ' +
+    'border-radius: 26px 26px 0 0; ' +
     'box-shadow: none !important;';
+
+const _gobjectToString = GObject.Object.prototype.toString;
+
+function _isActorValid(actor) {
+    if (!actor) return false;
+    try {
+        const desc = _gobjectToString.call(actor);
+        if (desc.includes('(DISPOSED)') || desc.includes('(FINALIZED)')) return false;
+        if (actor._cleanedUp) return false;
+        return typeof actor.visible === 'boolean';
+    } catch (_) {
+        return false;
+    }
+}
+
+function _isGlassAlive(glass) {
+    if (!glass) return false;
+    try {
+        const desc = _gobjectToString.call(glass);
+        if (desc.includes('(DISPOSED)') || desc.includes('(FINALIZED)')) return false;
+        if (glass._cleanedUp) return false;
+        return typeof glass.visible === 'boolean' && glass.get_parent() !== null;
+    } catch (_) {
+        return false;
+    }
+}
 
 const BTN_NORMAL_STYLE =
     'width: 50px; min-width: 50px; height: 50px; min-height: 50px; ' +
     'border-radius: 26px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    'border: 1px solid rgba(255, 255, 255, 0.22); ' +
-    'border-top: 1px solid rgba(255, 255, 255, 0.48); ' +
-    'border-bottom: 1px solid rgba(255, 255, 255, 0.24); ' +
+    'border: none !important; ' +
     'box-shadow: none !important;';
 
 const BTN_HOVER_STYLE =
@@ -54,9 +77,7 @@ const BTN_HOVER_STYLE =
     'border-radius: 26px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    'border: 1px solid rgba(255, 255, 255, 0.35); ' +
-    'border-top: 1px solid rgba(255, 255, 255, 0.65); ' +
-    'border-bottom: 1px solid rgba(255, 255, 255, 0.35); ' +
+    'border: none !important; ' +
     'box-shadow: none !important;';
 
 const SETTINGS_PANELS = [
@@ -230,6 +251,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             'box-shadow: none !important;'
         );
         this.add_child(this._box);
+        this._box.connect('notify::height', () => this._syncGlass());
+        this._box.connect('notify::width', () => this._syncGlass());
 
         this.connect('destroy', () => {
             this._onDestroy();
@@ -511,6 +534,15 @@ export const MacSpotlightDialog = GObject.registerClass({
         // 5. Connect Input & Keyboard Signals
         const ct = this._entry.clutter_text;
         ct.connect('text-changed', () => {
+            const text = this._entry.get_text() || '';
+            const hasText = text.trim().length > 0;
+            if (this._mode === 'search') {
+                if (hasText && !this._buttonsCollapsed) {
+                    this._collapseButtonsAndExpandPill();
+                } else if (!hasText && this._buttonsCollapsed) {
+                    this._uncollapseButtonsAndContractPill();
+                }
+            }
             this._scheduleSearch();
         });
         ct.connect('key-press-event', (_actor, event) => {
@@ -704,9 +736,13 @@ export const MacSpotlightDialog = GObject.registerClass({
                 settings: ext?.stateObj?._settings || null,
                 logger: console,
                 owner: 'spotlight',
+                excludeActors: [this, this._box, this._backdrop],
             });
+            this._glass.addExclusion(this);
+            this._glass.addExclusion(this._box);
+            this._glass.addExclusion(this._backdrop);
             const { tintVal, tintStrength } = this._getThemeParams();
-            this._glass.setIsDock(true);
+            this._glass.setIsDock(false);
             this._glass.setCornerSmoothingEnabled(0.0);
             this._glass.setCornerRadius(CORNER_RADIUS);
             this._glass.setTintColor(tintVal, tintVal, tintVal);
@@ -714,7 +750,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._glass.setBrightness(1.0);
             this._glass.setSaturation(1.0);
             this._glass.setContrast(1.0);
-            this._glass.setBlurRadius(1.0); // Strictly crystal LQ-Visual
+            this._glass.setBlurRadius(2.0);
             this._glass.setPadding(0);
             try {
                 this._glass._renderer.uniforms.set('shadow_intensity', 0.0);
@@ -739,119 +775,148 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
     }
 
+    _collapseButtonsAndExpandPill() {
+        if (this._buttonsCollapsed) return;
+        this._buttonsCollapsed = true;
+
+        this._buttonsBox.visible = false;
+        this._buttonsBox.opacity = 0;
+        this._buttonsBox.set_style('width: 0; min-width: 0; max-width: 0; margin: 0; padding: 0;');
+
+        this._searchPill.set_style(PILL_EXPANDED_STYLE);
+        this._searchPill.width = DIALOG_WIDTH;
+
+        try { this._syncGlass(); } catch (_) {}
+    }
+
+    _uncollapseButtonsAndContractPill() {
+        if (!this._buttonsCollapsed) return;
+        this._buttonsCollapsed = false;
+
+        this._searchPill.set_style(PILL_COLLAPSED_STYLE);
+        this._searchPill.width = COLLAPSED_PILL_WIDTH;
+
+        this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
+        this._btnApps.translation_x = 0;
+        this._btnApps.opacity = 255;
+        this._btnFiles.translation_x = 0;
+        this._btnFiles.opacity = 255;
+        this._btnClipboard.scale_x = 1.0;
+        this._btnClipboard.scale_y = 1.0;
+        this._btnClipboard.opacity = 255;
+        this._buttonsBox.opacity = 255;
+        this._buttonsBox.visible = true;
+
+        this._resultsWrapper.visible = false;
+        this._resultsWrapper.opacity = 0;
+        this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
+
+        try { this._syncGlass(); } catch (_) {}
+    }
+
     _syncGlass() {
-        if (!this._glass || this._glass.is_finalized?.() || !this._isOpen) {
-            try {
-                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
-                    this._glass.hide();
-                }
-            } catch (_) {}
-            return;
-        }
+        try {
+            if (!this._isOpen || !_isGlassAlive(this._glass)) {
+                return;
+            }
 
-        const box = this._box;
-        if (!box || box.is_finalized?.() || !box.visible) {
-            try {
-                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
-                    this._glass.hide();
-                }
-            } catch (_) {}
-            return;
-        }
+            const box = this._box;
+            if (!box || !_isActorValid(box) || !box.visible) {
+                return;
+            }
 
-        const opacity = box.get_paint_opacity ? box.get_paint_opacity() : box.opacity;
-        if (opacity <= 0) {
-            try {
-                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
-                    this._glass.hide();
-                }
-            } catch (_) {}
-            return;
-        }
+            const opacity = box.get_paint_opacity ? box.get_paint_opacity() : box.opacity;
+            if (opacity <= 0) {
+                return;
+            }
 
-        const mon = Main.layoutManager.primaryMonitor;
-        const scaleX = box.scale_x ?? 1.0;
-        const scaleY = box.scale_y ?? 1.0;
-        const rawW = box.width > 0 ? box.width : DIALOG_WIDTH;
-        const rawH = box.height > 0 ? box.height : PILL_HEIGHT;
+            const mon = Main.layoutManager.primaryMonitor;
+            const scaleX = box.scale_x ?? 1.0;
+            const scaleY = box.scale_y ?? 1.0;
+            const rawW = box.width > 0 ? box.width : DIALOG_WIDTH;
+            const rawH = box.height > 0 ? box.height : PILL_HEIGHT;
 
-        if (this._glass.opacity !== opacity) {
-            this._glass.opacity = opacity;
-        }
-        if (!this._glass.visible) {
-            this._glass.show();
-        }
+            if (this._glass.opacity !== opacity) {
+                this._glass.opacity = opacity;
+            }
+            if (!this._glass.visible) {
+                this._glass.show();
+            }
 
-        this._glass.set_position(mon.x, mon.y);
-        this._glass.set_size(mon.width, mon.height);
-        this._glass.setResolution(mon.width, mon.height);
+            this._glass.set_position(mon.x, mon.y);
+            this._glass.set_size(mon.width, mon.height);
+            this._glass.setResolution(mon.width, mon.height);
 
-        // In collapsed search mode without text, glass geometry covers search pill and 3 action buttons
-        const buttonsVisible = !this._buttonsCollapsed && this._buttonsBox && this._buttonsBox.visible && (this._buttonsBox.opacity > 0);
+            const hasText = (this._entry && this._entry.get_text) ? this._entry.get_text().trim().length > 0 : false;
+            const hasResults = this._resultsWrapper && this._resultsWrapper.visible && (box.height > PILL_HEIGHT + 10);
+            const isExpanded = this._buttonsCollapsed || hasText || hasResults || this._mode !== 'search';
 
-        if (this._mode === 'search' && buttonsVisible && this._searchPill && this._btnApps && this._btnFiles && this._btnClipboard) {
-            const pillPos = this._searchPill.get_transformed_position();
-            const b1Pos = this._btnApps.get_transformed_position();
-            const b2Pos = this._btnFiles.get_transformed_position();
-            const b3Pos = this._btnClipboard.get_transformed_position();
+            if (!isExpanded && this._searchPill && this._btnApps && this._btnFiles && this._btnClipboard) {
+                const pillPos = this._searchPill.get_transformed_position();
+                const b1Pos = this._btnApps.get_transformed_position();
+                const b2Pos = this._btnFiles.get_transformed_position();
+                const b3Pos = this._btnClipboard.get_transformed_position();
 
-            const pillX = Math.round(pillPos[0] - mon.x);
-            const pillY = Math.round(pillPos[1] - mon.y);
-            const pillW = Math.round((this._searchPill.width || COLLAPSED_PILL_WIDTH) * scaleX);
-            const pillH = Math.round((this._searchPill.height || PILL_HEIGHT) * scaleY);
+                const pillX = Math.round(pillPos[0] - mon.x);
+                const pillY = Math.round(pillPos[1] - mon.y);
+                const pillW = Math.round((this._searchPill.width || COLLAPSED_PILL_WIDTH) * scaleX);
+                const pillH = Math.round((this._searchPill.height || PILL_HEIGHT) * scaleY);
 
-            const b1X = Math.round(b1Pos[0] - mon.x);
-            const b1Y = Math.round(b1Pos[1] - mon.y);
-            const b1W = Math.round((this._btnApps.width || 52) * scaleX);
-            const b1H = Math.round((this._btnApps.height || 52) * scaleY);
+                const b1X = Math.round(b1Pos[0] - mon.x);
+                const b1Y = Math.round(b1Pos[1] - mon.y);
+                const b1W = Math.round((this._btnApps.width || BUTTON_SIZE) * scaleX);
+                const b1H = Math.round((this._btnApps.height || BUTTON_SIZE) * scaleY);
 
-            const b2X = Math.round(b2Pos[0] - mon.x);
-            const b2Y = Math.round(b2Pos[1] - mon.y);
-            const b2W = Math.round((this._btnFiles.width || 52) * scaleX);
-            const b2H = Math.round((this._btnFiles.height || 52) * scaleY);
+                const b2X = Math.round(b2Pos[0] - mon.x);
+                const b2Y = Math.round(b2Pos[1] - mon.y);
+                const b2W = Math.round((this._btnFiles.width || BUTTON_SIZE) * scaleX);
+                const b2H = Math.round((this._btnFiles.height || BUTTON_SIZE) * scaleY);
 
-            const b3X = Math.round(b3Pos[0] - mon.x);
-            const b3Y = Math.round(b3Pos[1] - mon.y);
-            const b3W = Math.round((this._btnClipboard.width || 52) * scaleX);
-            const b3H = Math.round((this._btnClipboard.height || 52) * scaleY);
+                const b3X = Math.round(b3Pos[0] - mon.x);
+                const b3Y = Math.round(b3Pos[1] - mon.y);
+                const b3W = Math.round((this._btnClipboard.width || BUTTON_SIZE) * scaleX);
+                const b3H = Math.round((this._btnClipboard.height || BUTTON_SIZE) * scaleY);
 
-            const { tintVal, tintStrength } = this._getThemeParams();
-            const regions = [
-                { x: pillX, y: pillY, w: pillW, h: pillH, tintR: tintVal, tintG: tintVal, tintB: tintVal, baseStrength: tintStrength },
-                { x: b1X, y: b1Y, w: b1W, h: b1H, tintR: tintVal, tintG: tintVal, tintB: tintVal, baseStrength: this._btnApps.hover ? tintStrength * 2.5 : tintStrength },
-                { x: b2X, y: b2Y, w: b2W, h: b2H, tintR: tintVal, tintG: tintVal, tintB: tintVal, baseStrength: this._btnFiles.hover ? tintStrength * 2.5 : tintStrength },
-                { x: b3X, y: b3Y, w: b3W, h: b3H, tintR: tintVal, tintG: tintVal, tintB: tintVal, baseStrength: this._btnClipboard.hover ? tintStrength * 2.5 : tintStrength },
-            ];
+                const { tintVal, tintStrength } = this._getThemeParams();
+                const regions = [
+                    { x: pillX, y: pillY, w: pillW, h: pillH, tintR: tintVal, tintG: tintVal, tintB: tintVal, baseStrength: tintStrength },
+                    { x: b1X, y: b1Y, w: b1W, h: b1H, tintR: tintVal, tintG: tintVal, tintB: tintVal, baseStrength: this._btnApps.hover ? tintStrength * 2.5 : tintStrength },
+                    { x: b2X, y: b2Y, w: b2W, h: b2H, tintR: tintVal, tintG: tintVal, tintB: tintVal, baseStrength: this._btnFiles.hover ? tintStrength * 2.5 : tintStrength },
+                    { x: b3X, y: b3Y, w: b3W, h: b3H, tintR: tintVal, tintG: tintVal, tintB: tintVal, baseStrength: this._btnClipboard.hover ? tintStrength * 2.5 : tintStrength },
+                ];
 
-            const minX = Math.min(pillX, b1X, b2X, b3X);
-            const minY = Math.min(pillY, b1Y, b2Y, b3Y);
-            const maxX = Math.max(pillX + pillW, b1X + b1W, b2X + b2W, b3X + b3W);
-            const maxY = Math.max(pillY + pillH, b1Y + b1H, b2Y + b2H, b3Y + b3H);
+                const minX = Math.min(pillX, b1X, b2X, b3X);
+                const minY = Math.min(pillY, b1Y, b2Y, b3Y);
+                const maxX = Math.max(pillX + pillW, b1X + b1W, b2X + b2W, b3X + b3W);
+                const maxY = Math.max(pillY + pillH, b1Y + b1H, b2Y + b2H, b3Y + b3H);
 
-            this._glass.setMultiRegionMode(true);
-            this._glass.setGlassRegions(regions);
-            this._glass.set_clip(minX - 4, minY - 4, (maxX - minX) + 8, (maxY - minY) + 8);
-        } else {
-            const w = rawW * scaleX;
-            const h = rawH * scaleY;
-            const bx = box.x;
-            const by = box.y;
+                this._glass.setMultiRegionMode(true);
+                this._glass.setGlassRegions(regions);
+                this._glass.set_clip(minX - 4, minY - 4, (maxX - minX) + 8, (maxY - minY) + 8);
+            } else {
+                const w = Math.round(DIALOG_WIDTH * scaleX);
+                const h = Math.round(rawH * scaleY);
+                const bx = box.x;
+                const by = box.y;
 
-            const localBgX = Math.round(bx - mon.x);
-            const localBgY = Math.round(by - mon.y);
-            const bgW = Math.round(w);
-            const bgH = Math.round(h);
+                const localBgX = Math.round(bx - mon.x);
+                const localBgY = Math.round(by - mon.y);
+                const bgW = Math.round(w);
+                const bgH = Math.round(h);
 
-            this._glass.setMultiRegionMode(false);
-            const { tintVal, tintStrength } = this._getThemeParams();
-            this._glass.setTintColor(tintVal, tintVal, tintVal);
-            this._glass.setTintStrength(tintStrength);
-            this._glass.setCornerRadius(CORNER_RADIUS);
-            this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
-            this._glass.set_clip(localBgX - 4, localBgY - 4, bgW + 8, bgH + 8);
-        }
+                this._glass.setMultiRegionMode(false);
+                const { tintVal, tintStrength } = this._getThemeParams();
+                this._glass.setTintColor(tintVal, tintVal, tintVal);
+                this._glass.setTintStrength(tintStrength);
+                this._glass.setCornerRadius(CORNER_RADIUS);
+                this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
+                this._glass.set_clip(localBgX - 4, localBgY - 4, bgW + 8, bgH + 8);
+            }
 
-        this._glass.syncSources();
+            if (typeof this._glass.syncSources === 'function') {
+                this._glass.syncSources();
+            }
+        } catch (_) {}
     }
 
     _setMode(newMode) {
@@ -870,95 +935,9 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._clipboardView.visible = false;
             this._searchView.visible = true;
 
-            // Collapse results and restore 3 buttons
-            this._resultsWrapper.ease({
-                opacity: 0,
-                duration: 140,
-                mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                onComplete: () => {
-                    this._resultsWrapper.visible = false;
-                },
-            });
-
-            this._box.ease({
-                height: PILL_HEIGHT,
-                duration: 200,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
-
-            this._searchPill.set_style(PILL_COLLAPSED_STYLE);
-            this._searchPill.ease({
-                width: COLLAPSED_PILL_WIDTH,
-                duration: 200,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
-
-            this._buttonsCollapsed = false;
-            this._buttonsBox.visible = true;
-            this._buttonsBox.ease({
-                opacity: 255,
-                duration: 220,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
-            this._btnApps.ease({
-                translation_x: 0,
-                opacity: 255,
-                duration: 220,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
-            this._btnFiles.ease({
-                translation_x: 0,
-                opacity: 255,
-                duration: 220,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
-            this._btnClipboard.ease({
-                scale_x: 1.0,
-                scale_y: 1.0,
-                opacity: 255,
-                duration: 220,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
+            this._uncollapseButtonsAndContractPill();
         } else {
-            // Animate buttons merging together to the right and disappearing
-            if (!this._buttonsCollapsed) {
-                this._buttonsCollapsed = true;
-                this._btnApps.ease({
-                    translation_x: 124,
-                    opacity: 0,
-                    duration: 180,
-                    mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                });
-                this._btnFiles.ease({
-                    translation_x: 62,
-                    opacity: 0,
-                    duration: 180,
-                    mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                });
-                this._btnClipboard.ease({
-                    scale_x: 0.6,
-                    scale_y: 0.6,
-                    opacity: 0,
-                    duration: 180,
-                    mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                    onComplete: () => {
-                        this._buttonsBox.visible = false;
-                    },
-                });
-                this._buttonsBox.ease({
-                    opacity: 0,
-                    duration: 180,
-                    mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                });
-            }
-
-            // Expand Search Pill to full width
-            this._searchPill.set_style(PILL_EXPANDED_STYLE);
-            this._searchPill.ease({
-                width: DIALOG_WIDTH,
-                duration: 200,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
+            this._collapseButtonsAndExpandPill();
 
             // Set Mode Headers & Content
             this._searchView.visible = false;
@@ -1008,6 +987,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             duration: 200,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         });
+
+        try { this._syncGlass(); } catch (_) {}
     }
 
     open() {
@@ -1038,7 +1019,9 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         // Reset search pill and buttons
         this._searchPill.set_size(COLLAPSED_PILL_WIDTH, PILL_HEIGHT);
+        this._searchPill.width = COLLAPSED_PILL_WIDTH;
         this._searchPill.set_style(PILL_COLLAPSED_STYLE);
+        this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
         this._buttonsBox.visible = true;
         this._buttonsBox.opacity = 255;
         this._btnApps.translation_x = 0;
@@ -1077,8 +1060,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         let glassValid = false;
         try {
-            if (this._glass && !this._glass.is_finalized?.()) {
-                this._glass.get_parent();
+            if (_isGlassAlive(this._glass)) {
                 glassValid = true;
             }
         } catch (_) {
@@ -1087,20 +1069,25 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
 
         if (glassValid) {
-            try { this._glass.remove_all_transitions(); } catch (_) {}
-            if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
-                Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
+            try {
+                this._glass.remove_all_transitions();
+                if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
+                    Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
+                }
+                Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
+                Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
+                this._glass.show();
+                this._glass.opacity = 255;
+                this._glass._backdropLocked = false;
+                if (typeof this._glass.forceRefresh === 'function') {
+                    this._glass.forceRefresh(1);
+                }
+                this._syncGlass();
+            } catch (err) {
+                this._glass = null;
+                this._initGlass();
+                Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
             }
-            Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
-            Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
-            this._glass.show();
-            this._glass.opacity = 255;
-            this._glass._backdropLocked = false;
-            if (typeof this._glass.forceRefresh === 'function') {
-                this._glass.forceRefresh(1);
-            }
-            this._syncGlass();
-            this._glass._backdropLocked = true;
         } else {
             this._glass = null;
             this._initGlass();
@@ -1109,7 +1096,14 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         if (!this._stageSignalId) {
             this._stageSignalId = global.stage.connect('before-update', () => {
-                this._syncGlass();
+                try {
+                    this._syncGlass();
+                } catch (e) {
+                    if (this._stageSignalId) {
+                        try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
+                        this._stageSignalId = 0;
+                    }
+                }
             });
         }
 
@@ -1131,13 +1125,6 @@ export const MacSpotlightDialog = GObject.registerClass({
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
                 this._syncGlass();
-                if (this._glass) {
-                    this._glass._backdropLocked = true;
-                }
-                if (this._stageSignalId) {
-                    try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
-                    this._stageSignalId = 0;
-                }
             },
         });
     }
@@ -1146,6 +1133,11 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (!this._isOpen) return;
         this._isOpen = false;
 
+        if (this._stageSignalId) {
+            try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
+            this._stageSignalId = 0;
+        }
+
         if (this._modalGrab) {
             try { this._modalGrab.dismiss(); } catch (_) {}
             this._modalGrab = null;
@@ -1153,14 +1145,9 @@ export const MacSpotlightDialog = GObject.registerClass({
             try { Main.popModal(this); } catch (_) {}
         }
 
-        if (this._stageSignalId) {
-            try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
-            this._stageSignalId = 0;
-        }
-
         const hideGlass = () => {
             try {
-                if (this._glass && !this._glass.is_finalized?.()) {
+                if (_isGlassAlive(this._glass)) {
                     this._glass.remove_all_transitions();
                     this._glass.opacity = 0;
                     this._glass.visible = false;
@@ -1184,7 +1171,16 @@ export const MacSpotlightDialog = GObject.registerClass({
             return;
         }
 
-        hideGlass();
+        if (_isGlassAlive(this._glass)) {
+            this._glass.ease({
+                opacity: 0,
+                duration: 180,
+                mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                onComplete: () => {
+                    hideGlass();
+                },
+            });
+        }
         this._backdrop.visible = false;
         this._box.ease({
             opacity: 0,
@@ -1243,94 +1239,12 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         // 'search' mode handling:
         if (query.length === 0) {
-            // Revert typing animation: contract search pill and slide buttons back
-            if (this._buttonsCollapsed) {
-                this._buttonsCollapsed = false;
-                this._searchPill.set_style(PILL_COLLAPSED_STYLE);
-                this._searchPill.ease({
-                    width: COLLAPSED_PILL_WIDTH,
-                    duration: 200,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
-                this._buttonsBox.visible = true;
-                this._buttonsBox.ease({
-                    opacity: 255,
-                    duration: 220,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
-                this._btnApps.ease({
-                    translation_x: 0,
-                    opacity: 255,
-                    duration: 220,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
-                this._btnFiles.ease({
-                    translation_x: 0,
-                    opacity: 255,
-                    duration: 220,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
-                this._btnClipboard.ease({
-                    scale_x: 1.0,
-                    scale_y: 1.0,
-                    opacity: 255,
-                    duration: 220,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
-            }
-
-            this._resultsWrapper.ease({
-                opacity: 0,
-                duration: 140,
-                mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                onComplete: () => {
-                    this._resultsWrapper.visible = false;
-                },
-            });
-            this._box.ease({
-                height: PILL_HEIGHT,
-                duration: 200,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
+            this._uncollapseButtonsAndContractPill();
             return;
         }
 
-        // When query is non-empty: trigger buttons merging animation and expand search pill
         if (!this._buttonsCollapsed) {
-            this._buttonsCollapsed = true;
-            this._btnApps.ease({
-                translation_x: 124,
-                opacity: 0,
-                duration: 180,
-                mode: Clutter.AnimationMode.EASE_IN_QUAD,
-            });
-            this._btnFiles.ease({
-                translation_x: 62,
-                opacity: 0,
-                duration: 180,
-                mode: Clutter.AnimationMode.EASE_IN_QUAD,
-            });
-            this._btnClipboard.ease({
-                scale_x: 0.6,
-                scale_y: 0.6,
-                opacity: 0,
-                duration: 180,
-                mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                onComplete: () => {
-                    this._buttonsBox.visible = false;
-                },
-            });
-            this._buttonsBox.ease({
-                opacity: 0,
-                duration: 180,
-                mode: Clutter.AnimationMode.EASE_IN_QUAD,
-            });
-            this._searchPill.set_style(PILL_EXPANDED_STYLE);
-            this._searchPill.ease({
-                width: DIALOG_WIDTH,
-                duration: 200,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
+            this._collapseButtonsAndExpandPill();
         }
 
         // Gather search items
@@ -2134,7 +2048,15 @@ let _spotlightDialog = null;
 
 export function toggleSearchDialog() {
     if (_spotlightDialog) {
-        if (!_spotlightDialog.get_parent() || _spotlightDialog.is_finalized?.()) {
+        let isDead = false;
+        try {
+            if (!_spotlightDialog.get_parent() || !_isActorValid(_spotlightDialog)) {
+                isDead = true;
+            }
+        } catch (_) {
+            isDead = true;
+        }
+        if (isDead) {
             try { _spotlightDialog.destroy(); } catch (_) {}
             _spotlightDialog = null;
         }
@@ -2143,12 +2065,14 @@ export function toggleSearchDialog() {
         try {
             const strays = Main.layoutManager.uiGroup.get_children().filter(c => c.name === 'mac-spotlight-wrapper');
             strays.forEach(s => { try { s.destroy(); } catch (_) {} });
-            const strayGlasses = Main.layoutManager.uiGroup.get_children().filter(c => c._owner === 'spotlight' || (c.name === 'liquid-glass-bg-actor' && c._owner === 'spotlight'));
-            strayGlasses.forEach(g => { try { g.destroy(); } catch (_) {} });
         } catch (_) {}
         _spotlightDialog = new MacSpotlightDialog();
     }
     globalThis._macSpotlightGlobalInstance = _spotlightDialog;
+    globalThis._macSpotlightToggle = toggleSearchDialog;
+    globalThis.toggleMacSpotlight = toggleSearchDialog;
+    globalThis.closeMacSpotlight = closeSearchDialog;
+
     if (_spotlightDialog._isOpen) {
         _spotlightDialog.close();
     } else {
@@ -2167,10 +2091,11 @@ export function closeSearchDialog(immediate = true) {
 
 export function destroySearchDialog() {
     if (_spotlightDialog) {
-        _spotlightDialog.destroy();
+        try { _spotlightDialog.destroy(); } catch (_) {}
         _spotlightDialog = null;
     }
 }
 
 globalThis._macSpotlightToggle = toggleSearchDialog;
+globalThis.toggleMacSpotlight = toggleSearchDialog;
 globalThis.closeMacSpotlight = closeSearchDialog;
