@@ -850,17 +850,29 @@ export default class EvalHelper extends Extension {
         });
 
         // macOS Startup Transition: Smooth opacity fade-in, rock-solid wallpaper (no zoom/scale)
+        if (Main.layoutManager?.panelBox) {
+            Main.layoutManager.panelBox.opacity = 255;
+            Main.layoutManager.panelBox.visible = true;
+        }
+
+        Main.overview.connectObject('hiding', () => {
+            if (Main.layoutManager?.panelBox && Main.layoutManager.panelBox.opacity !== 255) {
+                Main.layoutManager.panelBox.opacity = 255;
+            }
+        }, this);
+
         if (Main.layoutManager) {
             this._origStartupAnimationSession = Main.layoutManager._startupAnimationSession;
             Main.layoutManager._startupAnimationSession = async function() {
+                this.panelBox.ease({
+                    opacity: 255,
+                    duration: 700,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+
                 if (this._startInOverview) {
                     await Main.overview.runStartupAnimation();
                 } else {
-                    this.panelBox.ease({
-                        opacity: 255,
-                        duration: 700,
-                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                    });
 
                     for (const child of this.uiGroup.get_children()) {
                         if (child !== this._backgroundGroup && child !== this._systemBackground && child !== this._coverPane) {
@@ -1143,6 +1155,8 @@ export default class EvalHelper extends Extension {
             global.window_manager.disconnect(this._mapId);
             this._mapId = null;
         }
+
+        try { Main.overview.disconnectObject(this); } catch (_) {}
 
         if (Main.layoutManager && this._origStartupAnimationSession) {
             Main.layoutManager._startupAnimationSession = this._origStartupAnimationSession;

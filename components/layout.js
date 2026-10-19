@@ -816,15 +816,16 @@ export const LayoutManager = GObject.registerClass({
     }
 
     async _startupAnimationSession() {
+        this.panelBox.ease({
+            opacity: 255,
+            duration: 700,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
+
         if (this._startInOverview) {
             await Main.overview.runStartupAnimation();
         } else {
             // macOS Transition: smoothly fade in panel, dock, desktop icons, and windows
-            this.panelBox.ease({
-                opacity: 255,
-                duration: 700,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
 
             for (const child of this.uiGroup.get_children()) {
                 if (child !== this._backgroundGroup && child !== this._systemBackground && child !== this._coverPane) {
@@ -847,6 +848,7 @@ export const LayoutManager = GObject.registerClass({
     }
 
     _startupAnimationComplete() {
+        this.panelBox.opacity = 255;
         this._coverPane.destroy();
         this._coverPane = null;
 
