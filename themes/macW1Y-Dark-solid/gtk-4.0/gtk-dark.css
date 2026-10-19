@@ -6565,7 +6565,7 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 .nautilus-file-chooser .sidebar-pane:dir(ltr) banner > revealer > widget,
 .nautilus-file-chooser .sidebar-pane.end:dir(rtl),
 .nautilus-file-chooser .sidebar-pane.end:dir(rtl) banner > revealer > widget {
-  box-shadow: 0 0 0 6px @view_bg_color, 0 32px 0 6px @view_bg_color, 0 -32px 0 6px @view_bg_color, 2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
 }
 
 .nautilus-window .sidebar-pane:dir(rtl), .nautilus-window .sidebar-pane:dir(rtl) banner > revealer > widget, .nautilus-window .sidebar-pane.end:dir(ltr), .nautilus-window .sidebar-pane.end:dir(ltr) banner > revealer > widget,
@@ -6577,7 +6577,7 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 .nautilus-file-chooser .sidebar-pane:dir(rtl) banner > revealer > widget,
 .nautilus-file-chooser .sidebar-pane.end:dir(ltr),
 .nautilus-file-chooser .sidebar-pane.end:dir(ltr) banner > revealer > widget {
-  box-shadow: 0 0 0 6px @view_bg_color, 0 32px 0 6px @view_bg_color, 0 -32px 0 6px @view_bg_color, -2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
 }
 
 .nautilus-window .sidebar-pane:backdrop:dir(ltr), .nautilus-window .sidebar-pane:backdrop:dir(ltr) banner > revealer > widget, .nautilus-window .sidebar-pane:backdrop.end:dir(rtl), .nautilus-window .sidebar-pane:backdrop.end:dir(rtl) banner > revealer > widget,
@@ -8732,7 +8732,7 @@ toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
 .sidebar-pane .content-pane {
   background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.03), transparent 80%, rgba(255, 255, 255, 0.03));
   color: @sidebar_fg_color;
-  border-radius: 18px;
+  border-radius: 0;
   background-color: transparent;
 }
 
@@ -8921,7 +8921,7 @@ toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
 .sidebar-pane .content-pane:first-child:dir(ltr) banner > revealer > widget,
 .sidebar-pane .content-pane:first-child.end:dir(rtl),
 .sidebar-pane .content-pane:first-child.end:dir(rtl) banner > revealer > widget {
-  box-shadow: 9000px 0 0 9999px @view_bg_color, 2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
   border-right: none;
 }
 
@@ -8934,7 +8934,7 @@ toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
 .sidebar-pane .content-pane:first-child:dir(rtl) banner > revealer > widget,
 .sidebar-pane .content-pane:first-child.end:dir(ltr),
 .sidebar-pane .content-pane:first-child.end:dir(ltr) banner > revealer > widget {
-  box-shadow: -9000px 0 0 9999px @view_bg_color, -2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
   border-left: none;
 }
 
@@ -9859,3 +9859,53 @@ image.emblem {
     padding: 0;
 }
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
+
+/* --- MAC-NAUTILUS-SEAMLESS-CLEANUP-START --- */
+/* Completely eliminate the grey square/shadows around Nautilus sidebar */
+.nautilus-window,
+.nautilus-window .sidebar-pane,
+.nautilus-window .content-pane,
+.nautilus-window placessidebar,
+.nautilus-window list.navigation-sidebar,
+.nautilus-window splitview,
+.nautilus-window paned,
+#NautilusFileChooser .sidebar-pane,
+.nautilus-file-chooser .sidebar-pane {
+    box-shadow: none !important;
+}
+
+.nautilus-window .sidebar-pane,
+.sidebar-pane,
+.content-pane .sidebar-pane,
+.sidebar-pane .content-pane {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.nautilus-window .sidebar-pane,
+.nautilus-window .sidebar-pane > widget,
+.nautilus-window .sidebar-pane > box,
+.nautilus-window .sidebar-pane placessidebar,
+.nautilus-window .sidebar-pane list.navigation-sidebar {
+    background-color: rgba(28, 28, 30, 0.92) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.nautilus-window .sidebar-pane headerbar,
+.nautilus-window .sidebar-pane headerbar:backdrop,
+.sidebar-pane headerbar {
+    background-color: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.nautilus-window .content-pane,
+.nautilus-window .content-pane:backdrop {
+    background-color: #202022 !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+/* --- MAC-NAUTILUS-SEAMLESS-CLEANUP-END --- */
