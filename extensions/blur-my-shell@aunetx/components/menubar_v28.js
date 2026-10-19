@@ -5114,8 +5114,12 @@ export const MenuBarController = class MenuBarController {
             }
         };
 
+        const ccBtn = Main.panel.statusArea?.['ydotool-trigger-button']?.container
+            || Main.panel.statusArea?.['ydotool-trigger-button'];
+
         const isMyContainer = (child) => {
             if (!child) return false;
+            if (child === ccBtn || (ccBtn && child.contains && child.contains(ccBtn))) return true;
             if (child === quickSettings || child === quickSettings?.container || child?.name === 'quickSettings') return true;
             if (child === dateMenu || child === dateMenu?.container || child?.name === 'dateMenu') return true;
             if (child === this._privacyIndicator?.container || child === this._privacyIndicator) return true;
@@ -5188,9 +5192,7 @@ export const MenuBarController = class MenuBarController {
                     try { return v?.container === ext || v === ext; } catch (_e) { return false; }
                 })?.[0] || '';
                 if (role.includes('ydotool') || ext.accessible_name === 'Ydotool Trigger' || role.includes('run-cmd')) {
-                    ext.visible = false;
-                    ext.hide();
-                    continue;
+                    continue; // Positioned explicitly below after battery
                 }
                 if (role.includes('kiwi-wifi-button') || role.includes('kiwi-search-button') ||
                     role.includes('macWifi') || role.includes('macBluetooth') || role.includes('macVolume') || role.includes('macBattery')) {
@@ -5242,8 +5244,17 @@ export const MenuBarController = class MenuBarController {
             desiredOrder.push(this._batteryWidget.container);
         }
 
-        if (ensureInRightBox(quickSettings?.container))
+        if (ccBtn && ensureInRightBox(ccBtn)) {
+            ccBtn.visible = true;
+            ccBtn.show();
+            desiredOrder.push(ccBtn);
+            if (quickSettings?.container) {
+                quickSettings.container.visible = false;
+                quickSettings.container.hide();
+            }
+        } else if (ensureInRightBox(quickSettings?.container)) {
             desiredOrder.push(quickSettings.container);
+        }
 
         if (ensureInRightBox(dateMenu?.container))
             desiredOrder.push(dateMenu.container);
@@ -5268,8 +5279,21 @@ export const MenuBarController = class MenuBarController {
         try {
             for (const child of rightBox.get_children()) {
                 try {
-                    // Control Center and DateMenu must NEVER be hidden here
+                    // Control Center (ydotool) and DateMenu must NEVER be hidden here
+                    const ccBtn = Main.panel.statusArea?.['ydotool-trigger-button']?.container
+                        || Main.panel.statusArea?.['ydotool-trigger-button'];
+                    if (child === ccBtn || (ccBtn && child.contains && child.contains(ccBtn))) {
+                        child.visible = true;
+                        child.show();
+                        child.style = 'margin: 0 !important; padding: 0 4px !important; height: 28px !important; min-height: 28px !important; width: auto !important; min-width: 24px !important; max-width: none !important; -natural-hpadding: 4px !important; -minimum-hpadding: 4px !important;';
+                        continue;
+                    }
                     if (child === quickSettings || child === quickSettings?.container || child?.name === 'quickSettings' || (child.contains && child.contains(quickSettings))) {
+                        if (ccBtn) {
+                            child.visible = false;
+                            child.hide();
+                            continue;
+                        }
                         child.visible = true;
                         child.show();
                         continue;
@@ -5349,7 +5373,27 @@ export const MenuBarController = class MenuBarController {
 
         // Special styling for Control Center: matching 28px height
         try {
-            if (quickSettings) {
+            const ccBtn = Main.panel.statusArea?.['ydotool-trigger-button']?.container
+                || Main.panel.statusArea?.['ydotool-trigger-button'];
+            if (ccBtn) {
+                ccBtn.visible = true;
+                ccBtn.show();
+                ccBtn.style = 'margin: 0 !important; padding: 0 4px !important; height: 28px !important; min-height: 28px !important; width: auto !important; min-width: 24px !important; max-width: none !important; -natural-hpadding: 4px !important; -minimum-hpadding: 4px !important;';
+                const inner = ccBtn.get_first_child ? ccBtn.get_first_child() : ccBtn;
+                if (inner) {
+                    inner.visible = true;
+                    inner.show();
+                    inner.style = null;
+                }
+                if (quickSettings) {
+                    quickSettings.visible = false;
+                    quickSettings.hide();
+                    if (quickSettings.container) {
+                        quickSettings.container.visible = false;
+                        quickSettings.container.hide();
+                    }
+                }
+            } else if (quickSettings) {
                 quickSettings.visible = true;
                 quickSettings.show();
                 quickSettings._minHPadding = 0;

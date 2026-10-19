@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+    <template class="PrefsPage" parent="AdwPreferencesPage">
+        <child>
+            <object class="AdwPreferencesGroup">
+                <property name="title">Item Order</property>
+                <property name="description">Simply use drag and drop to order the items any way you want.</property>
+                <child>
+                    <object class="GtkLabel">
+                        <property name="label">Left Top Bar Box</property>
+                        <property name="halign">start</property>
+                        <property name="margin-bottom">12</property>
+                    </object>
+                </child>
+                <child>
+                    <object class="PrefsBoxOrderListBox" id="left-box-order-list-box">
+                        <property name="box-order">left-box-order</property>
+                        <signal name="row-move" handler="onRowMove"/>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkLabel">
+                        <property name="label">Center Top Bar Box</property>
+                        <property name="halign">start</property>
+                        <property name="margin-top">12</property>
+                        <property name="margin-bottom">12</property>
+                    </object>
+                </child>
+                <child>
+                    <object class="PrefsBoxOrderListBox" id="center-box-order-list-box">
+                        <property name="box-order">center-box-order</property>
+                        <signal name="row-move" handler="onRowMove"/>
+                    </object>
+                </child>
+                <child>
+                    <object class="GtkLabel">
+                        <property name="label">Right Top Bar Box</property>
+                        <property name="halign">start</property>
+                        <property name="margin-top">12</property>
+                        <property name="margin-bottom">12</property>
+                    </object>
+                </child>
+                <child>
+                    <object class="PrefsBoxOrderListBox" id="right-box-order-list-box">
+                        <property name="box-order">right-box-order</property>
+                        <signal name="row-move" handler="onRowMove"/>
+                    </object>
+                </child>
+            </object>
+        </child>
+    </template>
+</interface>

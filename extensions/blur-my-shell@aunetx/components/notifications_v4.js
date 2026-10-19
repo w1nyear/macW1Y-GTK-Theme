@@ -1138,7 +1138,6 @@ export const NotificationsController = class NotificationsController {
                 settings: ext?.stateObj?._settings || null,
                 logger: console,
                 owner: 'notification-banner',
-                excludeActors: [this._stackBox, Main.messageTray, Main.messageTray?._bannerBin].filter(Boolean),
             });
             const { tintVal, tintStrength } = this._getNotifThemeParams();
             this._glass.setIsDock(true);
@@ -1159,7 +1158,6 @@ export const NotificationsController = class NotificationsController {
             this._glass.hide();
 
             if (this._stackBox) {
-                this._glass.addExclusion(this._stackBox);
                 Main.layoutManager.uiGroup.insert_child_below(this._glass, this._stackBox);
             }
         } catch (e) {

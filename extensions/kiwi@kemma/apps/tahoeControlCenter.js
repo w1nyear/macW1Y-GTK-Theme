@@ -64,7 +64,7 @@ import(_LG_BASE + '/utils.js').then(m => {
         reportFrameLoopError = m.reportFrameLoopError;
 }).catch(e => console.warn(`[tahoe-qs] liquid-glass utils unavailable: ${e}`));
 function _lgReady() {
-    return !!(LiquidEffect && UnpickableActor && UILayerSampler && WindowCloneManager);
+    return false;
 }
 
 const PANEL_W = 320;

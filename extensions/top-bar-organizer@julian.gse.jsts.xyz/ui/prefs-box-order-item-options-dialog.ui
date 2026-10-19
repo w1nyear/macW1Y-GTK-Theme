@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+    <template class="PrefsBoxOrderItemOptionsDialog" parent="AdwDialog">
+        <!-- Same as the default-width of AdwPreferencesWindow.-->
+        <property name="content-width">640</property>
+        <child>
+            <object class="AdwToolbarView">
+                <child type="top">
+                    <object class="AdwHeaderBar"></object>
+                </child>
+                <property name="content">
+                    <object class="AdwPreferencesPage">
+                        <child>
+                            <object class="AdwPreferencesGroup">
+                                <child>
+                                    <object class="AdwComboRow" id="visibility-row">
+                                        <property name="title">Visibility</property>
+                                        <property name="subtitle">Forcefully hide or show an item or just don't affect its visibility. This option applies every time the top bar gets reordered, an items visiblity might be influenced by other factors and this option might not work for every item.</property>
+                                        <property name="model">
+                                            <object class="GtkStringList">
+                                                <items>
+                                                    <item>Default</item>
+                                                    <item>Forcefully Hide</item>
+                                                    <item>Forcefully Show</item>
+                                                </items>
+                                            </object>
+                                        </property>
+                                        <signal name="notify::selected-item" handler="onVisibilityRowSelectionChanged"/>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                    </object>
+                </property>
+            </object>
+        </child>
+    </template>
+</interface>

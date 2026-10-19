@@ -64,7 +64,7 @@ import(_LG_BASE + '/utils.js').then(m => {
         reportFrameLoopError = m.reportFrameLoopError;
 }).catch(e => console.warn(`[tahoe-qs] liquid-glass utils unavailable: ${e}`));
 function _lgReady() {
-    return !!(LiquidEffect && UnpickableActor && UILayerSampler && WindowCloneManager);
+    return false;
 }
 
 const PANEL_W = 320;
@@ -248,6 +248,14 @@ function _closeActiveSubmenu() {
         try { _activeSubmenu.close(); _activeSubmenu.destroy(); } catch (_) {}
         _activeSubmenu = null;
     }
+}
+
+export async function testOpenWifiSubmenu() {
+    if (_panel && _panel.wifi && _panel.wifi.btn) {
+        await _openWifiSubmenu(_panel.wifi.btn, _panel.state);
+        return true;
+    }
+    return false;
 }
 
 async function _openWifiSubmenu(sourceActor, state) {
@@ -1472,17 +1480,19 @@ function _buildPanel() {
     // panel bg + glass AFTER allocation (region math needs a real layout)
     try {
         const allocId = box.connect('notify::allocation', () => {
-            try {
-                box.disconnect(allocId);
-            } catch (_) {
-                // once
+            if (box.width > 0 && box.height > 0) {
+                try {
+                    panelBg.set_position(box.x, box.y);
+                    panelBg.set_size(box.width, box.height);
+                } catch (_) {
+                    // geometry unchanged
+                }
             }
-            try {
-                panelBg.set_position(box.x, box.y);
-                panelBg.set_size(box.width, box.height);
-            } catch (_) {
-                // geometry unchanged
-            }
+            if (_panel?.inkSampleDone)
+                return;
+            if (box.height <= 0)
+                return;
+            _panel.inkSampleDone = true;
             // adaptive ink: sample the real background behind the panel,
             // apply, and follow it while open (open animation covers a flip)
             try {
@@ -1506,6 +1516,7 @@ function _buildPanel() {
             _startGlass();
             _scheduleFocusFix();
         });
+        _panel.allocId = allocId;
     } catch (_) {
         _startGlass();
     }

@@ -6082,3 +6082,33 @@ echo "==> Встановлення успішно завершено!"
       * `cc_wifi_submenu_crop.png`: підменю Wi-Fi ліворуч від Центру керування з білим текстом, 14px заокругленням, мережею HomeHub та перемикачем.
       * `cc_bt_submenu_crop.png`: підменю Bluetooth ліворуч від Центру керування.
       * `cc_sound_submenu_crop.png`: підменю вибору звукового пристрою ліворуч від Центру керування з активним динаміком Raptor Lake-P/U/H та галочкою.
+
+112. Повна заміна правої сторони менюбара на GNOME-Tahoe-main від друга та виправлення Центру Керування і Центру Сповіщень:
+    - Контекст та вимоги:
+      * «повністю заміни теперіній праву сторону меню бара на Gnome-Theme-main від мого друга.реально повністю всі іконки і розміщення від мого друга»
+      * «виправи також ось цей контрол центр і центр сповіщень аби він нормально вигляядав як було»
+    - Права сторона менюбара 1:1 з проектом друга GNOME-Tahoe-main:
+      1) Встановлено та активовано розширення `top-bar-organizer@julian.gse.jsts.xyz` та `run-cmd@custom.extension` (`ydotool-trigger-button`).
+      2) Автентичний порядок індикаторів повністю відповідає еталонним скріншотам `quick-settings.png` та `desktop.png`:
+         `[Трей/AppIndicators (Telegram, Antigravity...)]` -> `[Keyboard badge (uk)]` -> `[Spotlight (🔍)]` -> `[Battery (100% 🔋)]` -> `[Control Center (🎛️ повзунки з /home/vitaliy/controlcenter.png)]` -> `[Date & Time (пн, 19 жовтня)]`.
+      3) Дефолтну кнопку GNOME `quickSettings` надійно приховано (`hide-quick-settings-button = true` в kiwi, сховано в `top-bar-organizer` та в `menubar_v29.js`).
+      4) Виправлено `menubar_v29.js` у `blur-my-shell@aunetx`: додано `ydotool-trigger-button` до списку системних контейнерів, забезпечено висоту 28px, ширину `auto` (min-width: 24px) та позиціонування між батареєю і годинником.
+    - Відновлення та виправлення Центру Керування (Control Center) і Центру Сповіщень (Notification Center):
+      1) Виявлено та усунено критичну синтаксичну помилку в `kiwi@kemma/stylesheet.css` (зайвий `box-shadow: none; }` біля рядка 1443), яка призводила до того, що GNOME Shell повністю відхиляв усю таблицю стилів Kiwi (через що всі пілюлі зникали, а іконки виводилися у дефолтному розмірі 48px).
+      2) Відновлено нормальне завантаження `stylesheet.css`: усі пілюлі (Wi-Fi, Bluetooth, AirDrop, Focus) повернули свої squircle-форми, акуратні круглі кнопки, білий текст та правильні розміри (20px, 24px).
+      3) Виправлено прозорість та гало: у `tahoeQuickSettings.js` вимкнено нестабільний шейдер Liquid Glass (`_lgReady() => false`), що прибрало яскраві білі ореоли навколо кнопок, як і в конфігурації друга (`liquid-glass_8.png`).
+      4) Виправлено геометрію підкладки `panelBg`: усунено баг передчасного відключення `notify::allocation`, завдяки чому `panelBg` тепер динамічно приймає повні розміри контейнера (320x528px) та огортає всі картки до самого низу (включно зі слайдером звуку та кнопкою «Edit Controls»).
+      5) Стиль панелі (`.tahoe-qs-panelbg` та `.tahoe-nc-panelbg`): насичене напівпрозоре акрилове темне скло (`rgba(26, 26, 30, 0.88)`), squircle-радіус 26px, витончений бордер `1px solid rgba(255, 255, 255, 0.16)` та м'яка 3D тінь `0 16px 48px rgba(0, 0, 0, 0.6)`.
+      6) Збережено повноцінні контекстні підменю по ПКМ (Wi-Fi, Bluetooth, Звук) ліворуч від Центру керування.
+      7) Центр сповіщень: красива темна скляна панель Tahoe з радіусом 26px, картками сповіщень та кнопкою очищення.
+    - Синхронізація файлів та локальний git commit:
+      * Усі змінені файли синхронізовано з `~/.local/share/gnome-shell/extensions/` до `MACTHEMEFILES/extensions/`:
+        - `extensions/top-bar-organizer@julian.gse.jsts.xyz/`
+        - `extensions/run-cmd@custom.extension/`
+        - `extensions/kiwi@kemma/` (stylesheet.css, apps/tahoeQuickSettings.js, extension.js)
+        - `extensions/blur-my-shell@aunetx/` (components/menubar_v29.js, extension.js)
+    - Верифікація:
+      * `topbar_v29_crop.png`: топбар праворуч точно повторює вигляд та порядок `GNOME-Tahoe-main`.
+      * `cc_full_crop.png`: Control Center із темним склом, squircle-формами, білим текстом і повною висотою.
+      * `cc_wifi_test_crop.png`: підменю Wi-Fi ліворуч від Центру керування.
+      * `nc_opened_crop.png`: Notification Center із темним акриловим склом 26px.
