@@ -577,16 +577,19 @@ export class Animator {
   }
 
   _setD2dBadgeOpacity(appwell, opacity) {
-    const badgeBin = this._getD2dBadgeBin(appwell);
-    if (badgeBin) {
-      if (opacity === 0) {
-        badgeBin.translation_x = -9999;
-      } else {
-        badgeBin.translation_x = 0;
-        badgeBin.opacity = 255;
+    try {
+      const badgeBin = this._getD2dBadgeBin(appwell);
+      if (badgeBin && !badgeBin.is_finalized?.()) {
+        if (opacity === 0) {
+          badgeBin.translation_x = -9999;
+        } else {
+          badgeBin.translation_x = 0;
+          badgeBin.opacity = 255;
+        }
       }
-    }
+    } catch (_) {}
   }
+
 
   _getD2dBadgeCount(appwell) {
     const badgeBin = this._getD2dBadgeBin(appwell);

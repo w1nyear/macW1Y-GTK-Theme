@@ -9,7 +9,7 @@ import St from 'gi://St';
 const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY',
     'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
-export const DateWidget = GObject.registerClass(
+export const DateWidget = GObject.registerClass({GTypeName: 'Tahoe_DateWidget_' + Math.floor(Math.random() * 10000000)},
 class DateWidget extends St.Widget {
     _init({settings = null, darkText = false, ...rest} = {}) {
         super._init({

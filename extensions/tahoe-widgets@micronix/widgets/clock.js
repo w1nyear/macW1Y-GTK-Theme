@@ -10,7 +10,7 @@ const SIZE = 190;
 
 const OFFSET_KEYS = ['clock-face-x', 'clock-face-y'];
 
-export const ClockWidget = GObject.registerClass(
+export const ClockWidget = GObject.registerClass({GTypeName: 'Tahoe_ClockWidget_' + Math.floor(Math.random() * 10000000)},
 class ClockWidget extends St.Widget {
     _init({settings = null, darkText = false, ...rest} = {}) {
         super._init({

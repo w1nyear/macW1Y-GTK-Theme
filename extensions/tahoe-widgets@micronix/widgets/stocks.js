@@ -42,7 +42,7 @@ function parseCsv(text) {
     return closes;
 }
 
-export const StocksWidget = GObject.registerClass(
+export const StocksWidget = GObject.registerClass({GTypeName: 'Tahoe_StocksWidget_' + Math.floor(Math.random() * 10000000)},
 class StocksWidget extends St.Widget {
     _init({settings = null, darkText = false, ...rest} = {}) {
         super._init({

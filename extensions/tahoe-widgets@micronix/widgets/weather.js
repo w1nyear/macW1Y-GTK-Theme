@@ -40,7 +40,7 @@ function describe(code) {
     return [best[1], best[2]];
 }
 
-export const WeatherWidget = GObject.registerClass(
+export const WeatherWidget = GObject.registerClass({GTypeName: 'Tahoe_WeatherWidget_' + Math.floor(Math.random() * 10000000)},
 class WeatherWidget extends St.Widget {
     _init({settings = null, darkText = false, variant = 'wide', ...rest} = {}) {
         super._init({

@@ -501,8 +501,8 @@ install_sounds() {
 # ------------------------------------------------------------------------------
 install_wallpaper() {
     log_step "Етап 5/13: Встановлення оригінальних шпалер macOS"
-    local WALLPAPER_SRC="$SCRIPT_DIR/wallpapers/mendhak-Bluebells_Suspended_In_Time.jpg"
-    local WALLPAPER_DEST="/usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg"
+    local WALLPAPER_SRC="$SCRIPT_DIR/wallpapers/GoldenGate_Day.jpg"
+    local WALLPAPER_DEST="/usr/share/backgrounds/GoldenGate_Day.jpg"
     
     if [ -f "$WALLPAPER_SRC" ]; then
         require_root
@@ -936,7 +936,7 @@ install_gdm_transition() {
         sudo sed -i 's|gtk-theme = "Yaru"|gtk-theme = "macW1Y-Dark"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
         sudo sed -i 's|icon-theme = "Yaru"|icon-theme = "MacTahoe-dark"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
         sudo sed -i 's|cursor-theme = "Yaru"|cursor-theme = "macOS"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
-        sudo sed -i 's|warty-final-ubuntu.png|mendhak-Bluebells_Suspended_In_Time.jpg|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
+        sudo sed -i -E 's|(warty-final-ubuntu\.png\|mendhak-Bluebells_Suspended_In_Time\.jpg)|GoldenGate_Day.jpg|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
     fi
     sudo glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
 
@@ -1032,7 +1032,7 @@ install_gdm_transition() {
     run_as_user gsettings set org.gnome.login-screen enable-fingerprint-authentication false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-mode 'cupertino' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock cupertino-always-show-user true 2>/dev/null || true
-    run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/GoldenGate_Day.jpg" 2>/dev/null || true
 
     # 11. Вимкнення автоматичного входу для обов'язкового відображення екрана блокування GDM
     if [ -f /etc/gdm3/custom.conf ]; then
@@ -1262,8 +1262,8 @@ run_incremental_update() {
     fi
 
     log_info "5/10 Перевірка шпалер..."
-    if [ -f "$SCRIPT_DIR/wallpapers/mendhak-Bluebells_Suspended_In_Time.jpg" ]; then
-        sync_or_update_file "$SCRIPT_DIR/wallpapers/mendhak-Bluebells_Suspended_In_Time.jpg" "/usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg" true
+    if [ -f "$SCRIPT_DIR/wallpapers/GoldenGate_Day.jpg" ]; then
+        sync_or_update_file "$SCRIPT_DIR/wallpapers/GoldenGate_Day.jpg" "/usr/share/backgrounds/GoldenGate_Day.jpg" true
     fi
 
     log_info "5/9 Перевірка розширень GNOME Shell..."

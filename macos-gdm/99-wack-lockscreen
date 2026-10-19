@@ -18,12 +18,12 @@ logo=''
 disable-user-list=false
 
 [org/gnome/desktop/background]
-picture-uri='file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
-picture-uri-dark='file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+picture-uri='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-uri-dark='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 picture-options='zoom'
 
 [org/gnome/desktop/screensaver]
-picture-uri='file:///usr/share/backgrounds/mendhak-Bluebells_Suspended_In_Time.jpg'
+picture-uri='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 picture-options='zoom'
 
 [org/gnome/shell/extensions/wack-lockscreen-clock]

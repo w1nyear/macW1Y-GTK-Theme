@@ -5717,3 +5717,28 @@ echo "==> Встановлення успішно завершено!"
         * `test_tahoe_nc.png`: перевірено Центр повідомлень Tahoe.
         * `verify_window_buttons.png`: перевірено круглі кнопки вікон (закрити, згорнути, розгорнути) зліва.
         * `restored_macW1Y_desktop.png` та `current_live_check.png`: перевірено робочий стіл — яблучко, глобальне меню, віджети, скляний док, прапорці робочих столів, збережені індикатори менюбару.
+
+97. Встановлення оригінальних шпалер Golden Gate Day як головних у модпаці та їх застосування в системі:
+    - Запит користувача:
+      * "використовуй цю шпалеру як головну у модпаці і прийми тут /home/vitaliy/Десктоп/GoldenGate_Day.jpg"
+    - Реалізовані дії:
+      1) Перенесення та інтеграція шпалер:
+         - Файл `/home/vitaliy/Десктоп/GoldenGate_Day.jpg` скопійовано до сховища шпалер модпаку: `wallpapers/GoldenGate_Day.jpg`.
+         - Встановлено в системну директорію `/usr/share/backgrounds/GoldenGate_Day.jpg` з правами 644.
+      2) Миттєве застосування у живій системі користувача:
+         - `gsettings set org.gnome.desktop.background picture-uri 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'`
+         - `gsettings set org.gnome.desktop.background picture-uri-dark 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'`
+         - `gsettings set org.gnome.desktop.screensaver picture-uri 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'`
+      3) Оновлення конфігурацій GDM та екрану блокування:
+         - Оновлено `macos-gdm/99-wack-lockscreen` та `/etc/dconf/db/gdm.d/99-wack-lockscreen` (виконано `dconf update`).
+         - Оновлено `macos-gdm/99_mactheme.gschema.override` та системний файл `/usr/share/glib-2.0/schemas/99_mactheme.gschema.override` (виконано `glib-compile-schemas`).
+      4) Оновлення скриптів інсталяції та експорту dconf:
+         - У `install.sh` замінено всі шляхи та змінні за замовчуванням на `GoldenGate_Day.jpg` (у функціях `install_wallpaper`, налаштуваннях локскріну, очищенні Yaru та перевірці синхронізації шпалер).
+         - Оновлено dconf-дампи `dconf/gnome-desktop.dconf` та `dconf/gnome-all.dconf`.
+      5) Супутнє виправлення стабільності:
+         - Усунено синтаксичну помилку незакритої дужки `if (settings)` у `worldclock.js`.
+         - Додано динамічну генерацію GTypeName у всіх віджетах (`calendar.js`, `clock.js`, `date.js`, `news.js`, `reminders.js`, `stocks.js`, `weather.js`, `worldclock.js`), що виключає колізію `Type name is already registered` при перезавантаженні.
+         - Захищено `_setD2dBadgeOpacity` у `cupertino-dock-lite` від звернення до disposed-об'єктів St.Bin.
+    - Верифікація:
+      - Зроблено знімок робочого столу `widgets_with_goldengate.png`.
+      - Шпалера Golden Gate Day активна на робочому столі, віджети та рідке скло Tahoe коректно заломлюють та відображають новий фон.

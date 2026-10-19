@@ -83,7 +83,7 @@ const OFFSET_KEYS = [
     'worldclock-cell3-x', 'worldclock-cell3-y',
 ];
 
-export const WorldClockWidget = GObject.registerClass(
+export const WorldClockWidget = GObject.registerClass({GTypeName: 'Tahoe_WorldClockWidget_' + Math.floor(Math.random() * 10000000)},
 class WorldClockWidget extends St.Widget {
     _init({settings = null, theme = 'glass', darkText = false, variant = 'wide', ...rest} = {}) {
         super._init({
@@ -162,6 +162,7 @@ class WorldClockWidget extends St.Widget {
             } catch (_) {
                 // static settings
             }
+        }
         this.connect('destroy', () => this.destroy());
         this.connect('notify::mapped', () => {
             if (this.mapped)
@@ -172,6 +173,7 @@ class WorldClockWidget extends St.Widget {
         this._startTimer();
         this._sync();
     }
+
 
     _applyTextOffsets() {
         if (!this._settings)

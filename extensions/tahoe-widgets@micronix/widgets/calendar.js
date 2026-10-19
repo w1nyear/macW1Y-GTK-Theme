@@ -17,7 +17,7 @@ const OFFSET_KEYS = [
 
 const CELL_KEYS = ['calendar-cell-w', 'calendar-cell-h'];
 
-export const CalendarWidget = GObject.registerClass(
+export const CalendarWidget = GObject.registerClass({GTypeName: 'Tahoe_CalendarWidget_' + Math.floor(Math.random() * 10000000)},
 class CalendarWidget extends St.Widget {
     _init({settings = null, darkText = false, variant = 'wide', ...rest} = {}) {
         super._init({

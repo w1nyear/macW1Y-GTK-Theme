@@ -11,7 +11,7 @@ const OFFSET_KEYS = [
     'reminders-list-x', 'reminders-list-y',
 ];
 
-export const RemindersWidget = GObject.registerClass(
+export const RemindersWidget = GObject.registerClass({GTypeName: 'Tahoe_RemindersWidget_' + Math.floor(Math.random() * 10000000)},
 class RemindersWidget extends St.Widget {
     _init({settings = null, darkText = false, ...rest} = {}) {
         super._init({

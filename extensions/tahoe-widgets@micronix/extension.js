@@ -12,14 +12,15 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import {ClockWidget, CLOCK_W, CLOCK_H} from './widgets/clock.js';
-import {CalendarWidget, CALENDAR_W, CALENDAR_H} from './widgets/calendar.js';
-import {WeatherWidget, WEATHER_W, WEATHER_H} from './widgets/weather.js';
-import {WorldClockWidget, WORLDCLOCK_W, WORLDCLOCK_H} from './widgets/worldclock.js';
-import {DateWidget, DATE_W, DATE_H} from './widgets/date.js';
-import {RemindersWidget, REMINDERS_W, REMINDERS_H} from './widgets/reminders.js';
-import {StocksWidget, STOCKS_W, STOCKS_H} from './widgets/stocks.js';
-import {NewsWidget, NEWS_W, NEWS_H} from './widgets/news.js';
+import {ClockWidget, CLOCK_W, CLOCK_H} from './widgets/clock.js?v=2';
+import {CalendarWidget, CALENDAR_W, CALENDAR_H} from './widgets/calendar.js?v=2';
+import {WeatherWidget, WEATHER_W, WEATHER_H} from './widgets/weather.js?v=2';
+import {WorldClockWidget, WORLDCLOCK_W, WORLDCLOCK_H} from './widgets/worldclock.js?v=2';
+import {DateWidget, DATE_W, DATE_H} from './widgets/date.js?v=2';
+import {RemindersWidget, REMINDERS_W, REMINDERS_H} from './widgets/reminders.js?v=2';
+import {StocksWidget, STOCKS_W, STOCKS_H} from './widgets/stocks.js?v=2';
+import {NewsWidget, NEWS_W, NEWS_H} from './widgets/news.js?v=2';
+
 import {paintBox, paintInk, usesDarkInk} from './widgets/theme.js';
 
 const SCHEMA = 'org.gnome.shell.extensions.tahoe-widgets';

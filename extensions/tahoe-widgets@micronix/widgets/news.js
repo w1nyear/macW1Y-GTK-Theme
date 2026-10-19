@@ -49,7 +49,7 @@ function itemImage(item) {
         })();
 }
 
-export const NewsWidget = GObject.registerClass(
+export const NewsWidget = GObject.registerClass({GTypeName: 'Tahoe_NewsWidget_' + Math.floor(Math.random() * 10000000)},
 class NewsWidget extends St.Widget {
     _init({settings = null, darkText = false, variant = 'wide', ...rest} = {}) {
         super._init({
