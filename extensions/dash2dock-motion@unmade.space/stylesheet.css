@@ -5,8 +5,15 @@
 
 .dash-item-container .overview-tile:hover .overview-icon,
 .dash-item-container .overview-tile.focused .overview-icon,
-.dash-item-container .show-apps:hover .overview-icon {
-  background-color: rgba(238, 238, 238, 0.2); }
+.dash-item-container .overview-tile:focus .overview-icon,
+.dash-item-container .overview-tile:active .overview-icon,
+.dash-item-container .show-apps:hover .overview-icon,
+.dash-item-container .show-apps:focus .overview-icon,
+.dash-item-container .show-apps:active .overview-icon {
+  background-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important; }
 
 .dash-item-container .overview-tile .app-grid-running-dot {
   margin-bottom: 5px;
@@ -44,8 +51,8 @@
     #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
     #dashtodockContainer.bottom #dash .dash-item-container .overview-tile {
       padding: 0px 0px;
-      padding-bottom: 12px;
-      padding-top: 12px; }
+      padding-bottom: 18px;
+      padding-top: 6px; }
       #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:ltr:first-child, #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:rtl:last-child,
       #dashtodockContainer.bottom #dash .dash-item-container .show-apps:ltr:first-child,
       #dashtodockContainer.bottom #dash .dash-item-container .show-apps:rtl:last-child,
@@ -66,13 +73,18 @@
     #dashtodockContainer.bottom #dash .dash-item-container .overview-tile.running .overview-icon {
       background-image: none; }
     #dashtodockContainer.bottom #dash .dash-item-container .app-well-app.focused .overview-icon,
-    #dashtodockContainer.bottom #dash .dash-item-container .overview-tile.focused .overview-icon {
-      background-color: rgba(238, 238, 238, 0.2); }
+    #dashtodockContainer.bottom #dash .dash-item-container .overview-tile.focused .overview-icon,
+    #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:hover .overview-icon,
+    #dashtodockContainer.bottom #dash .dash-item-container .overview-tile:hover .overview-icon {
+      background-color: transparent !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important; }
     #dashtodockContainer.bottom #dash .dash-item-container .app-well-app .app-well-app-running-dot,
     #dashtodockContainer.bottom #dash .dash-item-container .app-well-app .app-grid-running-dot,
     #dashtodockContainer.bottom #dash .dash-item-container .overview-tile .app-well-app-running-dot,
     #dashtodockContainer.bottom #dash .dash-item-container .overview-tile .app-grid-running-dot {
-      margin-bottom: 2px; }
+      margin-bottom: 4px; }
     #dashtodockContainer.bottom #dash .dash-item-container > StButton {
       transition-duration: 250;
       background-size: contain; }

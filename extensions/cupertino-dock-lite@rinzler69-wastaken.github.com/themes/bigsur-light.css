@@ -1,5 +1,6 @@
-/* Cupertinisator — Big Sur Light
- * Floating frosted-glass pill, light variant.
+/* Cupertinisator — Big Sur Dark
+ * Floating frosted-glass pill, full rounded corners, gap from screen edge.
+ * Stacked on top of Dash to Dock's own stylesheet — only overrides differ.
  */
 
 #dashtodockContainer.bottom #dash,
@@ -26,7 +27,7 @@
 
 #dashtodockContainer.bottom.shrink #dash .dash-separator {
   background-color: rgba(255, 255, 255, 0.15) !important;
-  width: 2px !important;
+  width: 1.5px !important;
   height: 2px !important;
   margin-bottom: 7.5px !important;
 }
@@ -74,8 +75,8 @@
 #dashtodockContainer.bottom #dash .dash-item-container .overview-tile,
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .overview-tile {
   padding: 0px 0px !important;
-  padding-bottom: 12px !important;
-  padding-top: 12px !important;
+  padding-bottom: 18px !important;
+  padding-top: 6px !important;
 }
 
 #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:ltr:first-child,
@@ -189,56 +190,70 @@
 }
 
 #dashtodockContainer.bottom #dash .dash-item-container .app-well-app.focused .overview-icon,
-
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .app-well-app.focused .overview-icon,
 #dashtodockContainer.bottom #dash .dash-item-container .overview-tile.focused .overview-icon,
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .overview-tile.focused .overview-icon {
-  background-color: rgba(34, 34, 38, 0.2) !important;
-
-
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.05) !important;
-
-  border-radius: 18px !important;
-  /* match your icon rounding */
+  background-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
 #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:hover .overview-icon,
-
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .app-well-app:hover .overview-icon,
 #dashtodockContainer.bottom #dash .dash-item-container .show-apps:hover .overview-icon,
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .show-apps:hover .overview-icon,
 #dashtodockContainer.bottom #dash .dash-item-container .overview-tile:hover .overview-icon,
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .overview-tile:hover .overview-icon {
   background-color: transparent !important;
+  background: transparent !important;
   box-shadow: none !important;
+  border: none !important;
 }
 
 #dashtodockContainer.bottom #dash .dash-item-container .app-well-app.focused:hover .overview-icon,
-
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .app-well-app.focused:hover .overview-icon,
 #dashtodockContainer.bottom #dash .dash-item-container .overview-tile.focused:hover .overview-icon,
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .overview-tile.focused:hover .overview-icon {
-  background-color: rgba(34, 34, 38, 0.2) !important;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.05) !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
 .app-grid-running-dot {
   height: 5px !important;
   width: 5px !important;
   border-radius: 5px !important;
-  background-color: #222226 !important;
+  background-color: #fafafb !important;
   offset-y: 3px !important;
 }
 
+/* left */
+#dashtodockContainer.left .app-grid-running-dot,
+
+/* left */
+#dashtodockContainer.left.shrink .app-grid-running-dot {
+  -x-offset: 4px;
+  -y-offset: 0;
+}
+
+/* right */
+#dashtodockContainer.right .app-grid-running-dot,
+
+/* right */
+#dashtodockContainer.right.shrink .app-grid-running-dot {
+  -x-offset: -4px;
+  -y-offset: 0;
+}
+
 .dash-label {
-  background-color: rgba(250, 250, 250, 0.8);
-  color: #222226;
+  background-color: rgba(34, 34, 38, 0.9);
+  color: #fafafb;
   padding-left: 18px;
   padding-right: 18px;
   border-radius: 6px;
-  border: 1px solid rgba(34, 34, 38, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   font-weight: 500;
 }
 
@@ -262,15 +277,11 @@
   margin-right: 18px !important;
 }
 
-
 /*---------------LEFT PROPERTIES---------------*/
-
 
 #dashtodockContainer.left #dash,
 
-
 /*---------------LEFT PROPERTIES---------------*/
-
 
 #dashtodockContainer.left.shrink #dash {
   margin: 0px !important;
@@ -286,15 +297,15 @@
   padding: 0 !important;
   border-radius: 22px !important;
   spacing: 4px !important;
-  background-color: rgba(242, 242, 247, 0.78) !important;
-  border: 1.5px solid rgba(34, 34, 38, 0.3) !important;
+  background-color: rgba(28, 28, 30, 0.72) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 #dashtodockContainer.left #dash .dash-separator,
 
 #dashtodockContainer.left.shrink #dash .dash-separator {
-  background-color: rgba(0, 0, 0, 0.10) !important;
-  height: 2px !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  height: 1.5px !important;
   width: 2px !important;
   margin-left: 7.5px !important;
 }
@@ -453,14 +464,10 @@
 #dashtodockContainer.left.shrink #dash .dash-item-container .app-well-app.focused .overview-icon,
 #dashtodockContainer.left #dash .dash-item-container .overview-tile.focused .overview-icon,
 #dashtodockContainer.left.shrink #dash .dash-item-container .overview-tile.focused .overview-icon {
-  background-color: rgba(34, 34, 38, 0.2) !important;
-
-
+  background-color: rgba(255, 255, 255, 0.2) !important;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45),
     inset 0 -1px 2px rgba(255, 255, 255, 0.05) !important;
-
   border-radius: 18px !important;
-  /* match your icon rounding */
 }
 
 #dashtodockContainer.left #dash .dash-item-container .app-well-app:hover .overview-icon,
@@ -479,7 +486,7 @@
 #dashtodockContainer.left.shrink #dash .dash-item-container .app-well-app.focused:hover .overview-icon,
 #dashtodockContainer.left #dash .dash-item-container .overview-tile.focused:hover .overview-icon,
 #dashtodockContainer.left.shrink #dash .dash-item-container .overview-tile.focused:hover .overview-icon {
-  background-color: rgba(34, 34, 38, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45),
     inset 0 -1px 2px rgba(255, 255, 255, 0.05) !important;
 }
@@ -508,8 +515,8 @@
   padding: 0 !important;
   border-radius: 22px !important;
   spacing: 4px !important;
-  background-color: rgba(242, 242, 247, 0.78) !important;
-  border: 1.5px solid rgba(34, 34, 38, 0.3) !important;
+  background-color: rgba(28, 28, 30, 0.72) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 #dashtodockContainer.right #dash .dash-separator,
@@ -675,14 +682,10 @@
 #dashtodockContainer.right.shrink #dash .dash-item-container .app-well-app.focused .overview-icon,
 #dashtodockContainer.right #dash .dash-item-container .overview-tile.focused .overview-icon,
 #dashtodockContainer.right.shrink #dash .dash-item-container .overview-tile.focused .overview-icon {
-  background-color: rgba(34, 34, 38, 0.2) !important;
-
-
+  background-color: rgba(255, 255, 255, 0.2) !important;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45),
     inset 0 -1px 2px rgba(255, 255, 255, 0.05) !important;
-
   border-radius: 18px !important;
-  /* match your icon rounding */
 }
 
 #dashtodockContainer.right #dash .dash-item-container .app-well-app:hover .overview-icon,
@@ -701,7 +704,7 @@
 #dashtodockContainer.right.shrink #dash .dash-item-container .app-well-app.focused:hover .overview-icon,
 #dashtodockContainer.right #dash .dash-item-container .overview-tile.focused:hover .overview-icon,
 #dashtodockContainer.right.shrink #dash .dash-item-container .overview-tile.focused:hover .overview-icon {
-  background-color: rgba(34, 34, 38, 0.2) !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45),
     inset 0 -1px 2px rgba(255, 255, 255, 0.05) !important;
 }
@@ -711,14 +714,14 @@
 /* bottom — border-top only */
 #dashtodockContainer.bottom.extended #dash .dash-background {
   margin-bottom: 0 !important;
-  background-color: rgba(242, 242, 247, 0.78) !important;
+  background-color: rgba(28, 28, 30, 0.72) !important;
   border: none !important;
-  border-top: 1.5px solid rgba(34, 34, 38, 0.3) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 0 !important;
 }
 
 #dashtodockContainer.bottom.extended #dash .dash-separator {
-  background-color: rgba(0, 0, 0, 0.10) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 #dashtodockContainer.bottom.extended #dash #dashtodockDashContainer {
@@ -734,14 +737,14 @@
 
 /* left — border-right only */
 #dashtodockContainer.left.extended #dash .dash-background {
-  background-color: rgba(242, 242, 247, 0.78) !important;
+  background-color: rgba(28, 28, 30, 0.72) !important;
   border: none !important;
-  border-right: 1.5px solid rgba(34, 34, 38, 0.3) !important;
+  border-right: 1.5px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 0 !important;
 }
 
 #dashtodockContainer.left.extended #dash .dash-separator {
-  background-color: rgba(0, 0, 0, 0.10) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 #dashtodockContainer.left.extended #dash #dashtodockDashContainer {
@@ -757,14 +760,14 @@
 
 /* right — border-left only */
 #dashtodockContainer.right.extended #dash .dash-background {
-  background-color: rgba(242, 242, 247, 0.78) !important;
+  background-color: rgba(28, 28, 30, 0.72) !important;
   border: none !important;
-  border-left: 1.5px solid rgba(34, 34, 38, 0.3) !important;
+  border-left: 1.5px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 0 !important;
 }
 
 #dashtodockContainer.right.extended #dash .dash-separator {
-  background-color: rgba(0, 0, 0, 0.10) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 #dashtodockContainer.right.extended #dash #dashtodockDashContainer {
@@ -777,6 +780,7 @@
   padding-left: 7px !important;
   padding-right: 5px !important;
 }
+
 
 #dashtodockContainer .notification-badge {
   color: white;

@@ -6423,3 +6423,24 @@ echo "==> Встановлення успішно завершено!"
         - `dock_context_menu_crop.png` та `dock_menu_tuned_crop.png` (контекстне меню іконки дока з чітким білим текстом, оптичним заломленням та відблиском).
       * Підтверджено повну відсутність сірих/чорних фонів та ідеальну роботу оптичного шейдера скла.
 
+125. Видалення hover-підсвічування (halo) над іконками у Доку та підняття іконок вище:
+    - Контекст та вимоги користувача:
+      * «видали ось цей hover над програмою у док щоб його не булою і піднеси іконки вище у док»
+      * Користувач надав знімок `media_1792439115003_1123829b.png`, де при наведенні курсору на іконку (Термінал) з'являвся напівпрозорий сіро-білий ореол/підкладка (hover halo `rgba(238, 238, 238, 0.2)`).
+      * Також на знімку `media_1792439134344_bf9bbf51.png` іконки сиділи занадто низько до нижнього краю капсули доку, створюючи візуальну перевантаженість знизу через індикатори запущених програм.
+    - Виконані технічні рішення та виправлення:
+      1) Повне усунення hover-ореолу та фокусу над іконками доку:
+         - У GSettings для розширення `dash2dock-motion` вимкнено параметр `show-icon-highlight`:
+           `gsettings set org.gnome.shell.extensions.dash2dock-motion show-icon-highlight false`
+         - У `stylesheet.css` розширення `dash2dock-motion@unmade.space` замінено стилі для:
+           `.dash-item-container .overview-tile:hover .overview-icon`, `.overview-tile.focused .overview-icon`, `.show-apps:hover .overview-icon`, `#dashtodockContainer.bottom #dash .dash-item-container .app-well-app:hover .overview-icon` тощо на сувору прозорість (`background-color: transparent !important; background: transparent !important; box-shadow: none !important; border: none !important;`).
+         - У темах `cupertino-dock-lite` (`bigsur-dark.css`, `bigsur-light.css`) та темах оболонки `gnome-shell.css` знято всі правила підсвічування плиток (`rgba(255, 255, 255, 0.2)` і `rgba(255, 255, 255, 0.1)`).
+      2) Підняття іконок вище всередині капсули Доку:
+         - Відкалібровано вертикальний розподіл відступів: замість симетричних `padding-top: 12px; padding-bottom: 12px;` встановлено `padding-top: 6px !important; padding-bottom: 18px !important;` для `.overview-tile` та `.app-well-app`.
+         - Самі іконки змістилися вгору на 6px (`y = 1014` -> `y = 1008`).
+         - Точки запущених додатків (`.app-grid-running-dot`) відкалібровано на `margin-bottom: 4px`, що забезпечило охайний простір між нижнім краєм іконки та точкою запуску, позбавивши док ефекту «притиснутості» донизу.
+    - Верифікація:
+      * Знято контрольний знімок `dock_hover_crop.png`: при активному hover-стані над Терміналом фон залишається кришталево прозорим без жодного біло-сірого ореолу.
+      * Знято контрольний знімок `dock_lifted_crop.png`: іконки розташовані вище у скляній капсулі доку, композиція виглядає просторо та збалансовано у повній відповідності до дизайну macOS Tahoe.
+
+
