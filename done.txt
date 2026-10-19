@@ -5645,3 +5645,35 @@ echo "==> Встановлення успішно завершено!"
         * Діалог перебуває у стані спокою: `promptBoxVisible: false`, `adjustmentValue: 0`.
         * Картка акаунта `_avatarButton` та `_userWell` реактивні (`reactive: true`).
         * Симуляція кліку по аватару успішно ініціює анімацію переходу `adjustment: 0 -> 1` та відкриває поле введення паролю (`promptBoxVisible: true`, `promptActive: true`).
+
+95. Усунення падіння GNOME Shell (SIGSEGV signal 11) та аварійного виходу із сесії при натисканні Ctrl+Space:
+    - Проблема:
+      * Користувач повідомив: "часто чомусь якщо натиснути ctrl+space виходить із сесії".
+      * При натисканні гарячої клавіші `Ctrl+Space` графічна сесія GNOME Wayland раптово переривалася, закривалися всі запущені програми і користувача викидало на екран входу GDM.
+    - Аналіз системних логів та першопричина:
+      1) У системних логах `journalctl` о 07:03:57 зафіксовано фатальний крах процесу `gnome-shell`:
+         `GNOME Shell crashed with signal 11` (SIGSEGV)
+         Зі стеком викликів:
+         `#0 backdropGlass.js:357 (vfunc_map)`
+         `#1 searchDialog_v4.js:776 (this._glass.show())`
+         `#2 searchDialog_v4.js:1091 (before-update)`
+         `#3 searchDialog_v4.js:2148 (open)`
+         `#4 eval-helper@mactheme/extension.js:334 (toggleSearchDialog)`
+      2) У системі на клавішу `search-shortcut` (`Ctrl+Space`) налаштовано виклик пошуку Spotlight.
+      3) Розширення `eval-helper@mactheme` перехоплювало комбінацію через `Main.wm.addKeybinding` та шукало `globalThis.toggleMacSpotlight`, якої не було (актуальна була `_macSpotlightToggle`). Внаслідок цього щоразу імпортувався застарілий модуль `searchDialog_v4.js`.
+      4) У `searchDialog_v4.js` при знищенні акторів екземпляр `this._glass` ставав disposed GObject у C/Mutter. Проте сигнал `before-update` на `global.stage` продовжував викликати `_syncGlass()` на кожному кадрі оновлення екрана (60/144 Гц), а той викликав `this._glass.show()`.
+      5) У `backdropGlass.js:357` метод `vfunc_map()` викликав `super.vfunc_map()`, який у Clutter C/Cogl звертався до звільненої пам'яті (use-after-free) -> сигнал 11 (SIGSEGV). У Wayland падіння Mutter призводить до негайного завершення сесії користувача та повернення до GDM.
+    - Реалізовані виправлення:
+      1) Повне усунення застарілого `searchDialog_v4.js`:
+         - Усі файли пошукового діалогу (`searchDialog_v4.js`, `searchDialog_v3.js`, `searchDialog.js`, `spotlight.js`) замінено на актуальний, безпечний та оптимізований модуль `searchDialog_v5.js`.
+         - У `eval-helper@mactheme/extension.js` (та інших файлах eval-helper) обробник клавіші оновлено: він звертається до `globalThis._macSpotlightToggle` та `globalThis.toggleMacSpotlight`, а резервний імпорт звертається виключно до `searchDialog_v5.js`.
+      2) Безпечний життєвий цикл `BackdropGlass` у `searchDialog_v5.js`:
+         - Додано валідатори `_isActorValid` та `_isGlassAlive` через низькорівневий `GObject.Object.prototype.toString.call(actor)` без небезпечних C-викликів.
+         - Метод `_syncGlass()` повністю захищено блоком `try/catch`, що виключає вихід будь-яких помилок у цикл Mutter.
+         - Обробник сигналу `before-update` захищено від помилок з автоматичним безпечним відключенням, а в методі `close()` він відключається негайно при старті закриття.
+         - Експортовано обидві глобальні змінні: `globalThis._macSpotlightToggle` та `globalThis.toggleMacSpotlight`.
+      3) Гаряче оновлення живої сесії:
+         - Модуль та гаряча клавіша `search-shortcut` оновлені в пам'яті GNOME Shell без необхідності перезавантаження ПК.
+    - Верифікація:
+      - Проведено стрес-тест багаторазового швидкого натискання (6 разів поспіль) — жодних помилок чи падінь, сесія абсолютно стабільна.
+      - Перевірено повноцінний цикл відкриття, введення запиту та закриття Spotlight — лог GNOME Shell чистий.

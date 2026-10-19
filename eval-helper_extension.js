@@ -249,11 +249,15 @@ export default class EvalHelper extends Extension {
                     Shell.ActionMode.ALL,
                     async () => {
                         try {
+                            if (typeof globalThis._macSpotlightToggle === 'function') {
+                                globalThis._macSpotlightToggle();
+                                return;
+                            }
                             if (typeof globalThis.toggleMacSpotlight === 'function') {
                                 globalThis.toggleMacSpotlight();
                                 return;
                             }
-                            const mod = await import(`file://${ext.path}/searchDialog_v4.js`);
+                            const mod = await import(`file://${ext.path}/searchDialog_v5.js`);
                             if (mod?.toggleSearchDialog) {
                                 mod.toggleSearchDialog();
                             }
