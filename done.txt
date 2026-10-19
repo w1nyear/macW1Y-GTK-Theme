@@ -5817,3 +5817,20 @@ echo "==> Встановлення успішно завершено!"
     - Верифікація:
       - Перевірено завантаження Pango 'Open Runde Bold' у середовищі Clutter/St.
       - Перевірено системний gresource, dconf GDM та налаштування сесії.
+
+102. Відновлення видимості верхньої панелі та меню-бара (panelBox opacity):
+    - Запит користувача:
+      * "виправи те що меню бара немає"
+    - Діагностика:
+      * У системному оверлеї /etc/gnome-shell/ui/layout.js та розширенні eval-helper@mactheme функція _startupAnimationSession() при старті сесії у режимі Огляду (_startInOverview === true) запускала анімацію огляду, але не встановлювала та не анімувала panelBox.opacity до 255 (значення залишалося 0 після початкової підготовки _prepareStartupAnimation).
+      * Через це контейнер panelBox мав paint_opacity: 0, роблячи всю верхню панель (яблучко, меню додатків, системний трей, Центр керування та годинник) невидимою для користувача.
+    - Виправлення:
+      1) У /etc/gnome-shell/ui/layout.js, MACTHEMEFILES/etc/gnome-shell/ui/layout.js та MACTHEMEFILES/components/layout.js:
+         - В _startupAnimationSession() анімацію opacity: 255 винесено як обов'язкову дію для всіх шляхів завантаження сесії.
+         - В _startupAnimationComplete() додано гарантоване встановлення this.panelBox.opacity = 255.
+      2) У розширенні eval-helper@mactheme (розгорнуто в системі та MACTHEMEFILES):
+         - В enable() додано миттєву перевірку та встановлення Main.layoutManager.panelBox.opacity = 255 та visible = true.
+         - Додано слухач Main.overview.connectObject('hiding', ...) для автоматичного повернення opacity: 255 при будь-якому виході з режиму огляду.
+    - Верифікація:
+      - Знято скріншот верхньої панелі top_menubar_fixed.png.
+      - Повне меню повернено на екран: яблучко, меню програми (Antigravity -> Файл, Редагування, Вигляд, Перехід, Вікно), перемикачі Tahoe, іконки трею, Центр керування та годинник відображаються коректно.
