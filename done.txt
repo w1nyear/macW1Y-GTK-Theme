@@ -6170,4 +6170,29 @@ echo "==> Встановлення успішно завершено!"
       * `nc_tahoe_blur_crop.png`: наш автентичний Центр сповіщень із feather-soft Gaussian backdrop blur від Центру керування.
       * `spotlight_verify_crop.png`: перевірено, що наш автентичний Spotlight залишився абсолютно незайманим і повністю функціональним.
 
+115. Глобальне очищення проекту від застарілих версій, дублікатів та усунення конфліктів накладання тем:
+    - Контекст та вимоги:
+      * «у нашому проекті видали всі непотрібні невикористовуючі файли які тепер просто валяються і засмічують аби організувати нормально файли у нашому проекті. я от бачу елементи ..._v2/23.xxx і так далі.»
+      * «видали наші колишні невикористовуючі елементи теми для того аби система не накладала один на одне а тем пак також один на одне тему не перекривав а просто повністю замінила з новими виглядами без накладань і багів»
+    - Виконані дії з очищення застарілих файлів та структури:
+      1) Очищення компонентів `blur-my-shell@aunetx/components/`:
+         - Видалено 26 застарілих версій: `control_center.js`, `control_center_v2.js`, `control_center_v26.js`..`v30.js`, `menubar.js`, `menubar_v2.js`, `menubar_v3.js`, `menubar_v21.js`..`v28.js`, `notifications.js`, `notifications_v2.js`, `notifications_v3.js`, `mac_input_switcher_v8.js`..`v10.js`, `mac_menus_shared_v2.js`..`v4.js`.
+         - Залишено виключно актуальні робочі модулі: `menubar_v29.js`, `notifications_v4.js`, `mac_input_switcher_v11.js`, `mac_menus_shared_v5.js`, `mac_feathered_backdrop_blur.js`, `mac_i18n.js` та стандартні компоненти BMS.
+      2) Очищення розширення `appmenu@ChathurangaBW.github.io/`:
+         - Видалено 10 неактивних версій та дублікатів: `applications_menu.js`, `applications_menu_v1.js`..`v4.js`, `clipboardDialog.js`, `searchDialog.js`, `searchDialog_v3.js`, `searchDialog_v4.js`, `spotlight.js`.
+         - Залишено виключно актуальні робочі модулі: `applications_menu_v5.js`, `clipboardDialog_v2.js`, `searchDialog_v5.js`.
+      3) Очищення `kiwi@kemma/apps/`:
+         - Видалено застарілий `tahoeQuickSettings_v2.js`.
+      4) Очищення кореня репозиторію (`MACTHEMEFILES` / `macW1Y`):
+         - Видалено 71 застарілий файл та тимчасові дампи: `control_center_v*.js`, `menubar_v*.js`, `notifications*.js`, `searchDialog*.js`, `mac_input_switcher*.js`, `dash.js`, `panel.js`, `spotlight.js`, `gestureImpl.js`, `liquid_glass_toggleStyles.js`, `eval-helper_extension.js`, `appmenu_extension.js`, `gnome-shell*.css`, `screen.webm`, `glass.frag` тощо.
+         - Видалено дублюючі кореневі каталоги розширень (`blur-my-shell`, `blur-my-shell@aunetx`, `dash-to-dock`, `eval-helper`, `eval-helper@mactheme`, `liquid-glass`, `liquid-glass@thinkingcoding1231.gmail.com`, `wack-lockscreen-clock@rinzler69-wastaken.github.com`, `ubuntu-appindicators`, `mac-styling`, `theme`, `gnome-shell`, `blur-my-shell-components`, `components`), оскільки всі 27 розширень канонічно розташовані в каталозі `extensions/`.
+    - Усунення конфліктів накладання старих і нових елементів теми:
+      1) У `menubar_v29.js` прибрано імпорт та конструювання старого `MacControlCenter` (`control_center_v30.js`) у системне меню QuickSettings. Тепер Центр керування надається виключно Tahoe Control Center (`kiwi@kemma`) без паралельної роботи двох центрів керування та накладання.
+      2) В `eval-helper@mactheme/extension.js` видалено застарілий монкі-патч `patchNotificationLQVisual`, який намагався динамічно підвантажувати старі `notifications_v3.js` та `menubar_v27.js` поверх нашого рідного стеку `menubar_v29.js` / `notifications_v4.js`.
+      3) В `install.sh` оновлено версійні перевірки на `menubar_v29.js`.
+    - Верифікація:
+      * Відсутні будь-які помилки імпорту або дублювання розширень.
+      * Усі робочі середовища (`~/.local/share/gnome-shell/extensions/`, `MACTHEMEFILES`, `macW1Y`) повністю синхронізовані та мають чисту організовану структуру.
+
+
 

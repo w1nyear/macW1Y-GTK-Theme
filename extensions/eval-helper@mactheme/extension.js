@@ -476,68 +476,7 @@ export default class EvalHelper extends Extension {
         };
         patchSwitcherPopupLQVisual();
 
-        // Ensure Notification Center and Notification Banners use LQ-Visual glass
-        const patchNotificationLQVisual = async () => {
-            try {
-                const notifMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v3.js');
-                const menubarMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v27.js');
-
-                // 1. Update global card builder and group class
-                globalThis._macBuildNotificationCard = notifMod.buildNotificationCard;
-                globalThis._MacNotificationGroup = notifMod.MacNotificationGroup;
-
-                // 2. Patch active MenuBarController prototype and instance if needed
-                const mbProto = menubarMod.MenuBarController.prototype;
-                const nc = globalThis._macNotificationCenter;
-                if (nc) {
-                    nc._initNotifGlass = mbProto._initNotifGlass.bind(nc);
-                    nc._syncNotifGlassRegions = mbProto._syncNotifGlassRegions.bind(nc);
-                    nc._updateNotifRealtime = mbProto._updateNotifRealtime.bind(nc);
-                    nc._setupCardGeometryTracking = mbProto._setupCardGeometryTracking.bind(nc);
-                    nc._openNotificationCenter = mbProto._openNotificationCenter.bind(nc);
-                    nc._closeNotificationCenter = mbProto._closeNotificationCenter.bind(nc);
-
-                    if (nc._notifCenterActor && !nc._notifCenterActor._glassListenersConnected) {
-                        nc._notifCenterActor._glassListenersConnected = true;
-                        nc._notifCenterActor.connect('notify::translation-x', () => {
-                            if (nc._notifCenterOpen) nc._syncNotifGlassRegions();
-                        });
-                        nc._notifCenterActor.connect('notify::opacity', () => {
-                            if (nc._notifGlass && !nc._notifGlass.is_finalized?.()) {
-                                nc._notifGlass.opacity = nc._notifCenterActor.opacity;
-                            }
-                        });
-                        if (nc._notifScrollView?.vadjustment) {
-                            nc._notifScrollView.vadjustment.connect('notify::value', () => {
-                                if (nc._notifCenterOpen) nc._syncNotifGlassRegions();
-                            });
-                        }
-                    }
-
-                    if (nc._notifCenterOpen) {
-                        nc._populateNotificationCards();
-                        await nc._initNotifGlass();
-                        nc._syncNotifGlassRegions();
-                    }
-                }
-
-                // 3. Hot-swap NotificationsController for floating banners ONLY if missing
-                const extBms = Main.extensionManager.lookup('blur-my-shell@aunetx');
-                if (extBms?.stateObj && !extBms.stateObj._notifications_controller) {
-                    const newNotifCtrl = new notifMod.NotificationsController(
-                        extBms.stateObj._connections?.[0] || extBms.stateObj._connection,
-                        extBms.stateObj._settings,
-                        extBms.stateObj._effects_manager
-                    );
-                    extBms.stateObj._notifications_controller = newNotifCtrl;
-                    newNotifCtrl.enable();
-                    globalThis._macNotificationsController = newNotifCtrl;
-                }
-            } catch (e) {
-                console.error('[EvalHelper] patchNotificationLQVisual error: ' + e);
-            }
-        };
-        patchNotificationLQVisual();
+        // Notification Center and Notification Banners are natively handled by blur-my-shell (menubar_v29 & notifications_v4)
 
         // Ensure GNOME Overview is strictly Mission Control (Window/Workspace picker only)
         // Ensure GNOME Overview is strictly Mission Control (Window/Workspace picker only)

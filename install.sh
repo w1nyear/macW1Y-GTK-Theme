@@ -111,8 +111,7 @@ get_installed_version() {
     # Експериментальне виявлення попередньо встановленої версії
     if [ -d "$TARGET_HOME/.themes/macW1Y-Dark" ] || \
        [ -d "$TARGET_HOME/.icons/macW1Y-dark" ] || \
-       [ -f "$TARGET_HOME/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v24.js" ] || \
-       [ -f "$TARGET_HOME/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v21.js" ] || \
+       [ -f "$TARGET_HOME/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v29.js" ] || \
        [ -f "/etc/systemd/system/mac-touchpad-daemon.service" ] || \
        [ -d "/boot/grub/themes/apple-mac" ]; then
         echo "0.1"

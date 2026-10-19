@@ -17,7 +17,6 @@ import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
 import { getMixerControl } from 'resource:///org/gnome/shell/ui/status/volume.js';
 import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 import { buildNotificationCard, MacNotificationGroup } from './notifications_v4.js';
-import { MacControlCenter } from './control_center_v30.js';
 import { MacInputSwitcher } from './mac_input_switcher_v11.js';
 import { MacFeatheredBackdropBlur } from './mac_feathered_backdrop_blur.js';
 import { t, tf } from './mac_i18n.js';
@@ -3262,55 +3261,18 @@ export const MenuBarController = class MenuBarController {
             });
         }
 
-        // Setup macOS Tahoe Control Center inside quickSettings.menu
-        const kiwiExt = Main.extensionManager.lookup('kiwi@kemma');
-        const isKiwiActive = kiwiExt && kiwiExt.state === 1;
-
-        if (isKiwiActive) {
-            if (this._macControlCenter) {
-                try { this._macControlCenter.destroy(); } catch (_) {}
-                this._macControlCenter = null;
-            }
-            if (quickSettings.menu?._grid) {
-                quickSettings.menu._grid.visible = false;
-                quickSettings.menu._grid.hide();
-                quickSettings.menu._grid.style = 'margin: 0 !important; padding: 0 !important; width: 0px !important; min-width: 0px !important; height: 0px !important; min-height: 0px !important; opacity: 0 !important;';
-            }
-            return;
+        // Control Center is handled by macOS Tahoe Control Center (kiwi@kemma).
+        // Hide standard quickSettings menu grid so it never overlaps.
+        if (this._macControlCenter) {
+            try { this._macControlCenter.destroy(); } catch (_) {}
+            this._macControlCenter = null;
         }
-
-        if (quickSettings.menu?.box) {
-            // Clean up any pre-existing or duplicate mac-control-center-root
-            const toRemove = [];
-            for (const child of quickSettings.menu.box.get_children()) {
-                if (child.has_style_class_name && child.has_style_class_name('mac-control-center-root')) {
-                    toRemove.push(child);
-                }
-            }
-            for (const c of toRemove) {
-                quickSettings.menu.box.remove_child(c);
-                try { c.destroy(); } catch (_) {}
-            }
-            if (this._macControlCenter) {
-                try { this._macControlCenter.destroy(); } catch (_) {}
-                this._macControlCenter = null;
-            }
-
-            try {
-                this._macControlCenter = new MacControlCenter(quickSettings.menu);
-                if (quickSettings.menu._grid) {
-                    quickSettings.menu._grid.visible = false;
-                    quickSettings.menu._grid.hide();
-                    quickSettings.menu._grid.style = 'margin: 0 !important; padding: 0 !important; width: 0px !important; min-width: 0px !important; height: 0px !important; min-height: 0px !important; opacity: 0 !important;';
-                }
-                quickSettings.menu.box.style = 'background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important;';
-                quickSettings.menu.box.add_child(this._macControlCenter.container);
-                this._macControlCenter.container.visible = true;
-                this._macControlCenter.container.show();
-            } catch (e) {
-                console.error(`[MenuBar] Error initializing MacControlCenter: ${e}`);
-            }
+        if (quickSettings.menu?._grid) {
+            quickSettings.menu._grid.visible = false;
+            quickSettings.menu._grid.hide();
+            quickSettings.menu._grid.style = 'margin: 0 !important; padding: 0 !important; width: 0px !important; min-width: 0px !important; height: 0px !important; min-height: 0px !important; opacity: 0 !important;';
         }
+        return;
 
         // Right-align Control Center menu flush to top-right corner and install smooth slide-in animation
         if (quickSettings.menu?._boxPointer) {
