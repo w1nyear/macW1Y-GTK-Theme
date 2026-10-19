@@ -5834,3 +5834,23 @@ echo "==> Встановлення успішно завершено!"
     - Верифікація:
       - Знято скріншот верхньої панелі top_menubar_fixed.png.
       - Повне меню повернено на екран: яблучко, меню програми (Antigravity -> Файл, Редагування, Вигляд, Перехід, Вікно), перемикачі Tahoe, іконки трею, Центр керування та годинник відображаються коректно.
+103. Видалення дубліката Launchpad та збереження рідного скругленого Launchpad у Доку:
+    - Запит користувача:
+      * "видали ось цей лівий лаунчпад. залиши тільки наш"
+      * "хочу нагадати: всі зміни які ми робимо в системі чи в файлах так само має бути і в наших файлах проекту macW1Y. я маю на увазі поки що тільки на пк всі файли і елементи зберігати в нашому проекті аби користувач мав те саме що й ми зараз. а деплоїти на гітхаб ми будемо лише в кінці при випуску 0.3"
+    - Діагностика:
+      * Розширення kiwi@kemma мало ввімкнений параметр enable-launchpad-app=true, через що скрипт apps/launchpadApp.js автоматично створював ярлик org.gnome.Shell.Extensions.Kiwi.Launchpad.desktop у ~/.local/share/applications та примусово закріплював його на позицію 1 у org.gnome.shell favorite-apps (між Finder/Nautilus та рідним Launchpad).
+      * В результаті у Доку відображалися два Launchpad: лівий сторонній (кольорова сітка 3x3) та рідний squircle (macOS Launchpad).
+    - Виправлення:
+      1) Вимкнено вбудований лаунчпад розширення kiwi:
+         - gsettings set org.gnome.shell.extensions.kiwi enable-launchpad-app false.
+         - Видалено згенеровані файли ~/.local/share/applications/org.gnome.Shell.Extensions.Kiwi.Launchpad.desktop та ~/.local/share/applications/launchpad-kiwi.desktop.
+      2) Очищено та оновлено список улюблених програм favorite-apps:
+         - Залишено виключно рідний лаунчпад: ['org.gnome.Nautilus.desktop', 'launchpad.desktop', 'google-chrome.desktop', 'antigravity_antigravity.desktop', 'org.gnome.Ptyxis.desktop', 'telegram-desktop_telegram-desktop.desktop', 'steam_steam.desktop', 'org.gnome.Settings.desktop'].
+      3) Синхронізація з репозиторієм macW1Y (MACTHEMEFILES):
+         - Оновлено та зафіксовано дампи dconf/kiwi.dconf, dconf/gnome-shell.dconf, dconf/gnome-all.dconf з параметром enable-launchpad-app=false та оновленим favorite-apps.
+         - Зміни закомічено локально у git репозиторій (без remote push до випуску v0.3).
+    - Верифікація:
+      - Знято скріншот Доку dock_crop_check.png.
+      - Лівий дублікат повністю зник; у Доку поруч з Finder розташований виключно наш рідний macOS скруглений Launchpad з кольоровими плитками.
+
