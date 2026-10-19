@@ -1,0 +1,86 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+/*(((((((((( Other fixes  ))))))))))))*/
+
+/* Nautilus list view fix to reduce padding */
+.nautilus-window
+  .nautilus-list-view
+  listview.view
+  > row.activatable
+  > cell
+  > widget#NautilusViewCell {
+  padding: 3px 9px;
+}
+
+/* Filepicker */
+listview.view > row.activatable > cell {
+  padding: 0px 9px;
+}
+
+/* Ensure maximize button shows properly when window is maximized */
+.maximized headerbar windowcontrols button.maximize > image,
+.fullscreen headerbar windowcontrols button.maximize > image {
+  min-width: 16px;
+  min-height: 16px;
+}
+
+/* Remove checkered alpha channel drawing around thumbnails and icons. Creates more cleaner look */
+.thumbnail,
+.icon .thumbnail,
+.grid-view .thumbnail {
+  background: none;
+  box-shadow: none;
+}
+
+/* Adding accent color to Floating bar */
+.floating-bar,
+.floating-bar.bottom,
+.floating-bar.horizontal,
+.floating-bar.right {
+  background-color: var(--accent-bg-color, #3584e4);
+  color: var(--accent-fg-color, #ffffff);
+}
+
+/* Popover and Menu accent color fix to use system accent color */
+/* Issue double selection with focus and hover*/
+popover.menu > contents > .menu-item:hover,
+popover.menu contents > .menu-item:hover,
+popover.menu modelbutton:hover,
+.menu > .menu-item:hover,
+.context-menu > .menu-item:hover,
+menuitem:hover,
+.menuitem:hover,
+popover.menu > contents > .menu-item:selected,
+popover.menu contents > .menu-item:selected,
+popover.menu modelbutton:selected,
+.menu > .menu-item:selected,
+.context-menu > .menu-item:selected,
+menuitem:selected,
+.menuitem:selected,
+popover.menu > contents > .menu-item:focus,
+popover.menu contents > .menu-item:focus,
+popover.menu modelbutton:focus,
+.menu > .menu-item:focus,
+.context-menu > .menu-item:focus,
+menuitem:focus,
+.menuitem:focus {
+  background-color: var(--accent-bg-color, #3584e4);
+  color: var(--accent-fg-color, #ffffff);
+}
+
+/* Dropdown selectors (GtkDropDown, GtkComboBox, AdwComboRow) put a listview in a
+   popover.menu, so their items are rows and none of the rules above reach them.
+   Adwaita gives those rows 9px vertical padding, taller than the 32px menu items
+   next to them; 6px lines the two up. */
+popover.menu scrolledwindow > listview > row {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* :selected marks the current value and keeps Adwaita's checkmark-only look, so
+   only the pointer states get the accent. */
+popover.menu listview > row:hover,
+popover.menu listview > row:active {
+  background-color: var(--accent-bg-color, #3584e4);
+  color: var(--accent-fg-color, #ffffff);
+}

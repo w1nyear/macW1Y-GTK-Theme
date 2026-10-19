@@ -1,0 +1,12 @@
+/* SPDX-FileCopyrightText: 2026 Disk_MTH
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
+/* The scroll view draws no scrollbar: a bar inside a popup this narrow would
+ * have to eat into the grid or sit over a toggle. This fade at the top and
+ * bottom edges is the whole affordance instead, and St only paints it on an
+ * edge that actually has content past it, so a menu that fits looks
+ * untouched. 24px is two thirds of a toggle's corner radius, enough to read
+ * as a cut-off row rather than as a shadow. */
+.qs-scroll-view {
+    -st-vfade-offset: 24px;
+}

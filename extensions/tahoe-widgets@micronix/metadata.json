@@ -1,0 +1,8 @@
+{
+    "uuid": "tahoe-widgets@micronix",
+    "settings-schema": "org.gnome.shell.extensions.tahoe-widgets",
+    "name": "Tahoe Widgets",
+    "description": "macOS-style draggable desktop widgets (clock, calendar, weather) with liquid glass.",
+    "shell-version": ["50"],
+    "version": 1
+}

@@ -3,9 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc && node build/space-output.cjs dist",
-    "watch": "tsc -w",
-    "pack": "rm -rf dist && npm run build && gnome-extensions pack --force --extra-source=dist --extra-source=preferences --extra-source=shaders --out-dir=. ."
+    "build": "tsc",
+    "watch": "tsc -w"
   },
   "devDependencies": {
     "@girs/gnome-shell": "^50.0.0",

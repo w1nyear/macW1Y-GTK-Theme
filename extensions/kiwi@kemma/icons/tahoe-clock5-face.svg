@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<rect x="8" y="8" width="240" height="240" rx="58" fill="#ffffff"/>
+<g transform="translate(128.0 16.0) rotate(0)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(139.8 16.0) rotate(6)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(151.8 16.0) rotate(12)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(164.4 16.0) rotate(18)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(177.9 16.0) rotate(24)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(192.6 16.1) rotate(30)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(207.2 19.0) rotate(36)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(219.9 25.9) rotate(42)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(230.1 36.1) rotate(48)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(237.0 48.8) rotate(54)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(239.9 63.4) rotate(60)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(240.0 78.1) rotate(66)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(240.0 91.6) rotate(72)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(240.0 104.2) rotate(78)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(240.0 116.2) rotate(84)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(240.0 128.0) rotate(90)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(240.0 139.8) rotate(96)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(240.0 151.8) rotate(102)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(240.0 164.4) rotate(108)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(240.0 177.9) rotate(114)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(239.9 192.6) rotate(120)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(237.0 207.2) rotate(126)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(230.1 219.9) rotate(132)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(219.9 230.1) rotate(138)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(207.2 237.0) rotate(144)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(192.6 239.9) rotate(150)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(177.9 240.0) rotate(156)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(164.4 240.0) rotate(162)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(151.8 240.0) rotate(168)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(139.8 240.0) rotate(174)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(128.0 240.0) rotate(180)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(116.2 240.0) rotate(186)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(104.2 240.0) rotate(192)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(91.6 240.0) rotate(198)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(78.1 240.0) rotate(204)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(63.4 239.9) rotate(210)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(48.8 237.0) rotate(216)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(36.1 230.1) rotate(222)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(25.9 219.9) rotate(228)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(19.0 207.2) rotate(234)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(16.1 192.6) rotate(240)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(16.0 177.9) rotate(246)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(16.0 164.4) rotate(252)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(16.0 151.8) rotate(258)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(16.0 139.8) rotate(264)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(16.0 128.0) rotate(270)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(16.0 116.2) rotate(276)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(16.0 104.2) rotate(282)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(16.0 91.6) rotate(288)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(16.0 78.1) rotate(294)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(16.1 63.4) rotate(300)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(19.0 48.8) rotate(306)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(25.9 36.1) rotate(312)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(36.1 25.9) rotate(318)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(48.8 19.0) rotate(324)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(63.4 16.1) rotate(330)"><rect x="-2.5" y="0" width="5" height="16" rx="1.5" fill="#3a3a3c"/></g>
+<g transform="translate(78.1 16.0) rotate(336)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(91.6 16.0) rotate(342)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(104.2 16.0) rotate(348)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g transform="translate(116.2 16.0) rotate(354)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
+<g font-family="SF Pro Display, Cantarell, Sans-Serif" font-weight="600" font-size="34" fill="#3a3a3c" text-anchor="middle" dominant-baseline="central">
+<text x="128.0" y="62.0">12</text>
+<text x="195.0" y="129.0">3</text>
+<text x="128.0" y="196.0">6</text>
+<text x="61.0" y="129.0">9</text>
+</g>
+</svg>

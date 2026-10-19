@@ -1,0 +1,1605 @@
+/* Custom GNOME Shell Theme - stylesheet.css */
+
+
+/*###############################################*/
+/*           Window Title Styling               */
+/*###############################################*/
+/* The icon is styled the moment addToStatusArea maps it, which happens before
+   panelStyling adds its gate class, and St never re-renders a texture for a
+   later icon-style change. So the symbolic request lives on the icon itself. */
+.kiwi-window-title-icon {
+  -st-icon-style: symbolic;
+}
+
+.app-menu-icon {
+  padding-left: 0px;
+}
+
+
+/*###############################################*/
+/*                Top Panel                      */
+/*###############################################*/
+
+/* Everything here is behind .kiwi-panel-styled, added to the panel by
+   apps/panelStyling.js when the "Panel Styling" option is on. */
+
+/* Panel base styles */
+#panel.kiwi-panel-styled {
+  font-weight: 500;
+  /* Remove transition-duration from here, we'll handle it in overview state */
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.05);
+  transition-property: background-color;
+  transition-timing-function: ease-out;
+}
+
+/* Force opaque background when fullscreen window is active (not in overview) */
+#panel.kiwi-panel-fullscreen:not(.overview) {
+  background-color: inherit !important;
+  /* Inherit theme color, ensure no transparency */
+  opacity: 1.0 !important;
+}
+
+/* Suppress the theme's 250ms background fade while the overview hides,
+   so restoring our alpha doesn't animate from a stale :overview reading */
+#panel.kiwi-panel-no-transition {
+  transition-duration: 0ms !important;
+}
+
+/* Panel color inherit fix for theme compatibility */
+#panel.kiwi-panel-color-inherit {
+  /* this often inherits transparency causing unwanted visual bugs */
+  /*background-color: inherit !important;*/
+  background-color: black;
+}
+
+#panel.kiwi-panel-styled .panel-button {
+  -natural-hpadding: 8px; /*default 12*/
+  -minimum-hpadding: 4px; /*default 12*/
+  transition-duration: 150ms;
+}
+
+#panel.kiwi-panel-styled .panel-button .popup-menu-arrow {
+  width: 0;
+  height: 0;
+}
+
+#panel.kiwi-panel-styled .panel-button .system-status-icon {
+  icon-size: 16px;
+  padding: 4px;
+  margin: 0;
+}
+
+#panel.kiwi-panel-styled .panel-button .panel-status-menu-box StLabel {
+  padding-left: 2px;
+}
+
+#panel.kiwi-panel-styled .panel-button .appindicator-trayicons-box {
+  margin: 0 4px;
+}
+
+#panel.kiwi-panel-styled .panel-button .app-menu-icon {
+  padding: 0 4px;
+}
+
+#panel.kiwi-panel-styled Gjs_AggregateMenu.panel-button .system-status-icon,
+#panel.kiwi-panel-styled Gjs_ui_panel_AggregateMenu.panel-button .system-status-icon,
+#panel.kiwi-panel-styled Gjs_ui_panel_QuickSettings.panel-button .system-status-icon {
+  margin: 0 2px !important;
+}
+
+#panel.kiwi-panel-styled Gjs_ui_dateMenu_DateMenuButton.panel-button {
+  -natural-hpadding: 0px !important;
+  -minimum-hpadding: 0px !important;
+}
+
+#panel.kiwi-panel-styled Gjs_ui_dateMenu_DateMenuButton StLabel {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* Dark foreground for a light background behind the panel, light foreground for
+   a dark one. Toggled by apps/panelTransparency.js. Must stay after the
+   .kiwi-panel-styled rules above — same specificity, so it wins on source
+   order. */
+#panel.kiwi-panel-dark-text .panel-button,
+#panel.kiwi-panel-dark-text .panel-button:hover,
+#panel.kiwi-panel-dark-text .panel-button:active,
+#panel.kiwi-panel-dark-text .panel-button:focus,
+#panel.kiwi-panel-dark-text .panel-button:checked,
+#panel.kiwi-panel-dark-text .panel-button StLabel,
+#panel.kiwi-panel-dark-text .panel-button StIcon {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+/* Hover and active pills: the shell overlays them in white, which vanishes on a
+   light wallpaper. Mirror the shell's own alpha steps in dark. The clock paints
+   its pill on the inner .clock node, so it needs its own selectors. */
+#panel.kiwi-panel-dark-text .panel-button:focus,
+#panel.kiwi-panel-dark-text .panel-button:hover,
+#panel.kiwi-panel-dark-text .panel-button.clock-display:focus .clock,
+#panel.kiwi-panel-dark-text .panel-button.clock-display:hover .clock {
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.17);
+}
+
+#panel.kiwi-panel-dark-text .panel-button:active,
+#panel.kiwi-panel-dark-text .panel-button:checked,
+#panel.kiwi-panel-dark-text .panel-button.clock-display:active .clock,
+#panel.kiwi-panel-dark-text .panel-button.clock-display:checked .clock {
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.28);
+}
+
+#panel.kiwi-panel-dark-text .panel-button:active:hover,
+#panel.kiwi-panel-dark-text .panel-button:checked:hover {
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.32);
+}
+
+/* Workspace dots are painted with background-color, so the foreground rules
+   above never reach them. */
+#panel.kiwi-panel-dark-text .panel-button#panelActivities .workspace-dot {
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+/* The mirror image, for a light shell theme (the Light Style extension, or a
+   light user theme): its own stylesheet paints the panel foreground dark, which
+   disappears as soon as transparency exposes a dark wallpaper underneath. */
+#panel.kiwi-panel-light-text .panel-button,
+#panel.kiwi-panel-light-text .panel-button:hover,
+#panel.kiwi-panel-light-text .panel-button:active,
+#panel.kiwi-panel-light-text .panel-button:focus,
+#panel.kiwi-panel-light-text .panel-button:checked,
+#panel.kiwi-panel-light-text .panel-button StLabel,
+#panel.kiwi-panel-light-text .panel-button StIcon {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+#panel.kiwi-panel-light-text .panel-button:focus,
+#panel.kiwi-panel-light-text .panel-button:hover,
+#panel.kiwi-panel-light-text .panel-button.clock-display:focus .clock,
+#panel.kiwi-panel-light-text .panel-button.clock-display:hover .clock {
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.17);
+}
+
+#panel.kiwi-panel-light-text .panel-button:active,
+#panel.kiwi-panel-light-text .panel-button:checked,
+#panel.kiwi-panel-light-text .panel-button.clock-display:active .clock,
+#panel.kiwi-panel-light-text .panel-button.clock-display:checked .clock {
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.28);
+}
+
+#panel.kiwi-panel-light-text .panel-button:active:hover,
+#panel.kiwi-panel-light-text .panel-button:checked:hover {
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.32);
+}
+
+#panel.kiwi-panel-light-text .panel-button#panelActivities .workspace-dot {
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+/* Overview mode styles */
+#panel.kiwi-panel-styled:overview {
+  background-color: transparent !important;
+  background: transparent !important;
+  font-weight: normal;
+  box-shadow: none;
+  transition-duration: 200ms;
+}
+
+
+/*################################################*/
+/*          Window Control Buttons Box           */
+/*################################################*/
+.window-controls-box {
+  spacing: 11px;  /* normal_size */
+  margin: 0;
+  padding: 0;
+}
+
+.window-controls-box.small-size {
+  spacing: 10px;  /* small_size */
+}
+
+/* Window control button icon sizing (GNOME Shell panel, not GTK headerbars)
+ * NOTE: This controls the macOS-style panel buttons created by apps/windowControls.js
+ */
+.window-control-icon {
+  icon-size: 16px; /* normal_size */
+}
+
+.window-controls-box.small-size .window-control-icon {
+  icon-size: 14px; /* small_size */
+}
+
+/* Remove background on window controls container hover */
+Gjs_apps_windowControls_WindowControlsIndicator.panel-button:hover,
+Gjs_apps_windowControls_WindowControlsIndicator.panel-button:active,
+Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
+  background-color: transparent !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* System mode: symbolic icons follow panel style */
+.window-controls-box.system-mode {
+  spacing: 4px;
+}
+
+.window-controls-box.system-mode .window-control-button {
+  padding: 4px;
+  border-radius: 99px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.window-controls-box.system-mode .window-control-button.close:hover,
+.window-controls-box.system-mode .window-control-button.minimize:hover,
+.window-controls-box.system-mode .window-control-button.maximize:hover {
+  background-color: rgba(128, 128, 128, 0.25) !important;
+}
+
+.window-controls-box.system-mode .window-control-button.close:active,
+.window-controls-box.system-mode .window-control-button.minimize:active,
+.window-controls-box.system-mode .window-control-button.maximize:active {
+  background-color: rgba(128, 128, 128, 0.40) !important;
+}
+
+.window-controls-box.system-mode .window-control-icon {
+  icon-size: 16px;
+}
+
+
+/*###############################################*/
+/*              Window Tiling Menu              */
+/*###############################################*/
+
+/* NOTE: a CSS "opacity" rule does not take effect on these labels, so the dimming is
+   applied to the actor in JS (windowTiling.js SECTION_LABEL_OPACITY, windowTitle.js
+   ACCEL_OPACITY). Do not re-add opacity here expecting it to work. */
+.kiwi-tiling-section-label {
+  padding: 4px 16px;
+  font-weight: bold;
+}
+
+/* Accelerator hint on the right of a menu item, e.g. F11 next to Fullscreen. */
+.kiwi-menu-accel {
+  padding-left: 24px;
+}
+
+/* The grid also sits inside the window title menu, where the surrounding
+   popup-menu-item padding would double up. */
+.kiwi-tiling-menu-item {
+  padding: 0;
+}
+
+.kiwi-tiling-menu-item:active,
+.kiwi-tiling-menu-item:hover,
+.kiwi-tiling-menu-item.selected {
+  background-color: transparent;
+}
+
+.kiwi-tiling-row {
+  spacing: 6px;
+  padding: 2px 12px 6px 12px;
+}
+
+.kiwi-tile-button {
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+/* Selected tile gets the same accent treatment as the menu entries above it. */
+.kiwi-tile-button:hover,
+.kiwi-tile-button:active {
+  background-color: -st-accent-color;
+}
+
+/* The glyph is a miniature screen. Colors are explicit rather than inherited from the
+   menu foreground: at 26x18px the panes need full contrast to read at all.
+   apps/windowTiling.js adds .light when the shell theme is light. */
+.kiwi-tile-glyph {
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+}
+
+/* Ghost panes need no rule of their own: same fill, dimmed via actor opacity in
+   apps/windowTiling.js (PANE_GHOST_OPACITY). */
+.kiwi-tile-pane {
+  background-color: #ffffff;
+  border-radius: 2px;
+}
+
+.kiwi-tiling-grid.light .kiwi-tile-glyph {
+  border-color: rgba(0, 0, 0, 0.55);
+}
+
+.kiwi-tiling-grid.light .kiwi-tile-pane {
+  background-color: #1c1c1e;
+}
+
+/* On the accent background the glyph switches to the accent foreground, mirroring the
+   "color: -st-accent-fg-color" the menu entries use. Selectors carry .kiwi-tiling-grid so
+   they outrank the .light overrides above regardless of rule order. */
+.kiwi-tiling-grid .kiwi-tile-button:hover .kiwi-tile-glyph,
+.kiwi-tiling-grid .kiwi-tile-button:active .kiwi-tile-glyph {
+  border-color: -st-accent-fg-color;
+}
+
+.kiwi-tiling-grid .kiwi-tile-button:hover .kiwi-tile-pane,
+.kiwi-tiling-grid .kiwi-tile-button:active .kiwi-tile-pane {
+  background-color: -st-accent-fg-color;
+}
+
+
+/*###############################################*/
+/*          Popup Menu Accent Styling           */
+/*###############################################*/
+
+/* These reach every shell menu, not just Kiwi's, so they hang off
+   .kiwi-popup-styled, which apps/panelStyling.js puts on the UI group when the
+   "Popup Menu Styling" option is on. */
+
+.kiwi-popup-styled .popup-menu .popup-menu-item {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.kiwi-popup-styled .popup-menu .popup-menu-item:hover,
+.kiwi-popup-styled .popup-menu .popup-menu-item:active,
+.kiwi-popup-styled .popup-menu .popup-menu-item.selected {
+  background-color: -st-accent-color;
+  color: -st-accent-fg-color;
+}
+
+.kiwi-popup-styled .popup-menu .popup-menu-item:checked {
+  background-color: -st-accent-color;
+  color: -st-accent-fg-color;
+}
+
+/* Ensure content fills the space */
+.maximized .window-content {
+  margin-top: 0;
+  border-radius: 0;
+}
+
+
+/*###############################################*/
+/*          Notification Badge Styling         */
+/*###############################################*/
+
+.notification-badge {
+  icon-size: 10px;
+  padding: 0px;
+}
+
+.kiwi-dnd-indicator {
+  margin-left: 6px;
+  opacity: 0.85;
+}
+
+
+/*###############################################*/
+/*          Dash-to-Dock Styling                */
+/*###############################################*/
+
+/* Bottom dock - normal mode: reduce margins between icon containers */
+#dashtodockContainer.kiwi-dock-styled.bottom #dash .dash-item-container {
+  margin: 0 !important; /* Reduced from 0 2px */
+}
+
+/* Bottom dock - normal mode: reduce padding around individual icons. The shell
+   theme puts a 0 2px margin on the icon buttons themselves too. */
+#dashtodockContainer.kiwi-dock-styled.bottom #dash .dash-item-container .app-well-app,
+#dashtodockContainer.kiwi-dock-styled.bottom #dash .dash-item-container .show-apps,
+#dashtodockContainer.kiwi-dock-styled.bottom #dash .dash-item-container .overview-tile {
+  margin: 0 !important; /* Reduced from 0 2px */
+  padding-left: 0 !important; /* Reduced from 2px */
+  padding-right: 0 !important; /* Reduced from 2px */
+  /* Takes over the vertical padding the icon box gave up, so the dock keeps its
+     height and the icons keep sitting where they did */
+  padding-bottom: 11px !important;
+  padding-top: 14px !important;
+}
+
+/* Bottom dock - shrink mode: even tighter spacing */
+#dashtodockContainer.kiwi-dock-styled.bottom.shrink #dash .dash-item-container {
+  margin: 0 !important; /* Reduced from 0 2px */
+}
+
+#dashtodockContainer.kiwi-dock-styled.bottom.shrink #dash .dash-item-container .app-well-app,
+#dashtodockContainer.kiwi-dock-styled.bottom.shrink #dash .dash-item-container .show-apps,
+#dashtodockContainer.kiwi-dock-styled.bottom.shrink #dash .dash-item-container .overview-tile {
+  margin: 0 !important; /* Reduced from 0 2px */
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  /* The dock background sits 4px up from the bottom of the item, so 7px here is
+     what keeps the dot 3px clear of that edge. The top then has to match it plus
+     the 3px the dot band adds below the icon, for the symmetric 10px above and
+     below the icon art that macOS has. */
+  padding-bottom: 7px !important;
+  padding-top: 10px !important;
+}
+
+/* No highlight behind the icons in any state - hover, keyboard focus, click and
+   the Dash-to-Dock focused-app state. Click feedback is the darken effect from
+   apps/dockStyling.js instead.
+
+   .overview-icon is a Shell.SquareBin, so its width follows its height: this
+   padding, on any side, is the only lever on the gap between icons. The running
+   dot ends where this box does, so its clearance is the bottom padding - hence
+   all of it on the bottom, where it buys 7px of clearance for the 5px dot at the
+   same 55px pitch a 3px-a-side box would cost. The icon art centres itself
+   horizontally in the square, so the sides do not need any. */
+#dashtodockContainer.kiwi-dock-styled #dash .dash-item-container .overview-icon {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important; /* Reduced from 6px */
+  padding-bottom: 7px !important;
+}
+
+/* Separators get 4px a side from Dash-to-Dock, which is a third of the room
+   macOS leaves around one. Applies to the one in front of the minimized strip
+   too - same style class. */
+#dashtodockContainer.kiwi-dock-styled #dash .dash-separator {
+  margin-left: 12px !important;
+  margin-right: 12px !important;
+}
+
+/* Reduce overall dash container padding. The left value is the space before the
+   first icon: Dash-to-Dock zeroes that icon's own leading padding, so this is
+   what holds the dock's left end open. */
+#dashtodockContainer.kiwi-dock-styled.bottom #dash #dashtodockDashContainer {
+  padding-left: 8px !important;
+  padding-right: 4px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+#dashtodockContainer.kiwi-dock-styled.bottom.shrink #dash #dashtodockDashContainer {
+  padding-left: 6px !important;
+  padding-right: 2px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Adaptive colours, from apps/dockColors.js. Two things move independently, so
+   there are two pairs of classes: .kiwi-dock-light / -dark say what the dock is
+   sitting on, which the dot and separator read against - what shows through the
+   pill at this opacity is mostly what is behind it - and .kiwi-dock-scheme-light
+   / -dark say what the session is, which is what the pill itself follows.
+
+   The separator is the one part Dash-to-Dock leaves to CSS in every
+   configuration; the pill and the running dot are here only for the case where
+   it leaves those to CSS too (transparency left at DEFAULT, indicator colours
+   not customized). Otherwise it paints them itself from the colour keys the
+   module writes. */
+#dashtodockContainer.kiwi-dock-light #dash .dash-separator {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+#dashtodockContainer.kiwi-dock-light #dash .app-grid-running-dot {
+  background-color: rgb(28, 28, 28) !important;
+}
+
+#dashtodockContainer.kiwi-dock-dark #dash .dash-separator {
+  background-color: rgba(250, 250, 250, 0.3) !important;
+}
+
+#dashtodockContainer.kiwi-dock-dark #dash .app-grid-running-dot {
+  background-color: rgb(250, 250, 250) !important;
+}
+
+/* The pill answers to the session's scheme rather than its surroundings, so it
+   takes its own pair of classes. These two only apply where Dash-to-Dock leaves
+   the pill to CSS; in every other configuration it writes an inline style, which
+   beats a stylesheet in St whatever the specificity, and the colour that shows
+   is PILL_COLOR in apps/dockColors.js. Change both together. */
+#dashtodockContainer.kiwi-dock-scheme-light #dash .dash-background {
+  background-color: rgb(120, 120, 120) !important;
+}
+
+#dashtodockContainer.kiwi-dock-scheme-dark #dash .dash-background {
+  background-color: rgb(28, 28, 28) !important;
+}
+
+/* The only border the dock has - neither the shell theme nor Dash-to-Dock draws
+   one, and Dash-to-Dock has no setting for it. An inset shadow rather than a
+   border: Dash-to-Dock writes border-left and border-color inline on the pill
+   (theming.js _adjustTheme) and an inline style beats a stylesheet in St, but it
+   never touches box-shadow. Drawn by the pill itself, so it follows its rounding
+   and its geometry with no actor of its own to keep in step.
+
+   Always light, so the edge glows off the pill rather than being drawn on it.
+   Only the alpha moves: the pill is translucent enough that light content behind
+   the dock lifts it most of the way to white on its own, and a glow that reads
+   against a dark pill at a fifth has almost nothing left to climb there. Keyed on
+   the content rather than the session, since that is what decides how light the
+   pill ends up. */
+#dashtodockContainer.kiwi-dock-styled #dash .dash-background {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+#dashtodockContainer.kiwi-dock-styled.kiwi-dock-light #dash .dash-background {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* Name tooltips: the shell theme keeps them near-black in a light session, so
+   they follow the session's scheme here instead, and take the palette the
+   downloads pills use so the two match. apps/dockStyling.js adds the classes -
+   the label is the shell's own actor, and shell stylesheets have no way to ask
+   for the scheme on their own. Geometry stays the theme's. */
+.dash-label.kiwi-dock-label {
+  background-color: rgba(238, 238, 238, 0.85);
+  color: #1c1c1c;
+  /* The pill floats over the wallpaper, so the light comes from straight on -
+     same shadow the downloads pills lift off with */
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+}
+
+.dash-label.kiwi-dock-label.dark {
+  background-color: rgba(46, 46, 46, 0.85);
+  color: #f2f2f2;
+}
+
+
+/*###############################################*/
+/* Quick Settings Notifications and Media Styles */
+/*###############################################*/
+
+.quick-settings-notifications-container {
+  margin-top: 6px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.kiwi-media,
+.kiwi-notifications {
+  margin: 0;
+  padding: 0;
+  border-radius: 12px;
+  max-width: 360px; /* Default quicksettings width */
+  max-height: 600px;
+  box-sizing: border-box;
+}
+
+.media-message {
+  font-size: 0.9em;
+}
+
+/* Page indicators for media player */
+.kiwi-page-indicators .page-indicator {
+  padding: 0 6px;
+  margin-bottom: 8px;
+}
+
+.kiwi-page-indicators .page-indicator > StWidget {
+  border: 1px solid rgba(0, 0, 0, 0.6);
+}
+
+.message-list-clear-button {
+  margin: 4px 8px;
+  padding: 4px 16px;
+  border-radius: 999px;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease,
+              box-shadow 150ms ease;
+  font-size: 0.9em;
+}
+
+.message-list-clear-button:focus {
+  box-shadow: inset 0 0 0 2px alpha(-st-focus-ring-color, 0.45);
+}
+
+.message-list-clear-button.disabled,
+.message-list-clear-button.disabled:hover,
+.message-list-clear-button.disabled:active {
+  opacity: -st-disabled-opacity;
+  box-shadow: none;
+}
+
+/* Notification expand buttons and close button */
+.message .message-expand-button, 
+.message .message-close-button,
+.message-group-header .message-collapse-button  {
+  -st-icon-style: symbolic;
+  min-width: 16px;
+  min-height: 16px;
+  padding: 4px;
+  border-radius: 999px;
+  box-sizing: border-box;
+}
+
+/* Notification and grouped notifications titles - make normal size */
+.message-title, .message-group-title {
+  font-size: 1em;
+  font-weight: normal;
+}
+
+.kiwi-notifications .message-content,
+.kiwi-notifications .message-body {
+  font-size: 0.95em;
+}
+
+/* Hide scrollbar and remove its reserved space */
+.kiwi-notification-scroll StScrollBar {
+    min-width: 0 !important;
+}
+
+/* Target scroll content container */
+.kiwi-notification-scroll StScrollView > * {
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+}
+
+.kiwi-dnd-button {
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
+  padding: 8px;
+  border-radius: 999px !important;
+  border-width: 0;
+  transition: background-color 150ms ease;
+}
+
+.kiwi-dnd-button:checked {
+  background-color: -st-accent-color;
+}
+
+
+/*###############################################*/
+/*       Keyboard Status Indicator Styling      */
+/*###############################################*/
+
+/* The border sits on the label, not the button: Panel.ButtonBox overrides
+   get_preferred_width, so padding and min-width set on the button itself are
+   ignored — only these two properties reach it. */
+#panel .panel-button.kiwi-input-themed {
+  -natural-hpadding: 4px;
+  -minimum-hpadding: 4px;
+}
+
+#panel .kiwi-input-themed StLabel {
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  padding: 1px 2px;
+  min-width: 22px; /* one majuscule takes as much room as two */
+  font-size: 0.80em;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Follows the panel foreground flip in apps/panelTransparency.js */
+#panel.kiwi-panel-dark-text .kiwi-input-themed StLabel {
+  border-color: rgba(0, 0, 0, 0.9);
+}
+
+/* When EN is mapped to A, invert: the border colour becomes the fill */
+#panel .kiwi-input-en StLabel {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: rgba(0, 0, 0, 0.9);
+}
+
+#panel.kiwi-panel-dark-text .kiwi-input-en StLabel {
+  background-color: rgba(0, 0, 0, 0.9);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* The white fill needs its dark glyph back — the light-text block above outranks
+   the plain .kiwi-input-en rule. */
+#panel.kiwi-panel-light-text .kiwi-input-en StLabel {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+/*###############################################*/
+/*        Minimized Windows in the Dock         */
+/*###############################################*/
+
+/* Thumbnails pack tightly like macOS: 6px between them, made of the tiles' own
+   2px sides plus 2px of spacing. Padding is only along the dock — across it, it
+   would make the whole dock taller. */
+#kiwi-minimized-strip {
+  spacing: 2px;
+  padding: 0 3px;
+}
+
+#dashtodockContainer.left #kiwi-minimized-strip,
+#dashtodockContainer.right #kiwi-minimized-strip {
+  padding: 3px 0;
+}
+
+/* Thumbnails draw no selector of their own, but they keep the inset an app icon
+   has: 6px across the dock, which holds a tile to the same height as an
+   .overview-icon so the two line up, and a tighter 2px along it. */
+.kiwi-minimized-tile {
+  padding: 6px 2px;
+}
+
+#dashtodockContainer.left .kiwi-minimized-tile,
+#dashtodockContainer.right .kiwi-minimized-tile {
+  padding: 2px 6px;
+}
+
+/*###############################################*/
+/*          Downloads Stack in the Dock          */
+/*###############################################*/
+
+/* The stack keeps the inset an app icon has, so it lines up with the icons and
+   with the minimized thumbnails it sits next to. */
+.kiwi-downloads-item {
+  padding: 6px 2px;
+}
+
+#dashtodockContainer.left .kiwi-downloads-item,
+#dashtodockContainer.right .kiwi-downloads-item {
+  padding: 2px 6px;
+}
+
+/* Name pills: a touch of the wallpaper carries through them the way it does
+   through a macOS label. The pill follows the session's light or dark scheme -
+   apps/downloadsStack.js adds .dark when the session asks for it, since shell
+   stylesheets have no way to ask on their own. */
+.kiwi-fan-label {
+  background-color: rgba(238, 238, 238, 0.85);
+  color: #1c1c1c;
+  border-radius: 99px;
+  padding: 5px 13px;
+  font-weight: 500;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+}
+
+.kiwi-fan-label.dark {
+  background-color: rgba(46, 46, 46, 0.85);
+  color: #f2f2f2;
+}
+
+.kiwi-fan-icon {
+  padding: 2px;
+}
+
+/* A mime icon casts its shadow off its own outline, so the shape of the icon is
+   what lifts off the wallpaper rather than the box around it. No offset on any
+   of these: the fan floats, so the light comes from straight on. */
+.kiwi-fan-file-icon {
+  icon-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
+}
+
+/* A thumbnail is a picture, so it takes a rectangular shadow, and the white
+   behind it only ever shows as the edge of a print. */
+.kiwi-fan-thumbnail {
+  background-color: #ffffff;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
+/* The round button is filled out to its own edge, where a thumbnail sits in a
+   roomier box, so this row keeps the pill off it. */
+.kiwi-fan-more-row {
+  spacing: 8px;
+}
+
+/* The round button that ends the fan: white glyph in a dark circle. */
+.kiwi-fan-more {
+  background-color: rgba(28, 28, 30, 0.92);
+  border-radius: 99px;
+  padding: 7px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+.kiwi-fan-more:hover,
+.kiwi-fan-more:focus {
+  background-color: rgba(60, 60, 67, 0.94);
+}
+
+.kiwi-fan-more-icon {
+  color: #1c1c1c;
+}
+
+.kiwi-fan-more.dark {
+  background-color: rgba(46, 46, 46, 0.94);
+}
+
+.kiwi-fan-more.dark .kiwi-fan-more-icon {
+  color: #f2f2f2;
+}
+
+/* Piled in the dock the cards are flat against each other, so they carry no
+   shadow of their own; they pick one up as they leave the pile. */
+.kiwi-downloads-stack .kiwi-fan-thumbnail {
+  box-shadow: none;
+}
+
+.kiwi-downloads-stack .kiwi-fan-file-icon {
+  icon-shadow: none;
+}
+
+/* Sticking out of the folder they stand off it rather than lie flat, so they
+   take back a shadow - a shallower one, since only their top edge is out. */
+.kiwi-downloads-stack.behind .kiwi-fan-thumbnail {
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.kiwi-downloads-stack.behind .kiwi-fan-file-icon {
+  icon-shadow: 0 0 4px rgba(0, 0, 0, 0.35);
+}
+
+/* ===== macOS Tahoe Applications (Launchpad) window ===== */
+/* Tahoe Apps — macOS Tahoe-style Applications window */
+
+.tahoe-overlay {
+    background-color: transparent;
+}
+
+.tahoe-window {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-radius: 26px;
+    color: #1d1d1f;
+}
+
+/* Nearly-transparent tint that follows the GTK color scheme. */
+.tahoe-dark .tahoe-window {
+    background-color: rgba(22, 22, 24, 0.45);
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-header-icon,
+.tahoe-dark .tahoe-more {
+    color: rgba(245, 245, 247, 0.85);
+}
+
+.tahoe-dark .tahoe-more:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.tahoe-dark .tahoe-search {
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-search StEntry {
+    color: #f5f5f7;
+    caret-color: #f5f5f7;
+    selection-background: rgba(0, 122, 255, 0.45);
+    font-size: 1.5em;
+    font-weight: 500;
+}
+
+.tahoe-dark .tahoe-search StEntry StLabel,
+.tahoe-dark .tahoe-search ClutterText {
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-search StLabel.hint-text {
+    color: rgba(245, 245, 247, 0.45);
+}
+
+.tahoe-dark .tahoe-pill {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-pill:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.tahoe-dark .tahoe-pill-active,
+.tahoe-dark .tahoe-pill-active:hover {
+    background-color: rgba(245, 245, 247, 0.9);
+    color: rgba(29, 29, 31, 0.7);
+}
+
+.tahoe-dark .tahoe-section-title {
+    color: rgba(245, 245, 247, 0.6);
+}
+
+.tahoe-dark .tahoe-app:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+}
+
+.tahoe-dark .tahoe-app:active {
+    background-color: rgba(255, 255, 255, 0.22);
+}
+
+.tahoe-dark .tahoe-app-label {
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-empty {
+    color: rgba(245, 245, 247, 0.6);
+}
+
+.tahoe-dark .tahoe-drop {
+    background-color: rgba(40, 40, 42, 0.88);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tahoe-dark .tahoe-drop-item {
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-drop-item:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.tahoe-glass {
+    border-radius: 26px;
+}
+
+/* ------------------------------------------------------------- header */
+
+.tahoe-header {
+    spacing: 12px;
+    padding: 18px 20px 8px 20px;
+}
+
+.tahoe-header-icon {
+    color: rgba(60, 60, 67, 0.7);
+}
+
+.tahoe-search {
+    font-size: 1.3em;
+    font-weight: normal;
+    padding: 8px 2px;
+    background-color: transparent;
+    border: none;
+    color: rgba(60, 60, 67, 0.7);
+}
+
+.tahoe-search StLabel.hint-text {
+    color: rgba(60, 60, 67, 0.7);
+    font-size: 1.5em;
+    font-weight: 500;
+}
+
+.tahoe-search StEntry {
+    caret-color: #1d1d1f;
+    selection-background: rgba(0, 122, 255, 0.35);
+    font-size: 1.5em;
+    font-weight: 500;
+    color: #3c3c43;
+}
+
+.tahoe-more {
+    font-size: 2.2em;
+    padding: 4px 4px 14px 4px;
+    border-radius: 10px;
+    color: rgba(60, 60, 67, 0.7);
+}
+
+.tahoe-more:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+/* --------------------------------------------------------------- pills */
+
+.tahoe-pills {
+    spacing: 8px;
+    padding: 6px 20px 10px 20px;
+}
+
+.tahoe-divider {
+    background-color: rgba(0, 0, 0, 0.18);
+    height: 1px;
+    margin: 2px 20px;
+}
+
+/* The bar stays functional (St drives the wheel, incl. touchpad smooth
+   scrolling) but is never painted and takes no space. */
+.tahoe-scroll StScrollBar,
+.tahoe-scroll StScrollBar StBin#trough,
+.tahoe-scroll StScrollBar StButton#vhandle,
+.tahoe-scroll StScrollBar StButton#hhandle {
+    opacity: 0;
+    width: 0;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background-color: transparent;
+}
+
+.tahoe-pill {
+    font-size: 0.92em;
+    font-weight: 500;
+    font-family: "SF Pro Display";
+    padding: 6px 12px;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.06);
+    color: rgba(60, 60, 67, 0.7);
+}
+
+.tahoe-pill:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.tahoe-pill-active,
+.tahoe-pill-active:hover {
+    background-color: rgba(29, 29, 31, 0.88);
+    color: #ffffff;
+}
+
+/* --------------------------------------------------------------- scroll */
+
+.tahoe-content {
+    spacing: 14px;
+    padding: 4px 22px 0 22px;
+}
+
+.tahoe-section {
+    spacing: 8px;
+}
+
+.tahoe-section-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: rgba(60, 60, 67, 0.7);
+    padding: 4px 2px 0 2px;
+}
+
+/* Must match COL_GAP in tahoeApps.js. */
+.tahoe-row {
+    spacing: 1px;
+}
+
+/* ---------------------------------------------------------------- apps */
+
+.tahoe-app {
+    border-radius: 14px;
+    padding: 2px 1px 2px 1px;
+}
+
+.tahoe-app:hover {
+    background-color: rgba(255, 255, 255, 0.55);
+}
+
+.tahoe-app:active {
+    background-color: rgba(255, 255, 255, 0.78);
+}
+
+.tahoe-app-box {
+    spacing: 2px;
+}
+
+.tahoe-app-label {
+    font-size: 0.85em;
+    font-weight: bold;
+    color: rgba(60, 60, 67, 0.7);
+}
+
+.tahoe-empty {
+    font-size: 1em;
+    color: rgba(60, 60, 67, 0.7);
+    padding: 48px 20px;
+}
+
+/* -------------------------------------------------------------- "…" menu */
+
+.tahoe-drop {
+    background-color: rgba(255, 255, 255, 0.88);
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+    padding: 6px;
+    spacing: 2px;
+}
+
+.tahoe-drop-item {
+    font-size: 0.87em;
+    padding: 7px 10px;
+    border-radius: 9px;
+    color: #1d1d1f;
+}
+
+.tahoe-drop-item:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+
+/* Tahoe-style dark gradient veil over the top bar: dark at top, gone at edge. */
+.kiwi-panel-gradient {
+    background-gradient-direction: vertical;
+    background-gradient-start: rgba(0, 0, 0, 0.18);
+    background-gradient-end: rgba(0, 0, 0, 0);
+}
+
+/* Upper veil: extra darkness at the very top for a progressive falloff. */
+.kiwi-panel-gradient-top {
+    background-gradient-direction: vertical;
+    background-gradient-start: rgba(0, 0, 0, 0.14);
+    background-gradient-end: rgba(0, 0, 0, 0);
+}
+
+/* ------------------------------------------------- Tahoe polkit auth card */
+.prompt-dialog.tahoe-polkit {
+    min-width: 380px;
+    border-radius: 20px;
+}
+
+.tahoe-polkit .modal-dialog-content-box StLabel {
+    text-align: center;
+}
+
+.tahoe-polkit-header {
+    spacing: 10px;
+    margin-top: 6px;
+    margin-bottom: 2px;
+}
+
+.tahoe-polkit-lock {
+    icon-size: 52px;
+}
+
+.tahoe-polkit .prompt-dialog-password-entry {
+    border-radius: 10px;
+    border-width: 2px;
+    margin-top: 10px;
+}
+
+.tahoe-polkit .prompt-dialog-password-entry:focus {
+    border-color: #0a84ff;
+}
+
+.tahoe-polkit .modal-dialog-linked-button {
+    border-radius: 10px;
+    margin: 0 5px;
+    font-weight: 600;
+}
+
+.tahoe-polkit .modal-dialog-linked-button:first-child {
+    background-color: rgba(120, 120, 128, 0.20);
+    color: #1d1d1f;
+}
+
+.tahoe-polkit .modal-dialog-linked-button:last-child {
+    background-color: #0a84ff;
+    background-gradient-direction: none;
+    color: #ffffff;
+}
+
+/* -------------------------------------------- Tahoe Mission Control */
+/* No icons or app names under overview windows. The title opacity is
+ * animated inline by the shell, so it is killed via transparent color;
+ * the icon has no such animation and obeys opacity. */
+.window-caption {
+    color: transparent;
+}
+
+.window-icon {
+    opacity: 0;
+}
+
+/* Toggles fully round, sliders flatter. */
+.quick-toggle,
+.quick-toggle-has-menu,
+.quick-toggle-has-menu:hover,
+.quick-toggle-has-menu:active {
+    border-radius: 9999px;
+}
+
+.quick-settings-grid .slider {
+    border-radius: 4px !important;
+    -slider-handle-radius: 5px !important;
+}
+
+/* Release slider pods from liquid-glass (it re-reads the theme node and
+   lets go by itself): flat CSS rounding instead of the shared toggle radius. */
+.liquid-glass-qs-root .quick-slider {
+    background-color: transparent !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+}
+
+/* ------------------------------- Tahoe Quick Settings v5 (macOS Tahoe CC)
+   Panel 320, padding 14, col gap 18, column 137, pills 80, circles 62,
+   music 152, cards 96, edit pill 36, Focus 137x62.
+   Panel bg = separate actor BELOW the glass stacks ('pill' r40,
+   'disc' r31, 'card'/'music' r26, 'edit' r18). White text on translucent gray (light) / faint white
+   (dark) glass fills — like macOS Tahoe. */
+.tahoe-qs-panel { spacing: 12px; padding: 14px; background-color: transparent; }
+/* no plate — just the ambient shadow of the whole floating panel */
+.tahoe-qs-panelbg {
+    border-radius: 22px;
+    background-color: transparent;
+    border: none;
+    /* one shadow for both themes: tight core + wide soft diffusion */
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.15),
+        0 12px 70px rgba(0, 0, 0, 0.10);
+}
+.tahoe-qs-cols { spacing: 18px; }
+.tahoe-qs-col { spacing: 12px; }
+.tahoe-qs-row { spacing: 6px; }
+.tahoe-qs-rowd { spacing: 18px; }
+
+/* macOS-style topbar status indicators (Focus moon, Airplane): plain bins,
+   never clickable (reactive=false, no handlers) */
+.kiwi-topbar-statusicon { padding: 0 4px; margin: 0 4px; }
+
+/* macOS-style battery in the top bar: "87%" + horizontal battery glyph.
+   Inherits panel foreground via tahoeInk, same as other topbar buttons. */
+.kiwi-battery-box { spacing: 6px; padding: 0 2px; }
+.kiwi-battery-label { font-weight: 600; font-size: 0.95em; }
+.kiwi-battery-icon { icon-size: 20px; }
+
+/* stock screen-sharing indicator: compact pill, unified with the bar.
+   Visible only while sharing, so this is the active state: purple.
+   #panel prefix: stock theme addresses it with an id selector. */
+#panel .screen-sharing-indicator,
+#panel .panel-button.screen-sharing-indicator {
+    height: 20px;
+    border-radius: 10px;
+    padding: 0 8px;
+    background-color: rgba(191, 90, 242, 0.9);
+}
+#panel .screen-sharing-indicator StIcon,
+#panel .panel-button.screen-sharing-indicator StIcon { color: #ffffff; }
+
+/* Tahoe volume/brightness OSD: glass pill (liquid-glass behind, the box
+   itself is transparent so the blur shapes it; hairline + shadow stay) */
+.tahoe-osd {
+    background-color: transparent;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 12px 16px 14px 16px;
+    spacing: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+.tahoe-osd-head { spacing: 8px; }
+.tahoe-osd-headicon { color: #ffffff; }
+.tahoe-osd-title {
+    font-family: "SF Pro Display";
+    font-size: 0.95em;
+    font-weight: 700;
+    color: #ffffff;
+}
+.tahoe-osd-bar { spacing: 10px; }
+.tahoe-osd-endicon { color: rgba(255, 255, 255, 0.9); }
+.tahoe-osd-endicon-big { color: #ffffff; }
+/* segmented bar draws itself (TahoeSegSlider); no theme needed */
+
+/* Tahoe Notification Center */
+.tahoe-nc-panel { spacing: 10px; padding: 14px; background-color: transparent; }
+.tahoe-nc-banners { spacing: 10px; }
+.tahoe-nc-head { spacing: 10px; }
+.tahoe-nc-clear {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background-color: rgba(120, 120, 128, 0.24);
+}
+.tahoe-nc-cross { color: #ffffff; }
+.tahoe-qs-dark .tahoe-nc-cross { color: #ffffff; }
+.tahoe-nc-title-big {
+    font-family: "SF Pro Display";
+    font-size: 1.35em;
+    font-weight: 800;
+    color: #1d1d1f;
+}
+.tahoe-qs-dark .tahoe-nc-title-big { color: #ffffff; }
+.tahoe-nc-scroll { }
+.tahoe-nc-list { spacing: 10px; }
+.tahoe-nc-empty {
+    font-family: "SF Pro Display";
+    font-size: 0.95em;
+    color: rgba(120, 120, 128, 0.9);
+    padding: 28px 0;
+}
+.tahoe-nc-card {
+    background-color: transparent;
+    border-radius: 20px;
+    padding: 10px 12px;
+    box-shadow: none;
+}
+.tahoe-nc-cardrow { spacing: 10px; }
+.tahoe-nc-texts { spacing: 2px; }
+.tahoe-nc-title {
+    font-family: "SF Pro Display";
+    font-size: 0.95em;
+    font-weight: 700;
+    color: #1d1d1f;
+}
+.tahoe-qs-dark .tahoe-nc-title { color: #ffffff; }
+.tahoe-nc-sub {
+    font-family: "SF Pro Display";
+    font-size: 0.85em;
+    font-weight: 400;
+    color: rgba(60, 60, 67, 0.85);
+}
+.tahoe-qs-dark .tahoe-nc-sub { color: rgba(235, 235, 245, 0.7); }
+
+/* adaptive topbar ink (toggled by luminance, not by theme - tahoeInk.js).
+   !important: must win over panelStyling's explicit colors. Every state
+   covered - adaptive means ALL text, no theme-driven leftovers on hover,
+   clock included. */
+#panel.tahoe-ink-light .panel-button,
+#panel.tahoe-ink-light .panel-button:hover,
+#panel.tahoe-ink-light .panel-button:active,
+#panel.tahoe-ink-light .panel-button:focus,
+#panel.tahoe-ink-light .panel-button:checked,
+#panel.tahoe-ink-light .panel-button StLabel,
+#panel.tahoe-ink-light .panel-button StIcon,
+#panel.tahoe-ink-light .panel-button .clock { color: #ffffff !important; }
+#panel.tahoe-ink-light .panel-button.clock-display:focus .clock,
+#panel.tahoe-ink-light .panel-button.clock-display:hover .clock,
+#panel.tahoe-ink-light .panel-button.clock-display:active .clock,
+#panel.tahoe-ink-light .panel-button.clock-display:checked .clock { color: #ffffff !important; }
+#panel.tahoe-ink-dark .panel-button,
+#panel.tahoe-ink-dark .panel-button:hover,
+#panel.tahoe-ink-dark .panel-button:active,
+#panel.tahoe-ink-dark .panel-button:focus,
+#panel.tahoe-ink-dark .panel-button:checked,
+#panel.tahoe-ink-dark .panel-button StLabel,
+#panel.tahoe-ink-dark .panel-button StIcon,
+#panel.tahoe-ink-dark .panel-button .clock { color: #1d1d1f !important; }
+#panel.tahoe-ink-dark .panel-button.clock-display:focus .clock,
+#panel.tahoe-ink-dark .panel-button.clock-display:hover .clock,
+#panel.tahoe-ink-dark .panel-button.clock-display:active .clock,
+#panel.tahoe-ink-dark .panel-button.clock-display:checked .clock { color: #1d1d1f !important; }
+
+/* Tahoe type: SF Pro Display Bold for titles, Medium for subtitles */
+.tahoe-qs-title, .tahoe-qs-music-title, .tahoe-qs-card-label, .tahoe-qs-edit {
+    font-family: "SF Pro Display";
+    font-weight: 700;
+}
+.tahoe-qs-subtitle, .tahoe-qs-music-artist {
+    font-family: "SF Pro Display";
+    font-weight: 500;
+}
+
+/* capsule pill (Wi-Fi, Bluetooth, Airplane, Focus) — glass r32 */
+.tahoe-qs-pill {
+    background-color: transparent;
+    border-radius: 999px;
+    padding: 10px 12px 10px 10px;
+    box-shadow: none;
+}
+.tahoe-qs-dark .tahoe-qs-pill { box-shadow: none; }
+.tahoe-qs-pill-circle {
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.25);
+    margin-right: 10px;
+}
+.tahoe-qs-pill-glyph { icon-size: 20px; color: #1d1d1f; }
+/* Bluetooth rune reads small at 20px: bump it inside the same 40px circle */
+.tahoe-qs-pill-bt .tahoe-qs-pill-glyph { icon-size: 24px; }
+/* Focus shares the exact Wi-Fi pill geometry (same circle, same padding,
+   single title line, no subtitle) */
+.tahoe-qs-pill.tahoe-qs-pill-focus { }
+.tahoe-qs-pill.tahoe-qs-on .tahoe-qs-pill-circle {
+    background-color: rgba(255, 255, 255, 0.95);
+}
+.tahoe-qs-pill.tahoe-qs-on .tahoe-qs-pill-glyph { color: #0a84ff; }
+.tahoe-qs-title { font-size: 0.95em; font-weight: 700; color: #1d1d1f; }
+.tahoe-qs-subtitle { font-size: 0.8em; color: rgba(0, 0, 0, 0.6); }
+/* privacy pill dot: camera green, mic orange, share blue (macOS) */
+.tahoe-qs-priv-green { background-color: #30d158; }
+.tahoe-qs-priv-orange { background-color: #ff9f0a; }
+.tahoe-qs-priv-blue { background-color: #0a84ff; }
+/* privacy pill is slim (lower than regular pills) */
+.tahoe-qs-pill.tahoe-qs-pill-priv { padding: 4px 10px; }
+.tahoe-qs-pill-priv .tahoe-qs-pill-circle { width: 20px; height: 20px; }
+.tahoe-qs-pill-priv .tahoe-qs-pill-glyph { icon-size: 12px; }
+.tahoe-qs-pill-priv .tahoe-qs-title { font-size: 0.8em; }
+.tahoe-qs-pill-priv .tahoe-qs-privdot { margin-right: 8px; }
+
+/* circles 60x60 — glass r32 */
+.tahoe-qs-circle {
+    background-color: transparent;
+    border-radius: 999px;
+    box-shadow: none;
+}
+.tahoe-qs-dark .tahoe-qs-circle { box-shadow: none; }
+.tahoe-qs-circle-icon { icon-size: 24px; color: #1d1d1f; }
+/* logout glyph is wide-short: bump it so it doesn't read small */
+.tahoe-qs-circle-logout .tahoe-qs-circle-icon { icon-size: 32px; }
+/* lock glyph: bump it too */
+.tahoe-qs-circle-lock .tahoe-qs-circle-icon { icon-size: 30px; }
+.tahoe-qs-circle.tahoe-qs-on .tahoe-qs-circle-icon { color: #0a84ff; }
+/* ON state: white wash OVER the dark glass (not instead of it) */
+/* ON state: white wash is painted in-shader (region mask), not here -
+   a CSS background would end at the actor rect and read smaller than glass */
+.tahoe-qs-circle.tahoe-qs-on { background-color: transparent; }
+
+/* music card — glass r26 */
+.tahoe-qs-music {
+    background-color: transparent;
+    border-radius: 28px;
+    padding: 10px 8px;
+    box-shadow: none;
+}
+.tahoe-qs-dark .tahoe-qs-music { box-shadow: none; }
+.tahoe-qs-music-box { spacing: 1px; }
+.tahoe-qs-music-art {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.18);
+    margin-bottom: 6px;
+}
+.tahoe-qs-music-articon { icon-size: 22px; color: rgba(0, 0, 0, 0.7); }
+.tahoe-qs-music-title { font-size: 1em; font-weight: 700; color: #1d1d1f; }
+.tahoe-qs-music-artist { font-size: 0.75em; color: rgba(0, 0, 0, 0.6); }
+.tahoe-qs-music-ctl { spacing: 3px; }
+.tahoe-qs-glyphbtn { width: 38px; height: 38px; }
+.tahoe-qs-glyphicon { icon-size: 24px; color: #1d1d1f; }
+
+/* slider cards — glass r26 */
+.tahoe-qs-card {
+    background-color: transparent;
+    border-radius: 28px;
+    padding: 10px 14px;
+    spacing: 6px;
+    box-shadow: none;
+}
+.tahoe-qs-dark .tahoe-qs-card { box-shadow: none; }
+.tahoe-qs-card-label { font-size: 0.9em; font-weight: 700; color: #1d1d1f; }
+.tahoe-qs-card-row { spacing: 10px; }
+.tahoe-qs-endicon-small { icon-size: 12px; opacity: 0.8; color: #1d1d1f; }
+.tahoe-qs-endicon { icon-size: 18px; color: #1d1d1f; }
+.tahoe-qs-endbtn {
+    width: 28px; height: 28px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.25);
+}
+.tahoe-qs-endbtn-icon { icon-size: 14px; color: #1d1d1f; }
+
+/* slider: white knob; dark track on light, translucent white on dark */
+.tahoe-qs-slider {
+    color: #fff;
+    -slider-height: 5px;
+    -slider-background-color: rgba(60, 60, 67, 0.35);
+    -slider-border-color: transparent;
+    -slider-active-background-color: #fff;
+    -slider-active-border-color: transparent;
+    -slider-border-width: 0px;
+    -slider-handle-radius: 8px;
+    -slider-handle-border-width: 0px;
+    -barlevel-height: 5px;
+    -barlevel-background-color: rgba(60, 60, 67, 0.35);
+    -barlevel-active-background-color: #fff;
+    -barlevel-overdrive-color: #ff453a;
+    -barlevel-overdrive-border-color: transparent;
+    -barlevel-border-width: 0px;
+    height: 24px;
+    min-width: 90px;
+}
+.tahoe-qs-dark .tahoe-qs-slider {
+    -slider-background-color: rgba(255, 255, 255, 0.22);
+    -barlevel-background-color: rgba(255, 255, 255, 0.22);
+    -slider-active-background-color: rgba(255, 255, 255, 0.9);
+    -barlevel-active-background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* bottom centered pill ("Edit Controls") — same geometry as privacy pill */
+.tahoe-qs-edit {
+    background-color: transparent;
+    border-radius: 15px;
+    padding: 0 10px;
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #1d1d1f;
+    box-shadow: none;
+}
+.tahoe-qs-dark .tahoe-qs-edit { box-shadow: none; }
+
+/* dark theme: white text and glyphs (base above is near-black) */
+/* adaptive ink: white text/glyphs when the background behind is dark
+   (toggled by luminance, not by theme - see tahoeInk.js) */
+.tahoe-qs-inklight .tahoe-qs-pill-glyph { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-title { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-subtitle { color: rgba(255, 255, 255, 0.65); }
+.tahoe-qs-inklight .tahoe-qs-circle-icon { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-music-articon { color: rgba(255, 255, 255, 0.9); }
+.tahoe-qs-inklight .tahoe-qs-music-title { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-music-artist { color: rgba(255, 255, 255, 0.65); }
+.tahoe-qs-inklight .tahoe-qs-glyphicon { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-card-label { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-endicon-small { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-endicon { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-endbtn-icon { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-edit { color: #ffffff; }
+
+
+/* ===================== Tahoe Edit Controls menu ===================== */
+.tahoe-qse-win {
+  background-color: rgba(242, 242, 247, 0.97);
+  border-radius: 14px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.18);
+  padding: 0;
+}
+.tahoe-qse-sidebar {
+  background-color: rgba(229, 229, 234, 0.95);
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+  padding: 10px 0 10px 0;
+}
+.tahoe-qse-search-box {
+  margin: 4px 10px 8px 10px;
+  padding: 6px 8px;
+  background-color: rgba(118, 118, 128, 0.12);
+  border-radius: 8px;
+}
+.tahoe-qse-search-icon { color: #8e8e93; }
+.tahoe-qse-search-entry {
+  background-color: transparent;
+  color: #1d1d1f;
+  font-size: 13px;
+  border: none;
+  padding: 0;
+  margin-left: 6px;
+}
+.tahoe-qse-search-entry StEntry:cursor { background-color: #0a84ff; }
+.tahoe-qse-cat-row {
+  padding: 5px 10px 5px 12px;
+  border-radius: 7px;
+  margin: 0 6px;
+}
+.tahoe-qse-cat-row:hover { background-color: rgba(0, 0, 0, 0.06); }
+.tahoe-qse-cat-row.selected { background-color: rgba(0, 0, 0, 0.11); }
+.tahoe-qse-cat-sq { margin-right: 9px; }
+.tahoe-qse-cat-icon { color: #ffffff; -st-icon-shadow: none; }
+.tahoe-qse-cat-label { color: #1d1d1f; font-size: 13px; font-weight: 500; }
+
+.tahoe-qse-scroll { background-color: rgba(255, 255, 255, 0.55); }
+.tahoe-qse-content { padding: 14px 18px 14px 18px; spacing: 4px; }
+.tahoe-qse-section { spacing: 10px; margin-bottom: 16px; }
+.tahoe-qse-sect-title { color: #1d1d1f; font-size: 13px; font-weight: 700; }
+.tahoe-qse-grid { spacing: 12px; }
+.tahoe-qse-grid-row { spacing: 16px; padding-bottom: 6px; }
+.tahoe-qse-tile-wrap {
+  width: 150px;
+  spacing: 6px;
+  padding-top: 4px;
+}
+.tahoe-qse-tile-wrap:hover .tahoe-qse-tile-circle {
+  background-color: rgba(118, 118, 128, 0.28);
+}
+.tahoe-qse-tile-circle {
+  background-color: rgba(118, 118, 128, 0.16);
+  border-radius: 31px;
+}
+.tahoe-qse-tile-label {
+  color: #1d1d1f;
+  font-size: 11px;
+  text-align: center;
+}
+
+.tahoe-qse-footer {
+  background-color: rgba(242, 242, 247, 0.98);
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  padding: 0 16px;
+  spacing: 12px;
+}
+.tahoe-qse-hint { color: #6e6e73; font-size: 12px; }
+.tahoe-qse-done {
+  background-color: #0a84ff;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 6px 18px;
+  margin: 8px 0;
+}
+.tahoe-qse-done:hover { background-color: #2691ff; }
+.tahoe-qse-done:active { background-color: #0070dd; }
+
+.tahoe-qse-ghost {
+  background-color: rgba(118, 118, 128, 0.35);
+  border-radius: 31px;
+  opacity: 0.85;
+}
+
+/* ---------- CC edit mode badges (remove / resize) ---------- */
+.tahoe-qs-editbadge {
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  background-color: rgba(250, 250, 252, 0.96);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  color: #1d1d1f;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  padding: 0;
+  z-index: 5;
+}
+.tahoe-qs-editbadge:hover { background-color: #ffffff; }
+.tahoe-qs-editbadge:active { background-color: #e5e5ea; }
+.tahoe-qs-editbadge-resize { color: #0a84ff; font-size: 15px; }

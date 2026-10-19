@@ -1,6 +1,6 @@
 import Gio from "gi://Gio"
 
-// Writes only while the `output-logs` setting is on.
+// Logger class. Used by other classes and initialized in extension.js.
 export class Logger {
   private _settings: Gio.Settings;
   private _outputLogs: boolean;
@@ -13,6 +13,7 @@ export class Logger {
   }
 
   _bindSettings() {
+
     const connectSetting = (key: string, callback: Function) => {
       let id = this._settings.connect(`changed::${key}`, callback.bind(this));
       this._settingsIds.push(id);
@@ -20,11 +21,6 @@ export class Logger {
     connectSetting('output-logs', () => {
       this._outputLogs = this._settings.get_boolean('output-logs');
     });
-  }
-
-  // Check this before building an expensive message only to log it.
-  get enabled(): boolean {
-    return this._outputLogs;
   }
 
   log(...args: any[]) {
@@ -48,8 +44,11 @@ export class Logger {
   }
 
   cleanup() {
-    for (const id of this._settingsIds)
-      this._settings.disconnect(id);
-    this._settingsIds = [];
+    if (this._settings) {
+      for (const id of this._settingsIds) {
+        this._settings.disconnect(id);
+      }
+      this._settingsIds = [];
+    }
   }
 }

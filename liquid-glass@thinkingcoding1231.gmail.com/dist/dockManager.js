@@ -1,36 +1,49 @@
+// src/dockManager.js
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import GLib from 'gi://GLib';
-import Gio from 'gi://Gio';
-import { BackdropGlass } from './rendering/backdropGlass.js';
-import { reportFrameLoopError } from './diagnostics/logging.js';
-import { ensureGlassAllocated } from './actors/allocation.js';
-import { isFrameSyncFrozen, SAME_FRAME_WINDOW_US } from './animation/frameSync.js';
-import { startStageLoop, stopStageLoop } from './animation/frameLoops.js';
-import { setClipIfChanged } from './actors/writes.js';
-import { isActorValid } from './actors/lifecycle.js';
-import { hexToColorArray } from './animation/colors.js';
-import { clipDockBounds, dockEdges, balanceDockBounds, insetDockBounds, visibleDockSize } from './actors/dockGeometry.js';
-// Room around the glass rect for the shader's edge effects.
+import Meta from 'gi://Meta';
+import { LiquidEffect } from './liquidEffect.js';
+import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js';
+// Padding to allow the shader to draw effects (like refraction and blur) outside the actor's strict bounds.
 const SHADER_PADDING = 20;
-
+// Utility: Convert HEX color string (e.g., "#ffffff") to normalized RGB array [1.0, 1.0, 1.0]
+function hexToColorArray(hex) {
+    if (!hex || typeof hex !== 'string' || !hex.startsWith('#') || hex.length !== 7) {
+        return [1.0, 1.0, 1.0];
+    }
+    let r = parseInt(hex.slice(1, 3), 16) / 255.0;
+    let g = parseInt(hex.slice(3, 5), 16) / 255.0;
+    let b = parseInt(hex.slice(5, 7), 16) / 255.0;
+    return [r, g, b];
+}
 export class DashManager {
     extensionPath;
     targetActor;
     _settings;
-    // Monitor-sized; see _syncDockGlass().
-    glass = null;
+    // private bgActor: St.Widget | null = null;
+    bgActor = null;
+    // Delete Shell.BlurEffect and use custom blur (dual kawase) — now handled inside LiquidEffect
+    effect = null;
+    // Nesting order (outermost → innermost):
+    //   bgActor (full monitor, no effect)
+    //     └─ liquidBox  ← LiquidEffect with built-in dual-Kawase blur
+    //          └─ _cloneContainer  ← bgClone + windowClones + uiClones
+    liquidBox = null;
     _lastScreenW;
     _lastScreenH;
     _glassExpand;
     _signals;
-    _settingsSignals;
+    _settingsSignals; // GSettingsのイベントリスナーを管理
     _frameSyncId;
-    _frameSignalId = 0;
-    _lastTickUs = 0;
-    _isEffectActive;
+    // [FIX] Set by cleanup() before anything that can throw. Read by the
+    // per-frame BEFORE_REDRAW tick so an orphaned chain stops itself even if
+    // cleanup() never reached its laterRemove(). See the note in frameTick().
+    _torndown = false;
+    _isEffectActive; // エフェクトが現在適用されているかのフラグ
     _originalStyle;
     _currentMarginStyle;
     _dockParent = null;
+    _cloneContainer = null;
     _lastAbsX;
     _lastAbsY;
     _lastTW;
@@ -43,41 +56,43 @@ export class DashManager {
     _lastBgY;
     _lastBaseW;
     _lastBaseH;
+    _outputLogs = false;
     _marginValue = 0;
     // Tracks the hide/show transition so the reason is logged once, not per frame.
     _lastHidden;
-    // What the last _syncGeometry() based the glass rect on; see
-    // _syncGlassGeometryLive().
-    _liveRef = null;
+    _uiSampler = null;
+    _windowCloneManager = null;
     _logger;
-
+    // コンストラクタに settings を追加
     constructor(extensionPath, targetActor, settings, logger) {
         this.extensionPath = extensionPath;
         this.targetActor = targetActor;
-        this._settings = settings;
-        this._logger = logger;
-        // Pixels added around the dock's own rect.
-        this._glassExpand = 0;
+        this._settings = settings; // GSettings object
+        this._logger = logger; // Logger object
+        this._glassExpand = 0; // ガラスエリアの拡張量（ピクセル）
         this._signals = [];
-        this._settingsSignals = [];
+        this._settingsSignals = []; // GSettingsのイベントリスナーを管理
         this._frameSyncId = 0;
-        this._isEffectActive = false;
+        this._isEffectActive = false; // エフェクトが現在適用されているかのフラグ
     }
-
+    // 拡張機能が有効化された時に呼ばれるエントリーポイント
     setup() {
         if (!this.targetActor || !this._settings)
             return;
+        // 設定の監視を開始
         this._bindSettings();
+        // 初回起動時にスイッチがONならエフェクトを適用
         if (this._settings.get_boolean('enable-dock-glass')) {
             this._applyEffect();
         }
     }
-
+    // 設定が変更された時にリアルタイムで反映するためのバインディング
     _bindSettings() {
         const connectSetting = (key, callback) => {
             let id = this._settings.connect(`changed::${key}`, callback.bind(this));
             this._settingsSignals.push(id);
         };
+        // ON/OFFスイッチの切り替え
         connectSetting('enable-dock-glass', () => {
             let enabled = this._settings.get_boolean('enable-dock-glass');
             if (enabled && !this._isEffectActive) {
@@ -88,123 +103,161 @@ export class DashManager {
             }
         });
         connectSetting('dock-glass-expand', () => {
-            if (this.glass && this._isEffectActive) {
+            if (this.effect && this._isEffectActive) {
                 this._glassExpand = this._settings.get_int('dock-glass-expand');
-                this.glass?.queue_redraw();
             }
         });
+        // マージン変更時
         connectSetting('dock-margin-bottom', () => {
             if (this._isEffectActive)
                 this._applyMargin();
             this._marginValue = this._settings.get_int('dock-margin-bottom') || 0;
         });
+        // シェーダーパラメータの動的変更
         connectSetting('dock-tint-color', () => {
-            if (this.glass && this._isEffectActive) {
+            if (this.effect && this._isEffectActive) {
                 let colorArray = hexToColorArray(this._settings.get_string('dock-tint-color'));
-                this.glass.setTintColor(...colorArray);
+                this.effect.setTintColor(...colorArray);
             }
         });
         connectSetting('dock-tint-strength', () => {
-            if (this.glass && this._isEffectActive) {
-                this.glass.setTintStrength(this._settings.get_double('dock-tint-strength'));
+            if (this.effect && this._isEffectActive) {
+                this.effect.setTintStrength(this._settings.get_double('dock-tint-strength'));
             }
         });
         connectSetting('dock-blur-radius', () => {
             const radius = this._settings.get_int('dock-blur-radius');
-            if (this.glass && this._isEffectActive)
-                this.glass.setBlurRadius(radius);
+            if (this.effect && this._isEffectActive)
+                this.effect.setBlurRadius(radius);
         });
         connectSetting('dock-corner-radius', () => {
-            if (this.glass && this._isEffectActive) {
-                this.glass.setCornerRadius(this._settings.get_double('dock-corner-radius'));
-                this.glass.setCornerSmoothingEnabled(false);
-            }
+            this._applyAdaptiveRadius();
+        });
+        connectSetting('output-logs', () => {
+            this._outputLogs = this._settings.get_boolean('output-logs');
         });
         connectSetting('dock-brightness', () => {
-            if (this.glass && this._isEffectActive) {
-                this.glass.setBrightness(this._settings.get_double('dock-brightness'));
+            if (this.effect && this._isEffectActive) {
+                this.effect.setBrightness(this._settings.get_double('dock-brightness'));
             }
         });
         connectSetting('dock-contrast', () => {
-            if (this.glass && this._isEffectActive) {
-                this.glass.setContrast(this._settings.get_double('dock-contrast'));
+            if (this.effect && this._isEffectActive) {
+                this.effect.setContrast(this._settings.get_double('dock-contrast'));
             }
         });
         connectSetting('dock-saturation', () => {
-            if (this.glass && this._isEffectActive) {
-                this.glass.setSaturation(this._settings.get_double('dock-saturation'));
+            if (this.effect && this._isEffectActive) {
+                this.effect.setSaturation(this._settings.get_double('dock-saturation'));
             }
         });
     }
-
-    // Moves the dock away from the screen edge it is closest to by
-    // dock-margin-bottom.
+    // マージンの再計算と適用（動的反映のために独立した関数化）
     _applyMargin() {
         if (!this.targetActor)
             return;
         let marginBottom = this._settings.get_int('dock-margin-bottom');
-        if (marginBottom <= 0) {
-            if (this._originalStyle !== undefined) {
-                this.targetActor.set_style(this._originalStyle || null);
-            }
-            return;
-        }
-
-        // Determine edge: first inspect ancestor classes for reliable positioning
-        let posClass = 'bottom';
-        let p = this.targetActor;
-        while (p) {
-            if (p.has_style_class_name) {
-                if (p.has_style_class_name('bottom')) { posClass = 'bottom'; break; }
-                if (p.has_style_class_name('top')) { posClass = 'top'; break; }
-                if (p.has_style_class_name('left')) { posClass = 'left'; break; }
-                if (p.has_style_class_name('right')) { posClass = 'right'; break; }
-            }
-            p = p.get_parent();
-        }
-
+        let [w, h] = this.targetActor.get_size();
+        let [x, y] = this.targetActor.get_transformed_position();
+        let monitorIndex = Main.layoutManager.findIndexForActor(this.targetActor);
+        if (monitorIndex < 0)
+            monitorIndex = Main.layoutManager.primaryIndex;
+        let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
+        // 画面の各エッジとの距離から配置場所を特定する
+        let distLeft = x - monitor.x;
+        let distRight = (monitor.x + monitor.width) - (x + w);
+        let distTop = y - monitor.y;
+        let distBottom = (monitor.y + monitor.height) - (y + h);
+        let minEdge = Math.min(distLeft, distRight, distTop, distBottom);
         let marginStyle = '';
-        if (posClass === 'bottom') {
-            marginStyle = `margin-bottom: ${marginBottom}px;`;
-        } else if (posClass === 'top') {
-            marginStyle = `margin-top: ${marginBottom}px;`;
-        } else if (posClass === 'right') {
-            marginStyle = `margin-right: ${marginBottom}px;`;
-        } else if (posClass === 'left') {
-            marginStyle = `margin-left: ${marginBottom}px;`;
-        } else {
-            let [w, h] = this.targetActor.get_size();
-            let [x, y] = this.targetActor.get_transformed_position();
-            let monitorIndex = Main.layoutManager.findIndexForActor(this.targetActor);
-            if (monitorIndex < 0)
-                monitorIndex = Main.layoutManager.primaryIndex;
-            let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
-            let distLeft = x - monitor.x;
-            let distRight = (monitor.x + monitor.width) - (x + w);
-            let distTop = y - monitor.y;
-            let distBottom = (monitor.y + monitor.height) - (y + h);
-            let minEdge = Math.min(distLeft, distRight, distTop, distBottom);
-            if (minEdge === distBottom || minEdge === distTop) {
-                if (minEdge === distBottom)
-                    marginStyle = `margin-bottom: ${marginBottom}px;`;
-                else
-                    marginStyle = `margin-top: ${marginBottom}px;`;
-            } else {
-                if (minEdge === distRight)
-                    marginStyle = `margin-right: ${marginBottom}px;`;
-                else
-                    marginStyle = `margin-left: ${marginBottom}px;`;
+        if (minEdge === distBottom || minEdge === distTop) {
+            if (minEdge === distBottom) {
+                marginStyle = `margin-bottom: ${marginBottom}px;`; // 下
+            }
+            else {
+                marginStyle = `margin-top: ${marginBottom}px;`; // 上
             }
         }
-
-        if (this._originalStyle === undefined) {
-            let s = this.targetActor.get_style() || '';
-            this._originalStyle = s.replace(/margin-(bottom|top|left|right):\s*[^;]+;?/g, '').trim();
+        else {
+            if (minEdge === distRight) {
+                marginStyle = `margin-right: ${marginBottom}px;`; // 右
+            }
+            else {
+                marginStyle = `margin-left: ${marginBottom}px;`; // 左
+            }
         }
-        if (this._currentMarginStyle !== marginStyle) {
-            this._currentMarginStyle = marginStyle;
-            let base = this._originalStyle ? `${this._originalStyle} ` : '';
-            this.targetActor.set_style(`${base}${marginStyle}`.trim());
+        if (this._originalStyle === undefined) {
+            this._originalStyle = this.targetActor.get_style() || '';
+        }
+        this._currentMarginStyle = marginStyle;
+        this.targetActor.set_style(`${this._originalStyle} ${marginStyle}`);
+    }
+    // Tahoe: at login the dash may not be laid out yet, so the edge
+    // detection in _applyMargin() misfires (wrong margin side, dock sits
+    // too low). Re-apply once layout settles and on layout changes.
+    _scheduleMarginReconcile() {
+        this._cancelMarginReconcile();
+        const reapply = () => {
+            if (!this._isEffectActive)
+                return GLib.SOURCE_REMOVE;
+            try {
+                this._applyMargin();
+            } catch (e) {
+                // actor gone
+            }
+            return GLib.SOURCE_REMOVE;
+        };
+        this._marginRetryIds = [
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2500, reapply),
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 6000, reapply),
+        ];
+        try {
+            this._layoutSignals = [
+                Main.layoutManager.connect('startup-complete', reapply),
+                Main.layoutManager.connect('monitors-changed', reapply),
+            ];
+        } catch (e) {
+            this._layoutSignals = null;
+        }
+    }
+
+    _cancelMarginReconcile() {
+        if (this._marginRetryIds) {
+            for (const id of this._marginRetryIds) {
+                try {
+                    GLib.source_remove(id);
+                } catch (e) {
+                    // gone
+                }
+            }
+            this._marginRetryIds = null;
+        }
+        if (this._layoutSignals) {
+            for (const id of this._layoutSignals) {
+                try {
+                    Main.layoutManager.disconnect(id);
+                } catch (e) {
+                    // gone
+                }
+            }
+            this._layoutSignals = null;
+        }
+    }
+
+    // Tahoe: keep the dock a rounded rect, never a pill — radius follows
+    // dock height, capped by the configured value.
+    _applyAdaptiveRadius() {
+        if (!this.effect || !this._isEffectActive || !this.targetActor)
+            return;
+        try {
+            const configured = this._settings.get_double('dock-corner-radius');
+            const [, h] = this.targetActor.get_size();
+            let radius = configured;
+            if (h > 0)
+                radius = Math.min(configured, Math.max(6, h * 0.28));
+            this.effect.setCornerRadius(radius);
+        } catch (e) {
+            // effect gone
         }
     }
 
@@ -212,27 +265,39 @@ export class DashManager {
         if (this._isEffectActive)
             return;
         this._isEffectActive = true;
-        this._lastScreenW = this._lastScreenH = undefined;
-        this._lastBgW = this._lastBgH = undefined;
-        this._lastBgX = this._lastBgY = undefined;
-        this._lastBaseW = this._lastBaseH = undefined;
-        this._lastAbsX = this._lastAbsY = undefined;
-        this._lastTW = this._lastTH = undefined;
-        this._stableDeltaW = this._stableDeltaH = undefined;
-        this._lastHidden = undefined;
         this.targetActor.add_style_class_name('liquid-glass-transparent');
         this._dockParent = this.targetActor.get_parent();
         if (this._dockParent) {
             this._dockParent.add_style_class_name('liquid-glass-transparent');
         }
-        const glass = new BackdropGlass({
-            extensionPath: this.extensionPath, settings: this._settings, logger: this._logger, owner: 'dock',
-        });
-        this.glass = glass;
-        glass.set_size(1.0, 1.0);
+        this.bgActor = new UnpickableActor();
+        this.bgActor.set_name('liquid-glass-bg-actor');
+        this.bgActor.set_size(1.0, 1.0);
+        // liquidBox: full-monitor-sized actor that holds the LiquidEffect.
+        // LiquidEffect internally runs dual-Kawase blur passes before the glass composite,
+        // so no separate blurBox/Shell.BlurEffect is needed.
+        this.liquidBox = new UnpickableActor();
+        this.liquidBox.set_name("liquid-box");
+        this.liquidBox.set_clip_to_allocation(true);
+        this.bgActor.add_child(this.liquidBox);
+        // dummyBreaker: dummy actor to break the BMS bug
+        let dummyBreaker = new UnpickableActor();
+        dummyBreaker.set_name("optimization-breaker");
+        dummyBreaker.set_size(1.0, 1.0);
+        dummyBreaker.set_opacity(0); // 完全に透明
+        this.liquidBox.add_child(dummyBreaker);
+        // _cloneContainer lives inside liquidBox.
+        // Clones are captured into the LiquidEffect's OffscreenEffect FBO and
+        // blurred + distorted by the shader in a single pass.
+        this._cloneContainer = new UnpickableActor();
+        this._cloneContainer.set_name("clone-container");
+        this.liquidBox.add_child(this._cloneContainer);
+        // 動的マージンを適用
         this._applyMargin();
+        this._scheduleMarginReconcile();
         this._marginValue = this._settings.get_int('dock-margin-bottom');
         this._glassExpand = this._settings.get_int("dock-glass-expand");
+        this._outputLogs = this._settings.get_boolean('output-logs');
         let dockRoot = this.targetActor;
         while (dockRoot && dockRoot.get_parent() !== Main.layoutManager.uiGroup) {
             let p = dockRoot.get_parent();
@@ -240,285 +305,441 @@ export class DashManager {
                 break;
             dockRoot = p;
         }
-        // Below the dock, so the glass reads the stage before the dock is drawn.
         if (dockRoot && dockRoot.get_parent() === Main.layoutManager.uiGroup) {
-            Main.layoutManager.uiGroup.insert_child_below(glass, dockRoot);
+            Main.layoutManager.uiGroup.insert_child_below(this.bgActor, dockRoot);
         }
         else {
-            Main.layoutManager.uiGroup.add_child(glass);
+            Main.layoutManager.uiGroup.add_child(this.bgActor);
         }
-        let isDark = true;
-        try {
-            const iface = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
-            const scheme = iface.get_string('color-scheme');
-            if (scheme === 'prefer-dark') isDark = true;
-            else if (scheme === 'prefer-light') isDark = false;
-            else {
-                const gtk = iface.get_string('gtk-theme') || '';
-                isDark = gtk.toLowerCase().includes('dark');
-            }
-        } catch (_) {
-            isDark = true;
-        }
-        let tintVal = isDark ? 0.0 : 1.0;
-        let tintStrength = 0.03; // Exactly 3% as requested by user
+        // 設定から初期値を読み込み
+        let blurRadius = this._settings.get_int('dock-blur-radius');
+        let tintColorStr = this._settings.get_string('dock-tint-color');
+        let tintStrength = this._settings.get_double('dock-tint-strength');
         let cornerRadius = this._settings.get_double('dock-corner-radius');
         let brightness = this._settings.get_double('dock-brightness');
         let contrast = this._settings.get_double('dock-contrast');
         let saturation = this._settings.get_double('dock-saturation');
-        let blurRadius = this._settings.get_int('dock-blur-radius');
-        glass.setPadding(SHADER_PADDING);
-        glass.setTintColor(tintVal, tintVal, tintVal);
-        glass.setTintStrength(tintStrength);
-        glass.setCornerRadius(cornerRadius);
-        glass.setBrightness(brightness);
-        glass.setContrast(contrast);
-        glass.setSaturation(saturation);
-        glass.setBlurRadius(blurRadius);
-        glass.setIsDock(true);
-        glass.setCornerSmoothingEnabled(false);
-        // Dash to Dock slides by relayout, so the frame tick sees last frame's
-        // position; the paint-time hook corrects it.
-        glass.setLiveGeometryHook(() => this._syncGlassGeometryLive());
-        glass.show();
-        // Follows the stage's own frames (startStageLoop()), so it costs nothing
-        // while nothing changes. Errors are reported rate-limited instead of
-        // logged every frame; SAME_FRAME_WINDOW_US keeps two stage views from
-        // stepping it twice in one frame.
+        this.effect = new LiquidEffect({ extensionPath: this.extensionPath, settings: this._settings, logger: this._logger, owner: 'dock' });
+        this.effect.setPadding(SHADER_PADDING);
+        this.effect.setTintColor(...hexToColorArray(tintColorStr));
+        this.effect.setTintStrength(tintStrength);
+        this._applyAdaptiveRadius();
+        this.effect.setBrightness(brightness);
+        this.effect.setContrast(contrast);
+        this.effect.setSaturation(saturation);
+        this.effect.setBlurRadius(blurRadius);
+        this.effect.setIsDock(true);
+        this.liquidBox.add_effect(this.effect);
+        // WindowCloneManager + UILayerSampler deposit their clones inside liquidBox.
+        this._windowCloneManager = new WindowCloneManager(this.liquidBox, this._cloneContainer, 'lg-dock');
+        // [FIX] dockRoot is passed BOTH as a fixed exclusion and as an ancestor
+        // source. The fixed entry covers the common case; the ancestor source is
+        // what keeps the exclusion correct after Dash to Dock destroys and
+        // rebuilds its container (which it does whenever its settings change,
+        // including a change of dock position). Without the second one the dock
+        // starts being cloned into its own glass — ghost icons inside the dock.
+        this._uiSampler = new UILayerSampler(this.bgActor, this.liquidBox, [dockRoot, global.windowGroup, global.window_group], this._cloneContainer, 'dock', [this.targetActor]);
+        this.bgActor.show();
+        const laterAdd = (laterType, callback) => {
+            return global.compositor.get_laters().add(laterType, callback);
+        };
+        const frameLaterType = Meta.LaterType.BEFORE_REDRAW;
+        // Rebuild clones (called on menu open): delegate entirely to WindowCloneManager + UILayerSampler
+        let buildClones = () => {
+            if (!this.bgActor)
+                return;
+            // _uiSampler が存在する場合のみ除外リストへの追加処理を行う
+            if (this._uiSampler) {
+                for (let child of Main.layoutManager.uiGroup.get_children()) {
+                    if (child === this.bgActor)
+                        continue;
+                    // 名前が 'liquid-glass-bg-actor' のもの、または 'liquid-box' を子に持つものを
+                    // 他のLiquid Glassエフェクトの背景アクターと判定する
+                    let isLiquidBg = child.name === 'liquid-glass-bg-actor' ||
+                        (typeof child.get_children === 'function' &&
+                            child.get_children().some(c => c.name === 'liquid-box'));
+                    if (isLiquidBg) {
+                        this._uiSampler.addExclusion(child);
+                    }
+                }
+            }
+            this._windowCloneManager?.rebuildClones();
+            this._uiSampler?.rebindSelf();
+            this._uiSampler?.refresh();
+        };
+        // The reschedule at the end is what keeps this chain alive, so it must
+        // not be reachable-only-on-success: a single throw out of
+        // _syncGeometry() (a disposed clone, a destroyed dash child, ...) used
+        // to skip it and freeze the dock's glass permanently — clones stuck at
+        // their last position, no new UI clones (the Overview's controls never
+        // appear inside the dock), and the only way back was hiding and
+        // re-showing the dock, since startFrameSync() only runs from
+        // 'notify::mapped'. Same shape as ApplicationManager._frameTick().
         let frameTick = () => {
-            if (!this._isEffectActive || !this.glass || !this.targetActor.mapped)
-                return;
-            if (isFrameSyncFrozen())
-                return;
-            const nowUs = GLib.get_monotonic_time();
-            if (nowUs - this._lastTickUs < SAME_FRAME_WINDOW_US)
-                return;
-            this._lastTickUs = nowUs;
+            this._frameSyncId = 0;
+            // [FIX] Hard stop after teardown. Every one of these ticks ends by
+            // re-adding itself as a BEFORE_REDRAW later, so a cleanup() that does
+            // not reach its laterRemove() — because an earlier step threw — leaves
+            // a self-rescheduling chain running forever against destroyed actors,
+            // holding this whole manager (and its settings and logger) alive. The
+            // next enable() then builds a second set on top of a live first set,
+            // which is the "the extension can no longer be enabled" symptom.
+            // Removing the later is still done in cleanup(); this is the backstop
+            // that does not depend on cleanup() getting that far.
+            if (this._torndown)
+                return GLib.SOURCE_REMOVE;
+            if (!this.bgActor || !this.targetActor.mapped)
+                return GLib.SOURCE_REMOVE;
+            // [DIAG] See setFrameSyncFrozen() in utils.ts. Reschedules but does
+            // nothing, so the cost of this poll can be measured directly.
+            if (isFrameSyncFrozen()) {
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
+                return GLib.SOURCE_REMOVE;
+            }
+            // Repair the subtree if Clutter has stopped allocating it. Sampled
+            // here, at the top of the tick, because the previous frame's relayout
+            // has settled by now and this frame's sync has not dirtied anything
+            // yet. See ensureGlassAllocated().
+            ensureGlassAllocated(this.bgActor);
             try {
-                // Checked before this frame's sync dirties anything.
-                ensureGlassAllocated(this.glass);
                 this._syncGeometry();
             }
             catch (e) {
                 reportFrameLoopError('DockManager', e);
             }
+            this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            return GLib.SOURCE_REMOVE;
         };
         let startFrameSync = () => {
-            if (this._frameSignalId !== 0)
-                return;
-            startStageLoop(this._frameSignalSlot, this._frameSlot, frameTick);
+            if (this._frameSyncId === 0) {
+                buildClones();
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            }
         };
-        // The glass is the dock's sibling, so it stays up when the dock is
-        // hidden as a whole (for instance over a fullscreen window).
-        const updateDockSync = () => {
-            if (this.targetActor.mapped && this.targetActor.visible && this.targetActor.opacity > 0) {
+        let mapSignalId = this.targetActor.connect('notify::mapped', () => {
+            if (this.targetActor.mapped) {
                 startFrameSync();
             }
             else {
-                this._stopFrameSync();
-                this._hideGlass();
-            }
-        };
-        this._signalCleanups = [];
-        const safeConnect = (obj, sig, fn) => {
-            if (!obj) return;
-            try {
-                const id = obj.connect(sig, fn);
-                this._signalCleanups.push(() => {
-                    try { obj.disconnect(id); } catch (_) {}
-                });
-            } catch (_) {}
-        };
-
-        safeConnect(this.targetActor, 'notify::mapped', updateDockSync);
-        safeConnect(this.targetActor, 'notify::visible', updateDockSync);
-        safeConnect(this.targetActor, 'notify::opacity', updateDockSync);
-        safeConnect(global.display, 'notify::focus-window', () => {
-            if (this.glass && this._isEffectActive) {
-                this.glass.syncSources(true);
+                if (this._frameSyncId !== 0) {
+                    this._frameSyncId = 0;
+                }
             }
         });
-
-        // Keep dock glass seamlessly updated during overview transitions
-        const triggerDockSync = () => {
-            if (this.glass && this._isEffectActive) {
-                this.glass.syncSources(true);
-                this.glass.queue_redraw();
+        this._signals.push(mapSignalId);
+        this._signals.push(this.targetActor.connect('notify::allocation', () => {
+            try {
+                this._applyAdaptiveRadius();
+            } catch (e) {
+                // effect gone
             }
-        };
-        safeConnect(Main.overview, 'showing', triggerDockSync);
-        safeConnect(Main.overview, 'hiding', triggerDockSync);
-        safeConnect(Main.overview, 'shown', triggerDockSync);
-
-        const onOverviewHidden = () => {
-            if (this.glass && this._isEffectActive) {
-                this.glass._copier?.clear();
-                this._lastSyncSourcesUs = 0;
-                const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
-                this.glass.setBrightness(baseBrightness);
-                if (typeof this.glass.forceRefresh === 'function') {
-                    this.glass.forceRefresh(1);
-                }
-                this.glass.syncSources(true);
-                this.glass.queue_redraw();
-            }
-        };
-        safeConnect(Main.overview, 'hidden', onOverviewHidden);
-
-        const stateAdjustment = Main.overview?._controls?._stateAdjustment
-            ?? Main.overview?._overview?._controls?._stateAdjustment;
-        if (stateAdjustment) {
-            safeConnect(stateAdjustment, 'notify::value', () => {
-                if (this.glass && this._isEffectActive) {
-                    const p = Math.max(0, Math.min(1, stateAdjustment.value));
-                    const baseBrightness = (this._settings.get_double('dock-brightness') ?? 1.0) || 1.0;
-                    this.glass.setBrightness(baseBrightness - p * 0.15);
-                    this.glass.queue_redraw();
-                }
-            });
+        }));
+        if (this.targetActor.mapped) {
+            startFrameSync();
         }
-        updateDockSync();
     }
-
-    // Runs at paint time (see GlassActor.setLiveGeometryHook()), when the
-    // dock's allocation is current. _syncGeometry() keeps per-frame state and
-    // must run once per frame, so only the glass rect's position is corrected
-    // here, by how far the dock moved since the tick.
-    _syncGlassGeometryLive() {
-        const ref = this._liveRef;
-        if (!ref || !this.glass)
-            return;
-        if (!ref.actor?.mapped)
-            return;
-        const [nx, ny] = ref.actor.get_transformed_position();
-        if (!Number.isFinite(nx) || !Number.isFinite(ny))
-            return;
-        this.glass.setGlassGeometry(ref.rect[0] + (nx - ref.rawX), ref.rect[1] + (ny - ref.rawY), ref.rect[2], ref.rect[3]);
-    }
-
     _syncGeometry() {
-        if (!this.glass || !this.targetActor || !this.targetActor.mapped)
+        if (!this.bgActor || !this.targetActor || !this.targetActor.mapped)
             return;
-        let bounds = this._readDockBounds();
-        if (!bounds)
+        let sourceActor = this.targetActor;
+        let children = this.targetActor.get_children();
+        for (let i = 0; i < children.length; i++) {
+            if (children[i].has_style_class_name('dash-background')) {
+                children[i].opacity = 0;
+                sourceActor = children[i];
+            }
+        }
+        // 1. まず元の背景のサイズと位置を取得
+        let [baseW, baseH] = sourceActor.get_size();
+        let [absX, absY] = sourceActor.get_transformed_position();
+        if (Number.isNaN(absX) || Number.isNaN(absY))
             return;
+        if (sourceActor !== this.targetActor) {
+            let [tX, tY] = this.targetActor.get_transformed_position();
+            let [tW, tH] = this.targetActor.get_size();
+            // 親コンテナからはみ出した分をカットし、本来のサイズに強制する
+            if (absX < tX) {
+                baseW -= (tX - absX);
+                absX = tX;
+            }
+            if (absY < tY) {
+                baseH -= (tY - absY);
+                absY = tY;
+            }
+            if (absX + baseW > tX + tW) {
+                baseW = (tX + tW) - absX;
+            }
+            if (absY + baseH > tY + tH) {
+                baseH = (tY + tH) - absY;
+            }
+        }
+        // this._logger.log(`[Raw] ${absX}, ${absY}, ${baseW}, ${baseH}`);
         let monitorIndex = Main.layoutManager.findIndexForActor(this.targetActor);
         if (monitorIndex < 0) {
             monitorIndex = Main.layoutManager.primaryIndex;
         }
         let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
-        const edges = dockEdges(bounds, monitor);
-        bounds = this._stabilizeDockBounds(bounds, edges);
-        if (this._marginValue > 0) {
-            this._applyMargin();
-            const refActor = this._findReferenceActor(this.targetActor);
-            if (refActor)
-                bounds = balanceDockBounds(bounds, this._actorBounds(refActor), edges);
-            bounds = this._applyDockMargin(bounds, monitor, edges);
+        let minCenterDist = -1;
+        let distLeftCenter = 0;
+        let distRightCenter = 0;
+        let distTopCenter = 0;
+        let distBottomCenter = 0;
+        if (monitor) {
+            let dockCenterX = absX + (baseW / 2);
+            let dockCenterY = absY + (baseH / 2);
+            distLeftCenter = dockCenterX - monitor.x;
+            distRightCenter = (monitor.x + monitor.width) - dockCenterX;
+            distTopCenter = dockCenterY - monitor.y;
+            distBottomCenter = (monitor.y + monitor.height) - dockCenterY;
+            minCenterDist = Math.min(distLeftCenter, distRightCenter, distTopCenter, distBottomCenter);
         }
-        const { baseW, baseH } = bounds;
-        if (baseW <= 9 || baseH <= 9) {
-            this._hideGlass();
-            return;
-        }
-        this.glass.show();
-        this.glass.opacity = this.targetActor.opacity;
-        this._syncDockVisibility(bounds, monitor);
-        this._syncDockGlass(bounds, monitor);
-    }
-
-    _actorBounds(actor) {
-        const [baseW, baseH] = actor.get_size();
-        const [absX, absY] = actor.get_transformed_position();
-        return { absX, absY, baseW, baseH };
-    }
-
-    _liveSource = null;
-
-    _readDockBounds() {
-        let sourceActor = this.targetActor;
-        let parent = this.targetActor.get_parent();
-        if (parent) {
-            for (let child of parent.get_children()) {
-                if (child.has_style_class_name && child.has_style_class_name('dash-background')) {
-                    child.opacity = 0;
-                    child.visible = false;
-                }
-            }
-        }
-        let children = this.targetActor.get_children();
-        for (let i = 0; i < children.length; i++) {
-            if (children[i].has_style_class_name && children[i].has_style_class_name('dash-background')) {
-                children[i].opacity = 0;
-                children[i].visible = false;
-            }
-        }
-        let [baseW, baseH] = sourceActor.get_size();
-        let [absX, absY] = sourceActor.get_transformed_position();
-        if (Number.isNaN(absX) || Number.isNaN(absY))
-            return null;
-        // The uncorrected position, which _syncGlassGeometryLive() compares against.
-        this._liveSource = { actor: sourceActor, rawX: absX, rawY: absY };
-        return { absX, absY, baseW, baseH };
-    }
-
-    _stabilizeDockBounds(bounds, edges) {
-        let { baseW, baseH } = bounds;
-        const { minCenterDist, distTopCenter, distBottomCenter } = edges;
         if (this._lastBaseW !== undefined && this._lastBaseH !== undefined) {
             let isHorizontalDock = (minCenterDist === distTopCenter || minCenterDist === distBottomCenter);
-            // The dock's thickness can jump by exactly the margin for a frame;
-            // such a jump is ignored.
             if (isHorizontalDock) {
-                if (Math.abs(Math.abs(baseH - this._lastBaseH) - this._marginValue) <= 1)
+                // ▼ 上・下ドックの場合：異常に膨張するのは H（厚み）
+                // Hの変化量が「ちょうど marginValue 分」だった場合のみ、そのジャンプを無効化（<= 1 に修正）
+                if (Math.abs(Math.abs(baseH - this._lastBaseH) - this._marginValue) <= 1) {
                     baseH = this._lastBaseH;
+                }
             }
             else {
-                if (Math.abs(Math.abs(baseW - this._lastBaseW) - this._marginValue) <= 1)
+                // ▼ 左・右ドックの場合：異常に膨張するのは W（厚み）
+                // Wの変化量が「ちょうど marginValue 分」だった場合のみ無効化
+                if (Math.abs(Math.abs(baseW - this._lastBaseW) - this._marginValue) <= 1) {
                     baseW = this._lastBaseW;
+                }
             }
         }
         this._lastBaseW = baseW;
         this._lastBaseH = baseH;
-        return { ...bounds, baseW, baseH };
-    }
-
-    _applyDockMargin(bounds, monitor, edges) {
-        const marginValue = this._marginValue || 0;
-        if (!monitor || !(marginValue > 0))
-            return bounds;
-        const { absX, absY, baseW, baseH } = bounds;
-        // No margin correction while the dock moves.
-        let isMoving = false;
-        if (this._lastAbsX !== undefined && this._lastAbsY !== undefined) {
-            let diffX = Math.abs(absX - this._lastAbsX);
-            let diffY = Math.abs(absY - this._lastAbsY);
-            if (diffX > 1.0 || diffY > 1.0) {
-                isMoving = true;
+        let refActor = this._findReferenceActor(this.targetActor);
+        if (refActor) {
+            let [refW, refH] = refActor.get_size();
+            let [refX, refY] = refActor.get_transformed_position();
+            // this._logger.log(`refActor [Raw]: ${refX}, ${refY}, ${refW}, ${refH}`);
+            if (!Number.isNaN(refX) && !Number.isNaN(refY) && refW > 0 && refH > 0) {
+                let topGap = refY - absY;
+                let bottomGap = (absY + baseH) - (refY + refH);
+                // For when the dock is upside down
+                if (topGap < 0 || bottomGap < 0) {
+                    // 原点が下端にあるため、真の左上Y座標は refY - refH になる
+                    let trueRefY = refY - refH;
+                    // ギャップを再計算して正常化
+                    topGap = trueRefY - absY;
+                    bottomGap = (absY + baseH) - (trueRefY + refH);
+                }
+                let leftGap = refX - absX;
+                let rightGap = (absX + baseW) - (refX + refW);
+                // ▼ X軸が反転（左右ミラー）しているかの検知と補正（左/右ドック用）
+                if (leftGap < 0 || rightGap < 0) {
+                    let trueRefX = refX - refW;
+                    leftGap = trueRefX - absX;
+                    rightGap = (absX + baseW) - (trueRefX + refW);
+                }
+                if (baseW >= baseH) {
+                    // ▼ 横長ドック（上・下ドック）▼
+                    let diff = Math.abs(bottomGap - topGap);
+                    // 異常値(高さを超えるようなズレ)は無視する安全装置
+                    if (diff > 0 && diff < baseH / 2) {
+                        if (bottomGap > topGap) {
+                            // 下の隙間の方が広い -> 下を削る
+                            baseH -= diff;
+                        }
+                        else {
+                            // 上の隙間の方が広い -> 開始位置(上)を下げて、高さも削る
+                            absY += diff;
+                            baseH -= diff;
+                        }
+                    }
+                }
+                else {
+                    // ▼ 縦長ドック（左・右ドック）▼
+                    let diff = Math.abs(rightGap - leftGap);
+                    if (diff > 0 && diff < baseW / 2) {
+                        if (minCenterDist === distLeftCenter) {
+                            // 左ドック: 中央方向（右側）の余白のみ削る
+                            // leftGap > rightGap になっても absX を右にズラしてはいけない
+                            if (rightGap > leftGap) {
+                                baseW -= diff;
+                            }
+                            // leftGap > rightGap の場合は何もしない（誤補正防止）
+                        }
+                        else {
+                            // 右ドック: 中央方向（左側）の余白を削る
+                            if (rightGap > leftGap) {
+                                baseW -= diff;
+                            }
+                            else {
+                                absX += diff;
+                                baseW -= diff;
+                            }
+                        }
+                    }
+                }
             }
         }
-        this._lastAbsX = absX;
-        this._lastAbsY = absY;
-        this._isMoving = isMoving;
-        let [tW, tH] = this.targetActor.get_size();
-        if (this._stableDeltaW === undefined || this._lastTW !== tW) {
-            this._stableDeltaW = baseW - tW;
-            this._lastTW = tW;
+        // this._logger.log(`[Gap] ${absX}, ${absY}, ${baseW}, ${baseH}`);
+        // --------------------------------------------------------------------
+        // --------------------------------------------------------------------
+        let marginValue = this._settings.get_int('dock-margin-bottom') || 0;
+        if (monitor && marginValue > 0) {
+            // アプリ起動時の微小揺れ（誤動作の元）を完全に無視するため、閾値を大きく設定
+            let isMoving = false;
+            if (this._lastAbsX !== undefined && this._lastAbsY !== undefined) {
+                let diffX = Math.abs(absX - this._lastAbsX);
+                let diffY = Math.abs(absY - this._lastAbsY);
+                if (diffX > 1.0 || diffY > 1.0) {
+                    isMoving = true;
+                }
+            }
+            // Fix hiding animation bug
+            // isMoving = false;
+            this._lastAbsX = absX;
+            this._lastAbsY = absY;
+            let [tW, tH] = this.targetActor.get_size();
+            if (this._stableDeltaW === undefined || this._lastTW !== tW) {
+                this._stableDeltaW = baseW - tW;
+                this._lastTW = tW;
+            }
+            if (this._stableDeltaH === undefined || this._lastTH !== tH) {
+                this._stableDeltaH = baseH - tH;
+                this._lastTH = tH;
+            }
+            let stableBaseW = tW + this._stableDeltaW;
+            let stableBaseH = tH + this._stableDeltaH;
+            if (!isMoving) {
+                if (minCenterDist === distBottomCenter) {
+                    // 下ドック
+                    let expectedBottom = monitor.y + monitor.height - marginValue;
+                    if (absY + baseH > expectedBottom) {
+                        let overflow = (absY + baseH) - expectedBottom;
+                        baseH -= overflow;
+                    }
+                    if (baseH > stableBaseH)
+                        baseH = stableBaseH; // Experimental
+                }
+                else if (minCenterDist === distTopCenter) {
+                    // 上ドック
+                    let expectedTop = monitor.y + marginValue;
+                    if (absY < expectedTop) {
+                        let diff = expectedTop - absY;
+                        absY = expectedTop;
+                        baseH -= diff;
+                    }
+                    if (baseH > stableBaseH)
+                        baseH = stableBaseH;
+                }
+                else if (minCenterDist === distRightCenter) {
+                    // 右ドック
+                    let expectedRight = monitor.x + monitor.width - marginValue;
+                    if (absX + baseW > expectedRight) {
+                        let overflow = (absX + baseW) - expectedRight;
+                        baseW -= overflow;
+                    }
+                    if (baseW > stableBaseW)
+                        baseW = stableBaseW; // Experimental
+                }
+                else {
+                    // 左ドック
+                    let expectedLeft = monitor.x + marginValue;
+                    if (absX < expectedLeft) {
+                        let diff = expectedLeft - absX;
+                        absX = expectedLeft;
+                        baseW -= diff;
+                    }
+                    if (baseW > stableBaseW)
+                        baseW = stableBaseW;
+                }
+            }
         }
-        if (this._stableDeltaH === undefined || this._lastTH !== tH) {
-            this._stableDeltaH = baseH - tH;
-            this._lastTH = tH;
+        // this._logger.log(`[Final] ${absX}, ${absY}, ${baseW}, ${baseH}`);
+        // --------------------------------------------------------------------
+        // dash2dock-motion magnifies the icons in place (set_scale + translation;
+        // allocations never change) and stretches its own .dash-background slab
+        // so the grown strip never overhangs it. The rect above comes from the
+        // icon container's allocation, which stays put, so the glass stayed
+        // short and the magnified icons spilled out of it. Grow the rect along
+        // the dock's axis to the slab's *visual* bounds (transformed origin
+        // scaled by its current scale) so the glass tracks the stretch. Only
+        // the axis is touched: thickness was tuned by the gap/margin
+        // corrections above, and the slab never grows that way anyway.
+        {
+            const slab = this._findDashBackground(this.targetActor.get_parent() ?? this.targetActor);
+            if (slab && slab.has_allocation()) {
+                const [slW, slH] = slab.get_size();
+                const [slX, slY] = slab.get_transformed_position();
+                const slSX = slab.scale_x || 1;
+                const slSY = slab.scale_y || 1;
+                if (Number.isFinite(slX) && Number.isFinite(slY) && slW > 0 && slH > 0) {
+                    const horizontalDock = (minCenterDist === distTopCenter || minCenterDist === distBottomCenter);
+                    if (horizontalDock) {
+                        const slabL = slX;
+                        const slabR = slX + slW * slSX;
+                        if (slabL < absX) {
+                            baseW += absX - slabL;
+                            absX = slabL;
+                        }
+                        if (slabR > absX + baseW) {
+                            baseW = slabR - absX;
+                        }
+                    }
+                    else {
+                        const slabT = slY;
+                        const slabB = slY + slH * slSY;
+                        if (slabT < absY) {
+                            baseH += absY - slabT;
+                            absY = slabT;
+                        }
+                        if (slabB > absY + baseH) {
+                            baseH = slabB - absY;
+                        }
+                    }
+                }
+            }
         }
-        let stableBaseW = tW + this._stableDeltaW;
-        let stableBaseH = tH + this._stableDeltaH;
-        return isMoving ? bounds : insetDockBounds(bounds, monitor, edges, marginValue, stableBaseW, stableBaseH);
-    }
-
-    _syncDockVisibility(bounds, monitor) {
-        const { absX, absY, baseW, baseH } = bounds;
-        const [visibleW, visibleH] = visibleDockSize(bounds, monitor);
-        // Only a degenerate box hides the glass: a dock flush against the screen
-        // edge is only a few pixels wide on screen. Logged on transition.
+        // 補正されたサイズを適用
+        let w = Math.max(1.0, baseW);
+        let h = Math.max(1.0, baseH);
+        if (baseW <= 9 || baseH <= 9) {
+            this.bgActor.hide();
+            // stateをリセットして、次の表示時に必ずガードを通過させる 
+            // Reset state to guard against the next frame tick from applying the guard.
+            this._lastBgW = undefined;
+            this._lastBgH = undefined;
+            this._lastBgX = undefined;
+            this._lastBgY = undefined;
+            return;
+        }
+        else {
+            this.bgActor.show();
+        }
+        this.bgActor.opacity = this.targetActor.opacity;
+        /*
+        let monitorIndex = Main.layoutManager.findIndexForActor(this.targetActor);
+        if (monitorIndex < 0) {
+            monitorIndex = Main.layoutManager.primaryIndex;
+        }
+        let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
+        */
+        let visibleW = baseW;
+        let visibleH = baseH;
+        if (monitor) {
+            if (absX < monitor.x)
+                visibleW -= (monitor.x - absX);
+            if (absY < monitor.y)
+                visibleH -= (monitor.y - absY);
+            if (absX + baseW > monitor.x + monitor.width)
+                visibleW -= ((absX + baseW) - (monitor.x + monitor.width));
+            if (absY + baseH > monitor.y + monitor.height)
+                visibleH -= ((absY + baseH) - (monitor.y + monitor.height));
+        }
+        // [FIX] Was `<= 5`. The guard exists to avoid drawing a glass for a dock
+        // that has been reduced to nothing, but 5px is wide enough to catch a dock
+        // that is merely sitting flush against a screen edge — which is exactly
+        // what a small dock-margin-bottom produces, and it made the glass vanish
+        // while the margin was being tuned. Only a genuinely degenerate box is
+        // rejected now, and the decision is logged on transition so a dock that
+        // still disappears says why.
         if (visibleW <= 1 || visibleH <= 1) {
             if (this._lastHidden !== true) {
                 this._lastHidden = true;
@@ -527,41 +748,43 @@ export class DashManager {
                     `monitor=(${monitor?.x},${monitor?.y},${monitor?.width}x${monitor?.height}) ` +
                     `margin=${this._marginValue}`);
             }
-            this.glass.opacity = 0;
+            this.bgActor.opacity = 0;
         }
         else {
             if (this._lastHidden === true) {
                 this._lastHidden = false;
                 this._logger.log('[Liquid Glass][dock] glass visible again');
             }
-            this.glass.opacity = this.targetActor.opacity;
+            this.bgActor.opacity = this.targetActor.opacity;
         }
-    }
-
-    _syncDockGlass(bounds, monitor) {
-        const { absX, absY, baseW, baseH } = bounds;
-        const w = Math.max(1.0, baseW), h = Math.max(1.0, baseH);
         let bgW = Math.max(1.0, w + (SHADER_PADDING * 2) + (this._glassExpand * 2));
         let bgH = Math.max(1.0, h + (SHADER_PADDING * 2) + (this._glassExpand * 2));
         let bgX = absX - SHADER_PADDING - this._glassExpand;
         let bgY = absY - SHADER_PADDING - this._glassExpand;
-        // The glass covers the whole monitor; the shader draws only the glass
-        // rect, in monitor-local coordinates.
+        // Full-screen FBO geometry.
+        // bgActor and liquidBox are both sized to cover the entire monitor.
+        // This makes the FBO coordinate system match what BMS expects (full-screen
+        // absolute coordinates), eliminating the BMS blur offset and cache-pollution
+        // bugs caused by the old dock-sized FBO.
         let screenW = monitor.width;
         let screenH = monitor.height;
-        // Monitor-local, as the shader uses them.
+        // Dock background position in monitor-local coordinates (monitor origin = 0,0).
+        // This is what the shader receives via setGlassGeometry() to reconstruct the
+        // dock-centred local coordinate system inside the full-screen FBO.
         let localBgX = bgX - monitor.x;
         let localBgY = bgY - monitor.y;
+        // Detect any change in dock geometry OR monitor size to trigger a rebuild.
         if (this._lastBgW !== bgW || this._lastBgH !== bgH ||
             this._lastBgX !== bgX || this._lastBgY !== bgY ||
-            this._lastScreenW !== screenW || this._lastScreenH !== screenH ||
-            this.glass.x !== monitor.x || this.glass.y !== monitor.y) {
-            this.glass.remove_transition('size');
-            this.glass.remove_transition('position');
-            this.glass.set_position(monitor.x, monitor.y);
-            this.glass.set_size(screenW, screenH);
-            this.glass.remove_transition('size');
-            this.glass.remove_transition('position');
+            this._lastScreenW !== screenW || this._lastScreenH !== screenH) {
+            this.bgActor.remove_transition('size');
+            this.bgActor.remove_transition('position');
+            this.bgActor.set_position(monitor.x, monitor.y);
+            this.bgActor.set_size(screenW, screenH);
+            this.bgActor.remove_transition('size');
+            this.bgActor.remove_transition('position');
+            this.liquidBox?.set_position(0, 0);
+            this.liquidBox?.set_size(screenW, screenH);
             this._lastBgW = bgW;
             this._lastBgH = bgH;
             this._lastBgX = bgX;
@@ -569,109 +792,231 @@ export class DashManager {
             this._lastScreenW = screenW;
             this._lastScreenH = screenH;
         }
-        // Limit drawing to the dock plus room for its shadow (not
-        // clip_to_allocation, which would cut the shadow off).
+        // Soft clipping via set_clip — limits GPU fragment-shader execution
+        // to the dock region + a generous margin for drop-shadow decay, without
+        // using clip_to_allocation (which hard-clips child actors and severs shadows).
+        //
+        // CLIP_PADDING must be at least as large as the maximum shadow_radius
+        // setting so the penumbra gradient has room to fade to zero naturally.
         const CLIP_PADDING = 200;
-        setClipIfChanged(this.glass, localBgX - CLIP_PADDING, localBgY - CLIP_PADDING, bgW + CLIP_PADDING * 2, bgH + CLIP_PADDING * 2);
+        // Clip only bgActor; liquidBox has no separate clip
+        // this.liquidBox?.remove_clip();
+        // [PERF] clutter_actor_set_clip() does not compare before storing: it
+        // notifies and calls clutter_actor_queue_redraw() every single time. Run
+        // unconditionally from this per-frame tick, it damaged the dock's glass
+        // (and therefore re-ran its capture/blur/composite) on every frame with
+        // nothing on screen having moved. See setClipIfChanged() in utils.ts.
+        setClipIfChanged(this.bgActor, localBgX - CLIP_PADDING, localBgY - CLIP_PADDING, bgW + CLIP_PADDING * 2, bgH + CLIP_PADDING * 2);
         const SHADOW_MAX_RADIUS = CLIP_PADDING - 20;
-        this.glass?.setShadowMaxRadius(SHADOW_MAX_RADIUS);
-        this.glass?.setResolution(screenW, screenH);
-        this.glass?.setGlassGeometry(localBgX, localBgY, bgW, bgH);
-        const source = this._liveSource;
-        this._liveRef = source ? {
-            actor: source.actor,
-            rawX: source.rawX, rawY: source.rawY,
-            rect: [localBgX, localBgY, bgW, bgH],
-        } : null;
-        // After the geometry setters, so the relays cover this frame's rect.
-        const now = GLib.get_monotonic_time();
-        if (this._isMoving || !this._lastSyncSourcesUs || (now - this._lastSyncSourcesUs > 100000)) {
-            this._lastSyncSourcesUs = now;
-            this.glass.syncSources();
+        this.effect?.setShadowMaxRadius(SHADOW_MAX_RADIUS);
+        /*
+        if (this._outputLogs) {
+          const shadowRadiusSetting = this._settings.get_double('shadow-radius');
+          const shadowIntensitySetting = this._settings.get_double('shadow-intensity');
+          this._logger.log(`[Shadow Debug] dock(local)=(${localBgX.toFixed(1)}, ${localBgY.toFixed(1)}, ${bgW.toFixed(1)}x${bgH.toFixed(1)}) ` +
+            `clip=(${(localBgX - CLIP_PADDING).toFixed(1)}, ${(localBgY - CLIP_PADDING).toFixed(1)}, ` +
+            `${(bgW + CLIP_PADDING * 2).toFixed(1)}x${(bgH + CLIP_PADDING * 2).toFixed(1)}) ` +
+            `shadow_max_radius=${SHADOW_MAX_RADIUS} shadow-radius=${shadowRadiusSetting} shadow-intensity=${shadowIntensitySetting} ` +
+            `screen=${screenW}x${screenH}`);
         }
+        */
+        // setResolution receives the full monitor dimensions (was bgW/bgH).
+        // The shader uses resolution to compute UV-to-pixel mapping over the full FBO.
+        this.effect?.setResolution(screenW, screenH);
+        // Inform the shader where the dock lives within the full-screen FBO.
+        // The shader uses these to compute dock_center and box_size, replacing
+        // the old "resolution * 0.5" center assumption that only worked when
+        // the FBO was dock-sized.
+        this.effect?.setGlassGeometry(localBgX, localBgY, bgW, bgH);
+        // Clones in WindowCloneManager are placed at (w.x, w.y) — absolute screen
+        // coordinates. The container shift of (-monitor.x, -monitor.y) makes each
+        // clone appear at (w.x - monitor.x, w.y - monitor.y) inside the full-screen
+        // FBO, which maps back to (w.x, w.y) in screen space once bgActor's
+        // monitor-origin position is added by Clutter's scene graph. ✓
+        this._windowCloneManager?.setOffset(-monitor.x, -monitor.y);
+        // [PERF ①/①b] Clip the offscreen CAPTURE to the region this glass can
+        // actually show, and hide the clones that fall outside it. Must sit
+        // between setGlassGeometry() (which makes the effect's uniforms describe
+        // this frame) and the two sync() calls below (which consume the cull
+        // rect this sets). See syncGlassCaptureClip() in utils.ts.
+        syncGlassCaptureClip({
+            cloneContainer: this._cloneContainer,
+            effect: this.effect,
+            originX: monitor.x,
+            originY: monitor.y,
+            uiSampler: this._uiSampler,
+            windowCloneManager: this._windowCloneManager,
+        });
+        // UILayerSampler is synced with the monitor origin and full-screen
+        // dimensions instead of the dock-relative bgX/bgY/bgW/bgH.
+        this._uiSampler?.refresh();
+        this._uiSampler?.sync(monitor.x, monitor.y, screenW, screenH);
+        this._windowCloneManager?.sync();
     }
-
-    get _frameSlot() {
-        return { get: () => this._frameSyncId, set: (id) => { this._frameSyncId = id; } };
-    }
-
-    get _frameSignalSlot() {
-        return { get: () => this._frameSignalId, set: (id) => { this._frameSignalId = id; } };
-    }
-
-    // The next sync shows it again and updates everything.
-    _hideGlass() {
-        this.glass?.hide();
-        this._lastBgW = undefined;
-        this._lastBgH = undefined;
-        this._lastBgX = undefined;
-        this._lastBgY = undefined;
-    }
-
-    _stopFrameSync() {
-        stopStageLoop(this._frameSignalSlot, this._frameSlot);
-    }
-
+    // エフェクトを画面から消し、元に戻す処理
     _removeEffect() {
         if (!this._isEffectActive)
             return;
         this._isEffectActive = false;
         this._currentMarginStyle = undefined;
-        this._stopFrameSync();
-        if (this._signalCleanups) {
-            for (const cleanup of this._signalCleanups) {
-                try { cleanup(); } catch (_) {}
+        // Safely try to remove styles/signals. If targetActor is already destroyed, 
+        // this will fail safely without breaking the rest of the cleanup.
+        try {
+            for (let sigId of this._signals) {
+                this.targetActor.disconnect(sigId);
             }
-            this._signalCleanups = [];
-        }
-        const dockAlive = isActorValid(this.targetActor);
-        for (const id of this._signals) {
-            if (dockAlive)
-                this.targetActor.disconnect(id);
-        }
-        this._signals = [];
-        if (dockAlive) {
             this.targetActor.remove_style_class_name('liquid-glass-transparent');
-            if (this._originalStyle !== undefined)
+            if (this._originalStyle !== undefined) {
                 this.targetActor.set_style(this._originalStyle);
-            for (const child of this.targetActor.get_children()) {
-                if (child.has_style_class_name('dash-background'))
-                    child.opacity = 255;
+                this._originalStyle = undefined;
+            }
+            let children = this.targetActor.get_children();
+            for (let i = 0; i < children.length; i++) {
+                if (children[i].has_style_class_name('dash-background')) {
+                    children[i].opacity = 255;
+                }
             }
         }
-        this._originalStyle = undefined;
-        if (isActorValid(this._dockParent))
-            this._dockParent.remove_style_class_name('liquid-glass-transparent');
+        catch (e) {
+            // Actor was likely destroyed, safe to ignore
+        }
+        this._cancelMarginReconcile();
+        this._signals = [];
+        this.targetActor.remove_style_class_name('liquid-glass-transparent');
+        try {
+            if (this._dockParent) {
+                this._dockParent.remove_style_class_name('liquid-glass-transparent');
+            }
+        }
+        catch (e) { }
         this._dockParent = null;
-        const glass = this.glass;
-        this.glass = null;
-        if (glass) {
-            glass.cleanup();
-            if (isActorValid(glass))
-                glass.destroy();
+        if (this._originalStyle !== undefined) {
+            this.targetActor.set_style(this._originalStyle);
+            this._originalStyle = undefined; // 次回オンになった時に再取得できるようクリア
+        }
+        let children = this.targetActor.get_children();
+        for (let i = 0; i < children.length; i++) {
+            if (children[i].has_style_class_name('dash-background')) {
+                children[i].opacity = 255;
+            }
+        }
+        if (this._frameSyncId !== 0) {
+            if (global.compositor?.get_laters) {
+                global.compositor.get_laters().remove(this._frameSyncId);
+            }
+            else {
+                // Meta.later_remove(this._frameSyncId);
+            }
+            this._frameSyncId = 0;
+        }
+        if (this.effect) {
+            this.effect.cleanup();
+            this.effect = null;
+        }
+        if (this.bgActor) {
+            this.bgActor.destroy();
+            this.bgActor = null;
+        }
+        // liquidBox is a child of bgActor and is already destroyed by bgActor.destroy().
+        // Just clear the reference here.
+        this.liquidBox = null;
+        this._uiSampler?.destroy();
+        this._windowCloneManager?.destroy();
+    }
+    // 拡張機能全体が無効化される時の最終クリーンアップ
+    // [FIX] Teardown must not be all-or-nothing.
+    //
+    // These steps used to run bare, one after another, so the first one that
+    // threw skipped every step after it — signal handlers, actors, effects and
+    // (worst of all) the per-frame later chain stayed alive, and the next
+    // enable() built a second set on top. Disabling is exactly when a throw is
+    // most likely: the shell is destroying the same actors we are.
+    _teardownStep(name, fn) {
+        try {
+            fn();
+        }
+        catch (e) {
+            try {
+                this._logger?.error(`[Liquid Glass] ${this.constructor.name}.${name} failed during cleanup: ${e}`);
+            }
+            catch (_) {
+                console.error(`[Liquid Glass] ${name} failed during cleanup: ${e}`);
+            }
         }
     }
-
     cleanup() {
-        this._liveRef = null;
-        this._stopFrameSync();
-        this._removeEffect();
-        for (let id of this._settingsSignals)
-            this._settings.disconnect(id);
-        this._settingsSignals = [];
+        this._torndown = true;
+        // 毎フレームの later チェーンを最初に、無条件で止める。_removeEffect()
+        // の途中で throw しても孤児チェーンが残らないようにするため
+        // （_teardownStep のコメント参照）。
+        this._teardownStep('frameSync', () => {
+            if (this._frameSyncId !== 0) {
+                if (global.compositor?.get_laters)
+                    global.compositor.get_laters().remove(this._frameSyncId);
+                this._frameSyncId = 0;
+            }
+        });
+        // エフェクトを解除
+        this._teardownStep('removeEffect', () => this._removeEffect());
+        // メモリリークを防ぐため、GSettingsのリスナーもすべて解除する
+        this._teardownStep('settingsSignals', () => {
+            if (this._settings) {
+                for (let id of this._settingsSignals) {
+                    try {
+                        this._settings.disconnect(id);
+                    }
+                    catch (e) { }
+                }
+                this._settingsSignals = [];
+            }
+        });
     }
-
-    // The first running-app indicator inside the dock (Dash to Dock's
-    // IndicatorDrawingArea), used to balance the gaps around the icons.
+    // ドックの内部から、計算の基準となるアイコンまたはインジケーターを1つ再帰的に探し出す
     _findReferenceActor(actor) {
         if (!actor)
             return null;
-        if (actor.toString().includes('IndicatorDrawingArea'))
+        // 1. 安全性のチェック：オブジェクトが存在しない、または get_children がない場合は終了
+        if (!actor || typeof actor.get_children !== 'function') {
+            return null;
+        }
+        // 2. 判定条件：文字列化して 'IndicatorDrawingArea' が含まれているか
+        if (actor.toString().includes('IndicatorDrawingArea')) {
             return actor;
-        for (const child of actor.get_children()) {
+        }
+        // 3. 子要素を再帰的に探索
+        const children = actor.get_children();
+        for (const child of children) {
             const found = this._findReferenceActor(child);
-            if (found)
+            if (found) {
+                return found; // 見つかったら即座に返す（無駄な探索をしない）
+            }
+        }
+        return null; // 見つからなかった場合
+    }
+    // Finds the dock's .dash-background slab. dash2dock-motion (and upstream
+    // dash-to-dock) keep it as a *sibling* of dashtodockDashContainer under
+    // #dash, so search the whole dash subtree, not just targetActor's children.
+    _findDashBackground(root, depth = 4) {
+        if (!root || depth < 0 || typeof root.get_children !== 'function')
+            return null;
+        let children;
+        try {
+            children = root.get_children();
+        }
+        catch (e) {
+            return null;
+        }
+        for (const child of children) {
+            if (child && typeof child.has_style_class_name === 'function' &&
+                child.has_style_class_name('dash-background')) {
+                return child;
+            }
+        }
+        for (const child of children) {
+            const found = this._findDashBackground(child, depth - 1);
+            if (found) {
                 return found;
+            }
         }
         return null;
     }

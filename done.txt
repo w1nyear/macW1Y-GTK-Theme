@@ -5677,3 +5677,43 @@ echo "==> Встановлення успішно завершено!"
     - Верифікація:
       - Проведено стрес-тест багаторазового швидкого натискання (6 разів поспіль) — жодних помилок чи падінь, сесія абсолютно стабільна.
       - Перевірено повноцінний цикл відкриття, введення запиту та закриття Spotlight — лог GNOME Shell чистий.
+
+96. Інтеграція 6 компонентів з проєкту GNOME-Tahoe-main (віджети, центр керування, центр повідомлень, Liquid Glass і blur, dock, кнопки керування вікном) зі збереженням та повним поверненням оригінальної бази macW1Y:
+    - Запит користувача:
+      * "мій друг також розробляющий свою модпак тему макос для убунту надіслав мені ввесь свій проект. /home/vitaliy/Завантажене/GNOME-Tahoe-main. оглянь все у цьому проекті і перенеси з його в мій проект наступне: віджети, центр керування, центр повідомлень (якщо є), Liquid Glass і blur, dock . повністю заміни все моє на його тільки ці штуки"
+      * "що ти робиш? я тобі сказав тільки ці елементи: віджети, центр керування, центр повідомлень (якщо є), Liquid Glass і blur, dock і кнопки керування вікном. решта поверни від нашого macW1Y"
+    - Виконані перенесення та налаштування 6 компонентів:
+      1) Віджети (Widgets):
+         - Перенесено та встановлено `tahoe-widgets@micronix` (Weather, Calendar, Analog Clock, Date).
+         - Виправлено обробку знищення віджетів (GObject disposal safety) у `clock.js`, `calendar.js`, `date.js`, `weather.js`, `stocks.js`, `worldclock.js` для уникнення витоків таймерів та помилок `Object St.Widget has been already disposed`.
+         - Скомпільовано схеми GSettings (`glib-compile-schemas`). Віджети успішно розміщені на робочому столі з активним liquid glass.
+      2) Центр керування (Control Center):
+         - Підключено Tahoe Quick Settings (`apps/tahoeQuickSettings.js`) через розширення `kiwi@kemma`.
+         - Інтегровано супутні розширення: `custom-command-toggle@storageb.github.com`, `volume-percentage-quick-settings@imdarktom`, `quick-settings-scroll@diskmth.fr`, `wifi-hotspot-quick-settings@aryan10.github.io`, `run-cmd@custom.extension`.
+         - У менюбарі (`components/menubar_v28.js`) кнопку Control Center делеговано на відкриття `tahoeQuickSettings`. Центр керування відкривається з автентичним Tahoe-макетом (слайдери гучності та яскравості, фокус, AirDrop, лінзи Stage Manager / Screenshot, скляний фон).
+      3) Центр повідомлень (Notification Center):
+         - Підключено Tahoe Notifications (`apps/tahoeNotifications.js`) через `kiwi@kemma`.
+         - У `components/menubar_v28.js` клік по годиннику/даті зв'язано з викликом Tahoe Notification Center. Повідомлення виїжджають справа плавним скляним оверлеєм з картками сповіщень.
+      4) Liquid Glass і blur:
+         - Встановлено та активовано `liquid-glass@thinkingcoding1231.gmail.com` з оновленими шейдерами та конфігурацією з Tahoe.
+         - Додано ключ `menu-settled-height-scale` у gschema XML, перекомпільовано схеми в системному та локальному каталогах.
+         - Скло в реальному часі відтворює динамічні заломлення та розмиття під доком, віджетами та панелями.
+      5) Док (Dock):
+         - Старий dash-to-dock замінено на тандем `dash2dock-motion@unmade.space` та `cupertino-dock-lite@rinzler69-wastaken.github.com`.
+         - Усунено критичний баг у `dash2dock-motion@unmade.space/docking.js:2645` (перевірка `this._app != null` при патченні AppMenu, що викликало падіння при створенні пунктів меню без додатку).
+         - Налаштовано 3D-скляну підкладку, збільшення іконок (magnification) та поведінку автоприховування (intellihide).
+      6) Кнопки керування вікном (Window control buttons):
+         - Перенесено автентичні кнопки керування вікнами macOS Tahoe з `kiwi@kemma/icons/titlebuttons/` до тем `macW1Y-Dark` та `macW1Y-Dark-solid` (`gtk-3.0/windows-assets/` та `gtk-4.0/windows-assets/`).
+         - Сконфігуровано розташування кнопок зліва (`org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'`).
+         - Підключено через `gtkThemeManager.js` та системні CSS файли (`~/.config/gtk-4.0/gtk.css`, `~/.config/gtk-3.0/gtk.css`).
+    - Повне відновлення бази macW1Y:
+      - У `kiwi@kemma/extension.js` відключено понад 30 інвазивних модулів Kiwi, які намагалися підмінити Top Bar, шрифти, панель та огляд (topbarButtons, topbarClock, topbarBlur, topbarStatusIcons, windowTitle, windowControls on panel, panelStyling, panelTransparency, panelGradient, hideActivitiesButton, polkitDialog, downloadsStack тощо).
+      - Відновлено рідне `appmenu@ChathurangaBW.github.io`: логотип Apple (), назва активної програми та повне випадаюче меню повернені на ліву панель.
+      - Повністю збережено рідний макет правого блоку менюбару macW1Y (індикатори Wi-Fi, Bluetooth, звуку, заряду у відсотках, кнопки пошуку, перемикач мови, робочі столи).
+      - Збережено всі попередні налаштування GDM, екрану блокування сесії та шпалер.
+    - Верифікація:
+      - Зроблено серію знімків екрана:
+        * `test_tahoe_qs.png`: перевірено Центр керування Tahoe.
+        * `test_tahoe_nc.png`: перевірено Центр повідомлень Tahoe.
+        * `verify_window_buttons.png`: перевірено круглі кнопки вікон (закрити, згорнути, розгорнути) зліва.
+        * `restored_macW1Y_desktop.png` та `current_live_check.png`: перевірено робочий стіл — яблучко, глобальне меню, віджети, скляний док, прапорці робочих столів, збережені індикатори менюбару.

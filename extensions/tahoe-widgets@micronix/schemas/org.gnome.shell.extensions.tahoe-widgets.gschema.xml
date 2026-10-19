@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.tahoe-widgets" path="/org/gnome/shell/extensions/tahoe-widgets/">
+    <key name="clock-visible" type="b">
+      <default>true</default>
+      <summary>Show clock widget</summary>
+    </key>
+    <key name="calendar-visible" type="b">
+      <default>true</default>
+      <summary>Show calendar widget</summary>
+    </key>
+    <key name="weather-visible" type="b">
+      <default>true</default>
+      <summary>Show weather widget</summary>
+    </key>
+    <key name="glass-blur" type="i">
+      <default>25</default>
+      <range min="0" max="100"/>
+      <summary>Glass blur strength</summary>
+    </key>
+    <key name="glass-radius" type="i">
+      <default>26</default>
+      <range min="0" max="60"/>
+      <summary>Glass corner radius</summary>
+    </key>
+    <key name="glass-saturation" type="i">
+      <default>85</default>
+      <range min="0" max="200"/>
+      <summary>Liquid glass saturation percent</summary>
+    </key>
+    <key name="glass-tint" type="s">
+      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <summary>Liquid glass tint color as rgba() string</summary>
+    </key>
+    <key name="glass-tint-strength" type="i">
+      <default>16</default>
+      <range min="0" max="100"/>
+      <summary>Liquid glass tint strength percent</summary>
+    </key>
+    <key name="theme" type="s">
+      <choices>
+        <choice value="glass"/>
+        <choice value="dark"/>
+        <choice value="light"/>
+      </choices>
+      <default>'glass'</default>
+      <summary>Widget theme</summary>
+    </key>
+    <key name="city" type="s">
+      <default>'Moscow'</default>
+      <summary>Weather city label</summary>
+    </key>
+    <key name="latitude" type="d">
+      <default>55.75</default>
+      <summary>Weather latitude</summary>
+    </key>
+    <key name="longitude" type="d">
+      <default>37.61</default>
+      <summary>Weather longitude</summary>
+    </key>
+    <key name="clock-x" type="i">
+      <default>-1</default>
+      <summary>Clock position X (-1 = auto)</summary>
+    </key>
+    <key name="clock-y" type="i">
+      <default>-1</default>
+      <summary>Clock position Y (-1 = auto)</summary>
+    </key>
+    <key name="calendar-x" type="i">
+      <default>-1</default>
+      <summary>Calendar position X (-1 = auto)</summary>
+    </key>
+    <key name="calendar-y" type="i">
+      <default>-1</default>
+      <summary>Calendar position Y (-1 = auto)</summary>
+    </key>
+    <key name="weather-x" type="i">
+      <default>-1</default>
+      <summary>Weather position X (-1 = auto)</summary>
+    </key>
+    <key name="weather-y" type="i">
+      <default>-1</default>
+      <summary>Weather position Y (-1 = auto)</summary>
+    </key>
+    <key name="worldclock-visible" type="b">
+      <default>true</default>
+      <summary>Show world clock widget</summary>
+    </key>
+    <key name="date-visible" type="b">
+      <default>true</default>
+      <summary>Show date widget</summary>
+    </key>
+    <key name="reminders-visible" type="b">
+      <default>true</default>
+      <summary>Show reminders widget</summary>
+    </key>
+    <key name="stocks-visible" type="b">
+      <default>true</default>
+      <summary>Show stocks widget</summary>
+    </key>
+    <key name="news-visible" type="b">
+      <default>true</default>
+      <summary>Show news widget</summary>
+    </key>
+    <key name="reminders" type="as">
+      <default>[]</default>
+      <summary>Reminder items as title|0/1</summary>
+    </key>
+    <key name="news-feed" type="s">
+      <default>'https://feeds.nbcnews.com/nbcnews/public/news'</default>
+      <summary>News RSS feed URL</summary>
+    </key>
+    <key name="worldclock-x" type="i">
+      <default>-1</default>
+      <summary>worldclock position X (-1 = auto)</summary>
+    </key>
+    <key name="worldclock-y" type="i">
+      <default>-1</default>
+      <summary>worldclock position Y (-1 = auto)</summary>
+    </key>
+    <key name="date-x" type="i">
+      <default>-1</default>
+      <summary>date position X (-1 = auto)</summary>
+    </key>
+    <key name="date-y" type="i">
+      <default>-1</default>
+      <summary>date position Y (-1 = auto)</summary>
+    </key>
+    <key name="reminders-x" type="i">
+      <default>-1</default>
+      <summary>reminders position X (-1 = auto)</summary>
+    </key>
+    <key name="reminders-y" type="i">
+      <default>-1</default>
+      <summary>reminders position Y (-1 = auto)</summary>
+    </key>
+    <key name="stocks-x" type="i">
+      <default>-1</default>
+      <summary>stocks position X (-1 = auto)</summary>
+    </key>
+    <key name="stocks-y" type="i">
+      <default>-1</default>
+      <summary>stocks position Y (-1 = auto)</summary>
+    </key>
+    <key name="news-x" type="i">
+      <default>-1</default>
+      <summary>news position X (-1 = auto)</summary>
+    </key>
+    <key name="news-y" type="i">
+      <default>-1</default>
+      <summary>news position Y (-1 = auto)</summary>
+    </key>
+    <key name="clock-scale" type="d">
+      <default>1.0</default>
+      <range min="0.5" max="2.0"/>
+      <summary>Clock widget scale (1 = normal size)</summary>
+    </key>
+    <key name="calendar-scale" type="d">
+      <default>1.0</default>
+      <range min="0.5" max="2.0"/>
+      <summary>Calendar widget scale (1 = normal size)</summary>
+    </key>
+    <key name="weather-scale" type="d">
+      <default>1.0</default>
+      <range min="0.5" max="2.0"/>
+      <summary>Weather widget scale (1 = normal size)</summary>
+    </key>
+    <key name="worldclock-scale" type="d">
+      <default>1.0</default>
+      <range min="0.5" max="2.0"/>
+      <summary>World clock widget scale (1 = normal size)</summary>
+    </key>
+    <key name="date-scale" type="d">
+      <default>1.0</default>
+      <range min="0.5" max="2.0"/>
+      <summary>Date widget scale (1 = normal size)</summary>
+    </key>
+    <key name="reminders-scale" type="d">
+      <default>1.0</default>
+      <range min="0.5" max="2.0"/>
+      <summary>Reminders widget scale (1 = normal size)</summary>
+    </key>
+    <key name="stocks-scale" type="d">
+      <default>1.0</default>
+      <range min="0.5" max="2.0"/>
+      <summary>Stocks widget scale (1 = normal size)</summary>
+    </key>
+    <key name="news-scale" type="d">
+      <default>1.0</default>
+      <range min="0.5" max="2.0"/>
+      <summary>News widget scale (1 = normal size)</summary>
+    </key>
+    <key name="worldclock-variant" type="s">
+      <choices>
+        <choice value="wide"/>
+        <choice value="square"/>
+      </choices>
+      <default>'wide'</default>
+      <summary>World clock shape: wide row or square grid</summary>
+    </key>
+    <key name="weather-variant" type="s">
+      <choices>
+        <choice value="wide"/>
+        <choice value="square"/>
+      </choices>
+      <default>'wide'</default>
+      <summary>Weather shape: wide with hourly strip or square</summary>
+    </key>
+    <key name="news-variant" type="s">
+      <choices>
+        <choice value="wide"/>
+        <choice value="square"/>
+      </choices>
+      <default>'wide'</default>
+      <summary>News shape: wide with thumbnail or square text</summary>
+    </key>
+    <key name="calendar-variant" type="s">
+      <choices>
+        <choice value="wide"/>
+        <choice value="square"/>
+      </choices>
+      <default>'square'</default>
+      <summary>Calendar shape: rectangle or square template</summary>
+    </key>
+    <key name="date-variant" type="s">
+      <choices>
+        <choice value="wide"/>
+        <choice value="square"/>
+      </choices>
+      <default>'square'</default>
+      <summary>Date shape: rectangle or square template</summary>
+    </key>
+    <key name="clock-variant" type="s">
+      <choices>
+        <choice value="wide"/>
+        <choice value="square"/>
+      </choices>
+      <default>'square'</default>
+      <summary>Clock shape: rectangle or square template</summary>
+    </key>
+    <key name="reminders-variant" type="s">
+      <choices>
+        <choice value="wide"/>
+        <choice value="square"/>
+      </choices>
+      <default>'wide'</default>
+      <summary>Reminders shape: rectangle or square template</summary>
+    </key>
+    <key name="stocks-variant" type="s">
+      <choices>
+        <choice value="wide"/>
+        <choice value="square"/>
+      </choices>
+      <default>'wide'</default>
+      <summary>Stocks shape: rectangle or square template</summary>
+    </key>
+    <key name="date-title-x" type="i">
+      <default>0</default>
+      <summary>Date weekday text X offset</summary>
+    </key>
+    <key name="date-title-y" type="i">
+      <default>0</default>
+      <summary>Date weekday text Y offset</summary>
+    </key>
+    <key name="date-num-x" type="i">
+      <default>0</default>
+      <summary>Date number text X offset</summary>
+    </key>
+    <key name="date-num-y" type="i">
+      <default>0</default>
+      <summary>Date number text Y offset</summary>
+    </key>
+    <key name="worldclock-cell0-x" type="i">
+      <default>0</default>
+      <summary>World clock Cupertino cell X offset</summary>
+    </key>
+    <key name="worldclock-cell0-y" type="i">
+      <default>0</default>
+      <summary>World clock Cupertino cell Y offset</summary>
+    </key>
+    <key name="worldclock-cell1-x" type="i">
+      <default>0</default>
+      <summary>World clock Tokyo cell X offset</summary>
+    </key>
+    <key name="worldclock-cell1-y" type="i">
+      <default>0</default>
+      <summary>World clock Tokyo cell Y offset</summary>
+    </key>
+    <key name="worldclock-cell2-x" type="i">
+      <default>0</default>
+      <summary>World clock Sydney cell X offset</summary>
+    </key>
+    <key name="worldclock-cell2-y" type="i">
+      <default>0</default>
+      <summary>World clock Sydney cell Y offset</summary>
+    </key>
+    <key name="worldclock-cell3-x" type="i">
+      <default>0</default>
+      <summary>World clock Paris cell X offset</summary>
+    </key>
+    <key name="worldclock-cell3-y" type="i">
+      <default>0</default>
+      <summary>World clock Paris cell Y offset</summary>
+    </key>
+    <key name="clock-face-x" type="i">
+      <default>0</default>
+      <summary>Clock dial X offset</summary>
+    </key>
+    <key name="clock-face-y" type="i">
+      <default>0</default>
+      <summary>Clock dial Y offset</summary>
+    </key>
+    <key name="calendar-title-x" type="i">
+      <default>0</default>
+      <summary>Calendar month title X offset</summary>
+    </key>
+    <key name="calendar-title-y" type="i">
+      <default>0</default>
+      <summary>Calendar month title Y offset</summary>
+    </key>
+    <key name="calendar-grid-x" type="i">
+      <default>0</default>
+      <summary>Calendar day grid X offset</summary>
+    </key>
+    <key name="calendar-grid-y" type="i">
+      <default>0</default>
+      <summary>Calendar day grid Y offset</summary>
+    </key>
+    <key name="reminders-head-x" type="i">
+      <default>0</default>
+      <summary>Reminders header X offset</summary>
+    </key>
+    <key name="reminders-head-y" type="i">
+      <default>0</default>
+      <summary>Reminders header Y offset</summary>
+    </key>
+    <key name="reminders-list-x" type="i">
+      <default>0</default>
+      <summary>Reminders list X offset</summary>
+    </key>
+    <key name="reminders-list-y" type="i">
+      <default>0</default>
+      <summary>Reminders list Y offset</summary>
+    </key>
+    <key name="weather-city-x" type="i">
+      <default>0</default>
+      <summary>Weather city X offset</summary>
+    </key>
+    <key name="weather-city-y" type="i">
+      <default>0</default>
+      <summary>Weather city Y offset</summary>
+    </key>
+    <key name="weather-temp-x" type="i">
+      <default>0</default>
+      <summary>Weather temperature row X offset</summary>
+    </key>
+    <key name="weather-temp-y" type="i">
+      <default>0</default>
+      <summary>Weather temperature row Y offset</summary>
+    </key>
+    <key name="weather-cond-x" type="i">
+      <default>0</default>
+      <summary>Weather condition X offset</summary>
+    </key>
+    <key name="weather-cond-y" type="i">
+      <default>0</default>
+      <summary>Weather condition Y offset</summary>
+    </key>
+    <key name="weather-hilow-x" type="i">
+      <default>0</default>
+      <summary>Weather high-low X offset</summary>
+    </key>
+    <key name="weather-hilow-y" type="i">
+      <default>0</default>
+      <summary>Weather high-low Y offset</summary>
+    </key>
+    <key name="weather-strip-x" type="i">
+      <default>0</default>
+      <summary>Weather hourly strip X offset</summary>
+    </key>
+    <key name="weather-strip-y" type="i">
+      <default>0</default>
+      <summary>Weather hourly strip Y offset</summary>
+    </key>
+    <key name="stocks-row0-x" type="i">
+      <default>0</default>
+      <summary>Stocks first row X offset</summary>
+    </key>
+    <key name="stocks-row0-y" type="i">
+      <default>0</default>
+      <summary>Stocks first row Y offset</summary>
+    </key>
+    <key name="stocks-row1-x" type="i">
+      <default>0</default>
+      <summary>Stocks second row X offset</summary>
+    </key>
+    <key name="stocks-row1-y" type="i">
+      <default>0</default>
+      <summary>Stocks second row Y offset</summary>
+    </key>
+    <key name="stocks-row2-x" type="i">
+      <default>0</default>
+      <summary>Stocks third row X offset</summary>
+    </key>
+    <key name="stocks-row2-y" type="i">
+      <default>0</default>
+      <summary>Stocks third row Y offset</summary>
+    </key>
+    <key name="news-head-x" type="i">
+      <default>0</default>
+      <summary>News headline X offset</summary>
+    </key>
+    <key name="news-head-y" type="i">
+      <default>0</default>
+      <summary>News headline Y offset</summary>
+    </key>
+    <key name="news-text-x" type="i">
+      <default>0</default>
+      <summary>News text column X offset</summary>
+    </key>
+    <key name="news-text-y" type="i">
+      <default>0</default>
+      <summary>News text column Y offset</summary>
+    </key>
+    <key name="news-thumb-x" type="i">
+      <default>0</default>
+      <summary>News thumbnail X offset</summary>
+    </key>
+    <key name="news-thumb-y" type="i">
+      <default>0</default>
+      <summary>News thumbnail Y offset</summary>
+    </key>
+    <key name="square-size" type="i">
+      <default>230</default>
+      <range min="100" max="600"/>
+      <summary>Square template side in pixels</summary>
+    </key>
+    <key name="rect-width" type="i">
+      <default>460</default>
+      <range min="200" max="800"/>
+      <summary>Rectangle template width in pixels</summary>
+    </key>
+    <key name="rect-height" type="i">
+      <default>230</default>
+      <range min="100" max="600"/>
+      <summary>Rectangle template height in pixels</summary>
+    </key>
+    <key name="text-size" type="i">
+      <default>0</default>
+      <range min="0" max="32"/>
+      <summary>Widget text size in pixels (0 = automatic)</summary>
+    </key>
+    <key name="worldclock-text-size" type="i">
+      <default>0</default>
+      <range min="0" max="32"/>
+      <summary>World clock text size, 0 follows the global text size</summary>
+    </key>
+    <key name="date-text-size" type="i">
+      <default>0</default>
+      <range min="0" max="32"/>
+      <summary>Date text size, 0 follows the global text size</summary>
+    </key>
+    <key name="calendar-text-size" type="i">
+      <default>0</default>
+      <range min="0" max="32"/>
+      <summary>Calendar text size, 0 follows the global text size</summary>
+    </key>
+    <key name="reminders-text-size" type="i">
+      <default>0</default>
+      <range min="0" max="32"/>
+      <summary>Reminders text size, 0 follows the global text size</summary>
+    </key>
+    <key name="weather-text-size" type="i">
+      <default>0</default>
+      <range min="0" max="32"/>
+      <summary>Weather text size, 0 follows the global text size</summary>
+    </key>
+    <key name="stocks-text-size" type="i">
+      <default>0</default>
+      <range min="0" max="32"/>
+      <summary>Stocks text size, 0 follows the global text size</summary>
+    </key>
+    <key name="news-text-size" type="i">
+      <default>0</default>
+      <range min="0" max="32"/>
+      <summary>News text size, 0 follows the global text size</summary>
+    </key>
+    <key name="clock-text-size" type="i">
+      <default>0</default>
+      <range min="0" max="32"/>
+      <summary>Clock text size, 0 follows the global text size</summary>
+    </key>
+    <key name="calendar-cell-w" type="i">
+      <default>24</default>
+      <range min="16" max="64"/>
+      <summary>Calendar day cell width, 24 follows the shape style</summary>
+    </key>
+    <key name="calendar-cell-h" type="i">
+      <default>24</default>
+      <range min="16" max="48"/>
+      <summary>Calendar day cell height, 24 follows the shape style</summary>
+    </key>
+  </schema>
+</schemalist>

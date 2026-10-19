@@ -1,0 +1,323 @@
+/* Tahoe Widgets: content paints over the live glass sheet. */
+
+.tahoe-widget-box {
+    background-color: transparent;
+}
+
+.tahoe-widget-tint {
+    border-radius: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+.tahoe-tint-dark {
+    background-color: rgba(28, 28, 30, 0.72);
+}
+
+.tahoe-tint-light {
+    background-color: rgba(255, 255, 255, 0.72);
+}
+
+.tahoe-widget {
+    color: #ffffff;
+    font-family: "SF Pro Display", "SF Pro Text", "SF Pro", Sans-Serif;
+    font-weight: 600;
+    padding: 12px;
+}
+
+.tahoe-widget StLabel {
+    color: #ffffff;
+}
+
+/* Light theme: dark translucent text, like the Tahoe window. */
+.tahoe-widget .tw-dark {
+    color: rgba(29, 29, 31, 0.85);
+}
+
+/* Month title reads solid black on a light card. */
+.tahoe-widget .tw-cal-title.tw-dark {
+    color: #1d1d1f;
+}
+
+/* Wide calendar template: roomier day cells fill the rectangle. */
+.cal-wide .tw-cal-dow,
+.cal-wide .tw-cal-day {
+    min-width: 52px;
+}
+.tahoe-widget .tw-cal-title.tw-dark {
+    color: #1d1d1f;
+}
+
+.tw-city {
+    font-size: 1.05em;
+    font-weight: 600;
+}
+
+.tw-temp-row {
+    spacing: 10px;
+}
+
+.tw-temp {
+    font-size: 3.2em;
+    font-weight: 300;
+}
+
+.tw-glyph {
+    font-size: 2.2em;
+}
+
+.tw-cond {
+    font-size: 0.95em;
+    font-weight: 500;
+}
+
+.tw-hilow {
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.tw-cal-title {
+    font-size: 0.85em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding-bottom: 6px;
+}
+
+.tw-cal-grid {
+    spacing: 2px;
+}
+
+.tw-cal-dow {
+    font-size: 0.75em;
+    font-weight: 700;
+    min-width: 24px;
+    text-align: center;
+}
+
+.tw-cal-day {
+    font-size: 0.85em;
+    min-width: 24px;
+    min-height: 24px;
+    text-align: center;
+}
+
+.tahoe-widget .tw-cal-today {
+    background-color: rgba(255, 255, 255, 0.92);
+    color: #1d1d1f;
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+.tahoe-widget .tw-cal-today.tw-dark {
+    background-color: rgba(29, 29, 31, 0.85);
+    color: #f5f5f7;
+}
+
+/* ------------------------------- world clock */
+.tahoe-widget-worldclock {
+    padding: 12px 8px;
+}
+
+.tw-wc-cell {
+    spacing: 1px;
+}
+
+.tw-wc-face {
+    x-align: center;
+}
+
+.tw-wc-city {
+    font-size: 0.85em;
+    font-weight: 700;
+    text-align: center;
+}
+
+.tw-wc-day, .tw-wc-off {
+    font-size: 0.7em;
+    text-align: center;
+    opacity: 0.7;
+}
+
+/* -------------------------------------- date */
+.tw-date-weekday {
+    font-size: 0.9em;
+    font-weight: 700;
+    color: #ff3b30;
+}
+
+.tw-date-num {
+    font-size: 5.2em;
+    font-weight: 300;
+}
+
+/* --------------------------------- reminders */
+.tw-rem-head {
+    spacing: 6px;
+}
+
+.tw-rem-title {
+    font-size: 1em;
+    font-weight: 700;
+}
+
+.tw-rem-count {
+    font-size: 1em;
+    font-weight: 600;
+    opacity: 0.65;
+}
+
+.tw-rem-list {
+    spacing: 2px;
+    padding-top: 6px;
+}
+
+.tw-rem-row {
+    spacing: 9px;
+    padding: 3px 0;
+}
+
+.tw-rem-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(128, 128, 128, 0.75);
+}
+
+.tw-rem-done-dot {
+    background-color: #ff9f0a;
+    border-color: transparent;
+}
+
+.tw-rem-check {
+    font-size: 0.8em;
+    font-weight: 700;
+    color: #ffffff;
+    text-align: center;
+}
+
+.tw-rem-item {
+    font-size: 0.88em;
+}
+
+.tw-rem-done {
+    opacity: 0.5;
+}
+
+.tw-rem-empty {
+    font-size: 0.85em;
+    opacity: 0.6;
+    padding-top: 8px;
+}
+
+/* ------------------------------ weather strip */
+.tw-strip {
+    spacing: 4px;
+    padding-top: 8px;
+}
+
+.tw-hcell {
+    min-width: 62px;
+}
+
+.tw-hh, .tw-hg, .tw-ht {
+    text-align: center;
+}
+
+.tw-hh {
+    font-size: 0.7em;
+    opacity: 0.75;
+}
+
+.tw-hg {
+    font-size: 1.15em;
+}
+
+.tw-ht {
+    font-size: 0.8em;
+    font-weight: 700;
+}
+
+/* Square weather: larger type fills the compact card. */
+.tw-square .tw-city {
+    font-size: 1.3em;
+}
+
+.tw-square .tw-temp {
+    font-size: 4em;
+}
+
+.tw-square .tw-cond {
+    font-size: 1.05em;
+}
+
+/* ------------------------------------ stocks (always black card) */
+.tw-stock-row {
+    spacing: 10px;
+    padding: 5px 0;
+}
+
+.tw-stock-arrow {
+    font-size: 0.85em;
+    padding-top: 2px;
+}
+
+.tw-stock-names {
+    spacing: 0;
+}
+
+.tw-stock-name {
+    font-size: 0.92em;
+    font-weight: 700;
+    color: #f5f5f7;
+}
+
+.tw-stock-sub {
+    font-size: 0.72em;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.tw-stock-nums {
+    spacing: 0;
+}
+
+.tw-stock-price {
+    font-size: 0.95em;
+    font-weight: 700;
+    color: #f5f5f7;
+    text-align: right;
+}
+
+.tw-stock-pct {
+    font-size: 0.75em;
+    text-align: right;
+}
+
+/* -------------------------------------- news */
+.tw-news-head {
+    font-size: 1em;
+    font-weight: 800;
+    color: #ff3b30;
+}
+
+.tw-news-body {
+    spacing: 10px;
+    padding-top: 4px;
+}
+
+.tw-news-src {
+    font-size: 0.68em;
+    font-weight: 700;
+    opacity: 0.6;
+}
+
+.tw-news-title {
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.tw-news-thumb {
+    width: 96px;
+    height: 96px;
+    border-radius: 12px;
+    background-color: rgba(128, 128, 128, 0.25);
+}

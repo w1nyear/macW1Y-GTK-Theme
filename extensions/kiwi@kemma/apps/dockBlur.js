@@ -1,0 +1,348 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Adds a blur effect behind Dash-to-Dock / Ubuntu Dock background.
+// Approach based on blur-my-shell: insert blur inside the dock's own actor tree,
+// sized to the dash-background pill, with event-driven repaints.
+
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import GLib from 'gi://GLib';
+import St from 'gi://St';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
+
+import { connectPaintSignal } from './blurPaintSignal.js';
+import { dashOf, dockContainers } from './dockUtils.js';
+
+let enabled = false;
+let dockSearchId = null;
+let dashes = []; // array of per-dash state objects
+let blurRepaintSignals = []; // global event signal connections for blur repaints
+let blurRepaintIdleId = 0; // idle source for coalesced blur repaints
+
+function _scheduleBlurRepaint() {
+    if (blurRepaintIdleId || dashes.length === 0) return;
+    blurRepaintIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+        blurRepaintIdleId = 0;
+        for (const info of dashes) {
+            if (info.blurEffect && info.blurWidget?.visible) {
+                try { info.blurEffect.queue_repaint(); } catch (_) {}
+            }
+        }
+        return GLib.SOURCE_REMOVE;
+    });
+}
+
+function _connectRepaintSignals() {
+    _disconnectRepaintSignals();
+
+    // Window stacking changes
+    const restackedId = global.display.connect('restacked', _scheduleBlurRepaint);
+    blurRepaintSignals.push({ obj: global.display, id: restackedId });
+
+    // Window lifecycle events
+    const wmSignals = ['map', 'destroy', 'minimize', 'unminimize', 'switch-workspace'];
+    for (const sigName of wmSignals) {
+        try {
+            const id = global.window_manager.connect(sigName, _scheduleBlurRepaint);
+            blurRepaintSignals.push({ obj: global.window_manager, id });
+        } catch (_) {}
+    }
+
+    // Background/wallpaper changes
+    const backgroundGroup = Main.layoutManager?._backgroundGroup;
+    if (backgroundGroup) {
+        for (const bg of backgroundGroup) {
+            const id = bg.connect('notify::content', _scheduleBlurRepaint);
+            blurRepaintSignals.push({ obj: bg, id });
+        }
+        const addId = backgroundGroup.connect('child-added', (_group, child) => {
+            const id = child.connect('notify::content', _scheduleBlurRepaint);
+            blurRepaintSignals.push({ obj: child, id });
+        });
+        const removeId = backgroundGroup.connect('child-removed', (_group, child) => {
+            blurRepaintSignals = blurRepaintSignals.filter(s => s.obj !== child);
+        });
+        blurRepaintSignals.push({ obj: backgroundGroup, id: addId });
+        blurRepaintSignals.push({ obj: backgroundGroup, id: removeId });
+    }
+
+    // Overview transitions
+    const showId = Main.overview.connect('showing', _scheduleBlurRepaint);
+    const hideId = Main.overview.connect('hidden', _scheduleBlurRepaint);
+    blurRepaintSignals.push({ obj: Main.overview, id: showId });
+    blurRepaintSignals.push({ obj: Main.overview, id: hideId });
+}
+
+function _disconnectRepaintSignals() {
+    for (const { obj, id } of blurRepaintSignals) {
+        try { obj.disconnect(id); } catch (_) {}
+    }
+    blurRepaintSignals = [];
+    if (blurRepaintIdleId) {
+        GLib.Source.remove(blurRepaintIdleId);
+        blurRepaintIdleId = 0;
+    }
+}
+
+function _hasValidAllocation(actor) {
+    return actor && actor.has_allocation() && actor.width > 0 && actor.height > 0;
+}
+
+function _tryBlurDock(dockContainer) {
+    const dash = dashOf(dockContainer);
+    if (!dash) return;
+    const dashBox = dash.get_parent();
+
+    // Check if we already blurred this dash
+    if (dashBox.get_children().some(c => c.name === 'kiwi-dock-blur-group'))
+        return;
+
+    // Find the dash-background (the translucent pill)
+    const dashBackground = dash.get_children().find(c =>
+        c.get_style_class_name?.()?.includes('dash-background')
+    );
+    if (!dashBackground) return;
+
+    // Create blur infrastructure
+    const backgroundGroup = new Meta.BackgroundGroup({
+        name: 'kiwi-dock-blur-group',
+        width: 0,
+        height: 0,
+    });
+
+    const blurWidget = new St.Widget({ name: 'kiwi-dock-blur' });
+
+    const blurEffect = new Shell.BlurEffect({
+        mode: Shell.BlurMode.BACKGROUND,
+        radius: 30,
+        brightness: 1.0,
+    });
+    blurWidget.add_effect(blurEffect);
+    backgroundGroup.insert_child_at_index(blurWidget, 0);
+
+    // Force throttled blur repaints when content above the blur repaints
+    // (button hover, icon shadows) — fixes lingering squared artifacts.
+    connectPaintSignal(blurWidget, _scheduleBlurRepaint);
+
+    // Insert at index 0 of dashBox (behind the dash content)
+    dashBox.insert_child_at_index(backgroundGroup, 0);
+
+    // Size and position the blur widget to match the dash-background
+    let lastRect = null;
+    const updateSize = () => {
+        if (!blurWidget || !dashBackground) return;
+        // Before an actor is allocated, width/height report the *natural* size
+        // instead of the allocation — for the dash-background that is a few
+        // pixels tall, which is where the slim blur strip came from. Wait for a
+        // real allocation instead of baking in the wrong geometry.
+        if (!_hasValidAllocation(dash) || !_hasValidAllocation(dashBackground)) {
+            retryUpdateSize();
+            return;
+        }
+        const w = dashBackground.width;
+        const h = dashBackground.height;
+        const x = dashBackground.x;
+        const y = dashBackground.y + dash.y;
+        retryAttempts = 0;
+
+        // The dock notifies through a dozen signals and re-emits them for every
+        // frame it slides or zooms; re-rendering the blur is only worth it when
+        // the geometry it is cut to actually moved
+        if (lastRect && lastRect.x === x && lastRect.y === y &&
+            lastRect.w === w && lastRect.h === h)
+            return;
+        lastRect = { x, y, w, h };
+
+        blurWidget.set_size(w, h);
+        blurWidget.set_position(x, y);
+        _scheduleBlurRepaint();
+    };
+
+    // Resizing our widgets straight from a layout notification re-enters the
+    // layout phase and makes the shell warn about actors needing an
+    // allocation. Defer with a compositor later: a GLib idle has a higher
+    // priority than the relayout, so it would run before the allocation it is
+    // waiting for.
+    let updateLaterId = 0;
+    const queueUpdateSize = () => {
+        if (updateLaterId) return;
+        updateLaterId = global.compositor.get_laters().add(Meta.LaterType.IDLE, () => {
+            updateLaterId = 0;
+            updateSize();
+            return GLib.SOURCE_REMOVE;
+        });
+    };
+
+    // A relayout that ends up with the same allocation emits no notify, so a
+    // read taken too early would never be corrected — retry until allocated.
+    let retryId = 0;
+    let retryAttempts = 0;
+    const retryUpdateSize = () => {
+        if (retryId || retryAttempts >= 25) return;
+        retryAttempts++;
+        retryId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, () => {
+            retryId = 0;
+            queueUpdateSize();
+            return GLib.SOURCE_REMOVE;
+        });
+    };
+    queueUpdateSize();
+
+    // Allocation signals catch geometry settling that the x/y/width/height
+    // notifications can miss (dock created mid-layout, resume from sleep).
+    const watched = [
+        [dash, ['allocation', 'width', 'height', 'x', 'y']],
+        [dashBackground, ['allocation', 'width', 'height', 'x', 'y']],
+        [dockContainer, ['width', 'height']],
+    ];
+    const signals = [];
+    for (const [actor, properties] of watched) {
+        for (const property of properties)
+            signals.push({ actor, id: actor.connect(`notify::${property}`, queueUpdateSize) });
+    }
+
+    const info = {
+        dockContainer,
+        dashBox,
+        dash,
+        dashBackground,
+        backgroundGroup,
+        blurWidget,
+        blurEffect,
+        signals,
+        destroyId: null,
+        cancelUpdate: () => {
+            if (updateLaterId) {
+                global.compositor.get_laters().remove(updateLaterId);
+                updateLaterId = 0;
+            }
+            if (retryId) {
+                GLib.Source.remove(retryId);
+                retryId = 0;
+            }
+        },
+    };
+
+    // Auto-cleanup if the dash is destroyed (user disables dock extension)
+    info.destroyId = dash.connect('destroy', () => _removeDashBlur(info, false));
+
+    dashes.push(info);
+
+    // Connect global repaint signals when first dash is blurred
+    if (dashes.length === 1)
+        _connectRepaintSignals();
+}
+
+function _removeDashBlur(info, disconnectDestroy = true) {
+    info.cancelUpdate();
+
+    // Disconnect size signals
+    for (const { actor, id } of info.signals) {
+        try { actor.disconnect(id); } catch (_) {}
+    }
+    info.signals = [];
+
+    if (disconnectDestroy && info.destroyId && info.dash) {
+        try { info.dash.disconnect(info.destroyId); } catch (_) {}
+    }
+    info.destroyId = null;
+
+    // Remove blur group from dock tree
+    if (info.backgroundGroup && info.dashBox) {
+        try { info.dashBox.remove_child(info.backgroundGroup); } catch (_) {}
+    }
+    if (info.backgroundGroup) {
+        info.backgroundGroup.destroy_all_children();
+        info.backgroundGroup.destroy();
+    }
+    info.backgroundGroup = null;
+    info.blurWidget = null;
+    info.blurEffect = null;
+
+    // Remove from dashes array
+    const idx = dashes.indexOf(info);
+    if (idx >= 0) dashes.splice(idx, 1);
+
+    // Disconnect global signals when no more blurred dashes
+    if (dashes.length === 0)
+        _disconnectRepaintSignals();
+}
+
+function _blurExistingDocks() {
+    dockContainers().forEach(container => _tryBlurDock(container));
+}
+
+function _removeAllBlurs() {
+    // Copy array since _removeDashBlur mutates it
+    [...dashes].forEach(info => _removeDashBlur(info));
+}
+
+let childAddedId = null;
+let startupCompleteId = null;
+
+export function enable() {
+    // Every settings change re-runs this; a second pass would connect another
+    // child-added handler over the one we hold and leave it connected for good
+    if (enabled)
+        return;
+    enabled = true;
+
+    // During shell startup the dock geometry is unreliable (startup animation,
+    // layout not settled) — blurring then yields a mis-sized blur bar.
+    // Defer until startup completes, like blur-my-shell does.
+    if (Main.layoutManager._startingUp) {
+        startupCompleteId = Main.layoutManager.connect('startup-complete', () => {
+            Main.layoutManager.disconnect(startupCompleteId);
+            startupCompleteId = null;
+            _enable();
+        });
+        return;
+    }
+    _enable();
+}
+
+function _enable() {
+    // Watch for new dock containers being added (e.g., dock enabled after us)
+    childAddedId = Main.uiGroup.connect('child-added', (_group, actor) => {
+        if (actor.name === 'dashtodockContainer')
+            _tryBlurDock(actor);
+    });
+
+    // Blur any already-existing docks
+    _blurExistingDocks();
+
+    // If no docks found yet, retry a few times (dock may load after us)
+    if (dashes.length === 0) {
+        let attempts = 0;
+        dockSearchId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
+            attempts++;
+            _blurExistingDocks();
+            if (dashes.length > 0 || attempts >= 10) {
+                dockSearchId = null;
+                return GLib.SOURCE_REMOVE;
+            }
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+}
+
+export function disable() {
+    enabled = false;
+
+    if (startupCompleteId) {
+        Main.layoutManager.disconnect(startupCompleteId);
+        startupCompleteId = null;
+    }
+
+    if (dockSearchId) {
+        GLib.Source.remove(dockSearchId);
+        dockSearchId = null;
+    }
+
+    if (childAddedId) {
+        Main.uiGroup.disconnect(childAddedId);
+        childAddedId = null;
+    }
+
+    _removeAllBlurs();
+    _disconnectRepaintSignals(); // safety, in case _removeAllBlurs didn't trigger it
+}
