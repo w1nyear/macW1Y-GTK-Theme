@@ -351,7 +351,7 @@ function _startDrag(tile, ev, overlay) {
         const [mx, my] = rev.get_coords();
         // check drop over CC panel
         try {
-            import('./tahoeControlCenter.js').then(qs => {
+            import('./tahoeQuickSettings.js').then(qs => {
                 if (qs.tryDropControl?.(ctrl, mx, my))
                     console.log(`[tahoe-qse] dropped ${ctrl.id} into CC`);
             }).catch(() => {});

@@ -67,29 +67,6 @@ function _lgReady() {
     return !!(LiquidEffect && UnpickableActor && UILayerSampler && WindowCloneManager);
 }
 
-export async function ensureLgReady() {
-    if (_lgReady())
-        return true;
-    try {
-        const [m1, m2] = await Promise.all([
-            import(_LG_BASE + '/liquidEffect.js'),
-            import(_LG_BASE + '/utils.js'),
-        ]);
-        if (m1?.LiquidEffect) LiquidEffect = m1.LiquidEffect;
-        if (m2?.UnpickableActor) UnpickableActor = m2.UnpickableActor;
-        if (m2?.UILayerSampler) UILayerSampler = m2.UILayerSampler;
-        if (m2?.WindowCloneManager) WindowCloneManager = m2.WindowCloneManager;
-        if (m2?.setClipIfChanged) setClipIfChanged = m2.setClipIfChanged;
-        if (m2?.getTransformedRect) getTransformedRect = m2.getTransformedRect;
-        if (m2?.ensureGlassAllocated) ensureGlassAllocated = m2.ensureGlassAllocated;
-        if (m2?.syncGlassCaptureClip) syncGlassCaptureClip = m2.syncGlassCaptureClip;
-        if (m2?.reportFrameLoopError) reportFrameLoopError = m2.reportFrameLoopError;
-    } catch (e) {
-        console.warn(`[tahoe-qs] ensureLgReady error: ${e}`);
-    }
-    return _lgReady();
-}
-
 const PANEL_W = 320;
 const PAD = 14;
 const COLGAP = 18;
@@ -260,256 +237,9 @@ let _settings = null;
 let _ = (m) => m;
 let _origOpen = null;
 let _origClose = null;
-let _origToggle = null;
 let _panel = null;
 let _editMode = false;
 let _editMod = null;
-let _activeSubmenu = null;
-
-function _closeActiveSubmenu() {
-    if (_activeSubmenu) {
-        try { _activeSubmenu.close(); _activeSubmenu.destroy(); } catch (_) {}
-        _activeSubmenu = null;
-    }
-}
-
-export async function testOpenWifiSubmenu() {
-    if (_panel && _panel.wifi && _panel.wifi.btn) {
-        await _openWifiSubmenu(_panel.wifi.btn, _panel.state);
-        return true;
-    }
-    return false;
-}
-
-async function _openWifiSubmenu(sourceActor, state) {
-    if (_activeSubmenu) {
-        const wasOpen = _activeSubmenu._sourceActor === sourceActor;
-        _closeActiveSubmenu();
-        if (wasOpen) return;
-    }
-
-    try {
-        const PopupMenu = await import('resource:///org/gnome/shell/ui/popupMenu.js');
-        const BoxPointer = await import('resource:///org/gnome/shell/ui/boxpointer.js');
-        const sharedMod = await import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/mac_menus_shared_v5.js');
-
-        const menu = new PopupMenu.PopupMenu(sourceActor, 0.5, St.Side.RIGHT);
-        menu._sourceActor = sourceActor;
-        Main.uiGroup.add_child(menu.actor);
-        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 14px !important; background-color: rgba(26, 26, 28, 0.88) !important; color: #ffffff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; padding: 6px !important;';
-
-        let nmClient = state.nm;
-        if (!nmClient) {
-            nmClient = NM.Client.new(null);
-            state.nm = nmClient;
-        }
-        const devices = nmClient.get_devices() || [];
-        const wifiDevice = devices.find(d => d.get_device_type() === NM.DeviceType.WIFI) || null;
-
-        sharedMod.populateUniversalWifiContent(menu, {
-            nmClient,
-            wifiDevice,
-            isEnabled: Boolean(nmClient?.wireless_enabled),
-            onToggle: (newState) => {
-                if (nmClient) nmClient.wireless_enabled = newState;
-            },
-            isControlCenter: false,
-            onClose: () => _closeActiveSubmenu(),
-            onOpenSettings: (p) => {
-                try { GLib.spawn_command_line_async('gnome-control-center ' + p); } catch (_) {}
-                _closeActiveSubmenu();
-                _closePanel();
-            },
-        });
-
-        _activeSubmenu = menu;
-        menu.actor.opacity = 0;
-        menu.actor.scale_x = 0.94;
-        menu.actor.scale_y = 0.94;
-        menu.actor.set_pivot_point(1.0, 0.2);
-        menu.open(BoxPointer.PopupAnimation.FULL);
-        menu.actor.ease({
-            opacity: 255,
-            scale_x: 1.0,
-            scale_y: 1.0,
-            duration: 300,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-        });
-    } catch (e) {
-        console.error(`[tahoe-cc] _openWifiSubmenu error: ${e}`);
-    }
-}
-
-async function _openBluetoothSubmenu(sourceActor, state) {
-    if (_activeSubmenu) {
-        const wasOpen = _activeSubmenu._sourceActor === sourceActor;
-        _closeActiveSubmenu();
-        if (wasOpen) return;
-    }
-
-    try {
-        const PopupMenu = await import('resource:///org/gnome/shell/ui/popupMenu.js');
-        const BoxPointer = await import('resource:///org/gnome/shell/ui/boxpointer.js');
-        const sharedMod = await import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/mac_menus_shared_v5.js');
-
-        const menu = new PopupMenu.PopupMenu(sourceActor, 0.5, St.Side.RIGHT);
-        menu._sourceActor = sourceActor;
-        Main.uiGroup.add_child(menu.actor);
-        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 14px !important; background-color: rgba(26, 26, 28, 0.88) !important; color: #ffffff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; padding: 6px !important;';
-
-        let btClient = state.bt;
-        if (!btClient) {
-            btClient = new GnomeBluetooth.Client();
-            state.bt = btClient;
-        }
-
-        sharedMod.populateUniversalBluetoothContent(menu, {
-            btClient,
-            isPowered: Boolean(btClient?.default_adapter_powered),
-            onToggle: (newState) => {
-                if (btClient) btClient.default_adapter_powered = newState;
-            },
-            isControlCenter: false,
-            onClose: () => _closeActiveSubmenu(),
-            onOpenSettings: (p) => {
-                try { GLib.spawn_command_line_async('gnome-control-center ' + p); } catch (_) {}
-                _closeActiveSubmenu();
-                _closePanel();
-            },
-        });
-
-        _activeSubmenu = menu;
-        menu.actor.opacity = 0;
-        menu.actor.scale_x = 0.94;
-        menu.actor.scale_y = 0.94;
-        menu.actor.set_pivot_point(1.0, 0.2);
-        menu.open(BoxPointer.PopupAnimation.FULL);
-        menu.actor.ease({
-            opacity: 255,
-            scale_x: 1.0,
-            scale_y: 1.0,
-            duration: 300,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-        });
-    } catch (e) {
-        console.error(`[tahoe-cc] _openBluetoothSubmenu error: ${e}`);
-    }
-}
-
-async function _openSoundSubmenu(sourceActor, state) {
-    if (_activeSubmenu) {
-        const wasOpen = _activeSubmenu._sourceActor === sourceActor;
-        _closeActiveSubmenu();
-        if (wasOpen) return;
-    }
-
-    try {
-        const PopupMenu = await import('resource:///org/gnome/shell/ui/popupMenu.js');
-        const BoxPointer = await import('resource:///org/gnome/shell/ui/boxpointer.js');
-        const sharedMod = await import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/mac_menus_shared_v5.js');
-
-        const menu = new PopupMenu.PopupMenu(sourceActor, 0.5, St.Side.RIGHT);
-        menu._sourceActor = sourceActor;
-        Main.uiGroup.add_child(menu.actor);
-        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 14px !important; background-color: rgba(26, 26, 28, 0.88) !important; color: #ffffff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; padding: 6px !important;';
-
-        const control = state.control;
-        const currentSink = control?.get_default_sink();
-
-        // 1. Output Device Section Header
-        const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
-        const headerLbl = new St.Label({
-            text: _('Output Device') || 'Вихідний пристрій',
-            style: 'font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: 0.5px !important; margin: 4px 8px !important;',
-        });
-        secHeader.add_child(headerLbl);
-        menu.addMenuItem(secHeader);
-
-        const sinks = control?.get_sinks() || [];
-        for (const s of sinks) {
-            const isDefault = currentSink && s.get_id() === currentSink.get_id();
-            const item = new PopupMenu.PopupBaseMenuItem({
-                reactive: true,
-                can_focus: false,
-                style_class: isDefault ? 'mac-menu-item-row mac-menu-item-active' : 'mac-menu-item-row',
-            });
-            sharedMod.setupMacMenuItem(item);
-
-            const sName = (s.get_name() || '').toLowerCase();
-            const iconName = (sName.includes('headphone') || sName.includes('headset') || sName.includes('buds') || sName.includes('airpods'))
-                ? 'audio-headphones-symbolic'
-                : 'audio-speakers-symbolic';
-            const icon = new St.Icon({
-                icon_name: iconName,
-                icon_size: 15,
-                style: 'margin-right: 8px; color: #ffffff !important;',
-            });
-            item.add_child(icon);
-
-            const desc = new St.Label({
-                text: s.get_description() || 'Аудіовихід',
-                x_expand: true,
-                y_align: Clutter.ActorAlign.CENTER,
-                style: 'color: #ffffff !important;',
-            });
-            desc.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-            item.add_child(desc);
-
-            if (isDefault) {
-                const check = new St.Icon({
-                    icon_name: 'emblem-ok-symbolic',
-                    icon_size: 14,
-                    style: 'color: #ffffff !important;',
-                });
-                item.add_child(check);
-            }
-
-            item.connect('activate', () => {
-                try {
-                    control.set_default_sink(s);
-                } catch (_) {}
-                _closeActiveSubmenu();
-            });
-
-            menu.addMenuItem(item);
-        }
-
-        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-
-        // Settings item
-        const settItem = new PopupMenu.PopupBaseMenuItem({reactive: true, can_focus: false, style_class: 'mac-menu-item-row'});
-        sharedMod.setupMacMenuItem(settItem);
-        const settLbl = new St.Label({
-            text: _('Sound Settings…') || 'Параметри звуку…',
-            x_expand: true,
-            y_align: Clutter.ActorAlign.CENTER,
-            style: 'color: #ffffff !important;',
-        });
-        settItem.add_child(settLbl);
-        settItem.connect('activate', () => {
-            try { GLib.spawn_command_line_async('gnome-control-center sound'); } catch (_) {}
-            _closeActiveSubmenu();
-            _closePanel();
-        });
-        menu.addMenuItem(settItem);
-
-        _activeSubmenu = menu;
-        menu.actor.opacity = 0;
-        menu.actor.scale_x = 0.94;
-        menu.actor.scale_y = 0.94;
-        menu.actor.set_pivot_point(1.0, 0.2);
-        menu.open(BoxPointer.PopupAnimation.FULL);
-        menu.actor.ease({
-            opacity: 255,
-            scale_x: 1.0,
-            scale_y: 1.0,
-            duration: 300,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-        });
-    } catch (e) {
-        console.error(`[tahoe-cc] _openSoundSubmenu error: ${e}`);
-    }
-}
 
 function _ifaceSettings() {
     try {
@@ -741,11 +471,9 @@ function _makeGlyph(iconName) {
     return {btn, icon};
 }
 
-// Tahoe slider: the stock round dot is replaced by an elongated pill
-// handle (~27x16, like macOS Tahoe). Only the handle paint is overridden;
-// the bar, gestures and value mapping stay stock.
+const _sliderUid = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 const TahoeSlider = GObject.registerClass({
-    GTypeName: `TahoeSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
+    GTypeName: `TahoeSlider_${_sliderUid}`,
 }, class TahoeSlider extends Slider {
 
     vfunc_repaint() {
@@ -773,7 +501,7 @@ const TahoeSlider = GObject.registerClass({
         cr.fill();   // fill() closes the capsule path
         cr.$dispose();
     }
-});
+}
 
 // full-width card: label + horizontal slider between two end icons
 function _makeSliderCard(title, leftIcon, rightIcon, withEndBtn) {
@@ -848,9 +576,6 @@ function _buildPanel() {
         width: monitor.width, height: monitor.height,
     });
     overlay.connect('button-press-event', (actor, event) => {
-        if (_activeSubmenu) {
-            _closeActiveSubmenu();
-        }
         try {
             if (global.stage.get_event_actor(event) !== actor)
                 return Clutter.EVENT_PROPAGATE;
@@ -935,13 +660,6 @@ function _buildPanel() {
             // no permission
         }
     });
-    wifi.btn.connect('button-press-event', (_actor, event) => {
-        if (event.get_button() === 3) {
-            _openWifiSubmenu(wifi.btn, state);
-            return Clutter.EVENT_STOP;
-        }
-        return Clutter.EVENT_PROPAGATE;
-    });
     leftCol.add_child(wifi.btn);
 
     const btPill = _makePill('bluetooth-active-symbolic', _('Bluetooth'), '…');
@@ -953,13 +671,6 @@ function _buildPanel() {
         } catch (_) {
             // unsupported
         }
-    });
-    btPill.btn.connect('button-press-event', (_actor, event) => {
-        if (event.get_button() === 3) {
-            _openBluetoothSubmenu(btPill.btn, state);
-            return Clutter.EVENT_STOP;
-        }
-        return Clutter.EVENT_PROPAGATE;
     });
     leftCol.add_child(btPill.btn);
 
@@ -1238,23 +949,6 @@ function _buildPanel() {
     // ======================= Sound card =======================
     const snd = _makeSliderCard(_('Sound'),
         'audio-volume-low-symbolic', 'audio-volume-high-symbolic', true);
-    snd.box.reactive = true;
-    snd.box.connect('button-press-event', (_actor, event) => {
-        if (event.get_button() === 3) {
-            _openSoundSubmenu(snd.box, state);
-            return Clutter.EVENT_STOP;
-        }
-        return Clutter.EVENT_PROPAGATE;
-    });
-    if (snd.endBtn) {
-        snd.endBtn.connect('clicked', () => {
-            _openSoundSubmenu(snd.box, state);
-        });
-        snd.endBtn.connect('button-press-event', (_actor, event) => {
-            _openSoundSubmenu(snd.box, state);
-            return Clutter.EVENT_STOP;
-        });
-    }
     box.add_child(snd.box);
 
     // sound backend: shared Gvc pattern from stock volume.js
@@ -1503,19 +1197,17 @@ function _buildPanel() {
     // panel bg + glass AFTER allocation (region math needs a real layout)
     try {
         const allocId = box.connect('notify::allocation', () => {
-            if (box.width > 0 && box.height > 0) {
-                try {
-                    panelBg.set_position(box.x, box.y);
-                    panelBg.set_size(box.width, box.height);
-                } catch (_) {
-                    // geometry unchanged
-                }
+            try {
+                box.disconnect(allocId);
+            } catch (_) {
+                // once
             }
-            if (_panel?.inkSampleDone)
-                return;
-            if (box.height <= 0)
-                return;
-            _panel.inkSampleDone = true;
+            try {
+                panelBg.set_position(box.x, box.y);
+                panelBg.set_size(box.width, box.height);
+            } catch (_) {
+                // geometry unchanged
+            }
             // adaptive ink: sample the real background behind the panel,
             // apply, and follow it while open (open animation covers a flip)
             try {
@@ -1539,7 +1231,6 @@ function _buildPanel() {
             _startGlass();
             _scheduleFocusFix();
         });
-        _panel.allocId = allocId;
     } catch (_) {
         _startGlass();
     }
@@ -2466,16 +2157,24 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         lastRegions: null, lastBounds: null, grace: 0, clip: null, screen: null};
 }
 
-async function _startGlass() {
+function _startGlass() {
     if (!_panel || _panel.glass)
         return;
     const monitor = Main.layoutManager.primaryMonitor;
     if (!monitor)
         return;
     if (!_lgReady()) {
-        await ensureLgReady();
-        if (!_lgReady() || !_panel || _panel.glass)
-            return;
+        // liquid-glass modules still loading: retry shortly while open.
+        try {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300, () => {
+                if (_panel && !_panel.glass)
+                    _startGlass();
+                return GLib.SOURCE_REMOVE;
+            });
+        } catch (_) {
+            // stays glass-less
+        }
+        return;
     }
 
     try {
@@ -2718,7 +2417,6 @@ function _destroyGlass() {
 let _closing = false;
 
 function _closePanel() {
-    _closeActiveSubmenu();
     if (!_panel || _closing)
         return;
     _closing = true;
@@ -2796,7 +2494,6 @@ function _closePanel() {
         // gone
     }
     _closing = false;
-    globalThis._tahoeQSOpen = false;
 }
 
 function _openPanel() {
@@ -2804,16 +2501,9 @@ function _openPanel() {
         _closePanel();
         return;
     }
-    globalThis._tahoeQSOpen = true;
-    try {
-        const bms = Main.extensionManager.lookup('blur-my-shell@aunetx')?.stateObj;
-        if (bms?._menubar_controller?._notifCenterOpen) {
-            bms._menubar_controller._toggleNotificationCenter();
-        }
-    } catch (_) {}
     // QS and NC never share the screen (dynamic import: no module cycle)
     try {
-        import('./tahoeNotificationCenter.js').then(mod => {
+        import('./tahoeNotifications.js').then(mod => {
             try {
                 mod.closeNC();
             } catch (_) {
@@ -2837,7 +2527,6 @@ export function togglePanel() {
         console.error(`[tahoe-qs] toggle failed: ${e}`);
     }
 }
-globalThis._tahoeQSToggle = togglePanel;
 
 // true while the Control Center panel is open (OSD suppresses itself then)
 export function isPanelOpen() {
@@ -3187,17 +2876,12 @@ export function enable(settings, gettextFunc) {
             return;
         _origOpen = menu.open;
         _origClose = menu.close;
-        _origToggle = menu.toggle;
         menu.open = () => {
             _openPanel();
             return true;
         };
         menu.close = () => {
             _closePanel();
-            return true;
-        };
-        menu.toggle = () => {
-            togglePanel();
             return true;
         };
     } catch (_) {
@@ -3217,12 +2901,6 @@ export function disable() {
             if (_origClose) {
                 menu.close = _origClose;
                 _origClose = null;
-            }
-            if (_origToggle) {
-                menu.toggle = _origToggle;
-                _origToggle = null;
-            } else {
-                delete menu.toggle;
             }
         }
     } catch (_) {

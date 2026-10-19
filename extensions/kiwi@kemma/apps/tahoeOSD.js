@@ -12,8 +12,8 @@ import Gvc from 'gi://Gvc';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {_makeGlassStack, isPanelOpen} from './tahoeControlCenter.js';
-import {isNCOpen as isNCPanelOpen} from './tahoeNotificationCenter.js';
+import {_makeGlassStack, isPanelOpen} from './tahoeQuickSettings.js';
+import {isNCOpen as isNCPanelOpen} from './tahoeNotifications.js';
 
 // Liquid-glass helpers live in another extension. Static
 // `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
@@ -40,9 +40,8 @@ const OSD_RADIUS = 22;
 // Segmented bar (Tahoe OSD): solid fill + a dots row beneath. Dots at/left
 // of the value are bold and opaque, the rest small and faint. Paint runs
 // ONLY in the repaint handler (get_context elsewhere segfaults the shell).
-const TahoeSegSlider = GObject.registerClass({
-    GTypeName: `TahoeSegSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
-}, class TahoeSegSlider extends St.DrawingArea {
+const TahoeSegSlider = GObject.registerClass(
+class TahoeSegSlider extends St.DrawingArea {
     _init() {
         super._init({reactive: false, height: 28});
         this._v = 0;
