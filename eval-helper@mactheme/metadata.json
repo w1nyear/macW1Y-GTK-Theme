@@ -1,0 +1,6 @@
+{
+  "name": "Eval Helper",
+  "description": "Enables unsafe mode and notification grouping",
+  "uuid": "eval-helper@mactheme",
+  "shell-version": ["46", "47", "48", "49", "50"]
+}

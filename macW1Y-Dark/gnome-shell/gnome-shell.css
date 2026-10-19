@@ -2123,7 +2123,7 @@ StEntry StLabel.hint-text {
   background-color: transparent !important;
   background: transparent !important;
   border-radius: 24px !important;
-  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border: none !important;
   box-shadow: none !important;
   padding: 8px;
 }
@@ -2722,7 +2722,7 @@ StEntry StLabel.hint-text {
 }
 
 .unlock-dialog-clock-time {
-  font-family: Open Runde, SF Pro Rounded, SF Pro Display, -apple-system, sans-serif !important;
+  font-family: Open Runde, Open Runde, SF Pro Rounded, SF Pro Display, -apple-system, sans-serif !important;
   font-size: 80pt !important;
   font-weight: 700 !important;
   color: #ffffff !important;
@@ -4102,6 +4102,33 @@ StWidget.focused .app-grid-running-dot {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
+.mac-notification-time {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.50) !important;
+  margin-top: 1px !important;
+  margin-right: 2px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
+}
+
+.mac-notification-collapse-btn {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  border-radius: 9999px !important;
+  padding: 4px 16px !important;
+  margin: 4px auto 0 auto !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  transition-duration: 150ms !important;
+}
+
+.mac-notification-collapse-btn:hover {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+}
+
 .mac-notification-close-btn {
   background: transparent !important;
   background-color: transparent !important;
@@ -4915,8 +4942,8 @@ StWidget.focused .app-grid-running-dot {
   spacing: 12px;
   color: #d3d7df;
   background-color: transparent !important;
-  border: 1px solid rgba(0, 0, 0, 0.75);
-  box-shadow: 0 3px 8px 0 rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4) !important;
 }
 
 .screenshot-ui-close-button {
@@ -5439,8 +5466,11 @@ StWidget.focused .app-grid-running-dot {
 #dashtodockContainer.right #dash .dash-background,
 #dashtodockContainer.shrink #dash .dash-background,
 #dashtodockContainer.dashtodock #dash .dash-background {
-  background-color: rgba(36, 36, 36, 0.04) !important;
+  background-color: transparent !important;
+  background: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
   border-radius: 28px !important;
 }
@@ -6067,8 +6097,11 @@ StWidget.focused .app-grid-running-dot {
 #dashtodockContainer.dashtodock #dash .dash-background {
   background-color: transparent !important;
   background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
+  border-radius: 28px !important;
 }
 
 #panel,
@@ -7097,7 +7130,7 @@ StWidget.focused .app-grid-running-dot {
   background-color: transparent !important;
   background: transparent !important;
   border-radius: 27px !important;
-  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border: none !important;
   box-shadow: none !important;
 }
 

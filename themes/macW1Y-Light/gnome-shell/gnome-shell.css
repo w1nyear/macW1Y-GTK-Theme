@@ -447,9 +447,13 @@ StWidget.focused .app-well-app-running-dot {
 
 .button {
   min-height: 1.5em;
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: none;
+  padding: 6px 14px;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  transition-duration: 100ms;
 }
 
 .icon-button, .background-app-item .icon-button, .background-app-item .message-notification-group .message-collapse-button, .message-notification-group .background-app-item .message-collapse-button, .background-app-item .message .message-header .message-expand-button, .message .message-header .background-app-item .message-expand-button,
@@ -897,7 +901,7 @@ StWidget.focused .app-well-app-running-dot {
   background-color: transparent !important;
   background: transparent !important;
   border-radius: 9999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
   box-shadow: none !important;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
   padding: 4px 12px !important;
@@ -1476,6 +1480,37 @@ StEntry StLabel.hint-text {
   font-size: 1.455em;
   padding-top: 10px;
   padding-bottom: 14px;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  text-align: center !important;
+  x-align: center !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85) !important;
+}
+
+.login-dialog .login-dialog-user-list-item:ltr .user-widget.vertical,
+.login-dialog .login-dialog-user-list-item:rtl .user-widget.vertical,
+.unlock-dialog .login-dialog-user-list-item:ltr .user-widget.vertical,
+.unlock-dialog .login-dialog-user-list-item:rtl .user-widget.vertical {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  x-align: center !important;
+}
+
+.login-dialog .user-icon,
+.login-dialog .user-avatar,
+.unlock-dialog .user-icon,
+.unlock-dialog .user-avatar {
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8) !important;
+}
+
+.login-dialog .user-widget-label,
+.unlock-dialog .user-widget-label {
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85) !important;
 }
 
 .login-dialog .login-dialog-prompt-layout {
@@ -2085,11 +2120,11 @@ StEntry StLabel.hint-text {
 /* OSD */
 .workspace-switcher-container, .switcher-list, .resize-popup, .osd-window {
   color: #dedede;
-  background-color: #242424;
-  border-radius: 24px;
-  border: solid rgba(0, 0, 0, 0.75);
-  border-width: 1px;
-  box-shadow: 0 3px 8px 0 rgba(0, 0, 0, 0.25);
+  background-color: transparent !important;
+  background: transparent !important;
+  border-radius: 24px !important;
+  border: none !important;
+  box-shadow: none !important;
   padding: 8px;
 }
 
@@ -2194,9 +2229,9 @@ StEntry StLabel.hint-text {
 #panel {
   font-weight: 500;
   color: white;
-  transition-duration: 250ms;
+  transition-duration: 300ms !important;
   height: 34px !important;
-  background-color: rgba(36, 36, 36, 0,65) !important;
+  background-color: transparent !important;
   background-gradient-direction: vertical !important;
   background-gradient-start: rgba(0, 0, 0, 0.65) !important;
   background-gradient-end: rgba(0, 0, 0, 0.0) !important;
@@ -2420,9 +2455,11 @@ StEntry StLabel.hint-text {
 #panel:overview {
   background-color: transparent !important;
   background-gradient-direction: vertical !important;
-  background-gradient-start: rgba(0, 0, 0, 0.25) !important;
-  background-gradient-end: rgba(0, 0, 0, 0.0) !important;
+  background-gradient-start: transparent !important;
+  background-gradient-end: transparent !important;
+  border-bottom: none !important;
   box-shadow: none !important;
+  transition-duration: 300ms !important;
 }
 
 #panel.unlock-screen, #panel.login-screen, #panel.lock-screen {
@@ -2516,7 +2553,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-content {
   padding: 5px;
-  box-shadow: none !important;
+  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.35);
   margin: 4px 12px 17px 12px;
   background-color: transparent !important;
   background: transparent !important;
@@ -2538,7 +2575,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:checked {
   font-weight: 500;
-  border-radius: 7px !important;
+  border-radius: 9999px !important;
   border: none;
   box-shadow: none;
   color: #afafaf !important;
@@ -2550,7 +2587,7 @@ StEntry StLabel.hint-text {
   color: #ffffff !important;
   background-color: -st-accent-color !important;
   background-gradient-direction: none !important;
-  border-radius: 7px !important;
+  border-radius: 9999px !important;
   transition-duration: 150ms;
 }
 
@@ -2566,14 +2603,16 @@ StEntry StLabel.hint-text {
 .popup-menu-item:focus, .popup-menu-item:hover, .popup-menu-item:selected {
   color: #ffffff !important;
   background-color: -st-accent-color !important;
-  border-radius: 7px !important;
-  transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), color 150ms ease;
-  transition-duration: 150ms !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
+  transition: background-color 100ms ease, color 100ms ease;
+  transition-duration: 100ms !important;
 }
 
 .popup-menu-item:active, .popup-menu-item.selected:active {
   color: #ffffff !important;
-  background-color: st-mix(#dedede, -st-accent-color, 5%) !important;
+  background-color: -st-accent-color !important;
+  border-radius: 9999px !important;
 }
 
 .popup-menu-item:insensitive {
@@ -2683,17 +2722,23 @@ StEntry StLabel.hint-text {
 }
 
 .unlock-dialog-clock-time {
-  font-family: Open Runde, SF Pro Rounded, SF Pro Display, -apple-system, sans-serif !important;
+  font-family: Open Runde, Open Runde, SF Pro Rounded, SF Pro Display, -apple-system, sans-serif !important;
+  font-size: 80pt !important;
   font-weight: 700 !important;
-  font-size: 64pt;
+  color: #ffffff !important;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85) !important;
   padding-top: 0px !important;
   margin-top: 0px !important;
-  font-feature-settings: "tnum";
+  font-feature-settings: "pnum" 1, "tnum" 0 !important;
 }
 
 .unlock-dialog-clock-date {
-  font-size: 16pt;
-  font-weight: normal;
+  font-family: 'SF Pro Display', -apple-system, sans-serif !important;
+  font-size: 18pt !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.98) !important;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75) !important;
+  margin-bottom: -4px !important;
 }
 
 .unlock-dialog-clock-hint {
@@ -2768,34 +2813,38 @@ StScrollView.hfade {
 
 StScrollBar {
   padding: 0;
-  margin: 6px;
+  margin: 2px 1px 2px 0;
 }
 
 StScrollView StScrollBar {
-  min-width: 8px;
-  min-height: 8px;
+  min-width: 6px;
+  min-height: 6px;
+  margin-right: 1px;
 }
 
 StScrollBar StBin#trough {
   border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: transparent;
 }
 
 StScrollBar StButton#vhandle, StScrollBar StButton#hhandle {
   border-radius: 9999px;
-  background-color: #999999;
-  border: 4px solid transparent;
+  background-color: rgba(255, 255, 255, 0.35);
+  border: none;
+  min-width: 5px;
+  margin-right: 1px;
+  transition-duration: 150ms;
 }
 
 StScrollBar StButton#vhandle:hover, StScrollBar StButton#hhandle:hover {
-  background-color: #afafaf;
+  background-color: rgba(255, 255, 255, 0.70);
 }
 
 StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
-  background-color: #dedede;
+  background-color: rgba(255, 255, 255, 0.90);
 }
 
-.app-folder-dialog .folder-name-container .folder-name-entry, #overview .search-entry {
+.app-folder-dialog .folder-name-container .folder-name-entry {
   width: 320px;
   min-height: 28px;
   padding: 0 10px !important;
@@ -2808,41 +2857,61 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
   border-radius: 8px;
   border-color: transparent !important;
   box-shadow: none !important;
-  box-shadow: none;
 }
 
-.app-folder-dialog .folder-name-container .folder-name-entry:hover, #overview .search-entry:hover {
+.app-folder-dialog .folder-name-container .folder-name-entry:hover {
   background-color: rgba(255, 255, 255, 0.2);
   border-color: transparent !important;
   box-shadow: none !important;
   color: rgba(255, 255, 255, 0.85);
-  box-shadow: none;
 }
 
-.app-folder-dialog .folder-name-container .folder-name-entry:focus, #overview .search-entry:focus {
+.app-folder-dialog .folder-name-container .folder-name-entry:focus {
   border-color: transparent !important;
   background-color: rgba(255, 255, 255, 0.18);
   box-shadow: none !important;
   color: rgba(255, 255, 255, 0.85);
-  box-shadow: none;
 }
 
-.app-folder-dialog .folder-name-container .folder-name-entry .search-entry-icon, #overview .search-entry .search-entry-icon {
+.app-folder-dialog .folder-name-container .folder-name-entry .search-entry-icon {
   icon-size: 16px;
   padding: 0 0;
   color: rgba(255, 255, 255, 0.5);
 }
 
-.app-folder-dialog .folder-name-container .folder-name-entry:hover .search-entry-icon, .app-folder-dialog .folder-name-container .folder-name-entry:focus .search-entry-icon, #overview .search-entry:hover .search-entry-icon, #overview .search-entry:focus .search-entry-icon {
+.app-folder-dialog .folder-name-container .folder-name-entry:hover .search-entry-icon,
+.app-folder-dialog .folder-name-container .folder-name-entry:focus .search-entry-icon {
   color: rgba(255, 255, 255, 0.85);
 }
 
-.app-folder-dialog .folder-name-container .folder-name-entry:insensitive, #overview .search-entry:insensitive {
+.app-folder-dialog .folder-name-container .folder-name-entry:insensitive {
   color: rgba(255, 255, 255, 0.45);
 }
 
-.app-folder-dialog .folder-name-container .folder-name-entry StLabel.hint-text, #overview .search-entry StLabel.hint-text {
+.app-folder-dialog .folder-name-container .folder-name-entry StLabel.hint-text {
   color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Overview Search Entry: Completely Hidden in Mission Control ── */
+#overview .search-entry,
+#overview .search-entry-bin,
+#overview .search-entry:hover,
+#overview .search-entry:focus,
+.search-entry-bin,
+#overview-search-entry,
+.search-entry {
+  display: none !important;
+  opacity: 0 !important;
+  height: 0px !important;
+  min-height: 0px !important;
+  max-height: 0px !important;
+  width: 0px !important;
+  min-width: 0px !important;
+  max-width: 0px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Search */
@@ -2932,7 +3001,11 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 .switcher-list {
-  border-radius: 20px;
+  background-color: transparent !important;
+  background: transparent !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  box-shadow: none !important;
 }
 
 .switcher-list .item-box {
@@ -3395,14 +3468,14 @@ StWidget.focused .app-grid-running-dot {
 .modal-dialog .modal-dialog-linked-button:hover:last-child {
   color: white !important;
   background-gradient-direction: none !important;
-  background-color: #1a8cff !important;
+  background-color: -st-accent-color !important;
 }
 
 .modal-dialog .modal-dialog-button:active:last-child,
 .modal-dialog .modal-dialog-linked-button:active:last-child {
   color: white !important;
   background-gradient-direction: none !important;
-  background-color: #0066d6 !important;
+  background-color: -st-accent-color !important;
 }
 
 .modal-dialog .modal-dialog-button:insensitive:last-child,
@@ -3976,19 +4049,20 @@ StWidget.focused .app-grid-running-dot {
   width: 395px !important;
   min-height: 56px !important;
   padding: 10px 14px !important;
-  border-radius: 18px !important;
-  background-color: rgba(36, 36, 36, 0.52) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.30) !important;
+  border-radius: 24px !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  box-shadow: none !important;
   color: white !important;
-  text-shadow: none !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
   transition-duration: 150ms;
 }
 
 .mac-notification-banner:hover {
-  background-color: rgba(55, 55, 55, 0.65) !important;
-  border-color: rgba(255, 255, 255, 0.30) !important;
-  box-shadow: 0 6px 18px 0 rgba(0, 0, 0, 0.38) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.26) !important;
+  box-shadow: none !important;
 }
 
 .mac-notification-icon-bin {
@@ -4007,22 +4081,52 @@ StWidget.focused .app-grid-running-dot {
 .mac-notification-app-name {
   font-size: 11.5px !important;
   font-weight: 600 !important;
-  color: rgba(255, 255, 255, 0.65) !important;
+  color: rgba(255, 255, 255, 0.78) !important;
   margin-bottom: 1px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
 .mac-notification-title {
   font-size: 13.5px !important;
   font-weight: 700 !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: #ffffff !important;
   margin-bottom: 2px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
 }
 
 .mac-notification-body {
   font-size: 12.5px !important;
   font-weight: 400 !important;
-  color: rgba(255, 255, 255, 0.85) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
   line-height: 1.25 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+.mac-notification-time {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.50) !important;
+  margin-top: 1px !important;
+  margin-right: 2px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
+}
+
+.mac-notification-collapse-btn {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  border-radius: 9999px !important;
+  padding: 4px 16px !important;
+  margin: 4px auto 0 auto !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  transition-duration: 150ms !important;
+}
+
+.mac-notification-collapse-btn:hover {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
 }
 
 .mac-notification-close-btn {
@@ -4058,8 +4162,25 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-notification-actions-box {
-  margin-top: 8px;
-  spacing: 8px;
+  margin-top: 8px !important;
+  margin-left: -4px !important;
+  spacing: 8px !important;
+  transition-duration: 150ms !important;
+}
+
+.mac-notification-action-btn {
+  border-radius: 9999px !important;
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.35) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  padding: 4px 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+  transition-duration: 150ms;
 }
 
 .mac-notification-action-btn,
@@ -4099,17 +4220,19 @@ StWidget.focused .app-grid-running-dot {
   border-radius: 24px !important;
   margin: 10px 14px 8px 8px;
   padding: 10px 14px;
-  color: #dedede;
-  background-color: rgba(36, 36, 36, 0.10) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
   text-shadow: none;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
+  box-shadow: none !important;
   transition-duration: 150ms;
 }
 
 .notification-banner:hover {
-  background-color: rgba(36, 36, 36, 0.18) !important;
-  box-shadow: 0 10px 36px 0 rgba(0, 0, 0, 0.42) !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.26) !important;
+  box-shadow: none !important;
 }
 
 .notification-banner .message-header .message-close-button {
@@ -4146,6 +4269,32 @@ StWidget.focused .app-grid-running-dot {
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
+}
+
+.notification-button:focus {
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.30) !important;
+  box-shadow: none !important;
+}
+
+.notification-button:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.notification-button:active, .notification-button:checked {
+  background-color: rgba(255, 255, 255, 0.26) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.notification-button:insensitive {
+  background-color: transparent !important;
+  color: rgba(175, 175, 175, 0.35) !important;
 }
 
 .controls-manager, .secondary-monitor-workspaces {
@@ -4322,7 +4471,7 @@ StWidget.focused .app-grid-running-dot {
   color: white;
   background: transparent !important;
   background-color: transparent !important;
-  border-radius: 9999px;
+  border-radius: 9999px !important;
   transition-duration: 150ms;
 }
 
@@ -4331,7 +4480,7 @@ StWidget.focused .app-grid-running-dot {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  border-radius: 9999px;
+  border-radius: 9999px !important;
   color: white;
   padding: 12px !important;
   /* Move padding into the box; this is to allow menu arrows
@@ -4402,7 +4551,7 @@ StWidget.focused .app-grid-running-dot {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  border-radius: 9999px;
+  border-radius: 9999px !important;
   padding: 4px 0 !important;
 }
 
@@ -4613,17 +4762,19 @@ StWidget.focused .app-grid-running-dot {
   min-height: 20px;
   padding: 8px 12px;
   color: #dedede !important;
-  border-radius: 12px;
+  border-radius: 9999px !important;
 }
 
 .quick-toggle-menu .popup-menu-item:focus, .quick-toggle-menu .popup-menu-item:hover, .quick-toggle-menu .popup-menu-item:selected {
-  background-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
+  border-radius: 9999px !important;
 }
 
 .quick-toggle-menu .popup-menu-item:active {
-  background-color: rgba(255, 255, 255, 0.22) !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
+  border-radius: 9999px !important;
 }
 
 .quick-toggle-menu .popup-menu-item > StIcon {
@@ -4791,8 +4942,8 @@ StWidget.focused .app-grid-running-dot {
   spacing: 12px;
   color: #d3d7df;
   background-color: transparent !important;
-  border: 1px solid rgba(0, 0, 0, 0.75);
-  box-shadow: 0 3px 8px 0 rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4) !important;
 }
 
 .screenshot-ui-close-button {
@@ -4986,8 +5137,8 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .search-entry {
-  margin-top: 16px;
-  margin-bottom: 4px;
+  margin-top: 14px !important;
+  margin-bottom: 6px !important;
 }
 
 /* Slider */
@@ -5315,8 +5466,11 @@ StWidget.focused .app-grid-running-dot {
 #dashtodockContainer.right #dash .dash-background,
 #dashtodockContainer.shrink #dash .dash-background,
 #dashtodockContainer.dashtodock #dash .dash-background {
-  background-color: rgba(36, 36, 36, 0.04) !important;
+  background-color: transparent !important;
+  background: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
   border-radius: 28px !important;
 }
@@ -5721,81 +5875,215 @@ StWidget.focused .app-grid-running-dot {
   y-align: center !important;
 }
 
-/* Standalone Menus in Control Center Style (Wi-Fi, Bluetooth, Sound) */
-.mac-menu-header-card {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 16px !important;
-  padding: 10px 14px !important;
-  margin: 4px 6px !important;
-  transition-duration: 150ms !important;
-}
-
-.mac-menu-header-card:hover {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-}
-
-.mac-menu-slider-card {
-  padding: 10px 14px !important;
-  margin: 4px 6px !important;
-}
-
-.mac-menu-toggle-icon {
-  border-radius: 9999px !important;
-  padding: 7px !important;
-  margin-right: 10px !important;
-  background-color: -st-accent-color !important;
-  color: white !important;
-}
-
-.mac-menu-toggle-icon-off {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-.mac-menu-card-title {
-  font-weight: bold !important;
-  font-size: 13px !important;
-  color: white !important;
-}
-
-.mac-menu-card-subtitle {
-  font-size: 11px !important;
-  color: rgba(255, 255, 255, 0.55) !important;
-}
-
-.mac-menu-item-row {
-  border-radius: 10px !important;
+/* Standalone Menus & Control Center Submenus in macOS Style (Wi-Fi, Bluetooth, Battery, Keyboard, Power) */
+.mac-menu-header-row {
   padding: 8px 12px !important;
-  margin: 2px 6px !important;
+  margin: 2px 4px !important;
+}
+
+.mac-menu-header-title {
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  color: #ffffff !important;
+}
+
+.mac-menu-header-value {
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.mac-menu-header-subtitle {
+  font-weight: 400 !important;
+  font-size: 11px !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  margin-top: 2px !important;
+}
+
+.mac-menu-section-label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  padding: 4px 6px 2px 4px !important;
+  margin: 0 !important;
+}
+
+.mac-menu-status-text {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  padding: 4px 6px 4px 4px !important;
+  margin: 0 !important;
+}
+
+.popup-menu-item.mac-menu-item-row,
+.mac-menu-item-row,
+.mac-cc-submenu-row,
+.mac-cc-submenu-item {
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  margin: 1px 2px !important;
+  min-height: 26px !important;
+  box-shadow: none !important;
+  transition-duration: 100ms !important;
+  background-color: transparent !important;
+}
+
+.popup-menu-item.mac-menu-item-row:hover,
+.popup-menu-item.mac-menu-item-row:focus,
+.popup-menu-item.mac-menu-item-row:selected,
+.popup-menu-item.mac-menu-item-row:selected:hover,
+.popup-menu-item.mac-menu-item-row.mac-menu-item-active:hover,
+.popup-menu-item.mac-menu-item-row.mac-menu-item-active:selected,
+.mac-menu-item-row:hover,
+.mac-menu-item-row:focus,
+.mac-menu-item-row:selected,
+.mac-menu-item-row:selected:hover,
+.mac-menu-item-active:hover,
+.mac-menu-item-active:selected,
+.mac-cc-submenu-row:hover,
+.mac-cc-submenu-item:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.popup-menu-item.mac-menu-item-row:active,
+.mac-menu-item-row:active,
+.mac-cc-submenu-row:active,
+.mac-cc-submenu-item:active {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.popup-menu-item.mac-menu-item-row.mac-menu-item-active,
+.mac-menu-item-active {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.mac-menu-item-title {
+  font-size: 13px !important;
+  color: #ffffff !important;
+}
+
+.mac-menu-item-title-muted {
+  font-size: 13px !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.mac-menu-circle-badge {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 13px !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  margin-right: 10px !important;
+  color: #ffffff !important;
+}
+
+.mac-menu-circle-badge-orange,
+.mac-menu-circle-badge-accent {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 13px !important;
+  background-color: -st-accent-color !important;
+  margin-right: 10px !important;
+  color: #ffffff !important;
+}
+
+.mac-menu-squircle-badge {
+  border-radius: 5px !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  font-size: 10px !important;
+  padding: 2px 5px !important;
+  margin-right: 10px !important;
+  min-width: 18px !important;
+  text-align: center !important;
+}
+
+.mac-menu-squircle-badge-dark {
+  border-radius: 6px !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  padding: 3px 6px !important;
+  margin-right: 10px !important;
+  min-width: 18px !important;
+  text-align: center !important;
+}
+
+.mac-menu-squircle-badge-active {
+  background-color: #ffcc00 !important;
+  color: #000000 !important;
+}
+
+.popup-menu-item.mac-menu-footer-button,
+.mac-menu-footer-button,
+.mac-cc-footer-btn {
+  border-radius: 8px !important;
+  padding: 7px 12px !important;
+  margin: 8px 2px 2px 2px !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
   transition-duration: 100ms !important;
 }
 
-.mac-menu-item-row:hover {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-.mac-menu-item-row:active {
-  background-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-.mac-menu-item-active {
+.popup-menu-item.mac-menu-footer-button:focus,
+.mac-menu-footer-button:focus,
+.mac-cc-footer-btn:focus {
   background-color: rgba(255, 255, 255, 0.08) !important;
-  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
 }
 
-.mac-menu-footer-button {
-  border-radius: 12px !important;
-  padding: 8px 12px !important;
-  margin: 4px 6px !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
+.popup-menu-item.mac-menu-footer-button:selected,
+.mac-menu-footer-button:selected,
+.mac-cc-footer-btn:selected {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
 }
 
-.mac-menu-footer-button:hover {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-  color: white !important;
+.popup-menu-item.mac-menu-footer-button:hover,
+.mac-menu-footer-button:hover,
+.mac-cc-footer-btn:hover {
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.popup-menu-item.mac-menu-footer-button:active,
+.mac-menu-footer-button:active,
+.mac-cc-footer-btn:active {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.mac-menu-check-slot {
+  width: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  margin-right: 4px !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+  text-align: center !important;
 }
 
 /* --- MAC-STYLING-START --- */
@@ -5809,8 +6097,11 @@ StWidget.focused .app-grid-running-dot {
 #dashtodockContainer.dashtodock #dash .dash-background {
   background-color: transparent !important;
   background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
+  border-radius: 28px !important;
 }
 
 #panel,
@@ -5831,38 +6122,40 @@ StWidget.focused .app-grid-running-dot {
 #panel:overview {
   background-color: transparent !important;
   background-gradient-direction: vertical !important;
-  background-gradient-start: rgba(0, 0, 0, 0.0) !important;
-  background-gradient-end: rgba(0, 0, 0, 0.0) !important;
+  background-gradient-start: transparent !important;
+  background-gradient-end: transparent !important;
   border-bottom: none !important;
   box-shadow: none !important;
-  transition-duration: 250ms;
+  transition-duration: 300ms !important;
 }
 
 .mac-notification-banner {
   width: 395px !important;
   min-height: 56px !important;
   padding: 10px 14px !important;
-  border-radius: 18px !important;
-  background-color: rgba(36, 36, 36, 0.52) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.30) !important;
+  border-radius: 24px !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  box-shadow: none !important;
   color: white !important;
-  text-shadow: none !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
   transition-duration: 150ms;
 }
 
 .mac-notification-banner:hover {
-  background-color: rgba(55, 55, 55, 0.65) !important;
-  border-color: rgba(255, 255, 255, 0.30) !important;
-  box-shadow: 0 6px 18px 0 rgba(0, 0, 0, 0.38) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.26) !important;
+  box-shadow: none !important;
 }
 
 .popup-menu-content {
   background-color: transparent !important;
   background: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  box-shadow: none !important;
   border-radius: 24px !important;
+  padding: 6px !important;
 }
 
 .popup-menu-boxpointer .popup-menu-content {
@@ -5873,23 +6166,118 @@ StWidget.focused .app-grid-running-dot {
   border-radius: 24px !important;
 }
 
-.popup-menu-hover-pill {
-  background-color: -st-accent-color !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40) !important;
-}
 
 .popup-menu-item {
   border-radius: 9999px !important;
   margin: 1px 4px !important;
-  padding: 2px 10px !important;
+  padding: 4px 10px !important;
   min-height: 22px !important;
+  color: #dedede !important;
+  transition: color 100ms ease;
 }
 
-.popup-menu-item:hover {
-  background-color: transparent !important;
+.popup-menu-item:focus,
+.popup-menu-item:hover,
+.popup-menu-item:selected {
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
+  box-shadow: none !important;
+}
+
+.popup-menu-item:active,
+.popup-menu-item.selected:active {
+  background-color: -st-accent-color !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+}
+
+/* AppMenu Menubar Popup Menus */
+.appmenu-popup-menu-content,
+.appmenu-popup-menu .popup-menu-content,
+.appmenu-popup-menu.popup-menu-boxpointer .popup-menu-content {
+  border-radius: 24px !important;
+  padding: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.appmenu-popup-menu .popup-sub-menu {
+  border-radius: 24px !important;
+}
+
+.appmenu-popup-menu-item,
+.appmenu-popup-menu .popup-menu-item,
+.appmenu-popup-menu-content .popup-menu-item {
+  min-height: 22px !important;
+  padding: 4px 10px !important;
+  margin: 1px 4px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: 9999px !important;
+  spacing: 6px !important;
+  color: #dedede !important;
+  transition: color 100ms ease !important;
+}
+
+.appmenu-popup-menu-item:focus,
+.appmenu-popup-menu-item:hover,
+.appmenu-popup-menu-item:selected,
+.appmenu-popup-menu .popup-menu-item:focus,
+.appmenu-popup-menu .popup-menu-item:hover,
+.appmenu-popup-menu .popup-menu-item:selected,
+.appmenu-popup-menu-content .popup-menu-item:focus,
+.appmenu-popup-menu-content .popup-menu-item:hover,
+.appmenu-popup-menu-content .popup-menu-item:selected {
+  background-color: -st-accent-color !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
+}
+
+.appmenu-popup-menu-item:active,
+.appmenu-popup-menu-item.selected:active,
+.appmenu-popup-menu .popup-menu-item:active,
+.appmenu-popup-menu-content .popup-menu-item:active {
+  background-color: -st-accent-color !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+}
+
+.mac-menu-hover-pill {
+  display: none !important;
+  opacity: 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.popup-menu-item.popup-separator-menu-item,
+.popup-separator-menu-item,
+.appmenu-popup-menu .popup-menu-item.popup-separator-menu-item,
+.appmenu-popup-menu-content .popup-menu-item.popup-separator-menu-item,
+.appmenu-separator-menu-item,
+.appmenu-popup-menu .popup-separator-menu-item,
+.appmenu-popup-menu-content .popup-separator-menu-item {
+  min-height: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: 3px 8px !important;
+  border: none !important;
+  background-color: transparent !important;
+}
+
+.popup-menu-item.popup-separator-menu-item .popup-separator-menu-item-separator,
+.popup-separator-menu-item .popup-separator-menu-item-separator,
+.appmenu-popup-menu .popup-separator-menu-item-separator,
+.appmenu-popup-menu-content .popup-separator-menu-item-separator,
+.appmenu-separator-menu-item .popup-separator-menu-item-separator {
+  min-height: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 /* OSD Maximum Rounding & Original Layout */
@@ -5908,6 +6296,11 @@ StWidget.focused .app-grid-running-dot {
 .popup-menu-content.quick-settings,
 .quick-settings,
 .quick-settings-menu,
+.popup-menu-boxpointer.quick-settings-menu,
+.quick-settings-menu .popup-menu-boxpointer,
+.quick-settings-menu .popup-menu-content,
+#quick-settings-menu,
+#quickSettingsMenu,
 .popup-menu-content.datemenu-popover,
 .datemenu-popover,
 .datemenu-popover .popup-menu-content,
@@ -6005,9 +6398,10 @@ StWidget.focused .app-grid-running-dot {
   min-height: 56px !important;
   padding: 12px 16px !important;
   border-radius: 24px !important;
-  background-color: rgba(36, 36, 36, 0.12) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  box-shadow: none !important;
   margin: 4px 0px 6px 0px !important;
   color: #ffffff !important;
   text-shadow: none !important;
@@ -6016,24 +6410,24 @@ StWidget.focused .app-grid-running-dot {
 
 .message-list .message:hover,
 .message-list .message:focus {
-  background-color: rgba(36, 36, 36, 0.18) !important;
-  border-color: rgba(255, 255, 255, 0.22) !important;
-  box-shadow: 0 10px 36px 0 rgba(0, 0, 0, 0.42) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  box-shadow: none !important;
 }
 
 /* Stacked card layers (macOS card deck effect) */
 .message:second-in-stack {
   border-radius: 24px !important;
-  background-color: rgba(36, 36, 36, 0.10) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.30) !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: none !important;
 }
 
 .message:lower-in-stack {
   border-radius: 24px !important;
-  background-color: rgba(36, 36, 36, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: none !important;
 }
 
 .message:second-in-stack StLabel,
@@ -6174,19 +6568,20 @@ StWidget.focused .app-grid-running-dot {
 
 .message-list-clear-button {
   border-radius: 9999px !important;
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   color: rgba(255, 255, 255, 0.95) !important;
   font-weight: 500 !important;
   font-size: 12px !important;
   padding: 5px 20px !important;
   margin: 4px auto !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
 }
 
 .message-list-clear-button:hover,
 .message-list-clear-button:focus {
-  background-color: rgba(255, 255, 255, 0.24) !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
   color: #ffffff !important;
 }
 
@@ -6199,74 +6594,118 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-nc-pill-btn {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 9999px !important;
   padding: 5px 14px !important;
   color: #ffffff !important;
   font-size: 12px !important;
   font-weight: 500 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.30) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
 }
 
 .mac-nc-pill-btn:hover {
-  background-color: rgba(255, 255, 255, 0.25) !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
 }
 
 .mac-nc-icon-btn {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 9999px !important;
   width: 26px !important;
   height: 26px !important;
   min-width: 26px !important;
   min-height: 26px !important;
   padding: 0px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.30) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
 }
 
-.mac-notif-center-scroll StScrollBar {
-  width: 0px !important;
-  height: 0px !important;
-  opacity: 0 !important;
+.mac-nc-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.mac-notif-center-scroll StScrollBar,
+.mac-launchpad-scroll StScrollBar,
+.mac-spotlight-scroll StScrollBar,
+.mac-clipboard-scroll StScrollBar {
   padding: 0 !important;
-  margin: 0 !important;
+  margin: 2px 1px 2px 0 !important;
+}
+
+.mac-notif-center-scroll StScrollBar .vhandle,
+.mac-launchpad-scroll StScrollBar .vhandle,
+.mac-spotlight-scroll StScrollBar .vhandle,
+.mac-clipboard-scroll StScrollBar .vhandle,
+.mac-notif-center-scroll StScrollBar StButton#vhandle,
+.mac-launchpad-scroll StScrollBar StButton#vhandle,
+.mac-spotlight-scroll StScrollBar StButton#vhandle,
+.mac-clipboard-scroll StScrollBar StButton#vhandle {
+  background-color: rgba(255, 255, 255, 0.35) !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  min-width: 5px !important;
+  margin-right: 1px !important;
+  transition-duration: 200ms !important;
+}
+
+.mac-notif-center-scroll StScrollBar .vhandle:hover,
+.mac-launchpad-scroll StScrollBar .vhandle:hover,
+.mac-spotlight-scroll StScrollBar .vhandle:hover,
+.mac-clipboard-scroll StScrollBar .vhandle:hover,
+.mac-notif-center-scroll StScrollBar StButton#vhandle:hover,
+.mac-launchpad-scroll StScrollBar StButton#vhandle:hover,
+.mac-spotlight-scroll StScrollBar StButton#vhandle:hover,
+.mac-clipboard-scroll StScrollBar StButton#vhandle:hover {
+  background-color: rgba(255, 255, 255, 0.70) !important;
 }
 
 .mac-notif-center-scroll StScrollBar StBin#trough,
-.mac-notif-center-scroll StScrollBar StButton#vhandle,
-.mac-notif-center-scroll StScrollBar StButton#hhandle {
+.mac-launchpad-scroll StScrollBar StBin#trough,
+.mac-spotlight-scroll StScrollBar StBin#trough,
+.mac-clipboard-scroll StScrollBar StBin#trough {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.mac-notif-center-scroll StScrollBar .hhandle,
+.mac-launchpad-scroll StScrollBar .hhandle,
+.mac-spotlight-scroll StScrollBar .hhandle,
+.mac-clipboard-scroll StScrollBar .hhandle {
   width: 0px !important;
   height: 0px !important;
   opacity: 0 !important;
-  background-color: transparent !important;
-  border: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
 }
 
 .mac-notif-clear-btn {
-  background-color: rgba(30, 30, 30, 0.55) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.38) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.20) !important;
   border-radius: 9999px !important;
-  padding: 3px 12px !important;
-  color: rgba(255, 255, 255, 0.88) !important;
+  padding: 3px 14px !important;
+  color: #ffffff !important;
   font-size: 11.5px !important;
   font-weight: 600 !important;
   font-family: "SF Pro Text", -apple-system, sans-serif !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
   transition-duration: 150ms !important;
 }
 
 .mac-notif-clear-btn:hover {
-  background-color: rgba(55, 55, 55, 0.80) !important;
-  border-color: rgba(255, 255, 255, 0.35) !important;
+  background-color: rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.55) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.26) !important;
   color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
 }
 
 .mac-notif-clear-btn:active {
-  background-color: rgba(20, 20, 20, 0.90) !important;
+  background-color: rgba(255, 255, 255, 0.20) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
 }
 
 .mac-notif-center-title {
@@ -6286,107 +6725,532 @@ StWidget.focused .app-grid-running-dot {
   text-align: center !important;
 }
 
-.mac-notif-clear-btn {
-  background-color: rgba(30, 30, 30, 0.55) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+/* ==========================================================================
+   macOS Tahoe Control Center Styles
+   ========================================================================== */
+.mac-control-center-root {
+  width: 360px !important;
+  min-width: 360px !important;
+  max-width: 360px !important;
+  spacing: 12px !important;
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 10px !important;
+  font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important;
+  color: #ffffff !important;
+}
+
+.mac-cc-pill {
+  width: 167px !important;
+  min-width: 167px !important;
+  max-width: 167px !important;
+  height: 70px !important;
+  min-height: 70px !important;
+  max-height: 70px !important;
   border-radius: 9999px !important;
-  padding: 3px 12px !important;
-  color: rgba(255, 255, 255, 0.88) !important;
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.45), 0 1px 6px rgba(0, 0, 0, 0.8) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0px !important;
   transition-duration: 150ms !important;
 }
 
-.mac-notif-clear-btn:hover {
-  background-color: rgba(55, 55, 55, 0.80) !important;
-  border-color: rgba(255, 255, 255, 0.35) !important;
-  color: #ffffff !important;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.6), 0 1px 6px rgba(0, 0, 0, 0.9) !important;
+.mac-cc-pill > StBoxLayout,
+.mac-cc-pill:ltr > StBoxLayout,
+.mac-cc-pill:rtl > StBoxLayout {
+  padding: 0px 6px 0px 14px !important;
+  padding-left: 14px !important;
+  padding-right: 6px !important;
+  margin: 0px !important;
+  spacing: 8px !important;
 }
 
-.mac-notif-clear-btn:active {
-  background-color: rgba(20, 20, 20, 0.90) !important;
+.mac-cc-pill:hover {
+  background-color: rgba(255, 255, 255, 0.10) !important;
 }
 
-.message-list-placeholder,
-.datemenu-today-button .day-label,
-.datemenu-today-button .date-label,
-.calendar-month-label {
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 0 18px rgba(0, 0, 0, 0.8) !important;
-}
-
-
-/* AppMenu Compact Menubar Popup Menus */
-.appmenu-popup-menu-content {
-  padding: 4px 0 !important;
-}
-
-.appmenu-popup-menu-item,
-.appmenu-popup-menu .popup-menu-item,
-.appmenu-popup-menu-content .popup-menu-item {
-  min-height: 18px !important;
-  padding: 1px 10px !important;
-  margin: 1px 4px !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
+.mac-cc-pill-icon-btn {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
   border-radius: 9999px !important;
-  spacing: 6px !important;
-  color: inherit !important;
-  transition: background-color 100ms ease, color 100ms ease !important;
-}
-
-.appmenu-popup-menu-item:focus,
-.appmenu-popup-menu-item:hover,
-.appmenu-popup-menu-item:selected,
-.appmenu-popup-menu .popup-menu-item:focus,
-.appmenu-popup-menu .popup-menu-item:hover,
-.appmenu-popup-menu .popup-menu-item:selected,
-.appmenu-popup-menu-content .popup-menu-item:focus,
-.appmenu-popup-menu-content .popup-menu-item:hover,
-.appmenu-popup-menu-content .popup-menu-item:selected {
-  background-color: -st-accent-color !important;
-  color: #ffffff !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40) !important;
-}
-
-.appmenu-popup-menu-item:active,
-.appmenu-popup-menu-item.selected:active,
-.appmenu-popup-menu .popup-menu-item:active,
-.appmenu-popup-menu-content .popup-menu-item:active {
-  background-color: -st-accent-color !important;
-  color: #ffffff !important;
-  border-radius: 9999px !important;
-}
-
-.popup-menu-item.popup-separator-menu-item,
-.popup-separator-menu-item,
-.appmenu-popup-menu .popup-menu-item.popup-separator-menu-item,
-.appmenu-popup-menu-content .popup-menu-item.popup-separator-menu-item,
-.appmenu-separator-menu-item,
-.appmenu-popup-menu .popup-separator-menu-item,
-.appmenu-popup-menu-content .popup-separator-menu-item {
-  min-height: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: 3px 8px !important;
+  background-color: transparent !important;
+  background: none !important;
   border: none !important;
+  box-shadow: none !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  margin: 0px !important;
+  padding: 0px !important;
+}
+
+.mac-cc-pill-icon-btn:hover {
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.mac-cc-pill-icon-btn.active {
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: -st-accent-color !important;
+}
+
+.mac-cc-circle-bg {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  border-radius: 9999px !important;
+  background-color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 1px #ffffff !important;
+}
+
+.mac-cc-dnd-circle-bg {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  border-radius: 9999px !important;
+  background-color: #5856d6 !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 0 10px rgba(88, 86, 214, 0.55), inset 0 1px 1px #ffffff !important;
+}
+
+.mac-cc-pill-icon-btn.active StIcon {
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: -st-accent-color !important;
+}
+
+.mac-cc-pill-icon-btn.dnd-active {
+  background-color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 1px #ffffff !important;
+  color: #5856d6 !important;
+}
+
+.mac-cc-pill-icon-btn.dnd-active StIcon {
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #5856d6 !important;
+}
+
+.mac-cc-dnd-icon-btn {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  border-radius: 9999px !important;
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0px !important;
+  padding: 0px !important;
+}
+
+.mac-cc-dnd-icon-btn.active {
+  background-color: #5856d6 !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 0 10px rgba(88, 86, 214, 0.55), inset 0 1px 1px #ffffff !important;
+  color: #ffffff !important;
+}
+
+.mac-cc-circle-btn-large {
+  width: 70px !important;
+  height: 70px !important;
+  min-width: 70px !important;
+  min-height: 70px !important;
+  border-radius: 9999px !important;
+  background-color: transparent !important;
+  background: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.20) !important;
+  color: #ffffff !important;
+  padding: 0px !important;
+  transition-duration: 150ms !important;
+}
+
+.mac-cc-circle-btn-large:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.mac-cc-circle-btn-large.active {
+  background-color: -st-accent-color !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 0 12px -st-accent-color, inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
+}
+
+.mac-cc-card {
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 20px !important;
+  padding: 8px !important;
+}
+
+.mac-cc-title {
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.15px !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+.mac-cc-subtitle {
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.1px !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  text-shadow: none !important;
+}
+
+.mac-cc-pill .mac-cc-title {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.15px !important;
+}
+
+.mac-cc-pill .mac-cc-subtitle {
+  font-size: 11.5px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.1px !important;
+}
+
+.mac-cc-media-card {
+  width: 159px !important;
+  min-width: 159px !important;
+  max-width: 159px !important;
+  height: 152px !important;
+  min-height: 152px !important;
+  max-height: 152px !important;
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0px !important;
+  border-radius: 35px !important;
+}
+
+.mac-cc-media-art {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  border-radius: 10px !important;
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.mac-cc-transport-btn {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  border-radius: 9999px !important;
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  padding: 0px !important;
+}
+
+.mac-cc-transport-btn:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+
+.mac-cc-slider-card {
+  width: 310px !important;
+  min-width: 310px !important;
+  max-width: 310px !important;
+  height: 50px !important;
+  min-height: 50px !important;
+  max-height: 50px !important;
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 25px !important;
+  padding: 10px 14px !important;
+}
+
+.mac-cc-slider-track {
+  height: 10px !important;
+  min-height: 10px !important;
+  max-height: 10px !important;
+  -barlevel-height: 9px !important;
+  -barlevel-background-color: rgba(255, 255, 255, 0.22) !important;
+  -barlevel-active-background-color: #ffffff !important;
+  -slider-handle-radius: 0px !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.20) !important;
+  color: #ffffff !important;
+}
+
+.mac-cc-airplay-btn {
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+  border-radius: 9999px !important;
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  color: #ffffff !important;
+  padding: 0px !important;
+  transition-duration: 150ms !important;
+}
+
+.mac-cc-airplay-btn:hover,
+.mac-cc-airplay-btn.active {
+  background-color: -st-accent-color !important;
+  border-color: -st-accent-color !important;
+  color: #ffffff !important;
+}
+
+.mac-cc-submenu-card {
+  width: 338px !important;
+  min-width: 338px !important;
+  max-width: 338px !important;
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  border-radius: 25px !important;
+  box-shadow: none !important;
+  padding: 4px 6px !important;
+}
+
+.mac-cc-sound-drawer {
+  width: 310px !important;
+  min-width: 310px !important;
+  max-width: 310px !important;
+  background-color: rgba(30, 30, 30, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  padding: 10px 12px !important;
+  margin-top: 4px !important;
+}
+
+.mac-cc-route-btn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  border-radius: 9999px !important;
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 0px !important;
+}
+
+.mac-cc-route-btn:hover {
+  background-color: rgba(255, 255, 255, 0.26) !important;
+}
+
+.mac-cc-route-btn.active {
+  background-color: -st-accent-color !important;
+  border-color: -st-accent-color !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px -st-accent-color !important;
+}
+
+.mac-cc-submenu-header {
+  padding: 4px 4px 10px 4px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  margin-bottom: 8px !important;
+}
+
+.mac-cc-back-btn {
+  border-radius: 9999px !important;
+  padding: 4px 10px !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.mac-cc-back-btn:hover {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.mac-cc-submenu-item,
+.mac-cc-submenu-row {
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  margin: 1px 0px !important;
+  transition-duration: 120ms !important;
   background-color: transparent !important;
 }
 
-.popup-menu-item.popup-separator-menu-item .popup-separator-menu-item-separator,
-.popup-separator-menu-item .popup-separator-menu-item-separator,
-.appmenu-popup-menu .popup-separator-menu-item-separator,
-.appmenu-popup-menu-content .popup-separator-menu-item-separator,
-.appmenu-separator-menu-item .popup-separator-menu-item-separator {
-  min-height: 1px !important;
+.mac-cc-submenu-item:hover,
+.mac-cc-submenu-row:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.mac-cc-submenu-item.active,
+.mac-cc-submenu-row.active {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+}
+
+.mac-cc-submenu-item.active StLabel,
+.mac-cc-submenu-item.active StIcon,
+.mac-cc-submenu-row.active StLabel,
+.mac-cc-submenu-row.active StIcon {
+  color: #ffffff !important;
+}
+
+/* --- Spotlight macOS Liquid Glass Redesign --- */
+.mac-spotlight-backdrop {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+.mac-spotlight-box {
+  background-color: transparent !important;
+  background: transparent !important;
+  border-radius: 27px !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+#mac-spotlight-box StEntry,
+#mac-spotlight-box StEntry:focus,
+#mac-spotlight-box StEntry:hover,
+.mac-spotlight-box StEntry,
+.mac-spotlight-box StEntry:focus,
+.mac-spotlight-box StEntry:hover,
+.mac-spotlight-entry,
+.mac-spotlight-entry:focus,
+.mac-spotlight-entry:hover,
+.mac-spotlight-entry:active {
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  outline-width: 0 !important;
+  color: #ffffff !important;
+  font-size: 19px !important;
+  font-weight: 400 !important;
+  padding: 0 10px !important;
+  caret-color: -st-accent-color !important;
+  selection-background-color: -st-accent-color !important;
+  selected-color: #ffffff !important;
+}
+
+.mac-spotlight-entry .st-entry-hint-text {
+  color: rgba(255, 255, 255, 0.42) !important;
+  font-size: 19px !important;
+  font-weight: 400 !important;
+}
+
+.mac-spotlight-divider {
   height: 1px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  background-color: rgba(0, 0, 0, 0.12) !important;
+  min-height: 1px !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  margin: 4px 16px 8px 16px !important;
+}
+
+.mac-spotlight-item {
+  padding: 6px 12px !important;
+  margin: 2px 8px !important;
+  border-radius: 10px !important;
+  transition-duration: 120ms !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.mac-spotlight-item:hover,
+.mac-spotlight-item.selected,
+.mac-spotlight-item:focus {
+  background-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+.mac-spotlight-item-title {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #ffffff !important;
+}
+
+.mac-spotlight-item-subtitle {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.mac-spotlight-item-badge {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.40) !important;
+  padding: 2px 6px !important;
+  border-radius: 6px !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.mac-spotlight-icon-squircle,
+.mac-spotlight-icon-slot {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-right: 14px !important;
 }
 
 /* --- MAC-STYLING-END --- */
+
+
+/* LQ-Visual: Strict transparency for Dock icons (no gray/white highlight squares on focused/hovered apps) */
+#dashtodockContainer #dash .overview-tile .overview-icon,
+#dashtodockContainer #dash .overview-tile:focus .overview-icon,
+#dashtodockContainer #dash .overview-tile.focused .overview-icon,
+#dashtodockContainer #dash .overview-tile:hover .overview-icon,
+#dashtodockContainer #dash .overview-tile:active .overview-icon,
+#dashtodockContainer #dash .overview-tile:highlighted .overview-icon,
+#dashtodockContainer #dash .overview-tile:selected .overview-icon,
+#dashtodockContainer #dash .overview-tile:checked .overview-icon,
+#dashtodockContainer #dash .app-well-app .overview-icon,
+#dashtodockContainer #dash .app-well-app:focus .overview-icon,
+#dashtodockContainer #dash .app-well-app.focused .overview-icon,
+#dashtodockContainer #dash .app-well-app:hover .overview-icon,
+#dashtodockContainer #dash .app-well-app:active .overview-icon,
+#dashtodockContainer #dash .show-apps .overview-icon,
+#dashtodockContainer #dash .show-apps:focus .overview-icon,
+#dashtodockContainer #dash .show-apps.focused .overview-icon,
+#dashtodockContainer #dash .show-apps:hover .overview-icon,
+#dashtodockContainer #dash .show-apps:active .overview-icon,
+#dashtodockContainer #dash .show-apps:checked .overview-icon,
+#dashtodockContainer #dash .overview-icon {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}

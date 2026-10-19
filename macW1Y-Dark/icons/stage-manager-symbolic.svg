@@ -1,8 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-  <!-- 3 left small cards / windows -->
-  <rect x="3.5" y="5" width="3.5" height="3" rx="1.2" fill="currentColor"/>
-  <rect x="3.5" y="10.5" width="3.5" height="3" rx="1.2" fill="currentColor"/>
-  <rect x="3.5" y="16" width="3.5" height="3" rx="1.2" fill="currentColor"/>
-  <!-- Main central window outline as pure filled path with evenodd fill rule -->
-  <path fill-rule="evenodd" d="M 12.5 4.5 L 17.5 4.5 C 19.16 4.5 20.5 5.84 20.5 7.5 L 20.5 16.5 C 20.5 18.16 19.16 19.5 17.5 19.5 L 12.5 19.5 C 10.84 19.5 9.5 18.16 9.5 16.5 L 9.5 7.5 C 9.5 5.84 10.84 4.5 12.5 4.5 Z M 13 6.5 C 12.17 6.5 11.5 7.17 11.5 8 L 11.5 16 C 11.5 16.83 12.17 17.5 13 17.5 L 17 17.5 C 17.83 17.5 18.5 16.83 18.5 16 L 18.5 8 C 18.5 7.17 17.83 6.5 17 6.5 Z" fill="currentColor"/>
+  <rect x="3" y="4.5" width="4.5" height="3.5" rx="1" fill="currentColor"/>
+  <rect x="3" y="10.2" width="4.5" height="3.5" rx="1" fill="currentColor"/>
+  <rect x="3" y="16" width="4.5" height="3.5" rx="1" fill="currentColor"/>
+  <rect x="9.5" y="4.5" width="11.5" height="15" rx="2" fill="currentColor"/>
 </svg>

@@ -213,29 +213,40 @@ export default class EvalHelper extends Extension {
                                 const isForced = nowUs < (this._forceUntilUs || 0);
                                 const mustCopy = !copy?.texture || !copy?.rect || overviewChanged;
 
-                                // 2. If we already have a valid texture with identical geometry and not forced, REUSE IT.
-                                // Do NOT periodically re-blit every 50ms while UI is on screen!
-                                if (!mustCopy && !isForced && sameGeometry && copy?.texture) {
+                                // 2. Throttle blits to ~60 FPS (16ms interval) when geometry is stable and not forced.
+                                // If less than 16ms has elapsed since the last blit, reuse existing copy to avoid excessive blits.
+                                if (!mustCopy && !isForced && sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < 16000)) {
                                     this.reuseCount++;
                                     return { copy, missed: false };
                                 }
 
-                                // 3. Redraw clip check: if clip doesn't contain the whole rect and we already have a copy,
-                                // Mutter only redrew partial dirty UI in fb; do NOT blit partial stale framebuffer!
+                                // 3. Redraw clip check: if clip doesn't touch our glass rect and we have a copy,
+                                // Mutter only redrew an unrelated area on the screen; reuse existing copy.
                                 const clip = paintContext.get_redraw_clip();
                                 const clipX = Math.floor(rect[0]);
                                 const clipY = Math.floor(rect[1]);
                                 const _Mtk = globalThis.Mtk || (typeof Mtk !== 'undefined' ? Mtk : imports.gi.Mtk);
-                                const inClip = !clip || !_Mtk || clip.contains_rectangle(new _Mtk.Rectangle({
-                                    x: clipX, y: clipY, width: Math.max(1, Math.ceil(rect[2]) - clipX), height: Math.max(1, Math.ceil(rect[3]) - clipY),
-                                })) === _Mtk.RegionOverlap.IN;
+                                let touchesClip = true;
+                                if (clip && _Mtk) {
+                                    try {
+                                        const overlap = clip.contains_rectangle(new _Mtk.Rectangle({
+                                            x: clipX, y: clipY, width: Math.max(1, Math.ceil(rect[2]) - clipX), height: Math.max(1, Math.ceil(rect[3]) - clipY),
+                                        }));
+                                        touchesClip = (overlap !== _Mtk.RegionOverlap.OUT);
+                                    } catch (_) {
+                                        touchesClip = true;
+                                    }
+                                }
 
-                                if (copy?.texture && !inClip) {
+                                if (!mustCopy && !isForced && copy?.texture && !touchesClip) {
                                     this.reuseCount++;
                                     return { copy, missed: false };
                                 }
 
+                                const savedForce = this._forceUntilUs;
+                                this._forceUntilUs = nowUs + 10000000;
                                 const res = origTake.call(this, actor, root, paintContext, stageRect);
+                                this._forceUntilUs = savedForce;
                                 if (res.copy) {
                                     res.copy.lastTimeUs = nowUs;
                                     res.copy.inOverview = inOverview;
@@ -244,6 +255,39 @@ export default class EvalHelper extends Extension {
                             };
                         }
                     }
+                }
+                // Connect window movement and overview signals to immediately refresh dock glass
+                const triggerAllDocks = (durationMs = 500) => {
+                    if (!global._lgGlass?.glassObjects) return;
+                    for (const g of global._lgGlass.glassObjects()) {
+                        if (g._owner === 'dock' && g.mapped && g.visible && g.width > 10) {
+                            g._copier?.clear();
+                            if (typeof g.forceRefresh === 'function') g.forceRefresh(durationMs);
+                            if (typeof g.syncSources === 'function') g.syncSources(true);
+                            g.queue_redraw();
+                        }
+                    }
+                };
+
+                if (!this._macDockSignalsConnected) {
+                    this._macDockSignalsConnected = true;
+                    this._dockSignals = [
+                        global.display.connect('restacked', () => triggerAllDocks(400)),
+                        global.display.connect('grab-op-begin', () => triggerAllDocks(1000)),
+                        global.display.connect('grab-op-end', () => triggerAllDocks(500)),
+                    ];
+                    if (global.window_manager) {
+                        this._dockSignals.push(
+                            global.window_manager.connect('size-change', () => triggerAllDocks(500)),
+                            global.window_manager.connect('switch-workspace', () => triggerAllDocks(600))
+                        );
+                    }
+                    this._dockSignals.push(
+                        Main.overview.connect('showing', () => triggerAllDocks(600)),
+                        Main.overview.connect('hiding', () => triggerAllDocks(600)),
+                        Main.overview.connect('shown', () => triggerAllDocks(400)),
+                        Main.overview.connect('hidden', () => triggerAllDocks(600))
+                    );
                 }
             } catch (_) {}
         };
@@ -333,7 +377,7 @@ export default class EvalHelper extends Extension {
                         glass.setCornerSmoothingEnabled(0.0);
                         glass.setCornerRadius(24.0);
                         glass.setTintColor(0.0, 0.0, 0.0);
-                        glass.setTintStrength(0.05); // LQ-Visual: 5% tint
+                        glass.setTintStrength(0.0); // 0% tint - pure glass without darkening or lightening
                         glass.setBlurRadius(3.0); // LQ-Visual: 3px blur
                         glass.setPadding(0);
                         try {
@@ -510,6 +554,13 @@ export default class EvalHelper extends Extension {
                     const origCompute = lm._origComputeWorkspacesBox || lm._computeWorkspacesBoxForState;
                     lm._origComputeWorkspacesBox = origCompute;
                     lm._computeWorkspacesBoxForState = function(state, box, ...rest) {
+                        if (state === 0 /* ControlsState.HIDDEN (Desktop) */) {
+                            const mon = Main.layoutManager.primaryMonitor;
+                            const res = new Clutter.ActorBox();
+                            res.set_origin(0, 0);
+                            res.set_size(mon.width, mon.height);
+                            return res;
+                        }
                         if (state === 1 /* OverviewControls.ControlsState.WINDOW_PICKER */) {
                             const baseBox = box || this._workAreaBox;
                             const [w, h] = baseBox.get_size();
@@ -527,7 +578,55 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 2. Hide and keep AppDisplay hidden
+                // 2. Full-monitor workspace layout and background (eliminates gaps under menubar and dock)
+                (async () => {
+                    try {
+                        const { WorkspaceBackground, WorkspaceLayout } = await import('resource:///org/gnome/shell/ui/workspace.js');
+                        if (WorkspaceLayout && !WorkspaceLayout.prototype._macWorkareaPatched) {
+                            WorkspaceLayout.prototype._macWorkareaPatched = true;
+                            WorkspaceLayout.prototype._origGetAdjustedWorkarea = WorkspaceLayout.prototype._getAdjustedWorkarea;
+                            WorkspaceLayout.prototype._getAdjustedWorkarea = function(container) {
+                                const mon = Main.layoutManager.monitors[this._monitorIndex] || Main.layoutManager.primaryMonitor;
+                                return new Mtk.Rectangle({
+                                    x: 0,
+                                    y: 0,
+                                    width: mon.width,
+                                    height: mon.height,
+                                });
+                            };
+                        }
+                        if (WorkspaceBackground && !WorkspaceBackground.prototype._macClipPatched) {
+                            WorkspaceBackground.prototype._macClipPatched = true;
+                            WorkspaceBackground.prototype._origUpdateRoundedClipBounds = WorkspaceBackground.prototype._updateRoundedClipBounds;
+                            WorkspaceBackground.prototype._updateRoundedClipBounds = function() {
+                                try {
+                                    const monitor = Main.layoutManager.monitors[this._monitorIndex] || Main.layoutManager.primaryMonitor;
+                                    if (monitor) {
+                                        const rect = new Graphene.Rect();
+                                        rect.origin.x = 0;
+                                        rect.origin.y = 0;
+                                        rect.size.width = monitor.width;
+                                        rect.size.height = monitor.height;
+                                        this._bgManager.backgroundActor.content.set_rounded_clip_bounds(rect);
+                                        return;
+                                    }
+                                } catch (_) {}
+                                this._origUpdateRoundedClipBounds();
+                            };
+                        }
+                    } catch (e) {
+                        console.error('[EvalHelper] Error patching WorkspaceLayout/Background:', e);
+                    }
+                })();
+
+                // 3. Unhide window_group on overview hiding so wallpaper is continuously visible behind overview exit
+                if (!Main.overview._macWgHidingConn) {
+                    Main.overview._macWgHidingConn = Main.overview.connect('hiding', () => {
+                        global.window_group.show();
+                    });
+                }
+
+                // 4. Hide and keep AppDisplay hidden
                 controls._updateAppDisplayVisibility = function() {
                     if (this._appDisplay) {
                         this._appDisplay.visible = false;
@@ -539,14 +638,14 @@ export default class EvalHelper extends Extension {
                     controls._appDisplay.opacity = 0;
                 }
 
-                // 3. Override _shiftState: Down closes overview, Up does NOT go to APP_GRID
+                // 5. Override _shiftState: Down closes overview, Up does NOT go to APP_GRID
                 controls._shiftState = function(direction) {
                     if (direction === Meta.MotionDirection.DOWN) {
                         Main.overview.hide();
                     }
                 };
 
-                // 4. Override showApps and _toggleAppsPage to toggle our Mac Applications Menu
+                // 6. Override showApps and _toggleAppsPage to toggle our Mac Applications Menu
                 controls._toggleAppsPage = function() {
                     if (typeof globalThis.toggleMacApplications === 'function') {
                         globalThis.toggleMacApplications();
@@ -558,7 +657,7 @@ export default class EvalHelper extends Extension {
                     }
                 };
 
-                // 5. Hide search entry and searchEntryBin completely (no "Введіть текст для пошуку")
+                // 7. Hide search entry and searchEntryBin completely (no "Введіть текст для пошуку")
                 if (controls._searchEntryBin) {
                     controls._searchEntryBin.visible = false;
                     controls._searchEntryBin.opacity = 0;
@@ -574,7 +673,7 @@ export default class EvalHelper extends Extension {
                     controls._searchEntry.get_preferred_width = () => [0, 0];
                 }
 
-                // 6. Disable search controller triggering in overview
+                // 8. Disable search controller triggering in overview
                 if (controls._searchController) {
                     controls._searchController._shouldTriggerSearch = () => false;
                     if (controls._searchController._entry) {
@@ -602,12 +701,12 @@ export default class EvalHelper extends Extension {
                 proto.set_appfolder_open = function(isOpen) {
                     this._appfolder_is_open = !!isOpen;
                     const overviewRadius = (this.settings.overview?.SIGMA ?? 30.0);
-                    const overviewBrightness = (this.settings.overview?.BRIGHTNESS ?? 0.60);
+                    const overviewBrightness = (this.settings.overview?.BRIGHTNESS ?? 1.0);
                     const folderSigma = (this.settings.appfolder?.SIGMA ?? 30.0);
                     const targetRadius = isOpen
                         ? Math.round(overviewRadius + folderSigma * 1.5)
                         : overviewRadius;
-                    const targetBrightness = isOpen ? 0.48 : overviewBrightness;
+                    const targetBrightness = isOpen ? 0.90 : overviewBrightness;
 
                     const ov = global.blur_my_shell?._overview_blur;
                     if (ov && ov.overview_background_group) {
@@ -639,9 +738,7 @@ export default class EvalHelper extends Extension {
                     if (Main.panel) {
                         Main.panel.set_style(
                             `background-color: transparent !important; ` +
-                            `background-gradient-direction: vertical !important; ` +
-                            `background-gradient-start: rgba(0, 0, 0, 0.12) !important; ` +
-                            `background-gradient-end: transparent !important; ` +
+                            `background: transparent !important; ` +
                             `box-shadow: none !important; ` +
                             `border-bottom: none !important; ` +
                             `transition-duration: 220ms !important;`
@@ -654,7 +751,6 @@ export default class EvalHelper extends Extension {
                         const duration = durationMs;
 
                         // 1. Panel Blur Actors: ALWAYS HIDDEN on desktop and overview!
-                        // User explicitly requested: "меню не при огляді на робочому столі має якийсь блюр на ввесь елемент. видалити."
                         this.actors_list?.forEach(actors => {
                             const bg = actors.widgets?.background;
                             if (!bg) return;
@@ -663,51 +759,16 @@ export default class EvalHelper extends Extension {
                             if (bg.visible) bg.hide();
                         });
 
-                        // 2. Main.panel gradient:
-                        // In overview: NOT dark, seamlessly blends with blurred wallpaper, no box-shadow
-                        // On desktop: clean gradient tint, no blur
+                        // 2. Main.panel: Clean transparent bar without dark gradient overlay
                         if (Main.panel) {
                             Main.panel.opacity = 255;
-                            if (isOverview) {
-                                Main.panel.set_style(
-                                    `background-color: transparent !important; ` +
-                                    `background-gradient-direction: vertical !important; ` +
-                                    `background-gradient-start: rgba(0, 0, 0, 0.12) !important; ` +
-                                    `background-gradient-end: transparent !important; ` +
-                                    `box-shadow: none !important; ` +
-                                    `border-bottom: none !important; ` +
-                                    `transition-duration: ${duration}ms !important;`
-                                );
-                            } else {
-                                let baseDesktopTint = 0.35;
-                                if (this._baseDesktopTint !== undefined) {
-                                    baseDesktopTint = this._baseDesktopTint;
-                                } else {
-                                    try {
-                                        const configPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
-                                        if (GLib.file_test(configPath, GLib.FileTest.EXISTS)) {
-                                            const [ok, content] = GLib.file_get_contents(configPath);
-                                            if (ok) {
-                                                const data = JSON.parse(new TextDecoder().decode(content));
-                                                if (typeof data.panel_tint === 'number') {
-                                                    baseDesktopTint = Math.min(Math.max(data.panel_tint * 0.6, 0.25), 0.50);
-                                                }
-                                            }
-                                        }
-                                    } catch (_) {}
-                                    this._baseDesktopTint = baseDesktopTint;
-                                }
-
-                                Main.panel.set_style(
-                                    `background-color: transparent !important; ` +
-                                    `background-gradient-direction: vertical !important; ` +
-                                    `background-gradient-start: rgba(0, 0, 0, ${baseDesktopTint.toFixed(3)}) !important; ` +
-                                    `background-gradient-end: rgba(0, 0, 0, 0.0) !important; ` +
-                                    `box-shadow: none !important; ` +
-                                    `border-bottom: none !important; ` +
-                                    `transition-duration: ${duration}ms !important;`
-                                );
-                            }
+                            Main.panel.set_style(
+                                `background-color: transparent !important; ` +
+                                `background: transparent !important; ` +
+                                `box-shadow: none !important; ` +
+                                `border-bottom: none !important; ` +
+                                `transition-duration: ${duration}ms !important;`
+                            );
                         }
                     } catch (e) {
                         console.error(`[PanelOverview] error: ${e}`);
@@ -1129,6 +1190,16 @@ export default class EvalHelper extends Extension {
                 });
             } catch (_) {}
             this._origUpdateFavoriteItem = null;
+        }
+
+        if (this._dockSignals) {
+            for (const id of this._dockSignals) {
+                try { global.display.disconnect(id); } catch (_) {}
+                try { global.window_manager.disconnect(id); } catch (_) {}
+                try { Main.overview.disconnect(id); } catch (_) {}
+            }
+            this._dockSignals = null;
+            this._macDockSignalsConnected = false;
         }
     }
 }

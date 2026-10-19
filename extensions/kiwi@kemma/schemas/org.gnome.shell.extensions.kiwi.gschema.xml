@@ -24,11 +24,6 @@
         <summary>Panel Transparency Level</summary>
         <description>Set the transparency level of the panel (0-100).</description>
       </key>
-      <key name="panel-adaptive-colors" type="b">
-        <default>true</default>
-        <summary>Adaptive Panel Colors</summary>
-        <description>Paint the transparent top panel with the average color of the wallpaper area behind it, so the bar follows what is visible on screen.</description>
-      </key>
       <key name="panel-opaque-on-window" type="b">
         <default>false</default>
         <summary>Panel Opaque on Maximized Window</summary>
@@ -38,11 +33,6 @@
         <default>false</default>
         <summary>Panel Blur</summary>
         <description>Apply a blur effect behind the top panel when it is transparent.</description>
-      </key>
-      <key name="panel-gradient" type="b">
-        <default>true</default>
-        <summary>Panel Gradient</summary>
-        <description>Paint a semi-transparent dark gradient over the top panel that fades out toward its bottom edge, like macOS Tahoe.</description>
       </key>
       <key name="panel-color-inherit" type="b">
         <default>false</default>
@@ -65,6 +55,11 @@
         <default>true</default>
         <summary>Show app icon next to the window title</summary>
         <description>Display the focused application's icon next to the window title in the top panel.</description>
+      </key>
+      <key name="show-window-subtitle" type="b">
+        <default>true</default>
+        <summary>Show window subtitle next to the app name</summary>
+        <description>Display the window's own title after the application name in the top panel.</description>
       </key>
       <key name="show-tiling-title-menu" type="b">
         <default>true</default>
@@ -102,7 +97,7 @@
         <description>Enable or disable showing battery percentage.</description>
       </key>
       <key name="lock-icon" type="b">
-        <default>true</default>
+        <default>false</default>
         <summary>Lock Icon</summary>
         <description>Enable or disable the lock icon.</description>
       </key>
@@ -241,7 +236,7 @@
 
       <!-- Kiwi -->
       <key name="overview-wallpaper-background" type="b">
-        <default>false</default>
+        <default>true</default>
         <summary>Overview Wallpaper Background</summary>
         <description>Use the current desktop wallpaper as a blurred background in the overview.</description>
       </key>
@@ -250,35 +245,20 @@
         <summary>Seamless Overview Zoom</summary>
         <description>Zoom the whole monitor in and out of the overview, including the desktop strip behind the top panel.</description>
       </key>
-      <key name="mission-control" type="b">
+      <key name="focus-on-overview-exit" type="b">
         <default>true</default>
-        <summary>Mission Control Overview</summary>
-        <description>Static sharp wallpaper without zoom-out, hidden panel and dock in the overview.</description>
-      </key>
-      <key name="polkit-dialog-macos" type="b">
-        <default>true</default>
-        <summary>macOS Auth Dialogs</summary>
-        <description>Centered card with lock icon and blue Unlock button for password prompts.</description>
-      </key>
-      <key name="hide-qs-circles" type="b">
-        <default>false</default>
-        <summary>Hide Quick Settings Circles</summary>
-        <description>Hide the round system toggles at the top of Quick Settings.</description>
-      </key>
-      <key name="tahoe-quick-settings" type="b">
-        <default>false</default>
-        <summary>Tahoe Quick Settings</summary>
-        <description>Replace the stock Quick Settings popup with the Tahoe liquid-glass control center.</description>
-      </key>
-      <key name="tahoe-airdrop-on" type="b">
-        <default>false</default>
-        <summary>Tahoe AirDrop State</summary>
-        <description>Whether the AirDrop pill in the Tahoe control center is on.</description>
+        <summary>Focus Window Under Cursor on Overview Exit</summary>
+        <description>Focus the window under the cursor instead of the previously focused window when leaving the overview.</description>
       </key>
       <key name="skip-overview-on-login" type="b">
         <default>false</default>
         <summary>Skip Overview on Login</summary>
         <description>Do not show the overview when logging into GNOME. Still shows animation.</description>
+      </key>
+      <key name="focus-new-windows" type="b">
+        <default>true</default>
+        <summary>Focus New Windows</summary>
+        <description>Automatically focus newly launched windows instead of showing window-ready notifications. Reload the extension after changing this.</description>
       </key>
       <key name="hide-minimized-windows" type="b">
         <default>false</default>
@@ -299,226 +279,6 @@
         <default>true</default>
         <summary>Transparent Move</summary>
         <description>Enable or disable transparent move.</description>
-      </key>
-      <key name="hide-quick-settings-button" type="b">
-        <default>true</default>
-        <summary>Hide quick settings button in the top bar</summary>
-        <description>Remove the quick settings icon row from the top bar. Quick settings themselves stay intact and open from their keyboard shortcut.</description>
-      </key>
-      <key name="quick-settings-shortcut" type="as">
-        <default>['&lt;Super&gt;s']</default>
-        <summary>Quick settings keyboard shortcut</summary>
-        <description>Key combination that opens the quick settings menu.</description>
-      </key>
-
-      <!-- ========================================================= -->
-      <!-- Applications page (Tahoe Launchpad window)                 -->
-      <!-- ========================================================= -->
-
-      <key name="tahoe-window-width" type="i">
-        <default>42</default>
-        <range min="20" max="100"/>
-        <summary>Applications Window Width</summary>
-        <description>Width of the Applications (Launchpad) window as a percentage of the monitor width.</description>
-      </key>
-      <key name="tahoe-window-height" type="i">
-        <default>55</default>
-        <range min="20" max="100"/>
-        <summary>Applications Window Height</summary>
-        <description>Height of the Applications (Launchpad) window as a percentage of the monitor height.</description>
-      </key>
-      <key name="tahoe-scale" type="i">
-        <default>100</default>
-        <range min="50" max="150"/>
-        <summary>Applications Panel Size</summary>
-        <description>Overall size of the Applications panel (100 = base size). Scales the whole panel: window, fonts, icons, gaps.</description>
-      </key>
-      <key name="tahoe-glass-blur" type="i">
-        <default>25</default>
-        <range min="0" max="100"/>
-        <summary>Glass Blur Strength</summary>
-        <description>Blur radius of the liquid glass behind the Applications window.</description>
-      </key>
-      <key name="tahoe-glass-radius" type="i">
-        <default>30</default>
-        <range min="0" max="64"/>
-        <summary>Glass Corner Radius</summary>
-        <description>Corner radius of the liquid glass sheet behind the Applications window.</description>
-      </key>
-      <key name="tahoe-glass-tint" type="i">
-        <default>10</default>
-        <range min="0" max="100"/>
-        <summary>Glass Tint Strength</summary>
-        <description>How strongly the glass is tinted (0-100).</description>
-      </key>
-      <key name="tahoe-glass-brightness" type="i">
-        <default>112</default>
-        <range min="50" max="200"/>
-        <summary>Glass Brightness</summary>
-        <description>Brightness inside the Applications window glass (50-200, 100 = neutral).</description>
-      </key>
-      <key name="tahoe-qs-glass-blur" type="i">
-        <default>8</default>
-        <range min="0" max="100"/>
-        <summary>Control Center Glass Blur</summary>
-        <description>Blur radius of the liquid glass in Tahoe Quick Settings (0-100). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-glass-brightness" type="i">
-        <default>130</default>
-        <range min="50" max="200"/>
-        <summary>Control Center Glass Brightness</summary>
-        <description>Brightness of the liquid glass in Tahoe Quick Settings (50-200, 100 = neutral). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-glass-saturation" type="i">
-        <default>85</default>
-        <range min="0" max="150"/>
-        <summary>Control Center Glass Saturation</summary>
-        <description>Color saturation of the control center glass (0-150, 100 = neutral). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-glass-tint" type="i">
-        <default>12</default>
-        <range min="0" max="100"/>
-        <summary>Control Center Glass Tint</summary>
-        <description>Strength of the glass tint wash (0-100). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-glass-refraction" type="i">
-        <default>117</default>
-        <range min="0" max="200"/>
-        <summary>Control Center Glass Refraction</summary>
-        <description>Refraction strength of the control center glass (0-200, 100 = stock). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-glass-glare" type="i">
-        <default>0</default>
-        <range min="0" max="100"/>
-        <summary>Control Center Glass Glare</summary>
-        <description>Specular sheen on the control center glass, 0 = clean (0-100). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-shadow-blur" type="i">
-        <default>22</default>
-        <range min="0" max="80"/>
-        <summary>Control Center Shadow Blur</summary>
-        <description>Blur radius of the panel shadow (0-80). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-shadow-opacity" type="i">
-        <default>15</default>
-        <range min="0" max="100"/>
-        <summary>Control Center Shadow Opacity</summary>
-        <description>Opacity of the panel shadow (0-100). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-shadow-glow" type="i">
-        <default>70</default>
-        <range min="0" max="120"/>
-        <summary>Control Center Shadow Glow</summary>
-        <description>Wide soft diffusion layer of the panel shadow (0-120, 0 = off). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-rim-width" type="i">
-        <default>50</default>
-        <range min="0" max="200"/>
-        <summary>Control Center Rim Width</summary>
-        <description>Width of the glass edge highlight, 10 = 1px (0-200). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-rim-intensity" type="i">
-        <default>8</default>
-        <range min="0" max="100"/>
-        <summary>Control Center Rim Intensity</summary>
-        <description>Strength of the glass edge highlight (0-100). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-rim-power" type="i">
-        <default>60</default>
-        <range min="0" max="200"/>
-        <summary>Control Center Rim Power</summary>
-        <description>Falloff sharpness of the edge highlight, 10 = 1.0 (0-200). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-rim-direction" type="i">
-        <default>27</default>
-        <range min="0" max="100"/>
-        <summary>Control Center Rim Direction</summary>
-        <description>Light directionality of the edge highlight, 10 = 1.0 (0-100). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-rim-light" type="i">
-        <default>140</default>
-        <range min="0" max="300"/>
-        <summary>Control Center Rim Light</summary>
-        <description>Brightness of the edge highlight color (0-300, 100 = neutral). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-specular" type="i">
-        <default>0</default>
-        <range min="0" max="100"/>
-        <summary>Control Center Specular</summary>
-        <description>Mirror-like specular spots on the glass (0-100). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-ior" type="i">
-        <default>240</default>
-        <range min="100" max="400"/>
-        <summary>Control Center Glass IOR</summary>
-        <description>Index of refraction of the glass, 100 = 1.0 (100-400). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-chroma" type="i">
-        <default>60</default>
-        <range min="0" max="200"/>
-        <summary>Control Center Chromatic Aberration</summary>
-        <description>Color fringing on refracted edges (0-200). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-edge" type="i">
-        <default>20</default>
-        <range min="0" max="100"/>
-        <summary>Control Center Edge Smoothing</summary>
-        <description>Feather of the glass region borders, 10 = 1px (0-100). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-profile" type="i">
-        <default>700</default>
-        <range min="110" max="1500"/>
-        <summary>Control Center Surface Profile</summary>
-        <description>Curvature profile of the glass surface, 100 = 1.0 (110-1500). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-qs-depth" type="i">
-        <default>25</default>
-        <range min="0" max="100"/>
-        <summary>Control Center Glass Depth</summary>
-        <description>Height of the glass surface relief (0-100). Reopen the control center to apply.</description>
-      </key>
-      <key name="tahoe-header-icon-size" type="i">
-        <default>24</default>
-        <range min="12" max="64"/>
-        <summary>Applications Header Icon Size</summary>
-        <description>Size of the App Store logo left of the search field, in pixels.</description>
-      </key>
-      <key name="tahoe-app-icon-size" type="i">
-        <default>64</default>
-        <range min="32" max="128"/>
-        <summary>Application Icon Size</summary>
-        <description>Size of the application icons in the Applications grid, in pixels.</description>
-      </key>
-      <key name="tahoe-font-size" type="i">
-        <default>15</default>
-        <range min="8" max="30"/>
-        <summary>Applications Font Size</summary>
-        <description>Base font size of the Applications window, in pixels.</description>
-      </key>
-      <key name="tahoe-font" type="s">
-        <default>'SF Pro Display'</default>
-        <summary>Applications Font Family</summary>
-        <description>Font family used by the Applications window.</description>
-      </key>
-      <key name="tahoe-theme" type="s">
-        <default>'auto'</default>
-        <summary>Applications Theme</summary>
-        <description>Light, dark, or following the system color scheme. Also drives the dock glass tint.</description>
-      </key>
-      <key name="icon-tint-enabled" type="b">
-        <default>false</default>
-        <summary>Icon Tint</summary>
-        <description>Recolor launchpad icons with the accent color, like macOS Tahoe tinted icons.</description>
-      </key>
-      <key name="icon-tint-color" type="s">
-        <default>'#0a84ff'</default>
-        <summary>Icon Tint Color</summary>
-        <description>Accent color applied to tinted launchpad icons.</description>
-      </key>
-      <key name="icon-style" type="s">
-        <default>'auto'</default>
-        <summary>Icon Style</summary>
-        <description>App icon look: automatic, light, dark, tinted or clear (macOS Tahoe styles).</description>
       </key>
     </schema>
 </schemalist>

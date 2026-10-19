@@ -486,13 +486,13 @@ export const PanelBlur = class PanelBlur {
         this._appfolder_is_open = !!isOpen;
 
         const overviewRadius = (this.settings.overview?.SIGMA ?? 30.0);
-        const overviewBrightness = (this.settings.overview?.BRIGHTNESS ?? 0.60);
+        const overviewBrightness = (this.settings.overview?.BRIGHTNESS ?? 1.0);
         const folderSigma = (this.settings.appfolder?.SIGMA ?? 30.0);
         const targetRadius = isOpen
             ? Math.round(overviewRadius + folderSigma * 1.5)
             : overviewRadius;
         const targetBrightness = isOpen
-            ? 0.48
+            ? 0.90
             : overviewBrightness;
 
         // Animate the full-screen overview wallpaper blur effects so the entire background,
@@ -636,26 +636,13 @@ export const PanelBlur = class PanelBlur {
             // Desktop: top-to-bottom darkening with baseDesktopTint at top, 0.0 at bottom, no shadow.
             if (Main.panel) {
                 Main.panel.opacity = 255;
-                if (isOverview) {
-                    Main.panel.set_style(
-                        `background-color: transparent !important; ` +
-                        `background-gradient-start: rgba(0, 0, 0, 0.12) !important; ` +
-                        `background-gradient-end: transparent !important; ` +
-                        `box-shadow: none !important; ` +
-                        `border-bottom: none !important; ` +
-                        `transition-duration: ${duration}ms !important;`
-                    );
-                } else {
-                    Main.panel.set_style(
-                        `background-color: transparent !important; ` +
-                        `background-gradient-direction: vertical !important; ` +
-                        `background-gradient-start: rgba(0, 0, 0, ${baseDesktopTint.toFixed(3)}) !important; ` +
-                        `background-gradient-end: rgba(0, 0, 0, 0.0) !important; ` +
-                        `box-shadow: none !important; ` +
-                        `border-bottom: none !important; ` +
-                        `transition-duration: ${duration}ms !important;`
-                    );
-                }
+                Main.panel.set_style(
+                    `background-color: transparent !important; ` +
+                    `background: transparent !important; ` +
+                    `box-shadow: none !important; ` +
+                    `border-bottom: none !important; ` +
+                    `transition-duration: ${duration}ms !important;`
+                );
             }
         } catch (e) {
             this._log(`Error animating overview transition: ${e}`);

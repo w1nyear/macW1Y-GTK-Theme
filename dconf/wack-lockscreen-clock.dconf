@@ -1,2 +1,4 @@
 [/]
+clock-weight='bold'
+cupertino-always-show-user=true
 lockscreen-mode='cupertino'

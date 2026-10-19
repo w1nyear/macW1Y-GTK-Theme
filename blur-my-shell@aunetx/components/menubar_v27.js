@@ -16,7 +16,7 @@ import * as BoxPointer from 'resource:///org/gnome/shell/ui/boxpointer.js';
 import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
 import { getMixerControl } from 'resource:///org/gnome/shell/ui/status/volume.js';
 import * as Util from 'resource:///org/gnome/shell/misc/util.js';
-import { buildNotificationCard, MacNotificationGroup } from './notifications_v3.js';
+import { buildNotificationCard, MacNotificationGroup } from './notifications_v4.js';
 import { MacControlCenter } from './control_center_v30.js';
 import { MacInputSwitcher } from './mac_input_switcher_v11.js';
 import { MacFeatheredBackdropBlur } from './mac_feathered_backdrop_blur.js';
@@ -4278,12 +4278,12 @@ export const MenuBarController = class MenuBarController {
                 },
             });
 
-            group.addNotification(oldSource, oldNotif, false);
-            group.addNotification(source, notification, true);
-
             this._setupCardGeometryTracking(group.actor);
             group.actor.x_align = Clutter.ActorAlign.CENTER;
             this._notifCardsBox.insert_child_at_index(group.actor, cardIdx >= 0 ? cardIdx : 0);
+
+            group.addNotification(oldSource, oldNotif, false);
+            group.addNotification(source, notification, true);
 
             this._updateEmptyState(this._notifCardsBox.get_children().length);
             this._updateNotificationCenterGeometry();
@@ -4410,12 +4410,12 @@ export const MenuBarController = class MenuBarController {
                 },
             });
 
-            group.addNotification(oldSource, oldNotif, false);
-            group.addNotification(source, notification, true);
-
             this._setupCardGeometryTracking(group.actor);
             group.actor.x_align = Clutter.ActorAlign.CENTER;
             this._notifCardsBox.insert_child_at_index(group.actor, cardIdx >= 0 ? cardIdx : 0);
+
+            group.addNotification(oldSource, oldNotif, false);
+            group.addNotification(source, notification, false);
 
             this._updateEmptyState(this._notifCardsBox.get_children().length);
             this._updateNotificationCenterGeometry();
@@ -4594,16 +4594,24 @@ export const MenuBarController = class MenuBarController {
                 for (const c of this._notifCardsBox.get_children()) {
                     if (!c.visible) continue;
                     let chH = 0;
-                    if (c._macGroup && c._macGroup.topCardBox) {
-                        let [_, tNat] = c._macGroup.topCardBox.get_preferred_height(targetW);
-                        chH = (tNat > 0 && tNat < 10000) ? tNat : (c._macGroup.topCardBox.height || 78);
+                    if (c._macGroup) {
                         if (c._macGroup.isExpanded && c._macGroup.expandedCardsBox) {
                             let [_, eNat] = c._macGroup.expandedCardsBox.get_preferred_height(targetW);
-                            if (eNat > 0 && eNat < 10000) chH += eNat + 8;
+                            chH = (eNat > 0 && eNat < 10000) ? eNat : (c._macGroup.expandedCardsBox.height || 180);
+                        } else {
+                            let topH = 78;
+                            if (c._macGroup.topCardBox) {
+                                let [_, tNat] = c._macGroup.topCardBox.get_preferred_height(targetW);
+                                if (tNat > 0 && tNat < 300) topH = tNat;
+                                else if (c._macGroup.topCardBox.height > 0 && c._macGroup.topCardBox.height < 300) topH = c._macGroup.topCardBox.height;
+                            }
+                            const extra = (c._macGroup.items.length >= 3) ? 14 : (c._macGroup.items.length >= 2 ? 8 : 0);
+                            chH = Math.min(140, Math.max(50, topH + extra));
                         }
                     } else {
                         let [_, cNat] = c.get_preferred_height(targetW);
-                        chH = (cNat > 0 && cNat < 10000) ? cNat : (c.height || 78);
+                        chH = (cNat > 0 && cNat < 300) ? cNat : (c.height || 78);
+                        chH = Math.min(250, Math.max(50, chH));
                     }
                     cardsH += Math.round(chH) + 10;
                 }

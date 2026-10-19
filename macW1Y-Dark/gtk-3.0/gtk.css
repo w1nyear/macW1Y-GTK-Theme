@@ -71,10 +71,10 @@ menu menuitem:selected,
 window.desktopmenu menuitem:hover,
 window.desktopmenu menuitem:focus,
 window.desktopmenu menuitem:selected {
-  background-color: @theme_selected_bg_color;
+  background-color: #007aff;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
 }
 
 menu menuitem:hover label,
@@ -92,7 +92,7 @@ window.desktopmenu menuitem:selected label {
 menu menuitem:active,
 .desktopmenu menuitem:active,
 window.desktopmenu menuitem:active {
-  background-color: @theme_selected_bg_color;
+  background-color: #0062cc;
   color: #ffffff;
   border-radius: 9999px;
 }
@@ -157,10 +157,10 @@ popover.menu modelbutton label {
 popover.menu modelbutton:hover,
 popover.menu modelbutton:focus,
 popover.menu modelbutton:selected {
-  background-color: @theme_selected_bg_color;
+  background-color: #007aff;
   color: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
 }
 
 popover.menu modelbutton:hover label,

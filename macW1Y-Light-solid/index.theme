@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=macW1Y-Light-solid
+Comment=macW1Y macOS Sequoia / Tahoe transformation theme by Vitaliy (w1nyear)
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=macW1Y-Light-solid
+MetacityTheme=macW1Y-Light-solid
+IconTheme=Adwaita
+CursorTheme=Adwaita
+ButtonLayout=close,minimize,maximize:menu
+

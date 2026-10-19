@@ -1,3 +1,8 @@
+/* Kiwi (is not Apple) - managed imports: begin */
+@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/titlebuttons3.css");
+@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/titlebuttons-size-small3.css");
+@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/fixes3.css");
+/* Kiwi (is not Apple) - managed imports: end */
 /* --- MAC-STYLING-START --- */
 /* macOS Tahoe Context Menus (System GTK Applications Only) */
 menu,

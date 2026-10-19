@@ -15,6 +15,7 @@ const KIWI_MARKER_FILENAME = '.kiwi-managed';
  * @param {object} config
  * @param {string} config.settingsKey    – GSettings boolean key that toggles this app's styling
  * @param {string} config.profileBaseDir – relative path under $HOME (e.g. '.mozilla/firefox')
+ * @param {string} config.xdgProfileDir  – relative path under $XDG_CONFIG_HOME (e.g. 'mozilla/firefox')
  * @param {string} config.cssPrefix      – CSS filename prefix (e.g. 'firefoxWindowControls')
  * @param {string} config.logPrefix      – label used in log messages
  */
@@ -27,32 +28,24 @@ export class MozillaThemeManager {
     }
 
     enable() {
-        if (!this._settings) {
-            this._settings = this._extension.getSettings();
-            this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
-                if (key === this._config.settingsKey || key === 'enable-app-window-buttons' || key === 'button-type' || key === 'button-size' || key === 'show-window-controls') {
-                    this.updateCss().catch(e => console.error(`[Kiwi] ${this._config.logPrefix} update error: ${e}`));
-                }
-            });
-            this.updateCss().catch(e => console.error(`[Kiwi] ${this._config.logPrefix} initial update error: ${e}`));
-        }
+        this._settings = this._extension.getSettings();
+        this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
+            if (key === this._config.settingsKey || key === 'enable-app-window-buttons' || key === 'button-type' || key === 'button-size' || key === 'show-window-controls') {
+                this.updateCss().catch(e => console.error(`[Kiwi] ${this._config.logPrefix} update error: ${e}`));
+            }
+        });
+        this.updateCss().catch(e => console.error(`[Kiwi] ${this._config.logPrefix} initial update error: ${e}`));
     }
 
     disable() {
-        if (this._settings && this._settingsChangedId) {
-            this._settings.disconnect(this._settingsChangedId);
-            this._settingsChangedId = null;
-            this._settings = null;
-        }
+        this._settings.disconnect(this._settingsChangedId);
+        this._settingsChangedId = null;
+        this._settings = null;
         this.removeCss().catch(e => console.error(`[Kiwi] ${this._config.logPrefix} disable cleanup error: ${e}`));
         this._extension = null;
     }
 
     async updateCss() {
-        if (!this._settings) {
-            await this.removeCss();
-            return;
-        }
         const enableStyling = this._settings.get_boolean(this._config.settingsKey);
         const enableAppButtons = this._settings.get_boolean('enable-app-window-buttons');
         const showControlsOnPanel = this._settings.get_boolean('show-window-controls');
@@ -65,8 +58,10 @@ export class MozillaThemeManager {
         }
 
         const profile = await this._getDefaultProfile();
-        if (!profile)
+        if (!profile) {
+            console.debug(`[Kiwi] ${this._config.logPrefix} no profile found`);
             return;
+        }
 
         const ext = this._extension;
         const cssRoot = `${ext.path}/css`;
@@ -96,10 +91,15 @@ export class MozillaThemeManager {
             if (enableStyling && enableAppButtons) {
                 const themingPath = `${cssRoot}/${prefix}.css`;
                 const altThemingPath = `${cssRoot}/${prefix}.alt.css`;
-                if (buttonType === 'titlebuttons-alt')
+                const glassThemingPath = `${cssRoot}/${prefix}.glass.css`;
+                if (buttonType === 'titlebuttons-alt') {
                     imports.push(`@import url("file://${altThemingPath}");`);
-                else
+                } else {
                     imports.push(`@import url("file://${themingPath}");`);
+                    // Glass only overrides the images of the default set
+                    if (buttonType === 'titlebuttons-glass')
+                        imports.push(`@import url("file://${glassThemingPath}");`);
+                }
 
                 if (buttonSize === 'small') {
                     const smallSizePath = `${cssRoot}/${prefix}-size-small.css`;
@@ -156,12 +156,8 @@ export class MozillaThemeManager {
     }
 
     _isChromeManagedByKiwi(chromeDirPath) {
-        try {
-            const markerPath = GLib.build_filenamev([chromeDirPath, KIWI_MARKER_FILENAME]);
-            return Gio.File.new_for_path(markerPath).query_exists(null);
-        } catch (_e) {
-            return false;
-        }
+        const markerPath = GLib.build_filenamev([chromeDirPath, KIWI_MARKER_FILENAME]);
+        return Gio.File.new_for_path(markerPath).query_exists(null);
     }
 
     async _ensureLegacyPref(profileDir) {
@@ -187,11 +183,19 @@ export class MozillaThemeManager {
      * Tries installs.ini first, falls back to profiles.ini.
      */
     async _getDefaultProfile() {
-        const home = GLib.get_home_dir();
-        const baseDir = GLib.build_filenamev([home, ...this._config.profileBaseDir.split('/')]);
+        // Legacy $HOME dir wins when present, same as Mozilla; else XDG config dir (Firefox 147+)
+        const baseDirs = [
+            GLib.build_filenamev([GLib.get_home_dir(), ...this._config.profileBaseDir.split('/')]),
+            GLib.build_filenamev([GLib.get_user_config_dir(), ...this._config.xdgProfileDir.split('/')]),
+        ];
 
-        return (await this._getProfileFromInstallsIni(baseDir))
-            ?? (await this._getProfileFromProfilesIni(baseDir));
+        for (const baseDir of baseDirs) {
+            const profile = (await this._getProfileFromInstallsIni(baseDir))
+                ?? (await this._getProfileFromProfilesIni(baseDir));
+            if (profile)
+                return profile;
+        }
+        return null;
     }
 
     async _getProfileFromInstallsIni(baseDir) {

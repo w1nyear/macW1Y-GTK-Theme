@@ -3188,6 +3188,21 @@ export const MenuBarController = class MenuBarController {
         }
 
         // Setup macOS Tahoe Control Center inside quickSettings.menu
+        const kiwiExt = Main.extensionManager.lookup('kiwi@kemma');
+        const isKiwiActive = kiwiExt && kiwiExt.state === 1;
+
+        if (isKiwiActive) {
+            if (this._macControlCenter) {
+                try { this._macControlCenter.destroy(); } catch (_) {}
+                this._macControlCenter = null;
+            }
+            if (quickSettings.menu?._grid) {
+                quickSettings.menu._grid.visible = true;
+                quickSettings.menu._grid.show();
+            }
+            return;
+        }
+
         if (quickSettings.menu?.box) {
             // Clean up any pre-existing or duplicate mac-control-center-root
             const toRemove = [];
@@ -3499,7 +3514,12 @@ export const MenuBarController = class MenuBarController {
             }
             container._clickConnId = container.connect('button-press-event', (_actor, event) => {
                 if (event.get_button() === 1) {
-                    this._toggleNotificationCenter();
+                    const kiwiExt = Main.extensionManager.lookup('kiwi@kemma');
+                    if (kiwiExt && kiwiExt.state === 1) {
+                        try { dateMenu.menu?.toggle(); } catch (_) {}
+                    } else {
+                        this._toggleNotificationCenter();
+                    }
                     return Clutter.EVENT_STOP;
                 }
                 return Clutter.EVENT_PROPAGATE;
@@ -3629,6 +3649,13 @@ export const MenuBarController = class MenuBarController {
                     return GLib.SOURCE_REMOVE;
                 });
             }
+        }
+
+        const kiwiExt = Main.extensionManager.lookup('kiwi@kemma');
+        const isKiwiActive = kiwiExt && kiwiExt.state === 1;
+        if (isKiwiActive) {
+            // Let Kiwi's Tahoe Notifications handle dateMenu completely
+            return;
         }
 
         const menu = dateMenu.menu;

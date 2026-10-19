@@ -2553,7 +2553,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-content {
   padding: 5px;
-  box-shadow: none !important;
+  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.35);
   margin: 4px 12px 17px 12px;
   background-color: transparent !important;
   background: transparent !important;
@@ -2722,22 +2722,23 @@ StEntry StLabel.hint-text {
 }
 
 .unlock-dialog-clock-time {
-  font-family: Open Runde, SF Pro Rounded, SF Pro Display, Cantarell, sans-serif !important;
+  font-family: Open Runde, Open Runde, SF Pro Rounded, SF Pro Display, -apple-system, sans-serif !important;
   font-size: 80pt !important;
   font-weight: 700 !important;
   color: #ffffff !important;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85) !important;
   padding-top: 0px !important;
   margin-top: 0px !important;
+  font-feature-settings: "pnum" 1, "tnum" 0 !important;
 }
 
 .unlock-dialog-clock-date {
-  font-family: SF Pro Display, Cantarell, sans-serif !important;
+  font-family: 'SF Pro Display', -apple-system, sans-serif !important;
   font-size: 18pt !important;
   font-weight: 600 !important;
   color: rgba(255, 255, 255, 0.98) !important;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75) !important;
-  margin-bottom: 0px !important;
+  margin-bottom: -4px !important;
 }
 
 .unlock-dialog-clock-hint {
@@ -4101,6 +4102,33 @@ StWidget.focused .app-grid-running-dot {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
+.mac-notification-time {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.50) !important;
+  margin-top: 1px !important;
+  margin-right: 2px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
+}
+
+.mac-notification-collapse-btn {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  border-radius: 9999px !important;
+  padding: 4px 16px !important;
+  margin: 4px auto 0 auto !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  transition-duration: 150ms !important;
+}
+
+.mac-notification-collapse-btn:hover {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+}
+
 .mac-notification-close-btn {
   background: transparent !important;
   background-color: transparent !important;
@@ -4914,8 +4942,8 @@ StWidget.focused .app-grid-running-dot {
   spacing: 12px;
   color: #d3d7df;
   background-color: transparent !important;
-  border: 1px solid rgba(0, 0, 0, 0.75);
-  box-shadow: 0 3px 8px 0 rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4) !important;
 }
 
 .screenshot-ui-close-button {
@@ -5438,17 +5466,20 @@ StWidget.focused .app-grid-running-dot {
 #dashtodockContainer.right #dash .dash-background,
 #dashtodockContainer.shrink #dash .dash-background,
 #dashtodockContainer.dashtodock #dash .dash-background {
-  background-color: rgba(36, 36, 36, 0.04) !important;
+  background-color: transparent !important;
+  background: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
-  border-radius: 24px !important;
+  border-radius: 28px !important;
 }
 
 #dashtodockContainer.bottom #dash #dashtodockDashContainer {
-  padding: 3px 8px !important;
-  padding-top: 3px !important;
-  padding-bottom: 3px !important;
-  margin-bottom: 4px !important;
+  padding: 10px 10px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 10px !important;
 }
 
 #dashtodockContainer.bottom.fixed #dash .dash-item-container .app-well-app,
@@ -5456,8 +5487,8 @@ StWidget.focused .app-grid-running-dot {
 #dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
 #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
 #dashtodockContainer.bottom #dash .dash-item-container .overview-tile {
-  padding-top: 1px !important;
-  padding-bottom: 3px !important;
+  padding-top: 4px !important;
+  padding-bottom: 7px !important;
 }
 
 #dashtodockContainer #dash .dash-separator {
@@ -6066,8 +6097,11 @@ StWidget.focused .app-grid-running-dot {
 #dashtodockContainer.dashtodock #dash .dash-background {
   background-color: transparent !important;
   background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
+  border-radius: 28px !important;
 }
 
 #panel,
@@ -6654,7 +6688,7 @@ StWidget.focused .app-grid-running-dot {
   color: #ffffff !important;
   font-size: 11.5px !important;
   font-weight: 600 !important;
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20) !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
   transition-duration: 150ms !important;
@@ -6675,7 +6709,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-notif-center-title {
-  font-family: SF Pro Display, Cantarell, sans-serif !important;
+  font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important;
   font-size: 20px !important;
   font-weight: 700 !important;
   color: #ffffff !important;
@@ -6684,7 +6718,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-notif-empty-label {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
   font-size: 14px !important;
   color: rgba(255, 255, 255, 0.6) !important;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 0 18px rgba(0, 0, 0, 0.85), 0 2px 10px rgba(0, 0, 0, 0.7) !important;
@@ -6704,7 +6738,7 @@ StWidget.focused .app-grid-running-dot {
   border: none !important;
   box-shadow: none !important;
   padding: 10px !important;
-  font-family: SF Pro Display, Cantarell, sans-serif !important;
+  font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important;
   color: #ffffff !important;
 }
 
@@ -6871,7 +6905,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-cc-title {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   letter-spacing: 0.15px !important;
@@ -6880,7 +6914,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-cc-subtitle {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
   font-size: 11.5px !important;
   font-weight: 400 !important;
   letter-spacing: 0.1px !important;
@@ -7222,139 +7256,86 @@ StWidget.focused .app-grid-running-dot {
 }
 
 
-/* === GDM & Login Screen macOS Tahoe Customization === */
-
-stage {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
+/* LQ-Visual: Zero darkening/lightening background tint & subtle soft shadow under icons and text for crystal-clear readability */
+.popup-menu-item,
+.popup-menu-item StLabel,
+.popup-menu-item .popup-menu-ornament,
+.popup-menu-item .popup-inactive-menu-item {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
 }
 
-#panel,
-#panel.login-screen,
-#panel.unlock-screen {
-  background-color: transparent !important;
-  background-gradient-direction: vertical !important;
-  background-gradient-start: rgba(0, 0, 0, 0.55) !important;
-  background-gradient-end: rgba(0, 0, 0, 0.0) !important;
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-  height: 32px !important;
-  border: none !important;
-  box-shadow: none !important;
+.popup-menu-item StIcon,
+.popup-menu-item .popup-menu-icon {
+  icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
-#panel.login-screen .panel-button,
-#panel.unlock-screen .panel-button {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
-  font-weight: 500 !important;
-  font-size: 13px !important;
-  color: rgba(255, 255, 255, 0.92) !important;
-  padding: 0 8px !important;
-  margin: 3px 2px !important;
-  border-radius: 6px !important;
+/* Quick Settings / Control Center text & icon shadows */
+.quick-toggle .quick-toggle-title,
+.quick-toggle .quick-toggle-subtitle,
+.quick-toggle-menu .header .title,
+.quick-toggle-menu .header .subtitle {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
 }
 
-#panel.login-screen .panel-button:hover,
-#panel.unlock-screen .panel-button:hover {
-  background-color: rgba(255, 255, 255, 0.16) !important;
-  color: #ffffff !important;
+.quick-toggle StIcon,
+.quick-toggle-menu StIcon,
+.quick-slider StIcon {
+  icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
-#panel.login-screen .panel-button:active,
-#panel.unlock-screen .panel-button:active {
-  background-color: rgba(255, 255, 255, 0.24) !important;
-  color: #ffffff !important;
+/* Notifications & Notification Center text & icon shadows */
+.message-list .message,
+.message .message-title,
+.message .message-secondary-bin,
+.message .message-body,
+.message .event-time,
+.message-notification-group .message-group-title,
+.datemenu-today-button .date-label {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
 }
 
-#panel.login-screen #quickSettings.panel-button {
-  width: auto !important;
-  min-width: auto !important;
-  padding: 0 10px !important;
-  margin-right: 12px !important;
+.message StIcon,
+.message-icon-bin StIcon,
+.message-notification-group StIcon {
+  icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
-#panel.login-screen .system-status-icon,
-#panel.unlock-screen .system-status-icon {
-  icon-size: 16px !important;
+/* Dock labels & icons */
+#dashtodockContainer #dash .overview-icon,
+#dashtodockContainer #dash .app-well-app .overview-icon,
+#dashtodockContainer #dash .show-apps .overview-icon {
+  icon-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
 }
 
-#panel.login-screen #keyboard,
-#panel.unlock-screen #keyboard {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 12px !important;
+.dash-label,
+#dashtodockContainer .dash-label {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
 }
 
-.login-dialog-user-list-item,
-.login-dialog-user-list-item .user-widget,
-.login-dialog-user-list-item:ltr .user-widget,
-.login-dialog-user-list-item:rtl .user-widget,
-.unlock-dialog .login-dialog-user-list-item:ltr .user-widget,
-.unlock-dialog .login-dialog-user-list-item:rtl .user-widget {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  x-align: center !important;
+/* Spotlight search text & icon shadows */
+.mac-spotlight-item-title,
+.mac-spotlight-item-subtitle,
+.mac-spotlight-entry {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
 }
 
-.login-dialog-user-list-item .user-widget-label {
-  x-align: center !important;
-  text-align: center !important;
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.75) !important;
+.mac-spotlight-item StIcon,
+.mac-spotlight-icon-slot StIcon {
+  icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
-.login-dialog-bottom-button-group {
-  margin-right: 24px !important;
-  margin-bottom: 24px !important;
-  padding-right: 4px !important;
-  padding-bottom: 4px !important;
+/* Applications Menu / Launchpad text & icon shadows */
+.mac-app-title,
+.mac-applications-box StLabel,
+#mac-applications-search {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
 }
 
-.login-dialog-bottom-button-group .login-dialog-button {
-  border-radius: 999px !important;
-  background-color: rgba(255, 255, 255, 0.12) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  padding: 8px !important;
-  margin: 4px !important;
-  color: rgba(255, 255, 255, 0.90) !important;
+.mac-applications-box StIcon,
+.mac-category-pill StIcon {
+  icon-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
 }
 
-.login-dialog-bottom-button-group .login-dialog-button:hover {
-  background-color: rgba(255, 255, 255, 0.22) !important;
-  color: #ffffff !important;
-}
-
-.wack-gdm-clock-wrapper {
-  background-color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.wack-date {
-  font-family: SF Pro Display, Cantarell, sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 28px !important;
-  color: rgba(255, 255, 255, 0.98) !important;
-  letter-spacing: 0px !important;
-  margin: 0 !important;
-  margin-bottom: 0px !important;
-  padding: 0 !important;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75) !important;
-}
-
-.wack-time,
-.unlock-dialog-clock-time.wack-time {
-  font-family: Open Runde, SF Pro Rounded, SF Pro Display, Cantarell, sans-serif !important;
-  font-size: 128px !important;
-  font-weight: 700 !important;
-  letter-spacing: -2px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  color: #ffffff !important;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85) !important;
+.mac-category-pill StLabel {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
 }

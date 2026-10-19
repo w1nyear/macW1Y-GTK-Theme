@@ -3668,7 +3668,7 @@ scrollbar.overlay-indicator > range > trough {
   outline: none;
   background-color: alpha(currentColor,0.1);
   border-radius: 9999px;
-  margin: 6px;
+  margin: 3px 1px 3px 0;
 }
 
 scrollbar.overlay-indicator > range > trough > slider {
@@ -3685,7 +3685,7 @@ scrollbar.overlay-indicator:not(.dragging):not(.hovering) {
 scrollbar.overlay-indicator:not(.dragging):not(.hovering) > range > trough {
   background-color: transparent;
   border: none;
-  margin: 6px;
+  margin: 3px 1px 3px 0;
 }
 
 scrollbar.overlay-indicator:not(.dragging):not(.hovering) > range > trough > slider {
@@ -4903,7 +4903,7 @@ row > box.header > box.title {
 }
 
 row:not(:hover) {
-  transition: all 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 button row.activatable:focus, button row.activatable:hover, button row.activatable:active {
@@ -6565,7 +6565,7 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 .nautilus-file-chooser .sidebar-pane:dir(ltr) banner > revealer > widget,
 .nautilus-file-chooser .sidebar-pane.end:dir(rtl),
 .nautilus-file-chooser .sidebar-pane.end:dir(rtl) banner > revealer > widget {
-  box-shadow: 0 0 0 6px @view_bg_color, 0 32px 0 6px @view_bg_color, 0 -32px 0 6px @view_bg_color, 2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
 }
 
 .nautilus-window .sidebar-pane:dir(rtl), .nautilus-window .sidebar-pane:dir(rtl) banner > revealer > widget, .nautilus-window .sidebar-pane.end:dir(ltr), .nautilus-window .sidebar-pane.end:dir(ltr) banner > revealer > widget,
@@ -6577,7 +6577,7 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 .nautilus-file-chooser .sidebar-pane:dir(rtl) banner > revealer > widget,
 .nautilus-file-chooser .sidebar-pane.end:dir(ltr),
 .nautilus-file-chooser .sidebar-pane.end:dir(ltr) banner > revealer > widget {
-  box-shadow: 0 0 0 6px @view_bg_color, 0 32px 0 6px @view_bg_color, 0 -32px 0 6px @view_bg_color, -2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
 }
 
 .nautilus-window .sidebar-pane:backdrop:dir(ltr), .nautilus-window .sidebar-pane:backdrop:dir(ltr) banner > revealer > widget, .nautilus-window .sidebar-pane:backdrop.end:dir(rtl), .nautilus-window .sidebar-pane:backdrop.end:dir(rtl) banner > revealer > widget,
@@ -6613,8 +6613,8 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected,
 #NautilusFileChooser .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected,
 .nautilus-file-chooser .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected {
-  background-color: color-mix(in srgb, @window_fg_color 8%, transparent);
-  color: @accent_bg_color;
+  background-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
 }
 
 .nautilus-window .sidebar-pane > separator.horizontal,
@@ -8732,7 +8732,7 @@ toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
 .sidebar-pane .content-pane {
   background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.03), transparent 80%, rgba(255, 255, 255, 0.03));
   color: @sidebar_fg_color;
-  border-radius: 18px;
+  border-radius: 0;
   background-color: transparent;
 }
 
@@ -8921,7 +8921,7 @@ toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
 .sidebar-pane .content-pane:first-child:dir(ltr) banner > revealer > widget,
 .sidebar-pane .content-pane:first-child.end:dir(rtl),
 .sidebar-pane .content-pane:first-child.end:dir(rtl) banner > revealer > widget {
-  box-shadow: 9000px 0 0 9999px @view_bg_color, 2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
   border-right: none;
 }
 
@@ -8934,7 +8934,7 @@ toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
 .sidebar-pane .content-pane:first-child:dir(rtl) banner > revealer > widget,
 .sidebar-pane .content-pane:first-child.end:dir(ltr),
 .sidebar-pane .content-pane:first-child.end:dir(ltr) banner > revealer > widget {
-  box-shadow: -9000px 0 0 9999px @view_bg_color, -2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
   border-left: none;
 }
 
@@ -9533,10 +9533,10 @@ menu menuitem:selected,
 .context-menu menuitem:hover,
 .context-menu menuitem:focus,
 .context-menu menuitem:selected {
-  background-color: @accent_bg_color;
+  background-color: #007aff;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
 }
 
 menu menuitem:hover label,
@@ -9546,7 +9546,7 @@ menu menuitem:selected label {
 }
 
 menu menuitem:active {
-  background-color: @accent_bg_color;
+  background-color: #0062cc;
   color: #ffffff;
   border-radius: 9999px;
 }
@@ -9646,10 +9646,10 @@ popover modelbutton:selected,
 .context-menu modelbutton:hover,
 .context-menu modelbutton:focus,
 .context-menu modelbutton:selected {
-  background-color: @accent_bg_color;
+  background-color: #007aff;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
 }
 
 popover.menu modelbutton:hover label,
@@ -9705,3 +9705,207 @@ tooltip label {
 }
 
 /* --- MAC-STYLING-END --- */
+
+
+/* --- MAC-NAUTILUS-SIDEBAR-START --- */
+/* macOS Finder Sidebar Styling for Nautilus and Libadwaita / GTK4 */
+splitview > paned > scrolledwindow > list.navigation-sidebar,
+splitview > paned > scrolledwindow > .navigation-sidebar,
+.sidebar-pane placessidebar,
+.sidebar-pane placessidebar list.navigation-sidebar,
+.navigation-sidebar,
+list.navigation-sidebar {
+    background-color: rgba(28, 28, 30, 0.75);
+    padding: 8px 6px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Sidebar rows base style */
+.navigation-sidebar row,
+.navigation-sidebar > row,
+list.navigation-sidebar row,
+placessidebar row,
+placessidebar .navigation-sidebar row,
+.nautilus-window .sidebar-pane placessidebar row,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row {
+    border-radius: 8px;
+    margin: 1px 6px;
+    padding: 4px 8px;
+    min-height: 28px;
+    color: rgba(255, 255, 255, 0.85);
+    background-clip: padding-box;
+    outline: none;
+    transition: background-color 120ms ease, color 120ms ease;
+    transition-property: background-color, color;
+}
+
+/* Hover state - strictly lock border-radius: 8px to completely eliminate square hover glitch during fast mouse movement */
+.navigation-sidebar row:hover,
+.navigation-sidebar > row:hover,
+list.navigation-sidebar row:hover,
+placessidebar row:hover,
+placessidebar .navigation-sidebar row:hover,
+.nautilus-window .sidebar-pane placessidebar row:hover,
+.navigation-sidebar row.activatable:hover,
+placessidebar .navigation-sidebar row.activatable:hover,
+.nautilus-window .sidebar-pane placessidebar row.activatable:hover,
+.navigation-sidebar row:hover:not(:selected),
+list.navigation-sidebar row:hover:not(:selected),
+placessidebar row:hover:not(:selected),
+.nautilus-window .sidebar-pane placessidebar row:hover:not(:selected),
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:hover {
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.08);
+    outline: none;
+    transition: background-color 120ms ease, color 120ms ease;
+    transition-property: background-color, color;
+}
+
+/* Selected state */
+.navigation-sidebar row:selected,
+.navigation-sidebar > row:selected,
+list.navigation-sidebar row:selected,
+placessidebar row:selected,
+placessidebar .navigation-sidebar row:selected,
+.nautilus-window .sidebar-pane placessidebar row:selected,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected {
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    outline: none;
+}
+
+.navigation-sidebar row:selected label,
+list.navigation-sidebar row:selected label,
+placessidebar row:selected label,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label {
+    color: #ffffff;
+}
+
+.navigation-sidebar row:selected:hover,
+list.navigation-sidebar row:selected:hover,
+placessidebar row:selected:hover,
+.nautilus-window .sidebar-pane placessidebar row:selected:hover,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover {
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.20);
+    color: #ffffff;
+    outline: none;
+}
+
+/* Unhovered state - strictly prevent any transition on border-radius */
+.navigation-sidebar row:not(:hover),
+.navigation-sidebar > row:not(:hover),
+list.navigation-sidebar row:not(:hover),
+placessidebar row:not(:hover),
+placessidebar .navigation-sidebar row:not(:hover),
+.nautilus-window .sidebar-pane placessidebar row:not(:hover),
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:not(:hover) {
+    border-radius: 8px;
+    transition: background-color 150ms ease, color 150ms ease;
+    transition-property: background-color, color;
+}
+
+/* Section Header Typography */
+.mac-sidebar-header {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.40);
+    letter-spacing: 0.2px;
+    padding-top: 14px;
+    padding-bottom: 4px;
+    padding-left: 10px;
+    margin-bottom: 2px;
+}
+
+/* Orange/Accent icon color for Favorites and Top items */
+.sidebar-orange-icon,
+image.sidebar-orange-icon,
+.navigation-sidebar row image.sidebar-orange-icon,
+list.navigation-sidebar row image.sidebar-orange-icon,
+placessidebar row image.sidebar-orange-icon,
+.navigation-sidebar row.sidebar-accent-icon image {
+    color: #f58220;
+}
+
+/* Neutral icon color for Mounts and Trash */
+.sidebar-neutral-icon,
+image.sidebar-neutral-icon,
+.navigation-sidebar row image.sidebar-neutral-icon,
+list.navigation-sidebar row image.sidebar-neutral-icon,
+placessidebar row image.sidebar-neutral-icon {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+/* Subtle separator before Trash */
+separator.sidebar-trash-separator {
+    min-height: 1px;
+    background-color: rgba(255, 255, 255, 0.08);
+    margin: 8px 10px;
+}
+
+/* Clean macOS app grid/list view without symlink/readonly emblems */
+#emblems_box,
+box#emblems_box,
+.nautilus-grid-view #emblems_box,
+.nautilus-list-view #emblems_box,
+#emblems_box image,
+.emblem,
+image.emblem {
+    opacity: 0;
+    min-width: 0px;
+    min-height: 0px;
+    margin: 0;
+    padding: 0;
+}
+/* --- MAC-NAUTILUS-SIDEBAR-END --- */
+
+/* --- MAC-NAUTILUS-SEAMLESS-CLEANUP-START --- */
+/* Completely eliminate the grey square/shadows around Nautilus sidebar */
+.nautilus-window,
+.nautilus-window .sidebar-pane,
+.nautilus-window .content-pane,
+.nautilus-window placessidebar,
+.nautilus-window list.navigation-sidebar,
+.nautilus-window splitview,
+.nautilus-window paned,
+#NautilusFileChooser .sidebar-pane,
+.nautilus-file-chooser .sidebar-pane {
+    box-shadow: none;
+}
+
+.nautilus-window .sidebar-pane,
+.sidebar-pane,
+.content-pane .sidebar-pane,
+.sidebar-pane .content-pane {
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.nautilus-window .sidebar-pane,
+.nautilus-window .sidebar-pane > widget,
+.nautilus-window .sidebar-pane > box,
+.nautilus-window .sidebar-pane placessidebar,
+.nautilus-window .sidebar-pane list.navigation-sidebar {
+    background-color: rgba(28, 28, 30, 0.92);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.nautilus-window .sidebar-pane headerbar,
+.nautilus-window .sidebar-pane headerbar:backdrop,
+.sidebar-pane headerbar {
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+}
+
+.nautilus-window .content-pane,
+.nautilus-window .content-pane:backdrop {
+    background-color: #202022;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+    border-radius: 0;
+}
+/* --- MAC-NAUTILUS-SEAMLESS-CLEANUP-END --- */

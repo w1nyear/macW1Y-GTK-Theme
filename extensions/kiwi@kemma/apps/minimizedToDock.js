@@ -14,8 +14,9 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
-    applyIconOffset, dashEndsWithSeparator, dashOf, disconnectAll, dockSettings, isTrashItem,
-    makeDashItem, makeDashSeparator, makeStrip, scaleFactor, watchDocks,
+    applyIconOffset, beforeRedraw, cancelBeforeRedraw, dashEndsWithSeparator, dashOf,
+    dashItemMatchesDock, disconnectAll, dockSettings, isTrashItem, makeDashItem,
+    makeDashSeparator, makeStrip, scaleFactor, watchDocks,
 } from './dockUtils.js';
 
 // Every tile is the same fixed box, so the badges line up in one row. The box
@@ -34,8 +35,6 @@ const TILE_SLOT_TIME = 160;   // ms to open or close the slot along the dock
 const TILE_GROW_TIME = 240;   // ms for the thumbnail itself to grow or shrink
 
 let enabled = false;
-const TRASH_SCALE = 1.05;       // trash a touch bigger than the app icons
-
 let docks = [];                 // [{ dash, strip, iconSize, signals, tiles, trashItem }]
 let order = [];                 // Meta.Window[], in minimize order (newest last)
 let snapshots = new Map();      // Meta.Window -> { content, width, height }
@@ -44,8 +43,12 @@ let globalSignals = [];         // [[object, id]]
 let restoring = new Set();      // windows whose restore animation is still running
 let d2dSettings = null;
 const sources = {
-    dockSearch: 0, restoreGrace: 0, geometryUpdate: 0, trashAdoption: 0, separatorSync: 0,
+    dockSearch: 0, restoreGrace: 0, geometryUpdate: 0,
 };
+// Reveals and reparents that have to land on a frame boundary, not whenever the
+// main loop next goes idle, are compositor laters and stay out of the table above
+let trashAdoptionLater = 0;
+let separatorSyncLater = 0;
 
 /* -------------------------------------------------------------- snapshots */
 
@@ -334,9 +337,13 @@ function _syncDock(info) {
     }
 
     info.tiles = info.tiles.filter(({ win, item }) => {
-        if (!rebuild && order.includes(win))
+        // A tile built before Dash-to-Dock filled its box of icons copied the
+        // shell's container, whose label sits above it wherever the dock is;
+        // rebuild it now the dock has an icon to copy
+        const stale = !dashItemMatchesDock(dash, item);
+        if (!rebuild && !stale && order.includes(win))
             return true;
-        if (rebuild)
+        if (rebuild || stale)
             item.destroy();
         else
             _animateOut(info, item);
@@ -364,9 +371,6 @@ function _syncDock(info) {
             strip.set_child_above_sibling(info.trashItem, null);
         // Dash-to-Dock only resizes the items it still owns
         info.trashItem.child.icon?.setIconSize(dash.iconSize);
-        // A touch bigger than the app icons, grown from its centre
-        info.trashItem.child.set_pivot_point(0.5, 0.5);
-        info.trashItem.child.set_scale(TRASH_SCALE, TRASH_SCALE);
     }
 }
 
@@ -476,13 +480,12 @@ function _syncSeparator(info) {
  * Dash-to-Dock's separator is not the last child and ours still looks needed.
  */
 function _queueSeparatorSync() {
-    if (sources.separatorSync || !enabled)
+    if (separatorSyncLater || !enabled)
         return;
     // Dash-to-Dock pulls its separator out and puts it back mid-redisplay
-    sources.separatorSync = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-        sources.separatorSync = 0;
+    separatorSyncLater = beforeRedraw(() => {
+        separatorSyncLater = 0;
         docks.forEach(_syncSeparator);
-        return GLib.SOURCE_REMOVE;
     });
 }
 
@@ -518,13 +521,13 @@ function _adoptTrash(info) {
 }
 
 function _queueTrashAdoption() {
-    if (sources.trashAdoption || !enabled)
+    if (trashAdoptionLater || !enabled)
         return;
-    // Never restructure the dash while Dash-to-Dock is in the middle of a redisplay
-    sources.trashAdoption = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-        sources.trashAdoption = 0;
+    // Same before-redraw phase as Dash-to-Dock's own rebuild, not an idle the
+    // post-unlock playback can push back
+    trashAdoptionLater = beforeRedraw(() => {
+        trashAdoptionLater = 0;
         docks.forEach(_adoptTrash);
-        return GLib.SOURCE_REMOVE;
     });
 }
 
@@ -690,6 +693,10 @@ function _attachDock(dockContainer) {
             _queueTrashAdoption();
         } else {
             _queueSeparatorSync();
+            // Tiles are built the moment the dock appears, before this box has
+            // any icons; rebuild them once the dock has one to copy
+            if (info.tiles.some(({ item }) => !dashItemMatchesDock(dash, item)))
+                _syncDock(info);
         }
     });
     info.signals.push([dash._box, addedId]);
@@ -783,6 +790,16 @@ function _watchDocks() {
 
 export function disable() {
     enabled = false;
+
+    if (trashAdoptionLater) {
+        cancelBeforeRedraw(trashAdoptionLater);
+        trashAdoptionLater = 0;
+    }
+
+    if (separatorSyncLater) {
+        cancelBeforeRedraw(separatorSyncLater);
+        separatorSyncLater = 0;
+    }
 
     for (const key of Object.keys(sources)) {
         if (sources[key])

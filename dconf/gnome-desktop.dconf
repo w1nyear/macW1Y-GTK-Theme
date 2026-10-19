@@ -60,7 +60,7 @@ document-font-name='SF Pro Text 11'
 font-antialiasing='rgba'
 font-name='SF Pro Text 11'
 gtk-theme='macW1Y-Dark'
-icon-theme='MacTahoe-dark'
+icon-theme='MacTahoe'
 monospace-font-name='SF Mono 11'
 show-battery-percentage=false
 
@@ -148,6 +148,8 @@ input-feedback-sounds=true
 theme-name='macOS'
 
 [wm/preferences]
-button-layout=':minimize,maximize,close'
+button-layout='close,minimize,maximize:'
+num-workspaces=2
 theme='macW1Y-Dark'
 titlebar-font='SF Pro Text Bold 11'
+workspace-names=['Робочий стіл 1', 'Робочий стіл 2', 'Робочий стіл 3']

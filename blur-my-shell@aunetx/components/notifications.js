@@ -459,24 +459,25 @@ export class MacNotificationGroup {
         this.actor.getGlassSubcards = () => this.getGlassSubcards();
         this.actor.getGlassRegions = (mon) => this.getGlassRegions(mon);
 
-        // Top card container
-        this.topCardBox = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
+        // Collapsed container: overlays layer2, layer1, and topCardBox with Clutter.BinLayout
+        this.collapsedContainer = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
             x_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            y_expand: false,
             reactive: false,
         });
-        this.actor.add_child(this.topCardBox);
+        this.actor.add_child(this.collapsedContainer);
 
-        // Stack layers box (positioned right below the top card)
-        this.stackLayersBox = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
+        // Spacer to provide exact allocation height for BinLayout without negative margins
+        this.spacer = new St.Widget({
             x_expand: true,
-            y_expand: false,
-            visible: false,
-            reactive: true,
-            style: 'margin-top: -6px;',
+            x_align: Clutter.ActorAlign.FILL,
+            height: 78,
+            opacity: 0,
+            reactive: false,
         });
-        this.actor.add_child(this.stackLayersBox);
+        this.collapsedContainer.add_child(this.spacer);
 
         // Click to expand from stack layers
         const handleExpandClick = () => {
@@ -486,27 +487,50 @@ export class MacNotificationGroup {
             }
             return Clutter.EVENT_PROPAGATE;
         };
-        this.stackLayersBox.connect('button-press-event', handleExpandClick);
 
-        // Layer 1 (immediately below top card)
-        this.layer1 = new St.Widget({
-            style: 'background-color: rgba(36, 36, 36, 0.70); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 20px; margin-left: 10px; margin-right: 10px; height: 10px;',
-            x_expand: true,
-            visible: false,
-            reactive: true,
-        });
-        this.layer1.connect('button-press-event', handleExpandClick);
-        this.stackLayersBox.add_child(this.layer1);
-
-        // Layer 2 (bottom layer for 3+ items)
+        // Layer 2 (bottom-most stack card for 3+ items)
         this.layer2 = new St.Widget({
-            style: 'background-color: rgba(26, 26, 26, 0.70); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 18px; margin-left: 20px; margin-right: 20px; height: 8px; margin-top: -4px;',
             x_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            height: 24,
+            y_align: Clutter.ActorAlign.START,
             visible: false,
             reactive: true,
+            style: 'background-color: rgba(28, 28, 28, 0.70); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 18px; margin-left: 28px; margin-right: 28px;',
         });
         this.layer2.connect('button-press-event', handleExpandClick);
-        this.stackLayersBox.add_child(this.layer2);
+        this.collapsedContainer.add_child(this.layer2);
+
+        // Layer 1 (middle stack card for 2+ items)
+        this.layer1 = new St.Widget({
+            x_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            height: 24,
+            y_align: Clutter.ActorAlign.START,
+            visible: false,
+            reactive: true,
+            style: 'background-color: rgba(38, 38, 38, 0.72); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 20px; margin-left: 14px; margin-right: 14px;',
+        });
+        this.layer1.connect('button-press-event', handleExpandClick);
+        this.collapsedContainer.add_child(this.layer1);
+
+        // Top card container (placed in front of layer 1 & 2 in z-order)
+        this.topCardBox = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            y_align: Clutter.ActorAlign.START,
+            reactive: false,
+        });
+        this.topCardBox.connect('notify::height', () => {
+            if (!this.isExpanded && this.items.length > 1) {
+                const h = this.topCardBox.height;
+                if (h > 40 && h < 300) {
+                    this._updateStackLayersGeometry(h);
+                }
+            }
+        });
+        this.collapsedContainer.add_child(this.topCardBox);
 
         // Expanded cards box
         this.expandedCardsBox = new St.BoxLayout({
@@ -562,18 +586,119 @@ export class MacNotificationGroup {
 
         const item = { source, notification, cardData, banner: cardData.banner };
 
+        notification.connectObject('destroy', () => {
+            this.removeNotification(notification, false);
+        }, cardData.banner);
+
+        const shouldAnimate = isPrepend && this.items.length > 0 && !this.isExpanded;
+        const oldTopItem = this.items[0];
+
         if (isPrepend) {
             this.items.unshift(item);
         } else {
             this.items.push(item);
         }
 
-        notification.connectObject('destroy', () => {
-            this.removeNotification(notification, false);
-        }, cardData.banner);
+        if (this.isExpanded) {
+            this._renderExpanded();
+            return item;
+        }
 
-        this._updateView();
+        if (shouldAnimate && oldTopItem?.banner) {
+            this._animateNewGrouping(oldTopItem, item);
+        } else {
+            this._renderCollapsed();
+        }
+
         return item;
+    }
+
+    _updateStackLayersGeometry(cardH) {
+        if (this.isExpanded) return;
+        const extraBottom = (this.items.length >= 3) ? 14 : (this.items.length >= 2 ? 8 : 0);
+        this.spacer.height = cardH + extraBottom;
+        this.collapsedContainer.height = cardH + extraBottom;
+
+        if (this.items.length >= 3) {
+            this.layer2.visible = true;
+            this.layer2.translation_y = cardH + 14 - 24;
+            this.layer1.visible = true;
+            this.layer1.translation_y = cardH + 8 - 24;
+        } else if (this.items.length >= 2) {
+            this.layer1.visible = true;
+            this.layer1.translation_y = cardH + 8 - 24;
+            this.layer2.visible = false;
+        } else {
+            this.layer1.visible = false;
+            this.layer2.visible = false;
+        }
+    }
+
+    _animateNewGrouping(oldTopItem, newItem) {
+        this.expandedCardsBox.visible = false;
+        this.collapsedContainer.visible = true;
+
+        const oldBanner = oldTopItem.banner;
+        const newBanner = newItem.banner;
+
+        if (oldBanner.get_parent() !== this.topCardBox) {
+            const p = oldBanner.get_parent();
+            if (p) p.remove_child(oldBanner);
+            this.topCardBox.add_child(oldBanner);
+        }
+
+        if (newBanner.get_parent()) {
+            newBanner.get_parent().remove_child(newBanner);
+        }
+        this.topCardBox.add_child(newBanner);
+
+        if (newItem.cardData?.countBadge) {
+            newItem.cardData.countBadge.text = `${this.items.length}`;
+            newItem.cardData.countBadge.visible = true;
+        }
+
+        const actualH = newBanner.height;
+        let [_, prefH] = newBanner.get_preferred_height(380);
+        let cardH = (actualH > 40 && actualH < 300) ? actualH : ((prefH > 40 && prefH < 300) ? prefH : 78);
+        this._updateStackLayersGeometry(cardH);
+
+        oldBanner.remove_all_transitions();
+        oldBanner.set_pivot_point(0.5, 0.5);
+        oldBanner.visible = true;
+
+        newBanner.remove_all_transitions();
+        newBanner.translation_x = 350;
+        newBanner.translation_y = 0;
+        newBanner.scale_x = 1.0;
+        newBanner.scale_y = 1.0;
+        newBanner.opacity = 0;
+        newBanner.visible = true;
+
+        if (this.options.onGeometryChanged) {
+            this.options.onGeometryChanged();
+        }
+
+        // 1. Old banner smoothly scales down to 0.95, moves down 8px, and fades into the stack
+        oldBanner.ease({
+            scale_x: 0.95,
+            scale_y: 0.95,
+            translation_y: 8,
+            opacity: 0,
+            duration: 280,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+
+        // 2. New banner slides in from the right to the primary position
+        newBanner.ease({
+            translation_x: 0,
+            opacity: 255,
+            duration: 280,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                oldBanner.set_pivot_point(0, 0);
+                this._renderCollapsed();
+            },
+        });
     }
 
     removeNotification(notification, userDismissed = false) {
@@ -628,38 +753,51 @@ export class MacNotificationGroup {
         this.expandedCardsBox.visible = false;
         this.expandedCardsBox.remove_all_children();
 
-        this.topCardBox.visible = true;
-        this.topCardBox.remove_all_children();
+        this.collapsedContainer.visible = true;
 
         const topItem = this.items[0];
-        if (topItem) {
-            this.topCardBox.add_child(topItem.banner);
-            topItem.banner.visible = true;
-            topItem.banner.opacity = 255;
-            topItem.banner.translation_y = 0;
-            topItem.banner.scale_x = 1.0;
-            topItem.banner.scale_y = 1.0;
+        if (!topItem) {
+            this.topCardBox.remove_all_children();
+            this.layer1.visible = false;
+            this.layer2.visible = false;
+            this.spacer.height = 0;
+            return;
+        }
 
-            if (topItem.cardData?.countBadge) {
-                if (this.items.length > 1) {
-                    topItem.cardData.countBadge.text = `${this.items.length}`;
-                    topItem.cardData.countBadge.visible = true;
-                } else {
-                    topItem.cardData.countBadge.visible = false;
-                }
+        for (const ch of this.topCardBox.get_children()) {
+            if (ch !== topItem.banner) {
+                ch.remove_all_transitions();
+                this.topCardBox.remove_child(ch);
             }
         }
 
-        if (this.items.length >= 2) {
-            this.stackLayersBox.visible = true;
-            this.stackLayersBox.opacity = 255;
-            this.layer1.visible = true;
-            this.layer2.visible = (this.items.length >= 3);
-        } else {
-            this.stackLayersBox.visible = false;
-            this.layer1.visible = false;
-            this.layer2.visible = false;
+        if (topItem.banner.get_parent() !== this.topCardBox) {
+            const p = topItem.banner.get_parent();
+            if (p) p.remove_child(topItem.banner);
+            this.topCardBox.add_child(topItem.banner);
         }
+
+        topItem.banner.remove_all_transitions();
+        topItem.banner.visible = true;
+        topItem.banner.opacity = 255;
+        topItem.banner.translation_x = 0;
+        topItem.banner.translation_y = 0;
+        topItem.banner.scale_x = 1.0;
+        topItem.banner.scale_y = 1.0;
+
+        if (topItem.cardData?.countBadge) {
+            if (this.items.length > 1) {
+                topItem.cardData.countBadge.text = `${this.items.length}`;
+                topItem.cardData.countBadge.visible = true;
+            } else {
+                topItem.cardData.countBadge.visible = false;
+            }
+        }
+
+        const actualH = topItem.banner.height;
+        let [_, prefH] = topItem.banner.get_preferred_height(380);
+        let cardH = (actualH > 40 && actualH < 300) ? actualH : ((prefH > 40 && prefH < 300) ? prefH : 78);
+        this._updateStackLayersGeometry(cardH);
 
         if (this.options.onGeometryChanged) {
             this.options.onGeometryChanged();
@@ -667,9 +805,8 @@ export class MacNotificationGroup {
     }
 
     _renderExpanded() {
-        this.topCardBox.visible = false;
+        this.collapsedContainer.visible = false;
         this.topCardBox.remove_all_children();
-        this.stackLayersBox.visible = false;
 
         this.expandedCardsBox.visible = true;
         this.expandedCardsBox.remove_all_children();
@@ -678,9 +815,13 @@ export class MacNotificationGroup {
             if (item.cardData?.countBadge) {
                 item.cardData.countBadge.visible = false;
             }
+            if (item.banner.get_parent()) {
+                item.banner.get_parent().remove_child(item.banner);
+            }
             this.expandedCardsBox.add_child(item.banner);
             item.banner.visible = true;
             item.banner.opacity = 255;
+            item.banner.translation_x = 0;
             item.banner.translation_y = 0;
             item.banner.scale_x = 1.0;
             item.banner.scale_y = 1.0;
@@ -698,16 +839,16 @@ export class MacNotificationGroup {
         if (this.isExpanded || this.items.length <= 1) return;
         this.isExpanded = true;
 
-        this.stackLayersBox.ease({
+        this.collapsedContainer.ease({
             opacity: 0,
             duration: 120,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             onComplete: () => {
-                this.stackLayersBox.visible = false;
+                this.collapsedContainer.visible = false;
+                this.collapsedContainer.opacity = 255;
             }
         });
 
-        this.topCardBox.visible = false;
         this.topCardBox.remove_all_children();
 
         this.expandedCardsBox.visible = true;
@@ -720,10 +861,14 @@ export class MacNotificationGroup {
             if (item.cardData?.countBadge) {
                 item.cardData.countBadge.visible = false;
             }
+            if (banner.get_parent()) {
+                banner.get_parent().remove_child(banner);
+            }
             this.expandedCardsBox.add_child(banner);
             banner.visible = true;
 
             banner.opacity = 0;
+            banner.translation_x = 0;
             banner.translation_y = -20 * (i + 1);
             banner.scale_x = 0.96;
             banner.scale_y = 0.96;
@@ -851,7 +996,7 @@ export class MacNotificationGroup {
         });
         this.items = [];
         this.collapseBtn.remove_all_transitions();
-        this.stackLayersBox.remove_all_transitions();
+        this.collapsedContainer.remove_all_transitions();
         this.actor.remove_all_transitions();
         this.actor.destroy();
     }

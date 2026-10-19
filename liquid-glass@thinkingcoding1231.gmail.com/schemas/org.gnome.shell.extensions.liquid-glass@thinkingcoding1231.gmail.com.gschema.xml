@@ -2,6 +2,12 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com" path="/org/gnome/shell/extensions/liquid-glass/">
 
+    <key name="preferences-advanced" type="b">
+      <default>false</default>
+      <summary>Show advanced preferences</summary>
+      <description>Choose between shared controls and individual surface settings.</description>
+    </key>
+
     <key name="enable-dock-glass" type="b">
       <default>true</default>
       <summary>Enable glass effect for Dock</summary>
@@ -24,7 +30,7 @@
       <summary>Tint strength</summary>
     </key>
     <key name="dock-blur-radius" type="i">
-      <default>5</default>
+      <default>2</default>
       <summary>Blur radius</summary>
     </key>
     <key name="dock-brightness" type="d">
@@ -38,7 +44,7 @@
       <description>Adjusts the contrast of the dock.</description>
     </key>
     <key name="dock-saturation" type="d">
-      <default>1.0</default>
+      <default>1.5</default>
       <summary>Saturation</summary>
       <description>Adjusts the saturation of the dock.</description>
     </key>
@@ -64,7 +70,7 @@
       <summary>Spring stiffness</summary>
     </key>
     <key name="menu-spring-damping" type="d">
-      <default>8.0</default>
+      <default>22.0</default>
       <summary>Spring damping</summary>
     </key>
     <key name="menu-spring-mass" type="d">
@@ -72,8 +78,10 @@
       <summary>Spring mass</summary>
     </key>
     <key name="menu-animation-interval-ms" type="i">
+      <range min="0" max="50"/>
       <default>16</default>
       <summary>Animation interval (ms)</summary>
+      <description>Minimum time between open/close animation updates. The animation is driven by the frame clock, so anything up to one frame (16) means every frame; 33 and 50 cap it at 30 and 20 fps.</description>
     </key>
     <key name="menu-x-offset" type="i">
       <default>0</default>
@@ -85,6 +93,11 @@
     <key name="menu-enable-adaptive-text-color" type="b">
       <default>true</default>
       <summary>Enable adaptive text color</summary>
+    </key>
+    <key name="menu-adaptive-text-preference" type="s">
+      <default>"auto"</default>
+      <summary>Preferred text color</summary>
+      <description>Which text color to settle on when the background does not clearly favour either one: "auto", "light" or "dark".</description>
     </key>
     <key name="menu-sample-per-element" type="b">
       <default>false</default>
@@ -121,10 +134,13 @@
       <summary>Glass for additional top panel menus</summary>
       <description>Automatically apply glass to detected panel dropdowns. Calendar and Quick Settings have separate controls.</description>
     </key>
-    <!-- [anim-diag] Starts/stops a timed global._lgGlass.dump() loop, so a
-         capture of a misbehaving animation can be taken the moment it happens
-         without Looking Glass or unsafe_mode. Press once to start, again to
-         stop early; it stops on its own after DUMP_LOOP_TICKS. -->
+    <!-- A shortcut that records the glass state while a problem is on screen,
+         without Looking Glass. -->
+    <key name="enable-dump-shortcut" type="b">
+      <default>false</default>
+      <summary>Enable the diagnostic dump shortcut</summary>
+      <description>Registers dump-loop-keybinding (Ctrl+Alt+L by default). Off by default so it cannot collide with the user's own shortcuts; turn it on only when capturing a problem for a bug report.</description>
+    </key>
     <key name="dump-loop-keybinding" type="as">
       <default><![CDATA[['<Control><Alt>l']]]></default>
       <summary>Toggle the periodic diagnostic dump</summary>
@@ -135,15 +151,18 @@
       <summary>Panel menus excluded from glass</summary>
       <description>Panel indicator names disabled individually in preferences.</description>
     </key>
+    <key name="blur-my-shell-popup-blur" type="b">
+      <default>false</default>
+      <summary>Blur my Shell is blurring popups</summary>
+      <description>Written by the shell at runtime so the preferences window can warn that Blur my Shell's popup blur shows through the glass.</description>
+    </key>
     <key name="detected-extra-menus" type="as">
       <default>[]</default>
       <summary>Detected optional panel menus</summary>
       <description>Written by the shell at runtime so the preferences window can offer a toggle only for menus that actually exist.</description>
     </key>
-    <!-- Appearance for the detected top bar dropdowns. Its own namespace so
-         these can be tuned without moving the Calendar menu, exactly as
-         quick-settings-*, notification-*, osd-* and dock-* already are.
-         Defaults mirror the menu-* values these menus used to borrow. -->
+    <!-- Appearance of the detected top bar menus, separate from the calendar
+         menu. The defaults match the menu-* keys. -->
     <key name="enable-panel-menu-animation" type="b">
       <default>true</default>
       <summary>Enable panel menu animation</summary>
@@ -153,7 +172,7 @@
       <summary>Spring stiffness</summary>
     </key>
     <key name="panel-menu-spring-damping" type="d">
-      <default>8.0</default>
+      <default>22.0</default>
       <summary>Spring damping</summary>
     </key>
     <key name="panel-menu-spring-mass" type="d">
@@ -161,8 +180,10 @@
       <summary>Spring mass</summary>
     </key>
     <key name="panel-menu-animation-interval-ms" type="i">
+      <range min="0" max="50"/>
       <default>16</default>
       <summary>Animation interval (ms)</summary>
+      <description>Minimum time between open/close animation updates. The animation is driven by the frame clock, so anything up to one frame (16) means every frame; 33 and 50 cap it at 30 and 20 fps.</description>
     </key>
     <key name="panel-menu-tint-color" type="s">
       <default>"#ffffff"</default>
@@ -185,7 +206,7 @@
       <summary>Contrast</summary>
     </key>
     <key name="panel-menu-saturation" type="d">
-      <default>1.0</default>
+      <default>1.5</default>
       <summary>Saturation</summary>
     </key>
     <key name="panel-menu-corner-radius" type="d">
@@ -209,6 +230,11 @@
       <summary>Menu scale</summary>
       <description>Scales the whole panel menu, including its glass, like zooming a window. 1.0 is the size GNOME renders.</description>
     </key>
+    <key name="panel-menu-settled-height-scale" type="d">
+      <default>0.0</default>
+      <summary>Remembered Quick Settings height ratio</summary>
+      <description>Cache, not a preference. Quick Settings reports no height until it has been opened once, so the ratio can only be measured after that; it is kept here so later sessions do not have to guess. 0 means not measured yet.</description>
+    </key>
     <key name="panel-menu-match-quick-settings-height" type="b">
       <default>false</default>
       <summary>Match Quick Settings height</summary>
@@ -218,9 +244,19 @@
       <default>true</default>
       <summary>Enable adaptive text color</summary>
     </key>
+    <key name="panel-menu-adaptive-text-preference" type="s">
+      <default>"auto"</default>
+      <summary>Preferred text color</summary>
+      <description>Which text color to settle on when the background does not clearly favour either one: "auto", "light" or "dark".</description>
+    </key>
     <key name="panel-menu-sample-interval-ms" type="i">
       <default>400</default>
       <summary>Sample interval (ms)</summary>
+    </key>
+    <key name="menu-settled-height-scale" type="d">
+      <default>0.0</default>
+      <summary>Remembered Quick Settings height ratio</summary>
+      <description>Cache, not a preference. Quick Settings reports no height until it has been opened once, so the ratio can only be measured after that; it is kept here so later sessions do not have to guess. 0 means not measured yet.</description>
     </key>
     <key name="menu-match-quick-settings-height" type="b">
       <default>false</default>
@@ -247,7 +283,7 @@
       <description>Adjusts the contrast of the menu.</description>
     </key>
     <key name="menu-saturation" type="d">
-      <default>1.0</default>
+      <default>1.5</default>
       <summary>Saturation</summary>
       <description>Adjusts the saturation of the menu.</description>
     </key>
@@ -259,6 +295,11 @@
     <key name="notification-enable-adaptive-text-color" type="b">
       <default>true</default>
       <summary>Enable adaptive text color</summary>
+    </key>
+    <key name="notification-adaptive-text-preference" type="s">
+      <default>"auto"</default>
+      <summary>Preferred text color</summary>
+      <description>Which text color to settle on when the background does not clearly favour either one: "auto", "light" or "dark".</description>
     </key>
     <key name="notification-sample-per-element" type="b">
       <default>false</default>
@@ -307,7 +348,7 @@
       <description>Adjusts the contrast of the notifications.</description>
     </key>
     <key name="notification-saturation" type="d">
-      <default>1.0</default>
+      <default>1.5</default>
       <summary>Saturation</summary>
       <description>Adjusts the saturation of the notifications.</description>
     </key>
@@ -325,7 +366,7 @@
       <summary>Spring stiffness</summary>
     </key>
     <key name="quick-settings-spring-damping" type="d">
-      <default>8.0</default>
+      <default>22.0</default>
       <summary>Spring damping</summary>
     </key>
     <key name="quick-settings-spring-mass" type="d">
@@ -333,12 +374,19 @@
       <summary>Spring mass</summary>
     </key>
     <key name="quick-settings-animation-interval-ms" type="i">
+      <range min="0" max="50"/>
       <default>16</default>
       <summary>Animation interval (ms)</summary>
+      <description>Minimum time between open/close animation updates. The animation is driven by the frame clock, so anything up to one frame (16) means every frame; 33 and 50 cap it at 30 and 20 fps.</description>
     </key>
     <key name="quick-settings-enable-adaptive-text-color" type="b">
       <default>false</default>
       <summary>Enable adaptive text color</summary>
+    </key>
+    <key name="quick-settings-adaptive-text-preference" type="s">
+      <default>"auto"</default>
+      <summary>Preferred text color</summary>
+      <description>Which text color to settle on when the background does not clearly favour either one: "auto", "light" or "dark".</description>
     </key>
     <key name="quick-settings-sample-per-element" type="b">
       <default>false</default>
@@ -388,7 +436,7 @@
       <description>Adjusts the contrast of the quick settings.</description>
     </key>
     <key name="quick-settings-saturation" type="d">
-      <default>1.0</default>
+      <default>1.5</default>
       <summary>Saturation</summary>
       <description>Adjusts the saturation of the quick settings.</description>
     </key>
@@ -403,7 +451,7 @@
       <description>How strongly each toggle's own original color is applied, independently of quick-settings-tint-strength. 0 applies none of it, 1 applies it fully. Only used when quick-settings-apply-to is Toggles.</description>
     </key>
     <key name="quick-settings-toggle-corner-radius" type="d">
-      <default>18.0</default>
+      <default>9999.0</default>
       <summary>Toggle corner radius</summary>
       <description>Corner radius applied to each individual toggle's glass shape. Only used when quick-settings-apply-to is Toggles.</description>
     </key>
@@ -415,6 +463,11 @@
     <key name="osd-enable-adaptive-text-color" type="b">
       <default>true</default>
       <summary>Enable adaptive text color</summary>
+    </key>
+    <key name="osd-adaptive-text-preference" type="s">
+      <default>"auto"</default>
+      <summary>Preferred text color</summary>
+      <description>Which text color to settle on when the background does not clearly favour either one: "auto", "light" or "dark".</description>
     </key>
     <key name="osd-sample-interval-ms" type="i">
       <default>400</default>
@@ -455,7 +508,7 @@
       <description>Adjusts the contrast of the on-screen displays.</description>
     </key>
     <key name="osd-saturation" type="d">
-      <default>1.0</default>
+      <default>1.5</default>
       <summary>Saturation</summary>
       <description>Adjusts the saturation of the on-screen displays.</description>
     </key>
@@ -465,7 +518,6 @@
       <summary>Enable glass effect for application windows</summary>
       <description>Apply the liquid glass effect to whitelisted application windows.</description>
     </key>
-    <!-- Whether to apply the effect to all application windows or only whitelisted ones -->
     <key name="application-glass-all-windows" type="b">
       <default>false</default>
       <summary>Apply to all windows</summary>
@@ -476,7 +528,6 @@
       <summary>Whitelisted window classes</summary>
       <description>WM_CLASS names (from xprop) that receive the glass effect. Only listed windows are affected when "apply to all windows" is off.</description>
     </key>
-    <!-- Exclusion list consulted only while "apply to all windows" is on -->
     <key name="application-window-blacklist" type="as">
       <default>[]</default>
       <summary>Blacklisted window classes</summary>
@@ -498,7 +549,6 @@
       <default>30.0</default>
       <summary>Corner radius</summary>
     </key>
-    <!-- Opacity of the application window's own content layer (0.0-1.0), so the glass shows through it -->
     <key name="application-content-opacity" type="d">
       <default>0.85</default>
       <summary>Window content opacity</summary>
@@ -519,12 +569,9 @@
       <summary>Saturation</summary>
       <description>Adjusts the saturation of the glass effect behind application windows.</description>
     </key>
-    <!-- The menu the desktop itself puts up (right-click on the wallpaper).
-         On Wayland that is a real toplevel, not a shell widget, so it is
-         handled by applicationManager — but with its own namespace, because
-         it is not an application window and should not inherit their look.
-         A smaller corner radius and a less transparent body than an app
-         window, since a menu is small and has to stay readable. -->
+    <!-- The desktop's own right-click menu. It is configured separately from
+         application windows, with smaller corners and a more opaque body so
+         it stays readable. -->
     <key name="enable-desktop-menu-glass" type="b">
       <default>false</default>
       <summary>Enable glass effect for the desktop menu</summary>
@@ -543,11 +590,11 @@
       <summary>Blur radius</summary>
     </key>
     <key name="desktop-menu-corner-radius" type="d">
-      <default>12.0</default>
+      <default>24.0</default>
       <summary>Corner radius</summary>
     </key>
     <key name="desktop-menu-content-opacity" type="d">
-      <default>0.90</default>
+      <default>1.0</default>
       <summary>Menu content opacity</summary>
       <description>Opacity of the menu's own content layer to let the glass effect show through (0.0 to 1.0).</description>
     </key>
@@ -580,25 +627,25 @@
     </key>
 
     <key name="glass-max-z" type="d">
-      <default>25.0</default>
+      <default>88.0</default>
       <summary>Maximum Z depth (Thickness)</summary>
       <description>Controls the physical thickness or depth of the glass effect.</description>
     </key>
 
     <key name="glass-displacement-scale" type="d">
-      <default>78.5</default>
+      <default>10.5</default>
       <summary>Displacement scale</summary>
       <description>Controls the strength of the light refraction distortion.</description>
     </key>
 
     <key name="glass-edge-smoothing" type="d">
-      <default>2.0</default>
+      <default>0.5</default>
       <summary>Edge smoothing</summary>
       <description>Geometry anti-aliasing feathering width for the glass edges.</description>
     </key>
 
     <key name="glass-profile-shape-n" type="d">
-      <default>7.0</default>
+      <default>3.6</default>
       <summary>Profile shape N</summary>
       <description>Controls the superellipse profile shape of the glass surface curvature.</description>
     </key>
@@ -610,9 +657,23 @@
     </key>
 
     <key name="glass-chroma-strength" type="d">
-      <default>1.5</default>
+      <range min="0.0" max="1.0"/>
+      <default>0.0</default>
       <summary>Chromatic aberration strength</summary>
-      <description>Controls the RGB color separation effect caused by refraction, in pixels. Previously this value was a fraction of the screen size, which capped the visible effect at well under one pixel; existing values carried over from that scale will need re-tuning.</description>
+      <description>RGB color separation caused by refraction, as a fraction of the refraction's displacement: blue is shifted that much further than green, and red that much less.</description>
+    </key>
+
+    <key name="glass-corner-smoothing" type="d">
+      <range min="0.0" max="1.0"/>
+      <default>0.6</default>
+      <summary>Corner smoothing</summary>
+      <description>0 gives circular corners. Higher values give continuous corners whose curve starts up to (1 + value) times the corner radius from the corner, keeping the corner's midpoint in place. Application windows always keep circular corners.</description>
+    </key>
+
+    <key name="glass-backdrop-highlights" type="b">
+      <default>true</default>
+      <summary>Backdrop-colored highlights</summary>
+      <description>Tints the edge light, highlights and sheen with the color behind the glass instead of plain white.</description>
     </key>
 
     <key name="glass-specular-intensity" type="d">
@@ -628,67 +689,67 @@
     </key>
 
     <key name="glass-rim-width" type="d">
-      <default>5.0</default>
+      <default>2.3</default>
       <summary>Rim light width</summary>
       <description>The width of the rim lighting band near the edges.</description>
     </key>
 
     <key name="glass-rim-intensity" type="d">
-      <default>0.6</default>
+      <default>0.5</default>
       <summary>Rim light intensity</summary>
       <description>The overall brightness of the rim lighting.</description>
     </key>
 
     <key name="glass-rim-directional-power" type="d">
-      <default>2.7</default>
+      <default>1.9</default>
       <summary>Rim directional power</summary>
       <description>Controls how the light direction affects the rim mask.</description>
     </key>
 
     <key name="glass-rim-power" type="d">
-      <default>6.0</default>
+      <default>3.0</default>
       <summary>Rim Fresnel power</summary>
       <description>Controls the Fresnel effect falloff for the rim light.</description>
     </key>
 
     <key name="glass-rim-light-color-intensity" type="d">
-      <default>1.4</default>
+      <default>1.0</default>
       <summary>Rim light color intensity</summary>
       <description>Multiplier for the rim light color brightness.</description>
     </key>
 
     <key name="glass-sheen-intensity" type="d">
-      <default>0.32</default>
+      <default>0.0</default>
       <summary>Sheen intensity</summary>
       <description>The intensity of the background sheen across the glass surface.</description>
     </key>
 
     <key name="glass-light-angle-deg" type="d">
-      <default>50.0</default>
+      <default>90.0</default>
       <summary>Light angle (Degrees)</summary>
       <description>The directional angle of the virtual light source illuminating the glass.</description>
     </key>
 
     <key name="shadow-radius" type="d">
-      <default>30.0</default>
+      <default>50.0</default>
       <summary>Drop shadow radius (px)</summary>
       <description>How far the drop shadow extends past the glass edge. Helps the glass stay visible on light backgrounds (e.g. white). Set to 0 to disable.</description>
     </key>
 
     <key name="shadow-intensity" type="d">
-      <default>0.55</default>
+      <default>0.22</default>
       <summary>Drop shadow intensity</summary>
       <description>How dark the drop shadow is. 0.0 = invisible, 1.0 = maximum darkness. Helps the glass stay visible on light backgrounds (e.g. white).</description>
     </key>
 
     <key name="glass-ao-intensity" type="d">
       <range min="0.0" max="1.0"/>
-      <default>0.25</default>
+      <default>0.65</default>
       <summary>Inner edge AO darkening intensity</summary>
     </key>
     <key name="glass-ao-radius" type="d">
       <range min="0.0" max="50.0"/>
-      <default>7.5</default>
+      <default>1.0</default>
       <summary>Inner edge AO darkening radius (px)</summary>
     </key>
 
@@ -701,7 +762,7 @@
     <key name="glass-debug-diagnostics" type="b">
       <default>false</default>
       <summary>Per-paint render diagnostics</summary>
-      <description>Collect the per-paint state that global._lgGlass.dump() reports (capture size, UV range, texture pool, blur result). This runs on every paint of every glass surface, so it costs performance even when logging is off. Leave this disabled unless you are debugging a rendering problem.</description>
+      <description>Collect the per-paint state that global._lgGlass.dump() reports (backdrop copy, blur and composite rects, texture pool, blur result). This runs on every paint of every glass surface, so it costs performance even when logging is off. Leave this disabled unless you are debugging a rendering problem.</description>
     </key>
 
   </schema>

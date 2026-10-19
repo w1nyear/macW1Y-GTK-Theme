@@ -9,10 +9,8 @@ export const DummyPipeline = class DummyPipeline {
         this.settings = settings;
         this.corner_radius_key = options.corner_radius_key ?? 'corner-radius';
         this.corner_radius_getter = options.corner_radius_getter ?? (() => this.settings.CORNER_RADIUS);
-        this.add_corner_effect = options.add_corner_effect ?? false;
         this.opacity_factor = 1;
         this.effect = null;
-        this.corner_effect = null;
         this.attach_effect_to_actor(actor);
     }
 
@@ -55,20 +53,8 @@ export const DummyPipeline = class DummyPipeline {
             "destroy", () => this.remove_pipeline_from_actor()
         );
 
-        // add the effect to the actor (corner_effect outermost first, then blur)
+        // add the effect to the actor
         if (this.actor) {
-            if (this.add_corner_effect) {
-                try {
-                    this.corner_effect = this.effects_manager.new_corner_effect({
-                        radius: this.corner_radius_getter() || 15,
-                        corners_top: true,
-                        corners_bottom: true,
-                    });
-                    this.actor.add_effect(this.corner_effect);
-                } catch (e) {
-                    this._warn(`could not add corner effect: ${e}`);
-                }
-            }
             this.actor.add_effect(this.effect);
         } else {
             this._warn(`could not add effect to actor, actor does not exist anymore`);
@@ -77,12 +63,6 @@ export const DummyPipeline = class DummyPipeline {
 
     remove_pipeline_from_actor() {
         this.remove_effect();
-        if (this.corner_effect) {
-            if (this.actor)
-                this.actor.remove_effect(this.corner_effect);
-            try { this.effects_manager.remove(this.corner_effect); } catch (_) {}
-            this.corner_effect = null;
-        }
         if (this.actor && this.actor_destroy_id)
             this.actor.disconnect(this.actor_destroy_id);
         this.actor_destroy_id = null;
