@@ -26,9 +26,7 @@ const PILL_COLLAPSED_STYLE =
     'height: 54px; min-height: 54px; padding: 0 16px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    'border: 1px solid rgba(255, 255, 255, 0.20); ' +
-    'border-top: 1px solid rgba(255, 255, 255, 0.45); ' +
-    'border-bottom: 1px solid rgba(255, 255, 255, 0.22); ' +
+    'border: none !important; ' +
     'border-radius: 27px; ' +
     'box-shadow: none !important;';
 
@@ -70,9 +68,7 @@ const BTN_NORMAL_STYLE =
     'border-radius: 26px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    'border: 1px solid rgba(255, 255, 255, 0.22); ' +
-    'border-top: 1px solid rgba(255, 255, 255, 0.48); ' +
-    'border-bottom: 1px solid rgba(255, 255, 255, 0.24); ' +
+    'border: none !important; ' +
     'box-shadow: none !important;';
 
 const BTN_HOVER_STYLE =
@@ -80,9 +76,7 @@ const BTN_HOVER_STYLE =
     'border-radius: 26px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    'border: 1px solid rgba(255, 255, 255, 0.35); ' +
-    'border-top: 1px solid rgba(255, 255, 255, 0.65); ' +
-    'border-bottom: 1px solid rgba(255, 255, 255, 0.35); ' +
+    'border: none !important; ' +
     'box-shadow: none !important;';
 
 const SETTINGS_PANELS = [

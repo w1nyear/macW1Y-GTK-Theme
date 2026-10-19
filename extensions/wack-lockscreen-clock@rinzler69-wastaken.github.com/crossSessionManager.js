@@ -639,7 +639,7 @@ export class CrossSessionManager {
             shading_type: this._bgSettings.get_enum('color-shading-type'),
             is_color: isColor,
             clockFormat: this._getClockFormat(),
-            clockWeight: this._settings ? this._settings.get_string('clock-weight') : 'semibold',
+            clockWeight: this._settings ? this._settings.get_string('clock-weight') : 'bold',
             clockTint: this._settings ? this._settings.get_boolean('clock-tint') : false,
             statusCorner: this._settings ? this._settings.get_boolean('status-corner') : true,
             passwordIndicators: this._settings ? this._settings.get_boolean('password-indicators') : true,

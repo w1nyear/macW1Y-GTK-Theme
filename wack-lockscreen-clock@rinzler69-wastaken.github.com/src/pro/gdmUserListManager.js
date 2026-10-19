@@ -61,7 +61,7 @@ export class GdmUserListManager {
 
         const currentX = box.x || 0;
         const currentY = box.y || 0;
-        box.translation_x = targetX - currentX;
+        box.translation_x = 0;
         box.translation_y = targetY - currentY;
     }
 
@@ -98,11 +98,6 @@ export class GdmUserListManager {
         }
 
         for (const item of userList._items.values()) {
-            item.x_align = Clutter.ActorAlign.CENTER;
-            if (item.child) {
-                item.child.x_align = Clutter.ActorAlign.CENTER;
-                item.child.x_expand = true;
-            }
             item.x_expand = false;
             item.set_width(maxW);
         }
@@ -133,9 +128,11 @@ export class GdmUserListManager {
         userList.enable_mouse_scrolling = true;
 
         this.applyUserListWidths(targetDialog);
+        this._gdm?._autoSelectSingleUser?.(targetDialog);
 
         this.userListItemAddedId = userList.connect('item-added', () => {
             this.applyUserListWidths(targetDialog);
+            this._gdm?._autoSelectSingleUser?.(targetDialog);
         });
     }
 

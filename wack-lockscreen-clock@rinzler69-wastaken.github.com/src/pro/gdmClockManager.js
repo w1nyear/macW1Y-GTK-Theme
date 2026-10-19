@@ -41,10 +41,8 @@ export class GdmClockManager {
         this.clock.remove_child(dateLabel);
         this.clock.remove_child(timeLabel);
 
-        this.clockWrapper = new St.BoxLayout({
+        this.clockWrapper = new St.Widget({
             style_class: 'wack-gdm-clock-wrapper',
-            vertical: true,
-            x_align: Clutter.ActorAlign.CENTER,
             reactive: false,
             track_hover: false,
         });
@@ -52,6 +50,9 @@ export class GdmClockManager {
         this.clockWrapper.set_pivot_point(0.5, 0.5);
         this.clockWrapper.add_child(dateLabel);
         this.clockWrapper.add_child(timeLabel);
+
+        centerClockLabel(timeLabel, this.clockWrapper);
+        centerClockLabel(dateLabel, this.clockWrapper);
 
         if (!dialogParent) {
             dialogParent = dialog?.get_parent() || Main.screenShield?._lockDialogGroup || Main.layoutManager?.uiGroup;
@@ -146,14 +147,23 @@ export class GdmClockManager {
         let startX = (alloc && alloc.x1 >= 0 && alloc.x1 < 32768) ? alloc.x1 : monitor.x;
 
         const topY = monitor.y + Math.floor(h * GDM_DATETIME_TOP_FRACTION);
+        const rawDateH = this.clock._dateOutput.get_preferred_height(-1)[1];
+        const preferredDateH = (rawDateH > 0 && rawDateH < 500) ? rawDateH : 30;
+        const effectiveDateH = Math.max(22, Math.min(60, Math.ceil(preferredDateH)));
+        const timeY = effectiveDateH - 4;
 
+        const rawTimeH = this.clock._time.get_preferred_height(-1)[1];
+        const preferredTimeH = (rawTimeH > 0 && rawTimeH < 1000) ? rawTimeH : 150;
+        const effectiveTimeH = Math.max(120, Math.min(250, Math.ceil(preferredTimeH)));
+
+        this.clockWrapper.set_size(w, timeY + effectiveTimeH + 20);
         this.clockWrapper.set_position(startX, topY);
-        this.clockWrapper.set_width(w);
         this.clockWrapper.set_pivot_point(0.5, 0.5);
 
-        if (this.clockWrapper.get_parent()) {
-            this.clockWrapper.get_parent().set_child_above_sibling(this.clockWrapper, null);
-        }
+        this.clock._dateOutput.set_position(0, 0);
+        this.clock._time.set_position(0, timeY);
+        this.clockWrapper.opacity = 255;
+        this.clockWrapper.visible = true;
 
 
     }

@@ -110,6 +110,13 @@ export default class WackLockscreenClockExtension extends Extension {
         this._loadSettings();
         initCache();
 
+        this._UnlockDialogControllerClass = UnlockDialogController;
+        import(`./src/main/unlockDialogController.js?t=${Date.now()}`).then(m => {
+            if (m?.UnlockDialogController) {
+                this._UnlockDialogControllerClass = m.UnlockDialogController;
+            }
+        }).catch(() => {});
+
         this._origEnsureUnlockDialog = Main.screenShield._ensureUnlockDialog;
         Main.screenShield._ensureUnlockDialog = (allowCancel) => {
             const res = this._origEnsureUnlockDialog.call(Main.screenShield, allowCancel);
@@ -187,7 +194,8 @@ export default class WackLockscreenClockExtension extends Extension {
         this._promptStyling = new PromptStyling(this);
         this._avatarManager = new AvatarManager(this);
         this._cupertinoPromptManager = new CupertinoPromptManager(this);
-        this._unlockDialogController = new UnlockDialogController(this);
+        const ControllerClass = this._UnlockDialogControllerClass || UnlockDialogController;
+        this._unlockDialogController = new ControllerClass(this);
         this._notifManager = new NotificationManager(this);
 
         this._themeManager.applyUserTheme();
@@ -236,6 +244,26 @@ export default class WackLockscreenClockExtension extends Extension {
 
         // Install UnlockDialog controller hooks
         this._unlockDialogController.install(dialog, lockDialogGroup);
+
+        // Disable fullscreen ClickGesture so clicking wallpaper/clock does not reveal prompt
+        this._disabledClickGestures = [];
+        for (const action of dialog.get_actions()) {
+            if (action instanceof Clutter.ClickGesture) {
+                action.enabled = false;
+                this._disabledClickGestures.push(action);
+            }
+        }
+
+        // Ensure no leftover menu bar items (e.g. appmenu Apple icon) appear in leftBox while locked
+        if (Main.panel?._leftBox) {
+            for (const child of Main.panel._leftBox.get_children()) {
+                const isActivities = child === Main.panel.statusArea?.activities?.container ||
+                                     child === Main.panel.statusArea?.activities;
+                if (!isActivities) {
+                    child.visible = false;
+                }
+            }
+        }
 
         // Setup MainBox layout and lockscreen message
         const mainBox = dialog._stack?.get_parent() ?? dialog.get_child_at_index(dialog.get_n_children() - 1);
@@ -294,6 +322,13 @@ export default class WackLockscreenClockExtension extends Extension {
                     return Clutter.EVENT_STOP;
                 }
             }
+
+            if (!this._promptActive) {
+                // In rest mode: do NOT reveal password prompt on arbitrary key presses;
+                // user must click on the account to reveal the password prompt.
+                return Clutter.EVENT_STOP;
+            }
+
             return Clutter.EVENT_PROPAGATE;
         }, this);
 
@@ -920,6 +955,17 @@ export default class WackLockscreenClockExtension extends Extension {
         if (this._injectionManager) {
             this._injectionManager.clear();
             this._injectionManager = null;
+        }
+
+        if (this._disabledClickGestures) {
+            for (const action of this._disabledClickGestures) {
+                try { action.enabled = true; } catch (_) {}
+            }
+            this._disabledClickGestures = null;
+        }
+
+        if (Main.sessionMode) {
+            try { Main.sessionMode.emit('updated'); } catch (_) {}
         }
 
         if (this._dialog._notificationsBox) {

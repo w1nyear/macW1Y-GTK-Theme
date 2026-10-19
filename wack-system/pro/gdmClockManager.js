@@ -399,8 +399,8 @@ export class GdmClockManager {
     _syncClockGlowWeight() {
         if (!this.clockGlowTime)
             return;
-        const weight = this.clock?._weight;
-        this.clockGlowTime.set_style(weight ? `font-weight: ${weight};` : null);
+        const weight = this.clock?._weight || 'bold';
+        this.clockGlowTime.set_style(`font-family: 'Open Runde', 'SF Pro Rounded', SF Pro Display, Cantarell, sans-serif; font-weight: ${weight};`);
     }
 
     setTint(tint) {

@@ -54,6 +54,27 @@ export class CupertinoPromptManager {
         });
 
         this.restPrompt = new WackCupertinoRestPrompt(this._extension._dialog._user, this._extension);
+        if (this.restPrompt?._avatarButton) {
+            this.restPrompt._avatarButton.reactive = true;
+            this.restPrompt._avatarButton.add_style_class_name('wack-avatar-clickable');
+            this.restPrompt._avatarButton.connectObject('clicked', () => {
+                if (!this._extension?._promptActive) {
+                    this._extension?._dialog?._showPrompt();
+                } else {
+                    this._extension?.triggerSwitchUser();
+                }
+            }, this);
+        }
+        if (this.restPrompt?._userWell) {
+            this.restPrompt._userWell.reactive = true;
+            this.restPrompt._userWell.connectObject('button-press-event', (_actor, event) => {
+                if (event.get_button() === 1 && !this._extension?._promptActive) {
+                    this._extension?._dialog?._showPrompt();
+                    return Clutter.EVENT_STOP;
+                }
+                return Clutter.EVENT_PROPAGATE;
+            }, this);
+        }
         if (this._extension._lastPromptColor || this._extension._lastClockAlpha != null) {
             this.restPrompt.updateVisuals(this._extension._lastPromptColor, this._extension._lastClockAlpha);
         }
@@ -275,8 +296,7 @@ export class CupertinoPromptManager {
 
         if (this.restPromptContainer) {
             if (this.restPrompt?._avatarButton) {
-                this.restPrompt._avatarButton.reactive = this._extension._promptActive;
-                if (!this._extension._promptActive) this.restPrompt._avatarButton.hover = false;
+                this.restPrompt._avatarButton.reactive = true;
             }
 
             const count = this._extension._notifManager.getNativeNotifCount();

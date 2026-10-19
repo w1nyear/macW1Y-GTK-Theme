@@ -5775,3 +5775,45 @@ echo "==> Встановлення успішно завершено!"
     - Верифікація:
       - Знято знімки екрана робочого столу та панелі Dock (`icons_after_install.png`), а також меню додатків (`app_grid_after_install.png`).
       - Всі відповідні додатки у Dock та меню програм отримали оновлені іконки macOS 27.
+100. Вирівнювання розмірів іконок у Dock та перехід на Liquid Glass з проекту GNOME-Tahoe:
+    - Запит користувача:
+      * "вирівняй розмір іконок. і виправи те що всі старі мої елементи не мають Liquid Glass. щодо скла. -- тепер використовувати скло від GNOME-Theme-Main проекту мого друга замість мого скла і видали мої border на склі. заміни скло повністю від проекта мого друга"
+    - Реалізовані дії:
+      1) Вирівнювання масштабу іконок (Dock Squircle Equalization):
+         - Проведено аудит і виявлено диспропорцію: 80 нових іконок macOS мали розмір 256x256 без внутрішніх полів (full-bleed squircle), тоді як Launchpad, Термінал, Antigravity та Кошик мали стандартні поля Apple macOS (розмір форми 228x228 з відступами по 14px з кожного боку).
+         - Масштабовано всі 80 растрових та SVG іконок до розміру 228x228 із центруванням та 14px безпечними полями по всіх директоріях (16, 22, 24, 32, 48, 64, 128, 256, scalable) у темах MacTahoe та MacTahoe-dark (~/.local/share/icons та MACTHEMEFILES/icons).
+         - Оновлено кеші іконок gtk-update-icon-cache; перевірено ідеальне вирівнювання іконок по висоті та ширині в усій панелі Dock.
+      2) Перенесення Liquid Glass з проекту друга GNOME-Tahoe:
+         - Перенесено точні параметри шейдера Liquid Glass з референсних скріншотів друга (Gaussian blur method 0, Quarter downscale 4, max-z 12.0, displacement scale 85.0, edge smoothing 0.99, shape-n 5.40, IOR 1.50, chroma strength 0.40, sheen 0.08, light angle 256.0, shadow radius 7.0, AO radius 1.84).
+         - Створено модуль dist/rendering/backdropGlass.js для підтримки нативного шейдера заломлення та розмиття заднього фону у віджетах, Spotlight та Launchpad.
+      3) Видалення бордерів зі скла (Borderless Liquid Glass):
+         - Прибрано всі штучні 1px білі рамки та обводки (border: 1px solid rgba(255, 255, 255, 0.20)) з усіх скляних елементів (Spotlight search pill, action buttons, App Grid category pills, Workspace switcher, OSD window, resize popups) у gnome-shell.css усіх тем macW1Y та у відповідних скриптах розширень.
+    - Верифікація:
+      - Знято скріншоти dock_crop_equalized.png, spotlight_crop.png, app_menu_crop_new.png. Усі іконки однакового розміру, Liquid Glass заломлює світло, білі контурні рамки усунуто.
+
+101. Встановлення жирного заокругленого шрифту Open Runde для годинника на екрані блокування GDM:
+    - Запит користувача:
+      * "у GDM екрана блокування у часі використай ось цей жирний шрифт замість старого /home/vitaliy/Завантажене/open-runde-font-family."
+    - Реалізовані дії:
+      1) Встановлення шрифтового сімейства Open Runde:
+         - Проскановано файли шрифтів з /home/vitaliy/Завантажене/open-runde-font-family (Bold, Medium, Regular, Semibold).
+         - Розгорнуто шрифти Open Runde у системні каталоги /usr/local/share/fonts/Open_Runde/ та /usr/share/fonts/opentype/Open_Runde/ з правами доступу 755/644, щоб користувач gdm мав до них прямий доступ.
+         - Розгорнуто шрифти у користувацьку директорію ~/.local/share/fonts/Open_Runde/ та резервну копію в ~/MACTHEMEFILES/fonts/Open_Runde/.
+         - Оновлено системний та користувацький кеші шрифтів (fc-cache -fv); перевірено fc-match 'Open Runde:weight=bold' -> OpenRunde-Bold.
+      2) Оновлення стилів та коду розширення wack-lockscreen-clock:
+         - У stylesheet.css, pro/gdm.css, src/pro/gdm.css для класів .wack-time та .unlock-dialog-clock-time.wack-time встановлено font-family: 'Open Runde', 'SF Pro Rounded', SF Pro Display, Cantarell, sans-serif !important; та font-weight: 700 !important;.
+         - У src/main/wackClock.js у методі _applyTextStyle() встановлено font-family 'Open Runde' та динамічну вагу ${this._weight || 'bold'}.
+         - У pro/gdmClockManager.js та src/pro/gdmClockManager.js для синхронізації свічення clockGlowTime встановлено шрифт 'Open Runde' з вагою 'bold'.
+         - У crossSessionManager.js, pro/gdmThemePipeline.js, src/pro/gdmThemePipeline.js, pro/pro.js, src/pro/pro.js fallback значення clockWeight змінено на 'bold'.
+         - Синхронізовано всі файли між ~/.local/share/gnome-shell/extensions/, /usr/share/gnome-shell/extensions/ та репозиторієм MACTHEMEFILES.
+      3) Оновлення тем GNOME Shell та перезбірка системного GDM gresource:
+         - У всіх gnome-shell.css файлах (macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid) оновлено селектор .unlock-dialog-clock-time на font-family: 'Open Runde', 'SF Pro Rounded', SF Pro Display, Cantarell, sans-serif !important; font-weight: 700 !important;.
+         - Повністю скомпільовано наново системний /usr/share/gnome-shell/theme/macW1Y-Dark/gnome-shell-theme.gresource через glib-compile-resources; перевірено наявність 'Open Runde' всередині скомпільованого ресурсу.
+      4) Конфігурація GDM dconf:
+         - У /etc/dconf/db/gdm.d/99-wack-lockscreen та ~/MACTHEMEFILES/macos-gdm/99-wack-lockscreen додано clock-weight='bold' і виконано sudo dconf update.
+         - Для поточної сесії встановлено gsettings set org.gnome.shell.extensions.wack-lockscreen-clock clock-weight 'bold'.
+      5) Оновлення install.sh:
+         - У функції install_fonts додано розгортання Open Runde до системи та користувача, а у блоці перевірки синхронізації додано перевірку папки fonts/Open_Runde.
+    - Верифікація:
+      - Перевірено завантаження Pango 'Open Runde Bold' у середовищі Clutter/St.
+      - Перевірено системний gresource, dconf GDM та налаштування сесії.

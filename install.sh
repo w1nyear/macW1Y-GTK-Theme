@@ -332,12 +332,20 @@ install_fonts() {
         require_root
         sudo mkdir -p "$SYS_FONT_DIR"
         sudo cp -r "$SCRIPT_DIR/fonts/SF_Pro/"* "$SYS_FONT_DIR/" 2>/dev/null || true
-        sudo fc-cache -f >/dev/null 2>&1 || true
-        run_as_user fc-cache -f >/dev/null 2>&1 || true
-        log_success "Шрифти Apple SF Pro успішно розгорнуто та оновлено в кеші шрифтів!"
-    else
-        log_warning "Папку fonts/SF_Pro не знайдено, пропускаємо."
     fi
+
+    if [ -d "$SCRIPT_DIR/fonts/Open_Runde" ]; then
+        mkdir -p "$TARGET_HOME/.local/share/fonts/Open_Runde"
+        cp -r "$SCRIPT_DIR/fonts/Open_Runde/"* "$TARGET_HOME/.local/share/fonts/Open_Runde/" 2>/dev/null || true
+        require_root
+        sudo mkdir -p "/usr/local/share/fonts/Open_Runde" "/usr/share/fonts/opentype/Open_Runde"
+        sudo cp -r "$SCRIPT_DIR/fonts/Open_Runde/"* "/usr/local/share/fonts/Open_Runde/" 2>/dev/null || true
+        sudo cp -r "$SCRIPT_DIR/fonts/Open_Runde/"* "/usr/share/fonts/opentype/Open_Runde/" 2>/dev/null || true
+    fi
+
+    sudo fc-cache -f >/dev/null 2>&1 || true
+    run_as_user fc-cache -f >/dev/null 2>&1 || true
+    log_success "Шрифти Apple SF Pro та Open Runde успішно розгорнуто та оновлено в кеші шрифтів!"
 }
 
 # ------------------------------------------------------------------------------
@@ -1219,6 +1227,8 @@ run_incremental_update() {
     log_info "1/9 Перевірка шрифтів..."
     sync_directory_tree "$SCRIPT_DIR/fonts/SF_Pro" "$TARGET_HOME/.local/share/fonts/SF_Pro" false
     sync_directory_tree "$SCRIPT_DIR/fonts/SF_Pro" "/usr/local/share/fonts/SF_Pro" true
+    sync_directory_tree "$SCRIPT_DIR/fonts/Open_Runde" "$TARGET_HOME/.local/share/fonts/Open_Runde" false
+    sync_directory_tree "$SCRIPT_DIR/fonts/Open_Runde" "/usr/local/share/fonts/Open_Runde" true
     
     log_info "2/9 Перевірка тем інтерфейсу..."
     sync_directory_tree "$SCRIPT_DIR/macW1Y-Dark" "$TARGET_HOME/.themes/macW1Y-Dark" false

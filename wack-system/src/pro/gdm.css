@@ -553,7 +553,7 @@
 
 .wack-time,
 .unlock-dialog-clock-time.wack-time {
-    font-family: SF Pro Display, Cantarell, sans-serif !important;
+    font-family: 'Open Runde', 'SF Pro Rounded', SF Pro Display, Cantarell, sans-serif !important;
     font-size: 128px !important;
     font-weight: 700 !important;
     letter-spacing: -2px !important;

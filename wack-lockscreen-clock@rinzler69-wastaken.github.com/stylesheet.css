@@ -2,41 +2,36 @@
     spacing: 0;
 }
 
-.wack-lockscreen-clock-wrapper {
-    spacing: 0px !important;
-}
-
 .wack-date {
-    font-family: "SF Pro Display" !important;
-    color: rgba(255, 255, 255, 0.98) !important;
-    font-size: 28px !important;
-    font-weight: 600 !important;
-    letter-spacing: 0px !important;
-    margin: 0 !important;
-    margin-bottom: 0px !important;
-    padding: 0 !important;
-    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75) !important;
+    font-family: SF Pro Display, Cantarell, sans-serif;
+    color: rgba(255, 255, 255, 0.98);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 0px;
+    margin: 0;
+    margin-bottom: 0px;
+    padding: 0;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75);
 }
 
 .wack-time,
 .unlock-dialog-clock-time.wack-time {
-    font-family: "SF Pro Rounded" !important;
+    font-family: 'Open Runde', 'SF Pro Rounded', SF Pro Display, Cantarell, sans-serif !important;
     color: #ffffff !important;
     font-size: 128px !important;
     font-weight: 700 !important;
-    font-feature-settings: "pnum" 1, "tnum" 0 !important;
     letter-spacing: -2px !important;
     padding: 0 !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     margin: 0 !important;
     margin-top: 0 !important;
-    margin-bottom: 0px !important;
+    margin-bottom: 0 !important;
     text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85) !important;
 }
 
 .wack-gdm-auth-subtitle {
-    font-family: 'SF Pro Text', sans-serif !important;
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
     font-size: 11px !important;
     font-weight: 400 !important;
     color: rgba(255, 255, 255, 0.72) !important;
@@ -51,7 +46,7 @@
     color: rgba(255, 255, 255, 0.90);
     font-weight: 600;
     font-size: 17px !important;
-    text-shadow: 0 0px 12px 2px rgba(0, 0, 0, 0.15);
+    text-shadow: 0 0px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Notification and media message styling */

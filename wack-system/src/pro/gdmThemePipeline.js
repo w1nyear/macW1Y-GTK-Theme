@@ -711,7 +711,7 @@ export class GdmThemeStore {
             shading_type: bg.get_enum('color-shading-type'),
             is_color: style === 0,
             clockFormat,
-            clockWeight: this._settings ? this._settings.get_string('clock-weight') : 'semibold',
+            clockWeight: this._settings ? this._settings.get_string('clock-weight') : 'bold',
             clockTint: this._settings ? this._settings.get_boolean('clock-tint') : false,
             statusCorner: this._settings ? this._settings.get_boolean('status-corner') : true,
             passwordIndicators: this._settings ? this._settings.get_boolean('password-indicators') : true,

@@ -292,10 +292,16 @@ export class GdmManager {
             _logError(`[WACK/GdmManager] Sub-manager setup error: ${subErr.stack || subErr}`);
         }
 
-        // Ensure Apple logo is not present in GDM top left panel
+        // Ensure no Apple logo in GDM top left panel
         if (Main.panel?._leftBox) {
             const appleBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-apple-menu");
             if (appleBtn) appleBtn.destroy();
+        }
+
+        // Offset accessibility button cleanly away from bottom-right corner
+        if (dialog._bottomButtonGroup) {
+            dialog._bottomButtonGroup.translation_x = -24;
+            dialog._bottomButtonGroup.translation_y = -24;
         }
 
         // Shift user selection list down
@@ -334,6 +340,18 @@ export class GdmManager {
                 dialog._userSelectionBox.visible = true;
                 this._positionUserList();
             }
+        }
+
+        // Auto-select single user immediately on GDM boot
+        if (dialog._loadUserList && !dialog._wackOrigLoadUserList) {
+            this._wackOrigLoadUserList = dialog._loadUserList.bind(dialog);
+            dialog._loadUserList = () => {
+                this._wackOrigLoadUserList();
+                this._autoSelectSingleUser(dialog);
+            };
+        }
+        if (dialog._userListLoaded) {
+            this._autoSelectSingleUser(dialog);
         }
 
         // Distro logo opacity override
@@ -703,7 +721,7 @@ export class GdmManager {
 
         const clock = this._clockManager?.clock;
         if (clock) {
-            const clockWeight = meta?.clockWeight ?? (this._settings ? this._settings.get_string('clock-weight') : 'semibold');
+            const clockWeight = meta?.clockWeight ?? (this._settings ? this._settings.get_string('clock-weight') : 'bold');
             this._clockManager.setWeight(clockWeight);
 
             if (meta?.clockFormat !== undefined) {
@@ -758,13 +776,9 @@ export class GdmManager {
         // 3. macOS lockscreen clock
         if (this._clockManager?.clockWrapper) {
             this._clockManager.clockWrapper.remove_all_transitions();
-            this._clockManager.clockWrapper.opacity = 0;
+            this._clockManager.clockWrapper.opacity = 255;
             this._clockManager.clockWrapper.visible = true;
-            this._clockManager.clockWrapper.ease({
-                opacity: 255,
-                duration: FADE_DURATION,
-                mode: FADE_MODE,
-            });
+            this._clockManager.positionClock();
         }
 
         // 4. Login dialog (account avatar, username, password entry)
@@ -857,6 +871,10 @@ export class GdmManager {
         if (this._origOnVerificationComplete && dialog) {
             dialog._onVerificationComplete = this._origOnVerificationComplete;
             this._origOnVerificationComplete = null;
+        }
+        if (this._wackOrigLoadUserList && dialog) {
+            dialog._loadUserList = this._wackOrigLoadUserList;
+            this._wackOrigLoadUserList = null;
         }
         if (this._userVerifierCompleteId) {
             const uv = dialog?._userVerifier || dialog?._authPrompt?._userVerifier;
@@ -1078,4 +1096,31 @@ export class GdmManager {
     _animateCupertinoReturnToPicker() { this._animController.animateCupertinoReturnToPicker(); }
     _onUserSelected() { this._animController.onUserSelected(); }
     _onReset() { this._animController.onReset(); }
+
+    _autoSelectSingleUser(dialog = null) {
+        const targetDialog = dialog || this._dialog;
+        if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible)
+            return;
+
+        const checkAndActivate = () => {
+            if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible)
+                return GLib.SOURCE_REMOVE;
+
+            const userList = targetDialog._userList;
+            if (!userList || !userList._items)
+                return GLib.SOURCE_REMOVE;
+
+            const items = Array.from(userList._items.values());
+            if (items.length === 1) {
+                const singleItem = items[0];
+                if (singleItem && typeof singleItem.activate === 'function') {
+                    _log('[WACK/GDM] Single user detected on boot, immediately activating password prompt');
+                    singleItem.activate();
+                }
+            }
+            return GLib.SOURCE_REMOVE;
+        };
+
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, checkAndActivate);
+    }
 }

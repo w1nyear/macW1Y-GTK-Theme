@@ -721,7 +721,7 @@ export class GdmManager {
 
         const clock = this._clockManager?.clock;
         if (clock) {
-            const clockWeight = meta?.clockWeight ?? (this._settings ? this._settings.get_string('clock-weight') : 'semibold');
+            const clockWeight = meta?.clockWeight ?? (this._settings ? this._settings.get_string('clock-weight') : 'bold');
             this._clockManager.setWeight(clockWeight);
 
             if (meta?.clockFormat !== undefined) {

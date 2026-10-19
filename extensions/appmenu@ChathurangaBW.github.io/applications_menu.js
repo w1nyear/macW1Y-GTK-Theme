@@ -212,9 +212,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             'background-color: transparent !important; ' +
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
-            'border-top: 1px solid rgba(255, 255, 255, 0.45) !important; ' +
-            'border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
+            'border: none !important; ' +
             'padding: 16px 2px 14px 2px; ' +
             'box-shadow: none !important;'
         );
@@ -394,7 +392,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             });
 
             const pillBg = isSelected ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.08)';
-            const pillBorder = isSelected ? 'border: 1px solid rgba(255, 255, 255, 0.25);' : 'border: 1px solid rgba(255, 255, 255, 0.12);';
+            const pillBorder = 'border: none !important;';
             const pillShadow = isSelected ? 'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);' : 'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20);';
             const pillColor = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.88)';
             btn.set_style(
@@ -433,13 +431,13 @@ export const MacApplicationsDialog = GObject.registerClass({
                 if (active) {
                     btn.set_style(
                         'background-color: rgba(255, 255, 255, 0.28); ' +
-                        'border: 1px solid rgba(255, 255, 255, 0.30); ' +
+                        'border: none !important; ' +
                         'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); ' +
                         'color: #ffffff; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 500;'
                     );
                 } else {
                     const bg = hover ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.08)';
-                    const border = hover ? 'border: 1px solid rgba(255, 255, 255, 0.20);' : 'border: 1px solid rgba(255, 255, 255, 0.12);';
+                    const border = 'border: none !important;';
                     btn.set_style(
                         `background-color: ${bg}; ` +
                         `${border} ` +
