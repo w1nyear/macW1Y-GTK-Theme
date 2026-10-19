@@ -240,11 +240,14 @@ export const DockDash = GObject.registerClass({
 
         this._background = new St.Widget({
             style_class: 'dash-background',
+            visible: true,
             y_expand: this._isHorizontal,
             x_expand: !this._isHorizontal,
         });
 
-        const sizerBox = new Clutter.Actor();
+        const sizerBox = new Clutter.Actor({
+            visible: true,
+        });
         sizerBox.add_constraint(new Clutter.BindConstraint({
             source: this._isHorizontal ? this._showAppsIcon.icon : this._dashContainer,
             coordinate: Clutter.BindCoordinate.HEIGHT,

@@ -665,33 +665,32 @@ export class DashManager {
         // corrections above, and the slab never grows that way anyway.
         {
             const slab = this._findDashBackground(this.targetActor.get_parent() ?? this.targetActor);
-            if (slab && slab.has_allocation()) {
-                const [slW, slH] = slab.get_size();
-                const [slX, slY] = slab.get_transformed_position();
-                const slSX = slab.scale_x || 1;
-                const slSY = slab.scale_y || 1;
-                if (Number.isFinite(slX) && Number.isFinite(slY) && slW > 0 && slH > 0) {
-                    const horizontalDock = (minCenterDist === distTopCenter || minCenterDist === distBottomCenter);
-                    if (horizontalDock) {
-                        const slabL = slX;
-                        const slabR = slX + slW * slSX;
-                        if (slabL < absX) {
-                            baseW += absX - slabL;
-                            absX = slabL;
+            if (slab) {
+                if (!slab.visible) {
+                    try { slab.show(); } catch (e) { }
+                }
+                if (slab.has_allocation()) {
+                    const [slW, slH] = slab.get_size();
+                    const [slX, slY] = slab.get_transformed_position();
+                    const slSX = slab.scale_x || 1;
+                    const slSY = slab.scale_y || 1;
+                    if (Number.isFinite(slX) && Number.isFinite(slY) && slW > 0 && slH > 0) {
+                        const horizontalDock = (minCenterDist === distTopCenter || minCenterDist === distBottomCenter);
+                        if (horizontalDock) {
+                            const slabL = slX;
+                            const slabR = slX + slW * slSX;
+                            const newL = Math.min(absX, slabL);
+                            const newR = Math.max(absX + baseW, slabR);
+                            baseW = newR - newL;
+                            absX = newL;
                         }
-                        if (slabR > absX + baseW) {
-                            baseW = slabR - absX;
-                        }
-                    }
-                    else {
-                        const slabT = slY;
-                        const slabB = slY + slH * slSY;
-                        if (slabT < absY) {
-                            baseH += absY - slabT;
-                            absY = slabT;
-                        }
-                        if (slabB > absY + baseH) {
-                            baseH = slabB - absY;
+                        else {
+                            const slabT = slY;
+                            const slabB = slY + slH * slSY;
+                            const newT = Math.min(absY, slabT);
+                            const newB = Math.max(absY + baseH, slabB);
+                            baseH = newB - newT;
+                            absY = newT;
                         }
                     }
                 }

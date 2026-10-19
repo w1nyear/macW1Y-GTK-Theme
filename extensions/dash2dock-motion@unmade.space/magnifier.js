@@ -40,7 +40,7 @@ const SETTLE_VELOCITY = 0.02;
 // the anchor turns that into the whole strip twitching - worst in the middle
 // of the strip, where the raised-cosine slope is steepest. Steady state lag
 // is speed times this, so about 7px at a normal sweep.
-const CURSOR_TAU = 0.03;
+const CURSOR_TAU = 0.015;
 
 const PIVOTS = {
     [St.Side.BOTTOM]: [0.5, 1],
@@ -85,6 +85,7 @@ export class DockMagnifier {
         this._connectSignals();
         this._unclipContainmentChain();
         this._syncTarget();
+        this._dash._background?.show?.();
     }
 
     destroy() {
@@ -315,19 +316,13 @@ export class DockMagnifier {
                 (bounds[i + 1] - bounds[i]) * elements[i].scale;
         }
 
-        // Anchor: the base-space point under the cursor maps to itself, so
-        // the icon under the pointer never slides out from beneath it.
-        let shift = 0;
-        if (cursor > bounds[0] && cursor < bounds[n]) {
-            let i = 0;
-            while (i < n - 1 && bounds[i + 1] < cursor)
-                i++;
-            const mapped = newBounds[i] +
-                (cursor - bounds[i]) * elements[i].scale;
-            shift = cursor - mapped;
-        } else if (cursor >= bounds[n]) {
-            shift = bounds[n] - newBounds[n];
-        }
+        // Anchor: macOS-style symmetric center anchoring.
+        // The dock expands smoothly and symmetrically outward from its center so the
+        // dock background and icons maintain a fixed, stable position on screen without
+        // jumping or jittering when sweeping the cursor rapidly side to side.
+        const baseCenter = (bounds[0] + bounds[n]) / 2;
+        const newCenter = (newBounds[0] + newBounds[n]) / 2;
+        const shift = baseCenter - newCenter;
 
         // Optional "rise": lift elements off the slab perpendicular to the
         // dock, proportional to their magnification. Applied to the
@@ -350,8 +345,21 @@ export class DockMagnifier {
         if (riseNorm === 0 && this._risen.size > 0)
             this._clearRisen();
 
+        // End padding: base margin + extra space when edge icons scale so the
+        // dock pill rounded corners comfortably surround magnified edge icons
+        const bgActor = this._dash._background;
+        const dashPos = this._dash.get_transformed_position();
+        const horizontal = this._horizontal;
+        const dashP = horizontal ? dashPos[0] : dashPos[1];
+        const bgP1 = dashP + (horizontal ? bgActor.allocation.x1 : bgActor.allocation.y1);
+        const bgP2 = dashP + (horizontal ? bgActor.allocation.x2 : bgActor.allocation.y2);
+        const basePadL = Math.max(2, bounds[0] - bgP1);
+        const basePadR = Math.max(2, bgP2 - bounds[n]);
+        const padL = basePadL + Math.max(0, elements[0].scale - 1) * 22;
+        const padR = basePadR + Math.max(0, elements[n - 1].scale - 1) * 22;
+
         this._stretchBackground(bounds[0], bounds[n],
-            newBounds[0] + shift, newBounds[n] + shift);
+            newBounds[0] + shift, newBounds[n] + shift, padL, padR);
     }
 
     /**
@@ -487,8 +495,12 @@ export class DockMagnifier {
      * the slight corner distortion goes away when the glass slab replaces
      * this widget.
      */
-    _stretchBackground(baseL, baseR, newL, newR) {
+    _stretchBackground(baseL, baseR, newL, newR, padL, padR) {
         const bg = this._dash._background;
+        if (!bg)
+            return;
+        if (!bg.visible)
+            bg.show();
         if (!bg.has_allocation())
             return;
 
@@ -499,13 +511,20 @@ export class DockMagnifier {
             (horizontal ? bg.allocation.x1 : bg.allocation.y1);
         const bgP2 = dashP +
             (horizontal ? bg.allocation.x2 : bg.allocation.y2);
-        const padL = baseL - bgP1;
-        const padR = bgP2 - baseR;
+
+        if (padL === undefined)
+            padL = Math.max(0, baseL - bgP1);
+        if (padR === undefined)
+            padR = Math.max(0, bgP2 - baseR);
 
         const baseSize = bgP2 - bgP1;
         if (baseSize <= 0)
             return;
-        const scale = ((newR + padR) - (newL - padL)) / baseSize;
+
+        const targetL = newL - padL;
+        const targetR = newR + padR;
+        const scale = (targetR - targetL) / baseSize;
+        const translation = targetL - bgP1;
 
         if (!this._transformed.has(bg)) {
             bg.pivot_point = new Graphene.Point({x: 0, y: 0});
@@ -513,7 +532,6 @@ export class DockMagnifier {
                 () => this._transformed.delete(bg));
             this._transformed.set(bg, destroyId);
         }
-        const translation = (newL - padL) - bgP1;
         if (horizontal) {
             bg.set_scale(scale, 1);
             bg.translation_x = translation;
