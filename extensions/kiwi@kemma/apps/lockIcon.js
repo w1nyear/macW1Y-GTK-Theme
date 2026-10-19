@@ -14,8 +14,12 @@ class LockIcon extends PanelMenu.Button {
     _init() {
         super._init(0.0, 'Lock Indicator', false);
 
-        // GNOME 51 dropped Clutter.get_default_backend(); go through the context.
-        this.keymap = global.stage.get_context().get_backend().get_default_seat().get_keymap();
+        // GNOME 51 dropped Clutter.get_default_backend(); the backend is reached
+        // through the actor's context instead, which only exists from 47 on.
+        const backend = Clutter.get_default_backend
+            ? Clutter.get_default_backend()
+            : global.stage.get_context().get_backend();
+        this.keymap = backend.get_default_seat().get_keymap();
 
         // Get extension object for accessing icons
         const extensionObject = Main.extensionManager.lookup('kiwi@kemma');
@@ -31,10 +35,9 @@ class LockIcon extends PanelMenu.Button {
             style_class: 'system-status-icon',
         });
 
-        // Create a layout container to hold both icons. GNOME 51 removed the
-        // `vertical` property from StBoxLayout; use `orientation` instead.
+        // Create a layout container to hold both icons
         this._lockKeysLayout = new St.BoxLayout({
-            orientation: Clutter.Orientation.HORIZONTAL,
+            vertical: false,
             style_class: 'lockkeys-container',
         });
         this._lockKeysLayout.add_child(this._numLockIcon);

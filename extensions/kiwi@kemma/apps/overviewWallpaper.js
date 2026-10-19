@@ -32,6 +32,7 @@ const BRIGHTNESS_DARK = 0.80;
 const BRIGHTNESS_LIGHT = 0.65;
 
 let _enabled = false;
+let _settings = null;
 let _group = null;
 let _managers = [];
 let _groupSignals = [];   // reconnected on every rebuild
@@ -43,8 +44,9 @@ function _brightness() {
 }
 
 function _disconnect(list) {
-    for (const [obj, id] of list)
-        obj.disconnect(id);
+    for (const [obj, id] of list) {
+        try { obj.disconnect(id); } catch (_) { /* actor already gone */ }
+    }
     list.length = 0;
 }
 
@@ -110,13 +112,18 @@ function _build() {
 
 function _syncBrightness() {
     const brightness = _brightness();
-    _group.get_children().forEach(holder => {
-        holder.get_effect(EFFECT_NAME).brightness = brightness;
+    _group?.get_children().forEach(holder => {
+        const effect = holder.get_effect(EFFECT_NAME);
+        if (effect)
+            effect.brightness = brightness;
     });
 }
 
-export function enable() {
+export function enable(settings) {
     if (_enabled)
+        return;
+    _settings = settings;
+    if (!_settings.get_boolean('overview-wallpaper-background'))
         return;
     _enabled = true;
 
@@ -131,8 +138,16 @@ export function enable() {
         St.Settings.get().connect('notify::color-scheme', () => _syncBrightness())]);
 }
 
+// Kept for extension.js, which calls this after enable(). There is nothing to
+// regenerate any more, so it only has to cover the case of being called first.
+export function refresh() {
+    if (_enabled && !_group)
+        _build();
+}
+
 export function disable() {
     _enabled = false;
     _disconnect(_globalSignals);
     _teardown();
+    _settings = null;
 }

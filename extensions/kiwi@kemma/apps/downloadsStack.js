@@ -12,13 +12,13 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
-    applyIconOffset, beforeRedraw, cancelBeforeRedraw, dashEndsWithSeparator, dashOf,
-    dashItemMatchesDock, disconnectAll, makeDashItem, makeDashSeparator, makeStrip,
-    prefersDark, scaleFactor, syncDarken, watchDocks,
+    applyIconOffset, dashEndsWithSeparator, dashOf, disconnectAll, makeDashItem,
+    makeDashSeparator, makeStrip, prefersDark, scaleFactor, syncDarken, watchDocks,
 } from './dockUtils.js';
 
 const MAX_ROWS = 10;          // files in the fan, as macOS caps it
 const FILE_ICON = 1.3;        // file icon, in dash icon sizes
+const FOLDER_SCALE = 1.1;     // folder paint scale — the slot stays stock size
 const ROW_SPACING = 1.2;      // step along the arc, in file icon sizes
 const FAN_START = 3;          // degrees of tilt on the first row
 const FAN_STEP = 1.4;         // degrees added per row
@@ -69,10 +69,7 @@ let recentKey = '';           // fingerprint of the list the piles were built fr
 let folderMonitor = null;     // Gio.FileMonitor on the Downloads folder
 let behindFolder = false;     // cards stick out of the folder rather than lie on it
 let gettextFunc = message => message;
-const sources = { dockSearch: 0, refresh: 0 };
-// A re-place has to land on a frame boundary, not whenever the main loop next
-// goes idle, so it is a compositor later and stays out of the table above
-let replaceLater = 0;
+const sources = { dockSearch: 0, replace: 0, refresh: 0 };
 
 /* ------------------------------------------------------------- file list */
 
@@ -154,7 +151,7 @@ function _readBatch(enumerator, found, callback) {
             try {
                 infos = source.next_files_finish(result);
             } catch (_) {
-                // A read error ends the listing with what was found so far
+                infos = [];
             }
 
             if (infos.length === 0) {
@@ -456,14 +453,17 @@ function _showFan(info) {
     else if (shown.length === 0)
         text = gettextFunc('Empty');
 
-    // The row that ends the fan and goes on to the folder. Its button is filled
-    // to its own edge, unlike a thumbnail sitting in a roomier box, so the row
-    // holds the pill off it.
+    // The row that ends the fan and goes on to the folder. White glyph
+    // in a dark circle, like macOS.
     const more = _makeRow(
         text,
         new St.Icon({
             style_class: 'kiwi-fan-more-icon',
-            icon_name: 'go-next-symbolic',
+            gicon: new Gio.FileIcon({
+                file: Gio.File.new_for_path(
+                    GLib.get_home_dir() +
+                    '/.local/share/gnome-shell/extensions/kiwi@kemma/icons/fan-more.svg'),
+            }),
             icon_size: Math.round(iconSize * 0.3),
         }),
         'kiwi-fan-more',
@@ -519,6 +519,7 @@ function _showFan(info) {
     });
 
     fan = { overlay, grab, rows, info };
+
 }
 
 function _dropOverlay(overlay) {
@@ -575,6 +576,8 @@ function _closeFan() {
             landed = true;
             return;
         }
+        if (sheet)
+            _dropFanSheet({sheet});
         _dropOverlay(overlay);
         // Rebuilt from the folder as it stands now, in case it changed while the
         // fan was out
@@ -759,38 +762,15 @@ function _stackIcon(dash) {
         gicon: new Gio.ThemedIcon({ name: 'folder-download' }),
         icon_size: dash.iconSize,
     });
+    // Bigger than the app icons, but painted inside its own slot: scaled
+    // about its centre so nothing sticks out past the dock.
+    folder.set_pivot_point(0.5, 0.5);
+    folder.set_scale(FOLDER_SCALE, FOLDER_SCALE);
 
-    // No fan on this dock, so nothing for a pile to come out of: the item is
-    // the folder alone
-    if (!_fansOut(dash)) {
-        box.cards = [];
-        box.add_child(folder);
-        return box;
-    }
-
-    // The bottom of the pile, and what is left of it once the cards have gone
-    if (!behindFolder)
-        box.add_child(folder);
-
-    const pile = _pileMetrics(dash);
+    // The folder alone, at its own size: no file cards behind or on it. The
+    // fan still flies out from where the pile would have lain.
     box.cards = [];
-    // Added back to front, so the newest ends up on top of the pile
-    for (let depth = pile.depth - 1; depth >= 0; depth--) {
-        const card = _fileIcon(recent[depth], pile.size);
-        const { x, y, tilt } = _cardOffset(pile, depth);
-        card.set({ translation_x: x, translation_y: y, rotation_angle_z: tilt });
-        // Leaning out of the folder rather than lying over it, so the card turns
-        // about the edge that stays inside - the one nearest the screen edge the
-        // dock sits on
-        if (behindFolder)
-            card.set_pivot_point(0.5, pile.dir < 0 ? 1 : 0);
-        box.add_child(card);
-        box.cards[depth] = card;
-    }
-
-    // In front of the pile, holding the papers in
-    if (behindFolder)
-        box.add_child(folder);
+    box.add_child(folder);
     return box;
 }
 
@@ -851,13 +831,6 @@ function _buildItem(info) {
  * @param info the per-dock state
  */
 function _placeItem(info) {
-    // We are attached the moment the dock appears, before it has filled its box
-    // of icons. A stack built then has no icon to copy and takes the shell's
-    // container, whose hover label sits above it wherever the dock is; rebuild
-    // it as soon as the dock has one of its own.
-    if (info.item && !dashItemMatchesDock(info.dash, info.item))
-        info.item.destroy();
-
     if (!info.item)
         _buildItem(info);
 
@@ -880,7 +853,7 @@ function _placeItem(info) {
     // At the head of the strip, after the divider that opens it: the stack comes
     // before the minimized windows, and the trash stays at the end
     const first = strip.get_first_child();
-    const divider = first?.get_style_class_name()?.includes('dash-separator');
+    const divider = first?.get_style_class_name?.()?.includes('dash-separator');
     const index = divider ? 1 : 0;
     // Clutter reorders by taking the child out and putting it back, relayout and
     // all, so ask only when we are not already there
@@ -931,11 +904,12 @@ function _syncSeparator(info, own) {
  * that is going on.
  */
 function _queueReplace() {
-    if (replaceLater || !enabled)
+    if (sources.replace || !enabled)
         return;
-    replaceLater = beforeRedraw(() => {
-        replaceLater = 0;
+    sources.replace = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+        sources.replace = 0;
         docks.forEach(_placeItem);
+        return GLib.SOURCE_REMOVE;
     });
 }
 
@@ -1058,11 +1032,6 @@ export function enable(gettext, settings) {
 
 export function disable() {
     enabled = false;
-
-    if (replaceLater) {
-        cancelBeforeRedraw(replaceLater);
-        replaceLater = 0;
-    }
 
     for (const key of Object.keys(sources)) {
         if (sources[key])

@@ -1121,9 +1121,95 @@ export default class EvalHelper extends Extension {
         } catch (e) {
             console.error(`[EvalHelper] Launchpad protection error: ${e}`);
         }
+
+        // Menubar Context & Popup Menu Appearance Animation (authentic 0.3s scale & fade)
+        try {
+            import('resource:///org/gnome/shell/ui/boxpointer.js').then((BoxPointer) => {
+                if (!this._origBoxPointerOpen) {
+                    this._origBoxPointerOpen = BoxPointer.BoxPointer.prototype.open;
+                    this._origBoxPointerClose = BoxPointer.BoxPointer.prototype.close;
+                }
+                BoxPointer.BoxPointer.prototype.open = function(animate, onComplete) {
+                    this.remove_all_transitions();
+                    this._muteKeys = false;
+                    this.show();
+
+                    this.set_pivot_point(0.5, 0);
+                    this.translation_x = 0;
+                    this.translation_y = 0;
+
+                    if (animate === 0 || animate === false) {
+                        this.opacity = 255;
+                        this.scale_x = 1.0;
+                        this.scale_y = 1.0;
+                        this._muteInput = false;
+                        if (onComplete) onComplete();
+                        return;
+                    }
+
+                    this.scale_x = 0.95;
+                    this.scale_y = 0.95;
+                    this.opacity = 0;
+
+                    this.ease({
+                        opacity: 255,
+                        scale_x: 1.0,
+                        scale_y: 1.0,
+                        translation_x: 0,
+                        translation_y: 0,
+                        duration: 300, // exactly 0.3s
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        onComplete: () => {
+                            this._muteInput = false;
+                            if (onComplete) onComplete();
+                        }
+                    });
+                };
+
+                BoxPointer.BoxPointer.prototype.close = function(animate, onComplete) {
+                    if (!this.visible) return;
+                    this.remove_all_transitions();
+
+                    if (animate === 0 || animate === false) {
+                        this.hide();
+                        this.scale_x = 1.0;
+                        this.scale_y = 1.0;
+                        if (onComplete) onComplete();
+                        return;
+                    }
+
+                    this.ease({
+                        opacity: 0,
+                        scale_x: 0.96,
+                        scale_y: 0.96,
+                        duration: 150,
+                        mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                        onComplete: () => {
+                            this.hide();
+                            this.scale_x = 1.0;
+                            this.scale_y = 1.0;
+                            if (onComplete) onComplete();
+                        }
+                    });
+                };
+            }).catch(e => console.error(`[EvalHelper] BoxPointer patch error: ${e}`));
+        } catch (e) {
+            console.error(`[EvalHelper] BoxPointer setup error: ${e}`);
+        }
     }
 
     disable() {
+        if (this._origBoxPointerOpen) {
+            try {
+                import('resource:///org/gnome/shell/ui/boxpointer.js').then((BoxPointer) => {
+                    if (this._origBoxPointerOpen) BoxPointer.BoxPointer.prototype.open = this._origBoxPointerOpen;
+                    if (this._origBoxPointerClose) BoxPointer.BoxPointer.prototype.close = this._origBoxPointerClose;
+                });
+            } catch (_) {}
+            this._origBoxPointerOpen = null;
+            this._origBoxPointerClose = null;
+        }
+
         if (this._dbusImpl) {
             try { this._dbusImpl.unexport(); } catch (_) {}
             this._dbusImpl = null;

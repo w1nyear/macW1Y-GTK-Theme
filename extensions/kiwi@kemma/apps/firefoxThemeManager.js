@@ -10,7 +10,6 @@ export function enable(ext) {
         _manager = new MozillaThemeManager(ext, {
             settingsKey: 'enable-firefox-styling',
             profileBaseDir: '.mozilla/firefox',
-            xdgProfileDir: 'mozilla/firefox',
             cssPrefix: 'firefoxWindowControls',
             logPrefix: 'FirefoxTheme',
         });

@@ -6,8 +6,9 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 let _activitiesButton = null;
 
 export function enable() {
-    _activitiesButton = Main.panel.statusArea.activities;
-    if (_activitiesButton?.visible) {
+    // Store reference to Activities button (left box first child normally)
+    _activitiesButton = Main.panel.statusArea['activities'] || Main.panel._leftBox?.get_children()?.find(c => c?.constructor?.name?.toLowerCase().includes('activities'));
+    if (_activitiesButton && _activitiesButton.visible) {
         _activitiesButton.hide();
     }
 }

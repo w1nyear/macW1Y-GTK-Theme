@@ -37,13 +37,14 @@ let panelStyleSignal;
 let bgSettings;
 let bgSignals = [];
 let wallpaperLuminance = 0;
+let wallpaperAverage = null; // [r,g,b] of the wallpaper top strip, 0..255
 let iconTheme;
 let monochromeIcons = new Map(); // gicon string -> 'light' | 'dark' | null
 let contentIcons = new WeakMap(); // St.ImageContent -> 'light' | 'dark' | null
 
 const SAMPLE_SIZE = 32; // wallpaper is downscaled to this before sampling
 const SAMPLE_ROWS = 4;  // top rows only — that's what sits behind the panel
-const LIGHT_THRESHOLD = 0.45;
+const LIGHT_THRESHOLD = 0.6;
 const DARKEN_EFFECT = 'kiwi-tray-darken';
 const LIGHTEN_EFFECT = 'kiwi-tray-lighten';
 const ICON_SAMPLE_SIZE = 24;
@@ -69,8 +70,8 @@ function createBlurEffect() {
     destroyBlurEffect();
 
     const panel = Main.panel;
-    const panelBox = panel.get_parent();
-    if (!panelBox) return;
+    const panelBox = panel?.get_parent();
+    if (!panel || !panelBox) return;
 
     // Container that doesn't affect layout
     blurBackgroundGroup = new Meta.BackgroundGroup({
@@ -122,7 +123,7 @@ function _scheduleBlurRepaint() {
     if (blurRepaintIdleId || !blurEffect) return;
     blurRepaintIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
         blurRepaintIdleId = 0;
-        if (blurEffect && blurWidget.visible)
+        if (blurEffect && blurWidget?.visible)
             blurEffect.queue_repaint();
         return GLib.SOURCE_REMOVE;
     });
@@ -130,8 +131,10 @@ function _scheduleBlurRepaint() {
 
 function _connectPaintSignals() {
     _disconnectPaintSignals();
+    if (!blurEffect) return;
 
     const backgroundGroup = Main.layoutManager._backgroundGroup;
+    if (!backgroundGroup) return;
 
     // Connect to each current background actor
     for (const bg of backgroundGroup) {
@@ -155,8 +158,10 @@ function _connectPaintSignals() {
 
     const wmSignals = ['map', 'destroy', 'minimize', 'unminimize', 'switch-workspace'];
     for (const sigName of wmSignals) {
-        const id = global.window_manager.connect(sigName, _scheduleBlurRepaint);
-        blurPaintSignals.push({ actor: global.window_manager, id });
+        try {
+            const id = global.window_manager.connect(sigName, _scheduleBlurRepaint);
+            blurPaintSignals.push({ actor: global.window_manager, id });
+        } catch (_) {}
     }
 
     const showId = Main.overview.connect('showing', _scheduleBlurRepaint);
@@ -179,8 +184,9 @@ function _disconnectPaintSignals() {
     // Copy and clear first so destroy-signal callbacks don't mutate mid-iteration
     const signals = blurPaintSignals;
     blurPaintSignals = [];
-    for (const { actor, id } of signals)
-        actor.disconnect(id);
+    for (const { actor, id } of signals) {
+        try { actor.disconnect(id); } catch (_) {}
+    }
     if (blurRepaintIdleId) {
         GLib.Source.remove(blurRepaintIdleId);
         blurRepaintIdleId = 0;
@@ -189,7 +195,7 @@ function _disconnectPaintSignals() {
 
 function _updateBlurSize() {
     const panel = Main.panel;
-    if (!blurWidget) return;
+    if (!blurWidget || !panel) return;
 
     blurWidget.set_position(panel.x, panel.y);
     blurWidget.set_size(panel.width, panel.height);
@@ -198,24 +204,29 @@ function _updateBlurSize() {
 
 function destroyBlurEffect() {
     const panel = Main.panel;
-    const panelBox = panel.get_parent();
+    const panelBox = panel?.get_parent();
 
     // Disconnect size tracking signals
     if (blurSizeSignals.length > 0) {
         // First two signals are on the panel, last two on panelBox
-        panel.disconnect(blurSizeSignals[0]);
-        panel.disconnect(blurSizeSignals[1]);
+        if (panel) {
+            try { panel.disconnect(blurSizeSignals[0]); } catch (_) {}
+            try { panel.disconnect(blurSizeSignals[1]); } catch (_) {}
+        }
         if (panelBox) {
-            panelBox.disconnect(blurSizeSignals[2]);
-            panelBox.disconnect(blurSizeSignals[3]);
+            try { panelBox.disconnect(blurSizeSignals[2]); } catch (_) {}
+            try { panelBox.disconnect(blurSizeSignals[3]); } catch (_) {}
         }
         blurSizeSignals = [];
     }
 
     _disconnectPaintSignals();
 
-    // destroy() also unparents it and destroys its children
     if (blurBackgroundGroup) {
+        if (panelBox) {
+            try { panelBox.remove_child(blurBackgroundGroup); } catch (_) {}
+        }
+        blurBackgroundGroup.destroy_all_children();
         blurBackgroundGroup.destroy();
         blurBackgroundGroup = null;
     }
@@ -237,7 +248,8 @@ function updateBlurVisibility(visible) {
 // Style extension) keeps dark text over a dark wallpaper.
 
 function _wallpaperPath() {
-    const dark = interfaceSettings.get_string('color-scheme') === 'prefer-dark';
+    if (!bgSettings) return null;
+    const dark = interfaceSettings?.get_string('color-scheme') === 'prefer-dark';
     let uri = dark ? bgSettings.get_string('picture-uri-dark') : '';
     if (!uri) uri = bgSettings.get_string('picture-uri');
     if (!uri) return null;
@@ -248,6 +260,7 @@ function updateWallpaperLightness() {
     const path = _wallpaperPath();
     if (!path) {
         wallpaperLuminance = 0;
+        wallpaperAverage = null;
         return;
     }
 
@@ -261,17 +274,24 @@ function updateWallpaperLightness() {
         const width = pixbuf.get_width();
         const rows = Math.min(SAMPLE_ROWS, pixbuf.get_height());
 
-        let sum = 0;
+        let sum = 0, sr = 0, sg = 0, sb = 0;
         for (let y = 0; y < rows; y++) {
             for (let x = 0; x < width; x++) {
                 const i = y * stride + x * channels;
-                sum += (0.2126 * pixels[i] + 0.7152 * pixels[i + 1] + 0.0722 * pixels[i + 2]) / 255;
+                const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+                sum += (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+                sr += r;
+                sg += g;
+                sb += b;
             }
         }
-        wallpaperLuminance = sum / (rows * width);
+        const n = rows * width;
+        wallpaperLuminance = sum / n;
+        wallpaperAverage = [Math.round(sr / n), Math.round(sg / n), Math.round(sb / n)];
     } catch (_e) {
         // XML slideshows and unreadable files: keep the theme foreground
         wallpaperLuminance = 0;
+        wallpaperAverage = null;
     }
 }
 
@@ -356,7 +376,7 @@ function _contentTone(content) {
     try {
         const [stream] = content.load(ICON_SAMPLE_SIZE, null);
         const pixbuf = GdkPixbuf.Pixbuf.new_from_stream(stream, null);
-        if (pixbuf.get_has_alpha())
+        if (pixbuf?.get_has_alpha())
             tone = _measureIcon(pixbuf);
     } catch (_e) {
         // Unreadable content: leave it alone
@@ -439,7 +459,7 @@ function updateForegroundContrast(opacity, panelLuminance = _panelLuminance()) {
     panel.add_style_class_name(dark ? 'kiwi-panel-dark-text' : 'kiwi-panel-light-text');
 
     // Indicators that appear later are picked up by the periodic safety check.
-    updateTrayIconInversion(settings.get_boolean('panel-invert-tray-icons')
+    updateTrayIconInversion(settings?.get_boolean('panel-invert-tray-icons')
         ? (dark ? 'darken' : 'lighten')
         : null);
 }
@@ -452,8 +472,9 @@ function updateForegroundContrast(opacity, panelLuminance = _panelLuminance()) {
 // behaviour needed an overview trip (which clears the inline style) to show up.
 function applyPanelColorFix() {
     const panel = Main.panel;
+    if (!panel) return;
 
-    if (settings.get_boolean('panel-color-inherit')) {
+    if (settings && settings.get_boolean('panel-color-inherit')) {
         panel.add_style_class_name('kiwi-panel-color-inherit');
     } else {
         panel.remove_style_class_name('kiwi-panel-color-inherit');
@@ -476,19 +497,24 @@ function applyPanelColorFix() {
 // other extension that paints the panel inline (e.g. Light Shell).
 function restorePanelStyle() {
     const panel = Main.panel;
+    if (!panel) return;
     ownBackground = '';
     panel.set_style(originalStyle);
     panel.queue_redraw();
 }
 
 function _isFullscreenActive() {
-    return global.workspace_manager
-        .get_active_workspace()
-        .list_windows()
-        .some(win =>
-            win.showing_on_its_workspace() &&
-            !win.is_hidden() &&
-            win.is_fullscreen());
+    try {
+        return global.workspace_manager
+            .get_active_workspace()
+            .list_windows()
+            .some(win =>
+                win.showing_on_its_workspace() &&
+                !win.is_hidden() &&
+                typeof win.is_fullscreen === 'function' && win.is_fullscreen());
+    } catch (_e) {
+        return false;
+    }
 }
 
 // The shell owns Main.panel.style too: Overview._gestureEnd() replaces it with
@@ -516,7 +542,7 @@ function _cancelNoTransitionIdle() {
 
 function updatePanelStyle(alpha = null) {
     const panel = Main.panel;
-    if (isUpdatingStyle) return;
+    if (isUpdatingStyle || !panel) return;
     isUpdatingStyle = true;
     
     try {
@@ -562,7 +588,7 @@ function updatePanelStyle(alpha = null) {
             return;
         }
 
-        if (!settings.get_boolean('panel-transparency')) {
+        if (!settings?.get_boolean('panel-transparency')) {
             updateBlurVisibility(false);
             updateForegroundContrast(1.0);
             restorePanelStyle();
@@ -580,14 +606,20 @@ function updatePanelStyle(alpha = null) {
         else if (!overviewHiding)
             lastPanelColor = [r, g, b];
 
+        // Adaptive panel: paint the wallpaper's own top-strip color instead
+        // of the theme color, so the bar follows what's behind it.
+        if (!overviewHiding && settings?.get_boolean('panel-adaptive-colors') &&
+            wallpaperAverage)
+            [r, g, b] = wallpaperAverage;
+
         if (alpha !== null) {
             lastForcedAlpha = alpha;
         }
-        const opacity = lastForcedAlpha ?? settings.get_int('panel-transparency-level') / 100;
+        const opacity = (alpha !== null ? alpha : (lastForcedAlpha !== null ? lastForcedAlpha : settings.get_int('panel-transparency-level') / 100));
         const newStyle = `background-color: rgba(${r}, ${g}, ${b}, ${opacity}) !important;`;
         
         // Show/hide blur regardless of whether style string changed
-        const blurEnabled = settings.get_boolean('panel-blur');
+        const blurEnabled = settings?.get_boolean('panel-blur');
         updateBlurVisibility(blurEnabled && opacity < 1.0);
         updateForegroundContrast(opacity, _luminance({ red: r, green: g, blue: b }));
 
@@ -595,20 +627,25 @@ function updatePanelStyle(alpha = null) {
             setPanelBackground(newStyle);
             panel.queue_redraw();
         }
+    } catch (error) {
+        ownBackground = '';
+        panel.set_style(originalStyle || '');
     } finally {
         isUpdatingStyle = false;
     }
 }
 
 function checkWindowTouchingPanel() {
-    if (!settings.get_boolean('panel-transparency') || 
+    if (!settings?.get_boolean('panel-transparency') || 
         !settings.get_boolean('panel-opaque-on-window')) {
         // Even if opaque-on-window is disabled, fullscreen should force opaque
         if (_isFullscreenActive()) {
             updatePanelStyle(1.0);
         } else {
             // Clear any stale forced alpha (e.g., from prior fullscreen)
-            lastForcedAlpha = null;
+            if (lastForcedAlpha !== null) {
+                lastForcedAlpha = null;
+            }
             updatePanelStyle(null);
         }
         return;
@@ -643,7 +680,12 @@ function checkWindowTouchingPanel() {
 function handleWindowSignals(connect = true) {
     if (!connect) {
         windowSignals.forEach(({ actor, signals }) => {
-            signals.forEach(signalId => actor.disconnect(signalId));
+            signals.forEach(signalId => {
+                // Some display signal connections fall back to 0 when the
+                // signal doesn't exist — disconnect(0) would throw
+                if (signalId)
+                    actor.disconnect(signalId);
+            });
         });
         windowSignals = [];
         return;
@@ -711,6 +753,11 @@ function disconnectWindowSignals(metaWindow) {
 }
 
 function setupSignals() {
+    settingsSignals.forEach(signal => {
+        settings.disconnect(signal);
+    });
+    settingsSignals = [];
+
     settingsSignals = [
         settings.connect('changed::panel-transparency', () => {
             if (settings.get_boolean('panel-transparency')) {
@@ -731,6 +778,9 @@ function setupSignals() {
             applyPanelColorFix();
         }),
         settings.connect('changed::panel-invert-tray-icons', () => {
+            updatePanelStyle(null);
+        }),
+        settings.connect('changed::panel-adaptive-colors', () => {
             updatePanelStyle(null);
         }),
         settings.connect('changed::panel-blur', () => {
@@ -763,9 +813,19 @@ function setupSignals() {
             global.display.connect('window-left-monitor', () => {
                 checkWindowTouchingPanel();
             }),
-            global.display.connect('in-fullscreen-changed', () => {
-                checkWindowTouchingPanel();
-            }),
+            // Fullscreen enter/leave signals (GNOME Shell provides these on display)
+            // Fallback: if signals are not available, they just won't fire.
+            (() => { try { return global.display.connect('window-entered-fullscreen', () => { updatePanelStyle(); }); } catch(_e) { return 0; } })(),
+                (() => { try { return global.display.connect('window-left-fullscreen', () => { 
+                    // Fullscreen exited: if opaque-on-window disabled, restore configured transparency.
+                    if (!settings.get_boolean('panel-opaque-on-window')) {
+                        lastForcedAlpha = null; // allow normal transparency level
+                        updatePanelStyle(null);
+                    } else {
+                        checkWindowTouchingPanel();
+                    }
+                 }); } catch(_e) { return 0; } })(),
+            (() => { try { return global.display.connect('in-fullscreen-changed', () => { checkWindowTouchingPanel(); }); } catch(_e) { return 0; } })()
         ]
     });
 
@@ -815,11 +875,15 @@ function forceThemeUpdate() {
     });
 }
 
+export function init(extensionSettings) {
+    settings = extensionSettings;
+}
+
 export function enable(_settings) {
     // extension.js re-runs every module's enable() on any settings change, so
     // this must be idempotent — otherwise originalStyle is re-captured from a
     // panel we already made transparent, and timers/signals pile up.
-    if (enabled) return;
+    if (enabled || !_settings) return;
     settings = _settings;
     enabled = true;
 
@@ -871,12 +935,14 @@ export function enable(_settings) {
 
     // Lightweight periodic safety check (every 2s) to catch missed transitions (uses full logic)
     safetyIntervalId = GLib.timeout_add(GLib.PRIORITY_LOW, 2000, () => {
+        if (!settings) { safetyIntervalId = null; return GLib.SOURCE_REMOVE; }
         checkWindowTouchingPanel();
         return GLib.SOURCE_CONTINUE;
     });
 }
 
 export function disable() {
+    if (!enabled) return;
     enabled = false;
 
     if (timeoutId) {
@@ -899,8 +965,6 @@ export function disable() {
     if (themeUpdateIdleId) {
         GLib.Source.remove(themeUpdateIdleId);
         themeUpdateIdleId = 0;
-        // forceThemeUpdate() took the class off; its idle was what put it back
-        Main.panel.add_style_class_name('panel');
     }
     if (colorSchemeIdleId) {
         GLib.Source.remove(colorSchemeIdleId);
@@ -938,12 +1002,10 @@ export function disable() {
     panel.remove_style_class_name('kiwi-panel-color-inherit');
     panel.remove_style_class_name('kiwi-panel-no-transition');
     clearForegroundContrast();
-    // Only hand back a style we saved; never clobber another extension's
-    if (originalStyle !== undefined)
-        restorePanelStyle();
+    restorePanelStyle();
 
     settings = null;
-    originalStyle = undefined;
+    originalStyle = null;
     lastForcedAlpha = null;
     lastFullscreenState = false;
     overviewHiding = false;

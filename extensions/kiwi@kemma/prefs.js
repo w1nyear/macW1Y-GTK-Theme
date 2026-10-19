@@ -24,7 +24,8 @@ import Gtk from 'gi://Gtk';
 import GLib from 'gi://GLib';
 import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-const D2D_UUIDS = ['dash-to-dock@micxgx.gmail.com', 'ubuntu-dock@ubuntu.com'];
+const D2D_UUIDS = ['dash-to-dock@micxgx.gmail.com', 'ubuntu-dock@ubuntu.com',
+    'dash2dock-motion@unmade.space'];
 const EXTENSION_ACTIVE = 1;
 // The shell's own end of the extensions interface. Prefs runs in the process
 // that owns org.gnome.Shell.Extensions, so asking that name is asking ourselves.
@@ -35,6 +36,10 @@ const SHELL = {
 };
 
 export default class KiwiPreferences extends ExtensionPreferences {
+    constructor(metadata) {
+        super(metadata);
+    }
+
     _createLinkRow(title, url, subtitle = null, prefixGicon = null) {
         const row = new Adw.ActionRow({
             title,
@@ -115,17 +120,24 @@ export default class KiwiPreferences extends ExtensionPreferences {
         window.title = extensionTitle;
         window.set_default_size(510, 710);
         // Enable built-in libadwaita search (adds search button automatically)
-        window.set_search_enabled(true);
+        if (window.set_search_enabled)
+            window.set_search_enabled(true);
 
         // Add custom icons path to GTK icon theme search path
         const iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
         const iconsPath = GLib.build_filenamev([this.path, 'icons']);
         iconTheme.add_search_path(iconsPath);
 
-        // Custom CSS for the version pill
-        const cssProvider = new Gtk.CssProvider();
-        cssProvider.load_from_path(GLib.build_filenamev([this.path, 'css', 'prefs.css']));
-        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), cssProvider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+        // Ensure custom CSS for version pill is loaded once per display
+        if (!window._kiwiVersionCssProvider) {
+            const cssProvider = new Gtk.CssProvider();
+            const cssPath = GLib.build_filenamev([this.path, 'css', 'prefs.css']);
+            cssProvider.load_from_path(cssPath);
+            const display = Gdk.Display.get_default();
+            if (display)
+                Gtk.StyleContext.add_provider_for_display(display, cssProvider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+            window._kiwiVersionCssProvider = cssProvider;
+        }
 
         //
         // About Page (First Page)
@@ -149,13 +161,22 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
 
         // Logo centered — Gtk.Picture scales with the window (matches kiwi-menu)
-        headerBox.append(new Gtk.Picture({
-            file: Gio.File.new_for_path(`${this.path}/icons/kiwi_logo.png`),
-            width_request: 128,
-            height_request: 128,
-            content_fit: Gtk.ContentFit.CONTAIN,
-            halign: Gtk.Align.CENTER,
-        }));
+        try {
+            const logoPath = this.path + '/icons/kiwi_logo.png';
+            const logoFile = Gio.File.new_for_path(logoPath);
+            if (logoFile.query_exists(null)) {
+                const logoImage = new Gtk.Picture({
+                    file: logoFile,
+                    width_request: 128,
+                    height_request: 128,
+                    content_fit: Gtk.ContentFit.CONTAIN,
+                    halign: Gtk.Align.CENTER,
+                });
+                headerBox.append(logoImage);
+            }
+        } catch (e) {
+            console.error('Failed to load Kiwi logo:', e);
+        }
 
         // Title
         const titleLabel = new Gtk.Label({
@@ -173,19 +194,32 @@ export default class KiwiPreferences extends ExtensionPreferences {
         headerBox.append(authorLabel);
 
         // Version pill
-        // EGO adds the numeric version on upload; local installs only have version-name
-        const versionName = this.metadata['version-name'];
-        const version = this.metadata.version;
+        const metadataVersionName = this.metadata['version-name'];
+        const metadataVersionRaw = this.metadata.version;
+        const metadataVersionString = typeof metadataVersionRaw === 'number'
+            ? (Number.isFinite(metadataVersionRaw) ? `${metadataVersionRaw}` : '')
+            : typeof metadataVersionRaw === 'string'
+                ? metadataVersionRaw.trim()
+                : '';
+        const hasValidNumericVersion = metadataVersionString.length > 0 && !Number.isNaN(Number(metadataVersionString));
+        let versionLabel = metadataVersionName ?? (hasValidNumericVersion ? metadataVersionString : _('Unknown'));
+        if (metadataVersionName && hasValidNumericVersion)
+            versionLabel = `${metadataVersionName} (${metadataVersionString})`;
         const versionButton = new Gtk.Button({
-            label: version ? `${versionName} (${version})` : versionName,
+            label: versionLabel,
             halign: Gtk.Align.CENTER,
             margin_top: 4,
             tooltip_text: _('Change log'),
         });
         versionButton.add_css_class('pill');
         versionButton.add_css_class('kiwi-version-button');
+        const releasesBaseUrl = 'https://github.com/kem-a/kiwi-kemma/releases';
         versionButton.connect('clicked', () => {
-            Gtk.show_uri(null, `https://github.com/kem-a/kiwi-kemma/releases/tag/v${encodeURIComponent(versionName)}`, Gdk.CURRENT_TIME);
+            let targetUrl = releasesBaseUrl;
+            if (metadataVersionName && metadataVersionName !== _('Unknown'))
+                targetUrl = `${releasesBaseUrl}/tag/v${encodeURIComponent(metadataVersionName)}`;
+
+            Gtk.show_uri(null, targetUrl, Gdk.CURRENT_TIME);
         });
         headerBox.append(versionButton);
 
@@ -435,7 +469,26 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
         transparencyExpander.add_row(invertTrayIconsRow);
 
+        // Adaptive panel color from the wallpaper behind it
+        const adaptiveColorsRow = new Adw.SwitchRow({
+            title: _("Adaptive Panel Colors"),
+            subtitle: _("Paint the transparent panel with the wallpaper color visible behind it"),
+            active: settings.get_boolean('panel-adaptive-colors'),
+            sensitive: settings.get_boolean('panel-transparency'),
+        });
+        transparencyExpander.add_row(adaptiveColorsRow);
+
         transparencyGroup.add(transparencyExpander);
+
+        // Tahoe-style dark gradient veil over the panel (independent switch)
+        const panelGradientRow = new Adw.SwitchRow({
+            title: _("Panel Gradient"),
+            subtitle: _("Dark gradient at the top of the panel fading out toward its edge, like macOS Tahoe"),
+            active: settings.get_boolean('panel-gradient'),
+        });
+        transparencyGroup.add(panelGradientRow);
+        settings.bind('panel-gradient', panelGradientRow, 'active',
+            Gio.SettingsBindFlags.DEFAULT);
 
         // Bindings for expander
         settings.bind('panel-transparency', transparencyExpander, 'enable-expansion',
@@ -460,16 +513,16 @@ export default class KiwiPreferences extends ExtensionPreferences {
             Gio.SettingsBindFlags.DEFAULT);
         settings.bind('panel-transparency', invertTrayIconsRow, 'sensitive',
             Gio.SettingsBindFlags.GET);
+        settings.bind('panel-adaptive-colors', adaptiveColorsRow, 'active',
+            Gio.SettingsBindFlags.DEFAULT);
+        settings.bind('panel-transparency', adaptiveColorsRow, 'sensitive',
+            Gio.SettingsBindFlags.GET);
 
         const windowTitleGroup = new Adw.PreferencesGroup({
             title: _('Panel Items'),
             description: _('Choose what the top panel and its menus show'),
         });
         panelPage.add(windowTitleGroup);
-
-        this._addSwitchRows(settings, windowTitleGroup, [
-            { key: 'panel-hover-fullscreen', title: _("Show Panel in Fullscreen on Hover"), subtitle: _("Show panel when mouse is near top edge in fullscreen. Bugged for GTK4 apps.") },
-        ]);
 
         // Tiling lives under the window title because the layouts are reached from its
         // menu; without the title in the panel there is no way to open them.
@@ -482,21 +535,13 @@ export default class KiwiPreferences extends ExtensionPreferences {
         settings.bind('show-window-title', windowTitleExpander, 'enable-expansion',
             Gio.SettingsBindFlags.DEFAULT);
 
-        // The sub-options are stored as positive keys, so their rows invert them.
+        // Both sub-options are stored as positive keys, so their rows invert them.
         const titleIconRow = new Adw.SwitchRow({
             title: _("Hide App Icon"),
             subtitle: _("Do not show the application icon next to the window title"),
         });
         windowTitleExpander.add_row(titleIconRow);
         settings.bind('show-window-title-icon', titleIconRow, 'active',
-            Gio.SettingsBindFlags.DEFAULT | Gio.SettingsBindFlags.INVERT_BOOLEAN);
-
-        const subtitleRow = new Adw.SwitchRow({
-            title: _("Hide Window Subtitle"),
-            subtitle: _("Show only the application name, without the window's own title"),
-        });
-        windowTitleExpander.add_row(subtitleRow);
-        settings.bind('show-window-subtitle', subtitleRow, 'active',
             Gio.SettingsBindFlags.DEFAULT | Gio.SettingsBindFlags.INVERT_BOOLEAN);
 
         const tilingTitleMenuRow = new Adw.SwitchRow({
@@ -507,11 +552,10 @@ export default class KiwiPreferences extends ExtensionPreferences {
         settings.bind('show-tiling-title-menu', tilingTitleMenuRow, 'active',
             Gio.SettingsBindFlags.DEFAULT | Gio.SettingsBindFlags.INVERT_BOOLEAN);
 
-        // Keep the expander closed while all sub-options sit at their default (off) state.
+        // Keep the expander closed while both sub-options sit at their default (off) state.
         const syncWindowTitleExpansion = () => {
             const titleEnabled = settings.get_boolean('show-window-title');
             const hasSubOption = !settings.get_boolean('show-window-title-icon') ||
-                !settings.get_boolean('show-window-subtitle') ||
                 !settings.get_boolean('show-tiling-title-menu');
             windowTitleExpander.expanded = titleEnabled && hasSubOption;
         };
@@ -519,8 +563,11 @@ export default class KiwiPreferences extends ExtensionPreferences {
         syncWindowTitleExpansion();
         settings.connect('changed::show-window-title', syncWindowTitleExpansion);
         settings.connect('changed::show-window-title-icon', syncWindowTitleExpansion);
-        settings.connect('changed::show-window-subtitle', syncWindowTitleExpansion);
         settings.connect('changed::show-tiling-title-menu', syncWindowTitleExpansion);
+
+        this._addSwitchRows(settings, windowTitleGroup, [
+            { key: 'panel-hover-fullscreen', title: _("Show Panel in Fullscreen on Hover"), subtitle: _("Show panel when mouse is near top edge in fullscreen. Bugged for GTK4 apps.") },
+        ]);
 
         // Expander with notification indicator style sub-option
         const calendarHasNonDefault =
@@ -540,6 +587,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             title: _("Keep GNOME Notification Panel"),
             subtitle: _("Don't split notification and calendar layout"),
         });
+        calendarExpander.add_row(keepPanelRow);
         settings.bind('keep-notification-panel', keepPanelRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 
         const indicatorStyleRow = this._createEnumComboRow(
@@ -550,9 +598,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             ['default', 'accent', 'symbolic'],
             [_('Default'), _('Accent'), _('Symbolic')]
         );
-
         calendarExpander.add_row(indicatorStyleRow);
-        calendarExpander.add_row(keepPanelRow);
 
         // Battery percentage clashes with GNOME's own top bar percentage, so
         // the row is greyed out while that setting is on
@@ -576,8 +622,8 @@ export default class KiwiPreferences extends ExtensionPreferences {
         interfaceSettings.connect('changed::show-battery-percentage', syncBatteryRow);
 
         this._addSwitchRows(settings, windowTitleGroup, [
-            { key: 'custom-dnd-button', title: _("Custom Do Not Disturb Button"), subtitle: _("Replace the system Do Not Disturb button with Kiwi's custom implementation") },
             { key: 'lock-icon', title: _("Caps Lock and Num Lock"), subtitle: _("Show Caps Lock and Num Lock icon") },
+            { key: 'custom-dnd-button', title: _("Custom Do Not Disturb Button"), subtitle: _("Replace the system Do Not Disturb button with Kiwi's custom implementation") },
             { key: 'hide-activities-button', title: _("Hide Activities Button"), subtitle: _("Hide the Activities button in the top panel") },
             { key: 'add-username-to-quick-menu', title: _("Add Username"), subtitle: _("Add username to the quick menu") },
         ]);
@@ -820,6 +866,108 @@ export default class KiwiPreferences extends ExtensionPreferences {
         window.connect('close-request', () => Gio.DBus.session.signal_unsubscribe(dockStateId));
 
         //
+        // Applications Page (Tahoe Launchpad window)
+        //
+        const appsPage = new Adw.PreferencesPage({
+            title: _('Applications'),
+            icon_name: 'view-app-grid-symbolic',
+        });
+        window.add(appsPage);
+
+        const addSpinRow = (group, title, subtitle, key, lower, upper) => {
+            const row = new Adw.SpinRow({
+                title,
+                subtitle,
+                adjustment: new Gtk.Adjustment({
+                    lower,
+                    upper,
+                    step_increment: 1,
+                    page_increment: 5,
+                    value: settings.get_int(key),
+                }),
+            });
+            group.add(row);
+            settings.bind(key, row, 'value', Gio.SettingsBindFlags.DEFAULT);
+            return row;
+        };
+
+        const appsWindowGroup = new Adw.PreferencesGroup({
+            title: _('Window'),
+            description: _('Size and shape of the Applications window'),
+        });
+        appsPage.add(appsWindowGroup);
+
+        addSpinRow(appsWindowGroup, _('Panel Size'),
+            _('Scales the whole Applications panel: window, text and icons (50-150%)'),
+            'tahoe-scale', 50, 150);
+        addSpinRow(appsWindowGroup, _('Corner Radius'),
+            _('Rounding of the glass window corners (px)'),
+            'tahoe-glass-radius', 0, 64);
+
+        const appsGlassGroup = new Adw.PreferencesGroup({
+            title: _('Liquid Glass'),
+            description: _('Tune the glass sheet behind the Applications window'),
+        });
+        appsPage.add(appsGlassGroup);
+
+        addSpinRow(appsGlassGroup, _('Blur Strength'),
+            _('Blur radius of the glass (0-100)'),
+            'tahoe-glass-blur', 0, 100);
+        addSpinRow(appsGlassGroup, _('Tint Strength'),
+            _('How strongly the glass is tinted (0-100)'),
+            'tahoe-glass-tint', 0, 100);
+        addSpinRow(appsGlassGroup, _('Brightness'),
+            _('Brightness inside the window glass (50-200, 100 = neutral)'),
+            'tahoe-glass-brightness', 50, 200);
+
+        const appsLookGroup = new Adw.PreferencesGroup({
+            title: _('Icons and Text'),
+            description: _('Icon sizes and typography of the Applications window'),
+        });
+        appsPage.add(appsLookGroup);
+
+        addSpinRow(appsLookGroup, _('Header Icon Size'),
+            _('Size of the App Store logo left of the search field (px)'),
+            'tahoe-header-icon-size', 12, 64);
+        addSpinRow(appsLookGroup, _('Application Icon Size'),
+            _('Size of the application icons in the grid (px)'),
+            'tahoe-app-icon-size', 32, 128);
+        addSpinRow(appsLookGroup, _('Font Size'),
+            _('Base font size of the Applications window (px)'),
+            'tahoe-font-size', 8, 30);
+
+        const fontRow = new Adw.EntryRow({
+            title: _('Font Family'),
+            text: settings.get_string('tahoe-font'),
+        });
+        appsLookGroup.add(fontRow);
+        settings.bind('tahoe-font', fontRow, 'text', Gio.SettingsBindFlags.DEFAULT);
+
+        const themeRow = this._createEnumComboRow(settings,
+            _('Theme'),
+            _('Light, dark, or following the system. Also drives the dock glass tint.'),
+            'tahoe-theme', ['auto', 'light', 'dark'],
+            [_('Automatic'), _('Light'), _('Dark')]);
+        appsLookGroup.add(themeRow);
+
+        const iconTintColorRow = new Adw.ActionRow({
+            title: _('Tint Color'),
+            subtitle: _('Accent color applied to the icons'),
+        });
+        const tintColorButton = new Gtk.ColorButton();
+        {
+            const rgba = new Gdk.RGBA();
+            if (rgba.parse(settings.get_string('icon-tint-color')))
+                tintColorButton.set_rgba(rgba);
+        }
+        tintColorButton.connect('color-set', () => {
+            settings.set_string('icon-tint-color',
+                tintColorButton.get_rgba().to_string());
+        });
+        iconTintColorRow.add_suffix(tintColorButton);
+        appsLookGroup.add(iconTintColorRow);
+
+        //
         // Window Controls Page
         //
         const windowControlsPage = new Adw.PreferencesPage({
@@ -863,8 +1011,8 @@ export default class KiwiPreferences extends ExtensionPreferences {
             _('Button Type'),
             _('Choose the button icon set'),
             'button-type',
-            ['titlebuttons', 'titlebuttons-alt', 'titlebuttons-glass'],
-            [_('Default'), _('Alternative'), _('Glass')]
+            ['titlebuttons', 'titlebuttons-alt'],
+            [_('Default'), _('Alternative')]
         );
         buttonsExpander.add_row(buttonTypeRow);
 
@@ -953,14 +1101,117 @@ export default class KiwiPreferences extends ExtensionPreferences {
         this._addSwitchRows(settings, group, [
             { key: 'overview-wallpaper-background', title: _("Overview Wallpaper Blur"), subtitle: _("Use blurred current wallpaper as overview background") },
             { key: 'overview-seamless-zoom', title: _("Seamless Overview Zoom"), subtitle: _("Zoom the whole desktop, including the strip behind the panel, in and out of the overview") },
-            { key: 'focus-on-overview-exit', title: _("Focus on Overview Exit"), subtitle: _("Focus the window under the cursor instead of the previously focused one when leaving the overview") },
+            { key: 'mission-control', title: _("Mission Control Overview"), subtitle: _("Static wallpaper without zoom-out, hidden panel and dock in the overview") },
+            { key: 'polkit-dialog-macos', title: _("macOS Auth Dialogs"), subtitle: _("Centered card with lock icon and blue Unlock button for password prompts") },
+            { key: 'hide-qs-circles', title: _("Hide Quick Settings Circles"), subtitle: _("Hide the round system toggles at the top of Quick Settings") },
+            { key: 'tahoe-quick-settings', title: _("Tahoe Quick Settings"), subtitle: _("Replace the stock popup with the liquid-glass control center") },
             { key: 'skip-overview-on-login', title: _("Skip to Desktop"), subtitle: _("Do not show the overview when logging in. Animation is still visible") },
             { key: 'hide-minimized-windows', title: _("Hide Minimized Windows"), subtitle: _("Hide minimized windows in the overview") },
             { key: 'move-window-to-new-workspace', title: _("Move Window to New Workspace"), subtitle: _("Move fullscreen window to a new workspace") },
             { key: 'reduce-window-animations', title: _("Reduce App Animations"), subtitle: _("Mimic macOS window opening and closing with a subtle scale and fade") },
-            { key: 'focus-new-windows', title: _("Focus New Windows"), subtitle: _("Automatically focus new windows instead of showing window-ready alerts. Requires extension reload") },
             { key: 'transparent-move', title: _("Transparent Move"), subtitle: _("Move window with transparency") },
         ]);
+
+        const qsGlassGroup = new Adw.PreferencesGroup({
+            title: _('Control Center Glass'),
+            description: _('Blur and brightness of the Tahoe Quick Settings glass. Reopen the control center to apply.'),
+        });
+        settingsPage.add(qsGlassGroup);
+
+        const addSliderRow = (title, subtitle, key, lower, upper) => {
+            const row = new Adw.ActionRow({title, subtitle});
+            const scale = new Gtk.Scale({
+                orientation: Gtk.Orientation.HORIZONTAL,
+                adjustment: new Gtk.Adjustment({
+                    lower,
+                    upper,
+                    step_increment: 1,
+                    page_increment: 5,
+                    value: settings.get_int(key),
+                }),
+                digits: 0,
+                draw_value: true,
+                value_pos: Gtk.PositionType.RIGHT,
+                hexpand: true,
+                halign: Gtk.Align.FILL,
+                valign: Gtk.Align.CENTER,
+                width_request: 220,
+            });
+            try {
+                scale.connect('value-changed', () => {
+                    try {
+                        settings.set_int(key, Math.round(scale.get_value()));
+                    } catch (_) {
+                        // schema missing
+                    }
+                });
+            } catch (_) {
+                // no scale
+            }
+            row.add_suffix(scale);
+            row.activatable_widget = scale;
+            qsGlassGroup.add(row);
+        };
+        addSliderRow(_('Glass Blur'),
+            _('Blur radius of the control center glass (0-100)'),
+            'tahoe-qs-glass-blur', 0, 100);
+        addSliderRow(_('Glass Brightness'),
+            _('Brightness of the control center glass (50-200, 100 = neutral)'),
+            'tahoe-qs-glass-brightness', 50, 200);
+        addSliderRow(_('Glass Saturation'),
+            _('Color saturation of the control center glass (0-150, 100 = neutral)'),
+            'tahoe-qs-glass-saturation', 0, 150);
+        addSliderRow(_('Glass Tint'),
+            _('Strength of the glass tint wash (0-100)'),
+            'tahoe-qs-glass-tint', 0, 100);
+        addSliderRow(_('Glass Refraction'),
+            _('Refraction strength of the glass (0-200, 100 = stock)'),
+            'tahoe-qs-glass-refraction', 0, 200);
+        addSliderRow(_('Glass Glare'),
+            _('Specular sheen on the glass, 0 = clean (0-100)'),
+            'tahoe-qs-glass-glare', 0, 100);
+        addSliderRow(_('Shadow Blur'),
+            _('Blur radius of the panel shadow (0-80)'),
+            'tahoe-qs-shadow-blur', 0, 80);
+        addSliderRow(_('Shadow Opacity'),
+            _('Opacity of the panel shadow (0-100)'),
+            'tahoe-qs-shadow-opacity', 0, 100);
+        addSliderRow(_('Shadow Glow'),
+            _('Wide soft diffusion of the panel shadow (0-120, 0 = off)'),
+            'tahoe-qs-shadow-glow', 0, 120);
+        addSliderRow(_('Rim Width'),
+            _('Width of the glass edge highlight, 10 = 1px (0-200)'),
+            'tahoe-qs-rim-width', 0, 200);
+        addSliderRow(_('Rim Intensity'),
+            _('Strength of the glass edge highlight (0-100)'),
+            'tahoe-qs-rim-intensity', 0, 100);
+        addSliderRow(_('Rim Power'),
+            _('Falloff sharpness of the edge highlight, 10 = 1.0 (0-200)'),
+            'tahoe-qs-rim-power', 0, 200);
+        addSliderRow(_('Rim Direction'),
+            _('Light directionality of the edge highlight, 10 = 1.0 (0-100)'),
+            'tahoe-qs-rim-direction', 0, 100);
+        addSliderRow(_('Rim Light'),
+            _('Brightness of the edge highlight color (0-300, 100 = neutral)'),
+            'tahoe-qs-rim-light', 0, 300);
+        addSliderRow(_('Specular'),
+            _('Mirror-like specular spots on the glass (0-100)'),
+            'tahoe-qs-specular', 0, 100);
+        addSliderRow(_('Glass IOR'),
+            _('Index of refraction of the glass, 100 = 1.0 (100-400)'),
+            'tahoe-qs-ior', 100, 400);
+        addSliderRow(_('Chromatic Aberration'),
+            _('Color fringing on refracted edges (0-200)'),
+            'tahoe-qs-chroma', 0, 200);
+        addSliderRow(_('Edge Smoothing'),
+            _('Feather of the glass region borders, 10 = 1px (0-100)'),
+            'tahoe-qs-edge', 0, 100);
+        addSliderRow(_('Surface Profile'),
+            _('Curvature profile of the glass surface, 100 = 1.0 (110-1500)'),
+            'tahoe-qs-profile', 110, 1500);
+        addSliderRow(_('Glass Depth'),
+            _('Height of the glass surface relief (0-100)'),
+            'tahoe-qs-depth', 0, 100);
 
         //
         // Advanced Page
@@ -1063,9 +1314,10 @@ export default class KiwiPreferences extends ExtensionPreferences {
             { title: 'Superbar', author: 'Furkan-rgb', url: 'https://github.com/Furkan-rgb/superbar' },
             { title: 'Compiz alike magic lamp effect', author: 'hermes83', url: 'https://extensions.gnome.org/extension/3740/' }, 
             { title: 'AppIndicator Support', author: '3v1n0', url: 'https://extensions.gnome.org/extension/615/' },
-            { title: 'Blur My Shell', author: 'aunetx', url: 'https://github.com/aunetx/blur-my-shell' },
+            { title: 'Clipboard Indicator', author: 'Tudmotu', url: 'https://extensions.gnome.org/extension/779/' },
             { title: 'Light Style', author: 'fmuellner', url: 'https://extensions.gnome.org/extension/6198/' },
             { title: 'Weather or Not', author: 'somepaulo', url: 'https://extensions.gnome.org/extension/5660/' },
+            { title: 'Blur My Shell', author: 'aunetx', url: 'https://github.com/aunetx/blur-my-shell' },
         ];
 
         recommendedExtensions.forEach((rec) => {

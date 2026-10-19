@@ -51,15 +51,15 @@ let _grabOpBeginId = null;
 const MAXIMIZE_ARGS = parseInt(Config.PACKAGE_VERSION) >= 49
     ? [] : [Meta.MaximizeFlags.BOTH];
 
-export function maximizeWindow(win) {
+function maximizeWindow(win) {
     win.maximize(...MAXIMIZE_ARGS);
 }
 
-export function unmaximizeWindow(win) {
+function unmaximizeWindow(win) {
     win.unmaximize(...MAXIMIZE_ARGS);
 }
 
-export function isMaximized(win) {
+function isMaximized(win) {
     return !!win && win.maximized_horizontally && win.maximized_vertically;
 }
 

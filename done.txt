@@ -5911,3 +5911,43 @@ echo "==> Встановлення успішно завершено!"
       * Знято скріншот центрального перемикача мов input_osd_verified_crop.png: білі рамки повністю зникли, чисте скло Liquid Glass.
       * Знято скріншот капсули біля курсору caret_popup_verified_crop.png: відсутня біла рамка, безшовне Liquid Glass.
 
+
+106. Автентичний вигляд контекстного меню менюбару (чистий білий текст, заокруглення 14px, анімація появи 0.3с) та підключення Центру керування і сповіщень Tahoe:
+    - Запит користувача:
+      * "текст у контекст меню тільки білим має бути. виправи заокруглення. виправи на нормальну перероби аніамцію появи. просто збільшення і поява за 0.3 секунди у менюбарі на те яке ми колись мали"
+      * "виправи те щоб центр керування і сповіщень були від GNOME-Theme-Main мого друга а не старі від убунту"
+      * "всі зміни які ми робимо в системі чи в файлах так само має бути і в наших файлах проекту macW1Y"
+    - Діагностика причин:
+      * Темний/брудний колір та кольорові ореоли (cyan/orange halos) на тексті меню:
+        1) В налаштуваннях Liquid Glass параметр panel-menu-enable-adaptive-text-color вимірював яскравість світлих шпалер під меню і примусово вставляв чорний inline-стиль для кольору тексту.
+        2) У рядках 7268-7278 gnome-shell.css було прописано штучну тінь 'text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;', яка створювала подвійні контури.
+        3) Повна прозорість меню (background: transparent) спричиняла заломлення світлих елементів робочого столу безпосередньо під літерами.
+      * Заокруглення: в menubar_v28.js використовувалось 24px та білі рамки 'border: 1px solid rgba(255, 255, 255, 0.16)'.
+      * Анімація: використовувався пружинний шейдер або стандартний 150мс підйом BoxPointer замість плавного збільшення та появи за 300мс (0.3с).
+      * Центр керування та сповіщень: використовувались дефолтні меню GNOME/Ubuntu замість Tahoe Control Center та Tahoe Notification Center з проекту друга.
+    - Реалізовані виправлення:
+      1) Колір тексту та тіні:
+         - Вимкнено адаптивний колір тексту в gsettings Liquid Glass: panel-menu-enable-adaptive-text-color false, menu-enable-adaptive-text-color false.
+         - Усунено всі text-shadow та icon-shadow у gnome-shell.css та appmenu stylesheet.css (встановлено 'text-shadow: none !important; icon-shadow: none !important;').
+         - Встановлено строгий чистий білий колір: #ffffff !important для активних пунктів, rgba(255, 255, 255, 0.45) для неактивних (:insensitive).
+      2) Заокруглення та скляний фон macOS Tahoe:
+         - Встановлено радіус зовнішніх кутів 14px (border-radius: 14px !important; panel-menu-corner-radius 14.0).
+         - Встановлено заокруглення пунктів меню 6px (border-radius: 6px !important;, margin: 1px 6px !important;, min-height: 22px !important;, padding: 3px 12px !important;).
+         - Надано темний напівпрозорий скляний фон: background-color: rgba(30, 30, 34, 0.78) !important;, box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;, без штучних бордюрів (border: none !important;).
+      3) Анімація появи 0.3с (300мс):
+         - Вимкнено різку фізику пружини Liquid Glass (enable-panel-menu-animation false).
+         - У BoxPointer.prototype.open та close (eval-helper@mactheme/extension.js) налаштовано автентичну анімацію масштабу та плавної появи:
+           * Початковий стан: scale_x = 0.95, scale_y = 0.95, opacity = 0, pivot_point = (0.5, 0).
+           * Анімація появи: duration: 300 (рівно 0.3 с), mode: Clutter.AnimationMode.EASE_OUT_QUAD, scale_x: 1.0, scale_y: 1.0, opacity: 255.
+           * Закриття: duration: 150, mode: Clutter.AnimationMode.EASE_IN_QUAD, scale_x: 0.96, scale_y: 0.96, opacity: 0.
+      4) Підключення Центру керування і сповіщень Tahoe:
+         - Інтегровано tahoeControlCenter.js та tahoeNotificationCenter.js з GNOME-Tahoe-main безпосередньо у kiwi@kemma.
+         - Підключено обробники menu.open / close / toggle для QuickSettings та DateMenu.
+         - Забезпечено повний набір Tahoe-іконок та стилів.
+    - Синхронізація:
+      * Усі файли (kiwi@kemma, appmenu stylesheet, blur-my-shell menubar_v28, eval-helper, теми gnome-shell та dconf дампи) синхронізовано з MACTHEMEFILES (macW1Y).
+    - Верифікація:
+      * live_edit_menu_v5_crop.png: ідеальний білий текст, заокруглення 14px, глибоке темне скло без артефактів.
+      * live_edit_menu_hover_crop.png: синє виділення 6px macOS Tahoe з білим текстом при наведенні.
+      * live_tahoe_qs_direct_crop.png: повноцінний Tahoe Control Center зі скляними плитками Wi-Fi, Bluetooth, AirDrop, повзунками яскравості та гучності, плеєром та кнопками.
+      * live_tahoe_nc_direct_crop.png: скляний Tahoe Notification Center зі списком карток сповіщень.

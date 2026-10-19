@@ -1,279 +1,318 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Adds customizable Launchpad icon to the dash, and makes it behave like the native Show Apps button.
+/*
+ * Kiwi is not Apple – macOS-inspired enhancements for GNOME Shell.
+ * Copyright (C) 2025  Arnis Kemlers
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
-import GioUnix from 'gi://GioUnix';
-import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { InjectionManager } from 'resource:///org/gnome/shell/extensions/extension.js';
-import { dashOf, disconnectAll, watchDocks } from './dockUtils.js';
+import { toggle as tahoeToggle } from './tahoeApps.js';
 
-Gio._promisify(Gio.File.prototype, 'query_info_async', 'query_info_finish');
-Gio._promisify(Gio.File.prototype, 'make_directory_async', 'make_directory_finish');
-Gio._promisify(Gio.File.prototype, 'load_contents_async', 'load_contents_finish');
-Gio._promisify(Gio.File.prototype, 'replace_contents_bytes_async', 'replace_contents_finish');
-Gio._promisify(Gio.File.prototype, 'delete_async', 'delete_finish');
-
+// Use a reverse-DNS desktop ID so DBusActivatable maps to a valid bus name
 const LAUNCHPAD_DESKTOP_ID = 'org.gnome.Shell.Extensions.Kiwi.Launchpad.desktop';
-const OLD_DESKTOP_ID = 'launchpad-kiwi.desktop';
 const ICON_RELATIVE_PATH = 'icons/launchpad.svg';
-// Right after the first favorite, like Launchpad after Finder
-const LAUNCHPAD_POSITION = 1;
+const DBUS_NAME = 'org.gnome.Shell.Extensions.Kiwi';
+// DBusActivatable app bus name must match desktop id without .desktop
+const APP_DBUS_NAME = 'org.gnome.Shell.Extensions.Kiwi.Launchpad';
+const DBUS_OBJECT_PATH = '/org/gnome/Shell/Extensions/Kiwi';
+const DBUS_INTERFACE_XML = `
+<node>
+  <interface name="org.gnome.Shell.Extensions.Kiwi">
+    <method name="ShowLaunchpad"/>
+  </interface>
+</node>`;
 
-let _enabled = false; // Guards repeated enable() calls, including pending initialization
-let _enableCancellable = null;
-let _injectionManager = null;
-let _app = null;
-// Keep writes and disable-time deletions in order across rapid enable cycles.
-let _fileOperations = Promise.resolve();
-let globalSignals = [];
-let docks = [];
-// The watched overview dash can be swapped out from under us, so it is kept
-// apart from globalSignals and each watch drops itself when its box dies
-let overviewWatches = [];
-const sources = { dockSearch: 0, overviewDashSearch: 0 };
-// Dash-to-Dock keeps a placeholder in place of the overview dash for the whole
-// startup animation, so the real one may only arrive after login
-const OVERVIEW_DASH_INTERVAL = 250; // ms
-const OVERVIEW_DASH_TRIES = 40;     // ~10s
+const APP_DBUS_OBJECT_PATH = '/org/gnome/Shell/Extensions/Kiwi/Launchpad';
+const APP_DBUS_INTERFACE_XML = `
+<node>
+    <interface name="org.freedesktop.Application">
+        <method name="Activate">
+            <arg type="a{sv}" direction="in"/>
+        </method>
+    </interface>
+</node>`;
 
-function _desktopPath(id) {
-    return GLib.build_filenamev([GLib.get_user_data_dir(), 'applications', id]);
-}
+let _enabled = false; // Guards repeated enable() calls
+let _busOwnerId = 0; // For custom Kiwi interface
+let _dbusExport = null;
+let _appBusOwnerId = 0; // For org.freedesktop.Application
+let _appDbusExport = null;
+const _mainLoopSources = new Set();
+const _overviewSignalIds = new Set();
+let gettextFunc = (message) => message;
 
-function _otherFavorites() {
-    return global.settings.get_strv('favorite-apps')
-        .filter(id => id !== LAUNCHPAD_DESKTOP_ID && id !== OLD_DESKTOP_ID);
-}
-
-// Puts our entry back in its slot after any drag, unpin or edit of the list
-function _pinFavorite() {
-    const current = global.settings.get_strv('favorite-apps');
-    const favorites = _otherFavorites();
-    favorites.splice(Math.min(LAUNCHPAD_POSITION, favorites.length), 0, LAUNCHPAD_DESKTOP_ID);
-    if (favorites.join() !== current.join())
-        global.settings.set_strv('favorite-apps', favorites);
-}
-
-// Route our favorite through the native Show Apps button so dock and overview
-// behavior matches it; suppress the app menu.
-function _takeOver(dash, item) {
-    const appIcon = item.child?._delegate;
-    if (appIcon?.app?.get_id() !== LAUNCHPAD_DESKTOP_ID)
-        return;
-
-    appIcon.activate = () => {
-        dash.showAppsButton.checked = !dash.showAppsButton.checked;
-    };
-    appIcon.popupMenu = () => false;
-}
-
-function _watchDash(dash) {
-    dash._box.get_children().forEach(item => _takeOver(dash, item));
-    return dash._box.connect('child-added', (_box, item) => _takeOver(dash, item));
-}
-
-// Dash-to-Dock uses a placeholder without an icon box until startup completes,
-// so wait for the real overview dash before attaching.
-function _watchOverviewDash() {
-    let attempts = 0;
-    const tryWatch = () => {
-        const {dash} = Main.overview;
-        if (dash?._box) {
-            const watch = { box: dash._box, childId: _watchDash(dash) };
-            // Dash-to-Dock swaps the overview dash in and out; drop the watch
-            // with the box so disable() never disconnects a dead actor
-            watch.destroyId = watch.box.connect('destroy', () => {
-                overviewWatches = overviewWatches.filter(other => other !== watch);
-            });
-            overviewWatches.push(watch);
-            sources.overviewDashSearch = 0;
-            return GLib.SOURCE_REMOVE;
-        }
-        if (++attempts < OVERVIEW_DASH_TRIES)
-            return GLib.SOURCE_CONTINUE;
-        sources.overviewDashSearch = 0;
-        return GLib.SOURCE_REMOVE;
-    };
-
-    if (tryWatch() === GLib.SOURCE_CONTINUE) {
-        sources.overviewDashSearch = GLib.timeout_add(
-            GLib.PRIORITY_DEFAULT, OVERVIEW_DASH_INTERVAL, tryWatch);
-    }
-}
-
-function _attach(container) {
-    const dash = dashOf(container);
-    if (!dash || docks.some(dock => dock.container === container))
-        return;
-
-    const entry = { container, box: dash._box, boxId: _watchDash(dash) };
-    entry.destroyId = container.connect('destroy', () => {
-        docks = docks.filter(other => other !== entry);
+function _queueIdle(callback) {
+    const id = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+        _mainLoopSources.delete(id);
+        return callback();
     });
-    docks.push(entry);
+    _mainLoopSources.add(id);
 }
 
-function _queueFileOperation(operation) {
-    const pending = _fileOperations.then(operation);
-    _fileOperations = pending.catch(() => {});
-    return pending;
+function _clearMainLoopSources() {
+    for (const id of _mainLoopSources)
+        GLib.Source.remove(id);
+    _mainLoopSources.clear();
 }
 
-async function _ensureDirectory(directory, cancellable) {
-    try {
-        await directory.make_directory_async(GLib.PRIORITY_DEFAULT, cancellable);
-    } catch (error) {
-        if (error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.EXISTS))
-            return;
-        const parent = directory.get_parent();
-        if (!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND) || !parent)
-            throw error;
-        await _ensureDirectory(parent, cancellable);
-        await _ensureDirectory(directory, cancellable);
+function _disconnectOverviewHandler(id) {
+    if (!_overviewSignalIds.has(id))
+        return;
+    Main.overview.disconnect(id);
+    _overviewSignalIds.delete(id);
+}
+
+function _clearOverviewHandlers() {
+    for (const id of _overviewSignalIds) {
+        Main.overview.disconnect(id);
     }
+    _overviewSignalIds.clear();
 }
 
-async function _writeDesktopFile(extension, gettextFunc, cancellable) {
-    if (cancellable.is_cancelled())
+function _isAppGridVisible() {
+    if (!Main.overview.visible)
         return false;
 
-    // Use custom icon if set and valid, otherwise default
-    const customIconPath = extension.getSettings().get_string('launchpad-app-custom-icon');
-    let iconPath = extension.dir.resolve_relative_path(ICON_RELATIVE_PATH).get_path();
-    if (customIconPath) {
-        try {
-            await Gio.File.new_for_path(customIconPath).query_info_async(
-                'standard::type', Gio.FileQueryInfoFlags.NONE, GLib.PRIORITY_DEFAULT, cancellable);
-            iconPath = customIconPath;
-        } catch (error) {
-            if (cancellable.is_cancelled())
-                throw error;
-            // Missing or unreadable custom icon; use the bundled one.
-        }
-    }
+    // Access overview controls (path varies by GNOME version)
+    const overview = Main.overview;
+    let controls = overview._overview?._controls;
+    if (!controls)
+        controls = overview.controls || overview._controls;
+    
+    if (!controls)
+        return false;
 
-    // NoDisplay=true would make AppFavorites drop it from the dash
-    const desktopContent = `[Desktop Entry]
-Type=Application
-Name=${gettextFunc('Launchpad')}
-Comment=${gettextFunc('Open Application Overview')}
-Icon=${iconPath}
-Exec=/usr/bin/true
-Terminal=false
-StartupNotify=false
-NoDisplay=false
-`;
+    // Check state adjustment - APP_GRID = 2, WINDOW_PICKER = 1, HIDDEN = 0
+    if (controls._stateAdjustment)
+        return controls._stateAdjustment.value === 2;
+    
+    // Fallback: check dash show apps button
+    const dash = controls.dash || controls._dash;
+    if (dash?.showAppsButton)
+        return Boolean(dash.showAppsButton.checked);
 
-    const desktopFile = Gio.File.new_for_path(_desktopPath(LAUNCHPAD_DESKTOP_ID));
-
-    // Touching the file makes the shell's app cache wait out its reload debounce
-    // before the icon is known again, so leave it alone when it already matches
-    try {
-        const [current] = await desktopFile.load_contents_async(cancellable);
-        if (new TextDecoder().decode(current) === desktopContent)
-            return true;
-    } catch (error) {
-        if (cancellable.is_cancelled())
-            throw error;
-        // Missing or unreadable; write it below
-    }
-
-    await _ensureDirectory(desktopFile.get_parent(), cancellable);
-    await desktopFile.replace_contents_bytes_async(
-        new GLib.Bytes(new TextEncoder().encode(desktopContent)), null, false,
-        Gio.FileCreateFlags.REPLACE_DESTINATION, cancellable);
-    return true;
+    return false;
 }
 
-export async function enable(extension, gettext) {
-    // extension.js re-runs this on any settings change. A custom-icon change is
-    // handled by disabling first, so that path still rewrites the .desktop file.
-    if (_enabled)
+function _activateLaunchpad() {
+    // The Tahoe Applications window (tahoeApps module) replaces GNOME's
+    // app grid, so every activation path routes straight to it.
+    _queueIdle(() => {
+        tahoeToggle();
+        return GLib.SOURCE_REMOVE;
+    });
+    return 'OK';
+}
+
+function _getOverviewControls() {
+    const overview = Main.overview;
+    let controls = overview._overview?._controls;
+    if (!controls)
+        controls = overview.controls || overview._controls;
+    return controls || null;
+}
+
+function _ensureDbusService() {
+    if (_busOwnerId !== 0)
         return;
 
-    _enabled = true;
-    const cancellable = new Gio.Cancellable();
-    _enableCancellable = cancellable;
-    let ready;
-    try {
-        ready = await _queueFileOperation(() => _writeDesktopFile(extension, gettext, cancellable));
-    } catch (error) {
-        if (_enableCancellable === cancellable) {
-            _enabled = false;
-            _enableCancellable = null;
-        }
-        if (!cancellable.is_cancelled())
-            console.error('Launchpad: Failed to create desktop file:', error);
+    const implementation = {
+        ShowLaunchpad: () => _activateLaunchpad(),
+    };
+
+    _dbusExport = Gio.DBusExportedObject.wrapJSObject(DBUS_INTERFACE_XML, implementation);
+    _busOwnerId = Gio.bus_own_name(
+        Gio.BusType.SESSION,
+        DBUS_NAME,
+        Gio.BusNameOwnerFlags.REPLACE,
+        connection => {
+            _dbusExport.export(connection, DBUS_OBJECT_PATH);
+        },
+        null,
+        () => {
+            if (_dbusExport) {
+                _dbusExport.unexport();
+                _dbusExport = null;
+            }
+            _busOwnerId = 0;
+        },
+    );
+    // Export org.freedesktop.Application for DBusActivatable launcher
+    const appImplementation = {
+        Activate(_platformData) {
+            _activateLaunchpad();
+        },
+    };
+    _appDbusExport = Gio.DBusExportedObject.wrapJSObject(APP_DBUS_INTERFACE_XML, appImplementation);
+    _appBusOwnerId = Gio.bus_own_name(
+        Gio.BusType.SESSION,
+        APP_DBUS_NAME,
+        Gio.BusNameOwnerFlags.REPLACE,
+        connection => {
+            _appDbusExport.export(connection, APP_DBUS_OBJECT_PATH);
+        },
+        null,
+        () => {
+            if (_appDbusExport) {
+                _appDbusExport.unexport();
+                _appDbusExport = null;
+            }
+            _appBusOwnerId = 0;
+        },
+    );
+}
+
+function _teardownDbusService() {
+    if (_busOwnerId !== 0) {
+        Gio.bus_unown_name(_busOwnerId);
+        _busOwnerId = 0;
+    }
+
+    if (_appBusOwnerId !== 0) {
+        Gio.bus_unown_name(_appBusOwnerId);
+        _appBusOwnerId = 0;
+    }
+
+    if (_dbusExport) {
+        _dbusExport.unexport();
+        _dbusExport = null;
+    }
+    if (_appDbusExport) {
+        _appDbusExport.unexport();
+        _appDbusExport = null;
+    }
+}
+
+export function enable(extension, gettext) {
+    gettextFunc = typeof gettext === 'function' ? gettext : (message) => message;
+    // extension.js re-runs this on any settings change; without a guard every pass
+    // re-registers two D-Bus names and rewrites the .desktop file. A custom-icon
+    // change is handled by disabling first, so that path still rewrites it.
+    if (_enabled)
+        return;
+    if (!extension || !extension.dir) {
+        console.error('Launchpad: Missing extension context');
         return;
     }
 
-    if (!ready || _enableCancellable !== cancellable || cancellable.is_cancelled())
+    _enabled = true;
+    _ensureDbusService();
+
+    const desktopDir = GLib.build_filenamev([GLib.get_user_data_dir(), 'applications']);
+    GLib.mkdir_with_parents(desktopDir, 0o755);
+
+    const desktopPath = GLib.build_filenamev([desktopDir, LAUNCHPAD_DESKTOP_ID]);
+
+    // Determine icon path: use custom icon if set and valid, otherwise default
+    const settings = extension.getSettings();
+    const customIconPath = settings.get_string('launchpad-app-custom-icon');
+    let iconPath = null;
+
+    if (customIconPath) {
+        const customFile = Gio.File.new_for_path(customIconPath);
+        if (customFile.query_exists(null))
+            iconPath = customIconPath;
+    }
+
+    if (!iconPath) {
+        const iconFile = extension.dir.resolve_relative_path(ICON_RELATIVE_PATH);
+        iconPath = iconFile ? iconFile.get_path() : null;
+    }
+
+    if (!iconPath) {
+        console.error('Launchpad: Failed to resolve icon path');
         return;
+    }
+    const desktopContent = `
+        [Desktop Entry]
+        Type=Application
+        Name=${gettextFunc('Launchpad')}
+        Comment=${gettextFunc('Open Application Overview')}
+        Icon=${iconPath}
+        DBusActivatable=true
+        Exec=/usr/bin/true
+        Terminal=false
+        Categories=Utility;
+        StartupNotify=false
+        NoDisplay=false
+        X-GNOME-UsesNotifications=false
+`;
 
-    // The shell's app cache sees a new .desktop file only after a 5 s debounce,
-    // so build the app ourselves and serve it for our id.
-    _app = new Shell.App({
-        app_info: GioUnix.DesktopAppInfo.new_from_filename(_desktopPath(LAUNCHPAD_DESKTOP_ID)),
+    try {
+        GLib.file_set_contents(desktopPath, desktopContent);
+    } catch (e) {
+        console.error('Launchpad: Failed to create desktop file:', e);
+        return;
+    }
+
+    _queueIdle(() => {
+        try {
+            const shellSettings = new Gio.Settings({ schema_id: 'org.gnome.shell' });
+            const favorites = shellSettings.get_strv('favorite-apps');
+            // Migrate from old desktop id if present
+            const OLD_ID = 'launchpad-kiwi.desktop';
+            for (let i = favorites.length - 1; i >= 0; i--) {
+                if (favorites[i] === OLD_ID)
+                    favorites.splice(i, 1);
+            }
+            // Ensure new ID at position 1
+            const existingIndex = favorites.indexOf(LAUNCHPAD_DESKTOP_ID);
+            if (existingIndex >= 0)
+                favorites.splice(existingIndex, 1);
+            const insertPosition = Math.min(1, favorites.length);
+            favorites.splice(insertPosition, 0, LAUNCHPAD_DESKTOP_ID);
+            shellSettings.set_strv('favorite-apps', favorites);
+        } catch (e) {
+            console.error('Launchpad: Failed to add to favorites:', e);
+        }
+        return GLib.SOURCE_REMOVE;
     });
-    _injectionManager = new InjectionManager();
-    _injectionManager.overrideMethod(Shell.AppSystem.prototype, 'lookup_app',
-        original => function (id) {
-            return id === LAUNCHPAD_DESKTOP_ID ? _app : original.call(this, id);
-        });
-
-    if (!Main.overview.isDummy)
-        _watchOverviewDash();
-    watchDocks({ attach: _attach, count: () => docks.length, globalSignals, sources });
-
-    globalSignals.push([global.settings,
-        global.settings.connect('changed::favorite-apps', _pinFavorite)]);
-    _pinFavorite();
 }
 
 export function disable() {
     _enabled = false;
-    _enableCancellable?.cancel();
-    _enableCancellable = null;
-
-    for (const key of ['dockSearch', 'overviewDashSearch']) {
-        if (sources[key])
-            GLib.Source.remove(sources[key]);
-        sources[key] = 0;
-    }
-
-    disconnectAll(globalSignals);
-    globalSignals = [];
-
-    _injectionManager?.clear();
-    _injectionManager = null;
-    _app = null;
-
-    for (const { box, childId, destroyId } of overviewWatches) {
-        box.disconnect(childId);
-        box.disconnect(destroyId);
-    }
-    overviewWatches = [];
-
-    for (const { container, destroyId, box, boxId } of docks) {
-        container.disconnect(destroyId);
-        box.disconnect(boxId);
-    }
-    docks = [];
-
-    const favorites = _otherFavorites();
-    if (favorites.length !== global.settings.get_strv('favorite-apps').length)
-        global.settings.set_strv('favorite-apps', favorites);
-
-    _queueFileOperation(async () => {
-        for (const id of [LAUNCHPAD_DESKTOP_ID, OLD_DESKTOP_ID]) {
-            try {
-                await Gio.File.new_for_path(_desktopPath(id)).delete_async(GLib.PRIORITY_DEFAULT, null);
-            } catch (error) {
-                if (!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND))
-                    console.error('Launchpad: Failed to remove desktop file:', error);
-            }
+    try {
+        const shellSettings = new Gio.Settings({ schema_id: 'org.gnome.shell' });
+        const favorites = shellSettings.get_strv('favorite-apps');
+        const index = favorites.indexOf(LAUNCHPAD_DESKTOP_ID);
+        if (index >= 0) {
+            favorites.splice(index, 1);
+            shellSettings.set_strv('favorite-apps', favorites);
         }
-    });
+    } catch (e) {
+        console.error('Launchpad: Failed to remove from favorites:', e);
+    }
+
+    _teardownDbusService();
+    _clearMainLoopSources();
+    _clearOverviewHandlers();
+
+    const desktopPath = GLib.build_filenamev([GLib.get_user_data_dir(), 'applications', LAUNCHPAD_DESKTOP_ID]);
+    const oldDesktopPath = GLib.build_filenamev([GLib.get_user_data_dir(), 'applications', 'launchpad-kiwi.desktop']);
+
+    try {
+        GLib.unlink(desktopPath);
+    } catch (e) {
+        // File may not exist, ignore error
+    }
+    try {
+        GLib.unlink(oldDesktopPath);
+    } catch (e) {
+        // Ignore
+    }
+
+    gettextFunc = (message) => message;
 }

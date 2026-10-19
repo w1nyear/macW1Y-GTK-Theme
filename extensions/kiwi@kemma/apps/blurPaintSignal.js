@@ -36,4 +36,5 @@ export function connectPaintSignal(actor, requestRepaint) {
         }
     });
     actor.add_effect(paintSignal);
+    return paintSignal;
 }

@@ -95,8 +95,6 @@ class WindowTitleIndicator extends PanelMenu.Button {
         this._iconVisibilityId = this._settings.connect('changed::show-window-title-icon',
             () => this._icon.visible = this._settings.get_boolean('show-window-title-icon'));
         this._box.add_child(this._icon);
-        this._subtitleVisibilityId = this._settings.connect('changed::show-window-subtitle',
-            () => this._updateWindowTitle());
 
         this._label = new St.Label({
             y_align: Clutter.ActorAlign.CENTER,
@@ -173,7 +171,7 @@ class WindowTitleIndicator extends PanelMenu.Button {
         // The overview takes the input focus, leaving no focus window at all. Keep
         // the last one instead of blanking the panel; 'hidden' re-syncs from the
         // real focus once the overview is done.
-        if (!window && (Main.overview.visible || this.menu.isOpen))
+        if (!window && (Main.overview.visible || (this.menu && this.menu.isOpen)))
             return;
 
         if (this._focusWindow) {
@@ -228,7 +226,8 @@ class WindowTitleIndicator extends PanelMenu.Button {
 
         windowTitle = windowTitle.trim();
 
-        const app = Shell.WindowTracker.get_default().get_window_app(titleWindow);
+        const tracker = Shell.WindowTracker.get_default();
+        const app = tracker ? tracker.get_window_app(titleWindow) : null;
         const appName = app ? app.get_name() : null;
         const normalizedAppName = appName ? appName.trim().toLowerCase() : '';
         if (normalizedAppName.startsWith('com.') || normalizedAppName.startsWith('gjs')) {
@@ -243,8 +242,7 @@ class WindowTitleIndicator extends PanelMenu.Button {
 
         if (app) {
             this._icon.gicon = app.get_icon();
-            this._label.text = this._settings.get_boolean('show-window-subtitle')
-                ? ` ${app.get_name()} — ${windowTitle}` : ` ${app.get_name()}`;
+            this._label.text = ` ${app.get_name()} — ${windowTitle}`;
             this._menu.setApp(app);
         } else {
             this._icon.gicon = null;
@@ -276,7 +274,7 @@ class WindowTitleIndicator extends PanelMenu.Button {
     // real item has to be looked up rather than assumed.
     _newWindowItem() {
         const menu = this._menu;
-        if (menu._newWindowItem.visible)
+        if (menu._newWindowItem && menu._newWindowItem.visible)
             return menu._newWindowItem;
 
         const appInfo = menu._app && menu._app.appInfo;
@@ -383,12 +381,14 @@ class WindowTitleIndicator extends PanelMenu.Button {
     // Never touch this.reactive here: hide() already blocks input, and every
     // reactive change re-syncs St's hover state from an enter/leave count that
     // an actor hidden under the pointer leaves stuck, latching the hover pill on.
-    _clearDisplay() {
+    _clearDisplay(resetMenu = true) {
         this._label.text = '';
         this._icon.gicon = null;
-        if (this.menu.isOpen)
-            this.menu.close(MENU_CLOSE_ARGS);
-        this._menu.setApp(null);
+        if (resetMenu && this._menu) {
+            if (this.menu && this.menu.isOpen)
+                this.menu.close(MENU_CLOSE_ARGS);
+            this._menu.setApp(null);
+        }
         this.hide();
     }
 
@@ -407,8 +407,12 @@ class WindowTitleIndicator extends PanelMenu.Button {
             return;
 
         const alignment = Math.max(0, Math.min(1, labelLeft / menuWidth));
-        this._menu.actor.setSourceAlignment(alignment);
-        this._menu._arrowAlignment = alignment;
+        if (this._menu.actor.setSourceAlignment)
+            this._menu.actor.setSourceAlignment(alignment);
+        if (this._menu.actor.setArrowAlignment)
+            this._menu.actor.setArrowAlignment(alignment);
+        else
+            this._menu._arrowAlignment = alignment;
     }
 
     destroy() {
@@ -425,16 +429,29 @@ class WindowTitleIndicator extends PanelMenu.Button {
 
         this._destroyKiwiMenuItems();
         this._wmKeybindings = null;
-        this._settings.disconnect(this._iconVisibilityId);
-        this._settings.disconnect(this._subtitleVisibilityId);
+        if (this._iconVisibilityId) {
+            this._settings.disconnect(this._iconVisibilityId);
+            this._iconVisibilityId = null;
+        }
         this._settings = null;
-        Main.overview.disconnect(this._overviewShowingId);
-        Main.overview.disconnect(this._overviewHidingId);
-        Main.overview.disconnect(this._overviewHiddenId);
-        this._menu.disconnect(this._menuOpenStateId);
-        global.display.disconnect(this._focusWindowSignal);
-        if (this._focusWindow)
+        if (this._overviewShowingId) {
+            Main.overview.disconnect(this._overviewShowingId);
+        }
+        if (this._overviewHidingId) {
+            Main.overview.disconnect(this._overviewHidingId);
+        }
+        if (this._menuOpenStateId) {
+            this._menu.disconnect(this._menuOpenStateId);
+        }
+        if (this._focusWindowSignal) {
+            global.display.disconnect(this._focusWindowSignal);
+        }
+        if (this._focusWindow && this._titleSignal) {
             this._focusWindow.disconnect(this._titleSignal);
+        }
+        if (this._overviewHiddenId) {
+            Main.overview.disconnect(this._overviewHiddenId);
+        }
         super.destroy();
     }
 });

@@ -2292,7 +2292,7 @@ export const MenuBarController = class MenuBarController {
 
             // 4. Popup menus tint and radius
             const pTint = (typeof data.popup_tint === 'number') ? data.popup_tint : 0.10;
-            const pRad = (typeof data.popup_radius === 'number') ? data.popup_radius : 24;
+            const pRad = (typeof data.popup_radius === 'number') ? data.popup_radius : 14;
             this._updatePopupRealtime(pTint, pRad);
 
             // 5. AppIndicators delay fix
@@ -2311,9 +2311,9 @@ export const MenuBarController = class MenuBarController {
         // Handled cleanly and efficiently by panel.js via opacity crossfade.
     }
 
-    _updatePopupRealtime(tint, radius = 24) {
+    _updatePopupRealtime(tint, radius = 14) {
         try {
-            const style = `background-color: transparent !important; background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: none !important; border-radius: ${radius}px !important;`;
+            const style = `background-color: rgba(30, 30, 34, 0.78) !important; border: none !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important; border-radius: ${radius}px !important;`;
             const found = [];
             const walk = (actor) => {
                 if (!actor) return;
@@ -3197,8 +3197,9 @@ export const MenuBarController = class MenuBarController {
                 this._macControlCenter = null;
             }
             if (quickSettings.menu?._grid) {
-                quickSettings.menu._grid.visible = true;
-                quickSettings.menu._grid.show();
+                quickSettings.menu._grid.visible = false;
+                quickSettings.menu._grid.hide();
+                quickSettings.menu._grid.style = 'margin: 0 !important; padding: 0 !important; width: 0px !important; min-width: 0px !important; height: 0px !important; min-height: 0px !important; opacity: 0 !important;';
             }
             return;
         }
@@ -3571,10 +3572,11 @@ export const MenuBarController = class MenuBarController {
                     const active = this.activeMenu;
                     const qsMenu = Main.panel?.statusArea?.quickSettings?.menu;
                     const dmMenu = Main.panel?.statusArea?.dateMenu?.menu;
-                    const notifOpen = Boolean(globalThis._macNotificationCenter?._notifCenterOpen);
+                    const notifOpen = Boolean(globalThis._macNotificationCenter?._notifCenterOpen || globalThis._tahoeNCOpen);
+                    const qsOpen = Boolean(qsMenu?.isOpen || globalThis._tahoeQSOpen);
 
                     // If Control Center or Notification Center is active, or if hovering onto them: NO hover switching!
-                    if (active === qsMenu || active === dmMenu || notifOpen || newMenu === qsMenu || newMenu === dmMenu) {
+                    if (active === qsMenu || active === dmMenu || notifOpen || qsOpen || newMenu === qsMenu || newMenu === dmMenu) {
                         return;
                     }
 
@@ -3589,11 +3591,12 @@ export const MenuBarController = class MenuBarController {
                     const targetActor = global.stage.get_event_actor(event);
                     const qsMenu = Main.panel?.statusArea?.quickSettings?.menu;
                     const dmMenu = Main.panel?.statusArea?.dateMenu?.menu;
-                    const notifOpen = Boolean(globalThis._macNotificationCenter?._notifCenterOpen);
+                    const notifOpen = Boolean(globalThis._macNotificationCenter?._notifCenterOpen || globalThis._tahoeNCOpen);
+                    const qsOpen = Boolean(qsMenu?.isOpen || globalThis._tahoeQSOpen);
 
                     // Block hover switching from Control Center or Notification Center
                     if (event.type() === Clutter.EventType.ENTER) {
-                        if (menu === qsMenu || menu === dmMenu || notifOpen) {
+                        if (menu === qsMenu || menu === dmMenu || notifOpen || qsOpen) {
                             return Clutter.EVENT_PROPAGATE;
                         }
                     }

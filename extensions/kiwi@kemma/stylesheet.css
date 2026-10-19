@@ -551,6 +551,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   overflow-y: auto;
 }
 
+.kiwi-media,
 .kiwi-notifications {
   margin: 0;
   padding: 0;
@@ -564,92 +565,14 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   font-size: 0.9em;
 }
 
-.kiwi-media-menu {
-  width: 310px;
-  padding: 8px 12px;
+/* Page indicators for media player */
+.kiwi-page-indicators .page-indicator {
+  padding: 0 6px;
+  margin-bottom: 8px;
 }
 
-.kiwi-media {
-  margin: 0;
-  padding: 0;
-}
-
-.kiwi-media-list {
-  spacing: 12px;
-  padding: 0 2px;
-}
-
-/* Media cards float inside the panel popup without their own card look */
-.kiwi-media .message {
-  background-color: transparent;
-  box-shadow: none;
-  border: none;
-  padding: 0;
-  margin-bottom: 0 !important;
-}
-
-.kiwi-media .message-box {
-  padding: 4px;
-  margin-top: 0;
-  spacing: 12px;
-}
-
-.kiwi-media-artwork-placeholder {
-  icon-size: 64px;
-}
-
-.kiwi-media .message-content {
-  spacing: 4px;
-  padding: 4px 0;
-  min-width: 0;
-}
-
-.kiwi-media .message-body {
-  font-weight: normal;
-}
-
-.kiwi-media .kiwi-media-controls {
-  margin-top: 4px;
-}
-
-.kiwi-media .message-media-control {
-  padding: 4px 12px;
-}
-
-.kiwi-track-title {
-  min-height: 1.2em;
-}
-
-.kiwi-media .kiwi-track-title .message-title {
-  font-weight: bold;
-}
-
-.kiwi-media-artist-row {
-  spacing: 6px;
-}
-
-.kiwi-media-soundwave {
-  spacing: 2px;
-}
-
-.kiwi-media-soundwave-bar {
-  width: 2px;
-  height: 12px;
-  border-radius: 1px;
-}
-
-.kiwi-media-progress {
-  padding: 6px 0 0;
-}
-
-.kiwi-media-progress .slider {
-  height: 18px;
-  -slider-handle-radius: 5px;
-}
-
-.kiwi-media-times {
-  font-size: 0.85em;
-  opacity: 0.7;
+.kiwi-page-indicators .page-indicator > StWidget {
+  border: 1px solid rgba(0, 0, 0, 0.6);
 }
 
 .message-list-clear-button {
@@ -852,9 +775,9 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   spacing: 8px;
 }
 
-/* The round button that ends the fan, the way macOS ends its own */
+/* The round button that ends the fan: white glyph in a dark circle. */
 .kiwi-fan-more {
-  background-color: rgba(238, 238, 238, 0.94);
+  background-color: rgba(28, 28, 30, 0.92);
   border-radius: 99px;
   padding: 7px;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
@@ -862,7 +785,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 .kiwi-fan-more:hover,
 .kiwi-fan-more:focus {
-  background-color: #ffffff;
+  background-color: rgba(60, 60, 67, 0.94);
 }
 
 .kiwi-fan-more-icon {
@@ -896,3 +819,787 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .kiwi-downloads-stack.behind .kiwi-fan-file-icon {
   icon-shadow: 0 0 4px rgba(0, 0, 0, 0.35);
 }
+
+/* ===== macOS Tahoe Applications (Launchpad) window ===== */
+/* Tahoe Apps — macOS Tahoe-style Applications window */
+
+.tahoe-overlay {
+    background-color: transparent;
+}
+
+.tahoe-window {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-radius: 26px;
+    color: #1d1d1f;
+}
+
+/* Nearly-transparent tint that follows the GTK color scheme. */
+.tahoe-dark .tahoe-window {
+    background-color: rgba(22, 22, 24, 0.45);
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-header-icon,
+.tahoe-dark .tahoe-more {
+    color: rgba(245, 245, 247, 0.85);
+}
+
+.tahoe-dark .tahoe-more:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.tahoe-dark .tahoe-search {
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-search StEntry {
+    color: #f5f5f7;
+    caret-color: #f5f5f7;
+    selection-background: rgba(0, 122, 255, 0.45);
+    font-size: 1.5em;
+    font-weight: 500;
+}
+
+.tahoe-dark .tahoe-search StEntry StLabel,
+.tahoe-dark .tahoe-search ClutterText {
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-search StLabel.hint-text {
+    color: rgba(245, 245, 247, 0.45);
+}
+
+.tahoe-dark .tahoe-pill {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-pill:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.tahoe-dark .tahoe-pill-active,
+.tahoe-dark .tahoe-pill-active:hover {
+    background-color: rgba(245, 245, 247, 0.9);
+    color: rgba(29, 29, 31, 0.7);
+}
+
+.tahoe-dark .tahoe-section-title {
+    color: rgba(245, 245, 247, 0.6);
+}
+
+.tahoe-dark .tahoe-app:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+}
+
+.tahoe-dark .tahoe-app:active {
+    background-color: rgba(255, 255, 255, 0.22);
+}
+
+.tahoe-dark .tahoe-app-label {
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-empty {
+    color: rgba(245, 245, 247, 0.6);
+}
+
+.tahoe-dark .tahoe-drop {
+    background-color: rgba(40, 40, 42, 0.88);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tahoe-dark .tahoe-drop-item {
+    color: #f5f5f7;
+}
+
+.tahoe-dark .tahoe-drop-item:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.tahoe-glass {
+    border-radius: 26px;
+}
+
+/* ------------------------------------------------------------- header */
+
+.tahoe-header {
+    spacing: 12px;
+    padding: 18px 20px 8px 20px;
+}
+
+.tahoe-header-icon {
+    color: rgba(60, 60, 67, 0.7);
+}
+
+.tahoe-search {
+    font-size: 1.3em;
+    font-weight: normal;
+    padding: 8px 2px;
+    background-color: transparent;
+    border: none;
+    color: rgba(60, 60, 67, 0.7);
+}
+
+.tahoe-search StLabel.hint-text {
+    color: rgba(60, 60, 67, 0.7);
+    font-size: 1.5em;
+    font-weight: 500;
+}
+
+.tahoe-search StEntry {
+    caret-color: #1d1d1f;
+    selection-background: rgba(0, 122, 255, 0.35);
+    font-size: 1.5em;
+    font-weight: 500;
+    color: #3c3c43;
+}
+
+.tahoe-more {
+    font-size: 2.2em;
+    padding: 4px 4px 14px 4px;
+    border-radius: 10px;
+    color: rgba(60, 60, 67, 0.7);
+}
+
+.tahoe-more:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+/* --------------------------------------------------------------- pills */
+
+.tahoe-pills {
+    spacing: 8px;
+    padding: 6px 20px 10px 20px;
+}
+
+.tahoe-divider {
+    background-color: rgba(0, 0, 0, 0.18);
+    height: 1px;
+    margin: 2px 20px;
+}
+
+/* The bar stays functional (St drives the wheel, incl. touchpad smooth
+   scrolling) but is never painted and takes no space. */
+.tahoe-scroll StScrollBar,
+.tahoe-scroll StScrollBar StBin#trough,
+.tahoe-scroll StScrollBar StButton#vhandle,
+.tahoe-scroll StScrollBar StButton#hhandle {
+    opacity: 0;
+    width: 0;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background-color: transparent;
+}
+
+.tahoe-pill {
+    font-size: 0.92em;
+    font-weight: 500;
+    font-family: "SF Pro Display";
+    padding: 6px 12px;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.06);
+    color: rgba(60, 60, 67, 0.7);
+}
+
+.tahoe-pill:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.tahoe-pill-active,
+.tahoe-pill-active:hover {
+    background-color: rgba(29, 29, 31, 0.88);
+    color: #ffffff;
+}
+
+/* --------------------------------------------------------------- scroll */
+
+.tahoe-content {
+    spacing: 14px;
+    padding: 4px 22px 0 22px;
+}
+
+.tahoe-section {
+    spacing: 8px;
+}
+
+.tahoe-section-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: rgba(60, 60, 67, 0.7);
+    padding: 4px 2px 0 2px;
+}
+
+/* Must match COL_GAP in tahoeApps.js. */
+.tahoe-row {
+    spacing: 1px;
+}
+
+/* ---------------------------------------------------------------- apps */
+
+.tahoe-app {
+    border-radius: 14px;
+    padding: 2px 1px 2px 1px;
+}
+
+.tahoe-app:hover {
+    background-color: rgba(255, 255, 255, 0.55);
+}
+
+.tahoe-app:active {
+    background-color: rgba(255, 255, 255, 0.78);
+}
+
+.tahoe-app-box {
+    spacing: 2px;
+}
+
+.tahoe-app-label {
+    font-size: 0.85em;
+    font-weight: bold;
+    color: rgba(60, 60, 67, 0.7);
+}
+
+.tahoe-empty {
+    font-size: 1em;
+    color: rgba(60, 60, 67, 0.7);
+    padding: 48px 20px;
+}
+
+/* -------------------------------------------------------------- "…" menu */
+
+.tahoe-drop {
+    background-color: rgba(255, 255, 255, 0.88);
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+    padding: 6px;
+    spacing: 2px;
+}
+
+.tahoe-drop-item {
+    font-size: 0.87em;
+    padding: 7px 10px;
+    border-radius: 9px;
+    color: #1d1d1f;
+}
+
+.tahoe-drop-item:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+
+/* Tahoe-style dark gradient veil over the top bar: dark at top, gone at edge. */
+.kiwi-panel-gradient {
+    background-gradient-direction: vertical;
+    background-gradient-start: rgba(0, 0, 0, 0.18);
+    background-gradient-end: rgba(0, 0, 0, 0);
+}
+
+/* Upper veil: extra darkness at the very top for a progressive falloff. */
+.kiwi-panel-gradient-top {
+    background-gradient-direction: vertical;
+    background-gradient-start: rgba(0, 0, 0, 0.14);
+    background-gradient-end: rgba(0, 0, 0, 0);
+}
+
+/* ------------------------------------------------- Tahoe polkit auth card */
+.prompt-dialog.tahoe-polkit {
+    min-width: 380px;
+    border-radius: 20px;
+}
+
+.tahoe-polkit .modal-dialog-content-box StLabel {
+    text-align: center;
+}
+
+.tahoe-polkit-header {
+    spacing: 10px;
+    margin-top: 6px;
+    margin-bottom: 2px;
+}
+
+.tahoe-polkit-lock {
+    icon-size: 52px;
+}
+
+.tahoe-polkit .prompt-dialog-password-entry {
+    border-radius: 10px;
+    border-width: 2px;
+    margin-top: 10px;
+}
+
+.tahoe-polkit .prompt-dialog-password-entry:focus {
+    border-color: #0a84ff;
+}
+
+.tahoe-polkit .modal-dialog-linked-button {
+    border-radius: 10px;
+    margin: 0 5px;
+    font-weight: 600;
+}
+
+.tahoe-polkit .modal-dialog-linked-button:first-child {
+    background-color: rgba(120, 120, 128, 0.20);
+    color: #1d1d1f;
+}
+
+.tahoe-polkit .modal-dialog-linked-button:last-child {
+    background-color: #0a84ff;
+    background-gradient-direction: none;
+    color: #ffffff;
+}
+
+/* -------------------------------------------- Tahoe Mission Control */
+/* No icons or app names under overview windows. The title opacity is
+ * animated inline by the shell, so it is killed via transparent color;
+ * the icon has no such animation and obeys opacity. */
+.window-caption {
+    color: transparent;
+}
+
+.window-icon {
+    opacity: 0;
+}
+
+/* Toggles fully round, sliders flatter. */
+.quick-toggle,
+.quick-toggle-has-menu,
+.quick-toggle-has-menu:hover,
+.quick-toggle-has-menu:active {
+    border-radius: 9999px;
+}
+
+.quick-settings-grid .slider {
+    border-radius: 4px !important;
+    -slider-handle-radius: 5px !important;
+}
+
+/* Release slider pods from liquid-glass (it re-reads the theme node and
+   lets go by itself): flat CSS rounding instead of the shared toggle radius. */
+.liquid-glass-qs-root .quick-slider {
+    background-color: transparent !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+}
+
+/* ------------------------------- Tahoe Quick Settings v5 (macOS Tahoe CC)
+   Panel 320, padding 14, col gap 18, column 137, pills 80, circles 62,
+   music 152, cards 96, edit pill 36, Focus 137x62.
+   Panel bg = separate actor BELOW the glass stacks ('pill' r40,
+   'disc' r31, 'card'/'music' r26, 'edit' r18). White text on translucent gray (light) / faint white
+   (dark) glass fills — like macOS Tahoe. */
+.tahoe-qs-panel { spacing: 12px; padding: 14px; background-color: transparent; }
+/* no plate — just the ambient shadow of the whole floating panel */
+.tahoe-qs-panelbg {
+    border-radius: 22px;
+    background-color: transparent;
+    border: none;
+    /* one shadow for both themes: tight core + wide soft diffusion */
+    box-shadow: 0 4px 22px rgba(0, 0, 0, 0.15),
+        0 12px 70px rgba(0, 0, 0, 0.10);
+}
+.tahoe-qs-cols { spacing: 18px; }
+.tahoe-qs-col { spacing: 12px; }
+.tahoe-qs-row { spacing: 6px; }
+.tahoe-qs-rowd { spacing: 18px; }
+
+/* macOS-style topbar status indicators (Focus moon, Airplane): plain bins,
+   never clickable (reactive=false, no handlers) */
+.kiwi-topbar-statusicon { padding: 0 4px; margin: 0 4px; }
+
+/* macOS-style battery in the top bar: "87%" + horizontal battery glyph.
+   Inherits panel foreground via tahoeInk, same as other topbar buttons. */
+.kiwi-battery-box { spacing: 6px; padding: 0 2px; }
+.kiwi-battery-label { font-weight: 600; font-size: 0.95em; }
+.kiwi-battery-icon { icon-size: 20px; }
+
+/* stock screen-sharing indicator: compact pill, unified with the bar.
+   Visible only while sharing, so this is the active state: purple.
+   #panel prefix: stock theme addresses it with an id selector. */
+#panel .screen-sharing-indicator,
+#panel .panel-button.screen-sharing-indicator {
+    height: 20px;
+    border-radius: 10px;
+    padding: 0 8px;
+    background-color: rgba(191, 90, 242, 0.9);
+}
+#panel .screen-sharing-indicator StIcon,
+#panel .panel-button.screen-sharing-indicator StIcon { color: #ffffff; }
+
+/* Tahoe volume/brightness OSD: glass pill (liquid-glass behind, the box
+   itself is transparent so the blur shapes it; hairline + shadow stay) */
+.tahoe-osd {
+    background-color: transparent;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 12px 16px 14px 16px;
+    spacing: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+.tahoe-osd-head { spacing: 8px; }
+.tahoe-osd-headicon { color: #ffffff; }
+.tahoe-osd-title {
+    font-family: "SF Pro Display";
+    font-size: 0.95em;
+    font-weight: 700;
+    color: #ffffff;
+}
+.tahoe-osd-bar { spacing: 10px; }
+.tahoe-osd-endicon { color: rgba(255, 255, 255, 0.9); }
+.tahoe-osd-endicon-big { color: #ffffff; }
+/* segmented bar draws itself (TahoeSegSlider); no theme needed */
+
+/* Tahoe Notification Center */
+.tahoe-nc-panel { spacing: 10px; padding: 14px; background-color: transparent; }
+.tahoe-nc-banners { spacing: 10px; }
+.tahoe-nc-head { spacing: 10px; }
+.tahoe-nc-clear {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background-color: rgba(120, 120, 128, 0.24);
+}
+.tahoe-nc-cross { color: #ffffff; }
+.tahoe-qs-dark .tahoe-nc-cross { color: #ffffff; }
+.tahoe-nc-title-big {
+    font-family: "SF Pro Display";
+    font-size: 1.35em;
+    font-weight: 800;
+    color: #1d1d1f;
+}
+.tahoe-qs-dark .tahoe-nc-title-big { color: #ffffff; }
+.tahoe-nc-scroll { }
+.tahoe-nc-list { spacing: 10px; }
+.tahoe-nc-empty {
+    font-family: "SF Pro Display";
+    font-size: 0.95em;
+    color: rgba(120, 120, 128, 0.9);
+    padding: 28px 0;
+}
+.tahoe-nc-card {
+    background-color: transparent;
+    border-radius: 20px;
+    padding: 10px 12px;
+    box-shadow: none;
+}
+.tahoe-nc-cardrow { spacing: 10px; }
+.tahoe-nc-texts { spacing: 2px; }
+.tahoe-nc-title {
+    font-family: "SF Pro Display";
+    font-size: 0.95em;
+    font-weight: 700;
+    color: #1d1d1f;
+}
+.tahoe-qs-dark .tahoe-nc-title { color: #ffffff; }
+.tahoe-nc-sub {
+    font-family: "SF Pro Display";
+    font-size: 0.85em;
+    font-weight: 400;
+    color: rgba(60, 60, 67, 0.85);
+}
+.tahoe-qs-dark .tahoe-nc-sub { color: rgba(235, 235, 245, 0.7); }
+
+/* adaptive topbar ink (toggled by luminance, not by theme - tahoeInk.js).
+   !important: must win over panelStyling's explicit colors. Every state
+   covered - adaptive means ALL text, no theme-driven leftovers on hover,
+   clock included. */
+#panel.tahoe-ink-light .panel-button,
+#panel.tahoe-ink-light .panel-button:hover,
+#panel.tahoe-ink-light .panel-button:active,
+#panel.tahoe-ink-light .panel-button:focus,
+#panel.tahoe-ink-light .panel-button:checked,
+#panel.tahoe-ink-light .panel-button StLabel,
+#panel.tahoe-ink-light .panel-button StIcon,
+#panel.tahoe-ink-light .panel-button .clock { color: #ffffff !important; }
+#panel.tahoe-ink-light .panel-button.clock-display:focus .clock,
+#panel.tahoe-ink-light .panel-button.clock-display:hover .clock,
+#panel.tahoe-ink-light .panel-button.clock-display:active .clock,
+#panel.tahoe-ink-light .panel-button.clock-display:checked .clock { color: #ffffff !important; }
+#panel.tahoe-ink-dark .panel-button,
+#panel.tahoe-ink-dark .panel-button:hover,
+#panel.tahoe-ink-dark .panel-button:active,
+#panel.tahoe-ink-dark .panel-button:focus,
+#panel.tahoe-ink-dark .panel-button:checked,
+#panel.tahoe-ink-dark .panel-button StLabel,
+#panel.tahoe-ink-dark .panel-button StIcon,
+#panel.tahoe-ink-dark .panel-button .clock { color: #1d1d1f !important; }
+#panel.tahoe-ink-dark .panel-button.clock-display:focus .clock,
+#panel.tahoe-ink-dark .panel-button.clock-display:hover .clock,
+#panel.tahoe-ink-dark .panel-button.clock-display:active .clock,
+#panel.tahoe-ink-dark .panel-button.clock-display:checked .clock { color: #1d1d1f !important; }
+
+/* Tahoe type: SF Pro Display Bold for titles, Medium for subtitles */
+.tahoe-qs-title, .tahoe-qs-music-title, .tahoe-qs-card-label, .tahoe-qs-edit {
+    font-family: "SF Pro Display";
+    font-weight: 700;
+}
+.tahoe-qs-subtitle, .tahoe-qs-music-artist {
+    font-family: "SF Pro Display";
+    font-weight: 500;
+}
+
+/* capsule pill (Wi-Fi, Bluetooth, Airplane, Focus) — glass r32 */
+.tahoe-qs-pill {
+    background-color: transparent;
+    border-radius: 999px;
+    padding: 10px 12px 10px 10px;
+    box-shadow: none;
+}
+.tahoe-qs-dark .tahoe-qs-pill { box-shadow: none; }
+.tahoe-qs-pill-circle {
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.25);
+    margin-right: 10px;
+}
+.tahoe-qs-pill-glyph { icon-size: 20px; color: #1d1d1f; }
+/* Bluetooth rune reads small at 20px: bump it inside the same 40px circle */
+.tahoe-qs-pill-bt .tahoe-qs-pill-glyph { icon-size: 24px; }
+/* Focus shares the exact Wi-Fi pill geometry (same circle, same padding,
+   single title line, no subtitle) */
+.tahoe-qs-pill.tahoe-qs-pill-focus { }
+.tahoe-qs-pill.tahoe-qs-on .tahoe-qs-pill-circle {
+    background-color: rgba(255, 255, 255, 0.95);
+}
+.tahoe-qs-pill.tahoe-qs-on .tahoe-qs-pill-glyph { color: #0a84ff; }
+.tahoe-qs-title { font-size: 0.95em; font-weight: 700; color: #1d1d1f; }
+.tahoe-qs-subtitle { font-size: 0.8em; color: rgba(0, 0, 0, 0.6); }
+/* privacy pill dot: camera green, mic orange, share blue (macOS) */
+.tahoe-qs-priv-green { background-color: #30d158; }
+.tahoe-qs-priv-orange { background-color: #ff9f0a; }
+.tahoe-qs-priv-blue { background-color: #0a84ff; }
+/* privacy pill is slim (lower than regular pills) */
+.tahoe-qs-pill.tahoe-qs-pill-priv { padding: 4px 10px; }
+.tahoe-qs-pill-priv .tahoe-qs-pill-circle { width: 20px; height: 20px; }
+.tahoe-qs-pill-priv .tahoe-qs-pill-glyph { icon-size: 12px; }
+.tahoe-qs-pill-priv .tahoe-qs-title { font-size: 0.8em; }
+.tahoe-qs-pill-priv .tahoe-qs-privdot { margin-right: 8px; }
+
+/* circles 60x60 — glass r32 */
+.tahoe-qs-circle {
+    background-color: transparent;
+    border-radius: 999px;
+    box-shadow: none;
+}
+.tahoe-qs-dark .tahoe-qs-circle { box-shadow: none; }
+.tahoe-qs-circle-icon { icon-size: 24px; color: #1d1d1f; }
+/* logout glyph is wide-short: bump it so it doesn't read small */
+.tahoe-qs-circle-logout .tahoe-qs-circle-icon { icon-size: 32px; }
+/* lock glyph: bump it too */
+.tahoe-qs-circle-lock .tahoe-qs-circle-icon { icon-size: 30px; }
+.tahoe-qs-circle.tahoe-qs-on .tahoe-qs-circle-icon { color: #0a84ff; }
+/* ON state: white wash OVER the dark glass (not instead of it) */
+/* ON state: white wash is painted in-shader (region mask), not here -
+   a CSS background would end at the actor rect and read smaller than glass */
+.tahoe-qs-circle.tahoe-qs-on { background-color: transparent; }
+
+/* music card — glass r26 */
+.tahoe-qs-music {
+    background-color: transparent;
+    border-radius: 28px;
+    padding: 10px 8px;
+    box-shadow: none;
+}
+.tahoe-qs-dark .tahoe-qs-music { box-shadow: none; }
+.tahoe-qs-music-box { spacing: 1px; }
+.tahoe-qs-music-art {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.18);
+    margin-bottom: 6px;
+}
+.tahoe-qs-music-articon { icon-size: 22px; color: rgba(0, 0, 0, 0.7); }
+.tahoe-qs-music-title { font-size: 1em; font-weight: 700; color: #1d1d1f; }
+.tahoe-qs-music-artist { font-size: 0.75em; color: rgba(0, 0, 0, 0.6); }
+.tahoe-qs-music-ctl { spacing: 3px; }
+.tahoe-qs-glyphbtn { width: 38px; height: 38px; }
+.tahoe-qs-glyphicon { icon-size: 24px; color: #1d1d1f; }
+
+/* slider cards — glass r26 */
+.tahoe-qs-card {
+    background-color: transparent;
+    border-radius: 28px;
+    padding: 10px 14px;
+    spacing: 6px;
+    box-shadow: none;
+}
+.tahoe-qs-dark .tahoe-qs-card { box-shadow: none; }
+.tahoe-qs-card-label { font-size: 0.9em; font-weight: 700; color: #1d1d1f; }
+.tahoe-qs-card-row { spacing: 10px; }
+.tahoe-qs-endicon-small { icon-size: 12px; opacity: 0.8; color: #1d1d1f; }
+.tahoe-qs-endicon { icon-size: 18px; color: #1d1d1f; }
+.tahoe-qs-endbtn {
+    width: 28px; height: 28px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.25);
+}
+.tahoe-qs-endbtn-icon { icon-size: 14px; color: #1d1d1f; }
+
+/* slider: white knob; dark track on light, translucent white on dark */
+.tahoe-qs-slider {
+    color: #fff;
+    -slider-height: 5px;
+    -slider-background-color: rgba(60, 60, 67, 0.35);
+    -slider-border-color: transparent;
+    -slider-active-background-color: #fff;
+    -slider-active-border-color: transparent;
+    -slider-border-width: 0px;
+    -slider-handle-radius: 8px;
+    -slider-handle-border-width: 0px;
+    -barlevel-height: 5px;
+    -barlevel-background-color: rgba(60, 60, 67, 0.35);
+    -barlevel-active-background-color: #fff;
+    -barlevel-overdrive-color: #ff453a;
+    -barlevel-overdrive-border-color: transparent;
+    -barlevel-border-width: 0px;
+    height: 24px;
+    min-width: 90px;
+}
+.tahoe-qs-dark .tahoe-qs-slider {
+    -slider-background-color: rgba(255, 255, 255, 0.22);
+    -barlevel-background-color: rgba(255, 255, 255, 0.22);
+    -slider-active-background-color: rgba(255, 255, 255, 0.9);
+    -barlevel-active-background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* bottom centered pill ("Edit Controls") — same geometry as privacy pill */
+.tahoe-qs-edit {
+    background-color: transparent;
+    border-radius: 15px;
+    padding: 0 10px;
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #1d1d1f;
+    box-shadow: none;
+}
+.tahoe-qs-dark .tahoe-qs-edit { box-shadow: none; }
+
+/* dark theme: white text and glyphs (base above is near-black) */
+/* adaptive ink: white text/glyphs when the background behind is dark
+   (toggled by luminance, not by theme - see tahoeInk.js) */
+.tahoe-qs-inklight .tahoe-qs-pill-glyph { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-title { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-subtitle { color: rgba(255, 255, 255, 0.65); }
+.tahoe-qs-inklight .tahoe-qs-circle-icon { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-music-articon { color: rgba(255, 255, 255, 0.9); }
+.tahoe-qs-inklight .tahoe-qs-music-title { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-music-artist { color: rgba(255, 255, 255, 0.65); }
+.tahoe-qs-inklight .tahoe-qs-glyphicon { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-card-label { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-endicon-small { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-endicon { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-endbtn-icon { color: #ffffff; }
+.tahoe-qs-inklight .tahoe-qs-edit { color: #ffffff; }
+
+
+/* ===================== Tahoe Edit Controls menu ===================== */
+.tahoe-qse-win {
+  background-color: rgba(242, 242, 247, 0.97);
+  border-radius: 14px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.18);
+  padding: 0;
+}
+.tahoe-qse-sidebar {
+  background-color: rgba(229, 229, 234, 0.95);
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+  padding: 10px 0 10px 0;
+}
+.tahoe-qse-search-box {
+  margin: 4px 10px 8px 10px;
+  padding: 6px 8px;
+  background-color: rgba(118, 118, 128, 0.12);
+  border-radius: 8px;
+}
+.tahoe-qse-search-icon { color: #8e8e93; }
+.tahoe-qse-search-entry {
+  background-color: transparent;
+  color: #1d1d1f;
+  font-size: 13px;
+  border: none;
+  padding: 0;
+  margin-left: 6px;
+}
+.tahoe-qse-search-entry StEntry:cursor { background-color: #0a84ff; }
+.tahoe-qse-cat-row {
+  padding: 5px 10px 5px 12px;
+  border-radius: 7px;
+  margin: 0 6px;
+}
+.tahoe-qse-cat-row:hover { background-color: rgba(0, 0, 0, 0.06); }
+.tahoe-qse-cat-row.selected { background-color: rgba(0, 0, 0, 0.11); }
+.tahoe-qse-cat-sq { margin-right: 9px; }
+.tahoe-qse-cat-icon { color: #ffffff; -st-icon-shadow: none; }
+.tahoe-qse-cat-label { color: #1d1d1f; font-size: 13px; font-weight: 500; }
+
+.tahoe-qse-scroll { background-color: rgba(255, 255, 255, 0.55); }
+.tahoe-qse-content { padding: 14px 18px 14px 18px; spacing: 4px; }
+.tahoe-qse-section { spacing: 10px; margin-bottom: 16px; }
+.tahoe-qse-sect-title { color: #1d1d1f; font-size: 13px; font-weight: 700; }
+.tahoe-qse-grid { spacing: 12px; }
+.tahoe-qse-grid-row { spacing: 16px; padding-bottom: 6px; }
+.tahoe-qse-tile-wrap {
+  width: 150px;
+  spacing: 6px;
+  padding-top: 4px;
+}
+.tahoe-qse-tile-wrap:hover .tahoe-qse-tile-circle {
+  background-color: rgba(118, 118, 128, 0.28);
+}
+.tahoe-qse-tile-circle {
+  background-color: rgba(118, 118, 128, 0.16);
+  border-radius: 31px;
+}
+.tahoe-qse-tile-label {
+  color: #1d1d1f;
+  font-size: 11px;
+  text-align: center;
+}
+
+.tahoe-qse-footer {
+  background-color: rgba(242, 242, 247, 0.98);
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  padding: 0 16px;
+  spacing: 12px;
+}
+.tahoe-qse-hint { color: #6e6e73; font-size: 12px; }
+.tahoe-qse-done {
+  background-color: #0a84ff;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 6px 18px;
+  margin: 8px 0;
+}
+.tahoe-qse-done:hover { background-color: #2691ff; }
+.tahoe-qse-done:active { background-color: #0070dd; }
+
+.tahoe-qse-ghost {
+  background-color: rgba(118, 118, 128, 0.35);
+  border-radius: 31px;
+  opacity: 0.85;
+}
+
+/* ---------- CC edit mode badges (remove / resize) ---------- */
+.tahoe-qs-editbadge {
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  background-color: rgba(250, 250, 252, 0.96);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  color: #1d1d1f;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  padding: 0;
+  z-index: 5;
+}
+.tahoe-qs-editbadge:hover { background-color: #ffffff; }
+.tahoe-qs-editbadge:active { background-color: #e5e5ea; }
+.tahoe-qs-editbadge-resize { color: #0a84ff; font-size: 15px; }

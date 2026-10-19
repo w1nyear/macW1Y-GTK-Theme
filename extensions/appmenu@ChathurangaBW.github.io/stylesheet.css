@@ -218,15 +218,17 @@
 .appmenu-popup-menu-content,
 .appmenu-popup-menu .popup-menu-content,
 .appmenu-popup-menu.popup-menu-boxpointer .popup-menu-content {
-    border-radius: 24px !important;
+    border-radius: 14px !important;
     padding: 6px 0 !important;
-    background-color: transparent !important;
-    background: transparent !important;
-    box-shadow: none !important;
+    background-color: rgba(30, 30, 34, 0.78) !important;
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
 }
 
 .appmenu-popup-menu .popup-sub-menu {
-    border-radius: 24px !important;
+    border-radius: 14px !important;
+    border: none !important;
+    background-color: rgba(30, 30, 34, 0.78) !important;
 }
 
 .appmenu-popup-menu-item,
@@ -237,10 +239,19 @@
     margin: 1px 6px !important;
     font-size: 13px !important;
     font-weight: 500 !important;
-    border-radius: 9999px !important;
+    border-radius: 6px !important;
     spacing: 6px !important;
-    color: #dedede !important;
+    color: #ffffff !important;
+    text-shadow: none !important;
+    icon-shadow: none !important;
     transition: background-color 100ms ease, color 100ms ease !important;
+}
+
+.appmenu-popup-menu-item StLabel,
+.appmenu-popup-menu .popup-menu-item StLabel,
+.appmenu-popup-menu-content .popup-menu-item StLabel {
+    color: inherit !important;
+    text-shadow: none !important;
 }
 
 .appmenu-popup-menu-item:focus,
@@ -254,7 +265,7 @@
 .appmenu-popup-menu-content .popup-menu-item:selected {
     background-color: -st-accent-color !important;
     color: #ffffff !important;
-    border-radius: 9999px !important;
+    border-radius: 6px !important;
     box-shadow: none !important;
 }
 
@@ -264,7 +275,26 @@
 .appmenu-popup-menu-content .popup-menu-item:active {
     background-color: -st-accent-color !important;
     color: #ffffff !important;
-    border-radius: 9999px !important;
+    border-radius: 6px !important;
+}
+
+.appmenu-popup-menu-item:insensitive,
+.appmenu-popup-menu .popup-menu-item:insensitive,
+.appmenu-popup-menu-content .popup-menu-item:insensitive,
+.appmenu-popup-menu-item.insensitive,
+.appmenu-popup-menu .popup-menu-item.insensitive,
+.appmenu-popup-menu-content .popup-menu-item.insensitive {
+    color: rgba(255, 255, 255, 0.45) !important;
+    background-color: transparent !important;
+}
+
+.appmenu-popup-menu-item:insensitive StLabel,
+.appmenu-popup-menu .popup-menu-item:insensitive StLabel,
+.appmenu-popup-menu-content .popup-menu-item:insensitive StLabel,
+.appmenu-popup-menu-item.insensitive StLabel,
+.appmenu-popup-menu .popup-menu-item.insensitive StLabel,
+.appmenu-popup-menu-content .popup-menu-item.insensitive StLabel {
+    color: rgba(255, 255, 255, 0.45) !important;
 }
 
 .popup-menu-item.popup-separator-menu-item,

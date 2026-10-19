@@ -7,7 +7,6 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import Meta from 'gi://Meta';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { DashItemContainer } from 'resource:///org/gnome/shell/ui/dash.js';
@@ -15,7 +14,16 @@ import { ExtensionState } from 'resource:///org/gnome/shell/misc/extensionUtils.
 
 const CONTAINER_NAME = 'dashtodockContainer';
 const D2D_SCHEMA = 'org.gnome.shell.extensions.dash-to-dock';
-const D2D_UUIDS = ['dash-to-dock@micxgx.gmail.com', 'ubuntu-dock@ubuntu.com'];
+const D2D_UUIDS = [
+    'dash-to-dock@micxgx.gmail.com',
+    'ubuntu-dock@ubuntu.com',
+    'dash2dock-motion@unmade.space',
+];
+// Docks that keep Dash-to-Dock's actor and container names but ship their own
+// settings schema under a different id
+const DOCK_SCHEMA_IDS = {
+    'dash2dock-motion@unmade.space': 'org.gnome.shell.extensions.dash2dock-motion',
+};
 const DOCK_SEARCH_INTERVAL = 1000; // ms between tries while the dock loads
 const DOCK_SEARCH_TRIES = 10;
 const PRESS_EFFECT = 'kiwi-press-darken';
@@ -34,22 +42,6 @@ export function prefersDark() {
 export function disconnectAll(pairs) {
     for (const [object, id] of pairs)
         object.disconnect(id);
-}
-
-/* ------------------------------------------------------ frame scheduling */
-
-/**
- * Run a callback before the next redraw instead of from a GLib idle, which the
- * busy frames after an unlock can starve for seconds.
- *
- * @param callback called once, before the next redraw
- */
-export function beforeRedraw(callback) {
-    return global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, callback);
-}
-
-export function cancelBeforeRedraw(id) {
-    global.compositor.get_laters().remove(id);
 }
 
 /* -------------------------------------------------------- dock discovery */
@@ -160,21 +152,27 @@ let d2dSettings;              // undefined until looked up, null without the doc
  */
 function lookupDockSchema() {
     const source = Gio.SettingsSchemaSource.get_default();
-    // A schema that is not installed aborts the shell rather than throwing
-    const schema = source?.lookup(D2D_SCHEMA, true);
-    if (schema)
-        return schema;
 
-    for (const uuid of D2D_UUIDS) {
+    // A schema that is not installed aborts the shell rather than throwing, so
+    // every lookup goes through the extension's own schemas directory. The dock
+    // that is running answers first: another dock that is installed but not
+    // running must not stand in for it, and each may name its schema its way.
+    const active = D2D_UUIDS.filter(uuid =>
+        Main.extensionManager.lookup(uuid)?.state === ExtensionState.ACTIVE);
+    const rest = D2D_UUIDS.filter(uuid => !active.includes(uuid));
+
+    for (const uuid of [...active, ...rest]) {
         const dir = Main.extensionManager.lookup(uuid)?.dir.get_child('schemas');
         if (!dir?.get_child('gschemas.compiled').query_exists(null))
             continue;
         const own = Gio.SettingsSchemaSource.new_from_directory(dir.get_path(), source, true)
-            .lookup(D2D_SCHEMA, true);
+            .lookup(DOCK_SCHEMA_IDS[uuid] ?? D2D_SCHEMA, true);
         if (own)
             return own;
     }
-    return null;
+
+    // A system-wide Dash-to-Dock keeps its schema in the default source
+    return source?.lookup(D2D_SCHEMA, true) ?? null;
 }
 
 /** Dash-to-Dock's own settings, or null when it is not installed. */
@@ -184,11 +182,6 @@ export function dockSettings() {
         d2dSettings = schema ? new Gio.Settings({ settings_schema: schema }) : null;
     }
     return d2dSettings;
-}
-
-/** Drops the cached settings, so the next enable looks the dock up again. */
-export function resetDockSettings() {
-    d2dSettings = undefined;
 }
 
 /**
@@ -223,7 +216,7 @@ function tooltipsHidden() {
  * @param labelText text for the hover label
  */
 export function makeDashItem(dash, child, labelText) {
-    const sibling = dash._box.get_children().find(c => c instanceof DashItemContainer);
+    const sibling = dash._box.get_children().find(c => typeof c.setLabelText === 'function');
     const Container = sibling ? sibling.constructor : DashItemContainer;
     const item = sibling ? new Container(dash._position) : new Container();
     item.setChild(child);
@@ -237,21 +230,6 @@ export function makeDashItem(dash, child, labelText) {
             showLabel();
     };
     return item;
-}
-
-/**
- * Whether an item Kiwi built is the dock's own kind of container. One built
- * before the dock had any icons to copy lands on the plain shell container,
- * whose label sits above the item wherever the dock is; the caller rebuilds it
- * once the dock has an icon of its own.
- *
- * @param dash the Dash-to-Dock dash actor
- * @param item the item to check
- */
-export function dashItemMatchesDock(dash, item) {
-    const sibling = dash._box.get_children()
-        .find(child => child instanceof DashItemContainer);
-    return !sibling || item.constructor === sibling.constructor;
 }
 
 export function isTrashItem(child) {
@@ -268,7 +246,7 @@ export function isTrashItem(child) {
  */
 export function dashEndsWithSeparator(dash) {
     const last = dash._box.get_children().findLast(child => !isTrashItem(child));
-    return !!last?.get_style_class_name()?.includes('dash-separator');
+    return !!last?.get_style_class_name?.()?.includes('dash-separator');
 }
 
 /**
