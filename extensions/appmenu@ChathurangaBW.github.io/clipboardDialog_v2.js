@@ -453,7 +453,11 @@ export const MacClipboardDialog = GObject.registerClass({
 
         this._searchEntry = new St.Entry({
             style_class: 'mac-clipboard-search',
-            style: 'font-size: 18px !important; font-weight: 500; color: #ffffff !important; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; outline: none !important;',
+            style: 'font-size: 18px !important; font-weight: 600 !important; color: #ffffff !important; ' +
+                   'hint-text-color: #ffffff !important; ' +
+                   'text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; ' +
+                   'background-color: transparent !important; background: none !important; ' +
+                   'border: none !important; box-shadow: none !important; outline: none !important;',
             hint_text: 'Буфер обміну',
             can_focus: true,
             x_expand: true,
@@ -461,6 +465,9 @@ export const MacClipboardDialog = GObject.registerClass({
         });
         if (this._searchEntry.clutter_text?.set_single_line_mode) {
             this._searchEntry.clutter_text.set_single_line_mode(true);
+        }
+        if (this._searchEntry.clutter_text) {
+            this._searchEntry.clutter_text.set_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 }));
         }
         this._headerRow.add_child(this._searchEntry);
 

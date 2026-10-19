@@ -291,7 +291,11 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._entry = new St.Entry({
             style_class: 'mac-spotlight-entry',
-            style: 'font-size: 19px !important; color: #ffffff !important; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; outline: none !important;',
+            style: 'font-size: 19px !important; font-weight: 500 !important; color: #ffffff !important; ' +
+                   'hint-text-color: #ffffff !important; ' +
+                   'text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; ' +
+                   'background-color: transparent !important; background: none !important; ' +
+                   'border: none !important; box-shadow: none !important; outline: none !important;',
             hint_text: t('spotlight_search', 'Пошук Spotlight'),
             can_focus: true,
             x_expand: true,
@@ -299,6 +303,9 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         if (this._entry.clutter_text?.set_single_line_mode) {
             this._entry.clutter_text.set_single_line_mode(true);
+        }
+        if (this._entry.clutter_text) {
+            this._entry.clutter_text.set_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 }));
         }
         this._searchPill.add_child(this._entry);
 
@@ -312,7 +319,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         const optionsLbl = new St.Label({
             text: '•••',
-            style: 'font-size: 11px; font-weight: bold; color: rgba(255, 255, 255, 0.75);',
+            style: 'font-size: 11px; font-weight: bold; color: #ffffff; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20);',
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
         });
@@ -642,7 +649,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
             const lbl = new St.Label({
                 text: f.label,
-                style: 'font-size: 13px; font-weight: 500; color: rgba(255, 255, 255, 0.88);',
+                style: 'font-size: 13px; font-weight: 600; color: #ffffff !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20);',
             });
             btn.set_child(lbl);
 
@@ -690,7 +697,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                     'padding: 5px 14px; ' +
                     'margin-right: 8px;'
                 );
-                btn._label.set_style('font-size: 13px; font-weight: 700; color: #ffffff;');
+                btn._label.set_style('font-size: 13px; font-weight: 700; color: #ffffff !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20);');
             } else {
                 btn.set_style(
                     'background-color: rgba(255, 255, 255, 0.12); ' +
@@ -698,7 +705,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                     'padding: 5px 14px; ' +
                     'margin-right: 8px;'
                 );
-                btn._label.set_style('font-size: 13px; font-weight: 500; color: rgba(255, 255, 255, 0.88);');
+                btn._label.set_style('font-size: 13px; font-weight: 600; color: #ffffff !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20);');
             }
         }
     }
@@ -718,7 +725,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             isDark = true;
         }
         const tintVal = isDark ? 0.0 : 1.0;
-        const tintStrength = 0.03; // Exactly 3% as requested by user
+        const tintStrength = isDark ? 0.12 : 0.10;
         return { isDark, tintVal, tintStrength };
     }
 
@@ -1488,7 +1495,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             const titleLbl = new St.Label({
                 text: item.title,
                 style_class: 'mac-spotlight-item-title',
-                style: 'font-size: 14px; font-weight: 500; color: #ffffff;',
+                style: 'font-size: 14px; font-weight: 600; color: #ffffff !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20);',
                 x_align: Clutter.ActorAlign.START,
             });
             textBox.add_child(titleLbl);
@@ -1497,7 +1504,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const subLbl = new St.Label({
                     text: item.subtitle,
                     style_class: 'mac-spotlight-item-subtitle',
-                    style: 'font-size: 11px; color: rgba(255, 255, 255, 0.55);',
+                    style: 'font-size: 11px; color: rgba(255, 255, 255, 0.85) !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);',
                     x_align: Clutter.ActorAlign.START,
                 });
                 textBox.add_child(subLbl);
@@ -1508,7 +1515,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const badge = new St.Label({
                     text: item.category,
                     style_class: 'mac-spotlight-item-badge',
-                    style: 'font-size: 11px; color: rgba(255, 255, 255, 0.40); padding: 2px 8px; border-radius: 6px; background-color: rgba(255, 255, 255, 0.08); margin-left: 8px;',
+                    style: 'font-size: 11px; font-weight: 500; color: #ffffff !important; padding: 2px 8px; border-radius: 6px; background-color: rgba(255, 255, 255, 0.15); margin-left: 8px;',
                     y_align: Clutter.ActorAlign.CENTER,
                 });
                 row.add_child(badge);
@@ -1710,7 +1717,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         const suggestions = allFiles.slice(0, 5);
         const suggTitle = new St.Label({
             text: 'Пропозиції',
-            style: 'font-size: 13px; font-weight: 700; color: #ffffff; margin: 4px 6px 10px 6px;',
+            style: 'font-size: 13px; font-weight: 700; color: #ffffff !important; margin: 4px 6px 10px 6px; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20);',
             x_align: Clutter.ActorAlign.START,
         });
         this._filesContentBox.add_child(suggTitle);
@@ -1732,7 +1739,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (recents.length > 0) {
             const recentTitle = new St.Label({
                 text: 'Недавні',
-                style: 'font-size: 13px; font-weight: 700; color: #ffffff; margin: 10px 6px 10px 6px;',
+                style: 'font-size: 13px; font-weight: 700; color: #ffffff !important; margin: 10px 6px 10px 6px; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20);',
                 x_align: Clutter.ActorAlign.START,
             });
             this._filesContentBox.add_child(recentTitle);
@@ -1781,7 +1788,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         // Filename label
         const titleLbl = new St.Label({
             text: file.name,
-            style: 'font-size: 11px; font-weight: 500; color: #ffffff; text-align: center; margin-top: 6px; max-width: 112px;',
+            style: 'font-size: 11px; font-weight: 500; color: #ffffff !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; text-align: center; margin-top: 6px; max-width: 112px;',
             x_align: Clutter.ActorAlign.CENTER,
         });
         if (titleLbl.clutter_text) {
@@ -1871,7 +1878,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
             const nameLbl = new St.Label({
                 text: app.get_name(),
-                style: 'font-size: 12px; font-weight: 500; color: #ffffff; text-align: center; margin-top: 6px; max-width: 112px;',
+                style: 'font-size: 12px; font-weight: 500; color: #ffffff !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; text-align: center; margin-top: 6px; max-width: 112px;',
                 x_align: Clutter.ActorAlign.CENTER,
             });
             if (nameLbl.clutter_text) {

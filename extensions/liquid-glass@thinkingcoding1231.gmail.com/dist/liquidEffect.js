@@ -2782,12 +2782,36 @@ export const LiquidEffect = GObject.registerClass({
         const settings = this._settings;
         if (!settings)
             return;
+        const dockDefaults = {
+            'displacement_scale': 78.5,
+            'ior': 2.40,
+            'rim_intensity': 0.60,
+            'rim_width': 5.0,
+            'rim_power': 6.0,
+            'rim_directional_power': 2.7,
+            'rim_light_color_intensity': 1.4,
+            'sheen_intensity': 0.32,
+            'chroma_strength': 0.02,
+            'max_z': 25.0,
+            'profile_shape_n': 7.0,
+            'edge_smoothing': 2.0,
+            'shadow_intensity': 0.55,
+            'shadow_radius': 30.0,
+        };
         mappings.forEach(map => {
+            if (this._owner === 'dock' && map.uniform in dockDefaults) {
+                this._setFloat(map.uniform, dockDefaults[map.uniform]);
+                return;
+            }
             // Apply the initial value.
             this._setFloat(map.uniform, settings.get_double(map.key));
             // Watch for changes.
             const id = settings.connect(`changed::${map.key}`, () => {
-                this._setFloat(map.uniform, settings.get_double(map.key));
+                if (this._owner === 'dock' && map.uniform in dockDefaults) {
+                    this._setFloat(map.uniform, dockDefaults[map.uniform]);
+                } else {
+                    this._setFloat(map.uniform, settings.get_double(map.key));
+                }
             });
             this._settingsIds.push(id);
         });

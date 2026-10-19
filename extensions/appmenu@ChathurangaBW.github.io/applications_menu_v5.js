@@ -268,13 +268,17 @@ export const MacApplicationsDialog = GObject.registerClass({
             can_focus: true,
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'font-size: 18px !important; font-weight: 500 !important; color: #ffffff !important; ' +
-                   'text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important; ' +
+            style: 'font-size: 18px !important; font-weight: 600 !important; color: #ffffff !important; ' +
+                   'hint-text-color: #ffffff !important; ' +
+                   'text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; ' +
                    'background-color: transparent !important; background: none !important; ' +
                    'border: none !important; box-shadow: none !important; outline: none !important;',
         });
         if (this._entry.clutter_text?.set_single_line_mode) {
             this._entry.clutter_text.set_single_line_mode(true);
+        }
+        if (this._entry.clutter_text) {
+            this._entry.clutter_text.set_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 }));
         }
         this._headerRow.add_child(this._entry);
 
@@ -392,25 +396,24 @@ export const MacApplicationsDialog = GObject.registerClass({
                 y_align: Clutter.ActorAlign.CENTER,
             });
 
-            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.08)';
+            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)';
             const pillBorder = 'border: none !important;';
-            const pillShadow = isSelected ? 'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);' : 'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20);';
-            const pillColor = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.88)';
+            const pillShadow = isSelected ? 'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);' : 'box-shadow: none;';
             btn.set_style(
                 `background-color: ${pillBg}; ` +
-                `color: ${pillColor}; ` +
+                'color: #ffffff !important; ' +
                 `${pillBorder} ` +
                 `${pillShadow} ` +
                 'border-radius: 10px; ' +
                 'height: 32px; ' +
                 'margin: 0 4px; ' +
                 'font-size: 13px; ' +
-                'font-weight: 500;'
+                'font-weight: 600;'
             );
 
             const label = new St.Label({
                 text: cat.label,
-                style: 'text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40);',
+                style: 'color: #ffffff !important; font-weight: 600 !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important;',
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -431,19 +434,19 @@ export const MacApplicationsDialog = GObject.registerClass({
                 const active = (this._selectedCategory === cat.id);
                 if (active) {
                     btn.set_style(
-                        'background-color: rgba(255, 255, 255, 0.28); ' +
+                        'background-color: rgba(255, 255, 255, 0.32); ' +
                         'border: none !important; ' +
-                        'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); ' +
-                        'color: #ffffff; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 500;'
+                        'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); ' +
+                        'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
                     );
                 } else {
-                    const bg = hover ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.08)';
+                    const bg = hover ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.12)';
                     const border = 'border: none !important;';
                     btn.set_style(
                         `background-color: ${bg}; ` +
                         `${border} ` +
-                        'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20); ' +
-                        'color: rgba(255, 255, 255, 0.88); border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 500;'
+                        'box-shadow: none; ' +
+                        'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
                     );
                 }
             });
@@ -468,7 +471,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             isDark = true;
         }
         const tintVal = isDark ? 0.0 : 1.0;
-        const tintStrength = isDark ? 0.04 : 0.08;
+        const tintStrength = isDark ? 0.12 : 0.10;
         return { isDark, tintVal, tintStrength };
     }
 
@@ -776,9 +779,9 @@ export const MacApplicationsDialog = GObject.registerClass({
         const label = new St.Label({
             text: app.get_name() || '',
             style_class: 'mac-app-title',
-            style: `font-size: 11px !important; color: rgba(255, 255, 255, 0.95) !important; ` +
+            style: `font-size: 11px !important; color: #ffffff !important; ` +
                    `text-align: center !important; font-weight: 500 !important; ` +
-                   `text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important; ` +
+                   `text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; ` +
                    `width: ${COLUMN_WIDTH - 4}px; max-width: ${COLUMN_WIDTH - 4}px;`,
             x_align: Clutter.ActorAlign.CENTER,
         });

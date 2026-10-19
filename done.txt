@@ -6230,3 +6230,40 @@ echo "==> Встановлення успішно завершено!"
          - Вимкнено дублюючі накладання BMS в Огляді та Coverflow (`blur-my-shell.overview.blur = false`, `blur-my-shell.coverflow-alt-tab.blur = false`), усунувши подвійне мильне розмиття під рідким склом.
     - Синхронізація:
       * Усі 7 змінених файлів повністю оновлено та синхронізовано між робочим середовищем `~/.local/share/gnome-shell/extensions/`, репозиторіями `MACTHEMEFILES` та `macW1Y`.
+
+117. Оптимізація та калібрування Dock, віджетів, скла та читабельності тексту у Spotlight/меню:
+    - Контекст та вимоги користувача:
+      * «зменш чуть іконки в доку і знову ж таки одні іконки більші за інші. вирівняй розмір іконок також на однаковий і зменш іконки на доку. відступ крайніх іконок від лівої і правої частини доку зроби як відступи між іконками в доку. поверни минуле скло для віджетів і те скло використай для всіх елементів до яких ми прийняли зміни окрім док. тінь під текстом у спотлайті зроби менше а текст у спотлайт типу меню типу пошук, програми і т д текст зроби чисто білим бо погана читабельність того тексту зараз»
+    - Виконані роботи та вирішення проблем:
+      1) Вирівнювання та зменшення іконок у Доку:
+         - Зменшено фіксований розмір іконок дока з 64px до 54px (`dash-max-icon-size = 54`, `icon-size-fixed = true`), створивши гармонійний відступ та візуальну легкість.
+         - Діагностовано причину, чому іконка Antigravity була більшою за всі інші: snap-пакет постачався з десктоп-файлом `/var/lib/snapd/desktop/applications/antigravity_antigravity.desktop`, що мав пряме посилання на PNG-зображення без теми, ігноруючи тему іконок.
+         - Створено файл `~/.local/share/applications/antigravity_antigravity.desktop` із зазначенням `Icon=antigravity`.
+         - У `~/.local/share/icons/MacTahoe/apps/scalable/antigravity.svg` додано `viewBox="0 0 64 64"`, завдяки чому іконка Antigravity тепер рендериться на абсолютно ідентичній 56x56 сквиркл-підкладці, як Safari, Chrome, Файли та Термінал. Оновлено кеш іконок та базу десктопів.
+      2) Відступи крайніх іконок Доку:
+         - У `dash2dock-motion@unmade.space/stylesheet.css`:
+           * Відкориговано горизонтальні відступи контейнера `#dashtodockContainer.bottom #dash #dashtodockDashContainer` (з 10px до `0 16px`).
+           * Замінено нульові марджини на першій та останній іконках (`first-child` / `last-child`) на `margin-left: 2px; padding-left: 2px;` та `margin-right: 2px; padding-right: 2px;`.
+           * Відстань від крайньої лівої іконки (Finder) та крайньої правої іконки (Смітник) до заокруглених кінців капсули дока тепер строго відповідає кроку між сусідніми іконками (~14-16px).
+      3) Ізоляція кришталевого скла Доку та повернення матового скла для віджетів і діалогів:
+         - У `liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js`:
+           * Додано жорстку ізоляцію за параметром `this._owner === 'dock'` у методі `_bindSettings()`.
+           * Коли ефект належить доку (`owner: 'dock'`), він безумовно використовує параметри автентичного рідкого скла (`displacement_scale: 78.5`, `ior: 2.40`, `rim_intensity: 0.60`, `sheen_intensity: 0.32`, `chroma_strength: 0.02`, `max_z: 25.0`, `shadow_intensity: 0.55`, `shadow_radius: 30.0`).
+           * Для всіх інших елементів (`this._owner !== 'dock'`) та віджетів робочого столу встановлено витончене матове скло (`glass-displacement-scale: 20.0`, `glass-ior: 1.50`, `glass-rim-intensity: 0.08`, `glass-rim-width: 5.0`, `glass-sheen-intensity: 0.0`, `glass-chroma-strength: 0.0`, `glass-max-z: 6.0`, `glass-profile-shape-n: 5.40`, `shadow-intensity: 0.0`, `glass-ao-intensity: 0.0`).
+           * Віджети робочого столу (`tahoe-widgets`) повністю повернули свій оригінальний м'який вигляд без спотворень та темних тіней (підтверджено скріншотом `widgets_left_verified_117.png`).
+           * Діалоги Spotlight, App Center, Буфер обміну та Пошук по файлах також використовують це акуратне матове скло.
+      4) Читабельність тексту та зменшення тіней у Spotlight і меню:
+         - У `searchDialog_v5.js`, `applications_menu_v5.js`, `clipboardDialog_v2.js`:
+           * Поле пошуку («Пошук», «Програми», «Буфер обміну»): встановлено `color: #ffffff !important;`, `hint-text-color: #ffffff !important;`, `font-weight: 600 !important;` та прямий колір Clutter.Color(255, 255, 255) на текстовий об'єкт `clutter_text`.
+           * Зменшено важкі темні тіні: замінено `rgba(0, 0, 0, 0.85)` на легку чітку тінь `0 1px 1px rgba(0, 0, 0, 0.20) !important;`.
+           * Кнопки категорій («Утиліти», «Спілкування», «Продуктивність», «Інше»): встановлено чисто білий колір `#ffffff !important;` із тонкою тінню 0 1px 1px.
+           * Назви програм під іконками (`mac-app-title`, `nameLbl`) та назви файлів (`titleLbl`): оформлено білим кольором `#ffffff !important;` з акуратною тінню 0 1px 1px.
+           * У `stylesheet.css` додано правила для класів `.mac-spotlight-entry`, `#mac-applications-search`, `.mac-applications-search`, `.mac-clipboard-search` із примусовим `hint-text-color: #ffffff !important;`.
+    - Верифікація скріншотами:
+      * `dock_verified_117.png` — ідеально однакові розміри сквирклів (Safari, Antigravity, Launchpad тощо), зменшений розмір 54px, симетричні крайні відступи, збережено кришталеве скло Доку.
+      * `spotlight_verified_117.png` — білий чіткий плейсхолдер «Пошук Spotlight».
+      * `appcenter_verified_117.png` — контрастний заголовок «Програми», чисто білі кнопки фільтрів та чіткі назви програм без чорних плям.
+      * `clipboard_verified_117.png` — чіткий білий заголовок «Буфер обміну».
+      * `widgets_left_verified_117.png` — відновлено витончене м'яке скло на віджетах Погоди, Календаря, Годинника та Дати.
+    - Синхронізація:
+      * Усі змінені файли скопійовано та засинхронізовано до робочих каталогів `~/.local/share/`, `MACTHEMEFILES` та `macW1Y`.

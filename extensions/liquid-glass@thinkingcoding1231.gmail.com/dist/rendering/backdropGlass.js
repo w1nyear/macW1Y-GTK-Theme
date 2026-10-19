@@ -89,18 +89,34 @@ export const BackdropGlass = GObject.registerClass({
             owner: this._owner,
         });
 
-        // Let LiquidEffect retain authentic GNOME-Tahoe shader parameters bound from settings
+        // Tahoe widget glass parameters (clean subtle rim 0.08, zero sheen, zero chroma, soft dark tint)
         this._effect.setPadding(20);
         this._effect.setIsDock(false);
         this._effect.setCornerRadius(26.0);
         this._effect.setBlurRadius(8);
         this._effect.setTintColor(0, 0, 0);
-        this._effect.setTintStrength(0.05);
+        this._effect.setTintStrength(0.12);
         this._effect.setSaturation(1.0);
         this._effect.setBrightness(1.0);
         this._effect.setContrast(1.0);
         try {
-            this._effect.setShadowMaxRadius?.(180);
+            this._effect._setFloat('displacement_scale', 20.0);
+            this._effect._setFloat('ior', 1.50);
+            this._effect._setFloat('sheen_intensity', 0.0);
+            this._effect._setFloat('rim_intensity', 0.08);
+            this._effect._setFloat('rim_width', 5.0);
+            this._effect._setFloat('rim_power', 6.0);
+            this._effect._setFloat('rim_directional_power', 2.7);
+            this._effect._setFloat('rim_light_color_intensity', 1.4);
+            this._effect._setFloat('specular_intensity', 0.0);
+            this._effect._setFloat('chroma_strength', 0.0);
+            this._effect._setFloat('edge_smoothing', 2.0);
+            this._effect._setFloat('profile_shape_n', 5.40);
+            this._effect._setFloat('max_z', 6.0);
+            this._effect._setFloat('shadow_intensity', 0.0);
+            this._effect._setFloat('shadow_radius', 0.0);
+            this._effect._setFloat('ao_intensity', 0.0);
+            this._effect._setFloat('ao_radius', 0.0);
         } catch (_) {}
 
         this._liquidBox.add_effect(this._effect);

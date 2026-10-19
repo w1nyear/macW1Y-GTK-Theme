@@ -325,3 +325,22 @@
     margin: 0 !important;
     background-color: rgba(255, 255, 255, 0.12) !important;
 }
+
+/* Spotlight & Modal Search Entries */
+.mac-spotlight-entry,
+#mac-applications-search,
+.mac-applications-search,
+.mac-clipboard-search {
+    color: #ffffff !important;
+    hint-text-color: #ffffff !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important;
+}
+
+.mac-spotlight-entry StLabel,
+#mac-applications-search StLabel,
+.mac-applications-search StLabel,
+.mac-clipboard-search StLabel {
+    color: #ffffff !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important;
+}
+
