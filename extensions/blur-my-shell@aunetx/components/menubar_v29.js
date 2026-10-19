@@ -2310,9 +2310,9 @@ export const MenuBarController = class MenuBarController {
         // Handled cleanly and efficiently by panel.js via opacity crossfade.
     }
 
-    _updatePopupRealtime(tint, radius = 14) {
+    _updatePopupRealtime(tint, radius = 20) {
         try {
-            const style = `background-color: rgba(30, 30, 34, 0.78) !important; border: none !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important; border-radius: ${radius}px !important;`;
+            const style = `background-color: transparent !important; background: transparent !important; background-image: none !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; box-shadow: none !important; border-radius: 20px !important;`;
             const found = [];
             const walk = (actor) => {
                 if (!actor) return;

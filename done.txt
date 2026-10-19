@@ -6394,4 +6394,32 @@ echo "==> Встановлення успішно завершено!"
     - Верифікація:
       * Знято контрольні знімки режиму огляду `overview_live.png`, `overview_multi_test.png` та фінальний `overview_verified_clean.png`.
       * Мініатюри вікон у режимі огляду відображаються з ідеально чистими заокругленими кутами без будь-яких зайвих плаваючих елементів, що на 100% відповідає автентичному вигляду macOS Mission Control.
+124. Очищення всіх контекстних меню від фонів та інтеграція скляного оптичного шейдера (Liquid Glass Shader):
+    - Контекст та вимоги користувача:
+      * «всі онтекстні меню очисти від всіх фонів і встав скляний шейдер який використовується наприклад у док і віджетах зараз»
+      * Користувач надав знімки контекстних меню файлового менеджера/робочого столу (DING) та оболонки GNOME із суцільними непрозорими темними фонами (`rgba(30, 30, 34, 0.78)`, `#333333`, `rgba(28, 28, 32, 0.65)`).
+      * Вимога: повністю усунути всі каламутні та непрозорі підкладки у всіх контекстних меню (як у додатках GTK3/GTK4/Wayland popup, так і у контекстних меню GNOME Shell / менюбара / дока) та підкласти чистий оптичний GLSL-шейдер рідкого скла (Liquid Glass Effect) з подвійним розмиттям Kawase, заломленням світла (refraction), дзеркальним відблиском граней (specular rim glint), заокругленнями squircles 20px та витонченою білою лінією `rgba(255, 255, 255, 0.18)`.
+    - Виконані технічні рішення та виправлення:
+      1) Повне очищення фонів у таблицях стилів GTK3, GTK4 та GNOME Shell:
+         - У `~/.config/gtk-3.0/gtk.css`, `~/.config/gtk-4.0/gtk.css`, темах `macW1Y-Dark`, `macW1Y-Dark-solid` та дзеркалах репозиторію очищено класи:
+           `menu`, `menu.popup-menu`, `menu.context-menu`, `.desktopmenu`, `window.desktopmenu`, `.fileitemmenu`, `window.popup`, `window.popup decoration`, `window.desktopmenu decoration`, `.csd.popup decoration`, `popover.menu > contents`, `popover.context-menu > contents`, `popover.background > contents`.
+         - Встановлено: `background-color: transparent !important; background: transparent !important; background-image: none !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; border-radius: 20px !important;`.
+         - У `gnome-shell.css` для `.popup-menu-content`, `.appmenu-popup-menu-content`, `.popup-sub-menu` знято темні заливки, задано прозорість та рамку 1px `rgba(255, 255, 255, 0.18)`.
+      2) Усунення примусового інлайн-стилю в розширенні Blur My Shell:
+         - Виявлено, що `_updatePopupRealtime` у `menubar_v29.js` примусово проходив по сцені та призначав меню `background-color: rgba(30, 30, 34, 0.78) !important;`.
+         - Замінено цей інлайн-стиль на повністю прозорий `background-color: transparent !important; background: transparent !important; background-image: none !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; box-shadow: none !important; border-radius: 20px !important;`.
+         - Застосовано патч наживо в активній сесії GNOME Shell.
+      3) Розширення та інтеграція скляного шейдера у Liquid Glass:
+         - У `applicationManager.js` та `src/applicationManager.ts`:
+           * Розширено фільтр `_isContextMenuWindow` для підхоплення всіх типів спливаючих меню (`DROPDOWN_MENU`, `POPUP_MENU`, `MENU`).
+           * Для профілю `desktop-menu` активовано скляний відблиск `effect.setSurfaceLightEnabled(true)`, `cornerRadius: 20px`, `padding: 20px`, `blurRadius: 6`, `tintColor: [1.0, 1.0, 1.0]`, `tintStrength: 0.01` та `surfaceActor.opacity = 255`.
+         - У `panelMenuManager.js` та `src/panelMenuManager.ts`:
+           * Інтегровано хук у `PopupMenu.PopupMenu.prototype.open`, що автоматично монтує шейдер `LiquidEffect` через `UIManager` під усі спливаючі контекстні меню (іконки дока, пункти менюбара тощо).
+         - Налаштовано параметри GSettings для `panel-menu`, `menu` та `desktop-menu` в ідентичній відповідності до параметрів дока (`brightness: 1.02`, `contrast: 1.02`, `blur-radius: 6`, `saturation: 1.15`, `tint-strength: 0.01`).
+         - Увімкнено адаптивну типографіку (`enable-adaptive-text-color`), завдяки якій текст меню плавно адаптується: світлий на темному тлі вікон і темний на світлому тлі шпалер.
+    - Верифікація:
+      * Знято детальні знімки меню з підтвердженням чистого скла:
+        - `apple_menu_crystal_crop.png` та `apple_menu_tuned_crop.png` (меню Apple з адаптивним темним текстом на фоні світлих дюн).
+        - `dock_context_menu_crop.png` та `dock_menu_tuned_crop.png` (контекстне меню іконки дока з чітким білим текстом, оптичним заломленням та відблиском).
+      * Підтверджено повну відсутність сірих/чорних фонів та ідеальну роботу оптичного шейдера скла.
 

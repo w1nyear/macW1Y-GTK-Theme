@@ -23,6 +23,7 @@ export class PanelMenuManager {
     _menus = new Map();
     _idleId = 0;
     _active = false;
+    _origOpen = null;
     constructor(_path, _settings, _logger) {
         this._path = _path;
         this._settings = _settings;
@@ -30,6 +31,43 @@ export class PanelMenuManager {
     }
     setup() {
         this._active = true;
+        if (!this._origOpen && PopupMenu?.PopupMenu?.prototype?.open) {
+            this._origOpen = PopupMenu.PopupMenu.prototype.open;
+            const self = this;
+            PopupMenu.PopupMenu.prototype.open = function(animate) {
+                try {
+                    if (self._active && !this._liquidGlassUIManager && this.actor && this.box) {
+                        const reserved = new Set([
+                            Main.panel.statusArea.dateMenu?.menu,
+                            Main.panel.statusArea.quickSettings?.menu,
+                        ]);
+                        if (!reserved.has(this)) {
+                            const mgr = new UIManager(
+                                self._path,
+                                self._settings,
+                                self._logger,
+                                { menu: this },
+                                false,
+                                'enable-extra-menu-glass',
+                                PANEL_MENU_PREFIX,
+                                'popup-menu'
+                            );
+                            mgr.setup();
+                            this._liquidGlassUIManager = mgr;
+                            this.actor.connect('destroy', () => {
+                                try {
+                                    this._liquidGlassUIManager?.cleanup();
+                                    this._liquidGlassUIManager = null;
+                                } catch (_) {}
+                            });
+                        }
+                    }
+                } catch (e) {
+                    try { self._logger?.log(`[Liquid Glass] PopupMenu open hook error: ${e}`); } catch (_) {}
+                }
+                return self._origOpen.call(this, animate);
+            };
+        }
         const schedule = () => this._scheduleScan();
         const watch = (target, signal) => {
             this._signals.push({ target, id: target.connect(signal, schedule) });
@@ -183,6 +221,12 @@ export class PanelMenuManager {
         for (const { name, manager } of [...this._menus.values()])
             this._teardownStep(`menu(${name})`, () => manager.cleanup());
         this._menus.clear();
+        this._teardownStep('popupMenuHook', () => {
+            if (this._origOpen && PopupMenu?.PopupMenu?.prototype) {
+                PopupMenu.PopupMenu.prototype.open = this._origOpen;
+                this._origOpen = null;
+            }
+        });
         this._teardownStep('detectedList', () => this._settings.set_strv('detected-extra-menus', []));
     }
 }

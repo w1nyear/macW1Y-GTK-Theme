@@ -626,11 +626,13 @@ export class ApplicationManager {
    * popups); they are not ours to decorate, and the user asked for them to
    * stay out.
    */
-  _isDesktopMenuWindow(metaWindow: Meta.Window): boolean {
+  _isContextMenuWindow(metaWindow: Meta.Window): boolean {
+    if (!metaWindow)
+      return false;
     if (metaWindow.is_override_redirect())
       return false;
-    if (!MENU_WINDOW_TYPES.includes(metaWindow.get_window_type()))
-      return false;
+    if (MENU_WINDOW_TYPES.includes(metaWindow.get_window_type()))
+      return true;
 
     let parent: Meta.Window | null = null;
     try {
@@ -642,14 +644,12 @@ export class ApplicationManager {
     for (let depth = 0; parent && depth < MAX_TRANSIENT_DEPTH; depth++) {
       if (parent.get_window_type() === Meta.WindowType.DESKTOP)
         return true;
-      // A submenu is transient for the menu above it, so keep walking — but
-      // only through menus, never up out of an ordinary app window.
       if (!MENU_WINDOW_TYPES.includes(parent.get_window_type()))
-        return false;
+        break;
       try {
         parent = parent.get_transient_for();
       } catch (e) {
-        return false;
+        break;
       }
     }
     return false;
@@ -665,9 +665,9 @@ export class ApplicationManager {
     if (!metaWindow)
       return null;
 
-    // Checked before the application rules: a desktop menu must not be able
+    // Checked before the application rules: a context menu must not be able
     // to fall through to "apply to all windows" and pick up app settings.
-    if (this._isDesktopMenuWindow(metaWindow))
+    if (this._isContextMenuWindow(metaWindow))
       return this._isProfileEnabled('desktop-menu') ? 'desktop-menu' : null;
 
     if (!this._isProfileEnabled('application'))
@@ -1118,10 +1118,16 @@ export class ApplicationManager {
     // non-opaque) content, reads as a distracting bright frame around the
     // window. Blur/tint/refraction are unaffected; only this glint group
     // is turned off, and only for this per-window effect instance — the
-    // shared glass-rim-*/glass-sheen-*/glass-specular-* settings still
-    // apply normally to the dock, menu, notification, quick-settings and
-    // OSD glass.
-    effect.setSurfaceLightEnabled(false);
+    if (profile === 'desktop-menu') {
+      effect.setSurfaceLightEnabled(true);
+      effect.setCornerRadius(cornerRadius || 20.0);
+      effect.setTintColor(1.0, 1.0, 1.0);
+      effect.setTintStrength(0.01);
+      effect.setBlurRadius(blurRadius || 10);
+      surfaceActor.opacity = 255;
+    } else {
+      effect.setSurfaceLightEnabled(false);
+    }
     // Keep the drop-shadow within the small padded border around the window,
     // rather than the huge margin dockManager uses for its full-screen FBO.
     effect.setShadowMaxRadius(Math.max(0, this._glassMargin - SHADOW_MARGIN_HEADROOM));

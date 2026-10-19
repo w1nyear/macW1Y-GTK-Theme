@@ -1,3 +1,8 @@
+/* Kiwi (is not Apple) - managed imports: begin */
+@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/titlebuttons4.css");
+@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/titlebuttons-size-small4.css");
+@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/fixes4.css");
+/* Kiwi (is not Apple) - managed imports: end */
 :root {
   --blue-1: #99c1f1;
   --blue-2: #62a0ea;
@@ -9224,10 +9229,15 @@ fullscreenbox toolbarview > .top-bar, fullscreenbox toolbarview > .top-bar.raise
   margin-left: 0;
 }
 
+windowcontrols {
+  margin-left: 0px !important;
+}
+
 .sidebar-pane headerbar windowcontrols:not(.empty).start:dir(ltr), .sidebar-pane headerbar windowcontrols:not(.empty).end:dir(rtl) {
-  margin-right: 0;
-  padding-left: 8px;
-  padding-right: 0;
+  margin-left: -9px !important;
+  margin-right: 0 !important;
+  padding-left: 0px;
+  padding-right: 0px;
 }
 
 .sidebar-pane headerbar windowcontrols:not(.empty).start:dir(rtl), .sidebar-pane headerbar windowcontrols:not(.empty).end:dir(ltr) {
@@ -9480,22 +9490,33 @@ menu.context-menu,
 .desktopmenu,
 window.desktopmenu,
 .desktopmenu menu,
+.fileitemmenu,
+window.popup,
+window.popup decoration,
+window.desktopmenu decoration,
+.csd.popup decoration,
+window.popup.background.csd > menu,
 .background.csd > menu,
 .background.popup > menu,
 popover.context-menu > contents,
 popover.popup-menu > contents {
-  background-color: rgba(28, 28, 32, 0.65);
+  background-color: transparent !important;
+  background: transparent !important;
+  background-image: none !important;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 24px;
-  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
   padding: 6px 4px;
 }
 
 window.desktopmenu decoration,
 .popup decoration,
 .csd.popup decoration {
-  border-radius: 24px;
+  background-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 20px !important;
 }
 
 menu menuitem,
@@ -9593,7 +9614,7 @@ popover.menu > contents,
 popover.menu contents,
 popover.context-menu > contents,
 popover > contents {
-  border-radius: 24px;
+  border-radius: 20px !important;
 }
 
 popover.menu.background > contents,
@@ -9602,11 +9623,14 @@ popover.menu contents,
 popover.context-menu > contents,
 popover.background > contents,
 popover > contents {
-  --popover-bg-color: rgba(28, 28, 32, 0.65);
-  background-color: rgba(28, 28, 32, 0.65);
+  --popover-bg-color: transparent;
+  background-color: transparent !important;
+  background: transparent !important;
+  background-image: none !important;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
   padding: 6px 4px;
 }
 
@@ -9718,19 +9742,24 @@ window.nautilus-window overlay-split-view {
     background-image: none;
 }
 
-/* Sidebar floating glass card: 18px rounding, margins, glass tint and solid dark system surround */
+/* Sidebar floating glass card: solid #202022 frame border, NO blur under frame, blur inside */
 window.nautilus-window overlay-split-view > widget.sidebar-pane,
 window.nautilus-window .sidebar-pane {
+    margin: 0px;
+    border-top: 8px solid #202022;
+    border-left: 8px solid #202022;
+    border-bottom: 8px solid #202022;
+    border-right: 8px solid #202022;
+    border-radius: 24px 0 0 24px;
     background-color: rgba(30, 30, 34, 0.40);
-    border-radius: 18px;
-    margin: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 0 8px #202022, 0 32px 0 8px #202022, 0 -32px 0 8px #202022, 0 6px 20px rgba(0, 0, 0, 0.35);
+    background-clip: padding-box;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 window.nautilus-window .sidebar-pane toolbarview,
 window.nautilus-window .sidebar-pane placessidebar {
-    border-radius: 18px;
+    border-radius: 16px;
+    background-color: transparent;
 }
 
 /* All inner sidebar containers must be transparent so blur shines through */

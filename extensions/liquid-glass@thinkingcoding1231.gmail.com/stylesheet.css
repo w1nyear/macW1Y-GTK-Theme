@@ -143,3 +143,16 @@
     margin-bottom: 8px !important;
     box-shadow: none !important;
 }
+
+/* Force complete transparency on all popup and context menus for pure Liquid Glass */
+.popup-menu-content,
+.popup-sub-menu,
+.appmenu-popup-menu-content,
+.appmenu-popup-menu .popup-menu-content {
+    background-color: transparent !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 20px !important;
+}
