@@ -76,15 +76,17 @@ export default class BoxOrderManager extends GObject.Object {
         // AppIndicator/KStatusNotifierItem extension, we loose a bunch of type
         // safety here.
         // https://github.com/ubuntu/gnome-shell-extension-appindicator
-        const appIndicator = indicatorContainer.get_child()._indicator;
-        let application = appIndicator.id;
+        const appIndicator = indicatorContainer.get_child?.()?._indicator;
+        let application = appIndicator?.id;
         if (!application && this.#appIndicatorReadyHandlerIdMap) {
-            const handlerId = appIndicator.connect("ready", () => {
-                this.emit("appIndicatorReady");
-                appIndicator.disconnect(handlerId);
-                this.#appIndicatorReadyHandlerIdMap.delete(handlerId);
-            });
-            this.#appIndicatorReadyHandlerIdMap.set(handlerId, appIndicator);
+            if (appIndicator) {
+                const handlerId = appIndicator.connect("ready", () => {
+                    this.emit("appIndicatorReady");
+                    appIndicator.disconnect(handlerId);
+                    this.#appIndicatorReadyHandlerIdMap.delete(handlerId);
+                });
+                this.#appIndicatorReadyHandlerIdMap.set(handlerId, appIndicator);
+            }
             throw new Error("Application can't be determined.");
         }
         // Since the Dropbox client appends its PID to the id, drop the PID and

@@ -137,13 +137,12 @@ function _initBatteryProxy() {
 
 function _toggleSpotlight() {
     try {
-        const ext = Main.extensionManager.lookup('spotlight@nin');
-        const popup = ext?.stateObj?._popup;
-        if (popup) {
-            if (popup.visible)
-                popup.close();
-            else
-                popup.open();
+        if (typeof globalThis._macSpotlightToggle === 'function') {
+            globalThis._macSpotlightToggle();
+            return;
+        }
+        if (typeof globalThis.toggleMacSpotlight === 'function') {
+            globalThis.toggleMacSpotlight();
             return;
         }
     } catch (_) {
@@ -157,7 +156,7 @@ function _toggleSpotlight() {
 }
 
 export function enable() {
-    if (!_batteryButton) {
+    if (!_batteryButton && !Main.panel.statusArea['kiwi-wifi-button']) {
         _batteryButton = new PanelMenu.Button(0.0, 'Battery', true);
         _batteryBox = new St.BoxLayout({
             style_class: 'kiwi-battery-box',
@@ -187,9 +186,11 @@ export function enable() {
         Main.panel.addToStatusArea('kiwi-wifi-button', _batteryButton, 0, 'right');
         _initBatteryProxy();
         _updateBattery();
+    } else if (!_batteryButton && Main.panel.statusArea['kiwi-wifi-button']) {
+        _batteryButton = Main.panel.statusArea['kiwi-wifi-button'];
     }
 
-    if (!_searchButton) {
+    if (!_searchButton && !Main.panel.statusArea['kiwi-search-button']) {
         _searchButton = new PanelMenu.Button(0.0, 'Search', true);
         const icon = new St.Icon({
             icon_name: 'edit-find-symbolic',
@@ -202,6 +203,8 @@ export function enable() {
             return Clutter.EVENT_STOP;
         });
         Main.panel.addToStatusArea('kiwi-search-button', _searchButton, 1, 'right');
+    } else if (!_searchButton && Main.panel.statusArea['kiwi-search-button']) {
+        _searchButton = Main.panel.statusArea['kiwi-search-button'];
     }
 }
 

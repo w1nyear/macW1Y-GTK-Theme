@@ -440,6 +440,7 @@ export const MacClipboardDialog = GObject.registerClass({
             y_align: Clutter.ActorAlign.CENTER,
             style: 'height: 56px; min-height: 56px; padding: 0 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);',
         });
+        this._headerBox = this._headerRow;
         this._box.add_child(this._headerRow);
 
         this._headerIcon = new St.Icon({
@@ -493,6 +494,7 @@ export const MacClipboardDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
         });
+        this._scrollWrapper = this._scrollView;
         this._box.add_child(this._scrollView);
 
         this._listContainer = new St.BoxLayout({
@@ -743,7 +745,7 @@ export const MacClipboardDialog = GObject.registerClass({
             this._box.scale_y = 1.0;
             this._box.opacity = 255;
 
-            this._headerBox.opacity = 0;
+            this._headerRow.opacity = 0;
             this._scrollWrapper.opacity = 0;
 
             this._box.ease({
@@ -755,7 +757,7 @@ export const MacClipboardDialog = GObject.registerClass({
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             });
 
-            this._headerBox.ease({
+            this._headerRow.ease({
                 opacity: 255,
                 duration: 200,
                 delay: 60,
@@ -774,7 +776,7 @@ export const MacClipboardDialog = GObject.registerClass({
             this._box.scale_x = 0.95;
             this._box.scale_y = 0.95;
             this._box.opacity = 0;
-            this._headerBox.opacity = 255;
+            this._headerRow.opacity = 255;
             this._scrollWrapper.opacity = 255;
 
             this._box.ease({
