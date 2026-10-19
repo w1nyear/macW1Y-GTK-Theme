@@ -5759,3 +5759,19 @@ echo "==> Встановлення успішно завершено!"
       * Знято знімки екрана (`nautilus_alone.png`, `nautilus_live_now.png`).
       * Бічна панель Nautilus тепер бездоганно інтегрована у вікно без будь-яких сірих рамок або квадратів.
       * Усі сторонні програми (Antigravity, Chrome, Telegram, ігри) мають повністю непрозорий, солідний фон без небажаного блюру.
+
+99. Інтеграція іконок macOS 27 normal light:
+    - Запит користувача:
+      * "заміни деякі теперішні іконки на ось ці: /home/vitaliy/Завантажене/Telegram Desktop/macOS 27 normal light."
+    - Реалізовані дії:
+      1) Повне перенесення набору з 82 іконок високої чіткості macOS 27:
+         - Скопійовано всі розмірні варіанти (16, 22, 24, 32, 48, 64, 128, 256) до директорій `apps/` у темах `MacTahoe` та `MacTahoe-dark` (як у користувацькій `~/.local/share/icons`, так і у репозиторії `MACTHEMEFILES/icons`).
+         - Створено векторизовані SVG-обгортки з повною роздільною здатністю 256x256 для `apps/scalable/`, щоб GNOME Shell та GTK використовували нові іконки без конфліктів пріоритету розширень.
+         - Інтегровано іконки кошика (`user-trash`, `user-trash-full`, `trashcan_empty`, `trashcan_full`) у `places/scalable/` та накопичувачів у `devices/scalable/`.
+      2) Налаштовано аліаси для системних додатків Ubuntu:
+         - Finder (Nautilus), Налаштування (Settings, Tweaks, Control Center), Google Chrome, Telegram, Steam, Калькулятор, Календар, Годинники, Погода, Музика, Фотографії, App Center (Snap Store / softwarecenter), Текстовий редактор тощо.
+      3) Оновлено `index.theme` з реєстрацією директорій `apps/24`, `apps/48`, `apps/64`, `apps/128`, `apps/256`.
+      4) Перегенеровано кеші іконок `gtk-update-icon-cache -f -t` та перезавантажено тему іконок у GNOME Shell.
+    - Верифікація:
+      - Знято знімки екрана робочого столу та панелі Dock (`icons_after_install.png`), а також меню додатків (`app_grid_after_install.png`).
+      - Всі відповідні додатки у Dock та меню програм отримали оновлені іконки macOS 27.
