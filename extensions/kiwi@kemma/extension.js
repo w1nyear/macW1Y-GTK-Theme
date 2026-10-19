@@ -11,6 +11,7 @@ import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { enable as tahoeQuickSettingsEnable, disable as tahoeQuickSettingsDisable } from './apps/tahoeControlCenter.js';
 import { enable as tahoeNCEnable, disable as tahoeNCDisable } from './apps/tahoeNotificationCenter.js';
 import { enable as tahoeInkEnable, disable as tahoeInkDisable } from './apps/tahoeInk.js';
+import { enable as topbarButtonsEnable, disable as topbarButtonsDisable } from './apps/topbarButtons.js';
 import { enable as reduceWindowAnimationsEnable, disable as reduceWindowAnimationsDisable } from './apps/reduceWindowAnimations.js';
 import { enable as gtkThemeSyncEnable, disable as gtkThemeSyncDisable } from './apps/gtkThemeSync.js';
 
@@ -37,9 +38,21 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeNCEnable: ${e}`);
         }
         try {
-            tahoeQuickSettingsEnable(this._settings, gettextFunc);
+            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri() + '?v=tahoe_v3';
+            import(ccUri).then(mod => {
+                this._tahoeCC = mod;
+                mod.enable(this._settings, gettextFunc);
+            }).catch(e => {
+                console.warn(`[kiwi] tahoeQuickSettingsEnable dynamic import failed: ${e}`);
+                tahoeQuickSettingsEnable(this._settings, gettextFunc);
+            });
         } catch (e) {
             console.warn(`[kiwi] tahoeQuickSettingsEnable: ${e}`);
+        }
+        try {
+            topbarButtonsEnable();
+        } catch (e) {
+            console.warn(`[kiwi] topbarButtonsEnable: ${e}`);
         }
 
         try {
@@ -79,7 +92,14 @@ export default class KiwiExtension extends Extension {
         }
         this._interfaceSettings = null;
 
-        try { tahoeQuickSettingsDisable(); } catch (_) {}
+        try { topbarButtonsDisable(); } catch (_) {}
+        try {
+            if (this._tahoeCC) {
+                this._tahoeCC.disable();
+                this._tahoeCC = null;
+            }
+            tahoeQuickSettingsDisable();
+        } catch (_) {}
         try { tahoeNCDisable(); } catch (_) {}
         try { tahoeInkDisable(); } catch (_) {}
         try { reduceWindowAnimationsDisable(); } catch (_) {}

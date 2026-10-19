@@ -2720,6 +2720,11 @@ export const MenuBarController = class MenuBarController {
         Main.panel.addToStatusArea('macVolume', this._volumeButton, 3, 'right');
         Main.panel.addToStatusArea('macBattery', this._batteryWidget, 4, 'right');
 
+        // Standalone Wi-Fi, Bluetooth, and Volume live in Control Center, hide from menubar
+        if (this._wifiButton?.container) this._wifiButton.container.visible = false;
+        if (this._bluetoothButton?.container) this._bluetoothButton.container.visible = false;
+        if (this._volumeButton?.container) this._volumeButton.container.visible = false;
+
         // 5. Position dateMenu at the far right
         this._applyDateMenu(dateMenu);
 
@@ -5179,26 +5184,62 @@ export const MenuBarController = class MenuBarController {
 
         for (const ext of externalIndicators) {
             try {
+                const role = Object.entries(Main.panel.statusArea || {}).find(([_, v]) => {
+                    try { return v?.container === ext || v === ext; } catch (_e) { return false; }
+                })?.[0] || '';
+                if (role.includes('ydotool') || ext.accessible_name === 'Ydotool Trigger' || role.includes('run-cmd')) {
+                    ext.visible = false;
+                    ext.hide();
+                    continue;
+                }
+                if (role.includes('kiwi-wifi-button') || role.includes('kiwi-search-button') ||
+                    role.includes('macWifi') || role.includes('macBluetooth') || role.includes('macVolume') || role.includes('macBattery')) {
+                    continue;
+                }
                 if (ensureInRightBox(ext) && ext !== Main.panel.statusArea?.keyboard?.container) {
                     desiredOrder.push(ext);
                 }
             } catch (_e) {}
         }
 
-        if (ensureInRightBox(this._wifiButton?.container))
-            desiredOrder.push(this._wifiButton.container);
+        // Hide standalone Wi-Fi, Bluetooth, and Volume from topbar (active in Control Center)
+        if (this._wifiButton?.container) {
+            this._wifiButton.container.visible = false;
+            this._wifiButton.container.hide();
+        }
+        if (this._bluetoothButton?.container) {
+            this._bluetoothButton.container.visible = false;
+            this._bluetoothButton.container.hide();
+        }
+        if (this._volumeButton?.container) {
+            this._volumeButton.container.visible = false;
+            this._volumeButton.container.hide();
+        }
 
-        if (ensureInRightBox(this._bluetoothButton?.container))
-            desiredOrder.push(this._bluetoothButton.container);
-
-        if (ensureInRightBox(this._volumeButton?.container))
-            desiredOrder.push(this._volumeButton.container);
-
-        if (ensureInRightBox(this._batteryWidget?.container))
-            desiredOrder.push(this._batteryWidget.container);
-
+        // Exact friend's GNOME-Tahoe order:
+        // [ Keyboard (uk/A) ] -> [ Spotlight (🔍) ] -> [ Battery (100% 🔋) ] -> [ Control Center (🎛️) ] -> [ Date & Time ]
         if (ensureInRightBox(Main.panel.statusArea?.keyboard?.container)) {
             desiredOrder.push(Main.panel.statusArea.keyboard.container);
+        }
+
+        const spotlightBtn = Main.panel.statusArea?.['kiwi-search-button']?.container
+            || Main.panel.statusArea?.['kiwi-search-button']
+            || Main.panel.statusArea?.['spotlight']?.container
+            || Main.panel.statusArea?.['spotlight'];
+        if (spotlightBtn && ensureInRightBox(spotlightBtn)) {
+            desiredOrder.push(spotlightBtn);
+        }
+
+        const kiwiBattery = Main.panel.statusArea?.['kiwi-wifi-button']?.container
+            || Main.panel.statusArea?.['kiwi-wifi-button'];
+        if (kiwiBattery && ensureInRightBox(kiwiBattery)) {
+            desiredOrder.push(kiwiBattery);
+            if (this._batteryWidget?.container) {
+                this._batteryWidget.container.visible = false;
+                this._batteryWidget.container.hide();
+            }
+        } else if (ensureInRightBox(this._batteryWidget?.container)) {
+            desiredOrder.push(this._batteryWidget.container);
         }
 
         if (ensureInRightBox(quickSettings?.container))

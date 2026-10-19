@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.spotlight" path="/org/gnome/shell/extensions/spotlight/">
+    <!-- Default is Ctrl+Space. Super+Space has timing issues on some GNOME 50 setups. -->
+    <key name="toggle-shortcut" type="as">
+      <default>['&lt;Control&gt;space']</default>
+      <summary>Toggle shortcut</summary>
+      <description>Keyboard shortcut to open Spotlight. Default is Ctrl+Space.</description>
+    </key>
+    <!-- Appearance theme. Default follows the system style, dark forces dark, light forces light. -->
+    <key name="theme-preference" type="s">
+      <default>'default'</default>
+      <summary>Theme preference</summary>
+      <description>Color theme for Spotlight. Values: default (follows system), dark, light.</description>
+    </key>
+    <!-- Liquid Glass tuning. Tint color as rgba() string, strengths in percent. -->
+    <key name="glass-tint" type="s">
+      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <summary>Glass tint color</summary>
+      <description>Tint color of the liquid glass as an rgba() string.</description>
+    </key>
+    <key name="glass-tint-strength" type="i">
+      <default>16</default>
+      <range min="0" max="100"/>
+      <summary>Glass tint strength</summary>
+      <description>How strongly the tint colors the glass, percent.</description>
+    </key>
+    <key name="glass-blur" type="i">
+      <default>14</default>
+      <range min="0" max="100"/>
+      <summary>Glass blur</summary>
+      <description>Refraction blur of the liquid glass.</description>
+    </key>
+    <key name="glass-radius" type="i">
+      <default>26</default>
+      <range min="0" max="60"/>
+      <summary>Glass corner radius</summary>
+      <description>Corner radius of the glass panel in pixels.</description>
+    </key>
+    <key name="glass-saturation" type="i">
+      <default>85</default>
+      <range min="0" max="200"/>
+      <summary>Glass saturation</summary>
+      <description>Color saturation of the liquid glass, percent.</description>
+    </key>
+    <key name="glass-refraction" type="i">
+      <default>92</default>
+      <range min="0" max="200"/>
+      <summary>Glass refraction</summary>
+      <description>Refraction strength (edge distortion) of the liquid glass.</description>
+    </key>
+    <!-- Glass engine: full scene clones (windows + wallpaper) or the proven
+         wallpaper-only mirror like tahoe-widgets. -->
+    <key name="glass-engine" type="s">
+      <default>'full'</default>
+      <summary>Glass engine</summary>
+      <description>Source sampled by the liquid glass: full (windows and wallpaper) or wallpaper (wallpaper only, most compatible).</description>
+    </key>
+  </schema>
+</schemalist>
