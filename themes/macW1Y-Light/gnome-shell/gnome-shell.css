@@ -2233,7 +2233,7 @@ StEntry StLabel.hint-text {
   height: 34px !important;
   background-color: transparent !important;
   background-gradient-direction: vertical !important;
-  background-gradient-start: rgba(0, 0, 0, 0.65) !important;
+  background-gradient-start: rgba(0, 0, 0, 0.35) !important;
   background-gradient-end: rgba(0, 0, 0, 0.0) !important;
   border-bottom: none !important;
   box-shadow: none !important;
@@ -6113,7 +6113,7 @@ StWidget.focused .app-grid-running-dot {
   height: 34px !important;
   background-color: transparent !important;
   background-gradient-direction: vertical !important;
-  background-gradient-start: rgba(0, 0, 0, 0.65) !important;
+  background-gradient-start: rgba(0, 0, 0, 0.35) !important;
   background-gradient-end: rgba(0, 0, 0, 0.0) !important;
   border-bottom: none !important;
   box-shadow: none !important;

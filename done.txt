@@ -6502,3 +6502,27 @@ echo "==> Встановлення успішно завершено!"
         - `crop_new_bounce_mid.png` (підскок іконки у звичайному стані: іконка повного розміру, ідеально відцентрована між суміжними програмами).
         - `crop_mag_bounce.png` (підскок іконки у збільшеному стані 1.8x: плавний вертикальний зліт по центру збільшеної області без жодного зміщення вліво-вгору чи появи порожніх сірих плям).
         - `crop_clicked_signal.png` (миттєва реакція на клік запуску програми).
+
+
+128. Зменшення градієнтного затемнення меню-бару (Top Panel) вдвічі:
+    - Контекст та вимоги користувача:
+      * «зменш затемнення градієнтне у меню бар вдвічі менше»
+    - Діагностика та першопричина:
+      * Досліджено джерело вертикального градієнтного затемнення меню-бару.
+      * Виявлено, що затемнення не походить із GLSL шейдера розмиття (параметри `top_darkness` та `bottom_darkness` у конфігурації шейдера вже були 0), а задається через CSS-правила St/Clutter для селекторів `#panel.gradient-panel` та `#panel.transparent-panel`:
+        1) У розширенні `blur-my-shell@aunetx/styles/panel.css` початкове значення становило `background-gradient-start: rgba(0, 0, 0, 0.70) !important;`.
+        2) У файлах теми `gnome-shell.css` (`themes/macW1Y-Dark`, `macW1Y-Dark-solid`, `macW1Y-Light`, `macW1Y-Light-solid` та системних копіях у `~/.themes/`) початкове значення становило `background-gradient-start: rgba(0, 0, 0, 0.65) !important;`.
+        3) У конфігурації `~/.config/mac-styling/styling.json` параметр `"panel_tint"` відповідав за тинтування.
+    - Виконані технічні зміни:
+      1) У `extensions/blur-my-shell@aunetx/styles/panel.css` та його системній інсталяції зменшено непрозорість стартової точки градієнта рівно вдвічі:
+         - `background-gradient-start: rgba(0, 0, 0, 0.35) !important;` (замість 0.70).
+      2) У всіх файлах тем `gnome-shell.css` для селекторів `#panel`, `#panel.gradient-panel`, `#panel.transparent-panel`:
+         - Зменшено `background-gradient-start` з `rgba(0, 0, 0, 0.65)` до `rgba(0, 0, 0, 0.35) !important;`.
+      3) У конфігурації `~/.config/mac-styling/styling.json` оновлено `"panel_tint": 0.35`.
+      4) У живій сесії GNOME Shell:
+         - Очищено інлайн-стилі панелі (`Main.panel.set_style(null)`).
+         - Перезавантажено тему через `user-theme._changeTheme()` та оновлено компонент розмиття панелі `blur-my-shell._panel_blur`.
+    - Верифікація:
+      * Порівняно контрольні знімки:
+        - `crop_topbar_before.png` (вихідний стан з темним градієнтом 0.70/0.65).
+        - `crop_topbar_after_test.png` та `crop_topbar_final.png` (новий стан зі зменшеним удвічі затемненням 0.35: напівпрозорий, кришталевий вигляд у стилі сучасного macOS Tahoe/Sequoia, з ідеальною читабельністю білого тексту та витонченою легкістю).
