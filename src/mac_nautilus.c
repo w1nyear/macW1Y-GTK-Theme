@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <gtk/gtk.h>
+#include <adwaita.h>
 #include <gio/gio.h>
 
 static gboolean is_nautilus(void)
@@ -467,5 +468,169 @@ void gtk_list_box_set_header_func(GtkListBox *box,
         orig_gtk_list_box_set_header_func(box, mac_sidebar_header_func, user_data, destroy);
     } else {
         orig_gtk_list_box_set_header_func(box, header_func, user_data, destroy);
+    }
+}
+
+static void (*orig_gtk_window_present)(GtkWindow *window) = NULL;
+static void (*orig_gtk_window_present_with_time)(GtkWindow *window, guint32 timestamp) = NULL;
+
+static void find_buttons_in_sidebar(GtkWidget *widget, GtkWidget **search_btn, GtkWidget **menu_btn)
+{
+    if (!widget) return;
+    if (GTK_IS_TOGGLE_BUTTON(widget)) {
+        const char *action = gtk_actionable_get_action_name(GTK_ACTIONABLE(widget));
+        if (g_strcmp0(action, "slot.search-global") == 0) {
+            *search_btn = widget;
+        }
+    } else if (GTK_IS_MENU_BUTTON(widget)) {
+        const char *icon = gtk_menu_button_get_icon_name(GTK_MENU_BUTTON(widget));
+        if (g_strcmp0(icon, "open-menu-symbolic") == 0) {
+            *menu_btn = widget;
+        }
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_buttons_in_sidebar(child, search_btn, menu_btn);
+    }
+}
+
+static void hide_folder_search_button(GtkWidget *widget)
+{
+    if (!widget) return;
+    if (GTK_IS_TOGGLE_BUTTON(widget)) {
+        const char *action = gtk_actionable_get_action_name(GTK_ACTIONABLE(widget));
+        if (g_strcmp0(action, "slot.search-visible") == 0) {
+            gtk_widget_set_visible(widget, FALSE);
+            GtkWidget *parent = gtk_widget_get_parent(widget);
+            if (parent && GTK_IS_STACK(parent)) {
+                gtk_widget_set_visible(parent, FALSE);
+            }
+            return;
+        }
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        hide_folder_search_button(child);
+    }
+}
+
+static void find_headerbars_recursive(GtkWidget *widget, GList **list)
+{
+    if (!widget) return;
+    if (ADW_IS_HEADER_BAR(widget)) {
+        *list = g_list_append(*list, widget);
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_headerbars_recursive(child, list);
+    }
+}
+
+static void find_split_view(GtkWidget *widget, AdwOverlaySplitView **split_view)
+{
+    if (!widget || *split_view) return;
+    if (ADW_IS_OVERLAY_SPLIT_VIEW(widget)) {
+        *split_view = ADW_OVERLAY_SPLIT_VIEW(widget);
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_split_view(child, split_view);
+    }
+}
+
+static void remove_from_headerbar(AdwHeaderBar *hb, GtkWidget *widget)
+{
+    if (!hb || !widget) return;
+    adw_header_bar_remove(hb, widget);
+    GtkWidget *parent = gtk_widget_get_parent(widget);
+    if (parent && GTK_IS_BOX(parent)) {
+        gtk_box_remove(GTK_BOX(parent), widget);
+    }
+}
+
+static gboolean mac_fix_nautilus_window(gpointer user_data)
+{
+    GtkWindow *window = GTK_WINDOW(user_data);
+    if (!window || !GTK_IS_WINDOW(window)) return G_SOURCE_REMOVE;
+
+    if (g_object_get_data(G_OBJECT(window), "mac_headerbars_reorganized")) {
+        return G_SOURCE_REMOVE;
+    }
+
+    AdwOverlaySplitView *split_view = NULL;
+    find_split_view(GTK_WIDGET(window), &split_view);
+    if (!split_view) {
+        return G_SOURCE_REMOVE;
+    }
+
+    GtkWidget *sidebar = adw_overlay_split_view_get_sidebar(split_view);
+    GtkWidget *content = adw_overlay_split_view_get_content(split_view);
+    if (!sidebar || !content) return G_SOURCE_REMOVE;
+
+    GList *sidebar_bars = NULL;
+    GList *content_bars = NULL;
+    find_headerbars_recursive(sidebar, &sidebar_bars);
+    find_headerbars_recursive(content, &content_bars);
+
+    if (sidebar_bars && content_bars) {
+        AdwHeaderBar *sidebar_hb = ADW_HEADER_BAR(sidebar_bars->data);
+        AdwHeaderBar *content_hb = ADW_HEADER_BAR(content_bars->data);
+
+        GtkWidget *search_btn = NULL;
+        GtkWidget *menu_btn = NULL;
+        find_buttons_in_sidebar(GTK_WIDGET(sidebar_hb), &search_btn, &menu_btn);
+
+        /* 1. Hide title and title-widget in sidebar headerbar (no title near controls) */
+        adw_header_bar_set_show_title(sidebar_hb, FALSE);
+        adw_header_bar_set_title_widget(sidebar_hb, NULL);
+
+        /* 2. Reparent search and menu buttons to content headerbar (right side, separate buttons) */
+        if (menu_btn) {
+            g_object_ref(menu_btn);
+            remove_from_headerbar(sidebar_hb, menu_btn);
+            adw_header_bar_pack_end(content_hb, menu_btn);
+            g_object_unref(menu_btn);
+        }
+        if (search_btn) {
+            g_object_ref(search_btn);
+            remove_from_headerbar(sidebar_hb, search_btn);
+            adw_header_bar_pack_end(content_hb, search_btn);
+            g_object_unref(search_btn);
+        }
+
+        /* 3. Hide redundant folder search button from pathbar */
+        hide_folder_search_button(GTK_WIDGET(content_hb));
+
+        g_object_set_data(G_OBJECT(window), "mac_headerbars_reorganized", GINT_TO_POINTER(1));
+    }
+
+    g_list_free(sidebar_bars);
+    g_list_free(content_bars);
+    return G_SOURCE_REMOVE;
+}
+
+void gtk_window_present(GtkWindow *window)
+{
+    if (!orig_gtk_window_present) {
+        orig_gtk_window_present = dlsym(RTLD_NEXT, "gtk_window_present");
+    }
+    if (orig_gtk_window_present) {
+        orig_gtk_window_present(window);
+    }
+    if (is_nautilus() && window) {
+        mac_fix_nautilus_window(window);
+        g_idle_add(mac_fix_nautilus_window, window);
+    }
+}
+
+void gtk_window_present_with_time(GtkWindow *window, guint32 timestamp)
+{
+    if (!orig_gtk_window_present_with_time) {
+        orig_gtk_window_present_with_time = dlsym(RTLD_NEXT, "gtk_window_present_with_time");
+    }
+    if (orig_gtk_window_present_with_time) {
+        orig_gtk_window_present_with_time(window, timestamp);
+    }
+    if (is_nautilus() && window) {
+        mac_fix_nautilus_window(window);
+        g_idle_add(mac_fix_nautilus_window, window);
     }
 }

@@ -9546,7 +9546,7 @@ image.sidebar-orange-icon,
 list.navigation-sidebar row image.sidebar-orange-icon,
 placessidebar row image.sidebar-orange-icon,
 .navigation-sidebar row.sidebar-accent-icon image {
-    color: #f58220;
+    color: @accent_bg_color;
 }
 
 /* Neutral icon color for Mounts and Trash */

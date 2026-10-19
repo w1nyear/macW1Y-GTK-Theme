@@ -5,17 +5,11 @@
 #include <unistd.h>
 #include <glib.h>
 #include <gio/gio.h>
+#include <dlfcn.h>
+#include <gtk/gtk.h>
+#include <adwaita.h>
 #include <json-glib/json-glib.h>
 
-/* Forward declarations for GTK4 & Libadwaita functions */
-extern double gtk_range_get_value(void *range);
-extern void gtk_range_set_value(void *range, double value);
-extern int adw_switch_row_get_active(void *row);
-extern void adw_switch_row_set_active(void *row, int active);
-extern unsigned int adw_combo_row_get_selected(void *row);
-extern void adw_combo_row_set_selected(void *row, unsigned int position);
-extern double adw_spin_row_get_value(void *row);
-extern void adw_spin_row_set_value(void *row, double value);
 
 typedef struct {
     int dock_blur;
@@ -568,5 +562,244 @@ void on_touchpad_gesture_delay_changed(void *widget, void *pspec, gpointer data)
     delay_ms = (int)adw_spin_row_get_value(widget);
     save_touchpad_conf_full(drag_mode, copy_paste, delay_ms);
 }
+
+static gboolean is_settings(void)
+{
+    static int cached = -1;
+    if (cached != -1) return cached;
+    const char *prg = program_invocation_short_name;
+    if (prg && (strcmp(prg, "gnome-control-center") == 0 || strcmp(prg, "org.gnome.Settings") == 0)) {
+        cached = 1;
+    } else {
+        cached = 0;
+    }
+    return cached;
+}
+
+static void (*orig_settings_gtk_window_present)(GtkWindow *window) = NULL;
+static void (*orig_settings_gtk_window_present_with_time)(GtkWindow *window, guint32 timestamp) = NULL;
+
+static void find_buttons_in_settings_sidebar(GtkWidget *widget, GtkWidget **search_btn, GtkWidget **menu_btn)
+{
+    if (!widget) return;
+    if (GTK_IS_TOGGLE_BUTTON(widget)) {
+        const char *icon = gtk_button_get_icon_name(GTK_BUTTON(widget));
+        if (g_strcmp0(icon, "edit-find-symbolic") == 0) {
+            *search_btn = widget;
+        }
+    } else if (GTK_IS_MENU_BUTTON(widget)) {
+        const char *icon = gtk_menu_button_get_icon_name(GTK_MENU_BUTTON(widget));
+        if (g_strcmp0(icon, "open-menu-symbolic") == 0) {
+            *menu_btn = widget;
+        }
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_buttons_in_settings_sidebar(child, search_btn, menu_btn);
+    }
+}
+
+static void find_headerbars_recursive(GtkWidget *widget, GList **list)
+{
+    if (!widget) return;
+    if (ADW_IS_HEADER_BAR(widget)) {
+        *list = g_list_append(*list, widget);
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_headerbars_recursive(child, list);
+    }
+}
+
+static void find_navigation_split_view(GtkWidget *widget, AdwNavigationSplitView **split_view)
+{
+    if (!widget || *split_view) return;
+    if (ADW_IS_NAVIGATION_SPLIT_VIEW(widget)) {
+        *split_view = ADW_NAVIGATION_SPLIT_VIEW(widget);
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_navigation_split_view(child, split_view);
+    }
+}
+
+static void remove_from_headerbar(AdwHeaderBar *hb, GtkWidget *widget)
+{
+    if (!hb || !widget) return;
+    adw_header_bar_remove(hb, widget);
+    GtkWidget *parent = gtk_widget_get_parent(widget);
+    if (parent && GTK_IS_BOX(parent)) {
+        gtk_box_remove(GTK_BOX(parent), widget);
+    }
+}
+
+static void find_navigation_views(GtkWidget *widget, GList **list)
+{
+    if (!widget) return;
+    if (ADW_IS_NAVIGATION_VIEW(widget)) {
+        *list = g_list_append(*list, widget);
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_navigation_views(child, list);
+    }
+}
+
+static void update_panel_headerbar(AdwNavigationSplitView *split_view);
+
+static void on_visible_page_changed_cb(GObject *gobject G_GNUC_UNUSED, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data)
+{
+    AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
+    update_panel_headerbar(split_view);
+}
+
+static void update_panel_headerbar(AdwNavigationSplitView *split_view)
+{
+    if (!split_view) return;
+    GtkWidget *search_btn = g_object_get_data(G_OBJECT(split_view), "mac_search_btn");
+    GtkWidget *menu_btn = g_object_get_data(G_OBJECT(split_view), "mac_menu_btn");
+    if (!search_btn || !menu_btn) return;
+
+    AdwNavigationPage *content_page = adw_navigation_split_view_get_content(split_view);
+    if (!content_page) return;
+
+    /* Check if content_page has an AdwNavigationView with a visible page */
+    GList *nav_views = NULL;
+    find_navigation_views(GTK_WIDGET(content_page), &nav_views);
+    GtkWidget *target_root = GTK_WIDGET(content_page);
+
+    if (nav_views) {
+        AdwNavigationView *nv = ADW_NAVIGATION_VIEW(nav_views->data);
+        if (!g_object_get_data(G_OBJECT(nv), "mac_connected")) {
+            g_signal_connect(nv, "notify::visible-page", G_CALLBACK(on_visible_page_changed_cb), split_view);
+            g_object_set_data(G_OBJECT(nv), "mac_connected", GINT_TO_POINTER(1));
+        }
+        AdwNavigationPage *vis_p = adw_navigation_view_get_visible_page(nv);
+        if (vis_p) {
+            target_root = GTK_WIDGET(vis_p);
+        }
+        g_list_free(nav_views);
+    }
+
+    GList *content_bars = NULL;
+    find_headerbars_recursive(target_root, &content_bars);
+    if (!content_bars) return;
+
+    AdwHeaderBar *target_hb = ADW_HEADER_BAR(content_bars->data);
+
+    /* Remove from previous parent if different */
+    GtkWidget *p_menu = gtk_widget_get_parent(menu_btn);
+    if (p_menu && p_menu != GTK_WIDGET(target_hb)) {
+        if (ADW_IS_HEADER_BAR(p_menu)) {
+            remove_from_headerbar(ADW_HEADER_BAR(p_menu), menu_btn);
+        } else if (GTK_IS_BOX(p_menu)) {
+            gtk_box_remove(GTK_BOX(p_menu), menu_btn);
+        }
+    }
+
+    GtkWidget *p_search = gtk_widget_get_parent(search_btn);
+    if (p_search && p_search != GTK_WIDGET(target_hb)) {
+        if (ADW_IS_HEADER_BAR(p_search)) {
+            remove_from_headerbar(ADW_HEADER_BAR(p_search), search_btn);
+        } else if (GTK_IS_BOX(p_search)) {
+            gtk_box_remove(GTK_BOX(p_search), search_btn);
+        }
+    }
+
+    /* Pack into target_hb: menu_btn at far right, search_btn to its left */
+    if (gtk_widget_get_parent(menu_btn) != GTK_WIDGET(target_hb)) {
+        adw_header_bar_pack_end(target_hb, menu_btn);
+    }
+    if (gtk_widget_get_parent(search_btn) != GTK_WIDGET(target_hb)) {
+        adw_header_bar_pack_end(target_hb, search_btn);
+    }
+    gtk_widget_set_visible(menu_btn, TRUE);
+    gtk_widget_set_visible(search_btn, TRUE);
+
+    g_list_free(content_bars);
+}
+
+static void on_content_changed_cb(GObject *gobject G_GNUC_UNUSED, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data)
+{
+    AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
+    update_panel_headerbar(split_view);
+}
+
+static gboolean mac_fix_settings_window(gpointer user_data)
+{
+    GtkWindow *window = GTK_WINDOW(user_data);
+    if (!window || !GTK_IS_WINDOW(window)) return G_SOURCE_REMOVE;
+
+    AdwNavigationSplitView *split_view = NULL;
+    find_navigation_split_view(GTK_WIDGET(window), &split_view);
+    if (!split_view) return G_SOURCE_REMOVE;
+
+    if (!g_object_get_data(G_OBJECT(split_view), "mac_signals_connected")) {
+        g_signal_connect(split_view, "notify::content", G_CALLBACK(on_content_changed_cb), split_view);
+        g_object_set_data(G_OBJECT(split_view), "mac_signals_connected", GINT_TO_POINTER(1));
+    }
+
+    AdwNavigationPage *sidebar = adw_navigation_split_view_get_sidebar(split_view);
+    if (!sidebar) return G_SOURCE_REMOVE;
+
+    GList *sidebar_bars = NULL;
+    find_headerbars_recursive(GTK_WIDGET(sidebar), &sidebar_bars);
+    if (sidebar_bars) {
+        AdwHeaderBar *sidebar_hb = ADW_HEADER_BAR(sidebar_bars->data);
+
+        /* 1. Hide title in sidebar headerbar */
+        adw_header_bar_set_show_title(sidebar_hb, FALSE);
+        adw_header_bar_set_title_widget(sidebar_hb, NULL);
+
+        /* 2. Find and remove search_button and menu_button */
+        GtkWidget *search_btn = g_object_get_data(G_OBJECT(split_view), "mac_search_btn");
+        GtkWidget *menu_btn = g_object_get_data(G_OBJECT(split_view), "mac_menu_btn");
+
+        if (!search_btn || !menu_btn) {
+            find_buttons_in_settings_sidebar(GTK_WIDGET(sidebar_hb), &search_btn, &menu_btn);
+            if (search_btn && menu_btn) {
+                g_object_ref(search_btn);
+                g_object_ref(menu_btn);
+                g_object_set_data_full(G_OBJECT(split_view), "mac_search_btn", search_btn, g_object_unref);
+                g_object_set_data_full(G_OBJECT(split_view), "mac_menu_btn", menu_btn, g_object_unref);
+
+                remove_from_headerbar(sidebar_hb, search_btn);
+                remove_from_headerbar(sidebar_hb, menu_btn);
+            }
+        }
+        g_list_free(sidebar_bars);
+    }
+
+    update_panel_headerbar(split_view);
+    return G_SOURCE_REMOVE;
+}
+
+void gtk_window_present(GtkWindow *window)
+{
+    if (!orig_settings_gtk_window_present) {
+        orig_settings_gtk_window_present = dlsym(RTLD_NEXT, "gtk_window_present");
+    }
+    if (orig_settings_gtk_window_present) {
+        orig_settings_gtk_window_present(window);
+    }
+    if (is_settings() && window) {
+        mac_fix_settings_window(window);
+        g_idle_add(mac_fix_settings_window, window);
+    }
+}
+
+void gtk_window_present_with_time(GtkWindow *window, guint32 timestamp)
+{
+    if (!orig_settings_gtk_window_present_with_time) {
+        orig_settings_gtk_window_present_with_time = dlsym(RTLD_NEXT, "gtk_window_present_with_time");
+    }
+    if (orig_settings_gtk_window_present_with_time) {
+        orig_settings_gtk_window_present_with_time(window, timestamp);
+    }
+    if (is_settings() && window) {
+        mac_fix_settings_window(window);
+        g_idle_add(mac_fix_settings_window, window);
+    }
+}
+
 
 
