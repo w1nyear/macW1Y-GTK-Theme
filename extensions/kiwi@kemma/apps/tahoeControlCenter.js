@@ -64,7 +64,30 @@ import(_LG_BASE + '/utils.js').then(m => {
         reportFrameLoopError = m.reportFrameLoopError;
 }).catch(e => console.warn(`[tahoe-qs] liquid-glass utils unavailable: ${e}`));
 function _lgReady() {
-    return false;
+    return !!(LiquidEffect && UnpickableActor && UILayerSampler && WindowCloneManager);
+}
+
+export async function ensureLgReady() {
+    if (_lgReady())
+        return true;
+    try {
+        const [m1, m2] = await Promise.all([
+            import(_LG_BASE + '/liquidEffect.js'),
+            import(_LG_BASE + '/utils.js'),
+        ]);
+        if (m1?.LiquidEffect) LiquidEffect = m1.LiquidEffect;
+        if (m2?.UnpickableActor) UnpickableActor = m2.UnpickableActor;
+        if (m2?.UILayerSampler) UILayerSampler = m2.UILayerSampler;
+        if (m2?.WindowCloneManager) WindowCloneManager = m2.WindowCloneManager;
+        if (m2?.setClipIfChanged) setClipIfChanged = m2.setClipIfChanged;
+        if (m2?.getTransformedRect) getTransformedRect = m2.getTransformedRect;
+        if (m2?.ensureGlassAllocated) ensureGlassAllocated = m2.ensureGlassAllocated;
+        if (m2?.syncGlassCaptureClip) syncGlassCaptureClip = m2.syncGlassCaptureClip;
+        if (m2?.reportFrameLoopError) reportFrameLoopError = m2.reportFrameLoopError;
+    } catch (e) {
+        console.warn(`[tahoe-qs] ensureLgReady error: ${e}`);
+    }
+    return _lgReady();
 }
 
 const PANEL_W = 320;
@@ -250,6 +273,14 @@ function _closeActiveSubmenu() {
     }
 }
 
+export async function testOpenWifiSubmenu() {
+    if (_panel && _panel.wifi && _panel.wifi.btn) {
+        await _openWifiSubmenu(_panel.wifi.btn, _panel.state);
+        return true;
+    }
+    return false;
+}
+
 async function _openWifiSubmenu(sourceActor, state) {
     if (_activeSubmenu) {
         const wasOpen = _activeSubmenu._sourceActor === sourceActor;
@@ -382,14 +413,7 @@ async function _openSoundSubmenu(sourceActor, state) {
         Main.uiGroup.add_child(menu.actor);
         menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 14px !important; background-color: rgba(26, 26, 28, 0.88) !important; color: #ffffff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; padding: 6px !important;';
 
-        let control = state.control;
-        if (!control) {
-            try {
-                control = new Gvc.MixerControl({name: 'Tahoe Quick Settings Audio Submenu'});
-                control.open();
-                state.control = control;
-            } catch (_) {}
-        }
+        const control = state.control;
         const currentSink = control?.get_default_sink();
 
         // 1. Output Device Section Header
@@ -1479,17 +1503,19 @@ function _buildPanel() {
     // panel bg + glass AFTER allocation (region math needs a real layout)
     try {
         const allocId = box.connect('notify::allocation', () => {
-            try {
-                box.disconnect(allocId);
-            } catch (_) {
-                // once
+            if (box.width > 0 && box.height > 0) {
+                try {
+                    panelBg.set_position(box.x, box.y);
+                    panelBg.set_size(box.width, box.height);
+                } catch (_) {
+                    // geometry unchanged
+                }
             }
-            try {
-                panelBg.set_position(box.x, box.y);
-                panelBg.set_size(box.width, box.height);
-            } catch (_) {
-                // geometry unchanged
-            }
+            if (_panel?.inkSampleDone)
+                return;
+            if (box.height <= 0)
+                return;
+            _panel.inkSampleDone = true;
             // adaptive ink: sample the real background behind the panel,
             // apply, and follow it while open (open animation covers a flip)
             try {
@@ -1513,6 +1539,7 @@ function _buildPanel() {
             _startGlass();
             _scheduleFocusFix();
         });
+        _panel.allocId = allocId;
     } catch (_) {
         _startGlass();
     }
@@ -2439,24 +2466,16 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         lastRegions: null, lastBounds: null, grace: 0, clip: null, screen: null};
 }
 
-function _startGlass() {
+async function _startGlass() {
     if (!_panel || _panel.glass)
         return;
     const monitor = Main.layoutManager.primaryMonitor;
     if (!monitor)
         return;
     if (!_lgReady()) {
-        // liquid-glass modules still loading: retry shortly while open.
-        try {
-            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300, () => {
-                if (_panel && !_panel.glass)
-                    _startGlass();
-                return GLib.SOURCE_REMOVE;
-            });
-        } catch (_) {
-            // stays glass-less
-        }
-        return;
+        await ensureLgReady();
+        if (!_lgReady() || !_panel || _panel.glass)
+            return;
     }
 
     try {
@@ -2786,6 +2805,12 @@ function _openPanel() {
         return;
     }
     globalThis._tahoeQSOpen = true;
+    try {
+        const bms = Main.extensionManager.lookup('blur-my-shell@aunetx')?.stateObj;
+        if (bms?._menubar_controller?._notifCenterOpen) {
+            bms._menubar_controller._toggleNotificationCenter();
+        }
+    } catch (_) {}
     // QS and NC never share the screen (dynamic import: no module cycle)
     try {
         import('./tahoeNotificationCenter.js').then(mod => {
@@ -2812,6 +2837,7 @@ export function togglePanel() {
         console.error(`[tahoe-qs] toggle failed: ${e}`);
     }
 }
+globalThis._tahoeQSToggle = togglePanel;
 
 // true while the Control Center panel is open (OSD suppresses itself then)
 export function isPanelOpen() {
@@ -3205,23 +3231,4 @@ export function disable() {
     _closePanel();
     _settings = null;
     _ = (m) => m;
-}
-
-export function openWifiSubmenu() {
-    if (_panel && _panel.wifi)
-        _openWifiSubmenu(_panel.wifi.btn, _panel.state);
-}
-
-export function openBluetoothSubmenu() {
-    if (_panel && _panel.bt)
-        _openBluetoothSubmenu(_panel.bt.btn, _panel.state);
-}
-
-export function openSoundSubmenu() {
-    if (_panel && _panel.snd)
-        _openSoundSubmenu(_panel.snd.box, _panel.state);
-}
-
-export function closeActiveSubmenu() {
-    _closeActiveSubmenu();
 }

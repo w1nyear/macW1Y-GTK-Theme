@@ -83,7 +83,11 @@ export default class RunCommandExtension extends Extension {
         });
 
         this._indicator.connect('button-press-event', () => {
-            import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeQuickSettings.js').then(mod => {
+            if (typeof globalThis._tahoeQSToggle === 'function') {
+                globalThis._tahoeQSToggle();
+                return;
+            }
+            import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeQuickSettings.js?v=live').then(mod => {
                 try {
                     mod.togglePanel();
                 } catch (e) {

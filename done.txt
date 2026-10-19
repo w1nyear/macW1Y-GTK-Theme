@@ -6139,3 +6139,35 @@ echo "==> Встановлення успішно завершено!"
       * `topbar_restored_crop.png`: топбар праворуч у точній послідовності `[Трей] [uk] [🔍] [--% 🔋] [🎛️] [Час]`.
       * `spotlight_restored_crop.png`: наш автентичний скляний Spotlight з трьома круглими кнопками дій ('A', папка, буфер) та полем вводу «Пошук Spotlight».
 
+114. Відновлення скляного Control Center від друга та перенесення Gaussian Backdrop Blur у наш Notification Center:
+    - Контекст та вимоги:
+      * «видали фон. постав нормальний контрол центр від могодруга з склом і т д але з цим ui» — Видалити глуху суцільну плашку з Центру керування. Встановити автентичне squircle-скло з проекта друга (`GNOME-Tahoe-main`) з пігулками, слайдерами, дисками та м'яким крайовим Gaussian-розмиттям фону, зберігши НАШ UI (підменю по ПКМ для Wi-Fi, Bluetooth, Audio; активні сині кнопки; білий чіткий текст).
+      * «а центр сповіщень поверни моє від мого проекту але замість блюра який у нас є у центрі сповіщень скопіюй блюр який на фоні з під центру керування від мого друга» — Відновити НАШ автентичний Центр сповіщень (`menubar_v28.js` / `menubar_v29.js` із заголовком «Центр повідомлень», кнопкою «Очистити всі», каскадними картками сповіщень), але замінити старий блюр на точну копію feather-soft Gaussian backdrop blur стеку з-під Центру керування від друга (`_makeGlassStack(monitor, 82, 'nc_backdrop', true, 60)`).
+    - Реалізація для Центру керування (Control Center):
+      1) Повне видалення глухого фону («видали фон»):
+         - У `stylesheet.css` клас `.tahoe-qs-panelbg` позбавлено непрозорої заливки (`background-color: transparent !important; border: none !important; box-shadow: 0 4px 22px rgba(0, 0, 0, 0.15), 0 12px 70px rgba(0, 0, 0, 0.10) !important;`).
+         - Видалено пласкі сірі підкладки з `.tahoe-qs-pill`, `.tahoe-qs-circle`, `.tahoe-qs-music`, `.tahoe-qs-card`, що дозволило шейдерам `LiquidEffect` малювати чисте 1:1 скло.
+      2) Асинхронне завантаження скляних шейдерів (`ensureLgReady`):
+         - Усунено проблему, коли скло не з'являлося через незавершений динамічний імпорт `liquidEffect.js` / `utils.js`.
+         - Створено хелпер `ensureLgReady()`, який очікує ініціалізації `LiquidEffect`, `UnpickableActor`, `UILayerSampler` та `WindowCloneManager` перед викликом `_startGlass()`.
+      3) Збереження нашого UI та взаємодії:
+         - Активні стани кнопок: синій колір (`#0a84ff`) для активних Wi-Fi та Bluetooth, білий диск для Dark Mode.
+         - Підменю по ПКМ (правий клік): обробники `button-press-event` (button 3) на Wi-Fi, Bluetooth та Sound викликають `_openWifiSubmenu`, `_openBluetoothSubmenu` та `_openSoundSubmenu` на базі `mac_menus_shared_v5.js`.
+         - Кнопка відкриття в топбарі (`ydotool-trigger-button` / `run-cmd@custom.extension`) безпосередньо викликає `globalThis._tahoeQSToggle()`.
+    - Реалізація для Центру сповіщень (Notification Center):
+      1) Відновлення нашого автентичного Центру сповіщень:
+         - Відключено перехоплення дати в `tahoeNotificationCenter.js` та `tahoeNotifications.js` (`_hookDate()`), повертаючи керування кліком на дату/годинник у наш `MenuBarController` (`menubar_v28.js` та `menubar_v29.js`).
+      2) Перенесення розмиття фону від Центру керування друга:
+         - Реалізовано метод `_ensureTahoeNotifGlass()` у `menubar_v28.js` та `menubar_v29.js`, який створює стек `_makeGlassStack(monitor, 82, 'nc_backdrop', true, 60)` з чистим Gaussian-розмиттям радіуса 82px і згладжуванням країв 60px без зайвих рамок і підкладок.
+         - Актор блюру `bgActor` розміщується безпосередньо під `_notifCenterActor` у `Main.layoutManager.uiGroup`.
+         - Реалізовано динамічну синхронізацію геометрії `_syncNotifBackdropBlur()` з урахуванням відступів (`mx = 80, my = 60`) та плавними анімаціями показу/приховування (`EASE_OUT_CUBIC` / `EASE_IN_CUBIC`).
+      3) Взаємне виключення (Mutual Exclusion):
+         - Відкриття Центру керування автоматично закриває Центр сповіщень, а відкриття Центру сповіщень автоматично закриває Центр керування.
+    - Синхронізація та фіксація:
+      * Усі змінені файли синхронізовано між робочим середовищем `~/.local/share/gnome-shell/extensions/`, сховищами `MACTHEMEFILES` та `macW1Y`.
+    - Верифікація:
+      * `cc_live_check_crop.png` / `cc_glass_transparent_crop.png`: Control Center без глухої коробки, з чистим склом, squircle-формами елементів, розмиттям фону та нашим функціоналом.
+      * `nc_tahoe_blur_crop.png`: наш автентичний Центр сповіщень із feather-soft Gaussian backdrop blur від Центру керування.
+      * `spotlight_verify_crop.png`: перевірено, що наш автентичний Spotlight залишився абсолютно незайманим і повністю функціональним.
+
+

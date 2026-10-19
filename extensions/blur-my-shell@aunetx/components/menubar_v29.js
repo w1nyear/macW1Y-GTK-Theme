@@ -2496,37 +2496,107 @@ export const MenuBarController = class MenuBarController {
         }
     }
 
-    _getNotifBlurActor() {
-        if (!this._notifBackdropBlur) {
-            this._notifBackdropBlur = new MacFeatheredBackdropBlur('mac-notif-center-feathered-blur');
-            if (this._notifCenterActor) {
-                Main.layoutManager.uiGroup.insert_child_below(this._notifBackdropBlur.actor, this._notifCenterActor);
-            } else {
-                Main.layoutManager.uiGroup.add_child(this._notifBackdropBlur.actor);
+    async _ensureTahoeNotifGlass() {
+        if (this._notifTahoeGlass && !this._notifTahoeGlass.bgActor.is_finalized?.())
+            return this._notifTahoeGlass;
+        try {
+            const uri = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeQuickSettings.js?v=live';
+            const mod = await import(uri);
+            if (mod.ensureLgReady) await mod.ensureLgReady();
+            const monitor = Main.layoutManager.primaryMonitor;
+            if (!monitor) return null;
+
+            // Exactly friend's CC backdrop blur stack:
+            // pure = true, radius = 82, edge_smoothing = 60, zero tint/specular/rim
+            const s = mod._makeGlassStack(monitor, 82, 'nc_backdrop', true, 60);
+            this._notifTahoeGlass = s;
+            if (this._notifCenterActor && s.bgActor) {
+                if (s.bgActor.get_parent() !== Main.layoutManager.uiGroup) {
+                    if (s.bgActor.get_parent()) {
+                        s.bgActor.get_parent().remove_child(s.bgActor);
+                    }
+                    Main.layoutManager.uiGroup.insert_child_below(s.bgActor, this._notifCenterActor);
+                }
             }
+            return s;
+        } catch (e) {
+            console.error(`[menubar_v28] _ensureTahoeNotifGlass error: ${e}`);
+            return null;
         }
-        return this._notifBackdropBlur.actor;
+    }
+
+    _getNotifBlurActor() {
+        this._ensureTahoeNotifGlass().then(() => {
+            if (this._notifCenterOpen) this._syncNotifBackdropBlur();
+        });
+        return this._notifTahoeGlass?.bgActor || null;
     }
 
     _syncNotifBackdropBlur() {
-        if (!this._notifBackdropBlur) {
-            this._getNotifBlurActor();
+        const s = this._notifTahoeGlass;
+        if (!s || !this._notifCenterActor || this._notifCenterActor.is_finalized?.()) return;
+        const monitor = Main.layoutManager.primaryMonitor;
+        if (!monitor) return;
+
+        const [nx, ny] = this._notifCenterActor.get_transformed_position();
+        const nw = this._notifCenterActor.width;
+        const nh = this._notifCenterActor.height;
+        if (!(nw > 0) || !(nh > 0) || !Number.isFinite(nx) || !Number.isFinite(ny)) return;
+
+        const monitorX = monitor.x;
+        const monitorY = monitor.y;
+        const screenW = monitor.width;
+        const screenH = monitor.height;
+
+        // Friend's Control Center backdrop margins:
+        // BACKDROP_REGION = 80 (x), BACKDROP_REGION_Y = 60 (y)
+        const mx = 80;
+        const my = 60;
+        let rx = (nx - monitorX) - mx;
+        let ry = (ny - monitorY) - my;
+        let rw = nw + mx * 2;
+        let rh = nh + my * 2;
+
+        const topEdge = Math.round(Main.layoutManager.panelBox?.height ?? 34) + 12;
+        if (ry < topEdge) {
+            const cut = topEdge - ry;
+            ry = topEdge;
+            rh -= cut;
+            if (!(rh > 0)) return;
         }
-        if (!this._notifBackdropBlur || !this._notifCenterActor || this._notifCenterActor.is_finalized?.()) return;
 
-        const cW = this._notifCenterActor.width || (this._notifCenterActor.get_transformed_size ? this._notifCenterActor.get_transformed_size()[0] : 460);
-        const cH = this._notifCenterActor.height || (this._notifCenterActor.get_transformed_size ? this._notifCenterActor.get_transformed_size()[1] : 200);
-        const cX = Number.isFinite(this._notifCenterActor.x) ? this._notifCenterActor.x : (this._notifCenterActor.get_transformed_position ? this._notifCenterActor.get_transformed_position()[0] - (this._notifCenterActor.translation_x || 0) : 1448);
-        const cY = Number.isFinite(this._notifCenterActor.y) ? this._notifCenterActor.y : (this._notifCenterActor.get_transformed_position ? this._notifCenterActor.get_transformed_position()[1] - (this._notifCenterActor.translation_y || 0) : 40);
-        if (cW <= 0 || cH <= 0 || !Number.isFinite(cX) || !Number.isFinite(cY)) return;
+        s.bgActor.set_position(monitorX, monitorY);
+        if (!s.bgActor.visible) s.bgActor.show();
 
-        this._notifBackdropBlur.updateGeometry(cX, cY, cW, cH);
+        s.liquidBox.set_position(0, 0);
+        s.liquidBox.set_size(screenW, screenH);
+        s.effect.setResolution(screenW, screenH);
 
-        if (this._notifBackdropBlur.actor.get_parent() !== Main.layoutManager.uiGroup) {
-            if (this._notifBackdropBlur.actor.get_parent()) {
-                this._notifBackdropBlur.actor.get_parent().remove_child(this._notifBackdropBlur.actor);
+        s.effect.setGlassRegions([{
+            x: rx, y: ry, w: rw, h: rh,
+            tintR: 0, tintG: 0, tintB: 0,
+            baseStrength: 0,
+        }]);
+
+        const CLIP_PADDING = 200;
+        const clip = [rx - CLIP_PADDING, ry - CLIP_PADDING,
+            rw + CLIP_PADDING * 2, rh + CLIP_PADDING * 2];
+        try {
+            s.bgActor.set_clip(clip[0], clip[1], clip[2], clip[3]);
+        } catch (_) {}
+
+        try {
+            s.wcm.setOffset(-monitorX, -monitorY);
+            s.uiSampler.refresh();
+            s.uiSampler.sync(monitorX, monitorY, screenW, screenH);
+            s.wcm.sync();
+        } catch (_) {}
+
+        if (this._notifCenterActor && s.bgActor.get_parent() !== Main.layoutManager.uiGroup) {
+            if (s.bgActor.get_parent()) {
+                s.bgActor.get_parent().remove_child(s.bgActor);
             }
-            Main.layoutManager.uiGroup.insert_child_below(this._notifBackdropBlur.actor, this._notifCenterActor);
+            Main.layoutManager.uiGroup.insert_child_below(s.bgActor, this._notifCenterActor);
         }
     }
 
@@ -3520,12 +3590,7 @@ export const MenuBarController = class MenuBarController {
             }
             container._clickConnId = container.connect('button-press-event', (_actor, event) => {
                 if (event.get_button() === 1) {
-                    const kiwiExt = Main.extensionManager.lookup('kiwi@kemma');
-                    if (kiwiExt && kiwiExt.state === 1) {
-                        try { dateMenu.menu?.toggle(); } catch (_) {}
-                    } else {
-                        this._toggleNotificationCenter();
-                    }
+                    this._toggleNotificationCenter();
                     return Clutter.EVENT_STOP;
                 }
                 return Clutter.EVENT_PROPAGATE;
@@ -3894,6 +3959,9 @@ export const MenuBarController = class MenuBarController {
             if (this._notifBackdropBlur?.actor) {
                 this._notifBackdropBlur.actor.opacity = container.opacity;
             }
+            if (this._notifTahoeGlass?.bgActor) {
+                this._notifTahoeGlass.bgActor.opacity = container.opacity;
+            }
         });
         container.connect('notify::allocation', () => {
             if (this._notifCenterOpen) {
@@ -3994,6 +4062,7 @@ export const MenuBarController = class MenuBarController {
     }
 
     _syncNotifGlassRegions() {
+        this._syncNotifBackdropBlur();
         if (!this._notifGlass || this._notifGlass.is_finalized?.() || (!this._notifCenterOpen && !this._isNotifCenterClosing)) {
             if (this._notifGlass && !this._notifGlass.is_finalized?.() && this._notifGlass.visible)
                 this._notifGlass.hide();
@@ -4759,6 +4828,9 @@ export const MenuBarController = class MenuBarController {
         if (qs?.menu?.isOpen) {
             qs.menu.close(BoxPointer.PopupAnimation.FADE);
         }
+        if (globalThis._tahoeQSOpen && typeof globalThis._tahoeQSToggle === 'function') {
+            globalThis._tahoeQSToggle();
+        }
         if (Main.panel?.menuManager?.activeMenu && Main.panel.menuManager.activeMenu !== Main.panel?.statusArea?.dateMenu?.menu) {
             Main.panel.menuManager.activeMenu.close(BoxPointer.PopupAnimation.FADE);
         }
@@ -4791,6 +4863,16 @@ export const MenuBarController = class MenuBarController {
         this._updateNotificationCenterGeometry();
         this._getNotifBlurActor();
         this._syncNotifBackdropBlur();
+        if (this._notifTahoeGlass?.bgActor) {
+            const bg = this._notifTahoeGlass.bgActor;
+            bg.opacity = 0;
+            bg.show();
+            bg.ease({
+                opacity: 255,
+                duration: 320,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
         if (this._notifBackdropBlur) {
             this._notifBackdropBlur.animateSlideIn(480, 320);
         }
@@ -4891,6 +4973,17 @@ export const MenuBarController = class MenuBarController {
             this._blurRebuildTimeout = 0;
         }
         this._disconnectNotifCenterListeners();
+        if (this._notifTahoeGlass?.bgActor) {
+            const bg = this._notifTahoeGlass.bgActor;
+            bg.ease({
+                opacity: 0,
+                duration: 260,
+                mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+                onComplete: () => {
+                    bg.hide();
+                },
+            });
+        }
         if (this._notifBackdropBlur) {
             this._notifBackdropBlur.animateSlideOut(480, 260);
         }

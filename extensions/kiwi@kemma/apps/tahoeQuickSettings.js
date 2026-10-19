@@ -64,7 +64,30 @@ import(_LG_BASE + '/utils.js').then(m => {
         reportFrameLoopError = m.reportFrameLoopError;
 }).catch(e => console.warn(`[tahoe-qs] liquid-glass utils unavailable: ${e}`));
 function _lgReady() {
-    return false;
+    return !!(LiquidEffect && UnpickableActor && UILayerSampler && WindowCloneManager);
+}
+
+export async function ensureLgReady() {
+    if (_lgReady())
+        return true;
+    try {
+        const [m1, m2] = await Promise.all([
+            import(_LG_BASE + '/liquidEffect.js'),
+            import(_LG_BASE + '/utils.js'),
+        ]);
+        if (m1?.LiquidEffect) LiquidEffect = m1.LiquidEffect;
+        if (m2?.UnpickableActor) UnpickableActor = m2.UnpickableActor;
+        if (m2?.UILayerSampler) UILayerSampler = m2.UILayerSampler;
+        if (m2?.WindowCloneManager) WindowCloneManager = m2.WindowCloneManager;
+        if (m2?.setClipIfChanged) setClipIfChanged = m2.setClipIfChanged;
+        if (m2?.getTransformedRect) getTransformedRect = m2.getTransformedRect;
+        if (m2?.ensureGlassAllocated) ensureGlassAllocated = m2.ensureGlassAllocated;
+        if (m2?.syncGlassCaptureClip) syncGlassCaptureClip = m2.syncGlassCaptureClip;
+        if (m2?.reportFrameLoopError) reportFrameLoopError = m2.reportFrameLoopError;
+    } catch (e) {
+        console.warn(`[tahoe-qs] ensureLgReady error: ${e}`);
+    }
+    return _lgReady();
 }
 
 const PANEL_W = 320;
@@ -2443,24 +2466,16 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         lastRegions: null, lastBounds: null, grace: 0, clip: null, screen: null};
 }
 
-function _startGlass() {
+async function _startGlass() {
     if (!_panel || _panel.glass)
         return;
     const monitor = Main.layoutManager.primaryMonitor;
     if (!monitor)
         return;
     if (!_lgReady()) {
-        // liquid-glass modules still loading: retry shortly while open.
-        try {
-            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300, () => {
-                if (_panel && !_panel.glass)
-                    _startGlass();
-                return GLib.SOURCE_REMOVE;
-            });
-        } catch (_) {
-            // stays glass-less
-        }
-        return;
+        await ensureLgReady();
+        if (!_lgReady() || !_panel || _panel.glass)
+            return;
     }
 
     try {
@@ -2790,6 +2805,12 @@ function _openPanel() {
         return;
     }
     globalThis._tahoeQSOpen = true;
+    try {
+        const bms = Main.extensionManager.lookup('blur-my-shell@aunetx')?.stateObj;
+        if (bms?._menubar_controller?._notifCenterOpen) {
+            bms._menubar_controller._toggleNotificationCenter();
+        }
+    } catch (_) {}
     // QS and NC never share the screen (dynamic import: no module cycle)
     try {
         import('./tahoeNotificationCenter.js').then(mod => {
@@ -2816,6 +2837,7 @@ export function togglePanel() {
         console.error(`[tahoe-qs] toggle failed: ${e}`);
     }
 }
+globalThis._tahoeQSToggle = togglePanel;
 
 // true while the Control Center panel is open (OSD suppresses itself then)
 export function isPanelOpen() {

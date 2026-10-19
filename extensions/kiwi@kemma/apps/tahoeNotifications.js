@@ -1243,19 +1243,7 @@ export function toggleNC() {
 let _hooked = false;
 
 function _hookDate() {
-    try {
-        const dm = Main.panel?.statusArea?.dateMenu;
-        const menu = dm?.menu;
-        if (!menu || menu._tahoeNCHooked)
-            return;
-        menu._tahoeNCHooked = true;
-        menu.open = () => openNC();
-        menu.close = () => closeNC();
-        menu.toggle = () => toggleNC();
-        _hooked = true;
-    } catch (_) {
-        // no date menu
-    }
+    // Handled by our authentic Notification Center in menubar_v28.js
 }
 
 export function enable(settings, gettextFunc) {
