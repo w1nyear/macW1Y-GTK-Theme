@@ -1,3 +1,8 @@
+/* Kiwi (is not Apple) - managed imports: begin */
+@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/titlebuttons4.css");
+@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/titlebuttons-size-small4.css");
+@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/fixes4.css");
+/* Kiwi (is not Apple) - managed imports: end */
 :root {
   --blue-1: #99c1f1;
   --blue-2: #62a0ea;
@@ -3668,7 +3673,7 @@ scrollbar.overlay-indicator > range > trough {
   outline: none;
   background-color: alpha(currentColor,0.1);
   border-radius: 9999px;
-  margin: 3px 1px 3px 0;
+  margin: 6px;
 }
 
 scrollbar.overlay-indicator > range > trough > slider {
@@ -3685,7 +3690,7 @@ scrollbar.overlay-indicator:not(.dragging):not(.hovering) {
 scrollbar.overlay-indicator:not(.dragging):not(.hovering) > range > trough {
   background-color: transparent;
   border: none;
-  margin: 3px 1px 3px 0;
+  margin: 6px;
 }
 
 scrollbar.overlay-indicator:not(.dragging):not(.hovering) > range > trough > slider {
@@ -4903,7 +4908,7 @@ row > box.header > box.title {
 }
 
 row:not(:hover) {
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: all 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 button row.activatable:focus, button row.activatable:hover, button row.activatable:active {
@@ -6613,8 +6618,8 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected,
 #NautilusFileChooser .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected,
 .nautilus-file-chooser .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected {
-  background-color: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
+  background-color: color-mix(in srgb, @window_fg_color 8%, transparent);
+  color: @accent_bg_color;
 }
 
 .nautilus-window .sidebar-pane > separator.horizontal,
@@ -9224,10 +9229,15 @@ fullscreenbox toolbarview > .top-bar, fullscreenbox toolbarview > .top-bar.raise
   margin-left: 0;
 }
 
+windowcontrols {
+  margin-left: 0px !important;
+}
+
 .sidebar-pane headerbar windowcontrols:not(.empty).start:dir(ltr), .sidebar-pane headerbar windowcontrols:not(.empty).end:dir(rtl) {
-  margin-right: 0;
-  padding-left: 8px;
-  padding-right: 0;
+  margin-left: -9px !important;
+  margin-right: 0 !important;
+  padding-left: 0px !important;
+  padding-right: 0 !important;
 }
 
 .sidebar-pane headerbar windowcontrols:not(.empty).start:dir(rtl), .sidebar-pane headerbar windowcontrols:not(.empty).end:dir(ltr) {
@@ -9706,18 +9716,53 @@ tooltip label {
 
 /* --- MAC-STYLING-END --- */
 
-
 /* --- MAC-NAUTILUS-SIDEBAR-START --- */
-/* macOS Finder Sidebar Styling for Nautilus and Libadwaita / GTK4 */
+/* macOS Tahoe Nautilus Finder - Translucent Glass Sidebar & Solid Dark Pane */
+
+/* Make window root and split container transparent in the sidebar area */
+window.nautilus-window,
+window.nautilus-window.background,
+window.nautilus-window > dialog-host,
+window.nautilus-window overlay-split-view {
+    background-color: transparent;
+    background-image: none;
+}
+
+/* Sidebar floating glass card: solid #202022 frame border, NO blur under frame, blur inside */
+window.nautilus-window overlay-split-view > widget.sidebar-pane,
+window.nautilus-window .sidebar-pane {
+    margin: 0px;
+    border-top: 8px solid #202022;
+    border-left: 8px solid #202022;
+    border-bottom: 8px solid #202022;
+    border-right: 8px solid #202022;
+    border-radius: 24px 0 0 24px;
+    background-color: rgba(30, 30, 34, 0.40);
+    background-clip: padding-box;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+window.nautilus-window .sidebar-pane toolbarview,
+window.nautilus-window .sidebar-pane placessidebar {
+    border-radius: 16px;
+    background-color: transparent;
+}
+
+/* All inner sidebar containers must be transparent so blur shines through */
+window.nautilus-window .sidebar-pane toolbarview,
+window.nautilus-window .sidebar-pane headerbar,
+window.nautilus-window .sidebar-pane placessidebar,
+window.nautilus-window .sidebar-pane placessidebar list.navigation-sidebar,
+window.nautilus-window .sidebar-pane scrolledwindow,
+window.nautilus-window .sidebar-pane viewport,
 splitview > paned > scrolledwindow > list.navigation-sidebar,
 splitview > paned > scrolledwindow > .navigation-sidebar,
-.sidebar-pane placessidebar,
-.sidebar-pane placessidebar list.navigation-sidebar,
 .navigation-sidebar,
 list.navigation-sidebar {
-    background-color: rgba(28, 28, 30, 0.75);
-    padding: 8px 6px;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
 }
 
 /* Sidebar rows base style */
@@ -9728,18 +9773,18 @@ placessidebar row,
 placessidebar .navigation-sidebar row,
 .nautilus-window .sidebar-pane placessidebar row,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row {
-    border-radius: 8px !important;
-    margin: 1px 6px !important;
-    padding: 4px 8px !important;
-    min-height: 28px !important;
+    border-radius: 8px;
+    margin: 1px 6px;
+    padding: 4px 8px;
+    min-height: 28px;
     color: rgba(255, 255, 255, 0.85);
-    background-clip: padding-box !important;
-    outline: none !important;
-    transition: background-color 120ms ease, color 120ms ease !important;
-    transition-property: background-color, color !important;
+    background-clip: padding-box;
+    outline: none;
+    transition: background-color 120ms ease, color 120ms ease;
+    transition-property: background-color, color;
 }
 
-/* Hover state - strictly lock border-radius: 8px to completely eliminate square hover glitch during fast mouse movement */
+/* Hover state - strictly lock border-radius: 8px to completely eliminate square hover glitch */
 .navigation-sidebar row:hover,
 .navigation-sidebar > row:hover,
 list.navigation-sidebar row:hover,
@@ -9754,11 +9799,11 @@ list.navigation-sidebar row:hover:not(:selected),
 placessidebar row:hover:not(:selected),
 .nautilus-window .sidebar-pane placessidebar row:hover:not(:selected),
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:hover {
-    border-radius: 8px !important;
-    background-color: rgba(255, 255, 255, 0.08) !important;
-    outline: none !important;
-    transition: background-color 120ms ease, color 120ms ease !important;
-    transition-property: background-color, color !important;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.08);
+    outline: none;
+    transition: background-color 120ms ease, color 120ms ease;
+    transition-property: background-color, color;
 }
 
 /* Selected state */
@@ -9769,17 +9814,17 @@ placessidebar row:selected,
 placessidebar .navigation-sidebar row:selected,
 .nautilus-window .sidebar-pane placessidebar row:selected,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected {
-    border-radius: 8px !important;
-    background-color: rgba(255, 255, 255, 0.16) !important;
-    color: #ffffff !important;
-    outline: none !important;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    outline: none;
 }
 
 .navigation-sidebar row:selected label,
 list.navigation-sidebar row:selected label,
 placessidebar row:selected label,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label {
-    color: #ffffff !important;
+    color: #ffffff;
 }
 
 .navigation-sidebar row:selected:hover,
@@ -9787,13 +9832,13 @@ list.navigation-sidebar row:selected:hover,
 placessidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover {
-    border-radius: 8px !important;
-    background-color: rgba(255, 255, 255, 0.20) !important;
-    color: #ffffff !important;
-    outline: none !important;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.20);
+    color: #ffffff;
+    outline: none;
 }
 
-/* Unhovered state - strictly prevent any transition on border-radius */
+/* Unhovered state */
 .navigation-sidebar row:not(:hover),
 .navigation-sidebar > row:not(:hover),
 list.navigation-sidebar row:not(:hover),
@@ -9801,9 +9846,9 @@ placessidebar row:not(:hover),
 placessidebar .navigation-sidebar row:not(:hover),
 .nautilus-window .sidebar-pane placessidebar row:not(:hover),
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:not(:hover) {
-    border-radius: 8px !important;
-    transition: background-color 150ms ease, color 150ms ease !important;
-    transition-property: background-color, color !important;
+    border-radius: 8px;
+    transition: background-color 150ms ease, color 150ms ease;
+    transition-property: background-color, color;
 }
 
 /* Section Header Typography */
@@ -9825,7 +9870,7 @@ image.sidebar-orange-icon,
 list.navigation-sidebar row image.sidebar-orange-icon,
 placessidebar row image.sidebar-orange-icon,
 .navigation-sidebar row.sidebar-accent-icon image {
-    color: #f58220;
+    color: @accent_bg_color;
 }
 
 /* Neutral icon color for Mounts and Trash */
@@ -9857,5 +9902,20 @@ image.emblem {
     min-height: 0px;
     margin: 0;
     padding: 0;
+}
+
+/* Content pane (files view) - strictly solid dark system theme color, NO blur */
+window.nautilus-window overlay-split-view > widget.content-pane,
+window.nautilus-window .content-pane,
+window.nautilus-window .content-pane toolbarview,
+window.nautilus-window .content-pane .view,
+window.nautilus-window .content-pane scrolledwindow {
+    background-color: #202022;
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+window.nautilus-window .content-pane headerbar {
+    background-color: #202022;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */

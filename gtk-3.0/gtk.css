@@ -1,7 +1,4 @@
 /* Kiwi (is not Apple) - managed imports: begin */
-@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/titlebuttons3.css");
-@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/titlebuttons-size-small3.css");
-@import url("file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/css/fixes3.css");
 /* Kiwi (is not Apple) - managed imports: end */
 /* --- MAC-STYLING-START --- */
 /* macOS Tahoe Context Menus (System GTK Applications Only) */
@@ -203,3 +200,97 @@ tooltip label {
 }
 
 /* --- MAC-STYLING-END --- */
+
+/* --- MAC-TRAFFIC-LIGHTS-START --- */
+/* macOS Traffic Lights for GTK 3, Electron, and Chromium Apps */
+headerbar.titlebar {
+  padding-left: 12px;
+}
+
+headerbar button.titlebutton,
+.titlebar button.titlebutton,
+windowcontrols button {
+  min-width: 14px;
+  min-height: 14px;
+  border-radius: 9999px;
+  margin: 0 4px;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+}
+
+headerbar button.titlebutton.close,
+.titlebar button.titlebutton.close,
+windowcontrols button.close {
+  background-color: #ed6a5e;
+  color: #ed6a5e;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-close-dark.png");
+}
+
+headerbar button.titlebutton.close:hover,
+.titlebar button.titlebutton.close:hover,
+windowcontrols button.close:hover {
+  background-color: #ed6a5e;
+  color: #ed6a5e;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-close-hover-dark.png");
+}
+
+headerbar button.titlebutton.close:active,
+.titlebar button.titlebutton.close:active,
+windowcontrols button.close:active {
+  background-color: #bf4942;
+  color: #bf4942;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-close-active-dark.png");
+}
+
+headerbar button.titlebutton.minimize,
+.titlebar button.titlebutton.minimize,
+windowcontrols button.minimize {
+  background-color: #f4bf4f;
+  color: #f4bf4f;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-minimize-dark.png");
+}
+
+headerbar button.titlebutton.minimize:hover,
+.titlebar button.titlebutton.minimize:hover,
+windowcontrols button.minimize:hover {
+  background-color: #f4bf4f;
+  color: #f4bf4f;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-minimize-hover-dark.png");
+}
+
+headerbar button.titlebutton.minimize:active,
+.titlebar button.titlebutton.minimize:active,
+windowcontrols button.minimize:active {
+  background-color: #c4993a;
+  color: #c4993a;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-minimize-active-dark.png");
+}
+
+headerbar button.titlebutton.maximize,
+.titlebar button.titlebutton.maximize,
+windowcontrols button.maximize {
+  background-color: #61c554;
+  color: #61c554;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-dark.png");
+}
+
+headerbar button.titlebutton.maximize:hover,
+.titlebar button.titlebutton.maximize:hover,
+windowcontrols button.maximize:hover {
+  background-color: #61c554;
+  color: #61c554;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-hover-dark.png");
+}
+
+headerbar button.titlebutton.maximize:active,
+.titlebar button.titlebutton.maximize:active,
+windowcontrols button.maximize:active {
+  background-color: #4b9c40;
+  color: #4b9c40;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-active-dark.png");
+}
+/* --- MAC-TRAFFIC-LIGHTS-END --- */
