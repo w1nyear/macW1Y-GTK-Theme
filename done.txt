@@ -6194,5 +6194,39 @@ echo "==> Встановлення успішно завершено!"
       * Відсутні будь-які помилки імпорту або дублювання розширень.
       * Усі робочі середовища (`~/.local/share/gnome-shell/extensions/`, `MACTHEMEFILES`, `macW1Y`) повністю синхронізовані та мають чисту організовану структуру.
 
-
-
+116. Повне позбавлення від плоского розмиття (blur) та непрозорих фонів у системі з переведенням на фізичне 3D рідке скло (Liquid Glass) з GNOME-Theme-Main (при збереженні блюру всередині програм):
+    - Контекст та вимоги:
+      * «тепер нам потрібно позбутись blur і прозорості у системі всюди ОКРІМ програм. у програмах залиши блюр і не рухай. видали фон у всьому елементі і заміни їх повністю на скло з проекту GNOME-Theme-Main. це стосується наступних елементів: Dock, language change, menubar context bars, Spotlight повязані вікна (Spotlight, App center, буфер обміну, пошук по файлах.)»
+    - Виявлена першопричина плоского мутного вигляду:
+      * У `backdropGlass.js` (рядки 103-114) були жорстко занулені параметри фізичного скла: `sheen_intensity = 0.0`, `rim_intensity = 0.0`, `rim_width = 0.0`, `chroma_strength = 0.0`, `shadow_intensity = 0.0`, а `displacement_scale` занижено до 20 замість 78.5. Через це шейдер `glass.frag` позбавлявся світлових відблисків (specular rim), хроматичної дисперсії, об'ємного заломлення та м'якої тіні, перетворюючись на звичайне плоске каламутне розмиття.
+      * У CSS-стилях менюбара (`appmenu stylesheet.css`) для контекстних меню був заданий непрозорий напівтемний фон `background-color: rgba(30, 30, 34, 0.78) !important;`, що глушив скляний шейдер.
+      * У gsettings `org.gnome.shell.extensions.liquid-glass` також були занулені `glass-rim-intensity`, `glass-sheen-intensity`, `glass-chroma-strength` та `shadow-intensity`.
+    - Виконані налаштування та реалізація фізичного рідкого скла (Liquid Glass):
+      1) Відновлення повноцінних фізичних параметрів Tahoe Liquid Glass:
+         - У GSettings `org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com`:
+           * `glass-displacement-scale`: 78.5 (реалістичне 3D заломлення фону).
+           * `glass-ior`: 2.40 (коефіцієнт заломлення світла кришталевого скла).
+           * `glass-rim-intensity`: 0.60, `glass-rim-width`: 5.0, `glass-rim-power`: 6.0, `glass-rim-light-color-intensity`: 1.4 (яскравий кришталевий відблиск по фасці граней).
+           * `glass-sheen-intensity`: 0.32, `glass-chroma-strength`: 0.02 (хроматична дисперсія та поверхневий блиск).
+           * `glass-max-z`: 25.0, `glass-profile-shape-n`: 7.0, `glass-edge-smoothing`: 2.0 (виразний 3D-рельєф скругленого сквиркла).
+           * `shadow-intensity`: 0.55, `shadow-radius`: 30.0 (глибока м'яка тінь, що відокремлює скло від робочого столу).
+           * `glass-blur-downscale`: 2, `blur-method`: 0 (Gaussian).
+      2) Dock:
+         - Видалено темну мутну підкладку: налаштовано `dock-tint-color '#ffffff'` та `dock-tint-strength 0.05`.
+         - Док отримав чисте кришталеве рідке скло з чітким білим відблиском по всьому периметру, заломленням світла шпалер та м'якою тінню (підтверджено скріншотом `dock_final.png`).
+      3) Контекстні меню менюбара (Menubar context bars) та банери сповіщень:
+         - У `extensions/appmenu@ChathurangaBW.github.io/stylesheet.css` усунено непрозорий шар `background-color: rgba(30, 30, 34, 0.78)` на `.appmenu-popup-menu-content` та `.popup-sub-menu`, встановлено `transparent !important`.
+         - Контекстні меню тепер рендеряться з чистим склом `PanelMenuManager` без темних пластин (підтверджено `menu_verified.png`).
+         - Увімкнено `enable-notification-glass = true` у `liquid-glass` — спливаючі сповіщення тепер використовують справжнє рідке скло з бліками та тінями (підтверджено `notif_right.png`).
+      4) Вікна, пов'язані зі Spotlight (Spotlight, App Center, Буфер обміну, Пошук по файлах):
+         - У `backdropGlass.js` видалено примусове занулення бліків, тіней та хроми для спливаючих вікон — тепер повний профіль скла Tahoe LiquidEffect передається у шейдер без спотворень.
+         - У `searchDialog_v5.js`, `applications_menu_v5.js` та `clipboardDialog_v2.js` прибрано занулення параметрів тіні (`shadow_intensity`, `shadow_radius`, `shadow_max_radius`).
+         - Розширено обрізку кліпу (`set_clip`) з 4px до 40px, щоб відблиски граней (specular rim) та м'які тіні навколо вікон не зрізалися краями контейнерів Clutter.
+         - Усі 4 діалогових вікна перевірено скріншотами: `spotlight_verified.png`, `appcenter_verified.png`, `clipboard_verified.png`, `filesearch_verified.png`.
+      5) Індикатор перемикання мови (Language change):
+         - У `mac_input_switcher_v11.js` (капсульний індикатор біля курсору) та `eval-helper@mactheme/extension.js` (модальний SwitcherPopup по центру): прибрано занулення тіней та розширено `CLIP_PAD` до 35-40px. Індикатор отримав об'ємне скло з фаскою та тінню (підтверджено `lang_verified.png`).
+      6) Збереження розмиття у програмах:
+         - `org.gnome.shell.extensions.blur-my-shell.applications.blur` залишено активним (`true`) з повним білим списком вікон програм.
+         - Вимкнено дублюючі накладання BMS в Огляді та Coverflow (`blur-my-shell.overview.blur = false`, `blur-my-shell.coverflow-alt-tab.blur = false`), усунувши подвійне мильне розмиття під рідким склом.
+    - Синхронізація:
+      * Усі 7 змінених файлів повністю оновлено та синхронізовано між робочим середовищем `~/.local/share/gnome-shell/extensions/`, репозиторіями `MACTHEMEFILES` та `macW1Y`.

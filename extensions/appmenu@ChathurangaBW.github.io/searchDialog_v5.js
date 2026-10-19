@@ -752,11 +752,6 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._glass.setContrast(1.0);
             this._glass.setBlurRadius(2.0);
             this._glass.setPadding(0);
-            try {
-                this._glass._renderer.uniforms.set('shadow_intensity', 0.0);
-                this._glass._renderer.uniforms.set('shadow_radius', 0.0);
-                this._glass._renderer.uniforms.set('shadow_max_radius', 0.0);
-            } catch (_) {}
             this._glass.hide();
 
             if (!this._isOpen) {
@@ -890,9 +885,10 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const maxX = Math.max(pillX + pillW, b1X + b1W, b2X + b2W, b3X + b3W);
                 const maxY = Math.max(pillY + pillH, b1Y + b1H, b2Y + b2H, b3Y + b3H);
 
+                const CLIP_PAD = 40;
                 this._glass.setMultiRegionMode(true);
                 this._glass.setGlassRegions(regions);
-                this._glass.set_clip(minX - 4, minY - 4, (maxX - minX) + 8, (maxY - minY) + 8);
+                this._glass.set_clip(minX - CLIP_PAD, minY - CLIP_PAD, (maxX - minX) + CLIP_PAD * 2, (maxY - minY) + CLIP_PAD * 2);
             } else {
                 const w = Math.round(DIALOG_WIDTH * scaleX);
                 const h = Math.round(rawH * scaleY);
@@ -910,7 +906,8 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._glass.setTintStrength(tintStrength);
                 this._glass.setCornerRadius(CORNER_RADIUS);
                 this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
-                this._glass.set_clip(localBgX - 4, localBgY - 4, bgW + 8, bgH + 8);
+                const CLIP_PAD = 40;
+                this._glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
             }
 
             if (typeof this._glass.syncSources === 'function') {

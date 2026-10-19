@@ -220,15 +220,17 @@
 .appmenu-popup-menu.popup-menu-boxpointer .popup-menu-content {
     border-radius: 14px !important;
     padding: 6px 0 !important;
-    background-color: rgba(30, 30, 34, 0.78) !important;
-    border: none !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+    background-color: transparent !important;
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: none !important;
 }
 
 .appmenu-popup-menu .popup-sub-menu {
     border-radius: 14px !important;
     border: none !important;
-    background-color: rgba(30, 30, 34, 0.78) !important;
+    background-color: transparent !important;
+    background: transparent !important;
 }
 
 .appmenu-popup-menu-item,

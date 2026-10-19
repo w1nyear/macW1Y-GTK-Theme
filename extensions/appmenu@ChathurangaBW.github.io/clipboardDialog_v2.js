@@ -589,11 +589,6 @@ export const MacClipboardDialog = GObject.registerClass({
             this._glass.setContrast(1.0);
             this._glass.setBlurRadius(8.0);
             this._glass.setPadding(0);
-            try {
-                this._glass._renderer.uniforms.set('shadow_intensity', 0.0);
-                this._glass._renderer.uniforms.set('shadow_radius', 0.0);
-                this._glass._renderer.uniforms.set('shadow_max_radius', 0.0);
-            } catch (_) {}
             this._glass.hide();
 
             if (!this._isOpen) {
@@ -661,7 +656,8 @@ export const MacClipboardDialog = GObject.registerClass({
         this._glass.setBlurRadius(8.0);
         this._glass.setCornerRadius(CORNER_RADIUS);
         this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
-        this._glass.set_clip(localBgX - 4, localBgY - 4, bgW + 8, bgH + 8);
+        const CLIP_PAD = 40;
+        this._glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
         this._glass.syncSources();
     }
 

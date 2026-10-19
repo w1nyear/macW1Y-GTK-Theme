@@ -531,7 +531,7 @@ export const MacInputSourcePopup = GObject.registerClass({
                 this._glass.setCornerRadius(this._targetCornerRadius);
                 this._glass.setGlassGeometry(localX, localY, bgW, bgH);
 
-                const CLIP_PAD = 10;
+                const CLIP_PAD = 35;
                 this._glass.set_clip(localX - CLIP_PAD, localY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
                 this._glass.syncSources();
             };
@@ -797,11 +797,6 @@ export class MacInputSwitcher {
             this._glass.setTintStrength(0.05);
             this._glass.setBlurRadius(8.0);
             this._glass.setPadding(0);
-            try {
-                this._glass._renderer.uniforms.set('shadow_intensity', 0.0);
-                this._glass._renderer.uniforms.set('shadow_radius', 0.0);
-                this._glass._renderer.uniforms.set('shadow_max_radius', 0.0);
-            } catch (_) {}
             this._glass.hide();
             Main.layoutManager.uiGroup.add_child(this._glass);
         } catch (err) {

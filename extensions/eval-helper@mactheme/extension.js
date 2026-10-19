@@ -380,11 +380,6 @@ export default class EvalHelper extends Extension {
                         glass.setTintStrength(0.04);
                         glass.setBlurRadius(8.0);
                         glass.setPadding(0);
-                        try {
-                            glass._renderer.uniforms.set('shadow_intensity', 0.0);
-                            glass._renderer.uniforms.set('shadow_radius', 0.0);
-                            glass._renderer.uniforms.set('shadow_max_radius', 0.0);
-                        } catch (_) {}
                         glass.hide();
                         Main.layoutManager.uiGroup.add_child(glass);
                         globalThis._macSwitcherGlass = glass;
@@ -446,7 +441,7 @@ export default class EvalHelper extends Extension {
                                     switcherGlass.setCornerRadius(24.0);
                                     switcherGlass.setGlassGeometry(localX, localY, bgW, bgH);
 
-                                    const CLIP_PAD = 10;
+                                    const CLIP_PAD = 40;
                                     switcherGlass.set_clip(localX - CLIP_PAD, localY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
                                     switcherGlass.syncSources();
                                 };
