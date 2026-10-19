@@ -48,6 +48,17 @@ export class Animator {
       // Wake the loop so updateIcon() can refresh clone badge geometry/counts.
       this._startAnimation();
     };
+
+    this._appSystemId = Shell.AppSystem.get_default().connectObject('app-state-changed', (sys, app) => {
+      if (app.get_state() === Shell.AppState.STARTING) {
+        const icon = this._findCloneForApp(app);
+        if (icon) {
+          icon._clickJump = 1.0;
+          this._startAnimation();
+          if (this.dashContainer?._animateIn) this.dashContainer._animateIn(0.2, 0);
+        }
+      }
+    }, this);
   }
 
   disable() {
@@ -55,6 +66,10 @@ export class Animator {
     if (this._oneShotId) { clearTimeout(this._oneShotId); this._oneShotId = null; }
     this._resetAppwellHooks();
     this._disconnectDraggableHooks();
+    if (this._appSystemId) {
+      Shell.AppSystem.get_default().disconnectObject(this);
+      this._appSystemId = null;
+    }
     if (this._iconsContainer) {
       Main.uiGroup.remove_child(this._iconsContainer);
       this._iconsContainer.destroy();
@@ -85,10 +100,18 @@ export class Animator {
 
   reloadIcons() {
     if (!this._iconsContainer) return;
-    // Restore native icon opacity before destroying clones — the animation
-    // loop may have zeroed them and _endAnimation won't run during a reload.
     this._iconsContainer.get_children().forEach(c => {
-      if (c._bin?.first_child) c._bin.first_child.opacity = 255;
+      const realIcon = c._bin?.first_child ?? c._icon;
+      if (realIcon) {
+        realIcon.translation_x = 0;
+        realIcon.translation_y = 0;
+        realIcon.opacity = 255;
+        realIcon.set_scale(1.0, 1.0);
+      }
+      if (c._appwell?._indicator?._notificationBadgeBin) {
+        c._appwell._indicator._notificationBadgeBin.translation_x = 0;
+        c._appwell._indicator._notificationBadgeBin.translation_y = 0;
+      }
       this._setD2dBadgeOpacity(c._appwell, 255);
       this._disconnectAppwellHooks(c._appwell);
       c.destroy();
@@ -162,6 +185,11 @@ export class Animator {
   _findCloneForAppwell(appwell) {
     if (!this._iconsContainer) return null;
     return this._iconsContainer.get_children().find(icon => icon._appwell === appwell) ?? null;
+  }
+
+  _findCloneForApp(app) {
+    if (!this._iconsContainer || !app) return null;
+    return this._iconsContainer.get_children().find(icon => icon._appwell?.app === app) ?? null;
   }
 
   _animate() {
@@ -384,10 +412,20 @@ export class Animator {
       const isJumping = (icon._clickJump > 0 || icon._introJump > 0 || icon._attentionJump > 0);
       const forceClone = icon._forceClone === true;
       const cloneActive = isJumping || forceClone;
+      const realIcon = icon._bin?.first_child ?? icon._icon;
 
       if (!cloneActive) {
         if (icon._wasActive) {
-          if (icon._bin.first_child) icon._bin.first_child.opacity = 255;
+          if (realIcon) {
+            realIcon.translation_x = 0;
+            realIcon.translation_y = 0;
+            realIcon.opacity = 255;
+            realIcon.set_scale(1.0, 1.0);
+          }
+          if (icon._appwell?._indicator?._notificationBadgeBin) {
+            icon._appwell._indicator._notificationBadgeBin.translation_x = 0;
+            icon._appwell._indicator._notificationBadgeBin.translation_y = 0;
+          }
           this._setD2dBadgeOpacity(icon._appwell, 255);
           icon.opacity = 0;
           icon._wasActive = false;
@@ -396,9 +434,8 @@ export class Animator {
       }
 
       icon._wasActive = true;
-      icon.visible = true;
+      icon.opacity = 0;
 
-      let pos = this._get_position(icon._bin);
       let jX = 0, jY = 0;
       let scale = 1.0;
       let opacity = 255;
@@ -429,16 +466,21 @@ export class Animator {
         if (dock_position === 'bottom') jY = -off; else if (dock_position === 'top') jY = off; else if (dock_position === 'left') jX = off; else if (dock_position === 'right') jX = -off;
       }
 
-      if (icon._bin.first_child) icon._bin.first_child.opacity = 0;
-      this._setD2dBadgeOpacity(icon._appwell, 0);
+      if (realIcon) {
+        realIcon.translation_x = jX;
+        realIcon.translation_y = jY;
+        if (icon._introJump > 0) {
+          realIcon.opacity = opacity;
+          realIcon.set_scale(scale, scale);
+        } else {
+          realIcon.opacity = 255;
+          realIcon.set_scale(1.0, 1.0);
+        }
+      }
 
-      icon.set_position(Math.round(pos[0] + jX), Math.round(pos[1] + jY));
-      icon.set_scale(scale, scale);
-      icon.opacity = opacity;
-
-      if (this._badgeManager) {
-        const badgeCount = this._getD2dBadgeCount(icon._appwell);
-        this._badgeManager.updateIcon(icon, iconSize, badgeCount, true);
+      if (icon._appwell?._indicator?._notificationBadgeBin) {
+        icon._appwell._indicator._notificationBadgeBin.translation_x = jX;
+        icon._appwell._indicator._notificationBadgeBin.translation_y = jY;
       }
     });
 
@@ -474,7 +516,17 @@ export class Animator {
     if (!this._iconsContainer) return;
 
     this._iconsContainer.get_children().forEach(icon => {
-      if (icon._bin?.first_child) icon._bin.first_child.opacity = 255;
+      const realIcon = icon._bin?.first_child ?? icon._icon;
+      if (realIcon) {
+        realIcon.translation_x = 0;
+        realIcon.translation_y = 0;
+        realIcon.opacity = 255;
+        realIcon.set_scale(1.0, 1.0);
+      }
+      if (icon._appwell?._indicator?._notificationBadgeBin) {
+        icon._appwell._indicator._notificationBadgeBin.translation_x = 0;
+        icon._appwell._indicator._notificationBadgeBin.translation_y = 0;
+      }
       this._setD2dBadgeOpacity(icon._appwell, 255);
       if (icon._badge) icon._badge.visible = false;
       icon.set_scale(1.0, 1.0);
@@ -487,8 +539,17 @@ export class Animator {
   _restoreIcons() {
     this._findIcons().forEach(c => {
       if (!c || !c._bin) return;
-      if (c._icon) c._icon.opacity = 255;
-      if (c._bin?.first_child) c._bin.first_child.opacity = 255;
+      const realIcon = c._bin?.first_child ?? c._icon;
+      if (realIcon) {
+        realIcon.translation_x = 0;
+        realIcon.translation_y = 0;
+        realIcon.opacity = 255;
+        realIcon.set_scale(1.0, 1.0);
+      }
+      if (c._appwell?._indicator?._notificationBadgeBin) {
+        c._appwell._indicator._notificationBadgeBin.translation_x = 0;
+        c._appwell._indicator._notificationBadgeBin.translation_y = 0;
+      }
       this._setD2dBadgeOpacity(c._appwell, 255);
       if (this.dashContainer && this.dash) {
         let sz = this.dash.iconSize * (this.extension.scale || 1.0);

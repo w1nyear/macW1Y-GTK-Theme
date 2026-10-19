@@ -816,6 +816,10 @@ export const DockAbstractAppIcon = GObject.registerClass({
     // Bounce on the axis perpendicular to the magnifier's, so the two can run
     // at once. EASE_OUT_BOUNCE gives the diminishing rebounds.
     animateLaunch() {
+        const cupertinoExt = Main.extensionManager?.lookup?.('cupertino-dock-lite@rinzler69-wastaken.github.com');
+        if (cupertinoExt?.stateObj?.animator)
+            return;
+
         const position = Utils.getPosition();
         const {scaleFactor} = St.ThemeContext.get_for_stage(global.stage);
         const travel = (this.icon?.iconSize ?? 48) * 0.55 * scaleFactor;
