@@ -34,14 +34,14 @@
 #dashtodockContainer.bottom #dash #dashtodockDashContainer,
 
 #dashtodockContainer.bottom.shrink #dash #dashtodockDashContainer {
-  padding: 0 14px !important;
+  padding: 0 12px !important;
 }
 
 #dashtodockContainer.bottom #dash .dash-item-container,
 
 #dashtodockContainer.bottom.shrink #dash .dash-item-container {
   /* Disable all margins defined upstream, we handle them here */
-  margin: 0 1px !important;
+  margin: 0 3px !important;
 }
 
 #dashtodockContainer.bottom #dash .dash-item-container>*,
@@ -73,9 +73,9 @@
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .show-apps,
 #dashtodockContainer.bottom #dash .dash-item-container .overview-tile,
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .overview-tile {
-  padding: 0px 1px !important;
-  padding-bottom: 9px !important;
-  padding-top: 9px !important;
+  padding: 0px 0px !important;
+  padding-bottom: 12px !important;
+  padding-top: 12px !important;
 }
 
 #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:ltr:first-child,
