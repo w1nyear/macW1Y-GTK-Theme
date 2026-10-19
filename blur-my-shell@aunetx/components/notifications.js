@@ -1138,12 +1138,13 @@ export const NotificationsController = class NotificationsController {
                 settings: ext?.stateObj?._settings || null,
                 logger: console,
                 owner: 'notification-banner',
+                excludeActors: [this._stackBox, Main.messageTray, Main.messageTray?._bannerBin].filter(Boolean),
             });
             const { tintVal, tintStrength } = this._getNotifThemeParams();
-            this._glass.setIsDock(true);
+            this._glass.setIsDock(false);
             this._glass.setMultiRegionMode(true);
             this._glass.setCornerRadius(24.0);
-            this._glass.setBlurRadius(3.0);
+            this._glass.setBlurRadius(8.0);
             this._glass.setTintStrength(tintStrength);
             this._glass.setTintColor(tintVal, tintVal, tintVal);
             this._glass.setBrightness(1.0);
@@ -1158,6 +1159,7 @@ export const NotificationsController = class NotificationsController {
             this._glass.hide();
 
             if (this._stackBox) {
+                this._glass.addExclusion(this._stackBox);
                 Main.layoutManager.uiGroup.insert_child_below(this._glass, this._stackBox);
             }
         } catch (e) {

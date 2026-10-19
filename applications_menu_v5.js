@@ -15,9 +15,9 @@ const DIALOG_HEIGHT = 530;
 const COLUMNS = 7;
 const COLUMN_WIDTH = 94;
 const ICON_SIZE = 52;
-const CORNER_RADIUS = 24.0;
-const TINT_STRENGTH = 0.0;
-const BLUR_RADIUS = 2.0;
+const CORNER_RADIUS = 26.0;
+const TINT_STRENGTH = 0.04;
+const BLUR_RADIUS = 8.0;
 
 const CATEGORIES = [
     {
@@ -212,9 +212,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             'background-color: transparent !important; ' +
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
-            'border-top: 1px solid rgba(255, 255, 255, 0.45) !important; ' +
-            'border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
+            'border: none !important; ' +
             'padding: 16px 2px 14px 2px; ' +
             'box-shadow: none !important;'
         );
@@ -225,6 +223,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
 
         this._initializingGlass = false;
+        this._initGlass().catch(() => {});
 
         // 3. Header Row: App Store 'A' icon, search field "| Програми", and "..." menu button
         this._headerRow = new St.BoxLayout({
@@ -394,7 +393,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             });
 
             const pillBg = isSelected ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.08)';
-            const pillBorder = isSelected ? 'border: 1px solid rgba(255, 255, 255, 0.25);' : 'border: 1px solid rgba(255, 255, 255, 0.12);';
+            const pillBorder = 'border: none !important;';
             const pillShadow = isSelected ? 'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);' : 'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20);';
             const pillColor = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.88)';
             btn.set_style(
@@ -433,13 +432,13 @@ export const MacApplicationsDialog = GObject.registerClass({
                 if (active) {
                     btn.set_style(
                         'background-color: rgba(255, 255, 255, 0.28); ' +
-                        'border: 1px solid rgba(255, 255, 255, 0.30); ' +
+                        'border: none !important; ' +
                         'box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); ' +
                         'color: #ffffff; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 500;'
                     );
                 } else {
                     const bg = hover ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.08)';
-                    const border = hover ? 'border: 1px solid rgba(255, 255, 255, 0.20);' : 'border: 1px solid rgba(255, 255, 255, 0.12);';
+                    const border = 'border: none !important;';
                     btn.set_style(
                         `background-color: ${bg}; ` +
                         `${border} ` +
@@ -468,8 +467,8 @@ export const MacApplicationsDialog = GObject.registerClass({
         } catch (_) {
             isDark = true;
         }
-        const tintVal = 0.0;
-        const tintStrength = 0.0; // 0% tint - pure glass without darkening or lightening
+        const tintVal = isDark ? 0.0 : 1.0;
+        const tintStrength = isDark ? 0.04 : 0.08;
         return { isDark, tintVal, tintStrength };
     }
 
@@ -487,9 +486,13 @@ export const MacApplicationsDialog = GObject.registerClass({
                 settings: ext?.stateObj?._settings || null,
                 logger: console,
                 owner: 'applications',
+                excludeActors: [this, this._box, this._backdrop],
             });
+            this._glass.addExclusion(this);
+            this._glass.addExclusion(this._box);
+            this._glass.addExclusion(this._backdrop);
             const { tintVal, tintStrength } = this._getThemeParams();
-            this._glass.setIsDock(true);
+            this._glass.setIsDock(false);
             this._glass.setCornerSmoothingEnabled(0.0);
             this._glass.setCornerRadius(CORNER_RADIUS);
             this._glass.setTintColor(tintVal, tintVal, tintVal);
@@ -579,11 +582,13 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._glass.set_size(mon.width, mon.height);
         this._glass.setResolution(mon.width, mon.height);
         const { tintVal, tintStrength } = this._getThemeParams();
+        this._glass.setIsDock(false);
         this._glass.setTintColor(tintVal, tintVal, tintVal);
         this._glass.setTintStrength(tintStrength);
+        this._glass.setBlurRadius(BLUR_RADIUS);
         this._glass.setCornerRadius(CORNER_RADIUS);
         this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
-        this._glass.set_clip(localBgX, localBgY, bgW, bgH);
+        this._glass.set_clip(localBgX - 4, localBgY - 4, bgW + 8, bgH + 8);
         this._glass.syncSources();
     }
 
@@ -1089,13 +1094,6 @@ export const MacApplicationsDialog = GObject.registerClass({
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 onComplete: () => {
                     this._syncGlass();
-                    if (this._glass) {
-                        this._glass._backdropLocked = true;
-                    }
-                    if (this._stageSignalId) {
-                        try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
-                        this._stageSignalId = 0;
-                    }
                 },
             });
 
@@ -1126,13 +1124,6 @@ export const MacApplicationsDialog = GObject.registerClass({
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 onComplete: () => {
                     this._syncGlass();
-                    if (this._glass) {
-                        this._glass._backdropLocked = true;
-                    }
-                    if (this._stageSignalId) {
-                        try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
-                        this._stageSignalId = 0;
-                    }
                 },
             });
         }

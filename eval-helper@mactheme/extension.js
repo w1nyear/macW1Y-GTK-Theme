@@ -373,12 +373,12 @@ export default class EvalHelper extends Extension {
                             logger: console,
                             owner: 'switcher-popup',
                         });
-                        glass.setIsDock(true);
+                        glass.setIsDock(false);
                         glass.setCornerSmoothingEnabled(0.0);
                         glass.setCornerRadius(24.0);
                         glass.setTintColor(0.0, 0.0, 0.0);
-                        glass.setTintStrength(0.0); // 0% tint - pure glass without darkening or lightening
-                        glass.setBlurRadius(3.0); // LQ-Visual: 3px blur
+                        glass.setTintStrength(0.04);
+                        glass.setBlurRadius(8.0);
                         glass.setPadding(0);
                         try {
                             glass._renderer.uniforms.set('shadow_intensity', 0.0);

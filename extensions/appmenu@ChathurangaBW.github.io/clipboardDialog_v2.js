@@ -422,9 +422,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._box.set_style(
             'background-color: transparent !important; background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
-            'border-top: 1px solid rgba(255, 255, 255, 0.45) !important; ' +
-            'border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
+            'border: none !important; ' +
             'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
         );
         this.add_child(this._box);
@@ -573,9 +571,13 @@ export const MacClipboardDialog = GObject.registerClass({
                 settings: ext?.stateObj?._settings || null,
                 logger: console,
                 owner: 'clipboard',
+                excludeActors: [this, this._box, this._backdrop],
             });
+            this._glass.addExclusion(this);
+            this._glass.addExclusion(this._box);
+            this._glass.addExclusion(this._backdrop);
             const { tintVal, tintStrength } = this._getThemeParams();
-            this._glass.setIsDock(true);
+            this._glass.setIsDock(false);
             this._glass.setCornerSmoothingEnabled(0.0);
             this._glass.setCornerRadius(CORNER_RADIUS);
             this._glass.setTintColor(tintVal, tintVal, tintVal);
@@ -583,7 +585,7 @@ export const MacClipboardDialog = GObject.registerClass({
             this._glass.setBrightness(1.0);
             this._glass.setSaturation(1.0);
             this._glass.setContrast(1.0);
-            this._glass.setBlurRadius(2.0);
+            this._glass.setBlurRadius(8.0);
             this._glass.setPadding(0);
             try {
                 this._glass._renderer.uniforms.set('shadow_intensity', 0.0);
@@ -610,9 +612,7 @@ export const MacClipboardDialog = GObject.registerClass({
             this._box.set_style(
                 'background-color: transparent !important; background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
-                'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
-                'border-top: 1px solid rgba(255, 255, 255, 0.40) !important; ' +
-                'border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important; ' +
+                'border: none !important; ' +
                 'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
             );
             this._syncGlass();
@@ -653,11 +653,13 @@ export const MacClipboardDialog = GObject.registerClass({
         this._glass.set_size(mon.width, mon.height);
         this._glass.setResolution(mon.width, mon.height);
         const { tintVal, tintStrength } = this._getThemeParams();
+        this._glass.setIsDock(false);
         this._glass.setTintColor(tintVal, tintVal, tintVal);
         this._glass.setTintStrength(tintStrength);
+        this._glass.setBlurRadius(8.0);
         this._glass.setCornerRadius(CORNER_RADIUS);
         this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
-        this._glass.set_clip(localBgX, localBgY, bgW, bgH);
+        this._glass.set_clip(localBgX - 4, localBgY - 4, bgW + 8, bgH + 8);
         this._glass.syncSources();
     }
 
@@ -698,9 +700,7 @@ export const MacClipboardDialog = GObject.registerClass({
             this._box.set_style(
                 'background-color: transparent !important; background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
-                'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
-                'border-top: 1px solid rgba(255, 255, 255, 0.45) !important; ' +
-                'border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
+                'border: none !important; ' +
                 'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
             );
             this._glass.show();
@@ -711,9 +711,7 @@ export const MacClipboardDialog = GObject.registerClass({
             this._box.set_style(
                 'background-color: transparent !important; background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
-                'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
-                'border-top: 1px solid rgba(255, 255, 255, 0.45) !important; ' +
-                'border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
+                'border: none !important; ' +
                 'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
             );
             this._initGlass();

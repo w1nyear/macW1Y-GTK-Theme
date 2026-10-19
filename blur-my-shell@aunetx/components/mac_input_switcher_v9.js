@@ -280,7 +280,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._capsuleBox = new St.Widget({
             style: 'background-color: transparent !important; ' +
                    'border-radius: 14px !important; ' +
-                   'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
+                   'border: none !important; ' +
                    'box-shadow: none !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
             width: W_capsule,
@@ -377,7 +377,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._osdBox = new St.Widget({
             style: 'background-color: transparent !important; ' +
                    'border-radius: 22px !important; ' +
-                   'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
+                   'border: none !important; ' +
                    'box-shadow: none !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
             width: this._osdW,
@@ -399,7 +399,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._selectionPill = new St.Widget({
             style: 'background-color: rgba(255, 255, 255, 0.15); ' +
                    'border-radius: 14px; ' +
-                   'border: 1px solid rgba(255, 255, 255, 0.20); ' +
+                   'border: none !important; ' +
                    'box-shadow: none !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
             width: pillW,
@@ -470,6 +470,8 @@ export const MacInputSourcePopup = GObject.registerClass({
 
         if (this._glass && this._targetBox) {
             try {
+                this._glass.addExclusion(this);
+                this._glass.addExclusion(this._targetBox);
                 Main.layoutManager.uiGroup.set_child_below_sibling(this._glass, this);
             } catch (_) {}
 
@@ -522,6 +524,10 @@ export const MacInputSourcePopup = GObject.registerClass({
                 this._glass.set_position(monitor.x, monitor.y);
                 this._glass.set_size(monitor.width, monitor.height);
                 this._glass.setResolution(monitor.width, monitor.height);
+                this._glass.setIsDock(false);
+                this._glass.setTintColor(0.0, 0.0, 0.0);
+                this._glass.setTintStrength(0.05);
+                this._glass.setBlurRadius(8.0);
                 this._glass.setCornerRadius(this._targetCornerRadius);
                 this._glass.setGlassGeometry(localX, localY, bgW, bgH);
 
@@ -785,11 +791,11 @@ export class MacInputSwitcher {
                 logger: console,
                 owner: 'input-switcher',
             });
-            this._glass.setIsDock(true);
+            this._glass.setIsDock(false);
             this._glass.setCornerSmoothingEnabled(0.0);
             this._glass.setTintColor(0.0, 0.0, 0.0);
-            this._glass.setTintStrength(0.05); // LQ-Visual: 5% tint
-            this._glass.setBlurRadius(3.0); // LQ-Visual: 3px blur
+            this._glass.setTintStrength(0.05);
+            this._glass.setBlurRadius(8.0);
             this._glass.setPadding(0);
             try {
                 this._glass._renderer.uniforms.set('shadow_intensity', 0.0);

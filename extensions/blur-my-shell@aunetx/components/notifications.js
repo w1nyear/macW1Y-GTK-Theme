@@ -1141,10 +1141,10 @@ export const NotificationsController = class NotificationsController {
                 excludeActors: [this._stackBox, Main.messageTray, Main.messageTray?._bannerBin].filter(Boolean),
             });
             const { tintVal, tintStrength } = this._getNotifThemeParams();
-            this._glass.setIsDock(true);
+            this._glass.setIsDock(false);
             this._glass.setMultiRegionMode(true);
             this._glass.setCornerRadius(24.0);
-            this._glass.setBlurRadius(3.0);
+            this._glass.setBlurRadius(8.0);
             this._glass.setTintStrength(tintStrength);
             this._glass.setTintColor(tintVal, tintVal, tintVal);
             this._glass.setBrightness(1.0);

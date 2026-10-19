@@ -5880,3 +5880,34 @@ echo "==> Встановлення успішно завершено!"
       * На сповіщеннях відсутні хроматичні відблиски та ореоли над іконкою та текстом.
       * У Spotlight при введенні тексту круглі кнопки зникають, рядок стає 700px, а меню результатів утворює єдине плавне скляне вікно з Liquid Glass.
 
+105. Активація автентичного Liquid Glass для Центру програм (Launchpad), перемикача мов вводу та діалогів буфера обміну, видалення старих рамок (border) зі скла:
+    - Запит користувача:
+      * "виправи те що центр програм та інші елементи не мають все ще скла нового. кожен прозорий на зараз елемент має мати скло."
+      * "видали мої border на склі. заміни скло повністю від проекта мого друга"
+    - Діагностика причин:
+      * Центр програм (applications_menu_v5.js / applications_menu.js): tintStrength було виставлено у 0.0 (0% відтінку), setIsDock(true) замість false, blur-radius = 2.0 замість 8.0, були відсутні виключення для UILayerSampler (excludeActors: [this, this._box, this._backdrop]), а також при завершенні анімації ease від'єднувався слухач stageSignalId, що перешкоджало подальшому оновленню геометрії скла.
+      * Перемикач мов вводу (mac_input_switcher_v11.js): плаваюча капсула каретки _capsuleBox та центральний OSD _osdBox разом з _selectionPill мали жорстко закодовані старі білі рамки 'border: 1px solid rgba(255, 255, 255, 0.20)', а BackdropGlass викликався з setIsDock(true), blurRadius 3.0 та без виключень.
+      * Діалог буфера обміну (clipboardDialog_v2.js / clipboardDialog.js): мав старі CSS-рамки border: 1px solid rgba(255, 255, 255, ...), setIsDock(true), низький blurRadius.
+      * В eval-helper@mactheme/extension.js та notifications.js/menubar_v28.js: glass для свитчера вікон та сповіщень мав setIsDock(true) та низький радіус розмиття.
+    - Реалізовані виправлення:
+      1) Центр програм (applications_menu_v5.js та applications_menu.js):
+         - Встановлено CORNER_RADIUS = 26.0, BLUR_RADIUS = 8.0, TINT_STRENGTH = 0.04 (для світлої теми 0.08).
+         - Встановлено setIsDock(false) для коректного обрахунку меж плаваючого вікна в шейдері glass.frag.
+         - Додано excludeActors: [this, this._box, this._backdrop] та addExclusion(), що усуває самозаломлення та артефакти іконок додатків.
+         - Забезпечено постійне з'єднання stageSignalId під час відкритого стану вікна для динамічного оновлення геометрії скла при скролі та зміні фільтрів.
+         - Попередньо завантажено BackdropGlass у конструкторі _init() для усунення затримки при першому відкритті.
+      2) Перемикач мови (mac_input_switcher_v11.js, v10, v9, v8):
+         - Повністю видалено всі старі рамки 'border: 1px solid rgba(255, 255, 255, 0.20)' з _capsuleBox, _osdBox та _selectionPill (встановлено 'border: none !important; box-shadow: none !important;').
+         - Увімкнено чисте скло Tahoe Liquid Glass: setIsDock(false), setBlurRadius(8.0), setTintStrength(0.05), додано виключення для спливаючих елементів.
+      3) Діалог буфера обміну (clipboardDialog_v2.js та clipboardDialog.js):
+         - Видалено всі багаторівневі білі рамки з _box, увімкнено чисте скло BackdropGlass з setIsDock(false), радіусом розмиття 8.0 та радіусом заокруглення 26px.
+      4) SwitcherPopup (Alt+Tab) та сповіщення (eval-helper, notifications.js, menubar_v28.js):
+         - Переведено на setIsDock(false), радіус блюру 8.0 та tintStrength 0.04-0.05.
+    - Синхронізація:
+      * Усі змінені файли дзеркально скопійовано до репозиторію macW1Y (MACTHEMEFILES) для версії 0.3.
+      * Зміни збережено в локальному git без push до релізу.
+    - Верифікація:
+      * Знято скріншот Центру програм apps_menu_verified_crop.png: плавне автентичне Liquid Glass з розмиттям 8px, радіусом 26px, відсутністю старих бордюрів та артефактів.
+      * Знято скріншот центрального перемикача мов input_osd_verified_crop.png: білі рамки повністю зникли, чисте скло Liquid Glass.
+      * Знято скріншот капсули біля курсору caret_popup_verified_crop.png: відсутня біла рамка, безшовне Liquid Glass.
+

@@ -5,6 +5,7 @@ import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Clutter from 'gi://Clutter';
+import Mtk from 'gi://Mtk';
 
 const EvalIface = `
 <node>
@@ -23,6 +24,7 @@ export default class EvalHelper extends Extension {
         globalThis.GLib = GLib;
         globalThis.Meta = Meta;
         globalThis.Main = Main;
+        globalThis.Mtk = Mtk;
         try {
             const nodeInfo = Gio.DBusNodeInfo.new_for_xml(EvalIface);
             this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(nodeInfo.interfaces[0], {
@@ -166,7 +168,14 @@ export default class EvalHelper extends Extension {
                                     this.offStageCount++;
                                     return { copy: this.lastCopy, missed: false };
                                 }
-                                const copy = this._copies.get(view) ?? null;
+                                let copy = this._copies.get(view) ?? null;
+
+                                // 1. Strict backdrop lock: If locked and we already have a backdrop, NEVER re-blit
+                                if (actor._backdropLocked && copy?.texture) {
+                                    this.reuseCount++;
+                                    return { copy, missed: false };
+                                }
+
                                 const layout = view.layout;
                                 const x0 = Math.max(stageRect[0], layout.x);
                                 const y0 = Math.max(stageRect[1], layout.y);
@@ -185,9 +194,13 @@ export default class EvalHelper extends Extension {
                                 const rect = [(fx0 - ox) / scale, (fy0 - oy) / scale, (fx1 - ox) / scale, (fy1 - oy) / scale];
 
                                 const inOverview = Boolean(Main?.overview?.visible || Main?.overview?._animationInProgress);
-                                if (copy && copy.inOverview !== undefined && copy.inOverview !== inOverview) {
+                                const overviewChanged = copy && copy.inOverview !== undefined && copy.inOverview !== inOverview;
+                                if (overviewChanged) {
                                     copy = null;
                                     this._copies.delete(view);
+                                    if (typeof this.forceRefresh === 'function') {
+                                        this.forceRefresh(500);
+                                    }
                                 }
 
                                 const nowUs = GLib.get_monotonic_time();
@@ -197,13 +210,43 @@ export default class EvalHelper extends Extension {
                                     Math.abs(copy.rect[2] - rect[2]) < 1.0 &&
                                     Math.abs(copy.rect[3] - rect[3]) < 1.0;
 
-                                const minIntervalUs = inOverview ? 16666 : 50000;
-                                if (sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < minIntervalUs)) {
+                                const isForced = nowUs < (this._forceUntilUs || 0);
+                                const mustCopy = !copy?.texture || !copy?.rect || overviewChanged;
+
+                                // 2. Throttle blits to ~60 FPS (16ms interval) when geometry is stable and not forced.
+                                // If less than 16ms has elapsed since the last blit, reuse existing copy to avoid excessive blits.
+                                if (!mustCopy && !isForced && sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < 16000)) {
                                     this.reuseCount++;
                                     return { copy, missed: false };
                                 }
 
+                                // 3. Redraw clip check: if clip doesn't touch our glass rect and we have a copy,
+                                // Mutter only redrew an unrelated area on the screen; reuse existing copy.
+                                const clip = paintContext.get_redraw_clip();
+                                const clipX = Math.floor(rect[0]);
+                                const clipY = Math.floor(rect[1]);
+                                const _Mtk = globalThis.Mtk || (typeof Mtk !== 'undefined' ? Mtk : imports.gi.Mtk);
+                                let touchesClip = true;
+                                if (clip && _Mtk) {
+                                    try {
+                                        const overlap = clip.contains_rectangle(new _Mtk.Rectangle({
+                                            x: clipX, y: clipY, width: Math.max(1, Math.ceil(rect[2]) - clipX), height: Math.max(1, Math.ceil(rect[3]) - clipY),
+                                        }));
+                                        touchesClip = (overlap !== _Mtk.RegionOverlap.OUT);
+                                    } catch (_) {
+                                        touchesClip = true;
+                                    }
+                                }
+
+                                if (!mustCopy && !isForced && copy?.texture && !touchesClip) {
+                                    this.reuseCount++;
+                                    return { copy, missed: false };
+                                }
+
+                                const savedForce = this._forceUntilUs;
+                                this._forceUntilUs = nowUs + 10000000;
                                 const res = origTake.call(this, actor, root, paintContext, stageRect);
+                                this._forceUntilUs = savedForce;
                                 if (res.copy) {
                                     res.copy.lastTimeUs = nowUs;
                                     res.copy.inOverview = inOverview;
@@ -212,6 +255,39 @@ export default class EvalHelper extends Extension {
                             };
                         }
                     }
+                }
+                // Connect window movement and overview signals to immediately refresh dock glass
+                const triggerAllDocks = (durationMs = 500) => {
+                    if (!global._lgGlass?.glassObjects) return;
+                    for (const g of global._lgGlass.glassObjects()) {
+                        if (g._owner === 'dock' && g.mapped && g.visible && g.width > 10) {
+                            g._copier?.clear();
+                            if (typeof g.forceRefresh === 'function') g.forceRefresh(durationMs);
+                            if (typeof g.syncSources === 'function') g.syncSources(true);
+                            g.queue_redraw();
+                        }
+                    }
+                };
+
+                if (!this._macDockSignalsConnected) {
+                    this._macDockSignalsConnected = true;
+                    this._dockSignals = [
+                        global.display.connect('restacked', () => triggerAllDocks(400)),
+                        global.display.connect('grab-op-begin', () => triggerAllDocks(1000)),
+                        global.display.connect('grab-op-end', () => triggerAllDocks(500)),
+                    ];
+                    if (global.window_manager) {
+                        this._dockSignals.push(
+                            global.window_manager.connect('size-change', () => triggerAllDocks(500)),
+                            global.window_manager.connect('switch-workspace', () => triggerAllDocks(600))
+                        );
+                    }
+                    this._dockSignals.push(
+                        Main.overview.connect('showing', () => triggerAllDocks(600)),
+                        Main.overview.connect('hiding', () => triggerAllDocks(600)),
+                        Main.overview.connect('shown', () => triggerAllDocks(400)),
+                        Main.overview.connect('hidden', () => triggerAllDocks(600))
+                    );
                 }
             } catch (_) {}
         };
@@ -297,12 +373,12 @@ export default class EvalHelper extends Extension {
                             logger: console,
                             owner: 'switcher-popup',
                         });
-                        glass.setIsDock(true);
+                        glass.setIsDock(false);
                         glass.setCornerSmoothingEnabled(0.0);
                         glass.setCornerRadius(24.0);
                         glass.setTintColor(0.0, 0.0, 0.0);
-                        glass.setTintStrength(0.05); // LQ-Visual: 5% tint
-                        glass.setBlurRadius(3.0); // LQ-Visual: 3px blur
+                        glass.setTintStrength(0.04);
+                        glass.setBlurRadius(8.0);
                         glass.setPadding(0);
                         try {
                             glass._renderer.uniforms.set('shadow_intensity', 0.0);
@@ -403,13 +479,14 @@ export default class EvalHelper extends Extension {
         // Ensure Notification Center and Notification Banners use LQ-Visual glass
         const patchNotificationLQVisual = async () => {
             try {
-                const notifMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v2.js');
-                const menubarMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v24.js');
+                const notifMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v3.js');
+                const menubarMod = await import('file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v27.js');
 
-                // 1. Update global card builder
+                // 1. Update global card builder and group class
                 globalThis._macBuildNotificationCard = notifMod.buildNotificationCard;
+                globalThis._MacNotificationGroup = notifMod.MacNotificationGroup;
 
-                // 2. Patch active MenuBarController prototype and instance
+                // 2. Patch active MenuBarController prototype and instance if needed
                 const mbProto = menubarMod.MenuBarController.prototype;
                 const nc = globalThis._macNotificationCenter;
                 if (nc) {
@@ -444,12 +521,9 @@ export default class EvalHelper extends Extension {
                     }
                 }
 
-                // 3. Hot-swap NotificationsController for floating banners if needed
+                // 3. Hot-swap NotificationsController for floating banners ONLY if missing
                 const extBms = Main.extensionManager.lookup('blur-my-shell@aunetx');
-                if (extBms?.stateObj && (!globalThis._macNotificationsController || !globalThis._macNotificationsController._glass)) {
-                    if (globalThis._macNotificationsController) {
-                        try { globalThis._macNotificationsController.disable(); } catch (_) {}
-                    }
+                if (extBms?.stateObj && !extBms.stateObj._notifications_controller) {
                     const newNotifCtrl = new notifMod.NotificationsController(
                         extBms.stateObj._connections?.[0] || extBms.stateObj._connection,
                         extBms.stateObj._settings,
@@ -473,25 +547,86 @@ export default class EvalHelper extends Extension {
                 const controls = Main.overview?._overview?.controls;
                 if (!controls) return;
 
-                // 1. Guard layout manager against NaN or null coordinates (prevents Wayland crash)
+                // 1. Stable, enlarged and lowered Workspaces Box (independent of panel expand/collapse)
                 const lm = controls.layout_manager;
-                if (lm && !lm._macNanGuarded) {
-                    lm._macNanGuarded = true;
-                    const origCompute = lm._computeWorkspacesBoxForState;
+                if (lm && !lm._macOverviewSpacingPatchedV2) {
+                    lm._macOverviewSpacingPatchedV2 = true;
+                    const origCompute = lm._origComputeWorkspacesBox || lm._computeWorkspacesBoxForState;
+                    lm._origComputeWorkspacesBox = origCompute;
                     lm._computeWorkspacesBoxForState = function(state, box, ...rest) {
-                        let res = origCompute.call(this, state, box, ...rest);
-                        if (!res) return res;
-                        const workArea = this._workAreaBox || box;
-                        const [w, h] = workArea.get_size();
-                        if (!Number.isFinite(res.x1)) res.x1 = workArea.x1 || 0;
-                        if (!Number.isFinite(res.y1)) res.y1 = workArea.y1 || 0;
-                        if (!Number.isFinite(res.x2)) res.x2 = workArea.x2 || (res.x1 + w);
-                        if (!Number.isFinite(res.y2)) res.y2 = workArea.y2 || (res.y1 + h);
-                        return res;
+                        if (state === 0 /* ControlsState.HIDDEN (Desktop) */) {
+                            const mon = Main.layoutManager.primaryMonitor;
+                            const res = new Clutter.ActorBox();
+                            res.set_origin(0, 0);
+                            res.set_size(mon.width, mon.height);
+                            return res;
+                        }
+                        if (state === 1 /* OverviewControls.ControlsState.WINDOW_PICKER */) {
+                            const baseBox = box || this._workAreaBox;
+                            const [w, h] = baseBox.get_size();
+                            // Perfectly symmetric vertical framing (96px top buffer for Spaces Bar, 96px bottom buffer for Dock on 1080p)
+                            // Workspaces are centered, enlarged to ~900px height, and never jump when menubar expands/collapses!
+                            const vBuffer = Math.max(88, Math.round(h * 0.0888));
+                            const res = baseBox.copy();
+                            res.x1 = baseBox.x1 || 0;
+                            res.y1 = (baseBox.y1 || 0) + vBuffer;
+                            res.x2 = res.x1 + w;
+                            res.y2 = Math.max(res.y1 + 100, (baseBox.y1 || 0) + h - vBuffer);
+                            return res;
+                        }
+                        return origCompute.call(this, state, box, ...rest);
                     };
                 }
 
-                // 2. Hide and keep AppDisplay hidden
+                // 2. Full-monitor workspace layout and background (eliminates gaps under menubar and dock)
+                (async () => {
+                    try {
+                        const { WorkspaceBackground, WorkspaceLayout } = await import('resource:///org/gnome/shell/ui/workspace.js');
+                        if (WorkspaceLayout && !WorkspaceLayout.prototype._macWorkareaPatched) {
+                            WorkspaceLayout.prototype._macWorkareaPatched = true;
+                            WorkspaceLayout.prototype._origGetAdjustedWorkarea = WorkspaceLayout.prototype._getAdjustedWorkarea;
+                            WorkspaceLayout.prototype._getAdjustedWorkarea = function(container) {
+                                const mon = Main.layoutManager.monitors[this._monitorIndex] || Main.layoutManager.primaryMonitor;
+                                return new Mtk.Rectangle({
+                                    x: 0,
+                                    y: 0,
+                                    width: mon.width,
+                                    height: mon.height,
+                                });
+                            };
+                        }
+                        if (WorkspaceBackground && !WorkspaceBackground.prototype._macClipPatched) {
+                            WorkspaceBackground.prototype._macClipPatched = true;
+                            WorkspaceBackground.prototype._origUpdateRoundedClipBounds = WorkspaceBackground.prototype._updateRoundedClipBounds;
+                            WorkspaceBackground.prototype._updateRoundedClipBounds = function() {
+                                try {
+                                    const monitor = Main.layoutManager.monitors[this._monitorIndex] || Main.layoutManager.primaryMonitor;
+                                    if (monitor) {
+                                        const rect = new Graphene.Rect();
+                                        rect.origin.x = 0;
+                                        rect.origin.y = 0;
+                                        rect.size.width = monitor.width;
+                                        rect.size.height = monitor.height;
+                                        this._bgManager.backgroundActor.content.set_rounded_clip_bounds(rect);
+                                        return;
+                                    }
+                                } catch (_) {}
+                                this._origUpdateRoundedClipBounds();
+                            };
+                        }
+                    } catch (e) {
+                        console.error('[EvalHelper] Error patching WorkspaceLayout/Background:', e);
+                    }
+                })();
+
+                // 3. Unhide window_group on overview hiding so wallpaper is continuously visible behind overview exit
+                if (!Main.overview._macWgHidingConn) {
+                    Main.overview._macWgHidingConn = Main.overview.connect('hiding', () => {
+                        global.window_group.show();
+                    });
+                }
+
+                // 4. Hide and keep AppDisplay hidden
                 controls._updateAppDisplayVisibility = function() {
                     if (this._appDisplay) {
                         this._appDisplay.visible = false;
@@ -503,14 +638,14 @@ export default class EvalHelper extends Extension {
                     controls._appDisplay.opacity = 0;
                 }
 
-                // 3. Override _shiftState: Down closes overview, Up does NOT go to APP_GRID
+                // 5. Override _shiftState: Down closes overview, Up does NOT go to APP_GRID
                 controls._shiftState = function(direction) {
                     if (direction === Meta.MotionDirection.DOWN) {
                         Main.overview.hide();
                     }
                 };
 
-                // 4. Override showApps and _toggleAppsPage to toggle our Mac Applications Menu
+                // 6. Override showApps and _toggleAppsPage to toggle our Mac Applications Menu
                 controls._toggleAppsPage = function() {
                     if (typeof globalThis.toggleMacApplications === 'function') {
                         globalThis.toggleMacApplications();
@@ -522,7 +657,7 @@ export default class EvalHelper extends Extension {
                     }
                 };
 
-                // 5. Hide search entry and searchEntryBin completely (no "Введіть текст для пошуку")
+                // 7. Hide search entry and searchEntryBin completely (no "Введіть текст для пошуку")
                 if (controls._searchEntryBin) {
                     controls._searchEntryBin.visible = false;
                     controls._searchEntryBin.opacity = 0;
@@ -538,7 +673,7 @@ export default class EvalHelper extends Extension {
                     controls._searchEntry.get_preferred_width = () => [0, 0];
                 }
 
-                // 6. Disable search controller triggering in overview
+                // 8. Disable search controller triggering in overview
                 if (controls._searchController) {
                     controls._searchController._shouldTriggerSearch = () => false;
                     if (controls._searchController._entry) {
@@ -566,12 +701,12 @@ export default class EvalHelper extends Extension {
                 proto.set_appfolder_open = function(isOpen) {
                     this._appfolder_is_open = !!isOpen;
                     const overviewRadius = (this.settings.overview?.SIGMA ?? 30.0);
-                    const overviewBrightness = (this.settings.overview?.BRIGHTNESS ?? 0.60);
+                    const overviewBrightness = (this.settings.overview?.BRIGHTNESS ?? 1.0);
                     const folderSigma = (this.settings.appfolder?.SIGMA ?? 30.0);
                     const targetRadius = isOpen
                         ? Math.round(overviewRadius + folderSigma * 1.5)
                         : overviewRadius;
-                    const targetBrightness = isOpen ? 0.48 : overviewBrightness;
+                    const targetBrightness = isOpen ? 0.90 : overviewBrightness;
 
                     const ov = global.blur_my_shell?._overview_blur;
                     if (ov && ov.overview_background_group) {
@@ -603,9 +738,7 @@ export default class EvalHelper extends Extension {
                     if (Main.panel) {
                         Main.panel.set_style(
                             `background-color: transparent !important; ` +
-                            `background-gradient-direction: vertical !important; ` +
-                            `background-gradient-start: rgba(0, 0, 0, 0.12) !important; ` +
-                            `background-gradient-end: transparent !important; ` +
+                            `background: transparent !important; ` +
                             `box-shadow: none !important; ` +
                             `border-bottom: none !important; ` +
                             `transition-duration: 220ms !important;`
@@ -618,7 +751,6 @@ export default class EvalHelper extends Extension {
                         const duration = durationMs;
 
                         // 1. Panel Blur Actors: ALWAYS HIDDEN on desktop and overview!
-                        // User explicitly requested: "меню не при огляді на робочому столі має якийсь блюр на ввесь елемент. видалити."
                         this.actors_list?.forEach(actors => {
                             const bg = actors.widgets?.background;
                             if (!bg) return;
@@ -627,51 +759,16 @@ export default class EvalHelper extends Extension {
                             if (bg.visible) bg.hide();
                         });
 
-                        // 2. Main.panel gradient:
-                        // In overview: NOT dark, seamlessly blends with blurred wallpaper, no box-shadow
-                        // On desktop: clean gradient tint, no blur
+                        // 2. Main.panel: Clean transparent bar without dark gradient overlay
                         if (Main.panel) {
                             Main.panel.opacity = 255;
-                            if (isOverview) {
-                                Main.panel.set_style(
-                                    `background-color: transparent !important; ` +
-                                    `background-gradient-direction: vertical !important; ` +
-                                    `background-gradient-start: rgba(0, 0, 0, 0.12) !important; ` +
-                                    `background-gradient-end: transparent !important; ` +
-                                    `box-shadow: none !important; ` +
-                                    `border-bottom: none !important; ` +
-                                    `transition-duration: ${duration}ms !important;`
-                                );
-                            } else {
-                                let baseDesktopTint = 0.35;
-                                if (this._baseDesktopTint !== undefined) {
-                                    baseDesktopTint = this._baseDesktopTint;
-                                } else {
-                                    try {
-                                        const configPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
-                                        if (GLib.file_test(configPath, GLib.FileTest.EXISTS)) {
-                                            const [ok, content] = GLib.file_get_contents(configPath);
-                                            if (ok) {
-                                                const data = JSON.parse(new TextDecoder().decode(content));
-                                                if (typeof data.panel_tint === 'number') {
-                                                    baseDesktopTint = Math.min(Math.max(data.panel_tint * 0.6, 0.25), 0.50);
-                                                }
-                                            }
-                                        }
-                                    } catch (_) {}
-                                    this._baseDesktopTint = baseDesktopTint;
-                                }
-
-                                Main.panel.set_style(
-                                    `background-color: transparent !important; ` +
-                                    `background-gradient-direction: vertical !important; ` +
-                                    `background-gradient-start: rgba(0, 0, 0, ${baseDesktopTint.toFixed(3)}) !important; ` +
-                                    `background-gradient-end: rgba(0, 0, 0, 0.0) !important; ` +
-                                    `box-shadow: none !important; ` +
-                                    `border-bottom: none !important; ` +
-                                    `transition-duration: ${duration}ms !important;`
-                                );
-                            }
+                            Main.panel.set_style(
+                                `background-color: transparent !important; ` +
+                                `background: transparent !important; ` +
+                                `box-shadow: none !important; ` +
+                                `border-bottom: none !important; ` +
+                                `transition-duration: ${duration}ms !important;`
+                            );
                         }
                     } catch (e) {
                         console.error(`[PanelOverview] error: ${e}`);
@@ -753,17 +850,29 @@ export default class EvalHelper extends Extension {
         });
 
         // macOS Startup Transition: Smooth opacity fade-in, rock-solid wallpaper (no zoom/scale)
+        if (Main.layoutManager?.panelBox) {
+            Main.layoutManager.panelBox.opacity = 255;
+            Main.layoutManager.panelBox.visible = true;
+        }
+
+        Main.overview.connectObject('hiding', () => {
+            if (Main.layoutManager?.panelBox && Main.layoutManager.panelBox.opacity !== 255) {
+                Main.layoutManager.panelBox.opacity = 255;
+            }
+        }, this);
+
         if (Main.layoutManager) {
             this._origStartupAnimationSession = Main.layoutManager._startupAnimationSession;
             Main.layoutManager._startupAnimationSession = async function() {
+                this.panelBox.ease({
+                    opacity: 255,
+                    duration: 700,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+
                 if (this._startInOverview) {
                     await Main.overview.runStartupAnimation();
                 } else {
-                    this.panelBox.ease({
-                        opacity: 255,
-                        duration: 700,
-                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                    });
 
                     for (const child of this.uiGroup.get_children()) {
                         if (child !== this._backgroundGroup && child !== this._systemBackground && child !== this._coverPane) {
@@ -1047,6 +1156,8 @@ export default class EvalHelper extends Extension {
             this._mapId = null;
         }
 
+        try { Main.overview.disconnectObject(this); } catch (_) {}
+
         if (Main.layoutManager && this._origStartupAnimationSession) {
             Main.layoutManager._startupAnimationSession = this._origStartupAnimationSession;
             this._origStartupAnimationSession = null;
@@ -1093,6 +1204,16 @@ export default class EvalHelper extends Extension {
                 });
             } catch (_) {}
             this._origUpdateFavoriteItem = null;
+        }
+
+        if (this._dockSignals) {
+            for (const id of this._dockSignals) {
+                try { global.display.disconnect(id); } catch (_) {}
+                try { global.window_manager.disconnect(id); } catch (_) {}
+                try { Main.overview.disconnect(id); } catch (_) {}
+            }
+            this._dockSignals = null;
+            this._macDockSignalsConnected = false;
         }
     }
 }

@@ -3960,10 +3960,10 @@ export const MenuBarController = class MenuBarController {
                 owner: 'notification-center',
             });
             const { tintVal, tintStrength } = this._getNotifThemeParams();
-            this._notifGlass.setIsDock(true);
+            this._notifGlass.setIsDock(false);
             this._notifGlass.setMultiRegionMode(true);
             this._notifGlass.setCornerRadius(24.0);
-            this._notifGlass.setBlurRadius(3.0);
+            this._notifGlass.setBlurRadius(8.0);
             this._notifGlass.setTintStrength(tintStrength);
             this._notifGlass.setTintColor(tintVal, tintVal, tintVal);
             this._notifGlass.setBrightness(1.0);
