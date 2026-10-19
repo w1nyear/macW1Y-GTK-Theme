@@ -585,6 +585,13 @@ export default class GestureImpl {
                     return ov._macOrigShow(state);
                 };
             }
+
+            // Disable window-close button in overview to match authentic macOS Mission Control
+            import('resource:///org/gnome/shell/ui/windowPreview.js').then(wp => {
+                if (wp?.WindowPreview?.prototype) {
+                    wp.WindowPreview.prototype._windowCanClose = () => false;
+                }
+            }).catch(() => {});
         } catch (_) {}
     }
 }

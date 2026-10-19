@@ -6371,3 +6371,27 @@ echo "==> Встановлення успішно завершено!"
          - У Telegram Desktop кнопки керування вікном примусово перенесені з правого кута на лівий кут у відповідності до системного макету (`close,minimize,maximize:`).
     - Верифікація:
       * Підтверджено знімками `nautilus_shifted_check.png`, `telegram_top_left.png` та `telegram_top_right.png`: у Nautilus смуги стали непрозорими, кнопки підсунуті вліво з однаковими відступами зліва та зверху, у Telegram кнопки розташовані зліва, всі GTK/Snap налаштування синхронізовані.
+123. Усунення візуального бага плаваючої червоної кнопки закриття (x) у режимі огляду (Overview / Mission Control):
+    - Контекст та вимоги користувача:
+      * «виправи візуал баг у огляді» (на наданому фото користувач червоним маркером виділив плаваючу круглу червону кнопку закриття вікна (x), яка перекривала верхній лівий кут мініатюр вікон у режимі огляду GNOME Shell).
+      * У зв'язку з розташуванням кнопок керування зліва (`close,minimize,maximize:`) GNOME Shell стандартно розміщує кнопку `.window-close` у кутку мініатюри (`factor: 0, pivot: (0.5, 0.5)`), що створювало візуальний шум, конфліктувало з власними світлофорними кнопками вікна та призводило до накладання кнопок при перекритті вікон.
+      * В автентичному macOS Mission Control на мініатюрах вікон немає виступаючих кнопок закриття.
+    - Виконані технічні рішення та виправлення:
+      1) Програмне вимкнення показу кнопки закриття у GNOME Shell Overview:
+         - У розширення тачпад-жестів `gestureImpl.js` (`_setupOverviewAppGridRestriction()`) інтегровано безпечний хук прототипу `WindowPreview`:
+           ```javascript
+           import('resource:///org/gnome/shell/ui/windowPreview.js').then(wp => {
+               if (wp?.WindowPreview?.prototype) {
+                   wp.WindowPreview.prototype._windowCanClose = () => false;
+               }
+           }).catch(() => {});
+           ```
+         - Завдяки цьому метод `WindowPreview.showOverlay()` не додає кнопку `_closeButton` до списку відтворення та анімації.
+      2) Багаторівневе CSS-приховування кнопки `.window-close` у темах оболонки:
+         - У темах `macW1Y-Dark`, `macW1Y-Dark-solid`, а також глобальних темах відокремлено стиль `.screenshot-ui-close-button` (збережено червону кнопку 30px для інтерфейсу скріншотів GNOME).
+         - Для класу `.window-close` та його дочірніх `StIcon` задано нульові розміри, повну прозорість та відсутність фону/рамок (`opacity: 0 !important; width: 0px !important; height: 0px !important; min-width: 0px !important; min-height: 0px !important; padding: 0px !important; margin: 0px !important; border: none !important; background-color: transparent !important; background-image: none !important; box-shadow: none !important; color: transparent !important;`).
+         - Застосовано зміни наживо через перемикання теми оболонки без необхідності перезапуску сесії.
+    - Верифікація:
+      * Знято контрольні знімки режиму огляду `overview_live.png`, `overview_multi_test.png` та фінальний `overview_verified_clean.png`.
+      * Мініатюри вікон у режимі огляду відображаються з ідеально чистими заокругленими кутами без будь-яких зайвих плаваючих елементів, що на 100% відповідає автентичному вигляду macOS Mission Control.
+

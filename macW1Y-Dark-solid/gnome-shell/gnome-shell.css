@@ -5219,7 +5219,7 @@ StWidget.focused .app-grid-running-dot {
   padding: 4px 8px;
 }
 
-.window-close, .screenshot-ui-close-button {
+.screenshot-ui-close-button {
   background-color: #ed5f5d;
   color: white;
   border-radius: 9999px;
@@ -5231,19 +5231,40 @@ StWidget.focused .app-grid-running-dot {
   background-image: url("assets/window-close-symbolic.svg");
 }
 
-.window-close StIcon, .screenshot-ui-close-button StIcon {
+.screenshot-ui-close-button StIcon {
   color: white;
   icon-size: 1px;
 }
 
-.window-close:hover, .screenshot-ui-close-button:hover {
+.screenshot-ui-close-button:hover {
   color: white;
   background-color: #f07a79;
 }
 
-.window-close:active, .screenshot-ui-close-button:active {
+.screenshot-ui-close-button:active {
   color: white;
   background-color: #ea4441;
+}
+
+/* Hide overview window close button to match authentic macOS Mission Control */
+.window-close {
+  opacity: 0 !important;
+  width: 0px !important;
+  height: 0px !important;
+  min-width: 0px !important;
+  min-height: 0px !important;
+  padding: 0px !important;
+  margin: 0px !important;
+  border: none !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: transparent !important;
+}
+
+.window-close StIcon {
+  icon-size: 0px !important;
+  color: transparent !important;
 }
 
 .workspace-background {
