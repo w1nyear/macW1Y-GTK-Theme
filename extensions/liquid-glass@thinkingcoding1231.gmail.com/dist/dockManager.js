@@ -254,7 +254,7 @@ export class DashManager {
             const [, h] = this.targetActor.get_size();
             let radius = configured;
             if (h > 0)
-                radius = Math.min(configured, Math.max(6, h * 0.28));
+                radius = Math.min(configured, Math.max(6, h * 0.33));
             this.effect.setCornerRadius(radius);
         } catch (e) {
             // effect gone

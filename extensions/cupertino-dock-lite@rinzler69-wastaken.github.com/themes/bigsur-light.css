@@ -15,17 +15,17 @@
   margin-bottom: 7px !important;
   overflow: visible !important;
   padding: 0 !important;
-  border-radius: 22px !important;
+  border-radius: 26px !important;
   spacing: 4px !important;
-  background-color: rgba(224, 224, 224, 0.78) !important;
-  border: 1px solid rgba(40, 40, 40, 0.4);
-  box-shadow: inset 0 0 0 2px rgba(40, 40, 40, 0.1);
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 #dashtodockContainer.bottom #dash .dash-separator,
 
 #dashtodockContainer.bottom.shrink #dash .dash-separator {
-  background-color: rgba(0, 0, 0, 0.10) !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
   width: 2px !important;
   height: 2px !important;
   margin-bottom: 7.5px !important;
@@ -34,8 +34,7 @@
 #dashtodockContainer.bottom #dash #dashtodockDashContainer,
 
 #dashtodockContainer.bottom.shrink #dash #dashtodockDashContainer {
-  padding: 3px 2px !important;
-  /* top/bottom 8px, left/right 6px */
+  padding: 0 22px !important;
 }
 
 #dashtodockContainer.bottom #dash .dash-item-container,
@@ -74,9 +73,9 @@
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .show-apps,
 #dashtodockContainer.bottom #dash .dash-item-container .overview-tile,
 #dashtodockContainer.bottom.shrink #dash .dash-item-container .overview-tile {
-  padding: 1px 1px !important;
-  padding-bottom: 12px !important;
-  padding-top: 3px !important;
+  padding: 2px 2px !important;
+  padding-bottom: 16px !important;
+  padding-top: 14px !important;
 }
 
 #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:ltr:first-child,

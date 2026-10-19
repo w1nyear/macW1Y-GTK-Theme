@@ -27,7 +27,7 @@
     height: 0;
     margin-bottom: 4px; }
   #dashtodockContainer.bottom #dash #dashtodockDashContainer {
-    padding: 0 16px;
+    padding: 0 22px;
     padding-bottom: 0;
     padding-top: 0; }
   #dashtodockContainer.bottom #dash .dash-item-container {
@@ -43,8 +43,8 @@
     #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
     #dashtodockContainer.bottom #dash .dash-item-container .overview-tile {
       padding: 2px 2px;
-      padding-bottom: 14px;
-      padding-top: 10px; }
+      padding-bottom: 16px;
+      padding-top: 14px; }
       #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:ltr:first-child, #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:rtl:last-child,
       #dashtodockContainer.bottom #dash .dash-item-container .show-apps:ltr:first-child,
       #dashtodockContainer.bottom #dash .dash-item-container .show-apps:rtl:last-child,
@@ -1485,16 +1485,16 @@
    .dash-background's own class list: Blur my Shell matches that class with
    an exact string comparison and silently bails if anything is added. */
 #dashtodockContainer.dash2dock-motion-glass #dash .dash-background {
-    background-color: rgba(255, 255, 255, 0.10);
+    background-color: transparent !important;
     border-radius: 26px;
-    box-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
+    box-shadow: none !important;
 }
 
 /* Optional rim (glass-outline setting, default off). One uniform colour:
    St paints rounded borders in a single colour, so a brighter border-top
    would tint the whole rim. */
 #dashtodockContainer.dash2dock-motion-glass-outline #dash .dash-background {
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: none !important;
 }
 
 /* Float the slab off the screen edge so the 26px corner rounding (and the
