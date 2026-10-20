@@ -1,3 +1,5 @@
+@import url("gtk-dark.css");
+
 /* Kiwi (is not Apple) - managed imports: begin */
 /* Kiwi (is not Apple) - managed imports: end */
 /* --- MAC-STYLING-START --- */
@@ -16,23 +18,23 @@ window.desktopmenu decoration,
 window.popup.background.csd > menu,
 .background.csd > menu,
 .background.popup > menu {
-  background-color: transparent !important;
-  background: transparent !important;
-  background-image: none !important;
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  border-radius: 20px !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: none;
   padding: 6px 4px;
 }
 
 window.desktopmenu decoration,
 .popup decoration,
 .csd.popup decoration {
-  background-color: transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border-radius: 20px !important;
+  background-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 20px;
 }
 
 menu menuitem,
@@ -138,13 +140,13 @@ popover.menu contents,
 popover.context-menu > contents,
 popover.background > contents,
 popover > contents {
-  border-radius: 20px !important;
-  background-color: transparent !important;
-  background: transparent !important;
-  background-image: none !important;
+  border-radius: 20px;
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: none;
   padding: 6px 4px;
 }
 
