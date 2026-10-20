@@ -14,7 +14,7 @@ const RECENT_ITEMS_FILE = GLib.build_filenamev([GLib.get_user_data_dir(), 'recen
 const CLIPBOARD_CACHE_FILE = GLib.build_filenamev([GLib.get_home_dir(), '.cache', 'mac-clipboard', 'history.json']);
 const ICONS_DIR = '/home/vitaliy/macW1Y/icons';
 
-const SEARCH_DEBOUNCE_MS = 50;
+const SEARCH_DEBOUNCE_MS = 180;
 const DIALOG_WIDTH = 700;
 const PILL_HEIGHT = 54;
 const COLLAPSED_PILL_WIDTH = 480;
@@ -261,6 +261,19 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._glass = null;
         this._initializingGlass = false;
         this._stageSignalId = 0;
+        this._cachedRecentFiles = null;
+        this._cachedRecentFilesTime = 0;
+
+        try {
+            this._systemModalSignalId = Main.layoutManager.connect('system-modal-opened', () => {
+                if (this._isOpen) this.close(true);
+            });
+            if (Main.screenshotUI) {
+                this._screenshotSignalId = Main.screenshotUI.connect('open-state-changed', (_ui, open) => {
+                    if (open && this._isOpen) this.close(true);
+                });
+            }
+        } catch (_) {}
 
         // 3. Top Row Container: Contains Search Pill + 3 Circular Action Buttons
         this._topRow = new St.BoxLayout({
@@ -919,10 +932,6 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const CLIP_PAD = 40;
                 this._glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
             }
-
-            if (typeof this._glass.syncSources === 'function') {
-                this._glass.syncSources();
-            }
         } catch (_) {}
     }
 
@@ -1108,26 +1117,15 @@ export const MacSpotlightDialog = GObject.registerClass({
             Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
         }
 
-        if (!this._stageSignalId) {
-            this._stageSignalId = global.stage.connect('before-update', () => {
-                try {
-                    this._syncGlass();
-                } catch (e) {
-                    if (this._stageSignalId) {
-                        try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
-                        this._stageSignalId = 0;
-                    }
-                }
-            });
-        }
-
         try {
-            if (global.stage.grab) {
-                this._modalGrab = global.stage.grab(this);
-            } else {
-                Main.pushModal(this);
-            }
-        } catch (_) {}
+            this._modalGrab = Main.pushModal(this, { actionMode: Shell.ActionMode.ALL });
+        } catch (_) {
+            try {
+                if (global.stage.grab) {
+                    this._modalGrab = global.stage.grab(this);
+                }
+            } catch (_) {}
+        }
 
         this._entry.grab_key_focus();
 
@@ -1153,7 +1151,9 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
 
         if (this._modalGrab) {
-            try { this._modalGrab.dismiss(); } catch (_) {}
+            try { Main.popModal(this._modalGrab); } catch (_) {
+                try { this._modalGrab.dismiss?.(); } catch (_) {}
+            }
             this._modalGrab = null;
         } else {
             try { Main.popModal(this); } catch (_) {}
@@ -1624,17 +1624,23 @@ export const MacSpotlightDialog = GObject.registerClass({
     // FILES VIEW (Image 2 Authentic Implementation)
     // -------------------------------------------------------------------------
     _getAllRecentFiles() {
+        const now = Date.now();
+        if (this._cachedRecentFiles && this._cachedRecentFilesTime && (now - this._cachedRecentFilesTime < 15000)) {
+            return this._cachedRecentFiles;
+        }
+
         const files = [];
         const seen = new Set();
 
-        // 1. Read recently-used.xbel
+        // 1. Read recently-used.xbel (bounded to most recent 50 valid items)
         try {
             if (GLib.file_test(RECENT_ITEMS_FILE, GLib.FileTest.EXISTS)) {
                 const [ok, bytes] = GLib.file_get_contents(RECENT_ITEMS_FILE);
                 if (ok) {
                     const xml = new TextDecoder('utf-8').decode(bytes);
                     const matches = [...xml.matchAll(/<bookmark href="([^"]+)"[\s\S]*?(?:<title>([^<]*)<\/title>)?[\s\S]*?<\/bookmark>/g)];
-                    for (let i = matches.length - 1; i >= 0; i--) {
+                    let count = 0;
+                    for (let i = matches.length - 1; i >= 0 && count < 50; i--) {
                         const m = matches[i];
                         const uri = m[1];
                         if (!uri || !uri.startsWith('file://')) continue;
@@ -1642,6 +1648,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                         if (seen.has(path)) continue;
                         if (!GLib.file_test(path, GLib.FileTest.EXISTS)) continue;
                         seen.add(path);
+                        count++;
 
                         let title = m[2];
                         if (!title) {
@@ -1661,7 +1668,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             }
         } catch (_) {}
 
-        // 2. Complement with standard directories
+        // 2. Complement with standard directories (bounded to 15 items per dir)
         const dirs = [
             GLib.build_filenamev([GLib.get_home_dir(), 'Завантаження']),
             GLib.build_filenamev([GLib.get_home_dir(), 'Зображення', 'Знімки екрана']),
@@ -1674,13 +1681,15 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const dir = Gio.File.new_for_path(d);
                 const enumerator = dir.enumerate_children('standard::name,standard::type', Gio.FileQueryInfoFlags.NONE, null);
                 let info;
-                while ((info = enumerator.next_file(null)) !== null) {
+                let dirCount = 0;
+                while ((info = enumerator.next_file(null)) !== null && dirCount < 15) {
                     if (info.get_file_type() !== Gio.FileType.REGULAR) continue;
                     const name = info.get_name();
                     if (name.startsWith('.')) continue;
                     const path = GLib.build_filenamev([d, name]);
                     if (seen.has(path)) continue;
                     seen.add(path);
+                    dirCount++;
                     const ext = name.split('.').pop().toLowerCase();
                     files.push({
                         name,
@@ -1694,6 +1703,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             } catch (_) {}
         }
 
+        this._cachedRecentFiles = files;
+        this._cachedRecentFilesTime = now;
         return files;
     }
 
@@ -2045,6 +2056,14 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (this._debounceId) {
             try { GLib.source_remove(this._debounceId); } catch (_) {}
             this._debounceId = 0;
+        }
+        if (this._systemModalSignalId) {
+            try { Main.layoutManager.disconnect(this._systemModalSignalId); } catch (_) {}
+            this._systemModalSignalId = 0;
+        }
+        if (this._screenshotSignalId && Main.screenshotUI) {
+            try { Main.screenshotUI.disconnect(this._screenshotSignalId); } catch (_) {}
+            this._screenshotSignalId = 0;
         }
         if (this._glass) {
             try { this._glass.destroy(); } catch (_) {}

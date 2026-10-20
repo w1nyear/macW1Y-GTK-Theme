@@ -409,6 +409,17 @@ export const MacClipboardDialog = GObject.registerClass({
             }, this);
         }
 
+        try {
+            this._systemModalSignalId = Main.layoutManager.connect('system-modal-opened', () => {
+                if (this._isOpen) this.close(true);
+            });
+            if (Main.screenshotUI) {
+                this._screenshotSignalId = Main.screenshotUI.connect('open-state-changed', (_ui, open) => {
+                    if (open && this._isOpen) this.close(true);
+                });
+            }
+        } catch (_) {}
+
         // 2. Main Floating Box (Liquid Glass Overlay)
         this._box = new St.BoxLayout({
             name: 'mac-clipboard-box',
@@ -668,7 +679,6 @@ export const MacClipboardDialog = GObject.registerClass({
         this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
         const CLIP_PAD = 40;
         this._glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
-        this._glass.syncSources();
     }
 
     open(options = {}) {
@@ -733,19 +743,15 @@ export const MacClipboardDialog = GObject.registerClass({
             Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
         }
 
-        if (!this._stageSignalId) {
-            this._stageSignalId = global.stage.connect('before-update', () => {
-                this._syncGlass();
-            });
-        }
-
         try {
-            if (global.stage.grab) {
-                this._modalGrab = global.stage.grab(this);
-            } else {
-                Main.pushModal(this);
-            }
-        } catch (_) {}
+            this._modalGrab = Main.pushModal(this, { actionMode: Shell.ActionMode.ALL });
+        } catch (_) {
+            try {
+                if (global.stage.grab) {
+                    this._modalGrab = global.stage.grab(this);
+                }
+            } catch (_) {}
+        }
 
         this._searchEntry.grab_key_focus();
 
@@ -807,7 +813,9 @@ export const MacClipboardDialog = GObject.registerClass({
         this._isOpen = false;
 
         if (this._modalGrab) {
-            try { this._modalGrab.dismiss(); } catch (_) {}
+            try { Main.popModal(this._modalGrab); } catch (_) {
+                try { this._modalGrab.dismiss?.(); } catch (_) {}
+            }
             this._modalGrab = null;
         } else {
             try { Main.popModal(this); } catch (_) {}
@@ -1078,6 +1086,14 @@ export const MacClipboardDialog = GObject.registerClass({
         if (this._stageSignalId) {
             try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
             this._stageSignalId = 0;
+        }
+        if (this._systemModalSignalId) {
+            try { Main.layoutManager.disconnect(this._systemModalSignalId); } catch (_) {}
+            this._systemModalSignalId = 0;
+        }
+        if (this._screenshotSignalId && Main.screenshotUI) {
+            try { Main.screenshotUI.disconnect(this._screenshotSignalId); } catch (_) {}
+            this._screenshotSignalId = 0;
         }
         if (this._glass) {
             try { this._glass.destroy(); } catch (_) {}

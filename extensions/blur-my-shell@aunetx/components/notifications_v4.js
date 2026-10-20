@@ -1165,7 +1165,7 @@ export const NotificationsController = class NotificationsController {
         }
     }
 
-    _syncGlass() {
+    _syncGlass(refreshSources = true) {
         if (!this._glass || this._glass.is_finalized?.()) return;
         if (!this.enabled || !this._activeGroups || this._activeGroups.size === 0) {
             if (this._glass.visible) this._glass.hide();
@@ -1208,14 +1208,14 @@ export const NotificationsController = class NotificationsController {
                 this._glass.show();
                 this._glass.opacity = 255;
             }
-            if (!this._glass._backdropLocked) {
+            if (refreshSources && !this._glass._backdropLocked) {
                 this._glass.syncSources();
             }
 
             if (!this._bannerStageLoopId) {
                 this._bannerStageLoopId = global.stage.connect('before-update', () => {
                     if (this._activeGroups && this._activeGroups.size > 0) {
-                        this._syncGlass();
+                        this._syncGlass(false);
                     }
                 });
             }

@@ -43,6 +43,15 @@ export function closeAllCenters(except = null) {
             }
         } catch (_) {}
     }
+    if (except !== 'apps') {
+        try {
+            if (globalThis._macApplicationsGlobalInstance?._isOpen) {
+                globalThis._macApplicationsGlobalInstance.close(true);
+            } else if (typeof globalThis._macApplicationsClose === 'function') {
+                globalThis._macApplicationsClose(true);
+            }
+        } catch (_) {}
+    }
     if (except !== 'panelMenu') {
         try {
             if (Main.panel?.menuManager?.activeMenu) {
@@ -74,6 +83,26 @@ try {
                 }
                 return origOpen.call(this, menu, open);
             };
+        }
+    }
+} catch (_) {}
+
+// Automatically close all centers when a system modal (e.g. Screenshot UI, lock screen, auth dialog) opens
+try {
+    if (!globalThis._macSystemModalHooked) {
+        globalThis._macSystemModalHooked = true;
+        Main.layoutManager?.connect('system-modal-opened', () => {
+            closeAllCenters();
+        });
+        if (Main.screenshotUI) {
+            Main.screenshotUI.connect('open-state-changed', (_ui, open) => {
+                if (open) closeAllCenters();
+            });
+        }
+        if (Main.overview) {
+            Main.overview.connect('showing', () => {
+                closeAllCenters();
+            });
         }
     }
 } catch (_) {}

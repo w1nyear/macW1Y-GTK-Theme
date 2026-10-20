@@ -386,12 +386,12 @@ function _rebuild(activeBanners = []) {
                     },
                 });
 
+                group.actor.x_align = Clutter.ActorAlign.CENTER;
+                p.list.add_child(group.actor);
+
                 for (const item of groupItems) {
                     group.addNotification(item.source, item.n, false);
                 }
-
-                group.actor.x_align = Clutter.ActorAlign.CENTER;
-                p.list.add_child(group.actor);
             }
         }
     } catch (e) {
@@ -457,6 +457,8 @@ function _syncBannerGlass() {
         }
         for (const card of kids) {
             try {
+                if (!card || !card.get_stage?.())
+                    continue;
                 if (!card?.has_style_class_name?.('mac-notification-banner') && !card?.has_style_class_name?.('tahoe-nc-card'))
                     continue;
                 if (!card.visible)

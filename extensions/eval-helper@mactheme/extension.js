@@ -443,8 +443,13 @@ export default class EvalHelper extends Extension {
 
                                     const CLIP_PAD = 40;
                                     switcherGlass.set_clip(localX - CLIP_PAD, localY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
-                                    switcherGlass.syncSources();
                                 };
+
+                                try {
+                                    if (typeof switcherGlass.forceRefresh === 'function') {
+                                        switcherGlass.forceRefresh(1);
+                                    }
+                                } catch (_) {}
 
                                 if (this._stageSignalId) {
                                     global.stage.disconnect(this._stageSignalId);
