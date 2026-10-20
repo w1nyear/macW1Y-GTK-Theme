@@ -7079,3 +7079,56 @@ echo "==> Встановлення успішно завершено!"
       * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js — делегування
       * /home/vitaliy/macW1Y/extensions/spotlight@nin/ (усього розширення) — синхронізовано (Source of Truth)
       * /home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/{extension.js,searchDialog_v5.js,applications_menu.js,applications_menu_v5.js,applications_menu_v5b.js} — синхронізовано (Source of Truth)
+
+Дата: 20.10.2026
+================================================================================
+НОВИЙ ВИГЛЯД СПОВІЩЕНЬ ИЗ MacShell-main (банери + Центр повідомлень)
+================================================================================
+Завдання: взяти новий вигляд повідомлень з проєкту [MacShell-main](file:///home/vitaliy/Завантажене/MacShell-main/) (QML-оболонка Hyprland, `MacBar.qml`: компонент `NotifBody`, `toastArea`, `notifPop`), перенести його в нашу систему (GNOME Shell 50.1, Wayland) замість старих сповіщень, адаптувати під наш дизайн-канон і наші анімації. Скло MacShell (`LGlass.qml`/.frag) НЕ копіювалось — використано наше рідке скло `BackdropGlass`/`LiquidEffect` (той самий `.frag`-шейдерний рушій, що у віджетах і дока), яке вже було інтегроване в сповіщення kiwi@kemma.
+
+1. Новий вигляд картки сповіщення (адаптація `NotifBody` → St-віджети, наш канон):
+   - Тайл-іконка застосунку 44×44px із заокругленням 10px (замість старих 36×36/9px).
+   - Текстова колона: назва джерела 14px/600; для критичної терміновості (`MessageTray.Urgency.CRITICAAL === 2`) показується мітка «ТЕРМІНОВО» (12px, розрідження 0.6px) замість назви — аналог macOS "time sensitive".
+   - Заголовок 14px/700 (до 2 рядків, перенесення WORD + elide кінця), тіло 13px з переносами WORD_CHAR без обрізання трикрапкою (канон збережено), колір rgba(255,255,255,0.80).
+   - Правий рейл: відносний час («тільки що», «5 хв тому», «3 год тому», «2 дн тому», старше — абсолютна дата) 12px назовні; при наведенні час м'яко (150мс, EASE_OUT_QUAD) поступається місцем круглий кнопці закриття ✕ 22×22px (radius 9999px) — як у MacShell.
+   - Живий перерахунок відносного часу кожні 30с (`GLib.timeout_add_seconds`, таймер знімається в `destroy`).
+   - Кольори картки залишились канонічними: темний акрил rgba(45,45,47,0.76), границя rgba(255,255,255,0.12), radius 16px, hover rgba(56,56,58,0.84).
+
+2. Морф «пілюля → картка» для плаваючих банерів (адаптація анімації MacShell `toastArea` під наші таймінги):
+   - Банер виїжджає з-права (320мс, EASE_OUT_CUBIC — наш канон), водночас його ширина росте з 42% (~161px) до 384px (460мс, EASE_OUT_QUINT, delay 60мс), заокруглення перетікає 9999px → 22px → 16px (кроки 0/330/520мс), контент розкривається fade-in на 220мс ближче до укладання (delay 300мс). Вміст фіксованої ширини, тому текст не пере-обтікає під час морфу (кліп + clip_to_allocation).
+   - Скло банера (стек `nc-banners`) синхронізує регіон по межам картки щокадру — морф з рідким склом працює без лагів.
+   - Ширина плаваючого банера тепер 384px (мак-стиль), бокс переміщено: `x = monitor.width - 384 - 12`; картки Центру — канонічні 440px.
+
+3. Новий вигляд Центру повідомлень (адаптація `notifPop`):
+   - Заголовок: «Центр повідомлень» 17px/600 + пілюля «Очистити все» (radius 9999px, padding 4×14, bg rgba(255,255,255,0.10), hover 0.20) замість старої круглої кнопки-хрестика.
+   - НОВИЙ рядок «Не турбувати»: темний тайл radius 12px, місяць (`weather-clear-night-symbolic`), живий перемикач `PopupMenu.Switch` двосторонньо прив'язаний до `org.gnome.desktop.notifications show-banners` (state = !show-banners; клік пише значення; `changed::show-banners` синхронізує назад). При увімкненому DnD банери не показуються (існуючий `_dndOn` флоу).
+   - Каскадна поява карток/стек у списку: opacity 0 + translation_y −16 → 255/0, 240мс EASE_OUT_CUBIC, стагер 35мс по індексу (наші анімації); активні банери, що «докируються» в Центр, анімуються старим 220мс фейдом.
+   - Стан «Немає нових повідомлень» і каскад «Очистити все» працюють як раніше.
+   - Панель, геометрія, скло-стеки (bd `nc-backdrop` radius 82, cards `nc-cards` radius 24), інк-режими (`tahoe-qs-dark`) — без змін (наше скло).
+
+4. Синхронізація дубля збірника в blur-my-shell:
+   - Мірror того ж білдера `buildNotificationCard` + `formatRelativeNotifAge` у [notifications_v4.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v4.js) (власний бустрап-хедер збережено), щоб NC від menubar_v29 залишався консистентним; у поточній сесії візуальні шляхи — kiwi (перевірено: blur-контролер банерів неактивний, kiwi перемагає ack-race).
+
+5. Технічна розв'язка гарячого перезавантаження (важливе відкриття, доповнення до п. 4.1 канону):
+   - `Main.extensionManager.reloadExtension` НЕ оновлює ES-модулі: `extension.js` кешується «Extensions can only be imported once» (підтверджено читанням `unloadExtension/_callExtensionInit` через `String(Main.extensionManager.reloadExtension)`), тому kiwi продовжував ганяти інстанцію `?v=tahoe_v21` session-завантаження.
+   - Скинути кesh можна ТІЛЬКИ новим URI: кожен унікальний запит `?v=<нове_значення>` читає файл з диску свіжо (перевірено probe-модулем: після перезапису файла імпорт `?v=pd` дав новий вміст — `stampprobe === 'CHANGED_<время>'`).
+   - Хірургічна заміна в сесії: `disable()` усіх старих кеш-інстанцій (`''` статик + `?v=tahoe_v21`), знищення старих `tahoe-nc-banners` боксів, `import('?v=macnotif_v3')` + `enable`, і патч `stateObj`: `_tahoeNC = M`, власні `disable`/`_on_settings_changed` (власний виклик M + страховка гасіння старих кеш-інстанцій). Стан розширення `1 (ENABLED)`, помилок ні.
+   - У поточній сесії працює v3; після наступного входу kiwi завантажиться з диска вже з `?v=macnotif_v3` — мануального патчу не потребуватиме.
+
+6. Тестування (живий режим через D-Bus `EvalHelper`):
+   - Банер: нове сповіщення → бокс 384px справа під топбаром, морф пілюлі знято на ~160мс (знімок `/tmp/opencode/morph_mid.png`: пілюля з повним заокругленням, чистий контент) і фінал 384×87 (radius 16px, контент 255).
+   - Центр: відкриття/закриття `dateMenu` (hook живий), заголовок + «Очистити все», рядок «Не турбувати» з перемикачем; вантоший стан після Clear → «Немає нових повідомлень»; картки 440px.
+   - DnD: `show-banners=false` → перемикач `state=true`, нове сповіщення НЕ з'являється (0 боксів); відновлення показу повертає перемикач у false.
+   - Відносний час: «тільки що»/«3 хв тому» на картках (знімок `/tmp/opencode/nc_v2.png` — повний новий вигляд Центру).
+   - Висоти карток природні (87px → 155px з розгорнутим тілом), стек-відступи 10px; групи, стопки-шари та дії карток не змінювались (канон зберігся).
+   - Прибирання тестових сповіщень; помилок у journalctl після 22:11 (тільки варнінги від мого агресивного тестового destroy джерел, не від фічі) немає.
+
+7. Змінені файли:
+   * [~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeNotificationCard.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeNotificationCard.js) — новий `buildNotificationCard` (44×44 іконка/r10, правий рейл, відносний час, ТЕРМІНОВО, кругла ✕, стилі/base/hover/pill/mid) + експорт `formatRelativeNotifAge`
+   * [~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeNotifications.js) — `BANNER_W = 384`, морф пілюлі в `_showBanner`, новий заголовок з пілюлею «Очистити все», рядок DnD з `PopupMenu.Switch` (GNOME 50: сам об'єкт Switch є актором — `.actor` більше не існує), каскад `_animateEnter`, ширина NC-карток 440
+   * [~/.local/share/gnome-shell/extensions/kiwi@kemma/extension.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/extension.js) — версія динамічного імпорту `?v=macnotif_v3`
+   * [~/.local/share/gnome-shell/extensions/kiwi@kemma/stylesheet.css](file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/stylesheet.css) — нові метрики `.mac-notification-*` (знято фіксовану ширину, min-height 74, padding 0, іконка 44/r10, шрифти 14/14/13/12), `.mac-notification-urgent`, `.mac-notification-close-btn`, пілюля `.tahoe-nc-clear`
+   * [~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v4.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v4.js) — mirror білдера (без змін бокових доріжок)
+   * [~/MACTHEMEFILES/extensions/](file:///home/vitaliy/macW1Y/extensions/) — усі 5 файлів синхронізовано з репозиторієм (Source of Truth), `diff` повний.
+
+Локальний комміт зроблено, push (як завжди) не виконано.

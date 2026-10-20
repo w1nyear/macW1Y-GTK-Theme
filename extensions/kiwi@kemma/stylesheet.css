@@ -1258,13 +1258,15 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-nc-banners { spacing: 10px; }
 .tahoe-nc-head { spacing: 10px; }
 .tahoe-nc-clear {
-    width: 28px;
-    height: 28px;
-    border-radius: 999px;
-    background-color: rgba(120, 120, 128, 0.24);
+    border-radius: 9999px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.16);
 }
-.tahoe-nc-cross { color: #ffffff; }
-.tahoe-qs-dark .tahoe-nc-cross { color: #ffffff; }
+.tahoe-qs-dark .tahoe-nc-clear { background-color: rgba(255, 255, 255, 0.14); }
 .tahoe-nc-title-big {
     font-family: "SF Pro Display";
     font-size: 1.35em;
@@ -1303,11 +1305,11 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 .tahoe-qs-dark .tahoe-nc-sub { color: rgba(235, 235, 245, 0.7); }
 
-/* Authentic macOS Notification Center Cards */
+/* Authentic macOS Notification Center Cards — новий вигляд (MacShell): іконка 44×44,
+   час дружнім відліком, кругла ✕ при наведенні; розміри задає інлайн у білдері */
 .mac-notification-banner {
-  width: 440px !important;
-  min-height: 56px !important;
-  padding: 10px 14px !important;
+  min-height: 74px !important;
+  padding: 0 !important;
   border-radius: 16px !important;
   background-color: rgba(45, 45, 47, 0.76) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -1324,14 +1326,26 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-icon-bin {
-  padding-right: 10px !important;
+  padding-right: 0 !important;
   margin-top: 2px !important;
-  border-radius: 9px !important;
+  border-radius: 10px !important;
 }
 
 .mac-notification-app-icon {
-  icon-size: 36px !important;
-  border-radius: 9px !important;
+  icon-size: 44px !important;
+  border-radius: 10px !important;
+}
+
+.mac-notification-close-btn {
+  border-radius: 9999px !important;
+}
+
+.mac-notification-urgent {
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.6px !important;
+  color: rgba(255, 255, 255, 0.66) !important;
 }
 
 .mac-notification-content-box {
@@ -1340,7 +1354,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 .mac-notification-app-name {
   font-family: "SF Pro Text", Cantarell, sans-serif !important;
-  font-size: 13px !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
   color: #ffffff !important;
   margin-bottom: 0px !important;
@@ -1360,8 +1374,8 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 .mac-notification-title {
   font-family: "SF Pro Text", Cantarell, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
   color: #ffffff !important;
   margin-top: 1px !important;
   margin-bottom: 1px !important;
@@ -1370,20 +1384,20 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 .mac-notification-body {
   font-family: "SF Pro Text", Cantarell, sans-serif !important;
-  font-size: 12.5px !important;
+  font-size: 13px !important;
   font-weight: 400 !important;
-  color: rgba(255, 255, 255, 0.78) !important;
-  line-height: 1.28 !important;
+  color: rgba(255, 255, 255, 0.80) !important;
+  line-height: 1.30 !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
 .mac-notification-time {
   font-family: "SF Pro Text", Cantarell, sans-serif !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   font-weight: 400 !important;
-  color: rgba(255, 255, 255, 0.45) !important;
+  color: rgba(255, 255, 255, 0.55) !important;
   margin-top: 1px !important;
-  margin-right: 2px !important;
+  margin-right: 0px !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
 }
 

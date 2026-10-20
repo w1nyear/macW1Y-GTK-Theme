@@ -11,14 +11,16 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import Meta from 'gi://Meta';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {getPanelInk, getTopbarInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
     MacNotificationGroup,
+    formatRelativeNotifAge,
     formatNotificationTimestamp,
     safePangoMarkup,
-} from './tahoeNotificationCard.js?v=tahoe_v21';
+} from './tahoeNotificationCard.js?v=macnotif_v3';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -54,6 +56,8 @@ const NC_W = 480;
 const NC_RADIUS = 82;
 const BACKDROP_PAD = 60;
 const SHADER_PADDING = 20;
+// Ширина плаваючого банера-pілюлі (новий вигляд MacShell)
+const BANNER_W = 384;
 
 let _ = (m) => m;
 let _nc = null;
@@ -216,9 +220,10 @@ function _activate(item) {
     } catch (_) {}
 }
 
-function _makeMacCard(item, onCloseCb) {
+function _makeMacCard(item, onCloseCb, width = null) {
     return buildNotificationCard(item.source, item.n, {
         sigma: 30,
+        width,
         isBanner: false,
         onClose: (data) => {
             const card = data.banner;
@@ -290,6 +295,23 @@ function _clearAll() {
     });
 }
 
+function _animateEnter(actor, idx = 0) {
+    try {
+        actor.remove_all_transitions();
+        actor.opacity = 0;
+        actor.translation_y = -16;
+        actor.ease({
+            opacity: 255,
+            translation_y: 0,
+            duration: 240,
+            delay: Math.min(8, Math.max(0, idx)) * 35,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+    } catch (_) {
+        try { actor.opacity = 255; actor.translation_y = 0; } catch (_) {}
+    }
+}
+
 function _rebuild(activeBanners = []) {
     const p = _nc;
     if (!p)
@@ -335,15 +357,19 @@ function _rebuild(activeBanners = []) {
 
         const monitor = Main.layoutManager.primaryMonitor;
 
+        let enterIdx = 0;
+
         for (const [groupKey, groupItems] of groupsMap) {
             if (groupItems.length === 1) {
                 const item = groupItems[0];
                 const cardData = _makeMacCard(item, () => {
                     if (p?.list && p.list.get_children().length === 0)
                         _rebuild();
-                });
+                }, 440);
                 cardData.banner.x_align = Clutter.ActorAlign.CENTER;
                 cardData.banner._notification = item.n;
+
+                p.list.add_child(cardData.banner);
 
                 if (item.activeBanner) {
                     // Floating banner docking animation into NC slot
@@ -356,9 +382,11 @@ function _rebuild(activeBanners = []) {
                         });
                         return GLib.SOURCE_REMOVE;
                     });
+                } else {
+                    // Каскадна поява карток (наш канон:,)
+                    _animateEnter(cardData.banner, enterIdx);
+                    enterIdx++;
                 }
-
-                p.list.add_child(cardData.banner);
             } else {
                 // Group of 2 or more notifications: use MacNotificationGroup stack!
                 const group = new MacNotificationGroup(groupKey, {
@@ -388,6 +416,10 @@ function _rebuild(activeBanners = []) {
 
                 group.actor.x_align = Clutter.ActorAlign.CENTER;
                 p.list.add_child(group.actor);
+                if (!groupItems.some(it => it.activeBanner)) {
+                    _animateEnter(group.actor, enterIdx);
+                    enterIdx++;
+                }
 
                 for (const item of groupItems) {
                     group.addNotification(item.source, item.n, false);
@@ -424,8 +456,8 @@ function _ensureBannerBox() {
             visible: true,
             opacity: 255,
         });
-        _bannerBox.set_width(NC_W);
-        _bannerBox.set_position(monitor.x + monitor.width - NC_W - 12, monitor.y + panelH + 10);
+        _bannerBox.set_width(BANNER_W);
+        _bannerBox.set_position(monitor.x + monitor.width - BANNER_W - 12, monitor.y + panelH + 10);
         try {
             if (getTopbarInk() === 'light')
                 _bannerBox.add_style_class_name('tahoe-qs-dark');
@@ -653,17 +685,72 @@ function _showBanner(item) {
         const card = cardData.banner;
         _bannerBox.add_child(card);
 
-        // Slide in animation from right edge with EASE_OUT_CUBIC
+        // Новий вигляд: пілюля → картка (адаптований морф MacShell, наші таймінги)
         try {
-            card.translation_x = 480;
+            const FULL_W = BANNER_W;
+            const PILL_W = Math.max(150, Math.round(FULL_W * 0.42));
+
+            card.remove_all_transitions();
+            card.set_width(PILL_W);
+            card.translation_x = 46;
             card.opacity = 0;
+            if (cardData.content) {
+                try { cardData.content.opacity = 0; } catch (_) {}
+            }
+            try { card.set_style(cardData.pillStyle || cardData.baseStyle); } catch (_) {}
+
+            // 1) вїзд зправа (наш канон: 320мс EASE_OUT_CUBIC)
             card.ease({
                 translation_x: 0,
                 opacity: 255,
                 duration: 320,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             });
+
+            // 2) ріст ширини пілюлі до повної картки (460мс EASE_OUT_QUINT)
+            card.ease({
+                width: FULL_W,
+                duration: 460,
+                delay: 60,
+                mode: Clutter.AnimationMode.EASE_OUT_QUINT,
+                onComplete: () => {
+                    try { card.set_width(FULL_W); } catch (_) {}
+                },
+            });
+
+            // 3) заокруглення: пілюля → 22px → 16px (наш канон)
+            const radiusSteps = [0, 330, 520];
+            const radiusStyles = [
+                cardData.pillStyle || cardData.baseStyle,
+                cardData.midStyle || cardData.baseStyle,
+                cardData.baseStyle,
+            ];
+            radiusSteps.forEach((ms, i) => {
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+                    try {
+                        if (!cardData.isClosing)
+                            card.set_style(radiusStyles[i]);
+                    } catch (_) {}
+                    return GLib.SOURCE_REMOVE;
+                });
+            });
+
+            // 4) вміст розкривається ближче до укладання картки
+            if (cardData.content) {
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300, () => {
+                    try {
+                        cardData.content.remove_all_transitions();
+                        cardData.content.ease({
+                            opacity: 255,
+                            duration: 220,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                    } catch (_) {}
+                    return GLib.SOURCE_REMOVE;
+                });
+            }
         } catch (_) {
+            try { card.set_width(FULL_W); } catch (_) {}
             card.translation_x = 0;
             card.opacity = 255;
         }
@@ -954,27 +1041,28 @@ function _buildPanel(activeBanners = []) {
     box.set_size(W, -1);
     overlay.add_child(box);
 
-    // Header: localized Tahoe big title + circular clear button with cross
+    // Заголовок: локалізований великий титул + пілюля «Очистити все» (новий вигляд MacShell)
     const head = new St.BoxLayout({style_class: 'tahoe-nc-head'});
     const title = new St.Label({
         style_class: 'tahoe-nc-title-big',
         text: _('Центр повідомлень'),
         x_expand: true,
+        style: 'font-size: 17px !important; font-weight: 600 !important;',
     });
+    const CLEAR_STYLE = 'background-color: rgba(255, 255, 255, 0.10) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 9999px !important; padding: 4px 14px !important; color: #ffffff !important; font-size: 12px !important; font-weight: 500 !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18) !important;';
+    const CLEAR_STYLE_HOVER = 'background-color: rgba(255, 255, 255, 0.20) !important; border: 1px solid rgba(255, 255, 255, 0.26) !important; border-radius: 9999px !important; padding: 4px 14px !important; color: #ffffff !important; font-size: 12px !important; font-weight: 500 !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22) !important;';
     const clear = new St.Button({
         style_class: 'tahoe-nc-clear',
+        label: _('Очистити все'),
         reactive: true,
         can_focus: true,
+        style: CLEAR_STYLE,
     });
-    const cross = new St.Icon({
-        style_class: 'tahoe-nc-cross',
-        icon_name: 'window-close-symbolic',
-        icon_size: 14,
+    clear.connect('notify::hover', () => {
+        try {
+            clear.set_style(clear.hover ? CLEAR_STYLE_HOVER : CLEAR_STYLE);
+        } catch (_) {}
     });
-    clear.set_child(cross);
-    try {
-        clear.set_tooltip_text?.('Очистити всі');
-    } catch (_) {}
     clear.connect('clicked', () => {
         try {
             _clearAll();
@@ -983,6 +1071,52 @@ function _buildPanel(activeBanners = []) {
     head.add_child(title);
     head.add_child(clear);
     box.add_child(head);
+
+    // Рядок «Не турбувати» (новий вигляд MacShell) з живим перемикачем DnD
+    const DND_STYLE_BASE = 'background-color: rgba(255, 255, 255, 0.07) !important; border: 1px solid rgba(255, 255, 255, 0.09) !important; border-radius: 12px !important; padding: 9px 12px !important; spacing: 10px !important; margin-bottom: 2px !important;';
+    const dndRow = new St.BoxLayout({
+        style_class: 'tahoe-nc-dndrow',
+        style: DND_STYLE_BASE,
+    });
+    const moonIcon = new St.Icon({
+        icon_name: 'weather-clear-night-symbolic',
+        icon_size: 15,
+        y_align: Clutter.ActorAlign.CENTER,
+        style: 'color: rgba(255, 255, 255, 0.85) !important;',
+    });
+    const dndLabel = new St.Label({
+        text: _('Не турбувати'),
+        y_align: Clutter.ActorAlign.CENTER,
+        style: 'color: rgba(255, 255, 255, 0.92) !important; font-size: 13px !important; font-weight: 500 !important;',
+    });
+    const dndSpacer = new St.Widget({x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+    const dndSwitch = new PopupMenu.Switch(false);
+    try {
+        dndSwitch.y_align = Clutter.ActorAlign.CENTER;
+    } catch (_) {}
+    const notifSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.notifications'});
+    const syncDnd = () => {
+        try {
+            dndSwitch.state = !notifSettings.get_boolean('show-banners');
+        } catch (_) {}
+    };
+    syncDnd();
+    dndSwitch.connect('notify::state', () => {
+        try {
+            notifSettings.set_boolean('show-banners', !dndSwitch.state);
+        } catch (_) {}
+    });
+    let dndSettingsId = 0;
+    try {
+        dndSettingsId = notifSettings.connect('changed::show-banners', syncDnd);
+    } catch (_) {
+        dndSettingsId = 0;
+    }
+    dndRow.add_child(moonIcon);
+    dndRow.add_child(dndLabel);
+    dndRow.add_child(dndSpacer);
+    dndRow.add_child(dndSwitch);
+    box.add_child(dndRow);
 
     const scroll = new St.ScrollView({
         style_class: 'tahoe-nc-scroll',
@@ -1020,6 +1154,7 @@ function _buildPanel(activeBanners = []) {
         tickId: 0,
         inkUnwatch: null,
         _closing: false,
+        dndSettings: { notifSettings, dndSettingsId },
     };
     _nc = p;
 
@@ -1137,6 +1272,12 @@ function _buildPanel(activeBanners = []) {
 function _destroyNC(p) {
     if (!p)
         return;
+    try {
+        const dd = p.dndSettings;
+        if (dd?.notifSettings && dd?.dndSettingsId) {
+            try { dd.notifSettings.disconnect(dd.dndSettingsId); } catch (_) {}
+        }
+    } catch (_) {}
     try {
         if (p.inkUnwatch)
             p.inkUnwatch();

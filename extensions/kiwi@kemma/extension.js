@@ -33,7 +33,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeInkEnable: ${e}`);
         }
         try {
-            const ncUri = this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri() + '?v=tahoe_v21';
+            const ncUri = this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri() + '?v=macnotif_v3';
             import(ncUri).then(mod => {
                 if (this._tahoeNC && this._tahoeNC !== mod) {
                     try { this._tahoeNC.disable(); } catch (_) {}
