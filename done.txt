@@ -6950,3 +6950,20 @@ echo "==> Встановлення успішно завершено!"
       * Плаваючі банери повідомлень:
         1) Плаваючі банери, що з'являються на робочому столі праворуч угорі, використовують той самий автентичний темний дизайн із плавною анімацією появи та зникнення.
       * Усі файли синхронізовано з MACTHEMEFILES та macW1Y.
+
+15. Виправлення синтаксичної помилки в appmenu — Spotlight та схожі меню не відкривались:
+    - Проблема: розширення appmenu@ChathurangaBW.github.io перебувало у стані ERROR (state=3) через SyntaxError у applications_menu_v5.js:1174.
+    - Причина: у методі `open()` класу `MacApplicationsDialog` відсутня закриваюча фігурна дужка `}` для блоку `} else {` (рядки 1124–1126). Блок `else { this._glass = null; this._initGlass(); }` не було закрито, тому наступний рядок `this._entry.grab_key_focus()` опинявся всередині тіла `else`, що спричиняло синтаксичну помилку GJS при розборі наступного методу `close()` на рядку 1174 (де GJS очікував продовження виразу, а натрапив на нове ключове слово класу).
+    - Виправлення:
+      * Додано відсутній `}` після `this._initGlass();` у файлі applications_menu_v5.js.
+      * Оскільки GJS кешує ES-модулі в пам'яті процесу і не звільняє їх при disable/enable, було створено копію виправленого файлу з новим ім'ям applications_menu_v5b.js.
+      * У extension.js статичний import та динамічний import замінено з v5.js на v5b.js для обходу кешу.
+      * Для застосування змін без перезавантаження Shell використано `Main.extensionManager.reloadExtension(ext)` (GS 50 API, який очищає кеш модуля).
+    - Результат:
+      * Розширення повернулось до стану ENABLED (state=1) без помилок.
+      * Spotlight (⌘Space), меню програм (Applications) та буфер обміну відкриваються коректно.
+      * `globalThis.toggleMacSpotlight`, `toggleMacApplications`, `toggleMacClipboard` — всі доступні та функціонують.
+    - Змінені файли:
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5.js — виправлено відсутній }
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js — нова копія без синтаксичної помилки
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/extension.js — оновлено import на v5b

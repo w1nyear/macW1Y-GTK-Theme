@@ -1124,6 +1124,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         } else {
             this._glass = null;
             this._initGlass();
+        }
         this._entry.grab_key_focus();
 
         if (fromRect) {

@@ -9,7 +9,7 @@ import { setLoggerSettings, debug } from './logger.js';
 import { disposeViewActions } from './actions/viewActions.js';
 import { WorkspaceIndicatorController } from './workspaceIndicator.js';
 import { toggleSearchDialog, destroySearchDialog } from './searchDialog_v5.js';
-import { toggleApplicationsDialog, destroyApplicationsDialog } from './applications_menu_v5.js';
+import { toggleApplicationsDialog, destroyApplicationsDialog } from './applications_menu_v5b.js';
 import { toggleClipboardDialog, destroyClipboardDialog } from './clipboardDialog_v2.js';
 import { initI18n } from './i18n.js';
 
@@ -78,7 +78,7 @@ export default class AppMenuExtension extends Extension {
             globalThis.toggleMacSpotlight = toggleSearchDialog;
         }
         try {
-            const m = await import(`${baseUri}/applications_menu_v5.js?t=${Date.now()}`);
+            const m = await import(`${baseUri}/applications_menu_v5b.js?t=${Date.now()}`);
             globalThis.toggleMacApplications = m.toggleApplicationsDialog;
             globalThis.toggleApplicationsMenu = m.toggleApplicationsDialog;
         } catch (_) {
