@@ -6988,3 +6988,23 @@ echo "==> Встановлення успішно завершено!"
       4) У методі `close()` додано плавне згасання скла (`this._glass.ease({ opacity: 0 })`) синхронно з діалогом.
       5) Очищено всі осиротілі/завислі скляні актори в `Main.layoutManager.uiGroup`.
       6) Усі файли синхронізовано між `.local/share/...`, `MACTHEMEFILES` та `macW1Y`.
+
+131. Підйом іконок у доку (dash2dock-motion) та фінальне виставлення вертикальної позиції:
+    - Завдання (за зверненням користувача):
+      * Підняти іконки в доку на 10 px відносно фону дока (`dash-background`), потім ітеративно уточнити позицію: -5 px, ще -1 px і ще -1 px (у підсумку іконки опущено на 7 px від базового центру, кінцевий відступ padding-top = 10 px).
+      * Змінювалися ЛИШЕ іконки всередині дока — фон дока, його висота та позиція дока на екрані не змінювалися.
+    - Причина:
+      * Вертикальне центрування іконок у доку визначається парою `padding-top` / `padding-bottom` у контейнері `.overview-tile` (висота елемента = padding-top + 58px контенту + padding-bottom, сума padding-ів тримається сталою 31px, тому загальна висота дока не змінюється).
+    - Реалізовано:
+      * У блоці CSS `#dashtodockContainer.bottom #dash .dash-item-container .overview-tile` послідовно змінено значення: `padding-top: 13px → 3px → 8px → 9px → 10px`, `padding-bottom: 18px → 28px → 23px → 22px → 21px`.
+      * Додано пояснювальний коментар: `/* macOS-стиль: іконки зміщено на 7px нижче від базової позиції (компенсація +10/-7) */`.
+      * Після кожної правки застосовано гаряче перезавантаження через `Main.extensionManager.reloadExtension(ext)` та перевірку геометрії через D-Bus `EvalHelper`.
+    - Результат (виміряно програмно, відносно верху контейнера `dashtodockContainer`):
+      * Контейнер дока: висота 93px (незмінно).
+      * Фон дока `.dash-background`: top = 0, height = 87px (незмінно).
+      * Контейнер елемента `.overview-tile`: top = 0, height = 89px (незмінно).
+      * Зображення іконки (`.overview-icon`, 58px): **top = 10**, bottom = 68 (було top = 13 до змін).
+      * Розширення `dash2dock-motion@unmade.space` у стані ENABLED (state = 1) без помилок `ext.error`.
+    - Змінені файли:
+      * /home/vitaliy/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/stylesheet.css — правила padding для іконок дока (рядки 52-56)
+      * /home/vitaliy/macW1Y/extensions/dash2dock-motion@unmade.space/stylesheet.css — синхронізована копія (Source of Truth)

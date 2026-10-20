@@ -51,8 +51,9 @@
     #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
     #dashtodockContainer.bottom #dash .dash-item-container .overview-tile {
       padding: 0px 0px;
-      padding-bottom: 18px;
-      padding-top: 13px; }
+      /* macOS-стиль: іконки зміщено на 7px нижче від базової позиції (компенсація +10/-7) */
+      padding-bottom: 21px;
+      padding-top: 10px; }
       #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:ltr:first-child, #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:rtl:last-child,
       #dashtodockContainer.bottom #dash .dash-item-container .show-apps:ltr:first-child,
       #dashtodockContainer.bottom #dash .dash-item-container .show-apps:rtl:last-child,
