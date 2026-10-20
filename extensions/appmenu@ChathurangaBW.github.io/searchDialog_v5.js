@@ -1073,9 +1073,10 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._box.set_position(x, y);
         this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
-        this._box.set_pivot_point(0.5, 0.0);
-        this._box.scale_x = 0.94;
-        this._box.scale_y = 0.94;
+        // macOS Tahoe style: fade-in + slight "recede" (start larger, settle to 1.0)
+        this._box.set_pivot_point(0.5, 0.5);
+        this._box.scale_x = 1.06;
+        this._box.scale_y = 1.06;
         this._box.opacity = 0;
 
         // Reset search pill and buttons
@@ -1237,8 +1238,8 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._backdrop.visible = false;
         this._box.ease({
             opacity: 0,
-            scale_x: 0.94,
-            scale_y: 0.94,
+            scale_x: 1.06,
+            scale_y: 1.06,
             duration: 180,
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {

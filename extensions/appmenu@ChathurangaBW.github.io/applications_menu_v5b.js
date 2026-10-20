@@ -1094,9 +1094,10 @@ export const MacApplicationsDialog = GObject.registerClass({
         } else {
             this._box.set_position(targetX, targetY);
             this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);
+            // macOS Tahoe style: fade-in + slight "recede" (start larger, settle to 1.0)
             this._box.set_pivot_point(0.5, 0.5);
-            this._box.scale_x = 0.94;
-            this._box.scale_y = 0.94;
+            this._box.scale_x = 1.06;
+            this._box.scale_y = 1.06;
             this._box.opacity = 0;
             this._headerRow.opacity = 255;
             this._categoryRow.opacity = 255;
@@ -1238,8 +1239,8 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._box.ease({
             opacity: 0,
-            scale_x: 0.94,
-            scale_y: 0.94,
+            scale_x: 1.06,
+            scale_y: 1.06,
             duration: 160,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
             onComplete: () => {

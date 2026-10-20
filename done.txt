@@ -7008,3 +7008,35 @@ echo "==> Встановлення успішно завершено!"
     - Змінені файли:
       * /home/vitaliy/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/stylesheet.css — правила padding для іконок дока (рядки 52-56)
       * /home/vitaliy/macW1Y/extensions/dash2dock-motion@unmade.space/stylesheet.css — синхронізована копія (Source of Truth)
+
+132. macOS-стиль анімації появи/зникнення для Spotlight-подібних меню (Spotlight, Центр програм, Буфер обміну):
+    - Завдання (за зверненням користувача):
+      * Замінити стару анімацію відкриття (збільшення масштабу 0.94→1.0, як у вікна) на macOS-стиль "віддалення": плавна поява 0→100% непрозорості + легке віддалення елемента (стартовий масштаб 1.06 → 1.0).
+      * При закритті — дзеркально: зникання 100→0% непрозорості + легке приближення (1.0 → 1.06).
+      * Анімація стосується лише самостійного показу меню по центру екрана. Морфінг із пілюлі Spotlight (шлях `fromRect` у `open(options)`) залишено без змін — це окрема фіча.
+    - Причина:
+      * У macOS Tahoe/Sequoia спливаючі центральні меню з'являються "віддаляючись" від користувача (з більшого масштабу до 1.0), а не наближаючись, як це було реалізовано раніше.
+    - Реалізовано:
+      * `searchDialog_v5.js` (Spotlight):
+        - `open()`: `set_pivot_point(0.5, 0.0)` → `set_pivot_point(0.5, 0.5)` (масштабування від центру), стартовий масштаб `0.94` → `1.06`.
+        - `close()`: кінцевий масштаб `0.94` → `1.06`.
+      * `applications_menu_v5b.js` (Центр програм / Launchpad):
+        - `open()` (самостійний показ): стартовий масштаб `0.94` → `1.06`.
+        - `close()`: кінцевий масштаб `0.94` → `1.06`.
+      * `clipboardDialog_v2.js` (Буфер обміну):
+        - `open()` (самостійний показ): стартовий масштаб `0.95` → `1.06`.
+        - `close()`: кінцевий масштаб `0.95` → `1.06`.
+      * Додано пояснювальні коментарі `// macOS Tahoe style: fade-in + slight "recede" (start larger, settle to 1.0)`.
+    - Тестування (гаряче перезавантаження + D-Bus `EvalHelper`, без перезапуску сесії):
+      * `Main.extensionManager.reloadExtension(ext)` — успішно, `state = 1 (ENABLED)`, `ext.error = none`.
+      * Spotlight: старт `scale = 1.06, opacity = 0` → проміжний кадр `≈1.028 / 135` → кінцевий `1.0 / 255`; закриття: `1.0 / 255` → `1.06 / 0`, `visible = false`.
+      * Буфер обміну: старт `1.06 / 0` → проміжний `≈1.029 / 131` → кінцевий `1.0 / 255`; закриття: `1.06 / 0`, `visible = false`.
+      * Центр програм: старт `1.06 / 0` → проміжний `≈1.030 / 129` → кінцевий `1.0 / 255`; закриття: `1.06 / 0`, `visible = false`.
+      * Після закриття всіх меню стан розширення `state = 1`, `ext.error = none`.
+    - Змінені файли:
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js — `open()` (рядки ~1076-1080), `close()` (рядки ~1238-1243)
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js — `open()` (рядки ~1097-1102), `close()` (рядки ~1239-1244)
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/clipboardDialog_v2.js — `open()` (рядки ~859-864), `close()` (рядки ~929-934)
+      * /home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js — синхронізована копія (Source of Truth)
+      * /home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js — синхронізована копія (Source of Truth)
+      * /home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/clipboardDialog_v2.js — синхронізована копія (Source of Truth)
