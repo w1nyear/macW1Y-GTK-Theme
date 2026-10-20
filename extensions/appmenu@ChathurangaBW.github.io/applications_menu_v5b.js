@@ -10,6 +10,32 @@ import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
 import { getAppFavorites } from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 
+const _gobjectToString = GObject.Object.prototype.toString;
+
+function _isActorValid(actor) {
+    if (!actor) return false;
+    try {
+        const desc = _gobjectToString.call(actor);
+        if (desc.includes('(DISPOSED)') || desc.includes('(FINALIZED)')) return false;
+        if (actor._cleanedUp) return false;
+        return typeof actor.visible === 'boolean';
+    } catch (_) {
+        return false;
+    }
+}
+
+function _isGlassAlive(glass) {
+    if (!glass) return false;
+    try {
+        const desc = _gobjectToString.call(glass);
+        if (desc.includes('(DISPOSED)') || desc.includes('(FINALIZED)')) return false;
+        if (glass._cleanedUp) return false;
+        return typeof glass.visible === 'boolean' && glass.get_parent() !== null;
+    } catch (_) {
+        return false;
+    }
+}
+
 const DIALOG_WIDTH = 714;
 const DIALOG_HEIGHT = 530;
 const COLUMNS = 7;
@@ -567,6 +593,11 @@ export const MacApplicationsDialog = GObject.registerClass({
             if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
                 Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
             }
+            this._glass.show();
+            this._glass.opacity = 255;
+            if (typeof this._glass.forceRefresh === 'function') {
+                this._glass.forceRefresh(1);
+            }
             this._syncGlass();
         } catch (e) {
             console.error(`[MacApplications] Error initializing BackdropGlass: ${e}`);
@@ -576,70 +607,52 @@ export const MacApplicationsDialog = GObject.registerClass({
     }
 
     _syncGlass() {
-        if (!this._glass || this._glass.is_finalized?.() || !this._isOpen) {
-            try {
-                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
-                    this._glass.hide();
-                }
-            } catch (_) {}
-            return;
-        }
+        try {
+            if (!this._isOpen || !_isGlassAlive(this._glass)) {
+                return;
+            }
 
-        const box = this._box;
-        if (!box || box.is_finalized?.() || !box.visible) {
-            try {
-                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
-                    this._glass.hide();
-                }
-            } catch (_) {}
-            return;
-        }
+            const box = this._box;
+            if (!box || !_isActorValid(box) || !box.visible) {
+                return;
+            }
 
-        const opacity = box.get_paint_opacity ? box.get_paint_opacity() : box.opacity;
-        if (opacity <= 0) {
-            try {
-                if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
-                    this._glass.hide();
-                }
-            } catch (_) {}
-            return;
-        }
+            const mon = Main.layoutManager.primaryMonitor;
+            const scaleX = box.scale_x ?? 1.0;
+            const scaleY = box.scale_y ?? 1.0;
+            const rawW = box.width > 0 ? box.width : DIALOG_WIDTH;
+            const rawH = box.height > 0 ? box.height : DIALOG_HEIGHT;
 
-        const mon = Main.layoutManager.primaryMonitor;
-        const scaleX = box.scale_x ?? 1.0;
-        const scaleY = box.scale_y ?? 1.0;
-        const rawW = box.width > 0 ? box.width : DIALOG_WIDTH;
-        const rawH = box.height > 0 ? box.height : DIALOG_HEIGHT;
+            const w = rawW * scaleX;
+            const h = rawH * scaleY;
+            const bx = box.x + (rawW - w) * 0.5;
+            const by = box.y;
 
-        const w = rawW * scaleX;
-        const h = rawH * scaleY;
-        const bx = box.x + (rawW - w) * 0.5;
-        const by = box.y;
+            const localBgX = Math.round(bx - mon.x);
+            const localBgY = Math.round(by - mon.y);
+            const bgW = Math.round(w);
+            const bgH = Math.round(h);
 
-        const localBgX = Math.round(bx - mon.x);
-        const localBgY = Math.round(by - mon.y);
-        const bgW = Math.round(w);
-        const bgH = Math.round(h);
+            if (!this._glass.visible) {
+                this._glass.show();
+            }
+            if (this._glass.opacity !== 255) {
+                this._glass.opacity = 255;
+            }
 
-        if (this._glass.opacity !== opacity) {
-            this._glass.opacity = opacity;
-        }
-        if (!this._glass.visible) {
-            this._glass.show();
-        }
-
-        this._glass.set_position(mon.x, mon.y);
-        this._glass.set_size(mon.width, mon.height);
-        this._glass.setResolution(mon.width, mon.height);
-        const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
-        this._glass.setIsDock(false);
-        this._glass.setTintColor(tintR, tintG, tintB);
-        this._glass.setTintStrength(tintStrength);
-        this._glass.setBlurRadius(BLUR_RADIUS);
-        this._glass.setCornerRadius(CORNER_RADIUS);
-        this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
-        const CLIP_PAD = 60;
-        this._glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
+            this._glass.set_position(mon.x, mon.y);
+            this._glass.set_size(mon.width, mon.height);
+            this._glass.setResolution(mon.width, mon.height);
+            const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
+            this._glass.setIsDock(false);
+            this._glass.setTintColor(tintR, tintG, tintB);
+            this._glass.setTintStrength(tintStrength);
+            this._glass.setBlurRadius(BLUR_RADIUS);
+            this._glass.setCornerRadius(CORNER_RADIUS);
+            this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
+            const CLIP_PAD = 60;
+            this._glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
+        } catch (_) {}
     }
 
     _getAppCategory(app) {
@@ -1097,35 +1110,45 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         let glassValid = false;
         try {
-            if (this._glass && !this._glass.is_finalized?.()) {
-                this._glass.get_parent();
+            if (_isGlassAlive(this._glass)) {
                 glassValid = true;
             }
         } catch (_) {
             glassValid = false;
-            this._glass = null;
         }
 
         if (glassValid) {
-            try { this._glass.remove_all_transitions(); } catch (_) {}
-            if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
-                Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
+            try {
+                this._glass.remove_all_transitions();
+                if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
+                    Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
+                }
+                Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
+                Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
+                this._glass.show();
+                this._glass.opacity = 255;
+                this._glass._backdropLocked = false;
+                if (typeof this._glass.forceRefresh === 'function') {
+                    this._glass.forceRefresh(1);
+                }
+                this._applyGlassUniforms();
+                this._syncGlass();
+            } catch (err) {
+                try { this._glass?.destroy?.(); } catch (_) {}
+                this._glass = null;
+                this._initGlass();
+                Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
             }
-            Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
-            Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
-            this._glass.show();
-            this._glass.opacity = 255;
-            this._glass._backdropLocked = false;
-            if (typeof this._glass.forceRefresh === 'function') {
-                this._glass.forceRefresh(1);
-            }
-            this._applyGlassUniforms();
-            this._syncGlass();
         } else {
+            try { this._glass?.destroy?.(); } catch (_) {}
             this._glass = null;
             this._initGlass();
+            Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
         }
-        this._entry.grab_key_focus();
+
+        try {
+            this._entry.grab_key_focus();
+        } catch (_) {}
 
         if (fromRect) {
             this._box.ease({
@@ -1184,7 +1207,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         const hideGlass = () => {
             try {
-                if (this._glass && !this._glass.is_finalized?.()) {
+                if (_isGlassAlive(this._glass)) {
                     this._glass.remove_all_transitions();
                     this._glass.opacity = 0;
                     this._glass.visible = false;
@@ -1202,7 +1225,17 @@ export const MacApplicationsDialog = GObject.registerClass({
             return;
         }
 
-        hideGlass();
+        if (_isGlassAlive(this._glass)) {
+            this._glass.ease({
+                opacity: 0,
+                duration: 160,
+                mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+                onComplete: () => {
+                    hideGlass();
+                },
+            });
+        }
+
         this._box.ease({
             opacity: 0,
             scale_x: 0.94,
@@ -1258,7 +1291,16 @@ export const MacApplicationsDialog = GObject.registerClass({
 
 export function toggleApplicationsDialog(options = {}) {
     if (globalThis._macApplicationsGlobalInstance) {
-        if (!globalThis._macApplicationsGlobalInstance.get_parent() || globalThis._macApplicationsGlobalInstance.is_finalized?.()) {
+        let isDead = false;
+        try {
+            if (globalThis._macApplicationsGlobalInstance.is_finalized?.() ||
+                !_isActorValid(globalThis._macApplicationsGlobalInstance)) {
+                isDead = true;
+            }
+        } catch (_) {
+            isDead = true;
+        }
+        if (isDead) {
             try { globalThis._macApplicationsGlobalInstance.destroy(); } catch (_) {}
             globalThis._macApplicationsGlobalInstance = null;
         }
@@ -1275,6 +1317,14 @@ export function toggleApplicationsDialog(options = {}) {
     if (globalThis._macApplicationsGlobalInstance._isOpen) {
         globalThis._macApplicationsGlobalInstance.close();
     } else {
+        if (typeof globalThis._macCloseAllCenters === 'function') {
+            globalThis._macCloseAllCenters('applications');
+        } else {
+            try { globalThis._tahoeQSClose?.(); } catch (_) {}
+            try { globalThis._tahoeNCClose?.(true); } catch (_) {}
+            try { globalThis.closeMacSpotlight?.(true); } catch (_) {}
+            try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
+        }
         if (Main.overview?.visible) {
             Main.overview.hide();
         }

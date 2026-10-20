@@ -16,6 +16,32 @@ const DIALOG_WIDTH = 540;
 const DIALOG_MAX_HEIGHT = 600;
 const CORNER_RADIUS = 26;
 
+const _gobjectToString = GObject.Object.prototype.toString;
+
+function _isActorValid(actor) {
+    if (!actor) return false;
+    try {
+        const desc = _gobjectToString.call(actor);
+        if (desc.includes('(DISPOSED)') || desc.includes('(FINALIZED)')) return false;
+        if (actor._cleanedUp) return false;
+        return typeof actor.visible === 'boolean';
+    } catch (_) {
+        return false;
+    }
+}
+
+function _isGlassAlive(glass) {
+    if (!glass) return false;
+    try {
+        const desc = _gobjectToString.call(glass);
+        if (desc.includes('(DISPOSED)') || desc.includes('(FINALIZED)')) return false;
+        if (glass._cleanedUp) return false;
+        return typeof glass.visible === 'boolean' && glass.get_parent() !== null;
+    } catch (_) {
+        return false;
+    }
+}
+
 // Ensure storage directories exist
 try {
     GLib.mkdir_with_parents(IMAGES_DIR, 0o755);
