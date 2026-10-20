@@ -456,6 +456,47 @@ void on_mac_styling_clicked(void *row, void *user_data) {
     /* If row or template triggered this, navigation is handled by navigation.push */
 }
 
+static const char *gpu_subtitles[] = {
+    "Гібридний: Intel для системи • RTX 3050 для ігор та важких додатків",
+    "Всі програми на RTX 3050: Intel для системи • RTX 3050 для ВСІХ програм",
+    "Повна продуктивність: Уся система та всі програми на RTX 3050",
+    "Енергозбереження: Дискретна графіка вимкнена, тільки Intel UHD"
+};
+
+void init_gpu_mode(void *widget, gpointer data) {
+    in_init = 1;
+    int idx = 0;
+    FILE *f = fopen("/etc/mac-gpu.state", "r");
+    if (f) {
+        char buf[64];
+        if (fgets(buf, sizeof(buf), f)) {
+            buf[strcspn(buf, "\r\n")] = 0;
+            if (strcmp(buf, "apps_nvidia") == 0) idx = 1;
+            else if (strcmp(buf, "nvidia") == 0) idx = 2;
+            else if (strcmp(buf, "intel") == 0) idx = 3;
+            else idx = 0;
+        }
+        fclose(f);
+    }
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), (guint)idx);
+    if (idx >= 0 && idx < 4) {
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(widget), gpu_subtitles[idx]);
+    }
+    in_init = 0;
+}
+
+void on_gpu_mode_changed(void *widget, void *pspec, gpointer data) {
+    if (in_init) return;
+    guint idx = adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    const char *modes[] = {"hybrid", "apps_nvidia", "nvidia", "intel"};
+    if (idx < 4) {
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(widget), gpu_subtitles[idx]);
+        char *cmd = g_strdup_printf("sudo /usr/local/bin/mac-gpu-manager set %s", modes[idx]);
+        g_spawn_command_line_async(cmd, NULL);
+        g_free(cmd);
+    }
+}
+
 void init_game_mode(void *widget, gpointer data) {
     in_init = 1;
     int is_active = 0;

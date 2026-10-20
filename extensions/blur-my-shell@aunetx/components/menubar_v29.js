@@ -3551,6 +3551,14 @@ export const MenuBarController = class MenuBarController {
                 try { container.disconnect(container._clickConnId); } catch (_) {}
             }
             container._clickConnId = container.connect('button-press-event', (_actor, event) => {
+                // Kiwi активний: Центр повідомлень повністю обробляється
+                // kiwi@kemma (tahoeNotifications.js) — власний NC menubar
+                // не відкриваємо (режим переробки UI сповіщень).
+                try {
+                    const kiwiNow = Main.extensionManager.lookup('kiwi@kemma');
+                    if (kiwiNow && kiwiNow.state === 1)
+                        return Clutter.EVENT_PROPAGATE;
+                } catch (_) {}
                 if (event.get_button() === 1) {
                     this._toggleNotificationCenter();
                     return Clutter.EVENT_STOP;

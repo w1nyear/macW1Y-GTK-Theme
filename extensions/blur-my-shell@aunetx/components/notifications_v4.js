@@ -1226,6 +1226,8 @@ export const NotificationsController = class NotificationsController {
     }
 
     async _initGlass() {
+        // РЕЖИМ БЕЗ БАНЕРІВ (переробка UI сповіщень): скло для банерів не потрібне
+        return;
         if (this._glass && !this._glass.is_finalized?.()) return;
         try {
             const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
@@ -1345,67 +1347,15 @@ export const NotificationsController = class NotificationsController {
             return;
         }
 
-        const notifCenter = globalThis._macNotificationCenter ||
-            Main.extensionManager?.lookup?.('blur-my-shell@aunetx')?.stateObj?._menubar_controller;
-
-        // Check Do Not Disturb (Не турбувати)
-        let showBanners = true;
-        try {
-            const notifSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.notifications' });
-            showBanners = notifSettings.get_boolean('show-banners');
-        } catch (_) {}
-
-        if (!showBanners) {
-            notification.acknowledged = true;
-            if (notifCenter && typeof notifCenter.addNotificationQuiet === 'function') {
-                notifCenter.addNotificationQuiet(source, notification);
-            }
-            return;
-        }
-
-        // If Notification Center is open, animate into Notification Center directly
-        const isCenterOpen = (notifCenter?.isOpen ?? false) || (Main.panel?.statusArea?.dateMenu?.menu?.isOpen ?? false);
-        if (isCenterOpen) {
-            notification.acknowledged = true;
-            try { notification.playSound(); } catch (_e) { /* ignore */ }
-
-            if (notifCenter && typeof notifCenter.addNotificationAnimated === 'function') {
-                notifCenter.addNotificationAnimated(source, notification);
-            }
-            return;
-        }
-
-        // Validate policy & state
-        if (notification.acknowledged)
-            return;
-        if (notification.urgency === 0) // LOW
-            return;
-        if (!notification.source?.policy?.showBanners && notification.urgency !== 2) // CRITICAL
-            return;
-        if (Main.sessionMode.isLocked && !notification.source?.policy?.showInLockScreen)
-            return;
-        if (Main.layoutManager.primaryMonitor?.inFullscreen && notification.urgency !== 2)
-            return;
-
+        // ─── РЕЖИМ БЕЗ БАНЕРІВ (переробка UI сповіщень, v4) ───
+        // Плаваючі банери повністю знято. Сповіщення тихо додається в
+        // MessageTray і накопичується для Центру повідомлень.
+        // Нативний шлях банерів GNOME відновлювати не можна (у поточній
+        // сесії _bannerBin знищено), тому hijack лишається, але нічого
+        // не рендерить.
         notification.acknowledged = true;
-        try { notification.playSound(); } catch (_e) { /* ignore */ }
-
-        // Grouping key: by application / source
-        const groupKey = source?.id || source?.title || 'app';
-        let group = this._activeGroups.get(groupKey);
-
-        if (group) {
-            // Group already active: add new notification to group
-            group.addNotification(source, notification, true);
-            this._startGroupTimer(group, DEFAULT_TIMEOUT_MS);
-            this._syncGlass();
-        } else {
-            if (this._activeGroups.size < MAX_VISIBLE_BANNERS) {
-                this._showNewGroup(source, notification, groupKey);
-            } else {
-                this._pendingQueue.push({ source, notification });
-            }
-        }
+        try { notification.playSound(); } catch (_e) { /* ігноруємо */ }
+        return;
     }
 
     _showNewGroup(source, notification, groupKey) {

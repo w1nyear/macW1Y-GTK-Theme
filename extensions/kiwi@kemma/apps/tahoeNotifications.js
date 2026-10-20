@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Tahoe Notification Center: replaces the calendar popup on date click.
-// Container, menu geometry, header and backdrop glass stack copied completely from GNOME-Theme-Main (tahoeNotifications.js).
-// Notification card styling, grouping, and all animations adapted from our theme (notifications_v4.js / menubar_v29.js).
+// Tahoe Notification Center (v4): замінює спливання календаря по кліку на дату.
+// ЕТАП ПЕРЕРОБКИ UI СПОВІЩЕНЬ (v4, "нічого не показуємо"):
+//   • плаваючі банери повністю ВИДАЛЕНО — жодних спливаючих вікон; новий
+//     простий UI банерів буде додано пізніше;
+//   • стеки груп (MacNotificationGroup) у Центрі видалено — кожне
+//     сповіщення = окрема картка; стеки переробимо заново пізніше;
+//   • збережено всю логіку та анімації Центру: слайд панелі 480→0 320мс
+//     EASE_OUT_CUBIC / 260мс EASE_IN_CUBIC, каскад карток 240мс EASE_OUT_
+//     CUBIC зі стагером 35мс, каскад «Очистити все» 220мс EASE_IN_CUBIC,
+//     фейд glass-бекдропів 320мс/260мс.
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -9,18 +16,13 @@ import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import Meta from 'gi://Meta';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {getPanelInk, getTopbarInk, watchInk} from './tahoeInk.js';
+import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-    MacNotificationGroup,
-    formatRelativeNotifAge,
-    formatNotificationTimestamp,
-    safePangoMarkup,
-} from './tahoeNotificationCard.js?v=macnotif_v3';
+} from './tahoeNotificationCard.js?v=macnotif_v4';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -56,19 +58,10 @@ const NC_W = 480;
 const NC_RADIUS = 82;
 const BACKDROP_PAD = 60;
 const SHADER_PADDING = 20;
-// Ширина плаваючого банера-pілюлі (новий вигляд MacShell)
-const BANNER_W = 384;
 
 let _ = (m) => m;
 let _nc = null;
-let _bannerBox = null;
-let _bannerStack = null;
-let _bannerTimers = new Map();
-let _bannerEnabled = false;
-let _bannerHookIds = [];
-let _bannerWasBlocked = false;
-let _hookedSrc = new Set();
-let _bannerTickId = 0;
+let _trayWasBlocked = false;
 let _hooked = false;
 
 function _lgSettings() {
@@ -312,27 +305,14 @@ function _animateEnter(actor, idx = 0) {
     }
 }
 
-function _rebuild(activeBanners = []) {
+function _rebuild() {
     const p = _nc;
     if (!p)
         return;
     try {
         p.list.destroy_all_children();
 
-        const activeNotifs = new Set(activeBanners.map(b => b.notification));
-        const allItems = [];
-
-        // 1. Add active banners taken from controller
-        for (const b of activeBanners) {
-            allItems.push({ source: b.source, n: b.notification, activeBanner: b });
-        }
-
-        // 2. Add collected notifications
-        for (const item of _collect()) {
-            if (!activeNotifs.has(item.n)) {
-                allItems.push(item);
-            }
-        }
+        const allItems = _collect();
 
         if (!allItems.length) {
             const empty = new St.Label({
@@ -346,492 +326,25 @@ function _rebuild(activeBanners = []) {
             return;
         }
 
-        // Group items by app (groupKey = source id/title)
-        const groupsMap = new Map();
-        for (const item of allItems) {
-            const groupKey = item.source?.id || item.source?.title || 'app';
-            if (!groupsMap.has(groupKey))
-                groupsMap.set(groupKey, []);
-            groupsMap.get(groupKey).push(item);
-        }
-
-        const monitor = Main.layoutManager.primaryMonitor;
-
+        // Кожне сповіщення — окрема картка (стеки-групи видалено,
+        // переробимо заново пізніше). Каскадна поява: 240мс EASE_OUT_CUBIC,
+        // стагер 35мс по індексу.
         let enterIdx = 0;
+        for (const item of allItems) {
+            const cardData = _makeMacCard(item, () => {
+                if (p?.list && p.list.get_children().length === 0)
+                    _rebuild();
+            }, 440);
+            cardData.banner.x_align = Clutter.ActorAlign.CENTER;
+            cardData.banner._notification = item.n;
 
-        for (const [groupKey, groupItems] of groupsMap) {
-            if (groupItems.length === 1) {
-                const item = groupItems[0];
-                const cardData = _makeMacCard(item, () => {
-                    if (p?.list && p.list.get_children().length === 0)
-                        _rebuild();
-                }, 440);
-                cardData.banner.x_align = Clutter.ActorAlign.CENTER;
-                cardData.banner._notification = item.n;
-
-                p.list.add_child(cardData.banner);
-
-                if (item.activeBanner) {
-                    // Floating banner docking animation into NC slot
-                    cardData.banner.opacity = 0;
-                    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-                        cardData.banner.ease({
-                            opacity: 255,
-                            duration: 220,
-                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                        });
-                        return GLib.SOURCE_REMOVE;
-                    });
-                } else {
-                    // Каскадна поява карток (наш канон:,)
-                    _animateEnter(cardData.banner, enterIdx);
-                    enterIdx++;
-                }
-            } else {
-                // Group of 2 or more notifications: use MacNotificationGroup stack!
-                const group = new MacNotificationGroup(groupKey, {
-                    sigma: 30,
-                    isBanner: false,
-                    onGeometryChanged: () => {
-                        const s = p.stacks.find(st => st.kind === 'cards');
-                        if (s && monitor)
-                            _syncCards(p, monitor, s);
-                    },
-                    onExpand: () => {
-                        const s = p.stacks.find(st => st.kind === 'cards');
-                        if (s && monitor)
-                            _syncCards(p, monitor, s);
-                    },
-                    onCollapse: () => {
-                        const s = p.stacks.find(st => st.kind === 'cards');
-                        if (s && monitor)
-                            _syncCards(p, monitor, s);
-                    },
-                    onEmpty: () => {
-                        try { group.actor.destroy(); } catch (_) {}
-                        if (p?.list && p.list.get_children().length === 0)
-                            _rebuild();
-                    },
-                });
-
-                group.actor.x_align = Clutter.ActorAlign.CENTER;
-                p.list.add_child(group.actor);
-                if (!groupItems.some(it => it.activeBanner)) {
-                    _animateEnter(group.actor, enterIdx);
-                    enterIdx++;
-                }
-
-                for (const item of groupItems) {
-                    group.addNotification(item.source, item.n, false);
-                }
-            }
+            p.list.add_child(cardData.banner);
+            _animateEnter(cardData.banner, enterIdx);
+            enterIdx++;
         }
     } catch (e) {
         console.error(`[tahoe-nc] _rebuild error: ${e}`);
     }
-}
-
-// ---- desktop floating banners ----
-function _dndOn() {
-    try {
-        const s = new Gio.Settings({schema_id: 'org.gnome.desktop.notifications'});
-        return !s.get_boolean('show-banners');
-    } catch (_) {
-        return false;
-    }
-}
-
-function _ensureBannerBox() {
-    if (_bannerBox)
-        return true;
-    try {
-        const monitor = Main.layoutManager.primaryMonitor;
-        if (!monitor)
-            return false;
-        const panelH = Main.layoutManager.panelBox?.height ?? 32;
-        _bannerBox = new St.BoxLayout({
-            vertical: true,
-            style_class: 'tahoe-nc-banners',
-            reactive: false,
-            visible: true,
-            opacity: 255,
-        });
-        _bannerBox.set_width(BANNER_W);
-        _bannerBox.set_position(monitor.x + monitor.width - BANNER_W - 12, monitor.y + panelH + 10);
-        try {
-            if (getTopbarInk() === 'light')
-                _bannerBox.add_style_class_name('tahoe-qs-dark');
-            else
-                _bannerBox.remove_style_class_name('tahoe-qs-dark');
-        } catch (_) {}
-        Main.layoutManager.uiGroup.add_child(_bannerBox);
-        return true;
-    } catch (_) {
-        _bannerBox = null;
-        return false;
-    }
-}
-
-function _syncBannerGlass() {
-    const s = _bannerStack;
-    if (!s || !_bannerBox)
-        return;
-    try {
-        const monitor = Main.layoutManager.primaryMonitor;
-        if (!monitor)
-            return;
-        const regions = [];
-        let kids = [];
-        try {
-            kids = _bannerBox.get_children();
-        } catch (_) {
-            kids = [];
-        }
-        for (const card of kids) {
-            try {
-                if (!card || !card.get_stage?.())
-                    continue;
-                if (!card?.has_style_class_name?.('mac-notification-banner') && !card?.has_style_class_name?.('tahoe-nc-card'))
-                    continue;
-                if (!card.visible)
-                    continue;
-                const [cx, cy] = card.get_transformed_position();
-                const cw = card.width, ch = card.height;
-                if (!(cw > 0) || !(ch > 0) || !isFinite(cx) || !isFinite(cy))
-                    continue;
-                const m = 0;
-                regions.push({
-                    x: (cx - monitor.x) - m, y: (cy - monitor.y) - m,
-                    w: cw + m * 2, h: ch + m * 2,
-                    tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
-                });
-            } catch (_) {}
-        }
-        s.bgActor.set_position(monitor.x, monitor.y);
-        if (!regions.length) {
-            if (s.bgActor.visible)
-                s.bgActor.hide();
-            return;
-        }
-        if (!s.bgActor.visible)
-            s.bgActor.show();
-        s.bgActor.opacity = 255;
-        const fill = _cardFill();
-        for (const r of regions) {
-            r.tintR = fill.c[0];
-            r.tintG = fill.c[1];
-            r.tintB = fill.c[2];
-            r.baseStrength = fill.a;
-        }
-        s.effect.setGlassRegions(regions);
-        s.effect.setResolution(monitor.width, monitor.height);
-        s.liquidBox.set_position(0, 0);
-        s.liquidBox.set_size(monitor.width, monitor.height);
-        const [bx, by] = _bannerBox.get_transformed_position();
-        const bw = _bannerBox.width, bh = _bannerBox.height;
-        if (isFinite(bx) && isFinite(by) && bw > 0 && bh > 0)
-            setClipIfChanged(s.bgActor, bx - monitor.x - 200, by - monitor.y - 200, bw + 400, bh + 400);
-        s.wcm.setOffset(-monitor.x, -monitor.y);
-        syncGlassCaptureClip({
-            cloneContainer: s.cloneContainer,
-            effect: s.effect,
-            originX: monitor.x,
-            originY: monitor.y,
-            uiSampler: s.uiSampler,
-            windowCloneManager: s.wcm,
-        });
-        ensureGlassAllocated(s.bgActor);
-        s.uiSampler.refresh();
-        s.uiSampler.sync(monitor.x, monitor.y, monitor.width, monitor.height);
-        s.wcm.sync();
-    } catch (_) {}
-}
-
-function _ensureBannerGlass() {
-    if (_bannerStack)
-        return true;
-    try {
-        const monitor = Main.layoutManager.primaryMonitor;
-        if (!monitor || !_bannerBox)
-            return false;
-        const s = _makeGlassStack(monitor, 24, 'nc-banners', false);
-        Main.layoutManager.uiGroup.add_child(s.bgActor);
-        try {
-            Main.layoutManager.uiGroup.set_child_below_sibling(s.bgActor, _bannerBox);
-        } catch (_) {}
-        try {
-            s.uiSampler.addExclusion(_bannerBox);
-        } catch (_) {}
-        s.wcm.rebuildClones();
-        s.uiSampler.rebindSelf();
-        s.uiSampler.refresh();
-        _bannerStack = s;
-        return true;
-    } catch (_) {
-        _bannerStack = null;
-        return false;
-    }
-}
-
-function _destroyBannerGlass() {
-    if (_bannerTickId) {
-        try {
-            global.compositor.get_laters().remove(_bannerTickId);
-        } catch (_) {}
-        _bannerTickId = 0;
-    }
-    const s = _bannerStack;
-    _bannerStack = null;
-    if (!s)
-        return;
-    try { s.effect?.cleanup?.(); } catch (_) {}
-    try { s.uiSampler?.destroy?.(); } catch (_) {}
-    try { s.wcm?.destroy?.(); } catch (_) {}
-    try { s.bgActor?.destroy?.(); } catch (_) {}
-}
-
-function _dismissBanner(card) {
-    try {
-        const id = _bannerTimers.get(card);
-        if (id) {
-            try { GLib.Source.remove(id); } catch (_) {}
-            _bannerTimers.delete(card);
-        }
-    } catch (_) {}
-    try {
-        card.ease({
-            translation_x: 480,
-            opacity: 0,
-            duration: 220,
-            mode: Clutter.AnimationMode.EASE_IN_CUBIC,
-            onComplete: () => {
-                try { card.destroy(); } catch (_) {}
-                try { _syncBannerGlass(); } catch (_) {}
-            },
-        });
-    } catch (_) {
-        try { card.destroy(); } catch (_) {}
-    }
-}
-
-function _bannerTickStart() {
-    if (_bannerTickId)
-        return;
-    const tick = () => {
-        _bannerTickId = 0;
-        try {
-            if (!_bannerStack || !_bannerBox)
-                return GLib.SOURCE_REMOVE;
-            let kids = [];
-            try {
-                kids = _bannerBox.get_children();
-            } catch (_) {
-                kids = [];
-            }
-            if (!kids.length)
-                return GLib.SOURCE_REMOVE;
-            try {
-                if (!_bannerStack.bgActor.mapped)
-                    return GLib.SOURCE_REMOVE;
-            } catch (_) {
-                return GLib.SOURCE_REMOVE;
-            }
-            try {
-                _syncBannerGlass();
-            } catch (_) {}
-        } catch (_) {
-            return GLib.SOURCE_REMOVE;
-        }
-        try {
-            _bannerTickId = global.compositor.get_laters().add(
-                Meta.LaterType.BEFORE_REDRAW, tick);
-        } catch (_) {
-            _bannerTickId = 0;
-        }
-        return GLib.SOURCE_REMOVE;
-    };
-    try {
-        _bannerTickId = global.compositor.get_laters().add(
-            Meta.LaterType.BEFORE_REDRAW, tick);
-    } catch (_) {
-        _bannerTickId = 0;
-    }
-}
-
-function _showBanner(item) {
-    try {
-        if (!_bannerEnabled)
-            return;
-        if (_dndOn())
-            return;
-        if (!_ensureBannerBox())
-            return;
-        try {
-            if (getTopbarInk() === 'light')
-                _bannerBox.add_style_class_name('tahoe-qs-dark');
-            else
-                _bannerBox.remove_style_class_name('tahoe-qs-dark');
-        } catch (_) {}
-        while (_bannerBox.get_children().length >= 4) {
-            try {
-                _bannerBox.get_children()[0].destroy();
-            } catch (_) {
-                break;
-            }
-        }
-        const cardData = _makeMacCard(item, () => {
-            _dismissBanner(cardData.banner);
-        });
-        const card = cardData.banner;
-        _bannerBox.add_child(card);
-
-        // Новий вигляд: пілюля → картка (адаптований морф MacShell, наші таймінги)
-        try {
-            const FULL_W = BANNER_W;
-            const PILL_W = Math.max(150, Math.round(FULL_W * 0.42));
-
-            card.remove_all_transitions();
-            card.set_width(PILL_W);
-            card.translation_x = 46;
-            card.opacity = 0;
-            if (cardData.content) {
-                try { cardData.content.opacity = 0; } catch (_) {}
-            }
-            try { card.set_style(cardData.pillStyle || cardData.baseStyle); } catch (_) {}
-
-            // 1) вїзд зправа (наш канон: 320мс EASE_OUT_CUBIC)
-            card.ease({
-                translation_x: 0,
-                opacity: 255,
-                duration: 320,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
-
-            // 2) ріст ширини пілюлі до повної картки (460мс EASE_OUT_QUINT)
-            card.ease({
-                width: FULL_W,
-                duration: 460,
-                delay: 60,
-                mode: Clutter.AnimationMode.EASE_OUT_QUINT,
-                onComplete: () => {
-                    try { card.set_width(FULL_W); } catch (_) {}
-                },
-            });
-
-            // 3) заокруглення: пілюля → 22px → 16px (наш канон)
-            const radiusSteps = [0, 330, 520];
-            const radiusStyles = [
-                cardData.pillStyle || cardData.baseStyle,
-                cardData.midStyle || cardData.baseStyle,
-                cardData.baseStyle,
-            ];
-            radiusSteps.forEach((ms, i) => {
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
-                    try {
-                        if (!cardData.isClosing)
-                            card.set_style(radiusStyles[i]);
-                    } catch (_) {}
-                    return GLib.SOURCE_REMOVE;
-                });
-            });
-
-            // 4) вміст розкривається ближче до укладання картки
-            if (cardData.content) {
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 300, () => {
-                    try {
-                        cardData.content.remove_all_transitions();
-                        cardData.content.ease({
-                            opacity: 255,
-                            duration: 220,
-                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                        });
-                    } catch (_) {}
-                    return GLib.SOURCE_REMOVE;
-                });
-            }
-        } catch (_) {
-            try { card.set_width(FULL_W); } catch (_) {}
-            card.translation_x = 0;
-            card.opacity = 255;
-        }
-
-        if (_ensureBannerGlass()) {
-            try { _syncBannerGlass(); } catch (_) {}
-            for (const ms of [80, 250, 500]) {
-                try {
-                    GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
-                        try { _syncBannerGlass(); } catch (_) {}
-                        return GLib.SOURCE_REMOVE;
-                    });
-                } catch (_) {
-                    break;
-                }
-            }
-        }
-
-        try {
-            const id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 6000, () => {
-                try { _bannerTimers.delete(card); } catch (_) {}
-                _dismissBanner(card);
-                return GLib.SOURCE_REMOVE;
-            });
-            _bannerTimers.set(card, id);
-        } catch (_) {}
-
-        try {
-            _bannerTickStart();
-        } catch (_) {}
-    } catch (_) {}
-}
-
-function _onTrayNotification(source) {
-    try {
-        const notifs = source?.notifications ?? [];
-        if (!notifs.length)
-            return;
-        const n = notifs[notifs.length - 1];
-        try {
-            if (n.acknowledged)
-                return;
-        } catch (_) {}
-        try {
-            if (n.urgency === MessageTray.Urgency.LOW)
-                return;
-        } catch (_) {}
-        _showBanner({source, n});
-        try {
-            n.acknowledged = true;
-        } catch (_) {}
-    } catch (_) {}
-}
-
-function _hookBannerTray() {
-    const hook = (obj, sig, fn) => {
-        try {
-            const id = obj.connect(sig, fn);
-            if (id)
-                _bannerHookIds.push([obj, id]);
-        } catch (_) {}
-    };
-    try {
-        const tray = Main.messageTray;
-        if (!tray)
-            return;
-        if (!_hookedSrc.has(tray)) {
-            _hookedSrc.add(tray);
-            hook(tray, 'source-added', (t, src) => hookSource(src));
-        }
-        const hookSource = (src) => {
-            if (!src || _hookedSrc.has(src))
-                return;
-            _hookedSrc.add(src);
-            hook(src, 'notification-added', () => _onTrayNotification(src));
-        };
-        try {
-            for (const src of tray.getSources?.() ?? [])
-                hookSource(src);
-        } catch (_) {}
-    } catch (_) {}
 }
 
 function _watchTray(p) {
@@ -997,7 +510,7 @@ function _applyNcInk() {
     } catch (_) {}
 }
 
-function _buildPanel(activeBanners = []) {
+function _buildPanel() {
     const monitor = Main.layoutManager.primaryMonitor;
     const panelH = Main.layoutManager.panelBox?.height ?? 32;
     const W = NC_W;
@@ -1244,7 +757,7 @@ function _buildPanel(activeBanners = []) {
     }
 
     _watchTray(p);
-    _rebuild(activeBanners);
+    _rebuild();
 
     // Slide-in animation from our theme: translation_x 480 -> 0 with EASE_OUT_CUBIC
     try {
@@ -1380,27 +893,20 @@ export function openNC() {
         }).catch(() => {});
     } catch (_) {}
 
-    // Take any active floating banners so we can dock them smoothly into the center
-    let activeBanners = [];
+    // Якщо відкритий NC menubar (легасі) — закриваємо його теж:
     try {
-        const notifCtrl = globalThis._macNotificationsController ||
-            Main.extensionManager?.lookup?.('blur-my-shell@aunetx')?.stateObj?._notifications_controller;
-        if (notifCtrl && typeof notifCtrl.takeActiveBanners === 'function') {
-            activeBanners = notifCtrl.takeActiveBanners();
-        }
-        if (notifCtrl?._stackBox) {
-            notifCtrl._stackBox.hide();
-        }
+        globalThis._macNotificationCenter?._closeNotificationCenter?.();
     } catch (_) {}
 
     try {
-        _buildPanel(activeBanners);
+        _buildPanel();
     } catch (e) {
         console.error(`[tahoe-nc] open failed: ${e}`);
         try {
             closeNC();
         } catch (_) {}
     }
+    globalThis._tahoeNCOpen = true;
 }
 
 export function closeNC(immediate = false) {
@@ -1410,15 +916,10 @@ export function closeNC(immediate = false) {
     p._closing = true;
     _nc = null;
 
+    globalThis._tahoeNCOpen = false;
+
     if (immediate) {
         _destroyNC(p);
-        try {
-            const notifCtrl = globalThis._macNotificationsController ||
-                Main.extensionManager?.lookup?.('blur-my-shell@aunetx')?.stateObj?._notifications_controller;
-            if (notifCtrl?._stackBox) {
-                notifCtrl._stackBox.show();
-            }
-        } catch (_) {}
         return;
     }
 
@@ -1458,13 +959,6 @@ export function closeNC(immediate = false) {
     } catch (_) {
         _destroyNC(p);
     }
-    try {
-        const notifCtrl = globalThis._macNotificationsController ||
-            Main.extensionManager?.lookup?.('blur-my-shell@aunetx')?.stateObj?._notifications_controller;
-        if (notifCtrl?._stackBox) {
-            notifCtrl._stackBox.show();
-        }
-    } catch (_) {}
 }
 
 export function toggleNC() {
@@ -1499,49 +993,37 @@ function _hookDate() {
 export function enable(settings, gettextFunc) {
     if (typeof gettextFunc === 'function')
         _ = gettextFunc;
-    _bannerEnabled = true;
+    // Тихий режим: нативні банери вимкнено (сповіщення накопичуються
+    // лише в Центрі повідомлень). Флоутинг-банери видалено у v4;
+    // новий простий UI банерів додається пізніше.
     try {
         const tray = Main.messageTray;
         if (tray) {
             try {
-                _bannerWasBlocked = !!tray.bannerBlocked;
+                _trayWasBlocked = !!tray.bannerBlocked;
             } catch (_) {
-                _bannerWasBlocked = false;
+                _trayWasBlocked = false;
             }
             try {
                 tray.bannerBlocked = true;
             } catch (_) {}
         }
     } catch (_) {}
-    _hookBannerTray();
     _hookDate();
+    // Делегатор для легасі-споживачів (tahoeNotificationCenter.js-шим
+    // → topbarBlur / tahoeOSD), щоб вони завжди консультували ЖИВИЙ
+    // інстанс модуля незалежно від кешування ES-модулів.
+    globalThis.__tahoeNC = {
+        isNCOpen, getNCPanelBox, getNCOverlay, openNC, closeNC, toggleNC,
+    };
+    globalThis._tahoeNCOpen = false;
 }
 
 export function disable() {
     _ = (m) => m;
-    _bannerEnabled = false;
-    try {
-        for (const [obj, id] of _bannerHookIds) {
-            try { obj?.disconnect(id); } catch (_) {}
-        }
-    } catch (_) {}
-    _bannerHookIds = [];
-    _hookedSrc.clear();
-    try {
-        for (const [card, id] of _bannerTimers) {
-            try { GLib.Source.remove(id); } catch (_) {}
-            try { card?.destroy(); } catch (_) {}
-        }
-    } catch (_) {}
-    _bannerTimers = new Map();
-    _destroyBannerGlass();
-    try {
-        _bannerBox?.destroy();
-    } catch (_) {}
-    _bannerBox = null;
     try {
         const tray = Main.messageTray;
-        if (tray && !_bannerWasBlocked) {
+        if (tray && !_trayWasBlocked) {
             try { tray.bannerBlocked = false; } catch (_) {}
         }
     } catch (_) {}
@@ -1559,8 +1041,14 @@ export function disable() {
         }
     } catch (_) {}
     _hooked = false;
+    globalThis.__tahoeNC = null;
+    globalThis._tahoeNCOpen = false;
 }
 
+// Інтерфейс для centerManager/extension.js:
 globalThis._tahoeNCClose = closeNC;
-globalThis._tahoeNCOpen = () => isNCOpen();
+// ВАЖЛИВО: _tahoeNCOpen — boolean стан (читається menubar_v29
+// у _changeMenu/_onCapturedEvent як Boolean(...)); функція тут неприпустима,
+// otherwise hover-switch патч ламається.
+globalThis._tahoeNCOpen = false;
 globalThis._tahoeNCToggle = toggleNC;

@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+import sys
+import os
+import subprocess
+import pwd
+
+STATE_FILE = '/etc/mac-gpu.state'
+ENV_FILE = '/etc/environment.d/99-mac-gpu.conf'
+
+MODES = ['hybrid', 'apps_nvidia', 'nvidia', 'intel']
+
+MODE_DESCRIPTIONS = {
+    'hybrid': 'Гібридний (Intel — система • RTX 3050 — ігри та важкі програми)',
+    'apps_nvidia': 'Всі програми на RTX 3050 (Intel — система • RTX 3050 — всі інші програми)',
+    'nvidia': 'Повна продуктивність (Все на RTX 3050)',
+    'intel': 'Енергозбереження (Тільки Intel UHD Graphics)'
+}
+
+NVIDIA_ENV_VARS = {
+    '__NV_PRIME_RENDER_OFFLOAD': '1',
+    '__GLX_VENDOR_LIBRARY_NAME': 'nvidia',
+    '__VK_LAYER_NV_optimus': 'NVIDIA_only',
+    'VK_DRIVER_FILES': '/usr/share/vulkan/icd.d/nvidia_icd.json',
+    'VK_ICD_FILENAMES': '/usr/share/vulkan/icd.d/nvidia_icd.json'
+}
+
+def run_cmd(cmd):
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
+        return res.stdout.strip()
+    except Exception:
+        return ''
+
+def get_current_prime():
+    return run_cmd(['prime-select', 'query']).lower()
+
+def get_current_mode():
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, 'r') as f:
+                val = f.read().strip()
+                if val in MODES:
+                    return val
+        except Exception:
+            pass
+
+    prime = get_current_prime()
+    has_env = os.path.exists(ENV_FILE)
+
+    if prime == 'intel':
+        return 'intel'
+    elif prime == 'nvidia':
+        return 'nvidia'
+    elif has_env:
+        return 'apps_nvidia'
+    else:
+        return 'hybrid'
+
+def apply_user_systemd_env(enable=True):
+    for u in pwd.getpwall():
+        if u.pw_uid >= 1000 and u.pw_uid < 60000:
+            uid = str(u.pw_uid)
+            user_env = os.environ.copy()
+            user_env['XDG_RUNTIME_DIR'] = f'/run/user/{uid}'
+            user_env['DBUS_SESSION_BUS_ADDRESS'] = f'unix:path=/run/user/{uid}/bus'
+            if enable:
+                for k, v in NVIDIA_ENV_VARS.items():
+                    cmd = ['sudo', '-u', u.pw_name, 'env', f'XDG_RUNTIME_DIR=/run/user/{uid}', 'systemctl', '--user', 'set-environment', f'{k}={v}']
+                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                var_names = list(NVIDIA_ENV_VARS.keys())
+                cmd = ['sudo', '-u', u.pw_name, 'env', f'XDG_RUNTIME_DIR=/run/user/{uid}', 'systemctl', '--user', 'unset-environment'] + var_names
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def set_mode(mode):
+    if mode not in MODES:
+        print(f"Error: Invalid mode '{mode}'. Choose from: {', '.join(MODES)}", file=sys.stderr)
+        sys.exit(1)
+
+    os.makedirs('/etc/environment.d', exist_ok=True)
+    current_prime = get_current_prime()
+
+    if mode == 'hybrid':
+        if current_prime != 'on-demand':
+            subprocess.run(['prime-select', 'on-demand'], check=False)
+        if os.path.exists(ENV_FILE):
+            try:
+                os.remove(ENV_FILE)
+            except OSError:
+                pass
+        apply_user_systemd_env(enable=False)
+
+    elif mode == 'apps_nvidia':
+        if current_prime != 'on-demand':
+            subprocess.run(['prime-select', 'on-demand'], check=False)
+        with open(ENV_FILE, 'w') as f:
+            for k, v in NVIDIA_ENV_VARS.items():
+                f.write(f'{k}={v}\n')
+        apply_user_systemd_env(enable=True)
+
+    elif mode == 'nvidia':
+        if current_prime != 'nvidia':
+            subprocess.run(['prime-select', 'nvidia'], check=False)
+        with open(ENV_FILE, 'w') as f:
+            for k, v in NVIDIA_ENV_VARS.items():
+                f.write(f'{k}={v}\n')
+        apply_user_systemd_env(enable=True)
+
+    elif mode == 'intel':
+        if current_prime != 'intel':
+            subprocess.run(['prime-select', 'intel'], check=False)
+        if os.path.exists(ENV_FILE):
+            try:
+                os.remove(ENV_FILE)
+            except OSError:
+                pass
+        apply_user_systemd_env(enable=False)
+
+    with open(STATE_FILE, 'w') as f:
+        f.write(f"{mode}\n")
+
+    print(f"Mode set to: {mode} ({MODE_DESCRIPTIONS[mode]})")
+
+def print_status():
+    mode = get_current_mode()
+    prime = get_current_prime()
+    print("=" * 50)
+    print("  macOS Style GPU Manager for Hybrid Laptops")
+    print("=" * 50)
+    print(f"Active Mode        : {mode} ({MODE_DESCRIPTIONS.get(mode, 'Unknown')})")
+    print(f"prime-select state : {prime}")
+    print(f"Global NVIDIA Env  : {'Enabled (/etc/environment.d/99-mac-gpu.conf)' if os.path.exists(ENV_FILE) else 'Disabled (Default to Intel UHD)'}")
+    print("=" * 50)
+
+def main():
+    if len(sys.argv) < 2:
+        print_status()
+        sys.exit(0)
+
+    action = sys.argv[1].lower()
+
+    if action in ('get', 'query', 'current'):
+        mode = get_current_mode()
+        print(mode)
+        try:
+            sys.exit(MODES.index(mode))
+        except ValueError:
+            sys.exit(0)
+
+    elif action in ('get-index', 'index'):
+        mode = get_current_mode()
+        try:
+            print(MODES.index(mode))
+        except ValueError:
+            print(0)
+        sys.exit(0)
+
+    elif action == 'set':
+        if len(sys.argv) < 3:
+            print("Usage: mac-gpu-manager set <hybrid|apps_nvidia|nvidia|intel>", file=sys.stderr)
+            sys.exit(1)
+        target = sys.argv[2].lower()
+        if target.isdigit():
+            idx = int(target)
+            if 0 <= idx < len(MODES):
+                target = MODES[idx]
+        set_mode(target)
+
+    elif action in ('status', 'info'):
+        print_status()
+
+    else:
+        print("Usage: mac-gpu-manager {get|get-index|set <mode>|status}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()

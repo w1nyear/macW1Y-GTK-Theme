@@ -7093,3 +7093,138 @@ echo "==> Встановлення успішно завершено!"
    * [~/MACTHEMEFILES/extensions/](file:///home/vitaliy/macW1Y/extensions/) — усі 5 файлів синхронізовано з репозиторієм (Source of Truth), `diff` повний.
 
 Локальний комміт зроблено, push (як завжди) не виконано.
+
+================================================================================
+17. Оптимізація графіки для гібридних ноутбуків (Intel UHD + NVIDIA RTX 3050)
+================================================================================
+1. Усунення просідання FPS (40 FPS у CS2) та фрізів компіляції шейдерів:
+   - Діагностика: у скрипті запуску Steam використовувались змінні `DRI_PRIME=1`, `MESA_VK_DEVICE_SELECT` та некоректна `VK_LOADER_DRIVERS_SELECT="*nvidia*"`. Через це рушій гри (Source 2 / Vulkan) та OpenGL примусово перенаправлялися через шар емуляції Mesa Zink (OpenGL поверх емуляції Vulkan), що призводило до катастрофічного падіння продуктивності до ~40 FPS.
+   - Виправлення:
+     * Повністю вилучено конфліктні змінні `DRI_PRIME` та `MESA_VK_DEVICE_SELECT`.
+     * Налаштовано прямий пропрієтарний стек NVIDIA PRIME Offload:
+       `__NV_PRIME_RENDER_OFFLOAD=1`
+       `__GLX_VENDOR_LIBRARY_NAME=nvidia`
+       `__VK_LAYER_NV_optimus=NVIDIA_only`
+       `VK_DRIVER_FILES=/usr/share/vulkan/icd.d/nvidia_icd.json`
+       `VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json`
+     * Налаштовано `FOSSILIZE_THREADS=2` для фонової обробки шейдерів Steam без перевантаження P-ядер процесора та зависання оболонки.
+     * Оновлено майстер-лаунчери /usr/local/bin/steam, ~/MACTHEMEFILES/bin/steam та створено універсальний /usr/local/bin/prime-run.
+
+2. Виправлення запуску Watch Dogs 2 (Snap Steam та дискретний накопичувач):
+   - Діагностика: при знаходженні додаткової бібліотеки Steam за шляхом `/mnt/nvme1n1/SteamLibrary`, пісочниця Steam Snap та середовище контейнеризації Proton (pressure-vessel) блокували шлях `/var/lib/snapd/hostfs/mnt/...` з помилкою `Proton: Error: unable to use parent for game drive`.
+   - Виправлення:
+     * Додано стабільне монтування `/mnt/nvme1n1 /media/vitaliy/nvme1n1 none bind,nofail 0 0` у `/etc/fstab`.
+     * Оновлено конфігураційні файли Steam:
+       `/home/vitaliy/snap/steam/common/.local/share/Steam/config/libraryfolders.vdf`
+       `/home/vitaliy/snap/steam/common/.local/share/Steam/steamapps/libraryfolders.vdf`
+       шлях бібліотеки змінено на прямий `/media/vitaliy/nvme1n1/SteamLibrary`.
+     * Інтерфейс Snap `removable-media` має прямий прозорий доступ до `/media`, завдяки чому Proton призначає дискові літери без помилок.
+
+3. Перемикач розподілу GPU у системних «Параметрах» (Живлення / Power):
+   - Створено системний менеджер `/usr/local/bin/mac-gpu-manager` (та ~/MACTHEMEFILES/bin/mac-gpu-manager) з підтримкою 4 режимів:
+     1) Гібридний (Intel — система • RTX 3050 — ігри та важкі програми) [За замовчуванням]
+     2) Всі програми на RTX 3050 (Intel — система • RTX 3050 — всі інші програми, навіть прості)
+     3) Повна продуктивність (Все на RTX 3050)
+     4) Енергозбереження (Тільки Intel UHD Graphics)
+   - Інтерфейс користувача:
+     * У `cc-power-panel.ui` (оверлей GNOME Settings) додано групу «Графіка та відеокарти (GPU)» з селектором `AdwComboRow` (`gpu_mode_row`).
+     * У динамічній бібліотеці `libmac_settings.c` реалізовано обробники сигналів `init_gpu_mode` та `on_gpu_mode_changed` з динамічним оновленням підписів.
+     * Бібліотеку скомпільовано у `~/.local/lib/libmac_settings.so` та синхронізовано з `MACTHEMEFILES/lib/libmac_settings.so`.
+
+Дата: 20.10.2026
+================================================================================
+18. ПОВНА ПЕРЕРОБКА СПОВІЩЕНЬ — ЕТАП 1: БАНЕРИ ВИМКНЕНО, СТЕКИ ЗНЯТО
+================================================================================
+Рішення користувача: плаваючі банери виводяться повністю («поки що нічого не
+буде» — новий простий UI банерів робиться наступними етапами), у Центрі
+повідомлень знято стеки-групи (переробляться заново), вся логіка та анімації
+Центру збережені.
+
+1. [tahoeNotifications.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeNotifications.js) (активація `?v=macnotif_v4`):
+   - Видалено ~403 рядки банерної підсистеми: `BANNER_W`, `_bannerBox`,
+     `_bannerStack`, `_bannerTimers`, `_bannerTickId`, функції `_dndOn`,
+     `_ensureBannerBox`, `_syncBannerGlass`, `_ensureBannerGlass`,
+     `_destroyBannerGlass`, `_dismissBanner`, `_bannerTickStart`,
+     `_showBanner` (морф «пілюля → картка»), `_onTrayNotification`,
+     `_hookBannerTray`; з `openNC`/`closeNC` прибрано докінг активних
+     банерів (takeActiveBanners/_stackBox).
+   - [`_rebuild()`](file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeNotifications.js#L196-L235) — плаский список: кожне сповіщення = окрема картка
+     `buildNotificationCard(..., 440)` з каскадом 240мс EASE_OUT_CUBIC,
+     стагер 35мс; гілку для MacNotificationGroup видалено.
+   - `enable()`: `tray.bannerBlocked = true` (тихий режим) + реєстрація
+     делегатора `globalThis.__tahoeNC` (isNCOpen/getNCPanelBox/getNCOverlay/
+     openNC/closeNC/toggleNC); `disable()` — повний рестор.
+   - ВАЖЛИВО: `globalThis._tahoeNCOpen` тепер BOOLEAN стан (оригінальний
+     варіант «функція () => isNCOpen()» давав Boolean(fn)===true і назавжди
+     блокував hover-switch у патчe `_changeMenu` menubar_v29.js).
+   - `openNC` додатково просто закриває легасі-NC menubar (якщо раптом
+     `globalThis._macNotificationCenter` відкритий).
+
+2. [tahoeNotificationCard.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeNotificationCard.js):
+   1634 → 517 рядків. Видалено `MacNotificationGroup` (стеки) і
+   `NotificationsController` (банери) + глобал `_macBuildNotificationCard`.
+   Залишено `buildNotificationCard` (тайл-іконка 44×44/r10, відносний час,
+   «ТЕРМІНОВО», кругла кнопка ✕, стилі base/hover/pill/mid) та хелпери
+   (`safePangoMarkup`, `formatRelativeNotifAge` тощо) — вони потрібні Центру.
+
+3. [tahoeNotificationCenter.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeNotificationCenter.js):
+   старий 1349-рядковий мертвий дубль переписано у THIN-SHIM (~52 рядки):
+   усі експорти делегують через `globalThis.__tahoeNC` до ЖИВОГО інстансу
+   `tahoeNotifications.js` — це виправляє споживачів `topbarBlur.js`
+   (getNCPanelBox/getNCOverlay) та `tahoeOSD.js` (isNCOpen), які раніше
+   завжди отримували null/false, і записує консистентний
+   `globalThis._tahoeNotificationCenterClose`.
+
+4. blur-my-shell / [notifications_v4.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/notifications_v4.js) + [menubar_v29.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v29.js):
+   - `_handleNotificationRequest` → РЕЖИМ БЕЗ БАНЕРІВ: hijack tray ЗБЕРЕЖЕНО
+     навмисно, але нічого не рендериться (`acknowledged = true` + звук).
+     Причина: у живій сесії `Main.messageTray._bannerBin` ЗНИЩЕНО (щербина
+     минулого агресивного тестування) — відновлення нативного шляху впало
+     б з `get_x_align on undefined`.
+   - `_initGlass` → no-op (скло банерів не створюється).
+   - menubar: у container-click handler додано guard — коли kiwi активний,
+     власний NC menubar не відкриває (dateMenu повністю обслуговує kiwi).
+
+5. [extension.js](file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/extension.js):
+   динамічний імпорт NC замінено `?v=macnotif_v3` → `?v=macnotif_v4` (після
+   перезавантаження сесії система грузиться зі свіжим кодом). У stylesheet.css
+   видалено клас `.tahoe-nc-banners`.
+
+6. Жива хірургія (без розриву сесії, техніка з п. 5 «НОВИЙ ВИГЛЯД…»):
+   - blur: instance-patch `_handleNotificationRequest`/`_initGlass` → but
+     no-op; скло банерів знищено; stage-loop відключено; `_stackBox` ховано.
+   - kiwi: `disable()` старих інстанцій (static '', `?v=macnotif_v3`,
+     stateObj) → `import('?v=macnotif_v4')` (унікальний URI — єдиний шлях
+     обійти кеш GJS) → `enable`; `stateObj._tahoeNC = M`; власний
+     `_on_settings_changed` (оригінал викликається, далі гарантується
+     повернення на v4-інстанс).
+   - menubar: live-no-op `_openNotificationCenter`.
+
+7. Верифікація (EvalHelper, D-Bus):
+   - Нове тестове сповіщення: бенер ВІДСУТНІЙ (activeGroups=0, stackKids=0,
+     glass-акторів 0); джерело накопичилось у MessageTray для Центру.
+   - Центр: overlay видимий, геометрія 480×~734 у правому верхньому куті;
+     ПЛАСКИЙ список — 5 карток, 0 стеків; closing чистий.
+   - «Очистити все»: каскад відпрацював → cards:0, emptyState:true, усі
+     джерела tray знищені (семантика Clear All збережена).
+   - DnD-рядок та перемикач у Центрі не пошкоджені; заголовок/пілюля — на
+     місці.
+   - journalctl: 0 JS-ошибок (лише pixman-invalid-rect варнінги, які мали
+     місце ДО змін).
+   - Відкриття: `bannerBlocked` виявилось нативною властивістю, синхронізо-
+     ваною з `org.gnome.desktop.notifications show-banners` (нативна
+     синхронізація миттєво перетирає вручну встановлене значення) →
+     пригнічення банерів реально забезпечує hijack no-op, а не цей
+     прапорець.
+
+8. Стан: kiwi state=1, dateMenu hooked, `__tahoeNC` делегатор живий,
+   `_tahoeNCOpen` = boolean. Після перезавантаження сесії все грузиться з
+   диска вже в v4 без ручних патчів.
+
+9. Файли синхронізовано з репо (Source of Truth): extension.js, stylesheet.css,
+   apps/tahoeNotifications.js, apps/tahoeNotificationCard.js,
+   apps/tahoeNotificationCenter.js (kiwi@kemma); components/notifications_v4.js,
+   components/menubar_v29.js (blur-my-shell@aunetx).
+
+Наступні етапи (за домовленістю): новий простий UI плаваючих банерів та
+нові стеки-групи (переробка з нуля).

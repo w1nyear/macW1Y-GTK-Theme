@@ -1255,7 +1255,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 /* Tahoe Notification Center */
 .tahoe-nc-panel { spacing: 10px; padding: 14px; background-color: transparent; }
-.tahoe-nc-banners { spacing: 10px; }
+
 .tahoe-nc-head { spacing: 10px; }
 .tahoe-nc-clear {
     border-radius: 9999px;

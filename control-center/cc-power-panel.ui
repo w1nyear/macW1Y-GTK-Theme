@@ -80,6 +80,30 @@ corresponding .blp file and regenerate this file with blueprint-compiler.
 													</object>
 												</child>
 												<child>
+													<object class="AdwPreferencesGroup" id="gpu_management_section">
+														<property name="title" translatable="yes">Графіка та відеокарти (GPU)</property>
+														<property name="description" translatable="yes">Розподіл навантаження між енергоефективною Intel UHD Graphics та дискретною NVIDIA GeForce RTX 3050</property>
+														<child>
+															<object class="AdwComboRow" id="gpu_mode_row">
+																<property name="title" translatable="yes">Режим розподілу GPU</property>
+																<property name="subtitle" translatable="yes">Гібридний: Intel для системи • RTX 3050 для ігор та важких додатків</property>
+																<property name="model">
+																	<object class="GtkStringList">
+																		<items>
+																			<item translatable="yes">Гібридний (Intel — система • RTX 3050 — ігри та важкі)</item>
+																			<item translatable="yes">Всі програми на RTX 3050 (Intel — система • RTX 3050 — всі інші)</item>
+																			<item translatable="yes">Повна продуктивність (Все на RTX 3050)</item>
+																			<item translatable="yes">Енергозбереження (Тільки Intel UHD)</item>
+																		</items>
+																	</object>
+																</property>
+																<signal name="realize" handler="init_gpu_mode"/>
+																<signal name="notify::selected" handler="on_gpu_mode_changed"/>
+															</object>
+														</child>
+													</object>
+												</child>
+												<child>
 													<object class="AdwPreferencesGroup" id="game_mode_section">
 														<property name="title" translatable="yes">Режим гри</property>
 														<property name="description" translatable="yes">Оптимізація ресурсів процесора, графічного стека та пам'яті для усунення мікрофрізів (не залежить від джерела живлення)</property>
