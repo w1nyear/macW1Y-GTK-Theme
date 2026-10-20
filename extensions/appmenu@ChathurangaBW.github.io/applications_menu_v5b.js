@@ -1291,14 +1291,6 @@ export const MacApplicationsDialog = GObject.registerClass({
 });
 
 export function toggleApplicationsDialog(options = {}) {
-    // DELEGATION: the Applications Center (Launchpad) moved into the
-    // spotlight@nin popup as its apps view. Route every caller (dash-to-dock,
-    // blur-my-shell, gestures, eval-helper, ...) to the new popup so the old
-    // fullscreen dialog is never constructed again.
-    if (globalThis._macSpotlightNinInstance) {
-        globalThis._macSpotlightNinInstance.openApps();
-        return;
-    }
     if (globalThis._macApplicationsGlobalInstance) {
         let isDead = false;
         try {
@@ -1342,11 +1334,6 @@ export function toggleApplicationsDialog(options = {}) {
 }
 
 export function closeApplicationsDialog(immediate = true) {
-    // DELEGATION: route to the new spotlight@nin popup when present.
-    if (globalThis._macSpotlightNinInstance) {
-        globalThis._macSpotlightNinInstance.close();
-        return;
-    }
     if (globalThis._macApplicationsGlobalInstance) {
         globalThis._macApplicationsGlobalInstance.close(immediate);
     }

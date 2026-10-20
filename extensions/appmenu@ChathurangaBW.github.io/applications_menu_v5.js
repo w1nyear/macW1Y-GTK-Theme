@@ -1290,12 +1290,6 @@ export const MacApplicationsDialog = GObject.registerClass({
 });
 
 export function toggleApplicationsDialog(options = {}) {
-    // DELEGATION: the Applications Center moved into the spotlight@nin popup.
-    // Route re-importers (eval-helper, dash-to-dock, blur-my-shell) to it.
-    if (globalThis._macSpotlightNinInstance) {
-        globalThis._macSpotlightNinInstance.openApps();
-        return;
-    }
     if (globalThis._macApplicationsGlobalInstance) {
         let isDead = false;
         try {
@@ -1339,11 +1333,6 @@ export function toggleApplicationsDialog(options = {}) {
 }
 
 export function closeApplicationsDialog(immediate = true) {
-    // DELEGATION: route to the new spotlight@nin popup when present.
-    if (globalThis._macSpotlightNinInstance) {
-        globalThis._macSpotlightNinInstance.close();
-        return;
-    }
     if (globalThis._macApplicationsGlobalInstance) {
         globalThis._macApplicationsGlobalInstance.close(immediate);
     }
