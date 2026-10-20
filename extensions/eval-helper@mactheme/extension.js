@@ -4,6 +4,7 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as Background from 'resource:///org/gnome/shell/ui/background.js';
 import Clutter from 'gi://Clutter';
 import Mtk from 'gi://Mtk';
 
@@ -16,6 +17,79 @@ const EvalIface = `
     </method>
   </interface>
 </node>`;
+
+class OverviewWallpaperManager {
+    constructor() {
+        this._bgManagers = [];
+        this._bgGroup = null;
+        this._build();
+
+        Main.layoutManager.connectObject(
+            'monitors-changed', () => this._build(),
+            this
+        );
+
+        Main.layoutManager.overviewGroup.connectObject(
+            'child-added', () => {
+                if (this._bgGroup && this._bgGroup.get_parent() === Main.layoutManager.overviewGroup) {
+                    Main.layoutManager.overviewGroup.set_child_below_sibling(this._bgGroup, null);
+                }
+            },
+            this
+        );
+    }
+
+    _build() {
+        for (const mgr of this._bgManagers) {
+            try { mgr.destroy(); } catch (_) {}
+        }
+        this._bgManagers = [];
+
+        if (this._bgGroup) {
+            try { this._bgGroup.destroy(); } catch (_) {}
+            this._bgGroup = null;
+        }
+
+        if (!Main.layoutManager?.overviewGroup) return;
+
+        this._bgGroup = new Meta.BackgroundGroup({ name: 'mac-overview-wallpaper-group', reactive: false });
+        Main.layoutManager.overviewGroup.insert_child_at_index(this._bgGroup, 0);
+
+        for (const monitor of (Main.layoutManager.monitors || [])) {
+            const monBin = new Clutter.Actor({
+                name: 'mac-overview-monitor-bin',
+                reactive: false,
+                x: monitor.x,
+                y: monitor.y,
+                width: monitor.width,
+                height: monitor.height,
+            });
+            this._bgGroup.add_child(monBin);
+
+            const bgMgr = new Background.BackgroundManager({
+                container: monBin,
+                monitorIndex: monitor.index,
+                controlPosition: false,
+            });
+            this._bgManagers.push(bgMgr);
+        }
+    }
+
+    destroy() {
+        try { Main.layoutManager.disconnectObject(this); } catch (_) {}
+        try { Main.layoutManager.overviewGroup.disconnectObject(this); } catch (_) {}
+
+        for (const mgr of this._bgManagers) {
+            try { mgr.destroy(); } catch (_) {}
+        }
+        this._bgManagers = [];
+
+        if (this._bgGroup) {
+            try { this._bgGroup.destroy(); } catch (_) {}
+            this._bgGroup = null;
+        }
+    }
+}
 
 export default class EvalHelper extends Extension {
     enable() {
@@ -626,6 +700,14 @@ export default class EvalHelper extends Extension {
         };
         patchMissionControlOverview();
 
+        // Ensure GNOME Overview always has a solid, crisp desktop wallpaper background behind all workspaces
+        // Completely eliminates window ghosting, Solitaire Win98 trails, and transparent stage margins on physical display
+        try {
+            this._overviewWallpaperManager = new OverviewWallpaperManager();
+        } catch (e) {
+            console.error('[EvalHelper] OverviewWallpaperManager init error: ' + e);
+        }
+
         // Ensure blur-my-shell panel overview and folder transitions are smooth, seamless and dynamic
         const patchPanelOverviewAndFolders = () => {
             try {
@@ -1182,6 +1264,11 @@ export default class EvalHelper extends Extension {
         }
 
         try { Main.overview.disconnectObject(this); } catch (_) {}
+
+        if (this._overviewWallpaperManager) {
+            try { this._overviewWallpaperManager.destroy(); } catch (_) {}
+            this._overviewWallpaperManager = null;
+        }
 
         if (Main.layoutManager && this._origStartupAnimationSession) {
             Main.layoutManager._startupAnimationSession = this._origStartupAnimationSession;
