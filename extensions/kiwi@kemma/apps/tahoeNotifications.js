@@ -17,7 +17,7 @@ import {
     MacNotificationGroup,
     formatNotificationTimestamp,
     safePangoMarkup,
-} from './tahoeNotificationCard.js';
+} from './tahoeNotificationCard.js?v=tahoe_v2';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -49,7 +49,7 @@ import(_LG_BASE + '/utils.js').then(m => {
         syncGlassCaptureClip = m.syncGlassCaptureClip;
 }).catch(e => console.warn(`[tahoe-nc] liquid-glass utils unavailable: ${e}`));
 
-const NC_W = 425;
+const NC_W = 480;
 const NC_RADIUS = 82;
 const BACKDROP_PAD = 60;
 const SHADER_PADDING = 20;

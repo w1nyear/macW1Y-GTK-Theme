@@ -497,7 +497,7 @@ export class MacNotificationGroup {
             y_align: Clutter.ActorAlign.START,
             visible: false,
             reactive: true,
-            style: 'background-color: rgba(28, 28, 28, 0.70); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 18px; margin-left: 28px; margin-right: 28px;',
+            style: 'background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 18px; margin-left: 28px; margin-right: 28px;',
         });
         this.layer2.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer2);
@@ -510,7 +510,7 @@ export class MacNotificationGroup {
             y_align: Clutter.ActorAlign.START,
             visible: false,
             reactive: true,
-            style: 'background-color: rgba(38, 38, 38, 0.72); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 20px; margin-left: 14px; margin-right: 14px;',
+            style: 'background-color: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 20px; margin-left: 14px; margin-right: 14px;',
         });
         this.layer1.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer1);

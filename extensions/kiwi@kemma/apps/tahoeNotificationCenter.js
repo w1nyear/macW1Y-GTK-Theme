@@ -29,7 +29,7 @@ import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/l
 }).catch(e => console.warn(`[tahoe-nc] liquid-glass utils unavailable: ${e}`));
 import {getPanelInk, getTopbarInk, watchInk} from './tahoeInk.js';
 
-const NC_W = 360;
+const NC_W = 480;
 const NC_RADIUS = 82;
 
 let _ = (m) => m;
