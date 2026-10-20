@@ -189,9 +189,12 @@ export function buildNotificationCard(source, notification, options = {}) {
     const iconBin = new St.Bin({
         style_class: 'mac-notification-icon-bin',
         y_align: Clutter.ActorAlign.START,
+        x_align: Clutter.ActorAlign.CENTER,
+        clip_to_allocation: true,
+        style: 'border-radius: 9px; width: 36px; height: 36px; margin-right: 10px; margin-top: 1px;',
     });
     const iconParams = {
-        icon_size: 38,
+        icon_size: 36,
         style_class: 'mac-notification-app-icon',
     };
     if (gicon) {
@@ -209,9 +212,10 @@ export function buildNotificationCard(source, notification, options = {}) {
         x_expand: true,
         style_class: 'mac-notification-content-box',
     });
+    contentBox.set_width(366);
     topRow.add_child(contentBox);
 
-    // App Header: App Name + Count Badge (for grouped stacks)
+    // App Header Row: [ App Name ] [ Count Badge ] [ Flex Spacer ] [ TimeLabel / CloseButton ]
     const appHeaderBox = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,
         x_expand: true,
@@ -229,30 +233,18 @@ export function buildNotificationCard(source, notification, options = {}) {
     const countBadge = new St.Label({
         text: '',
         style_class: 'mac-notification-count-badge',
-        style: 'color: rgba(255, 255, 255, 0.75); background-color: rgba(255, 255, 255, 0.16); font-size: 10px; font-weight: 600; border-radius: 9999px; padding: 1px 7px; margin-left: 6px;',
+        style: 'color: rgba(255, 255, 255, 0.90); background-color: rgba(255, 255, 255, 0.20); font-size: 10px; font-weight: 600; border-radius: 9999px; padding: 1px 6px; margin-left: 6px;',
         y_align: Clutter.ActorAlign.CENTER,
         visible: false,
     });
     appHeaderBox.add_child(countBadge);
 
-    // Title
-    const titleLabel = new St.Label({
-        style_class: 'mac-notification-title',
+    const headerSpacer = new St.Widget({
+        x_expand: true,
     });
-    setLabelMarkup(titleLabel, notification.title || '');
-    contentBox.add_child(titleLabel);
+    appHeaderBox.add_child(headerSpacer);
 
-    // Body
-    const bodyText = notification.bannerBodyText || notification.body || '';
-    const bodyLabel = new St.Label({
-        style_class: 'mac-notification-body',
-    });
-    setLabelMarkup(bodyLabel, bodyText);
-    bodyLabel.clutter_text.line_wrap = false;
-    bodyLabel.clutter_text.ellipsize = 3; // END
-    contentBox.add_child(bodyLabel);
-
-    // 3. Top-Right Bin (Time + Close button)
+    // 3. Top-Right Bin (Time + Close button) placed inside App Header on the right
     const extDir = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/blur-my-shell@aunetx`;
     const closeIconPath = `${extDir}/assets/close.png`;
     const closeHoverIconPath = `${extDir}/assets/close-button-hover.png`;
@@ -260,17 +252,17 @@ export function buildNotificationCard(source, notification, options = {}) {
     const giconHover = Gio.icon_new_for_string(closeHoverIconPath);
     let closeIcon = new St.Icon({
         gicon: giconNormal,
-        icon_size: 20,
+        icon_size: 18,
     });
     const closeBtn = new St.Button({
         style_class: 'mac-notification-close-btn',
         child: closeIcon,
-        y_align: Clutter.ActorAlign.START,
+        y_align: Clutter.ActorAlign.CENTER,
         x_align: Clutter.ActorAlign.END,
         reactive: true,
         can_focus: true,
     });
-    closeBtn.set_style('background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important; border-radius: 9999px !important; padding: 0 !important; width: 22px !important; height: 22px !important;');
+    closeBtn.set_style('background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important; border-radius: 9999px !important; padding: 0 !important; width: 20px !important; height: 20px !important;');
     closeBtn.opacity = 0;
     closeBtn.visible = false;
     closeBtn.connect('notify::hover', () => {
@@ -280,29 +272,64 @@ export function buildNotificationCard(source, notification, options = {}) {
     const timeLabel = new St.Label({
         text: formatNotificationTimestamp(notification.datetime),
         style_class: 'mac-notification-time',
-        y_align: Clutter.ActorAlign.START,
+        y_align: Clutter.ActorAlign.CENTER,
         x_align: Clutter.ActorAlign.END,
-        style: 'color: rgba(255, 255, 255, 0.45); font-size: 11px; margin-top: 1px; margin-right: 2px;',
+        style: 'color: rgba(255, 255, 255, 0.45); font-size: 11px; margin-right: 0px;',
     });
     timeLabel.opacity = 255;
     timeLabel.visible = true;
 
     const topRightBin = new St.Widget({
         layout_manager: new Clutter.BinLayout(),
-        y_align: Clutter.ActorAlign.START,
+        y_align: Clutter.ActorAlign.CENTER,
         x_align: Clutter.ActorAlign.END,
     });
     topRightBin.add_child(timeLabel);
     topRightBin.add_child(closeBtn);
-    topRow.add_child(topRightBin);
+    appHeaderBox.add_child(topRightBin);
 
-    // 4. Action Buttons (if notification has actions)
+    // Title (only shown if distinct from app name and non-empty, matching macOS)
+    const rawTitle = (notification.title || '').trim();
+    const appName = (source?.title || '').trim();
+    const isDuplicateTitle = rawTitle.toLowerCase() === appName.toLowerCase();
+    const titleLabel = new St.Label({
+        style_class: 'mac-notification-title',
+        x_expand: true,
+    });
+    if (rawTitle && !isDuplicateTitle) {
+        setLabelMarkup(titleLabel, rawTitle);
+        titleLabel.clutter_text.line_wrap = true;
+        titleLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+        titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        titleLabel.visible = true;
+        contentBox.add_child(titleLabel);
+    } else {
+        titleLabel.visible = false;
+    }
+
+    // Body (supports natural multi-line wrapping up to 3 lines)
+    const bodyText = notification.bannerBodyText || notification.body || '';
+    const bodyLabel = new St.Label({
+        style_class: 'mac-notification-body',
+        x_expand: true,
+    });
+    setLabelMarkup(bodyLabel, bodyText);
+    bodyLabel.clutter_text.single_line_mode = false;
+    bodyLabel.clutter_text.line_wrap = true;
+    bodyLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+    bodyLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+    contentBox.add_child(bodyLabel);
+
+    // 4. Action Buttons (placed at bottom right of content area)
     let actionsBox = null;
     if (notification.actions && notification.actions.length > 0) {
         actionsBox = new St.BoxLayout({
             style_class: 'mac-notification-actions-box',
             orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
+            x_align: Clutter.ActorAlign.END,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: 'margin-top: 6px; margin-bottom: 2px; spacing: 8px;',
             visible: true,
             opacity: 255,
         });
@@ -312,6 +339,12 @@ export function buildNotificationCard(source, notification, options = {}) {
                 label: action.label,
                 reactive: true,
                 can_focus: true,
+                style: 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px;',
+            });
+            actBtn.connect('notify::hover', () => {
+                actBtn.set_style(actBtn.hover
+                    ? 'background-color: rgba(255, 255, 255, 0.26) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px;'
+                    : 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px;');
             });
             actBtn.connect('clicked', () => {
                 try { action.activate(); } catch (e) { logError(e); }
@@ -319,11 +352,16 @@ export function buildNotificationCard(source, notification, options = {}) {
             });
             actionsBox.add_child(actBtn);
         }
-        mainBox.add_child(actionsBox);
+        contentBox.add_child(actionsBox);
     }
 
-    // Pure liquid glass translucent container: transparent background so BackdropGlass shader shines cleanly
-    banner.set_style('background-color: transparent !important; background: transparent !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 24px !important;');
+    // Authentic macOS Tahoe/Sonoma notification card styling
+    banner.set_style('background-color: rgba(45, 45, 47, 0.76) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 16px !important; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;');
+    banner.connect('notify::hover', () => {
+        banner.set_style(banner.hover
+            ? 'background-color: rgba(56, 56, 58, 0.84) !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; border-radius: 16px !important; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.42) !important;'
+            : 'background-color: rgba(45, 45, 47, 0.76) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 16px !important; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;');
+    });
 
     const cardData = {
         banner,
@@ -496,7 +534,7 @@ export class MacNotificationGroup {
             y_align: Clutter.ActorAlign.START,
             visible: false,
             reactive: true,
-            style: 'background-color: rgba(28, 28, 28, 0.70); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 18px; margin-left: 28px; margin-right: 28px;',
+            style: 'background-color: rgba(30, 30, 32, 0.65); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; margin-left: 24px; margin-right: 24px;',
         });
         this.layer2.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer2);
@@ -509,7 +547,7 @@ export class MacNotificationGroup {
             y_align: Clutter.ActorAlign.START,
             visible: false,
             reactive: true,
-            style: 'background-color: rgba(38, 38, 38, 0.72); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 20px; margin-left: 14px; margin-right: 14px;',
+            style: 'background-color: rgba(38, 38, 40, 0.72); border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 15px; margin-left: 12px; margin-right: 12px;',
         });
         this.layer1.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer1);
@@ -615,18 +653,18 @@ export class MacNotificationGroup {
 
     _updateStackLayersGeometry(cardH) {
         if (this.isExpanded) return;
-        const extraBottom = (this.items.length >= 3) ? 14 : (this.items.length >= 2 ? 8 : 0);
+        const extraBottom = (this.items.length >= 3) ? 11 : (this.items.length >= 2 ? 6 : 0);
         this.spacer.height = cardH + extraBottom;
         this.collapsedContainer.height = cardH + extraBottom;
 
         if (this.items.length >= 3) {
             this.layer2.visible = true;
-            this.layer2.translation_y = cardH + 14 - 24;
+            this.layer2.translation_y = cardH + 11 - 24;
             this.layer1.visible = true;
-            this.layer1.translation_y = cardH + 8 - 24;
+            this.layer1.translation_y = cardH + 6 - 24;
         } else if (this.items.length >= 2) {
             this.layer1.visible = true;
-            this.layer1.translation_y = cardH + 8 - 24;
+            this.layer1.translation_y = cardH + 6 - 24;
             this.layer2.visible = false;
         } else {
             this.layer1.visible = false;
@@ -798,6 +836,14 @@ export class MacNotificationGroup {
         let [_, prefH] = topItem.banner.get_preferred_height(380);
         let cardH = (actualH > 40 && actualH < 300) ? actualH : ((prefH > 40 && prefH < 300) ? prefH : 78);
         this._updateStackLayersGeometry(cardH);
+
+        if (!topItem.banner._macAllocConnId) {
+            topItem.banner._macAllocConnId = topItem.banner.connect('notify::allocation', () => {
+                if (!this.isExpanded && topItem.banner.height > 40) {
+                    this._updateStackLayersGeometry(topItem.banner.height);
+                }
+            });
+        }
 
         if (this.options.onGeometryChanged) {
             this.options.onGeometryChanged();

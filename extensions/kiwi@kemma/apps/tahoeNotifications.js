@@ -18,7 +18,7 @@ import {
     MacNotificationGroup,
     formatNotificationTimestamp,
     safePangoMarkup,
-} from './tahoeNotificationCard.js?v=tahoe_v2';
+} from './tahoeNotificationCard.js?v=tahoe_v21';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;

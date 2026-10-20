@@ -1303,6 +1303,122 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 .tahoe-qs-dark .tahoe-nc-sub { color: rgba(235, 235, 245, 0.7); }
 
+/* Authentic macOS Notification Center Cards */
+.mac-notification-banner {
+  width: 440px !important;
+  min-height: 56px !important;
+  padding: 10px 14px !important;
+  border-radius: 16px !important;
+  background-color: rgba(45, 45, 47, 0.76) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
+  transition-duration: 150ms;
+}
+
+.mac-notification-banner:hover {
+  background-color: rgba(56, 56, 58, 0.84) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.42) !important;
+}
+
+.mac-notification-icon-bin {
+  padding-right: 10px !important;
+  margin-top: 2px !important;
+  border-radius: 9px !important;
+}
+
+.mac-notification-app-icon {
+  icon-size: 36px !important;
+  border-radius: 9px !important;
+}
+
+.mac-notification-content-box {
+  spacing: 2px !important;
+}
+
+.mac-notification-app-name {
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  margin-bottom: 0px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+.mac-notification-count-badge {
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  background-color: rgba(255, 255, 255, 0.20) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  border-radius: 9999px !important;
+  padding: 1px 6px !important;
+  margin-left: 6px !important;
+}
+
+.mac-notification-title {
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  margin-top: 1px !important;
+  margin-bottom: 1px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
+}
+
+.mac-notification-body {
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  line-height: 1.28 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+.mac-notification-time {
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  margin-top: 1px !important;
+  margin-right: 2px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
+}
+
+.mac-notification-actions-box {
+  margin-top: 6px !important;
+  spacing: 8px !important;
+  transition-duration: 150ms !important;
+}
+
+.mac-notification-action-btn {
+  min-height: 22px !important;
+  padding: 4px 12px !important;
+  border-radius: 7px !important;
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  color: #ffffff !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1px !important;
+  transition-duration: 100ms;
+}
+
+.mac-notification-action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.26) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+.mac-notification-action-btn:active {
+  background-color: rgba(255, 255, 255, 0.34) !important;
+  border-color: rgba(255, 255, 255, 0.30) !important;
+  color: #ffffff !important;
+}
+
 /* adaptive topbar ink (toggled by luminance, not by theme - tahoeInk.js).
    !important: must win over panelStyling's explicit colors. Every state
    covered - adaptive means ALL text, no theme-driven leftovers on hover,

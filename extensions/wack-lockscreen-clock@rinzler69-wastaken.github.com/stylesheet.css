@@ -11,7 +11,7 @@
     margin: 0;
     margin-bottom: 0px;
     padding: 0;
-    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.38);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
 }
 
 .wack-time,
@@ -27,7 +27,7 @@
     margin: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
-    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.22) !important;
 }
 
 .wack-gdm-auth-subtitle {

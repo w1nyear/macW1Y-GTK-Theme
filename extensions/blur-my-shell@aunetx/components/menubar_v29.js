@@ -2415,9 +2415,9 @@ export const MenuBarController = class MenuBarController {
         }
     }
 
-    _updateNotifRealtime(tint = 0.0, radius = 24) {
+    _updateNotifRealtime(tint = 0.0, radius = 16) {
         try {
-            const style = `background-color: transparent !important; background: transparent !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; box-shadow: none !important;`;
+            const style = `background-color: rgba(45, 45, 47, 0.76) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 16px !important; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;`;
             const found = [];
             const walk = (actor) => {
                 if (!actor) return;
