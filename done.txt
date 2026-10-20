@@ -6657,3 +6657,30 @@ echo "==> Встановлення успішно завершено!"
      * У [tahoeNotificationCard.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotificationCard.js#L500-L514) фонові картки стопки групування переведено на легке напівпрозоре скло `rgba(255, 255, 255, 0.08)` та `rgba(255, 255, 255, 0.05)`.
      * Усі зміни активовано в системі та перевірено візуально скріншотом.
    - Результат: сповіщення повністю та вільно вміщуються всередині панелі, час і довгий текст більше не обрізаються, стопка виглядає чисто й прозоро.
+
+4. Калібрування висоти верхньої частини та вертикальної симетрії Доку (ідеальне центрування іконок):
+   - Діагностика:
+     * За знімком користувача та детальними вимірами було виявлено, що іконки у Доку розташовані занадто близько до верхнього краю скляної капсули порівняно з нижнім:
+       - Відстань від верхнього краю іконок до верхнього обідка доку складала лише 10px (`y=54..64`).
+       - Відстань від нижнього краю іконок до нижнього обідка доку складала 16px..17px.
+       - Причина: у стилях `gnome-shell.css`, `cupertino-dock-lite` та `dash2dock-motion` відступ плитки було встановлено як `padding-top: 6px !important;` та `padding-bottom: 18px !important;`, що зсувало іконки вгору на 6px.
+   - Виконані дії:
+     * Відкалібровано відступ зверху: `padding-top` збільшено з 6px до 13px для `.app-well-app`, `.show-apps` та `.overview-tile` у всіх темах:
+       - `themes/macW1Y-Dark/gnome-shell/gnome-shell.css`
+       - `themes/macW1Y-Dark-solid/gnome-shell/gnome-shell.css`
+       - `themes/macW1Y-Light/gnome-shell/gnome-shell.css`
+       - `themes/macW1Y-Light-solid/gnome-shell/gnome-shell.css`
+       - `macW1Y-Dark/gnome-shell/gnome-shell.css`, `macW1Y-Dark-solid/...`, `macW1Y-Light/...`, `macW1Y-Light-solid/...`
+       - `gnome-shell-theme/gnome-shell.css`
+       - `cupertino-dock-lite@rinzler69-wastaken.github.com/themes/bigsur-dark.css` та `bigsur-light.css`
+       - `dash2dock-motion@unmade.space/stylesheet.css`
+     * Синхронізовано файли з системними директоріями `~/.themes/` та `~/.local/share/gnome-shell/extensions/`.
+     * Перезавантажено стилі оболонки GNOME Shell та дока.
+   - Верифікація та результати:
+     * Проведено високоточний аналіз скріншоту:
+       - Верхній край капсули доку: `y = 54`
+       - Верхній край іконки Finder: `y = 71` -> **Відступ зверху = 17px**
+       - Нижній край іконки Finder: `y = 117`
+       - Нижній край капсули доку: `y = 134` -> **Відступ знизу = 17px**
+       - Різниця вертикальної симетрії: **0px (абсолютна попіксельна симетрія)**!
+     * Точка індикатора запущеної програми розміщена точно посередині нижнього відступу (`y = 124..128`), не притискаючись до краю. Док виглядає збалансованим, естетичним і просторим відповідно до стандартів macOS Tahoe.
