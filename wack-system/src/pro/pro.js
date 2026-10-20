@@ -58,6 +58,7 @@ export class GdmManager {
         this._promptResetAnimating = false;
         this._verificationSucceeded = false;
         this._legacyPromptAnimationState = 'idle';
+        this._hasAutoSelectedUser = false;
         this._skipLegacyPromptEntryAnimation = false;
         this._origLoginScreenSessionActivated = null;
         this._origOnSessionOpened = null;
@@ -1099,11 +1100,11 @@ export class GdmManager {
 
     _autoSelectSingleUser(dialog = null) {
         const targetDialog = dialog || this._dialog;
-        if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible)
+        if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible || this._hasAutoSelectedUser)
             return;
 
         const checkAndActivate = () => {
-            if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible)
+            if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible || this._hasAutoSelectedUser)
                 return GLib.SOURCE_REMOVE;
 
             const userList = targetDialog._userList;
@@ -1113,9 +1114,14 @@ export class GdmManager {
             const items = Array.from(userList._items.values());
             if (items.length === 1) {
                 const singleItem = items[0];
-                if (singleItem && typeof singleItem.activate === 'function') {
+                if (singleItem) {
+                    this._hasAutoSelectedUser = true;
                     _log('[WACK/GDM] Single user detected on boot, immediately activating password prompt');
-                    singleItem.activate();
+                    if (typeof targetDialog._onUserListActivated === 'function') {
+                        targetDialog._onUserListActivated(singleItem);
+                    } else if (typeof singleItem.emit === 'function') {
+                        singleItem.emit('activate');
+                    }
                 }
             }
             return GLib.SOURCE_REMOVE;

@@ -6787,3 +6787,27 @@ echo "==> Встановлення успішно завершено!"
      * Згорнутий пошуковий рядок та 3 круглі кнопки дій (crop_spotlight_glass_collapsed.png): кожна кнопка та пігулка мають власний 3D-контур заломлення, білий скляний обідок та реакцію на наведення курсору.
      * Розгорнуте меню результатів пошуку (crop_spotlight_glass_search.png): велика скляна картка з виразною фаскою, відблисками та глибоким заломленням заднього фону.
      * Режим перегляду файлів (crop_spotlight_glass_files.png) та програм (crop_spotlight_glass_apps.png): плавний перехід, повна відсутність фризів чи артефактів.
+8. Комплексне вдосконалення екрана блокування та GDM (WACK Sonoma Lockscreen):
+   - Зменшення тіні під годинником та датою у 2 рази:
+     * Тінь годинника зменшено з `0 2px 20px rgba(0, 0, 0, 0.85)` до `0 1px 10px rgba(0, 0, 0, 0.42)`.
+     * Тінь дати зменшено з `0 1px 10px rgba(0, 0, 0, 0.75)` до `0 1px 5px rgba(0, 0, 0, 0.38)`.
+     * Оновлено у `stylesheet.css`, `src/main/wackClock.js`, `pro/gdm.css`, `src/pro/gdm.css`, а також у всіх темах GNOME Shell (`gnome-shell-theme/`, `macW1Y-*`, `themes/macW1Y-*`, `~/.themes/`, `/usr/share/themes/`).
+   - Відновлення відображення аватарки (іконки користувача) та імені:
+     * Усунено примусове приховування в `stylesheet.css` (`.user-icon { opacity: 0 }` змінено на `1`, `.user-widget-label { font-size: 0 }` змінено на 16px з SF Pro Display).
+     * У `src/main/avatarManager.js` виправлено скидання прозорості на `opacity = 255`.
+     * У `src/main/cupertinoPrompt.js` та `pro/gdmAvatarManager.js` додано fallback на `/var/lib/AccountsService/icons/${userName}`, пряме призначення `background-image` та підписку на `notify::is-loaded` для асинхронного завантаження AccountsService.
+   - Оптимізація вертикальних відступів (компактний macOS-лейаут):
+     * Поле вводу паролю присунуто впритул до підказки «TouchID або пароль» (`margin-top: 3px`, усунено порожній відступ `authPrompt._message`).
+     * Аватарка та ім'я користувача підсунуті ближче вниз до поля вводу (відступ зменшено до 4px, `margin-bottom: 2px`).
+   - Динамічне виведення повідомлень про помилки та попередження:
+     * Перехоплено `authPrompt.setMessage()` у `gdmAnimationController.js` та `unlockDialogController.js`.
+     * При невірному паролі або повідомленні PAM текст підказки «TouchID або пароль» автоматично замінюється на повідомлення помилки з червоним акцентом `.wack-gdm-auth-subtitle-warning` (`#ff6961`).
+     * При початку нового введення паролю (`text-changed`) підказка миттєво повертається до стандартного стану.
+   - Поведінка автопоказу пароля на старті GDM vs режим сну:
+     * На холодному старті GDM без сесії для єдиного користувача автоматично відкривається поле вводу пароля через `targetDialog._onUserListActivated(singleItem)`.
+     * Після блокування / виходу зі сну при активній сесії екран залишається у режимі спокою (показує лише аватар та ім'я) допоки користувач не натисне безпосередньо на аватар (клавіатурні події у rest mode не відкривають поле передчасно).
+   - Повна синхронізація у 4 системних директоріях:
+     * `MACTHEMEFILES/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`
+     * `MACTHEMEFILES/wack-system/`
+     * `~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`
+     * `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`

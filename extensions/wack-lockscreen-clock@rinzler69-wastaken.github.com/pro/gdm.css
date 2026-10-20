@@ -548,7 +548,7 @@
     margin: 0 !important;
     margin-bottom: 0px !important;
     padding: 0 !important;
-    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75) !important;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.38) !important;
 }
 
 .wack-time,
@@ -564,13 +564,14 @@
     margin-top: 0 !important;
     margin-bottom: 0 !important;
     color: #ffffff !important;
-    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85) !important;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;
 }
 
 /* ── Cupertino Auth Prompt Widget Alignment ── */
 .login-dialog .wack-cupertino-prompt .user-widget.vertical {
-    spacing: 8px !important;
+    spacing: 4px !important;
     x-align: center !important;
+    margin-bottom: 2px !important;
 }
 
 .login-dialog .wack-cupertino-prompt .user-widget.vertical .user-icon,
@@ -600,8 +601,16 @@
     font-size: 16px !important;
     font-weight: 600 !important;
     color: rgba(255, 255, 255, 0.95) !important;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85) !important;
-    margin-bottom: 2px !important;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5) !important;
+    margin-top: 4px !important;
+    margin-bottom: 0px !important;
+}
+
+.login-dialog .wack-cupertino-prompt.login-dialog-prompt-layout,
+.login-dialog .wack-cupertino-prompt .login-dialog-prompt-layout {
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    spacing: 2px !important;
 }
 
 .wack-gdm-auth-subtitle {
@@ -609,9 +618,9 @@
     font-size: 12px !important;
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.85) !important;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
     margin-top: 2px !important;
-    margin-bottom: 4px !important;
+    margin-bottom: 2px !important;
     text-align: center !important;
     x-align: center !important;
 }
@@ -628,6 +637,8 @@
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
     min-width: 180px !important;
     height: 32px !important;
+    margin-top: 4px !important;
+    margin-bottom: 0px !important;
 }
 
 .login-dialog .wack-cupertino-prompt .login-dialog-prompt-entry StLabel.hint-text {
@@ -641,10 +652,17 @@
     font-size: 12px !important;
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.85) !important;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85) !important;
-    margin-top: 8px !important;
-    margin-bottom: 2px !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
+    margin-top: 3px !important;
+    margin-bottom: 0px !important;
     text-align: center !important;
     x-align: center !important;
+}
+
+.wack-gdm-auth-subtitle.wack-gdm-auth-subtitle-warning,
+.login-dialog .wack-cupertino-prompt .wack-gdm-auth-subtitle.wack-gdm-auth-subtitle-warning {
+    color: #ff6961 !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7) !important;
 }
 

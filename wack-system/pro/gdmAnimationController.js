@@ -388,14 +388,21 @@ export class GdmAnimationController {
 
         if (authPrompt._message) {
             authPrompt._message.add_style_class_name('wack-cupertino-message');
+            authPrompt._message.y_expand = false;
+            authPrompt._message.opacity = 0;
+            authPrompt._message.visible = false;
         }
         if (authPrompt._capsLockWarningLabel) {
             authPrompt._capsLockWarningLabel.add_style_class_name('wack-cupertino-caps-lock-warning');
+            authPrompt._capsLockWarningLabel.y_expand = false;
         }
 
         const uw = authPrompt._userWell?.get_child();
         if (uw) {
-            if (uw._avatar) uw._avatar.opacity = 255;
+            if (uw._avatar) {
+                uw._avatar.opacity = 255;
+                uw._avatar.visible = true;
+            }
             if (uw._avatarButton) {
                 uw._avatarButton.opacity = 255;
                 uw._avatarButton.visible = true;
@@ -419,9 +426,47 @@ export class GdmAnimationController {
                 authPrompt._inputWell.add_child(authPrompt._wackHintLabel);
             } else {
                 authPrompt._wackHintLabel.text = getAuthSubtitleText(selectedUser);
+                authPrompt._wackHintLabel.remove_style_class_name('wack-gdm-auth-subtitle-warning');
                 authPrompt._wackHintLabel.visible = true;
                 authPrompt._wackHintLabel.opacity = 255;
             }
+        }
+
+        // Intercept authPrompt.setMessage so warnings/errors replace "TouchID або пароль"
+        if (!authPrompt._wackSetMessageWrapped) {
+            authPrompt._wackSetMessageWrapped = true;
+            const origSetMessage = (authPrompt.constructor?.prototype?.setMessage || authPrompt.setMessage).bind(authPrompt);
+            authPrompt._wackOrigSetMessage = origSetMessage;
+            authPrompt.setMessage = (message, type, wiggleParameters) => {
+                origSetMessage(message, type, wiggleParameters);
+                if (authPrompt._message) {
+                    authPrompt._message.opacity = 0;
+                    authPrompt._message.visible = false;
+                    authPrompt._message.y_expand = false;
+                }
+                if (authPrompt._wackHintLabel) {
+                    if (message && message.trim().length > 0) {
+                        authPrompt._wackHintLabel.text = message;
+                        authPrompt._wackHintLabel.add_style_class_name('wack-gdm-auth-subtitle-warning');
+                        authPrompt._wackHintLabel.visible = true;
+                        authPrompt._wackHintLabel.opacity = 255;
+                    } else {
+                        authPrompt._wackHintLabel.text = getAuthSubtitleText(selectedUser);
+                        authPrompt._wackHintLabel.remove_style_class_name('wack-gdm-auth-subtitle-warning');
+                    }
+                }
+            };
+        }
+
+        const promptEntry = this._gdm._findPromptEntry(authPrompt);
+        if (promptEntry?.clutter_text && !promptEntry._wackTextChangeId) {
+            promptEntry._wackTextChangeId = promptEntry.clutter_text.connect('text-changed', () => {
+                if (authPrompt._wackHintLabel &&
+                    authPrompt._wackHintLabel.has_style_class_name('wack-gdm-auth-subtitle-warning')) {
+                    authPrompt._wackHintLabel.text = getAuthSubtitleText(selectedUser);
+                    authPrompt._wackHintLabel.remove_style_class_name('wack-gdm-auth-subtitle-warning');
+                }
+            });
         }
 
         this._gdm._updateLockscreenMessage();
@@ -443,6 +488,16 @@ export class GdmAnimationController {
         if (authPrompt._wackHintLabel) {
             authPrompt._wackHintLabel.destroy();
             delete authPrompt._wackHintLabel;
+        }
+
+        if (authPrompt._wackOrigSetMessage) {
+            authPrompt.setMessage = authPrompt._wackOrigSetMessage;
+            delete authPrompt._wackOrigSetMessage;
+        }
+        const promptEntry = this._gdm._findPromptEntry(authPrompt);
+        if (promptEntry?.clutter_text && promptEntry._wackTextChangeId) {
+            promptEntry.clutter_text.disconnect(promptEntry._wackTextChangeId);
+            delete promptEntry._wackTextChangeId;
         }
 
         this._gdm._setPromptBackgroundBlur(false, false);

@@ -1,11 +1,29 @@
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+
+function _writeDebugFile(prefix, msg) {
+    try {
+        const line = `[${new Date().toISOString()}] ${prefix} ${msg}\n`;
+        const file = Gio.File.new_for_path('/var/tmp/wack/gdm-debug.log');
+        let stream;
+        if (file.query_exists(null)) {
+            stream = file.append_to(Gio.FileCreateFlags.NONE, null);
+        } else {
+            stream = file.create(Gio.FileCreateFlags.NONE, null);
+        }
+        stream.write_all(line, null);
+        stream.close(null);
+    } catch (_) {}
+}
 
 export function _log(msg) {
-    console.debug(msg);
+    console.log(msg);
+    _writeDebugFile('[INFO]', msg);
 }
 
 export function _logError(msg) {
     console.error(msg);
+    _writeDebugFile('[ERROR]', msg);
 }
 
 export function _setActorVisible(actor, visible, opacity) {
@@ -47,6 +65,6 @@ export const GDM_USER_STACK_VERTICAL_FRACTION_WITH_CSA = 1.08; // User selection
 export const GDM_USER_STACK_VERTICAL_FRACTION_NO_CSA = 1.04;   // User selection list bottom anchor Y without CSA
 export const GDM_USER_LIST_CAP_WITH_CSA = 3;                   // Max visible accounts before scrolling with CSA
 export const GDM_USER_LIST_CAP_NO_CSA = 4;                     // Max visible accounts before scrolling without CSA
-export const GDM_DATETIME_TOP_FRACTION = 0.09; // Date/Time offset from the top (percentage of screen height)
+export const GDM_DATETIME_TOP_FRACTION = 0.07; // Date/Time offset from the top
 export const GDM_CROSSFADE_DURATION = 300; // Transition duration for selection changes in ms
 export const GDM_REST_PROMPT_VERTICAL_FRACTION = 0.66; // Prompt center Y when returning to lock screen from GDM

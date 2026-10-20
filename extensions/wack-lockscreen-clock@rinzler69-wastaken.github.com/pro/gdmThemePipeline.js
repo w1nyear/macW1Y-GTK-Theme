@@ -718,13 +718,13 @@ export class GdmThemeStore {
             systemActions: defaultActions,
             backgroundDimmer: defaultDimmer,
             dateStyle: this._settings ? (this._settings.get_string('date-style') || 'full') : 'full',
-            clockAlpha: 0.6,
+            clockAlpha: 1.0,
             lockscreenMode: this._settings ? this._settings.get_string('lockscreen-mode') : 'cupertino',
             active_color_scheme: dark ? 1 : 0,
         };
         return this._freeze({
             userName: 'gdm', meta, rawMeta: meta, xmlText: null, slide: null,
-            image: uri, palette: null, clockAlpha: 0.6,
+            image: uri, palette: null, clockAlpha: 1.0,
         });
     }
 
@@ -756,6 +756,7 @@ export class GdmThemeStore {
 export class GdmWallpaperView {
     constructor(parent, sibling) {
         this._group = new Clutter.Actor();
+        this._group.opacity = 0;
         parent.add_child(this._group);
         parent.set_child_below_sibling(this._group, sibling);
         this._monitors = [];   // { container, stacks: Map(stackKey -> {root, base, overlay}), topKey, dimmer }

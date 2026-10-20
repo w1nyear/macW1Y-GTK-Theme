@@ -134,8 +134,16 @@ export class GdmAvatarManager {
             const user = avatar._user || item?._userWidget?._user;
             if (user && !user.is_loaded) {
                 user.connectObject(
-                    'notify::is-loaded', () => this._applyStyleToUserListItemAvatar(avatar),
-                    'changed', () => this._applyStyleToUserListItemAvatar(avatar),
+                    'notify::is-loaded', () => {
+                        if (avatar && typeof avatar.update === 'function')
+                            avatar.update();
+                        this._applyStyleToUserListItemAvatar(avatar);
+                    },
+                    'changed', () => {
+                        if (avatar && typeof avatar.update === 'function')
+                            avatar.update();
+                        this._applyStyleToUserListItemAvatar(avatar);
+                    },
                     this
                 );
             }
@@ -152,18 +160,11 @@ export class GdmAvatarManager {
                     item._userWidget.set_vertical(true);
             } catch (_) {}
             try {
-                item._userWidget.remove_style_class_name('horizontal');
-                item._userWidget.add_style_class_name('vertical');
                 item._userWidget.orientation = Clutter.Orientation.VERTICAL;
                 item._userWidget.x_align = Clutter.ActorAlign.CENTER;
-                item._userWidget.set_style('padding-left: 0; padding-right: 0; margin-left: 0; margin-right: 0;');
-                item.x_align = Clutter.ActorAlign.CENTER;
-                item.set_style('padding-left: 0; padding-right: 0;');
-                item._userWidget.clip_to_allocation = false;
-                item.clip_to_allocation = false;
+                item._userWidget.style_class = 'user-widget vertical';
                 if (avatar) {
                     avatar.x_align = Clutter.ActorAlign.CENTER;
-                    avatar.clip_to_allocation = false;
                 }
             } catch (_) {}
 
@@ -179,22 +180,29 @@ export class GdmAvatarManager {
     _applyStyleToUserListItemAvatar(avatar) {
         if (!avatar || avatar._wackSettingStyle) return;
 
-        // Never touch picture avatars! GNOME Shell sets their photo via background-image on avatar.style.
-        if (this._hasImageAvatar(avatar)) {
+        const iconFile = this._getIconFile(avatar);
+        if (iconFile) {
+            avatar.child = null;
+            avatar.add_style_class_name('user-avatar');
+            avatar.style = `
+                background-image: url("${iconFile}");
+                background-size: cover;
+                border-radius: 999px !important;
+            `;
+            avatar.visible = true;
+            avatar.opacity = 255;
             delete avatar._wackHasVibrancy;
-            avatar.clip_to_allocation = false;
             return;
         }
 
         // If user info is still loading via AccountsService, wait until it's loaded before styling
-        // so we don't prematurely style an account whose photo hasn't been read yet.
         const user = avatar._user;
         if (user && !user.is_loaded)
             return;
 
         const color = this._lastAvatarColor;
         const bgRgba = color ? (color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`) : null;
-        const buttonStyle = bgRgba ? `background-color: ${bgRgba}; border-radius: 999px;` : null;
+        const buttonStyle = bgRgba ? `background-color: ${bgRgba} !important; border-radius: 999px !important;` : null;
 
         if (avatar.get_style() !== buttonStyle) {
             avatar._wackSettingStyle = true;
@@ -205,27 +213,29 @@ export class GdmAvatarManager {
             else
                 delete avatar._wackHasVibrancy;
         }
-        avatar.clip_to_allocation = false;
+        avatar.clip_to_allocation = true;
         const child = avatar.get_child();
         if (child) {
-            const iconStyle = buttonStyle ? 'background-color: transparent; border-radius: 999px;' : null;
+            const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
             if (child.get_style() !== iconStyle)
                 child.set_style(iconStyle);
         }
     }
 
     _hasImageAvatar(avatar) {
-        if (!avatar) return false;
-        if (avatar.has_style_class_name?.('user-avatar')) return true;
-        const style = avatar.get_style?.() || '';
-        if (style.includes('background-image')) return true;
-        const user = avatar._user;
-        if (user) {
-            const iconFile = user.get_icon_file?.();
-            if (iconFile && GLib.file_test(iconFile, GLib.FileTest.EXISTS))
-                return true;
+        return Boolean(this._getIconFile(avatar));
+    }
+
+    _getIconFile(avatar) {
+        if (!avatar) return null;
+        let iconFile = avatar._user?.get_icon_file ? avatar._user.get_icon_file() : null;
+        if (iconFile && GLib.file_test(iconFile, GLib.FileTest.EXISTS)) return iconFile;
+        const userName = avatar._user?.get_user_name ? avatar._user.get_user_name() : (this._dialog?._user?.get_user_name?.() || GLib.get_user_name());
+        if (userName) {
+            const asIcon = `/var/lib/AccountsService/icons/${userName}`;
+            if (GLib.file_test(asIcon, GLib.FileTest.EXISTS)) return asIcon;
         }
-        return false;
+        return null;
     }
 
     updateAvatarVibrancy(avatarColor) {
@@ -236,7 +246,7 @@ export class GdmAvatarManager {
         const color = this._lastAvatarColor;
         this._updatingVibrancy = true;
         const bgRgba = color ? (color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`) : null;
-        const buttonStyle = bgRgba ? `background-color: ${bgRgba}; border-radius: 999px;` : null;
+        const buttonStyle = bgRgba ? `background-color: ${bgRgba} !important; border-radius: 999px !important;` : null;
 
         const applyToWell = (uw) => {
             if (!uw) return;
@@ -244,13 +254,23 @@ export class GdmAvatarManager {
             const avatarButton = uw._avatarButton;
             if (!avatarButton) return;
 
-            if (this._hasImageAvatar(avatar)) {
-                if (avatarButton.get_style() !== null)
-                    avatarButton.set_style(null);
-                // Never clear or overwrite avatar.style for picture avatars!
-                delete avatar._wackHasVibrancy;
-                if (avatar) avatar.clip_to_allocation = false;
-                if (avatarButton) avatarButton.clip_to_allocation = false;
+            const iconFile = this._getIconFile(avatar);
+            if (iconFile) {
+                if (avatar) {
+                    avatar.child = null;
+                    avatar.add_style_class_name('user-avatar');
+                    avatar.style = `
+                        background-image: url("${iconFile}");
+                        background-size: cover;
+                        border-radius: 999px !important;
+                    `;
+                    avatar.visible = true;
+                    avatar.opacity = 255;
+                }
+                avatarButton.set_style('border-radius: 999px !important; background-color: transparent !important;');
+                avatarButton.visible = true;
+                avatarButton.opacity = 255;
+                delete avatar?._wackHasVibrancy;
             } else {
                 if (avatarButton.get_style() !== buttonStyle)
                     avatarButton.set_style(buttonStyle);
@@ -265,16 +285,16 @@ export class GdmAvatarManager {
                         else
                             delete avatar._wackHasVibrancy;
                     }
-                    avatar.clip_to_allocation = false;
+                    avatar.clip_to_allocation = true;
                     const child = avatar.get_child();
                     if (child) {
-                        const iconStyle = buttonStyle ? 'background-color: transparent; border-radius: 999px;' : null;
+                        const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
                         if (child.get_style() !== iconStyle)
                             child.set_style(iconStyle);
                     }
                 }
                 if (avatarButton)
-                    avatarButton.clip_to_allocation = false;
+                    avatarButton.clip_to_allocation = true;
             }
         };
 
@@ -326,10 +346,7 @@ export class GdmAvatarManager {
                 can_focus: false,
                 child: avatar,
                 reactive: false,
-                clip_to_allocation: false,
             });
-            uw.clip_to_allocation = false;
-            if (avatar) avatar.clip_to_allocation = false;
             uw.insert_child_at_index(uw._avatarButton, 0);
 
             if (avatar && !avatar._wackOrigUpdate) {
@@ -368,8 +385,16 @@ export class GdmAvatarManager {
             if (avatar && avatar._user) {
                 this._connectedUser = avatar._user;
                 this._connectedUser.connectObject(
-                    'notify::is-loaded', () => this.updateAvatarVibrancy(),
-                    'changed', () => this.updateAvatarVibrancy(),
+                    'notify::is-loaded', () => {
+                        if (avatar && typeof avatar.update === 'function')
+                            avatar.update();
+                        this.updateAvatarVibrancy();
+                    },
+                    'changed', () => {
+                        if (avatar && typeof avatar.update === 'function')
+                            avatar.update();
+                        this.updateAvatarVibrancy();
+                    },
                     this
                 );
             }

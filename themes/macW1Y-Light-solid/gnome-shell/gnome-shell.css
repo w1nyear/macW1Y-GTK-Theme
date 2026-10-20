@@ -2726,7 +2726,7 @@ StEntry StLabel.hint-text {
   font-size: 80pt !important;
   font-weight: 700 !important;
   color: #ffffff !important;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.85) !important;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;
   padding-top: 0px !important;
   margin-top: 0px !important;
   font-feature-settings: "pnum" 1, "tnum" 0 !important;
@@ -2737,7 +2737,7 @@ StEntry StLabel.hint-text {
   font-size: 18pt !important;
   font-weight: 600 !important;
   color: rgba(255, 255, 255, 0.98) !important;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75) !important;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.38) !important;
   margin-bottom: -4px !important;
 }
 

@@ -22,13 +22,13 @@ export class AvatarManager {
                 const uw = authPrompt._userWell?.get_child();
                 if (uw && uw._avatar) {
                     uw._avatar.visible = true;
-                    uw._avatar.opacity = 0;
+                    uw._avatar.opacity = 255;
                 }
             };
             const promptUserWidget = authPrompt._userWell?.get_child();
             if (promptUserWidget?._avatar) {
                 promptUserWidget._avatar.visible = true;
-                promptUserWidget._avatar.opacity = 0;
+                promptUserWidget._avatar.opacity = 255;
             }
         }
 

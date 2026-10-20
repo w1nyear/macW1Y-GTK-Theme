@@ -247,15 +247,15 @@ export class GdmPowerButtons {
 
         let overlayStyle = '';
         if (isHovered) {
-            overlayStyle += ` color: #ffffff !important;`;
+            overlayStyle += ` color: #ffffff;`;
         } else {
-            overlayStyle += ` color: rgba(255, 255, 255, 0.95) !important;`;
+            overlayStyle += ` color: rgba(255, 255, 255, 0.95);`;
         }
         if (isFocused) {
-            overlayStyle += ` border: 1px solid rgba(255, 255, 255, 0.8) !important;`;
+            overlayStyle += ` border: 1px solid rgba(255, 255, 255, 0.8);`;
         }
 
-        const bgStyle = ` background-color: rgba(${curR}, ${curG}, ${curB}, 0.25) !important;${overlayStyle}`;
+        const bgStyle = ` background-color: rgba(${curR}, ${curG}, ${curB}, 0.25);${overlayStyle}`;
 
         icon.set_style(`${icon._wackOriginalStyle ?? ''}${bgStyle}`);
 

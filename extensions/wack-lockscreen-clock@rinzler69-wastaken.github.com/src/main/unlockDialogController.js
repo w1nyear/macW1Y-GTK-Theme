@@ -11,7 +11,7 @@ import {
     CUPERTINO_UNLOCK_TSO_DELAY,
 } from './constants.js';
 import { applyClockAnimation, applyPromptAnimation } from './anims.js';
-import { _setActorVisible } from './mainUtils.js';
+import { _setActorVisible, getAuthSubtitleText } from './mainUtils.js';
 
 export class UnlockDialogController {
     constructor(extension) {
@@ -31,21 +31,57 @@ export class UnlockDialogController {
     _setupAuthPrompt(authPrompt) {
         if (!authPrompt) return;
 
-        if (authPrompt.setMessage && !authPrompt._wackOrigSetMessage) {
-            authPrompt._wackOrigSetMessage = authPrompt.setMessage.bind(authPrompt);
-            authPrompt.setMessage = (message, type) => {
-                authPrompt._wackOrigSetMessage(message, type);
-                if (this._extension._promptStyling)
-                    this._extension._promptStyling.updatePromptMessageStyle();
-            };
-        }
-
         if (this._extension._lockscreenMode === 'cupertino') {
             if (authPrompt._message) {
                 authPrompt._message.add_style_class_name('wack-cupertino-message');
+                authPrompt._message.opacity = 0;
+                authPrompt._message.visible = false;
+                authPrompt._message.y_expand = false;
             }
-            if (this._extension._promptStyling)
-                this._extension._promptStyling.updatePromptMessageStyle();
+            if (authPrompt._capsLockWarningLabel) {
+                authPrompt._capsLockWarningLabel.y_expand = false;
+            }
+
+            const cupertinoMgr = this._extension._cupertinoPromptManager;
+            const userName = this._extension._dialog?._user?.get_user_name() || GLib.get_user_name();
+
+            if (authPrompt.setMessage && !authPrompt._wackSetMessageWrapped) {
+                authPrompt._wackSetMessageWrapped = true;
+                const origSetMessage = (authPrompt.constructor?.prototype?.setMessage || authPrompt.setMessage).bind(authPrompt);
+                this.origSetMessage = origSetMessage;
+                authPrompt.setMessage = (message, type, wiggleParameters) => {
+                    origSetMessage(message, type, wiggleParameters);
+                    if (authPrompt._message) {
+                        authPrompt._message.opacity = 0;
+                        authPrompt._message.visible = false;
+                        authPrompt._message.y_expand = false;
+                    }
+                    if (cupertinoMgr?.restPrompt?._hintLabel) {
+                        if (message && message.trim().length > 0) {
+                            cupertinoMgr.restPrompt._hintLabel.text = message;
+                            cupertinoMgr.restPrompt._hintLabel.add_style_class_name('wack-gdm-auth-subtitle-warning');
+                            if (cupertinoMgr.restPrompt._hintBoxWrapper)
+                                cupertinoMgr.restPrompt._hintBoxWrapper.opacity = 255;
+                        } else {
+                            cupertinoMgr.restPrompt._hintLabel.text = getAuthSubtitleText(userName);
+                            cupertinoMgr.restPrompt._hintLabel.remove_style_class_name('wack-gdm-auth-subtitle-warning');
+                        }
+                    }
+                    if (this._extension._promptStyling)
+                        this._extension._promptStyling.updatePromptMessageStyle();
+                };
+            }
+
+            const promptEntry = authPrompt._entry ?? (authPrompt.get_children ? authPrompt.get_children().find(c => c.has_style_class_name?.('login-dialog-prompt-entry')) : null);
+            if (promptEntry?.clutter_text && !promptEntry._wackTextChangeId) {
+                promptEntry._wackTextChangeId = promptEntry.clutter_text.connect('text-changed', () => {
+                    if (cupertinoMgr?.restPrompt?._hintLabel &&
+                        cupertinoMgr.restPrompt._hintLabel.has_style_class_name('wack-gdm-auth-subtitle-warning')) {
+                        cupertinoMgr.restPrompt._hintLabel.text = getAuthSubtitleText(userName);
+                        cupertinoMgr.restPrompt._hintLabel.remove_style_class_name('wack-gdm-auth-subtitle-warning');
+                    }
+                });
+            }
         }
     }
 
@@ -72,9 +108,9 @@ export class UnlockDialogController {
                         return Clutter.EVENT_STOP;
                     }
                     if (keyval === Clutter.KEY_Escape) {
-                        return Clutter.EVENT_PROPAGATE;
+                        return Clutter.EVENT_STOP;
                     }
-                    return Clutter.EVENT_PROPAGATE;
+                    return Clutter.EVENT_STOP;
                 }
                 return this.origKeyPressEvent(event);
             };
@@ -371,12 +407,15 @@ export class UnlockDialogController {
                         const targetOpacity = hasNotifs ? Math.round(255 * progress) : 255;
                         cupertinoMgr.restPromptContainer.opacity = targetOpacity;
                         cupertinoMgr.restPromptContainer.visible = targetOpacity > 0;
-                        const subOpacity = Math.round(255 * (1 - progress));
                         if (cupertinoMgr.restPrompt?._hintBoxWrapper) {
-                            cupertinoMgr.restPrompt._hintBoxWrapper.opacity = subOpacity;
+                            cupertinoMgr.restPrompt._hintBoxWrapper.opacity = 255;
+                            cupertinoMgr.restPrompt._hintBoxWrapper.visible = true;
                         }
                         const nameLabel = cupertinoMgr.restPrompt?._userWell?.get_child()?._label;
-                        if (nameLabel) nameLabel.opacity = subOpacity;
+                        if (nameLabel) {
+                            nameLabel.opacity = 255;
+                            nameLabel.visible = true;
+                        }
                     }
                 }
 

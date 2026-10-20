@@ -82,8 +82,18 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
             this._user = user;
             if (this._user) {
                 this._user.connectObject(
-                    'notify::is-loaded', () => this.updateAvatarVibrancy(),
-                    'changed', () => this.updateAvatarVibrancy(),
+                    'notify::is-loaded', () => {
+                        const avatar = this._avatarButton?.get_child();
+                        if (avatar && typeof avatar.update === 'function')
+                            avatar.update();
+                        this.updateAvatarVibrancy();
+                    },
+                    'changed', () => {
+                        const avatar = this._avatarButton?.get_child();
+                        if (avatar && typeof avatar.update === 'function')
+                            avatar.update();
+                        this.updateAvatarVibrancy();
+                    },
                     this
                 );
             }
@@ -181,24 +191,49 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
         }
 
         _hasImageAvatar(avatar) {
-            if (!avatar || !avatar._user) return false;
-            const iconFile = avatar._user.get_icon_file();
-            return Boolean(iconFile && GLib.file_test(iconFile, GLib.FileTest.EXISTS));
+            return Boolean(this._getIconFile(avatar));
+        }
+
+        _getIconFile(avatar) {
+            if (!avatar) return null;
+            let iconFile = avatar._user?.get_icon_file ? avatar._user.get_icon_file() : null;
+            if (iconFile && GLib.file_test(iconFile, GLib.FileTest.EXISTS)) return iconFile;
+            const userName = avatar._user?.get_user_name ? avatar._user.get_user_name() : (this._user?.get_user_name?.() || GLib.get_user_name());
+            if (userName) {
+                const asIcon = `/var/lib/AccountsService/icons/${userName}`;
+                if (GLib.file_test(asIcon, GLib.FileTest.EXISTS)) return asIcon;
+            }
+            return null;
         }
 
         updateAvatarVibrancy(avatarColor) {
             if (avatarColor)
                 this._lastAvatarColor = avatarColor;
             const color = this._lastAvatarColor;
-            if (!color || !this._avatarButton || this._updatingVibrancy) return;
+            if (!this._avatarButton || this._updatingVibrancy) return;
 
             this._updatingVibrancy = true;
             const avatar = this._avatarButton.get_child();
-            if (this._hasImageAvatar(avatar)) {
-                if (this._avatarButton.get_style() !== null)
-                    this._avatarButton.set_style(null);
-                this._avatarButton.remove_style_class_name('wack-vibrancied');
-            } else {
+            const iconFile = this._getIconFile(avatar);
+            if (iconFile) {
+                if (avatar) {
+                    avatar.child = null;
+                    avatar.add_style_class_name('user-avatar');
+                    avatar.style = `
+                        background-image: url("${iconFile}");
+                        background-size: cover;
+                        border-radius: 999px !important;
+                    `;
+                    avatar.visible = true;
+                    avatar.opacity = 255;
+                }
+                if (this._avatarButton) {
+                    this._avatarButton.set_style('border-radius: 999px !important; background-color: transparent !important;');
+                    this._avatarButton.remove_style_class_name('wack-vibrancied');
+                    this._avatarButton.visible = true;
+                    this._avatarButton.opacity = 255;
+                }
+            } else if (color) {
                 this._avatarButton.add_style_class_name('wack-vibrancied');
                 const bgRgba = color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`;
                 const btnStyle = `background-color: ${bgRgba} !important; border-radius: 999px !important;`;

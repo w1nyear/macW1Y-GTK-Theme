@@ -58,6 +58,7 @@ export class GdmManager {
         this._promptResetAnimating = false;
         this._verificationSucceeded = false;
         this._legacyPromptAnimationState = 'idle';
+        this._hasAutoSelectedUser = false;
         this._skipLegacyPromptEntryAnimation = false;
         this._origLoginScreenSessionActivated = null;
         this._origOnSessionOpened = null;
@@ -72,6 +73,7 @@ export class GdmManager {
         this._origOnPrompted = null;
         this._origSetUserListExpanded = null;
         this._origAuthPromptCancel = null;
+        this._origBindOpacity = null;
     }
 
     enable() {
@@ -196,7 +198,9 @@ export class GdmManager {
 
     _setup() {
         const dialog = this._dialog;
-        this._dialogParent = dialog.get_parent();
+        if (!dialog) return;
+        this._dialogParent = dialog.get_parent() || Main.screenShield?._lockDialogGroup || Main.layoutManager?.uiGroup;
+        _log(`[WACK/GdmManager] _setup() started: dialog=${!!dialog}, parent=${!!this._dialogParent}`);
 
         this._verificationSucceeded = false;
         this._legacyPromptAnimationState = 'idle';
@@ -208,8 +212,14 @@ export class GdmManager {
             this._origVfuncAllocate = dialog.vfunc_allocate;
             dialog.vfunc_allocate = (dialogBox) => {
                 this._origVfuncAllocate.call(dialog, dialogBox);
-                this._positionUserList(dialogBox);
-                this._positionAuthPrompt(dialogBox);
+                try {
+                    this._clockManager?.positionClock(dialogBox);
+                    this._userListManager?.positionUserList(dialogBox);
+                    this._positionAuthPrompt(dialogBox);
+                    this._powerButtons?.positionPowerButtons(dialogBox);
+                } catch (allocErr) {
+                    _logError(`[WACK/GdmManager] allocate error: ${allocErr.stack || allocErr}`);
+                }
             };
         }
 
@@ -271,17 +281,28 @@ export class GdmManager {
             };
         }
 
-        this._wallpaperManager.setup(dialog, this._dialogParent);
-        this._clockManager.setup(dialog, this._dialogParent);
-        this._messageManager.setup(this._dialogParent);
-        this._userListManager.setup(dialog);
-        this._avatarManager.setup(dialog);
-        this._powerButtons.setup(dialog);
+        try {
+            this._wallpaperManager.setup(dialog, this._dialogParent);
+            this._clockManager.setup(dialog, this._dialogParent);
+            this._messageManager.setup(this._dialogParent);
+            this._userListManager.setup(dialog);
+            this._avatarManager.setup(dialog);
+            // this._powerButtons.setup(dialog); // Disabled per user request
+            _log('[WACK/GdmManager] Sub-managers setup completed');
+        } catch (subErr) {
+            _logError(`[WACK/GdmManager] Sub-manager setup error: ${subErr.stack || subErr}`);
+        }
 
         // Ensure no Apple logo in GDM top left panel
         if (Main.panel?._leftBox) {
             const appleBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-apple-menu");
             if (appleBtn) appleBtn.destroy();
+        }
+
+        // Offset accessibility button cleanly away from bottom-right corner
+        if (dialog._bottomButtonGroup) {
+            dialog._bottomButtonGroup.translation_x = -24;
+            dialog._bottomButtonGroup.translation_y = -24;
         }
 
         // Shift user selection list down
@@ -314,14 +335,11 @@ export class GdmManager {
             if (dialog._sessionMenuButton) {
                 _setActorVisible(dialog._sessionMenuButton, false, 0);
             }
-            if (dialog._userSelectionBox && dialog._userSelectionBox.visible) {
+            if (dialog._userSelectionBox) {
                 dialog._userSelectionBox.remove_all_transitions();
-                dialog._userSelectionBox.opacity = 0;
-                dialog._userSelectionBox.ease({
-                    opacity: 255,
-                    duration: GDM_CROSSFADE_DURATION,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                });
+                dialog._userSelectionBox.opacity = 255;
+                dialog._userSelectionBox.visible = true;
+                this._positionUserList();
             }
         }
 
@@ -349,8 +367,11 @@ export class GdmManager {
                 if (!hasBeenFullyVisible) {
                     hasBeenFullyVisible = true;
                 }
-                if (!this._legacyPromptChromeVisible && this._clockManager.clockWrapper && !this._clockManager.clockWrapper.get_transition('opacity'))
+                if (this._clockManager?.clockWrapper) {
+                    this._clockManager.clockWrapper.remove_all_transitions();
                     this._clockManager.clockWrapper.opacity = 255;
+                    this._clockManager.clockWrapper.visible = true;
+                }
                 const messageActor = this._getLockscreenMessageActor();
                 if (messageActor) {
                     if (this._selectedPromptMode !== 'wack' && !this._isNotListed && messageActor.visible) {
@@ -360,8 +381,10 @@ export class GdmManager {
                     }
                 }
             } else if (hasBeenFullyVisible) {
-                if (!this._legacyPromptChromeVisible && this._clockManager.clockWrapper && !this._clockManager.clockWrapper.get_transition('opacity'))
-                    this._clockManager.clockWrapper.opacity = op;
+                if (this._clockManager?.clockWrapper && !this._verificationSucceeded) {
+                    this._clockManager.clockWrapper.opacity = 255;
+                    this._clockManager.clockWrapper.visible = true;
+                }
                 const messageActor = this._getLockscreenMessageActor();
                 if (messageActor && !messageActor.get_transition('opacity')) {
                     if (this._selectedPromptMode !== 'wack' && !this._isNotListed && messageActor.visible) {
@@ -470,11 +493,45 @@ export class GdmManager {
             };
         }
 
+        if (dialog._bindOpacity) {
+            this._origBindOpacity = dialog._bindOpacity.bind(dialog);
+            dialog._bindOpacity = () => {
+                const bgActors = new Set();
+                if (this._wallpaperManager?.view) {
+                    bgActors.add(this._wallpaperManager.view);
+                    if (this._wallpaperManager.view.root)
+                        bgActors.add(this._wallpaperManager.view.root);
+                }
+                if (dialog._backgroundGroup)
+                    bgActors.add(dialog._backgroundGroup);
+                if (Main.layoutManager?._backgroundGroup)
+                    bgActors.add(Main.layoutManager._backgroundGroup);
+
+                dialog._bindings = Main.layoutManager.uiGroup.get_children()
+                    .filter(c => c !== Main.layoutManager.screenShieldGroup && !bgActors.has(c))
+                    .map(c => dialog.bind_property('opacity', c, 'opacity', 0));
+            };
+        }
+
         if (dialog._startSession) {
             this._origStartSession = dialog._startSession.bind(dialog);
             dialog._startSession = (...args) => {
                 markVerificationSuccess();
+                if (this._wallpaperManager?.view) {
+                    this._wallpaperManager.view.opacity = 255;
+                    if (this._wallpaperManager.view.root)
+                        this._wallpaperManager.view.root.opacity = 255;
+                }
                 fadeOutOverlayActors(250);
+                if (dialog._authPrompt) {
+                    dialog._authPrompt.ease({ opacity: 0, duration: 250, mode: Clutter.AnimationMode.EASE_OUT_QUAD });
+                }
+                if (dialog._userSelectionBox) {
+                    dialog._userSelectionBox.ease({ opacity: 0, duration: 250, mode: Clutter.AnimationMode.EASE_OUT_QUAD });
+                }
+                if (Main.panel) {
+                    Main.panel.ease({ opacity: 0, duration: 250, mode: Clutter.AnimationMode.EASE_OUT_QUAD });
+                }
                 if (this._selectedPromptMode === 'wack') {
                     this._animateLegacyPromptSuccessFadeOut();
                     this._setLegacyPromptChrome(false, true);
@@ -545,15 +602,11 @@ export class GdmManager {
                 const wasVisible = dialog._userSelectionBox?.visible;
                 this._origSetUserListExpanded(expanded);
                 this._powerButtons?.syncQuickSettingsVisibility();
-                if (expanded && dialog._userSelectionBox && (!wasVisible || dialog._userSelectionBox.opacity === 0)) {
+                if (expanded && dialog._userSelectionBox) {
                     this._positionUserList();
                     dialog._userSelectionBox.remove_all_transitions();
-                    dialog._userSelectionBox.opacity = 0;
-                    dialog._userSelectionBox.ease({
-                        opacity: 255,
-                        duration: GDM_CROSSFADE_DURATION,
-                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                    });
+                    dialog._userSelectionBox.opacity = 255;
+                    dialog._userSelectionBox.visible = true;
                 }
             };
         }
@@ -693,12 +746,49 @@ export class GdmManager {
     _restartDialogFadeIn() {
         const dialog = this._dialog;
         if (!dialog) return;
+
+        const FADE_DURATION = 900;
+        const FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
+
+        // 1. Wallpaper view: smoothly fade in from black
+        const wpGroup = this._wallpaperManager?.view?._group;
+        if (wpGroup) {
+            wpGroup.remove_all_transitions();
+            wpGroup.opacity = 0;
+            wpGroup.ease({
+                opacity: 255,
+                duration: FADE_DURATION,
+                mode: FADE_MODE,
+            });
+        }
+
+        // 2. GNOME Shell default background group
+        const bgGroup = Main.layoutManager?._backgroundGroup;
+        if (bgGroup) {
+            bgGroup.remove_all_transitions();
+            bgGroup.opacity = 0;
+            bgGroup.ease({
+                opacity: 255,
+                duration: FADE_DURATION,
+                mode: FADE_MODE,
+            });
+        }
+
+        // 3. macOS lockscreen clock
+        if (this._clockManager?.clockWrapper) {
+            this._clockManager.clockWrapper.remove_all_transitions();
+            this._clockManager.clockWrapper.opacity = 255;
+            this._clockManager.clockWrapper.visible = true;
+            this._clockManager.positionClock();
+        }
+
+        // 4. Login dialog (account avatar, username, password entry)
         dialog.remove_all_transitions();
         dialog.opacity = 0;
         dialog.ease({
             opacity: 255,
-            duration: 1000,
-            mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            duration: FADE_DURATION,
+            mode: FADE_MODE,
         });
     }
 
@@ -775,9 +865,17 @@ export class GdmManager {
             dialog._startSession = this._origStartSession;
             this._origStartSession = null;
         }
+        if (this._origBindOpacity && dialog) {
+            dialog._bindOpacity = this._origBindOpacity;
+            this._origBindOpacity = null;
+        }
         if (this._origOnVerificationComplete && dialog) {
             dialog._onVerificationComplete = this._origOnVerificationComplete;
             this._origOnVerificationComplete = null;
+        }
+        if (this._wackOrigLoadUserList && dialog) {
+            dialog._loadUserList = this._wackOrigLoadUserList;
+            this._wackOrigLoadUserList = null;
         }
         if (this._userVerifierCompleteId) {
             const uv = dialog?._userVerifier || dialog?._authPrompt?._userVerifier;
@@ -864,14 +962,14 @@ export class GdmManager {
 
         const restPrompt = this._cupertinoRestPrompt;
         const userWell = restPrompt?._userWell;
-        const [, , , wellH] = userWell ? userWell.get_preferred_size() : [0, 0, 0, 0];
+        const wellH = userWell ? (userWell.get_preferred_size()[3] || 0) : 0;
         const [, , promptW, promptH] = authPrompt.get_preferred_size();
-
-        const anchorH = wellH > 0 ? Math.floor(wellH * 1.3) : promptH;
-        const targetY = Math.floor(h * CUPERTINO_PROMPT_VERTICAL_FRACTION) - anchorH;
-        const currentY = authPrompt.get_allocation_box().y1;
-        authPrompt.translation_y = targetY - currentY;
+        const bottomMargin = 55;
+        const effPromptH = promptH > 0 ? promptH : 160;
+        const targetTopY = Math.max(50, Math.floor(h - effPromptH - bottomMargin));
+        const currentY = authPrompt.y || 0;
         authPrompt.translation_x = Math.floor(w / 2 - promptW / 2) - (authPrompt.x || 0);
+        authPrompt.translation_y = targetTopY - currentY;
 
         const messageActor = this._getLockscreenMessageActor();
         if (!dialogBox && messageActor && messageActor.visible && !this._isNotListed && this._selectedPromptMode !== 'wack') {
@@ -879,7 +977,7 @@ export class GdmManager {
             const msgW = this._messageManager.width;
             const msgH = this._messageManager.height;
             const msgX = alloc.x1 + Math.floor((w - msgW) / 2.0);
-            const msgY = alloc.y1 + targetY - MESSAGE_PROMPT_GAP - msgH;
+            const msgY = alloc.y1 + targetTopY - MESSAGE_PROMPT_GAP - msgH;
             messageActor.set_position(msgX, msgY);
         } else if (messageActor && (this._selectedPromptMode === 'wack' || this._isNotListed)) {
             _setActorVisible(messageActor, false, 0);
@@ -1002,11 +1100,11 @@ export class GdmManager {
 
     _autoSelectSingleUser(dialog = null) {
         const targetDialog = dialog || this._dialog;
-        if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible)
+        if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible || this._hasAutoSelectedUser)
             return;
 
         const checkAndActivate = () => {
-            if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible)
+            if (!targetDialog || targetDialog._user || targetDialog._authPrompt?.visible || this._hasAutoSelectedUser)
                 return GLib.SOURCE_REMOVE;
 
             const userList = targetDialog._userList;
@@ -1016,9 +1114,14 @@ export class GdmManager {
             const items = Array.from(userList._items.values());
             if (items.length === 1) {
                 const singleItem = items[0];
-                if (singleItem && typeof singleItem.activate === 'function') {
+                if (singleItem) {
+                    this._hasAutoSelectedUser = true;
                     _log('[WACK/GDM] Single user detected on boot, immediately activating password prompt');
-                    singleItem.activate();
+                    if (typeof targetDialog._onUserListActivated === 'function') {
+                        targetDialog._onUserListActivated(singleItem);
+                    } else if (typeof singleItem.emit === 'function') {
+                        singleItem.emit('activate');
+                    }
                 }
             }
             return GLib.SOURCE_REMOVE;
