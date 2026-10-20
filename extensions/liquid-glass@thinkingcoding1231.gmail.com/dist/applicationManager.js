@@ -1550,6 +1550,7 @@ export class ApplicationManager {
             this._syncClones(state);
             return;
         }
+        state.effect?.markBackdropDirty?.();
         if (BASE_LAYER_ENABLED)
             this._applyCounterScale(state.baseActor, actor, frameDX - margin, frameDY - margin, baseActorW, baseActorH);
         // Glass background (blurred) expanded by padding.
@@ -1795,10 +1796,11 @@ export class ApplicationManager {
         for (const src of state.clones.keys()) {
             if (hooks.has(src))
                 continue;
-            if (!isActorValid(src) || !innerGlassEffectOf(src))
+            if (!isActorValid(src))
                 continue;
             try {
                 const id = src.connect('damaged', () => {
+                    state.effect?.markBackdropDirty?.();
                     const bg = state.bgActor;
                     if (bg && isActorValid(bg) && bg.mapped && bg.visible)
                         bg.queue_redraw();
@@ -1859,6 +1861,7 @@ export class ApplicationManager {
             : undefined;
         // ▼ 個別ウィンドウのクローン同期 (translation_x/yを使用) ▼
         // Sync blurred clones
+        let clonesChanged = false;
         for (let [src, clone] of state.clones.entries()) {
             if (!isActorValid(src) || !src.visible || !src.mapped) {
                 if (isActorValid(clone))
@@ -1881,13 +1884,17 @@ export class ApplicationManager {
                 // 詳細は utils.ts の setTranslationIfChanged()。
                 if (clone.x !== 0 || clone.y !== 0)
                     clone.set_position(0, 0);
-                setTranslationIfChanged(clone, src.x, src.y);
-                setSizeIfChanged(clone, src.width, src.height);
-                setScaleIfChanged(clone, src.scale_x, src.scale_y);
-                setOpacityIfChanged(clone, src.opacity);
+                clonesChanged = setTranslationIfChanged(clone, src.x, src.y) || clonesChanged;
+                clonesChanged = setSizeIfChanged(clone, src.width, src.height) || clonesChanged;
+                clonesChanged = setScaleIfChanged(clone, src.scale_x, src.scale_y) || clonesChanged;
+                clonesChanged = setOpacityIfChanged(clone, src.opacity) || clonesChanged;
                 this._checkCloneAnomaly(clone, src, 'blurred');
             }
         }
+        if (clonesChanged) {
+            state.effect?.markBackdropDirty?.();
+        }
+        this._syncDamageHooks(state);
         // [window-clone-clip] Keep the cull opt-out in step with what this glass
         // clones, so mutter stops handing those windows' surface actors a
         // damage-limited clip region. See CullOptOutEffect in utils.ts.

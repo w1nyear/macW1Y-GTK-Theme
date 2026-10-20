@@ -1137,6 +1137,9 @@ export const LiquidEffect = GObject.registerClass({
   // marks the outer actor dirty again. Counting re-renders here is what lets
   // ApplicationManager notice an inner re-render and repair the outer.
   declare private _recaptureSerial: number;
+  declare private _lastBlurRecaptureSerial: number;
+  declare private _lastBlurTimeUs: number;
+  declare private _backdropDirty: boolean;
 
 
   // Per-pass pipeline copies. See _passPipeline() for why a shared pipeline
@@ -1233,6 +1236,9 @@ export const LiquidEffect = GObject.registerClass({
     this._blurRuns = 0;
     this._blurSkips = 0;
     this._recaptureSerial = 0;
+    this._lastBlurRecaptureSerial = -1;
+    this._lastBlurTimeUs = 0;
+    this._backdropDirty = true;
     _ensureFrameSerialHook();
     this._uvMismatchWarned = false;
     this._passPipelines = new Map();
@@ -2135,12 +2141,26 @@ export const LiquidEffect = GObject.registerClass({
       ? (blurRect === null)
       : (blurRect !== null && a[0] === blurRect[0] && a[1] === blurRect[1] &&
         a[2] === blurRect[2] && a[3] === blurRect[3]);
-    const reuseBlur = !firstPaintThisFrame &&
-      this.PASS_COUNT > 0 &&
+
+    const now = GLib.get_monotonic_time();
+    // 60 FPS cap: 16,666 microseconds (1/60s).
+    // Prevents running expensive multi-pass blur shaders at 165Hz display refresh rate.
+    const MIN_BLUR_INTERVAL_US = 16666;
+    const timeSinceLastBlur = now - (this._lastBlurTimeUs || 0);
+    const canReuseBlur = this.PASS_COUNT > 0 &&
       this._blurResultTex !== null &&
       rectUnchanged &&
       this._poolWidth === blurW &&
       this._poolHeight === blurH;
+
+    // Dirty tracking: only dirty if backdrop was explicitly marked dirty
+    const isDirty = (this._backdropDirty !== false);
+
+    // Reuse cached blur texture if:
+    // 1. Same-frame repeat paint (!firstPaintThisFrame), OR
+    // 2. Backdrop is completely clean and static (!isDirty), OR
+    // 3. Less than 16.6ms has elapsed since the last blur computation (rate-limited to 60 FPS max)
+    const reuseBlur = canReuseBlur && (!firstPaintThisFrame || !isDirty || timeSinceLastBlur < MIN_BLUR_INTERVAL_US);
 
     // [PERF] The crop runs only for a paint that is going to blur — the blur
     // is its only consumer now that both composite layers share one texture.
@@ -2225,6 +2245,9 @@ export const LiquidEffect = GObject.registerClass({
       // _blurResultTex is left exactly as the frame's first paint set it.
       this._blurSkips++;
     } else {
+      this._lastBlurTimeUs = now;
+      this._lastBlurRecaptureSerial = this._recaptureSerial;
+      this._backdropDirty = false;
       this._blurResultTex = null;
       this._blurRectUsed = blurRect;
       if (this.PASS_COUNT > 0) {
@@ -3607,7 +3630,12 @@ export const LiquidEffect = GObject.registerClass({
   // way, so every one of this file's existing `this.queue_repaint()` call
   // sites transparently goes through here without needing to change any
   // of them individually) the inherited Clutter.Effect.queue_repaint().
+  markBackdropDirty(): void {
+    this._backdropDirty = true;
+  }
+
   queue_repaint(): void {
+    this._backdropDirty = true;
     if (LiquidEffect.DRAG_PERF_MODE_ENABLED && this._batchDepth) {
       this._batchDirty = true;
       return;
