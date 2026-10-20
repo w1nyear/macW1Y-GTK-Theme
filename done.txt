@@ -7228,3 +7228,41 @@ echo "==> Встановлення успішно завершено!"
 
 Наступні етапи (за домовленістю): новий простий UI плаваючих банерів та
 нові стеки-групи (переробка з нуля).
+
+
+================================================================================
+17. Оптимізація графіки для гібридних ноутбуків (Intel UHD + NVIDIA RTX 3050)
+================================================================================
+1. Усунення просідання FPS (40 FPS у CS2) та фрізів компіляції шейдерів:
+   - Діагностика: у скрипті запуску Steam використовувались змінні `DRI_PRIME=1`, `MESA_VK_DEVICE_SELECT` та некоректна `VK_LOADER_DRIVERS_SELECT="*nvidia*"`. Через це рушій гри (Source 2 / Vulkan) та OpenGL примусово перенаправлялися через шар емуляції Mesa Zink (OpenGL поверх емуляції Vulkan), що призводило до катастрофічного падіння продуктивності до ~40 FPS.
+   - Виправлення:
+     * Повністю вилучено конфліктні змінні `DRI_PRIME` та `MESA_VK_DEVICE_SELECT`.
+     * Налаштовано прямий пропрієтарний стек NVIDIA PRIME Offload:
+       `__NV_PRIME_RENDER_OFFLOAD=1`
+       `__GLX_VENDOR_LIBRARY_NAME=nvidia`
+       `__VK_LAYER_NV_optimus=NVIDIA_only`
+       `VK_DRIVER_FILES=/usr/share/vulkan/icd.d/nvidia_icd.json`
+       `VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json`
+     * Налаштовано `FOSSILIZE_THREADS=2` для фонової обробки шейдерів Steam без перевантаження P-ядер процесора та зависання оболонки.
+     * Оновлено майстер-лаунчери /usr/local/bin/steam, ~/MACTHEMEFILES/bin/steam та створено універсальний /usr/local/bin/prime-run.
+
+2. Виправлення запуску Watch Dogs 2 (Snap Steam та дискретний накопичувач):
+   - Діагностика: при знаходженні додаткової бібліотеки Steam за шляхом `/mnt/nvme1n1/SteamLibrary`, пісочниця Steam Snap та середовище контейнеризації Proton (pressure-vessel) блокували шлях `/var/lib/snapd/hostfs/mnt/...` з помилкою `Proton: Error: unable to use parent for game drive`.
+   - Виправлення:
+     * Додано стабільне монтування `/mnt/nvme1n1 /media/vitaliy/nvme1n1 none bind,nofail 0 0` у `/etc/fstab`.
+     * Оновлено конфігураційні файли Steam:
+       `/home/vitaliy/snap/steam/common/.local/share/Steam/config/libraryfolders.vdf`
+       `/home/vitaliy/snap/steam/common/.local/share/Steam/steamapps/libraryfolders.vdf`
+       шлях бібліотеки змінено на прямий `/media/vitaliy/nvme1n1/SteamLibrary`.
+     * Інтерфейс Snap `removable-media` має прямий прозорий доступ до `/media`, завдяки чому Proton призначає дискові літери без помилок.
+
+3. Перемикач розподілу GPU у системних «Параметрах» (Живлення / Power):
+   - Створено системний менеджер `/usr/local/bin/mac-gpu-manager` (та ~/MACTHEMEFILES/bin/mac-gpu-manager) з підтримкою 4 режимів:
+     1) Гібридний (Intel — система • RTX 3050 — ігри та важкі програми) [За замовчуванням]
+     2) Всі програми на RTX 3050 (Intel — система • RTX 3050 — всі інші програми, навіть прості)
+     3) Повна продуктивність (Все на RTX 3050)
+     4) Енергозбереження (Тільки Intel UHD Graphics)
+   - Інтерфейс користувача:
+     * У `cc-power-panel.ui` (оверлей GNOME Settings) додано групу «Графіка та відеокарти (GPU)» з селектором `AdwComboRow` (`gpu_mode_row`).
+     * У динамічній бібліотеці `libmac_settings.c` реалізовано обробники сигналів `init_gpu_mode` та `on_gpu_mode_changed` з динамічним оновленням підписів.
+     * Бібліотеку скомпільовано у `~/.local/lib/libmac_settings.so` та синхронізовано з `MACTHEMEFILES/lib/libmac_settings.so`.
