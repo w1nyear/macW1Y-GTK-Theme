@@ -23,13 +23,11 @@
 > - [`styling.json`](file:///home/vitaliy/.config/mac-styling/styling.json)
 
 > [!IMPORTANT]
-> **ПРАВИЛО 4: ПОТРІЙНА СИНХРОНІЗАЦІЯ ФАЙЛІВ**
-> У системі є три ключових місця розміщення файлів:
-> 1. Робоча система: `~/.local/share/gnome-shell/extensions/...`, `~/.themes/...`, `~/.config/...`
-> 2. Головний репозиторій: `/home/vitaliy/MACTHEMEFILES/`
-> 3. Резервна копія: `/home/vitaliy/macW1Y/`
->
-> Будь-яка зміна у системному файлі **НЕГАЙНО** копіюється в `~/MACTHEMEFILES/` та `~/macW1Y/`. Папка `MACTHEMEFILES` є основним джерелом істини (Source of Truth).
+> **ПРАВИЛО 4: СИНХРОНІЗАЦІЯ З ГОЛОВНИМ РЕПОЗИТОРІЄМ**
+> Фізична папка проєкту — це `/home/vitaliy/macW1Y/`, а `/home/vitaliy/MACTHEMEFILES` — це символічне посилання (symlink) на неї:
+> `MACTHEMEFILES -> /home/vitaliy/macW1Y`
+> Вони вказують на одні й ті самі фізичні файли на диску.
+> Будь-яка зміна у робочій системі (`~/.local/share/gnome-shell/extensions/...`, `~/.themes/...`, `~/.config/...`) **НЕГАЙНО** копіюється в репозиторій `~/macW1Y/` (або через symlink `~/MACTHEMEFILES/`). Робити подвійне копіювання в обидва шляхи не потрібно. Репозиторій є основним джерелом істини (Source of Truth).
 
 > [!IMPORTANT]
 > **ПРАВИЛО 5: ЖУРНАЛ `done.txt` ТА ЛОКАЛЬНИЙ ГІТ-КОМІТ**
