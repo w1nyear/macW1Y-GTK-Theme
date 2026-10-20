@@ -1001,6 +1001,13 @@ export const MacSpotlightDialog = GObject.registerClass({
     open() {
         if (this._isOpen) return;
         if (Main.overview?.visible) return;
+        if (typeof globalThis._macCloseAllCenters === 'function') {
+            globalThis._macCloseAllCenters('spotlight');
+        } else {
+            try { globalThis._tahoeQSClose?.(); } catch (_) {}
+            try { globalThis._tahoeNCClose?.(true); } catch (_) {}
+            try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
+        }
         this._isOpen = true;
         this._mode = 'search';
         this._buttonsCollapsed = false;
@@ -2083,6 +2090,13 @@ export function toggleSearchDialog() {
     if (_spotlightDialog._isOpen) {
         _spotlightDialog.close();
     } else {
+        if (typeof globalThis._macCloseAllCenters === 'function') {
+            globalThis._macCloseAllCenters('spotlight');
+        } else {
+            try { globalThis._tahoeQSClose?.(); } catch (_) {}
+            try { globalThis._tahoeNCClose?.(true); } catch (_) {}
+            try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
+        }
         if (Main.overview?.visible) {
             Main.overview.hide();
         }
@@ -2106,3 +2120,4 @@ export function destroySearchDialog() {
 globalThis._macSpotlightToggle = toggleSearchDialog;
 globalThis.toggleMacSpotlight = toggleSearchDialog;
 globalThis.closeMacSpotlight = closeSearchDialog;
+globalThis._macSpotlightClose = closeSearchDialog;

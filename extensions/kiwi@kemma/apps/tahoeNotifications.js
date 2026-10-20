@@ -12,6 +12,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import Meta from 'gi://Meta';
 import {getPanelInk, getTopbarInk, watchInk} from './tahoeInk.js';
+import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
     MacNotificationGroup,
@@ -1212,16 +1213,28 @@ export function openNC() {
         }
     } catch (_) {}
 
-    // QS and NC never share the screen
+    // Only one center can be open at a time
+    if (typeof globalThis._macCloseAllCenters === 'function') {
+        globalThis._macCloseAllCenters('nc');
+    } else {
+        try { globalThis._tahoeQSClose?.(); } catch (_) {}
+        try { globalThis._macSpotlightGlobalInstance?.close?.(true); } catch (_) {}
+        try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
+        try {
+            const qs = Main.panel?.statusArea?.quickSettings;
+            if (qs?.menu?.isOpen)
+                qs.menu.close(1);
+        } catch (_) {}
+        try {
+            if (Main.panel?.menuManager?.activeMenu && Main.panel.menuManager.activeMenu !== Main.panel?.statusArea?.dateMenu?.menu) {
+                Main.panel.menuManager.activeMenu.close(1);
+            }
+        } catch (_) {}
+    }
     try {
-        const qs = Main.panel?.statusArea?.quickSettings;
-        if (qs?.menu?.isOpen)
-            qs.menu.close(1);
-    } catch (_) {}
-    try {
-        if (Main.panel?.menuManager?.activeMenu && Main.panel.menuManager.activeMenu !== Main.panel?.statusArea?.dateMenu?.menu) {
-            Main.panel.menuManager.activeMenu.close(1);
-        }
+        import('./tahoeControlCenter.js').then(mod => {
+            try { mod.closePanel?.(); } catch (_) {}
+        }).catch(() => {});
     } catch (_) {}
 
     // Take any active floating banners so we can dock them smoothly into the center
@@ -1247,12 +1260,24 @@ export function openNC() {
     }
 }
 
-export function closeNC() {
+export function closeNC(immediate = false) {
     const p = _nc;
     if (!p || p._closing)
         return;
     p._closing = true;
     _nc = null;
+
+    if (immediate) {
+        _destroyNC(p);
+        try {
+            const notifCtrl = globalThis._macNotificationsController ||
+                Main.extensionManager?.lookup?.('blur-my-shell@aunetx')?.stateObj?._notifications_controller;
+            if (notifCtrl?._stackBox) {
+                notifCtrl._stackBox.show();
+            }
+        } catch (_) {}
+        return;
+    }
 
     // Slide-out animation from our theme: translation_x 0 -> 480 with EASE_IN_CUBIC
     try {
@@ -1392,3 +1417,7 @@ export function disable() {
     } catch (_) {}
     _hooked = false;
 }
+
+globalThis._tahoeNCClose = closeNC;
+globalThis._tahoeNCOpen = () => isNCOpen();
+globalThis._tahoeNCToggle = toggleNC;

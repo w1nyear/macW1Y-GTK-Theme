@@ -33,7 +33,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeInkEnable: ${e}`);
         }
         try {
-            const ncUri = this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri() + '?v=tahoe_v4';
+            const ncUri = this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri() + '?v=tahoe_v5';
             import(ncUri).then(mod => {
                 if (this._tahoeNC && this._tahoeNC !== mod) {
                     try { this._tahoeNC.disable(); } catch (_) {}
@@ -48,7 +48,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeNCEnable: ${e}`);
         }
         try {
-            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri() + '?v=tahoe_v4';
+            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri() + '?v=tahoe_v5';
             import(ccUri).then(mod => {
                 if (this._tahoeCC && this._tahoeCC !== mod) {
                     try { this._tahoeCC.disable(); } catch (_) {}
@@ -95,10 +95,81 @@ export default class KiwiExtension extends Extension {
             gtkThemeSyncEnable();
         } catch (_) {}
 
+        this._setupMutualExclusion();
         this._on_settings_changed(null);
     }
 
+    _setupMutualExclusion() {
+        globalThis._macCloseAllCenters = function(except) {
+            if (except !== 'qs') {
+                try {
+                    if (typeof globalThis._tahoeQSClose === 'function')
+                        globalThis._tahoeQSClose();
+                } catch (_) {}
+            }
+            if (except !== 'nc') {
+                try {
+                    if (typeof globalThis._tahoeNCClose === 'function')
+                        globalThis._tahoeNCClose(true);
+                } catch (_) {}
+                try {
+                    if (typeof globalThis._tahoeNotificationCenterClose === 'function')
+                        globalThis._tahoeNotificationCenterClose();
+                } catch (_) {}
+            }
+            if (except !== 'spotlight') {
+                try {
+                    if (globalThis._macSpotlightGlobalInstance?._isOpen)
+                        globalThis._macSpotlightGlobalInstance.close(true);
+                    else if (typeof globalThis._macSpotlightClose === 'function')
+                        globalThis._macSpotlightClose(true);
+                } catch (_) {}
+            }
+            if (except !== 'clipboard') {
+                try {
+                    if (globalThis._macClipboardGlobalInstance?._isOpen)
+                        globalThis._macClipboardGlobalInstance.close(true);
+                    else if (typeof globalThis._macClipboardClose === 'function')
+                        globalThis._macClipboardClose(true);
+                } catch (_) {}
+            }
+            if (except !== 'panelMenu') {
+                try {
+                    if (Main.panel?.menuManager?.activeMenu)
+                        Main.panel.menuManager.activeMenu.close(1);
+                } catch (_) {}
+            }
+        };
+
+        try {
+            const mm = Main.panel?.menuManager;
+            if (mm && !this._origMenuOpenState) {
+                this._origMenuOpenState = mm._onMenuOpenState;
+                const self = this;
+                mm._onMenuOpenState = function(menu, open) {
+                    if (open) {
+                        let except = 'panelMenu';
+                        if (menu === Main.panel.statusArea?.quickSettings?.menu) {
+                            except = 'qs';
+                        } else if (menu === Main.panel.statusArea?.dateMenu?.menu) {
+                            except = 'nc';
+                        }
+                        if (typeof globalThis._macCloseAllCenters === 'function') {
+                            globalThis._macCloseAllCenters(except);
+                        }
+                    }
+                    return self._origMenuOpenState ? self._origMenuOpenState.call(this, menu, open) : undefined;
+                };
+            }
+        } catch (_) {}
+    }
+
     disable() {
+        if (this._origMenuOpenState && Main.panel?.menuManager) {
+            Main.panel.menuManager._onMenuOpenState = this._origMenuOpenState;
+            this._origMenuOpenState = null;
+        }
+
         if (this._settingsChangedId && this._settings) {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = null;

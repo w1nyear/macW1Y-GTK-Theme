@@ -23,6 +23,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Slider} from 'resource:///org/gnome/shell/ui/slider.js';
 import {getPanelInk, watchInk, notePanelRect} from './tahoeInk.js';
+import {closeAllCenters} from './centerManager.js';
 
 // Liquid-glass helpers live in another extension. Static
 // `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
@@ -2801,10 +2802,25 @@ function _closePanel() {
     globalThis._tahoeQSOpen = false;
 }
 
+export function closePanel() {
+    _closePanel();
+}
+globalThis._tahoeQSClose = _closePanel;
+
 function _openPanel() {
     if (_panel) {
         _closePanel();
         return;
+    }
+    // Only one center can be open at a time
+    if (typeof globalThis._macCloseAllCenters === 'function') {
+        globalThis._macCloseAllCenters('qs');
+    } else {
+        try { globalThis._tahoeNCClose?.(true); } catch (_) {}
+        try { globalThis._tahoeNotificationCenterClose?.(); } catch (_) {}
+        try { globalThis._macSpotlightGlobalInstance?.close?.(true); } catch (_) {}
+        try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
+        try { Main.panel?.menuManager?.activeMenu?.close?.(1); } catch (_) {}
     }
     globalThis._tahoeQSOpen = true;
     try {
@@ -2813,20 +2829,14 @@ function _openPanel() {
             bms._menubar_controller._toggleNotificationCenter();
         }
     } catch (_) {}
-    // QS and NC never share the screen (dynamic import: no module cycle)
     try {
+        import('./tahoeNotifications.js').then(mod => {
+            try { mod.closeNC?.(true); } catch (_) {}
+        }).catch(() => {});
         import('./tahoeNotificationCenter.js').then(mod => {
-            try {
-                mod.closeNC();
-            } catch (_) {
-                // nc unavailable
-            }
-        }).catch(() => {
-            // nc unavailable
-        });
-    } catch (_) {
-        // nc unavailable
-    }
+            try { mod.closeNC?.(); } catch (_) {}
+        }).catch(() => {});
+    } catch (_) {}
     _buildPanel();
 }
 
@@ -3180,8 +3190,12 @@ export function enable(settings, gettextFunc) {
     _settings = settings;
     if (typeof gettextFunc === 'function')
         _ = gettextFunc;
-    if (!_settings.get_boolean('tahoe-quick-settings'))
-        return;
+    try {
+        if (_settings && _settings.settings_schema && _settings.settings_schema.has_key('tahoe-quick-settings')) {
+            if (!_settings.get_boolean('tahoe-quick-settings'))
+                return;
+        }
+    } catch (_) {}
     _enabled = true;
     try {
         const menu = Main.panel?.statusArea?.quickSettings?.menu;

@@ -6684,3 +6684,36 @@ echo "==> Встановлення успішно завершено!"
        - Нижній край капсули доку: `y = 134` -> **Відступ знизу = 17px**
        - Різниця вертикальної симетрії: **0px (абсолютна попіксельна симетрія)**!
      * Точка індикатора запущеної програми розміщена точно посередині нижнього відступу (`y = 124..128`), не притискаючись до краю. Док виглядає збалансованим, естетичним і просторим відповідно до стандартів macOS Tahoe.
+
+5. Взаємне виключення центрів і панелей (Mutual Exclusion): відкриття лише одного центру за раз:
+   - Діагностика:
+     * Користувач надав знімок `media_1792469195320_3a70057d.png`, де одночасно були відкриті і Центр повідомлень (Notification Center), і Центр керування (Control Center) — один перекривав інший, кнопки гучності, яскравості та фокусу просвічували крізь картки повідомлень.
+     * Причина: у модулях `tahoeControlCenter.js` та `tahoeNotifications.js` не було взаємного закриття при перемиканні: відкриття Центру повідомлень не закривало Центр керування, а Центр керування намагався імпортувати застарілий `tahoeNotificationCenter.js` замість активного `tahoeNotifications.js`. Також Spotlight та Буфер обміну не мали загального координатора закриття центрів.
+   - Виконані дії:
+     * Створено єдиний координатор взаємного виключення [centerManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/centerManager.js) з функцією `closeAllCenters(except)`.
+     * У [tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js):
+       - При відкритті Центру керування викликається `closeAllCenters('qs')` для миттєвого закриття Центру повідомлень, Spotlight, Буфера обміну та будь-яких відкритих меню верхньої панелі.
+       - Експортовано функцію `closePanel()` та зареєстровано `globalThis._tahoeQSClose`.
+     * У [tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js):
+       - При відкритті Центру повідомлень викликається `closeAllCenters('nc')` для негайного закриття Центру керування (`_tahoeQSClose()`), Spotlight та Буфера обміну.
+       - Додано параметр `closeNC(immediate = true)` для миттєвого зняття оверлея при перемиканні на інший центр.
+       - Зареєстровано `globalThis._tahoeNCClose`.
+     * У [searchDialog_v5.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js) (Spotlight / Центр програм / Буфер):
+       - Додано виклик `closeAllCenters('spotlight')` при відкритті Spotlight, що закриває Центр керування та Центр повідомлень.
+       - Зареєстровано `globalThis._macSpotlightClose`.
+     * У [clipboardDialog_v2.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/clipboardDialog_v2.js) (Буфер обміну):
+       - Додано виклик `closeAllCenters('clipboard')` при відкритті.
+       - Зареєстровано `globalThis._macClipboardClose`.
+     * У [extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/extension.js) перехоплено `Main.panel.menuManager._onMenuOpenState`: відкриття будь-якого меню верхньої панелі автоматично закриває відкриті центри.
+     * Усі файли синхронізовано з `~/.local/share/gnome-shell/extensions/` та протестовано в середовищі оболонки.
+   - Верифікація:
+     * Проведено автоматизоване тестування перемикань через D-Bus Eval:
+       - CC -> NC: CC закрився, NC відкрився (`cc: false, nc: true`).
+       - NC -> CC: NC закрився, CC відкрився (`cc: true, nc: false`).
+       - CC -> Spotlight: CC закрився, Spotlight відкрився (`cc: false, sp: true`).
+       - Spotlight -> NC: Spotlight закрився, NC відкрився (`sp: false, nc: true`).
+     * Знято контрольні знімки перемикання:
+       - `crop_mutual_cc2.png` — відкрито виключно Центр керування.
+       - `crop_mutual_nc_animated.png` — після натискання на дату Центр керування повністю зник, відкрито виключно Центр повідомлень.
+       - `crop_mutual_cc_after_nc.png` — після натискання на Центр керування Центр повідомлень миттєво зник, відкрито виключно Центр керування.
+     * Повна відсутність накладання або одночасного відкриття двох панелей.

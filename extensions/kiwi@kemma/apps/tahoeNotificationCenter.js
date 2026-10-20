@@ -15,6 +15,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import Meta from 'gi://Meta';
 import {togglePanel, isPanelOpen, _makeGlassStack, BACKDROP_PAD} from './tahoeControlCenter.js';
+import {closeAllCenters} from './centerManager.js';
 
 // Liquid-glass helpers live in another extension. Static
 // `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
@@ -1134,12 +1135,14 @@ export function openNC() {
     if (_nc)
         return;
     globalThis._tahoeNCOpen = true;
-    // QS and NC never share the screen
-    try {
-        if (isPanelOpen())
-            togglePanel();
-    } catch (_) {
-        // qs unavailable
+    if (typeof globalThis._macCloseAllCenters === 'function') {
+        globalThis._macCloseAllCenters('nc');
+    } else {
+        try { globalThis._tahoeQSClose?.(); } catch (_) {}
+        try {
+            if (isPanelOpen())
+                togglePanel();
+        } catch (_) {}
     }
     try {
         _buildPanel();
@@ -1152,6 +1155,7 @@ export function openNC() {
         }
     }
 }
+globalThis._tahoeNotificationCenterClose = closeNC;
 
 export function closeNC() {
     globalThis._tahoeNCOpen = false;

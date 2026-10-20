@@ -674,6 +674,13 @@ export const MacClipboardDialog = GObject.registerClass({
     open(options = {}) {
         if (this._isOpen) return;
         if (Main.overview?.visible) return;
+        if (typeof globalThis._macCloseAllCenters === 'function') {
+            globalThis._macCloseAllCenters('clipboard');
+        } else {
+            try { globalThis._tahoeQSClose?.(); } catch (_) {}
+            try { globalThis._tahoeNCClose?.(true); } catch (_) {}
+            try { globalThis._macSpotlightGlobalInstance?.close?.(true); } catch (_) {}
+        }
         this._isOpen = true;
 
         const mon = Main.layoutManager.primaryMonitor;
@@ -1103,6 +1110,13 @@ export function toggleClipboardDialog(options = {}) {
     if (globalThis._macClipboardGlobalInstance._isOpen) {
         globalThis._macClipboardGlobalInstance.close();
     } else {
+        if (typeof globalThis._macCloseAllCenters === 'function') {
+            globalThis._macCloseAllCenters('clipboard');
+        } else {
+            try { globalThis._tahoeQSClose?.(); } catch (_) {}
+            try { globalThis._tahoeNCClose?.(true); } catch (_) {}
+            try { globalThis._macSpotlightGlobalInstance?.close?.(true); } catch (_) {}
+        }
         if (Main.overview?.visible) {
             Main.overview.hide();
         }
@@ -1113,6 +1127,13 @@ export function toggleClipboardDialog(options = {}) {
 export function openClipboardDialog(options = {}) {
     if (!globalThis._macClipboardGlobalInstance) {
         globalThis._macClipboardGlobalInstance = new MacClipboardDialog();
+    }
+    if (typeof globalThis._macCloseAllCenters === 'function') {
+        globalThis._macCloseAllCenters('clipboard');
+    } else {
+        try { globalThis._tahoeQSClose?.(); } catch (_) {}
+        try { globalThis._tahoeNCClose?.(true); } catch (_) {}
+        try { globalThis._macSpotlightGlobalInstance?.close?.(true); } catch (_) {}
     }
     if (Main.overview?.visible) {
         Main.overview.hide();
@@ -1135,5 +1156,6 @@ export function destroyClipboardDialog() {
 
 globalThis.toggleMacClipboard = toggleClipboardDialog;
 globalThis.closeMacClipboard = closeClipboardDialog;
+globalThis._macClipboardClose = closeClipboardDialog;
 globalThis.destroyMacClipboard = destroyClipboardDialog;
 globalThis.macClipboardStore = clipboardStore;
