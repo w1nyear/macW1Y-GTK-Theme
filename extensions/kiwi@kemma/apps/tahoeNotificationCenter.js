@@ -357,7 +357,7 @@ function _syncBannerGlass() {
                 const cw = card.width, ch = card.height;
                 if (!(cw > 0) || !(ch > 0) || !isFinite(cx) || !isFinite(cy))
                     continue;
-                const m = 20;
+                const m = 0;
                 regions.push({
                     x: (cx - monitor.x) - m, y: (cy - monitor.y) - m,
                     w: cw + m * 2, h: ch + m * 2,
@@ -753,11 +753,11 @@ function _watchTray(p) {
 function _cardFill() {
     try {
         if (getPanelInk() === 'light')
-            return {c: [0.18, 0.18, 0.20], a: 0.55};
+            return {c: [0.0, 0.0, 0.0], a: 0.04};
     } catch (_) {
         // light fill stays
     }
-    return {c: [1, 1, 1], a: 0.45};
+    return {c: [1.0, 1.0, 1.0], a: 0.05};
 }
 
 function _syncCards(p, monitor, s) {
@@ -781,7 +781,7 @@ function _syncCards(p, monitor, s) {
                 const cw = card.width, ch = card.height;
                 if (!(cw > 0) || !(ch > 0) || !isFinite(cx) || !isFinite(cy))
                     continue;
-                const m = 20;
+                const m = 0;
                 regions.push({
                     x: (cx - monitor.x) - m, y: (cy - monitor.y) - m,
                     w: cw + m * 2, h: ch + m * 2,

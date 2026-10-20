@@ -142,9 +142,11 @@ const ICON_DIR = GLib.get_home_dir() +
     '/.local/share/gnome-shell/extensions/kiwi@kemma/icons';
 function _fileGicon(name) {
     try {
-        return new Gio.FileIcon({
-            file: Gio.File.new_for_path(`${ICON_DIR}/${name}`),
-        });
+        const path = `${ICON_DIR}/${name}`;
+        const f = Gio.File.new_for_path(path);
+        if (f.query_exists(null))
+            return new Gio.FileIcon({ file: f });
+        return null;
     } catch (_) {
         return null;
     }

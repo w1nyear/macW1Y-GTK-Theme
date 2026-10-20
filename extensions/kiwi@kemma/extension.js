@@ -33,13 +33,26 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeInkEnable: ${e}`);
         }
         try {
-            tahoeNCEnable(this._settings, gettextFunc);
+            const ncUri = this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri() + '?v=tahoe_v4';
+            import(ncUri).then(mod => {
+                if (this._tahoeNC && this._tahoeNC !== mod) {
+                    try { this._tahoeNC.disable(); } catch (_) {}
+                }
+                this._tahoeNC = mod;
+                mod.enable(this._settings, gettextFunc);
+            }).catch(e => {
+                console.warn(`[kiwi] tahoeNCEnable dynamic import failed: ${e}`);
+                tahoeNCEnable(this._settings, gettextFunc);
+            });
         } catch (e) {
             console.warn(`[kiwi] tahoeNCEnable: ${e}`);
         }
         try {
-            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri() + '?v=tahoe_v3';
+            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri() + '?v=tahoe_v4';
             import(ccUri).then(mod => {
+                if (this._tahoeCC && this._tahoeCC !== mod) {
+                    try { this._tahoeCC.disable(); } catch (_) {}
+                }
                 this._tahoeCC = mod;
                 mod.enable(this._settings, gettextFunc);
             }).catch(e => {
@@ -100,7 +113,13 @@ export default class KiwiExtension extends Extension {
             }
             tahoeQuickSettingsDisable();
         } catch (_) {}
-        try { tahoeNCDisable(); } catch (_) {}
+        try {
+            if (this._tahoeNC) {
+                this._tahoeNC.disable();
+                this._tahoeNC = null;
+            }
+            tahoeNCDisable();
+        } catch (_) {}
         try { tahoeInkDisable(); } catch (_) {}
         try { reduceWindowAnimationsDisable(); } catch (_) {}
         try { gtkThemeSyncDisable(); } catch (_) {}
