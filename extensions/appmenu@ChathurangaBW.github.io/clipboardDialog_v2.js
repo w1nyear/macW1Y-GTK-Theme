@@ -575,9 +575,57 @@ export const MacClipboardDialog = GObject.registerClass({
         } catch (_) {
             isDark = true;
         }
-        const tintVal = isDark ? 0.0 : 1.0;
-        const tintStrength = 0.03; // Exactly 3% as requested by user
-        return { isDark, tintVal, tintStrength };
+        const tintR = isDark ? 0.16 : 1.0;
+        const tintG = isDark ? 0.16 : 1.0;
+        const tintB = isDark ? 0.18 : 1.0;
+        const tintVal = isDark ? 0.16 : 1.0;
+        const tintStrength = isDark ? 0.12 : 0.10;
+        return { isDark, tintR, tintG, tintB, tintVal, tintStrength };
+    }
+
+    _applyGlassUniforms() {
+        if (!_isGlassAlive(this._glass)) return;
+        const effect = this._glass._effect;
+        if (!effect) return;
+
+        const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
+        this._glass.setIsDock(false);
+        this._glass.setCornerSmoothingEnabled(0.0);
+        this._glass.setCornerRadius(CORNER_RADIUS);
+        this._glass.setTintColor(tintR, tintG, tintB);
+        this._glass.setTintStrength(tintStrength);
+        this._glass.setBrightness(1.0);
+        this._glass.setContrast(1.0);
+        this._glass.setSaturation(1.0);
+        this._glass.setBlurRadius(8.0);
+        this._glass.setPadding(0);
+
+        try {
+            effect.setSurfaceLightEnabled(true);
+            effect._setFloat('displacement_scale', 85.0);
+            effect._setFloat('ior', 1.50);
+            effect._setFloat('max_z', 14.0);
+            effect._setFloat('edge_smoothing', 1.2);
+            effect._setFloat('profile_shape_n', 5.40);
+
+            effect._setFloat('rim_intensity', 0.18);
+            effect._setFloat('rim_width', 4.5);
+            effect._setFloat('rim_power', 5.0);
+            effect._setFloat('rim_directional_power', 2.7);
+            effect._setFloat('rim_light_color_intensity', 1.6);
+
+            effect._setFloat('specular_intensity', 0.15);
+            effect._setFloat('sheen_intensity', 0.10);
+            effect._setFloat('chroma_strength', 0.008);
+
+            effect._setFloat('shadow_intensity', isDark ? 0.35 : 0.22);
+            effect._setFloat('shadow_radius', 18.0);
+            effect._setFloat('shadow_max_radius', 60.0);
+            effect._setFloat('ao_intensity', 0.08);
+            effect._setFloat('ao_radius', 2.5);
+
+            effect.queue_repaint();
+        } catch (_) {}
     }
 
     async _initGlass() {
@@ -599,17 +647,7 @@ export const MacClipboardDialog = GObject.registerClass({
             this._glass.addExclusion(this);
             this._glass.addExclusion(this._box);
             this._glass.addExclusion(this._backdrop);
-            const { tintVal, tintStrength } = this._getThemeParams();
-            this._glass.setIsDock(false);
-            this._glass.setCornerSmoothingEnabled(0.0);
-            this._glass.setCornerRadius(CORNER_RADIUS);
-            this._glass.setTintColor(tintVal, tintVal, tintVal);
-            this._glass.setTintStrength(tintStrength);
-            this._glass.setBrightness(1.0);
-            this._glass.setSaturation(1.0);
-            this._glass.setContrast(1.0);
-            this._glass.setBlurRadius(8.0);
-            this._glass.setPadding(0);
+            this._applyGlassUniforms();
             this._glass.hide();
 
             if (!this._isOpen) {
@@ -670,14 +708,14 @@ export const MacClipboardDialog = GObject.registerClass({
         this._glass.set_position(mon.x, mon.y);
         this._glass.set_size(mon.width, mon.height);
         this._glass.setResolution(mon.width, mon.height);
-        const { tintVal, tintStrength } = this._getThemeParams();
+        const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
         this._glass.setIsDock(false);
-        this._glass.setTintColor(tintVal, tintVal, tintVal);
+        this._glass.setTintColor(tintR, tintG, tintB);
         this._glass.setTintStrength(tintStrength);
         this._glass.setBlurRadius(8.0);
         this._glass.setCornerRadius(CORNER_RADIUS);
         this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
-        const CLIP_PAD = 40;
+        const CLIP_PAD = 60;
         this._glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
     }
 
@@ -730,6 +768,7 @@ export const MacClipboardDialog = GObject.registerClass({
             );
             this._glass.show();
             this._glass.opacity = 255;
+            this._applyGlassUniforms();
             this._syncGlass();
         } else {
             this._glass = null;
