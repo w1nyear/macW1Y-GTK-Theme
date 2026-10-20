@@ -29,7 +29,7 @@ Comment[tr]=Steam üzerinden oyun oynama ve düzenleme uygulaması
 Comment[uk]=Програма для керування іграми та запуску ігор у Steam
 Comment[vi]=Ứng dụng để quản lý và chơi trò chơi trên Steam
 X-SnapAppName=steam
-Exec=/snap/bin/steam %U
+Exec=/usr/local/bin/steam %U
 Icon=steam
 Terminal=false
 Type=Application
@@ -67,7 +67,7 @@ Name[tr]=Mağaza
 Name[uk]=Крамниця
 Name[vi]=Cửa hàng
 X-SnapAppName=steam
-Exec=/snap/bin/steam steam://store
+Exec=/usr/local/bin/steam steam://store
 
 [Desktop Action Community]
 Name=Community
@@ -98,7 +98,7 @@ Name[tr]=Topluluk
 Name[uk]=Спільнота
 Name[vi]=Cộng đồng
 X-SnapAppName=steam
-Exec=/snap/bin/steam steam://url/SteamIDControlPage
+Exec=/usr/local/bin/steam steam://url/SteamIDControlPage
 
 [Desktop Action Library]
 Name=Library
@@ -129,7 +129,7 @@ Name[tr]=Kütüphane
 Name[uk]=Бібліотека
 Name[vi]=Thư viện
 X-SnapAppName=steam
-Exec=/snap/bin/steam steam://open/games
+Exec=/usr/local/bin/steam steam://open/games
 
 [Desktop Action Servers]
 Name=Servers
@@ -160,7 +160,7 @@ Name[tr]=Sunucular
 Name[uk]=Сервери
 Name[vi]=Máy chủ
 X-SnapAppName=steam
-Exec=/snap/bin/steam steam://open/servers
+Exec=/usr/local/bin/steam steam://open/servers
 
 [Desktop Action Screenshots]
 Name=Screenshots
@@ -191,7 +191,7 @@ Name[tr]=Ekran Görüntüleri
 Name[uk]=Скріншоти
 Name[vi]=Ảnh chụp
 X-SnapAppName=steam
-Exec=/snap/bin/steam steam://open/screenshots
+Exec=/usr/local/bin/steam steam://open/screenshots
 
 [Desktop Action News]
 Name=News
@@ -222,7 +222,7 @@ Name[tr]=Haberler
 Name[uk]=Новини
 Name[vi]=Tin tức
 X-SnapAppName=steam
-Exec=/snap/bin/steam steam://open/news
+Exec=/usr/local/bin/steam steam://open/news
 
 [Desktop Action Settings]
 Name=Settings
@@ -253,12 +253,12 @@ Name[tr]=Ayarlar
 Name[uk]=Налаштування
 Name[vi]=Thiết lập
 X-SnapAppName=steam
-Exec=/snap/bin/steam steam://open/settings
+Exec=/usr/local/bin/steam steam://open/settings
 
 [Desktop Action BigPicture]
 Name=Big Picture
 X-SnapAppName=steam
-Exec=/snap/bin/steam steam://open/bigpicture
+Exec=/usr/local/bin/steam steam://open/bigpicture
 
 [Desktop Action Friends]
 Name=Friends
@@ -289,7 +289,7 @@ Name[tr]=Arkadaşlar
 Name[uk]=Друзі
 Name[vi]=Bạn bè
 X-SnapAppName=steam
-Exec=/snap/bin/steam steam://open/friends
+Exec=/usr/local/bin/steam steam://open/friends
 
 [Desktop Action Report]
 Name=Report
