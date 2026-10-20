@@ -2120,6 +2120,13 @@ export const MacSpotlightDialog = GObject.registerClass({
 let _spotlightDialog = null;
 
 export function toggleSearchDialog() {
+    // DELEGATION: the Spotlight UI moved to the dedicated spotlight@nin
+    // extension. Route every caller (kiwi topbar, gestures, eval-helper, ...)
+    // to the new popup so the old dialog is never constructed again.
+    if (globalThis._macSpotlightNinInstance) {
+        globalThis._macSpotlightNinInstance.toggle();
+        return;
+    }
     if (_spotlightDialog) {
         let isDead = false;
         try {
@@ -2164,6 +2171,11 @@ export function toggleSearchDialog() {
 }
 
 export function closeSearchDialog(immediate = true) {
+    // DELEGATION: route to the new spotlight@nin popup when present.
+    if (globalThis._macSpotlightNinInstance) {
+        globalThis._macSpotlightNinInstance.close();
+        return;
+    }
     if (_spotlightDialog) {
         _spotlightDialog.close(immediate);
     }

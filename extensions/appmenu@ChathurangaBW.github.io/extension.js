@@ -66,7 +66,10 @@ export default class AppMenuExtension extends Extension {
         } catch (_) {
             this._workspaceIndicatorController = new WorkspaceIndicatorController(this._settings);
         }
-        this._addSearchKeybinding();
+        // NOTE: the search (Spotlight) keybinding is intentionally NOT registered
+        // here anymore. Spotlight moved to the dedicated spotlight@nin extension,
+        // which grabs <Control>space itself. Registering a second grab on the same
+        // accelerator would cause double-toggles. Clipboard stays on <Super>v.
         this._addClipboardKeybinding();
         const baseUri = this.dir.get_uri();
         try {
@@ -250,11 +253,18 @@ export default class AppMenuExtension extends Extension {
         destroySearchDialog();
         destroyApplicationsDialog();
         destroyClipboardDialog();
-        globalThis._macSpotlightToggle = null;
-        globalThis.toggleMacApplications = null;
+        // Only clear the spotlight/apps globals when spotlight@nin is NOT the
+        // active owner. Otherwise disabling appmenu would break Spotlight.
+        if (!globalThis._macSpotlightNinInstance) {
+            globalThis._macSpotlightToggle = null;
+            globalThis.toggleMacSpotlight = null;
+            globalThis.toggleMacApplications = null;
+            globalThis.toggleApplicationsMenu = null;
+            globalThis.closeMacApplications = null;
+            globalThis.closeMacSpotlight = null;
+            globalThis._macSpotlightClose = null;
+        }
         globalThis.toggleMacClipboard = null;
-        globalThis.closeMacApplications = null;
-        globalThis.closeMacSpotlight = null;
         globalThis.closeMacClipboard = null;
 
         if (this._focusTimeoutId) {

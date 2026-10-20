@@ -7040,3 +7040,42 @@ echo "==> Встановлення успішно завершено!"
       * /home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js — синхронізована копія (Source of Truth)
       * /home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js — синхронізована копія (Source of Truth)
       * /home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/clipboardDialog_v2.js — синхронізована копія (Source of Truth)
+
+133. Заміна Spotlight та центру програм на новий спотлайт `spotlight@nin` (з вбудованим Launchpad):
+    - Завдання (за зверненням користувача):
+      * Перенести з проєкту `/home/vitaliy/Завантажене/GNOME-Tahoe-main` центр програм і замінити наш старий спотлайт новим (`spotlight@nin`).
+      * Підлаштувати весь Spotlight-меню під новий спотлайт, щоб усе працювало й правильно викликалося ззовні.
+    - Що було перенесено:
+      * `spotlight@nin` (версія 2026.16) — компактний лаунчер у стилі macOS Spotlight із вбудованим центром програм (Launchpad) як `appsView` (порт kiwi's `tahoeApps.js` всередину панелі). Встановлено в `~/.local/share/gnome-shell/extensions/spotlight@nin` та в репозиторій.
+      * УСТАНІВЛЕНО замість нашого старого `searchDialog_v5.js` (Spotlight) та `applications_menu_v5b.js` (центр програм appmenu).
+    - Архітектура нової інтеграції (делегування через `globalThis._macSpotlightNinInstance`):
+      1) `spotlight@nin/extension.js`: додано `_publishGlobals()` / `_clearGlobals()` — публікує глобальні точки входу для всієї macOS-екосистеми: `toggleMacSpotlight`, `_macSpotlightToggle`, `closeMacSpotlight`, `_macSpotlightClose`, `_macSpotlightGlobalInstance`, а також `toggleMacApplications`, `toggleApplicationsMenu`, `closeMacApplications`, `_macApplicationsGlobalInstance`, `_macApplicationsClose`. Обидва входи (спотлайт і центр програм) розв'язуються на той самий popup.
+      2) `spotlightPopup.js`: додано метод `openApps()` (відкриває спотлайт одразу в режимі центру програм), `toggle()`, гетер `_isOpen` (для взаємного виключення kiwi `centerManager`), а також виклик `globalThis._macCloseAllCenters('spotlight')` при відкритті.
+      3) Старі файли appmenu (`searchDialog_v5.js`, `applications_menu.js`, `applications_menu_v5.js`, `applications_menu_v5b.js`) — на початку `toggleSearchDialog`/`closeSearchDialog`/`toggleApplicationsDialog`/`closeApplicationsDialog` додано делегування до `_macSpotlightNinInstance`. Це критично, бо `eval-helper`, `dash-to-dock` та `blur-my-shell` ПОВТОРНО імпортують ці файли і переприсвоюють `globalThis.toggleMacApplications`.
+      4) `appmenu/extension.js`: прибрано реєстрацію `search-shortcut` (`<Control>space`), щоб не дублювати grab зі спотлайтом (буфер обміну `<Super>v` залишено); `disable()` захищено від затирання глобалів, коли власником є `spotlight@nin`.
+    - Виправлення виявлених багів (захист GObject / ідемпотентність):
+      * `spotlightPopup.js::destroy()` зроблено ідемпотентним (додано прапорець `_destroyed`, захист від null `_glass`/`_toolGlasses`), щоб повторний `disable()` не кидав `TypeError: this._toolGlasses is null`.
+      * `extension.js::disable()` повністю захищено `try/catch` та optional chaining (`_settings?.`, `_keybindingManager?.`, `_popup?.`) — при частковому enable або подвійному disable більше не виникає `TypeError` і не залишається ERROR-стан.
+      * `searchStealer.js::restore()` — захищено `add_child` перевіркою на null `_entryParent` / `_searchParent`.
+    - Тестування (живий режим через D-Bus `EvalHelper`, без перезапуску сесії):
+      * Реєстрація в реєстрі: `createExtensionObject` + `loadExtension` + `enableExtension` → `state = 1 (ENABLED)`, `ext.error = none`.
+      * Spotlight: `toggleMacSpotlight()` → `_visible = true`; `closeMacSpotlight()` → `_visible = false`.
+      * Центр програм: `toggleMacApplications()` → `_visible = true` та `_appsView.visible = true` (Launchpad всередині спотлайту); закриття → `false`.
+      * Делегування: повторний імпорт `applications_menu_v5b.js` та `searchDialog_v5.js` і виклик старих `toggle*` коректно відкриває новий спотлайт/центр програм.
+      * Взаємне виключення: `_macCloseAllCenters` працює; відкриття центру програм закриває спотлайт і навпаки.
+      * `<Control>space`: лише один grab (немає дублювання з appmenu).
+      * Рідке скло: `glass.live = true`, `glass._built = true`, `_bgActor` створено (інтеграція з `liquid-glass` працює).
+      * Геометрія: ширина 620px, позиція 25% від верху.
+      * Подвійний `disable()`/`enable` більше не залишає ERROR-стан (після чистого `unload`→`load`→`enable` стан `1`, error `none`).
+    - Примітка щодо Wayland/GJS: під час живого тесту `reloadExtension` не скидає кеш ES-модулів допоміжних файлів (задокументовано в розділі 4.1 AI_INSTRUCTIONS), тому застосування правок `disable()`/`destroy()` вимагало повного `unloadExtension` → `loadExtension`. У НОВОМУ вході в сесію розширення завантажиться одразу з усіма виправленнями.
+    - Змінені файли:
+      * /home/vitaliy/.local/share/gnome-shell/extensions/spotlight@nin/extension.js — публікація глобалів, захищений disable()
+      * /home/vitaliy/.local/share/gnome-shell/extensions/spotlight@nin/lib/popup/widget/spotlightPopup.js — openApps(), toggle(), _isOpen, ідемпотентний destroy()
+      * /home/vitaliy/.local/share/gnome-shell/extensions/spotlight@nin/lib/overview/searchStealer.js — захищений restore()
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/extension.js — прибрано search-keybinding, захищено disable()
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js — делегування
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js — делегування
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5.js — делегування
+      * /home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js — делегування
+      * /home/vitaliy/macW1Y/extensions/spotlight@nin/ (усього розширення) — синхронізовано (Source of Truth)
+      * /home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/{extension.js,searchDialog_v5.js,applications_menu.js,applications_menu_v5.js,applications_menu_v5b.js} — синхронізовано (Source of Truth)
