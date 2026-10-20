@@ -333,7 +333,7 @@ export default class EvalHelper extends Extension {
                                 globalThis.toggleMacSpotlight();
                                 return;
                             }
-                            const mod = await import(`file://${ext.path}/searchDialog_v5.js`);
+                            const mod = await import(`file://${ext.path}/searchDialog_v5.js?t=${Date.now()}`);
                             if (mod?.toggleSearchDialog) {
                                 mod.toggleSearchDialog();
                             }
@@ -1021,7 +1021,7 @@ export default class EvalHelper extends Extension {
                 };
             }
 
-            import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js')
+            import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5.js?t=' + Date.now())
                 .then(mod => {
                     globalThis.toggleMacApplications = mod.toggleApplicationsDialog;
                 }).catch(e => console.error('[EvalHelper] Error loading applications_menu:', e));
@@ -1035,7 +1035,7 @@ export default class EvalHelper extends Extension {
                 if (typeof globalThis.toggleMacApplications === 'function') {
                     globalThis.toggleMacApplications();
                 } else {
-                    import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js')
+                    import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5.js?t=' + Date.now())
                         .then(mod => {
                             globalThis.toggleMacApplications = mod.toggleApplicationsDialog;
                             mod.toggleApplicationsDialog();

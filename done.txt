@@ -6526,3 +6526,37 @@ echo "==> Встановлення успішно завершено!"
       * Порівняно контрольні знімки:
         - `crop_topbar_before.png` (вихідний стан з темним градієнтом 0.70/0.65).
         - `crop_topbar_after_test.png` та `crop_topbar_final.png` (новий стан зі зменшеним удвічі затемненням 0.35: напівпрозорий, кришталевий вигляд у стилі сучасного macOS Tahoe/Sequoia, з ідеальною читабельністю білого тексту та витонченою легкістю).
+
+
+129. Виправлення відкриття Центру керування, Центру програм (Launchpad), Spotlight та Буфера обміну:
+    - Контекст та вимоги користувача:
+      * «виправи те що центр керування і центр програм і спотлайт і буфер обміну не відкривається»
+    - Діагностика та першопричини несправності:
+      1) Центр керування (Control Center) та кнопки топбара:
+         - У коміті `68cbd2b9` при перенесенні Tahoe Notification Center файл `extensions/kiwi@kemma/extension.js` було випадково перезаписано стандартним файлом розширення Kiwi, внаслідок чого з ініціалізації випали модулі `tahoeControlCenter.js` та `topbarButtons.js`.
+         - Через це глобальний обробник `globalThis._tahoeQSToggle` став `undefined`, кнопка відкриття `ydotool-trigger-button` у топбарі не реагувала, а також у топбарі була відсутня кнопка пошуку Spotlight [🔍].
+      2) Spotlight (`searchDialog_v5.js`), Центр програм (`applications_menu_v5.js`) та Буфер обміну (`clipboardDialog_v2.js`):
+         - Усі три модулі містили виклик `this._entry.clutter_text.set_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 }));`.
+         - У середовищі GNOME 46/47 `Clutter.Color` більше не є конструктором, через що при будь-якій спробі відкриття діалогів виникала фатальна помилка `TypeError: (intermediate value).Color is not a constructor`.
+         - Крім того, статичні імпорти модулів кешувалися в рантаймі GJS без оновлення при гарячому перезавантаженні.
+    - Виконані технічні рішення та виправлення:
+      1) Усунення помилки `Clutter.Color` у діалогах:
+         - У `searchDialog_v5.js` (рядок 308), `applications_menu_v5.js` (рядок 281) та `clipboardDialog_v2.js` (рядок 470) небезпечний прямий виклик `new Clutter.Color(...)` захищено безпечною перевіркою `try { if (typeof Clutter.Color === 'function') ... } catch (_) {}`, спираючись на нативне St CSS правило `color: #ffffff !important;` самого віджета `St.Entry`.
+      2) Відновлення архітектури Tahoe Suite у `kiwi@kemma/extension.js`:
+         - Повернуто імпорт та активацію `tahoeControlCenter.js` (`tahoeQuickSettingsEnable`), `tahoeNotifications.js` (`tahoeNCEnable`), `topbarButtons.js` (`topbarButtonsEnable`), `tahoeInk.js`, `reduceWindowAnimations.js`, `gtkThemeSync.js`.
+         - Синхронізовано всі необхідні модулі додатків (`tahoeControlCenter.js`, `topbarButtons.js`, `gtkThemeSync.js`, `topbarBlur.js`, `topbarClock.js`, `topbarStatusIcons.js`, `tahoeOnScreenDisplay.js`) з `~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/`.
+         - Відновлено глобальний тригер `globalThis._tahoeQSToggle = togglePanel`.
+      3) Динамічний імпорт та актуалізація глобальних обробників в `appmenu@ChathurangaBW.github.io/extension.js` та `eval-helper@mactheme/extension.js`:
+         - Забезпечено динамічне завантаження модулів із міткою часу (`?t=${Date.now()}`), що гарантує підхоплення свіжих версій коду діалогів без кешування.
+         - Зареєстровано глобальні функції:
+           * `globalThis._macSpotlightToggle` та `globalThis.toggleMacSpotlight` (Spotlight).
+           * `globalThis.toggleMacApplications` та `globalThis.toggleApplicationsMenu` (Центр програм).
+           * `globalThis.toggleMacClipboard` (Буфер обміну).
+         - Додано резервні симлінки `applications_menu.js`, `searchDialog.js`, `clipboardDialog.js` для сумісності з будь-якими зовнішніми викликами.
+    - Верифікація:
+      * Усі 4 компоненти успішно відкрито, перевірено та знято контрольні знімки:
+        - `crop_cc_open_live.png`: кришталево чистий скляний Центр керування з повзунками яскравості/звуку, перемикачами Wi-Fi/Bluetooth та кнопкою Edit Controls.
+        - `crop_spotlight_open_live.png`: Spotlight-капсула з трьома круглими кнопками ('A', папка, буфер), полем вводу «Пошук Spotlight» та кнопкою `...`.
+        - `crop_apps_open_live.png`: Центр програм (Launchpad) із категоріями, сіткою скруглених додатків та миттєвим пошуком.
+        - `crop_clipboard_open_live.png`: акриловий діалог історії буфера обміну з прев'ю зображень, лічильниками символів та швидким копіюванням.
+      * Усі тригери перевірено: комбінації клавіш (`Ctrl+Space`, `Super+V`), кнопки у топбарі (`kiwi-search-button`, `ydotool-trigger-button`) та клік на Launchpad у Доку.

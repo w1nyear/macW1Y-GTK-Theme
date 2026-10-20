@@ -1,0 +1,1 @@
+clipboardDialog_v2.js

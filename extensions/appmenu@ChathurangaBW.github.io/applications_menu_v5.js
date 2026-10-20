@@ -278,7 +278,10 @@ export const MacApplicationsDialog = GObject.registerClass({
             this._entry.clutter_text.set_single_line_mode(true);
         }
         if (this._entry.clutter_text) {
-            this._entry.clutter_text.set_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 }));
+            try {
+                if (typeof Clutter.Color === 'function')
+                    this._entry.clutter_text.set_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 }));
+            } catch (_) {}
         }
         this._headerRow.add_child(this._entry);
 

@@ -68,9 +68,28 @@ export default class AppMenuExtension extends Extension {
         }
         this._addSearchKeybinding();
         this._addClipboardKeybinding();
-        globalThis._macSpotlightToggle = toggleSearchDialog;
-        globalThis.toggleMacApplications = toggleApplicationsDialog;
-        globalThis.toggleMacClipboard = toggleClipboardDialog;
+        const baseUri = this.dir.get_uri();
+        try {
+            const m = await import(`${baseUri}/searchDialog_v5.js?t=${Date.now()}`);
+            globalThis._macSpotlightToggle = m.toggleSearchDialog;
+            globalThis.toggleMacSpotlight = m.toggleSearchDialog;
+        } catch (_) {
+            globalThis._macSpotlightToggle = toggleSearchDialog;
+            globalThis.toggleMacSpotlight = toggleSearchDialog;
+        }
+        try {
+            const m = await import(`${baseUri}/applications_menu_v5.js?t=${Date.now()}`);
+            globalThis.toggleMacApplications = m.toggleApplicationsDialog;
+            globalThis.toggleApplicationsMenu = m.toggleApplicationsDialog;
+        } catch (_) {
+            globalThis.toggleMacApplications = toggleApplicationsDialog;
+        }
+        try {
+            const m = await import(`${baseUri}/clipboardDialog_v2.js?t=${Date.now()}`);
+            globalThis.toggleMacClipboard = m.toggleClipboardDialog;
+        } catch (_) {
+            globalThis.toggleMacClipboard = toggleClipboardDialog;
+        }
 
         if (Main.overview) {
             Main.overview.connectObject('showing', () => {
