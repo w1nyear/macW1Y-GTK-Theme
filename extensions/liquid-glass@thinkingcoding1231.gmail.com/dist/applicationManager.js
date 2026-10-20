@@ -445,12 +445,15 @@ export class ApplicationManager {
         return list.some((entry) => entry.toLowerCase() === normalized);
     }
     _windowMatchesWhitelist(metaWindow) {
+        if (!metaWindow)
+            return false;
         const whitelist = this._getWhitelist();
         const appName = metaWindow.get_wm_class();
+        const gtkAppId = metaWindow.get_gtk_application_id ? metaWindow.get_gtk_application_id() : null;
         if (whitelist.length === 0) {
             return false;
         }
-        let ret = this._listContainsClass(whitelist, appName);
+        let ret = this._listContainsClass(whitelist, appName) || this._listContainsClass(whitelist, gtkAppId);
         if (!ret) {
             this._logger.log("[Liquid Glass] window is not in whitelist. name = " + appName);
         }
@@ -460,12 +463,15 @@ export class ApplicationManager {
         return ret;
     }
     _windowMatchesBlacklist(metaWindow) {
+        if (!metaWindow)
+            return false;
         const blacklist = this._getBlacklist();
         if (blacklist.length === 0) {
             return false;
         }
         const appName = metaWindow.get_wm_class();
-        const ret = this._listContainsClass(blacklist, appName);
+        const gtkAppId = metaWindow.get_gtk_application_id ? metaWindow.get_gtk_application_id() : null;
+        const ret = this._listContainsClass(blacklist, appName) || this._listContainsClass(blacklist, gtkAppId);
         if (ret) {
             this._logger.log("[Liquid Glass] window is in blacklist, skipping. name = " + appName);
         }
@@ -494,33 +500,49 @@ export class ApplicationManager {
      * popups); they are not ours to decorate, and the user asked for them to
      * stay out.
      */
+    _getRootWindow(metaWindow) {
+        if (!metaWindow)
+            return null;
+        let curr = metaWindow;
+        for (let depth = 0; depth < MAX_TRANSIENT_DEPTH; depth++) {
+            try {
+                const parent = curr.get_transient_for();
+                if (!parent)
+                    break;
+                curr = parent;
+            }
+            catch (_) {
+                break;
+            }
+        }
+        return curr;
+    }
     _isContextMenuWindow(metaWindow) {
         if (!metaWindow)
             return false;
         if (metaWindow.is_override_redirect())
             return false;
-        if (MENU_WINDOW_TYPES.includes(metaWindow.get_window_type()))
+        if (!MENU_WINDOW_TYPES.includes(metaWindow.get_window_type()))
+            return false;
+
+        const rootWin = this._getRootWindow(metaWindow);
+        const isDesktop = rootWin?.get_window_type?.() === Meta.WindowType.DESKTOP ||
+                          metaWindow.get_window_type() === Meta.WindowType.DESKTOP;
+        if (isDesktop)
             return true;
-        let parent = null;
-        try {
-            parent = metaWindow.get_transient_for();
-        }
-        catch (e) {
+
+        // Context menus in external / non-system programs must NOT have glass
+        if (this._windowMatchesBlacklist(rootWin) || this._windowMatchesBlacklist(metaWindow)) {
             return false;
         }
-        for (let depth = 0; parent && depth < MAX_TRANSIENT_DEPTH; depth++) {
-            if (parent.get_window_type() === Meta.WindowType.DESKTOP)
-                return true;
-            if (!MENU_WINDOW_TYPES.includes(parent.get_window_type()))
-                break;
-            try {
-                parent = parent.get_transient_for();
-            }
-            catch (e) {
-                break;
-            }
+
+        // Only whitelisted system applications (e.g. Nautilus, GNOME Settings, etc.) have context menu glass
+        const isSystemApp = this._windowMatchesWhitelist(rootWin) || this._windowMatchesWhitelist(metaWindow);
+        if (!isSystemApp) {
+            return false;
         }
-        return false;
+
+        return true;
     }
     /**
      * Which settings namespace should dress this window, or null to leave it

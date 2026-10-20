@@ -2804,13 +2804,21 @@ export const LiquidEffect = GObject.registerClass({
                 return;
             }
             // Apply the initial value.
-            this._setFloat(map.uniform, settings.get_double(map.key));
+            let val = settings.get_double(map.key);
+            if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {
+                val *= this._shadowIntensityMultiplier;
+            }
+            this._setFloat(map.uniform, val);
             // Watch for changes.
             const id = settings.connect(`changed::${map.key}`, () => {
                 if (this._owner === 'dock' && map.uniform in dockDefaults) {
                     this._setFloat(map.uniform, dockDefaults[map.uniform]);
                 } else {
-                    this._setFloat(map.uniform, settings.get_double(map.key));
+                    let v = settings.get_double(map.key);
+                    if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {
+                        v *= this._shadowIntensityMultiplier;
+                    }
+                    this._setFloat(map.uniform, v);
                 }
             });
             this._settingsIds.push(id);
@@ -2973,6 +2981,16 @@ export const LiquidEffect = GObject.registerClass({
      */
     setShadowMaxRadius(radius) {
         this._setFloat('shadow_max_radius', radius);
+    }
+    setShadowIntensityMultiplier(multiplier) {
+        this._shadowIntensityMultiplier = multiplier;
+        const base = this._settings?.get_double('shadow-intensity') ?? 0.55;
+        this._setFloat('shadow_intensity', base * multiplier);
+        this.queue_repaint();
+    }
+    setShadowIntensity(intensity) {
+        this._setFloat('shadow_intensity', intensity);
+        this.queue_repaint();
     }
     /**
      * [DEBUG] Forces glass.frag (and the downsample/upsample shaders) to be

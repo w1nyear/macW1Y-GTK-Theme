@@ -574,13 +574,16 @@ export class ApplicationManager {
   }
 
   _windowMatchesWhitelist(metaWindow: Meta.Window): boolean {
+    if (!metaWindow)
+      return false;
     const whitelist = this._getWhitelist();
     const appName = metaWindow.get_wm_class();
+    const gtkAppId = (metaWindow as any).get_gtk_application_id ? (metaWindow as any).get_gtk_application_id() : null;
     if (whitelist.length === 0) {
       return false;
     }
 
-    let ret = this._listContainsClass(whitelist, appName);
+    let ret = this._listContainsClass(whitelist, appName) || this._listContainsClass(whitelist, gtkAppId);
     if (!ret) {
       this._logger.log("[Liquid Glass] window is not in whitelist. name = " + appName);
     } else {
@@ -590,69 +593,65 @@ export class ApplicationManager {
   }
 
   _windowMatchesBlacklist(metaWindow: Meta.Window): boolean {
+    if (!metaWindow)
+      return false;
     const blacklist = this._getBlacklist();
     if (blacklist.length === 0) {
       return false;
     }
 
     const appName = metaWindow.get_wm_class();
-    const ret = this._listContainsClass(blacklist, appName);
+    const gtkAppId = (metaWindow as any).get_gtk_application_id ? (metaWindow as any).get_gtk_application_id() : null;
+    const ret = this._listContainsClass(blacklist, appName) || this._listContainsClass(blacklist, gtkAppId);
     if (ret) {
       this._logger.log("[Liquid Glass] window is in blacklist, skipping. name = " + appName);
     }
     return ret;
   }
 
-  /**
-   * Is this the menu the desktop itself puts up (right-click on the wallpaper)?
-   *
-   * On Wayland that menu is not a shell widget: it is a genuine toplevel of
-   * its own, which is why it reaches this manager at all. Measured on GNOME
-   * Shell 50 / Wayland with Desktop Icons NG, the popup reports
-   *
-   *   type=DROPDOWN_MENU or=false client=WAYLAND class=null inst=null
-   *   gtkapp=null transient_for=DESKTOP/gjs/<same pid>
-   *
-   * so neither the WM_CLASS matching the whitelist uses nor the GTK
-   * application id can identify it — every field a menu would normally be
-   * recognised by is null. What IS reliable is the pair (menu window type,
-   * transitively transient for a DESKTOP-type window), and that pair is also
-   * what keeps in-app popups out: a Chrome menu measures as
-   * `type=OVERRIDE_OTHER or=true` with no transient parent at all, so it
-   * fails both halves.
-   *
-   * Override-redirect windows are rejected outright. Those are the ones a
-   * client positions and manages entirely by itself (X11 menus, Chrome's own
-   * popups); they are not ours to decorate, and the user asked for them to
-   * stay out.
-   */
+  _getRootWindow(metaWindow: Meta.Window): Meta.Window | null {
+    if (!metaWindow)
+      return null;
+    let curr: Meta.Window = metaWindow;
+    for (let depth = 0; depth < MAX_TRANSIENT_DEPTH; depth++) {
+      try {
+        const parent = curr.get_transient_for();
+        if (!parent)
+          break;
+        curr = parent;
+      } catch (_) {
+        break;
+      }
+    }
+    return curr;
+  }
+
   _isContextMenuWindow(metaWindow: Meta.Window): boolean {
     if (!metaWindow)
       return false;
     if (metaWindow.is_override_redirect())
       return false;
-    if (MENU_WINDOW_TYPES.includes(metaWindow.get_window_type()))
+    if (!MENU_WINDOW_TYPES.includes(metaWindow.get_window_type()))
+      return false;
+
+    const rootWin = this._getRootWindow(metaWindow);
+    const isDesktop = (rootWin as any)?.get_window_type?.() === Meta.WindowType.DESKTOP ||
+                      metaWindow.get_window_type() === Meta.WindowType.DESKTOP;
+    if (isDesktop)
       return true;
 
-    let parent: Meta.Window | null = null;
-    try {
-      parent = metaWindow.get_transient_for();
-    } catch (e) {
+    // Context menus in external / non-system programs must NOT have glass
+    if (this._windowMatchesBlacklist(rootWin!) || this._windowMatchesBlacklist(metaWindow)) {
       return false;
     }
 
-    for (let depth = 0; parent && depth < MAX_TRANSIENT_DEPTH; depth++) {
-      if (parent.get_window_type() === Meta.WindowType.DESKTOP)
-        return true;
-      if (!MENU_WINDOW_TYPES.includes(parent.get_window_type()))
-        break;
-      try {
-        parent = parent.get_transient_for();
-      } catch (e) {
-        break;
-      }
+    // Only whitelisted system applications (e.g. Nautilus, GNOME Settings, etc.) have context menu glass
+    const isSystemApp = this._windowMatchesWhitelist(rootWin!) || this._windowMatchesWhitelist(metaWindow);
+    if (!isSystemApp) {
+      return false;
     }
-    return false;
+
+    return true;
   }
 
   /**

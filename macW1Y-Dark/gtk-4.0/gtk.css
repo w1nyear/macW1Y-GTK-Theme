@@ -9597,16 +9597,32 @@ popover arrow,
   padding: 0;
 }
 
-/* Ensure outer popover node has no border, background, shadow or padding */
+/* Ensure outer popover node and contents have no background, shadow or padding */
 popover,
 popover.menu,
 popover.context-menu,
-popover.background {
+popover.background,
+popover.menu > contents,
+popover.menu contents,
+popover.menu scrolledwindow,
+popover.menu scrolledwindow viewport,
+popover.menu stack,
+popover.menu box,
+popover.context-menu > contents,
+popover.background > contents,
+.nautilus-window popover,
+.nautilus-window popover.menu,
+.nautilus-window popover.menu > contents,
+.nautilus-window popover.menu contents,
+.nautilus-window popover.menu scrolledwindow,
+.nautilus-window popover.menu viewport,
+.nautilus-window popover.menu stack,
+.nautilus-window popover.menu box {
   background: transparent;
   background-color: transparent;
+  background-image: none;
   border: none;
   box-shadow: none;
-  padding: 0;
   margin: 0;
 }
 
@@ -9616,22 +9632,6 @@ popover.menu contents,
 popover.context-menu > contents,
 popover > contents {
   border-radius: 20px;
-}
-
-popover.menu.background > contents,
-popover.menu > contents,
-popover.menu contents,
-popover.context-menu > contents,
-popover.background > contents,
-popover > contents {
-  --popover-bg-color: transparent;
-  background-color: transparent;
-  background: transparent;
-  background-image: none;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 20px;
-  box-shadow: none;
   padding: 6px 4px;
 }
 
@@ -9704,7 +9704,8 @@ popover modelbutton:disabled label {
   color: rgba(255, 255, 255, 0.35);
 }
 
-popover.menu separator {
+popover.menu separator,
+.nautilus-window popover.menu separator {
   min-height: 1px;
   background-color: rgba(255, 255, 255, 0.12);
   margin: 4px 6px;
@@ -9940,9 +9941,10 @@ image.emblem {
 /* Content pane (files view) - strictly solid dark system theme color, NO blur */
 window.nautilus-window overlay-split-view > widget.content-pane,
 window.nautilus-window .content-pane,
-window.nautilus-window .content-pane toolbarview,
+window.nautilus-window .content-pane > toolbarview,
 window.nautilus-window .content-pane .view,
-window.nautilus-window .content-pane scrolledwindow {
+window.nautilus-window .content-pane > toolbarview > scrolledwindow,
+window.nautilus-window .content-pane > scrolledwindow {
     background-color: #202022;
     border-left: 1px solid rgba(255, 255, 255, 0.06);
 }

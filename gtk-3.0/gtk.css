@@ -4,37 +4,44 @@
 @import url("fixes3.css");
 /* Kiwi (is not Apple) - managed imports: end */
 /* --- MAC-STYLING-START --- */
-/* macOS Tahoe Context Menus (System GTK Applications Only) */
-menu,
-.popup-menu,
-.context-menu,
-.desktopmenu,
+/* macOS Tahoe Context Menus (Desktop and System GTK Applications) */
 window.desktopmenu,
-.desktopmenu menu,
-.fileitemmenu,
-window.popup,
-window.popup decoration,
 window.desktopmenu decoration,
+window.popup decoration,
+.popup decoration,
 .csd.popup decoration,
+window.popup.background.csd,
+.background.csd.popup,
+window.popup.background.csd decoration {
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 20px;
+}
+
+menu,
+menu.desktopmenu,
+.desktopmenu menu,
+.desktopmenu,
+.fileitemmenu,
+window.desktopmenu menu,
 window.popup.background.csd > menu,
 .background.csd > menu,
-.background.popup > menu {
+.background.popup > menu,
+.popup-menu,
+.context-menu {
   background-color: transparent;
   background: transparent;
   background-image: none;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 20px;
+  border: none;
   box-shadow: none;
+  margin: 0;
   padding: 6px 4px;
-}
-
-window.desktopmenu decoration,
-.popup decoration,
-.csd.popup decoration {
-  background-color: transparent;
-  background: transparent;
-  box-shadow: none;
   border-radius: 20px;
 }
 
@@ -111,10 +118,13 @@ window.desktopmenu menuitem:active {
   border-radius: 9999px;
 }
 
-menu separator {
+menu separator,
+.desktopmenu separator,
+window.desktopmenu separator {
   min-height: 1px;
   background-color: rgba(255, 255, 255, 0.12);
   margin: 4px 6px;
+  border: none;
 }
 
 /* Popover Arrow removal: strictly no arrow above context menu or popovers */

@@ -6811,3 +6811,28 @@ echo "==> Встановлення успішно завершено!"
      * `MACTHEMEFILES/wack-system/`
      * `~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`
      * `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`
+
+9. Оптимізація та виправлення контекстних меню системи, GTK3, GTK4/Nautilus та сторонніх програм:
+   - Зменшення тіні під контекстним меню менюбара втричі:
+     * В liquidEffect.ts та liquidEffect.js додано підтримку _shadowIntensityMultiplier, методи setShadowIntensityMultiplier(multiplier) та setShadowIntensity(intensity).
+     * В uiManager.ts та uiManager.js при відкритті контекстних меню верхньої панелі (this._keyPrefix === 'panel-menu') застосовано this.effect.setShadowIntensityMultiplier(1.0 / 3.0).
+     * Це зменшило інтенсивність розмиття та глибину тіні шейдера рідкого скла під випадаючими меню менюбара рівно в 3 рази, забезпечивши легкий і акуратний вигляд меню в стилі macOS Tahoe.
+   - Nautilus (GTK4) — повне усунення непрозорого сірого елемента (#202022), що затуляв скло:
+     * Виявлено причину: загальне правило контентної панелі Nautilus window.nautilus-window .content-pane scrolledwindow { background-color: #202022; } через каскад селекторів застосовувало темний фон до scrolledwindow всередині popover.menu.
+     * Селектор контентної панелі звужено до безпосередніх дочірніх контейнерів перегляду файлів (> toolbarview > scrolledwindow, > scrolledwindow).
+     * Для всіх елементів меню GTK4 (popover.menu, popover.menu > contents, scrolledwindow, viewport, stack, box) встановлено повну прозорість фону, відсутність сторонніх рамок та тіней (background: transparent; border: none; box-shadow: none; border-radius: 20px;).
+     * Виправлено синтаксис CSS GTK (усунено помилки парсера через !important, який не підтримується рушієм GTK CSS).
+     * Тепер під пунктами контекстного меню Nautilus відображається чисте рідке скло Liquid Glass без сірих перешкод.
+   - Робочий стіл (GTK3 / DING) — видалення сірого контуру/елемента за склом:
+     * Виявлено, що стандартний вузол decoration у GTK3 мав margin: 10px та складену важку тінь box-shadow з чорною рамкою у .csd.popup decoration, а також внутрішні рамки у menu.
+     * Для window.desktopmenu, window.desktopmenu decoration, window.popup decoration, .csd.popup decoration встановлено нульовий відступ margin: 0;, відсутність рамки та тіні (border: none; box-shadow: none; background: transparent; border-radius: 20px;).
+     * Для menu.desktopmenu налаштовано прозорий фон і чисті заокруглені кути 20px, тому при правому кліку на стільниці чи файлах показується лише гладке рідке скло від шейдера Mutter без подвійних сірих рамок позаду.
+   - Заборона скляного ефекту для контекстних меню сторонніх (не системних) програм:
+     * У applicationManager.ts та applicationManager.js реалізовано метод _getRootWindow(metaWindow) для ієрархічного пошуку кореневого вікна програми крізь ланцюжок get_transient_for().
+     * В _isContextMenuWindow(metaWindow) прибрано безумовне накладання скла на всі MENU_WINDOW_TYPES.
+     * Накладання рідкого скла дозволено виключно для меню робочого столу (DESKTOP) або системних програм із білого списку (whitelist).
+     * Будь-які вікна з чорного списку (blacklist) або сторонні не системні програми (Telegram, Chrome, Discord, Steam тощо) суворо виключені — їхні контекстні меню більше не отримують скляного ефекту і відкриваються в оригінальному вигляді.
+   - Повна синхронізація:
+     * Оновлено файли розширення у ~/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/ та MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/.
+     * Оновлено стилі GTK4 у ~/.config/gtk-4.0/, ~/.themes/macW1Y-Dark*/gtk-4.0/, MACTHEMEFILES/gtk-4.0/, MACTHEMEFILES/macW1Y-Dark*/gtk-4.0/.
+     * Оновлено стилі GTK3 у ~/.config/gtk-3.0/, ~/.themes/macW1Y-Dark*/gtk-3.0/, MACTHEMEFILES/gtk-3.0/, MACTHEMEFILES/macW1Y-Dark*/gtk-3.0/.

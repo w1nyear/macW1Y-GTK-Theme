@@ -4941,8 +4941,9 @@ decoration:backdrop {
 }
 
 .csd.popup decoration {
-  border-radius: 12px;
-  box-shadow: 0 5px 8px rgba(0, 0, 0, 0.15), 0 8px 15px rgba(0, 0, 0, 0.08), 0 0 0 2px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.75);
+  border-radius: 20px;
+  box-shadow: none;
+  margin: 0;
 }
 
 tooltip.csd decoration {

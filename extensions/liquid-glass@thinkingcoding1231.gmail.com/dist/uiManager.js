@@ -514,6 +514,9 @@ export class UIManager {
         this.effect.setContrast(contrast);
         this.effect.setSaturation(saturation);
         this.effect.setBlurRadius(blurRadius);
+        if (this._keyPrefix === 'panel-menu') {
+            this.effect.setShadowIntensityMultiplier(1.0 / 3.0);
+        }
         this.liquidBox.add_effect(this.effect);
         this.bgActor.hide();
         // Helper functions to hook into GNOME's render pipeline
