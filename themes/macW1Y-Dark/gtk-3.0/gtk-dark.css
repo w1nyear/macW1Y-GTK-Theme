@@ -2577,22 +2577,22 @@ menubar > menuitem:disabled,
 menu {
   margin: 0;
   padding: 6px;
-  background-color: transparent !important;
-  background: transparent !important;
-  background-image: none !important;
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
   color: #dedede;
   border: none;
   border-radius: 20px;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 .background.csd > menu, .background.popup > menu, window.popup.background.csd > menu {
   border: none;
   border-radius: 20px;
-  background-color: transparent !important;
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
 }
 
 menu > separator {
@@ -2720,15 +2720,15 @@ popover.background {
   padding: 0;
   border-radius: 20px;
   background-clip: border-box;
-  background-color: transparent !important;
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
 }
 
 .csd popover.background, popover.background {
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 popover.background separator, popover.background separator, .csd popover.background separator {

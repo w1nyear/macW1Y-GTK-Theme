@@ -1,6 +1,9 @@
 @import url("gtk-dark.css");
 
 /* Kiwi (is not Apple) - managed imports: begin */
+@import url("titlebuttons3.css");
+@import url("titlebuttons-size-small3.css");
+@import url("fixes3.css");
 /* Kiwi (is not Apple) - managed imports: end */
 /* --- MAC-STYLING-START --- */
 /* macOS Tahoe Context Menus (System GTK Applications Only) */

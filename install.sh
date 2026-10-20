@@ -438,6 +438,19 @@ EOF_NAUT
     run_as_user gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark"
     run_as_user gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
     run_as_user gsettings set org.gnome.desktop.wm.preferences theme "macW1Y-Dark"
+    run_as_user gsettings set org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:"
+
+    # Синхронізація стилів вікон та кнопок керування для Snap-додатків
+    if [ -d "$TARGET_HOME/snap" ]; then
+        for snap_dir in "$TARGET_HOME"/snap/*/*/; do
+            if [ -d "$snap_dir" ]; then
+                mkdir -p "${snap_dir}.config/gtk-3.0" "${snap_dir}.config/gtk-4.0"
+                [ -d "$SCRIPT_DIR/gtk-3.0" ] && cp -rf "$SCRIPT_DIR/gtk-3.0/"* "${snap_dir}.config/gtk-3.0/" 2>/dev/null || true
+                [ -d "$SCRIPT_DIR/gtk-4.0" ] && cp -rf "$SCRIPT_DIR/gtk-4.0/"* "${snap_dir}.config/gtk-4.0/" 2>/dev/null || true
+            fi
+        done
+        chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/snap" 2>/dev/null || true
+    fi
     log_success "Теми інтерфейсу успішно активовано!"
 }
 
@@ -681,6 +694,7 @@ install_settings_overlay() {
     [ -f "$SCRIPT_DIR/bin/gnome-theme-switcher" ] && cp "$SCRIPT_DIR/bin/gnome-theme-switcher" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/gnome-theme-switcher"
     [ -f "$SCRIPT_DIR/bin/toggle-launchpad.sh" ] && cp "$SCRIPT_DIR/bin/toggle-launchpad.sh" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/toggle-launchpad.sh"
     [ -f "$SCRIPT_DIR/bin/extension-manager" ] && cp "$SCRIPT_DIR/bin/extension-manager" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/extension-manager"
+    [ -f "$SCRIPT_DIR/bin/google-chrome" ] && cp "$SCRIPT_DIR/bin/google-chrome" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/google-chrome"
     
     rm -f "$APP_DIR/mac-styling-settings.desktop"
     if [ -d "$SCRIPT_DIR/applications" ]; then
@@ -1236,6 +1250,17 @@ run_incremental_update() {
     ln -sfn "macW1Y-Dark-solid" "$TARGET_HOME/.themes/MacTahoe-Dark-solid"
     sync_directory_tree "$SCRIPT_DIR/gtk-3.0" "$TARGET_HOME/.config/gtk-3.0" false
     sync_directory_tree "$SCRIPT_DIR/gtk-4.0" "$TARGET_HOME/.config/gtk-4.0" false
+    run_as_user gsettings set org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:" 2>/dev/null || true
+    if [ -d "$TARGET_HOME/snap" ]; then
+        for snap_dir in "$TARGET_HOME"/snap/*/*/; do
+            if [ -d "$snap_dir" ]; then
+                mkdir -p "${snap_dir}.config/gtk-3.0" "${snap_dir}.config/gtk-4.0"
+                [ -d "$SCRIPT_DIR/gtk-3.0" ] && cp -rf "$SCRIPT_DIR/gtk-3.0/"* "${snap_dir}.config/gtk-3.0/" 2>/dev/null || true
+                [ -d "$SCRIPT_DIR/gtk-4.0" ] && cp -rf "$SCRIPT_DIR/gtk-4.0/"* "${snap_dir}.config/gtk-4.0/" 2>/dev/null || true
+            fi
+        done
+        chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/snap" 2>/dev/null || true
+    fi
     if [ -d "$SCRIPT_DIR/gnome-shell-theme" ]; then
         sync_directory_tree "$SCRIPT_DIR/gnome-shell-theme" "$TARGET_HOME/.themes/macW1Y-Dark/gnome-shell" false
     fi
@@ -1325,7 +1350,7 @@ run_incremental_update() {
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-styling-settings gnome-theme-switcher toggle-launchpad.sh extension-manager; do
+    for b in gnome-control-center mac-styling-settings gnome-theme-switcher toggle-launchpad.sh extension-manager google-chrome; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true

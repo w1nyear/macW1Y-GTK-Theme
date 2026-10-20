@@ -9952,3 +9952,12 @@ window.nautilus-window .content-pane headerbar {
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
+
+/* Alignment for Resources (net.nokyan.Resources) */
+overlay-split-view headerbar {
+    margin-top: -4px;
+    margin-left: 6px;
+}
+overlay-split-view headerbar windowcontrols:not(.empty).start:dir(ltr) {
+    margin-left: 6px;
+}

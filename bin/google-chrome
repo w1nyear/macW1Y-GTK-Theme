@@ -1,0 +1,2 @@
+#!/bin/bash
+exec /usr/bin/google-chrome-stable --ozone-platform=x11 "$@"

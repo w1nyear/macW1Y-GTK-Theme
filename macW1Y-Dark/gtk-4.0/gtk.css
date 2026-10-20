@@ -2743,6 +2743,7 @@ headerbar windowcontrols {
 }
 
 headerbar windowcontrols:not(.empty).start:dir(ltr), headerbar windowcontrols:not(.empty).end:dir(rtl) {
+  margin-top: -1px;
   margin-right: 8px;
 }
 
@@ -9230,12 +9231,12 @@ fullscreenbox toolbarview > .top-bar, fullscreenbox toolbarview > .top-bar.raise
 }
 
 windowcontrols {
-  margin-left: 0px !important;
+  margin-left: 0px;
 }
 
 .sidebar-pane headerbar windowcontrols:not(.empty).start:dir(ltr), .sidebar-pane headerbar windowcontrols:not(.empty).end:dir(rtl) {
-  margin-left: -9px !important;
-  margin-right: 0 !important;
+  margin-left: -1px;
+  margin-right: 0;
   padding-left: 0px;
   padding-right: 0px;
 }
@@ -9500,23 +9501,23 @@ window.popup.background.csd > menu,
 .background.popup > menu,
 popover.context-menu > contents,
 popover.popup-menu > contents {
-  background-color: transparent !important;
-  background: transparent !important;
-  background-image: none !important;
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  border-radius: 20px !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: none;
   padding: 6px 4px;
 }
 
 window.desktopmenu decoration,
 .popup decoration,
 .csd.popup decoration {
-  background-color: transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border-radius: 20px !important;
+  background-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 20px;
 }
 
 menu menuitem,
@@ -9614,7 +9615,7 @@ popover.menu > contents,
 popover.menu contents,
 popover.context-menu > contents,
 popover > contents {
-  border-radius: 20px !important;
+  border-radius: 20px;
 }
 
 popover.menu.background > contents,
@@ -9624,13 +9625,13 @@ popover.context-menu > contents,
 popover.background > contents,
 popover > contents {
   --popover-bg-color: transparent;
-  background-color: transparent !important;
-  background: transparent !important;
-  background-image: none !important;
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  border-radius: 20px !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: none;
   padding: 6px 4px;
 }
 
@@ -9754,6 +9755,24 @@ window.nautilus-window .sidebar-pane {
     background-color: rgba(30, 30, 34, 0.40);
     background-clip: padding-box;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+window.nautilus-window .sidebar-pane headerbar {
+    margin-top: -6px;
+}
+
+window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr) {
+    margin-left: 3px;
+}
+
+navigation-split-view headerbar,
+navigation-split-view headerbar windowcontrols.start:dir(ltr),
+navigationview.sidebar headerbar,
+navigationview.sidebar headerbar windowcontrols.start:dir(ltr),
+.navigation-sidebar headerbar,
+.navigation-sidebar headerbar windowcontrols.start:dir(ltr) {
+    margin-top: -4px;
+    margin-left: 5px;
 }
 
 window.nautilus-window .sidebar-pane toolbarview,
@@ -9933,3 +9952,12 @@ window.nautilus-window .content-pane headerbar {
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
+
+/* Alignment for Resources (net.nokyan.Resources) */
+overlay-split-view headerbar {
+    margin-top: -4px;
+    margin-left: 6px;
+}
+overlay-split-view headerbar windowcontrols:not(.empty).start:dir(ltr) {
+    margin-left: 6px;
+}

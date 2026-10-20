@@ -6578,9 +6578,9 @@ echo "==> Встановлення успішно завершено!"
          - У стандартних вікнах (Редактор, Ptyxis, Калькулятор) кнопки потребували зміщення вліво для точної квадратної симетрії з верхнім відступом.
     - Виконані технічні рішення:
       1) Очищення GTK CSS від синтаксичних помилок:
-         - Видалено всі входження `!important` у [themes/macW1Y-Dark/gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/themes/macW1Y-Dark/gtk-4.0/gtk.css) та [themes/macW1Y-Dark/gtk-3.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/themes/macW1Y-Dark/gtk-3.0/gtk.css).
-         - Додано коректний імпорт `@import url("gtk-dark.css");` у GTK3.
-         - Синхронізовано очищені файли з `~/.themes/macW1Y-Dark/` та `~/.config/gtk-4.0/`, `~/.config/gtk-3.0/`.
+         - Видалено всі входження `!important` у [themes/macW1Y-Dark/gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/themes/macW1Y-Dark/gtk-4.0/gtk.css), [themes/macW1Y-Dark/gtk-3.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/themes/macW1Y-Dark/gtk-3.0/gtk.css) та [themes/macW1Y-Dark/gtk-3.0/gtk-dark.css](file:///home/vitaliy/MACTHEMEFILES/themes/macW1Y-Dark/gtk-3.0/gtk-dark.css) (рядки 2580-2595 для `menu` та 2723-2731 для `popover.background`).
+         - Додано коректний імпорт `@import url("gtk-dark.css");` та імпорти `titlebuttons3.css`, `titlebuttons-size-small3.css`, `fixes3.css` у GTK3.
+         - Синхронізовано очищені файли з `~/.themes/macW1Y-Dark/`, `/usr/share/themes/macW1Y-Dark/` та `~/.config/gtk-4.0/`, `~/.config/gtk-3.0/`.
       2) Повна автономність для Snap-додатків:
          - Створено локальні пакети ресурсів `windows-assets/` та автономні файли стилів `titlebuttons3.css`, `titlebuttons4.css`, `titlebuttons-size-small*.css` у `~/.config/gtk-3.0/` та `~/.config/gtk-4.0/` з відносними шляхами без звернення до `~/.local/share/`.
          - Автоматично синхронізовано всі файли конфігурацій та іконки `windows-assets/` в усі активні каталоги Snap: `~/snap/firefox/`, `~/snap/telegram-desktop/`, `~/snap/antigravity/`, `~/snap/steam/`, `~/snap/snap-store/`, `~/snap/firmware-updater/`, `~/snap/prompting-client/`, `~/snap/snapd-desktop-integration/`.
@@ -6592,11 +6592,30 @@ echo "==> Встановлення успішно завершено!"
          - У стандартних панелях заголовка `headerbar windowcontrols.start:dir(ltr)` додано `margin-top: -1px; margin-right: 8px;`.
          - Для Nautilus: `window.nautilus-window .sidebar-pane headerbar { margin-top: -6px; }` та `window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr) { margin-left: 3px; }`.
          - Для «Налаштувань»: `navigation-split-view headerbar windowcontrols.start:dir(ltr) { margin-top: -4px; margin-left: 5px; }`.
-    - Результати вимірювань та верифікація:
+         - Для додатку «Ресурси» (`net.nokyan.Resources`): `overlay-split-view headerbar { margin-top: -4px; margin-left: 6px; }` та `overlay-split-view headerbar windowcontrols:not(.empty).start:dir(ltr) { margin-left: 6px; }`.
+      5) Калібрування положення кнопок у GTK3 додатках:
+         - Усунено дефект зміщення кнопок праворуч (раніше `dist_left: 24px`, `dist_top: 8px`).
+         - У [~/.config/gtk-3.0/fixes3.css](file:///home/vitaliy/.config/gtk-3.0/fixes3.css) встановлено:
+           `window headerbar, window headerbar.titlebar, window headerbar.default-decoration { padding-left: 8px; }`
+           `headerbar box.horizontal.left, headerbar > box.left { padding-left: 0px; }`
+           `headerbar button.titlebutton.close, headerbar button.titlebutton:first-child { margin-left: 0px; }`
+         - Відстань від кнопок до лівого краю вікна зменшено рівно до 8px, що дає ідеальну симетрію `dist_left: 8px, dist_top: 8px`.
+      6) Примусове використання macOS traffic lights у Google Chrome:
+         - Під чистою сесією Wayland Chrome відмовлявся рендерити теми через відсутність SSD у Mutter, малюючи білі векторні піктограми.
+         - Забезпечено запуск Chrome через `--ozone-platform=x11` у [~/.local/share/applications/google-chrome.desktop](file:///home/vitaliy/.local/share/applications/google-chrome.desktop) та створено системний бінарний wrapper [~/.local/bin/google-chrome](file:///home/vitaliy/.local/bin/google-chrome).
+         - Chrome тепер примусово підвантажує GTK-рушій `NavButtonProviderGtk` та рендерить повноцінні круглі macOS traffic lights з лівого боку.
+    - Результати вимірювань та підтверджена симетрія (dist_left == dist_top):
       * Nautilus: `dist_left: 16px, dist_top: 16px` (ідеальний квадратний баланс).
+      * Resources (Ресурси): `dist_left: 16px, dist_top: 16px` (ідеальний квадратний баланс).
       * Firefox (Snap): `dist_left: 14px, dist_top: 14px` (ідеальний квадратний баланс).
       * Settings (GNOME Settings): `dist_left: 15px, dist_top: 16px` (піксель-ідеально).
       * Text Editor: `dist_left: 16px, dist_top: 17px`.
       * Ptyxis (Термінал): `dist_left: 16px, dist_top: 17px`.
       * Calculator: `dist_left: 16px, dist_top: 17px`.
-      * Повністю усунуто помилки теми при запуску додатків у терміналі (чистий запуск без варнінгів).
+      * Extension Manager: `dist_left: 16px, dist_top: 17px`.
+      * GNOME Tweaks: `dist_left: 16px, dist_top: 17px`.
+      * Baobab (Аналізатор дисків): `dist_left: 16px, dist_top: 17px`.
+      * GTK3 Apps (на прикладі `nm-connection-editor`): `dist_left: 8px, dist_top: 8px` (ідеальний квадратний баланс).
+      * Google Chrome: кольорові traffic lights від нашої теми ліворуч.
+      * Flutter Apps (`snap-store`, `firmware-updater`): зафіксовано upstream-обмеження пакета `yaru.dart`, який не зчитує системний `button-layout`.
+      * Повністю усунуто всі помилки теми GTK при запуску будь-яких додатків (чистий запуск без варнінгів).
