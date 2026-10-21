@@ -7764,3 +7764,62 @@ echo "==> Встановлення успішно завершено!"
    замість «Щойно» (eq2_hover.png).
 7. Синхронізовано extension.js + apps/tahoeNotifications.js +
    apps/tahoeNotificationCard.js (?v=notif_v6l).
+
+19.11. Етап 2.11 — тінт 2% скрізь + скло в діалогах підтверджень +
+   верифікація traffic-light у Chrome/OpenCode.
+
+   ТІНТ 2% (єдиний тінт, чорний, як у віджетів):
+   1. gsettings tahoe-widgets glass-tint-strength 10 -> 2 (еталон
+      віджетів: тінт rgba(0,0,0,255), blur 4, radius 30).
+   2. liquid-glass gsettings: application/desktop-menu/dock/menu/
+      notification/osd/panel-menu/quick-settings/quick-settings-toggle
+      tint-strength -> 0.02.
+   3. kiwi tahoeNotifications.js: setTintStrength 0.04 -> 0.02 (ряд.
+      175); _cardFill light a 0.04 -> 0.02, dark a 0.05 -> 0.02.
+   4. appmenu applications_menu.js/_v5/_v5b + searchDialog_v5 +
+      clipboardDialog_v2: const tintStrength = isDark ? 0.02 : 0.02
+      (було 0.12/0.10).
+   5. blur-my-shell menubar_v29.js (3989/3990) і notifications_v4.js
+      (1059, 1078, 1223, 1224): baseStrength/tintStrength -> 0.02,
+      коментарі 3% -> 2%.
+   6. mac_input_switcher_v11.js 529/797: 0.05 -> 0.02.
+   7. eval-helper extension.js 454 (світлокамера/****): 0.04 -> 0.02.
+   8. liquid-glass dist/rendering/backdropGlass.js 176.*(98): default
+      setTintStrength 0.12 -> 0.02 (dist поза комітами).
+   Ефект стане видимим після перезапуску сесії; gsettings вже живі.
+
+   TRAFFIC LIGHTS (Chrome/Chromium + OpenCode) — верифікація:
+   1. Chrome (user gtk-3.0 css, секція MAC-TRAFFIC-LIGHTS): дист
+      ліворуч 15, верх 11, pitch 22, кнопки 16px — вже мак-вид.
+      ДОКАЗАНО пробами: будь-які додаткові css-правила ЛАМАЮТЬ
+      геометрію (pitch 24-30, зсуви) — жодних змін не внесено.
+   2. OpenCode (Electron): ізоляційні проби з user css -> кольорові
+      кнопки, дист 13/8, pitch 24, кнопки 14-15px — мак-вид.
+      Сірі диски в попередніх знімках = НЕАКТИВНИЙ стан вікна
+      (backdrop); під фокусом кнопки кольорові (oc_real_focus2.png).
+      Старий процес мав pitch 30-31 (стилі теми докампюニア) —
+      свіжий запуск дає мак. CSS не змінено.
+   3. Вертикаль кнопок Electron не керується css margin/padding
+      (проби mt6/pt3/wcmt/mh24 — без змін) — розбіги легитимні.
+
+   СКЛО В ДІАЛОГАХ (ModalDialog: підтвердження, вимкнення):
+   1. eval-helper extension.js: patchModalDialogLQVisual (556-740) —
+      патерн SwitcherPopup-скла: BackdropGlass у backgroundStack під
+      dialogLayout, sync на 'before-update', прикріплення через
+      ModalDialog.prototype.open + modalDialogGroup child-added +
+      скан існуючих (endSessionDialog вкл.).
+   2. Параметри шейдера = віджети: тінт чорний 2%, blur 15, радиус
+      35, padding 0, clip ±60; фон діалога rgba(30,30,30,0.40)
+      ЗАЛИШЕНО (лише шейдер за скринькою).
+   3. Структура GNOME 50 перевірена з gresource: ModalDialog ->
+      backgroundBin -> backgroundStack -> dialogLayout(Dialog) ->
+      _dialog; робота через dialogLayout._dialog.
+   4. ЖИВИЙ ТЕСТ через eval-переформат ділянки файлу (hot reload у
+      GNOME 50 НЕ працює для цього розширення: GJS модуле-кеш +
+      _canLoad «different version» —reloadExtension повертає старий
+      код; активується після наступного логіну). Знімки:
+      glass_dialog_wp2.png (діалог «Завершити роботу» на шпалерах,
+      rim+шадов), glass_dialog_test4.png (тінт 0.5 контрольний ->
+      скло точно рендериться).
+   5. Cleanup тест-стану: діалоги закриті, states=0, OpenCode
+      відновлено; фінальний вид після логіну.

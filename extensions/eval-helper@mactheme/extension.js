@@ -451,7 +451,7 @@ export default class EvalHelper extends Extension {
                         glass.setCornerSmoothingEnabled(0.0);
                         glass.setCornerRadius(24.0);
                         glass.setTintColor(0.0, 0.0, 0.0);
-                        glass.setTintStrength(0.04);
+                        glass.setTintStrength(0.02);
                         glass.setBlurRadius(8.0);
                         glass.setPadding(0);
                         glass.hide();
@@ -549,6 +549,195 @@ export default class EvalHelper extends Extension {
             }
         };
         patchSwitcherPopupLQVisual();
+
+        // Patch ModalDialog (confirmation/system dialogs) with LQ-Visual glass
+        // The dialog keeps its own rgba(30,30,30,0.40) fill; only the BackdropGlass
+        // shader is added behind the dialog box (same engine as Tahoe widgets).
+        const patchModalDialogLQVisual = async () => {
+            try {
+                const ModalDialogMod = await import('resource:///org/gnome/shell/ui/modalDialog.js');
+                const ModalDialog = ModalDialogMod.ModalDialog;
+                if (!ModalDialog) return;
+
+                const getLiquidGlassPath = () => {
+                    const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
+                    return ext?.path || `${GLib.get_user_data_dir()}/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`;
+                };
+
+                const createDialogGlass = async (dialogActor) => {
+                    const path = getLiquidGlassPath();
+                    const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
+                    const glassMod = await import(`file://${path}/dist/rendering/backdropGlass.js`);
+                    const BackdropGlass = glassMod.BackdropGlass;
+
+                    const stack = dialogActor.backgroundStack;
+                    const dialogLayout = dialogActor.dialogLayout;
+                    const dialogBox = dialogLayout?._dialog;
+                    if (!stack || !dialogBox) return null;
+
+                    // Remove any lingering glass from previous runs
+                    for (const child of stack.get_children()) {
+                        if (child.name === 'liquid-glass-dialog-actor') {
+                            stack.remove_child(child);
+                            try { child.destroy(); } catch (_) {}
+                        }
+                    }
+
+                    const glass = new BackdropGlass({
+                        extensionPath: path,
+                        settings: ext?.stateObj?._settings || null,
+                        logger: console,
+                        owner: 'modal-dialog',
+                    });
+                    glass.name = 'liquid-glass-dialog-actor';
+
+                    stack.insert_child_below(glass, dialogLayout);
+                    try { glass.set_pivot_point(0, 0); } catch (_) {}
+                    try { glass.x_expand = true; glass.y_expand = true; } catch (_) {}
+
+                    glass.setIsDock(false);
+                    glass.setCornerSmoothingEnabled(0.0);
+                    glass.setPadding(0);
+                    glass.hide();
+
+                    const state = {
+                        dialogActor, dialogLayout, dialogBox, glass,
+                        lastX: null, lastY: null, lastW: null, lastH: null,
+                    };
+                    dialogLayout.connect('destroy', () => {
+                        globalThis._macDlgStates?.delete(state);
+                        try { glass.destroy(); } catch (_) {}
+                        if (dialogActor._macDlgGlassState === state)
+                            delete dialogActor._macDlgGlassState;
+                    });
+                    return state;
+                };
+
+                const syncDialogGlass = (state) => {
+                    const { dialogActor, dialogBox, glass } = state;
+                    // Actor validity guards
+                    if (!dialogActor || !dialogBox || !glass) return;
+                    if (dialogActor.is_finalized?.() || dialogBox.is_finalized?.() || glass.is_finalized?.()) return;
+
+                    const isOpeningOrOpen = dialogActor.visible && dialogActor.mapped && dialogActor.opacity > 0;
+                    if (!isOpeningOrOpen) {
+                        if (glass.visible) glass.hide();
+                        return;
+                    }
+
+                    glass.opacity = dialogActor.opacity;
+                    if (!glass.visible) glass.show();
+
+                    let monitorIndex = -1;
+                    try {
+                        const mc = dialogActor._monitorConstraint;
+                        if (mc && mc.index !== undefined) monitorIndex = mc.index;
+                    } catch (_) {}
+                    if (monitorIndex < 0) monitorIndex = global.display.get_current_monitor();
+                    let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
+                    const monitorX = monitor?.x ?? 0;
+                    const monitorY = monitor?.y ?? 0;
+                    const screenW = Math.max(1, monitor?.width ?? 1);
+                    const screenH = Math.max(1, monitor?.height ?? 1);
+
+                    const [diagAbsX, diagAbsY] = dialogBox.get_transformed_position();
+                    const [w, h] = dialogBox.get_size();
+                    if (Number.isNaN(diagAbsX) || Number.isNaN(diagAbsY) || w <= 1 || h <= 1) return;
+
+                    const localBgX = Math.round(diagAbsX - monitorX);
+                    const localBgY = Math.round(diagAbsY - monitorY);
+                    const bgW = Math.round(w);
+                    const bgH = Math.round(h);
+
+                    if (state.lastX !== localBgX || state.lastY !== localBgY || state.lastW !== bgW || state.lastH !== bgH) {
+                        state.lastX = localBgX;
+                        state.lastY = localBgY;
+                        state.lastW = bgW;
+                        state.lastH = bgH;
+
+                        // Tahoe-widget look: same engine/defaults as SwitcherPopup glass
+                        glass.setResolution(screenW, screenH);
+                        glass.setCornerRadius(35.0);
+                        glass.setTintColor(0.0, 0.0, 0.0);
+                        glass.setTintStrength(0.02);
+                        glass.setBlurRadius(15.0);
+                        glass.setPadding(0);
+                        glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
+
+                        const CLIP_PAD = 60;
+                        glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
+                    }
+
+                    if (typeof glass.syncSources === 'function') glass.syncSources();
+                };
+
+                const syncAllDialogs = () => {
+                    if (!globalThis._macDlgStates || globalThis._macDlgStates.size === 0) return;
+                    for (const state of [...globalThis._macDlgStates]) {
+                        try { syncDialogGlass(state); } catch (_) {}
+                    }
+                };
+
+                const attachDialogGlass = (dialogActor) => {
+                    try {
+                        if (!dialogActor || dialogActor._macDlgGlassState) return;
+                        const stack = dialogActor.backgroundStack;
+                        const dialogLayout = dialogActor.dialogLayout;
+                        if (!stack || !dialogLayout?._dialog) return;
+                        dialogActor._macDlgGlassState = 'pending';
+                        createDialogGlass(dialogActor).then((state) => {
+                            if (!state) { delete dialogActor._macDlgGlassState; return; }
+                            globalThis._macDlgStates.add(state);
+                            dialogActor._macDlgGlassState = state;
+                        }).catch(() => { delete dialogActor._macDlgGlassState; });
+                    } catch (_) {}
+                };
+
+                const attachIfSystemDialog = (child) => {
+                    try {
+                        if (child?.backgroundStack && child?.dialogLayout) attachDialogGlass(child);
+                    } catch (_) {}
+                };
+
+                if (!globalThis._macDlgStates) {
+                    globalThis._macDlgStates = new Set();
+                } else {
+                    // stale states from a previous extension run
+                    globalThis._macDlgStates.clear();
+                }
+                if (globalThis._macDlgStageId) {
+                    try { global.stage.disconnect(globalThis._macDlgStageId); } catch (_) {}
+                    globalThis._macDlgStageId = 0;
+                }
+                if (globalThis._macDlgChildId) {
+                    try {
+                        Main.layoutManager.modalDialogGroup?.disconnect(globalThis._macDlgChildId);
+                    } catch (_) {}
+                    globalThis._macDlgChildId = 0;
+                }
+
+                globalThis._macDlgStageId = global.stage.connect('before-update', syncAllDialogs);
+
+                const mg = Main.layoutManager.modalDialogGroup;
+                if (mg) {
+                    globalThis._macDlgChildId = mg.connect('child-added', (_, child) => attachIfSystemDialog(child));
+                    for (const child of mg.get_children()) attachIfSystemDialog(child);
+                }
+                try { if (Main.endSessionDialog) attachIfSystemDialog(Main.endSessionDialog); } catch (_) {}
+
+                if (!ModalDialog.prototype._macDlgGlassPatchedV1) {
+                    ModalDialog.prototype._macDlgGlassPatchedV1 = true;
+                    const origOpen = ModalDialog.prototype.open;
+                    ModalDialog.prototype.open = function (...args) {
+                        try { attachDialogGlass(this); } catch (_) {}
+                        return origOpen.call(this, ...args);
+                    };
+                }
+            } catch (e) {
+                console.error('[EvalHelper] patchModalDialogLQVisual error: ' + e);
+            }
+        };
+        patchModalDialogLQVisual();
 
         // Notification Center and Notification Banners are natively handled by blur-my-shell (menubar_v29 & notifications_v4)
 

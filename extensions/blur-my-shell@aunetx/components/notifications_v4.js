@@ -1056,7 +1056,7 @@ export class MacNotificationGroup {
                         tintR: 0.0,
                         tintG: 0.0,
                         tintB: 0.0,
-                        baseStrength: 0.06,
+                        baseStrength: 0.02,
                     });
                 }
             }
@@ -1075,7 +1075,7 @@ export class MacNotificationGroup {
                         tintR: 0.0,
                         tintG: 0.0,
                         tintB: 0.0,
-                        baseStrength: 0.06,
+                        baseStrength: 0.02,
                     });
                 }
             }
@@ -1220,8 +1220,8 @@ export const NotificationsController = class NotificationsController {
         }
 
         const tintVal = isDark ? 0.0 : 1.0;
-        const baseStrength = 0.03; // Exactly 3% as requested by user
-        const tintStrength = 0.03; // Exactly 3% as requested by user
+        const baseStrength = 0.02; // Exactly 2% as requested by user
+        const tintStrength = 0.02; // Exactly 2% as requested by user
         return { isDark, tintVal, baseStrength, tintStrength };
     }
 

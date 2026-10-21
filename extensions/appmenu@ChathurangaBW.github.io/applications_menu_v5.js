@@ -514,7 +514,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         const tintG = isDark ? 0.16 : 1.0;
         const tintB = isDark ? 0.18 : 1.0;
         const tintVal = isDark ? 0.16 : 1.0;
-        const tintStrength = isDark ? 0.12 : 0.10;
+        const tintStrength = isDark ? 0.02 : 0.02;
         return { isDark, tintR, tintG, tintB, tintVal, tintStrength };
     }
 

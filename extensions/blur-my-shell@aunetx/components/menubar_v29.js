@@ -3986,8 +3986,8 @@ export const MenuBarController = class MenuBarController {
         }
 
         const tintVal = isDark ? 0.0 : 1.0;
-        const baseStrength = 0.03; // Exactly 3% as requested by user
-        const tintStrength = 0.03; // Exactly 3% as requested by user
+        const baseStrength = 0.02; // Exactly 2% as requested by user
+        const tintStrength = 0.02; // Exactly 2% as requested by user
         return { isDark, tintVal, baseStrength, tintStrength };
     }
 

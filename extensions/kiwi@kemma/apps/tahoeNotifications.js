@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v6l';
+} from './tahoeNotificationCard.js?v=notif_v6m';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -172,7 +172,7 @@ function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0) {
         effect.setSaturation(1.0);
     } else {
         effect.setTintColor(0.16, 0.16, 0.18);
-        effect.setTintStrength(0.04);
+        effect.setTintStrength(0.02);
         effect.setBrightness(1.0);
         effect.setContrast(1.0);
         effect.setSaturation(1.0);
@@ -1473,6 +1473,7 @@ function _rebuild(merges = null) {
             }, NC_W - 40);
             cardData.banner.x_align = Clutter.ActorAlign.CENTER;
             cardData.banner._notification = item.n;
+            cardData.banner._macApp = String(item.source?.title ?? '').trim();
 
             const m = merges?.get?.(item.n) ?? null;
             p.list.add_child(cardData.banner);
@@ -1483,8 +1484,119 @@ function _rebuild(merges = null) {
             }
             enterIdx++;
         }
+        try { _collapseNcGroups(p); } catch (ex) { console.error('[tahoe-nc] groups: ' + ex); }
     } catch (e) {
         console.error(`[tahoe-nc] _rebuild error: ${e}`);
+    }
+}
+
+function _ncHeldBox(p) {
+    if (!p)
+        return null;
+    if (p._held)
+        return p._held;
+    try {
+        const h = new Clutter.Actor();
+        h.visible = false;
+        global.stage.add_child(h);
+        p._held = h;
+        return h;
+    } catch (e) {
+        return null;
+    }
+}
+
+/* 2.11: стеки-групи за ім'ям застосунку. Колапс: найновіша картка
+   повного розміру, під нею 2 подібних тонші слої (уп до 3 видимих
+   рівнів), клік по найновішій розгортає групу в звичайні картки. */
+function _collapseNcGroups(p) {
+    if (!p || !p.list)
+        return;
+    const held = _ncHeldBox(p);
+    if (!held)
+        return;
+    for (const c of held.get_children().slice()) {
+        try { c.destroy(); } catch (_) {}
+    }
+    const kids = p.list.get_children().filter((c) => !!c._notification);
+    if (kids.length < 2)
+        return;
+    const gr = new Map();
+    const order = [];
+    for (const b of kids) {
+        const app = String(b._macApp ?? '').trim() || 'Повідомлення';
+        let g = gr.get(app);
+        if (!g) {
+            g = { app, cards: [], peek: null, expanded: false };
+            gr.set(app, g);
+            order.push(g);
+        }
+        g.cards.push(b);
+    }
+    const flat = [];
+    for (const g of order) {
+        flat.push(g.cards[0]);
+        if (g.cards.length > 1) {
+            for (const b of g.cards.slice(1)) {
+                p.list.remove_child(b);
+                held.add_child(b);
+            }
+            const peek = new St.BoxLayout({
+                vertical: true,
+                style: 'spacing: 4px;',
+            });
+            peek.set_width(NC_W - 40);
+            peek.x_align = Clutter.ActorAlign.CENTER;
+            peek._macPeekGroup = g;
+            for (let li = 0; li < Math.min(2, g.cards.length - 1); li++) {
+                const slab = new St.Widget({
+                    style: 'background-color: rgba(255, 255, 255, 0.09);'
+                        + ' border: 1px solid rgba(255, 255, 255, 0.06);'
+                        + ' border-radius: ' + (li ? 12 : 16) + 'px;',
+                });
+                slab.set_width(NC_W - 40 - (li + 1) * 14);
+                slab.set_height(li ? 14 : 20);
+                peek.add_child(slab);
+            }
+            g.peek = peek;
+            g.cards[0]._macGroupIntercept = () => _expandGroup(g);
+            flat.push(peek);
+        }
+    }
+    for (const b of kids) {
+        p.list.remove_child(b);
+    }
+    for (const x of flat) {
+        p.list.add_child(x);
+    }
+}
+
+function _expandGroup(g) {
+    try {
+        if (!g || g.expanded || !g.peek)
+            return;
+        const p = _nc;
+        const held = _ncHeldBox(p);
+        if (!p || !held || g.peek.get_parent() !== p.list)
+            return;
+        g.expanded = true;
+        let pos = p.list.get_children().indexOf(g.peek);
+        p.list.remove_child(g.peek);
+        g.peek.destroy();
+        g.peek = null;
+        let idx = 0;
+        for (const b of g.cards) {
+            if (b.get_parent() === p.list)
+                continue;
+            if (b.get_parent())
+                b.get_parent().remove_child(b);
+            p.list.insert_child_at_index(b, pos);
+            _animateEnter(b, idx);
+            pos++;
+            idx++;
+        }
+    } catch (e) {
+        console.error('[tahoe-nc] expand: ' + e);
     }
 }
 
@@ -1535,9 +1647,9 @@ function _widgetGlassFill() {
 function _cardFill() {
     try {
         if (getPanelInk() === 'light')
-            return {c: [0.0, 0.0, 0.0], a: 0.04};
+            return {c: [0.0, 0.0, 0.0], a: 0.02};
     } catch (_) {}
-    return {c: [1.0, 1.0, 1.0], a: 0.05};
+    return {c: [1.0, 1.0, 1.0], a: 0.02};
 }
 
 function _syncCards(p, monitor, s) {
@@ -2159,6 +2271,7 @@ export function enable(settings, gettextFunc) {
 }
 
 export function disable() {
+    try { if (_nc && _nc._held) { _nc._held.destroy(); _nc._held = null; } } catch (_) {}
     _ = (m) => m;
     try {
         const tray = Main.messageTray;

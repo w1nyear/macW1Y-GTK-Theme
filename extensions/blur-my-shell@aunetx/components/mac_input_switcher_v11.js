@@ -526,7 +526,7 @@ export const MacInputSourcePopup = GObject.registerClass({
                 this._glass.setResolution(monitor.width, monitor.height);
                 this._glass.setIsDock(false);
                 this._glass.setTintColor(0.0, 0.0, 0.0);
-                this._glass.setTintStrength(0.05);
+                this._glass.setTintStrength(0.02);
                 this._glass.setBlurRadius(8.0);
                 this._glass.setCornerRadius(this._targetCornerRadius);
                 this._glass.setGlassGeometry(localX, localY, bgW, bgH);
@@ -794,7 +794,7 @@ export class MacInputSwitcher {
             this._glass.setIsDock(false);
             this._glass.setCornerSmoothingEnabled(0.0);
             this._glass.setTintColor(0.0, 0.0, 0.0);
-            this._glass.setTintStrength(0.05);
+            this._glass.setTintStrength(0.02);
             this._glass.setBlurRadius(8.0);
             this._glass.setPadding(0);
             this._glass.hide();
