@@ -604,12 +604,14 @@ export default class EvalHelper extends Extension {
                         dialogActor, dialogLayout, dialogBox, glass,
                         lastX: null, lastY: null, lastW: null, lastH: null,
                     };
-                    dialogLayout.connect('destroy', () => {
+                    const cleanUpState = () => {
                         globalThis._macDlgStates?.delete(state);
                         try { glass.destroy(); } catch (_) {}
                         if (dialogActor._macDlgGlassState === state)
                             delete dialogActor._macDlgGlassState;
-                    });
+                    };
+                    dialogLayout.connect('destroy', cleanUpState);
+                    dialogActor.connect('destroy', cleanUpState);
                     return state;
                 };
 
@@ -642,7 +644,7 @@ export default class EvalHelper extends Extension {
 
                     const [diagAbsX, diagAbsY] = dialogBox.get_transformed_position();
                     const [w, h] = dialogBox.get_size();
-                    if (Number.isNaN(diagAbsX) || Number.isNaN(diagAbsY) || w <= 1 || h <= 1) return;
+                    if (diagAbsX == null || diagAbsY == null || Number.isNaN(diagAbsX) || Number.isNaN(diagAbsY) || w <= 1 || h <= 1) return;
 
                     const localBgX = Math.round(diagAbsX - monitorX);
                     const localBgY = Math.round(diagAbsY - monitorY);
@@ -680,7 +682,15 @@ export default class EvalHelper extends Extension {
 
                 const attachDialogGlass = (dialogActor) => {
                     try {
-                        if (!dialogActor || dialogActor._macDlgGlassState) return;
+                        if (!dialogActor) return;
+                        if (dialogActor._macDlgGlassState) {
+                            if (dialogActor._macDlgGlassState !== 'pending') {
+                                if (globalThis._macDlgStates && !globalThis._macDlgStates.has(dialogActor._macDlgGlassState)) {
+                                    globalThis._macDlgStates.add(dialogActor._macDlgGlassState);
+                                }
+                            }
+                            return;
+                        }
                         const stack = dialogActor.backgroundStack;
                         const dialogLayout = dialogActor.dialogLayout;
                         if (!stack || !dialogLayout?._dialog) return;
@@ -1540,6 +1550,20 @@ export default class EvalHelper extends Extension {
             }
             this._dockSignals = null;
             this._macDockSignalsConnected = false;
+        }
+
+        if (globalThis._macDlgStageId) {
+            try { global.stage.disconnect(globalThis._macDlgStageId); } catch (_) {}
+            globalThis._macDlgStageId = 0;
+        }
+        if (globalThis._macDlgChildId) {
+            try { Main.layoutManager.modalDialogGroup?.disconnect(globalThis._macDlgChildId); } catch (_) {}
+            globalThis._macDlgChildId = 0;
+        }
+        if (globalThis._macDlgStates) {
+            for (const st of globalThis._macDlgStates) {
+                try { st.glass?.hide(); } catch (_) {}
+            }
         }
     }
 }
