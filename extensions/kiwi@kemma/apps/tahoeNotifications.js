@@ -242,12 +242,22 @@ function _collect() {
                 items.push({source: src, n});
         }
     } catch (_) {}
-    // Sort items by time (newest first)
-    items.sort((a, b) => {
-        const timeA = a.n?.datetime?.to_unix ? a.n.datetime.to_unix() : 0;
-        const timeB = b.n?.datetime?.to_unix ? b.n.datetime.to_unix() : 0;
-        return timeB - timeA;
-    });
+    // Sort items by time (newest first); datetime гранулярна до
+    // секунди, тому додаємо мікросекунди - иначе односекундні
+    // пари сортувались за порядком трея і новіша ставала піром
+    const tOf = (it) => {
+        const dt = it.n?.datetime;
+        if (!dt)
+            return 0;
+        try {
+            let t = dt.to_unix?.() ?? 0;
+            t += (dt.get_microsecond?.() ?? 0) / 1e6;
+            return t;
+        } catch (_) {
+            return 0;
+        }
+    };
+    items.sort((a, b) => tOf(b) - tOf(a));
     return items;
 }
 
@@ -1591,6 +1601,16 @@ function _collapseNcGroups(p, merges = null) {
             b.set_pivot_point(0.5, 0);
             b.set_scale(1 - i * 0.024, 1);
             b.translation_y = i * over;
+            // ГЛАВНИЙ СІРИЙ елемент: плита піра малювалась ПОВЕРХ
+            // скла голови (крізь напівпрозоре скло просвічував темний
+            // фон rgba(30,32,38,.55)) -> скло голови сіріло. Кліп:
+            // пір малює только частину нижче нижньої межі голови
+            // (нижню каївку), головне скло лишається чистим
+            try {
+                const ph = Math.round(b.height) || headH;
+                const cY = Math.max(0, headH - i * over);
+                b.set_clip(0, cY, Math.round(b.width), Math.max(4, ph - cY));
+            } catch (_) {}
             peerEnter(b, i);
             container.add_child(b);
         }
@@ -1656,6 +1676,7 @@ function _expandGroup(g) {
             if (b.get_parent())
                 b.get_parent().remove_child(b);
             b.reactive = true;
+            try { b.remove_clip(); } catch (_) {}
             delete b._macHiddenPeer;
             try { b.set_style(b._macSavedStyle ?? ''); } catch (_) {}
             try {
