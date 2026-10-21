@@ -26,7 +26,10 @@ const PILL_COLLAPSED_STYLE =
     'width: 480px; min-width: 480px; max-width: 480px; height: 54px; min-height: 54px; padding: 0 16px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    'border: none !important; ' +
+    'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+    'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+    'border-left: none !important; ' +
+    'border-right: none !important; ' +
     'border-radius: 27px; ' +
     'box-shadow: none !important;';
 
@@ -69,7 +72,10 @@ const BTN_NORMAL_STYLE =
     'border-radius: 26px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    'border: none !important; ' +
+    'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+    'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+    'border-left: none !important; ' +
+    'border-right: none !important; ' +
     'box-shadow: none !important;';
 
 const BTN_HOVER_STYLE =
@@ -77,7 +83,10 @@ const BTN_HOVER_STYLE =
     'border-radius: 26px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    'border: none !important; ' +
+    'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+    'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+    'border-left: none !important; ' +
+    'border-right: none !important; ' +
     'box-shadow: none !important;';
 
 const SETTINGS_PANELS = [
@@ -253,6 +262,10 @@ export const MacSpotlightDialog = GObject.registerClass({
         this.add_child(this._box);
         this._box.connect('notify::height', () => this._syncGlass());
         this._box.connect('notify::width', () => this._syncGlass());
+        this._box.connect('notify::x', () => this._syncGlass());
+        this._box.connect('notify::y', () => this._syncGlass());
+        this._box.connect('notify::scale-x', () => this._syncGlass());
+        this._box.connect('notify::scale-y', () => this._syncGlass());
 
         this.connect('destroy', () => {
             this._onDestroy();
@@ -770,7 +783,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             effect._setFloat('displacement_scale', 85.0);
             effect._setFloat('ior', 1.50);
             effect._setFloat('max_z', 14.0);
-            effect._setFloat('edge_smoothing', 1.2);
+            effect._setFloat('edge_smoothing', 1.33);
             effect._setFloat('profile_shape_n', 5.40);
 
             effect._setFloat('rim_intensity', 0.18);
@@ -839,6 +852,17 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._buttonsBox.opacity = 0;
         this._buttonsBox.set_style('width: 0; min-width: 0; max-width: 0; margin: 0; padding: 0;');
 
+        this._box.set_style(
+            'background-color: transparent !important; ' +
+            'background: none !important; ' +
+            `border-radius: ${CORNER_RADIUS}px !important; ` +
+            'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+            'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+            'border-left: none !important; ' +
+            'border-right: none !important; ' +
+            'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
+        );
+
         this._searchPill.set_style(PILL_EXPANDED_STYLE);
         this._searchPill.width = DIALOG_WIDTH;
 
@@ -848,6 +872,14 @@ export const MacSpotlightDialog = GObject.registerClass({
     _uncollapseButtonsAndContractPill() {
         if (!this._buttonsCollapsed) return;
         this._buttonsCollapsed = false;
+
+        this._box.set_style(
+            'background-color: transparent !important; ' +
+            'background: none !important; ' +
+            `border-radius: ${CORNER_RADIUS}px !important; ` +
+            'border: none !important; ' +
+            'box-shadow: none !important;'
+        );
 
         this._searchPill.set_style(PILL_COLLAPSED_STYLE);
         this._searchPill.width = COLLAPSED_PILL_WIDTH;
@@ -881,19 +913,15 @@ export const MacSpotlightDialog = GObject.registerClass({
                 return;
             }
 
-            const opacity = box.get_paint_opacity ? box.get_paint_opacity() : box.opacity;
-            if (opacity <= 0) {
-                return;
-            }
-
             const mon = Main.layoutManager.primaryMonitor;
             const scaleX = box.scale_x ?? 1.0;
             const scaleY = box.scale_y ?? 1.0;
             const rawW = box.width > 0 ? box.width : DIALOG_WIDTH;
             const rawH = box.height > 0 ? box.height : PILL_HEIGHT;
 
-            if (this._glass.opacity !== opacity) {
-                this._glass.opacity = opacity;
+            const targetOpacity = (typeof box.opacity === 'number' && box.opacity > 0) ? box.opacity : 255;
+            if (this._glass.opacity !== targetOpacity) {
+                this._glass.opacity = targetOpacity;
             }
             if (!this._glass.visible) {
                 this._glass.show();
@@ -1034,6 +1062,12 @@ export const MacSpotlightDialog = GObject.registerClass({
             height: targetHeight,
             duration: 220,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onUpdate: () => {
+                this._syncGlass();
+            },
+            onComplete: () => {
+                this._syncGlass();
+            },
         });
 
         this._resultsWrapper.ease({
@@ -1169,12 +1203,25 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._entry.grab_key_focus();
 
+        if (_isGlassAlive(this._glass)) {
+            this._glass.opacity = 0;
+            this._glass.show();
+            this._glass.ease({
+                opacity: 255,
+                duration: 220,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
+
         this._box.ease({
             opacity: 255,
             scale_x: 1.0,
             scale_y: 1.0,
             duration: 220,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onUpdate: () => {
+                this._syncGlass();
+            },
             onComplete: () => {
                 this._syncGlass();
             },
@@ -1473,6 +1520,12 @@ export const MacSpotlightDialog = GObject.registerClass({
                 height: PILL_HEIGHT,
                 duration: 200,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                onUpdate: () => {
+                    this._syncGlass();
+                },
+                onComplete: () => {
+                    this._syncGlass();
+                },
             });
             return;
         }

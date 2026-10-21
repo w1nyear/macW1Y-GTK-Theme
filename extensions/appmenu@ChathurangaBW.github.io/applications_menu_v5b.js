@@ -238,11 +238,20 @@ export const MacApplicationsDialog = GObject.registerClass({
             'background-color: transparent !important; ' +
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: none !important; ' +
+            'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+            'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+            'border-left: none !important; ' +
+            'border-right: none !important; ' +
             'padding: 16px 2px 14px 2px; ' +
-            'box-shadow: none !important;'
+            'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
         );
         this.add_child(this._box);
+        this._box.connect('notify::x', () => this._syncGlass());
+        this._box.connect('notify::y', () => this._syncGlass());
+        this._box.connect('notify::width', () => this._syncGlass());
+        this._box.connect('notify::height', () => this._syncGlass());
+        this._box.connect('notify::scale-x', () => this._syncGlass());
+        this._box.connect('notify::scale-y', () => this._syncGlass());
 
         this.connect('destroy', () => {
             this._onDestroy();
@@ -540,7 +549,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             effect._setFloat('displacement_scale', 85.0);
             effect._setFloat('ior', 1.50);
             effect._setFloat('max_z', 14.0);
-            effect._setFloat('edge_smoothing', 1.2);
+            effect._setFloat('edge_smoothing', 1.33);
             effect._setFloat('profile_shape_n', 5.40);
 
             effect._setFloat('rim_intensity', 0.18);
@@ -593,8 +602,24 @@ export const MacApplicationsDialog = GObject.registerClass({
             if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
                 Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
             }
+            Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
+            Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
+
+            this._box.set_style(
+                'background-color: transparent !important; ' +
+                'background: none !important; ' +
+                `border-radius: ${CORNER_RADIUS}px !important; ` +
+                'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+                'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+                'border-left: none !important; ' +
+                'border-right: none !important; ' +
+                'padding: 16px 2px 14px 2px; ' +
+                'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
+            );
+
             this._glass.show();
-            this._glass.opacity = 255;
+            this._glass.opacity = (typeof this._box.opacity === 'number' && this._box.opacity > 0) ? this._box.opacity : 255;
+            this._glass._backdropLocked = false;
             if (typeof this._glass.forceRefresh === 'function') {
                 this._glass.forceRefresh(1);
             }
@@ -633,11 +658,12 @@ export const MacApplicationsDialog = GObject.registerClass({
             const bgW = Math.round(w);
             const bgH = Math.round(h);
 
+            const targetOpacity = (typeof box.opacity === 'number' && box.opacity > 0) ? box.opacity : 255;
+            if (this._glass.opacity !== targetOpacity) {
+                this._glass.opacity = targetOpacity;
+            }
             if (!this._glass.visible) {
                 this._glass.show();
-            }
-            if (this._glass.opacity !== 255) {
-                this._glass.opacity = 255;
             }
 
             this._glass.set_position(mon.x, mon.y);
@@ -1127,7 +1153,7 @@ export const MacApplicationsDialog = GObject.registerClass({
                 Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
                 Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
                 this._glass.show();
-                this._glass.opacity = 255;
+                this._glass.opacity = fromRect ? 255 : 0;
                 this._glass._backdropLocked = false;
                 if (typeof this._glass.forceRefresh === 'function') {
                     this._glass.forceRefresh(1);
@@ -1152,6 +1178,11 @@ export const MacApplicationsDialog = GObject.registerClass({
         } catch (_) {}
 
         if (fromRect) {
+            if (_isGlassAlive(this._glass)) {
+                this._glass.opacity = 255;
+                this._glass.show();
+            }
+
             this._box.ease({
                 x: targetX,
                 y: targetY,
@@ -1159,6 +1190,9 @@ export const MacApplicationsDialog = GObject.registerClass({
                 height: DIALOG_HEIGHT,
                 duration: 250,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                onUpdate: () => {
+                    this._syncGlass();
+                },
                 onComplete: () => {
                     this._syncGlass();
                 },
@@ -1183,12 +1217,25 @@ export const MacApplicationsDialog = GObject.registerClass({
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             });
         } else {
+            if (_isGlassAlive(this._glass)) {
+                this._glass.opacity = 0;
+                this._glass.show();
+                this._glass.ease({
+                    opacity: 255,
+                    duration: 200,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+            }
+
             this._box.ease({
                 opacity: 255,
                 scale_x: 1.0,
                 scale_y: 1.0,
                 duration: 200,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                onUpdate: () => {
+                    this._syncGlass();
+                },
                 onComplete: () => {
                     this._syncGlass();
                 },
