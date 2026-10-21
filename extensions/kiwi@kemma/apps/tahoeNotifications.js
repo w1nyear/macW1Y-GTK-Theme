@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v7b';
+} from './tahoeNotificationCard.js?v=notif_v8';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -1599,9 +1599,9 @@ function _collapseNcGroups(p, merges = null) {
             b._macSavedStyle = CARD_BASE_STYLE;
             b.set_style(CARD_BASE_STYLE + ' border-top: none !important;');
             try {
-                const inner = (b.get_children?.() ?? [])[0];
-                if (inner)
-                    inner.visible = false;
+                for (const ch of b.get_children?.() ?? []) {
+                    ch.visible = false;
+                }
             } catch (_) {}
             b.set_pivot_point(0.5, 0);
             b.set_scale(1 - i * 0.042, 1);
@@ -2114,6 +2114,13 @@ function _buildPanel(merges = null) {
                 // інакше скло карток семплить темний фон панелі і
                 // виглядає плоско, а не як скло з заломленням
                 s.uiSampler.addExclusion(overlay);
+                for (const child of global.window_group?.get_children?.() ?? []) {
+                    if (child.meta_window?.get_gtk_application_id?.() === 'com.rastersoft.ding' ||
+                        child.meta_window?.get_title?.() === 'Desktop Icons 1' ||
+                        child.meta_window?.get_window_type?.() === 1) {
+                        s.uiSampler.addExclusion(child);
+                    }
+                }
             } catch (_) {}
             s.wcm.rebuildClones();
             s.uiSampler.rebindSelf();
@@ -2409,8 +2416,16 @@ function _hookDate() {
 }
 
 export function enable(settings, gettextFunc) {
-    if (typeof gettextFunc === 'function')
-        _ = gettextFunc;
+    if (typeof gettextFunc === 'function') {
+        _ = (s) => {
+            try {
+                const res = gettextFunc(s);
+                return typeof res === 'string' && res ? res : s;
+            } catch (_) {
+                return s;
+            }
+        };
+    }
     // Тихий режим: нативні банери вимкнено (сповіщення накопичуються
     // лише в Центрі повідомлень). Флоутинг-банери видалено у v4;
     // новий простий UI банерів додається пізніше.

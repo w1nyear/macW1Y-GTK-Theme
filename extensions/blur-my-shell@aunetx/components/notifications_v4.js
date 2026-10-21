@@ -236,14 +236,23 @@ export function buildNotificationCard(source, notification, options = {}) {
     iconBin.set_child(icon);
     mainBox.add_child(iconBin);
 
+    const bannerWidth = (typeof options?.width === 'number' && options.width > 0) ? options.width : 440;
+    const padH = 28;
+    const iconW = 56;
+    const railW = 76;
+    const contentW = Math.max(120, bannerWidth - padH - iconW - railW);
+
     // 2. Колона текстів
     const contentBox = new St.BoxLayout({
         orientation: Clutter.Orientation.VERTICAL,
-        x_expand: true,
+        x_expand: false,
         y_align: Clutter.ActorAlign.START,
         style_class: 'mac-notification-content-box',
         style: 'spacing: 2px !important;',
     });
+    contentBox.set_width(contentW);
+    contentBox.min_width = contentW;
+    contentBox.max_width = contentW;
     mainBox.add_child(contentBox);
 
     // Рядок заголовка: [Ім'я програми / ТЕРМІНОВО] [Лічильник стопки]
@@ -280,7 +289,10 @@ export function buildNotificationCard(source, notification, options = {}) {
         y_align: Clutter.ActorAlign.START,
         x_align: Clutter.ActorAlign.END,
     });
-    rightRail.set_width(76);
+    rightRail.set_width(railW);
+    rightRail.min_width = railW;
+    rightRail.max_width = railW;
+    rightRail.x_expand = false;
     mainBox.add_child(rightRail);
 
     const timeLabel = new St.Label({
@@ -356,31 +368,34 @@ export function buildNotificationCard(source, notification, options = {}) {
     bodyLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
     contentBox.add_child(bodyLabel);
 
-    // 4. Кнопки дій (внизу праворуч від тексту) — канонічні капсули 7px
+    // 4. Кнопки дій (внизу ліворуч від тексту) — канонічні капсули 7px
     let actionsBox = null;
     if (notification.actions && notification.actions.length > 0) {
         actionsBox = new St.BoxLayout({
             style_class: 'mac-notification-actions-box',
             orientation: Clutter.Orientation.HORIZONTAL,
-            x_expand: true,
-            x_align: Clutter.ActorAlign.END,
+            x_expand: false,
+            x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'margin-top: 7px !important; margin-bottom: 2px !important; spacing: 8px !important;',
             visible: true,
             opacity: 255,
         });
+        actionsBox.set_width(contentW);
+        actionsBox.max_width = contentW;
         for (const action of notification.actions) {
             const actBtn = new St.Button({
                 style_class: 'mac-notification-action-btn',
                 label: action.label,
                 reactive: true,
                 can_focus: true,
-                style: 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px;',
+                x_expand: false,
+                style: 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px;',
             });
             actBtn.connect('notify::hover', () => {
                 actBtn.set_style(actBtn.hover
-                    ? 'background-color: rgba(255, 255, 255, 0.26) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px;'
-                    : 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px;');
+                    ? 'background-color: rgba(255, 255, 255, 0.26) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px;'
+                    : 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px;');
             });
             actBtn.connect('clicked', () => {
                 try { action.activate(); } catch (e) { logError(e); }

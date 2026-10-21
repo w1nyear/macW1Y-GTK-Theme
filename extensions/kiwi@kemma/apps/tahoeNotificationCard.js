@@ -282,6 +282,12 @@ export function buildNotificationCard(source, notification, options = {}) {
         try { gicon = source?.createIcon?.(44) ?? null; } catch (_) {}
     }
     const iconSize = isScreenshot ? 38 : 44;
+    const bannerWidth = width || 440;
+    const padH = 28; // 14px left + 14px right
+    const iconW = iconSize + 12; // tile width + margin
+    const railW = 76;
+    const contentW = Math.max(120, bannerWidth - padH - iconW - railW);
+
     const iconTile = new St.Widget({
         width: iconSize,
         height: iconSize,
@@ -301,13 +307,16 @@ export function buildNotificationCard(source, notification, options = {}) {
     try { iconTile.style += 'margin-right: 12px;'; } catch (_) {}
     mainBox.add_child(iconTile);
 
-    // 2. Текст-колонка (тост-канон, spacing 4)
+    // 2. Текст-колонка (фіксована ширина без зворотного переповнення Clutter)
     const contentBox = new St.BoxLayout({
         orientation: Clutter.Orientation.VERTICAL,
-        x_expand: true,
+        x_expand: false,
         y_align: Clutter.ActorAlign.CENTER,
         style: isScreenshot ? 'spacing: 2px !important;' : 'spacing: 4px !important;',
     });
+    contentBox.set_width(contentW);
+    contentBox.min_width = contentW;
+    contentBox.max_width = contentW;
     mainBox.add_child(contentBox);
 
     // GNOME 50: критичні мають urgency=3 (>=2 - HIGH і вище)
@@ -390,16 +399,18 @@ export function buildNotificationCard(source, notification, options = {}) {
         actionsBox = new St.BoxLayout({
             style_class: 'mac-notification-actions-box',
             orientation: Clutter.Orientation.HORIZONTAL,
-            x_expand: true,
-            x_align: Clutter.ActorAlign.END,
+            x_expand: false,
+            x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.CENTER,
             style: isScreenshot
-                ? 'margin-top: 3px !important; margin-bottom: 0px !important; spacing: 6px !important;'
+                ? 'margin-top: 4px !important; margin-bottom: 0px !important; spacing: 6px !important;'
                 : 'margin-top: 7px !important; margin-bottom: 2px !important; spacing: 8px !important;',
         });
+        actionsBox.set_width(contentW);
+        actionsBox.max_width = contentW;
         const btnStyleBase = isScreenshot
-            ? 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 6px !important; padding: 2px 10px !important; font-size: 11px !important; font-weight: 500 !important; margin-left: 6px !important;'
-            : 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;';
+            ? 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 6px !important; padding: 2px 10px !important; font-size: 11px !important; font-weight: 500 !important; margin-right: 6px !important;'
+            : 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px !important;';
         const btnStyleHover = btnStyleBase.replace('0.16', '0.26').replace('0.14', '0.20');
 
         for (const action of notification.actions) {
@@ -408,6 +419,7 @@ export function buildNotificationCard(source, notification, options = {}) {
                 label: action.label,
                 reactive: true,
                 can_focus: true,
+                x_expand: false,
                 style: btnStyleBase,
             });
             actBtn.connect('notify::hover', () => {
@@ -439,6 +451,9 @@ export function buildNotificationCard(source, notification, options = {}) {
         y_align: Clutter.ActorAlign.START,
         style: CLOSE_BASE,
     });
+    closeBtn.set_size(22, 22);
+    closeBtn.min_width = 22;
+    closeBtn.min_height = 22;
     try {
         closeBtn.set_child(new St.Label({
             text: '✕',
@@ -456,7 +471,10 @@ export function buildNotificationCard(source, notification, options = {}) {
         y_align: Clutter.ActorAlign.START,
         x_align: Clutter.ActorAlign.END,
     });
-    rightRail.set_width(76);
+    rightRail.set_width(railW);
+    rightRail.min_width = railW;
+    rightRail.max_width = railW;
+    rightRail.x_expand = false;
     rightRail.add_child(timeLabel);
     rightRail.add_child(closeBtn);
     mainBox.add_child(rightRail);
