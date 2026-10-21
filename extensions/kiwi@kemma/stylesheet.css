@@ -1192,12 +1192,25 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
    Panel bg = separate actor BELOW the glass stacks ('pill' r40,
    'disc' r31, 'card'/'music' r26, 'edit' r18). White text on translucent gray (light) / faint white
    (dark) glass fills — like macOS Tahoe. */
-.tahoe-qs-panel { spacing: 12px; padding: 14px; background-color: transparent; }
+.tahoe-qs-panel {
+    spacing: 12px;
+    padding: 14px;
+    background-color: transparent;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
 /* no plate — just the ambient shadow of the whole floating panel */
 .tahoe-qs-panelbg {
     border-radius: 22px;
     background-color: transparent;
     border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
     /* one shadow for both themes: tight core + wide soft diffusion */
     box-shadow: 0 4px 22px rgba(0, 0, 0, 0.15),
         0 12px 70px rgba(0, 0, 0, 0.10);
@@ -1501,6 +1514,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     border-radius: 999px;
     padding: 10px 12px 10px 10px;
     box-shadow: none;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-pill { box-shadow: none; }
 .tahoe-qs-pill-circle {
@@ -1526,7 +1543,13 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-priv-orange { background-color: #ff9f0a; }
 .tahoe-qs-priv-blue { background-color: #0a84ff; }
 /* privacy pill is slim (lower than regular pills) */
-.tahoe-qs-pill.tahoe-qs-pill-priv { padding: 4px 10px; }
+.tahoe-qs-pill.tahoe-qs-pill-priv {
+    padding: 4px 10px;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
+}
 .tahoe-qs-pill-priv .tahoe-qs-pill-circle { width: 20px; height: 20px; }
 .tahoe-qs-pill-priv .tahoe-qs-pill-glyph { icon-size: 12px; }
 .tahoe-qs-pill-priv .tahoe-qs-title { font-size: 0.8em; }
@@ -1537,6 +1560,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     background-color: transparent;
     border-radius: 999px;
     box-shadow: none;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-circle { box-shadow: none; }
 .tahoe-qs-circle-icon { icon-size: 24px; color: #1d1d1f; }
@@ -1556,6 +1583,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     border-radius: 28px;
     padding: 10px 8px;
     box-shadow: none;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-music { box-shadow: none; }
 .tahoe-qs-music-box { spacing: 1px; }
@@ -1579,6 +1610,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     padding: 10px 14px;
     spacing: 6px;
     box-shadow: none;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-card { box-shadow: none; }
 .tahoe-qs-card-label { font-size: 0.9em; font-weight: 700; color: #1d1d1f; }
@@ -1628,6 +1663,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     font-weight: 700;
     color: #1d1d1f;
     box-shadow: none;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-edit { box-shadow: none; }
 

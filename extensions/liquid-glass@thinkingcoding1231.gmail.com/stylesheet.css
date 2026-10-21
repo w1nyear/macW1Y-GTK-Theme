@@ -159,3 +159,16 @@
     border-right: none !important;
     border-radius: 20px !important;
 }
+
+/* Control Center / Quick Settings outer container must NOT have background borders */
+.popup-menu-content.quick-settings,
+.quick-settings,
+.quick-settings-menu,
+.tahoe-qs-panel,
+.tahoe-qs-panelbg {
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}

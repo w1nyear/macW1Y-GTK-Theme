@@ -48,7 +48,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeNCEnable: ${e}`);
         }
         try {
-            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri() + '?v=tahoe_v5';
+            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri() + '?v=tahoe_v6';
             import(ccUri).then(mod => {
                 if (this._tahoeCC && this._tahoeCC !== mod) {
                     try { this._tahoeCC.disable(); } catch (_) {}

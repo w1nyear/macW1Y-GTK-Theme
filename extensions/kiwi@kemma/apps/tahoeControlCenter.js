@@ -254,7 +254,7 @@ function _qsPanelShadow() {
         const a2 = (op * 0.67 / 100).toFixed(2);
         shadow += `, 0 ${Math.round(glow / 6)}px ${glow}px rgba(0, 0, 0, ${a2})`;
     }
-    return shadow + '; border: none !important;';
+    return shadow + '; border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important;';
 }
 
 let _enabled = false;
@@ -890,6 +890,7 @@ function _buildPanel() {
     }
     box.set_position(X, Y);
     box.set_size(W, -1);
+    box.set_style('border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important;');
     overlay.add_child(box);
 
     const state = {control: null, nm: null, bt: null,

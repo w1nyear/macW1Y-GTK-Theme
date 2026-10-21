@@ -8107,3 +8107,26 @@ echo "==> Встановлення успішно завершено!"
       - Модулі оновлено до версії ?v=notif_v8b та перезавантажено наживо у робочій сесії GNOME Shell.
       - Знято контрольний знімок екрана (nc_opened_v8b_verified_crop.png): стос скріншотів повністю відображає заголовок «Знімок зроблено», повний текст та кнопку «Показувати у «Файлах»»; оновлювач прошивки показує всі тексти та кнопку «Install»; правий нижній кут стоса тепер має чистий плавний контур без будь-яких зайвих елементів скла.
       - Усі зміни збережено до ~/MACTHEMEFILES/.
+
+19.24. control-center: 2.24 усунення рамок з фону Центру керування та застосування 2px 50% сірих рамок до внутрішніх елементів скла
+   1. Виявлення дефекту за користувацьким скріншотом (media_1792595950959_1928aaa4.png):
+      - Загальний плаваючий фон Центру керування (tahoe-qs-panelbg) помилково мав зовнішню рамку зверху і знизу, тоді як усі внутрішні елементи зі скляним розмиттям (пілюлі Wi-Fi, Bluetooth, AirDrop, Focus, картка музики, картки повзунків гучності та яскравості, круглі кнопки перемикачів і пілюля «Edit Controls») не мали рамок.
+   2. Усунення зовнішніх рамок з фонового контейнера:
+      - У kiwi@kemma/stylesheet.css для .tahoe-qs-panel та .tahoe-qs-panelbg жорстко встановлено:
+        border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important;
+      - У liquid-glass@thinkingcoding1231.gmail.com/stylesheet.css додано явне скидання бордюрів для .popup-menu-content.quick-settings, .quick-settings, .quick-settings-menu, .tahoe-qs-panel, .tahoe-qs-panelbg.
+      - У tahoeControlCenter.js та tahoeQuickSettings.js у функції _qsPanelShadow() прибрано будь-які бордюри та додано повне скидання (border: none !important; ...), а також на box панелі встановлено inline set_style зі скиданням бордюрів.
+   3. Застосування 2px 50% сірих рамок (border-top / border-bottom) до всіх внутрішніх елементів зі склом:
+      - У kiwi@kemma/stylesheet.css додано стилі з border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important; для:
+        - .tahoe-qs-pill (Wi-Fi, Bluetooth, AirDrop, Focus)
+        - .tahoe-qs-pill.tahoe-qs-pill-priv (індикатор приватності / Droidcam)
+        - .tahoe-qs-circle (1x1 круглі кнопки-перемикачі: Dark Mode, Stage Manager, Screenshot, Screen Recording)
+        - .tahoe-qs-music (картка Now Playing)
+        - .tahoe-qs-card (картки регуляторів дисплея та звуку)
+        - .tahoe-qs-edit (пілюля редагування елементів у нижній частині).
+   4. Гаряче оновлення та верифікація:
+      - Оновлено кеш стилів St.ThemeContext для обох розширень kiwi та liquid-glass.
+      - Модуль Центру керування оновлено до ?v=tahoe_v6 та перезавантажено в пам'яті GNOME Shell без перезапуску сесії.
+      - Проведено інспекцію дерева St-віджетів: підтверджено, що фон має BT:0 BB:0, а всі внутрішні елементи отримали BT:2 BB:2 BL:0 BR:0.
+      - Знято контрольний скріншот (cc_fixed_borders_crop.png): загальний фон чистий без бордюрів, внутрішні віджети чітко окреслені скляними рамками macOS Tahoe.
+      - Усі зміни синхронізовано з репозиторієм ~/MACTHEMEFILES/.
