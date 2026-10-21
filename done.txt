@@ -8143,3 +8143,25 @@ echo "==> Встановлення успішно завершено!"
       - Скинуто St.TextureCache та оновлено Dash-to-Dock у GNOME Shell.
       - Знято контрольний скріншот доку (dock_antigravity_verified.png та dock_safari_antigravity_opencode_crop.png): розміри та контури сквирклів Safari, Antigravity та OpenCode ідеально збігаються по висоті та ширині, лінії верхівок і низу утворюють єдину безперервну візуальну площину.
       - Усі файли синхронізовано з репозиторієм ~/MACTHEMEFILES/.
+
+19.26. topbar: 2.26 виправлення зависання та взаємного накладання меню переходу та вікна в меню барі
+   1. Виявлення проблеми:
+      - Користувач повідомив, що після відкриття пунктів «Перехід» та «Вікно» в меню барі обидва випадаючі списки наклалися один на один і зависли, не закриваючись кліком поза меню або клавішею Escape; вони зникли лише після створення скріншоту.
+   2. Аналіз першопричин:
+      - У патчі `BoxPointer.prototype.close` в `eval-helper@mactheme/extension.js` закриття меню для `PopupAnimation.FADE` виконувало асинхронну анімацію через 150 мс з приховуванням (`this.hide()`) виключно в `onComplete`. При перемиканні меню виклик `remove_all_transitions()` скасовував попередню анімацію, внаслідок чого `onComplete` у Clutter взагалі не викликався, і старе меню назавжди залишалося видимим (`visible = true`).
+      - У `liquid-glass@thinkingcoding1231.gmail.com` метод `_startAnimation` при вимкненій анімації (`!this._enableAnimation`) при закритті (`targetValue === 0`) примусово встановлював `this.bgActor.opacity = 255` та `this.animActor.opacity = 255`, залишаючи шейдер скла активним на екрані.
+      - У перехоплювачі подій `pmm._onCapturedEvent` в `eval-helper` клік на сусідній пункт меню викликав закриття поточного меню та планував відкриття нового через `GLib.idle_add`, що розривало модальне захоплення (modal grab) та десинхронізувало стан `Main.panel.menuManager`.
+   3. Комплексне виправлення:
+      - У `eval-helper@mactheme/extension.js`:
+        - Для `BoxPointer.prototype.close`: при перемиканні меню (`animate === PopupAnimation.FADE` або за відсутності біта `FULL`) попереднє меню закривається та приховується миттєво (`this.hide()`, `opacity = 0`, синхронно).
+        - Для повного закриття (`FULL`): реалізовано таймер безпеки (safety timeout), що гарантовано викликає `finalizeClose()` навіть при перериванні переходів Clutter.
+        - У `pmm._onCapturedEvent`: перемикання між меню реалізовано атомарно через прямий виклик `this._changeMenu(clickedMenu)` без розриву захоплення та без асинхронного `idle_add`.
+      - У `liquid-glass@thinkingcoding1231.gmail.com` (`dist/uiManager.js` та `src/uiManager.ts`):
+        - У `_startAnimation`: при закритті з `!this._enableAnimation` встановлено `this.bgActor.opacity = 0`, `this.bgActor.visible = false`, `this.animActor.opacity = 0`, а також виклик `this.menu.actor.hide()`.
+        - У `_syncGeometry()`: додано перевірку `if (!this.menu?.isOpen)`, яка негайно приховує фоновий скляний актор та скидає непрозорість до 0, унеможливлюючи появу залишкового скла.
+      - У `appmenu@ChathurangaBW.github.io/menuManager.js`:
+        - У `TopLevelMenuButton` при відкритті меню додано примусове синхронне закриття всіх сусідніх меню кнопок верхньої панелі (`btn.menu.close(0)`, `hide()`).
+   4. Тестування та верифікація:
+      - Проведено емуляцію відкриття «Перехід», перемикання на «Вікно» та кліку поза межами меню.
+      - Знято контрольні скріншоти (`perehid_opened.png`, `vikno_only.png`, `switch_test.png`): накладання повністю усунуто, меню змінюються миттєво без накладання, клік на робочий стіл миттєво закриває активне меню, кількість залишкових скляних акторів становить 0.
+      - Усі зміни синхронізовано з `~/MACTHEMEFILES/`.

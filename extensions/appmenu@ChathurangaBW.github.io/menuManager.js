@@ -217,8 +217,22 @@ const TopLevelMenuButton = GObject.registerClass(
         }
 
         this._menuOpenSignalId = this.menu.connect('open-state-changed', (_menu, isOpen) => {
-            if (isOpen && !this._destroyed)
+            if (isOpen && !this._destroyed) {
+                if (this._menuManagerInstance && Array.isArray(this._menuManagerInstance._buttons)) {
+                    this._menuManagerInstance._buttons.forEach(btn => {
+                        if (btn !== this && btn?.menu && (btn.menu.isOpen || btn.menu.actor?.visible)) {
+                            try {
+                                btn.menu.close(0);
+                                if (btn.menu.actor) {
+                                    btn.menu.actor.hide();
+                                    btn.menu.actor.opacity = 0;
+                                }
+                            } catch (_) {}
+                        }
+                    });
+                }
                 this._menuOpenHandler?.();
+            }
         });
     }
 

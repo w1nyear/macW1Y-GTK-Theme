@@ -646,9 +646,10 @@ export class UIManager {
     }
     // Calculates and synchronizes the position/size of the glass background every frame
     _syncGeometry() {
-        if (!this.bgActor || !this.targetActor || !this.targetActor.mapped) {
+        if (!this.bgActor || !this.targetActor || !this.targetActor.mapped || (this.menu && !this.menu.isOpen)) {
             if (this.bgActor && this.bgActor.visible) {
                 this.bgActor.hide();
+                this.bgActor.opacity = 0;
             }
             return;
         }
@@ -986,11 +987,16 @@ export class UIManager {
         if (!this._enableAnimation) {
             if (this.bgActor) {
                 this.bgActor.remove_all_transitions();
-                this.bgActor.opacity = 255;
+                this.bgActor.opacity = isClosing ? 0 : 255;
+                this.bgActor.visible = !isClosing;
                 this.bgActor.set_scale(1.0, 1.0);
                 if (this.animActor) {
+                    this.animActor.remove_all_transitions();
                     this.animActor.set_scale(1.0, 1.0);
-                    this.animActor.opacity = 255;
+                    this.animActor.opacity = isClosing ? 0 : 255;
+                }
+                if (isClosing && this.menu?.actor) {
+                    this.menu.actor.hide();
                 }
             }
             return;
@@ -1085,12 +1091,14 @@ export class UIManager {
                     if (isClosing && this.menu.actor) {
                         this.menu.actor.hide();
                         this.bgActor.opacity = 0;
+                        this.bgActor.visible = false;
                         this.animActor.opacity = 0;
                     }
                     if (!isClosing) {
                         this.animActor.set_scale(1.0, 1.0);
                         this.animActor.opacity = 255;
                         this.bgActor.opacity = 255;
+                        this.bgActor.visible = true;
                         this._syncGeometry();
                     }
                     return GLib.SOURCE_REMOVE;

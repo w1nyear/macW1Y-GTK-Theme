@@ -1158,16 +1158,8 @@ export default class EvalHelper extends Extension {
                             const clickedMenu = this._findMenuForSource(targetActor);
                             if (clickedMenu && clickedMenu !== menu) {
                                 // User intentionally clicked on another menu in the panel!
-                                // Immediately close the active menu and open the clicked menu in one click.
-                                menu.close(PopupAnimation.FADE);
-                                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                                    if (clickedMenu.isOpen) {
-                                        clickedMenu.close(PopupAnimation.FADE);
-                                    } else {
-                                        clickedMenu.open(PopupAnimation.FADE);
-                                    }
-                                    return GLib.SOURCE_REMOVE;
-                                });
+                                // Immediately change to the clicked menu atomically without desync.
+                                this._changeMenu(clickedMenu);
                                 return Clutter.EVENT_STOP;
                             }
                         }
@@ -1340,6 +1332,10 @@ export default class EvalHelper extends Extension {
                     this._origBoxPointerClose = BoxPointer.BoxPointer.prototype.close;
                 }
                 BoxPointer.BoxPointer.prototype.open = function(animate, onComplete) {
+                    if (this._closeTimeoutId) {
+                        GLib.source_remove(this._closeTimeoutId);
+                        this._closeTimeoutId = 0;
+                    }
                     this.remove_all_transitions();
                     this._muteKeys = false;
                     this.show();
@@ -1348,7 +1344,9 @@ export default class EvalHelper extends Extension {
                     this.translation_x = 0;
                     this.translation_y = 0;
 
-                    if (animate === 0 || animate === false) {
+                    // When animate is false, 0, or FADE (used when switching between adjacent menus in the panel)
+                    // switch instantly without slow ease-in lag.
+                    if (animate === 0 || animate === false || animate === BoxPointer.PopupAnimation.FADE) {
                         this.opacity = 255;
                         this.scale_x = 1.0;
                         this.scale_y = 1.0;
@@ -1367,7 +1365,7 @@ export default class EvalHelper extends Extension {
                         scale_y: 1.0,
                         translation_x: 0,
                         translation_y: 0,
-                        duration: 300, // exactly 0.3s
+                        duration: 250,
                         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                         onComplete: () => {
                             this._muteInput = false;
@@ -1377,29 +1375,56 @@ export default class EvalHelper extends Extension {
                 };
 
                 BoxPointer.BoxPointer.prototype.close = function(animate, onComplete) {
-                    if (!this.visible) return;
-                    this.remove_all_transitions();
-
-                    if (animate === 0 || animate === false) {
-                        this.hide();
-                        this.scale_x = 1.0;
-                        this.scale_y = 1.0;
+                    if (this._closeTimeoutId) {
+                        GLib.source_remove(this._closeTimeoutId);
+                        this._closeTimeoutId = 0;
+                    }
+                    if (!this.visible) {
                         if (onComplete) onComplete();
                         return;
                     }
+                    this.remove_all_transitions();
+                    this._muteInput = true;
+                    this._muteKeys = true;
+
+                    const finalizeClose = () => {
+                        if (this._closeTimeoutId) {
+                            GLib.source_remove(this._closeTimeoutId);
+                            this._closeTimeoutId = 0;
+                        }
+                        this.hide();
+                        this.opacity = 0;
+                        this.scale_x = 1.0;
+                        this.scale_y = 1.0;
+                        this.translation_x = 0;
+                        this.translation_y = 0;
+                        if (onComplete) onComplete();
+                    };
+
+                    // Synchronous instant close when:
+                    // 1) animate is 0 or false
+                    // 2) animate is PopupAnimation.FADE (used during menu switching in PopupMenuManager._changeMenu)
+                    // 3) FULL bit is not set
+                    if (animate === 0 || animate === false || animate === BoxPointer.PopupAnimation.FADE || !(animate & BoxPointer.PopupAnimation.FULL)) {
+                        finalizeClose();
+                        return;
+                    }
+
+                    // For animated close (PopupAnimation.FULL):
+                    // Safety timer to guarantee hide() even if transition is interrupted or dropped
+                    this._closeTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 180, () => {
+                        this._closeTimeoutId = 0;
+                        finalizeClose();
+                        return GLib.SOURCE_REMOVE;
+                    });
 
                     this.ease({
                         opacity: 0,
                         scale_x: 0.96,
                         scale_y: 0.96,
-                        duration: 150,
+                        duration: 140,
                         mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                        onComplete: () => {
-                            this.hide();
-                            this.scale_x = 1.0;
-                            this.scale_y = 1.0;
-                            if (onComplete) onComplete();
-                        }
+                        onComplete: finalizeClose
                     });
                 };
             }).catch(e => console.error(`[EvalHelper] BoxPointer patch error: ${e}`));
