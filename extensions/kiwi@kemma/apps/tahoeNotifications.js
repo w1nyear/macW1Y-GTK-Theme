@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v6e';
+} from './tahoeNotificationCard.js?v=notif_v6f';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -80,7 +80,7 @@ import(_LG_BASE + '/utils.js').then(m => {
     console.warn(`[tahoe-nc] liquid-glass utils unavailable: ${e}`);
 });
 
-const NC_W = 480;
+const NC_W = 524;
 const NC_RADIUS = 82;
 const BACKDROP_PAD = 60;
 const SHADER_PADDING = 20;
@@ -1458,7 +1458,7 @@ function _rebuild(merges = null) {
             const cardData = _makeMacCard(item, () => {
                 if (p?.list && p.list.get_children().length === 0)
                     _rebuild();
-            }, 440);
+            }, NC_W - 40);
             cardData.banner.x_align = Clutter.ActorAlign.CENTER;
             cardData.banner._notification = item.n;
 
@@ -1791,6 +1791,10 @@ function _buildPanel(merges = null) {
         for (const s of [bd, cards]) {
             try {
                 s.uiSampler.addExclusion(box);
+                // сам оверлей (panelBg + бокс) НЕ має бути в каптурі -
+                // інакше скло карток семплить темний фон панелі і
+                // виглядає плоско, а не як скло з заломленням
+                s.uiSampler.addExclusion(overlay);
             } catch (_) {}
             s.wcm.rebuildClones();
             s.uiSampler.rebindSelf();

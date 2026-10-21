@@ -235,7 +235,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         x_expand: true,
         y_expand: true,
         clip_to_allocation: true,
-        style: 'padding: 14px 14px 16px 14px !important; border-radius: 24px !important;',
+        style: 'padding: 16px 14px 18px 14px !important; border-radius: 24px !important;',
     });
     banner.set_child(mainBox);
 
@@ -547,8 +547,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         try {
             if (!banner.get_parent())
                 return;
-            const colW = Math.max(80, Math.round((width ?? 440)) - 28 - 44 - 12 - 76);
-            let total = 30; // паддінги 14+16
+            const colW = Math.max(80, Math.round((width ?? 484)) - 28 - 44 - 12 - 76);
+            let total = 34; // паддінги 16+18
             let count = 0;
             for (const l of [appLabel, titleLabel, bodyLabel]) {
                 if (!l || !l.get_parent?.())
@@ -567,7 +567,7 @@ export function buildNotificationCard(source, notification, options = {}) {
                 total += 7 + 24;
             }
             total += 4 * Math.max(0, count - 1);
-            const target = Math.max(64, Math.ceil(total));
+            const target = Math.max(72, Math.ceil(total));
             if (Math.abs(target - banner.height) > 1) {
                 try { banner.set_height(target); } catch (_) {}
             }
