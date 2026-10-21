@@ -79,14 +79,14 @@ export const WackClock = GObject.registerClass(
                 () => { this._updateDate(); return GLib.SOURCE_CONTINUE; });
 
             this._dateStyle = 'full';
-            this._weight = 'bold';
+            this._weight = '600'; // Open Runde SemiBold — фірмовий дизайн (GDM + екран блокування)
             this._tint = false;
             this._alpha = 0.85;
             this._promptColor = null;
-            // GDM-типографіка (активується лише викликами setLetterSpacing/setColonRise,
-            // тому звичайний екран блокування у сесії працює як раніше).
-            this._letterSpacing = null;
-            this._colonRisePx = null;
+            // Типографіка macOS: цифри щільніші на пару px та двокрапка по центру
+            // висоти цифр (однаково для GDM гретера і екрана блокування в сесії).
+            this._letterSpacing = -4;
+            this._colonRisePx = 12.41; // 0.09695em × 128px (.wack-time) — метрика Open Runde
             this._inColonMarkup = false;
 
             this._updateTime();
@@ -170,7 +170,7 @@ export const WackClock = GObject.registerClass(
         }
 
         setWeight(weight) {
-            this._weight = weight || 'bold';
+            this._weight = weight || '600';
             this._applyTextStyle();
         }
 
@@ -191,7 +191,7 @@ export const WackClock = GObject.registerClass(
             const timeColor = '#ffffff';
             const dateColor = 'rgba(255, 255, 255, 0.98)';
             const font = "font-family: Open Runde, SF Pro Rounded, SF Pro Display, Cantarell, sans-serif;";
-            const weight = `font-weight: ${this._weight || 'bold'};`;
+            const weight = `font-weight: ${this._weight || '600'};`;
             const timeShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);';
             const dateShadow = 'text-shadow: 0 1px 5px rgba(0, 0, 0, 0.38);';
             const letterSpacing = (this._letterSpacing != null)

@@ -7956,3 +7956,14 @@ echo "==> Встановлення успішно завершено!"
    Зверни увагу: liquid-glass dist у шляхах сховищ — орган
       "/org/gnome/shell/extensions/liquid-glass" (БЕЗ @-суфікса),
       Rounded_Corners = "/org/gnome/shell/extensions/lennart-k/rounded_corners".
+
+ЕТАП 26: Типографіка часу «і там і там» — Open Runde SemiBold, піднята двокрапка та щільні цифри тепер і на екрані блокування у сесії:
+--------------------------------------------------------------------------------
+1. Уніфікація дизайну WackClock (обидва контексти одразу):
+   - У [src/main/wackClock.js](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/wackClock.js) змінено дефолти _init(): _weight='600' (Open Runde SemiBold), _letterSpacing=-4, _colonRisePx=12.41. Оскільки [extension.js](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/extension.js) (L213) створює годинник екрана блокування як new WackClock() БЕЗ setWeight — новий дизайн застосовується автоматично, без зайвих викликів.
+   - Fallback'и setWeight() та _applyTextStyle() змінені 'bold' -> '600'.
+   - GDM-шлях не постраждав: GdmClockManager ставить ті самі значення (setWeight('600')/setLetterSpacing(-4)/setColonRise(12.41)) і його funnel продовжує захищати вагу від маніфесту ('bold') та dconf.
+2. CSS-шар: [stylesheet.css](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/stylesheet.css) .wack-time: font-weight 700 -> 600, letter-spacing -2px -> -4px (щоб не було спалаху старої ваги до першого _applyTextStyle і CSS збігався з inline).
+3. Верифікація (EvalHelper, калібрувальна копія класу з унікальним іменем): екземпляр WackClock БЕЗ сетерів -> fontName "Open Runde,...,Semi-Bold 128px", висота 168px, колон y_offset=12708 (12.41px вгору), inline style font-weight:600 + letter-spacing:-4px. Саме це відрендерить локскрін після перечитання модулів.
+4. Пастка ES-модулів: reloadExtension повертає state=1, але GJS-реєстр модулів wackClock.js у поточній сесії лишається СТАРИМ (перевірено: екземпляр з кешованого URI досі Bold без rise) — нова типографіка екрана блокування в сесії набирає чинності після виходу/входу (перезапуск Shell), разом з оновленим GDM гретером.
+5. Розгортання: src/main/wackClock.js та stylesheet.css скопійовано до /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/ (GDM) та ~/.local/share/gnome-shell/extensions/... (сесія); дифи з репозиторієм порожні; gschema clock-weight (default 'semibold') не чіпали — код дефолтів і funnel'и повністю керують дизайном.
