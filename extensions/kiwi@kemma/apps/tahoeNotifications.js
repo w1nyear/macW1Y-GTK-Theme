@@ -361,18 +361,10 @@ function _clearAll() {
 function _animateEnter(actor, idx = 0) {
     try {
         actor.remove_all_transitions();
-        actor.opacity = 0;
-        actor.translation_y = -16;
-        actor.ease({
-            opacity: 255,
-            translation_y: 0,
-            duration: 240,
-            delay: Math.min(8, Math.max(0, idx)) * 35,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-        });
-    } catch (_) {
-        try { actor.opacity = 255; actor.translation_y = 0; } catch (_) {}
-    }
+        actor.opacity = 255;
+        actor.translation_y = 0;
+        actor.translation_x = 0;
+    } catch (_) {}
 }
 
 // ═════════════════════════════════════════════════════════════════════
@@ -465,18 +457,8 @@ function _ensureToastBox() {
     }
 }
 
-// t-крива пiлюлi, вимiряна з поточної висоти слота
-// (MacShell: height = bodyH * (0.35 + 0.65 * tc))
 function _toastSlotT(slot) {
-    if (slot?._entered)
-        return 1.0;
-    try {
-        const bh = slot._bodyH || 74;
-        const t = (slot.height / Math.max(1, bh) - 0.35) / 0.65;
-        return Math.max(0, Math.min(1, t));
-    } catch (_) {
-        return 1.0;
-    }
+    return 1.0;
 }
 
 // Вiднсний час iOS: Щойно / N хв тому / N год тому
@@ -768,9 +750,9 @@ function _makeToastCard(item, noglass = false) {
     if (bodyLabel)
         coldH += 4 + pangoH(bodyLabel, COL_W);
     slot._bodyH = Math.max(72, Math.ceil(coldH + 30));
-    slot.set_height(Math.max(14, slot._bodyH * 0.35));
+    slot.set_height(slot._bodyH);
     try { content.set_height(slot._bodyH); } catch (_) {}
-    try { pill.set_height(Math.max(36, slot.height)); } catch (_) {}
+    try { pill.set_height(slot._bodyH); } catch (_) {}
 
     // створення-time pref лейаут ще дефолтного шрифту (стиль лінивий) -
     // висоту перераховують ПІСЛЯ перших кадрів з фактичних prefH рядків
@@ -802,12 +784,17 @@ function _makeToastCard(item, noglass = false) {
                 slot._bodyH = target;
                 try { content.set_height(target); } catch (_) {}
                 try {
-                    slot.remove_all_transitions();
-                    slot.ease({
-                        height: target,
-                        duration: 180,
-                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                    });
+                    if (slot._entered) {
+                        try { slot.remove_transition('height'); } catch (_) {}
+                        slot.ease({
+                            height: target,
+                            duration: 180,
+                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        });
+                    } else {
+                        slot.set_height(target);
+                        try { pill.set_height(target); } catch (_) {}
+                    }
                 } catch (_) {
                     try { slot.set_height(target); } catch (_) {}
                 }
@@ -943,29 +930,23 @@ function _dismissToast(slot) {
         return;
     slot._leaving = true;
     _toastLifeStop(slot);
-    const bh = slot._bodyH || 74;
     try {
         slot.remove_all_transitions();
         slot.ease({
-            height: Math.max(14, bh * 0.35),
-            duration: TOAST_ANIM_MS,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-        });
-        slot.ease({
+            translation_x: TOAST_W + 30,
             opacity: 0,
-            duration: 350,
-            mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            duration: 250,
+            mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+            onComplete: () => {
+                if (!slot._merging) {
+                    _toastClearTimers(slot);
+                    _destroyToastSlot(slot, false);
+                }
+            },
         });
-    } catch (_) {}
-    GLib.timeout_add(GLib.PRIORITY_DEFAULT, TOAST_GONE_MS, () => {
-        try {
-            if (!slot._merging) {
-                _toastClearTimers(slot);
-                _destroyToastSlot(slot, false);
-            }
-        } catch (_) {}
-        return GLib.SOURCE_REMOVE;
-    });
+    } catch (_) {
+        _destroyToastSlot(slot, false);
+    }
 }
 
 // Знищення слота + плавний glide решти стеку вгору
@@ -1044,32 +1025,24 @@ function _showToast(item) {
     slot._nItem = item;
     _toastBox.insert_child_at_index(slot, 0);
 
-    // ПОЯВА (пілюля -> картка), 770мс: слот-висота 0.35->1 EASE_OUT_QUINT,
-    // слот-непрозорість 350мс (швидкий ramp ~ tc*2.2), контент EASE_IN_QUAD
-    // (наближення pow(tc,1.3))
+    // ПОЯВА: виїзд з правої верхньої сторони (translation_x: TOAST_W + 30 -> 0)
     try {
+        slot.translation_x = TOAST_W + 30;
         slot.opacity = 0;
-        slot._content.opacity = 0;
-        slot._content.ease({
-            opacity: 255,
-            duration: TOAST_ANIM_MS,
-            mode: Clutter.AnimationMode.EASE_IN_QUAD,
-        });
+        slot._content.opacity = 255;
+        slot.remove_all_transitions();
         slot.ease({
+            translation_x: 0,
             opacity: 255,
-            duration: 350,
-            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-        });
-        slot.ease({
-            height: slot._bodyH,
-            duration: TOAST_ANIM_MS,
-            mode: Clutter.AnimationMode.EASE_OUT_QUINT,
+            duration: 280,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
                 slot._entered = true;
             },
         });
     } catch (_) {
         try {
+            slot.translation_x = 0;
             slot.opacity = 255;
             slot._content.opacity = 255;
             slot.set_height(slot._bodyH);
@@ -1207,34 +1180,27 @@ function _syncToastGlass(monitor, s) {
         for (const slot of _toastBox.get_children()) {
             try {
                 const pill = slot._pill;
-                if (!pill || slot._merging)
+                if (!pill || slot._leaving)
                     continue;
                 if (!slot.visible || slot.opacity <= 0)
                     continue;
-                // геометрія морфу цього кадру (MacShell tslab формули)
-                const t = _toastSlotT(slot);
-                const pillW = TOAST_W * (0.42 + 0.58 * t);
-                const slide = (1 - t) * 46;
+                const pillW = TOAST_W;
                 const pillH = Math.max(36, slot.height);
                 pill.set_width(pillW);
                 pill.set_height(pillH);
-                pill.set_x(TOAST_W - pillW + slide);
-                try { pill.set_clip_to_allocation(t < 0.999); } catch (_) {}
+                pill.set_x(0);
                 if (slot._content)
-                    slot._content.set_x(pillW - TOAST_W);
+                    slot._content.set_x(0);
                 const [gx, gy] = pill.get_transformed_position();
                 if (!isFinite(gx) || !isFinite(gy) || !(pillW > 0))
                     continue;
-                // шейдер стискає кожен регіон на SHADER_PADDING з усіх
-                // боків (actual_size = size - pad*2), тому підганяємо
-                // прямокутник назад до пілюлі
                 const P = SHADER_PADDING;
                 regions.push({
                     x: gx - monitor.x - P, y: gy - monitor.y - P,
                     w: pillW + 2 * P, h: pillH + 2 * P,
                     tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
                 });
-                const r = Math.min(24 + (1 - t) * TOAST_PILL_CORNER, pillH / 2);
+                const r = Math.min(24, pillH / 2);
                 if (r > maxR)
                     maxR = r;
             } catch (_) {}
@@ -1311,19 +1277,15 @@ function _toastTick() {
         if (_toastStack)
             _syncToastGlass(Main.layoutManager.primaryMonitor, _toastStack);
         else if (_toastBox) {
-            // без скла теж трекаємо морф-геометрію контенту
             for (const slot of _toastBox.get_children()) {
                 try {
-                    const t = _toastSlotT(slot);
                     const pill = slot._pill;
                     if (pill && !slot._merging) {
-                        const pillW = TOAST_W * (0.42 + 0.58 * t);
-                        pill.set_width(pillW);
+                        pill.set_width(TOAST_W);
                         pill.set_height(Math.max(36, slot.height));
-                        pill.set_x(TOAST_W - pillW + (1 - t) * 46);
-                        try { pill.set_clip_to_allocation(t < 0.999); } catch (_) {}
+                        pill.set_x(0);
                         if (slot._content)
-                            slot._content.set_x(pillW - TOAST_W);
+                            slot._content.set_x(0);
                     }
                 } catch (_) {}
             }
@@ -1418,36 +1380,45 @@ function _unhookToastTray() {
 // --- MERGE у Центр: тости віддають позиції карткам Центру ---
 
 function _takeToastMerges() {
-    const merges = new Map();
+    const merges = new Set();
     if (!_toastBox)
         return merges;
-    const doomed = [];
-    for (const slot of _toastBox.get_children()) {
-        try {
-            if (slot._leaving || slot._merging || !slot._nItem)
-                continue;
-            const t = _toastSlotT(slot);
-            if (t < 0.5)
-                continue; // ще не розгорнутий — летіти нізвідки
-            const [gx, gy] = slot._pill.get_transformed_position();
-            merges.set(slot._nItem, {x: gx, y: gy, w: slot._pill.width});
-            slot._merging = true;
-            _toastLifeStop(slot);
-            slot.visible = false;
-            doomed.push(slot);
-        } catch (_) {}
+    const slots = _toastBox.get_children().filter(s => !s._leaving && !s._merging && s._nItem);
+    if (!slots.length)
+        return merges;
+
+    // Зсув тоста у слот Центру сповіщень:
+    // Тост 0 лежить на Y ~ 42, X = monitor.width - 484 - 10.
+    // Картка Центру лежить на Y ~ 94, X = monitor.width - 524 - 12 + 20 = monitor.width - 516.
+    // Зсув: dy = +52px, dx = -22px.
+    const SHIFT_Y = 52;
+    const SHIFT_X = -22;
+
+    for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i];
+        slot._merging = true;
+        slot.set_reactive(false);
+        _toastLifeStop(slot);
+        if (slot._nItem?.n)
+            merges.add(slot._nItem.n);
+        merges.add(slot._nItem);
+
+        slot.remove_all_transitions();
+        slot.ease({
+            translation_y: SHIFT_Y,
+            translation_x: SHIFT_X,
+            opacity: 255,
+            duration: 300,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                try {
+                    _toastClearTimers(slot);
+                    _destroyToastSlot(slot, false);
+                } catch (_) {}
+            },
+        });
     }
-    // MacShell handOff: 30мс на перший кадр панелі, потім слоти зникають
-    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 30, () => {
-        for (const s of doomed) {
-            try {
-                _toastClearTimers(s);
-                _destroyToastSlot(s, true);
-            } catch (_) {}
-        }
-        _toastTickStart();
-        return GLib.SOURCE_REMOVE;
-    });
+    _toastTickStart();
     return merges;
 }
 
@@ -1484,50 +1455,53 @@ function _toastClearTimersAll() {
     _toastTimers.clear();
 }
 
-// MERGE з банерів-тостів: картка стартує з позиції тоста і летить
-// у свій слот (MacShell flyFromPopup: 620мс EASE_OUT_QUINT, політ
-// правого краю + масштаб = wToast/wCard)
+// MERGE з банерів-тостів: картка плавно зміщується вниз зі своєї
+// вихідної позиції тоста (m.x, m.y) у слот Центру сповіщень
 function _animateEnterMerge(card, m) {
     try {
         card.remove_all_transitions();
         let fired = false;
         const tryFly = () => {
+            if (fired)
+                return true;
             try {
+                if (!card.get_stage())
+                    return false;
                 const [cx, cy] = card.get_transformed_position();
-                if (!isFinite(cx) || !isFinite(cy) || !card.mapped)
-                    return; // ще не в макеті — чекаємо наступний сигнал
+                if (!isFinite(cx) || !isFinite(cy) || cx <= 0 || cy <= 0)
+                    return false;
                 fired = true;
-                const s = Math.min(1.25, Math.max(0.5, m.w / Math.max(1, card.width)));
-                card.set_pivot_point(1, 0);
-                card.scale_x = s;
-                card.scale_y = s;
-                card.translation_x = (m.x + m.w) - (cx + card.width);
-                card.translation_y = m.y - cy;
+                const diffX = m.x - cx;
+                const diffY = m.y - cy;
+                card.translation_x = diffX;
+                card.translation_y = diffY;
+                card.opacity = 255;
                 card.ease({
-                    scale_x: 1,
-                    scale_y: 1,
                     translation_x: 0,
                     translation_y: 0,
-                    duration: 620,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUINT,
+                    duration: 320,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 });
-            } catch (_) {}
+                return true;
+            } catch (_) {
+                return false;
+            }
         };
+
         const id = card.connect('notify::allocation', () => {
             try {
-                if (fired || !card.mapped)
-                    return;
-                card.disconnect(id);
-                tryFly();
+                if (tryFly()) {
+                    card.disconnect(id);
+                }
             } catch (_) {}
         });
-        // страховка: якщо allocation не прилетить за 1с — літаємо від нуля
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
-            try {
-                if (!fired) { fired = true; tryFly(); }
-            } catch (_) {}
-            return GLib.SOURCE_REMOVE;
-        });
+
+        for (const delay of [20, 60, 120, 200]) {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
+                try { tryFly(); } catch (_) {}
+                return GLib.SOURCE_REMOVE;
+            });
+        }
     } catch (_) {
         try { _animateEnter(card, 0); } catch (_) {}
     }
@@ -1567,10 +1541,19 @@ function _rebuild(merges = null) {
             cardData.banner._notification = item.n;
             cardData.banner._macApp = String(item.source?.title ?? '').trim();
 
-            const m = merges?.get?.(item.n) ?? null;
+            const isMerged = merges && (merges.has(item.n) || merges.has(item));
             p.list.add_child(cardData.banner);
-            if (m) {
-                try { _animateEnterMerge(cardData.banner, m); } catch (_) {}
+            if (isMerged) {
+                cardData.banner.opacity = 0;
+                cardData.banner._isMergedToast = true;
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 290, () => {
+                    try {
+                        if (cardData.banner && !cardData.banner.is_finalized?.()) {
+                            cardData.banner.opacity = 255;
+                        }
+                    } catch (_) {}
+                    return GLib.SOURCE_REMOVE;
+                });
             } else {
                 _animateEnter(cardData.banner, enterIdx);
             }
@@ -1649,13 +1632,7 @@ function _collapseNcGroups(p, merges = null) {
         const peerEnter = (b, delayIdx) => {
             try {
                 b.remove_all_transitions();
-                b.opacity = 0;
-                b.ease({
-                    opacity: 255,
-                    duration: 240,
-                    delay: Math.max(0, delayIdx) * 35,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
+                b.opacity = 255;
             } catch (_) {}
         };
         for (let i = peersN; i >= 1; i--) {
@@ -1731,18 +1708,21 @@ function _collapseNcGroups(p, merges = null) {
         p.list.add_child(x);
         const isStack = !!x._macPeekGroup;
         const banner = isStack ? x.get_children()[x.get_children().length - 1] : x;
-        const m = banner && banner._notification ? (merges?.get?.(banner._notification) ?? null) : null;
+        const isMerged = banner && (banner._isMergedToast || (merges && (merges.has(banner._notification) || merges.has(banner._notification?.n))));
         if (banner) {
-            if (m) {
-                try {
-                    banner.remove_all_transitions();
-                    banner.opacity = 255;
-                    _animateEnterMerge(banner, m);
-                } catch (_) {
-                    _animateEnter(banner, flatIdx);
-                }
-            } else
+            if (isMerged) {
+                banner.opacity = 0;
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 290, () => {
+                    try {
+                        if (banner && !banner.is_finalized?.()) {
+                            banner.opacity = 255;
+                        }
+                    } catch (_) {}
+                    return GLib.SOURCE_REMOVE;
+                });
+            } else {
                 _animateEnter(banner, flatIdx);
+            }
         }
         if (!isStack)
             flatIdx++;
@@ -1871,7 +1851,7 @@ function _syncCards(p, monitor, s) {
                 if (c._macPeekGroup) {
                     const g = c._macPeekGroup;
                     const newest = g.cards?.[0];
-                    if (newest && newest.visible && newest.mapped) {
+                    if (newest && newest.visible && newest.mapped && newest.opacity > 0) {
                         const [cx, cy] = newest.get_transformed_position();
                         const cw = newest.width, ch = newest.height;
                         if (cw > 0 && ch > 0 && isFinite(cx) && isFinite(cy)) {
@@ -1902,7 +1882,7 @@ function _syncCards(p, monitor, s) {
                 }
                 if (!card?.has_style_class_name?.('mac-notification-banner') && !card?.has_style_class_name?.('tahoe-nc-card'))
                     continue;
-                if (!card.visible || !card.mapped)
+                if (!card.visible || !card.mapped || card.opacity <= 0)
                     continue;
                 const [cx, cy] = card.get_transformed_position();
                 const cw = card.width, ch = card.height;
@@ -1934,7 +1914,6 @@ function _syncCards(p, monitor, s) {
         else if (alpha === 0 && s.bgActor.visible)
             s.bgActor.hide();
         s.bgActor.opacity = alpha;
-        s.bgActor.translation_x = p.box.translation_x;
         // тінт регіонів карток = той самий, що в тостів (віджет-конфіг)
         if (regions.length)
             maxR = 24; // корнер картки, як у тостів (radius 24)
@@ -1987,7 +1966,6 @@ function _syncGlass(p, monitor, s) {
         else if (alpha === 0 && s.bgActor.visible)
             s.bgActor.hide();
         s.bgActor.opacity = alpha;
-        s.bgActor.translation_x = p.box.translation_x;
         s.effect.setGlassRegions([{
             x: (bx - monitor.x) - m, y: (by - monitor.y) - m,
             w: bw + m * 2, h: bh + m * 2,
@@ -2203,7 +2181,6 @@ function _buildPanel(merges = null) {
             s.uiSampler.rebindSelf();
             s.uiSampler.refresh();
             s.bgActor.opacity = 0;
-            s.bgActor.translation_x = 480;
             s.bgActor.visible = false;
         }
         p.stacks = [bd, cards];
@@ -2221,7 +2198,6 @@ function _buildPanel(merges = null) {
             for (const s of p.stacks) {
                 try {
                     s.bgActor.opacity = p.box.opacity;
-                    s.bgActor.translation_x = p.box.translation_x;
                 } catch (_) {}
             }
             try {
@@ -2260,19 +2236,19 @@ function _buildPanel(merges = null) {
         panelBg.translation_x = 480;
         panelBg.opacity = 0;
         for (const s of p.stacks) {
-            s.bgActor.translation_x = 480;
             s.bgActor.opacity = 0;
             s.bgActor.visible = false;
         }
         box.ease({
             translation_x: 0,
             opacity: 255,
-            duration: 320,
+            duration: 300,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         });
         panelBg.ease({
+            translation_x: 0,
             opacity: 255,
-            duration: 320,
+            duration: 300,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         });
     } catch (_) {
@@ -2449,7 +2425,6 @@ export function closeNC(immediate = false) {
         for (const s of p.stacks) {
             try {
                 s.bgActor?.ease({
-                    translation_x: 480,
                     opacity: 0,
                     duration: 260,
                     mode: Clutter.AnimationMode.EASE_IN_CUBIC,

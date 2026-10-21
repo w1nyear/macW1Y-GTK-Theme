@@ -1547,10 +1547,22 @@ function _buildPanel() {
     } catch (_) {
         _startGlass();
     }
+    box.translation_x = W + 30;
     box.opacity = 0;
+    panelBg.translation_x = W + 30;
     panelBg.opacity = 0;
-    box.ease({opacity: 255, duration: 160, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
-    panelBg.ease({opacity: 255, duration: 160, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+    box.ease({
+        translation_x: 0,
+        opacity: 255,
+        duration: 280,
+        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+    });
+    panelBg.ease({
+        translation_x: 0,
+        opacity: 255,
+        duration: 280,
+        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+    });
 }
 
 // adaptive ink application: class + custom-glyph repaint (runs at open
@@ -2520,8 +2532,6 @@ async function _startGlass() {
 
         for (const s of stacks) {
             s.bgActor.opacity = 0;
-            s.bgActor.ease({opacity: 255, duration: 160,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD});
         }
 
         const tick = () => {
@@ -2535,12 +2545,11 @@ async function _startGlass() {
             } catch (_) {
                 // gone
             }
-            // Invisible throttle: heavy sampler sync every 4th frame (~15fps).
-            // Regions are static while open; opacity above stays per-frame so
-            // the 160ms fade-in keeps all its steps.
-            const heavy = (glass.tickN++ % 4) === 0;
+            const isAnimating = (_panel.box?.translation_x !== 0) || _closing;
+            const heavy = isAnimating || ((glass.tickN++ % 4) === 0);
             for (const s of glass.stacks) {
                 try {
+                    s.bgActor.opacity = _panel.box.opacity;
                     if (heavy) {
                         ensureGlassAllocated(s.bgActor);
                         _syncStack(s, monitor);
@@ -2721,97 +2730,114 @@ function _destroyGlass() {
 // ------------------------------------------------------------ open/close
 let _closing = false;
 
-function _closePanel() {
-    _closeActiveSubmenu();
-    if (!_panel || _closing)
+function _teardownPanel(p) {
+    if (!p)
         return;
-    _closing = true;
-    const {overlay, state} = _panel;
+    const {overlay, state} = p;
     _panel = null;
+    _closing = false;
+    globalThis._tahoeQSOpen = false;
+
     // leave edit mode: badges die with the overlay, menu closes too
     _editMode = false;
     if (_editBadgeTimer) {
         try {
             GLib.source_remove(_editBadgeTimer);
-        } catch (_) {
-            // gone
-        }
+        } catch (_) {}
         _editBadgeTimer = 0;
     }
     for (const b of _editBadges) {
         try {
             b.destroy();
-        } catch (_) {
-            // already gone
-        }
+        } catch (_) {}
     }
     _editBadges = [];
     _editBadgeSig = '';
     try {
         import('./tahoeQSEdit.js').then(m => m.closeEditMenu()).catch(() => {});
-    } catch (_) {
-        // menu never opened
-    }
+    } catch (_) {}
     try {
         state.inkUnwatch?.();
-    } catch (_) {
-        // unwatched
-    }
+    } catch (_) {}
     try {
         notePanelRect(null);
-    } catch (_) {
-        // sampler keeps last
-    }
+    } catch (_) {}
     try {
         state.control?.close?.();
-    } catch (_) {
-        // mixer gone
-    }
+    } catch (_) {}
     if (state.mprisTimer) {
         try {
             GLib.source_remove(state.mprisTimer);
-        } catch (_) {
-            // gone
-        }
+        } catch (_) {}
     }
     if (state.privTimer) {
         try {
             GLib.source_remove(state.privTimer);
-        } catch (_) {
-            // gone
-        }
+        } catch (_) {}
     }
     try {
         if (state.camMon && state.camId)
             state.camMon.disconnect(state.camId);
-    } catch (_) {
-        // gone
-    }
+    } catch (_) {}
     try {
         if (state.shareInd && state.shareId)
             state.shareInd.disconnect(state.shareId);
-    } catch (_) {
-        // gone
-    }
+    } catch (_) {}
     _destroyGlass();
     try {
         overlay.destroy();
-    } catch (_) {
-        // gone
-    }
-    _closing = false;
-    globalThis._tahoeQSOpen = false;
+    } catch (_) {}
 }
 
-export function closePanel() {
-    _closePanel();
+function _closePanel(immediate = false) {
+    _closeActiveSubmenu();
+    if (!_panel || _closing)
+        return;
+    const p = _panel;
+    if (immediate) {
+        _teardownPanel(p);
+        return;
+    }
+    _closing = true;
+    globalThis._tahoeQSOpen = false;
+
+    const W = p.box?.width || PANEL_W;
+    try {
+        p.box.remove_all_transitions();
+        p.panelBg.remove_all_transitions();
+        p.panelBg.ease({
+            translation_x: W + 30,
+            opacity: 0,
+            duration: 240,
+            mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+        });
+        p.box.ease({
+            translation_x: W + 30,
+            opacity: 0,
+            duration: 240,
+            mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+            onComplete: () => {
+                _teardownPanel(p);
+            },
+        });
+    } catch (_) {
+        _teardownPanel(p);
+    }
+}
+
+export function closePanel(immediate = false) {
+    _closePanel(immediate);
 }
 globalThis._tahoeQSClose = _closePanel;
 
 function _openPanel() {
     if (_panel) {
-        _closePanel();
-        return;
+        if (_closing) {
+            _teardownPanel(_panel);
+        } else {
+            _closePanel();
+            return;
+        }
     }
     // Only one center can be open at a time
     if (typeof globalThis._macCloseAllCenters === 'function') {
@@ -2855,7 +2881,7 @@ globalThis._tahoeQSToggle = togglePanel;
 // true while the Control Center panel is open (OSD suppresses itself then)
 export function isPanelOpen() {
     try {
-        return !!_panel;
+        return !!_panel && !_closing;
     } catch (_) {
         return false;
     }
