@@ -280,7 +280,10 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._capsuleBox = new St.Widget({
             style: 'background-color: transparent !important; ' +
                    'border-radius: 14px !important; ' +
-                   'border: none !important; ' +
+                   'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+                   'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+                   'border-left: none !important; ' +
+                   'border-right: none !important; ' +
                    'box-shadow: none !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
             width: W_capsule,
@@ -377,7 +380,10 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._osdBox = new St.Widget({
             style: 'background-color: transparent !important; ' +
                    'border-radius: 22px !important; ' +
-                   'border: none !important; ' +
+                   'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+                   'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
+                   'border-left: none !important; ' +
+                   'border-right: none !important; ' +
                    'box-shadow: none !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
             width: this._osdW,
@@ -526,8 +532,8 @@ export const MacInputSourcePopup = GObject.registerClass({
                 this._glass.setResolution(monitor.width, monitor.height);
                 this._glass.setIsDock(false);
                 this._glass.setTintColor(0.0, 0.0, 0.0);
-                this._glass.setTintStrength(0.02);
-                this._glass.setBlurRadius(8.0);
+                this._glass.setTintStrength(0.05);
+                this._glass.setBlurRadius(2.0);
                 this._glass.setCornerRadius(this._targetCornerRadius);
                 this._glass.setGlassGeometry(localX, localY, bgW, bgH);
 
@@ -794,8 +800,8 @@ export class MacInputSwitcher {
             this._glass.setIsDock(false);
             this._glass.setCornerSmoothingEnabled(0.0);
             this._glass.setTintColor(0.0, 0.0, 0.0);
-            this._glass.setTintStrength(0.02);
-            this._glass.setBlurRadius(8.0);
+            this._glass.setTintStrength(0.05);
+            this._glass.setBlurRadius(2.0);
             this._glass.setPadding(0);
             this._glass.hide();
             Main.layoutManager.uiGroup.add_child(this._glass);
