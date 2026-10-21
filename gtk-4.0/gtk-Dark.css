@@ -6571,7 +6571,7 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 .nautilus-file-chooser .sidebar-pane:dir(ltr) banner > revealer > widget,
 .nautilus-file-chooser .sidebar-pane.end:dir(rtl),
 .nautilus-file-chooser .sidebar-pane.end:dir(rtl) banner > revealer > widget {
-  box-shadow: 0 0 0 6px @view_bg_color, 0 32px 0 6px @view_bg_color, 0 -32px 0 6px @view_bg_color, 2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
 }
 
 .nautilus-window .sidebar-pane:dir(rtl), .nautilus-window .sidebar-pane:dir(rtl) banner > revealer > widget, .nautilus-window .sidebar-pane.end:dir(ltr), .nautilus-window .sidebar-pane.end:dir(ltr) banner > revealer > widget,
@@ -6583,7 +6583,7 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 .nautilus-file-chooser .sidebar-pane:dir(rtl) banner > revealer > widget,
 .nautilus-file-chooser .sidebar-pane.end:dir(ltr),
 .nautilus-file-chooser .sidebar-pane.end:dir(ltr) banner > revealer > widget {
-  box-shadow: 0 0 0 6px @view_bg_color, 0 32px 0 6px @view_bg_color, 0 -32px 0 6px @view_bg_color, -2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
 }
 
 .nautilus-window .sidebar-pane:backdrop:dir(ltr), .nautilus-window .sidebar-pane:backdrop:dir(ltr) banner > revealer > widget, .nautilus-window .sidebar-pane:backdrop.end:dir(rtl), .nautilus-window .sidebar-pane:backdrop.end:dir(rtl) banner > revealer > widget,
@@ -9744,18 +9744,39 @@ window.nautilus-window overlay-split-view {
     background-image: none;
 }
 
-/* Sidebar floating glass card: solid #202022 frame border, NO blur under frame, blur inside */
+/* Sidebar floating glass card: solid #202022 frame border, rounded on both left and right sides */
 window.nautilus-window overlay-split-view > widget.sidebar-pane,
-window.nautilus-window .sidebar-pane {
+window.nautilus-window .sidebar-pane,
+window.nautilus-window .sidebar-pane:dir(ltr),
+window.nautilus-window .sidebar-pane:dir(rtl),
+.nautilus-window .sidebar-pane:dir(ltr),
+.nautilus-window .sidebar-pane:dir(rtl) {
     margin: 0px;
     border-top: 8px solid #202022;
     border-left: 8px solid #202022;
     border-bottom: 8px solid #202022;
     border-right: 8px solid #202022;
-    border-radius: 24px 0 0 24px;
+    border-radius: 24px;
     background-color: rgba(30, 30, 34, 0.40);
     background-clip: padding-box;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+}
+
+/* Remove any shadow or separator border between sidebar and content pane */
+window.nautilus-window overlay-split-view > shadow,
+window.nautilus-window overlay-split-view > border,
+window.nautilus-window .sidebar-pane > shadow,
+window.nautilus-window .sidebar-pane > border,
+window.nautilus-window shadow,
+.nautilus-window overlay-split-view > shadow,
+.nautilus-window overlay-split-view > border {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    min-width: 0;
+    min-height: 0;
+    border-style: none;
+    border-width: 0;
 }
 
 window.nautilus-window .sidebar-pane headerbar {
@@ -9946,12 +9967,21 @@ window.nautilus-window .content-pane .view,
 window.nautilus-window .content-pane > toolbarview > scrolledwindow,
 window.nautilus-window .content-pane > scrolledwindow {
     background-color: #202022;
-    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    border-left-style: none;
+    border-left-width: 0;
 }
 
 window.nautilus-window .content-pane headerbar {
     background-color: #202022;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Lower top panel buttons (pathbar, search, options, view modes) to match right margin */
+window.nautilus-window .content-pane headerbar > windowhandle > box > widget > box.start,
+window.nautilus-window .content-pane headerbar > windowhandle > box > widget > box.end,
+window.nautilus-window .content-pane headerbar > windowhandle > box > widget > .title,
+window.nautilus-window .content-pane headerbar > windowhandle > box > widget {
+    margin-top: 8px;
 }
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
 
