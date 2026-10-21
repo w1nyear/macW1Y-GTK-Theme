@@ -1,12 +1,13 @@
 /* ================================================================
    Банери-тости (етап 2.1) — стилi, додатковi до inline:
    fundamentals (padding/radius/shadow/font) ставляться inline JS.
-   Фон картки = LiquidEffect регiон (свiтле frosted-скло).
+   Фон картки = LiquidEffect регiон (стекло LiquidGlass
+   по тому, що позадi: вiкна+UI+шпалери).
    ================================================================ */
 .mac-toast {
   border: none;
 }
 .mac-toast-noglass {
-  background-color: rgba(240, 242, 246, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  background-color: rgba(28, 30, 36, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 }

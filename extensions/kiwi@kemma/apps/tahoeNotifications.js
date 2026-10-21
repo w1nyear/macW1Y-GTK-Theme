@@ -32,6 +32,7 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
@@ -398,8 +399,8 @@ function _clampText(s, n) {
 }
 
 // ---- Ink-палiтра тостiв за iOS-референсом (i expectation user) ----
-const TOAST_INK = '#1d1d1f';
-const TOAST_INK_SUB = 'rgba(60, 60, 67, 0.60)';
+const TOAST_INK = '#ffffff';
+const TOAST_INK_SUB = 'rgba(255, 255, 255, 0.60)';
 const TOAST_INK_RED = '#ff453a';
 
 // ---- рядок тексту тоста (стANNEL inline) ----
@@ -528,15 +529,46 @@ function _makeToastCard(item, noglass = false) {
     if (noglass) {
         try {
             content.add_style_class_name('mac-toast-noglass');
-            content.style += ` background-color: rgba(240, 242, 246, 0.92); border: 1px solid rgba(255, 255, 255, 0.55); border-radius: 24px;`;
+            content.style += ` background-color: rgba(28, 30, 36, 0.92); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 24px;`;
         } catch (_) {}
     }
     pill.add_child(content);
     slot._content = content;
 
     // --- iконка 44×44 (fallback: акцентна плитка + дзвоник), по центру ---
+    // іконка ХТО надіслав: gicon повідомлення -> source.icon ->
+    // додаток джерела -> createIcon джерела. Без іконки - нейтральна
+    // темна плитка (не акцентно-синя)
     let gicon = null;
     try { gicon = n.gicon ?? null; } catch (_) {}
+    try { if (!gicon) gicon = source.icon ?? null; } catch (_) {}
+    try { if (!gicon) gicon = source.app?.get_icon?.() ?? null; } catch (_) {}
+    // назва джерела -> застосунок (cover -a python, snap-назви тощо)
+    try {
+        if (!gicon) {
+            const name = String(source?.title ?? '').trim();
+            if (name && Shell.AppSystem) {
+                const appSys = Shell.AppSystem.get_default();
+                let app = appSys.lookup_app(`${name}.desktop`)
+                    ?? appSys.lookup_app(`${name.toLowerCase()}.desktop`);
+                if (!app) {
+                    const lower = name.toLowerCase();
+                    for (const cand of appSys.get_installed?.() ?? []) {
+                        try {
+                            const nm = String(cand.get_name() ?? '').toLowerCase();
+                            const id = String(cand.get_id() ?? '').toLowerCase();
+                            if (nm === lower || id.startsWith(`${lower}.`)) {
+                                app = cand;
+                                break;
+                            }
+                        } catch (_) {}
+                    }
+                }
+                gicon = app?.get_app_info?.()?.get_icon?.()
+                    ?? app?.get_icon?.() ?? null;
+            }
+        }
+    } catch (_) {}
     if (!gicon) {
         try { gicon = source.createIcon?.(44) ?? null; } catch (_) {}
     }
@@ -545,7 +577,7 @@ function _makeToastCard(item, noglass = false) {
         height: 44,
         y_align: Clutter.ActorAlign.CENTER,
         style: gicon ? 'border-radius: 10px;'
-                     : 'background-color: #0A84FF; border-radius: 10px;',
+                     : 'background-color: rgba(28, 30, 36, 0.62); border-radius: 10px;',
         layout_manager: new Clutter.BinLayout(),
     });
     try { iconTile.set_clip_to_allocation(true); } catch (_) {}
@@ -578,7 +610,7 @@ function _makeToastCard(item, noglass = false) {
     } else if (appName) {
         rowA.add_child(_toastLabel(appName, {color: TOAST_INK_SUB, size: 12, weight: 600, max: 40, expand: true, ellip: true}));
     }
-    const timeLabel = _toastLabel('Щойно', {color: 'rgba(60, 60, 67, 0.55)', size: 12, weight: 500, max: 16, ellip: true});
+    const timeLabel = _toastLabel('Щойно', {color: 'rgba(255, 255, 255, 0.55)', size: 12, weight: 500, max: 16, ellip: true});
     try { timeLabel.style += 'margin-left: 12px;'; } catch (_) {}
     rowA.add_child(timeLabel);
     textCol.add_child(rowA);
@@ -601,13 +633,13 @@ function _makeToastCard(item, noglass = false) {
         opacity: 0,
         reactive: false,
         style: 'width: 22px; height: 22px; border-radius: 11px;'
-            + ' background-color: rgba(0, 0, 0, 0.08);'
+            + ' background-color: rgba(255, 255, 255, 0.14);'
             + ' border: none; box-shadow: none; padding: 0;',
     });
     try {
         closeBtn.set_child(new St.Label({
             text: '✕',
-            style: 'font-size: 11px; color: rgba(60, 60, 67, 0.70);'
+            style: 'font-size: 11px; color: rgba(255, 255, 255, 0.85);'
                 + ' font-weight: 600; text-align: center;',
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
@@ -989,6 +1021,12 @@ function _applyWidgetGlassParams(effect) {
         try { blur = Math.min(60, Math.max(0, _readIntSetting(sset, 'glass-blur', blur))); } catch (_) {}
         try { sat = Math.min(2, Math.max(0.2, _readIntSetting(sset, 'glass-saturation', 100) / 100)); } catch (_) {}
     } catch (_) {}
+    // для фону з вікнами беремо свій notification-blur (8) - саме
+    // його LiquidGlass-автори поставили для банерів
+    try {
+        const lgset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.liquid-glass' });
+        blur = Math.min(60, Math.max(0, _readIntSetting(lgset, 'notification-blur-radius', 8)));
+    } catch (_) {}
     try { effect.setBlurRadius(blur); } catch (_) {}
     try { effect.setTintColor(tint[0], tint[1], tint[2]); } catch (_) {}
     try { effect.setTintStrength(strength); } catch (_) {}
@@ -1023,57 +1061,9 @@ function _readIntSetting(s, key, dflt) {
 }
 
 
-// шпалери-актор (як у віджетів робочого столу - mirror саме фону)
-function _widgetWallpaper(monitor) {
-    try {
-        const bg = Main.layoutManager._bgManagers?.[monitor?.index ?? 0]?.backgroundActor;
-        if (bg)
-            return bg;
-    } catch (_) {}
-    try { return Main.layoutManager._backgroundGroup ?? null; } catch (_) { return null; }
-}
-
 // стек скла в схемі віджетів: ТОЛЬКО mirror шпалерів + LiquidEffect.
 // Ніяких WindowCloneManager/UILayerSampler - під склом тепер не
 // "лінза" з вікнами, а той самий вид, який дають віджети столу
-function _makeWidgetToastGlassStack(monitor, radius) {
-    if (!LiquidEffect || !UnpickableActor)
-        throw new Error('liquid-glass modules not loaded yet');
-    const bgActor = new UnpickableActor();
-    bgActor.set_name('liquid-glass-bg-actor-mac-toast-glass');
-    bgActor.set_pivot_point(0, 0);
-
-    const liquidBox = new UnpickableActor();
-    liquidBox.set_name('liquid-box-mac-toast-glass');
-    liquidBox.set_clip_to_allocation(true);
-    bgActor.add_child(liquidBox);
-
-    const dummy = new UnpickableActor();
-    dummy.set_name('optimization-breaker');
-    dummy.set_size(1, 1);
-    dummy.set_opacity(0);
-    liquidBox.add_child(dummy);
-
-    const mirror = new Clutter.Clone({source: _widgetWallpaper(monitor) ?? Main.layoutManager._backgroundGroup});
-    mirror.set_size(global.stage.width, global.stage.height);
-    mirror.set_position(-monitor.x, -monitor.y);
-    liquidBox.add_child(mirror);
-
-    const effect = new LiquidEffect({
-        extensionPath: GLib.get_home_dir() +
-            '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com',
-        settings: _lgSettings(),
-        owner: 'tahoe-nc-mac-toast-glass',
-    });
-    effect.setPadding(SHADER_PADDING);
-    effect.setCornerRadius(radius);
-    effect.setIsDock(false);
-    effect.setMultiRegionMode(true);
-    _applyWidgetGlassParams(effect);
-    liquidBox.add_effect(effect);
-
-    return {widget: true, bgActor, liquidBox, effect, mirror, srcActor: null};
-}
 
 function _ensureToastGlass() {
     if (_toastStack)
@@ -1084,9 +1074,10 @@ function _ensureToastGlass() {
         const monitor = Main.layoutManager.primaryMonitor;
         if (!monitor)
             return false;
-        if (!LiquidEffect || !UnpickableActor)
+        if (!LiquidEffect || !UnpickableActor || !UILayerSampler || !WindowCloneManager)
             return false;
-        const s = _makeWidgetToastGlassStack(monitor, 24);
+        const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', false);
+        _applyWidgetGlassParams(s.effect);
         _toastStack = s;
         Main.layoutManager.uiGroup.insert_child_below(s.bgActor, _toastBox);
         return true;
@@ -1190,21 +1181,6 @@ function _syncToastGlass(monitor, s) {
         s.liquidBox.set_size(monitor.width, monitor.height);
         setClipIfChanged(s.bgActor, 0, 0, monitor.width, monitor.height);
         ensureGlassAllocated(s.bgActor);
-        if (s.widget) {
-            // віджет-схема: клонів вікон немає - джерело шейдера =
-            // чисті шпалери (те саме, що бачать віджети столу).
-            // Пере-в'язую джерело, якщо шпалери замінилися
-            try {
-                const src = _widgetWallpaper(monitor);
-                if (src && s.srcActor !== src) {
-                    s.mirror.source = src;
-                    s.srcActor = src;
-                }
-            } catch (_) {}
-            try { s.mirror.set_size(global.stage.width, global.stage.height); } catch (_) {}
-            try { s.mirror.set_position(-monitor.x, -monitor.y); } catch (_) {}
-            return;
-        }
         s.wcm.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,

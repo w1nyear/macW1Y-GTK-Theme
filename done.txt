@@ -7529,3 +7529,42 @@ echo "==> Встановлення успішно завершено!"
    налаштуваннях); (б) можливо підсилити blur 4 -> 8-12 для
    читабельності тексту на яскравих ділянках; (в) незроблені етапи:
    GDM/lock, нові стекла-групи у Центрі.
+
+19.3. Етап 2.3 — «Супер. Тільки має бути білий текст, зліва іконка
+   програми хто надіслав, а шейдер фону має братись на основі того
+   що позаді а не тільки шпалери» (21.10)
+
+1. Стиль тексту — білий (iOS dark-style): TOAST_INK #1d1d1f ->
+   #ffffff; TOAST_INK_SUB rgba(60,60,67,.60) -> rgba(255,255,255,.60);
+   час rgba(60,60,67,.55) -> rgba(255,255,255,.55); ✕: фон
+   rgba(0,0,0,.08) -> rgba(255,255,255,.14), гліф ->
+   rgba(255,255,255,.85); «⚠ ТЕРМІНОВО» лишився #ff453a.
+   Fallback .mac-toast-noglass (и inline без-скла варіант) -> темний:
+   rgba(28,30,36,.92), рамка rgba(255,255,255,.16).
+2. Іконка відправника: ланцюжок n.gicon -> source.icon -> ->
+   source.app.get_icon() -> Shell.AppSystem (lookup '<title>.desktop'
+   + скан по get_installed за назвою/id) -> source.createIcon ->
+   нейтральна темна плитка rgba(28,30,36,.62) + білий символік
+   (СИНЯ акцентна плитка #0A84FF знята). Знайдено: живі джерела дають
+   ThemedIcon через source.icon (Антиgravіty, software-update);
+   createIcon(44) у GNOME 50 -> null (тому іконки не було);
+   '-a firefox' демон не резолвить без desktop-entry - працює через
+   AppSystem (desktop id firefox_firefox.desktop; thunderbird не
+   встановлений -> фолбек плитка - коректно).
+3. Скло НАРОДНО СПРАВЖНЬОГО ФОНУ: тости знову на _makeGlassStack
+   (mirror шпалерів + UILayerSampler([windowGroup, window_group]) +
+   WindowCloneManager - саме те, що за ними; pipeline 2.1 з
+   синхронізацією по пілях,leftтемний із SHADER_PADDING фіксом).
+   Параметри: tint/rim/ior/displacement - віджет-конфіг (чорно 10%,
+   ior 2.4, disp 92, rim .08); blur = notification-blur-radius з
+   схеми liquid-glass (8) бо widget-овий blur 4 надто прозорий для
+   вікон. Мертвий віджет-стек (_makeWidgetToastGlassStack/
+   _widgetWallpaper + гілка s.widget у _syncToastGlass) видалено.
+4. Тести: slotH=88/107 (висота без регресій); іконки firefox ✓ /
+   thunderbird фолбек ✓; наведення ✕ (toast_white_hover.png);
+   повний вигляд toast_appicon_v2.png (розмитий контент файла вікна
+   виден у правій частині картки «Пошта» - фон = те, що позаді).
+   JournalCtl чистий.
+5. Репо: apps/tahoeNotifications.js + apps/mac-toast.css. Комміт:
+   done.txt + 2 файли kiwi@kemma; liquid-glass dist/src (14 M) — поза
+   коммітом.
