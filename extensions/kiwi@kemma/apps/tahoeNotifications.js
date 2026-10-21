@@ -1078,6 +1078,10 @@ function _ensureToastGlass() {
             return false;
         const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', false);
         _applyWidgetGlassParams(s.effect);
+        // тости НЕ мають заломлюватись у власному склі: UILayerSampler
+        // клонує всіх дітей uiGroup, тому без виключення самі слоти
+        // (іконка/текст) потрапляють у каптур і «сяють» у шейдері
+        try { s.uiSampler?.addExclusion?.(_toastBox); } catch (_) {}
         _toastStack = s;
         Main.layoutManager.uiGroup.insert_child_below(s.bgActor, _toastBox);
         return true;
@@ -1222,8 +1226,14 @@ function _toastTick() {
                 } catch (_) {}
             }
         }
-        if (_toastBox.get_children().length === 0)
+        // коли останній тост зник - НЕ лишати скло висіти з
+        // застиглим регіоном/кадром (інакше на столі "сяє" привид
+        // останнього банера): чищаємо регіони і ховаємо стек
+        if (_toastBox.get_children().length === 0) {
+            try { _toastStack?.effect?.setGlassRegions?.([]); } catch (_) {}
+            try { _toastStack?.bgActor?.hide?.(); } catch (_) {}
             return GLib.SOURCE_REMOVE;
+        }
     } catch (_) {
         return GLib.SOURCE_REMOVE;
     }
