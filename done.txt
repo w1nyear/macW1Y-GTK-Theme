@@ -7937,3 +7937,22 @@ echo "==> Встановлення успішно завершено!"
    - reloadExtension у user-session: state=1 (ENABLED), без помилок; журнал gnome-shell чистий.
 
 6. Розгортання: оновлені src/main/wackClock.js, src/pro/gdmClockManager.js, src/pro/gdm.css скопійовано до /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/ (GDM гретер) та ~/.local/share/gnome-shell/extensions/... (сесія користувача), дифи з репозиторієм порожні. Візуальний результат на GDM гретері перевіряється після виходу з сесії / перезапуску GDM (Wayland: Meta.restart недоступний).
+
+19.12. Етап 2.12 — повна синхронізація репо macW1Y з живою системою
+   (гарантує однаковий стан після установки).
+
+   1. Синхронізовано live -> репо: liquid-glass dist+src (14 файлів,
+      паритет 1:1), kiwi v60 (extension.js, apps/tahoeNotifications.js,
+      css/fixes4.css, prefs.js, schemas, metadata.json, всі locale .mo;
+      знято repo-легат extension_tahoe.js / tahoeNotification*.js верхового
+      рівня, видалено locale/ru якого немає в живій системі).
+   2. Оновлено ВСІ dconf-дампи з живої системи:
+      gnome-all (повний /), gnome-shell (/org/gnome/shell),
+      gn<{oe-extensions>, gnome-desktop, liquid-glass, rounded-corners,
+      stage-manager, wack-lockscreen-clock, appmenu, blur-my-shell,
+      dash-to-dock, kiwi. Шляхи виправлені (dconf вимагає '/').
+      Значення тінту у дампах: tahoe-widgets glass-tint-strength=2,
+      liquid-glass усі *-tint-strength=0.02.
+   Зверни увагу: liquid-glass dist у шляхах сховищ — орган
+      "/org/gnome/shell/extensions/liquid-glass" (БЕЗ @-суфікса),
+      Rounded_Corners = "/org/gnome/shell/extensions/lennart-k/rounded_corners".
