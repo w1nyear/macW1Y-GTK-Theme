@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v6g';
+} from './tahoeNotificationCard.js?v=notif_v6h';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;

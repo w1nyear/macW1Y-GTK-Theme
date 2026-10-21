@@ -235,7 +235,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         x_expand: true,
         y_expand: true,
         clip_to_allocation: true,
-        style: 'padding: 16px 14px 18px 14px !important; border-radius: 24px !important;',
+        style: 'padding: 14px 14px 16px 14px !important; border-radius: 24px !important;',
     });
     banner.set_child(mainBox);
 
@@ -278,7 +278,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     const iconTile = new St.Widget({
         width: 44,
         height: 44,
-        y_align: Clutter.ActorAlign.START,
+        y_align: Clutter.ActorAlign.CENTER,
         style: gicon ? 'border-radius: 10px !important;'
                      : 'background-color: rgba(28, 30, 36, 0.62) !important; border-radius: 10px !important;',
         layout_manager: new Clutter.BinLayout(),
@@ -388,7 +388,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         text: formatToastAge(notification.datetime),
         x_align: Clutter.ActorAlign.END,
         y_align: Clutter.ActorAlign.START,
-        style: 'color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important; margin-top: 3px !important;',
+        style: 'color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important;',
     });
     try { timeLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
 
@@ -548,7 +548,7 @@ export function buildNotificationCard(source, notification, options = {}) {
             if (!banner.get_parent())
                 return;
             const colW = Math.max(80, Math.round((width ?? 484)) - 28 - 44 - 12 - 76);
-            let total = 34; // паддінги 16+18
+            let total = 30; // паддінги 14+16 (тост-канон)
             let count = 0;
             for (const l of [appLabel, titleLabel, bodyLabel]) {
                 if (!l || !l.get_parent?.())
