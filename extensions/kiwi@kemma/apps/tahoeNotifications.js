@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v10';
+} from './tahoeNotificationCard.js?v=notif_v14';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -517,14 +517,20 @@ function _makeToastCard(item, noglass = false) {
 
     // pill — контейнер з clip: карта-контент праворуч звужується/
     // розкривається (механiка tslab + tcontent у MacShell)
-    const pill = new Clutter.Actor();
-    pill.set_clip_to_allocation(true);
+    const pill = new Clutter.Actor({
+        layout_manager: new Clutter.BinLayout(),
+        clip_to_allocation: true,
+    });
     slot.add_child(pill);
     slot._pill = pill;
 
     const content = new St.BoxLayout({
         vertical: false,
         track_hover: true,
+        x_expand: true,
+        y_expand: true,
+        x_align: Clutter.ActorAlign.FILL,
+        y_align: Clutter.ActorAlign.FILL,
         style: 'background-color: rgba(0, 0, 0, 0) !important; padding: 14px 14px 16px 14px; border-radius: 24px; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important; box-shadow: none !important;',
     });
     try { content.set_reactive(true); } catch (_) {}
@@ -674,27 +680,39 @@ function _makeToastCard(item, noglass = false) {
         textCol.add_child(actionsBox);
     }
 
-    // --- ✕ 22×22 (10,10 вiд краю) — з'являється замiстi часу при
-    // наведеннi (крос-фейд), як у iOS ---
+    // --- ✕ 22×22 оверлеєм у верхньому правому куті повідомлення ---
     const closeBtn = new St.Button({
         opacity: 0,
         reactive: false,
-        style: 'width: 22px; height: 22px; border-radius: 11px;'
-            + ' background-color: rgba(255, 255, 255, 0.14);'
-            + ' border: none; box-shadow: none; padding: 0;',
+        x_expand: true,
+        y_expand: true,
+        x_align: Clutter.ActorAlign.END,
+        y_align: Clutter.ActorAlign.START,
+        style: 'width: 22px !important; height: 22px !important; border-radius: 11px !important;'
+            + ' background-color: rgba(255, 255, 255, 0.18) !important;'
+            + ' border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important; padding: 0 !important;'
+            + ' margin-top: 9px !important; margin-right: 9px !important;',
     });
     try {
         closeBtn.set_child(new St.Label({
             text: '✕',
-            style: 'font-size: 11px; color: rgba(255, 255, 255, 0.85);'
-                + ' font-weight: 600; text-align: center;',
+            style: 'font-size: 11px !important; color: rgba(255, 255, 255, 0.90) !important;'
+                + ' font-weight: 600 !important; text-align: center !important;',
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
         }));
     } catch (_) {}
-    closeBtn.x_align = Clutter.ActorAlign.END;
-    closeBtn.y_align = Clutter.ActorAlign.START;
-    rail.add_child(closeBtn);
+    closeBtn.connect('notify::hover', () => {
+        try {
+            closeBtn.style = 'width: 22px !important; height: 22px !important; border-radius: 11px !important;'
+                + (closeBtn.hover
+                    ? ' background-color: rgba(255, 255, 255, 0.28) !important;'
+                    : ' background-color: rgba(255, 255, 255, 0.18) !important;')
+                + ' border: 1px solid rgba(255, 255, 255, 0.18) !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important; padding: 0 !important;'
+                + ' margin-top: 9px !important; margin-right: 9px !important;';
+        } catch (_) {}
+    });
+    pill.add_child(closeBtn);
     slot._closeBtn = closeBtn;
     closeBtn.connect('clicked', () => {
         try { _toastCloseClicked(item, slot); } catch (_) {}
@@ -825,9 +843,9 @@ function _makeToastCard(item, noglass = false) {
 
     // --- наведення: час -> ✕ (крос-фейд), розкриття кнопок дій, пауза тоста ---
     try {
-        content.connect('notify::hover', () => {
+        const updateHover = () => {
             try {
-                const h = !!content.hover;
+                const h = !!content.hover || !!closeBtn.hover;
                 const inM = h ? Clutter.AnimationMode.EASE_OUT_CUBIC : Clutter.AnimationMode.EASE_IN_CUBIC;
                 closeBtn.ease({
                     opacity: h ? 255 : 0,
@@ -856,7 +874,7 @@ function _makeToastCard(item, noglass = false) {
                             duration: 140,
                             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                             onComplete: () => {
-                                if (!content.hover) actionsBox.visible = false;
+                                if (!content.hover && !closeBtn.hover) actionsBox.visible = false;
                             },
                         });
                     }
@@ -868,7 +886,9 @@ function _makeToastCard(item, noglass = false) {
                 else if (!slot._leaving && !slot._merging)
                     _toastLifeStart(slot);
             } catch (_) {}
-        });
+        };
+        content.connect('notify::hover', updateHover);
+        closeBtn.connect('notify::hover', updateHover);
     } catch (_) {}
 
     return slot;

@@ -210,8 +210,8 @@ export function buildNotificationCard(source, notification, options = {}) {
     // Пілюля → картка (морф банерів): стілі сумісні зі старим API
     const CARD_PILL_STYLE = CARD_BASE_STYLE.replace('border-radius: 24px !important;', 'border-radius: 9999px !important;');
     const CARD_MID_STYLE = CARD_BASE_STYLE.replace('border-radius: 24px !important;', 'border-radius: 22px !important;');
-    const CLOSE_BASE = 'width: 22px !important; height: 22px !important; border-radius: 11px !important; background-color: rgba(255, 255, 255, 0.14) !important; border: none !important; box-shadow: none !important; padding: 0 !important;';
-    const CLOSE_HOVER = CLOSE_BASE.replace('0.14', '0.26');
+    const CLOSE_BASE = 'width: 22px !important; height: 22px !important; border-radius: 11px !important; background-color: rgba(255, 255, 255, 0.18) !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important; padding: 0 !important;';
+    const CLOSE_HOVER = CLOSE_BASE.replace('0.18', '0.28');
 
     const appName = String(source?.title ?? '').trim();
     const rawTitle = (notification.title || '').trim();
@@ -228,6 +228,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         x_expand: true,
         y_expand: false,
         clip_to_allocation: true,
+        layout_manager: new Clutter.BinLayout(),
     });
     banner.set_style(isScreenshot
         ? (CARD_BASE_STYLE + ' min-height: 54px !important;')
@@ -442,7 +443,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         text: formatToastAge(notification.datetime),
         x_align: Clutter.ActorAlign.END,
         y_align: Clutter.ActorAlign.START,
-        style: 'font-family: "Open Runde" !important; color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important;',
+        style: 'font-family: "Open Runde" !important; color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important; margin-top: 5px !important; margin-right: 5px !important;',
     });
     try { timeLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
 
@@ -460,7 +461,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     try {
         closeBtn.set_child(new St.Label({
             text: '✕',
-            style: 'font-size: 11px; color: rgba(255, 255, 255, 0.85); font-weight: 600;',
+            style: 'font-size: 11px; color: rgba(255, 255, 255, 0.90); font-weight: 600;',
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
         }));
@@ -473,6 +474,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         layout_manager: new Clutter.BinLayout(),
         y_align: Clutter.ActorAlign.START,
         x_align: Clutter.ActorAlign.END,
+        style: 'margin-top: -5px !important; margin-right: -5px !important;',
     });
     rightRail.set_width(railW);
     rightRail.min_width = railW;
