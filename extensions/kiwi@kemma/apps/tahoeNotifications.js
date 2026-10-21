@@ -397,35 +397,22 @@ function _clampText(s, n) {
     return t.length > n ? t.slice(0, n - 1).trimEnd() + '\u2026' : t;
 }
 
-function _mkToastLabel(text, cls, maxChars) {
+// ---- Ink-палiтра тостiв за iOS-референсом (i expectation user) ----
+const TOAST_INK = '#1d1d1f';
+const TOAST_INK_SUB = 'rgba(60, 60, 67, 0.60)';
+const TOAST_INK_RED = '#ff453a';
+
+// ---- рядок тексту тоста (стANNEL inline) ----
+function _toastLabel(text, spec) {
     const l = new St.Label({
-        style_class: cls,
-        text: _clampText(text, maxChars),
+        text: _clampText(text, spec.max ?? 96),
+        x_expand: !!spec.expand,
     });
     try { l.clutter_text.set_line_wrap(true); } catch (_) {}
     try { l.clutter_text.set_line_wrap_mode(Pango.WrapMode.WORD); } catch (_) {}
-    // шрифт МАСШЕЛ: Open Runde; kiwi-досвід — inline стилі надійні
     try {
-        const light = String(cls).endsWith('-light');
-        let fam = 'Open Runde';
-        let size = 13;
-        let weight = 500;
-        if (String(cls).includes('urgent')) {
-            fam = 'Open Runde Semibold';
-            size = 12;
-            weight = 600;
-        } else if (String(cls).includes('-app')) {
-            fam = 'Open Runde Semibold';
-            size = 14;
-            weight = 600;
-        } else if (String(cls).includes('summary')) {
-            size = 14;
-            weight = 700;
-        }
-        let color = light ? '#1d1d1f' : '#ffffff';
-        if (String(cls).includes('urgent'))
-            color = light ? 'rgba(0, 0, 0, 0.55)' : 'rgba(255, 255, 255, 0.62)';
-        l.style = `font-family: "${fam}"; font-size: ${size}px; font-weight: ${weight}; color: ${color};`;
+        l.style = `font-family: "${spec.fam || 'Open Runde'}"; font-size: ${spec.size}px;`
+            + ` font-weight: ${spec.weight ?? 500}; color: ${spec.color};`;
     } catch (_) {}
     return l;
 }
@@ -438,7 +425,7 @@ function _ensureToastBox() {
         if (!monitor)
             return false;
         const panelH = Main.layoutManager.panelBox?.height ?? 32;
-        // GNOME 50: spacing в St.BoxLayout — тільки CSS-властивість
+        // GNOME 50: spacing у St.BoxLayout — тільки CSS-властивiсть
         _toastBox = new St.BoxLayout({
             vertical: true,
             reactive: true,
@@ -458,7 +445,7 @@ function _ensureToastBox() {
     }
 }
 
-// t-крива пілюлі, виміряна з поточної висоти слота
+// t-крива пiлюлi, вимiряна з поточної висоти слота
 // (MacShell: height = bodyH * (0.35 + 0.65 * tc))
 function _toastSlotT(slot) {
     try {
@@ -470,133 +457,200 @@ function _toastSlotT(slot) {
     }
 }
 
-// Картка тоста — порт NotifBody (MacShell MacBar.qml:1408):
-//   іконка 44×44 у (14,15), текст-колонка від x=70, \u2715 22×22 (10,10),
-//   висота max(74, text+30), шрифт Open Runde.
+// Вiднсний час iOS: Щойно / N хв тому / N год тому
+function _toastRelTime(spawn) {
+    try {
+        const now = GLib.DateTime.new_now_local();
+        const sec = Math.max(0, now.difference(spawn) / 1000000);
+        if (sec < 60)
+            return 'Щойно';
+        const min = Math.floor(sec / 60);
+        if (min < 60)
+            return `${min} хв тому`;
+        const hr = Math.floor(min / 60);
+        return `${hr} год тому`;
+    } catch (_) {
+        return 'Щойно';
+    }
+}
+
+function _toastTimeStart(slot) {
+    try {
+        if (slot._timeId) {
+            try { GLib.source_remove(slot._timeId); } catch (_) {}
+            slot._timeId = 0;
+        }
+        if (!slot._spawnTime)
+            slot._spawnTime = GLib.DateTime.new_now_local();
+        const upd = () => {
+            try {
+                if (!slot._timeLabel)
+                    return GLib.SOURCE_REMOVE;
+                slot._timeLabel.text = _toastRelTime(slot._spawnTime);
+                if (slot._leaving || slot._merging || !slot.get_parent())
+                    return GLib.SOURCE_REMOVE;
+            } catch (_) {
+                return GLib.SOURCE_REMOVE;
+            }
+            return GLib.SOURCE_CONTINUE;
+        };
+        slot._timeId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, upd);
+    } catch (_) {}
+}
+
+// Картка тоста — вигляд за референсом iOS: свiтле frosted-скло,
+// темний текст, [⚠ ТЕРМIНОВО | застосунок] + час зверху, ✕ на
+// наведеннi на мiсцi часу; iконка 44×44 вертикально по центру.
 function _makeToastCard(item, noglass = false) {
     const {source, n} = item;
-    // kiwi-семантика: getPanelInk()==='light' => темний фон панелі
-    const dark = (() => {
-        try { return getPanelInk() === 'light'; } catch (_) { return true; }
+    const urgency = (() => {
+        try { return n.urgency ?? 1; } catch (_) { return 1; }
     })();
+    const isCritical = urgency >= 2;
 
     const slot = new Clutter.Actor();
     slot.set_width(TOAST_W);
 
     // pill — контейнер з clip: карта-контент праворуч звужується/
-    // розкривається (механіка tslab + tcontent у MacShell)
+    // розкривається (механiка tslab + tcontent у MacShell)
     const pill = new Clutter.Actor();
     pill.set_clip_to_allocation(true);
     slot.add_child(pill);
     slot._pill = pill;
 
-    const suffix = dark ? '' : '-light';
     const content = new St.BoxLayout({
         vertical: false,
-        style_class: `mac-toast${noglass ? ' mac-toast-noglass' : ''}`,
-        reactive: true,
-        width: TOAST_W,
-        style: `padding: 14px 0px 16px 14px; border-radius: 24px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);`,
+        track_hover: true,
+        style: 'padding: 14px 14px 16px 14px; border-radius: 24px;'
+            + ` box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);`,
     });
-
+    try { content.set_reactive(true); } catch (_) {}
+    try { content.set_width(TOAST_W); } catch (_) {}
+    if (noglass) {
+        try {
+            content.add_style_class_name('mac-toast-noglass');
+            content.style += ` background-color: rgba(240, 242, 246, 0.92); border: 1px solid rgba(255, 255, 255, 0.55); border-radius: 24px;`;
+        } catch (_) {}
+    }
     pill.add_child(content);
     slot._content = content;
 
-    // --- іконка 44×44 (fallback: акцентна плитка + дзвоник) ---
+    // --- iконка 44×44 (fallback: акцентна плитка + дзвоник), по центру ---
     let gicon = null;
     try { gicon = n.gicon ?? null; } catch (_) {}
     if (!gicon) {
         try { gicon = source.createIcon?.(44) ?? null; } catch (_) {}
     }
-    // 44×44 жорстко: St.Widget (перевірена фіксація розміру в 50-й)
-    const binLayout = new Clutter.BinLayout();
     const iconTile = new St.Widget({
-        width: 44, height: 44,
-        y_align: Clutter.ActorAlign.START,
-        layout_manager: binLayout,
+        width: 44,
+        height: 44,
+        y_align: Clutter.ActorAlign.CENTER,
         style: gicon ? 'border-radius: 10px;'
                      : 'background-color: #0A84FF; border-radius: 10px;',
+        layout_manager: new Clutter.BinLayout(),
     });
-    const iconChild = gicon
+    try { iconTile.set_clip_to_allocation(true); } catch (_) {}
+    iconTile.add_child(gicon
         ? new St.Icon({gicon, icon_size: 44})
         : new St.Icon({
             icon_name: 'org.gnome.Settings-notifications-symbolic',
             icon_size: 22,
             style: 'color: #ffffff !important;',
-        });
-    try { iconTile.set_clip_to_allocation(true); } catch (_) {}
-    iconTile.add_child(iconChild);
-    iconTile.style = (iconTile.style ?? '') + ' margin-top: 1px; margin-right: 12px;';
+        }));
+    try { iconTile.style += 'margin-right: 12px;'; } catch (_) {}
     content.add_child(iconTile);
 
-    // --- текст-колонка (x=70) ---
-    // GNOME 50: spacing — тільки через style
+    // --- прача колонка: [термiнове/застосунок .. час] + сумарi + тiло ---
     const textCol = new St.BoxLayout({
         vertical: true,
         x_expand: true,
         y_align: Clutter.ActorAlign.START,
-        style: 'spacing: 1px;',
+        style: 'spacing: 4px;',
     });
-    const urgency = (() => {
-        try { return n.urgency ?? 1; } catch (_) { return 1; }
-    })();
+    content.add_child(textCol);
+
     const appName = String(source?.title ?? '').trim();
     const summary = String(n.title ?? '').trim();
     const body = String(n.body ?? '').trim();
 
-    if (urgency >= 2)
-        textCol.add_child(_mkToastLabel('ТЕРМІНОВО', `mac-toast-urgent${suffix}`, 24));
-    else if (appName)
-        textCol.add_child(_mkToastLabel(appName, `mac-toast-app${suffix}`, 48));
-    if (summary)
-        textCol.add_child(_mkToastLabel(summary, `mac-toast-summary${suffix}`, 90));
-    if (body)
-        textCol.add_child(_mkToastLabel(body, `mac-toast-body${suffix}`, 170));
-    content.add_child(textCol);
+    const rowA = new St.BoxLayout({vertical: false, x_expand: true});
+    if (isCritical) {
+        rowA.add_child(_toastLabel('⚠ ТЕРМIНОВО', {color: TOAST_INK_RED, size: 13, weight: 700, max: 28, expand: true}));
+    } else if (appName) {
+        rowA.add_child(_toastLabel(appName, {color: TOAST_INK_SUB, size: 12, weight: 600, max: 40, expand: true, ellip: true}));
+    }
+    const timeLabel = _toastLabel('Щойно', {color: 'rgba(60, 60, 67, 0.55)', size: 12, weight: 500, max: 16, ellip: true});
+    try { timeLabel.style += 'margin-left: 12px;'; } catch (_) {}
+    rowA.add_child(timeLabel);
+    textCol.add_child(rowA);
+    slot._timeLabel = timeLabel;
 
-    // --- правий рельс (резерв 44px) з \u2715 22×22 (10,10 від краю) ---
-    const rail = new Clutter.Actor();
-    rail.set_width(44);
-    content.add_child(rail);
+    let summaryLabel = null;
+    if (summary) {
+        summaryLabel = _toastLabel(summary, {color: TOAST_INK, size: 14, weight: 700, max: 110});
+        textCol.add_child(summaryLabel);
+    }
+    let bodyLabel = null;
+    if (body) {
+        bodyLabel = _toastLabel(body, {color: TOAST_INK, size: 13, weight: 500, max: 170});
+        textCol.add_child(bodyLabel);
+    }
+
+    // --- ✕ 22×22 (10,10 вiд краю) — з'являється замiстi часу при
+    // наведеннi (крос-фейд), як у iOS ---
     const closeBtn = new St.Button({
-        style_class: 'mac-toast-close-btn',
-        width: 22, height: 22,
         opacity: 0,
         reactive: false,
+        style: 'width: 22px; height: 22px; border-radius: 11px;'
+            + ' background-color: rgba(0, 0, 0, 0.08);'
+            + ' border: none; box-shadow: none; padding: 0;',
     });
     try {
-        const extDir = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/blur-my-shell@aunetx`;
-        closeBtn.set_child(new St.Icon({
-            gicon: Gio.icon_new_for_string(`${extDir}/assets/close.png`),
-            icon_size: 12,
+        closeBtn.set_child(new St.Label({
+            text: '✕',
+            style: 'font-size: 11px; color: rgba(60, 60, 67, 0.70);'
+                + ' font-weight: 600; text-align: center;',
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
         }));
-    } catch (_) {
-        try {
-            closeBtn.set_child(new St.Label({text: '\u2715', style: 'font-size: 11px;'}));
-        } catch (_) {}
-    }
-    try {
-        closeBtn.set_position(12, -4); // MacShell xbtn: right:10 по відношенню до карти
     } catch (_) {}
-    rail.add_child(closeBtn);
+    slot.add_child(closeBtn);
+    try { closeBtn.set_position(TOAST_W - 32, 10); } catch (_) {}
     slot._closeBtn = closeBtn;
     closeBtn.connect('clicked', () => {
         try { _toastCloseClicked(item, slot); } catch (_) {}
     });
 
-    // --- висота картки (MacShell: max(74, text+30)) ---
-    let bodyH = 74;
+    // --- висота картки: ручний height-for-width. St.BoxLayout рахує
+    // висоту за природною шириною лейблiв (до переносу), тому
+    // вимiрюємо рядки напряму через Clutter.Text (вiн коректно
+    // реалiзує height-for-width). Колонка тексту = 280px
+    // (364 - паддiнги 14x2 - iконка 44 - маржа 12). ---
+    const COL_W = 280;
+    const lineH = (l) => {
+        try {
+            const [, h] = l.get_preferred_height(COL_W);
+            return isFinite(h) && h > 0 ? h : 0;
+        } catch (_) {
+            return 0;
+        }
+    };
+    let coldH = 0;
     try {
-        const [, natH] = content.get_preferred_height(TOAST_W);
-        if (isFinite(natH) && natH > 0)
-            bodyH = natH;
+        const [, h] = rowA.get_preferred_height(-1);
+        if (isFinite(h) && h > 0)
+            coldH = h;
     } catch (_) {}
-    // MacShell: height = max(74, textCol + 30)
-    slot._bodyH = Math.max(74, bodyH);
-    slot.set_height(Math.max(14, bodyH * 0.35));
+    if (summaryLabel)
+        coldH += 4 + lineH(summaryLabel);
+    if (bodyLabel)
+        coldH += 4 + lineH(bodyLabel);
+    slot._bodyH = Math.max(74, Math.ceil(coldH + 30));
+    slot.set_height(Math.max(14, slot._bodyH * 0.35));
+    try { content.set_height(slot._bodyH); } catch (_) {}
     try { pill.set_height(Math.max(36, slot.height)); } catch (_) {}
 
-    // --- клік по картці = активація сповіщення + dismiss ---
+    // --- клiк по картцi = активацiя сповiщення + dismiss ---
     try {
         content.connect('button-press-event', () => {
             try { _activate(item); } catch (_) {}
@@ -605,16 +659,21 @@ function _makeToastCard(item, noglass = false) {
         });
     } catch (_) {}
 
-    // --- наведення: \u2715 з'являється, життя на паузі (перезапуск) ---
+    // --- наведення: час -> ✕ (крос-фейд), тост ставиться на паузу ---
     try {
-        content.track_hover = true;
         content.connect('notify::hover', () => {
             try {
                 const h = !!content.hover;
+                const inM = h ? Clutter.AnimationMode.EASE_OUT_CUBIC : Clutter.AnimationMode.EASE_IN_CUBIC;
                 closeBtn.ease({
                     opacity: h ? 255 : 0,
                     duration: 140,
-                    mode: h ? Clutter.AnimationMode.EASE_OUT_CUBIC : Clutter.AnimationMode.EASE_IN_CUBIC,
+                    mode: inM,
+                });
+                slot._timeLabel.ease({
+                    opacity: h ? 0 : 255,
+                    duration: 140,
+                    mode: inM,
                 });
                 try { closeBtn.set_reactive(h); } catch (_) {}
                 if (h)
@@ -636,7 +695,7 @@ function _toastLifeStart(slot) {
     }
     if (rec.id)
         _toastLifeStop(slot);
-    // Timer running: false -> true у QML перезапускає відлік з нуля
+    // Timer running: false -> true у QML перезапускає вiдлiк з нуля
     const base = rec.baseMs || (slot._critical ? TOAST_TIMEOUT_CRITICAL_MS : TOAST_TIMEOUT_MS);
     rec.baseMs = base;
     rec.id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, base, () => {
@@ -647,6 +706,7 @@ function _toastLifeStart(slot) {
         } catch (_) {}
         return GLib.SOURCE_REMOVE;
     });
+    _toastTimeStart(slot);
 }
 
 function _toastLifeStop(slot) {
@@ -657,15 +717,20 @@ function _toastLifeStop(slot) {
             rec.id = 0;
         }
     } catch (_) {}
+    // час НЕ призупиняється на паузi — вiн вiдбиває прiющий тост
 }
 
 function _toastClearTimers(slot) {
     _toastLifeStop(slot);
+    try {
+        if (slot?._timeId) {
+            try { GLib.source_remove(slot._timeId); } catch (_) {}
+            slot._timeId = 0;
+        }
+    } catch (_) {}
     try { _toastTimers.delete(slot); } catch (_) {}
 }
 
-// \u2715: сповіщення закривається повністю (dismiss у MacShell прибирає
-// і тост, і запис з історії Центру)
 function _toastCloseClicked(item, slot) {
     try { _dismissToast(slot); } catch (_) {}
     try { item.n.destroy(2); } catch (_) {}
@@ -836,6 +901,7 @@ function _ensureToastGlass() {
         if (!LiquidEffect || UILayerSampler === null || WindowCloneManager === null)
             return false;
         const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', false);
+        try { s.effect.setBlurRadius(32); } catch (_) {}
         _toastStack = s;
         Main.layoutManager.uiGroup.insert_child_below(s.bgActor, _toastBox);
         return true;
@@ -861,9 +927,6 @@ function _syncToastGlass(monitor, s) {
     if (!s || !_toastBox)
         return;
     try {
-        const dark = (() => {
-            try { return getPanelInk() === 'light'; } catch (_) { return true; }
-        })();
         const regions = [];
         let maxR = 24;
         for (const slot of _toastBox.get_children()) {
@@ -887,9 +950,13 @@ function _syncToastGlass(monitor, s) {
                 const [gx, gy] = pill.get_transformed_position();
                 if (!isFinite(gx) || !isFinite(gy) || !(pillW > 0))
                     continue;
+                // шейдер стискає кожен регіон на SHADER_PADDING з усіх
+                // боків (actual_size = size - pad*2), тому підганяємо
+                // прямокутник назад до пілюлі
+                const P = SHADER_PADDING;
                 regions.push({
-                    x: gx - monitor.x, y: gy - monitor.y,
-                    w: pillW, h: pillH,
+                    x: gx - monitor.x - P, y: gy - monitor.y - P,
+                    w: pillW + 2 * P, h: pillH + 2 * P,
                     tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
                 });
                 const r = Math.min(24 + (1 - t) * TOAST_PILL_CORNER, pillH / 2);
@@ -906,7 +973,8 @@ function _syncToastGlass(monitor, s) {
         if (!s.bgActor.visible)
             s.bgActor.show();
         s.bgActor.opacity = 255;
-        const fill = dark ? {c: [0.05, 0.05, 0.06], a: 0.46} : {c: [1.0, 1.0, 1.0], a: 0.50};
+        // iOS-референс: свiтле frosted-скло (бiлий тiнт, сильне розмиття)
+        const fill = {c: [1.0, 1.0, 1.0], a: 0.84};
         for (const r of regions) {
             r.tintR = fill.c[0];
             r.tintG = fill.c[1];

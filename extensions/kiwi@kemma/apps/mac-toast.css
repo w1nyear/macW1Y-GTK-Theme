@@ -1,76 +1,12 @@
 /* ================================================================
-   Банери-тости (етап 2) — вигляд MacShell-main (NotifBody port).
-   Фон картки = LiquidEffect регіон (скло). Тут — контент.
-   Шрифт Open Runde. Ink: світлий текст (dark) / темний (light).
+   Банери-тости (етап 2.1) — стилi, додатковi до inline:
+   fundamentals (padding/radius/shadow/font) ставляться inline JS.
+   Фон картки = LiquidEffect регiон (свiтле frosted-скло).
    ================================================================ */
 .mac-toast {
-  padding-top: 14px;
-  padding-right: 0px;
-  padding-bottom: 16px;
-  padding-left: 14px;
-  border-radius: 24px;
   border: none;
-  background-color: transparent;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
-  font-family: Open Runde, Open Runde Medium;
 }
 .mac-toast-noglass {
-  background-color: rgba(18, 18, 20, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-.mac-toast-app {
-  font-family: Open Runde Semibold, Open Runde;
-  font-weight: 600;
-  font-size: 14px;
-  color: #ffffff;
-}
-.mac-toast-app-light {
-  font-family: Open Runde Semibold, Open Runde;
-  font-weight: 600;
-  font-size: 14px;
-  color: #1d1d1f;
-}
-.mac-toast-urgent {
-  font-family: Open Runde Semibold, Open Runde;
-  font-weight: 600;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.62);
-}
-.mac-toast-urgent-light {
-  font-family: Open Runde Semibold, Open Runde;
-  font-weight: 600;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.55);
-}
-.mac-toast-summary {
-  font-family: Open Runde, Open Runde Medium;
-  font-weight: 700;
-  font-size: 14px;
-  color: #ffffff;
-}
-.mac-toast-summary-light {
-  font-family: Open Runde, Open Runde Medium;
-  font-weight: 700;
-  font-size: 14px;
-  color: #1d1d1f;
-}
-.mac-toast-body {
-  font-family: Open Runde, Open Runde Medium;
-  font-size: 13px;
-  color: #ffffff;
-}
-.mac-toast-body-light {
-  font-family: Open Runde, Open Runde Medium;
-  font-size: 13px;
-  color: #1d1d1f;
-}
-.mac-toast-close-btn {
-  border-radius: 11px;
-  background-color: rgba(255, 255, 255, 0.20);
-  border: none;
-  box-shadow: none;
-  padding: 0px;
-}
-.mac-toast-close-btn:hover {
-  background-color: rgba(255, 255, 255, 0.30);
+  background-color: rgba(240, 242, 246, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.55);
 }
