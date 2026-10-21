@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v8';
+} from './tahoeNotificationCard.js?v=notif_v10';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -468,12 +468,14 @@ function _ensureToastBox() {
 // t-крива пiлюлi, вимiряна з поточної висоти слота
 // (MacShell: height = bodyH * (0.35 + 0.65 * tc))
 function _toastSlotT(slot) {
+    if (slot?._entered)
+        return 1.0;
     try {
         const bh = slot._bodyH || 74;
         const t = (slot.height / Math.max(1, bh) - 0.35) / 0.65;
         return Math.max(0, Math.min(1, t));
     } catch (_) {
-        return 1;
+        return 1.0;
     }
 }
 
@@ -541,7 +543,7 @@ function _makeToastCard(item, noglass = false) {
     const content = new St.BoxLayout({
         vertical: false,
         track_hover: true,
-        style: 'padding: 14px 14px 16px 14px; border-radius: 24px;',
+        style: 'background-color: rgba(0, 0, 0, 0) !important; padding: 14px 14px 16px 14px; border-radius: 24px; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important; box-shadow: none !important;',
     });
     try { content.set_reactive(true); } catch (_) {}
     try { content.set_width(TOAST_W); } catch (_) {}
@@ -656,6 +658,40 @@ function _makeToastCard(item, noglass = false) {
         textCol.add_child(bodyLabel);
     }
 
+    // --- Кнопки дій тоста — приховані за замовчуванням, з'являються при hover ---
+    let actionsBox = null;
+    if (item.n.actions && item.n.actions.length > 0) {
+        actionsBox = new St.BoxLayout({
+            orientation: Clutter.Orientation.HORIZONTAL,
+            x_expand: false,
+            x_align: Clutter.ActorAlign.START,
+            y_align: Clutter.ActorAlign.CENTER,
+            visible: false,
+            opacity: 0,
+            style: 'margin-top: 6px; margin-bottom: 2px; spacing: 8px;',
+        });
+        const btnStyleBase = 'font-family: "Open Runde"; background-color: rgba(255, 255, 255, 0.16); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 7px; padding: 4px 12px; font-size: 11.5px; font-weight: 500; margin-right: 6px;';
+        const btnStyleHover = btnStyleBase.replace('0.16', '0.26').replace('0.14', '0.20');
+        for (const action of item.n.actions) {
+            const actBtn = new St.Button({
+                label: action.label,
+                reactive: true,
+                can_focus: true,
+                x_expand: false,
+                style: btnStyleBase,
+            });
+            actBtn.connect('notify::hover', () => {
+                actBtn.set_style(actBtn.hover ? btnStyleHover : btnStyleBase);
+            });
+            actBtn.connect('clicked', () => {
+                try { action.activate(); } catch (e) { logError(e); }
+                try { _dismissToast(slot); } catch (_) {}
+            });
+            actionsBox.add_child(actBtn);
+        }
+        textCol.add_child(actionsBox);
+    }
+
     // --- ✕ 22×22 (10,10 вiд краю) — з'являється замiстi часу при
     // наведеннi (крос-фейд), як у iOS ---
     const closeBtn = new St.Button({
@@ -739,12 +775,15 @@ function _makeToastCard(item, noglass = false) {
     // створення-time pref лейаут ще дефолтного шрифту (стиль лінивий) -
     // висоту перераховують ПІСЛЯ перших кадрів з фактичних prefH рядків
     // (інакше під текстом лишалось ~20px порожнього скла)
-    const remeasure = () => {
+    const remeasure = (hovered = null) => {
         try {
             if (!slot || !slot.get_parent())
                 return;
+            const isHover = hovered !== null ? hovered : !!content.hover;
             const rows = [];
             for (const k of textCol.get_children()) {
+                if (k === actionsBox && !isHover)
+                    continue;
                 try {
                     // строго по ширині колонки: get_preferred_height(-1)
                     // міряє рядок БЕЗ переносу - тіло з 2+ рядків
@@ -763,9 +802,10 @@ function _makeToastCard(item, noglass = false) {
                 slot._bodyH = target;
                 try { content.set_height(target); } catch (_) {}
                 try {
+                    slot.remove_all_transitions();
                     slot.ease({
                         height: target,
-                        duration: 240,
+                        duration: 180,
                         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                     });
                 } catch (_) {
@@ -796,7 +836,7 @@ function _makeToastCard(item, noglass = false) {
         });
     } catch (_) {}
 
-    // --- наведення: час -> ✕ (крос-фейд), тост ставиться на паузу ---
+    // --- наведення: час -> ✕ (крос-фейд), розкриття кнопок дій, пауза тоста ---
     try {
         content.connect('notify::hover', () => {
             try {
@@ -813,6 +853,29 @@ function _makeToastCard(item, noglass = false) {
                     mode: inM,
                 });
                 try { closeBtn.set_reactive(h); } catch (_) {}
+
+                if (actionsBox) {
+                    actionsBox.remove_all_transitions();
+                    if (h) {
+                        actionsBox.visible = true;
+                        actionsBox.ease({
+                            opacity: 255,
+                            duration: 180,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                    } else {
+                        actionsBox.ease({
+                            opacity: 0,
+                            duration: 140,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                            onComplete: () => {
+                                if (!content.hover) actionsBox.visible = false;
+                            },
+                        });
+                    }
+                }
+                remeasure(h);
+
                 if (h)
                     _toastLifeStop(slot);
                 else if (!slot._leaving && !slot._merging)
@@ -1001,6 +1064,9 @@ function _showToast(item) {
             height: slot._bodyH,
             duration: TOAST_ANIM_MS,
             mode: Clutter.AnimationMode.EASE_OUT_QUINT,
+            onComplete: () => {
+                slot._entered = true;
+            },
         });
     } catch (_) {
         try {
@@ -1008,6 +1074,7 @@ function _showToast(item) {
             slot._content.opacity = 255;
             slot.set_height(slot._bodyH);
         } catch (_) {}
+        slot._entered = true;
     }
 
     _toastLifeStart(slot);
@@ -1073,12 +1140,12 @@ function _applyWidgetGlassParams(effect) {
         effect._setFloat('rim_directional_power', 2.7);
         effect._setFloat('rim_light_color_intensity', 1.4);
         effect._setFloat('specular_intensity', 0);
-        effect._setFloat('displacement_scale', 92);
-        effect._setFloat('ior', 2.4);
-        effect._setFloat('chroma_strength', 0.006);
+        effect._setFloat('displacement_scale', 20.0);
+        effect._setFloat('ior', 1.50);
+        effect._setFloat('chroma_strength', 0.0);
         effect._setFloat('edge_smoothing', 1.33);
-        effect._setFloat('profile_shape_n', 7.0);
-        effect._setFloat('max_z', 25);
+        effect._setFloat('profile_shape_n', 5.40);
+        effect._setFloat('max_z', 6.0);
     } catch (_) {}
 }
 
@@ -1092,10 +1159,7 @@ function _readIntSetting(s, key, dflt) {
 }
 
 
-// стек скла в схемі віджетів: ТОЛЬКО mirror шпалерів + LiquidEffect.
-// Ніяких WindowCloneManager/UILayerSampler - під склом тепер не
-// "лінза" з вікнами, а той самий вид, який дають віджети столу
-
+// стек скла тостів: LiquidEffect + WindowCloneManager + UILayerSampler
 function _ensureToastGlass() {
     if (_toastStack)
         return true;
@@ -1107,7 +1171,7 @@ function _ensureToastGlass() {
             return false;
         if (!LiquidEffect || !UnpickableActor || !UILayerSampler || !WindowCloneManager)
             return false;
-        const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', false, 0, true);
+        const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', false, 0, false);
         _applyWidgetGlassParams(s.effect);
         // тости НЕ мають заломлюватись у власному склі: UILayerSampler
         // клонує всіх дітей uiGroup, тому без виключення самі слоти
@@ -1181,17 +1245,16 @@ function _syncToastGlass(monitor, s) {
                 s.bgActor.hide();
             return;
         }
-        const alpha = p.box.opacity;
+        const alpha = _toastBox ? _toastBox.opacity : 255;
         if (alpha > 0 && !s.bgActor.visible)
             s.bgActor.show();
         else if (alpha === 0 && s.bgActor.visible)
             s.bgActor.hide();
         s.bgActor.opacity = alpha;
-        s.bgActor.translation_x = p.box.translation_x;
-        // скло як у віджетах робочого столу: слабкий тінт користувача,
-        // жодного білого фону - видима поверхня тільки від
-        // LiquidEffect .frag
-        let glassTint = [0, 0, 0], glassStrength = 0.10;
+        s.bgActor.translation_x = _toastBox ? _toastBox.translation_x : 0;
+        s.bgActor.translation_y = _toastBox ? _toastBox.translation_y : 0;
+        // скло LQ-Visual: слабкий тінт 2%, розмиття, заломлення
+        let glassTint = [0, 0, 0], glassStrength = 0.02;
         try {
             const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
             const raw = String(sset.get_string('glass-tint') || '');
@@ -1204,7 +1267,7 @@ function _syncToastGlass(monitor, s) {
                         glassTint = cc;
                 }
             }
-            glassStrength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 10) / 100));
+            glassStrength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 2) / 100));
         } catch (_) {}
         const fill = {c: glassTint, a: glassStrength};
         for (const r of regions) {
@@ -1220,7 +1283,8 @@ function _syncToastGlass(monitor, s) {
         s.liquidBox.set_size(monitor.width, monitor.height);
         setClipIfChanged(s.bgActor, 0, 0, monitor.width, monitor.height);
         ensureGlassAllocated(s.bgActor);
-        s.wcm.setOffset(-monitor.x, -monitor.y);
+        if (s.wcm)
+            s.wcm.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,
             effect: s.effect,
@@ -1230,10 +1294,13 @@ function _syncToastGlass(monitor, s) {
             windowCloneManager: s.wcm,
         });
         ensureGlassAllocated(s.bgActor);
-        s.uiSampler.refresh();
-        s.uiSampler.sync(monitor.x, monitor.y, monitor.width, monitor.height);
-        s.wcm.sync();
-    } catch (_) {}
+        s.uiSampler?.refresh();
+        s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
+        if (s.wcm)
+            s.wcm.sync();
+    } catch (e) {
+        console.error(`[tahoe-nc] _syncToastGlass error: ${e}\n${e?.stack || ''}`);
+    }
 }
 
 function _toastTick() {
@@ -1269,7 +1336,8 @@ function _toastTick() {
             try { _toastStack?.bgActor?.hide?.(); } catch (_) {}
             return GLib.SOURCE_REMOVE;
         }
-    } catch (_) {
+    } catch (e) {
+        console.error(`[tahoe-nc] _toastTick error: ${e}\n${e?.stack || ''}`);
         return GLib.SOURCE_REMOVE;
     }
     _toastTickId = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, _toastTick);
@@ -1633,6 +1701,15 @@ function _collapseNcGroups(p, merges = null) {
                 inner.visible = true;
         } catch (_) {}
         container.add_child(newest);
+        try {
+            newest.connect('notify::height', () => {
+                try {
+                    if (container && !container.is_finalized?.() && container._macPeekGroup) {
+                        container.set_height(newest.height + peersN * over);
+                    }
+                } catch (_) {}
+            });
+        } catch (_) {}
         try {
             container.connect('button-press-event', () => {
                 try { _expandGroup(g); } catch (_) {}
@@ -2243,6 +2320,25 @@ function _destroyNC(p) {
     try {
         p.overlay.destroy();
     } catch (_) {}
+}
+
+export function getToastDebug() {
+    return {
+        _toastStack: !!_toastStack,
+        _toastBox: !!_toastBox,
+        _toastTickId,
+        _toastPending: _toastPending.length,
+        _toastsEnabled,
+        kids: _toastBox ? _toastBox.get_children().map(k => ({
+            visible: k.visible,
+            opacity: k.opacity,
+            h: k.height,
+            w: k.width,
+            _entered: k._entered,
+            _pill: !!k._pill,
+            _content: !!k._content
+        })) : []
+    };
 }
 
 export function isNCOpen() {

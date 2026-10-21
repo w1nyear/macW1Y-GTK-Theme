@@ -393,7 +393,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         }
     }
 
-    // 3. Кнопки дій — компактні для скріншотів
+    // 3. Кнопки дій — компактні для скріншотів, приховані за замовчуванням (з'являються при hover)
     let actionsBox = null;
     if (notification.actions && notification.actions.length > 0) {
         actionsBox = new St.BoxLayout({
@@ -402,6 +402,8 @@ export function buildNotificationCard(source, notification, options = {}) {
             x_expand: false,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.CENTER,
+            visible: false,
+            opacity: 0,
             style: isScreenshot
                 ? 'margin-top: 4px !important; margin-bottom: 0px !important; spacing: 6px !important;'
                 : 'margin-top: 7px !important; margin-bottom: 2px !important; spacing: 8px !important;',
@@ -424,6 +426,7 @@ export function buildNotificationCard(source, notification, options = {}) {
             });
             actBtn.connect('notify::hover', () => {
                 actBtn.set_style(actBtn.hover ? btnStyleHover : btnStyleBase);
+                updateHoverState();
             });
             actBtn.connect('clicked', () => {
                 try { action.activate(); } catch (e) { logError(e); }
@@ -522,7 +525,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         try {
             if (cardData.isClosing || !banner.get_stage() || !closeBtn.get_stage()) return false;
             if (banner.hover || closeBtn.hover) return true;
-            if (actionsBox && actionsBox.visible && actionsBox.get_stage()) {
+            if (actionsBox && actionsBox.get_stage()) {
+                if (actionsBox.hover) return true;
                 for (const b of actionsBox.get_children()) {
                     if (b.hover) return true;
                 }
@@ -531,7 +535,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         return false;
     };
 
-    // При наведенні час м'яко поступається кнопці закриття (150мс)
+    // При наведенні час м'яко поступається кнопці закриття (150мс),
+    // кнопки дій з'являються, а висота картки плавно збільшується
     const updateHoverState = () => {
         try {
             if (cardData.isClosing || !banner.get_stage() || !closeBtn.get_stage())
@@ -540,6 +545,7 @@ export function buildNotificationCard(source, notification, options = {}) {
 
             closeBtn.remove_all_transitions();
             timeLabel.remove_all_transitions();
+            if (actionsBox) actionsBox.remove_all_transitions();
 
             if (hovered) {
                 closeBtn.visible = true;
@@ -558,6 +564,15 @@ export function buildNotificationCard(source, notification, options = {}) {
                         } catch (_) {}
                     },
                 });
+                if (actionsBox) {
+                    actionsBox.visible = true;
+                    actionsBox.ease({
+                        opacity: 255,
+                        duration: 180,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    });
+                }
+                measureCard(true);
             } else {
                 timeLabel.visible = true;
                 timeLabel.ease({
@@ -577,6 +592,21 @@ export function buildNotificationCard(source, notification, options = {}) {
                         } catch (_) {}
                     },
                 });
+                if (actionsBox) {
+                    actionsBox.ease({
+                        opacity: 0,
+                        duration: 140,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        onComplete: () => {
+                            try {
+                                if (!isCardHovered() && actionsBox.get_stage()) {
+                                    actionsBox.visible = false;
+                                }
+                            } catch (_) {}
+                        },
+                    });
+                }
+                measureCard(false);
             }
         } catch (_) {}
     };
@@ -614,12 +644,13 @@ export function buildNotificationCard(source, notification, options = {}) {
     // Ремір висоти картки: перенесені рядки тіла St.BoxLayout меряє
     // БЕЗ переносу (natural width), тому перший лейаут нищий і другомий
     // рядок тіла обрізає клип банера. Міряю рядки напряму по ширині
-    // текст-колонки (як у тостів: get_preferred_height(colW)) іuju
-    // ставлю висоту банера явно.
-    const measureCard = () => {
+    // текст-колонки (як у тостів: get_preferred_height(colW)) і
+    // плавно анімую висоту банера при hover.
+    const measureCard = (hovered = null) => {
         try {
             if (!banner.get_parent())
                 return;
+            const isHover = hovered !== null ? hovered : isCardHovered();
             const colW = Math.max(80, Math.round((width ?? 484)) - 28 - (isScreenshot ? 38 : 44) - 12 - 76);
             let total = isScreenshot ? 20 : 30; // паддінги 10+10 (скріншот) або 14+16 (канон)
             let count = 0;
@@ -636,13 +667,22 @@ export function buildNotificationCard(source, notification, options = {}) {
             }
             if (!count)
                 return;
-            if (actionsBox?.visible) {
-                total += isScreenshot ? (3 + 22) : (7 + 24);
+            if (actionsBox && isHover) {
+                total += isScreenshot ? (4 + 22) : (7 + 24);
             }
             total += (isScreenshot ? 2 : 4) * Math.max(0, count - 1);
             const target = Math.max(isScreenshot ? 54 : 72, Math.ceil(total));
             if (Math.abs(target - banner.height) > 1) {
-                try { banner.set_height(target); } catch (_) {}
+                try {
+                    banner.remove_all_transitions();
+                    banner.ease({
+                        height: target,
+                        duration: 180,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    });
+                } catch (_) {
+                    try { banner.set_height(target); } catch (_) {}
+                }
             }
         } catch (_) {}
     };
