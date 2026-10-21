@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v6i';
+} from './tahoeNotificationCard.js?v=notif_v6l';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -86,7 +86,7 @@ const BACKDROP_PAD = 60;
 const SHADER_PADDING = 20;
 
 // --- Банери-тости (вигляд MacShell-main, етап 2) ---
-const TOAST_W = 364;              /* ширина колонки тостів (MacShell toastArea) */
+const TOAST_W = NC_W - 40;        /* = 484: та сама ширина, що в карток Центру (NC_W 524 - 40) */
 const TOAST_X_PAD = 10;           /* відступ від правого краю екрана */
 const TOAST_Y_PAD = 8;            /* відступ під панеллю */
 const TOAST_SPACING = 10;         /* інтервал між тостами */
@@ -599,6 +599,15 @@ function _makeToastCard(item, noglass = false) {
     });
     content.add_child(textCol);
 
+    // Правий рейл 76px - та сама структура, що в карток Центру: час i ✕
+    // лежать у ньому один над одним (BinLayout), крос-фейд при наведенні
+    const rail = new St.Widget({
+        layout_manager: new Clutter.BinLayout(),
+        y_align: Clutter.ActorAlign.START,
+    });
+    rail.set_width(76);
+    content.add_child(rail);
+
     const appName = String(source?.title ?? '').trim();
     const summary = String(n.title ?? '').trim();
     const body = String(n.body ?? '').trim();
@@ -610,9 +619,10 @@ function _makeToastCard(item, noglass = false) {
         rowA.add_child(_toastLabel(appName, {color: TOAST_INK_SUB, size: 12, weight: 600, max: 40, expand: true, ellip: true}));
     }
     const timeLabel = _toastLabel('Щойно', {color: 'rgba(255, 255, 255, 0.55)', size: 12, weight: 500, max: 16, ellip: true});
-    try { timeLabel.style += 'margin-left: 12px;'; } catch (_) {}
-    rowA.add_child(timeLabel);
+    timeLabel.x_align = Clutter.ActorAlign.END;
+    timeLabel.y_align = Clutter.ActorAlign.START;
     textCol.add_child(rowA);
+    rail.add_child(timeLabel);
     slot._timeLabel = timeLabel;
 
     let summaryLabel = null;
@@ -644,8 +654,9 @@ function _makeToastCard(item, noglass = false) {
             y_align: Clutter.ActorAlign.CENTER,
         }));
     } catch (_) {}
-    slot.add_child(closeBtn);
-    try { closeBtn.set_position(TOAST_W - 32, 10); } catch (_) {}
+    closeBtn.x_align = Clutter.ActorAlign.END;
+    closeBtn.y_align = Clutter.ActorAlign.START;
+    rail.add_child(closeBtn);
     slot._closeBtn = closeBtn;
     closeBtn.connect('clicked', () => {
         try { _toastCloseClicked(item, slot); } catch (_) {}
@@ -654,9 +665,10 @@ function _makeToastCard(item, noglass = false) {
     // --- висота картки: ручний height-for-width. St.BoxLayout рахує
     // висоту за природною шириною лейблiв (до переносу), тому
     // вимiрюємо рядки напряму через Clutter.Text (вiн коректно
-    // реалiзує height-for-width). Колонка тексту = 280px
-    // (364 - паддiнги 14x2 - iконка 44 - маржа 12). ---
-    const COL_W = 280;
+    // реалiзує height-for-width). Колонка = 344px - та сама, що в
+    // карток Центру (484 - паддiнги 14x2 - iконка 44 - маржа 12 -
+    // рейл 76), тому висоти тоста i картки збігаються. ---
+    const COL_W = TOAST_W - 28 - 44 - 12 - 76;
     // висоти через Pango layout: Clutter.Text тримає той самий
     // лейаут, яким потім малює, тому висота піксельно збігається зі
     // стабільним рендером (get_preferred_height на неприйнятому
@@ -699,7 +711,7 @@ function _makeToastCard(item, noglass = false) {
         coldH += 4 + pangoH(summaryLabel, COL_W);
     if (bodyLabel)
         coldH += 4 + pangoH(bodyLabel, COL_W);
-    slot._bodyH = Math.max(74, Math.ceil(coldH + 30));
+    slot._bodyH = Math.max(72, Math.ceil(coldH + 30));
     slot.set_height(Math.max(14, slot._bodyH * 0.35));
     try { content.set_height(slot._bodyH); } catch (_) {}
     try { pill.set_height(Math.max(36, slot.height)); } catch (_) {}
@@ -726,7 +738,7 @@ function _makeToastCard(item, noglass = false) {
             const count = rows.filter((v) => v > 0).length;
             const sum = rows.reduce((acc, v) => acc + v, 0);
             const total = 30 + sum + 4 * Math.max(0, count - 1);
-            const target = Math.max(74, Math.ceil(total));
+            const target = Math.max(72, Math.ceil(total));
             if (Math.abs(target - slot._bodyH) > 1) {
                 slot._bodyH = target;
                 try { content.set_height(target); } catch (_) {}

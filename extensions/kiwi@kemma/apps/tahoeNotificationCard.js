@@ -313,8 +313,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         y_align: Clutter.ActorAlign.CENTER,
         x_expand: true,
         style: isCritical
-            ? 'color: #ff453a !important; font-size: 13px !important; font-weight: 700 !important;'
-            : 'color: rgba(255, 255, 255, 0.60) !important; font-size: 12px !important; font-weight: 600 !important;',
+            ? 'font-family: "Open Runde" !important; color: #ff453a !important; font-size: 13px !important; font-weight: 700 !important;'
+            : 'font-family: "Open Runde" !important; color: rgba(255, 255, 255, 0.60) !important; font-size: 12px !important; font-weight: 600 !important;',
     });
     try { appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
     contentBox.add_child(appLabel);
@@ -326,7 +326,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     if (rawTitle && !isDuplicateTitle) {
         titleLabel = new St.Label({
             x_expand: true,
-            style: 'color: #ffffff !important; font-size: 14px !important; font-weight: 700 !important;',
+            style: 'font-family: "Open Runde" !important; color: #ffffff !important; font-size: 14px !important; font-weight: 700 !important;',
         });
         setLabelMarkup(titleLabel, rawTitle);
         try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
@@ -340,7 +340,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     if (bodyText) {
         bodyLabel = new St.Label({
             x_expand: true,
-            style: 'color: #ffffff !important; font-size: 13px !important; font-weight: 500 !important;',
+            style: 'font-family: "Open Runde" !important; color: #ffffff !important; font-size: 13px !important; font-weight: 500 !important;',
         });
         setLabelMarkup(bodyLabel, bodyText);
         bodyLabel.clutter_text.single_line_mode = false;
@@ -367,12 +367,12 @@ export function buildNotificationCard(source, notification, options = {}) {
                 label: action.label,
                 reactive: true,
                 can_focus: true,
-                style: 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;',
+                style: 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;',
             });
             actBtn.connect('notify::hover', () => {
                 actBtn.set_style(actBtn.hover
-                    ? 'background-color: rgba(255, 255, 255, 0.26) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;'
-                    : 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;');
+                    ? 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.26) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;'
+                    : 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;');
             });
             actBtn.connect('clicked', () => {
                 try { action.activate(); } catch (e) { logError(e); }
@@ -388,7 +388,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         text: formatToastAge(notification.datetime),
         x_align: Clutter.ActorAlign.END,
         y_align: Clutter.ActorAlign.START,
-        style: 'color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important;',
+        style: 'font-family: "Open Runde" !important; color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important;',
     });
     try { timeLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
 
