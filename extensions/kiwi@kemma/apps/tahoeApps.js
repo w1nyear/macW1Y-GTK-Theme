@@ -617,7 +617,10 @@ class TahoeApps {
         win.style = `font-family: "${this._settings.get_string('tahoe-font')}";` +
             ` font-size: ${Math.round(this._settings.get_int('tahoe-font-size') * S)}px;` +
             ' font-weight: normal;' +
-            ` border-radius: ${tahoeRadius}px;`;
+            ` border-radius: ${tahoeRadius}px;` +
+            ' border-top: 2px solid rgba(200, 200, 200, 0.50);' +
+            ' border-bottom: 2px solid rgba(200, 200, 200, 0.50);' +
+            ' border-left: none; border-right: none;';
         win.connect('button-press-event', () => {
             if (this._menu)
                 this._closeMenu();

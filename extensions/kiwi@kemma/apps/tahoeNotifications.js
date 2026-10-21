@@ -1589,7 +1589,7 @@ function _collapseNcGroups(p, merges = null) {
             b.reactive = false;
             b._macHiddenPeer = true;
             b._macSavedStyle = CARD_BASE_STYLE;
-            b.set_style(CARD_BASE_STYLE);
+            b.set_style(CARD_BASE_STYLE + ' border-top: none !important;');
             try {
                 const inner = (b.get_children?.() ?? [])[0];
                 if (inner)
@@ -1598,7 +1598,10 @@ function _collapseNcGroups(p, merges = null) {
             b.set_pivot_point(0.5, 0);
             b.set_scale(1 - i * 0.042, 1);
             b.translation_y = i * over;
-            try { b.remove_clip(); } catch (_) {}
+            try {
+                const clipY = Math.max(0, headH - i * over);
+                b.set_clip(0, clipY, b.width, i * over + 50);
+            } catch (_) {}
             peerEnter(b, i);
             container.add_child(b);
         }
@@ -1774,9 +1777,23 @@ function _syncCards(p, monitor, s) {
         try {
             for (const c of p.list.get_children()) {
                 if (c._macPeekGroup) {
-                    for (const b2 of c.get_children()) {
-                        if (b2.has_style_class_name?.('mac-notification-banner'))
-                            kids.push(b2);
+                    const g = c._macPeekGroup;
+                    const newest = g.cards?.[0];
+                    if (newest && newest.visible && newest.mapped) {
+                        const [cx, cy] = newest.get_transformed_position();
+                        const cw = newest.width, ch = newest.height;
+                        if (cw > 0 && ch > 0 && isFinite(cx) && isFinite(cy)) {
+                            const m = SHADER_PADDING;
+                            const peersN = Math.min(2, (g.cards?.length ?? 1) - 1);
+                            const extra = peersN * 9;
+                            regions.push({
+                                x: (cx - monitor.x) - m,
+                                y: (cy - monitor.y) - m,
+                                w: cw + m * 2,
+                                h: ch + extra + m * 2,
+                                tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
+                            });
+                        }
                     }
                     continue;
                 }

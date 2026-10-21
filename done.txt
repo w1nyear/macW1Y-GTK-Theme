@@ -7994,3 +7994,17 @@ echo "==> Встановлення успішно завершено!"
       - У CARD_BASE_STYLE (tahoeNotificationCard.js та tahoeNotifications.js) та stylesheet.css (.tahoe-nc-list .mac-notification-banner) додано 2px сірий бордер з 50% непрозорістю зверху і знизу: border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important;.
       - Завдяки border-radius: 24px лінії зверху і знизу плавно та природно сходять нанівець при закругленні бічних кутів, усуваючи артефакти розмиття по боках.
    4. Версію імпорту оновлено до ?v=notif_v6x та ?v=notif_v6n і успішно застосовано в робочій сесії.
+
+19.17. notifs: 2.17 уніфікація 2px 50% сірих рамок (border зверху/знизу) на ВСІХ Liquid Glass елементах + повне очищення стоса під верхньою карткою
+   1. Чистота верхнього повідомлення у стосі:
+      - У _collapseNcGroups для карток-пірів (старіших сповіщень) примусово вимкнено border-top: b.set_style(CARD_BASE_STYLE + ' border-top: none !important;'). Раніше top-border піра малювався на висоті 9px всередині прозорого тіла верхньої картки.
+      - Додано строгий set_clip(0, Math.max(0, headH - i * over), b.width, i * over + 50) для пірів: Clutter не відмальовує жодного пікселя піра в зоні верхньої картки, залишаючи видимим лише нижній виступаючий край.
+      - У _syncCards для згорнутого стоса c._macPeekGroup формується один єдиний неперервний регіон рідкого скла на всю висоту стоса (нова картка + виступ пірів) без додавання внутрішніх overlapping-регіонів для пірів. Шейдер більше не створює внутрішніх контурів (rim/specular/edge_smoothing) всередині верхньої картки — крізь рідке скло просвічуються виключно робочі вікна та шпалери стільниці.
+      - При розгортанні (_expandGroup) усім карткам повертається повний CARD_BASE_STYLE (з верхнім та нижнім 2px бордером), знімається кліп і кожна картка отримує свій повноцінний регіон скла.
+   2. Уніфікація 2px 50% сірих рамок (border зверху/знизу) на всіх Liquid Glass елементах:
+      - Quick Settings / Control Center (.tahoe-qs-panelbg у stylesheet.css та _qsPanelShadow() у tahoeControlCenter.js і tahoeQuickSettings.js): додано border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important;.
+      - OSD повзунки гучності/яскравості (.tahoe-osd у stylesheet.css).
+      - Tahoe Apps вікно запуску (win.style у tahoeApps.js).
+      - Tahoe Widgets віджети стільниці (.tahoe-widget-tint у stylesheet.css та glassCard() у widgets/theme.js).
+      - Контекстні та випадаючі меню (.popup-menu-content, .popup-sub-menu, .appmenu-popup-menu-content у liquid-glass stylesheet.css).
+   3. Версію імпорту в extension.js оновлено до ?v=notif_v6y, модулі перезавантажено в робочій сесії GNOME Shell.

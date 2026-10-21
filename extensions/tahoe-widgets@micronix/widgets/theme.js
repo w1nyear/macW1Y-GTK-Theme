@@ -5,7 +5,9 @@
 
 function glassCard() {
     return 'background-color: rgba(64,60,58,0.55);' +
-        'border: 1px solid rgba(255,255,255,0.22);' +
+        'border-top: 2px solid rgba(200, 200, 200, 0.50);' +
+        'border-bottom: 2px solid rgba(200, 200, 200, 0.50);' +
+        'border-left: none; border-right: none;' +
         'border-radius: 26px;';
 }
 
