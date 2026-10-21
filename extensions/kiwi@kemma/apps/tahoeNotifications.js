@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v6m';
+} from './tahoeNotificationCard.js?v=notif_v6n';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -48,7 +48,7 @@ let syncGlassCaptureClip = () => {};
 let ensureGlassAllocated = () => {};
 
 const _LG_BASE = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist';
-const CARD_BASE_STYLE = 'background-color: rgba(0, 0, 0, 0) !important; border: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
+const CARD_BASE_STYLE = 'background-color: rgba(0, 0, 0, 0) !important; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
 
 import(_LG_BASE + '/liquidEffect.js').then(m => {
     if (m.LiquidEffect)
@@ -196,7 +196,7 @@ function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0, noWin 
             effect._setFloat('rim_width', 5.0);
             effect._setFloat('rim_power', 6.0);
             effect._setFloat('displacement_scale', 0.02);
-            effect._setFloat('edge_smoothing', 2.0);
+            effect._setFloat('edge_smoothing', 1.33);
         }
     } catch (_) {}
 
@@ -1075,7 +1075,7 @@ function _applyWidgetGlassParams(effect) {
         effect._setFloat('displacement_scale', 92);
         effect._setFloat('ior', 2.4);
         effect._setFloat('chroma_strength', 0.006);
-        effect._setFloat('edge_smoothing', 2.0);
+        effect._setFloat('edge_smoothing', 1.33);
         effect._setFloat('profile_shape_n', 7.0);
         effect._setFloat('max_z', 25);
     } catch (_) {}
@@ -1596,7 +1596,7 @@ function _collapseNcGroups(p, merges = null) {
                     inner.visible = false;
             } catch (_) {}
             b.set_pivot_point(0.5, 0);
-            b.set_scale(1 - i * 0.024, 1);
+            b.set_scale(1 - i * 0.042, 1);
             b.translation_y = i * over;
             try { b.remove_clip(); } catch (_) {}
             peerEnter(b, i);
@@ -1690,7 +1690,7 @@ function _expandGroup(g) {
             } else {
                 // Старіші сповіщення плавно спадають униз з-під верхнього
                 b.set_pivot_point(0.5, 0);
-                b.set_scale(1 - i * 0.024, 1);
+                b.set_scale(1 - i * 0.042, 1);
                 b.translation_y = - (i * step - (i * 9));
                 b.opacity = 220;
                 b.ease({

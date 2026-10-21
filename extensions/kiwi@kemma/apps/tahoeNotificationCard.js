@@ -207,7 +207,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     // під нею власна плитка скла (стек 'nc-cards', ті самі параметри
     // віджет-конфігу, що в тостів); білий текст; іконка того, хто
     // надіслав; час -> ✕ крос-фейд при наведенні.
-    const CARD_BASE_STYLE = 'background-color: rgba(0, 0, 0, 0) !important; border: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
+    const CARD_BASE_STYLE = 'background-color: rgba(0, 0, 0, 0) !important; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
     const CARD_HOVER_STYLE = CARD_BASE_STYLE;
     // Пілюля → картка (морф банерів): стілі сумісні зі старим API
     const CARD_PILL_STYLE = CARD_BASE_STYLE.replace('border-radius: 24px !important;', 'border-radius: 9999px !important;');
