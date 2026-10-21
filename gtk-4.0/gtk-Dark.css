@@ -9744,7 +9744,7 @@ window.nautilus-window overlay-split-view {
     background-image: none;
 }
 
-/* Sidebar floating glass card: solid #202022 frame border, rounded on both left and right sides */
+/* Sidebar floating glass card: solid #202022 frame border, seamless gapless junction on right */
 window.nautilus-window overlay-split-view > widget.sidebar-pane,
 window.nautilus-window .sidebar-pane,
 window.nautilus-window .sidebar-pane:dir(ltr),
@@ -9756,7 +9756,7 @@ window.nautilus-window .sidebar-pane:dir(rtl),
     border-left: 8px solid #202022;
     border-bottom: 8px solid #202022;
     border-right: 8px solid #202022;
-    border-radius: 24px;
+    border-radius: 24px 0 0 24px;
     background-color: rgba(30, 30, 34, 0.40);
     background-clip: padding-box;
     box-shadow: none;
@@ -9976,13 +9976,6 @@ window.nautilus-window .content-pane headerbar {
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Lower top panel buttons (pathbar, search, options, view modes) to match right margin */
-window.nautilus-window .content-pane headerbar > windowhandle > box > widget > box.start,
-window.nautilus-window .content-pane headerbar > windowhandle > box > widget > box.end,
-window.nautilus-window .content-pane headerbar > windowhandle > box > widget > .title,
-window.nautilus-window .content-pane headerbar > windowhandle > box > widget {
-    margin-top: 8px;
-}
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
 
 /* Alignment for Resources (net.nokyan.Resources) */
