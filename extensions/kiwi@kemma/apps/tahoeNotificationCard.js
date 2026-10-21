@@ -7,6 +7,7 @@
 
 import St from 'gi://St';
 import Gio from 'gi://Gio';
+import Shell from 'gi://Shell';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
@@ -167,6 +168,34 @@ export function formatRelativeNotifAge(datetime) {
     return formatNotificationTimestamp(dt);
 }
 
+// Відносний час у тост-каноні: «Щойно», «5 хв тому», «3 год тому»,
+// для старіших - дата/час як у Центрі.
+export function formatToastAge(datetime) {
+    try {
+        const now = GLib.DateTime.new_now_local();
+        let dt = datetime;
+        if (!dt) {
+            dt = now;
+        } else if (typeof dt.to_local === 'function') {
+            dt = dt.to_local();
+        }
+        const sec = Math.max(0, now.to_unix() - dt.to_unix());
+        if (sec < 60)
+            return 'Щойно';
+        const min = Math.floor(sec / 60);
+        if (min < 60)
+            return `${min} хв тому`;
+        const hr = Math.floor(min / 60);
+        if (hr < 24)
+            return `${hr} год тому`;
+        if (hr < 48)
+            return `Вчора, ${dt.format('%H:%M')}`;
+        return formatNotificationTimestamp(dt);
+    } catch (_) {
+        return 'Щойно';
+    }
+}
+
 export function buildNotificationCard(source, notification, options = {}) {
     const {
         width = 440,
@@ -174,12 +203,17 @@ export function buildNotificationCard(source, notification, options = {}) {
         onClick = null,
     } = options;
 
-    // Канонічні стилі картки: темний матовий акрил, radius 16 (наш дизайн-канон)
-    const CARD_BASE_STYLE = 'background-color: rgba(45, 45, 47, 0.76) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 16px !important; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;';
-    const CARD_HOVER_STYLE = 'background-color: rgba(56, 56, 58, 0.84) !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; border-radius: 16px !important; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.42) !important;';
-    // Пілюля → картка (морф банерів)
-    const CARD_PILL_STYLE = CARD_BASE_STYLE.replace('border-radius: 16px !important;', 'border-radius: 9999px !important;');
-    const CARD_MID_STYLE = CARD_BASE_STYLE.replace('border-radius: 16px !important;', 'border-radius: 22px !important;');
+    // Канон нового вигляду = тости v5 (етапи 2.2-2.4): картка ПРОЗОРА,
+    // під нею власна плитка скла (стек 'nc-cards', ті самі параметри
+    // віджет-конфігу, що в тостів); білий текст; іконка того, хто
+    // надіслав; час -> ✕ крос-фейд при наведенні.
+    const CARD_BASE_STYLE = 'background-color: rgba(0, 0, 0, 0) !important; border: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
+    const CARD_HOVER_STYLE = CARD_BASE_STYLE;
+    // Пілюля → картка (морф банерів): стілі сумісні зі старим API
+    const CARD_PILL_STYLE = CARD_BASE_STYLE.replace('border-radius: 24px !important;', 'border-radius: 9999px !important;');
+    const CARD_MID_STYLE = CARD_BASE_STYLE.replace('border-radius: 24px !important;', 'border-radius: 22px !important;');
+    const CLOSE_BASE = 'width: 22px !important; height: 22px !important; border-radius: 11px !important; background-color: rgba(255, 255, 255, 0.14) !important; border: none !important; box-shadow: none !important; padding: 0 !important;';
+    const CLOSE_HOVER = CLOSE_BASE.replace('0.14', '0.26');
 
     const banner = new St.Button({
         style_class: 'mac-notification-banner',
@@ -195,161 +229,128 @@ export function buildNotificationCard(source, notification, options = {}) {
         try { banner.set_width(width); } catch (_) {}
     }
 
-    // Головна розкладка в стилі macOS: [іконка 44×44] [тексти] [правий рейл]
+    // Головна розкладка тоста: [іконка 44×44] [тексти], паддінг 14/14/16
     const mainBox = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,
         x_expand: true,
         y_expand: true,
         clip_to_allocation: true,
-        style: 'padding: 13px 14px !important; spacing: 12px !important;',
+        style: 'padding: 14px 14px 16px 14px !important; border-radius: 24px !important;',
     });
     banner.set_child(mainBox);
 
-    // 1. Тайл іконки 44×44, заокруглення 10 (новий вигляд MacShell)
-    const gicon = notification.gicon || source?.icon || source?.app?.get_app_info()?.get_icon() || null;
-    const iconBin = new St.Bin({
-        style_class: 'mac-notification-icon-bin',
-        x_align: Clutter.ActorAlign.CENTER,
-        y_align: Clutter.ActorAlign.START,
-        clip_to_allocation: true,
-        style: 'width: 44px !important; height: 44px !important; border-radius: 10px !important; background-color: rgba(255, 255, 255, 0.12) !important; margin-top: 2px !important;',
-    });
-    const iconParams = {
-        icon_size: 44,
-        style_class: 'mac-notification-app-icon',
-        x_align: Clutter.ActorAlign.CENTER,
-        y_align: Clutter.ActorAlign.CENTER,
-    };
-    if (gicon) {
-        iconParams.gicon = gicon;
-    } else {
-        iconParams.icon_name = 'dialog-information-symbolic';
+    // 1. Іконка ХТО надіслав: gicon повідомлення -> source.icon ->
+    //    додаток джерела -> AppSystem (lookup <title>.desktop + скан по
+    //    get_installed) -> createIcon джерела. Без іконки - нейтральна
+    //    темна плитка (не акцентно-синя), як у тостів.
+    let gicon = null;
+    try { gicon = notification.gicon ?? null; } catch (_) {}
+    try { if (!gicon) gicon = source?.icon ?? null; } catch (_) {}
+    try { if (!gicon) gicon = source?.app?.get_icon?.() ?? null; } catch (_) {}
+    try {
+        if (!gicon) {
+            const name = String(source?.title ?? '').trim();
+            if (name && Shell.AppSystem) {
+                const appSys = Shell.AppSystem.get_default();
+                let app = appSys.lookup_app(`${name}.desktop`)
+                    ?? appSys.lookup_app(`${name.toLowerCase()}.desktop`);
+                if (!app) {
+                    const lower = name.toLowerCase();
+                    for (const cand of appSys.get_installed?.() ?? []) {
+                        try {
+                            const nm = String(cand.get_name() ?? '').toLowerCase();
+                            const id = String(cand.get_id() ?? '').toLowerCase();
+                            if (nm === lower || id.startsWith(`${lower}.`)) {
+                                app = cand;
+                                break;
+                            }
+                        } catch (_) {}
+                    }
+                }
+                gicon = app?.get_app_info?.()?.get_icon?.()
+                    ?? app?.get_icon?.() ?? null;
+            }
+        }
+    } catch (_) {}
+    if (!gicon) {
+        try { gicon = source?.createIcon?.(44) ?? null; } catch (_) {}
     }
-    const icon = new St.Icon(iconParams);
-    iconBin.set_child(icon);
-    mainBox.add_child(iconBin);
+    const iconTile = new St.Widget({
+        width: 44,
+        height: 44,
+        y_align: Clutter.ActorAlign.START,
+        style: gicon ? 'border-radius: 10px !important;'
+                     : 'background-color: rgba(28, 30, 36, 0.62) !important; border-radius: 10px !important;',
+        layout_manager: new Clutter.BinLayout(),
+    });
+    try { iconTile.set_clip_to_allocation(true); } catch (_) {}
+    iconTile.add_child(gicon
+        ? new St.Icon({gicon, icon_size: 44})
+        : new St.Icon({
+            icon_name: 'org.gnome.Settings-notifications-symbolic',
+            icon_size: 22,
+            style: 'color: #ffffff !important;',
+        }));
+    try { iconTile.style += 'margin-right: 12px;'; } catch (_) {}
+    mainBox.add_child(iconTile);
 
-    // 2. Колона текстів
+    // 2. Текст-колонка (тост-канон, spacing 4)
     const contentBox = new St.BoxLayout({
         orientation: Clutter.Orientation.VERTICAL,
         x_expand: true,
         y_align: Clutter.ActorAlign.START,
-        style_class: 'mac-notification-content-box',
-        style: 'spacing: 2px !important;',
+        style: 'spacing: 4px !important;',
     });
     mainBox.add_child(contentBox);
 
-    // Рядок заголовка: [Ім'я програми / ТЕРМІНОВО] [Лічильник стопки]
-    const appHeaderBox = new St.BoxLayout({
-        orientation: Clutter.Orientation.HORIZONTAL,
-        x_expand: true,
-        y_align: Clutter.ActorAlign.CENTER,
-    });
-    contentBox.add_child(appHeaderBox);
+    // GNOME 50: критичні мають urgency=3 (>=2 - HIGH і вище)
+    const isCritical = (notification.urgency ?? 1) >= 2;
+    const appName = String(source?.title ?? '').trim();
 
-    const isUrgent = (notification.urgency === 2); // MessageTray.Urgency.CRITICAL
-
+    // Рядок A: ТЕРМІНОВО (червоним) або ім'я застосунку (напівпрозорий білий)
     const appLabel = new St.Label({
-        text: isUrgent ? 'ТЕРМІНОВО' : (source?.title || 'Повідомлення'),
-        style_class: isUrgent ? 'mac-notification-urgent' : 'mac-notification-app-name',
+        text: isCritical ? '⚠ ТЕРМІНОВО' : (appName || 'Повідомлення'),
         y_align: Clutter.ActorAlign.CENTER,
-    });
-    appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-    appHeaderBox.add_child(appLabel);
-
-    const countBadge = new St.Label({
-        text: '',
-        style_class: 'mac-notification-count-badge',
-        style: 'color: rgba(255, 255, 255, 0.90); background-color: rgba(255, 255, 255, 0.20); font-size: 10px !important; font-weight: 600 !important; border-radius: 9999px !important; padding: 1px 6px !important; margin-left: 6px !important;',
-        y_align: Clutter.ActorAlign.CENTER,
-        visible: false,
-    });
-    appHeaderBox.add_child(countBadge);
-
-    // 3. Правий рейл: відносний час («тільки що», «5 хв тому») вгорі; при наведенні
-    // на його місці — кругла кнопка закриття ✕ (22px), як у MacShell.
-    const rightRail = new St.Widget({
-        layout_manager: new Clutter.BinLayout(),
-        y_align: Clutter.ActorAlign.START,
-        x_align: Clutter.ActorAlign.END,
-    });
-    rightRail.set_width(76);
-    mainBox.add_child(rightRail);
-
-    const timeLabel = new St.Label({
-        text: formatRelativeNotifAge(notification.datetime),
-        style_class: 'mac-notification-time',
-        x_align: Clutter.ActorAlign.END,
-        y_align: Clutter.ActorAlign.START,
-        style: 'color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; margin-top: 3px !important;',
-    });
-    timeLabel.opacity = 255;
-    timeLabel.visible = true;
-
-    const extDir = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/blur-my-shell@aunetx`;
-    const closeIconPath = `${extDir}/assets/close.png`;
-    const closeHoverIconPath = `${extDir}/assets/close-button-hover.png`;
-    const giconNormal = Gio.icon_new_for_string(closeIconPath);
-    const giconHover = Gio.icon_new_for_string(closeHoverIconPath);
-    let closeIcon = new St.Icon({
-        gicon: giconNormal,
-        icon_size: 12,
-    });
-    const closeBtn = new St.Button({
-        style_class: 'mac-notification-close-btn',
-        child: closeIcon,
-        x_align: Clutter.ActorAlign.END,
-        y_align: Clutter.ActorAlign.START,
-        reactive: true,
-        can_focus: true,
-        style: 'background-color: rgba(255, 255, 255, 0.14) !important; border: none !important; box-shadow: none !important; border-radius: 9999px !important; padding: 5px !important; width: 22px !important; height: 22px !important; margin-top: 1px !important;',
-    });
-    closeBtn.opacity = 0;
-    closeBtn.visible = false;
-    closeBtn.connect('notify::hover', () => {
-        closeIcon.gicon = closeBtn.hover ? giconHover : giconNormal;
-        try {
-            closeBtn.set_style(closeBtn.hover
-                ? 'background-color: rgba(255, 255, 255, 0.26) !important; border: none !important; border-radius: 9999px !important; padding: 5px !important; width: 22px !important; height: 22px !important; margin-top: 1px !important;'
-                : 'background-color: rgba(255, 255, 255, 0.14) !important; border: none !important; border-radius: 9999px !important; padding: 5px !important; width: 22px !important; height: 22px !important; margin-top: 1px !important;');
-        } catch (_) {}
-    });
-    rightRail.add_child(timeLabel);
-    rightRail.add_child(closeBtn);
-
-    // Заголовок (тільки якщо відрізняється від імені застосунку — як у macOS)
-    const rawTitle = (notification.title || '').trim();
-    const appName = (source?.title || '').trim();
-    const isDuplicateTitle = rawTitle.toLowerCase() === appName.toLowerCase();
-    const titleLabel = new St.Label({
-        style_class: 'mac-notification-title',
         x_expand: true,
+        style: isCritical
+            ? 'color: #ff453a !important; font-size: 13px !important; font-weight: 700 !important;'
+            : 'color: rgba(255, 255, 255, 0.60) !important; font-size: 12px !important; font-weight: 600 !important;',
     });
+    try { appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
+    contentBox.add_child(appLabel);
+
+    // Заголовок (тільки якщо відрізняється від імені застосунку)
+    const rawTitle = (notification.title || '').trim();
+    const isDuplicateTitle = rawTitle.toLowerCase() === appName.toLowerCase();
+    let titleLabel = null;
     if (rawTitle && !isDuplicateTitle) {
+        titleLabel = new St.Label({
+            x_expand: true,
+            style: 'color: #ffffff !important; font-size: 14px !important; font-weight: 700 !important;',
+        });
         setLabelMarkup(titleLabel, rawTitle);
-        titleLabel.clutter_text.line_wrap = true;
-        titleLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
-        titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        titleLabel.visible = true;
+        try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
         contentBox.add_child(titleLabel);
-    } else {
-        titleLabel.visible = false;
     }
 
-    // Тіло: багаторядкове перенесення, ніколи не обрізається трикрапкою (канон!)
-    const bodyText = notification.bannerBodyText || notification.body || '';
-    const bodyLabel = new St.Label({
-        style_class: 'mac-notification-body',
-        x_expand: true,
-    });
-    setLabelMarkup(bodyLabel, bodyText);
-    bodyLabel.clutter_text.single_line_mode = false;
-    bodyLabel.clutter_text.line_wrap = true;
-    bodyLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
-    bodyLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
-    contentBox.add_child(bodyLabel);
+    // Тіло: перенесення рядків, трикрапкою НІКОЛИ (канон Центру)
+    // body (повний) перший: GNOME-трімає bannerBodyText підрізаним
+    const bodyText = notification.body || notification.bannerBodyText || '';
+    let bodyLabel = null;
+    if (bodyText) {
+        bodyLabel = new St.Label({
+            x_expand: true,
+            style: 'color: #ffffff !important; font-size: 13px !important; font-weight: 500 !important;',
+        });
+        setLabelMarkup(bodyLabel, bodyText);
+        bodyLabel.clutter_text.single_line_mode = false;
+        bodyLabel.clutter_text.line_wrap = true;
+        bodyLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+        bodyLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+        contentBox.add_child(bodyLabel);
+    }
 
-    // 4. Кнопки дій (внизу праворуч від тексту) — канонічні капсули 7px
+    // 3. Кнопки дій — ті самі нейтральні капсули (працюють і на склі)
     let actionsBox = null;
     if (notification.actions && notification.actions.length > 0) {
         actionsBox = new St.BoxLayout({
@@ -359,8 +360,6 @@ export function buildNotificationCard(source, notification, options = {}) {
             x_align: Clutter.ActorAlign.END,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'margin-top: 7px !important; margin-bottom: 2px !important; spacing: 8px !important;',
-            visible: true,
-            opacity: 255,
         });
         for (const action of notification.actions) {
             const actBtn = new St.Button({
@@ -368,12 +367,12 @@ export function buildNotificationCard(source, notification, options = {}) {
                 label: action.label,
                 reactive: true,
                 can_focus: true,
-                style: 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px;',
+                style: 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;',
             });
             actBtn.connect('notify::hover', () => {
                 actBtn.set_style(actBtn.hover
-                    ? 'background-color: rgba(255, 255, 255, 0.26) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px;'
-                    : 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px;');
+                    ? 'background-color: rgba(255, 255, 255, 0.26) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;'
+                    : 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;');
             });
             actBtn.connect('clicked', () => {
                 try { action.activate(); } catch (e) { logError(e); }
@@ -384,19 +383,46 @@ export function buildNotificationCard(source, notification, options = {}) {
         contentBox.add_child(actionsBox);
     }
 
-    // Живе оновлення відносного часу кожні 30с
-    let agoTimerId = 0;
-    const updateAgo = () => {
-        try {
-            timeLabel.set_text(formatRelativeNotifAge(notification.datetime));
-        } catch (_) {}
-    };
-    updateAgo();
-    agoTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, () => {
-        updateAgo();
-        return GLib.SOURCE_CONTINUE;
+    // 4. ✕ 22×22 + час у правому рейлі (тост-стиль, гліф ✕, без PNG)
+    const timeLabel = new St.Label({
+        text: formatToastAge(notification.datetime),
+        x_align: Clutter.ActorAlign.END,
+        y_align: Clutter.ActorAlign.START,
+        style: 'color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important; margin-top: 3px !important;',
+    });
+    try { timeLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
+
+    const closeBtn = new St.Button({
+        opacity: 0,
+        visible: false,
+        reactive: false,
+        x_align: Clutter.ActorAlign.END,
+        y_align: Clutter.ActorAlign.START,
+        style: CLOSE_BASE,
+    });
+    try {
+        closeBtn.set_child(new St.Label({
+            text: '✕',
+            style: 'font-size: 11px; color: rgba(255, 255, 255, 0.85); font-weight: 600;',
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+        }));
+    } catch (_) {}
+    closeBtn.connect('notify::hover', () => {
+        try { closeBtn.set_style(closeBtn.hover ? CLOSE_HOVER : CLOSE_BASE); } catch (_) {}
     });
 
+    const rightRail = new St.Widget({
+        layout_manager: new Clutter.BinLayout(),
+        y_align: Clutter.ActorAlign.START,
+        x_align: Clutter.ActorAlign.END,
+    });
+    rightRail.set_width(76);
+    rightRail.add_child(timeLabel);
+    rightRail.add_child(closeBtn);
+    mainBox.add_child(rightRail);
+
+    // Заглушка cardData (для замикань нижче)
     const cardData = {
         banner,
         notification,
@@ -405,7 +431,6 @@ export function buildNotificationCard(source, notification, options = {}) {
         timeLabel,
         titleLabel,
         bodyLabel,
-        countBadge,
         actionsBox,
         content: mainBox,
         isClosing: false,
@@ -432,15 +457,14 @@ export function buildNotificationCard(source, notification, options = {}) {
     const isCardHovered = () => {
         if (banner.hover || closeBtn.hover) return true;
         if (actionsBox && actionsBox.visible) {
-            const btns = actionsBox.get_children();
-            for (let b of btns) {
+            for (const b of actionsBox.get_children()) {
                 if (b.hover) return true;
             }
         }
         return false;
     };
 
-    // При наведенні час м'яко поступається місцем кнопці закриття (канон) — 150мс
+    // При наведенні час м'яко поступається кнопці закриття (150мс)
     const updateHoverState = () => {
         if (cardData.isClosing)
             return;
@@ -493,6 +517,19 @@ export function buildNotificationCard(source, notification, options = {}) {
         }
     }
 
+    // Живе оновлення відносного часу кожні 30с
+    let agoTimerId = 0;
+    const updateAgo = () => {
+        try {
+            timeLabel.set_text(formatToastAge(notification.datetime));
+        } catch (_) {}
+    };
+    updateAgo();
+    agoTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, () => {
+        updateAgo();
+        return GLib.SOURCE_CONTINUE;
+    });
+
     banner.connect('destroy', () => {
         cardData.isClosing = true;
         if (agoTimerId) {
@@ -501,7 +538,51 @@ export function buildNotificationCard(source, notification, options = {}) {
         }
     });
 
-    // Внутрішні стилі для споживачів (пілюля → картка морф у tahoeNotifications)
+    // Ремір висоти картки: перенесені рядки тіла St.BoxLayout меряє
+    // БЕЗ переносу (natural width), тому перший лейаут нищий і другомий
+    // рядок тіла обрізає клип банера. Міряю рядки напряму по ширині
+    // текст-колонки (як у тостів: get_preferred_height(colW)) іuju
+    // ставлю висоту банера явно.
+    const measureCard = () => {
+        try {
+            if (!banner.get_parent())
+                return;
+            const colW = Math.max(80, Math.round((width ?? 440)) - 28 - 44 - 12 - 76);
+            let total = 30; // паддінги 14+16
+            let count = 0;
+            for (const l of [appLabel, titleLabel, bodyLabel]) {
+                if (!l || !l.get_parent?.())
+                    continue;
+                try { l.ensure_style?.(); } catch (_) {}
+                try { l.clutter_text?.layout?.set_text(l.clutter_text.get_text()); } catch (_) {}
+                const [, hh] = l.get_preferred_height(colW);
+                if (isFinite(hh) && hh > 0) {
+                    total += hh;
+                    count++;
+                }
+            }
+            if (!count)
+                return;
+            if (actionsBox?.visible) {
+                total += 7 + 24;
+            }
+            total += 4 * Math.max(0, count - 1);
+            const target = Math.max(64, Math.ceil(total));
+            if (Math.abs(target - banner.height) > 1) {
+                try { banner.set_height(target); } catch (_) {}
+            }
+        } catch (_) {}
+    };
+    for (const d of [80, 200, 400]) {
+        try {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, d, () => {
+                try { measureCard(); } catch (_) {}
+                return GLib.SOURCE_REMOVE;
+            });
+        } catch (_) {}
+    }
+
+    // Внутрішні стілі для споживачів (пілюля → картка морф у tahoeNotifications)
     cardData.baseStyle = CARD_BASE_STYLE;
     cardData.hoverStyle = CARD_HOVER_STYLE;
     cardData.pillStyle = CARD_PILL_STYLE;

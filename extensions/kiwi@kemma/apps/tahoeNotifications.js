@@ -33,12 +33,11 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v5';
+} from './tahoeNotificationCard.js?v=notif_v6e';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -1715,52 +1714,6 @@ function _buildPanel(merges = null) {
     head.add_child(clear);
     box.add_child(head);
 
-    // Рядок «Не турбувати» (новий вигляд MacShell) з живим перемикачем DnD
-    const DND_STYLE_BASE = 'background-color: rgba(255, 255, 255, 0.07) !important; border: 1px solid rgba(255, 255, 255, 0.09) !important; border-radius: 12px !important; padding: 9px 12px !important; spacing: 10px !important; margin-bottom: 2px !important;';
-    const dndRow = new St.BoxLayout({
-        style_class: 'tahoe-nc-dndrow',
-        style: DND_STYLE_BASE,
-    });
-    const moonIcon = new St.Icon({
-        icon_name: 'weather-clear-night-symbolic',
-        icon_size: 15,
-        y_align: Clutter.ActorAlign.CENTER,
-        style: 'color: rgba(255, 255, 255, 0.85) !important;',
-    });
-    const dndLabel = new St.Label({
-        text: _('Не турбувати'),
-        y_align: Clutter.ActorAlign.CENTER,
-        style: 'color: rgba(255, 255, 255, 0.92) !important; font-size: 13px !important; font-weight: 500 !important;',
-    });
-    const dndSpacer = new St.Widget({x_expand: true, y_align: Clutter.ActorAlign.CENTER});
-    const dndSwitch = new PopupMenu.Switch(false);
-    try {
-        dndSwitch.y_align = Clutter.ActorAlign.CENTER;
-    } catch (_) {}
-    const notifSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.notifications'});
-    const syncDnd = () => {
-        try {
-            dndSwitch.state = !notifSettings.get_boolean('show-banners');
-        } catch (_) {}
-    };
-    syncDnd();
-    dndSwitch.connect('notify::state', () => {
-        try {
-            notifSettings.set_boolean('show-banners', !dndSwitch.state);
-        } catch (_) {}
-    });
-    let dndSettingsId = 0;
-    try {
-        dndSettingsId = notifSettings.connect('changed::show-banners', syncDnd);
-    } catch (_) {
-        dndSettingsId = 0;
-    }
-    dndRow.add_child(moonIcon);
-    dndRow.add_child(dndLabel);
-    dndRow.add_child(dndSpacer);
-    dndRow.add_child(dndSwitch);
-    box.add_child(dndRow);
-
     const scroll = new St.ScrollView({
         style_class: 'tahoe-nc-scroll',
         x_expand: true,
@@ -1797,7 +1750,6 @@ function _buildPanel(merges = null) {
         tickId: 0,
         inkUnwatch: null,
         _closing: false,
-        dndSettings: { notifSettings, dndSettingsId },
     };
     _nc = p;
 
@@ -1915,12 +1867,6 @@ function _buildPanel(merges = null) {
 function _destroyNC(p) {
     if (!p)
         return;
-    try {
-        const dd = p.dndSettings;
-        if (dd?.notifSettings && dd?.dndSettingsId) {
-            try { dd.notifSettings.disconnect(dd.dndSettingsId); } catch (_) {}
-        }
-    } catch (_) {}
     try {
         if (p.inkUnwatch)
             p.inkUnwatch();

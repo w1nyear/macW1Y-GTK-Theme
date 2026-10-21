@@ -7603,3 +7603,49 @@ echo "==> Встановлення успішно завершено!"
    фікситься тут (не впливає на область тостів).
 6. Репо: apps/tahoeNotifications.js (mac-toast.css без змін).
    Комміт: done.txt + 1 файл; liquid-glass dist/src - поза.
+
+19.5. Етап 2.5 — «збережи цей вигляд повідомлення і заміни замість
+   старого вигляду у центрі сповіщень. у центрі сповіщень також
+   видали перемикач не турбувати»
+
+1. ПЕРЕПИСАНО buildNotificationCard (apps/tahoeNotificationCard.js):
+   картки Центру = ТОЧНИЙ вигляд тостів v5 (2.2-2.4):
+   • картка ПРОЗОРА (radius 24, паддінг 14/14/16) - під нею світить
+     скло стеку 'nc-cards' (старі акрил rgba(45,45,47,.76)+box-shadow
+     знято; hover-акрил теж знято);
+   • іконка ХТО надіслав: n.gicon -> source.icon -> app.get_icon ->
+     AppSystem (lookup <title>.desktop + скан get_installed) ->
+     source.createIcon(44) -> нейтральна темна плитка - 1:1 з тоста;
+   • rowA: «⚠ ТЕРМІНОВО» #ff453а bold (критичні) або ім'я застосунку
+     rgba(255,255,255,.60) 12px; час праворуч 12px .55; заголовок
+     білий bold 14; тіло біле 13, wrap WORD_CHAR, ellipsize NONE
+     (канон Центру: трикрапки НІКОЛИ);
+   • ✕ 22×22 (гліф, rgba(255,255,255,.14)/.26 hover, текст .85)
+     крос-фейд із часом 150мс; лічильник стопки видалено;
+   • час тост-стиль: «Щойно», «N хв тому», «N год тому», «Вчора,
+     HH:mm», далі дата/час (formatToastAge, оновлення 30с).
+2. GNOME 50: notify-send -u critical = urgency=3 (не 2!) ->
+   isCritical = (urgency ?? 1) >= 2 (старе ===2 пропускало критичні).
+3. ВИСОТА КАРТОК: wrap тіла St.BoxLayout міряє по natural width ->
+   перший лейаут нищий, другий рядок тіла обрізається клипом. Фікс:
+   measureCard() через 80/200/400мс - get_preferred_height(colW=280)
+   по рядках (як у тостів) + явна banner.set_height(). Перевірено
+   тілом на 6 рядків - переноситься повністю.
+4. ТІЛО: беру n.body (п骨干ний), а не bannerBodyText (GNOME його
+   підрізає; у-message bannerBodyText навіть порожній).
+5. ДНД: рядок «Не турбувати» ВИДАЛЕНО з _buildPanel (dndRow/moonIcon/
+   PopupMenu.Switch/Gio.Settings show-banners/syncDnd + disconnect у
+   _destroyNC + p.dndSettings + імпорт PopupMenu).
+6. ІНСТРУМЕНТАЛЬНЕ ВІДКРИТТЯ (гучение, на ньому втратив 3 свапи):
+   extension.js._on_settings_changed реімпортує ФІКСОВАНИЙ URL
+   'tahoeNotifications.js?v=notif_v5' - у живій сесії це ЗАКЕШОВАНИЙ
+   старий парс (DND+акрил), і кожна зміна налаштувань ПОВЕРНУЛА стару
+   панель поверх нової. Фікс: версію бампнуто до '?v=notif_v6e' +
+   swap-wrapper на той самий URL. Механізм освіжі модулів = ТІЛЬКИ
+   нові версійні запити (?v=). bring
+7. Тести: center_v6e.png (новий вигляд, всі елементи), center_v6c.png
+   (ТЕРМІНОВО червоним), center_hover.png (✕ замість часу при
+   наведенні), center_v6.png (DND зник, іконки firefox реальні).
+8. Репо: extension.js (версія неif_v6e), apps/tahoeNotifications.js
+   (?v=notif_v6e у імпорті картки), apps/tahoeNotificationCard.js.
+   liquid-glass dist/src - поза коммітом.
