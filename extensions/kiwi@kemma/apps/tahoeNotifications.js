@@ -521,8 +521,7 @@ function _makeToastCard(item, noglass = false) {
     const content = new St.BoxLayout({
         vertical: false,
         track_hover: true,
-        style: 'padding: 14px 14px 16px 14px; border-radius: 24px;'
-            + ` box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);`,
+        style: 'padding: 14px 14px 16px 14px; border-radius: 24px;',
     });
     try { content.set_reactive(true); } catch (_) {}
     try { content.set_width(TOAST_W); } catch (_) {}
@@ -627,28 +626,103 @@ function _makeToastCard(item, noglass = false) {
     // реалiзує height-for-width). Колонка тексту = 280px
     // (364 - паддiнги 14x2 - iконка 44 - маржа 12). ---
     const COL_W = 280;
-    const lineH = (l) => {
+    // висоти через Pango layout: Clutter.Text тримає той самий
+    // лейаут, яким потім малює, тому висота піксельно збігається зі
+    // стабільним рендером (get_preferred_height на неприйнятому
+    // акторі повертає завищені значення -> зайвий висота картки)
+    const pangoH = (l, w) => {
         try {
-            const [, h] = l.get_preferred_height(COL_W);
+            if (!l || !l.clutter_text)
+                return 0;
+            // шрифт inline-стилю застосовується ліниво (на першому
+            // малярстві) — наступивимо стиль синхронно, інакше лейаут
+            // міряє дефолтним шрифтом (+~5px на рядок)
+            try { l.ensure_style(); } catch (_) {}
+            const lay = l.clutter_text.get_layout();
+            try {
+                lay.set_wrap(Pango.WrapMode.WORD);
+                lay.set_width(Math.max(1, Math.round(w)) * Pango.SCALE);
+            } catch (_) {}
+            const [, h] = lay.get_pixel_size();
             return isFinite(h) && h > 0 ? h : 0;
         } catch (_) {
             return 0;
         }
     };
-    let coldH = 0;
-    try {
-        const [, h] = rowA.get_preferred_height(-1);
-        if (isFinite(h) && h > 0)
-            coldH = h;
-    } catch (_) {}
+    let rowH = 0;
+    const rowKids = rowA?.get_children?.() ?? [];
+    for (const rk of rowKids) {
+        if (!rk.clutter_text)
+            continue;
+        const h = pangoH(rk, 160);
+        if (h > rowH)
+            rowH = h;
+    }
+    if (!(rowH > 0)) {
+        try {
+            rowH = 15;
+        } catch (_) {}
+    }
+    let coldH = rowH;
     if (summaryLabel)
-        coldH += 4 + lineH(summaryLabel);
+        coldH += 4 + pangoH(summaryLabel, COL_W);
     if (bodyLabel)
-        coldH += 4 + lineH(bodyLabel);
+        coldH += 4 + pangoH(bodyLabel, COL_W);
     slot._bodyH = Math.max(74, Math.ceil(coldH + 30));
     slot.set_height(Math.max(14, slot._bodyH * 0.35));
     try { content.set_height(slot._bodyH); } catch (_) {}
     try { pill.set_height(Math.max(36, slot.height)); } catch (_) {}
+
+    // створення-time pref лейаут ще дефолтного шрифту (стиль лінивий) -
+    // висоту перераховують ПІСЛЯ перших кадрів з фактичних prefH рядків
+    // (інакше під текстом лишалось ~20px порожнього скла)
+    const remeasure = () => {
+        try {
+            if (!slot || !slot.get_parent())
+                return;
+            const rows = [];
+            for (const k of textCol.get_children()) {
+                try {
+                    // строго по ширині колонки: get_preferred_height(-1)
+                    // міряє рядок БЕЗ переносу - тіло з 2+ рядків
+                    // стискається до одного -> еліпсис на кінці тексту
+                    const [, h] = k.get_preferred_height(COL_W);
+                    rows.push(isFinite(h) && h > 0 ? h : 0);
+                } catch (_) {
+                    rows.push(0);
+                }
+            }
+            const count = rows.filter((v) => v > 0).length;
+            const sum = rows.reduce((acc, v) => acc + v, 0);
+            const total = 30 + sum + 4 * Math.max(0, count - 1);
+            const target = Math.max(74, Math.ceil(total));
+            if (Math.abs(target - slot._bodyH) > 1) {
+                slot._bodyH = target;
+                try { content.set_height(target); } catch (_) {}
+                try {
+                    slot.ease({
+                        height: target,
+                        duration: 240,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    });
+                } catch (_) {
+                    try { slot.set_height(target); } catch (_) {}
+                }
+            }
+        } catch (_) {}
+    };
+    try {
+        slot._r1 = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
+            try { remeasure(); } catch (_) {}
+            slot._r1 = 0;
+            return GLib.SOURCE_REMOVE;
+        });
+        slot._r2 = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 320, () => {
+            try { remeasure(); } catch (_) {}
+            slot._r2 = 0;
+            return GLib.SOURCE_REMOVE;
+        });
+    } catch (_) {}
 
     // --- клiк по картцi = активацiя сповiщення + dismiss ---
     try {
@@ -722,12 +796,14 @@ function _toastLifeStop(slot) {
 
 function _toastClearTimers(slot) {
     _toastLifeStop(slot);
-    try {
-        if (slot?._timeId) {
-            try { GLib.source_remove(slot._timeId); } catch (_) {}
-            slot._timeId = 0;
-        }
-    } catch (_) {}
+    for (const t of ['_timeId', '_r1', '_r2']) {
+        try {
+            if (slot?.[t]) {
+                try { GLib.source_remove(slot[t]); } catch (_) {}
+                slot[t] = 0;
+            }
+        } catch (_) {}
+    }
     try { _toastTimers.delete(slot); } catch (_) {}
 }
 
@@ -889,6 +965,116 @@ function _flushToastQueue() {
 
 // --- скло тостів: мультирегіон-стек LiquidEffect ---
 
+
+// === Скло тостів = точний конфіг віджетів робочого столу
+// (tahoe-widgets@micronix): той самий .frag, слабкий тінт користувача,
+// refraction ior 2.4 / displacement 92 / rim-набір. Головне — НЕ наш
+// білий тінт: фон картки дає лишей шейдер скла.
+function _applyWidgetGlassParams(effect) {
+    if (!effect)
+        return;
+    let tint = [0, 0, 0], strength = 0.10, blur = 4, sat = 1.0;
+    try {
+        const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
+        try {
+            const raw = String(sset.get_string('glass-tint') || '');
+            const nums = raw.match(/[\d.]+/g);
+            if (nums && nums.length >= 3) {
+                const c = nums.slice(0, 3).map((x) => Math.min(1, Math.max(0, parseFloat(x) / 255)));
+                if (c.every((v) => isFinite(v)))
+                    tint = c;
+            }
+        } catch (_) {}
+        try { strength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 10) / 100)); } catch (_) {}
+        try { blur = Math.min(60, Math.max(0, _readIntSetting(sset, 'glass-blur', blur))); } catch (_) {}
+        try { sat = Math.min(2, Math.max(0.2, _readIntSetting(sset, 'glass-saturation', 100) / 100)); } catch (_) {}
+    } catch (_) {}
+    try { effect.setBlurRadius(blur); } catch (_) {}
+    try { effect.setTintColor(tint[0], tint[1], tint[2]); } catch (_) {}
+    try { effect.setTintStrength(strength); } catch (_) {}
+    try { effect.setBrightness(1.0); } catch (_) {}
+    try { effect.setContrast(1.0); } catch (_) {}
+    try { effect.setSaturation(sat); } catch (_) {}
+    try { effect.setSurfaceLightEnabled(true); } catch (_) {}
+    try {
+        effect._setFloat('sheen_intensity', 0);
+        effect._setFloat('rim_intensity', 0.08);
+        effect._setFloat('rim_width', 5.0);
+        effect._setFloat('rim_power', 6.0);
+        effect._setFloat('rim_directional_power', 2.7);
+        effect._setFloat('rim_light_color_intensity', 1.4);
+        effect._setFloat('specular_intensity', 0);
+        effect._setFloat('displacement_scale', 92);
+        effect._setFloat('ior', 2.4);
+        effect._setFloat('chroma_strength', 0.006);
+        effect._setFloat('edge_smoothing', 2.0);
+        effect._setFloat('profile_shape_n', 7.0);
+        effect._setFloat('max_z', 25);
+    } catch (_) {}
+}
+
+// int-зчитування з партнерського schem'я (int/uint/double як є)
+function _readIntSetting(s, key, dflt) {
+    try { return s.get_int(key); } catch (_) {}
+    try { return s.get_uint(key); } catch (_) {}
+    try { return Math.round(s.get_double(key)); } catch (_) {}
+    try { return parseInt(String(s.get_string(key)), 10) || dflt; } catch (_) {}
+    return dflt;
+}
+
+
+// шпалери-актор (як у віджетів робочого столу - mirror саме фону)
+function _widgetWallpaper(monitor) {
+    try {
+        const bg = Main.layoutManager._bgManagers?.[monitor?.index ?? 0]?.backgroundActor;
+        if (bg)
+            return bg;
+    } catch (_) {}
+    try { return Main.layoutManager._backgroundGroup ?? null; } catch (_) { return null; }
+}
+
+// стек скла в схемі віджетів: ТОЛЬКО mirror шпалерів + LiquidEffect.
+// Ніяких WindowCloneManager/UILayerSampler - під склом тепер не
+// "лінза" з вікнами, а той самий вид, який дають віджети столу
+function _makeWidgetToastGlassStack(monitor, radius) {
+    if (!LiquidEffect || !UnpickableActor)
+        throw new Error('liquid-glass modules not loaded yet');
+    const bgActor = new UnpickableActor();
+    bgActor.set_name('liquid-glass-bg-actor-mac-toast-glass');
+    bgActor.set_pivot_point(0, 0);
+
+    const liquidBox = new UnpickableActor();
+    liquidBox.set_name('liquid-box-mac-toast-glass');
+    liquidBox.set_clip_to_allocation(true);
+    bgActor.add_child(liquidBox);
+
+    const dummy = new UnpickableActor();
+    dummy.set_name('optimization-breaker');
+    dummy.set_size(1, 1);
+    dummy.set_opacity(0);
+    liquidBox.add_child(dummy);
+
+    const mirror = new Clutter.Clone({source: _widgetWallpaper(monitor) ?? Main.layoutManager._backgroundGroup});
+    mirror.set_size(global.stage.width, global.stage.height);
+    mirror.set_position(-monitor.x, -monitor.y);
+    liquidBox.add_child(mirror);
+
+    const effect = new LiquidEffect({
+        extensionPath: GLib.get_home_dir() +
+            '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com',
+        settings: _lgSettings(),
+        owner: 'tahoe-nc-mac-toast-glass',
+    });
+    effect.setPadding(SHADER_PADDING);
+    effect.setCornerRadius(radius);
+    effect.setIsDock(false);
+    effect.setMultiRegionMode(true);
+    _applyWidgetGlassParams(effect);
+    liquidBox.add_effect(effect);
+
+    return {widget: true, bgActor, liquidBox, effect, mirror, srcActor: null};
+}
+
 function _ensureToastGlass() {
     if (_toastStack)
         return true;
@@ -898,10 +1084,9 @@ function _ensureToastGlass() {
         const monitor = Main.layoutManager.primaryMonitor;
         if (!monitor)
             return false;
-        if (!LiquidEffect || UILayerSampler === null || WindowCloneManager === null)
+        if (!LiquidEffect || !UnpickableActor)
             return false;
-        const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', false);
-        try { s.effect.setBlurRadius(32); } catch (_) {}
+        const s = _makeWidgetToastGlassStack(monitor, 24);
         _toastStack = s;
         Main.layoutManager.uiGroup.insert_child_below(s.bgActor, _toastBox);
         return true;
@@ -973,8 +1158,25 @@ function _syncToastGlass(monitor, s) {
         if (!s.bgActor.visible)
             s.bgActor.show();
         s.bgActor.opacity = 255;
-        // iOS-референс: свiтле frosted-скло (бiлий тiнт, сильне розмиття)
-        const fill = {c: [1.0, 1.0, 1.0], a: 0.84};
+        // скло як у віджетах робочого столу: слабкий тінт користувача,
+        // жодного білого фону - видима поверхня тільки від
+        // LiquidEffect .frag
+        let glassTint = [0, 0, 0], glassStrength = 0.10;
+        try {
+            const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
+            const raw = String(sset.get_string('glass-tint') || '');
+            const nums = raw.match(/[\d.]+/g);
+            if (nums && nums.length >= 3) {
+                const c = nums;
+                if (c && c.length >= 3) {
+                    const cc = c.slice(0, 3).map((x) => Math.min(1, Math.max(0, parseFloat(x) / 255)));
+                    if (cc.every((v) => isFinite(v)))
+                        glassTint = cc;
+                }
+            }
+            glassStrength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 10) / 100));
+        } catch (_) {}
+        const fill = {c: glassTint, a: glassStrength};
         for (const r of regions) {
             r.tintR = fill.c[0];
             r.tintG = fill.c[1];
@@ -987,6 +1189,22 @@ function _syncToastGlass(monitor, s) {
         s.liquidBox.set_position(0, 0);
         s.liquidBox.set_size(monitor.width, monitor.height);
         setClipIfChanged(s.bgActor, 0, 0, monitor.width, monitor.height);
+        ensureGlassAllocated(s.bgActor);
+        if (s.widget) {
+            // віджет-схема: клонів вікон немає - джерело шейдера =
+            // чисті шпалери (те саме, що бачать віджети столу).
+            // Пере-в'язую джерело, якщо шпалери замінилися
+            try {
+                const src = _widgetWallpaper(monitor);
+                if (src && s.srcActor !== src) {
+                    s.mirror.source = src;
+                    s.srcActor = src;
+                }
+            } catch (_) {}
+            try { s.mirror.set_size(global.stage.width, global.stage.height); } catch (_) {}
+            try { s.mirror.set_position(-monitor.x, -monitor.y); } catch (_) {}
+            return;
+        }
         s.wcm.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,

@@ -7464,3 +7464,68 @@ echo "==> Встановлення успішно завершено!"
 7. Файли в комміті: done.txt, extensions/kiwi@kemma/apps/
    {tahoeNotifications.js, mac-toast.css}. Зміни liquid-glass (dist/
    src) з попереднього сеансу НЕ входять у цей комміт.
+
+19.2. Етап 2.2 — «Видали фон повністю. Постав тільки шейдер скла
+   Liquid Glass .frag який є у елементі віджетів на робочому столі.
+   А висоту повідомлення менше зроби бо там текст закінчився а займе
+   місце» (kiwi@kemma, 21.10)
+
+1. Віджет-скло знайдено: віджети на столі («City 24», годинник) — це
+   ТАХОЙ-WIDGETS ext (tahoe-widgets@micronix, extension.js). Їхне скло
+   = LiquidEffect з парами: tint = gsettings glass-tint
+   (='rgba(0, 0, 0, 255.0)'), strength = glass-tint-strength/100
+   (=10%), blur = glass-blur (=4), saturation = glass-saturation
+   (=100), radius 30, ПЛЮС rim-набір uniformів: ior 2.4,
+   displacement_scale 92, rim_intensity 0.08 / rim_width 5 /
+   rim_power 6 / rim_directional_power 2.7 /
+   rim_light_color_intensity 1.4, sheen 0, specular 0,
+   chroma_strength 0.006, edge_smoothing 2.0, profile_shape_n 7,
+   max_z 25, surfaceLightEnabled(true).
+   Чисте джерело віджет-скла = ШПАЛЕРИ (mirror =
+   _bgManagers[mon].backgroundActor, rebinder при заміні), БЕЗ
+   клонів вікон (WindowCloneManager/UILayerSampler у них відсутні).
+2. НОВИЙ стек тостів _makeWidgetToastGlassStack(monitor, 24):
+   UnpickableActor bg -> liquidBox (clip) -> dummy 1x1 (BMS guard) ->
+   mirror(source=_widgetWallpaper()) -> LiquidEffect(SHADER_PADDING,
+   multiRegion, _applyWidgetGlassParams()). Жодних wcm/uiSampler.
+   _syncToastGlass: загальна частина (регіони по пілях, fill =
+   tint/з-reader'а tahoe-widgets схеми per-sync, setCornerRadius(maxR),
+   setGlassRegions, setResolution, clip, ensureGlassAllocated)
+   -> потім if (s.widget) { rebinder mirror; return; } -> else
+   старий картковий pipeline (wcm/uiSampler - незайманий).
+   БАГ по дорозі: віджет-гілка спершу стояла ПЕРЕД
+   if (!regions.length) з return -> setGlassRegions ніколи не
+   викликався -> скло НЕ МАЛЮвалося взагалі (піксельний тест
+   strength 10 vs 70 однакові). Після реструктуризації регіони
+   живі: strength 70 затемнює (87->29), 10 = як у віджетів.
+3. Білий тінт [1,1,1]@0.84 знятий; у .content прибрано
+   box-shadow: 0 8px 24px rgba(0,0,0,0.28) - «фон» маптили тепер
+   ТОЛЬКИ шейдер (запасність: .mac-toast-noglass CSS лишився для
+   dead-glass фолбека, живий рендер його не бачить).
+4. Висота карток: вимір при створенні брав stale-лейаут дефолтного
+   шрифту (Cantarell 11pt = 23px/рядок на Всіх лейблах;
+   ensure_style() НЕ перефарбовує Clutter.Text лейаут синхронно) ->
+   slot мав +19-23px порожнього скла під текстом. Рішення: друга
+   проба через 80/320мс (remeasure) з фактичними prefH рядків
+   (СТРОГО при ширині COL_W=280: get_preferred_height(-1) міряє тіло
+   БЕЗ переносу -> 2-рядкове тіло стискалося до 1 -> еліпсис
+   «...Proceed…»; таймери slot._r1/_r2 чіпляються в _makeToastCard і
+   чищаться в _toastClearTimers (спільний цикл ['_timeId','_r1',
+   '_r2'])). М'який доп-морф EASE_OUT_CUBIC 240мс.
+   Результат: Погода (1 рядок тіла) 107 -> 88; критичний (2 рядки)
+   -> 107 з ПОВНИМ тілом (без еліпсису), жодного порожнього скла.
+5. Тести: slotH=88/107 (було 107/107), скло реагує на
+   glass-tint-strength (пікс. тест), наведення ✕ (крос-фейд
+   час->✕ працює, toast_hover_v3.png), фінал toast_final_v2.png;
+   journalctl чистий. Параметри віджет-схеми — ті самі, що у віджетів,
+   тому скло тостів візуально = скло віджетів City 24.
+6. Репо-синхронізація: extensions/kiwi@kemma/apps/
+   tahoeNotifications.js (mac-toast.css без змін). Комміт: done.txt +
+   1 файл kiwi@kemma; зміни liquid-glass (dist/src, 14 файлів) —
+   НЕ в комміті (окремий етап).
+
+7. Наступні кроки: (а) фидбек по вигляду (тінт 10% може видатись
+   надто блідим — підняти glass-tint-strength в tahoe-widgets
+   налаштуваннях); (б) можливо підсилити blur 4 -> 8-12 для
+   читабельності тексту на яскравих ділянках; (в) незроблені етапи:
+   GDM/lock, нові стекла-групи у Центрі.
