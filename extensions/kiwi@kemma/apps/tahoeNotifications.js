@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v6h';
+} from './tahoeNotificationCard.js?v=notif_v6i';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -1539,6 +1539,7 @@ function _syncCards(p, monitor, s) {
         } catch (_) {
             kids = [];
         }
+        let maxR = 0;
         for (const card of kids) {
             try {
                 if (card._macGroup && typeof card._macGroup.getGlassRegions === 'function') {
@@ -1554,7 +1555,11 @@ function _syncCards(p, monitor, s) {
                 const cw = card.width, ch = card.height;
                 if (!(cw > 0) || !(ch > 0) || !isFinite(cx) || !isFinite(cy))
                     continue;
-                const m = 0;
+                // як у тостів: шейдер стискає кожен регіон на
+                // SHADER_PADDING з усіх боків (actual_size = size -
+                // pad*2), тому компенсуємо - інакше скло НЕ на всю
+                // висоту/рядо картки
+                const m = SHADER_PADDING;
                 regions.push({
                     x: (cx - monitor.x) - m, y: (cy - monitor.y) - m,
                     w: cw + m * 2, h: ch + m * 2,
@@ -1574,6 +1579,8 @@ function _syncCards(p, monitor, s) {
             s.bgActor.show();
         s.bgActor.opacity = 255;
         // тінт регіонів карток = той самий, що в тостів (віджет-конфіг)
+        if (regions.length)
+            maxR = 24; // корнер картки, як у тостів (radius 24)
         const fill = _widgetGlassFill();
         for (const r of regions) {
             r.tintR = fill.c[0];
@@ -1581,6 +1588,7 @@ function _syncCards(p, monitor, s) {
             r.tintB = fill.c[2];
             r.baseStrength = fill.a;
         }
+        try { s.effect.setCornerRadius(maxR); } catch (_) {}
         s.effect.setGlassRegions(regions);
         s.effect.setResolution(monitor.width, monitor.height);
         s.liquidBox.set_position(0, 0);
