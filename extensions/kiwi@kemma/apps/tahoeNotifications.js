@@ -48,6 +48,7 @@ let syncGlassCaptureClip = () => {};
 let ensureGlassAllocated = () => {};
 
 const _LG_BASE = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist';
+const CARD_BASE_STYLE = 'background-color: rgba(0, 0, 0, 0) !important; border: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
 
 import(_LG_BASE + '/liquidEffect.js').then(m => {
     if (m.LiquidEffect)
@@ -1587,12 +1588,8 @@ function _collapseNcGroups(p, merges = null) {
                 p.list.remove_child(b);
             b.reactive = false;
             b._macHiddenPeer = true;
-            b._macSavedStyle = b.get_style() ?? '';
-            try {
-                b.set_style((b._macSavedStyle || '')
-                    + '; background-color: rgba(30, 32, 38, 0.55);'
-                    + ' border-radius: 24px;');
-            } catch (_) {}
+            b._macSavedStyle = CARD_BASE_STYLE;
+            b.set_style(CARD_BASE_STYLE);
             try {
                 const inner = (b.get_children?.() ?? [])[0];
                 if (inner)
@@ -1601,16 +1598,7 @@ function _collapseNcGroups(p, merges = null) {
             b.set_pivot_point(0.5, 0);
             b.set_scale(1 - i * 0.024, 1);
             b.translation_y = i * over;
-            // ГЛАВНИЙ СІРИЙ елемент: плита піра малювалась ПОВЕРХ
-            // скла голови (крізь напівпрозоре скло просвічував темний
-            // фон rgba(30,32,38,.55)) -> скло голови сіріло. Кліп:
-            // пір малює только частину нижче нижньої межі голови
-            // (нижню каївку), головне скло лишається чистим
-            try {
-                const ph = Math.round(b.height) || headH;
-                const cY = Math.max(0, headH - i * over);
-                b.set_clip(0, cY, Math.round(b.width), Math.max(4, ph - cY));
-            } catch (_) {}
+            try { b.remove_clip(); } catch (_) {}
             peerEnter(b, i);
             container.add_child(b);
         }
@@ -1624,6 +1612,8 @@ function _collapseNcGroups(p, merges = null) {
         if (newest.get_parent() === p.list)
             p.list.remove_child(newest);
         newest.translation_y = 0;
+        newest.set_scale(1, 1);
+        newest.set_style(CARD_BASE_STYLE);
         container.add_child(newest);
         try {
             container.connect('button-press-event', () => {
@@ -1672,13 +1662,18 @@ function _expandGroup(g) {
         const p = _nc;
         g.expanded = true;
         let pos = p.list.get_children().indexOf(cont);
-        for (const b of g.cards) {
+        const headH = Math.max(72, Math.ceil(g.cards[0].height) || 88);
+        const spacing = 10;
+        const step = headH + spacing;
+
+        for (let i = 0; i < g.cards.length; i++) {
+            const b = g.cards[i];
             if (b.get_parent())
                 b.get_parent().remove_child(b);
             b.reactive = true;
             try { b.remove_clip(); } catch (_) {}
             delete b._macHiddenPeer;
-            try { b.set_style(b._macSavedStyle ?? ''); } catch (_) {}
+            b.set_style(CARD_BASE_STYLE);
             try {
                 const inner = (b.get_children?.() ?? [])[0];
                 if (inner)
@@ -1686,7 +1681,28 @@ function _expandGroup(g) {
             } catch (_) {}
             b.remove_all_transitions();
             p.list.insert_child_at_index(b, pos);
-            _animateEnter(b, pos);
+
+            if (i === 0) {
+                // Те що було зверху стоса, залишається нагорі (чисте рідке скло, без блимання)
+                b.translation_y = 0;
+                b.set_scale(1, 1);
+                b.opacity = 255;
+            } else {
+                // Старіші сповіщення плавно спадають униз з-під верхнього
+                b.set_pivot_point(0.5, 0);
+                b.set_scale(1 - i * 0.024, 1);
+                b.translation_y = - (i * step - (i * 9));
+                b.opacity = 220;
+                b.ease({
+                    translation_y: 0,
+                    scale_x: 1,
+                    scale_y: 1,
+                    opacity: 255,
+                    duration: 280,
+                    delay: (i - 1) * 35,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+            }
             pos++;
         }
         cont.destroy();
@@ -1759,7 +1775,7 @@ function _syncCards(p, monitor, s) {
             for (const c of p.list.get_children()) {
                 if (c._macPeekGroup) {
                     for (const b2 of c.get_children()) {
-                        if (b2.has_style_class_name?.('mac-notification-banner') && !b2._macHiddenPeer)
+                        if (b2.has_style_class_name?.('mac-notification-banner'))
                             kids.push(b2);
                     }
                     continue;
