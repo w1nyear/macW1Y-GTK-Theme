@@ -7875,3 +7875,65 @@ echo "==> Встановлення успішно завершено!"
     груп 'in/other', allParented=true; журнал чистий.
 11. Версії: ?v=notif_v6o -> v6t (кожен свап); карта - v6m
     (не змінювалась).
+
+19.13. Етап 2.13 — «сірий темний елемент всередині шейдера скла
+   видали повністю бо цей сірий елемент перекриває скло і інші
+   скло і повідомленнях стоса» — прибрані клони вікон з
+   тост-стека скла.
+
+1. ДІАГНОСТИКА (живий стос тостів, critical persist): у deprecated
+   дереві тост-скла mac-toast-glass знайдено
+   lg-mac-toast-glass-window-clones з ТРЕМА клонами реальних
+   вікон: Desktop Icons 1 (1920x1080), Ubuntu (754x263), OpenCode
+   (1348x868) — WindowCloneManager додає їх у фон шейдера.
+   Фрагменти цих вікон (плюс тіні) просвічували всередині
+   скла як сірі плями поверх скла та сусідніх тостів
+   (t1_stack.png: пляма в правій частині тоста «Погода»).
+2. Причина: у Центрі клони вікон приглушаються темною панеллю
+   оверлея і не кидаються в око; тости плавають прямо на яскравому
+   столі - сірі фрагменти видно в голоску такого скла.
+3. ФІКС: прапорець noWin у _makeGlassStack(monitor, radius, name,
+   pure, edgePx, noWin) — для тост-стека зазначено
+   _makeGlassStack(monitor, 24, 'mac-toast-glass', false, 0, true):
+   WindowCloneManager не створюється, window-clones не з'являються.
+   Заломлення лишається: дзеркало шпалер (_backgroundGroup) +
+   UILayerSampler (ui-канва; _toastBox як і раніше в
+   ексклюзіях). Центр не торкався (bd pure + cards з клонами, як
+   раніше).
+4. Контроль: t2_stack_nowin.png — сіра пляма зникла, скло чисте,
+   під ним шпалери (мост) з коректним заломленням; в дереві скла
+   clone-container Toysom має тільки ui-clones-container.
+   Журнал чистий.
+5. Сервіс: витallo сповіщення трея (67 тестових предметів, дублі
+   «Марія»/«Погода»/«Календар») - n.destroy() по всіх.
+6. Версії: ?v=notif_v6t -> v6u (tahoeNotifications.js); карта v6m
+   не змінювалась.
+
+ЕТАП 25: Типографіка часу на GDM екрані блокування (поза сесією): Open Runde SemiBold, піднята двокрапка по центру висоти цифр, щільніші цифри:
+--------------------------------------------------------------------------------
+1. Шрифт часу GDM-годинника — Open Runde SemiBold:
+   - У [src/pro/gdmClockManager.js](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/gdmClockManager.js) у методі setup() після застосування метаданих шпалер час фіксовано на font-weight: 600 (напівжирна жирність Open Runde SemiBold, розмір 128px збережено).
+   - Метод setWeight() того ж менеджера перехоплює ВСІ подальші джерела ваги (cross-session маніфест користувача clockWeight='bold' та dconf /etc/dconf/db/gdm.d/99-wack-lockscreen) і навіть з них ставить '600' — інакше маніфест користувача перезаписував би дизайн екрана входу після кожного перемикання акаунта.
+   - CSS-шар [src/pro/gdm.css](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/gdm.css) синхронізовано: .wack-time font-weight 700 -> 600 (греєр завантажує gdm.css пізніше за stylesheet.css, тому правило діє лише в GDM).
+
+2. Двокрапка «:» піднята до оптичного центру висоти цифр (як у macOS):
+   - Метрику знято з самого файла OpenRunde-Semibold.otf (fontTools): цифри займають смугу -39..2076 юнітів (центр 0.36169em), двокрапка -22..1513 (центр 0.26474em) -> підйом = 0.09695em = 12.41px при 128px.
+   - У [src/main/wackClock.js](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/wackClock.js) додано метод setColonRise(px): двокрапка піднімається Pango-розміткою <span rise="N">:</span> (rise 12708 Pango-юнітів, 1024 = 1px) через clutter_text.set_markup().
+   - Підйом застосовується у _updateTime() після кожного хвилинного оновлення (.text скидає Pango-атрибути), у _applyTextStyle() після зміни стилю та захищений від повторного входу прапорцем _inColonMarkup; при збої розмітки — відкат на звичайний текст.
+   - Знак та масштаб rise верифіковано живими тестами через EvalHelper: rise="12707" збільшує висоту лейбла 155 -> 168px (гліф їде вгору), Pango-юніти 1:1 до px*1024.
+
+3. Цифри щільніші на пару пікселів:
+   - letter-spacing часу .wack-time у GDM: -2px -> -4px (і в inline-стилі setLetterSpacing(-4), і в gdm.css). Перевірено живим тестом: Pango розподіляє інтервал навколо гліфів, сумарний міжсимвольний проміж стискається на 4px.
+   - Звичайний екран блокування У СЕСІЇ не змінено: нові поля WackClock (_letterSpacing, _colonRisePx) дефолтно null, тож користувацький локскрін лишається Bold 700 з letter-spacing -2px зі [stylesheet.css](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/stylesheet.css).
+
+4. Технічні пастки, які довелось оминути (задокументовано для майбутніх етапів):
+   - Повторний динамічний імпорт wackClock.js з ?v= падає: GObject.registerClass реєструє тип "Gjs_main_wackClock_WackClock" один раз на процес. Для тестів клас копіюється з перейменуванням (sed) в /tmp/opencode з абсолютними import-URI залежностей.
+   - style-changed у St стріляє ще з fallback-шрифтом ("Sans 12") — реальний Open Runde 128px матеріалізується пізніше БЕЗ сигналу, тому розрахунок rise від розв'язаного шрифту ненадійний; натомість rise передається в готових CSS-px і множиться на scale_factor теми з St.ThemeContext.get_for_stage(global.stage) — коректно з першого кадру.
+   - Pango-розмітка НЕ підтримує атрибут letter_spacing (<span letter_spacing="..."> ігнорується) — інтервал задається лише через CSS St (ст_theme_node_get_letter_spacing працює).
+   - index_to_pos() НЕ відображає rise (він застосовується на рівні гліфів) — для верифікації читався Pango.GlyphItem.y_offset з line.runs.
+
+5. Верифікація (живі тести в user-session через EvalHelper, точна емуляція послідовності GdmClockManager.setup):
+   - fontName: "Open Runde,...,sans-serif Semi-Bold 128px"; висота лейбла часу 168px (підйом застосований), колон y_offset = 12708 одразу після сетапу та 12708 після хвилинного тіка; letter-spacing -4px в inline-стилі.
+   - reloadExtension у user-session: state=1 (ENABLED), без помилок; журнал gnome-shell чистий.
+
+6. Розгортання: оновлені src/main/wackClock.js, src/pro/gdmClockManager.js, src/pro/gdm.css скопійовано до /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/ (GDM гретер) та ~/.local/share/gnome-shell/extensions/... (сесія користувача), дифи з репозиторієм порожні. Візуальний результат на GDM гретері перевіряється після виходу з сесії / перезапуску GDM (Wayland: Meta.restart недоступний).

@@ -95,7 +95,7 @@ export const BackdropGlass = GObject.registerClass({
         this._effect.setCornerRadius(26.0);
         this._effect.setBlurRadius(8);
         this._effect.setTintColor(0, 0, 0);
-        this._effect.setTintStrength(0.12);
+        this._effect.setTintStrength(0.02);
         this._effect.setSaturation(1.0);
         this._effect.setBrightness(1.0);
         this._effect.setContrast(1.0);

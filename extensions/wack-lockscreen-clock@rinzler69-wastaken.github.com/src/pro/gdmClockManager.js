@@ -35,6 +35,16 @@ export class GdmClockManager {
         if (metadata?.clockAlpha !== undefined && metadata?.clockAlpha !== null && typeof this.clock.setWallpaperAlpha === 'function')
             this.clock.setWallpaperAlpha(metadata.clockAlpha, metadata?.promptColor ?? null);
 
+        // GDM-типографіка часу (macOS Tahoe): Open Runde SemiBold, цифри щільніші на 2px
+        // та двокрапка, піднята до оптичного центру висоти цифр. Фіксуємо поверх
+        // маніфесту/dconf ('bold' з user-session інакше перезаписував би дизайн входу).
+        if (typeof this.clock.setWeight === 'function')
+            this.clock.setWeight('600'); // Open Runde SemiBold
+        if (typeof this.clock.setLetterSpacing === 'function')
+            this.clock.setLetterSpacing(-4); // було -2px у stylesheet — ще щільніше на пару px
+        if (typeof this.clock.setColonRise === 'function')
+            this.clock.setColonRise(12.41); // 0.09695em × 128px — ':' по центру висоти цифр (метрика Open Runde)
+
         const dateLabel = this.clock._dateOutput;
         const timeLabel = this.clock._time;
         this.timeLabel = timeLabel;
@@ -202,8 +212,10 @@ export class GdmClockManager {
     }
 
     setWeight(weight) {
+        // GDM: час завжди Open Runde SemiBold ('600') — фіксований дизайн екрана входу,
+        // тому значення з маніфесту користувача чи dconf ('bold') свідомо ігнорується.
         if (typeof this.clock?.setWeight === 'function') {
-            this.clock.setWeight(weight);
+            this.clock.setWeight('600');
         }
     }
 

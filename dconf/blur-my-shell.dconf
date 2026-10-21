@@ -16,6 +16,7 @@ blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegr
 blur=true
 blur-on-overview=true
 brightness=1.0
+corner-radius=24
 corner-when-maximized=false
 dynamic-opacity=false
 enable-all=false
@@ -26,6 +27,7 @@ static-blur=false
 whitelist=['org.gnome.Settings', 'gnome-control-center', 'org.gnome.Nautilus', 'nautilus', 'org.gnome.DiskUtility', 'gnome-disks', 'org.gnome.baobab', 'baobab', 'org.gnome.tweaks', 'gnome-tweaks', 'org.gnome.Logs', 'gnome-logs', 'org.gnome.seahorse.Application', 'seahorse']
 
 [coverflow-alt-tab]
+blur=false
 pipeline='pipeline_default'
 
 [dash-to-dock]
@@ -49,13 +51,13 @@ blur=false
 sigma=10
 
 [overview]
-blur=true
+blur=false
 brightness=1.0
 pipeline='pipeline_default'
 style-components=0
 
 [panel]
-blur=false
+blur=true
 brightness=1.0
 corner-radius=0
 customize=true
