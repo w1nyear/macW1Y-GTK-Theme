@@ -448,6 +448,12 @@ export function buildNotificationCard(source, notification, options = {}) {
     closeBtn.connect('button-press-event', dismissCardNow);
 
     banner.connect('clicked', () => {
+        try {
+            if (banner._macGroupIntercept) {
+                banner._macGroupIntercept();
+                return;
+            }
+        } catch (_) {}
         if (cardData.isClosing)
             return;
         if (onClick)

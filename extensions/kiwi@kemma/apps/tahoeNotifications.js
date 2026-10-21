@@ -1484,7 +1484,7 @@ function _rebuild(merges = null) {
             }
             enterIdx++;
         }
-        try { _collapseNcGroups(p); } catch (ex) { console.error('[tahoe-nc] groups: ' + ex); }
+        try { _collapseNcGroups(p, merges); } catch (ex) { console.error('[tahoe-nc] groups: ' + ex); }
     } catch (e) {
         console.error(`[tahoe-nc] _rebuild error: ${e}`);
     }
@@ -1506,18 +1506,14 @@ function _ncHeldBox(p) {
     }
 }
 
-/* 2.11: стеки-групи за ім'ям застосунку. Колапс: найновіша картка
-   повного розміру, під нею 2 подібних тонші слої (уп до 3 видимих
-   рівнів), клік по найновішій розгортає групу в звичайні картки. */
-function _collapseNcGroups(p) {
+/* 2.11: стеки-групи за ім'ям застосунку (референс macOS):
+   колапс - найновіша картка повного розміру зверху, під нею
+   старіші ПОВНОГО РОЗМІРУ, злегка менші за скейлом (по x) і
+   присунуті нижче - видно лише нижній край кожного шару.
+   Клік по стеку розгортає групу в звичайні картки. */
+function _collapseNcGroups(p, merges = null) {
     if (!p || !p.list)
         return;
-    const held = _ncHeldBox(p);
-    if (!held)
-        return;
-    for (const c of held.get_children().slice()) {
-        try { c.destroy(); } catch (_) {}
-    }
     const kids = p.list.get_children().filter((c) => !!c._notification);
     if (kids.length < 2)
         return;
@@ -1527,7 +1523,7 @@ function _collapseNcGroups(p) {
         const app = String(b._macApp ?? '').trim() || 'Повідомлення';
         let g = gr.get(app);
         if (!g) {
-            g = { app, cards: [], peek: null, expanded: false };
+            g = { app, cards: [], container: null, expanded: false };
             gr.set(app, g);
             order.push(g);
         }
@@ -1535,66 +1531,138 @@ function _collapseNcGroups(p) {
     }
     const flat = [];
     for (const g of order) {
-        flat.push(g.cards[0]);
-        if (g.cards.length > 1) {
-            for (const b of g.cards.slice(1)) {
-                p.list.remove_child(b);
-                held.add_child(b);
-            }
-            const peek = new St.BoxLayout({
-                vertical: true,
-                style: 'spacing: 4px;',
-            });
-            peek.set_width(NC_W - 40);
-            peek.x_align = Clutter.ActorAlign.CENTER;
-            peek._macPeekGroup = g;
-            for (let li = 0; li < Math.min(2, g.cards.length - 1); li++) {
-                const slab = new St.Widget({
-                    style: 'background-color: rgba(255, 255, 255, 0.09);'
-                        + ' border: 1px solid rgba(255, 255, 255, 0.06);'
-                        + ' border-radius: ' + (li ? 12 : 16) + 'px;',
-                });
-                slab.set_width(NC_W - 40 - (li + 1) * 14);
-                slab.set_height(li ? 14 : 20);
-                peek.add_child(slab);
-            }
-            g.peek = peek;
-            g.cards[0]._macGroupIntercept = () => _expandGroup(g);
-            flat.push(peek);
+        if (g.cards.length <= 1) {
+            flat.push(g.cards[0]);
+            continue;
         }
+        // шаруємо: старіші під найновішою (порядок додавання =
+        // порядок малювання, тому найновіша додається останньою)
+        const newest = g.cards[0];
+        const headH = Math.max(72, Math.ceil(newest.height) || 88);
+        const over = 9;
+        const peersN = Math.min(2, g.cards.length - 1);
+        const container = new St.Widget({ reactive: true });
+        container._macPeekGroup = g;
+        // тіло у гурті далі peersN - у невидимій скриньці (щоб не загубити
+        // картки при колапсі і повернути всі при розгортанні)
+        const held = new St.Widget({ visible: false });
+        g.held = held;
+        g.container = container;
+        container.set_width(NC_W - 40);
+        container.set_height(headH + peersN * over);
+        container.x_align = Clutter.ActorAlign.CENTER;
+        const peerEnter = (b, delayIdx) => {
+            try {
+                b.remove_all_transitions();
+                b.opacity = 0;
+                b.ease({
+                    opacity: 255,
+                    duration: 240,
+                    delay: Math.max(0, delayIdx) * 35,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+            } catch (_) {}
+        };
+        for (let i = peersN; i >= 1; i--) {
+            const b = g.cards[i];
+            if (b.get_parent() === p.list)
+                p.list.remove_child(b);
+            b.reactive = false;
+            b._macHiddenPeer = true;
+            b._macSavedStyle = b.get_style() ?? '';
+            try {
+                b.set_style((b._macSavedStyle || '')
+                    + '; background-color: rgba(30, 32, 38, 0.55);'
+                    + ' border-radius: 24px;');
+            } catch (_) {}
+            try {
+                const inner = (b.get_children?.() ?? [])[0];
+                if (inner)
+                    inner.visible = false;
+            } catch (_) {}
+            b.set_pivot_point(0.5, 0);
+            b.set_scale(1 - i * 0.024, 1);
+            b.translation_y = i * over;
+            peerEnter(b, i);
+            container.add_child(b);
+        }
+        for (let i = peersN + 1; i < g.cards.length; i++) {
+            const b = g.cards[i];
+            if (b.get_parent() === p.list)
+                p.list.remove_child(b);
+            held.add_child(b);
+        }
+        container.add_child(held);
+        if (newest.get_parent() === p.list)
+            p.list.remove_child(newest);
+        newest.translation_y = 0;
+        container.add_child(newest);
+        try {
+            container.connect('button-press-event', () => {
+                try { _expandGroup(g); } catch (_) {}
+                return Clutter.EVENT_STOP;
+            });
+        } catch (_) {}
+        newest._macGroupIntercept = () => _expandGroup(g);
+        flat.push(container);
     }
-    for (const b of kids) {
-        p.list.remove_child(b);
+    for (const b of kids.slice()) {
+        if (b.get_parent() === p.list)
+            try { p.list.remove_child(b); } catch (_) {}
     }
+    // remove_child скасовує ease (каскад "замер" на opacity 0),
+    // тому кожну картку перевставляємо з повторним каскадом;
+    // злиті - з merge-анімацією
+    let flatIdx = 0;
     for (const x of flat) {
         p.list.add_child(x);
+        const isStack = !!x._macPeekGroup;
+        const banner = isStack ? x.get_children()[x.get_children().length - 1] : x;
+        const m = banner && banner._notification ? (merges?.get?.(banner._notification) ?? null) : null;
+        if (banner) {
+            if (m) {
+                try {
+                    banner.remove_all_transitions();
+                    banner.opacity = 255;
+                    _animateEnterMerge(banner, m);
+                } catch (_) {
+                    _animateEnter(banner, flatIdx);
+                }
+            } else
+                _animateEnter(banner, flatIdx);
+        }
+        if (!isStack)
+            flatIdx++;
     }
 }
 
 function _expandGroup(g) {
     try {
-        if (!g || g.expanded || !g.peek)
+        const cont = g?.container;
+        if (!cont || g.expanded || cont.get_parent() !== _nc?.list)
             return;
         const p = _nc;
-        const held = _ncHeldBox(p);
-        if (!p || !held || g.peek.get_parent() !== p.list)
-            return;
         g.expanded = true;
-        let pos = p.list.get_children().indexOf(g.peek);
-        p.list.remove_child(g.peek);
-        g.peek.destroy();
-        g.peek = null;
-        let idx = 0;
+        let pos = p.list.get_children().indexOf(cont);
         for (const b of g.cards) {
-            if (b.get_parent() === p.list)
-                continue;
             if (b.get_parent())
                 b.get_parent().remove_child(b);
+            b.reactive = true;
+            delete b._macHiddenPeer;
+            try { b.set_style(b._macSavedStyle ?? ''); } catch (_) {}
+            try {
+                const inner = (b.get_children?.() ?? [])[0];
+                if (inner)
+                    inner.visible = true;
+            } catch (_) {}
+            b.remove_all_transitions();
             p.list.insert_child_at_index(b, pos);
-            _animateEnter(b, idx);
+            _animateEnter(b, pos);
             pos++;
-            idx++;
         }
+        cont.destroy();
+        g.container = null;
+        g.held = null;
     } catch (e) {
         console.error('[tahoe-nc] expand: ' + e);
     }
@@ -1659,7 +1727,16 @@ function _syncCards(p, monitor, s) {
         const regions = [];
         let kids = [];
         try {
-            kids = p.list.get_children();
+            for (const c of p.list.get_children()) {
+                if (c._macPeekGroup) {
+                    for (const b2 of c.get_children()) {
+                        if (b2.has_style_class_name?.('mac-notification-banner') && !b2._macHiddenPeer)
+                            kids.push(b2);
+                    }
+                    continue;
+                }
+                kids.push(c);
+            }
         } catch (_) {
             kids = [];
         }
