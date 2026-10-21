@@ -123,7 +123,7 @@ function _lgSettings() {
     }
 }
 
-function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0) {
+function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0, noWin = false) {
     if (!LiquidEffect || !UnpickableActor || !UILayerSampler || !WindowCloneManager)
         throw new Error('liquid-glass modules not loaded yet');
 
@@ -201,17 +201,25 @@ function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0) {
 
     liquidBox.add_effect(effect);
 
-    const wcm = new WindowCloneManager(liquidBox, cloneContainer, `lg-${name}`);
+    // noWin: без клонів вікон у протекторі шейдера (тости плавають на
+    // яскравому столі - фрагменти вікон з тінями виглядають сірими
+    // "елементами всередині скла" і перекривають сусідні тости;
+    // заломлення лишається на шпалерах-дзеркалі та ui-канві)
+    const wcm = noWin
+        ? null
+        : new WindowCloneManager(liquidBox, cloneContainer, `lg-${name}`);
     const uiSampler = new UILayerSampler(bgActor, liquidBox,
         [global.windowGroup, global.window_group], cloneContainer, name,
         Main.panel ? [Main.panel] : []);
-    wcm.rebuildClones();
+    if (wcm)
+        wcm.rebuildClones();
     uiSampler.rebindSelf();
     uiSampler.refresh();
 
     return {
         kind: pure ? 'backdrop' : 'cards',
-        bgActor, liquidBox, cloneContainer, effect, wcm, uiSampler,
+        bgActor, liquidBox, cloneContainer, effect,
+        wcm: noWin ? null : wcm, uiSampler,
         lastRegions: null, lastBounds: null, grace: 0, clip: null, screen: null
     };
 }
@@ -1087,7 +1095,7 @@ function _ensureToastGlass() {
             return false;
         if (!LiquidEffect || !UnpickableActor || !UILayerSampler || !WindowCloneManager)
             return false;
-        const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', false);
+        const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', false, 0, true);
         _applyWidgetGlassParams(s.effect);
         // тости НЕ мають заломлюватись у власному склі: UILayerSampler
         // клонує всіх дітей uiGroup, тому без виключення самі слоти
