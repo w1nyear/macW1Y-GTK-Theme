@@ -7677,3 +7677,24 @@ echo "==> Встановлення успішно завершено!"
 4. Синхронізовано: extension.js (?v=notif_v6f),
    apps/tahoeNotifications.js, apps/tahoeNotificationCard.js.
    liquid-glass dist/src - поза коммітом.
+
+19.7. Етап 2.7 — «На фото я не бачу шейдера скла і те щоб
+   виглядало так як само і повідомлення які приходять»
+
+1. ПРИЧИНА: тост-стек отримував _applyWidgetGlassParams, а стек
+   'nc-cards' жив на ДЕФОЛТАХ ефекту (без blur 8/ior 2.4/
+   displacement 92/rim), і тінт регіонів брався з _cardFill()
+   (4-5%, темна/світла залежно від ink), а не з віджет-конфігу
+   (чорний 10%) як у тостів.
+2. ФІКС (tahoeNotifications.js):
+   • _applyWidgetGlassParams(cards.effect) одразу після
+     створення стека 'nc-cards' - юніформи гарантовано ті самі;
+   • новий {} _widgetGlassFill() (glass-tint + glass-tint-strength
+     з tahoe-widgets) - у _syncCards регіони карток тепер тінтуються
+     тим самим чорним 10%, що і тости (унезалежно від ink панелі).
+3. A/B-перевірка: надіслано 'Погода' -> знімок тоста -> той самий
+   тост змерджився у першу картку Центру: ab_toast.png vs
+   ab_center.png - той самий фрост і реакції шейдера; картка над
+   мостом дає сильніше заломлення (заці реальний фон яскравіший).
+4. Синхронізовано: extension.js (?v=notif_v6g),
+   apps/tahoeNotifications.js. liquid-glass dist/src - поза коммітом.

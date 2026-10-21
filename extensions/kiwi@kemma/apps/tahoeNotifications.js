@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v6f';
+} from './tahoeNotificationCard.js?v=notif_v6g';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -1501,6 +1501,25 @@ function _watchTray(p) {
     } catch (_) {}
 }
 
+function _widgetGlassFill() {
+    // той самий тінт і сила, що в тостів (віджет-конфіг): чорний 10%
+    let tint = [0, 0, 0], strength = 0.10;
+    try {
+        const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
+        try {
+            const raw = String(sset.get_string('glass-tint') || '');
+            const nums = raw.match(/[\d.]+/g);
+            if (nums && nums.length >= 3) {
+                const c = nums.slice(0, 3).map((x) => Math.min(1, Math.max(0, parseFloat(x) / 255)));
+                if (c.every((v) => isFinite(v)))
+                    tint = c;
+            }
+        } catch (_) {}
+        try { strength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 10) / 100)); } catch (_) {}
+    } catch (_) {}
+    return {c: tint, a: strength};
+}
+
 function _cardFill() {
     try {
         if (getPanelInk() === 'light')
@@ -1554,7 +1573,8 @@ function _syncCards(p, monitor, s) {
         if (!s.bgActor.visible)
             s.bgActor.show();
         s.bgActor.opacity = 255;
-        const fill = _cardFill();
+        // тінт регіонів карток = той самий, що в тостів (віджет-конфіг)
+        const fill = _widgetGlassFill();
         for (const r of regions) {
             r.tintR = fill.c[0];
             r.tintG = fill.c[1];
@@ -1782,6 +1802,10 @@ function _buildPanel(merges = null) {
     try {
         const bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
         const cards = _makeGlassStack(monitor, 24, 'nc-cards', false);
+        // юніформи ефекту = точно як у тост-стека (blur 8, ior 2.4,
+        // displacement 92, rim…), інакше шейдер на дефолтах виглядав
+        // не як скло тостів
+        try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
         overlay.insert_child_at_index(bd.bgActor, 1);
         overlay.insert_child_at_index(cards.bgActor, 2);
         try {
