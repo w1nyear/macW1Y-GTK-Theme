@@ -197,11 +197,9 @@ export function formatToastAge(datetime) {
 }
 
 export function buildNotificationCard(source, notification, options = {}) {
-    const {
-        width = 440,
-        onClose = null,
-        onClick = null,
-    } = options;
+    const width = options.width || 440;
+    const onClose = options.onClose || null;
+    const onClick = options.onClick || null;
 
     // Канон нового вигляду = тости v5 (етапи 2.2-2.4): картка ПРОЗОРА,
     // під нею власна плитка скла (стек 'nc-cards', ті самі параметри
@@ -215,34 +213,42 @@ export function buildNotificationCard(source, notification, options = {}) {
     const CLOSE_BASE = 'width: 22px !important; height: 22px !important; border-radius: 11px !important; background-color: rgba(255, 255, 255, 0.14) !important; border: none !important; box-shadow: none !important; padding: 0 !important;';
     const CLOSE_HOVER = CLOSE_BASE.replace('0.14', '0.26');
 
+    const appName = String(source?.title ?? '').trim();
+    const rawTitle = (notification.title || '').trim();
+    const bodyText = notification.body || notification.bannerBodyText || '';
+    const isScreenshot = /знім|screenshot|screen\s*capture/i.test(appName) ||
+                         /знім|screenshot/i.test(rawTitle) ||
+                         (source?.id && /screenshot/i.test(source.id));
+
     const banner = new St.Button({
         style_class: 'mac-notification-banner',
         can_focus: true,
         reactive: true,
         track_hover: true,
-        x_expand: false,
+        x_expand: true,
         y_expand: false,
         clip_to_allocation: true,
     });
-    banner.set_style(CARD_BASE_STYLE);
+    banner.set_style(isScreenshot
+        ? (CARD_BASE_STYLE + ' min-height: 54px !important;')
+        : CARD_BASE_STYLE);
     if (width) {
         try { banner.set_width(width); } catch (_) {}
     }
 
-    // Головна розкладка тоста: [іконка 44×44] [тексти], паддінг 14/14/16
+    // Головна розкладка тоста: [іконка] [тексти], для скріншотів компактний паддінг
     const mainBox = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,
         x_expand: true,
         y_expand: true,
         clip_to_allocation: true,
-        style: 'padding: 14px 14px 16px 14px !important; border-radius: 24px !important;',
+        style: isScreenshot
+            ? 'padding: 10px 14px !important; border-radius: 20px !important;'
+            : 'padding: 14px 14px 16px 14px !important; border-radius: 24px !important;',
     });
     banner.set_child(mainBox);
 
-    // 1. Іконка ХТО надіслав: gicon повідомлення -> source.icon ->
-    //    додаток джерела -> AppSystem (lookup <title>.desktop + скан по
-    //    get_installed) -> createIcon джерела. Без іконки - нейтральна
-    //    темна плитка (не акцентно-синя), як у тостів.
+    // 1. Іконка ХТО надіслав
     let gicon = null;
     try { gicon = notification.gicon ?? null; } catch (_) {}
     try { if (!gicon) gicon = source?.icon ?? null; } catch (_) {}
@@ -275,20 +281,21 @@ export function buildNotificationCard(source, notification, options = {}) {
     if (!gicon) {
         try { gicon = source?.createIcon?.(44) ?? null; } catch (_) {}
     }
+    const iconSize = isScreenshot ? 38 : 44;
     const iconTile = new St.Widget({
-        width: 44,
-        height: 44,
+        width: iconSize,
+        height: iconSize,
         y_align: Clutter.ActorAlign.CENTER,
-        style: gicon ? 'border-radius: 10px !important;'
-                     : 'background-color: rgba(28, 30, 36, 0.62) !important; border-radius: 10px !important;',
+        style: gicon ? 'border-radius: 9px !important;'
+                     : 'background-color: rgba(28, 30, 36, 0.62) !important; border-radius: 9px !important;',
         layout_manager: new Clutter.BinLayout(),
     });
     try { iconTile.set_clip_to_allocation(true); } catch (_) {}
     iconTile.add_child(gicon
-        ? new St.Icon({gicon, icon_size: 44})
+        ? new St.Icon({gicon, icon_size: iconSize})
         : new St.Icon({
-            icon_name: 'org.gnome.Settings-notifications-symbolic',
-            icon_size: 22,
+            icon_name: isScreenshot ? 'camera-photo-symbolic' : 'org.gnome.Settings-notifications-symbolic',
+            icon_size: Math.round(iconSize * 0.55),
             style: 'color: #ffffff !important;',
         }));
     try { iconTile.style += 'margin-right: 12px;'; } catch (_) {}
@@ -298,59 +305,86 @@ export function buildNotificationCard(source, notification, options = {}) {
     const contentBox = new St.BoxLayout({
         orientation: Clutter.Orientation.VERTICAL,
         x_expand: true,
-        y_align: Clutter.ActorAlign.START,
-        style: 'spacing: 4px !important;',
+        y_align: Clutter.ActorAlign.CENTER,
+        style: isScreenshot ? 'spacing: 2px !important;' : 'spacing: 4px !important;',
     });
     mainBox.add_child(contentBox);
 
     // GNOME 50: критичні мають urgency=3 (>=2 - HIGH і вище)
     const isCritical = (notification.urgency ?? 1) >= 2;
-    const appName = String(source?.title ?? '').trim();
 
-    // Рядок A: ТЕРМІНОВО (червоним) або ім'я застосунку (напівпрозорий білий)
-    const appLabel = new St.Label({
-        text: isCritical ? '⚠ ТЕРМІНОВО' : (appName || 'Повідомлення'),
-        y_align: Clutter.ActorAlign.CENTER,
-        x_expand: true,
-        style: isCritical
-            ? 'font-family: "Open Runde" !important; color: #ff453a !important; font-size: 13px !important; font-weight: 700 !important;'
-            : 'font-family: "Open Runde" !important; color: rgba(255, 255, 255, 0.60) !important; font-size: 12px !important; font-weight: 600 !important;',
-    });
-    try { appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
-    contentBox.add_child(appLabel);
-
-    // Заголовок (тільки якщо відрізняється від імені застосунку)
-    const rawTitle = (notification.title || '').trim();
-    const isDuplicateTitle = rawTitle.toLowerCase() === appName.toLowerCase();
+    let appLabel = null;
     let titleLabel = null;
-    if (rawTitle && !isDuplicateTitle) {
+    let bodyLabel = null;
+
+    if (isScreenshot) {
+        // Компактний вигляд скріншотів (новий вигляд macOS):
+        // Рядок 1: «Знімок зроблено» (або назва), Рядок 2: інструкція/статус
+        const shotTitle = rawTitle || (appName && !appName.includes('Захоплення') ? appName : 'Знімок зроблено');
         titleLabel = new St.Label({
             x_expand: true,
-            style: 'font-family: "Open Runde" !important; color: #ffffff !important; font-size: 14px !important; font-weight: 700 !important;',
+            style: 'font-family: "Open Runde" !important; color: #ffffff !important; font-size: 13.5px !important; font-weight: 700 !important;',
         });
-        setLabelMarkup(titleLabel, rawTitle);
+        setLabelMarkup(titleLabel, shotTitle);
         try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
         contentBox.add_child(titleLabel);
-    }
 
-    // Тіло: перенесення рядків, трикрапкою НІКОЛИ (канон Центру)
-    // body (повний) перший: GNOME-трімає bannerBodyText підрізаним
-    const bodyText = notification.body || notification.bannerBodyText || '';
-    let bodyLabel = null;
-    if (bodyText) {
+        const shotBody = bodyText || 'Знімок збережено в буфер обміну';
         bodyLabel = new St.Label({
             x_expand: true,
-            style: 'font-family: "Open Runde" !important; color: #ffffff !important; font-size: 13px !important; font-weight: 500 !important;',
+            style: 'font-family: "Open Runde" !important; color: rgba(255, 255, 255, 0.82) !important; font-size: 12px !important; font-weight: 500 !important;',
         });
-        setLabelMarkup(bodyLabel, bodyText);
+        setLabelMarkup(bodyLabel, shotBody);
         bodyLabel.clutter_text.single_line_mode = false;
         bodyLabel.clutter_text.line_wrap = true;
         bodyLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
         bodyLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         contentBox.add_child(bodyLabel);
+    } else {
+        // Звичайні застосунки:
+        const isDuplicateTitle = rawTitle.toLowerCase() === appName.toLowerCase();
+        const hasBody = !!bodyText;
+
+        if (appName && (!isDuplicateTitle || hasBody || isCritical)) {
+            appLabel = new St.Label({
+                text: isCritical ? '⚠ ТЕРМІНОВО' : appName,
+                y_align: Clutter.ActorAlign.CENTER,
+                x_expand: true,
+                style: isCritical
+                    ? 'font-family: "Open Runde" !important; color: #ff453a !important; font-size: 13px !important; font-weight: 700 !important;'
+                    : 'font-family: "Open Runde" !important; color: rgba(255, 255, 255, 0.60) !important; font-size: 12px !important; font-weight: 600 !important;',
+            });
+            try { appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
+            contentBox.add_child(appLabel);
+        }
+
+        // Заголовок: якщо є rawTitle, або якщо взагалі немає body - показуємо завжди!
+        const displayTitle = rawTitle || (!hasBody ? (appName || 'Повідомлення') : '');
+        if (displayTitle && (!isDuplicateTitle || !hasBody)) {
+            titleLabel = new St.Label({
+                x_expand: true,
+                style: 'font-family: "Open Runde" !important; color: #ffffff !important; font-size: 14px !important; font-weight: 700 !important;',
+            });
+            setLabelMarkup(titleLabel, displayTitle);
+            try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
+            contentBox.add_child(titleLabel);
+        }
+
+        if (hasBody) {
+            bodyLabel = new St.Label({
+                x_expand: true,
+                style: 'font-family: "Open Runde" !important; color: #ffffff !important; font-size: 13px !important; font-weight: 500 !important;',
+            });
+            setLabelMarkup(bodyLabel, bodyText);
+            bodyLabel.clutter_text.single_line_mode = false;
+            bodyLabel.clutter_text.line_wrap = true;
+            bodyLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+            bodyLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+            contentBox.add_child(bodyLabel);
+        }
     }
 
-    // 3. Кнопки дій — ті самі нейтральні капсули (працюють і на склі)
+    // 3. Кнопки дій — компактні для скріншотів
     let actionsBox = null;
     if (notification.actions && notification.actions.length > 0) {
         actionsBox = new St.BoxLayout({
@@ -359,20 +393,25 @@ export function buildNotificationCard(source, notification, options = {}) {
             x_expand: true,
             x_align: Clutter.ActorAlign.END,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'margin-top: 7px !important; margin-bottom: 2px !important; spacing: 8px !important;',
+            style: isScreenshot
+                ? 'margin-top: 3px !important; margin-bottom: 0px !important; spacing: 6px !important;'
+                : 'margin-top: 7px !important; margin-bottom: 2px !important; spacing: 8px !important;',
         });
+        const btnStyleBase = isScreenshot
+            ? 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 6px !important; padding: 2px 10px !important; font-size: 11px !important; font-weight: 500 !important; margin-left: 6px !important;'
+            : 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;';
+        const btnStyleHover = btnStyleBase.replace('0.16', '0.26').replace('0.14', '0.20');
+
         for (const action of notification.actions) {
             const actBtn = new St.Button({
                 style_class: 'mac-notification-action-btn',
                 label: action.label,
                 reactive: true,
                 can_focus: true,
-                style: 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;',
+                style: btnStyleBase,
             });
             actBtn.connect('notify::hover', () => {
-                actBtn.set_style(actBtn.hover
-                    ? 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.26) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;'
-                    : 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-left: 6px !important;');
+                actBtn.set_style(actBtn.hover ? btnStyleHover : btnStyleBase);
             });
             actBtn.connect('clicked', () => {
                 try { action.activate(); } catch (e) { logError(e); }
@@ -429,6 +468,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         source,
         closeBtn,
         timeLabel,
+        appLabel,
         titleLabel,
         bodyLabel,
         actionsBox,
@@ -461,57 +501,66 @@ export function buildNotificationCard(source, notification, options = {}) {
     });
 
     const isCardHovered = () => {
-        if (banner.hover || closeBtn.hover) return true;
-        if (actionsBox && actionsBox.visible) {
-            for (const b of actionsBox.get_children()) {
-                if (b.hover) return true;
+        try {
+            if (cardData.isClosing || !banner.get_stage() || !closeBtn.get_stage()) return false;
+            if (banner.hover || closeBtn.hover) return true;
+            if (actionsBox && actionsBox.visible && actionsBox.get_stage()) {
+                for (const b of actionsBox.get_children()) {
+                    if (b.hover) return true;
+                }
             }
-        }
+        } catch (_) {}
         return false;
     };
 
     // При наведенні час м'яко поступається кнопці закриття (150мс)
     const updateHoverState = () => {
-        if (cardData.isClosing)
-            return;
-        const hovered = isCardHovered();
+        try {
+            if (cardData.isClosing || !banner.get_stage() || !closeBtn.get_stage())
+                return;
+            const hovered = isCardHovered();
 
-        closeBtn.remove_all_transitions();
-        timeLabel.remove_all_transitions();
+            closeBtn.remove_all_transitions();
+            timeLabel.remove_all_transitions();
 
-        if (hovered) {
-            closeBtn.visible = true;
-            closeBtn.ease({
-                opacity: 255,
-                duration: 150,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-            timeLabel.ease({
-                opacity: 0,
-                duration: 150,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                onComplete: () => {
-                    if (isCardHovered()) timeLabel.visible = false;
-                },
-            });
-        } else {
-            timeLabel.visible = true;
-            timeLabel.ease({
-                opacity: 255,
-                duration: 150,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-            closeBtn.ease({
-                opacity: 0,
-                duration: 150,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                onComplete: () => {
-                    if (!cardData.isClosing && !isCardHovered()) {
-                        closeBtn.visible = false;
-                    }
-                },
-            });
-        }
+            if (hovered) {
+                closeBtn.visible = true;
+                closeBtn.ease({
+                    opacity: 255,
+                    duration: 150,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+                timeLabel.ease({
+                    opacity: 0,
+                    duration: 150,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        try {
+                            if (isCardHovered() && timeLabel.get_stage()) timeLabel.visible = false;
+                        } catch (_) {}
+                    },
+                });
+            } else {
+                timeLabel.visible = true;
+                timeLabel.ease({
+                    opacity: 255,
+                    duration: 150,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+                closeBtn.ease({
+                    opacity: 0,
+                    duration: 150,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        try {
+                            if (!cardData.isClosing && !isCardHovered() && closeBtn.get_stage()) {
+                                closeBtn.visible = false;
+                            }
+                        } catch (_) {}
+                    },
+                });
+            }
+        } catch (_) {}
     };
 
     banner.connect('notify::hover', updateHoverState);
@@ -553,8 +602,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         try {
             if (!banner.get_parent())
                 return;
-            const colW = Math.max(80, Math.round((width ?? 484)) - 28 - 44 - 12 - 76);
-            let total = 30; // паддінги 14+16 (тост-канон)
+            const colW = Math.max(80, Math.round((width ?? 484)) - 28 - (isScreenshot ? 38 : 44) - 12 - 76);
+            let total = isScreenshot ? 20 : 30; // паддінги 10+10 (скріншот) або 14+16 (канон)
             let count = 0;
             for (const l of [appLabel, titleLabel, bodyLabel]) {
                 if (!l || !l.get_parent?.())
@@ -570,10 +619,10 @@ export function buildNotificationCard(source, notification, options = {}) {
             if (!count)
                 return;
             if (actionsBox?.visible) {
-                total += 7 + 24;
+                total += isScreenshot ? (3 + 22) : (7 + 24);
             }
-            total += 4 * Math.max(0, count - 1);
-            const target = Math.max(72, Math.ceil(total));
+            total += (isScreenshot ? 2 : 4) * Math.max(0, count - 1);
+            const target = Math.max(isScreenshot ? 54 : 72, Math.ceil(total));
             if (Math.abs(target - banner.height) > 1) {
                 try { banner.set_height(target); } catch (_) {}
             }

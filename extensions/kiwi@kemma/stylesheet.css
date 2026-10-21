@@ -1197,10 +1197,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-panelbg {
     border-radius: 22px;
     background-color: transparent;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-left: none !important;
-    border-right: none !important;
+    border: none !important;
     /* one shadow for both themes: tight core + wide soft diffusion */
     box-shadow: 0 4px 22px rgba(0, 0, 0, 0.15),
         0 12px 70px rgba(0, 0, 0, 0.10);

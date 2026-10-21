@@ -254,7 +254,7 @@ function _qsPanelShadow() {
         const a2 = (op * 0.67 / 100).toFixed(2);
         shadow += `, 0 ${Math.round(glow / 6)}px ${glow}px rgba(0, 0, 0, ${a2})`;
     }
-    return shadow + '; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important;';
+    return shadow + '; border: none !important;';
 }
 
 let _enabled = false;

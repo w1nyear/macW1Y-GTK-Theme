@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v6n';
+} from './tahoeNotificationCard.js?v=notif_v7b';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -128,9 +128,10 @@ function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0, noWin 
     if (!LiquidEffect || !UnpickableActor || !UILayerSampler || !WindowCloneManager)
         throw new Error('liquid-glass modules not loaded yet');
 
-    const bgActor = new UnpickableActor();
+    const bgActor = new UnpickableActor({ visible: false, opacity: 0 });
     bgActor.set_name(`liquid-glass-bg-actor-${name}`);
     bgActor.set_pivot_point(0, 0);
+    bgActor.set_clip(0, 0, 0, 0);
 
     const liquidBox = new UnpickableActor();
     liquidBox.set_name(`liquid-box-${name}`);
@@ -282,7 +283,7 @@ function _activate(item) {
     } catch (_) {}
 }
 
-function _makeMacCard(item, onCloseCb, width = null) {
+function _makeMacCard(item, onCloseCb, width = NC_W - 40) {
     return buildNotificationCard(item.source, item.n, {
         sigma: 30,
         width,
@@ -1180,9 +1181,13 @@ function _syncToastGlass(monitor, s) {
                 s.bgActor.hide();
             return;
         }
-        if (!s.bgActor.visible)
+        const alpha = p.box.opacity;
+        if (alpha > 0 && !s.bgActor.visible)
             s.bgActor.show();
-        s.bgActor.opacity = 255;
+        else if (alpha === 0 && s.bgActor.visible)
+            s.bgActor.hide();
+        s.bgActor.opacity = alpha;
+        s.bgActor.translation_x = p.box.translation_x;
         // скло як у віджетах робочого столу: слабкий тінт користувача,
         // жодного білого фону - видима поверхня тільки від
         // LiquidEffect .frag
@@ -1557,10 +1562,13 @@ function _collapseNcGroups(p, merges = null) {
         // шаруємо: старіші під найновішою (порядок додавання =
         // порядок малювання, тому найновіша додається останньою)
         const newest = g.cards[0];
-        const headH = Math.max(72, Math.ceil(newest.height) || 88);
+        const headH = Math.max(54, Math.ceil(newest.height) || 68);
         const over = 9;
         const peersN = Math.min(2, g.cards.length - 1);
-        const container = new St.Widget({ reactive: true });
+        const container = new St.Widget({
+            reactive: true,
+            layout_manager: new Clutter.BinLayout(),
+        });
         container._macPeekGroup = g;
         // тіло у гурті далі peersN - у невидимій скриньці (щоб не загубити
         // картки при колапсі і повернути всі при розгортанні)
@@ -1598,6 +1606,7 @@ function _collapseNcGroups(p, merges = null) {
             b.set_pivot_point(0.5, 0);
             b.set_scale(1 - i * 0.042, 1);
             b.translation_y = i * over;
+            b.set_width(NC_W - 40);
             try {
                 const clipY = Math.max(0, headH - i * over);
                 b.set_clip(0, clipY, b.width, i * over + 50);
@@ -1616,7 +1625,13 @@ function _collapseNcGroups(p, merges = null) {
             p.list.remove_child(newest);
         newest.translation_y = 0;
         newest.set_scale(1, 1);
+        newest.set_width(NC_W - 40);
         newest.set_style(CARD_BASE_STYLE);
+        try {
+            const inner = (newest.get_children?.() ?? [])[0];
+            if (inner)
+                inner.visible = true;
+        } catch (_) {}
         container.add_child(newest);
         try {
             container.connect('button-press-event', () => {
@@ -1784,13 +1799,11 @@ function _syncCards(p, monitor, s) {
                         const cw = newest.width, ch = newest.height;
                         if (cw > 0 && ch > 0 && isFinite(cx) && isFinite(cy)) {
                             const m = SHADER_PADDING;
-                            const peersN = Math.min(2, (g.cards?.length ?? 1) - 1);
-                            const extra = peersN * 9;
                             regions.push({
                                 x: (cx - monitor.x) - m,
                                 y: (cy - monitor.y) - m,
                                 w: cw + m * 2,
-                                h: ch + extra + m * 2,
+                                h: ch + m * 2,
                                 tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
                             });
                         }
@@ -1838,9 +1851,13 @@ function _syncCards(p, monitor, s) {
                 s.bgActor.hide();
             return;
         }
-        if (!s.bgActor.visible)
+        const alpha = p.box.opacity;
+        if (alpha > 0 && !s.bgActor.visible)
             s.bgActor.show();
-        s.bgActor.opacity = 255;
+        else if (alpha === 0 && s.bgActor.visible)
+            s.bgActor.hide();
+        s.bgActor.opacity = alpha;
+        s.bgActor.translation_x = p.box.translation_x;
         // тінт регіонів карток = той самий, що в тостів (віджет-конфіг)
         if (regions.length)
             maxR = 24; // корнер картки, як у тостів (radius 24)
@@ -1880,13 +1897,20 @@ function _syncGlass(p, monitor, s) {
     try {
         const [bx, by] = p.panelBg.get_transformed_position();
         const bw = p.panelBg.width, bh = p.panelBg.height;
-        if (!(bw > 0) || !(bh > 0) || !isFinite(bx) || !isFinite(by))
+        if (!(bw > 0) || !(bh > 0) || !isFinite(bx) || !isFinite(by)) {
+            if (s.bgActor.visible)
+                s.bgActor.hide();
             return;
+        }
         const m = BACKDROP_PAD;
         s.bgActor.set_position(monitor.x, monitor.y);
-        if (!s.bgActor.visible)
+        const alpha = p.box.opacity;
+        if (alpha > 0 && !s.bgActor.visible)
             s.bgActor.show();
-        s.bgActor.opacity = 255;
+        else if (alpha === 0 && s.bgActor.visible)
+            s.bgActor.hide();
+        s.bgActor.opacity = alpha;
+        s.bgActor.translation_x = p.box.translation_x;
         s.effect.setGlassRegions([{
             x: (bx - monitor.x) - m, y: (by - monitor.y) - m,
             w: bw + m * 2, h: bh + m * 2,
@@ -2094,14 +2118,9 @@ function _buildPanel(merges = null) {
             s.wcm.rebuildClones();
             s.uiSampler.rebindSelf();
             s.uiSampler.refresh();
-            try {
-                s.bgActor.opacity = 0;
-                s.bgActor.ease({
-                    opacity: 255,
-                    duration: 320,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
-            } catch (_) {}
+            s.bgActor.opacity = 0;
+            s.bgActor.translation_x = 480;
+            s.bgActor.visible = false;
         }
         p.stacks = [bd, cards];
 
@@ -2111,6 +2130,16 @@ function _buildPanel(merges = null) {
                 return GLib.SOURCE_REMOVE;
             if (!p.overlay.mapped)
                 return GLib.SOURCE_REMOVE;
+            try {
+                p.panelBg.opacity = p.box.opacity;
+                p.panelBg.translation_x = p.box.translation_x;
+            } catch (_) {}
+            for (const s of p.stacks) {
+                try {
+                    s.bgActor.opacity = p.box.opacity;
+                    s.bgActor.translation_x = p.box.translation_x;
+                } catch (_) {}
+            }
             try {
                 const bd = p.stacks.find(s => s.kind === 'backdrop');
                 if (bd) _syncGlass(p, monitor, bd);
@@ -2144,7 +2173,13 @@ function _buildPanel(merges = null) {
     try {
         box.translation_x = 480;
         box.opacity = 0;
+        panelBg.translation_x = 480;
         panelBg.opacity = 0;
+        for (const s of p.stacks) {
+            s.bgActor.translation_x = 480;
+            s.bgActor.opacity = 0;
+            s.bgActor.visible = false;
+        }
         box.ease({
             translation_x: 0,
             opacity: 255,
@@ -2311,6 +2346,7 @@ export function closeNC(immediate = false) {
         for (const s of p.stacks) {
             try {
                 s.bgActor?.ease({
+                    translation_x: 480,
                     opacity: 0,
                     duration: 260,
                     mode: Clutter.AnimationMode.EASE_IN_CUBIC,
@@ -2319,6 +2355,7 @@ export function closeNC(immediate = false) {
         }
         try {
             p.panelBg.ease({
+                translation_x: 480,
                 opacity: 0,
                 duration: 260,
                 mode: Clutter.AnimationMode.EASE_IN_CUBIC,
