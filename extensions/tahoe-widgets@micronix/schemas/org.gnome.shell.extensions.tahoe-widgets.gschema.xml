@@ -29,11 +29,11 @@
       <summary>Liquid glass saturation percent</summary>
     </key>
     <key name="glass-tint" type="s">
-      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <default>'rgba(41, 41, 46, 255.0)'</default>
       <summary>Liquid glass tint color as rgba() string</summary>
     </key>
     <key name="glass-tint-strength" type="i">
-      <default>16</default>
+      <default>12</default>
       <range min="0" max="100"/>
       <summary>Liquid glass tint strength percent</summary>
     </key>

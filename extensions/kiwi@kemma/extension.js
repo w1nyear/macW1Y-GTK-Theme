@@ -14,6 +14,7 @@ import { enable as tahoeInkEnable, disable as tahoeInkDisable } from './apps/tah
 import { enable as topbarButtonsEnable, disable as topbarButtonsDisable } from './apps/topbarButtons.js';
 import { enable as reduceWindowAnimationsEnable, disable as reduceWindowAnimationsDisable } from './apps/reduceWindowAnimations.js';
 import { enable as gtkThemeSyncEnable, disable as gtkThemeSyncDisable } from './apps/gtkThemeSync.js';
+import { enable as labelBlurEnable, disable as labelBlurDisable } from './apps/labelBlur.js';
 
 export default class KiwiExtension extends Extension {
     _resolveDark() {
@@ -66,6 +67,11 @@ export default class KiwiExtension extends Extension {
             topbarButtonsEnable();
         } catch (e) {
             console.warn(`[kiwi] topbarButtonsEnable: ${e}`);
+        }
+        try {
+            labelBlurEnable();
+        } catch (e) {
+            console.warn(`[kiwi] labelBlurEnable: ${e}`);
         }
 
         try {
@@ -192,6 +198,7 @@ export default class KiwiExtension extends Extension {
             tahoeNCDisable();
         } catch (_) {}
         try { tahoeInkDisable(); } catch (_) {}
+        try { labelBlurDisable(); } catch (_) {}
         try { reduceWindowAnimationsDisable(); } catch (_) {}
         try { gtkThemeSyncDisable(); } catch (_) {}
 

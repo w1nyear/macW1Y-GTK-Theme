@@ -459,11 +459,8 @@ export const MacClipboardDialog = GObject.registerClass({
         this._box.set_style(
             'background-color: transparent !important; background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-            'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-            'border-left: none !important; ' +
-            'border-right: none !important; ' +
-            'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
+            'border: none !important; ' +
+            'box-shadow: none !important;'
         );
         this.add_child(this._box);
         this._box.connect('notify::x', () => this._syncGlass());
@@ -477,7 +474,19 @@ export const MacClipboardDialog = GObject.registerClass({
             this.destroy();
         });
 
+        this.connect('key-press-event', (_actor, event) => {
+            const symbol = event.get_key_symbol();
+            const state = event.get_state();
+            const isCtrl = (state & Clutter.ModifierType.CONTROL_MASK) !== 0;
+            if (symbol === Clutter.KEY_Escape || (isCtrl && symbol === Clutter.KEY_space)) {
+                this.close();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+
         this._initializingGlass = false;
+        this._initGlass().catch(() => {});
 
         // 3. Top Header / Search Row
         this._headerRow = new St.BoxLayout({
@@ -567,7 +576,9 @@ export const MacClipboardDialog = GObject.registerClass({
         });
         ct.connect('key-press-event', (_actor, event) => {
             const symbol = event.get_key_symbol();
-            if (symbol === Clutter.KEY_Escape) {
+            const state = event.get_state();
+            const isCtrl = (state & Clutter.ModifierType.CONTROL_MASK) !== 0;
+            if (symbol === Clutter.KEY_Escape || (isCtrl && symbol === Clutter.KEY_space)) {
                 this.close();
                 return Clutter.EVENT_STOP;
             }
@@ -614,7 +625,7 @@ export const MacClipboardDialog = GObject.registerClass({
         const tintG = isDark ? 0.16 : 1.0;
         const tintB = isDark ? 0.18 : 1.0;
         const tintVal = isDark ? 0.16 : 1.0;
-        const tintStrength = isDark ? 0.02 : 0.02;
+        const tintStrength = isDark ? 0.12 : 0.08;
         return { isDark, tintR, tintG, tintB, tintVal, tintStrength };
     }
 
@@ -706,11 +717,8 @@ export const MacClipboardDialog = GObject.registerClass({
             this._box.set_style(
                 'background-color: transparent !important; background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
-                'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-                'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-                'border-left: none !important; ' +
-                'border-right: none !important; ' +
-                'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
+                'border: none !important; ' +
+                'box-shadow: none !important;'
             );
 
             this._glass.show();
@@ -842,11 +850,8 @@ export const MacClipboardDialog = GObject.registerClass({
             this._box.set_style(
                 'background-color: transparent !important; background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
-                'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-                'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-                'border-left: none !important; ' +
-                'border-right: none !important; ' +
-                'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
+                'border: none !important; ' +
+                'box-shadow: none !important;'
             );
             this._initGlass();
             Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
@@ -864,77 +869,34 @@ export const MacClipboardDialog = GObject.registerClass({
 
         this._searchEntry.grab_key_focus();
 
-        const fromRect = options?.fromRect;
-        if (fromRect) {
-            this._box.set_position(fromRect.x, fromRect.y);
-            this._box.set_size(fromRect.width, fromRect.height);
-            this._box.set_pivot_point(0.5, 0.0);
-            this._box.scale_x = 1.0;
-            this._box.scale_y = 1.0;
-            this._box.opacity = 255;
+        this._box.set_position(targetX, targetY);
+        this._box.set_size(DIALOG_WIDTH, h);
+        // macOS Tahoe style: fade-in + slight "recede" (start larger at 1.06, settle to 1.0)
+        this._box.set_pivot_point(0.5, 0.5);
+        this._box.scale_x = 1.06;
+        this._box.scale_y = 1.06;
+        this._box.opacity = 0;
+        this._headerRow.opacity = 255;
+        this._scrollWrapper.opacity = 255;
 
-            this._headerRow.opacity = 0;
-            this._scrollWrapper.opacity = 0;
-
-            if (_isGlassAlive(this._glass)) {
-                this._glass.opacity = 255;
-                this._glass.show();
-            }
-
-            this._box.ease({
-                x: targetX,
-                y: targetY,
-                width: DIALOG_WIDTH,
-                height: h,
-                duration: 250,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                onUpdate: () => this._syncGlass(),
-                onComplete: () => this._syncGlass(),
-            });
-
-            this._headerRow.ease({
-                opacity: 255,
-                duration: 200,
-                delay: 60,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-            this._scrollWrapper.ease({
+        if (_isGlassAlive(this._glass)) {
+            this._glass.opacity = 0;
+            this._glass.show();
+            this._glass.ease({
                 opacity: 255,
                 duration: 220,
-                delay: 100,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-        } else {
-            this._box.set_position(targetX, targetY);
-            this._box.set_size(DIALOG_WIDTH, h);
-            // macOS Tahoe style: fade-in + slight "recede" (start larger, settle to 1.0)
-            this._box.set_pivot_point(0.5, 0.5);
-            this._box.scale_x = 1.06;
-            this._box.scale_y = 1.06;
-            this._box.opacity = 0;
-            this._headerRow.opacity = 255;
-            this._scrollWrapper.opacity = 255;
-
-            if (_isGlassAlive(this._glass)) {
-                this._glass.opacity = 0;
-                this._glass.show();
-                this._glass.ease({
-                    opacity: 255,
-                    duration: 200,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
-            }
-
-            this._box.ease({
-                opacity: 255,
-                scale_x: 1.0,
-                scale_y: 1.0,
-                duration: 200,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                onUpdate: () => this._syncGlass(),
-                onComplete: () => this._syncGlass(),
             });
         }
+
+        this._box.ease({
+            opacity: 255,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            duration: 220,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => this._syncGlass(),
+        });
     }
 
     close(immediate = false) {
@@ -975,7 +937,7 @@ export const MacClipboardDialog = GObject.registerClass({
         if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
             this._glass.ease({
                 opacity: 0,
-                duration: 160,
+                duration: 180,
                 mode: Clutter.AnimationMode.EASE_IN_QUAD,
                 onComplete: () => {
                     if (this._glass && !this._glass.is_finalized?.()) {
@@ -994,7 +956,7 @@ export const MacClipboardDialog = GObject.registerClass({
             opacity: 0,
             scale_x: 1.06,
             scale_y: 1.06,
-            duration: 160,
+            duration: 180,
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {
                 this.visible = false;

@@ -371,16 +371,9 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         // Button 1: Центр програм (App Store 'A' icon) - launches existing system Applications dialog from the dock
         this._btnApps = this._createCircleButton('mac-spotlight-apps', t('applications', 'Центр програм'), () => {
-            const boxPos = this._box.get_transformed_position();
-            const fromRect = {
-                x: boxPos[0],
-                y: boxPos[1],
-                width: this._box.width,
-                height: this._box.height,
-            };
-            this.close(true);
+            this.close(false);
             if (typeof globalThis.toggleMacApplications === 'function') {
-                globalThis.toggleMacApplications({ fromRect });
+                globalThis.toggleMacApplications();
             }
         });
         this._buttonsBox.add_child(this._btnApps);
@@ -391,7 +384,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         // Button 2: Файли (Folder icon) - opens existing system Files (Nautilus)
         this._btnFiles = this._createCircleButton('mac-spotlight-files', t('files', 'Файли'), () => {
-            this.close(true);
+            this.close(false);
             const app = Shell.AppSystem.get_default().lookup_app('org.gnome.Nautilus.desktop');
             if (app) {
                 app.activate();
@@ -405,16 +398,9 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         // Button 3: Буфер обміну (Clipboard icon) - opens existing system Mac Clipboard dialog
         this._btnClipboard = this._createCircleButton('mac-spotlight-clipboard', t('clipboard', 'Буфер обміну'), () => {
-            const boxPos = this._box.get_transformed_position();
-            const fromRect = {
-                x: boxPos[0],
-                y: boxPos[1],
-                width: this._box.width,
-                height: this._box.height,
-            };
-            this.close(true);
+            this.close(false);
             if (typeof globalThis.toggleMacClipboard === 'function') {
-                globalThis.toggleMacClipboard({ fromRect });
+                globalThis.toggleMacClipboard();
             }
         });
         this._buttonsBox.add_child(this._btnClipboard);
@@ -628,6 +614,8 @@ export const MacSpotlightDialog = GObject.registerClass({
 
             return Clutter.EVENT_PROPAGATE;
         });
+
+        this._initGlass().catch(() => {});
     }
 
     _createCircleButton(iconName, tooltipText, onClick) {
@@ -757,7 +745,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         const tintG = isDark ? 0.16 : 1.0;
         const tintB = isDark ? 0.18 : 1.0;
         const tintVal = isDark ? 0.16 : 1.0;
-        const tintStrength = isDark ? 0.02 : 0.02;
+        const tintStrength = isDark ? 0.12 : 0.08;
         return { isDark, tintR, tintG, tintB, tintVal, tintStrength };
     }
 
@@ -836,6 +824,15 @@ export const MacSpotlightDialog = GObject.registerClass({
             if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
                 Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
             }
+            Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
+            Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
+            this._glass.show();
+            this._glass.opacity = (typeof this._box.opacity === 'number' && this._box.opacity > 0) ? this._box.opacity : 255;
+            this._glass._backdropLocked = false;
+            if (typeof this._glass.forceRefresh === 'function') {
+                this._glass.forceRefresh(1);
+            }
+            this._applyGlassUniforms();
             this._syncGlass();
         } catch (e) {
             console.error(`[Spotlight] Error initializing BackdropGlass: ${e}`);
@@ -856,11 +853,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             'background-color: transparent !important; ' +
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-            'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-            'border-left: none !important; ' +
-            'border-right: none !important; ' +
-            'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
+            'border: none !important; ' +
+            'box-shadow: none !important;'
         );
 
         this._searchPill.set_style(PILL_EXPANDED_STYLE);
@@ -2201,19 +2195,38 @@ export function toggleSearchDialog() {
 
     if (_spotlightDialog._isOpen) {
         _spotlightDialog.close();
-    } else {
-        if (typeof globalThis._macCloseAllCenters === 'function') {
-            globalThis._macCloseAllCenters('spotlight');
-        } else {
-            try { globalThis._tahoeQSClose?.(); } catch (_) {}
-            try { globalThis._tahoeNCClose?.(true); } catch (_) {}
-            try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
-        }
-        if (Main.overview?.visible) {
-            Main.overview.hide();
-        }
-        _spotlightDialog.open();
+        return;
     }
+
+    const isClipboardOpen = !!(globalThis._macClipboardGlobalInstance?._isOpen);
+    const isNCOpen = !!(globalThis._tahoeNCOpen ||
+                        (typeof globalThis.__tahoeNC?.isNCOpen === 'function' && globalThis.__tahoeNC.isNCOpen()) ||
+                        Main.panel.statusArea?.dateMenu?.menu?.isOpen);
+    const isQSOpen = !!(globalThis._tahoeQSIsOpen ||
+                        Main.panel.statusArea?.quickSettings?.menu?.isOpen);
+    const isAppsOpen = !!(globalThis._macAppsMenuGlobalInstance?._isOpen);
+
+    if (isClipboardOpen || isNCOpen || isQSOpen || isAppsOpen) {
+        try { globalThis._macClipboardGlobalInstance?.close?.(false); } catch (_) {}
+        try { globalThis._tahoeNCClose?.(false); } catch (_) {}
+        try { globalThis._tahoeQSClose?.(); } catch (_) {}
+        try { globalThis._macAppsMenuGlobalInstance?.close?.(false); } catch (_) {}
+        if (Main.panel.statusArea?.dateMenu?.menu?.isOpen) {
+            try { Main.panel.statusArea.dateMenu.menu.close(BoxPointer.PopupAnimation?.FADE || true); } catch (_) {}
+        }
+        if (Main.panel.statusArea?.quickSettings?.menu?.isOpen) {
+            try { Main.panel.statusArea.quickSettings.menu.close(BoxPointer.PopupAnimation?.FADE || true); } catch (_) {}
+        }
+        return;
+    }
+
+    if (typeof globalThis._macCloseAllCenters === 'function') {
+        globalThis._macCloseAllCenters('spotlight');
+    }
+    if (Main.overview?.visible) {
+        Main.overview.hide();
+    }
+    _spotlightDialog.open();
 }
 
 export function closeSearchDialog(immediate = true) {

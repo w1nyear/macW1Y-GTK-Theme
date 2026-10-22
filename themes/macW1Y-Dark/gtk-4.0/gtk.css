@@ -6571,7 +6571,7 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 .nautilus-file-chooser .sidebar-pane:dir(ltr) banner > revealer > widget,
 .nautilus-file-chooser .sidebar-pane.end:dir(rtl),
 .nautilus-file-chooser .sidebar-pane.end:dir(rtl) banner > revealer > widget {
-  box-shadow: 0 0 0 6px @view_bg_color, 0 32px 0 6px @view_bg_color, 0 -32px 0 6px @view_bg_color, 2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
 }
 
 .nautilus-window .sidebar-pane:dir(rtl), .nautilus-window .sidebar-pane:dir(rtl) banner > revealer > widget, .nautilus-window .sidebar-pane.end:dir(ltr), .nautilus-window .sidebar-pane.end:dir(ltr) banner > revealer > widget,
@@ -6583,7 +6583,7 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 .nautilus-file-chooser .sidebar-pane:dir(rtl) banner > revealer > widget,
 .nautilus-file-chooser .sidebar-pane.end:dir(ltr),
 .nautilus-file-chooser .sidebar-pane.end:dir(ltr) banner > revealer > widget {
-  box-shadow: 0 0 0 6px @view_bg_color, 0 32px 0 6px @view_bg_color, 0 -32px 0 6px @view_bg_color, -2px 3px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px alpha(#ffffff,0.06);
+  box-shadow: none;
 }
 
 .nautilus-window .sidebar-pane:backdrop:dir(ltr), .nautilus-window .sidebar-pane:backdrop:dir(ltr) banner > revealer > widget, .nautilus-window .sidebar-pane:backdrop.end:dir(rtl), .nautilus-window .sidebar-pane:backdrop.end:dir(rtl) banner > revealer > widget,
@@ -9597,16 +9597,32 @@ popover arrow,
   padding: 0;
 }
 
-/* Ensure outer popover node has no border, background, shadow or padding */
+/* Ensure outer popover node and contents have no background, shadow or padding */
 popover,
 popover.menu,
 popover.context-menu,
-popover.background {
+popover.background,
+popover.menu > contents,
+popover.menu contents,
+popover.menu scrolledwindow,
+popover.menu scrolledwindow viewport,
+popover.menu stack,
+popover.menu box,
+popover.context-menu > contents,
+popover.background > contents,
+.nautilus-window popover,
+.nautilus-window popover.menu,
+.nautilus-window popover.menu > contents,
+.nautilus-window popover.menu contents,
+.nautilus-window popover.menu scrolledwindow,
+.nautilus-window popover.menu viewport,
+.nautilus-window popover.menu stack,
+.nautilus-window popover.menu box {
   background: transparent;
   background-color: transparent;
+  background-image: none;
   border: none;
   box-shadow: none;
-  padding: 0;
   margin: 0;
 }
 
@@ -9616,22 +9632,6 @@ popover.menu contents,
 popover.context-menu > contents,
 popover > contents {
   border-radius: 20px;
-}
-
-popover.menu.background > contents,
-popover.menu > contents,
-popover.menu contents,
-popover.context-menu > contents,
-popover.background > contents,
-popover > contents {
-  --popover-bg-color: transparent;
-  background-color: transparent;
-  background: transparent;
-  background-image: none;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 20px;
-  box-shadow: none;
   padding: 6px 4px;
 }
 
@@ -9704,7 +9704,8 @@ popover modelbutton:disabled label {
   color: rgba(255, 255, 255, 0.35);
 }
 
-popover.menu separator {
+popover.menu separator,
+.nautilus-window popover.menu separator {
   min-height: 1px;
   background-color: rgba(255, 255, 255, 0.12);
   margin: 4px 6px;
@@ -9734,27 +9735,53 @@ tooltip label {
 /* --- MAC-NAUTILUS-SIDEBAR-START --- */
 /* macOS Tahoe Nautilus Finder - Translucent Glass Sidebar & Solid Dark Pane */
 
-/* Make window root and split container transparent in the sidebar area */
+/* Make window root and split container transparent in the sidebar area, with corner patches for rounded sidebar */
 window.nautilus-window,
 window.nautilus-window.background,
 window.nautilus-window > dialog-host,
 window.nautilus-window overlay-split-view {
     background-color: transparent;
-    background-image: none;
+    background-image: 
+        linear-gradient(#202022, #202022),
+        linear-gradient(#202022, #202022);
+    background-repeat: no-repeat;
+    background-size: 40px 40px, 40px 40px;
+    background-position: 215px top, 215px bottom;
 }
 
-/* Sidebar floating glass card: solid #202022 frame border, NO blur under frame, blur inside */
+/* Sidebar floating glass card: solid #202022 frame border, rounded on all 4 corners */
 window.nautilus-window overlay-split-view > widget.sidebar-pane,
-window.nautilus-window .sidebar-pane {
+window.nautilus-window .sidebar-pane,
+window.nautilus-window .sidebar-pane:dir(ltr),
+window.nautilus-window .sidebar-pane:dir(rtl),
+.nautilus-window .sidebar-pane:dir(ltr),
+.nautilus-window .sidebar-pane:dir(rtl) {
     margin: 0px;
     border-top: 8px solid #202022;
     border-left: 8px solid #202022;
     border-bottom: 8px solid #202022;
     border-right: 8px solid #202022;
-    border-radius: 24px 0 0 24px;
+    border-radius: 24px;
     background-color: rgba(30, 30, 34, 0.40);
     background-clip: padding-box;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+}
+
+/* Remove any shadow or separator border between sidebar and content pane */
+window.nautilus-window overlay-split-view > shadow,
+window.nautilus-window overlay-split-view > border,
+window.nautilus-window .sidebar-pane > shadow,
+window.nautilus-window .sidebar-pane > border,
+window.nautilus-window shadow,
+.nautilus-window overlay-split-view > shadow,
+.nautilus-window overlay-split-view > border {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    min-width: 0;
+    min-height: 0;
+    border-style: none;
+    border-width: 0;
 }
 
 window.nautilus-window .sidebar-pane headerbar {
@@ -9940,17 +9967,33 @@ image.emblem {
 /* Content pane (files view) - strictly solid dark system theme color, NO blur */
 window.nautilus-window overlay-split-view > widget.content-pane,
 window.nautilus-window .content-pane,
-window.nautilus-window .content-pane toolbarview,
+window.nautilus-window .content-pane > toolbarview,
 window.nautilus-window .content-pane .view,
-window.nautilus-window .content-pane scrolledwindow {
+window.nautilus-window .content-pane > toolbarview > scrolledwindow,
+window.nautilus-window .content-pane > scrolledwindow {
     background-color: #202022;
-    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    border-left-style: none;
+    border-left-width: 0;
 }
 
 window.nautilus-window .content-pane headerbar {
     background-color: #202022;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
+
+/* Shift top panel buttons down by 3 pixels and increase width on the left side by 15 pixels */
+window.nautilus-window .content-pane headerbar centerbox,
+window.nautilus-window .content-pane headerbar > windowhandle > centerbox {
+    margin-top: 3px;
+}
+
+window.nautilus-window .content-pane headerbar centerbox > widget > box.start,
+window.nautilus-window .content-pane headerbar box.start,
+window.nautilus-window .content-pane headerbar .linked:first-child {
+    margin-left: 15px;
+}
+
+
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
 
 /* Alignment for Resources (net.nokyan.Resources) */

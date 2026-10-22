@@ -546,6 +546,19 @@ static void remove_from_headerbar(AdwHeaderBar *hb, GtkWidget *widget)
     }
 }
 
+static void shift_start_box(GtkWidget *widget)
+{
+    if (!widget) return;
+    if (g_strcmp0(G_OBJECT_TYPE_NAME(widget), "NautilusHistoryControls") == 0) {
+        gtk_widget_set_margin_start(widget, 15);
+        fprintf(stderr, "[MAC-NAUTILUS] Found NautilusHistoryControls! Set margin_start to 15\n");
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        shift_start_box(child);
+    }
+}
+
 static gboolean mac_fix_nautilus_window(gpointer user_data)
 {
     GtkWindow *window = GTK_WINDOW(user_data);
@@ -598,6 +611,10 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
 
         /* 3. Hide redundant folder search button from pathbar */
         hide_folder_search_button(GTK_WIDGET(content_hb));
+
+        /* 4. Shift content headerbar down by 3px and increase left width/margin by 15px */
+        gtk_widget_set_margin_top(GTK_WIDGET(content_hb), 3);
+        shift_start_box(GTK_WIDGET(content_hb));
 
         g_object_set_data(G_OBJECT(window), "mac_headerbars_reorganized", GINT_TO_POINTER(1));
     }

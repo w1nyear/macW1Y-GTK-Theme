@@ -165,7 +165,7 @@ export default class AppMenuExtension extends Extension {
             'search-shortcut',
             this._settings,
             Meta.KeyBindingFlags.NONE,
-            Shell.ActionMode.NORMAL,
+            Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP,
             () => (globalThis._macSpotlightToggle ? globalThis._macSpotlightToggle() : toggleSearchDialog())
         );
         this._searchShortcutInstalled = true;

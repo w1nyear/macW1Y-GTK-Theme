@@ -199,7 +199,7 @@ class TahoeWidgets {
         try {
             return _parseTint(this._settings.get_string('glass-tint'));
         } catch (_) {
-            return [1, 1, 1];
+            return [0.16, 0.16, 0.18];
         }
     }
 
@@ -329,7 +329,7 @@ class TahoeWidgets {
             e.setBlurRadius(this._glassInt('glass-blur', 12));
             const [tr, tg, tb] = this._glassTintRgb();
             e.setTintColor(tr, tg, tb);
-            e.setTintStrength(this._glassInt('glass-tint-strength', 16) / 100);
+            e.setTintStrength(this._glassInt('glass-tint-strength', 12) / 100);
             e.setBrightness(1.0);
             e.setContrast(1.0);
             e.setSaturation(this._glassInt('glass-saturation', 85) / 100);
@@ -424,7 +424,7 @@ class TahoeWidgets {
                         regions.push({
                             x: rx, y: ry, w: rw, h: rh,
                             tintR: tr, tintG: tg, tintB: tb,
-                            baseStrength: this._glassInt('glass-tint-strength', 16) / 100,
+                            baseStrength: this._glassInt('glass-tint-strength', 12) / 100,
                         });
                         minX = Math.min(minX, rx);
                         minY = Math.min(minY, ry);

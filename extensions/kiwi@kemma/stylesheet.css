@@ -528,16 +528,28 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
    the label is the shell's own actor, and shell stylesheets have no way to ask
    for the scheme on their own. Geometry stays the theme's. */
 .dash-label.kiwi-dock-label {
-  background-color: rgba(238, 238, 238, 0.85);
+  background-color: rgba(238, 238, 238, 0.50);
   color: #1c1c1c;
   /* The pill floats over the wallpaper, so the light comes from straight on -
      same shadow the downloads pills lift off with */
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .dash-label.kiwi-dock-label.dark {
-  background-color: rgba(46, 46, 46, 0.85);
-  color: #f2f2f2;
+  background-color: rgba(30, 30, 34, 0.45);
+  color: #ffffff;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 
@@ -1158,7 +1170,15 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
  * animated inline by the shell, so it is killed via transparent color;
  * the icon has no such animation and obeys opacity. */
 .window-caption {
-    color: transparent;
+    color: #ffffff;
+    background-color: rgba(30, 30, 34, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .window-icon {

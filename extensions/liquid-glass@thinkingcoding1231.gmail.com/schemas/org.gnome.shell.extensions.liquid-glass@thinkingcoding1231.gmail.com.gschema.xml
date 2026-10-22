@@ -22,7 +22,7 @@
       <summary>Bottom margin</summary>
     </key>
     <key name="dock-tint-color" type="s">
-      <default>"#ffffff"</default>
+      <default>"#29292e"</default>
       <summary>Tint color (Hex)</summary>
     </key>
     <key name="dock-tint-strength" type="d">

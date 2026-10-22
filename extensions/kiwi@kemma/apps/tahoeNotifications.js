@@ -174,7 +174,7 @@ function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0, noWin 
         effect.setSaturation(1.0);
     } else {
         effect.setTintColor(0.16, 0.16, 0.18);
-        effect.setTintStrength(0.02);
+        effect.setTintStrength(0.12);
         effect.setBrightness(1.0);
         effect.setContrast(1.0);
         effect.setSaturation(1.0);
@@ -1096,7 +1096,7 @@ function _flushToastQueue() {
 function _applyWidgetGlassParams(effect) {
     if (!effect)
         return;
-    let tint = [0, 0, 0], strength = 0.10, blur = 4, sat = 1.0;
+    let tint = [0.16, 0.16, 0.18], strength = 0.12, blur = 4, sat = 1.0;
     try {
         const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
         try {
@@ -1108,7 +1108,7 @@ function _applyWidgetGlassParams(effect) {
                     tint = c;
             }
         } catch (_) {}
-        try { strength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 10) / 100)); } catch (_) {}
+        try { strength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 12) / 100)); } catch (_) {}
         try { blur = Math.min(60, Math.max(0, _readIntSetting(sset, 'glass-blur', blur))); } catch (_) {}
         try { sat = Math.min(2, Math.max(0.2, _readIntSetting(sset, 'glass-saturation', 100) / 100)); } catch (_) {}
     } catch (_) {}

@@ -514,7 +514,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         const tintG = isDark ? 0.16 : 1.0;
         const tintB = isDark ? 0.18 : 1.0;
         const tintVal = isDark ? 0.16 : 1.0;
-        const tintStrength = isDark ? 0.02 : 0.02;
+        const tintStrength = isDark ? 0.12 : 0.08;
         return { isDark, tintR, tintG, tintB, tintVal, tintStrength };
     }
 
@@ -1066,9 +1066,8 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._backdrop.set_size(mon.width, mon.height);
         this._backdrop.visible = true;
 
-        const fromRect = options?.fromRect;
         const targetX = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
-        const targetY = fromRect ? fromRect.y : mon.y + Math.round(mon.height * 0.16);
+        const targetY = mon.y + Math.round(mon.height * 0.16);
 
         this._currentQuery = '';
         this._entry.text = '';
@@ -1079,29 +1078,16 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._box.remove_all_transitions();
         this.remove_all_transitions();
 
-        if (fromRect) {
-            // Smooth morphing transformation from Spotlight capsule position and size
-            this._box.set_position(fromRect.x, fromRect.y);
-            this._box.set_size(fromRect.width, fromRect.height);
-            this._box.set_pivot_point(0.5, 0.0);
-            this._box.scale_x = 1.0;
-            this._box.scale_y = 1.0;
-            this._box.opacity = 255;
-
-            this._headerRow.opacity = 0;
-            this._categoryRow.opacity = 0;
-            this._scrollWrapper.opacity = 0;
-        } else {
-            this._box.set_position(targetX, targetY);
-            this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);
-            this._box.set_pivot_point(0.5, 0.5);
-            this._box.scale_x = 0.94;
-            this._box.scale_y = 0.94;
-            this._box.opacity = 0;
-            this._headerRow.opacity = 255;
-            this._categoryRow.opacity = 255;
-            this._scrollWrapper.opacity = 255;
-        }
+        this._box.set_position(targetX, targetY);
+        this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);
+        // macOS Tahoe style: fade-in + slight "recede" (start larger at 1.06, settle to 1.0)
+        this._box.set_pivot_point(0.5, 0.5);
+        this._box.scale_x = 1.06;
+        this._box.scale_y = 1.06;
+        this._box.opacity = 0;
+        this._headerRow.opacity = 255;
+        this._categoryRow.opacity = 255;
+        this._scrollWrapper.opacity = 255;
 
         if (!this.get_parent()) {
             Main.layoutManager.uiGroup.add_child(this);
@@ -1150,49 +1136,26 @@ export const MacApplicationsDialog = GObject.registerClass({
             this._entry.grab_key_focus();
         } catch (_) {}
 
-        if (fromRect) {
-            this._box.ease({
-                x: targetX,
-                y: targetY,
-                width: DIALOG_WIDTH,
-                height: DIALOG_HEIGHT,
-                duration: 250,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                onComplete: () => {
-                    this._syncGlass();
-                },
-            });
-
-            this._headerRow.ease({
-                opacity: 255,
-                duration: 200,
-                delay: 60,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-            this._categoryRow.ease({
-                opacity: 255,
-                duration: 200,
-                delay: 90,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-            this._scrollWrapper.ease({
+        if (_isGlassAlive(this._glass)) {
+            this._glass.opacity = 0;
+            this._glass.show();
+            this._glass.ease({
                 opacity: 255,
                 duration: 220,
-                delay: 110,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-        } else {
-            this._box.ease({
-                opacity: 255,
-                scale_x: 1.0,
-                scale_y: 1.0,
-                duration: 200,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                onComplete: () => {
-                    this._syncGlass();
-                },
             });
         }
+
+        this._box.ease({
+            opacity: 255,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            duration: 220,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                this._syncGlass();
+            },
+        });
     }
 
     close(immediate = false) {
@@ -1228,8 +1191,8 @@ export const MacApplicationsDialog = GObject.registerClass({
         if (_isGlassAlive(this._glass)) {
             this._glass.ease({
                 opacity: 0,
-                duration: 160,
-                mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+                duration: 180,
+                mode: Clutter.AnimationMode.EASE_IN_QUAD,
                 onComplete: () => {
                     hideGlass();
                 },
@@ -1238,10 +1201,10 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._box.ease({
             opacity: 0,
-            scale_x: 0.94,
-            scale_y: 0.94,
-            duration: 160,
-            mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+            scale_x: 1.06,
+            scale_y: 1.06,
+            duration: 180,
+            mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {
                 this.visible = false;
                 hideGlass();

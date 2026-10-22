@@ -898,12 +898,12 @@ StWidget.focused .app-well-app-running-dot {
 
 .dash-label {
   color: #ffffff !important;
-  background-color: transparent !important;
-  background: transparent !important;
+  background-color: rgba(30, 30, 34, 0.45) !important;
+  background: rgba(30, 30, 34, 0.45) !important;
   border-radius: 9999px !important;
   border: 1px solid rgba(255, 255, 255, 0.20) !important;
-  box-shadow: none !important;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
   padding: 4px 12px !important;
   margin: 4px;
   text-align: center;
@@ -4071,80 +4071,63 @@ StWidget.focused .app-grid-running-dot {
   width: 440px !important;
   min-height: 56px !important;
   padding: 10px 14px !important;
-  border-radius: 16px !important;
-  background-color: rgba(45, 45, 47, 0.76) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
+  border-radius: 24px !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  box-shadow: none !important;
   color: white !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
   transition-duration: 150ms;
 }
 
 .mac-notification-banner:hover {
-  background-color: rgba(56, 56, 58, 0.84) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.42) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.26) !important;
+  box-shadow: none !important;
 }
 
 .mac-notification-icon-bin {
-  padding-right: 10px !important;
-  margin-top: 2px !important;
-  border-radius: 9px !important;
+  padding-right: 12px !important;
 }
 
 .mac-notification-app-icon {
-  icon-size: 36px !important;
+  icon-size: 38px !important;
   border-radius: 9px !important;
 }
 
 .mac-notification-content-box {
-  spacing: 2px !important;
+  spacing: 1px !important;
 }
 
 .mac-notification-app-name {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
-  font-size: 13px !important;
+  font-size: 11.5px !important;
   font-weight: 600 !important;
-  color: #ffffff !important;
-  margin-bottom: 0px !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  margin-bottom: 1px !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
-.mac-notification-count-badge {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
-  background-color: rgba(255, 255, 255, 0.20) !important;
-  color: rgba(255, 255, 255, 0.90) !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  border-radius: 9999px !important;
-  padding: 1px 6px !important;
-  margin-left: 6px !important;
-}
-
 .mac-notification-title {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
   color: #ffffff !important;
-  margin-top: 1px !important;
-  margin-bottom: 1px !important;
+  margin-bottom: 2px !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
 }
 
 .mac-notification-body {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
   font-size: 12.5px !important;
   font-weight: 400 !important;
-  color: rgba(255, 255, 255, 0.78) !important;
-  line-height: 1.28 !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  line-height: 1.25 !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
 .mac-notification-time {
-  font-family: SF Pro Text, Cantarell, sans-serif !important;
   font-size: 11px !important;
-  font-weight: 400 !important;
-  color: rgba(255, 255, 255, 0.45) !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.50) !important;
   margin-top: 1px !important;
   margin-right: 2px !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
@@ -4201,21 +4184,37 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-notification-actions-box {
-  margin-top: 6px !important;
+  margin-top: 8px !important;
+  margin-left: -4px !important;
   spacing: 8px !important;
   transition-duration: 150ms !important;
+}
+
+.mac-notification-action-btn {
+  border-radius: 9999px !important;
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.35) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  padding: 4px 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+  transition-duration: 150ms;
 }
 
 .mac-notification-action-btn,
 .notification-button {
   min-height: 22px !important;
-  padding: 4px 12px !important;
-  border-radius: 7px !important;
-  background-color: rgba(255, 255, 255, 0.16) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  padding: 3px 14px !important;
+  border-radius: 9999px !important;
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: none !important;
   color: #ffffff !important;
-  font-size: 11.5px !important;
+  font-size: 11px !important;
   font-weight: 500 !important;
   letter-spacing: 0.1px !important;
   transition-duration: 100ms;
@@ -4223,16 +4222,16 @@ StWidget.focused .app-grid-running-dot {
 
 .mac-notification-action-btn:hover,
 .notification-button:hover {
-  background-color: rgba(255, 255, 255, 0.26) !important;
-  border-color: rgba(255, 255, 255, 0.22) !important;
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
   box-shadow: none !important;
   color: #ffffff !important;
 }
 
 .mac-notification-action-btn:active,
 .notification-button:active {
-  background-color: rgba(255, 255, 255, 0.34) !important;
-  border-color: rgba(255, 255, 255, 0.30) !important;
+  background-color: rgba(255, 255, 255, 0.26) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
   box-shadow: none !important;
   color: #ffffff !important;
 }
@@ -5228,10 +5227,15 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .window-caption {
-  color: rgba(255, 255, 255, 0.85);
-  background-color: rgba(0, 0, 0, 0.75);
-  border-radius: 9999px;
-  padding: 4px 8px;
+  color: #ffffff !important;
+  background-color: rgba(30, 30, 34, 0.45) !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  padding: 4px 12px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
 }
 
 .screenshot-ui-close-button {
@@ -6173,6 +6177,25 @@ StWidget.focused .app-grid-running-dot {
   transition-duration: 300ms !important;
 }
 
+.mac-notification-banner {
+  width: 440px !important;
+  min-height: 56px !important;
+  padding: 10px 14px !important;
+  border-radius: 24px !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  box-shadow: none !important;
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
+  transition-duration: 150ms;
+}
+
+.mac-notification-banner:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.26) !important;
+  box-shadow: none !important;
+}
 
 .popup-menu-content {
   background-color: transparent !important;
