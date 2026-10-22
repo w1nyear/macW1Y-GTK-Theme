@@ -8720,3 +8720,36 @@ echo "==> Встановлення успішно завершено!"
       - Реальну пасту (Ctrl+V у фокусний застосунок) не тригерив живцем — перевірка була б небезпечною для користувацьких вікон; механізм повторює перевіряний notify_keyval-патерн.
       - Аномалія першого дампу спотлайту (відкрився розгорнутим) — гонка мого ж тестового `_entry.text='term'` із попереднього скрипта; чистий тест показав коректний колапсед-старт.
       - Файли синхронізовано в репозиторій: `extensions/appmenu@ChathurangaBW.github.io/{applications_menu_v5b.js,searchDialog_v5.js,clipboardDialog_v2.js}` + `icons/{mac-launchpad-a.svg,mac-clipboard-copy.svg}`.
+
+102. Пакет UI-правок №2: відкат іконки ЦП, вирівнювання шапок, 36px поле вводу скрізь, єдиний border країв, морф-анімації переходів меню (22.10.2026):
+   1. Мета (запит користувача):
+      - Повернути ПРЕДНЮ іконку Центру програм (синя плитка Appstore.svg замість білої «А» з пакета №101).
+      - Вирівняти шапки по середині висоти: у ЦП іконку-3-крапки-набір тексту ПІДНЯТИ вгору; у Буфері та Spotlight — ОПУСТИТИ вниз.
+      - Висоту поля вводу взяти з ЦП (36px) і вставити в інші меню (буфер 44→36, розгорнутий spotlight 40→36).
+      - Морф-анімація переходів: спотлайт → розгорнуте меню спотлайта, спотлайт ↔ ЦП, спотлайт ↔ буфер (і навпаки через Ctrl+Space) — фон і елементи анімуються трансформацією, плавно, НЕ дьоргано, ОДНОТИПНО.
+      - Фото 3: border (тонка світла рамка + округлені кути incl. низ) зі «spotlight введення тексту» — один стиль країв в УСІХ цих меню.
+   2. Виконані правки:
+      - `applications_menu_v5b.js` (ЦП):
+        * Іконка: з кандидатів прибрано extDir/…/mac-launchpad-a.svg (обидві позиції) — повернуто першим кандидатом `…/MacTahoe/apps/scalable/Appstore.svg`; сам файл `icons/mac-launchpad-a.svg` в репо залишено (не використовується).
+        * Shapка: `_appLogo/_entry/_moreIcon.translation_y = −3` (підйом вгору до центру 36px-полоси).
+        * `_box` set_style: `border: none` → `border: 1px solid rgba(255,255,255,0.30)` (radius 26 вже є — усі 4 кути).
+      - `searchDialog_v5.js` (Spotlight):
+        * `EXP_PILL_HEIGHT 40→36`; `PILL_EXPANDED_STYLE` height 36 (і topRow у `_collapseButtonsAndExpandPill` → 36px); формла висоти результатів `EXP_PILL_HEIGHT + 14 + n·52` оновилась автоматично.
+        * Border: `PILL_COLLAPSED_STYLE` (згорнута пілюля 480×54) + `PILL_EXPANDED_STYLE` (714×36, radius 26 УСІ кути — низ скруглений як на фото 3) + обидва BTN-стилі кнопок-кілець (50px, radius 26) + усі 3 `_box.set_style` (init/collapse/uncollapse): замінено «border-top/bottom 2px rgba(200,200,200,0.50)»/«border: none» на єдиний `border: 1px solid rgba(255,255,255,0.30)`.
+        * Вміст пілюлі: `_searchIcon/_entry/_optionsBtn.translation_y = +3` (опускання вниз; кнопку-обіцяйки topRow не чіпали).
+      - `clipboardDialog_v2.js` (Буфер): header 44→36px; `_headerIcon/_searchEntry/_clearBtn.translation_y = +3`; `_box` set_style ×3 (init/glass-init/open): `border: none` → `1px solid rgba(255,255,255,0.30)`.
+      - Морф-анімації (однаковий сніпет у всіх 3 файлах — модульні `_saveMorphFrom(actor)` / `_consumeMorphFrom()`, стейт у `globalThis._macMorphFrom {x,y,w,h,t}`, протухає за 900мс):
+        * close() (усі 3): одразу після `_isOpen=false` — `_saveMorphFrom(this)` (зберігає rect._box навіть при immediate=true — саме так через `_macCloseAllCenters` (kiwi@kemma/apps/centerManager.js, close(true)) працюють Ctrl+Space-переходи).
+        * open() intro (усі 3): pivot(0.5,0.5); якщо морф-рект свіжий — translation = від-центр − до-центр, старт scale = clamp(from.w/toW, 0.6, 1.15); інакше scale 0.94→1.0; ease до (0,0,1.0,255) 220мс EASE_OUT_CUBIC + onUpdate/onComplete `_syncGlass()` → фон-стекло їде разом із боксом.
+        * close() outro (усі 3, non-immediate): заміна старих 1.06 «recede» на `opacity→0, scale→0.94` 180мс EASE_IN_QUAD (однотипно зі «втягуванням»); immediate — миттєво, але rect зберігає.
+        * Внутрішні перемиканя Spotlight (режими/результати): `_expandToHeight` — `_resultsWrapper` ease +`translation_y 8→0` (opacity fade 200мс вже було) на КОЖНОМУ перерендері; порожні результати — fade-out з `translation_y 6` (140мс EASE_IN_QUAD).
+      - Живий rebind toggle-глобалів (?v=morph17): `toggleMacSpotlight/_macSpotlightToggle/closeMacSpotlight` ← searchDialog, `toggleMacApplications/toggleApplicationsMenu` ← applications_menu, `toggleMacClipboard` ← clipboardDialog (ensure буфера/ЦП сам toggle-глобали НЕ переприв'язує — без rebind старий ensure знищував нові інстанси й відкривав старий код).
+   3. Валідація (жива, EvalHelper D-Bus):
+      - Імпорт-синтаксис трьох файлів: gjs-заглушки (GI_TYPELIB_PATH = /usr/lib/gnome-shell + mutter-18 + girepository-1.0), заглушки main/dnd/appFavorites/dash/util + локальний i18n.js; помилка буфера лише очікуваний runtime `global is not defined` (top-level ClipboardStore try/catch).
+      - Дамп: ЦП icon=…/Appstore.svg, header «height: 36», border rgba(255,255,255,0.30) у _box, ty [-3,-3,-3]; Буфер header 36, ty [3,3,3], border ✓; Спотлайт: collapsed пілюля 54 + 1px border (у top/bottom 2px більше НІМАЄ), кнопки 1px-ободок, ty пілюлі [3,3,3], розгортання — пілюля 714×36 + border + radius 26 (усі кути), topRow 36, box border ✓, відкат у collapsed ✓.
+      - Морф уживу: спотлайт(603,205,714×54) → Буфер: intro ty=-238 (старт від центру спотлайта, опускання до центру панелі 530), sx=1→1, fade 0→255 220мс, settle (0,0,1,255) ✓; спотлайт → ЦП: ty=-206 ✓; close(true) напряму зберігає rect ✓ (~1792689…); ease ЦП завершується (sx=1, op=255) ✓.
+      - Довершений тест t2 (перша спроба toggle буфера дав інакше 0.94-гілку) — причина знайдена: toggle/ensure неузгодженість старих модулів у globalThis; після rebind послідовність повторювана ✓.
+   4. Примітки:
+      - Напружування «однотипності»: всі три меню мають ІДЕНТИЧНІ параметри intro (0.94/морф → 1.0, 220мс EASE_OUT_CUBIC) та outro (→0.94, 180мс EASE_IN_QUAD); стекло синхронізується кожним кадром через отже `notify::scale/x/y` → `_syncGlass`.
+      - Значення зсувів шапок (−3 вниз у ЦП, +3 у буфері/спотлайті) — емпіричні; готовий скоригувати за відгуком користувача.
+      - Файли синхронізовано в репозиторій: `extensions/appmenu@ChathurangaBW.github.io/{applications_menu_v5b.js,searchDialog_v5.js,clipboardDialog_v2.js}`.

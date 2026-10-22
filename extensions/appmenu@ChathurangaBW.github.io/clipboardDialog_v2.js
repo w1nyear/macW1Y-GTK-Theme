@@ -42,6 +42,27 @@ function _isGlassAlive(glass) {
     }
 }
 
+// Спільний морф-стейт для плавних переходів між меню (ЦП/Спотлайт/Буфер)
+function _saveMorphFrom(actor) {
+    try {
+        const b = actor ? actor._box : null;
+        if (!b) return;
+        globalThis._macMorphFrom = { x: b.x, y: b.y, w: b.width, h: b.height, t: Date.now() };
+    } catch (_) {}
+}
+
+function _consumeMorphFrom() {
+    try {
+        const m = globalThis._macMorphFrom;
+        globalThis._macMorphFrom = null;
+        if (!m) return null;
+        if (Date.now() - m.t > 900) return null;
+        return m;
+    } catch (_) {
+        return null;
+    }
+}
+
 // Ensure storage directories exist
 try {
     GLib.mkdir_with_parents(IMAGES_DIR, 0o755);
@@ -478,7 +499,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._box.set_style(
             'background-color: transparent !important; background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: none !important; ' +
+            'border: 1px solid rgba(255, 255, 255, 0.30) !important; ' +
             'box-shadow: none !important;'
         );
         this.add_child(this._box);
@@ -525,7 +546,7 @@ export const MacClipboardDialog = GObject.registerClass({
             vertical: false,
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'height: 44px; min-height: 44px; padding: 0 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.10);',
+            style: 'height: 36px; min-height: 36px; padding: 0 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.10);',
         });
         this._headerBox = this._headerRow;
         this._box.add_child(this._headerRow);
@@ -596,6 +617,13 @@ export const MacClipboardDialog = GObject.registerClass({
             this._refreshList();
         });
         this._headerRow.add_child(this._clearBtn);
+
+        // Вирівнювання шапки по середині висоти: трохи опустити вниз
+        try {
+            this._headerIcon.translation_y = 3;
+            this._searchEntry.translation_y = 3;
+            this._clearBtn.translation_y = 3;
+        } catch (_) {}
 
         // 4. Scrollable Container for Clipboard Entries
         this._scrollView = new St.ScrollView({
@@ -758,7 +786,7 @@ export const MacClipboardDialog = GObject.registerClass({
             this._box.set_style(
                 'background-color: transparent !important; background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
-                'border: none !important; ' +
+                'border: 1px solid rgba(255, 255, 255, 0.30) !important; ' +
                 'box-shadow: none !important;'
             );
 
@@ -859,7 +887,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._box.set_style(
             'background-color: transparent !important; background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: none !important; ' +
+            'border: 1px solid rgba(255, 255, 255, 0.30) !important; ' +
             'box-shadow: none !important;'
         );
 
@@ -929,10 +957,25 @@ export const MacClipboardDialog = GObject.registerClass({
 
         this._box.set_position(targetX, targetY);
         this._box.set_size(DIALOG_WIDTH, h);
-        // macOS Tahoe style: fade-in + slight "recede" (start larger at 1.06, settle to 1.0)
+        // Єдина intro: морф з попереднього меню або fade+scale 0.94→1.0
         this._box.set_pivot_point(0.5, 0.5);
-        this._box.scale_x = 1.06;
-        this._box.scale_y = 1.06;
+        const _mFrom = _consumeMorphFrom();
+        if (_mFrom) {
+            const fromCx = _mFrom.x + Math.round(_mFrom.w / 2);
+            const fromCy = _mFrom.y + Math.round(_mFrom.h / 2);
+            const toCx = targetX + Math.round(DIALOG_WIDTH / 2);
+            const toCy = targetY + Math.round(h / 2);
+            const s0 = Math.max(0.60, Math.min(1.15, _mFrom.w / DIALOG_WIDTH));
+            this._box.translation_x = fromCx - toCx;
+            this._box.translation_y = fromCy - toCy;
+            this._box.scale_x = s0;
+            this._box.scale_y = s0;
+        } else {
+            this._box.translation_x = 0;
+            this._box.translation_y = 0;
+            this._box.scale_x = 0.94;
+            this._box.scale_y = 0.94;
+        }
         this._box.opacity = 0;
         this._headerRow.opacity = 255;
         this._scrollWrapper.opacity = 255;
@@ -949,17 +992,28 @@ export const MacClipboardDialog = GObject.registerClass({
 
         this._box.ease({
             opacity: 255,
+            translation_x: 0,
+            translation_y: 0,
             scale_x: 1.0,
             scale_y: 1.0,
             duration: 220,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            onComplete: () => this._syncGlass(),
+            onUpdate: () => this._syncGlass(),
+            onComplete: () => {
+                this._box.translation_x = 0;
+                this._box.translation_y = 0;
+                this._box.scale_x = 1.0;
+                this._box.scale_y = 1.0;
+                this._syncGlass();
+            },
         });
     }
 
     close(immediate = false) {
         if (!this._isOpen) return;
         this._isOpen = false;
+        // Запам'ятати геометрію для морф-переходу в інше меню (діє 900мс)
+        _saveMorphFrom(this);
 
         if (this._modalGrab) {
             try { Main.popModal(this._modalGrab); } catch (_) {
@@ -1012,8 +1066,8 @@ export const MacClipboardDialog = GObject.registerClass({
 
         this._box.ease({
             opacity: 0,
-            scale_x: 1.06,
-            scale_y: 1.06,
+            scale_x: 0.94,
+            scale_y: 0.94,
             duration: 180,
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {
