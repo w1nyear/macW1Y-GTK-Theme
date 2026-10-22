@@ -35,8 +35,8 @@ function _isGlassAlive(glass) {
     try {
         const desc = _gobjectToString.call(glass);
         if (desc.includes('(DISPOSED)') || desc.includes('(FINALIZED)')) return false;
-        if (glass._cleanedUp) return false;
-        return typeof glass.visible === 'boolean' && glass.get_parent() !== null;
+        if (glass._cleanedUp || glass.is_finalized?.()) return false;
+        return typeof glass.visible === 'boolean';
     } catch (_) {
         return false;
     }
@@ -474,6 +474,19 @@ export const MacClipboardDialog = GObject.registerClass({
             this.destroy();
         });
 
+        this.connect('captured-event', (_actor, event) => {
+            if (event.type() === Clutter.EventType.KEY_PRESS) {
+                const symbol = event.get_key_symbol();
+                const state = event.get_state();
+                const isCtrl = (state & Clutter.ModifierType.CONTROL_MASK) !== 0;
+                if (symbol === Clutter.KEY_Escape || (isCtrl && symbol === Clutter.KEY_space)) {
+                    this.close();
+                    return Clutter.EVENT_STOP;
+                }
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+
         this.connect('key-press-event', (_actor, event) => {
             const symbol = event.get_key_symbol();
             const state = event.get_state();
@@ -486,7 +499,7 @@ export const MacClipboardDialog = GObject.registerClass({
         });
 
         this._initializingGlass = false;
-        this._initGlass().catch(() => {});
+        this._initGlassPromise = this._initGlass().catch(() => {});
 
         // 3. Top Header / Search Row
         this._headerRow = new St.BoxLayout({
@@ -695,22 +708,16 @@ export const MacClipboardDialog = GObject.registerClass({
             this._glass.addExclusion(this._backdrop);
             this._applyGlassUniforms();
             this._glass.hide();
-
-            if (!this._isOpen) {
-                if (this._glass && !this._glass.is_finalized?.()) {
-                    try {
-                        this._glass.remove_all_transitions();
-                        this._glass.opacity = 0;
-                        this._glass.visible = false;
-                        this._glass.hide();
-                    } catch (_) {}
-                }
-                return;
-            }
+            this._glass.opacity = 0;
 
             if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
                 Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
             }
+
+            if (!this._isOpen) {
+                return;
+            }
+
             Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
             Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
 
@@ -727,6 +734,7 @@ export const MacClipboardDialog = GObject.registerClass({
             if (typeof this._glass.forceRefresh === 'function') {
                 this._glass.forceRefresh(1);
             }
+            this._applyGlassUniforms();
             this._syncGlass();
         } catch (_) {
         } finally {
@@ -751,7 +759,7 @@ export const MacClipboardDialog = GObject.registerClass({
         const w = rawW * scaleX;
         const h = rawH * scaleY;
         const bx = box.x + (rawW - w) * 0.5;
-        const by = box.y;
+        const by = box.y + (rawH - h) * 0.5;
 
         const localBgX = Math.round(bx - mon.x);
         const localBgY = Math.round(by - mon.y);
@@ -813,6 +821,13 @@ export const MacClipboardDialog = GObject.registerClass({
         }
         this.visible = true;
 
+        this._box.set_style(
+            'background-color: transparent !important; background: none !important; ' +
+            `border-radius: ${CORNER_RADIUS}px !important; ` +
+            'border: none !important; ' +
+            'box-shadow: none !important;'
+        );
+
         if (_isGlassAlive(this._glass)) {
             try {
                 this._glass.remove_all_transitions();
@@ -821,40 +836,48 @@ export const MacClipboardDialog = GObject.registerClass({
                 }
                 Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
                 Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
-                this._box.set_style(
-                    'background-color: transparent !important; background: none !important; ' +
-                    `border-radius: ${CORNER_RADIUS}px !important; ` +
-                    'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-                    'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-                    'border-left: none !important; ' +
-                    'border-right: none !important; ' +
-                    'box-shadow: 0 20px 50px rgba(0, 0, 0, 0.40) !important;'
-                );
                 this._glass.show();
-                this._glass.opacity = options?.fromRect ? 255 : 0;
+                this._glass.opacity = 0;
                 this._glass._backdropLocked = false;
                 if (typeof this._glass.forceRefresh === 'function') {
                     this._glass.forceRefresh(1);
                 }
                 this._applyGlassUniforms();
                 this._syncGlass();
+                this._glass.ease({
+                    opacity: 255,
+                    duration: 220,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
             } catch (_) {
                 try { this._glass?.destroy?.(); } catch (_) {}
                 this._glass = null;
-                this._initGlass();
+                this._initGlassPromise = this._initGlass();
                 Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
             }
         } else {
             try { this._glass?.destroy?.(); } catch (_) {}
             this._glass = null;
-            this._box.set_style(
-                'background-color: transparent !important; background: none !important; ' +
-                `border-radius: ${CORNER_RADIUS}px !important; ` +
-                'border: none !important; ' +
-                'box-shadow: none !important;'
-            );
-            this._initGlass();
+            this._initGlassPromise = this._initGlass();
             Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
+            if (this._initGlassPromise) {
+                this._initGlassPromise.then(() => {
+                    if (!this._isOpen || !_isGlassAlive(this._glass)) return;
+                    if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
+                        Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
+                    }
+                    Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
+                    Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
+                    this._glass.show();
+                    this._applyGlassUniforms();
+                    this._syncGlass();
+                    this._glass.ease({
+                        opacity: 255,
+                        duration: 180,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    });
+                }).catch(() => {});
+            }
         }
 
         try {
@@ -1198,7 +1221,7 @@ export const MacClipboardDialog = GObject.registerClass({
     }
 });
 
-export function toggleClipboardDialog(options = {}) {
+export function ensureClipboardDialog() {
     if (globalThis._macClipboardGlobalInstance) {
         if (!globalThis._macClipboardGlobalInstance.get_parent() || globalThis._macClipboardGlobalInstance.is_finalized?.()) {
             try { globalThis._macClipboardGlobalInstance.destroy(); } catch (_) {}
@@ -1214,6 +1237,11 @@ export function toggleClipboardDialog(options = {}) {
         } catch (_) {}
         globalThis._macClipboardGlobalInstance = new MacClipboardDialog();
     }
+    return globalThis._macClipboardGlobalInstance;
+}
+
+export function toggleClipboardDialog(options = {}) {
+    ensureClipboardDialog();
     if (globalThis._macClipboardGlobalInstance._isOpen) {
         globalThis._macClipboardGlobalInstance.close();
     } else {

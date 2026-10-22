@@ -8455,3 +8455,36 @@ echo "==> Встановлення успішно завершено!"
       - Синхронізація та компіляція:
         * Перекомпільовано бібліотеку `libmac_nautilus.so` через `gcc` та оновлено в `/usr/lib/x86_64-linux-gnu/libmac_nautilus.so` і `lib/libmac_nautilus.so`.
         * Файл `gtk.css` дзеркально оновлено у `~/.config/gtk-4.0/`, `~/.themes/macW1Y-Dark/`, `~/.themes/macW1Y-Dark-solid/`, `/usr/share/themes/macW1Y-Dark/`, `/usr/share/themes/macW1Y-Dark-solid/` та каталогах `MACTHEMEFILES/`.
+
+19.41. appmenu, kiwi, liquid-glass, tahoe-widgets: виправлення першого відкриття скла Spotlight, взаємовиключення Ctrl+Space, круглі кути тінту буфера обміну та уніфікація 0.12 тінту для всіх скляних елементів
+   1. Вимоги користувача:
+      - Виправити те, що скло у Spotlight з'являлося тільки після другого відкриття.
+      - Якщо відкрито буфер обміну, центр сповіщень чи інше меню, і натиснуто Ctrl+Space — відкрите меню має закриватись, а не відкривати ще одне Spotlight меню накладанням.
+      - У буфері обміну надати строго кругле заокруглення для ефекту тінту/тіні, усунувши виступання гострих 90-градусних країв за межі радіуса діалогу.
+      - Додати цей же єдиний тінт строго в усі елементи з шейдером скла Liquid Glass: віджети, док, повідомлення (тости), повідомлення у центрі сповіщень (картки NC), центр програм та Spotlight.
+      - Забезпечити безвідмовну роботу Liquid Glass у Spotlight та споріднених меню.
+      - Суворо дотримуватись заборони на виклики скріншотів, що призводять до виходу з сесії.
+   2. Реалізація:
+      - Виправлення відсутності скла при першому відкритті Spotlight (`searchDialog_v5.js`):
+        * Виявлено кореневу причину: утиліта перевірки `_isGlassAlive(glass)` вимагала `glass.get_parent() !== null`, тоді як конструктор створював скло до виклику `open()`. Через це `_isGlassAlive()` помилково вважав скло неактивним, обнуляв його (`this._glass = null`) і пропускав анімацію відкриття скла.
+        * У `searchDialog_v5.js`, `applications_menu_v5b.js`, `applications_menu_v5.js` та `clipboardDialog_v2.js` функцію `_isGlassAlive()` виправлено: вона валідує стан `GObject`, прапорці `_cleanedUp` та `is_finalized` без блокування відсутністю батьківського контейнера на етапі ініціалізації.
+        * У `_initGlass()` екземпляр `BackdropGlass` тепер відразу вбудовується в `Main.layoutManager.uiGroup` під кореневий актор діалогу з початковою схованою видимістю та `opacity = 0`.
+        * Збережено проміс `this._initGlassPromise`: якщо `open()` викликано у момент першого завантаження, метод автоматично підключається до завершення проміса і плавно виводить скло на екран.
+        * Додано методи `ensureSearchDialog()`, `ensureApplicationsDialog()` та `ensureClipboardDialog()` і підключено їх до `enable()` у `extension.js`, що гарантує 100% готовність шейдерів скла ще до першого натискання клавіш користувачем.
+      - Взаємовиключення при натисканні `Ctrl+Space`:
+        * У `toggleSearchDialog()` (`searchDialog_v5.js`): виправлено перевірку активних спливаючих меню (додано коректну перевірку `_macApplicationsGlobalInstance`, виправлено ReferenceError `BoxPointer.PopupAnimation` при закритті меню панелі, підключено виклики `_tahoeNCClose(false)` та `closeNC(false)`). При відкритому Буфері обміну, Центрі сповіщень, Центрі програм або Quick Settings натискання `Ctrl+Space` негайно закриває активне меню та перериває функцію, не допускаючи накладання Spotlight.
+        * У `clipboardDialog_v2.js` та `applications_menu_v5b.js` додано глобальні обробники `captured-event`: комбінація `Ctrl+Space` та клавіша `Escape` перехоплюються на фазі capture незалежно від фокуса елементів введення та плавно закривають діалог.
+      - Усунення прямокутних кутів тінту в буфері обміну (`clipboardDialog_v2.js`):
+        * Виявлено причину виходу тінту за межі 26px радіуса: у `this._box.set_style()` задавався Clutter `box-shadow` із несиметричними межами `border-top` / `border-bottom` (без `border-left`/`border-right`), через що рушій St малював тіньову підкладку прямокутником із гострими 90° кутами.
+        * `box-shadow` та штучні межі повністю усунено зі стилю коробки (`border: none !important; box-shadow: none !important; border-radius: 26px !important;`).
+        * Реалістичну м'яку тінь із точним математичним радіусом 26px тепер повністю формує сам шейдер Liquid Glass (`sdRoundRect` у `glass.frag` із параметрами `shadow_intensity: 0.35`, `shadow_radius: 18.0`, `ao_intensity: 0.08`), що виключає будь-яке виступання за межі округленого меню.
+        * У `_syncGlass()` виправлено координату Y при масштабуванні з півотом `(0.5, 0.5)`: `by = box.y + (rawH - h) * 0.5`, забезпечивши ідеальне суміщення скла та контенту коробки впродовж усієї анімації.
+      - Сувора уніфікація 0.12 тінту (`0.16, 0.16, 0.18` / `#29292e` / `rgba(41, 41, 46, 255.0)` при силі `0.12` / `12%`) на всіх елементах зі склом:
+        * 1. Віджети (`tahoe-widgets@micronix`): `glass-tint = 'rgba(41, 41, 46, 255.0)'`, `glass-tint-strength = 12`.
+        * 2. Док (`liquid-glass@thinkingcoding1231.gmail.com`): `dock-tint-color = '#29292e'`, `dock-tint-strength = 0.12`.
+        * 3. Сповіщення / тости (`tahoeNotifications.js`): `setTintColor(0.16, 0.16, 0.18)`, `setTintStrength(0.12)`, `glassStrength = 0.12`, `notification-tint-color = '#29292e'`, `notification-tint-strength = 0.12`.
+        * 4. Повідомлення в Центрі сповіщень (`tahoeNotifications.js`): `_widgetGlassFill()` та `_cardFill()` налаштовано на єдині параметри `tint = [0.16, 0.16, 0.18]`, `strength = 0.12`.
+        * 5. Центр програм (`applications_menu_v5b.js` та `applications_menu_v5.js`): `tintR: 0.16, tintG: 0.16, tintB: 0.18, tintStrength: 0.12`.
+        * 6. Spotlight (`searchDialog_v5.js`): `tintR: 0.16, tintG: 0.16, tintB: 0.18, tintStrength: 0.12`.
+        * Буфер обміну (`clipboardDialog_v2.js`): `tintR: 0.16, tintG: 0.16, tintB: 0.18, tintStrength: 0.12`.
+      - Верифікація проведена через DBus EvalHelper без використання скріншотів, виключивши будь-які ризики для поточної графічної сесії.

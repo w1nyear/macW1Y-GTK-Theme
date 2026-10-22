@@ -1239,8 +1239,8 @@ function _syncToastGlass(monitor, s) {
         s.bgActor.opacity = alpha;
         s.bgActor.translation_x = _toastBox ? _toastBox.translation_x : 0;
         s.bgActor.translation_y = _toastBox ? _toastBox.translation_y : 0;
-        // скло LQ-Visual: слабкий тінт 2%, розмиття, заломлення
-        let glassTint = [0, 0, 0], glassStrength = 0.02;
+        // єдиний тінт скла 12% [0.16, 0.16, 0.18], розмиття, заломлення
+        let glassTint = [0.16, 0.16, 0.18], glassStrength = 0.12;
         try {
             const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
             const raw = String(sset.get_string('glass-tint') || '');
@@ -1253,7 +1253,7 @@ function _syncToastGlass(monitor, s) {
                         glassTint = cc;
                 }
             }
-            glassStrength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 2) / 100));
+            glassStrength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 12) / 100));
         } catch (_) {}
         const fill = {c: glassTint, a: glassStrength};
         for (const r of regions) {
@@ -1834,8 +1834,8 @@ function _watchTray(p) {
 }
 
 function _widgetGlassFill() {
-    // той самий тінт і сила, що в тостів (віджет-конфіг): чорний 10%
-    let tint = [0, 0, 0], strength = 0.10;
+    // єдиний тінт і сила [0.16, 0.16, 0.18] 12%
+    let tint = [0.16, 0.16, 0.18], strength = 0.12;
     try {
         const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
         try {
@@ -1847,17 +1847,13 @@ function _widgetGlassFill() {
                     tint = c;
             }
         } catch (_) {}
-        try { strength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 10) / 100)); } catch (_) {}
+        try { strength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 12) / 100)); } catch (_) {}
     } catch (_) {}
     return {c: tint, a: strength};
 }
 
 function _cardFill() {
-    try {
-        if (getPanelInk() === 'light')
-            return {c: [0.0, 0.0, 0.0], a: 0.02};
-    } catch (_) {}
-    return {c: [1.0, 1.0, 1.0], a: 0.02};
+    return {c: [0.16, 0.16, 0.18], a: 0.12};
 }
 
 function _syncCards(p, monitor, s) {

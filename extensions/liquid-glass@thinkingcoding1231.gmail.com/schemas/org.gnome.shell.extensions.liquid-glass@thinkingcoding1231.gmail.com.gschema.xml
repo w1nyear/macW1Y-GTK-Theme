@@ -314,11 +314,11 @@
       <summary>Hide safety margin</summary>
     </key>
     <key name="notification-tint-color" type="s">
-      <default>"#ffffff"</default>
+      <default>"#29292e"</default>
       <summary>Tint color (Hex)</summary>
     </key>
     <key name="notification-tint-strength" type="d">
-      <default>0.08</default>
+      <default>0.12</default>
       <summary>Tint strength</summary>
     </key>
     <key name="notification-blur-radius" type="i">

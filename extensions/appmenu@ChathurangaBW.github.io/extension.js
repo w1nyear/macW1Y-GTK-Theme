@@ -73,20 +73,24 @@ export default class AppMenuExtension extends Extension {
             const m = await import(`${baseUri}/searchDialog_v5.js?t=${Date.now()}`);
             globalThis._macSpotlightToggle = m.toggleSearchDialog;
             globalThis.toggleMacSpotlight = m.toggleSearchDialog;
+            try { m.ensureSearchDialog?.(); } catch (_) {}
         } catch (_) {
             globalThis._macSpotlightToggle = toggleSearchDialog;
             globalThis.toggleMacSpotlight = toggleSearchDialog;
+            try { toggleSearchDialog; } catch (_) {}
         }
         try {
             const m = await import(`${baseUri}/applications_menu_v5b.js?t=${Date.now()}`);
             globalThis.toggleMacApplications = m.toggleApplicationsDialog;
             globalThis.toggleApplicationsMenu = m.toggleApplicationsDialog;
+            try { m.ensureApplicationsDialog?.(); } catch (_) {}
         } catch (_) {
             globalThis.toggleMacApplications = toggleApplicationsDialog;
         }
         try {
             const m = await import(`${baseUri}/clipboardDialog_v2.js?t=${Date.now()}`);
             globalThis.toggleMacClipboard = m.toggleClipboardDialog;
+            try { m.ensureClipboardDialog?.(); } catch (_) {}
         } catch (_) {
             globalThis.toggleMacClipboard = toggleClipboardDialog;
         }
