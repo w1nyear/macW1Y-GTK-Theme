@@ -18,7 +18,17 @@ try {
 const EFFECT_NAME = 'tahoe-label-blur';
 let childAddedId = 0;
 let overviewShowingId = 0;
+let overviewShownId = 0;
 let origWpInit = null;
+let origShowOverlay = null;
+
+function _isLabelActor(actor) {
+    if (!actor || !actor.has_style_class_name) return false;
+    return actor.has_style_class_name('dash-label') ||
+           actor.has_style_class_name('window-caption') ||
+           actor.has_style_class_name('screenshot-ui-tooltip') ||
+           actor.has_style_class_name('tooltip');
+}
 
 export function applyLabelBlur(actor) {
     if (!actor || !actor.add_effect)
@@ -64,9 +74,7 @@ export function removeLabelBlur(actor) {
 
 function _dashLabels() {
     try {
-        return Main.uiGroup.get_children().filter(child =>
-            child.has_style_class_name?.('dash-label')
-        );
+        return Main.uiGroup.get_children().filter(_isLabelActor);
     } catch (_) {
         return [];
     }
@@ -90,33 +98,60 @@ function _blurAllCaptions() {
     try {
         if (Main.layoutManager?.overviewGroup)
             _walkOverviewCaptions(Main.layoutManager.overviewGroup);
+
+        const wsViews = Main.overview?._overview?._controls?._workspacesDisplay?._workspacesViews;
+        if (wsViews) {
+            for (const wv of wsViews) {
+                const wss = wv._workspaces || [];
+                for (const ws of wss) {
+                    const wins = ws._windows || [];
+                    for (const wp of wins) {
+                        if (wp._title)
+                            applyLabelBlur(wp._title);
+                    }
+                }
+            }
+        }
     } catch (_) {}
 }
 
 export function enable() {
-    // 1. Blur existing and future dock labels
+    // 1. Blur existing and future dock labels / tooltips
     _dashLabels().forEach(applyLabelBlur);
 
     if (!childAddedId && Main.uiGroup) {
         childAddedId = Main.uiGroup.connect('child-added', (_group, actor) => {
-            if (actor.has_style_class_name?.('dash-label'))
+            if (_isLabelActor(actor))
                 applyLabelBlur(actor);
         });
     }
 
-    // 2. Blur overview window captions on overview showing
+    // 2. Blur overview window captions on overview showing & shown
     if (!overviewShowingId && Main.overview) {
         overviewShowingId = Main.overview.connect('showing', _blurAllCaptions);
     }
+    if (!overviewShownId && Main.overview) {
+        overviewShownId = Main.overview.connect('shown', _blurAllCaptions);
+    }
 
-    // 3. Hook WindowPreview._init
-    if (WindowPreview && !origWpInit) {
-        origWpInit = WindowPreview.prototype._init;
-        WindowPreview.prototype._init = function(...args) {
-            origWpInit.apply(this, args);
-            if (this._title)
-                applyLabelBlur(this._title);
-        };
+    // 3. Hook WindowPreview._init & showOverlay
+    if (WindowPreview) {
+        if (!origWpInit) {
+            origWpInit = WindowPreview.prototype._init;
+            WindowPreview.prototype._init = function(...args) {
+                origWpInit.apply(this, args);
+                if (this._title)
+                    applyLabelBlur(this._title);
+            };
+        }
+        if (!origShowOverlay) {
+            origShowOverlay = WindowPreview.prototype.showOverlay;
+            WindowPreview.prototype.showOverlay = function(...args) {
+                if (this._title)
+                    applyLabelBlur(this._title);
+                return origShowOverlay.apply(this, args);
+            };
+        }
     }
 
     // Check if overview is currently open
@@ -134,9 +169,20 @@ export function disable() {
         overviewShowingId = 0;
     }
 
-    if (WindowPreview && origWpInit) {
-        WindowPreview.prototype._init = origWpInit;
-        origWpInit = null;
+    if (overviewShownId && Main.overview) {
+        Main.overview.disconnect(overviewShownId);
+        overviewShownId = 0;
+    }
+
+    if (WindowPreview) {
+        if (origWpInit) {
+            WindowPreview.prototype._init = origWpInit;
+            origWpInit = null;
+        }
+        if (origShowOverlay) {
+            WindowPreview.prototype.showOverlay = origShowOverlay;
+            origShowOverlay = null;
+        }
     }
 
     _dashLabels().forEach(removeLabelBlur);

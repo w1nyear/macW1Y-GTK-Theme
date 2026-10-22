@@ -896,14 +896,15 @@ StWidget.focused .app-well-app-running-dot {
   height: 32px;
 }
 
-.dash-label {
+.dash-label,
+#dashtodockContainer .dash-label {
   color: #ffffff !important;
-  background-color: transparent !important;
-  background: transparent !important;
+  background-color: rgba(41, 41, 46, 0.28) !important;
+  background: rgba(41, 41, 46, 0.28) !important;
   border-radius: 9999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.20) !important;
-  box-shadow: none !important;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
   padding: 4px 12px !important;
   margin: 4px;
   text-align: center;
@@ -2233,7 +2234,7 @@ StEntry StLabel.hint-text {
   height: 34px !important;
   background-color: transparent !important;
   background-gradient-direction: vertical !important;
-  background-gradient-start: rgba(0, 0, 0, 0.65) !important;
+  background-gradient-start: rgba(0, 0, 0, 0.35) !important;
   background-gradient-end: rgba(0, 0, 0, 0.0) !important;
   border-bottom: none !important;
   box-shadow: none !important;
@@ -3839,7 +3840,7 @@ StWidget.focused .app-grid-running-dot {
   border-radius: 18px !important;
   padding: 12px 16px !important;
   margin: 6px 0 !important;
-  background-color: rgba(38, 38, 42, 0.65) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
   color: #ffffff !important;
@@ -3847,7 +3848,7 @@ StWidget.focused .app-grid-running-dot {
 
 .popup-menu .message:hover, .popup-menu .message:focus {
   color: #ffffff !important;
-  background-color: rgba(48, 48, 54, 0.75) !important;
+  background-color: rgba(255, 255, 255, 0.14) !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.36) !important;
 }
@@ -4068,7 +4069,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-notification-banner {
-  width: 395px !important;
+  width: 440px !important;
   min-height: 56px !important;
   padding: 10px 14px !important;
   border-radius: 24px !important;
@@ -5227,10 +5228,16 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .window-caption {
-  color: rgba(255, 255, 255, 0.85);
-  background-color: rgba(0, 0, 0, 0.75);
-  border-radius: 9999px;
-  padding: 4px 8px;
+  color: #ffffff !important;
+  background-color: rgba(41, 41, 46, 0.28) !important;
+  background: rgba(41, 41, 46, 0.28) !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  padding: 4px 12px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
 }
 
 .screenshot-ui-close-button {
@@ -6156,7 +6163,7 @@ StWidget.focused .app-grid-running-dot {
   height: 34px !important;
   background-color: transparent !important;
   background-gradient-direction: vertical !important;
-  background-gradient-start: rgba(0, 0, 0, 0.65) !important;
+  background-gradient-start: rgba(0, 0, 0, 0.35) !important;
   background-gradient-end: rgba(0, 0, 0, 0.0) !important;
   border-bottom: none !important;
   box-shadow: none !important;
@@ -6173,7 +6180,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-notification-banner {
-  width: 395px !important;
+  width: 440px !important;
   min-height: 56px !important;
   padding: 10px 14px !important;
   border-radius: 24px !important;
@@ -6437,7 +6444,7 @@ StWidget.focused .app-grid-running-dot {
 /* Individual notification cards: exact macOS Photo 3 styling */
 .message-list .message,
 .message {
-  width: 395px !important;
+  width: 440px !important;
   min-height: 56px !important;
   padding: 12px 16px !important;
   border-radius: 24px !important;

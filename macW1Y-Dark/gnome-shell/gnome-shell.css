@@ -896,13 +896,14 @@ StWidget.focused .app-well-app-running-dot {
   height: 32px;
 }
 
-.dash-label {
+.dash-label,
+#dashtodockContainer .dash-label {
   color: #ffffff !important;
-  background-color: rgba(30, 30, 34, 0.45) !important;
-  background: rgba(30, 30, 34, 0.45) !important;
+  background-color: rgba(41, 41, 46, 0.28) !important;
+  background: rgba(41, 41, 46, 0.28) !important;
   border-radius: 9999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.20) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
   padding: 4px 12px !important;
   margin: 4px;
@@ -5228,14 +5229,15 @@ StWidget.focused .app-grid-running-dot {
 
 .window-caption {
   color: #ffffff !important;
-  background-color: rgba(30, 30, 34, 0.45) !important;
+  background-color: rgba(41, 41, 46, 0.28) !important;
+  background: rgba(41, 41, 46, 0.28) !important;
   border-radius: 9999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   padding: 4px 12px !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
 }
 
 .screenshot-ui-close-button {

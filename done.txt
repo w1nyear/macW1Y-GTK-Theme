@@ -8406,3 +8406,27 @@ echo "==> Встановлення успішно завершено!"
         * Файл синхронізовано до `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js`.
       - Оновлено завантажувальний образ `initrd.img-7.0.0-38-generic` за допомогою `sudo update-initramfs -u`.
       - Суворо дотримано заборону на створення скріншотів `Shell.Screenshot` під час сесії.
+
+19.39. kiwi, gnome-shell-theme: 5px апаратний блюр для всіх бірок і підказок (dock labels, tooltips) та виправлення чорних бірок у режимі огляду (Overview / Mission Control)
+   1. Вимоги користувача:
+      - Бірки (підказки над іконками дока `.dash-label`, спливаючі мітки) повинні мати апаратний блюр на 5 пікселів (`radius: 5`).
+      - В огляді (Overview / Mission Control) виправити те, що бірки вікон (`.window-caption`) відображалися чорними монолітними плашками (`rgba(0, 0, 0, 0.75)` / `(8, 10, 13)`).
+      - Забезпечити правильне заокруглення капсули (pill capsule), естетику рідкого скла (Liquid Glass) з уніфікованим тінтом `0.12` / `rgba(41, 41, 46, 0.28)`, чіткий білий текст та тонку рамку.
+      - Суворо заборонено створювати скріншоти (`Shell.Screenshot`), щоб виключити падіння композитора або вихід із сесії користувача.
+   2. Аналіз та першопричина:
+      - У системному ресурсі `/usr/share/gnome-shell/theme/macW1Y-Dark/gnome-shell-theme.gresource` та файлах теми `/usr/share/themes/macW1Y-Dark/gnome-shell/gnome-shell.css` для `.window-caption` було жорстко встановлено непрозоре темне тло `background-color: rgba(0, 0, 0, 0.75)`, через що бірки виглядали суцільними чорними брусками.
+      - В `extensions/kiwi@kemma/stylesheet.css` для `.window-icon` було встановлено `opacity: 0`, а для `.window-caption` застосовувалася темна важка тінь `box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25)`.
+      - Раніше на бірки підказок не накладався апаратний `BlurEffect` радіусом 5 пікселів із круглим маскуванням кутів.
+   3. Реалізація:
+      - Модуль розмиття бірок (`extensions/kiwi@kemma/apps/labelBlur.js`):
+        * Реалізовано накладання `Blur.BlurEffect` (або `Shell.BlurEffect`) з параметрами: `mode: BACKGROUND`, `radius: 5`, `corner_radius: 9999` для ідеальної капсульної пілюлі.
+        * Підтримуються всі системні бірки та підказки: `.dash-label` (підказки дока), `.window-caption` (назви вікон в Огляді), `.screenshot-ui-tooltip`, `.tooltip`.
+        * Перехоплено методи `WindowPreview.prototype._init` та `WindowPreview.prototype.showOverlay`, що гарантує миттєве накладання 5px блюру на заголовок вікна `_title` як при створенні, так і при відкритті та переході в Огляд.
+        * Додано слухачі на `Main.overview` (`showing` та `shown`) та `Main.uiGroup` (`child-added`) для динамічного виявлення нових бірок без затримок.
+      - Стилізація теми Shell (`gnome-shell.css`):
+        * Для `.window-caption` та `.dash-label` встановлено витончене напівпрозоре тло рідкого скла `background-color: rgba(41, 41, 46, 0.28) !important`, тонку лінію скляного контуру `border: 1px solid rgba(255, 255, 255, 0.22) !important`, білий текст `color: #ffffff !important` та м'яку тінь `box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important`.
+        * У `extensions/kiwi@kemma/stylesheet.css` видалено блокування прозорості іконок вікон (`.window-icon { opacity: 1 !important; }`), а стиль `.window-caption` синхронізовано з темою.
+      - Синхронізація та компіляція:
+        * Зміни збережено в `gnome-shell-theme/gnome-shell.css`, `macW1Y-Dark`, `macW1Y-Dark-solid`, системних каталогах `/usr/share/themes/` та `~/.themes/`.
+        * Наново скомпільовано системний ресурс `/usr/share/gnome-shell/theme/macW1Y-Dark/gnome-shell-theme.gresource` через `glib-compile-resources`.
+        * Перезавантажено ресурси теми у живому сеансі GNOME Shell (`Main.reloadThemeResource()`, `Main.loadTheme()`) без перезапуску та без створення скріншотів.

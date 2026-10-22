@@ -69,9 +69,19 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] topbarButtonsEnable: ${e}`);
         }
         try {
-            labelBlurEnable();
+            const lbUri = this.dir.get_child('apps').get_child('labelBlur.js').get_uri() + '?v=lb_v2';
+            import(lbUri).then(mod => {
+                if (this._labelBlurMod && this._labelBlurMod !== mod) {
+                    try { this._labelBlurMod.disable(); } catch (_) {}
+                }
+                this._labelBlurMod = mod;
+                mod.enable();
+            }).catch(e => {
+                console.warn(`[kiwi] labelBlur dynamic import failed: ${e}`);
+                labelBlurEnable();
+            });
         } catch (e) {
-            console.warn(`[kiwi] labelBlurEnable: ${e}`);
+            console.warn(`[kiwi] labelBlur: ${e}`);
         }
 
         try {
@@ -198,7 +208,13 @@ export default class KiwiExtension extends Extension {
             tahoeNCDisable();
         } catch (_) {}
         try { tahoeInkDisable(); } catch (_) {}
-        try { labelBlurDisable(); } catch (_) {}
+        try {
+            if (this._labelBlurMod) {
+                this._labelBlurMod.disable();
+                this._labelBlurMod = null;
+            }
+            labelBlurDisable();
+        } catch (_) {}
         try { reduceWindowAnimationsDisable(); } catch (_) {}
         try { gtkThemeSyncDisable(); } catch (_) {}
 
