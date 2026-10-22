@@ -1092,6 +1092,13 @@ install_plymouth() {
     if [ -f "$SCRIPT_DIR/systemd/plymouth-verbose-logger.service" ]; then
         sudo cp "$SCRIPT_DIR/systemd/plymouth-verbose-logger.service" /etc/systemd/system/
     fi
+
+    if [ -d "$SCRIPT_DIR/systemd/plymouth-start.service.d" ]; then
+        sudo mkdir -p /etc/systemd/system/plymouth-start.service.d
+        sudo cp -r "$SCRIPT_DIR/systemd/plymouth-start.service.d/"* /etc/systemd/system/plymouth-start.service.d/
+    fi
+    sudo systemctl daemon-reload 2>/dev/null || true
+    sudo systemctl enable plymouth-verbose-logger.service 2>/dev/null || true
     
     if [ -f "$SCRIPT_DIR/systemd/plymouth-quit.service.d/override.conf" ]; then
         sudo mkdir -p /etc/systemd/system/plymouth-quit.service.d

@@ -130,6 +130,8 @@ def set_verbose(enable):
     if enable:
         try:
             subprocess.run(["cp", "-f", "/usr/share/plymouth/themes/apple-mac/1x1.png", "/usr/share/plymouth/themes/apple-mac/verbose_on.png"], check=False)
+            subprocess.run(["systemctl", "daemon-reload"], check=False)
+            subprocess.run(["systemctl", "enable", "plymouth-verbose-logger.service"], check=False)
         except Exception:
             pass
         if re.search(r"^GRUB_CMDLINE_LINUX_DEFAULT=.*", c, re.M):
@@ -140,6 +142,7 @@ def set_verbose(enable):
         try:
             if os.path.exists("/usr/share/plymouth/themes/apple-mac/verbose_on.png"):
                 os.remove("/usr/share/plymouth/themes/apple-mac/verbose_on.png")
+            subprocess.run(["systemctl", "disable", "plymouth-verbose-logger.service"], check=False)
         except Exception:
             pass
         if re.search(r"^GRUB_CMDLINE_LINUX_DEFAULT=.*", c, re.M):

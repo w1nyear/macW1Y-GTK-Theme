@@ -75,6 +75,7 @@ global.max_verbose_lines = Math.Int(screen_height / global.verbose_line_h);
 if (global.max_verbose_lines < 40)
     global.max_verbose_lines = 40;
 global.verbose_count = 0;
+global.has_kmsg_stream = 0;
 
 fun verbose_message(text)
 {
@@ -122,8 +123,27 @@ fun verbose_message(text)
     }
 }
 
-Plymouth.SetMessageFunction(verbose_message);
-Plymouth.SetUpdateStatusFunction(verbose_message);
+fun verbose_message_cb(text)
+{
+    global.has_kmsg_stream = 1;
+    verbose_message(text);
+}
+
+fun verbose_status_cb(text)
+{
+    if (!global.verbose_enabled || !text)
+        return;
+
+    # If the kmsg logger stream is active, do not pollute the log with bare unit names
+    if (global.has_kmsg_stream)
+        return;
+
+    # Fallback when logger is not active: format bare unit name to descriptive system line
+    verbose_message("systemd[1]: Starting " + text + "...");
+}
+
+Plymouth.SetMessageFunction(verbose_message_cb);
+Plymouth.SetUpdateStatusFunction(verbose_status_cb);
 
 # Progress bar dimensions (Boot, Shutdown, and Reboot support)
 mode = Plymouth.GetMode();

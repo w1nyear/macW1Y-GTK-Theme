@@ -14,4 +14,4 @@ StandardOutput=null
 StandardError=null
 
 [Install]
-WantedBy=sysinit.target
+WantedBy=plymouth-start.service sysinit.target

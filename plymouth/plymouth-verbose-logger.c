@@ -28,7 +28,7 @@ static int connect_plymouth(void) {
 
 static int send_message(int sock, const char *msg) {
     size_t msg_len = strlen(msg);
-    if (msg_len > 240) msg_len = 240;
+    if (msg_len > 180) msg_len = 180;
 
     unsigned char buf[512];
     buf[0] = 'M';
@@ -71,17 +71,24 @@ int main(void) {
     while (access("/run/plymouth/pid", F_OK) == 0) {
         ssize_t n = read(kmsg, kbuf, sizeof(kbuf) - 1);
         if (n <= 0) {
-            usleep(2000);
+            usleep(4000);
             continue;
         }
         kbuf[n] = '\0';
         char *semicolon = strchr(kbuf, ';');
         char *line = semicolon ? semicolon + 1 : kbuf;
+
+        char *nl = strchr(line, '\n');
+        if (nl) *nl = '\0';
+        nl = strchr(line, '\r');
+        if (nl) *nl = '\0';
+
         size_t l = strlen(line);
-        while (l > 0 && (line[l - 1] == '\n' || line[l - 1] == '\r')) {
-            line[--l] = '\0';
-        }
         if (l == 0) continue;
+        if (l > 180) {
+            line[180] = '\0';
+            l = 180;
+        }
 
         if (send_message(sock, line) < 0) {
             close(sock);

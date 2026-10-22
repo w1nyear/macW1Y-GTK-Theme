@@ -8338,3 +8338,31 @@ echo "==> Встановлення успішно завершено!"
         * Вилучено зламаний механізм `fromRect`, що фіксував розмір коробки у 54px і не підтримував `onUpdate` у Clutter ease.
         * При натисканні кнопок «Центр програм» або «Буфер обміну» в Spotlight тепер викликається плавне закриття Spotlight (`this.close(false)`), а цільовий діалог відкривається зі своєю повноцінною плавною анімацією розгортання та повністю синхронізованим шейдером скла Liquid Glass.
       - Повністю дотримано заборону на запуск `Shell.Screenshot` під час сесії.
+
+19.36. plymouth, mac-boot-config, verbose-logger: відновлення повноцінного докладного журналу завантаження macOS Verbose Boot
+   1. Вимоги користувача:
+      - Виправити те, що під час старту системи у режимі Verbose виводиться замало тексту (лише короткі окремі назви служб systemd на кшталт cups.service, snap-core22-2955.mount).
+      - Відновити поведінку, яка була раніше: повнорозмірні довгі рядки до половини екрану, які детально описують кожен крок ініціалізації ядра та підсистем, як в автентичному macOS Verbose Boot.
+      - Суворо заборонено створювати скріншоти (Shell.Screenshot), щоб не спровокувати падіння композитора або вихід із сесії.
+   2. Аналіз та першопричина:
+      - Утиліта `plymouth-verbose-logger` була скомпільована, проте служба `plymouth-verbose-logger.service` була у стані `disabled`.
+      - При перемиканні режиму Verbose у Параметрах (`mac-boot-config set-verbose enable`) створювався лише прапорець `verbose_on.png` та змінювався рядок ядра у GRUB, але служба реєстрації логів `plymouth-verbose-logger.service` не активувалася в systemd.
+      - Через відсутність логера Plymouth отримував лише стандартні статуси від systemd через функцію `SetUpdateStatusFunction`, яка передає лише голі ідентифікатори юнітів (`u->id`).
+   3. Реалізація:
+      - У `plymouth-verbose-logger.c`:
+        * Реалізовано акуратне очищення від метаданих словника та переносу рядків `/dev/kmsg` (відсікання за першим `\n` чи `\r`).
+        * Встановлено ліміт довжини рядка у 180 символів: при 8pt моноширинному шрифті рядок займає до ~900px (близько 45-50% ширини 1080p/1440p дисплея), акуратно зупиняючись перед центральним логотипом Apple.
+        * Оптимізовано затримку при обробці черги kernel log (1мс при читанні беклогу та 4мс у стані очікування подій у реальному часі).
+        * Програму скомпільовано з оптимізацією `-O2` до `/usr/local/bin/plymouth-verbose-logger` та збережено у `MACTHEMEFILES/bin/`.
+      - У `apple-mac.script`:
+        * Додано розділення обробки джерел логів: `verbose_message_cb` для потоку kmsg (`SetMessageFunction`) та `verbose_status_cb` для статусів systemd (`SetUpdateStatusFunction`).
+        * Якщо активний детальний потік логів ядра (`has_kmsg_stream = 1`), голі імена юнітів systemd пригнічуються, запобігаючи засміченню журналу короткими фрагментами.
+        * У разі відсутності логера додано fallback-форматування голих юнітів до вигляду `systemd[1]: Starting <unit>...`.
+      - У `systemd/plymouth-verbose-logger.service` та `systemd/plymouth-start.service.d/verbose-logger.conf`:
+        * Додано залежність `WantedBy=plymouth-start.service sysinit.target`.
+        * Створено дроп-ін оверрайд `plymouth-start.service.d/verbose-logger.conf` із `Wants=plymouth-verbose-logger.service`, що забезпечує гарантований одночасний запуск логера разом із запуском демона Plymouth.
+        * Службу увімкнено у системі (`systemctl enable plymouth-verbose-logger.service`).
+      - У `bin/mac-boot-config` та `install.sh`:
+        * Додано автоматичне увімкнення (`systemctl enable`) служби при `set-verbose enable` та вимкнення (`systemctl disable`) при `set-verbose disable`.
+        * В `install.sh` додано встановлення дроп-ін конфігурації та активацію служби.
+      - Оновлено initramfs (`update-initramfs -u`): прапорець `verbose_on.png` та оновлений `apple-mac.script` упаковано безпосередньо в initrd, що гарантує показ журналу з перших секунд завантаження.
