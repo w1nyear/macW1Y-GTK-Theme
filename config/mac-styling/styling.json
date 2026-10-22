@@ -5,12 +5,11 @@
   "dock_radius": 28,
   "panel_blur": true,
   "panel_sigma": 0,
-  "panel_tint": 0.65,
+  "panel_tint": 0.35,
   "qs_sigma": 30,
   "qs_anim": "window",
   "notif_blur": true,
   "notif_sigma": 30,
   "notif_tint": 0.05,
-  "notif_radius": 24,
-  "popup_radius": 24
+  "notif_radius": 16
 }

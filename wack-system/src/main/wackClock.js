@@ -79,10 +79,15 @@ export const WackClock = GObject.registerClass(
                 () => { this._updateDate(); return GLib.SOURCE_CONTINUE; });
 
             this._dateStyle = 'full';
-            this._weight = 'bold';
+            this._weight = '600'; // Open Runde SemiBold — фірмовий дизайн (GDM + екран блокування)
             this._tint = false;
             this._alpha = 0.85;
             this._promptColor = null;
+            // Типографіка macOS: цифри щільніші на пару px та двокрапка по центру
+            // висоти цифр (однаково для GDM гретера і екрана блокування в сесії).
+            this._letterSpacing = -4;
+            this._colonRisePx = 12.41; // 0.09695em × 128px (.wack-time) — метрика Open Runde
+            this._inColonMarkup = false;
 
             this._updateTime();
             this._updateDate();
@@ -136,6 +141,11 @@ export const WackClock = GObject.registerClass(
             } else {
                 this._time.text = now.format('%H:%M');
             }
+
+            // Setting .text скидає Pango-атрибути — двокрапку потрібно підняти заново.
+            this._colonAppliedRise = null;
+            this._colonAppliedText = null;
+            this._applyColonMarkup();
         }
 
         _updateDate() {
@@ -160,7 +170,7 @@ export const WackClock = GObject.registerClass(
         }
 
         setWeight(weight) {
-            this._weight = weight || 'bold';
+            this._weight = weight || '600';
             this._applyTextStyle();
         }
 
@@ -181,11 +191,78 @@ export const WackClock = GObject.registerClass(
             const timeColor = '#ffffff';
             const dateColor = 'rgba(255, 255, 255, 0.98)';
             const font = "font-family: Open Runde, SF Pro Rounded, SF Pro Display, Cantarell, sans-serif;";
-            const weight = `font-weight: ${this._weight || 'bold'};`;
+            const weight = `font-weight: ${this._weight || '600'};`;
             const timeShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);';
             const dateShadow = 'text-shadow: 0 1px 5px rgba(0, 0, 0, 0.38);';
-            this._time.set_style(`color: ${timeColor}; ${font} ${weight} ${timeShadow}`);
+            const letterSpacing = (this._letterSpacing != null)
+                ? ` letter-spacing: ${this._letterSpacing}px;` : '';
+            this._time.set_style(`color: ${timeColor}; ${font} ${weight} ${timeShadow}${letterSpacing}`);
             this._dateOutput.set_style(`color: ${dateColor}; font-family: SF Pro Display, Cantarell, sans-serif; font-weight: 600; margin-bottom: 0px; ${dateShadow}`);
+            // Після зміни стилю шрифт може перерахуватись — піднімаємо двокрапку заново.
+            this._applyColonMarkup();
+        }
+
+        /**
+         * Set extra letter spacing (px) for the time label.
+         * Negative values tighten the digits; null restores the stylesheet value.
+         * @param {number|null} px
+         */
+        setLetterSpacing(px) {
+            this._letterSpacing = (typeof px === 'number') ? px : null;
+            this._applyTextStyle();
+        }
+
+        /**
+         * Lift the ':' glyph so its optical center matches the vertical center
+         * of the digits (macOS-style clock colon).
+         * @param {number|null} px rise in CSS pixels (масштабується темою):
+         *   12.41px для .wack-time 128px — метрика Open Runde
+         *   (центр цифр 0.36169em мінус центр двокрапки 0.26474em = 0.09695em).
+         */
+        setColonRise(px) {
+            this._colonRisePx = (typeof px === 'number' && px > 0) ? px : null;
+            this._updateTime();
+        }
+
+        /**
+         * Apply Pango markup that raises ':' by _colonRisePx (Pango units: 1024 == 1px).
+         * Повторне застосування відбувається лише коли rise/текст реально змінились.
+         */
+        _applyColonMarkup() {
+            if (this._colonRisePx == null || this._inColonMarkup)
+                return;
+            const label = this._time;
+            const text = label?.text;
+            if (!text)
+                return;
+            const colonIndex = text.indexOf(':');
+            if (colonIndex === -1)
+                return;
+            // CSS px → device px через масштаб теми (global.stage існує завжди,
+            // тому rise коректний з першого кадру, до розв'язання шрифту).
+            const scale = St.ThemeContext.get_for_stage(global.stage)?.scale_factor || 1;
+            const rise = Math.round(this._colonRisePx * scale * 1024);
+            if (rise <= 0)
+                return;
+            if (rise === this._colonAppliedRise && text === this._colonAppliedText)
+                return;
+            const clutterText = label.get_clutter_text();
+            if (!clutterText)
+                return;
+            const markup = `${text.slice(0, colonIndex)}<span rise="${rise}">:</span>${text.slice(colonIndex + 1)}`;
+            this._inColonMarkup = true;
+            try {
+                clutterText.set_markup(markup);
+                this._colonAppliedRise = rise;
+                this._colonAppliedText = text;
+            } catch (e) {
+                // Збій розмітки ніколи не має ламати годинник — відкат на звичайний текст.
+                clutterText.set_text(text);
+                this._colonAppliedRise = null;
+                this._colonAppliedText = null;
+            } finally {
+                this._inColonMarkup = false;
+            }
         }
 
 
@@ -217,6 +294,12 @@ export const WackClock = GObject.registerClass(
                 GLib.source_remove(this._dateTimeoutId);
                 this._dateTimeoutId = null;
             }
+
+            this._letterSpacing = null;
+            this._colonRisePx = null;
+            this._inColonMarkup = false;
+            this._colonAppliedRise = null;
+            this._colonAppliedText = null;
 
             super.destroy();
         }

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Discrete GPU wrapper for Heroic Games Launcher
+REAL_BIN=$(PATH=$(echo "$PATH" | sed -e 's|/usr/local/bin||g' -e 's|::|:|g') which heroic 2>/dev/null)
+if [ -n "$REAL_BIN" ] && [ -x "$REAL_BIN" ]; then
+    exec /usr/local/bin/prime-run "$REAL_BIN" "$@"
+elif which flatpak >/dev/null 2>&1 && flatpak list | grep -q "com.heroicgameslauncher.hgl"; then
+    exec /usr/local/bin/prime-run flatpak run com.heroicgameslauncher.hgl "$@"
+else
+    echo "Heroic Games Launcher is not installed." >&2
+    exit 1
+fi

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Discrete GPU wrapper for Lutris
+REAL_BIN=$(PATH=$(echo "$PATH" | sed -e 's|/usr/local/bin||g' -e 's|::|:|g') which lutris 2>/dev/null)
+if [ -n "$REAL_BIN" ] && [ -x "$REAL_BIN" ]; then
+    exec /usr/local/bin/prime-run "$REAL_BIN" "$@"
+elif which flatpak >/dev/null 2>&1 && flatpak list | grep -q "net.lutris.Lutris"; then
+    exec /usr/local/bin/prime-run flatpak run net.lutris.Lutris "$@"
+else
+    echo "Lutris is not installed." >&2
+    exit 1
+fi

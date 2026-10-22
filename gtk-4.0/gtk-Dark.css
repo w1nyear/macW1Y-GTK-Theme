@@ -9735,16 +9735,21 @@ tooltip label {
 /* --- MAC-NAUTILUS-SIDEBAR-START --- */
 /* macOS Tahoe Nautilus Finder - Translucent Glass Sidebar & Solid Dark Pane */
 
-/* Make window root and split container transparent in the sidebar area */
+/* Make window root and split container transparent in the sidebar area, with corner patches for rounded sidebar */
 window.nautilus-window,
 window.nautilus-window.background,
 window.nautilus-window > dialog-host,
 window.nautilus-window overlay-split-view {
     background-color: transparent;
-    background-image: none;
+    background-image: 
+        linear-gradient(#202022, #202022),
+        linear-gradient(#202022, #202022);
+    background-repeat: no-repeat;
+    background-size: 40px 40px, 40px 40px;
+    background-position: 215px top, 215px bottom;
 }
 
-/* Sidebar floating glass card: solid #202022 frame border, seamless gapless junction on right */
+/* Sidebar floating glass card: solid #202022 frame border, rounded on all 4 corners */
 window.nautilus-window overlay-split-view > widget.sidebar-pane,
 window.nautilus-window .sidebar-pane,
 window.nautilus-window .sidebar-pane:dir(ltr),
@@ -9756,7 +9761,7 @@ window.nautilus-window .sidebar-pane:dir(rtl),
     border-left: 8px solid #202022;
     border-bottom: 8px solid #202022;
     border-right: 8px solid #202022;
-    border-radius: 24px 0 0 24px;
+    border-radius: 24px;
     background-color: rgba(30, 30, 34, 0.40);
     background-clip: padding-box;
     box-shadow: none;
@@ -9969,12 +9974,30 @@ window.nautilus-window .content-pane > scrolledwindow {
     background-color: #202022;
     border-left-style: none;
     border-left-width: 0;
+    box-shadow: -30px 0 0 0 #202022;
 }
 
 window.nautilus-window .content-pane headerbar {
     background-color: #202022;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 3px;
+    padding-left: 15px;
 }
+
+/* Shift top panel buttons down by 3 pixels and increase width on the left side by 15 pixels */
+window.nautilus-window .content-pane headerbar centerbox,
+window.nautilus-window .content-pane headerbar > windowhandle > centerbox,
+window.nautilus-window .content-pane headerbar > windowhandle > box {
+    margin-top: 3px;
+}
+
+window.nautilus-window .content-pane headerbar centerbox > widget > box.start,
+window.nautilus-window .content-pane headerbar box.start,
+window.nautilus-window .content-pane headerbar .linked:first-child,
+window.nautilus-window .content-pane headerbar .start {
+    margin-left: 15px;
+}
+
 
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
 

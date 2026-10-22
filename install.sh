@@ -391,6 +391,8 @@ install_themes() {
     mkdir -p "$TARGET_HOME/.config/gtk-3.0" "$TARGET_HOME/.config/gtk-4.0"
     [ -d "$SCRIPT_DIR/gtk-3.0" ] && cp -r "$SCRIPT_DIR/gtk-3.0/"* "$TARGET_HOME/.config/gtk-3.0/"
     [ -d "$SCRIPT_DIR/gtk-4.0" ] && cp -r "$SCRIPT_DIR/gtk-4.0/"* "$TARGET_HOME/.config/gtk-4.0/"
+    (cd "$TARGET_HOME/.config/gtk-4.0" && ln -sfn gtk-Dark.css gtk-dark.css 2>/dev/null || true)
+    sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$TARGET_HOME/.config/gtk-3.0/gtk.css" "$TARGET_HOME/.config/gtk-4.0/gtk.css" "$TARGET_HOME/.config/gtk-4.0/gtk-Dark.css" 2>/dev/null || true
     chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/gtk-3.0" "$TARGET_HOME/.config/gtk-4.0"
     
     if [ -d "$SCRIPT_DIR/gnome-shell-theme" ]; then
@@ -443,6 +445,7 @@ EOF_NAUT
     if [ -f "$SCRIPT_DIR/config/gtk-3.0/bookmarks" ]; then
         mkdir -p "$TARGET_HOME/.config/gtk-3.0"
         cp -f "$SCRIPT_DIR/config/gtk-3.0/bookmarks" "$TARGET_HOME/.config/gtk-3.0/bookmarks"
+        sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$TARGET_HOME/.config/gtk-3.0/bookmarks" 2>/dev/null || true
         chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/gtk-3.0/bookmarks"
     fi
     if [ -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" ]; then
@@ -784,10 +787,10 @@ install_gamemode() {
     require_root
     
     # 1. Встановлення бінарних утиліт та скриптів
-    for bin_file in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config mac-clipboard; do
-        if [ -f "$SCRIPT_DIR/bin/$bin_file" ]; then
-            sudo cp "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
-            sudo chmod +x "/usr/local/bin/$bin_file"
+    for bin_file in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64; do
+        if [ -f "$SCRIPT_DIR/bin/$bin_file" ] || [ -L "$SCRIPT_DIR/bin/$bin_file" ]; then
+            sudo cp -a "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
+            sudo chmod +x "/usr/local/bin/$bin_file" 2>/dev/null || true
         fi
     done
     
@@ -1402,10 +1405,10 @@ run_incremental_update() {
     [ -f "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" ] && sync_or_update_file "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" "/etc/udev/rules.d/99-uinput.rules" true
     [ -f "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" "/etc/systemd/system/mac-touchpad-daemon.service" true
 
-    for gb in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config mac-clipboard; do
-        if [ -f "$SCRIPT_DIR/bin/$gb" ]; then
+    for gb in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64; do
+        if [ -f "$SCRIPT_DIR/bin/$gb" ] || [ -L "$SCRIPT_DIR/bin/$gb" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$gb" "/usr/local/bin/$gb" true
-            sudo chmod +x "/usr/local/bin/$gb"
+            sudo chmod +x "/usr/local/bin/$gb" 2>/dev/null || true
         fi
     done
     [ -f "$SCRIPT_DIR/systemd/mac-gamemode.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-gamemode.service" "/etc/systemd/system/mac-gamemode.service" true
@@ -1463,6 +1466,7 @@ EOF_NAUT
     if [ -f "$SCRIPT_DIR/config/gtk-3.0/bookmarks" ]; then
         mkdir -p "$TARGET_HOME/.config/gtk-3.0"
         sync_or_update_file "$SCRIPT_DIR/config/gtk-3.0/bookmarks" "$TARGET_HOME/.config/gtk-3.0/bookmarks" false
+        sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$TARGET_HOME/.config/gtk-3.0/bookmarks" 2>/dev/null || true
     fi
     if [ -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" ]; then
         mkdir -p "$TARGET_HOME/.config/autostart"

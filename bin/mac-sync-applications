@@ -133,8 +133,13 @@ def sync():
                 try:
                     shutil.copy2(f, dest_path)
                     os.chmod(dest_path, 0o755)
+                    cats = app_info.get_categories() or ""
+                    cmdline = app_info.get_commandline() or ""
+                    is_game = ("Game" in cats) or ("game" in base.lower()) or ("steam" in base.lower()) or ("steam://" in cmdline)
                     with open(dest_path, "a") as df:
                         df.write(f"\nX-Mac-Real-Path={f}\n")
+                        if is_game:
+                            df.write("PrefersNonDefaultGPU=true\nX-KDE-RunOnDiscreteGpu=true\n")
                 except Exception:
                     pass
                     

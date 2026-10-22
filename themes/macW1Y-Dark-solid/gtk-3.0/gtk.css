@@ -1,27 +1,50 @@
 @import url("gtk-dark.css");
 
+/* Kiwi (is not Apple) - managed imports: begin */
+@import url("titlebuttons3.css");
+@import url("titlebuttons-size-small3.css");
+@import url("fixes3.css");
+/* Kiwi (is not Apple) - managed imports: end */
 /* --- MAC-STYLING-START --- */
-/* macOS Tahoe Context Menus (System GTK Applications Only) */
-menu,
-.popup-menu,
-.context-menu,
-.desktopmenu,
+/* macOS Tahoe Context Menus (Desktop and System GTK Applications) */
 window.desktopmenu,
-.desktopmenu menu,
-.background.csd > menu,
-.background.popup > menu {
-  background-color: rgba(28, 28, 32, 0.65);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 24px;
+window.desktopmenu decoration,
+window.popup decoration,
+.popup decoration,
+.csd.popup decoration,
+window.popup.background.csd,
+.background.csd.popup,
+window.popup.background.csd decoration {
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
+  border: none;
   box-shadow: none;
-  padding: 6px 4px;
+  margin: 0;
+  padding: 0;
+  border-radius: 20px;
 }
 
-window.desktopmenu decoration,
-.popup decoration,
-.csd.popup decoration {
-  border-radius: 24px;
+menu,
+menu.desktopmenu,
+.desktopmenu menu,
+.desktopmenu,
+.fileitemmenu,
+window.desktopmenu menu,
+window.popup.background.csd > menu,
+.background.csd > menu,
+.background.popup > menu,
+.popup-menu,
+.context-menu {
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
+  color: #ffffff;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  padding: 6px 4px;
+  border-radius: 20px;
 }
 
 menu menuitem,
@@ -97,10 +120,13 @@ window.desktopmenu menuitem:active {
   border-radius: 9999px;
 }
 
-menu separator {
+menu separator,
+.desktopmenu separator,
+window.desktopmenu separator {
   min-height: 1px;
   background-color: rgba(255, 255, 255, 0.12);
   margin: 4px 6px;
+  border: none;
 }
 
 /* Popover Arrow removal: strictly no arrow above context menu or popovers */
@@ -124,17 +150,17 @@ popover arrow,
 /* GTK Popover menus (system popovers only) */
 popover.menu > contents,
 popover.menu contents,
+popover.context-menu > contents,
+popover.background > contents,
 popover > contents {
-  border-radius: 24px;
-}
-
-popover.menu > contents,
-popover.menu contents {
-  background-color: rgba(28, 28, 32, 0.65);
+  border-radius: 20px;
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: none;
-  padding: 4px;
+  padding: 6px 4px;
 }
 
 popover.menu modelbutton {
@@ -200,3 +226,97 @@ tooltip label {
 }
 
 /* --- MAC-STYLING-END --- */
+
+/* --- MAC-TRAFFIC-LIGHTS-START --- */
+/* macOS Traffic Lights for GTK 3, Electron, and Chromium Apps */
+headerbar.titlebar {
+  padding-left: 12px;
+}
+
+headerbar button.titlebutton,
+.titlebar button.titlebutton,
+windowcontrols button {
+  min-width: 14px;
+  min-height: 14px;
+  border-radius: 9999px;
+  margin: 0 4px;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+}
+
+headerbar button.titlebutton.close,
+.titlebar button.titlebutton.close,
+windowcontrols button.close {
+  background-color: #ed6a5e;
+  color: #ed6a5e;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-close-dark.png");
+}
+
+headerbar button.titlebutton.close:hover,
+.titlebar button.titlebutton.close:hover,
+windowcontrols button.close:hover {
+  background-color: #ed6a5e;
+  color: #ed6a5e;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-close-hover-dark.png");
+}
+
+headerbar button.titlebutton.close:active,
+.titlebar button.titlebutton.close:active,
+windowcontrols button.close:active {
+  background-color: #bf4942;
+  color: #bf4942;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-close-active-dark.png");
+}
+
+headerbar button.titlebutton.minimize,
+.titlebar button.titlebutton.minimize,
+windowcontrols button.minimize {
+  background-color: #f4bf4f;
+  color: #f4bf4f;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-minimize-dark.png");
+}
+
+headerbar button.titlebutton.minimize:hover,
+.titlebar button.titlebutton.minimize:hover,
+windowcontrols button.minimize:hover {
+  background-color: #f4bf4f;
+  color: #f4bf4f;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-minimize-hover-dark.png");
+}
+
+headerbar button.titlebutton.minimize:active,
+.titlebar button.titlebutton.minimize:active,
+windowcontrols button.minimize:active {
+  background-color: #c4993a;
+  color: #c4993a;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-minimize-active-dark.png");
+}
+
+headerbar button.titlebutton.maximize,
+.titlebar button.titlebutton.maximize,
+windowcontrols button.maximize {
+  background-color: #61c554;
+  color: #61c554;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-dark.png");
+}
+
+headerbar button.titlebutton.maximize:hover,
+.titlebar button.titlebutton.maximize:hover,
+windowcontrols button.maximize:hover {
+  background-color: #61c554;
+  color: #61c554;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-hover-dark.png");
+}
+
+headerbar button.titlebutton.maximize:active,
+.titlebar button.titlebutton.maximize:active,
+windowcontrols button.maximize:active {
+  background-color: #4b9c40;
+  color: #4b9c40;
+  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-active-dark.png");
+}
+/* --- MAC-TRAFFIC-LIGHTS-END --- */

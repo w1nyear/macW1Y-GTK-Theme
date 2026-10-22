@@ -8574,3 +8574,31 @@ echo "==> Встановлення успішно завершено!"
       - Діагностика: globalThis._macGlassStats() (eventDriven/surfaces/damageVersion/refreshes); globalThis._macGlassLivePatchInfo() (стан живого патчу); форс-рефреш скла: glassForceRefresh(ключ) з glassGate.js.
       - Синтаксис усіх змінених файлів перевірено strip-check-парсингом (gjs -m; ReferenceError від знятих гі-імпортів — очікувано, не SyntaxError).
       - Репозиторій синхронізовано з робочою системою (10 змінених runtime-файлів + 2 нові glassGate.js/gpuSaveLiveApply.js), виконано локальний коміт без push.
+
+19.45. sync, audit, install.sh, themes, gtk, binaries: глобальна ревізія та 100% синхронізація всіх тем, конфігів, бінарних лаунчерів та розширень із живої системи в репозиторій macW1Y
+   1. Вимоги:
+      - Провести повну ревізію файлів теми, конфігів, скриптів та сесій OpenCode, перевірити відповідність з AI_INSTRUCTIONS.md.
+      - Синхронізувати та перенести в репозиторій macW1Y абсолютно всі зміни, внесені іншими ШІ в робочій системі (~/.themes, ~/.config/gtk-4.0, ~/.config/gtk-3.0, ~/.config/mac-styling, /usr/local/bin, розширення GNOME).
+      - Забезпечити, щоб будь-який користувач при встановленні чи оновленні через install.sh отримував на 100% той самий вигляд та поведінку системи, що й на поточному ПК розробника.
+      - Суворо дотримуватись правил: без git push, локальний коміт, клікабельні file:// лінки у звіті українською мовою.
+   2. Виконана діагностика та синхронізація:
+      - Теми GTK 3 та GTK 4 (~/.themes/macW1Y-Dark, ~/.themes/macW1Y-Dark-solid та /usr/share/themes/):
+        * Перенесено оновлені файли стилів gtk-3.0/gtk.css, gtk-3.0/gtk-dark.css та gtk-4.0/gtk-dark.css з інтегрованими правками Nautilus Finder (заокруглення бічної панелі, безшовне з'єднання без тіньової смуги, dark-corner coverage), Kiwi window titlebuttons, стилями контекстних меню стільниці та правилами сумісності для Resources (net.nokyan.Resources).
+        * Синхронізовано як каталог themes/, так і кореневі каталоги macW1Y-Dark/ та macW1Y-Dark-solid/.
+      - Конфігурації GTK-4.0 та GTK-3.0 (~/.config/gtk-4.0, ~/.config/gtk-3.0):
+        * Замінено биті абсолютні симлінки gtk-dark.css та gtk.css у gtk-4.0/ на повноцінні файли та відносні посилання (gtk-dark.css -> gtk-Dark.css), що унеможливлює збій на ПК з іншим іменем користувача.
+        * Перенесено відсутні каталоги ассетів: assets/, windows-assets/ (кнопки вікон, чекбокси, радіокнопки, слайдери), а також fixes4.css, titlebuttons4.css, titlebuttons-size-small4.css, settings.ini.
+        * У конфігурацію gtk-3.0 додано перевірені правила MAC-TRAFFIC-LIGHTS для Electron, Chromium та GTK3-додатків.
+      - Системні лаунчери та бінарні обгортки (/usr/local/bin -> macW1Y/bin):
+        * До macW1Y/bin/ перенесено актуальні версії steam, mac-sync-applications, gamemoderun, mac-gpu-manager, nvidia-game-run, prime-run.
+        * Перенесено нові універсальні обгортки дискретної GPU NVIDIA: bottles, gamescope, heroic, lutris, nautilus, nvidia-run, prismlauncher, wine, wine64, droidcam.
+        * Оновлено install.sh (функції install_gamemode() та run_incremental_update()), додавши автоматичне встановлення та синхронізацію всіх лаунчерів для кінцевих користувачів.
+      - Розширення GNOME Shell:
+        * У macos-touchpad-gestures@mactheme/gestureImpl.js перенесено відключення кнопки закриття вікон в огляді (Mission Control).
+        * Оновлено gschemas.compiled для tahoe-widgets@micronix.
+        * Синхронізовано wack-system/ із extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/ з усіма захистами Main.screenShield.
+      - Plymouth та mac-styling:
+        * Додано verbose_on.png до plymouth/apple-mac/.
+        * Оновлено styling.json (notif_radius: 16, panel_tint: 0.35) та файл version.
+      - Динамічна адаптація шляхів у install.sh:
+        * Впроваджено динамічну заміну /home/vitaliy на $TARGET_HOME у ~/.config/gtk-3.0/bookmarks та файлах стилів gtk.css / gtk-Dark.css при інсталяції та інкрементальному оновленні.

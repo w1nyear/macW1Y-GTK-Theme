@@ -548,7 +548,7 @@
     margin: 0 !important;
     margin-bottom: 0px !important;
     padding: 0 !important;
-    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.38) !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.20) !important;
 }
 
 .wack-time,
@@ -564,14 +564,14 @@
     margin-top: 0 !important;
     margin-bottom: 0 !important;
     color: #ffffff !important;
-    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.22) !important;
 }
 
 /* ── Cupertino Auth Prompt Widget Alignment ── */
 .login-dialog .wack-cupertino-prompt .user-widget.vertical {
-    spacing: 4px !important;
+    spacing: 2px !important;
     x-align: center !important;
-    margin-bottom: 2px !important;
+    margin-bottom: 0px !important;
 }
 
 .login-dialog .wack-cupertino-prompt .user-widget.vertical .user-icon,
@@ -602,7 +602,7 @@
     font-weight: 600 !important;
     color: rgba(255, 255, 255, 0.95) !important;
     text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5) !important;
-    margin-top: 4px !important;
+    margin-top: 2px !important;
     margin-bottom: 0px !important;
 }
 
@@ -620,7 +620,7 @@
     color: rgba(255, 255, 255, 0.85) !important;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
     margin-top: 2px !important;
-    margin-bottom: 2px !important;
+    margin-bottom: 0px !important;
     text-align: center !important;
     x-align: center !important;
 }
@@ -637,7 +637,7 @@
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
     min-width: 180px !important;
     height: 32px !important;
-    margin-top: 4px !important;
+    margin-top: 2px !important;
     margin-bottom: 0px !important;
 }
 
@@ -653,7 +653,7 @@
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.85) !important;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
-    margin-top: 3px !important;
+    margin-top: 2px !important;
     margin-bottom: 0px !important;
     text-align: center !important;
     x-align: center !important;

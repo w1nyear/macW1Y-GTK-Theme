@@ -20,8 +20,9 @@ NVIDIA_ENV_VARS = {
     '__NV_PRIME_RENDER_OFFLOAD': '1',
     '__GLX_VENDOR_LIBRARY_NAME': 'nvidia',
     '__VK_LAYER_NV_optimus': 'NVIDIA_only',
-    'VK_DRIVER_FILES': '/usr/share/vulkan/icd.d/nvidia_icd.json',
-    'VK_ICD_FILENAMES': '/usr/share/vulkan/icd.d/nvidia_icd.json'
+    'VK_LOADER_DRIVERS_SELECT': '*nvidia*',
+    'PROTON_ENABLE_NVAPI': '1',
+    'DXVK_ENABLE_NVAPI': '1'
 }
 
 def run_cmd(cmd):

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Discrete GPU wrapper for Prism Launcher
+REAL_BIN=$(PATH=$(echo "$PATH" | sed -e 's|/usr/local/bin||g' -e 's|::|:|g') which prismlauncher 2>/dev/null)
+if [ -n "$REAL_BIN" ] && [ -x "$REAL_BIN" ]; then
+    exec /usr/local/bin/prime-run "$REAL_BIN" "$@"
+elif which flatpak >/dev/null 2>&1 && flatpak list | grep -q "org.prismlauncher.PrismLauncher"; then
+    exec /usr/local/bin/prime-run flatpak run org.prismlauncher.PrismLauncher "$@"
+else
+    echo "Prism Launcher is not installed." >&2
+    exit 1
+fi
