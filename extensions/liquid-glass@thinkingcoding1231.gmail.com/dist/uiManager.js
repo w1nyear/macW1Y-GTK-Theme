@@ -1,3 +1,5 @@
+// [MODULE-MARK] лічильник живих інстансів модуля (діагностика reload)
+try { globalThis.__lgUiManagerModules = (globalThis.__lgUiManagerModules ?? 0) + 1; } catch (_) {}
 // src/uiManager.ts
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Clutter from 'gi://Clutter';
@@ -534,6 +536,16 @@ export class UIManager {
         let buildClones = () => {
             if (!this.bgActor)
                 return;
+            try {
+                if (!globalThis.__dbgSigMap)
+                    globalThis.__dbgSigMap = new Map();
+                globalThis.__dbgSigMap.set(String(this._label), {
+                    this: String(this).slice(0, 60),
+                    ctor: this.constructor?.name,
+                    prevSig: this._lastCloneSig ?? null,
+                    sigSetHere: false,
+                });
+            } catch (_) {}
             // _uiSampler が存在する場合のみ除外リストへの追加処理を行う
             if (this._uiSampler) {
                 for (let child of Main.layoutManager.uiGroup.get_children()) {
@@ -549,14 +561,45 @@ export class UIManager {
                     }
                 }
             }
+            // [MENU-OPEN-STAB] Перебудова клонів вікон на КОЖНОМУ відкритті
+            // меню знищує і заново створює всі WindowGroupClones — саме це
+            // давало короткий блінк/фриз при відкритті контекстних менюі.
+            // Кешуємо сигнатуру window-actors (склад/порядок/mapped-стан):
+            // перебудова лише коли вона змінилась або клонів ще немає.
+            let needCloneRebuild = true;
+            try {
+                let sig = '';
+                for (const a of global.get_window_actors?.() ?? []) {
+                    const mw = a.get_meta_window?.();
+                    sig += (mw ? String(mw.get_stable_sequence?.() ?? 0) : 'x') +
+                        (a.is_mapped?.() === false ? 'u' : 'm') + ';';
+                }
+                needCloneRebuild = sig !== this._lastCloneSig ||
+                    !(this._windowCloneManager?.windowClonesContainer);
+                this._lastCloneSig = sig;
+                try {
+                    const rec = globalThis.__dbgSigMap?.get(String(this._label));
+                    if (rec) {
+                        rec.sig = sig;
+                        rec.wcc = !!this._windowCloneManager?.windowClonesContainer;
+                        rec.rebuild = needCloneRebuild;
+                        rec.sigSetHere = true;
+                    }
+                } catch (_) {}
+            } catch (_) {
+                this._lastCloneSig = null;
+                needCloneRebuild = true;
+            }
             // Before the clones, so this frame's capture already sees the final order.
             this._restackGlass();
-            this._windowCloneManager?.rebuildClones();
+            if (needCloneRebuild) {
+                this._windowCloneManager?.rebuildClones();
+                // [GPU-SAVE] після повної перебудови наступний тік мусить дати
+                // повний рефреш без очікування межі 60 FPS.
+                glassForceRefresh?.(this.bgActor);
+            }
             this._uiSampler?.rebindSelf();
             this._uiSampler?.refresh();
-            // [GPU-SAVE] після повної перебудови наступний тік мусить дати
-            // повний рефреш без очікування межі 60 FPS.
-            glassForceRefresh?.(this.bgActor);
         };
         // Render loop: called every frame while the menu is visible.
         // The reschedule must survive a throw out of _syncGeometry() — see the

@@ -1,7 +1,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import GLib from 'gi://GLib';
-import { UIManager } from './uiManager.js';
+import { UIManager } from './uiManager.js?v=lg13';
 // GSettings namespace for every detected panel dropdown. Separate from the
 // Calendar's `menu-*` so these can be tuned without moving the date menu —
 // the same split quick-settings-*, notification-*, osd-* and dock-* already
@@ -42,6 +42,14 @@ export class PanelMenuManager {
                             Main.panel.statusArea.quickSettings?.menu,
                         ]);
                         if (!reserved.has(this)) {
+                            // [RELOAD-STAB] Після reloadExtension попередній manager може
+                            // лишатись закріпленим за меню з СТАРОГО модуля (стара логіка
+                            // не підчіплює новий код). Чистимо старий і вішаємо новий.
+                            const prev = this._liquidGlassUIManager;
+                            if (prev) {
+                                try { prev.cleanup(); } catch (_) {}
+                                this._liquidGlassUIManager = null;
+                            }
                             const mgr = new UIManager(
                                 self._path,
                                 self._settings,
@@ -52,8 +60,8 @@ export class PanelMenuManager {
                                 PANEL_MENU_PREFIX,
                                 'popup-menu'
                             );
-                            mgr.setup();
                             this._liquidGlassUIManager = mgr;
+                            mgr.setup();
                             this.actor.connect('destroy', () => {
                                 try {
                                     this._liquidGlassUIManager?.cleanup();

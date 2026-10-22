@@ -1,7 +1,7 @@
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { UIManager } from './dist/uiManager.js';
-import { PanelMenuManager } from './dist/panelMenuManager.js';
+import { UIManager } from './dist/uiManager.js?v=lg13';
+import { PanelMenuManager } from './dist/panelMenuManager.js?v=lg13';
 import { DashManager } from './dist/dockManager.js';
 import { NotificationManager } from './dist/notificationManager.js';
 import { QuickSettingsManager } from './dist/quickSettingsManager.js';

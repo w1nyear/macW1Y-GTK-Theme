@@ -4,6 +4,7 @@
  */
 
 import Gio from 'gi://Gio';
+/*[MODULE-MARK]*/ try { globalThis.__kiwiModuleMark = (globalThis.__kiwiModuleMark ?? 0) + 1; } catch (_) {}
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -34,7 +35,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeInkEnable: ${e}`);
         }
         try {
-            const ncUri = this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri() + '?v=notif_v12';
+            const ncUri = this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri() + '?v=notif_v13';
             import(ncUri).then(mod => {
                 if (this._tahoeNC && this._tahoeNC !== mod) {
                     try { this._tahoeNC.disable(); } catch (_) {}

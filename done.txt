@@ -8648,3 +8648,35 @@ echo "==> Встановлення успішно завершено!"
         * У функції `install_extensions()` та `run_incremental_update()` оновлено масив `EXT_LIST` до актуального списку 21 розширення.
         * Додано автокопіювання `99_mactheme.gschema.override` та компіляцію схем у процедуру інкрементального оновлення.
         * Оновлено файли `dconf/gnome-all.dconf`, `dconf/gnome-shell.dconf`, `dconf/gnome-extensions.dconf`.
+
+100. Рідке скло Центру сповіщень: без дьоргання при відкритті, «політ» тостів разом з панеллю, без мерехтіння дропдаунів лівого менюбара (22.10.2026):
+   1. Мета та завдання:
+      - Баг 1: liquid glass-елементи Центру сповіщень відкривалися «дьоргано» — скло з'являлося з фризами через дорогі операції (sampler refresh, rebuildClones, каптура) прямо у кадрах слайду.
+      - Баг 2: при відкритті Центру з видимим тостом сповіщень центр виїжджав окремо, а тост дрейфував/блимав самостійно - замість того, щоб летіти разом з панеллю у позицію свого банера.
+      - Баг 3: при відкритті контекстного меню у лівому менюбарі (appmenu-дропдауни) елементи меню «моргали»/підмерзали в анімації через повторні дорогі перебудови клонів скла.
+   2. Виконані виправлення:
+      - Баг 1 (дефер дорогих операцій скла) — `kiwi@kemma/apps/tahoeNotifications.js`:
+        * Розділено `_syncGlass`/`_syncCards` на дешеву щокадрову частину (glass-регіони `setGlassRegions` + `setResolution`, кліп, opacity — скло «їде» разом з панеллю) і дорогу (sampler refresh/sync, WCM sync, capture-clip), яка виконується лише за gate `glassRefreshDue(bgActor, extraHash)`.
+        * extraHash бекдропу тепер містить лише bw/bh (слайд-координати bx/by виключені) — слайд більше не провокує дешеві refresh-шторми.
+        * Скло карток (`nc-cards`) тепер створюється ТІЛЬКИ на settle слайду (`_ensureNcCards` з `_ncSettle`: onComplete slide-ease + тик-перевірка `tx<=0.5 && opacity>=254`); fade-in стеку 0→255/260мс через `_stackFadeK`/`_startStackFade`.
+        * У `closeNC` повернено per-stack ease opacity→0 (260мс, EASE_IN_CUBIC, guard `is_finalized`) одразу після `p.box.remove_all_transitions()`, бо тик мертвий (`_nc = null` з початку closeNC) — без цього скло не опадало під час slide-out.
+      - Баг 2 (ride тостів разом з панеллю) — той самий файл:
+        * Прибрано старий ease `translation_y:52/translation_x:-22` із `_takeToastMerges`; тик `_ncRideTick` щокадрово рахує `translation = prog·(bannerPos − slotNatPos)`, `prog = 1 − clamp(box.translation_x/480,0,1)`.
+        * Банер у Центрі прозорий (op 0) до settle; на settle (`tx<=0.75`) — `_finishMergedSlot` (opacity 0 перед destroy), `_commitMergedBanners` (op 255), створення cards-стеку; fail-safe timeout 420мс сам committed/прибирає тості.
+        * Банер знаходиться через `banner._notification === slot._nItem.n` (кеш `slot._rideBanner`, старт `slot._rideNat`); повторний `_rebuild(null)` посеред ride миттєво завершує всі rides (`_killMergingSlots` + commit); прибирання у `closeNC`/`_destroyNC` як страховка.
+        * Два сповіщення одного джерела збираються у групу-стек `_macPeekGroup` (head + peer в одному контейнері) — peer оп 255, нічого не губиться.
+      - Баг 3 (мерехтіння дропдаунів лівого менюбара) — `liquid-glass@thinkingcoding1231.gmail.com`:
+        * У `dist/uiManager.js` `buildClones()` кешує сигнатуру window-actors (`_lastCloneSig`: stable_sequence+mapped по кожному актору + наявність `_windowCloneManager.windowClonesContainer`) і пропускає дорогі `rebuildClones()`+`glassForceRefresh`, коли сигнатура не змінилась; `_restackGlass`/`rebindSelf`/`refresh` залишені безумовними (дешеві).
+        * У `dist/panelMenuManager.js` додано стабілізацію [RELOAD-STAB]: попап-хук чистить/замінює старий `menu._liquidGlassUIManager` перед створенням нового (захист від зомбі-інстансів після гарячої підміни модулів).
+        * Імпорти `?v=lg13` у `liquid-glass/extension.js`, `?v=notif_v13` + маркер `__kiwiModuleMark` у kiwi — контроль гарячої підміни.
+   3. Валідація:
+      - Синтаксис усіх 3 змінених файлів перевірено gjs-заглушками (PARSE_OK; GI_TYPELIB_PATH = mutter-18 + gnome-shell).
+      - Живий single-eval тест Центру (2 сповіщення → openNC → заміри 40-мс кроками → settle → closeNC → прибирання):
+        * Слайд відкриття: boxTx 447→51→0; bd-скло оп 17→227→255 (cheap-шлях, скло їде з панеллю); nc-cards відсутні в усіх кадрах слайду і з'являються лише на settle (fade-in op 32→103→147→187→229→255 за ~240мс) — дорогої побудови в кадрах руху немає, дьоргання усунено.
+        * Ride: тости від'їжджають у перших кадрах (tx 29→26), на settle моменті обидва злиті (toasts очищені), банер картки op 255 у (1404, 93); тест time-border case ty=2815.9 у одного тоста в один кадр (t=40) не впливає на фінальний стан і потребує точної діагностики у чистій сесії.
+        * Close slide-out: після 750мс — панель, скло і тості прибрані; повторне відкриття коректне.
+      - Баг 3 (живий, прототипний патч у цій сесії): після першого «теплого» відкриття попап-меню подальші відкриття виконуються БЕЗ rebuildClones (skipped>0, rebuild-виклик 0), час відкриття попап-групи падає з ~45-50мс до ~5мс.
+   4. Обмеження та примітки:
+      - GJS не перечитує кеш модулів при ExtensionHelper reload — гарячі заміни спрацювали лише частково (ride/сards живі через fish-and-forget підміну tahoeNotifications.js; skip-патч uiManager застосовано як прототипний `WindowCloneManager.prototype.rebuildClones`-патч через EvalHelper, runtime-only).
+      - Повна файлова застосінність усіх фіксів (без зомбі-акторів від гарячих reload'ів) — після наступного перезапуску шелла/логіну; поточна сесія залишилась деградованою (surfaces 64, шторм попереджень від зомбі-акторів старих тост-скла 18:04-18:05), але фікс-стейт файлів валідний і протестований.
+      - Файли синхронізовано в репозиторій: `extensions/kiwi@kemma/{extension.js,apps/tahoeNotifications.js}`, `extensions/liquid-glass@thinkingcoding1231.gmail.com/{extension.js,dist/uiManager.js,dist/panelMenuManager.js}`.

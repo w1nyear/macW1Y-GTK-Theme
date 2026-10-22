@@ -1272,6 +1272,10 @@ function _syncToastGlass(monitor, s) {
         }
         // [GPU-SAVE] Extras-хеш регіонів тостів: зміщення тостів (висування/
         // згортання стосу, злива HOSTING) та стан Overview миттєво рахуються як зміна скла.
+        // RIDE: поки злиті тости летять у Центр, їхні регіони змінюються
+        // щокадрово — рух тоста не рахуємо за «зміну сцени», важка частина
+        // повернеться одразу після settle.
+        const riding = _mergingSlots().length > 0;
         let extraH = regions.length ^ (Main.overview?.visible ? 1337 : 42);
         try {
             const ovVal = Main.overview?._controls?._stateAdjustment?.value;
@@ -1279,7 +1283,9 @@ function _syncToastGlass(monitor, s) {
                 extraH = (extraH ^ (Math.round(ovVal * 100) * 10007)) | 0;
         } catch (_) {}
         for (const r of regions) {
-            extraH = (extraH ^ (Math.round(r.x * 4) * 73856093) ^ (Math.round(r.y * 4) * 19349663) ^
+            const dxh = riding ? 0 : (Math.round(r.x * 4) * 73856093);
+            const dyh = riding ? 0 : (Math.round(r.y * 4) * 19349663);
+            extraH = (extraH ^ dxh ^ dyh ^
                 (Math.round(r.w * 4) * 83492791) ^ (Math.round(r.h * 4) * 2654435761)) | 0;
         }
         try { s.effect.setCornerRadius(maxR); } catch (_) {}
@@ -1456,6 +1462,88 @@ function _unhookToastTray() {
 }
 
 // --- MERGE у Центр: тости віддають позиції карткам Центру ---
+// RIDE: замість короткого ease «SHIFT_X/SHIFT_Y» тост-двійник летить
+// разом із панеллю Центру до позиції свого банера, в settle обмінюється
+// на банер за один кадр (без дрейфу/блимання окремого сповіщення).
+
+function _mergingSlots() {
+    if (!_toastBox)
+        return [];
+    try {
+        return _toastBox.get_children().filter(s => s._merging && !s._leaving);
+    } catch (_) {
+        return [];
+    }
+}
+
+function _finishMergedSlot(slot) {
+    try {
+        if (!slot || slot.is_finalized?.() || !slot._merging)
+            return;
+        try { slot.remove_all_transitions(); } catch (_) {}
+        try { slot.translation_x = 0; slot.translation_y = 0; } catch (_) {}
+        try { slot.opacity = 0; } catch (_) {}
+        try { _toastClearTimers(slot); } catch (_) {}
+        try { _destroyToastSlot(slot, false); } catch (_) {}
+    } catch (_) {}
+}
+
+function _killMergingSlots() {
+    for (const slot of _mergingSlots()) {
+        try { _finishMergedSlot(slot); } catch (_) {}
+    }
+}
+
+// Банер Центру, що відповідає злитому тосту (за самим Notification).
+// Кеш у slot._rideBanner: _rebuild може перестворювати картки посеред
+// польоту, тоді кеш стає недійсним і шукаємо заново.
+function _rideFindBanner(p, slot) {
+    try {
+        const cached = slot._rideBanner;
+        if (cached && !cached.is_finalized?.() && cached.get_parent?.())
+            return cached;
+        slot._rideBanner = null;
+        if (!p?.list || !slot._nItem?.n)
+            return null;
+        for (const cont of p.list.get_children()) {
+            if (cont._macPeekGroup) {
+                for (const b of cont._macPeekGroup.cards ?? []) {
+                    if (b._notification === slot._nItem.n) {
+                        slot._rideBanner = b;
+                        return b;
+                    }
+                }
+                continue;
+            }
+            if (cont._notification === slot._nItem.n) {
+                slot._rideBanner = cont;
+                return cont;
+            }
+        }
+    } catch (_) {
+        slot._rideBanner = null;
+    }
+    return null;
+}
+
+// Показ злитих банерів, які тримали у прозорості на час польоту.
+function _commitMergedBanners(p) {
+    try {
+        if (!p?.list)
+            return;
+        for (const cont of p.list.get_children()) {
+            if (cont._macPeekGroup) {
+                for (const b of cont._macPeekGroup.cards ?? []) {
+                    if (b._isMergedToast)
+                        try { b.opacity = 255; } catch (_) {}
+                }
+                continue;
+            }
+            if (cont._isMergedToast)
+                try { cont.opacity = 255; } catch (_) {}
+        }
+    } catch (_) {}
+}
 
 function _takeToastMerges() {
     const merges = new Set();
@@ -1465,39 +1553,170 @@ function _takeToastMerges() {
     if (!slots.length)
         return merges;
 
-    // Зсув тоста у слот Центру сповіщень:
-    // Тост 0 лежить на Y ~ 42, X = monitor.width - 484 - 10.
-    // Картка Центру лежить на Y ~ 94, X = monitor.width - 524 - 12 + 20 = monitor.width - 516.
-    // Зсув: dy = +52px, dx = -22px.
-    const SHIFT_Y = 52;
-    const SHIFT_X = -22;
-
-    for (let i = 0; i < slots.length; i++) {
-        const slot = slots[i];
+    for (const slot of slots) {
         slot._merging = true;
         slot.set_reactive(false);
         _toastLifeStop(slot);
         if (slot._nItem?.n)
             merges.add(slot._nItem.n);
         merges.add(slot._nItem);
-
-        slot.remove_all_transitions();
-        slot.ease({
-            translation_y: SHIFT_Y,
-            translation_x: SHIFT_X,
-            opacity: 255,
-            duration: 300,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            onComplete: () => {
-                try {
-                    _toastClearTimers(slot);
-                    _destroyToastSlot(slot, false);
-                } catch (_) {}
-            },
+        try { slot.remove_all_transitions(); } catch (_) {}
+        // природна (стартова) позиція тоста — точка відліку польоту
+        try {
+            const [nx, ny] = slot.get_transformed_position();
+            slot._rideNat = isFinite(nx) && isFinite(ny) ? { x: nx, y: ny } : null;
+        } catch (_) {
+            slot._rideNat = null;
+        }
+        slot._rideBanner = null;
+        slot._mergeAt = Date.now();
+        // fail-safe: якщо тик Центру не завершить політ (ease відмінено,
+        // панель не відкрилась, сповіщення зникло) — прибираємо самі
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 420, () => {
+            try {
+                if (slot?._merging && !slot.is_finalized?.()) {
+                    _commitMergedBanners(_nc);
+                    _finishMergedSlot(slot);
+                }
+            } catch (_) {}
+            return GLib.SOURCE_REMOVE;
         });
     }
     _toastTickStart();
     return merges;
+}
+
+// fade-in скла стеку (0..1 за _fadeMS мс); рухається тіком Центру
+function _stackFadeK(s) {
+    try {
+        if (!s || !s._fadeT0)
+            return 1;
+        const k = Math.min(1, Math.max(0, (Date.now() - s._fadeT0) / Math.max(60, s._fadeMS ?? 240)));
+        if (k >= 1) {
+            s._fadeT0 = 0;
+            s._fadeK = 1;
+            return 1;
+        }
+        s._fadeK = k;
+        return k;
+    } catch (_) {
+        return 1;
+    }
+}
+
+function _startStackFade(s, ms = 240) {
+    try { s._fadeT0 = Date.now(); s._fadeMS = ms; s._fadeK = 0; } catch (_) {}
+}
+
+// Спільна підготовка стеку Центру: виключення з каптура (панель/бокс/столешні
+// іконки) + перший семплінг.
+function _setupNcStack(p, s) {
+    try {
+        try { s.uiSampler?.addExclusion?.(p.box); } catch (_) {}
+        // сам оверлей (panelBg + бокс) НЕ має бути в каптурі -
+        // інакше скло карток семплить темний фон панелі і
+        // виглядає плоско, а не як скло з заломленням
+        try { s.uiSampler?.addExclusion?.(p.overlay); } catch (_) {}
+        for (const child of global.window_group?.get_children?.() ?? []) {
+            if (child.meta_window?.get_gtk_application_id?.() === 'com.rastersoft.ding' ||
+                child.meta_window?.get_title?.() === 'Desktop Icons 1' ||
+                child.meta_window?.get_window_type?.() === 1) {
+                try { s.uiSampler?.addExclusion?.(child); } catch (_) {}
+            }
+        }
+        s.uiSampler?.rebindSelf?.();
+        s.uiSampler?.refresh?.();
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+// cards-стек створюється ТІЛЬКИ при settle (кінець слайду): дорога побудова
+// (rebuildClones/каптура) у кадрах руху панелі — причина «дьоргання» відкриття.
+// Під час слайду скла карток немає взагалі; на місці воно приходить fade-in.
+function _ensureNcCards(p) {
+    try {
+        if (!p || !p.overlay || !p.stacks)
+            return false;
+        if (p.stacks.some(s => s.kind === 'cards'))
+            return false;
+        const monitor = Main.layoutManager.primaryMonitor;
+        if (!monitor)
+            return false;
+        const cards = _makeGlassStack(monitor, 24, 'nc-cards', false);
+        try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
+        try {
+            p.overlay.insert_child_at_index(cards.bgActor, 2);
+        } catch (_) {
+            try { p.overlay.add_child(cards.bgActor); } catch (_) {}
+        }
+        _setupNcStack(p, cards);
+        cards.bgActor.opacity = 0;
+        cards.bgActor.visible = false;
+        p.stacks.push(cards);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+// Тик ПОЛЬОТУ: злиті тости їдуть разом із панеллю Центру у точку свого банера.
+// prog = 1 - clamp(box.translation_x/480): 0 на старті слайду, 1 при settle;
+// перевід тоста = prog * (трансформована позиція банера − природна позиція тоста).
+// Окремих ease-транзишнів на тостах немає — рух виводить сам тик.
+function _ncRideTick(p) {
+    try {
+        const slots = _mergingSlots();
+        if (!slots.length)
+            return;
+        const tx = Math.max(0, p?.box?.translation_x ?? 0);
+        if (!(p._rideDone || tx <= 0.75)) {
+            const prog = 1 - Math.min(1, tx / 480);
+            const now = Date.now();
+            for (const slot of slots) {
+                try {
+                    if (slot?._mergeAt && now - slot._mergeAt > 420)
+                        continue; // fail-safe прибере сам
+                    const banner = _rideFindBanner(p, slot);
+                    if (!banner || !slot._rideNat)
+                        continue;
+                    const [bx, by] = banner.get_transformed_position();
+                    if (!isFinite(bx) || !isFinite(by))
+                        continue;
+                    slot.translation_x = prog * (bx - slot._rideNat.x);
+                    slot.translation_y = prog * (by - slot._rideNat.y);
+                } catch (_) {}
+            }
+            return;
+        }
+        // SETTLE: тости на позиції банерів → банери показуємо, тости прибираємо
+        for (const slot of slots) {
+            try { _finishMergedSlot(slot); } catch (_) {}
+        }
+        _commitMergedBanners(p);
+        p._rideDone = true;
+    } catch (_) {}
+}
+
+// settle слайду: дорога частина лишається поза кадрами руху — тут створюємо
+// скло карток і форсуємо рефреші стеків (один раз, поза анімацією).
+function _ncSettle(p) {
+    try {
+        if (!p || p._settleDone)
+            return;
+        p._settleDone = true;
+        _ensureNcCards(p);
+        for (const s of p.stacks ?? []) {
+            try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+        }
+        try {
+            const cards = p.stacks?.find(s => s.kind === 'cards');
+            if (cards)
+                _startStackFade(cards, 260);
+        } catch (_) {}
+        _ncRideTick(p);
+    } catch (_) {}
 }
 
 function _destroyToasts() {
@@ -1589,6 +1808,16 @@ function _rebuild(merges = null) {
     const p = _nc;
     if (!p)
         return;
+    // RIDE: повторний rebuild (нове сповіщення/очистка) посеред польоту
+    // тостів — миттєво завершуємо, інакше старі двійники ведуться до
+    // заново створених карток і стан хитається.
+    try {
+        if (merges === null && _mergingSlots().length && !p._rideDone) {
+            _killMergingSlots();
+            _commitMergedBanners(p);
+            p._rideDone = true;
+        }
+    } catch (_) {}
     try {
         p.list.destroy_all_children();
 
@@ -1622,16 +1851,10 @@ function _rebuild(merges = null) {
             const isMerged = merges && (merges.has(item.n) || merges.has(item));
             p.list.add_child(cardData.banner);
             if (isMerged) {
-                cardData.banner.opacity = 0;
+                // RIDE: банер тримаємо прозорим до settle (тост-двійник летить
+                // до його позиції), далі показ за один кадр без блимання
                 cardData.banner._isMergedToast = true;
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 290, () => {
-                    try {
-                        if (cardData.banner && !cardData.banner.is_finalized?.()) {
-                            cardData.banner.opacity = 255;
-                        }
-                    } catch (_) {}
-                    return GLib.SOURCE_REMOVE;
-                });
+                cardData.banner.opacity = (p._rideDone || p._settleDone) ? 255 : 0;
             } else {
                 _animateEnter(cardData.banner, enterIdx);
             }
@@ -1782,6 +2005,7 @@ function _collapseNcGroups(p, merges = null) {
     // тому кожну картку перевставляємо з повторним каскадом;
     // злиті - з merge-анімацією
     let flatIdx = 0;
+    const ridePending = _mergingSlots().length > 0 && !p._settleDone;
     for (const x of flat) {
         p.list.add_child(x);
         const isStack = !!x._macPeekGroup;
@@ -1789,15 +2013,9 @@ function _collapseNcGroups(p, merges = null) {
         const isMerged = banner && (banner._isMergedToast || (merges && (merges.has(banner._notification) || merges.has(banner._notification?.n))));
         if (banner) {
             if (isMerged) {
-                banner.opacity = 0;
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 290, () => {
-                    try {
-                        if (banner && !banner.is_finalized?.()) {
-                            banner.opacity = 255;
-                        }
-                    } catch (_) {}
-                    return GLib.SOURCE_REMOVE;
-                });
+                // RIDE: до settle банер прозорий, після — за один кадр
+                banner._isMergedToast = true;
+                banner.opacity = ridePending ? 0 : 255;
             } else {
                 _animateEnter(banner, flatIdx);
             }
@@ -1982,12 +2200,12 @@ function _syncCards(p, monitor, s) {
                 s.bgActor.hide();
             return;
         }
-        const alpha = p.box.opacity;
+        const alpha = p.box.opacity * _stackFadeK(s);
         if (alpha > 0 && !s.bgActor.visible)
             s.bgActor.show();
         else if (alpha === 0 && s.bgActor.visible)
             s.bgActor.hide();
-        s.bgActor.opacity = alpha;
+        s.bgActor.opacity = Math.round(Math.min(255, Math.max(0, alpha)));
         // тінт регіонів карток = той самий, що в тостів (віджет-конфіг)
         if (regions.length)
             maxR = 24; // корнер картки, як у тостів (radius 24)
@@ -2001,11 +2219,15 @@ function _syncCards(p, monitor, s) {
         try { s.effect.setCornerRadius(maxR); } catch (_) {}
         // [GPU-SAVE] Extras: регіони карток (позиції з transformed_position
         // самих карток) — зміщення/згортання стосу сповіщень рахується як зміна.
+        // Стек карток існує лише від settle, слайд панелі тому не потрапляє
+        // у хеш; анімації карток (к-enter/expand) чесно рахуються.
         let extraH = regions.length;
         for (const r of regions) {
             extraH = (extraH ^ (Math.round(r.x * 4) * 73856093) ^ (Math.round(r.y * 4) * 19349663) ^
                 (Math.round(r.w * 4) * 83492791) ^ (Math.round(r.h * 4) * 2654435761)) | 0;
         }
+        // ДЕШЕВИЙ шлях (щокадрово): регіони їдуть разом із картками без
+        // нового захоплення кадру — фон за склом не змінюється від їх руху.
         s.effect.setGlassRegions(regions);
         s.effect.setResolution(monitor.width, monitor.height);
         s.liquidBox.set_position(0, 0);
@@ -2022,7 +2244,7 @@ function _syncCards(p, monitor, s) {
         }
         if (!doHeavy)
             return;
-        s.wcm.setOffset(-monitor.x, -monitor.y);
+        s.wcm?.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,
             effect: s.effect,
@@ -2031,9 +2253,9 @@ function _syncCards(p, monitor, s) {
             uiSampler: s.uiSampler,
             windowCloneManager: s.wcm,
         });
-        s.uiSampler.refresh();
-        s.uiSampler.sync(monitor.x, monitor.y, monitor.width, monitor.height);
-        s.wcm.sync();
+        s.uiSampler?.refresh();
+        s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
+        s.wcm?.sync();
         try {
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
@@ -2053,23 +2275,31 @@ function _syncGlass(p, monitor, s) {
         }
         const m = BACKDROP_PAD;
         s.bgActor.set_position(monitor.x, monitor.y);
-        const alpha = p.box.opacity;
+        const alpha = p.box.opacity * _stackFadeK(s);
         if (alpha > 0 && !s.bgActor.visible)
             s.bgActor.show();
         else if (alpha === 0 && s.bgActor.visible)
             s.bgActor.hide();
-        s.bgActor.opacity = alpha;
+        s.bgActor.opacity = Math.round(Math.min(255, Math.max(0, alpha)));
         s.liquidBox.set_position(0, 0);
         s.liquidBox.set_size(monitor.width, monitor.height);
+        // ДЕШЕВИЙ шлях (щокадрово): регіон і кліп їдуть разом із панеллю,
+        // захоплений кадр при цьому МАЛЮЄТЬСЯ не заново — фон за панеллю
+        // не змінюється від слайду, тож стара каптура лишається правильною.
+        s.effect.setGlassRegions([{
+            x: (bx - monitor.x) - m, y: (by - monitor.y) - m,
+            w: bw + m * 2, h: bh + m * 2,
+            tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
+        }]);
+        s.effect.setResolution(monitor.width, monitor.height);
         const clip = [(bx - monitor.x) - m - 200, (by - monitor.y) - m - 200,
             bw + m * 2 + 400, bh + m * 2 + 400];
         setClipIfChanged(s.bgActor, clip[0], clip[1], clip[2], clip[3]);
-        // [GPU-SAVE] Важку частину виконуємо тільки коли фон (панель над ним,
-        // або геометрія самої поверхні) дійсно змінився; жорстка межа 60 FPS.
-        // У спокої — нуль GPU-роботи від скла центру сповіщень.
-        const extraH = (((bx || 0) * 73856093) ^ ((by || 0) * 19349663) ^
-            ((bw || 0) * 83492791) ^ ((bh || 0) * 2654435761) ^ ((clip[0] || 0) * 1274126177) ^
-            ((clip[1] || 0) * 1550398307)) | 0;
+        // [GPU-SAVE] Важку частину виконуємо тільки коли фон дійсно змінився
+        // (перший кадр стеку, зміна вікна/шпалер під склом) або коли реально
+        // змінився РОЗМІР панелі (вміст списку). Слайд bx/by у хеш НЕ входить:
+        // рух панелі не має рахуватися за «зміну сцени», інакше — фризи.
+        const extraH = (((bw || 0) * 73856093) ^ ((bh || 0) * 19349663)) | 0;
         let doHeavy = true;
         try {
             doHeavy = glassRefreshDue ? glassRefreshDue(s.bgActor, extraH) : true;
@@ -2078,12 +2308,6 @@ function _syncGlass(p, monitor, s) {
         }
         if (!doHeavy)
             return;
-        s.effect.setGlassRegions([{
-            x: (bx - monitor.x) - m, y: (by - monitor.y) - m,
-            w: bw + m * 2, h: bh + m * 2,
-            tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
-        }]);
-        s.effect.setResolution(monitor.width, monitor.height);
         s.wcm.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,
@@ -2258,42 +2482,20 @@ function _buildPanel(merges = null) {
         p.allocId = 0;
     }
 
-    // Glass stacks: CC-style backdrop (pure blur) + glass under every notification card
+    // Glass stacks: CC-style backdrop (pure blur) створюємо одразу; стек скла
+    // карток відкладаємо до settle — дорога побудова (wcm.rebuildClones,
+    // семплінг, каптура) у кадрах слайду давала фризи відкриття.
     try {
         const bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
-        const cards = _makeGlassStack(monitor, 24, 'nc-cards', false);
-        // юніформи ефекту = точно як у тост-стека (blur 8, ior 2.4,
-        // displacement 92, rim…), інакше шейдер на дефолтах виглядав
-        // не як скло тостів
-        try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
         overlay.insert_child_at_index(bd.bgActor, 1);
-        overlay.insert_child_at_index(cards.bgActor, 2);
         try {
             overlay.set_child_above_sibling(panelBg, bd.bgActor);
         } catch (_) {}
 
-        for (const s of [bd, cards]) {
-            try {
-                s.uiSampler.addExclusion(box);
-                // сам оверлей (panelBg + бокс) НЕ має бути в каптурі -
-                // інакше скло карток семплить темний фон панелі і
-                // виглядає плоско, а не як скло з заломленням
-                s.uiSampler.addExclusion(overlay);
-                for (const child of global.window_group?.get_children?.() ?? []) {
-                    if (child.meta_window?.get_gtk_application_id?.() === 'com.rastersoft.ding' ||
-                        child.meta_window?.get_title?.() === 'Desktop Icons 1' ||
-                        child.meta_window?.get_window_type?.() === 1) {
-                        s.uiSampler.addExclusion(child);
-                    }
-                }
-            } catch (_) {}
-            s.wcm.rebuildClones();
-            s.uiSampler.rebindSelf();
-            s.uiSampler.refresh();
-            s.bgActor.opacity = 0;
-            s.bgActor.visible = false;
-        }
-        p.stacks = [bd, cards];
+        _setupNcStack(p, bd);
+        bd.bgActor.opacity = 0;
+        bd.bgActor.visible = false;
+        p.stacks = [bd];
 
         const tick = () => {
             p.tickId = 0;
@@ -2305,18 +2507,21 @@ function _buildPanel(merges = null) {
                 p.panelBg.opacity = p.box.opacity;
                 p.panelBg.translation_x = p.box.translation_x;
             } catch (_) {}
-            for (const s of p.stacks) {
-                try {
-                    s.bgActor.opacity = p.box.opacity;
-                } catch (_) {}
-            }
             try {
-                const bd = p.stacks.find(s => s.kind === 'backdrop');
-                if (bd) _syncGlass(p, monitor, bd);
+                // RIDE: злиті тости летять разом із панеллю (щокадрово),
+                // settle-страховка на випадок відміненого onComplete
+                _ncRideTick(p);
+                if (!p._settleDone &&
+                    (p.box.translation_x ?? 0) <= 0.5 && (p.box.opacity ?? 0) >= 254)
+                    _ncSettle(p);
             } catch (_) {}
             try {
-                const cards = p.stacks.find(s => s.kind === 'cards');
-                if (cards) _syncCards(p, monitor, cards);
+                for (const s of p.stacks) {
+                    if (s.kind === 'cards')
+                        _syncCards(p, monitor, s);
+                    else
+                        _syncGlass(p, monitor, s);
+                }
             } catch (_) {}
             try {
                 p.tickId = global.compositor.get_laters().add(
@@ -2339,7 +2544,9 @@ function _buildPanel(merges = null) {
     _watchTray(p);
     _rebuild(merges);
 
-    // Slide-in animation from our theme: translation_x 480 -> 0 with EASE_OUT_CUBIC
+    // Slide-in animation from our theme: translation_x 480 -> 0 with EASE_OUT_CUBIC.
+    // Скло їде разом із панеллю: дешеві шляхи тиків рухають регіони/кліп,
+    // важкий (каптура/семплінг) ніколи не виконується в кадрах руху.
     try {
         box.translation_x = 480;
         box.opacity = 0;
@@ -2354,6 +2561,9 @@ function _buildPanel(merges = null) {
             opacity: 255,
             duration: 300,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                try { _ncSettle(p); } catch (_) {}
+            },
         });
         panelBg.ease({
             translation_x: 0,
@@ -2362,15 +2572,20 @@ function _buildPanel(merges = null) {
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         });
     } catch (_) {
-        box.translation_x = 0;
-        box.opacity = 255;
-        panelBg.opacity = 255;
+        try {
+            box.translation_x = 0;
+            box.opacity = 255;
+            panelBg.opacity = 255;
+        } catch (_) {}
+        try { _ncSettle(p); } catch (_) {}
     }
 }
 
 function _destroyNC(p) {
     if (!p)
         return;
+    // RIDE: зачистка злитних тостів (ніхто їх більше не веде)
+    try { _killMergingSlots(); } catch (_) {}
     try {
         if (p.inkUnwatch)
             p.inkUnwatch();
@@ -2523,24 +2738,36 @@ export function closeNC(immediate = false) {
 
     globalThis._tahoeNCOpen = false;
 
+    // RIDE: злиті тости більше не ведуться польотом — прибираємо одразу,
+    // щоб не тягнути їх у slide-out (банери вже показані в по-settle,
+    // а на ран busiest закритті сповіщення лишаться в Центрі на наступний раз)
+    try { _killMergingSlots(); } catch (_) {}
+
     if (immediate) {
         _destroyNC(p);
         return;
     }
 
-    // Slide-out animation from our theme: translation_x 0 -> 480 with EASE_IN_CUBIC
+    // Slide-out animation from our theme: translation_x 0 -> 480 with EASE_IN_CUBIC.
+    // Тик уже мертвий (_nc = null на старті closeNC), тому опадність скла
+    // на slide-out ведуть per-stack ease → 0, synchronно з панеллю (260мс).
     try {
         p.box.remove_all_transitions();
         p.panelBg.remove_all_transitions();
-        for (const s of p.stacks) {
-            try {
-                s.bgActor?.ease({
-                    opacity: 0,
-                    duration: 260,
-                    mode: Clutter.AnimationMode.EASE_IN_CUBIC,
-                });
-            } catch (_) {}
-        }
+        try {
+            for (const s of p.stacks || []) {
+                try {
+                    const bg = s?.bgActor;
+                    if (!bg || (typeof bg.is_finalized === 'function' && bg.is_finalized()))
+                        continue;
+                    bg.ease({
+                        opacity: 0,
+                        duration: 260,
+                        mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+                    });
+                } catch (_) {}
+            }
+        } catch (_) {}
         try {
             p.panelBg.ease({
                 translation_x: 480,
