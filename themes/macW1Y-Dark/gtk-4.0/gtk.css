@@ -9974,22 +9974,27 @@ window.nautilus-window .content-pane > scrolledwindow {
     background-color: #202022;
     border-left-style: none;
     border-left-width: 0;
+    box-shadow: -30px 0 0 0 #202022;
 }
 
 window.nautilus-window .content-pane headerbar {
     background-color: #202022;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 3px;
+    padding-left: 15px;
 }
 
 /* Shift top panel buttons down by 3 pixels and increase width on the left side by 15 pixels */
 window.nautilus-window .content-pane headerbar centerbox,
-window.nautilus-window .content-pane headerbar > windowhandle > centerbox {
+window.nautilus-window .content-pane headerbar > windowhandle > centerbox,
+window.nautilus-window .content-pane headerbar > windowhandle > box {
     margin-top: 3px;
 }
 
 window.nautilus-window .content-pane headerbar centerbox > widget > box.start,
 window.nautilus-window .content-pane headerbar box.start,
-window.nautilus-window .content-pane headerbar .linked:first-child {
+window.nautilus-window .content-pane headerbar .linked:first-child,
+window.nautilus-window .content-pane headerbar .start {
     margin-left: 15px;
 }
 

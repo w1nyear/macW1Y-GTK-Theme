@@ -8430,3 +8430,28 @@ echo "==> Встановлення успішно завершено!"
         * Зміни збережено в `gnome-shell-theme/gnome-shell.css`, `macW1Y-Dark`, `macW1Y-Dark-solid`, системних каталогах `/usr/share/themes/` та `~/.themes/`.
         * Наново скомпільовано системний ресурс `/usr/share/gnome-shell/theme/macW1Y-Dark/gnome-shell-theme.gresource` через `glib-compile-resources`.
         * Перезавантажено ресурси теми у живому сеансі GNOME Shell (`Main.reloadThemeResource()`, `Main.loadTheme()`) без перезапуску та без створення скріншотів.
+
+19.40. nautilus, gtk-4.0, libmac_nautilus: симетричне повне заокруглення бічної панелі (leftbar), перекриття радіуса кутів чорним тлом, зсув верхньої панелі на 3px вниз та розширення лівого боку на 15px
+   1. Вимоги користувача:
+      - У файловому менеджері Nautilus зробити бічну панель (leftbar / sidebar) строго круглою в правій стороні так само, як і в лівій (симетричні заокруглені кути 24px з обох боків).
+      - У місцях, де на цих кутах з'явиться радіус заокруглення, прикрити вирізи елементом з чорним фоном програми (`#202022`).
+      - Верхню панель вмісту (content headerbar) зсунути вниз на 3 пікселі (`margin-top: 3px`).
+      - Ширину/відступ у лівій стороні верхньої панелі збільшити на 15 пікселів (`margin-left: 15px`, `padding-left: 15px`).
+      - Суворо заборонено створювати скріншоти (`Shell.Screenshot`), щоб виключити падіння композитора або вихід із сесії користувача.
+   2. Реалізація:
+      - Симетричне заокруглення бічної панелі (`gtk-4.0/gtk.css`):
+        * Для селектора `window.nautilus-window overlay-split-view > widget.sidebar-pane` (та всіх модифікаторів `.sidebar-pane`) встановлено `border-radius: 24px` на всі 4 кути (верхній лівий, верхній правий, нижній правий, нижній лівий).
+        * Збережено скляне напівпрозоре тло бічної панелі `background-color: rgba(30, 30, 34, 0.40)` із захисною рамкою `#202022`.
+      - Прикриття кутів чорним фоном програми (`#202022`):
+        * До контейнера вмісту `window.nautilus-window .content-pane` додано розширювальне перекриття `box-shadow: -30px 0 0 0 #202022`. Це гарантує, що при будь-якій зміні ширини вікна чи панелі область під радіусом правого верхнього та правого нижнього кутів надійно заповнена фірмовим чорним тлом програми `#202022` без просвічування шпалер.
+        * Додатково у кореневому `window.nautilus-window` та `overlay-split-view` збережено градієнтні кутові підкладки `#202022`.
+      - Зсув верхньої панелі на 3px та збільшення ширини зліва на 15px:
+        * У бібліотеці перехоплення `src/mac_nautilus.c` (`libmac_nautilus.so`):
+          - Для `content_hb` встановлено `gtk_widget_set_margin_top(GTK_WIDGET(content_hb), 3)`.
+          - Для блоку кнопок історії `NautilusHistoryControls` встановлено відступ `gtk_widget_set_margin_start(widget, 15)`.
+        * У `gtk-4.0/gtk.css`:
+          - До `window.nautilus-window .content-pane headerbar` додано `margin-top: 3px !important; padding-left: 15px !important;`.
+          - До елементів лівої групи (`centerbox > widget > box.start`, `.linked:first-child`, `.start`) застосовано `margin-left: 15px !important;`.
+      - Синхронізація та компіляція:
+        * Перекомпільовано бібліотеку `libmac_nautilus.so` через `gcc` та оновлено в `/usr/lib/x86_64-linux-gnu/libmac_nautilus.so` і `lib/libmac_nautilus.so`.
+        * Файл `gtk.css` дзеркально оновлено у `~/.config/gtk-4.0/`, `~/.themes/macW1Y-Dark/`, `~/.themes/macW1Y-Dark-solid/`, `/usr/share/themes/macW1Y-Dark/`, `/usr/share/themes/macW1Y-Dark-solid/` та каталогах `MACTHEMEFILES/`.
