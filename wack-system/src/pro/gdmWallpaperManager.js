@@ -33,11 +33,16 @@ export class GdmWallpaperManager {
         });
 
         this.monitorsChangedId = Main.layoutManager.connect('monitors-changed', () => {
-            if (this.view)
+            if (this.view) {
                 this.view.rebuild();
+                const activeUser = this._gdm._dialog?._user?.get_user_name() ?? null;
+                this.applyWallpaper(activeUser, false);
+            }
             this._gdm._syncLockscreenMessageLayout();
             this._gdm._positionAuthPrompt();
             this._gdm._positionUserList();
+            if (this._gdm._clockManager)
+                this._gdm._clockManager.positionClock();
         });
 
         this.setupSharedWallpaperMonitor();

@@ -20,6 +20,41 @@ export class GdmClockManager {
     }
 
     setup(dialog, dialogParent) {
+        if (!dialogParent) {
+            dialogParent = dialog?.get_parent() || Main.screenShield?._lockDialogGroup || Main.layoutManager?.uiGroup;
+        }
+
+        // 1. Clean up any existing instances in this manager
+        if (this.clockWrapper) {
+            try { this.clockWrapper.destroy(); } catch (_) {}
+            this.clockWrapper = null;
+        }
+        if (this.clock) {
+            try { this.clock.destroy(); } catch (_) {}
+            this.clock = null;
+        }
+
+        // 2. Clean up any stray clock wrappers from previous setups in dialogParent
+        if (dialogParent?.get_children) {
+            for (const child of dialogParent.get_children()) {
+                if (child.has_style_class_name && child.has_style_class_name('wack-gdm-clock-wrapper')) {
+                    try { child.destroy(); } catch (_) {}
+                }
+            }
+        }
+
+        // 3. Cleanly hide any native GNOME Shell lock/login clock to prevent double render
+        if (dialog?._clock) {
+            dialog._clock.visible = false;
+            dialog._clock.opacity = 0;
+            dialog._clock.hide();
+        }
+        if (dialog?._stack?._clock) {
+            dialog._stack._clock.visible = false;
+            dialog._stack._clock.opacity = 0;
+            dialog._stack._clock.hide();
+        }
+
         this.clock = new WackClock();
         const metadata = this._gdm._currentWallpaperMetadata;
         const dateStyle = metadata?.dateStyle ?? 'full';

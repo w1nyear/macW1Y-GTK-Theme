@@ -688,7 +688,27 @@ export class GdmThemeStore {
         const iface = this._interfaceSettings ?? new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
         const dark = iface.get_enum('color-scheme') === 1;
         const style = bg.get_enum('picture-options');
-        const uri = bg.get_string(dark ? 'picture-uri-dark' : 'picture-uri');
+        let uri = bg.get_string(dark ? 'picture-uri-dark' : 'picture-uri');
+        const checkExists = (p) => {
+            if (!p || typeof p !== 'string') return false;
+            const cleanPath = p.replace(/^file:\/\//, '');
+            return GLib.file_test(cleanPath, GLib.FileTest.EXISTS);
+        };
+        if (!checkExists(uri)) {
+            uri = bg.get_string('picture-uri');
+        }
+        if (!checkExists(uri)) {
+            for (const candidate of [
+                '/usr/share/backgrounds/GoldenGate_Day.jpg',
+                '/usr/share/backgrounds/GoldenGate_Day.png',
+                '/usr/share/backgrounds/warty-final-ubuntu.png',
+            ]) {
+                if (GLib.file_test(candidate, GLib.FileTest.EXISTS)) {
+                    uri = `file://${candidate}`;
+                    break;
+                }
+            }
+        }
         const clockFormatOverride = this._settings ? this._settings.get_string('clock-format') : 'system';
         const clockFormat = clockFormatOverride === 'system' ? iface.get_string('clock-format') : clockFormatOverride;
         const canonicalUser = this._defaultUser;
@@ -756,7 +776,8 @@ export class GdmThemeStore {
 export class GdmWallpaperView {
     constructor(parent, sibling) {
         this._group = new Clutter.Actor();
-        this._group.opacity = 0;
+        this._group.opacity = 255;
+        this._group.visible = true;
         parent.add_child(this._group);
         parent.set_child_below_sibling(this._group, sibling);
         this._monitors = [];   // { container, stacks: Map(stackKey -> {root, base, overlay}), topKey, dimmer }
@@ -770,6 +791,12 @@ export class GdmWallpaperView {
             m.container.destroy();
         this._monitors = [];
         this._presentedRevision = -1;
+        this._presentedUser = null;
+
+        if (this._group) {
+            this._group.opacity = 255;
+            this._group.visible = true;
+        }
 
         for (const monitor of Main.layoutManager.monitors) {
             const container = new St.Widget({
@@ -816,6 +843,12 @@ export class GdmWallpaperView {
             return;   // idempotent: return-to-picker + onReset both call this safely
         this._presentedUser = theme.userName;
         this._presentedRevision = theme.revision;
+
+        if (this._group) {
+            this._group.visible = true;
+            if (!animate || this._group.opacity === 0)
+                this._group.opacity = 255;
+        }
 
         for (const m of this._monitors) {
             const key = this._stackKey(theme);

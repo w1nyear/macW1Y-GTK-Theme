@@ -83,7 +83,8 @@ picture-uri = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 [org.gnome.shell.extensions.wack-lockscreen-clock]
 lockscreen-mode = 'cupertino'
 cupertino-always-show-user = true
-lockscreen-wallpaper-enable = false
+lockscreen-wallpaper-enable = true
+lockscreen-wallpaper-path = '/usr/share/backgrounds/GoldenGate_Day.jpg'
 date-style = 'full'
 clock-animation = 'scale-down'
 prompt-animation = 'shell'
@@ -92,7 +93,8 @@ cupertino-unlock-fade = true
 [org.gnome.shell.extensions.wack-lockscreen-clock:ubuntu]
 lockscreen-mode = 'cupertino'
 cupertino-always-show-user = true
-lockscreen-wallpaper-enable = false
+lockscreen-wallpaper-enable = true
+lockscreen-wallpaper-path = '/usr/share/backgrounds/GoldenGate_Day.jpg'
 date-style = 'full'
 clock-animation = 'scale-down'
 prompt-animation = 'shell'
@@ -101,7 +103,8 @@ cupertino-unlock-fade = true
 [org.gnome.shell.extensions.wack-lockscreen-clock:GNOME-Greeter]
 lockscreen-mode = 'cupertino'
 cupertino-always-show-user = true
-lockscreen-wallpaper-enable = false
+lockscreen-wallpaper-enable = true
+lockscreen-wallpaper-path = '/usr/share/backgrounds/GoldenGate_Day.jpg'
 date-style = 'full'
 clock-animation = 'scale-down'
 prompt-animation = 'shell'

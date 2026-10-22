@@ -125,10 +125,12 @@ export class GdmAvatarManager {
                 if (avatar._wackSettingStyle || avatar._wackUpdating)
                     return;
                 avatar._wackUpdating = true;
-                avatar._wackOrigUpdate();
-                avatar._wackUpdating = false;
-
-                this._applyStyleToUserListItemAvatar(avatar);
+                try {
+                    avatar._wackOrigUpdate();
+                    this._applyStyleToUserListItemAvatar(avatar);
+                } finally {
+                    avatar._wackUpdating = false;
+                }
             };
 
             const user = avatar._user || item?._userWidget?._user;
@@ -182,16 +184,22 @@ export class GdmAvatarManager {
 
         const iconFile = this._getIconFile(avatar);
         if (iconFile) {
-            avatar.child = null;
-            avatar.add_style_class_name('user-avatar');
-            avatar.style = `
-                background-image: url("${iconFile}");
-                background-size: cover;
-                border-radius: 999px !important;
-            `;
-            avatar.visible = true;
-            avatar.opacity = 255;
-            delete avatar._wackHasVibrancy;
+            avatar._wackSettingStyle = true;
+            try {
+                if (avatar.child !== null)
+                    avatar.child = null;
+                avatar.add_style_class_name('user-avatar');
+                avatar.style = `
+                    background-image: url("${iconFile}");
+                    background-size: cover;
+                    border-radius: 999px !important;
+                `;
+                avatar.visible = true;
+                avatar.opacity = 255;
+                delete avatar._wackHasVibrancy;
+            } finally {
+                avatar._wackSettingStyle = false;
+            }
             return;
         }
 
@@ -204,21 +212,24 @@ export class GdmAvatarManager {
         const bgRgba = color ? (color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`) : null;
         const buttonStyle = bgRgba ? `background-color: ${bgRgba} !important; border-radius: 999px !important;` : null;
 
-        if (avatar.get_style() !== buttonStyle) {
-            avatar._wackSettingStyle = true;
-            avatar.set_style(buttonStyle);
+        avatar._wackSettingStyle = true;
+        try {
+            if (avatar.get_style() !== buttonStyle) {
+                avatar.set_style(buttonStyle);
+                if (buttonStyle)
+                    avatar._wackHasVibrancy = true;
+                else
+                    delete avatar._wackHasVibrancy;
+            }
+            avatar.clip_to_allocation = true;
+            const child = avatar.get_child();
+            if (child) {
+                const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
+                if (child.get_style() !== iconStyle)
+                    child.set_style(iconStyle);
+            }
+        } finally {
             avatar._wackSettingStyle = false;
-            if (buttonStyle)
-                avatar._wackHasVibrancy = true;
-            else
-                delete avatar._wackHasVibrancy;
-        }
-        avatar.clip_to_allocation = true;
-        const child = avatar.get_child();
-        if (child) {
-            const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
-            if (child.get_style() !== iconStyle)
-                child.set_style(iconStyle);
         }
     }
 
@@ -355,10 +366,12 @@ export class GdmAvatarManager {
                     if (avatar._wackSettingStyle || avatar._wackUpdating)
                         return;
                     avatar._wackUpdating = true;
-                    avatar._wackOrigUpdate();
-                    avatar._wackUpdating = false;
-
-                    this.updateAvatarVibrancy();
+                    try {
+                        avatar._wackOrigUpdate();
+                        this.updateAvatarVibrancy();
+                    } finally {
+                        avatar._wackUpdating = false;
+                    }
                 };
             }
 

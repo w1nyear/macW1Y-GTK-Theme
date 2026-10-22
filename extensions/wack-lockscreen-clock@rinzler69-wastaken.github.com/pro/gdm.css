@@ -548,15 +548,15 @@
     margin: 0 !important;
     margin-bottom: 0px !important;
     padding: 0 !important;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.20) !important;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.38) !important;
 }
 
 .wack-time,
 .unlock-dialog-clock-time.wack-time {
     font-family: Open Runde, SF Pro Rounded, SF Pro Display, Cantarell, sans-serif !important;
     font-size: 128px !important;
-    font-weight: 700 !important;
-    letter-spacing: -2px !important;
+    font-weight: 600 !important;
+    letter-spacing: -4px !important;
     padding: 0 !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
@@ -564,14 +564,14 @@
     margin-top: 0 !important;
     margin-bottom: 0 !important;
     color: #ffffff !important;
-    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.22) !important;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;
 }
 
 /* ── Cupertino Auth Prompt Widget Alignment ── */
 .login-dialog .wack-cupertino-prompt .user-widget.vertical {
-    spacing: 2px !important;
+    spacing: 4px !important;
     x-align: center !important;
-    margin-bottom: 0px !important;
+    margin-bottom: 2px !important;
 }
 
 .login-dialog .wack-cupertino-prompt .user-widget.vertical .user-icon,
@@ -602,7 +602,7 @@
     font-weight: 600 !important;
     color: rgba(255, 255, 255, 0.95) !important;
     text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5) !important;
-    margin-top: 2px !important;
+    margin-top: 4px !important;
     margin-bottom: 0px !important;
 }
 
@@ -620,7 +620,7 @@
     color: rgba(255, 255, 255, 0.85) !important;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
     margin-top: 2px !important;
-    margin-bottom: 0px !important;
+    margin-bottom: 2px !important;
     text-align: center !important;
     x-align: center !important;
 }
@@ -637,7 +637,7 @@
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6) !important;
     min-width: 180px !important;
     height: 32px !important;
-    margin-top: 2px !important;
+    margin-top: 4px !important;
     margin-bottom: 0px !important;
 }
 
@@ -653,7 +653,7 @@
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.85) !important;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
-    margin-top: 2px !important;
+    margin-top: 3px !important;
     margin-bottom: 0px !important;
     text-align: center !important;
     x-align: center !important;
@@ -666,3 +666,19 @@
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7) !important;
 }
 
+
+/* Cleanly hide accessibility and session buttons at bottom of GDM */
+.login-dialog-bottom-button-group,
+.login-dialog .login-dialog-bottom-button-group,
+.login-dialog .login-dialog-button.a11y-button,
+.login-dialog .login-dialog-session-list-button,
+.login-dialog .a11y-button,
+#loginDialogBottomButtonGroup {
+    display: none !important;
+    opacity: 0 !important;
+    height: 0px !important;
+    width: 0px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    visibility: hidden !important;
+}

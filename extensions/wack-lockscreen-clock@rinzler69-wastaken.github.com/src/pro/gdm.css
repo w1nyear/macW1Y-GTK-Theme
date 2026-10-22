@@ -666,3 +666,19 @@
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7) !important;
 }
 
+
+/* Cleanly hide accessibility and session buttons at bottom of GDM */
+.login-dialog-bottom-button-group,
+.login-dialog .login-dialog-bottom-button-group,
+.login-dialog .login-dialog-button.a11y-button,
+.login-dialog .login-dialog-session-list-button,
+.login-dialog .a11y-button,
+#loginDialogBottomButtonGroup {
+    display: none !important;
+    opacity: 0 !important;
+    height: 0px !important;
+    width: 0px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    visibility: hidden !important;
+}

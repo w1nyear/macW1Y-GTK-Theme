@@ -315,10 +315,17 @@ export class GdmManager {
             if (appleBtn) appleBtn.destroy();
         }
 
-        // Offset accessibility button cleanly away from bottom-right corner
+        // Cleanly hide accessibility button and session menu button at bottom of GDM
         if (dialog._bottomButtonGroup) {
-            dialog._bottomButtonGroup.translation_x = -24;
-            dialog._bottomButtonGroup.translation_y = -24;
+            dialog._bottomButtonGroup.visible = false;
+            dialog._bottomButtonGroup.opacity = 0;
+            dialog._bottomButtonGroup.reactive = false;
+            dialog._bottomButtonGroup.hide();
+        }
+        if (dialog._a11yMenuButton) {
+            dialog._a11yMenuButton.visible = false;
+            dialog._a11yMenuButton.opacity = 0;
+            dialog._a11yMenuButton.hide();
         }
 
         // Shift user selection list down
@@ -766,16 +773,12 @@ export class GdmManager {
         const FADE_DURATION = 400;
         const FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
 
-        // 1. Wallpaper view: smoothly fade in from black
+        // 1. Wallpaper view: guaranteed visible
         const wpGroup = this._wallpaperManager?.view?._group;
         if (wpGroup) {
             wpGroup.remove_all_transitions();
-            wpGroup.opacity = 0;
-            wpGroup.ease({
-                opacity: 255,
-                duration: FADE_DURATION,
-                mode: FADE_MODE,
-            });
+            wpGroup.visible = true;
+            wpGroup.opacity = 255;
         }
 
         // 2. GNOME Shell default background group

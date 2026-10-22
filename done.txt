@@ -8792,3 +8792,24 @@ echo "==> Встановлення успішно завершено!"
         * Реалізовано захист під час ковзання панелі: поки триває slide-анімація (`translation_x != 0` або до настання `_settleDone`), шар `s.bgActor` приховано (`visible = false, opacity = 0`). Це повністю усуває розриви та дублювання текстури шпалер під час руху, оскільки GPU не намагається семплити динамічний буфер під час зсуву.
         * Після зупинки панелі (`_ncSettle`) спрацьовує плавний fade-in скляного шару (`_startStackFade(s, 220)`) та миттєве оновлення розмиття `glassForceRefresh()`.
         * Зміни синхронізовано у живому розширенні GNOME Shell та в репозиторії.
+
+104. Пакет виправлень екрана входу GDM після першого завантаження ВМ (22.10.2026):
+   1. Мета (запит користувача за скріншотом екрана блокування/GDM у віртуальній машині):
+      - Усунути відсутність шпалер (чорний екран замість шпалери Golden Gate Bridge).
+      - Усунути візуальний баг годинника (двоїння, зміщені артефакти та контури цифр 20:13).
+      - Прибрати зайві елементи внизу екрана (кнопку спеціальних можливостей / accessibility та перемикач сесій/контрасту у нижньому правому кутку).
+
+   2. Виконані правки:
+      - Усунення чорного екрана (відсутність шпалер у GDM):
+        * Виявлено критичний системний збій у журналі (`JS ERROR: too much recursion` у `gdmAvatarManager.js`): при завантаженні GDM метод `_applyStyleToUserListItemAvatar` змінював стиль та дочірній елемент аватарки, що викликало подію GNOME Shell `vfunc_style_changed`, яка повторно викликала `avatar.update()`. Прапорець блокування рекурсії скидався передчасно, що викликало нескінченний цикл переповнення стека, обриваючи завантаження GDM, рендеринг шпалер та роботу розширення.
+        * У `gdmAvatarManager.js` (у методах `_setupUserListItem`, `_applyStyleToUserListItemAvatar` та `wrapGdmAvatar`) і в `cupertinoPrompt.js` встановлено надійні захисні блоки `_wackUpdating` (із блоком `try ... finally`) та `_wackSettingStyle`, що унеможливлює повторне викликання `update()` під час зміни стилю чи аватара.
+        * У `gdmWallpaperManager.js` виправлено обробник сигналу `monitors-changed`: при зміні чи узгодженні роздільної здатності дисплея (що обов'язково відбувається при завантаженні у віртуальній машині через драйвер віртуального монітора) викликався `this.view.rebuild()`, який знищував контейнери зі шпалерами, але НЕ викликав повторну побудову `this.applyWallpaper()`. Додано автоматичний виклик `this.applyWallpaper(activeUser, false)` та позиціонування годинника при кожній зміні моніторів.
+        * У `gdmThemePipeline.js` у методі `_buildFallbackTheme()` реалізовано гарантований захисний fallback: якщо `picture-uri-dark` чи `picture-uri` у базі dconf порожні або вказують на неіснуючий файл, автоматично підставляється системний шлях `/usr/share/backgrounds/GoldenGate_Day.jpg`.
+        * У `GdmWallpaperView` початкову прозорість групи шпалер `this._group.opacity` встановлено у `255` (разом з `visible = true`), а в `_restartDialogFadeIn()` зафіксовано обов'язкову видимість.
+        * Оновлено конфігурації `macos-gdm/99-wack-lockscreen`, `macos-gdm/99_mactheme.gschema.override` та `install.sh`: активовано `lockscreen-wallpaper-enable = true` та встановлено `lockscreen-wallpaper-path = '/usr/share/backgrounds/GoldenGate_Day.jpg'`, оновлено системну базу dconf gdm.
+      - Усунення бага з годинником (подвійні цифри / зміщений шлейф):
+        * У `gdmClockManager.js` у методі `setup()` реалізовано очищення попередніх екземплярів перед створенням нового годинника: знищення попереднього `this.clockWrapper` і `this.clock`, а також примусове видалення будь-яких залишкових віджетів `.wack-gdm-clock-wrapper` у контейнері `dialogParent`. Це повністю ліквідувало нашарування двох однакових годинників із мікрозсувом у 10-15px.
+        * Додано примусове приховування нативного годинника GNOME Shell (`dialog._clock` та `dialog._stack._clock`), щоб виключити паралельне малювання системного та кастомного годинників.
+      - Приховування елементів доступності (accessibility) внизу екрана:
+        * У `pro.js` замінено старе зміщення на повне приховування: `dialog._bottomButtonGroup.visible = false; dialog._bottomButtonGroup.opacity = 0; dialog._bottomButtonGroup.reactive = false; dialog._bottomButtonGroup.hide();` та аналогічно для `dialog._a11yMenuButton`.
+        * У `gdm.css` додано суворі правила приховування: `.login-dialog-bottom-button-group`, `.login-dialog .login-dialog-button.a11y-button`, `.login-dialog .login-dialog-session-list-button`, `.login-dialog .a11y-button { display: none !important; opacity: 0 !important; visibility: hidden !important; }`.

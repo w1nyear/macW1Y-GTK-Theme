@@ -131,8 +131,15 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
                 if (!avatar._wackOrigUpdate) {
                     avatar._wackOrigUpdate = avatar.update.bind(avatar);
                     avatar.update = () => {
-                        avatar._wackOrigUpdate();
-                        this.updateAvatarVibrancy();
+                        if (avatar._wackUpdating)
+                            return;
+                        avatar._wackUpdating = true;
+                        try {
+                            avatar._wackOrigUpdate();
+                            this.updateAvatarVibrancy();
+                        } finally {
+                            avatar._wackUpdating = false;
+                        }
                     };
                 }
 

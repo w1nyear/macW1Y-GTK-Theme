@@ -20,6 +20,41 @@ export class GdmClockManager {
     }
 
     setup(dialog, dialogParent) {
+        if (!dialogParent) {
+            dialogParent = dialog?.get_parent() || Main.screenShield?._lockDialogGroup || Main.layoutManager?.uiGroup;
+        }
+
+        // 1. Clean up any existing instances in this manager
+        if (this.clockWrapper) {
+            try { this.clockWrapper.destroy(); } catch (_) {}
+            this.clockWrapper = null;
+        }
+        if (this.clock) {
+            try { this.clock.destroy(); } catch (_) {}
+            this.clock = null;
+        }
+
+        // 2. Clean up any stray clock wrappers from previous setups in dialogParent
+        if (dialogParent?.get_children) {
+            for (const child of dialogParent.get_children()) {
+                if (child.has_style_class_name && child.has_style_class_name('wack-gdm-clock-wrapper')) {
+                    try { child.destroy(); } catch (_) {}
+                }
+            }
+        }
+
+        // 3. Cleanly hide any native GNOME Shell lock/login clock to prevent double render
+        if (dialog?._clock) {
+            dialog._clock.visible = false;
+            dialog._clock.opacity = 0;
+            dialog._clock.hide();
+        }
+        if (dialog?._stack?._clock) {
+            dialog._stack._clock.visible = false;
+            dialog._stack._clock.opacity = 0;
+            dialog._stack._clock.hide();
+        }
+
         this.clock = new WackClock();
         const metadata = this._gdm._currentWallpaperMetadata;
         const dateStyle = metadata?.dateStyle ?? 'full';
@@ -34,6 +69,16 @@ export class GdmClockManager {
             this.clock.setTint(metadata.clockTint);
         if (metadata?.clockAlpha !== undefined && metadata?.clockAlpha !== null && typeof this.clock.setWallpaperAlpha === 'function')
             this.clock.setWallpaperAlpha(metadata.clockAlpha, metadata?.promptColor ?? null);
+
+        // GDM-типографіка часу (macOS Tahoe): Open Runde SemiBold, цифри щільніші на 2px
+        // та двокрапка, піднята до оптичного центру висоти цифр. Фіксуємо поверх
+        // маніфесту/dconf ('bold' з user-session інакше перезаписував би дизайн входу).
+        if (typeof this.clock.setWeight === 'function')
+            this.clock.setWeight('600'); // Open Runde SemiBold
+        if (typeof this.clock.setLetterSpacing === 'function')
+            this.clock.setLetterSpacing(-4); // було -2px у stylesheet — ще щільніше на пару px
+        if (typeof this.clock.setColonRise === 'function')
+            this.clock.setColonRise(12.41); // 0.09695em × 128px — ':' по центру висоти цифр (метрика Open Runde)
 
         const dateLabel = this.clock._dateOutput;
         const timeLabel = this.clock._time;
@@ -202,8 +247,10 @@ export class GdmClockManager {
     }
 
     setWeight(weight) {
+        // GDM: час завжди Open Runde SemiBold ('600') — фіксований дизайн екрана входу,
+        // тому значення з маніфесту користувача чи dconf ('bold') свідомо ігнорується.
         if (typeof this.clock?.setWeight === 'function') {
-            this.clock.setWeight(weight);
+            this.clock.setWeight('600');
         }
     }
 
