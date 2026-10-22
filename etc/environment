@@ -1,2 +1,1 @@
 PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
-G_RESOURCE_OVERLAYS="/org/gnome/shell/ui=/etc/gnome-shell/ui"

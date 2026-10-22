@@ -86,21 +86,23 @@ export class GdmManager {
         themeContext.connectObject('notify::theme', () => this._ensureStylesheetLoaded(), this);
         this._ensureStylesheetLoaded();
 
-        this._origEnsureUnlockDialog = Main.screenShield._ensureUnlockDialog;
-        Main.screenShield._ensureUnlockDialog = (allowCancel) => {
-            const res = this._origEnsureUnlockDialog.call(Main.screenShield, allowCancel);
+        if (Main.screenShield) {
+            this._origEnsureUnlockDialog = Main.screenShield._ensureUnlockDialog;
+            Main.screenShield._ensureUnlockDialog = (allowCancel) => {
+                const res = this._origEnsureUnlockDialog.call(Main.screenShield, allowCancel);
 
-            if (Main.screenShield._dialog && this._dialog !== Main.screenShield._dialog) {
-                if (this._dialog) {
-                    this._teardown();
+                if (Main.screenShield._dialog && this._dialog !== Main.screenShield._dialog) {
+                    if (this._dialog) {
+                        this._teardown();
+                    }
+                    this._dialog = Main.screenShield._dialog;
+                    this._setup();
+                    this._applyWallpaper();
+                    this._restartDialogFadeIn();
                 }
-                this._dialog = Main.screenShield._dialog;
-                this._setup();
-                this._applyWallpaper();
-                this._restartDialogFadeIn();
-            }
-            return res;
-        };
+                return res;
+            };
+        }
 
         const existingDialog = this._findLoginDialog();
         if (existingDialog) {
@@ -139,7 +141,7 @@ export class GdmManager {
         themeContext.disconnectObject(this);
         this._unloadStylesheet();
 
-        if (this._origEnsureUnlockDialog) {
+        if (this._origEnsureUnlockDialog && Main.screenShield) {
             Main.screenShield._ensureUnlockDialog = this._origEnsureUnlockDialog;
             this._origEnsureUnlockDialog = null;
         }
@@ -155,7 +157,21 @@ export class GdmManager {
     }
 
     _findLoginDialog() {
-        return Main.screenShield._dialog || null;
+        if (Main.screenShield?._dialog)
+            return Main.screenShield._dialog;
+        const findInActor = (actor) => {
+            if (!actor) return null;
+            if (actor.has_style_class_name && actor.has_style_class_name('login-dialog'))
+                return actor;
+            if (actor.get_children) {
+                for (const child of actor.get_children()) {
+                    const res = findInActor(child);
+                    if (res) return res;
+                }
+            }
+            return null;
+        };
+        return findInActor(Main.layoutManager?.uiGroup);
     }
 
     _ensureStylesheetLoaded() {

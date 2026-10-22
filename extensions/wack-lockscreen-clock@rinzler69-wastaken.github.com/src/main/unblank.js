@@ -15,13 +15,22 @@ export class UnblankManager {
     constructor(extension) {
         this._extension = extension;
         this._settings = extension._settings;
-        this._sessionSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.session' });
+        this._sessionSettings = null;
         this._timerId = 0;
         this._lastOnBattery = null;
         this._upowerProxyChangedId = 0;
+        this._upowerProxy = null;
+        this._originalActivateFade = null;
 
+        if (!Main.screenShield) {
+            this._disabled = true;
+            return;
+        }
+        this._disabled = false;
+
+        this._sessionSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.session' });
         this._originalActivateFade =
-            Main.screenShield._activateFade.bind(Main.screenShield);
+            Main.screenShield._activateFade ? Main.screenShield._activateFade.bind(Main.screenShield) : null;
 
         const UPowerProxy = Gio.DBusProxy.makeProxyWrapper(UPowerIface);
         this._upowerProxy = new UPowerProxy(
@@ -139,11 +148,14 @@ export class UnblankManager {
     }
 
     _restore() {
-        Main.screenShield._activateFade = this._originalActivateFade;
+        if (Main.screenShield && this._originalActivateFade)
+            Main.screenShield._activateFade = this._originalActivateFade;
     }
 
     destroy() {
-        this._settings.disconnectObject(this);
+        if (this._disabled)
+            return;
+        this._settings?.disconnectObject(this);
         this._cancelTimer();
         this._restore();
 
@@ -152,7 +164,7 @@ export class UnblankManager {
             this._upowerProxyChangedId = 0;
         }
 
-        if (Main.screenShield._becameActiveId !== 0) {
+        if (Main.screenShield && Main.screenShield._becameActiveId !== 0) {
             Main.screenShield.idleMonitor.remove_watch(Main.screenShield._becameActiveId);
             Main.screenShield._becameActiveId = 0;
         }

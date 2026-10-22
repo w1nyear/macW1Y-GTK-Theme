@@ -117,16 +117,16 @@ export default class WackLockscreenClockExtension extends Extension {
             }
         }).catch(() => {});
 
-        this._origEnsureUnlockDialog = Main.screenShield._ensureUnlockDialog;
-        Main.screenShield._ensureUnlockDialog = (allowCancel) => {
-            const res = this._origEnsureUnlockDialog.call(Main.screenShield, allowCancel);
-            if (Main.screenShield._dialog && this._dialog !== Main.screenShield._dialog) {
-                this._setupDialog(Main.screenShield._dialog);
-            }
-            return res;
-        };
-
         if (Main.screenShield) {
+            this._origEnsureUnlockDialog = Main.screenShield._ensureUnlockDialog;
+            Main.screenShield._ensureUnlockDialog = (allowCancel) => {
+                const res = this._origEnsureUnlockDialog.call(Main.screenShield, allowCancel);
+                if (Main.screenShield._dialog && this._dialog !== Main.screenShield._dialog) {
+                    this._setupDialog(Main.screenShield._dialog);
+                }
+                return res;
+            };
+
             Main.screenShield.connectObject('active-changed', () => {
                 if (Main.screenShield.active) {
                     if (Main.screenShield._dialog && this._dialog !== Main.screenShield._dialog) {
@@ -173,7 +173,7 @@ export default class WackLockscreenClockExtension extends Extension {
             });
         }, this);
 
-        if (Main.screenShield._dialog) {
+        if (Main.screenShield?._dialog) {
             this._setupDialog(Main.screenShield._dialog);
         }
     }
@@ -184,7 +184,7 @@ export default class WackLockscreenClockExtension extends Extension {
         this._dialog = dialog;
 
         _log(`[WACK] _setupDialog called, dialog=${!!dialog}`);
-        const lockDialogGroup = Main.screenShield._lockDialogGroup;
+        const lockDialogGroup = Main.screenShield?._lockDialogGroup || (Main.layoutManager?.uiGroup || null);
 
         // Subsystem instantiations
         this._themeManager = new ThemeManager(this);
@@ -1027,7 +1027,7 @@ export default class WackLockscreenClockExtension extends Extension {
     }
 
     disable() {
-        if (this._origEnsureUnlockDialog) {
+        if (this._origEnsureUnlockDialog && Main.screenShield) {
             Main.screenShield._ensureUnlockDialog = this._origEnsureUnlockDialog;
             this._origEnsureUnlockDialog = null;
         }

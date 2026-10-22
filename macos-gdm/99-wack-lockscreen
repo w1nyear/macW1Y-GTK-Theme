@@ -1,6 +1,6 @@
 [org/gnome/shell]
 disable-user-extensions=false
-enabled-extensions=['wack-lockscreen-clock@rinzler69-wastaken.github.com', 'user-theme@gnome-shell-extensions.gcampax.github.com']
+enabled-extensions=['wack-lockscreen-clock@rinzler69-wastaken.github.com']
 
 [org/gnome/shell/extensions/user-theme]
 name='macW1Y-Dark'

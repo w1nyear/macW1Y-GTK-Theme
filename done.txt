@@ -8518,3 +8518,29 @@ echo "==> Встановлення успішно завершено!"
       - Перевірка:
         * Перевірено `vulkaninfo` всередині контейнера sniper runtime: RTX 3050 виступає як єдиний вибраний GPU (Vulkan 1.4.329).
         * Проведено перевірочний запуск CS2: рушій та система рендерингу завантажуються штатно без помилок Vulkan 1.2+.
+
+19.43. gdm, install.sh, wack-lockscreen-clock, gnome-shell: виправлення критичного збою запуску GDM / GNOME Desktop ("О, нет! Что-то пошло не так") на цільових системах Ubuntu 24.04 LTS
+   1. Вимоги:
+      - Усунути критичну проблему, через яку після встановлення темпаку на ПК користувачів (Ubuntu 24.04 LTS) після перезавантаження система не могла завантажитися і видавала білий екран з помилкою GNOME "Fail Whale": «О, нет! Что-то пошло не так. Произошла ошибка, и системе не удалось восстановиться. Обратитесь к системному администратору».
+      - Забезпечити повну сумісність інсталятора install.sh, GDM-конфігурацій, схем dconf та розширень як з Ubuntu 24.04 LTS (GNOME Shell 46), так і з Ubuntu 26.04 (GNOME Shell 50).
+      - Суворо дотримуватись заборони на скріншоти та git push.
+   2. Реалізація та кореневі причини:
+      - Причина 1 (G_RESOURCE_OVERLAYS з несумісним layout.js):
+        * В install_gdm_transition() скрипта install.sh до /etc/environment записувалася змінна G_RESOURCE_OVERLAYS="/org/gnome/shell/ui=/etc/gnome-shell/ui" з файлом layout.js, знятим з GNOME Shell 50.1.
+        * У GNOME 46 (Ubuntu 24.04 LTS) файл layout.js завершувався фатальною помилкою імпорту ../misc/errorUtils.js (який відсутній у версії 46), а також намагався викликати нові Mutter/Clutter API (global.stage.get_capture_final_size, Clutter.PaintFlag.NO_CURSORS).
+        * Через це системний процес gnome-shell --mode=gdm аварійно завершувався при старті тричі поспіль, що призводило до появи екрана «Fail Whale».
+        * Виправлення: повністю вилучено небезпечний оверлей layout.js. Зі скриптів install.sh, uninstall.sh, конфігурації etc/environment та системного середовища видалено G_RESOURCE_OVERLAYS.*gnome-shell та каталог /etc/gnome-shell/ui. Плавний перехід 0.4с забезпечується динамічним розширенням eval-helper@mactheme, яке безпечно перехоплює метод у сесії користувача без пошкодження GDM.
+      - Причина 2 (Main.screenShield null у wack-lockscreen-clock під час запуску GDM):
+        * Розширення wack-lockscreen-clock увімкнене для GDM у /etc/dconf/db/gdm.d/99-wack-lockscreen.
+        * У сесії вітального екрана GDM (Main.sessionMode.currentMode === 'gdm') екземпляр Main.screenShield є null.
+        * У src/pro/pro.js (рядки 89, 143, 158), src/main/unblank.js (рядок 24, 151) та extension.js відбувався прямий виклик Main.screenShield._ensureUnlockDialog та Main.screenShield._dialog, що викидало необроблений TypeError: Main.screenShield is null і аварійно зупиняло оболонку.
+        * Виправлення: додано суворі перевірки if (Main.screenShield) навколо всіх звернень до Main.screenShield, реалізовано безпечний пошук діалогу _findLoginDialog() через Main.layoutManager.uiGroup, а також безпечне відновлення обробників при відключенні.
+        * З файлу macos-gdm/99-wack-lockscreen прибрано розширення user-theme зі списку enabled-extensions для GDM, оскільки тема GDM постачається через скомпільований системний ресурс gnome-shell-theme.gresource.
+      - Причина 3 (Невідповідність залежності libmutter-18-dev на Ubuntu 24.04):
+        * У dependencies/apt-packages.txt було прописано libmutter-18-dev. На Ubuntu 24.04 використовується Mutter 14 (libmutter-14-dev), через що команда apt-get install завершувалася з кодом помилки "Unable to locate package", залишаючи систему без встановлених критичних пакунків (dconf-cli, gnome-shell-extensions, gir1.2-adw-1).
+        * Виправлення: усунуто жорстке посилання на libmutter-18-dev з dependencies/apt-packages.txt. В install_dependencies() впроваджено валідацію через apt-cache show та динамічний підбір доступної бібліотеки libmutter-*-dev (18, 17, 16, 15, 14), а також додано команду sudo dpkg --add-architecture i386.
+      - Причина 4 (Глобальний LD_PRELOAD у конфігурації оточення):
+        * В install_themes() раніше створювався файл ~/.config/environment.d/10-mac-theme.conf із LD_PRELOAD=/usr/local/lib/libmacpopover.so, що форсувало підвантаження бібліотеки в системні процеси, викликаючи падіння Mutter та 32-бітних застосунків.
+        * Виправлення: видалено створення глобального LD_PRELOAD у конфігураціях користувача та системи.
+      - Причина 5 (Синтаксис sed у схемі 10_ubuntu-settings):
+        * Виправлено регулярний вираз sed із прапорцем -E для заміни шпалер за замовчуванням у схемі Ubuntu Settings.

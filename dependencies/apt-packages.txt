@@ -32,7 +32,6 @@ meson
 ninja-build
 patch
 gobject-introspection
-libmutter-18-dev
 preload
 vulkan-tools
 libvulkan1

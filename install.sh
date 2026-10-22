@@ -279,12 +279,26 @@ install_dependencies() {
     
     if [ -f "$SCRIPT_DIR/dependencies/apt-packages.txt" ]; then
         log_info "Оновлення індексів пакунків..."
+        sudo dpkg --add-architecture i386 2>/dev/null || true
         sudo apt-get update -qq
         
         log_info "Встановлення пакунків із dependencies/apt-packages.txt..."
-        local PKGS
-        PKGS=$(grep -v "^#" "$SCRIPT_DIR/dependencies/apt-packages.txt" | tr "\n" " ")
-        sudo apt-get install -y $PKGS
+        local RAW_PKGS
+        RAW_PKGS=$(grep -v "^#" "$SCRIPT_DIR/dependencies/apt-packages.txt" | tr "\n" " ")
+        local VALID_PKGS=()
+        for p in $RAW_PKGS; do
+            if apt-cache show "$p" >/dev/null 2>&1; then
+                VALID_PKGS+=("$p")
+            fi
+        done
+        # Динамічний вибір версії libmutter-dev під поточну версію Ubuntu (24.04, 24.10, 26.04)
+        for mdev in libmutter-18-dev libmutter-17-dev libmutter-16-dev libmutter-15-dev libmutter-14-dev; do
+            if apt-cache show "$mdev" >/dev/null 2>&1; then
+                VALID_PKGS+=("$mdev")
+                break
+            fi
+        done
+        sudo apt-get install -y "${VALID_PKGS[@]}"
         log_success "Системні залежності успішно встановлено!"
     else
         log_warning "Файл dependencies/apt-packages.txt не знайдено, пропускаємо."
@@ -307,7 +321,12 @@ install_dependencies() {
                 sudo meson install -C build 2>/dev/null || true
                 sudo mkdir -p /usr/lib/girepository-1.0
                 sudo cp -f /usr/lib/x86_64-linux-gnu/girepository-1.0/Blur-1.0.typelib /usr/lib/girepository-1.0/ 2>/dev/null || true
-                echo "/usr/lib/x86_64-linux-gnu/mutter-18" | sudo tee /etc/ld.so.conf.d/mutter-18.conf >/dev/null 2>&1 || true
+                for mdir in /usr/lib/x86_64-linux-gnu/mutter-*; do
+                    if [ -d "$mdir" ]; then
+                        echo "$mdir" | sudo tee /etc/ld.so.conf.d/mutter-macw1y.conf >/dev/null 2>&1 || true
+                        break
+                    fi
+                done
                 sudo ldconfig 2>/dev/null || true
             )
             log_success "Бібліотеку gnome-rounded-blur успішно встановлено!"
@@ -382,11 +401,9 @@ install_themes() {
     if [ -f "$SCRIPT_DIR/lib/libmacpopover.so" ]; then
         sudo cp "$SCRIPT_DIR/lib/libmacpopover.so" /usr/local/lib/libmacpopover.so
         sudo chmod 755 /usr/local/lib/libmacpopover.so
-        mkdir -p "$TARGET_HOME/.config/environment.d"
-        echo "LD_PRELOAD=/usr/local/lib/libmacpopover.so" > "$TARGET_HOME/.config/environment.d/10-mac-theme.conf"
-        chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/environment.d"
-        sudo sed -i "/libmacpopover.so/d" /etc/environment 2>/dev/null || true
         sudo cp -f "$SCRIPT_DIR/lib/libmacpopover.so" /usr/lib/libmacpopover.so 2>/dev/null || true
+        rm -f "$TARGET_HOME/.config/environment.d/10-mac-theme.conf" 2>/dev/null || true
+        sudo sed -i "/libmacpopover.so/d" /etc/environment 2>/dev/null || true
     fi
     
     # Налаштування macOS Nautilus Finder Sidebar та розділу Програми
@@ -910,14 +927,9 @@ install_gdm_transition() {
     log_step "Етап 10/13: Налаштування плавного переходу GDM та екрана блокування macW1Y"
     require_root
     
-    if [ -f "$SCRIPT_DIR/etc/gnome-shell/ui/layout.js" ]; then
-        sudo mkdir -p /etc/gnome-shell/ui
-        sudo cp "$SCRIPT_DIR/etc/gnome-shell/ui/layout.js" /etc/gnome-shell/ui/layout.js
-    fi
-    
-    if ! grep -q "G_RESOURCE_OVERLAYS" /etc/environment 2>/dev/null; then
-        echo "G_RESOURCE_OVERLAYS=\"/org/gnome/shell/ui=/etc/gnome-shell/ui\"" | sudo tee -a /etc/environment >/dev/null
-    fi
+    # Видаляємо небезпечні глобальні GResource оверлеї, які ламають завантаження GNOME
+    sudo rm -rf /etc/gnome-shell/ui/layout.js /etc/gnome-shell/ui 2>/dev/null || true
+    sudo sed -i '/G_RESOURCE_OVERLAYS.*gnome-shell/d' /etc/environment 2>/dev/null || true
 
     # 1. Dconf профіль GDM
     sudo mkdir -p /etc/dconf/profile
@@ -961,7 +973,7 @@ install_gdm_transition() {
         sudo sed -i 's|gtk-theme = "Yaru"|gtk-theme = "macW1Y-Dark"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
         sudo sed -i 's|icon-theme = "Yaru"|icon-theme = "MacTahoe-dark"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
         sudo sed -i 's|cursor-theme = "Yaru"|cursor-theme = "macOS"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
-        sudo sed -i -E 's|(warty-final-ubuntu\.png\|mendhak-Bluebells_Suspended_In_Time\.jpg)|GoldenGate_Day.jpg|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
+        sudo sed -i -E 's/(warty-final-ubuntu\.png|mendhak-Bluebells_Suspended_In_Time\.jpg)/GoldenGate_Day.jpg/g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
     fi
     sudo glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
 
@@ -1459,7 +1471,8 @@ EOF_NAUT
     run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
 
     log_info "8/9 Перевірка Plymouth та GDM переходу..."
-    [ -f "$SCRIPT_DIR/etc/gnome-shell/ui/layout.js" ] && sync_or_update_file "$SCRIPT_DIR/etc/gnome-shell/ui/layout.js" "/etc/gnome-shell/ui/layout.js" true
+    sudo rm -rf /etc/gnome-shell/ui/layout.js /etc/gnome-shell/ui 2>/dev/null || true
+    sudo sed -i '/G_RESOURCE_OVERLAYS.*gnome-shell/d' /etc/environment 2>/dev/null || true
     if [ -d "$SCRIPT_DIR/plymouth/apple-mac" ]; then
         sync_directory_tree "$SCRIPT_DIR/plymouth/apple-mac" "/usr/share/plymouth/themes/apple-mac" true
         if command -v update-alternatives >/dev/null 2>&1; then
@@ -1568,7 +1581,8 @@ run_clean_update() {
     sudo rm -f /etc/systemd/system/mac-gamemode.service /usr/local/bin/mac-gamemode /usr/local/bin/gamemoderun /usr/local/bin/nvidia-game-run /usr/local/bin/prime-run /usr/local/bin/mac-clipboard /etc/mac-gamemode.state
     rm -rf "$TARGET_HOME/.cache/mac-clipboard"
     
-    sudo rm -f /etc/gnome-shell/ui/layout.js
+    sudo rm -rf /etc/gnome-shell/ui/layout.js /etc/gnome-shell/ui 2>/dev/null || true
+    sudo sed -i '/G_RESOURCE_OVERLAYS.*gnome-shell/d' /etc/environment 2>/dev/null || true
     
     sudo systemctl stop plymouth-verbose-logger.service 2>/dev/null || true
     sudo systemctl disable plymouth-verbose-logger.service 2>/dev/null || true
