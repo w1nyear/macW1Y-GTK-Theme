@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Mac Ensure Extensions
+Exec=/usr/local/bin/mac-ensure-extensions.sh
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true

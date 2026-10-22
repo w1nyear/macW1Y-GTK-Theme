@@ -611,25 +611,36 @@ install_extensions() {
     # Активація розширень
     log_info "Увімкнення розширень у системі..."
     local EXT_LIST=(
-        "blur-my-shell@aunetx"
-        "dash-to-dock@micxgx.gmail.com"
+        "user-theme@gnome-shell-extensions.gcampax.github.com"
+        "ubuntu-appindicators@ubuntu.com"
         "compiz-alike-magic-lamp-effect@hermes83.github.com"
         "Rounded_Corners@lennart-k"
+        "macos-touchpad-gestures@mactheme"
+        "custom-command-toggle@storageb.github.com"
+        "volume-percentage-quick-settings@imdarktom"
+        "quick-settings-scroll@diskmth.fr"
+        "wifi-hotspot-quick-settings@aryan10.github.io"
+        "tahoe-widgets@micronix"
+        "dash2dock-motion@unmade.space"
+        "top-bar-organizer@julian.gse.jsts.xyz"
+        "run-cmd@custom.extension"
+        "cupertino-dock-lite@rinzler69-wastaken.github.com"
+        "wack-lockscreen-clock@rinzler69-wastaken.github.com"
+        "ding@rastersoft.com"
+        "eval-helper@mactheme"
+        "blur-my-shell@aunetx"
         "liquid-glass@thinkingcoding1231.gmail.com"
         "appmenu@ChathurangaBW.github.io"
-        "user-theme@gnome-shell-extensions.gcampax.github.com"
-        "macos-touchpad-gestures@mactheme"
-        "eval-helper@mactheme"
-        "wack-lockscreen-clock@rinzler69-wastaken.github.com"
-        "ubuntu-appindicators@ubuntu.com"
+        "kiwi@kemma"
     )
     for ext_id in "${EXT_LIST[@]}"; do
         run_as_user gnome-extensions enable "$ext_id" 2>/dev/null || true
     done
 
     # Вимкнення Stage Manager та накладок/баласту Ubuntu поверх чистого GNOME
-    run_as_user gnome-extensions disable "stage-manager@gnome-stage-manager" 2>/dev/null || true
     local UBUNTU_BLOAT_EXTS=(
+        "stage-manager@gnome-stage-manager"
+        "dash-to-dock@micxgx.gmail.com"
         "snapd-prompting@canonical.com"
         "snapd-search-provider@canonical.com"
         "web-search-provider@ubuntu.com"
@@ -1340,8 +1351,35 @@ run_incremental_update() {
                 fi
             fi
         done
+        local EXT_LIST=(
+            "user-theme@gnome-shell-extensions.gcampax.github.com"
+            "ubuntu-appindicators@ubuntu.com"
+            "compiz-alike-magic-lamp-effect@hermes83.github.com"
+            "Rounded_Corners@lennart-k"
+            "macos-touchpad-gestures@mactheme"
+            "custom-command-toggle@storageb.github.com"
+            "volume-percentage-quick-settings@imdarktom"
+            "quick-settings-scroll@diskmth.fr"
+            "wifi-hotspot-quick-settings@aryan10.github.io"
+            "tahoe-widgets@micronix"
+            "dash2dock-motion@unmade.space"
+            "top-bar-organizer@julian.gse.jsts.xyz"
+            "run-cmd@custom.extension"
+            "cupertino-dock-lite@rinzler69-wastaken.github.com"
+            "wack-lockscreen-clock@rinzler69-wastaken.github.com"
+            "ding@rastersoft.com"
+            "eval-helper@mactheme"
+            "blur-my-shell@aunetx"
+            "liquid-glass@thinkingcoding1231.gmail.com"
+            "appmenu@ChathurangaBW.github.io"
+            "kiwi@kemma"
+        )
+        for ext_id in "${EXT_LIST[@]}"; do
+            run_as_user gnome-extensions enable "$ext_id" 2>/dev/null || true
+        done
         local UBUNTU_BLOAT_EXTS=(
             "stage-manager@gnome-stage-manager"
+            "dash-to-dock@micxgx.gmail.com"
             "snapd-prompting@canonical.com"
             "snapd-search-provider@canonical.com"
             "web-search-provider@ubuntu.com"
@@ -1351,6 +1389,20 @@ run_incremental_update() {
         for ext_id in "${UBUNTU_BLOAT_EXTS[@]}"; do
             run_as_user gnome-extensions disable "$ext_id" 2>/dev/null || true
         done
+
+        # Системні налаштування gschema override
+        if [ -f "$SCRIPT_DIR/macos-gdm/99_mactheme.gschema.override" ]; then
+            sudo cp "$SCRIPT_DIR/macos-gdm/99_mactheme.gschema.override" /usr/share/glib-2.0/schemas/
+            sudo chmod 644 /usr/share/glib-2.0/schemas/99_mactheme.gschema.override
+            sudo glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
+        fi
+
+        # Сторожовий скрипт автозапуску розширень (захист від вивантаження)
+        if [ -f "$SCRIPT_DIR/bin/mac-ensure-extensions.sh" ]; then
+            sync_or_update_file "$SCRIPT_DIR/bin/mac-ensure-extensions.sh" "/usr/local/bin/mac-ensure-extensions.sh" true
+            sudo chmod +x /usr/local/bin/mac-ensure-extensions.sh
+            [ -f "$SCRIPT_DIR/autostart/mac-ensure-extensions.desktop" ] && sync_or_update_file "$SCRIPT_DIR/autostart/mac-ensure-extensions.desktop" "/etc/xdg/autostart/mac-ensure-extensions.desktop" true
+        fi
         run_as_user systemctl --user unmask localsearch-3.service tracker-miner-fs-3.service 2>/dev/null || true
         run_as_user systemctl --user stop snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
         run_as_user systemctl --user mask snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true

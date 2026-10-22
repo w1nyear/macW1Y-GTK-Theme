@@ -8628,3 +8628,23 @@ echo "==> Встановлення успішно завершено!"
         * Імпортовано glassForceRefresh з liquid-glass utils.
         * До хешу extraH включено стан Main.overview.visible та stateAdjustment.value, що змушує скло негайно оновлювати захоплення сцени при відкритті/закритті огляду.
         * Додано хуки на showing, hiding, hidden, shown огляду та restacked вікон для виклику glassForceRefresh.
+
+99. Закріплення теми macW1Y як системного замовчування та захист від скидання розширень (22.10.2026):
+   1. Мета та завдання:
+      - Усунути проблему скидання теми інтерфейсу до ванільного вигляду GNOME/Ubuntu після падіння або перезапуску сесії (відсутність скла, стоковий сірий бар, старі сповіщення без liquid-glass).
+      - Зафіксувати тему macW1Y як системну основу на рівні бінарних схем GSettings (gschemas.compiled) для сесій GNOME, Ubuntu та GDM Greeter, щоб скидання dconf ніколи не повертало ванільний вигляд.
+      - Забезпечити сторожовий механізм (autostart watchdog) для автоматичного відновлення всіх 21 розширення при вході у систему.
+   2. Виконані виправлення:
+      - Оновлено системний оверрайд схем:
+        * У `macos-gdm/99_mactheme.gschema.override` та `/usr/share/glib-2.0/schemas/99_mactheme.gschema.override` додано секції `[org.gnome.shell]` та `[org.gnome.shell:ubuntu]` з повним переліком 21 розширення macW1Y (`blur-my-shell`, `liquid-glass`, `kiwi`, `tahoe-widgets`, `cupertino-dock-lite`, `dash2dock-motion`, `wack-lockscreen-clock`, `appmenu`, `Rounded_Corners`, `compiz-alike-magic-lamp-effect` тощо).
+        * Заблоковано баластні розширення Ubuntu (`disabled-extensions`): `ubuntu-dock`, `tiling-assistant`, `snapd-*`, `stage-manager`.
+        * Встановлено системні замовчування для `org.gnome.desktop.interface` (шрифти SF Pro / SF Mono, prefer-dark, тема macW1Y-Dark, іконки MacTahoe-dark, курсор macOS) та `org.gnome.desktop.wm.preferences` (`button-layout = 'close,minimize,maximize:'`).
+        * Виконано перекомпcompіляцію схем: `glib-compile-schemas /usr/share/glib-2.0/schemas/`.
+      - Створено та встановлено системний сторожовий механізм:
+        * Скрипт `bin/mac-ensure-extensions.sh` встановлено у `/usr/local/bin/mac-ensure-extensions.sh` (та `~/.local/bin/mac-ensure-extensions.sh`).
+        * Створено `autostart/mac-ensure-extensions.desktop` та встановлено у `/etc/xdg/autostart/` і `~/.config/autostart/`.
+        * Скрипт при запуску сесії перевіряє статус розширень і за потреби автоматично вмикає всі 21 розширення, знімає блокування версій (`disable-extension-version-validation: true`) та вимикає зайві розширення Ubuntu.
+      - Оновлення інсталятора install.sh та конфігурацій dconf:
+        * У функції `install_extensions()` та `run_incremental_update()` оновлено масив `EXT_LIST` до актуального списку 21 розширення.
+        * Додано автокопіювання `99_mactheme.gschema.override` та компіляцію схем у процедуру інкрементального оновлення.
+        * Оновлено файли `dconf/gnome-all.dconf`, `dconf/gnome-shell.dconf`, `dconf/gnome-extensions.dconf`.

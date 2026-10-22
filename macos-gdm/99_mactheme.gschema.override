@@ -2,16 +2,53 @@
 gtk-theme = 'macW1Y-Dark'
 icon-theme = 'MacTahoe-dark'
 cursor-theme = 'macOS'
+color-scheme = 'prefer-dark'
+font-name = 'SF Pro Text 11'
+document-font-name = 'SF Pro Text 11'
+monospace-font-name = 'SF Mono 11'
 
 [org.gnome.desktop.interface:ubuntu]
 gtk-theme = 'macW1Y-Dark'
 icon-theme = 'MacTahoe-dark'
 cursor-theme = 'macOS'
+color-scheme = 'prefer-dark'
+font-name = 'SF Pro Text 11'
+document-font-name = 'SF Pro Text 11'
+monospace-font-name = 'SF Mono 11'
 
 [org.gnome.desktop.interface:GNOME-Greeter]
 gtk-theme = 'macW1Y-Dark'
 icon-theme = 'MacTahoe-dark'
 cursor-theme = 'macOS'
+color-scheme = 'prefer-dark'
+
+[org.gnome.desktop.wm.preferences]
+button-layout = 'close,minimize,maximize:'
+
+[org.gnome.desktop.wm.preferences:ubuntu]
+button-layout = 'close,minimize,maximize:'
+
+[org.gnome.desktop.sound]
+theme-name = 'macOS'
+event-sounds = true
+input-feedback-sounds = true
+
+[org.gnome.desktop.sound:ubuntu]
+theme-name = 'macOS'
+event-sounds = true
+input-feedback-sounds = true
+
+[org.gnome.shell]
+enabled-extensions = ['user-theme@gnome-shell-extensions.gcampax.github.com', 'ubuntu-appindicators@ubuntu.com', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'Rounded_Corners@lennart-k', 'macos-touchpad-gestures@mactheme', 'custom-command-toggle@storageb.github.com', 'volume-percentage-quick-settings@imdarktom', 'quick-settings-scroll@diskmth.fr', 'wifi-hotspot-quick-settings@aryan10.github.io', 'tahoe-widgets@micronix', 'dash2dock-motion@unmade.space', 'top-bar-organizer@julian.gse.jsts.xyz', 'run-cmd@custom.extension', 'cupertino-dock-lite@rinzler69-wastaken.github.com', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'ding@rastersoft.com', 'eval-helper@mactheme', 'blur-my-shell@aunetx', 'liquid-glass@thinkingcoding1231.gmail.com', 'appmenu@ChathurangaBW.github.io', 'kiwi@kemma']
+disabled-extensions = ['apps-menu@gnome-shell-extensions.gcampax.github.com', 'ubuntu-dock@ubuntu.com', 'snapd-prompting@canonical.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'tiling-assistant@ubuntu.com', 'stage-manager@gnome-stage-manager', 'dash-to-dock@micxgx.gmail.com', 'spotlight@nin']
+disable-user-extensions = false
+disable-extension-version-validation = true
+
+[org.gnome.shell:ubuntu]
+enabled-extensions = ['user-theme@gnome-shell-extensions.gcampax.github.com', 'ubuntu-appindicators@ubuntu.com', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'Rounded_Corners@lennart-k', 'macos-touchpad-gestures@mactheme', 'custom-command-toggle@storageb.github.com', 'volume-percentage-quick-settings@imdarktom', 'quick-settings-scroll@diskmth.fr', 'wifi-hotspot-quick-settings@aryan10.github.io', 'tahoe-widgets@micronix', 'dash2dock-motion@unmade.space', 'top-bar-organizer@julian.gse.jsts.xyz', 'run-cmd@custom.extension', 'cupertino-dock-lite@rinzler69-wastaken.github.com', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'ding@rastersoft.com', 'eval-helper@mactheme', 'blur-my-shell@aunetx', 'liquid-glass@thinkingcoding1231.gmail.com', 'appmenu@ChathurangaBW.github.io', 'kiwi@kemma']
+disabled-extensions = ['apps-menu@gnome-shell-extensions.gcampax.github.com', 'ubuntu-dock@ubuntu.com', 'snapd-prompting@canonical.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'tiling-assistant@ubuntu.com', 'stage-manager@gnome-stage-manager', 'dash-to-dock@micxgx.gmail.com', 'spotlight@nin']
+disable-user-extensions = false
+disable-extension-version-validation = true
 
 [org.gnome.shell.extensions.user-theme]
 name = 'macW1Y-Dark'
