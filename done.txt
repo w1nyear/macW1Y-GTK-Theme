@@ -8488,3 +8488,33 @@ echo "==> Встановлення успішно завершено!"
         * 6. Spotlight (`searchDialog_v5.js`): `tintR: 0.16, tintG: 0.16, tintB: 0.18, tintStrength: 0.12`.
         * Буфер обміну (`clipboardDialog_v2.js`): `tintR: 0.16, tintG: 0.16, tintB: 0.18, tintStrength: 0.12`.
       - Верифікація проведена через DBus EvalHelper без використання скріншотів, виключивши будь-які ризики для поточної графічної сесії.
+
+19.42. steam, cs2, prime-run, mac-gpu-manager, mac-sync-applications: запуск усіх ігор на дискретній відеокарті NVIDIA RTX 3050 та виправлення помилки запуску CS2 "Vulkan 1.2+ required"
+   1. Вимоги:
+      - Забезпечити, щоб ВСІ ігри незалежно від лаунчера (Steam Snap, Lutris, Heroic, Bottles, Wine, Gamescope, нативні бінарники) запускались строго на дискретній відеокарті NVIDIA GeForce RTX 3050 6GB Laptop GPU, зберігаючи інтерфейс системи на Intel UHD.
+      - Виправити помилку запуску Counter-Strike 2 (CS2) про необхідність Vulkan 1.2+ ("Vulkan 1.2+ required" / "A Vulkan 1.2+ device was not found").
+      - Суворо дотримуватись заборони на виклики скріншотів, що призводять до виходу з сесії, та заборони на git push.
+   2. Реалізація:
+      - Діагностика причини помилки CS2:
+        * Steam працює як Snap-пакет (`snap/steam`), де драйвер NVIDIA монтується за шляхом `/var/lib/snapd/lib/vulkan/icd.d/nvidia_icd.json`. Шлях хоста `/usr/share/vulkan/icd.d/nvidia_icd.json` у Snap відсутній.
+        * У `/usr/local/bin/steam` було жорстко експортовано `VK_DRIVER_FILES=/usr/share/vulkan/icd.d/nvidia_icd.json`, через що контейнер ізоляції Steam Linux Runtime Sniper (`pressure-vessel`) отримував неіснуючий шлях, давав збій "No such file or directory" та захоплював усередину контейнера 0 драйверів Vulkan.
+        * Через це CS2 у контейнері отримував 0 пристроїв Vulkan і завершувався з помилкою про відсутність Vulkan 1.2+.
+      - Виправлення CS2 (`cs2.sh`):
+        * Оновлено `/mnt/nvme1n1/SteamLibrary/steamapps/common/Counter-Strike Global Offensive/game/cs2.sh`.
+        * Налаштовано коректні змінні NVIDIA PRIME Offload (`__NV_PRIME_RENDER_OFFLOAD=1`, `__GLX_VENDOR_LIBRARY_NAME=nvidia`, `__VK_LAYER_NV_optimus=NVIDIA_only`).
+        * Прибрано несумісний параметр `MESA_VK_DEVICE_SELECT` та додано `unset DRI_PRIME`.
+        * Використано офіційний механізм відбору драйверів Vulkan `VK_LOADER_DRIVERS_SELECT="*nvidia*"`, який відсікає iGPU та llvmpipe без пошкодження середовища контейнера.
+        * Додано коректну перевірку наявності файлів `VK_DRIVER_FILES` та екранування лапками у `basename "$0"`.
+      - Виправлення запуску Steam (`/usr/local/bin/steam`):
+        * Видалено жорсткі шляхи `VK_DRIVER_FILES` та `VK_ICD_FILENAMES`.
+        * Налаштовано `VK_LOADER_DRIVERS_SELECT="*nvidia*"` разом із оптимізаціями Proton/DXVK NVAPI (`PROTON_ENABLE_NVAPI=1`, `DXVK_ENABLE_NVAPI=1`).
+        * Тепер Steam Snap та його контейнер Pressure-Vessel успішно захоплюють та ініціалізують NVIDIA RTX 3050 з підтримкою Vulkan 1.4.329.
+      - Глобальний запуск усіх ігор на дискретній відеокарті NVIDIA:
+        * Оновлено універсальні скрипти запуску `/usr/local/bin/prime-run`, `/usr/local/bin/nvidia-run`, `/usr/local/bin/gamemoderun`, `/usr/local/bin/nvidia-game-run`.
+        * Створено системні обгортки в `/usr/local/bin` для всіх лаунчерів та засобів запуску: `lutris`, `heroic`, `bottles`, `wine`, `wine64`, `gamescope`, `prismlauncher`. Запуск будь-якої гри через термінал або лаунчер гарантовано спрямовується на RTX 3050.
+        * Оновлено `mac-gpu-manager` (`/usr/local/bin/mac-gpu-manager`) для використання універсального `VK_LOADER_DRIVERS_SELECT: '*nvidia*'`.
+        * Оновлено механізм синхронізації застосунків `mac-sync-applications` (`/usr/local/bin/mac-sync-applications`): усім ярликам ігор автоматично прописуються прапорці стандарту FreeDesktop `PrefersNonDefaultGPU=true` та `X-KDE-RunOnDiscreteGpu=true`.
+        * Оновлено десктоп-файли ігор у `~/.local/share/applications` та `~/Applications` (`Counter-Strike Source.desktop`, `Watch_Dogs 2.desktop`, `Steam.desktop`), що забезпечує автоматичне виділення дискретної GPU службою switcheroo-control при запуску з графічного інтерфейсу, Центру програм чи Spotlight.
+      - Перевірка:
+        * Перевірено `vulkaninfo` всередині контейнера sniper runtime: RTX 3050 виступає як єдиний вибраний GPU (Vulkan 1.4.329).
+        * Проведено перевірочний запуск CS2: рушій та система рендерингу завантажуються штатно без помилок Vulkan 1.2+.
