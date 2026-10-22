@@ -406,14 +406,14 @@ export function buildNotificationCard(source, notification, options = {}) {
             visible: false,
             opacity: 0,
             style: isScreenshot
-                ? 'margin-top: 4px !important; margin-bottom: 0px !important; spacing: 6px !important;'
-                : 'margin-top: 7px !important; margin-bottom: 2px !important; spacing: 8px !important;',
+                ? 'margin-top: 6px !important; margin-bottom: 4px !important; spacing: 6px !important;'
+                : 'margin-top: 8px !important; margin-bottom: 4px !important; spacing: 8px !important;',
         });
         actionsBox.set_width(contentW);
         actionsBox.max_width = contentW;
         const btnStyleBase = isScreenshot
-            ? 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 6px !important; padding: 2px 10px !important; font-size: 11px !important; font-weight: 500 !important; margin-right: 6px !important;'
-            : 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px !important;';
+            ? 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 4px 14px !important; font-size: 11px !important; font-weight: 500 !important; margin-right: 6px !important;'
+            : 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 5px 16px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px !important;';
         const btnStyleHover = btnStyleBase.replace('0.16', '0.26').replace('0.14', '0.20');
 
         for (const action of notification.actions) {
@@ -574,7 +574,7 @@ export function buildNotificationCard(source, notification, options = {}) {
                         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                     });
                 }
-                measureCard(true);
+                measureCard(true, true);
             } else {
                 timeLabel.visible = true;
                 timeLabel.ease({
@@ -608,7 +608,7 @@ export function buildNotificationCard(source, notification, options = {}) {
                         },
                     });
                 }
-                measureCard(false);
+                measureCard(false, true);
             }
         } catch (_) {}
     };
@@ -648,50 +648,76 @@ export function buildNotificationCard(source, notification, options = {}) {
     // рядок тіла обрізає клип банера. Міряю рядки напряму по ширині
     // текст-колонки (як у тостів: get_preferred_height(colW)) і
     // плавно анімую висоту банера при hover.
-    const measureCard = (hovered = null) => {
+    // Обчислення точної висоти картки (для unhovered та hovered станів)
+    const computeCardTargetHeight = (isHover = false) => {
+        const colW = Math.max(80, Math.round((width ?? 484)) - 28 - (isScreenshot ? 38 : 44) - 12 - 76);
+        let total = isScreenshot ? 20 : 30; // паддінги 10+10 (скріншот) або 14+16 (канон)
+        let count = 0;
+        for (const l of [appLabel, titleLabel, bodyLabel]) {
+            if (!l)
+                continue;
+            try { l.ensure_style?.(); } catch (_) {}
+            try { l.clutter_text?.layout?.set_text(l.clutter_text.get_text()); } catch (_) {}
+            const [, hh] = l.get_preferred_height(colW);
+            if (isFinite(hh) && hh > 0) {
+                total += hh;
+                count++;
+            }
+        }
+        if (!count)
+            return isScreenshot ? 54 : 72;
+
+        if (actionsBox && isHover) {
+            // Збільшена висота на hover для комфортного розміщення круглої кнопки з достатнім відступом знизу
+            total += isScreenshot ? 42 : 46;
+        }
+        total += (isScreenshot ? 2 : 4) * Math.max(0, count - 1);
+        const minH = isScreenshot ? (isHover && actionsBox ? 104 : 54) : (isHover && actionsBox ? 116 : 72);
+        return Math.max(minH, Math.ceil(total));
+    };
+
+    const measureCard = (hovered = null, animate = false) => {
         try {
-            if (!banner.get_parent())
-                return;
             const isHover = hovered !== null ? hovered : isCardHovered();
-            const colW = Math.max(80, Math.round((width ?? 484)) - 28 - (isScreenshot ? 38 : 44) - 12 - 76);
-            let total = isScreenshot ? 20 : 30; // паддінги 10+10 (скріншот) або 14+16 (канон)
-            let count = 0;
-            for (const l of [appLabel, titleLabel, bodyLabel]) {
-                if (!l || !l.get_parent?.())
-                    continue;
-                try { l.ensure_style?.(); } catch (_) {}
-                try { l.clutter_text?.layout?.set_text(l.clutter_text.get_text()); } catch (_) {}
-                const [, hh] = l.get_preferred_height(colW);
-                if (isFinite(hh) && hh > 0) {
-                    total += hh;
-                    count++;
-                }
-            }
-            if (!count)
-                return;
-            if (actionsBox && isHover) {
-                total += isScreenshot ? (4 + 22) : (7 + 24);
-            }
-            total += (isScreenshot ? 2 : 4) * Math.max(0, count - 1);
-            const target = Math.max(isScreenshot ? 54 : 72, Math.ceil(total));
+            const target = computeCardTargetHeight(isHover);
             if (Math.abs(target - banner.height) > 1) {
-                try {
-                    banner.remove_all_transitions();
-                    banner.ease({
-                        height: target,
-                        duration: 180,
-                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                    });
-                } catch (_) {
-                    try { banner.set_height(target); } catch (_) {}
+                if (animate && banner.get_parent() && banner.get_stage()) {
+                    try {
+                        banner.remove_all_transitions();
+                        banner.ease({
+                            height: target,
+                            duration: 180,
+                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        });
+                    } catch (_) {
+                        try { banner.set_height(target); } catch (_) {}
+                    }
+                } else {
+                    try {
+                        banner.remove_all_transitions();
+                        banner.set_height(target);
+                        banner.min_height = target;
+                    } catch (_) {}
                 }
             }
         } catch (_) {}
     };
+
+    // Негайно при створенні встановлюємо коректну статичну висоту банера,
+    // щоб Clutter не задавав йому гігантську unallocated-висоту (0x100000000)
+    // і Центр сповіщень не стрибав при відкритті:
+    const initialH = computeCardTargetHeight(false);
+    banner.set_height(initialH);
+    banner.min_height = initialH;
+
     for (const d of [80, 200, 400]) {
         try {
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, d, () => {
-                try { measureCard(); } catch (_) {}
+                try {
+                    if (!isCardHovered()) {
+                        measureCard(false, false);
+                    }
+                } catch (_) {}
                 return GLib.SOURCE_REMOVE;
             });
         } catch (_) {}

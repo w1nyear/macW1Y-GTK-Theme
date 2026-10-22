@@ -37,7 +37,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v14';
+} from './tahoeNotificationCard.js?v=notif_v15';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -665,9 +665,9 @@ function _makeToastCard(item, noglass = false) {
             y_align: Clutter.ActorAlign.CENTER,
             visible: false,
             opacity: 0,
-            style: 'margin-top: 6px; margin-bottom: 2px; spacing: 8px;',
+            style: 'margin-top: 6px; margin-bottom: 4px; spacing: 8px;',
         });
-        const btnStyleBase = 'font-family: "Open Runde"; background-color: rgba(255, 255, 255, 0.16); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 7px; padding: 4px 12px; font-size: 11.5px; font-weight: 500; margin-right: 6px;';
+        const btnStyleBase = 'font-family: "Open Runde"; background-color: rgba(255, 255, 255, 0.16); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 9999px; padding: 4px 14px; font-size: 11.5px; font-weight: 500; margin-right: 6px;';
         const btnStyleHover = btnStyleBase.replace('0.16', '0.26').replace('0.14', '0.20');
         for (const action of item.n.actions) {
             const actBtn = new St.Button({
@@ -805,8 +805,11 @@ function _makeToastCard(item, noglass = false) {
             }
             const count = rows.filter((v) => v > 0).length;
             const sum = rows.reduce((acc, v) => acc + v, 0);
-            const total = 30 + sum + 4 * Math.max(0, count - 1);
-            const target = Math.max(72, Math.ceil(total));
+            let total = 30 + sum + 4 * Math.max(0, count - 1);
+            if (actionsBox && isHover) {
+                total += 44; // ample breathing room for pill button
+            }
+            const target = Math.max(isHover && actionsBox ? 104 : 72, Math.ceil(total));
             if (Math.abs(target - slot._bodyH) > 1) {
                 slot._bodyH = target;
                 try { content.set_height(target); } catch (_) {}
@@ -1706,6 +1709,12 @@ function _ncSettle(p) {
         if (!p || p._settleDone)
             return;
         p._settleDone = true;
+        try {
+            p.box.min_height = -1;
+            p.box.set_size(NC_W, -1);
+            p.panelBg.min_height = -1;
+            p.panelBg.set_size(NC_W, -1);
+        } catch (_) {}
         _ensureNcCards(p);
         for (const s of p.stacks ?? []) {
             try {
@@ -1917,21 +1926,32 @@ function _collapseNcGroups(p, merges = null) {
         // шаруємо: старіші під найновішою (порядок додавання =
         // порядок малювання, тому найновіша додається останньою)
         const newest = g.cards[0];
-        const headH = Math.max(54, Math.ceil(newest.height) || 68);
+        let headH = newest.height;
+        if (!(headH > 0) || headH > 1500) {
+            try {
+                const [, ph] = newest.get_preferred_height(NC_W - 40);
+                if (ph > 0 && ph < 1500) headH = ph;
+            } catch (_) {}
+        }
+        headH = Math.max(54, Math.ceil(headH) || 68);
         const over = 9;
         const peersN = Math.min(2, g.cards.length - 1);
         const container = new St.Widget({
             reactive: true,
             layout_manager: new Clutter.BinLayout(),
+            x_expand: false,
+            y_expand: false,
         });
         container._macPeekGroup = g;
         // тіло у гурті далі peersN - у невидимій скриньці (щоб не загубити
         // картки при колапсі і повернути всі при розгортанні)
-        const held = new St.Widget({ visible: false });
+        const held = new St.Widget({ visible: false, x_expand: false, y_expand: false });
         g.held = held;
         g.container = container;
         container.set_width(NC_W - 40);
-        container.set_height(headH + peersN * over);
+        const groupH = headH + peersN * over;
+        container.set_height(groupH);
+        container.min_height = groupH;
         container.x_align = Clutter.ActorAlign.CENTER;
         const peerEnter = (b, delayIdx) => {
             try {
@@ -1986,7 +2006,9 @@ function _collapseNcGroups(p, merges = null) {
             newest.connect('notify::height', () => {
                 try {
                     if (container && !container.is_finalized?.() && container._macPeekGroup) {
-                        container.set_height(newest.height + peersN * over);
+                        const newH = newest.height + peersN * over;
+                        container.set_height(newH);
+                        container.min_height = newH;
                     }
                 } catch (_) {}
             });
@@ -2392,12 +2414,21 @@ function _buildPanel(merges = null) {
     })();
     const darkCls = isDark ? ' tahoe-qs-dark' : '';
 
-    const panelBg = new St.Widget({style_class: `tahoe-qs-panelbg${darkCls}`});
+    const panelBg = new St.Widget({
+        style_class: `tahoe-qs-panelbg${darkCls}`,
+        x_expand: false,
+        y_expand: false,
+    });
     panelBg.set_position(X, Y);
     panelBg.set_size(W, -1);
     overlay.add_child(panelBg);
 
-    const box = new St.BoxLayout({style_class: `tahoe-nc-panel${darkCls}`, vertical: true});
+    const box = new St.BoxLayout({
+        style_class: `tahoe-nc-panel${darkCls}`,
+        vertical: true,
+        x_expand: false,
+        y_expand: false,
+    });
     box.set_position(X, Y);
     box.set_size(W, -1);
     overlay.add_child(box);
@@ -2436,6 +2467,7 @@ function _buildPanel(merges = null) {
     const scroll = new St.ScrollView({
         style_class: 'tahoe-nc-scroll',
         x_expand: true,
+        y_expand: false,
     });
     scroll.style = `max-height: ${maxH}px;`;
     try {
@@ -2448,6 +2480,7 @@ function _buildPanel(merges = null) {
         vertical: true,
         style_class: 'tahoe-nc-list',
         x_expand: true,
+        y_expand: false,
     });
     scroll.add_child(list);
     box.add_child(scroll);
@@ -2558,6 +2591,15 @@ function _buildPanel(merges = null) {
 
     _watchTray(p);
     _rebuild(merges);
+
+    try {
+        const [, ph] = box.get_preferred_height(W);
+        const initialPanelH = Math.min(maxH, Math.max(70, Math.ceil(ph)));
+        box.set_size(W, initialPanelH);
+        box.min_height = initialPanelH;
+        panelBg.set_size(W, initialPanelH);
+        panelBg.min_height = initialPanelH;
+    } catch (_) {}
 
     // Slide-in animation from our theme: translation_x 480 -> 0 with EASE_OUT_CUBIC.
     // Скло їде разом із панеллю: дешеві шляхи тиків рухають регіони/кліп,
