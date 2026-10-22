@@ -12,8 +12,8 @@ const CACHE_DIR = GLib.build_filenamev([GLib.get_home_dir(), '.cache', 'mac-clip
 const IMAGES_DIR = GLib.build_filenamev([CACHE_DIR, 'images']);
 const HISTORY_FILE = GLib.build_filenamev([CACHE_DIR, 'history.json']);
 const MAX_HISTORY_ITEMS = 80;
-const DIALOG_WIDTH = 540;
-const DIALOG_MAX_HEIGHT = 600;
+const DIALOG_WIDTH = 714;
+const DIALOG_MAX_HEIGHT = 530;
 const CORNER_RADIUS = 26;
 
 const _gobjectToString = GObject.Object.prototype.toString;
@@ -347,6 +347,25 @@ class ClipboardStore {
         return this._items;
     }
 
+    moveToTop(item) {
+        if (!item) return;
+        const idx = this._items.findIndex(it => it.id === item.id);
+        if (idx > 0) {
+            this._items.splice(idx, 1);
+            this._items.unshift(item);
+            item.timestamp = Date.now();
+        } else if (idx === -1) {
+            this._items.unshift(item);
+        } else {
+            // Вже зверху — оновити тільки час
+            item.timestamp = Date.now();
+        }
+        this._scheduleSave();
+        if (globalThis._macClipboardGlobalInstance?._isOpen) {
+            globalThis._macClipboardGlobalInstance._refreshList();
+        }
+    }
+
     clear() {
         for (const it of this._items) {
             if (it.type === 'image' && it.imagePath) {
@@ -506,15 +525,30 @@ export const MacClipboardDialog = GObject.registerClass({
             vertical: false,
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'height: 56px; min-height: 56px; padding: 0 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.08);',
+            style: 'height: 44px; min-height: 44px; padding: 0 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.10);',
         });
         this._headerBox = this._headerRow;
         this._box.add_child(this._headerRow);
 
+        let headerGicon = null;
+        try {
+            const home = GLib.get_home_dir();
+            const candidates = [
+                `${home}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/icons/mac-clipboard-copy.svg`,
+                `${home}/.local/share/icons/MacTahoe/apps/scalable/edit-copy-symbolic.svg`,
+            ];
+            for (const p of candidates) {
+                if (p && GLib.file_test(p, GLib.FileTest.EXISTS)) {
+                    headerGicon = new Gio.FileIcon({ file: Gio.File.new_for_path(p) });
+                    break;
+                }
+            }
+        } catch (_) {}
         this._headerIcon = new St.Icon({
             icon_name: 'edit-paste-symbolic',
+            gicon: headerGicon || null,
             icon_size: 22,
-            style: 'color: rgba(255, 255, 255, 0.75); margin-left: 4px; margin-right: 12px;',
+            style: 'color: rgba(255, 255, 255, 0.75); margin-left: 4px; margin-right: 12px; icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);',
             y_align: Clutter.ActorAlign.CENTER,
         });
         this._headerRow.add_child(this._headerIcon);
@@ -545,7 +579,7 @@ export const MacClipboardDialog = GObject.registerClass({
         // Header Action: Clear History Button
         this._clearBtn = new St.Button({
             style_class: 'mac-clipboard-header-btn',
-            style: 'padding: 6px 10px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.08); margin-right: 2px;',
+            style: 'padding: 2px 4px; border-radius: 8px; background-color: transparent; margin-right: 2px;',
             reactive: true,
             can_focus: true,
             track_hover: true,
@@ -578,7 +612,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._listContainer = new St.BoxLayout({
             vertical: true,
             x_expand: true,
-            style: 'padding: 4px 18px 4px 8px;',
+            style: 'padding: 4px 20px 4px 20px;',
         });
         this._scrollView.set_child(this._listContainer);
 
@@ -808,7 +842,8 @@ export const MacClipboardDialog = GObject.registerClass({
 
         const h = Math.min(DIALOG_MAX_HEIGHT, Math.round(mon.height * 0.75));
         const targetX = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
-        const targetY = mon.y + Math.round((mon.height - h) / 2);
+        // Той самий якір по вертикалі (0.19 висоти монітора), що й у Spotlight — буфер відкривається на місці спотлайту
+        const targetY = mon.y + Math.round(mon.height * 0.19);
 
         this._searchEntry.text = '';
         this._refreshList();
@@ -1125,12 +1160,14 @@ export const MacClipboardDialog = GObject.registerClass({
             copyBtn.set_child(copyIcon);
 
             copyBtn.connect('clicked', () => {
-                this._activateItem(item, copyIcon);
+                // Тільки права кнопка КОПІЮЄ у буфер обміну і підіймає елемент нагору
+                this._activateItem(item, copyIcon, false);
             });
             row.add_child(copyBtn);
 
             btn.connect('clicked', () => {
-                this._activateItem(item, copyIcon);
+                // Клік по елементу = миттєва ВСТАВКА у фокусоване вікно
+                this._activateItem(item, null, true);
             });
             btn.connect('notify::hover', () => {
                 if (btn.hover) {
@@ -1166,7 +1203,8 @@ export const MacClipboardDialog = GObject.registerClass({
 
     _activateCurrent() {
         if (this._selectedIndex >= 0 && this._displayedItems[this._selectedIndex]) {
-            this._activateItem(this._displayedItems[this._selectedIndex]);
+            // Enter = вставка, як і клік по рядку
+            this._activateItem(this._displayedItems[this._selectedIndex], null, true);
         }
     }
 
@@ -1178,19 +1216,46 @@ export const MacClipboardDialog = GObject.registerClass({
         }
     }
 
-    _activateItem(item, iconWidget = null) {
+    _activateItem(item, iconWidget = null, doPaste = false) {
         if (!item) return;
-        clipboardStore.restore(item);
+        try { clipboardStore.restore(item); } catch (_) {}
 
-        if (iconWidget) {
-            iconWidget.icon_name = 'object-select-symbolic';
-            iconWidget.style = 'color: #34c759;';
+        if (!doPaste) {
+            // Режим копіювання (кнопка праворуч): підняти елемент нагору і оновити список
+            if (iconWidget) {
+                iconWidget.icon_name = 'object-select-symbolic';
+                iconWidget.style = 'color: #34c759;';
+            }
+            try { clipboardStore.moveToTop(item); } catch (_) {}
+            this._refreshList();
+            return;
         }
 
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 120, () => {
-            this.close();
+        // Режим миттєвої вставки: закрити меню і відправити Ctrl+V у фокусоване вікно
+        try { this.close(false); } catch (_) {}
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 280, () => {
+            this._injectPasteKey();
             return GLib.SOURCE_REMOVE;
         });
+    }
+
+    _injectPasteKey() {
+        try {
+            const seat = Clutter.get_default_backend().get_default_seat();
+            const vd = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+            if (!vd) return;
+            let t = GLib.get_monotonic_time();
+            vd.notify_keyval(t, Clutter.KEY_Control_L, Clutter.KeyState.PRESSED);
+            t += 5;
+            vd.notify_keyval(t, Clutter.KEY_v, Clutter.KeyState.PRESSED);
+            t += 5;
+            vd.notify_keyval(t, Clutter.KEY_v, Clutter.KeyState.RELEASED);
+            t += 5;
+            vd.notify_keyval(t, Clutter.KEY_Control_L, Clutter.KeyState.RELEASED);
+            t += 5;
+        } catch (e) {
+            try { console.error(`[Clipboard] paste inject failed: ${e}`); } catch (_) {}
+        }
     }
 
     destroy() {

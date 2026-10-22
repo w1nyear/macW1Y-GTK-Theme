@@ -286,22 +286,26 @@ export const MacApplicationsDialog = GObject.registerClass({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
-            style: 'height: 44px; margin-bottom: 12px; margin-left: 18px; margin-right: 18px;',
+            style: 'height: 36px; margin-left: 18px; margin-right: 18px;',
         });
         this._box.add_child(this._headerRow);
 
-        // App Store icon matching reference image
+        // Glyph icon 'A' (simple line SVG as on the macOS Tahoe reference photo)
         let appIconGIcon = null;
         try {
+            let extDirPath = null;
+            try { extDirPath = new URL('.', import.meta.url).pathname; } catch (_) {}
             const home = GLib.get_home_dir();
             const candidates = [
+                extDirPath ? `${extDirPath}icons/mac-launchpad-a.svg` : null,
+                `${home}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/icons/mac-launchpad-a.svg`,
                 `${home}/.local/share/icons/MacTahoe/apps/scalable/Appstore.svg`,
                 `${home}/.local/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
                 `${home}/.local/share/icons/macW1Y-dark/apps/scalable/Appstore.svg`,
                 `/usr/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
             ];
             for (const p of candidates) {
-                if (GLib.file_test(p, GLib.FileTest.EXISTS)) {
+                if (p && GLib.file_test(p, GLib.FileTest.EXISTS)) {
                     appIconGIcon = Gio.FileIcon.new(Gio.File.new_for_path(p));
                     break;
                 }
@@ -349,6 +353,13 @@ export const MacApplicationsDialog = GObject.registerClass({
             style: 'color: rgba(255, 255, 255, 0.75); margin-right: 6px; icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);',
         });
         this._headerRow.add_child(this._moreIcon);
+
+        // Тонка лінія-розділювач під полем вводу (як на фото‑референсі)
+        this._headerDivider = new St.Widget({
+            x_expand: true,
+            style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.10); margin-left: 18px; margin-right: 18px; margin-bottom: 12px;',
+        });
+        this._box.add_child(this._headerDivider);
 
         // 4. Category Filter Bar (4 rounded pills matching reference image)
         this._categoryRow = new St.BoxLayout({
@@ -1048,6 +1059,15 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
 
             this._gridContainer.add_child(rowBox);
+
+            // Друга тонка лінія — під сімома останніми програмами (лише у звичайному стані)
+            if (r === 0 && !this._currentQuery && !this._selectedCategory && apps.length > 0) {
+                const gridDivider = new St.Widget({
+                    x_expand: true,
+                    style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.10); margin: 2px 18px 10px 18px;',
+                });
+                this._gridContainer.add_child(gridDivider);
+            }
         }
     }
 

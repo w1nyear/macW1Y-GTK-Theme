@@ -15,8 +15,9 @@ const CLIPBOARD_CACHE_FILE = GLib.build_filenamev([GLib.get_home_dir(), '.cache'
 const ICONS_DIR = '/home/vitaliy/macW1Y/icons';
 
 const SEARCH_DEBOUNCE_MS = 180;
-const DIALOG_WIDTH = 700;
-const PILL_HEIGHT = 54;
+const DIALOG_WIDTH = 714;
+const PILL_HEIGHT = 54;        // згорнута пілюля (не змінюємо — як було)
+const EXP_PILL_HEIGHT = 40;    // шапка розгорнутого меню з результатами (1:1 як на фото)
 const COLLAPSED_PILL_WIDTH = 480;
 const BUTTONS_BOX_WIDTH = 192;
 const BUTTON_SIZE = 50;
@@ -34,7 +35,7 @@ const PILL_COLLAPSED_STYLE =
     'box-shadow: none !important;';
 
 const PILL_EXPANDED_STYLE =
-    'width: 700px; min-width: 700px; max-width: 700px; height: 54px; min-height: 54px; padding: 0 20px; ' +
+    'width: 714px; min-width: 714px; max-width: 714px; height: 40px; min-height: 40px; padding: 0 20px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
     'border: none !important; ' +
@@ -340,7 +341,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         // Options Button `...` (more options button on right of search pill, visible in 'files' mode)
         this._optionsBtn = new St.Button({
-            style: 'width: 32px; height: 32px; border-radius: 16px; background-color: rgba(255, 255, 255, 0.08); margin-right: 2px;',
+            style: 'width: 32px; height: 32px; border-radius: 16px; background-color: transparent; margin-right: 2px;',
             y_align: Clutter.ActorAlign.CENTER,
             visible: false,
             reactive: true,
@@ -442,7 +443,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 420px;',
+            style: 'max-height: 460px;',
         });
         this._scrollWrapper.add_child(this._scrollView);
 
@@ -490,7 +491,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 480px;',
+            style: 'max-height: 414px;',
         });
         this._filesView.add_child(this._filesScrollView);
 
@@ -861,6 +862,8 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._searchPill.set_style(PILL_EXPANDED_STYLE);
         this._searchPill.width = DIALOG_WIDTH;
+        // Шапка розгорнутого меню — компактна (1:1 як на фото)
+        this._topRow.set_style('height: 40px; min-height: 40px;');
 
         try { this._syncGlass(); } catch (_) {}
     }
@@ -879,6 +882,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._searchPill.set_style(PILL_COLLAPSED_STYLE);
         this._searchPill.width = COLLAPSED_PILL_WIDTH;
+        this._topRow.set_style('height: 54px; min-height: 54px;');
 
         this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
         this._btnApps.translation_x = 0;
@@ -1029,21 +1033,21 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._entry.hint_text = t('files', 'Файли');
                 this._optionsBtn.visible = true;
                 this._loadFilesView();
-                this._expandToHeight(580);
+                this._expandToHeight(530);
             } else if (newMode === 'apps') {
                 const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-apps.svg`);
                 this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
                 this._entry.hint_text = t('search_apps', 'Пошук програм');
                 this._optionsBtn.visible = false;
                 this._loadAppsView();
-                this._expandToHeight(540);
+                this._expandToHeight(530);
             } else if (newMode === 'clipboard') {
                 const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-clipboard.svg`);
                 this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
                 this._entry.hint_text = t('search_clipboard', 'Пошук у буфері');
                 this._optionsBtn.visible = false;
                 this._loadClipboardView();
-                this._expandToHeight(540);
+                this._expandToHeight(530);
             }
         }
     }
@@ -1113,6 +1117,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._searchPill.set_size(COLLAPSED_PILL_WIDTH, PILL_HEIGHT);
         this._searchPill.width = COLLAPSED_PILL_WIDTH;
         this._searchPill.set_style(PILL_COLLAPSED_STYLE);
+        this._topRow.set_style('height: 54px; min-height: 54px;');
         this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
         this._buttonsBox.visible = true;
         this._buttonsBox.opacity = 255;
@@ -1516,7 +1521,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 },
             });
             this._box.ease({
-                height: PILL_HEIGHT,
+                height: EXP_PILL_HEIGHT,
                 duration: 200,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 onUpdate: () => {
@@ -1638,7 +1643,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
 
         const visibleCount = Math.min(items.length, 7);
-        const targetHeight = PILL_HEIGHT + 14 + visibleCount * 52;
+        const targetHeight = EXP_PILL_HEIGHT + 14 + visibleCount * 52;
         this._expandToHeight(targetHeight);
 
         this._setSelectedIndex(0);

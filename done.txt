@@ -8680,3 +8680,43 @@ echo "==> Встановлення успішно завершено!"
       - GJS не перечитує кеш модулів при ExtensionHelper reload — гарячі заміни спрацювали лише частково (ride/сards живі через fish-and-forget підміну tahoeNotifications.js; skip-патч uiManager застосовано як прототипний `WindowCloneManager.prototype.rebuildClones`-патч через EvalHelper, runtime-only).
       - Повна файлова застосінність усіх фіксів (без зомбі-акторів від гарячих reload'ів) — після наступного перезапуску шелла/логіну; поточна сесія залишилась деградованою (surfaces 64, шторм попереджень від зомбі-акторів старих тост-скла 18:04-18:05), але фікс-стейт файлів валідний і протестований.
       - Файли синхронізовано в репозиторій: `extensions/kiwi@kemma/{extension.js,apps/tahoeNotifications.js}`, `extensions/liquid-glass@thinkingcoding1231.gmail.com/{extension.js,dist/uiManager.js,dist/panelMenuManager.js}`.
+
+101. Пакет UI-правок: Центр програм + Spotlight + Буфер обміну — висоти полів, нові SVG-гліфи, розміри як у ЦП, вставка кліком, лінії-розділювачі (22.10.2026):
+   1. Мета та завдання (за фото-референсами користувача):
+      - Зменшити висоту верхньої зони (поле вводу) у Центрі програм, Spotlight та Буфері обміну.
+      - Нова проста SVG-іконка ЦП зверху-ліворуч «в точності з під того що на фото» (біла рукописна «A»), такий же гліф для буфера (два накладені округлені квадрати).
+      - Ширина і висота меню буфера обміну та Spotlight — як у ЦП (714×530).
+      - Видалити білий фон кнопки «⋮» — «лише ця іконка має бути».
+      - Буфер відкривається НА МІСЦІ Spotlight-пошуку, а не нижче.
+      - Клік по елементу буфера = миттєва ВСТАВКА (не копіювання); копіює лише права кнопка і ставить елемент нагору.
+      - Тонкі лінії-розділювачі: під полем вводу скрізь; у ЦП — дві (під полем + під 7 останніми програмами).
+      - Уточнення користувача по ходу: пілюлю спотлайту у згорнутому стані НЕ рухати (повернути 480×54/кнопки 50); менша (1:1 як на фото) має бути лише шапка РОЗГОРНУТОГО меню з результатами.
+   2. Виконані правки:
+      - `appmenu@.../applications_menu_v5b.js` (ЦП):
+        * header 44→36px (margin-bottom прибрано); додано `_headerDivider` (St.Widget 1px, rgba(255,255,255,0.10), margin 0 18px 12px 18px) між header і categoryRow.
+        * Другий розділювач у `_buildGridItems` після rowBox r===0 (лише у звичайному стані `!query && !category`, органи grid-геометрію/клавіатурну навігацію не чіпає).
+        * Іконка: `icons/mac-launchpad-a.svg` (білі три штриха: ноги (10,55)→(27,9)→(45,55), перекладина (18.5,41)→(37.5,41), stroke 5, round caps + miter-вершина) — кандидати: extDir/…/icons/mac-launchpad-a.svg перший, далі Appstore.svg фолбеки; тон `icon-shadow` збережено.
+        * `_moreIcon` — іконка без фону (джерело «білої пілюлі» в ЦП не в коді іконки; реальний білий фон мали буферний ⋮ і спотлайтовий options-кнопка — обидва прибрано).
+      - `searchDialog_v5.js` (Spotlight):
+        * ЗГОРНУТА пілюля повернена як була: `COLLAPSED_PILL_WIDTH 480`, `PILL_HEIGHT 54`, `BUTTON_SIZE 50`, BTN-стилі 50/radius 26, buttonsBox 192×54 (3 місця), topRow 54.
+        * РОЗГОРНУТА шапка (меню з результатами) — компактна 1:1 як на фото: `EXP_PILL_HEIGHT=40`, `PILL_EXPANDED_STYLE` height 40 (width 714 = як у ЦП); у `_collapseButtonsAndExpandPill` topRow → 40px, у `_uncollapseButtonsAndContractPill`/`open()` → назад 54px.
+        * Висоти розгорнутих переглядів під нову шапку: формла `_renderResults` = `EXP_PILL_HEIGHT + 14 + n·52`; порожні результати → ease до 40; Файли/Програми/Буфер-види `_expandToHeight(530)` (було 580/540/540); scroll max-height: search 420→460, files 480→414 (apps/clip 460 залишились) → ціль бокс ≈530.
+        * `_optionsBtn` («•••»): фон rgba(255,255,255,0.08) → transparent — «лише іконка».
+      - `clipboardDialog_v2.js` (Буфер):
+        * `DIALOG_WIDTH 540→714`, `DIALOG_MAX_HEIGHT 600→530` (розмір = ЦП); позиція: `targetY = mon.y + round(mon.height·0.19)` — той самий якір, що в Spotlight (живий дамп: (603,205) при 1080p), замість вертикального центрування.
+        * header 56→44px, border-bottom 0.08→0.10; `listContainer` padding `4px 20px` (симетрично до header-іконки).
+        * Гліф іконки: `icons/mac-clipboard-copy.svg` (два накладені округлені квадрати rx 9, stroke 4.5) через Gio.FileIcon з хардкод-кандидатами (глобальний `URL` у shell-скоупі не існує — перша спроба через `new URL('.', import.meta.url)`_validator впала у catch і дала fallback; виправлено).
+        * `_clearBtn` («⋮»): фон rgba(255,255,255,0.08) → transparent, padding 2px 4px.
+        * Вставка кліком: `btn.clicked` → `_activateItem(item, null, true)` — restore → `close(false)` → через 280мс `_injectPasteKey()`; `Enter` (_activateCurrent) — теж вставка.
+        * Права кнопка (copyBtn): `_activateItem(item, copyIcon, false)` — галочка + `clipboardStore.moveToTop(item)` (новий метод: unshift + timestamp + автозбереження) + `_refreshList()`; меню лишається відкритим.
+        * Паста-ін'єкція `_injectPasteKey()`: `vd.notify_keyval` (Clutter.KEY_Control_L + KEY_v, PRESSED/RELEASED по 5мс) — патерн перевіреного `_sendAccelerator` з menuManager.js. ВАЖЛИВО: первісний план через `executeKeyboardAction('paste')` ВІДХИЛЕНО після аудиту — `actions/scancodes.js` містить evdev-коди (KEY_CTRL=29, KEY_V=47), а `VirtualInputDevice.notify_key` очікує XKB keycode (evdev+8) — ін'єкція дала б НЕ Ctrl+V (ризик Ctrl+Y тощо у фокусному застосунку).
+   3. Валідація:
+      - Синтаксис трьох файлів — gjs-заглушки (PARSE_OK; GI_TYPELIB_PATH = mutter-18/gnome-shell/girepository-1.0).
+      - Живий hot-reload через EvalHelper (fire-and-forget `import('?v=hdr15e')` + знищення старих інстансів `destroy()` перед `ensure*Dialog()` — ensure тримає живу стару інстанцію, тому явне знищення обов'язкове):
+        * ЦП: бокс 714×530, header 36px + `_headerDivider` 1px (маргіни як задумано), grid-дітей 7 (3 rowBox + gridDivider під першим рядком), logoGicon = …/icons/mac-launchpad-a.svg.
+        * Буфер: 714×530 @ (603,205) — якір 0.19·1080 ✓; header 44px(+1px лінія), ⋮ transparent, listContainer 4px 20px, headerGicon = mac-clipboard-copy.svg, `_injectPasteKey` у прототипi.
+        * Spotlight: відкриття — пілюля 480×54, topRow 54, кнопки 192-бренд (повернуто як було); розгортання (текст) — пілюля 714×40, topRow 40, бокс з результатами; очищення — повернення 480×54/54px ✓.
+   4. Обмеження та примітки:
+      - Реальну пасту (Ctrl+V у фокусний застосунок) не тригерив живцем — перевірка була б небезпечною для користувацьких вікон; механізм повторює перевіряний notify_keyval-патерн.
+      - Аномалія першого дампу спотлайту (відкрився розгорнутим) — гонка мого ж тестового `_entry.text='term'` із попереднього скрипта; чистий тест показав коректний колапсед-старт.
+      - Файли синхронізовано в репозиторій: `extensions/appmenu@ChathurangaBW.github.io/{applications_menu_v5b.js,searchDialog_v5.js,clipboardDialog_v2.js}` + `icons/{mac-launchpad-a.svg,mac-clipboard-copy.svg}`.

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <g fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="miter">
+    <!-- Ліва та права «ноги» літери A з гострим верхів'ям -->
+    <path d="M10 55 L27 9 L45 55"/>
+    <!-- Перекладина -->
+    <path d="M18.5 41 L37.5 41"/>
+  </g>
+</svg>
