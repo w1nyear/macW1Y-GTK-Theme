@@ -1,14 +1,38 @@
 #!/bin/bash
 # Steam master launcher with native NVIDIA PRIME Offload and system stability optimizations
 
+# Find real steam binary
+REAL_STEAM=""
+if [ -x "/snap/bin/steam" ]; then
+    REAL_STEAM="/snap/bin/steam"
+elif [ -x "/usr/games/steam" ]; then
+    REAL_STEAM="/usr/games/steam"
+else
+    # Check PATH excluding /usr/local/bin to avoid recursion
+    REAL_STEAM=$(PATH=$(echo "$PATH" | sed -e 's|/usr/local/bin||g' -e 's|::|:|g') which steam 2>/dev/null)
+fi
+
+if [ -z "$REAL_STEAM" ] || [ ! -x "$REAL_STEAM" ]; then
+    if which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; then
+        REAL_STEAM="flatpak run com.valvesoftware.Steam"
+    fi
+fi
+
+if [ -z "$REAL_STEAM" ]; then
+    echo "Steam is not installed on this system." >&2
+    exit 1
+fi
+
 # Unset any broken LD_PRELOAD that might corrupt game processes or 32-bit runtimes
 unset LD_PRELOAD
 
 # 1. Force discrete NVIDIA GeForce RTX 3050 GPU for all Vulkan and OpenGL games
-export __NV_PRIME_RENDER_OFFLOAD=1
-export __GLX_VENDOR_LIBRARY_NAME=nvidia
-export __VK_LAYER_NV_optimus=NVIDIA_only
-export VK_LOADER_DRIVERS_SELECT="*nvidia*"
+if which nvidia-smi >/dev/null 2>&1; then
+    export __NV_PRIME_RENDER_OFFLOAD=1
+    export __GLX_VENDOR_LIBRARY_NAME=nvidia
+    export __VK_LAYER_NV_optimus=NVIDIA_only
+    export VK_LOADER_DRIVERS_SELECT="*nvidia*"
+fi
 unset VK_DRIVER_FILES
 unset VK_ICD_FILENAMES
 
@@ -24,5 +48,5 @@ export PROTON_HIDE_NVIDIA_GPU=0
 # 3. Prevent shader compilation from starving CPU and freezing desktop
 export FOSSILIZE_THREADS=2
 
-# 4. Launch Steam snap executable
-exec /snap/bin/steam "$@"
+# 4. Launch Steam executable
+exec $REAL_STEAM "$@"

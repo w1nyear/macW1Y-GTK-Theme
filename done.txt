@@ -8813,3 +8813,37 @@ echo "==> Встановлення успішно завершено!"
       - Приховування елементів доступності (accessibility) внизу екрана:
         * У `pro.js` замінено старе зміщення на повне приховування: `dialog._bottomButtonGroup.visible = false; dialog._bottomButtonGroup.opacity = 0; dialog._bottomButtonGroup.reactive = false; dialog._bottomButtonGroup.hide();` та аналогічно для `dialog._a11yMenuButton`.
         * У `gdm.css` додано суворі правила приховування: `.login-dialog-bottom-button-group`, `.login-dialog .login-dialog-button.a11y-button`, `.login-dialog .login-dialog-session-list-button`, `.login-dialog .a11y-button { display: none !important; opacity: 0 !important; visibility: hidden !important; }`.
+
+105. Захист Dock від неіснуючих/фантомних програм (Steam, Telegram, Antigravity, OpenCode, Chrome тощо) на чистій системі (22.10.2026):
+   1. Мета (запит користувача):
+      - Усунути автоматичне дочіпляння до Dock програм, яких немає у системі користувача (наприклад Steam із червоною іконкою ракети, розробницькі застосунки Antigravity, OpenCode тощо після встановлення теми на чистій віртуальній машині).
+      - Забезпечити, щоб на чистій системі формувався гармонійний стандартний Dock macOS (Finder, Launchpad, встановлений системний браузер, встановлений термінал, системні параметри), а відсутні сторонні програми не з'являлись.
+   2. Виконані правки:
+      - Розробка системної утиліти-санітизатора `bin/mac-sanitize-favorites.sh`:
+        * Створено автономний Python-скрипт `mac-sanitize-favorites.sh` (встановлено до `/usr/local/bin/mac-sanitize-favorites.sh` з правами 755).
+        * Скрипт інспектує поточний та збережений списки `org.gnome.shell favorite-apps`. Для кожного `.desktop` елемента перевіряє наявність файлу в системних шляхах XDG та реальне існування виконуваного файлу (`Exec`).
+        * Реалізовано специфічні строгі перевірки для Steam, Google Chrome, Telegram, Antigravity та OpenCode: перевіряється реальна наявність відповідного виконуваного бінарника (`/snap/bin/`, `/usr/games/`, `/usr/bin/`, `which`) або Flatpak-пакета.
+        * Додано автоочищення `~/.local/share/applications/` від застарілих / фантомних `.desktop` файлів сторонніх програм, якщо вони не встановлені в системі.
+        * Забезпечено динамічну побудову еталонного Dock macOS:
+          - Позиція 0: Finder (`org.gnome.Nautilus.desktop`)
+          - Позиція 1: Launchpad (`launchpad.desktop`)
+          - Позиція 2: Найкращий встановлений браузер (автопошук: Google Chrome -> Firefox Snap -> Firefox deb -> Brave -> Chromium -> Edge -> Opera)
+          - Позиція 3: Найкращий встановлений термінал (автопошук: Ptyxis -> GNOME Terminal -> Console -> Tilix -> Alacritty -> Kitty)
+          - Позиції 4+: Інші реально встановлені улюблені програми користувача
+          - Кінцева позиція: Системні параметри (`org.gnome.Settings.desktop`).
+        * Запис у GSettings здійснюється лише у разі фактичної зміни списку, що виключає блимання або навантаження на сесію.
+      - Очищення та оптимізація Dconf (`dconf/gnome-all.dconf`, `dconf/gnome-shell.dconf`):
+        * Вилучено персональні розробницькі та ігрові програми (`steam_steam.desktop`, `antigravity_antigravity.desktop`, `ai.opencode.desktop.desktop`, `telegram-desktop_telegram-desktop.desktop`) зі списків `favorite-apps`.
+        * Очищено `app-picker-layout` від особистих ідентифікаторів та ігор (Counter-Strike тощо).
+        * Очищено записи сповіщень та вибору файлів для `ai-opencode-desktop` та `antigravity`.
+      - Вибіркове копіювання `.desktop` файлів в `install.sh`:
+        * У функціях `install_applications()` та `run_incremental_update()` замінено сліпе копіювання `applications/*.desktop` на суворо вибіркове.
+        * Базові елементи теми (`launchpad.desktop`, `mac-app-launcher.desktop`, `org.gnome.Settings.desktop`) встановлюються завжди.
+        * Сторонні оверлеї (`steam`, `chrome`, `telegram`, `antigravity`, `firefox`, `extension-manager`, `snap-store`, `firmware-updater`) копіюються лише якщо відповідний додаток дійсно встановлено на цільовому ПК. Якщо додаток відсутній — його `.desktop` файл та пов'язані локальні бінарні обгортки негайно видаляються з `~/.local/share/applications/` та `~/.local/bin/`.
+      - Розумний wrapper `/usr/local/bin/steam`:
+        * У `bin/steam` додано динамічний пошук справжнього бінарника Steam (`/snap/bin/steam`, `/usr/games/steam`, `/usr/bin/steam`, Flatpak `com.valvesoftware.Steam`) з безпечним оминанням `/usr/local/bin/steam` для уникнення рекурсії.
+        * У `install.sh` заборонено встановлення `/usr/local/bin/steam`, якщо Steam відсутній у системі (у разі відсутності wrapper примусово видаляється, щоб не вводити GNOME Shell в оману).
+      - Інтеграція в автозапуск та сесійний сторож:
+        * У `bin/mac-ensure-extensions.sh` додано виклик `mac-sanitize-favorites.sh` під час кожного запуску сесії.
+        * В `install.sh` додано збереження попередніх обраних додатків перед імпортом dconf та негайну санітизацію після завантаження.
+        * У `uninstall.sh` додано видалення `/usr/local/bin/mac-sanitize-favorites.sh`.

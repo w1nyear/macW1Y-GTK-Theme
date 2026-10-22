@@ -57,3 +57,8 @@ done
 if [ -x /usr/local/bin/mac-generate-bookmarks.sh ]; then
     /usr/local/bin/mac-generate-bookmarks.sh "$(id -un)" "$HOME" 2>/dev/null || true
 fi
+
+# Ensure favorite-apps does not contain uninstalled/phantom apps (Steam, Chrome, etc.)
+if [ -x /usr/local/bin/mac-sanitize-favorites.sh ]; then
+    /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
+fi

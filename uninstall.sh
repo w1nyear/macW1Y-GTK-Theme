@@ -157,6 +157,8 @@ restore_system() {
     sudo rm -f /usr/local/bin/nvidia-game-run
     sudo rm -f /usr/local/bin/prime-run
     sudo rm -f /usr/local/bin/steam
+    sudo rm -f /usr/local/bin/mac-sanitize-favorites.sh
+    sudo rm -f /usr/local/bin/mac-generate-bookmarks.sh
     sudo rm -f /usr/local/bin/mac-clipboard
     sudo rm -f /etc/mac-gamemode.state
     sudo rm -f /etc/sysctl.d/99-macw1y-performance.conf

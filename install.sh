@@ -615,7 +615,14 @@ install_extensions() {
     # Імпорт Dconf
     if [ -f "$SCRIPT_DIR/dconf/gnome-all.dconf" ]; then
         log_info "Імпорт конфігурацій Dconf..."
+        local PREV_FAVS=""
+        PREV_FAVS="$(run_as_user gsettings get org.gnome.shell favorite-apps 2>/dev/null || true)"
         run_as_user dconf load / < "$SCRIPT_DIR/dconf/gnome-all.dconf"
+        if [ -f "$SCRIPT_DIR/bin/mac-sanitize-favorites.sh" ]; then
+            sudo cp "$SCRIPT_DIR/bin/mac-sanitize-favorites.sh" /usr/local/bin/mac-sanitize-favorites.sh
+            sudo chmod +x /usr/local/bin/mac-sanitize-favorites.sh
+            run_as_user /usr/local/bin/mac-sanitize-favorites.sh "$PREV_FAVS" 2>/dev/null || true
+        fi
     fi
     
     # Активація розширень
@@ -761,13 +768,110 @@ install_settings_overlay() {
     [ -f "$SCRIPT_DIR/bin/gnome-theme-switcher" ] && cp "$SCRIPT_DIR/bin/gnome-theme-switcher" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/gnome-theme-switcher"
     [ -f "$SCRIPT_DIR/bin/toggle-launchpad.sh" ] && cp "$SCRIPT_DIR/bin/toggle-launchpad.sh" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/toggle-launchpad.sh"
     [ -f "$SCRIPT_DIR/bin/extension-manager" ] && cp "$SCRIPT_DIR/bin/extension-manager" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/extension-manager"
-    [ -f "$SCRIPT_DIR/bin/google-chrome" ] && cp "$SCRIPT_DIR/bin/google-chrome" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/google-chrome"
+    if [ -x "/usr/bin/google-chrome-stable" ] || [ -x "/usr/bin/google-chrome" ] || [ -x "/snap/bin/google-chrome" ]; then
+        [ -f "$SCRIPT_DIR/bin/google-chrome" ] && cp "$SCRIPT_DIR/bin/google-chrome" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/google-chrome"
+    else
+        rm -f "$LOCAL_BIN/google-chrome" 2>/dev/null || true
+    fi
     
     rm -f "$APP_DIR/mac-styling-settings.desktop"
-    if [ -d "$SCRIPT_DIR/applications" ]; then
-        cp -f "$SCRIPT_DIR/applications/"*.desktop "$APP_DIR/" 2>/dev/null || true
-        sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/"*.desktop 2>/dev/null || true
-        chmod +x "$APP_DIR/"*.desktop 2>/dev/null || true
+    
+    # 1. Системні компоненти теми Mac (встановлюються завжди)
+    for core_df in launchpad.desktop mac-app-launcher.desktop org.gnome.Settings.desktop; do
+        if [ -f "$SCRIPT_DIR/applications/$core_df" ]; then
+            cp -f "$SCRIPT_DIR/applications/$core_df" "$APP_DIR/"
+            sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/$core_df" 2>/dev/null || true
+            chmod +x "$APP_DIR/$core_df" 2>/dev/null || true
+        fi
+    done
+
+    # 2. Оверлеї сторонніх програм — лише якщо відповідні програми дійсно встановлені в системі
+    # Steam
+    if [ -x "/snap/bin/steam" ] || [ -x "/usr/games/steam" ] || [ -x "/usr/bin/steam" ] || { which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; }; then
+        if [ -f "$SCRIPT_DIR/applications/steam_steam.desktop" ]; then
+            cp -f "$SCRIPT_DIR/applications/steam_steam.desktop" "$APP_DIR/"
+            sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/steam_steam.desktop" 2>/dev/null || true
+            chmod +x "$APP_DIR/steam_steam.desktop" 2>/dev/null || true
+        fi
+    else
+        rm -f "$APP_DIR/steam_steam.desktop" "$APP_DIR/steam.desktop" 2>/dev/null || true
+    fi
+
+    # Google Chrome
+    if [ -x "/usr/bin/google-chrome-stable" ] || [ -x "/usr/bin/google-chrome" ] || [ -x "/snap/bin/google-chrome" ]; then
+        if [ -f "$SCRIPT_DIR/applications/google-chrome.desktop" ]; then
+            cp -f "$SCRIPT_DIR/applications/google-chrome.desktop" "$APP_DIR/"
+            sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/google-chrome.desktop" 2>/dev/null || true
+            chmod +x "$APP_DIR/google-chrome.desktop" 2>/dev/null || true
+        fi
+    else
+        rm -f "$APP_DIR/google-chrome.desktop" 2>/dev/null || true
+    fi
+
+    # Telegram
+    if [ -x "/snap/bin/telegram-desktop" ] || [ -x "/usr/bin/telegram-desktop" ]; then
+        if [ -f "$SCRIPT_DIR/applications/telegram-desktop_telegram-desktop.desktop" ]; then
+            cp -f "$SCRIPT_DIR/applications/telegram-desktop_telegram-desktop.desktop" "$APP_DIR/"
+            sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/telegram-desktop_telegram-desktop.desktop" 2>/dev/null || true
+            chmod +x "$APP_DIR/telegram-desktop_telegram-desktop.desktop" 2>/dev/null || true
+        fi
+    else
+        rm -f "$APP_DIR/telegram-desktop_telegram-desktop.desktop" "$APP_DIR/telegram-desktop.desktop" 2>/dev/null || true
+    fi
+
+    # Antigravity IDE
+    if [ -x "/snap/bin/antigravity" ] || [ -x "/usr/bin/antigravity" ] || [ -x "/usr/local/bin/antigravity" ]; then
+        if [ -f "$SCRIPT_DIR/applications/antigravity_antigravity.desktop" ]; then
+            cp -f "$SCRIPT_DIR/applications/antigravity_antigravity.desktop" "$APP_DIR/"
+            sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/antigravity_antigravity.desktop" 2>/dev/null || true
+            chmod +x "$APP_DIR/antigravity_antigravity.desktop" 2>/dev/null || true
+        fi
+    else
+        rm -f "$APP_DIR/antigravity_antigravity.desktop" 2>/dev/null || true
+    fi
+
+    # Firefox
+    if [ -x "/snap/bin/firefox" ] || [ -x "/usr/bin/firefox" ]; then
+        if [ -f "$SCRIPT_DIR/applications/firefox_firefox.desktop" ]; then
+            cp -f "$SCRIPT_DIR/applications/firefox_firefox.desktop" "$APP_DIR/"
+            sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
+            chmod +x "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
+        fi
+    else
+        rm -f "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
+    fi
+
+    # Extension Manager
+    if which extension-manager >/dev/null 2>&1 || [ -x "$LOCAL_BIN/extension-manager" ]; then
+        if [ -f "$SCRIPT_DIR/applications/com.mattjakeman.ExtensionManager.desktop" ]; then
+            cp -f "$SCRIPT_DIR/applications/com.mattjakeman.ExtensionManager.desktop" "$APP_DIR/"
+            sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/com.mattjakeman.ExtensionManager.desktop" 2>/dev/null || true
+            chmod +x "$APP_DIR/com.mattjakeman.ExtensionManager.desktop" 2>/dev/null || true
+        fi
+    else
+        rm -f "$APP_DIR/com.mattjakeman.ExtensionManager.desktop" 2>/dev/null || true
+    fi
+
+    # Snap Store
+    if [ -x "/snap/bin/snap-store" ] || [ -x "/usr/bin/snap-store" ]; then
+        if [ -f "$SCRIPT_DIR/applications/snap-store_snap-store.desktop" ]; then
+            cp -f "$SCRIPT_DIR/applications/snap-store_snap-store.desktop" "$APP_DIR/"
+            sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/snap-store_snap-store.desktop" 2>/dev/null || true
+            chmod +x "$APP_DIR/snap-store_snap-store.desktop" 2>/dev/null || true
+        fi
+    else
+        rm -f "$APP_DIR/snap-store_snap-store.desktop" 2>/dev/null || true
+    fi
+
+    # Firmware Updater
+    if [ -x "/snap/bin/firmware-updater" ] || [ -x "/usr/bin/firmware-updater" ]; then
+        if [ -f "$SCRIPT_DIR/applications/firmware-updater_firmware-updater.desktop" ]; then
+            cp -f "$SCRIPT_DIR/applications/firmware-updater_firmware-updater.desktop" "$APP_DIR/"
+            sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/firmware-updater_firmware-updater.desktop" 2>/dev/null || true
+            chmod +x "$APP_DIR/firmware-updater_firmware-updater.desktop" 2>/dev/null || true
+        fi
+    else
+        rm -f "$APP_DIR/firmware-updater_firmware-updater.desktop" 2>/dev/null || true
     fi
     [ -f "$SCRIPT_DIR/services/org.gnome.Settings.service" ] && cp "$SCRIPT_DIR/services/org.gnome.Settings.service" "$SVC_DIR/"
     
@@ -830,12 +934,22 @@ install_gamemode() {
     require_root
     
     # 1. Встановлення бінарних утиліт та скриптів
-    for bin_file in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64; do
+    for bin_file in mac-gamemode gamemoderun nvidia-game-run prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-sanitize-favorites.sh; do
         if [ -f "$SCRIPT_DIR/bin/$bin_file" ] || [ -L "$SCRIPT_DIR/bin/$bin_file" ]; then
             sudo cp -a "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
             sudo chmod +x "/usr/local/bin/$bin_file" 2>/dev/null || true
         fi
     done
+
+    # Steam wrapper: встановлюється лише за умови наявності Steam у системі
+    if [ -x "/snap/bin/steam" ] || [ -x "/usr/games/steam" ] || [ -x "/usr/bin/steam" ] || { which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; }; then
+        if [ -f "$SCRIPT_DIR/bin/steam" ]; then
+            sudo cp -a "$SCRIPT_DIR/bin/steam" /usr/local/bin/steam
+            sudo chmod +x /usr/local/bin/steam
+        fi
+    else
+        sudo rm -f /usr/local/bin/steam
+    fi
     
     if [ -d "$SCRIPT_DIR/etc/sudoers.d" ]; then
         for sf in "$SCRIPT_DIR/etc/sudoers.d/"*; do
@@ -1258,6 +1372,11 @@ finalize_installation() {
     sleep 1
     run_as_user gnome-extensions enable blur-my-shell@aunetx 2>/dev/null || true
     
+    # Санітизація та оптимізація закріплених програм Dock
+    if [ -x "/usr/local/bin/mac-sanitize-favorites.sh" ]; then
+        run_as_user /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
+    fi
+    
     echo -e "\n${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
     echo -e " ${C_BOLD}${C_GREEN}✔ ВСТАНОВЛЕННЯ / ОНОВЛЕННЯ macW1Y v${NEW_VERSION} УСПІШНО ЗАВЕРШЕНО!${C_RESET}"
     echo -e "${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
@@ -1478,20 +1597,74 @@ run_incremental_update() {
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-styling-settings gnome-theme-switcher toggle-launchpad.sh extension-manager google-chrome; do
+    for b in gnome-control-center mac-styling-settings gnome-theme-switcher toggle-launchpad.sh extension-manager; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true
         fi
     done
-    if [ -d "$SCRIPT_DIR/applications" ]; then
-        for df in "$SCRIPT_DIR/applications/"*.desktop; do
-            if [ -f "$df" ]; then
-                local bdf="$(basename "$df")"
-                sync_or_update_file "$df" "$APP_DIR/$bdf" false
-                chmod +x "$APP_DIR/$bdf" 2>/dev/null || true
-            fi
-        done
+    if [ -x "/usr/bin/google-chrome-stable" ] || [ -x "/usr/bin/google-chrome" ] || [ -x "/snap/bin/google-chrome" ]; then
+        [ -f "$SCRIPT_DIR/bin/google-chrome" ] && sync_or_update_file "$SCRIPT_DIR/bin/google-chrome" "$LOCAL_BIN/google-chrome" false && chmod +x "$LOCAL_BIN/google-chrome" 2>/dev/null || true
+    else
+        rm -f "$LOCAL_BIN/google-chrome" 2>/dev/null || true
+    fi
+
+    # Core macOS theme desktop files
+    for core_df in launchpad.desktop mac-app-launcher.desktop org.gnome.Settings.desktop; do
+        if [ -f "$SCRIPT_DIR/applications/$core_df" ]; then
+            sync_or_update_file "$SCRIPT_DIR/applications/$core_df" "$APP_DIR/$core_df" false
+            sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/$core_df" 2>/dev/null || true
+            chmod +x "$APP_DIR/$core_df" 2>/dev/null || true
+        fi
+    done
+
+    # Selective optional third-party desktop files
+    if [ -x "/snap/bin/steam" ] || [ -x "/usr/games/steam" ] || [ -x "/usr/bin/steam" ] || { which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; }; then
+        [ -f "$SCRIPT_DIR/applications/steam_steam.desktop" ] && sync_or_update_file "$SCRIPT_DIR/applications/steam_steam.desktop" "$APP_DIR/steam_steam.desktop" false && chmod +x "$APP_DIR/steam_steam.desktop" 2>/dev/null || true
+    else
+        rm -f "$APP_DIR/steam_steam.desktop" "$APP_DIR/steam.desktop" 2>/dev/null || true
+    fi
+
+    if [ -x "/usr/bin/google-chrome-stable" ] || [ -x "/usr/bin/google-chrome" ] || [ -x "/snap/bin/google-chrome" ]; then
+        [ -f "$SCRIPT_DIR/applications/google-chrome.desktop" ] && sync_or_update_file "$SCRIPT_DIR/applications/google-chrome.desktop" "$APP_DIR/google-chrome.desktop" false && chmod +x "$APP_DIR/google-chrome.desktop" 2>/dev/null || true
+    else
+        rm -f "$APP_DIR/google-chrome.desktop" 2>/dev/null || true
+    fi
+
+    if [ -x "/snap/bin/telegram-desktop" ] || [ -x "/usr/bin/telegram-desktop" ]; then
+        [ -f "$SCRIPT_DIR/applications/telegram-desktop_telegram-desktop.desktop" ] && sync_or_update_file "$SCRIPT_DIR/applications/telegram-desktop_telegram-desktop.desktop" "$APP_DIR/telegram-desktop_telegram-desktop.desktop" false && chmod +x "$APP_DIR/telegram-desktop_telegram-desktop.desktop" 2>/dev/null || true
+    else
+        rm -f "$APP_DIR/telegram-desktop_telegram-desktop.desktop" "$APP_DIR/telegram-desktop.desktop" 2>/dev/null || true
+    fi
+
+    if [ -x "/snap/bin/antigravity" ] || [ -x "/usr/bin/antigravity" ] || [ -x "/usr/local/bin/antigravity" ]; then
+        [ -f "$SCRIPT_DIR/applications/antigravity_antigravity.desktop" ] && sync_or_update_file "$SCRIPT_DIR/applications/antigravity_antigravity.desktop" "$APP_DIR/antigravity_antigravity.desktop" false && chmod +x "$APP_DIR/antigravity_antigravity.desktop" 2>/dev/null || true
+    else
+        rm -f "$APP_DIR/antigravity_antigravity.desktop" 2>/dev/null || true
+    fi
+
+    if [ -x "/snap/bin/firefox" ] || [ -x "/usr/bin/firefox" ]; then
+        [ -f "$SCRIPT_DIR/applications/firefox_firefox.desktop" ] && sync_or_update_file "$SCRIPT_DIR/applications/firefox_firefox.desktop" "$APP_DIR/firefox_firefox.desktop" false && chmod +x "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
+    else
+        rm -f "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
+    fi
+
+    if which extension-manager >/dev/null 2>&1 || [ -x "$LOCAL_BIN/extension-manager" ]; then
+        [ -f "$SCRIPT_DIR/applications/com.mattjakeman.ExtensionManager.desktop" ] && sync_or_update_file "$SCRIPT_DIR/applications/com.mattjakeman.ExtensionManager.desktop" "$APP_DIR/com.mattjakeman.ExtensionManager.desktop" false && chmod +x "$APP_DIR/com.mattjakeman.ExtensionManager.desktop" 2>/dev/null || true
+    else
+        rm -f "$APP_DIR/com.mattjakeman.ExtensionManager.desktop" 2>/dev/null || true
+    fi
+
+    if [ -x "/snap/bin/snap-store" ] || [ -x "/usr/bin/snap-store" ]; then
+        [ -f "$SCRIPT_DIR/applications/snap-store_snap-store.desktop" ] && sync_or_update_file "$SCRIPT_DIR/applications/snap-store_snap-store.desktop" "$APP_DIR/snap-store_snap-store.desktop" false && chmod +x "$APP_DIR/snap-store_snap-store.desktop" 2>/dev/null || true
+    else
+        rm -f "$APP_DIR/snap-store_snap-store.desktop" 2>/dev/null || true
+    fi
+
+    if [ -x "/snap/bin/firmware-updater" ] || [ -x "/usr/bin/firmware-updater" ]; then
+        [ -f "$SCRIPT_DIR/applications/firmware-updater_firmware-updater.desktop" ] && sync_or_update_file "$SCRIPT_DIR/applications/firmware-updater_firmware-updater.desktop" "$APP_DIR/firmware-updater_firmware-updater.desktop" false && chmod +x "$APP_DIR/firmware-updater_firmware-updater.desktop" 2>/dev/null || true
+    else
+        rm -f "$APP_DIR/firmware-updater_firmware-updater.desktop" 2>/dev/null || true
     fi
     [ -f "$SCRIPT_DIR/services/org.gnome.Settings.service" ] && sync_or_update_file "$SCRIPT_DIR/services/org.gnome.Settings.service" "$SVC_DIR/org.gnome.Settings.service" false
     if [ -d "$SCRIPT_DIR/config/mac-styling" ]; then
@@ -1507,12 +1680,22 @@ run_incremental_update() {
     [ -f "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" ] && sync_or_update_file "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" "/etc/udev/rules.d/99-uinput.rules" true
     [ -f "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" "/etc/systemd/system/mac-touchpad-daemon.service" true
 
-    for gb in mac-gamemode gamemoderun nvidia-game-run prime-run steam DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64; do
+    for gb in mac-gamemode gamemoderun nvidia-game-run prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-sanitize-favorites.sh; do
         if [ -f "$SCRIPT_DIR/bin/$gb" ] || [ -L "$SCRIPT_DIR/bin/$gb" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$gb" "/usr/local/bin/$gb" true
             sudo chmod +x "/usr/local/bin/$gb" 2>/dev/null || true
         fi
     done
+
+    # Steam wrapper: оновлюється лише за умови наявності Steam у системі
+    if [ -x "/snap/bin/steam" ] || [ -x "/usr/games/steam" ] || [ -x "/usr/bin/steam" ] || { which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; }; then
+        if [ -f "$SCRIPT_DIR/bin/steam" ]; then
+            sync_or_update_file "$SCRIPT_DIR/bin/steam" "/usr/local/bin/steam" true
+            sudo chmod +x "/usr/local/bin/steam" 2>/dev/null || true
+        fi
+    else
+        sudo rm -f /usr/local/bin/steam
+    fi
     [ -f "$SCRIPT_DIR/systemd/mac-gamemode.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-gamemode.service" "/etc/systemd/system/mac-gamemode.service" true
 
     # Системні оптимізації швидкодії та ігор у режимі оновлення
@@ -1609,6 +1792,11 @@ EOF
     run_as_user fc-cache -f >/dev/null 2>&1 || true
     gtk-update-icon-cache -f -t "$TARGET_HOME/.local/share/icons/macW1Y-dark" 2>/dev/null || true
     run_as_user update-desktop-database "$APP_DIR" 2>/dev/null || true
+    
+    # Санітизація та оптимізація закріплених програм Dock
+    if [ -x "/usr/local/bin/mac-sanitize-favorites.sh" ]; then
+        run_as_user /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
+    fi
     
     sudo systemctl daemon-reload 2>/dev/null || true
     sudo systemctl restart mac-touchpad-daemon.service 2>/dev/null || true
