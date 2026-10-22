@@ -620,10 +620,17 @@ export const MacClipboardDialog = GObject.registerClass({
 
         // Вирівнювання шапки по середині висоти: трохи опустити вниз
         try {
-            this._headerIcon.translation_y = 3;
-            this._searchEntry.translation_y = 3;
-            this._clearBtn.translation_y = 3;
+            this._headerIcon.translation_y = 5;
+            this._searchEntry.translation_y = 5;
+            this._clearBtn.translation_y = 5;
         } catch (_) {}
+
+        // Separator under header
+        const _separator = new St.Widget({
+            style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.12); margin: 0 16px;',
+            x_expand: true,
+        });
+        this._box.add_child(_separator);
 
         // 4. Scrollable Container for Clipboard Entries
         this._scrollView = new St.ScrollView({
@@ -640,7 +647,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._listContainer = new St.BoxLayout({
             vertical: true,
             x_expand: true,
-            style: 'padding: 4px 20px 4px 20px;',
+            style: 'padding: 4px 8px 4px 8px;',
         });
         this._scrollView.set_child(this._listContainer);
 
@@ -1123,7 +1130,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._displayedItems.forEach((item, index) => {
             const btn = new St.Button({
                 style_class: 'mac-clipboard-row',
-                style: 'padding: 8px 12px; margin: 2px 4px; border-radius: 12px; background-color: transparent !important;',
+                style: 'padding: 8px 12px; margin: 2px 2px; border-radius: 12px; background-color: transparent !important;',
                 reactive: true,
                 can_focus: true,
                 track_hover: true,
@@ -1247,10 +1254,10 @@ export const MacClipboardDialog = GObject.registerClass({
         this._selectedIndex = index;
         this._rowButtons.forEach((btn, idx) => {
             if (idx === index) {
-                btn.set_style('padding: 8px 12px; margin: 2px 4px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.13) !important;');
+                btn.set_style('padding: 8px 12px; margin: 2px 2px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.13) !important;');
                 try { Util.ensureActorVisibleInScrollView?.(this._scrollView, btn); } catch (_) {}
             } else {
-                btn.set_style('padding: 8px 12px; margin: 2px 4px; border-radius: 12px; background-color: transparent !important;');
+                btn.set_style('padding: 8px 12px; margin: 2px 2px; border-radius: 12px; background-color: transparent !important;');
             }
         });
     }

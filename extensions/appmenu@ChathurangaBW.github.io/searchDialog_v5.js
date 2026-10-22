@@ -28,7 +28,7 @@ const PILL_COLLAPSED_STYLE =
     'width: 480px; min-width: 480px; max-width: 480px; height: 54px; min-height: 54px; padding: 0 16px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    `border: ${EDGE_STYLE} !important; ` +
+    'border: none !important; ' +
     'border-radius: 27px; ' +
     'box-shadow: none !important;';
 
@@ -36,7 +36,7 @@ const PILL_EXPANDED_STYLE =
     'width: 714px; min-width: 714px; max-width: 714px; height: 36px; min-height: 36px; padding: 0 20px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
-    `border: ${EDGE_STYLE} !important; ` +
+    'border: none !important; ' +
     'border-radius: 26px; ' +
     'box-shadow: none !important;';
 
@@ -270,7 +270,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             'background-color: transparent !important; ' +
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            `border: ${EDGE_STYLE} !important; ` +
+            'border: none !important; ' +
             'box-shadow: none !important;'
         );
         this.add_child(this._box);
@@ -375,9 +375,9 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         // Вирівнювання вмісту пілюлі по середині висоти: трохи опустити вниз
         try {
-            this._searchIcon.translation_y = 3;
-            this._entry.translation_y = 3;
-            this._optionsBtn.translation_y = 3;
+            this._searchIcon.translation_y = 5;
+            this._entry.translation_y = 5;
+            this._optionsBtn.translation_y = 5;
         } catch (_) {}
 
         // 3B. Buttons Container: Holds the 3 Circular Buttons on the right
@@ -876,7 +876,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             'background-color: transparent !important; ' +
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            `border: ${EDGE_STYLE} !important; ` +
+            'border: none !important; ' +
             'box-shadow: none !important;'
         );
 
@@ -896,7 +896,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             'background-color: transparent !important; ' +
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            `border: ${EDGE_STYLE} !important; ` +
+            'border: none !important; ' +
             'box-shadow: none !important;'
         );
 
@@ -1147,8 +1147,8 @@ export const MacSpotlightDialog = GObject.registerClass({
         } else {
             this._box.translation_x = 0;
             this._box.translation_y = 0;
-            this._box.scale_x = 0.94;
-            this._box.scale_y = 0.94;
+            this._box.scale_x = 1.08;
+            this._box.scale_y = 1.08;
         }
         this._box.opacity = 0;
 
