@@ -8753,3 +8753,42 @@ echo "==> Встановлення успішно завершено!"
       - Напружування «однотипності»: всі три меню мають ІДЕНТИЧНІ параметри intro (0.94/морф → 1.0, 220мс EASE_OUT_CUBIC) та outro (→0.94, 180мс EASE_IN_QUAD); стекло синхронізується кожним кадром через отже `notify::scale/x/y` → `_syncGlass`.
       - Значення зсувів шапок (−3 вниз у ЦП, +3 у буфері/спотлайті) — емпіричні; готовий скоригувати за відгуком користувача.
       - Файли синхронізовано в репозиторій: `extensions/appmenu@ChathurangaBW.github.io/{applications_menu_v5b.js,searchDialog_v5.js,clipboardDialog_v2.js}`.
+
+103. Пакет системних виправлень для універсальності системи (тестування на чистій ВМ ubuntu-26) (22.10.2026):
+   1. Мета (запит користувача після тесту на віртуальній машині):
+      - Nautilus: відновити іконки у leftbar, прибрати хардкод `/home/vitaliy` у закріплених місцях (має братись поточний користувач) та прибрати залежність від українських назв типу «Десктоп» (підтримка будь-якої локалі та користувача).
+      - Меню-бар: відновити відображення іконки Центру керування (Control Center), при цьому розмістити іконку в системних каталогах (`/usr/share/...`), щоб користувач нічого не міг випадково пошкодити/стерти.
+      - Параметри (GNOME Settings): прибрати заголовок «Параметри» з верхньої панелі; кнопки пошуку та трьох крапок перемістити з leftbar у праву контентну частину вікна.
+      - Програми з blur leftbar (Налаштування тощо): усунути візуальний баг (чорні прямокутні шлейфи/привиди) при швидкому русі курсора миші по рядках списку (hover).
+      - Центр сповіщень: усунути візуальний баг миготіння та розриву шпалер (Golden Gate Bridge) під час анімації відкриття/висування бічної панелі.
+
+   2. Виконані правки:
+      - Nautilus / Провідник:
+        * Створено універсальний скрипт `bin/mac-generate-bookmarks.sh` (встановлено в `/usr/local/bin/mac-generate-bookmarks.sh`), який динамічно через `xdg-user-dir` генерує коректні URI для `~/.config/gtk-3.0/bookmarks` під ім'я поточного активного користувача та його локаль.
+        * Скрипт створює сумісні символічні посилання (`~/Desktop`, `~/Documents`, `~/Downloads`, `~/Music`, `~/Pictures`, `~/Videos`, `~/Applications`) незалежно від того, як папки називаються в системі («Робочий стіл», «Десктоп», «Schreibtisch» тощо).
+        * Оновлено модуль `src/mac_nautilus.c`: динамічне визначення папок через `g_get_user_special_dir()`, визначення локалі системи (`is_ukrainian_locale()`), прив'язка іконок macOS (`user-desktop-symbolic`, `folder-documents-symbolic`, `folder-download-symbolic`, `folder-music-symbolic`, `folder-pictures-symbolic`, `folder-videos-symbolic`, `drive-harddisk-symbolic`, `network-workgroup-symbolic`) та заголовків секцій («Вибрані»/«Favorites», «Місця»/«Locations»).
+        * Перекомпільовано `lib/libmac_nautilus.so` та оновлено `/usr/lib/x86_64-linux-gnu/libmac_nautilus.so`.
+        * Скрипт генерації закладок інтегровано в `install.sh` (для свіжого встановлення та інкрементального оновлення) і в сторожовий сервіс автозапуску `bin/mac-ensure-extensions.sh`.
+      - Меню-бар (Іконка Центру керування):
+        * Створено повний набір системних іконок: кольорову `controlcenter.png`, контрастну `controlcenter-dark.png` та векторну `control-center-symbolic.svg`.
+        * Іконки розміщено у захищених системних каталогах: `/usr/share/mactheme/icons/` та `/usr/share/icons/hicolor/scalable/status/` (права доступу 644 root:root).
+        * Оновлено розширення `run-cmd@custom.extension/extension.js` (у живому каталозі та в репозиторії) для завантаження іконки виключно з `/usr/share/mactheme/icons/controlcenter.png` / `controlcenter-dark.png`.
+        * Оновлено функцію `install_icons()` у `install.sh` для автоматичного встановлення іконок у системні каталоги при розгортанні на будь-якому ПК.
+      - Параметри (GNOME Settings Headerbar):
+        * Оновлено бібліотеку-оверлей `gnome-control-center-overlay/libmac_settings.c` та `control-center/libmac_settings.c`:
+          - Додано розпізнавання бінарників `"gnome-control-center.orig"` та ідентифікатора `"org.gnome.Settings"`.
+          - Додано функцію `hide_title_labels()` та виклик `adw_navigation_page_set_title(sidebar, "")`, що повністю приховує заголовок «Параметри» / «Settings».
+          - Доопрацьовано пошук та перенесення кнопок пошуку та трьох крапок (`find_buttons_in_settings_sidebar()`) з лівої панелі у правий робочий заголовок контенту через виявлення їхніх tooltips та іконок (`edit-find-symbolic`, `view-more-symbolic`).
+        * Оновлено UI-шаблони оверлею (`cc-window.ui`, `cc-system-panel.ui`, `cc-power-panel.ui`, `cc-mouse-panel.ui`) та встановлено в `/usr/share/mactheme/gnome-control-center-overlay/`.
+        * Створено глобальний системний wrapper `/usr/bin/gnome-control-center` та `/usr/local/bin/gnome-control-center` для гарантованого завантаження `LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libmac_settings.so` навіть при запуску через D-Bus сервіс `org.gnome.Settings.service`.
+        * Перекомпільовано та встановлено `libmac_settings.so` в `/usr/lib/x86_64-linux-gnu/libmac_settings.so`.
+      - Швидкий hover у blur leftbar (усунення чорних артефактів/шлейфів):
+        * Виявлено причину: у `gtk-4.0/gtk.css` правило `row:not(:hover)` мало `transition: all 300ms cubic-bezier(...)`. Оскільки базовий GTK4 `row` має `border-radius: 0px`, при швидкому відведенні курсора GTK анімував скидання `border-radius` від 8px до 0px протягом 300мс, створюючи чорні прямокутні контури та шлейфи.
+        * Замінено універсальний `transition: all` на чітко обмежені властивості: `transition: background-color 80ms ease, color 80ms ease;`.
+        * Для класів `.navigation-sidebar row`, `navigation-split-view list.navigation-sidebar row` та `placessidebar row` зафіксовано постійний `border-radius: 8px !important;` та ультраплавний швидкий перехід `transition: background-color 60ms ease, color 60ms ease !important;`.
+        * Зміни синхронізовано в `~/.config/gtk-4.0/gtk.css`, `macW1Y/config/gtk-4.0/gtk.css`, `macW1Y/gtk-4.0/gtk.css`, `macW1Y/macW1Y-Dark/gtk-4.0/gtk.css` та `macW1Y/themes/macW1Y-Dark/gtk-4.0/gtk.css`.
+      - Центр сповіщень (миготіння та розрив шпалер):
+        * У `kiwi@kemma/apps/tahoeNotifications.js` виправлено позиціонування актора розмитого фону: замінено жорсткі екранні координати `s.bgActor.set_position(monitor.x, monitor.y)` на відносні до оверлея `s.bgActor.set_position(monitor.x - ovX, monitor.y - ovY)`.
+        * Реалізовано захист під час ковзання панелі: поки триває slide-анімація (`translation_x != 0` або до настання `_settleDone`), шар `s.bgActor` приховано (`visible = false, opacity = 0`). Це повністю усуває розриви та дублювання текстури шпалер під час руху, оскільки GPU не намагається семплити динамічний буфер під час зсуву.
+        * Після зупинки панелі (`_ncSettle`) спрацьовує плавний fade-in скляного шару (`_startStackFade(s, 220)`) та миттєве оновлення розмиття `glassForceRefresh()`.
+        * Зміни синхронізовано у живому розширенні GNOME Shell та в репозиторії.

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- macOS Control Center sliders icon -->
+  <!-- Top track -->
+  <rect x="1" y="2.5" width="14" height="4.5" rx="2.25" fill="currentColor" opacity="0.35"/>
+  <!-- Top knob (left side) -->
+  <circle cx="4.5" cy="4.75" r="2.25" fill="currentColor"/>
+  <!-- Bottom track -->
+  <rect x="1" y="9" width="14" height="4.5" rx="2.25" fill="currentColor" opacity="0.35"/>
+  <!-- Bottom knob (right side) -->
+  <circle cx="11.5" cy="11.25" r="2.25" fill="currentColor"/>
+</svg>

@@ -161,6 +161,39 @@ GBinding *g_object_bind_property(gpointer source, const gchar *source_property,
     return orig_g_object_bind_property(source, source_property, target, target_property, flags);
 }
 
+static gboolean is_ukrainian_locale(void)
+{
+    const char *lang = g_getenv("LANG");
+    const char *lc_all = g_getenv("LC_ALL");
+    const char *lc_messages = g_getenv("LC_MESSAGES");
+    const char *l = lc_all ? lc_all : (lc_messages ? lc_messages : lang);
+    return (l && g_str_has_prefix(l, "uk"));
+}
+
+static gboolean uri_matches_xdg(const char *uri, GUserDirectory dir, const char *alt1, const char *alt2)
+{
+    if (!uri) return FALSE;
+    const char *path = g_get_user_special_dir(dir);
+    if (path) {
+        GFile *f = g_file_new_for_path(path);
+        if (f) {
+            char *f_uri = g_file_get_uri(f);
+            g_object_unref(f);
+            if (f_uri) {
+                gboolean m = (g_str_equal(uri, f_uri) ||
+                              (g_str_has_prefix(uri, f_uri) && uri[strlen(f_uri)] == '/'));
+                g_free(f_uri);
+                if (m) return TRUE;
+            }
+        }
+    }
+    if (alt1 && (g_str_has_suffix(uri, alt1) || g_str_has_suffix(uri, "/Desktop/")))
+        return TRUE;
+    if (alt2 && g_str_has_suffix(uri, alt2))
+        return TRUE;
+    return FALSE;
+}
+
 static int get_row_priority(GtkListBoxRow *row)
 {
     if (!row || !G_IS_OBJECT(row)) return 9999;
@@ -193,22 +226,18 @@ static int get_row_priority(GtkListBoxRow *row)
             rank = 800; // bottom
         } else if (g_str_has_suffix(uri, "/Applications") || g_str_has_suffix(uri, "/Applications/")) {
             rank = 100;
-        } else if (g_str_has_suffix(uri, "/%D0%94%D0%B5%D1%81%D0%BA%D1%82%D0%BE%D0%BF") ||
-                   g_str_has_suffix(uri, "/%D0%A0%D0%BE%D0%B1%D0%BE%D1%87%D0%B8%D0%B9%20%D1%81%D1%82%D1%96%D0%BB") ||
-                   g_str_has_suffix(uri, "/Desktop")) {
+        } else if (uri_matches_xdg(uri, G_USER_DIRECTORY_DESKTOP, "/Desktop", "/%D0%94%D0%B5%D1%81%D0%BA%D1%82%D0%BE%D0%BF") ||
+                   g_str_has_suffix(uri, "/%D0%A1%D1%82%D1%96%D0%BB%D1%8C%D0%BD%D0%B8%D1%86%D1%8F") ||
+                   g_str_has_suffix(uri, "/%D0%A0%D0%BE%D0%B1%D0%BE%D1%87%D0%B8%D0%B9%20%D1%81%D1%82%D1%96%D0%BB")) {
             rank = 110;
-        } else if (g_str_has_suffix(uri, "/%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B8") ||
-                   g_str_has_suffix(uri, "/Documents")) {
+        } else if (uri_matches_xdg(uri, G_USER_DIRECTORY_DOCUMENTS, "/Documents", "/%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B8")) {
             rank = 120;
-        } else if (g_str_has_suffix(uri, "/%D0%97%D0%B0%D0%B2%D0%B0%D0%BD%D1%82%D0%B0%D0%B6%D0%B5%D0%BD%D0%B5") ||
-                   g_str_has_suffix(uri, "/%D0%97%D0%B0%D0%B2%D0%B0%D0%BD%D1%82%D0%B0%D0%B6%D0%B5%D0%BD%D0%BD%D1%8F") ||
-                   g_str_has_suffix(uri, "/Downloads")) {
+        } else if (uri_matches_xdg(uri, G_USER_DIRECTORY_DOWNLOAD, "/Downloads", "/%D0%97%D0%B0%D0%B2%D0%B0%D0%BD%D1%82%D0%B0%D0%B6%D0%B5%D0%BD%D0%B5") ||
+                   g_str_has_suffix(uri, "/%D0%97%D0%B0%D0%B2%D0%B0%D0%BD%D1%82%D0%B0%D0%B6%D0%B5%D0%BD%D0%BD%D1%8F")) {
             rank = 130;
-        } else if (g_str_has_suffix(uri, "/%D0%97%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%BD%D1%8F") ||
-                   g_str_has_suffix(uri, "/Pictures")) {
+        } else if (uri_matches_xdg(uri, G_USER_DIRECTORY_PICTURES, "/Pictures", "/%D0%97%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%BD%D1%8F")) {
             rank = 140;
-        } else if (g_str_has_suffix(uri, "/%D0%92%D1%96%D0%B4%D0%B5%D0%BE") ||
-                   g_str_has_suffix(uri, "/Videos")) {
+        } else if (uri_matches_xdg(uri, G_USER_DIRECTORY_VIDEOS, "/Videos", "/%D0%92%D1%96%D0%B4%D0%B5%D0%BE")) {
             rank = 150;
         } else if (section_type == 2) { /* BOOKMARKS */
             rank = 160;
@@ -306,10 +335,13 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
     gboolean has_start_icon = g_object_class_find_property(oc, "start-icon") != NULL;
     gboolean has_label = g_object_class_find_property(oc, "label") != NULL;
     
+    gboolean uk = is_ukrainian_locale();
+
     if (uri) {
         if (p == 10) {
-            if (has_label && (!cur_label || !g_str_equal(cur_label, "Недавні"))) {
-                g_object_set(row, "label", "Недавні", NULL);
+            const char *target = uk ? "Недавні" : "Recent";
+            if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
+                g_object_set(row, "label", target, NULL);
             }
             if (has_start_icon) {
                 GIcon *clock = g_themed_icon_new("preferences-system-time-symbolic");
@@ -318,13 +350,15 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 20) {
-            if (has_label && (!cur_label || !g_str_equal(cur_label, "Домівка"))) {
-                g_object_set(row, "label", "Домівка", NULL);
+            const char *target = uk ? "Домівка" : "Home";
+            if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
+                g_object_set(row, "label", target, NULL);
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 100) {
-            if (has_label && (!cur_label || !g_str_equal(cur_label, "Програми"))) {
-                g_object_set(row, "label", "Програми", NULL);
+            const char *target = uk ? "Програми" : "Applications";
+            if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
+                g_object_set(row, "label", target, NULL);
             }
             if (has_start_icon) {
                 GIcon *app_icon = g_themed_icon_new("software-store-symbolic");
@@ -333,8 +367,9 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 110) {
-            if (has_label && (!cur_label || !g_str_equal(cur_label, "Робочий стіл"))) {
-                g_object_set(row, "label", "Робочий стіл", NULL);
+            const char *target = uk ? "Робочий стіл" : "Desktop";
+            if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
+                g_object_set(row, "label", target, NULL);
             }
             if (has_start_icon) {
                 GIcon *desk_icon = g_themed_icon_new("user-desktop-symbolic");
@@ -343,8 +378,9 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 120) {
-            if (has_label && (!cur_label || !g_str_equal(cur_label, "Документи"))) {
-                g_object_set(row, "label", "Документи", NULL);
+            const char *target = uk ? "Документи" : "Documents";
+            if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
+                g_object_set(row, "label", target, NULL);
             }
             if (has_start_icon) {
                 GIcon *doc_icon = g_themed_icon_new("folder-documents-symbolic");
@@ -353,8 +389,9 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 130) {
-            if (has_label && (!cur_label || !g_str_equal(cur_label, "Завантаження"))) {
-                g_object_set(row, "label", "Завантаження", NULL);
+            const char *target = uk ? "Завантаження" : "Downloads";
+            if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
+                g_object_set(row, "label", target, NULL);
             }
             if (has_start_icon) {
                 GIcon *dl_icon = g_themed_icon_new("folder-download-symbolic");
@@ -363,8 +400,9 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 140) {
-            if (has_label && (!cur_label || !g_str_equal(cur_label, "Фото"))) {
-                g_object_set(row, "label", "Фото", NULL);
+            const char *target = uk ? "Фото" : "Pictures";
+            if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
+                g_object_set(row, "label", target, NULL);
             }
             if (has_start_icon) {
                 GIcon *pic_icon = g_themed_icon_new("folder-pictures-symbolic");
@@ -373,8 +411,9 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 150) {
-            if (has_label && (!cur_label || !g_str_equal(cur_label, "Відеозаписи"))) {
-                g_object_set(row, "label", "Відеозаписи", NULL);
+            const char *target = uk ? "Відеозаписи" : "Movies";
+            if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
+                g_object_set(row, "label", target, NULL);
             }
             if (has_start_icon) {
                 GIcon *vid_icon = g_themed_icon_new("folder-videos-symbolic");
@@ -383,8 +422,9 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 800) {
-            if (has_label && (!cur_label || !g_str_equal(cur_label, "Кошик"))) {
-                g_object_set(row, "label", "Кошик", NULL);
+            const char *target = uk ? "Кошик" : "Trash";
+            if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
+                g_object_set(row, "label", target, NULL);
             }
             find_and_style_images(GTK_WIDGET(row), FALSE);
         } else if (p == 300) {
@@ -400,7 +440,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
         GtkWidget *header = gtk_list_box_row_get_header(row);
         if (!header || !g_object_get_data(G_OBJECT(header), "mac-favorites-header")) {
             GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-            GtkWidget *lbl = gtk_label_new("Вибрані");
+            GtkWidget *lbl = gtk_label_new(uk ? "Вибрані" : "Favorites");
             gtk_widget_add_css_class(lbl, "mac-sidebar-header");
             gtk_widget_set_halign(lbl, GTK_ALIGN_START);
             gtk_box_append(GTK_BOX(box), lbl);
@@ -413,7 +453,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
         GtkWidget *header = gtk_list_box_row_get_header(row);
         if (!header || !g_object_get_data(G_OBJECT(header), "mac-mounts-header")) {
             GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-            GtkWidget *lbl = gtk_label_new("Місця");
+            GtkWidget *lbl = gtk_label_new(uk ? "Місця" : "Locations");
             gtk_widget_add_css_class(lbl, "mac-sidebar-header");
             gtk_widget_set_halign(lbl, GTK_ALIGN_START);
             gtk_box_append(GTK_BOX(box), lbl);

@@ -442,11 +442,10 @@ EOF_NAUT
         run_as_user xdg-mime default mac-app-launcher.desktop application/x-desktop 2>/dev/null || true
         run_as_user gio mime application/x-desktop mac-app-launcher.desktop 2>/dev/null || true
     fi
-    if [ -f "$SCRIPT_DIR/config/gtk-3.0/bookmarks" ]; then
-        mkdir -p "$TARGET_HOME/.config/gtk-3.0"
-        cp -f "$SCRIPT_DIR/config/gtk-3.0/bookmarks" "$TARGET_HOME/.config/gtk-3.0/bookmarks"
-        sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$TARGET_HOME/.config/gtk-3.0/bookmarks" 2>/dev/null || true
-        chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/gtk-3.0/bookmarks"
+    if [ -f "$SCRIPT_DIR/bin/mac-generate-bookmarks.sh" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/mac-generate-bookmarks.sh" /usr/local/bin/mac-generate-bookmarks.sh
+        sudo chmod 755 /usr/local/bin/mac-generate-bookmarks.sh
+        run_as_user /usr/local/bin/mac-generate-bookmarks.sh "$TARGET_USER" "$TARGET_HOME"
     fi
     if [ -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" ]; then
         mkdir -p "$TARGET_HOME/.config/autostart"
@@ -491,8 +490,19 @@ install_icons() {
     # Створюємо сумісне посилання macW1Y-dark -> MacTahoe-dark
     ln -sfn "MacTahoe-dark" "$ICONS_DIR/macW1Y-dark"
     
-    [ -f "$SCRIPT_DIR/icons/control-center.png" ] && cp "$SCRIPT_DIR/icons/control-center.png" "$ICONS_DIR/hicolor/scalable/apps/"
-    [ -f "$SCRIPT_DIR/icons/control-center-symbolic.svg" ] && cp "$SCRIPT_DIR/icons/control-center-symbolic.svg" "$ICONS_DIR/hicolor/scalable/apps/"
+    # Системні іконки Центру керування (незалежні від користувача та захищені від видалення)
+    sudo mkdir -p /usr/share/mactheme/icons /usr/share/icons/hicolor/scalable/status
+    if [ -d "$SCRIPT_DIR/assets/icons" ]; then
+        sudo cp -f "$SCRIPT_DIR/assets/icons"/* /usr/share/mactheme/icons/ 2>/dev/null || true
+        sudo chmod 644 /usr/share/mactheme/icons/* 2>/dev/null || true
+        if [ -f "$SCRIPT_DIR/assets/icons/control-center-symbolic.svg" ]; then
+            sudo cp -f "$SCRIPT_DIR/assets/icons/control-center-symbolic.svg" /usr/share/icons/hicolor/scalable/status/ 2>/dev/null || true
+        fi
+    fi
+    
+    [ -f "$SCRIPT_DIR/assets/icons/controlcenter.png" ] && cp "$SCRIPT_DIR/assets/icons/controlcenter.png" "$ICONS_DIR/hicolor/scalable/apps/" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/assets/icons/controlcenter-dark.png" ] && cp "$SCRIPT_DIR/assets/icons/controlcenter-dark.png" "$ICONS_DIR/hicolor/scalable/apps/" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/assets/icons/control-center-symbolic.svg" ] && cp "$SCRIPT_DIR/assets/icons/control-center-symbolic.svg" "$ICONS_DIR/hicolor/scalable/apps/" 2>/dev/null || true
     
     chown -R "${TARGET_USER}:${TARGET_USER}" "$ICONS_DIR"
     gtk-update-icon-cache -f -t "$ICONS_DIR/MacTahoe" 2>/dev/null || true
@@ -708,11 +718,33 @@ install_settings_overlay() {
     
     log_info "Збірка динамічної бібліотеки libmac_settings.so..."
     if command -v gcc >/dev/null 2>&1; then
-        gcc -shared -fPIC -o "$LOCAL_LIB/libmac_settings.so" "$OVERLAY_DIR/libmac_settings.c" $(pkg-config --cflags --libs glib-2.0 gio-2.0 json-glib-1.0 2>/dev/null) -ldl 2>/dev/null || {
+        gcc -shared -fPIC -O2 -o "$LOCAL_LIB/libmac_settings.so" "$OVERLAY_DIR/libmac_settings.c" $(pkg-config --cflags --libs glib-2.0 gio-2.0 json-glib-1.0 gtk4 libadwaita-1 2>/dev/null) -ldl 2>/dev/null || {
             [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ] && cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
         }
     else
         [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ] && cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
+    fi
+    
+    # Системне встановлення бібліотеки та оверлеїв для всіх користувачів
+    sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay /usr/lib/x86_64-linux-gnu
+    if [ -f "$LOCAL_LIB/libmac_settings.so" ]; then
+        sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/lib/x86_64-linux-gnu/libmac_settings.so
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_settings.so
+    fi
+    if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
+        sudo cp -f "$SCRIPT_DIR/gnome-control-center-overlay"/cc-*.ui /usr/share/mactheme/gnome-control-center-overlay/ 2>/dev/null || true
+        sudo chmod 644 /usr/share/mactheme/gnome-control-center-overlay/* 2>/dev/null || true
+    fi
+    
+    # Системна обгортка gnome-control-center
+    if [ -f "/usr/bin/gnome-control-center" ] && [ ! -f "/usr/bin/gnome-control-center.orig" ]; then
+        sudo cp -p /usr/bin/gnome-control-center /usr/bin/gnome-control-center.orig
+    fi
+    if [ -f "$SCRIPT_DIR/bin/gnome-control-center" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/gnome-control-center" /usr/bin/gnome-control-center
+        sudo chmod 755 /usr/bin/gnome-control-center
+        sudo cp -f "$SCRIPT_DIR/bin/gnome-control-center" /usr/local/bin/gnome-control-center
+        sudo chmod 755 /usr/local/bin/gnome-control-center
     fi
 
     log_info "Збірка динамічної бібліотеки libmac_extension_manager.so..."
@@ -1424,6 +1456,22 @@ run_incremental_update() {
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so" false
+        sync_or_update_file "$SCRIPT_DIR/lib/libmac_settings.so" "/usr/lib/x86_64-linux-gnu/libmac_settings.so" true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_settings.so 2>/dev/null || true
+    fi
+    sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay 2>/dev/null || true
+    if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
+        sudo cp -f "$SCRIPT_DIR/gnome-control-center-overlay"/cc-*.ui /usr/share/mactheme/gnome-control-center-overlay/ 2>/dev/null || true
+        sudo chmod 644 /usr/share/mactheme/gnome-control-center-overlay/* 2>/dev/null || true
+    fi
+    if [ -f "/usr/bin/gnome-control-center" ] && [ ! -f "/usr/bin/gnome-control-center.orig" ]; then
+        sudo cp -p /usr/bin/gnome-control-center /usr/bin/gnome-control-center.orig 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/bin/gnome-control-center" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/gnome-control-center" /usr/bin/gnome-control-center 2>/dev/null || true
+        sudo chmod 755 /usr/bin/gnome-control-center 2>/dev/null || true
+        sudo cp -f "$SCRIPT_DIR/bin/gnome-control-center" /usr/local/bin/gnome-control-center 2>/dev/null || true
+        sudo chmod 755 /usr/local/bin/gnome-control-center 2>/dev/null || true
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
@@ -1515,10 +1563,10 @@ EOF_NAUT
         run_as_user xdg-mime default mac-app-launcher.desktop application/x-desktop 2>/dev/null || true
         run_as_user gio mime application/x-desktop mac-app-launcher.desktop 2>/dev/null || true
     fi
-    if [ -f "$SCRIPT_DIR/config/gtk-3.0/bookmarks" ]; then
-        mkdir -p "$TARGET_HOME/.config/gtk-3.0"
-        sync_or_update_file "$SCRIPT_DIR/config/gtk-3.0/bookmarks" "$TARGET_HOME/.config/gtk-3.0/bookmarks" false
-        sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$TARGET_HOME/.config/gtk-3.0/bookmarks" 2>/dev/null || true
+    if [ -f "$SCRIPT_DIR/bin/mac-generate-bookmarks.sh" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/mac-generate-bookmarks.sh" /usr/local/bin/mac-generate-bookmarks.sh
+        sudo chmod 755 /usr/local/bin/mac-generate-bookmarks.sh
+        run_as_user /usr/local/bin/mac-generate-bookmarks.sh "$TARGET_USER" "$TARGET_HOME"
     fi
     if [ -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" ]; then
         mkdir -p "$TARGET_HOME/.config/autostart"

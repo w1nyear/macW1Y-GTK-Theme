@@ -1708,7 +1708,10 @@ function _ncSettle(p) {
         p._settleDone = true;
         _ensureNcCards(p);
         for (const s of p.stacks ?? []) {
-            try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+            try {
+                _startStackFade(s, 220);
+                glassForceRefresh?.(s.bgActor);
+            } catch (_) {}
         }
         try {
             const cards = p.stacks?.find(s => s.kind === 'cards');
@@ -2274,7 +2277,19 @@ function _syncGlass(p, monitor, s) {
             return;
         }
         const m = BACKDROP_PAD;
-        s.bgActor.set_position(monitor.x, monitor.y);
+        const [ovX, ovY] = p.overlay.get_transformed_position();
+        s.bgActor.set_position(monitor.x - ovX, monitor.y - ovY);
+
+        // Slide animation protection: while the panel is sliding in (before settle or translation_x != 0),
+        // keep the glass backdrop hidden so unaligned wallpaper clones never flash or tear during movement.
+        const isSliding = (!p._settleDone || (p.box?.translation_x !== 0 && Math.abs(p.box?.translation_x ?? 0) > 1));
+        if (isSliding) {
+            if (s.bgActor.visible)
+                s.bgActor.hide();
+            s.bgActor.opacity = 0;
+            return;
+        }
+
         const alpha = p.box.opacity * _stackFadeK(s);
         if (alpha > 0 && !s.bgActor.visible)
             s.bgActor.show();

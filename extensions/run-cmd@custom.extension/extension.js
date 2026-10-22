@@ -29,21 +29,25 @@ function _loadInk() {
 }
 _loadInk();
 
-const LIGHT_PATH = GLib.get_home_dir() + '/controlcenter.png';
-const DARK_PATH = GLib.get_home_dir() + '/controlcenter-dark.png';
+const SYSTEM_LIGHT_PATH = '/usr/share/mactheme/icons/controlcenter.png';
+const SYSTEM_DARK_PATH = '/usr/share/mactheme/icons/controlcenter-dark.png';
+const FALLBACK_LIGHT = GLib.get_home_dir() + '/controlcenter.png';
+const FALLBACK_DARK = GLib.get_home_dir() + '/controlcenter-dark.png';
 
 // Adaptive ink (not theme): white icon on dark backgrounds, black on light.
 function themedIconPath() {
+    const isDarkInk = (getTopbarInk() === 'dark');
     try {
-        if (getTopbarInk() === 'dark') {
-            const dark = Gio.File.new_for_path(DARK_PATH);
-            if (dark.query_exists(null))
-                return DARK_PATH;
+        if (isDarkInk) {
+            if (GLib.file_test(SYSTEM_DARK_PATH, GLib.FileTest.EXISTS))
+                return SYSTEM_DARK_PATH;
+            if (GLib.file_test(FALLBACK_DARK, GLib.FileTest.EXISTS))
+                return FALLBACK_DARK;
         }
-    } catch (e) {
-        // fall through to the light asset
-    }
-    return LIGHT_PATH;
+    } catch (_) {}
+    if (GLib.file_test(SYSTEM_LIGHT_PATH, GLib.FileTest.EXISTS))
+        return SYSTEM_LIGHT_PATH;
+    return FALLBACK_LIGHT;
 }
 
 export default class RunCommandExtension extends Extension {

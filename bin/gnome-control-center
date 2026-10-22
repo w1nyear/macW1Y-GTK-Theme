@@ -1,4 +1,17 @@
-#!/bin/bash
-export G_RESOURCE_OVERLAYS="/org/gnome/Settings/gtk/cc-window.ui=/home/vitaliy/.local/share/gnome-control-center-overlay/cc-window.ui:/org/gnome/control-center/system/cc-system-panel.ui=/home/vitaliy/.local/share/gnome-control-center-overlay/cc-system-panel.ui:/org/gnome/control-center/power/cc-power-panel.ui=/home/vitaliy/.local/share/gnome-control-center-overlay/cc-power-panel.ui:/org/gnome/control-center/mouse/cc-mouse-panel.ui=/home/vitaliy/.local/share/gnome-control-center-overlay/cc-mouse-panel.ui"
-export LD_PRELOAD="/home/vitaliy/.local/lib/libmac_settings.so${LD_PRELOAD:+:$LD_PRELOAD}"
-exec /usr/bin/gnome-control-center "$@"
+#!/bin/sh
+OVERLAY_DIR="/usr/share/mactheme/gnome-control-center-overlay"
+[ ! -d "$OVERLAY_DIR" ] && OVERLAY_DIR="$HOME/.local/share/gnome-control-center-overlay"
+
+export G_RESOURCE_OVERLAYS="/org/gnome/Settings/gtk/cc-window.ui=$OVERLAY_DIR/cc-window.ui:/org/gnome/control-center/system/cc-system-panel.ui=$OVERLAY_DIR/cc-system-panel.ui:/org/gnome/control-center/power/cc-power-panel.ui=$OVERLAY_DIR/cc-power-panel.ui:/org/gnome/control-center/mouse/cc-mouse-panel.ui=$OVERLAY_DIR/cc-mouse-panel.ui"
+
+if [ -f "/usr/lib/x86_64-linux-gnu/libmac_settings.so" ]; then
+    export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_settings.so${LD_PRELOAD:+:$LD_PRELOAD}"
+elif [ -f "$HOME/.local/lib/libmac_settings.so" ]; then
+    export LD_PRELOAD="$HOME/.local/lib/libmac_settings.so${LD_PRELOAD:+:$LD_PRELOAD}"
+fi
+
+if [ -f "/usr/bin/gnome-control-center.orig" ]; then
+    exec /usr/bin/gnome-control-center.orig "$@"
+else
+    exec /usr/bin/gnome-control-center "$@"
+fi

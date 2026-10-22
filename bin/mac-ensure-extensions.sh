@@ -52,3 +52,8 @@ BLOAT_EXTS=(
 for ext in "${BLOAT_EXTS[@]}"; do
     LD_PRELOAD= gnome-extensions disable "$ext" 2>/dev/null || true
 done
+
+# Ensure bookmarks are dynamically generated for current user and locale
+if [ -x /usr/local/bin/mac-generate-bookmarks.sh ]; then
+    /usr/local/bin/mac-generate-bookmarks.sh "$(id -un)" "$HOME" 2>/dev/null || true
+fi

@@ -456,47 +456,6 @@ void on_mac_styling_clicked(void *row, void *user_data) {
     /* If row or template triggered this, navigation is handled by navigation.push */
 }
 
-static const char *gpu_subtitles[] = {
-    "Гібридний: Intel для системи • RTX 3050 для ігор та важких додатків",
-    "Всі програми на RTX 3050: Intel для системи • RTX 3050 для ВСІХ програм",
-    "Повна продуктивність: Уся система та всі програми на RTX 3050",
-    "Енергозбереження: Дискретна графіка вимкнена, тільки Intel UHD"
-};
-
-void init_gpu_mode(void *widget, gpointer data) {
-    in_init = 1;
-    int idx = 0;
-    FILE *f = fopen("/etc/mac-gpu.state", "r");
-    if (f) {
-        char buf[64];
-        if (fgets(buf, sizeof(buf), f)) {
-            buf[strcspn(buf, "\r\n")] = 0;
-            if (strcmp(buf, "apps_nvidia") == 0) idx = 1;
-            else if (strcmp(buf, "nvidia") == 0) idx = 2;
-            else if (strcmp(buf, "intel") == 0) idx = 3;
-            else idx = 0;
-        }
-        fclose(f);
-    }
-    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), (guint)idx);
-    if (idx >= 0 && idx < 4) {
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(widget), gpu_subtitles[idx]);
-    }
-    in_init = 0;
-}
-
-void on_gpu_mode_changed(void *widget, void *pspec, gpointer data) {
-    if (in_init) return;
-    guint idx = adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
-    const char *modes[] = {"hybrid", "apps_nvidia", "nvidia", "intel"};
-    if (idx < 4) {
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(widget), gpu_subtitles[idx]);
-        char *cmd = g_strdup_printf("sudo /usr/local/bin/mac-gpu-manager set %s", modes[idx]);
-        g_spawn_command_line_async(cmd, NULL);
-        g_free(cmd);
-    }
-}
-
 void init_game_mode(void *widget, gpointer data) {
     in_init = 1;
     int is_active = 0;
@@ -609,7 +568,9 @@ static gboolean is_settings(void)
     static int cached = -1;
     if (cached != -1) return cached;
     const char *prg = program_invocation_short_name;
-    if (prg && (strcmp(prg, "gnome-control-center") == 0 || strcmp(prg, "org.gnome.Settings") == 0)) {
+    if (prg && (strcmp(prg, "gnome-control-center") == 0 ||
+                strcmp(prg, "gnome-control-center.orig") == 0 ||
+                strcmp(prg, "org.gnome.Settings") == 0)) {
         cached = 1;
     } else {
         cached = 0;
@@ -620,17 +581,38 @@ static gboolean is_settings(void)
 static void (*orig_settings_gtk_window_present)(GtkWindow *window) = NULL;
 static void (*orig_settings_gtk_window_present_with_time)(GtkWindow *window, guint32 timestamp) = NULL;
 
+static void hide_title_labels(GtkWidget *widget)
+{
+    if (!widget) return;
+    if (GTK_IS_LABEL(widget)) {
+        const char *txt = gtk_label_get_text(GTK_LABEL(widget));
+        if (txt && (g_str_has_prefix(txt, "Парам") ||
+                    g_str_equal(txt, "Settings") ||
+                    g_str_equal(txt, "Paramètres") ||
+                    g_str_equal(txt, "Einstellungen"))) {
+            gtk_widget_set_visible(widget, FALSE);
+        }
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        hide_title_labels(child);
+    }
+}
+
 static void find_buttons_in_settings_sidebar(GtkWidget *widget, GtkWidget **search_btn, GtkWidget **menu_btn)
 {
     if (!widget) return;
     if (GTK_IS_TOGGLE_BUTTON(widget)) {
         const char *icon = gtk_button_get_icon_name(GTK_BUTTON(widget));
-        if (g_strcmp0(icon, "edit-find-symbolic") == 0) {
+        const char *tooltip = gtk_widget_get_tooltip_text(widget);
+        if (g_strcmp0(icon, "edit-find-symbolic") == 0 ||
+            (tooltip && (g_str_equal(tooltip, "Search") || g_str_equal(tooltip, "Пошук")))) {
             *search_btn = widget;
         }
     } else if (GTK_IS_MENU_BUTTON(widget)) {
         const char *icon = gtk_menu_button_get_icon_name(GTK_MENU_BUTTON(widget));
-        if (g_strcmp0(icon, "open-menu-symbolic") == 0) {
+        const char *tooltip = gtk_widget_get_tooltip_text(widget);
+        if (g_strcmp0(icon, "open-menu-symbolic") == 0 ||
+            (tooltip && (g_str_equal(tooltip, "Main Menu") || g_str_equal(tooltip, "Головне меню")))) {
             *menu_btn = widget;
         }
     }
@@ -782,14 +764,20 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     AdwNavigationPage *sidebar = adw_navigation_split_view_get_sidebar(split_view);
     if (!sidebar) return G_SOURCE_REMOVE;
 
+    /* Lock empty title on sidebar page */
+    if (ADW_IS_NAVIGATION_PAGE(sidebar)) {
+        adw_navigation_page_set_title(sidebar, "");
+    }
+
     GList *sidebar_bars = NULL;
     find_headerbars_recursive(GTK_WIDGET(sidebar), &sidebar_bars);
     if (sidebar_bars) {
         AdwHeaderBar *sidebar_hb = ADW_HEADER_BAR(sidebar_bars->data);
 
-        /* 1. Hide title in sidebar headerbar */
+        /* 1. Hide title and any title labels in sidebar headerbar */
         adw_header_bar_set_show_title(sidebar_hb, FALSE);
         adw_header_bar_set_title_widget(sidebar_hb, NULL);
+        hide_title_labels(GTK_WIDGET(sidebar_hb));
 
         /* 2. Find and remove search_button and menu_button */
         GtkWidget *search_btn = g_object_get_data(G_OBJECT(split_view), "mac_search_btn");
