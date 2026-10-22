@@ -1,11 +1,12 @@
 // Date widget (macOS Tahoe): red weekday on top, huge day number.
-// No events backend: shows the date only.
+// Content is centered inside the card.
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
+// GLib get_day_of_week(): Mon=1..Sun=7. Map to English names (Sun is index 7 % 7 = 0).
 const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY',
     'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
@@ -20,8 +21,16 @@ class DateWidget extends St.Widget {
             layout_manager: new Clutter.BoxLayout({orientation: Clutter.Orientation.VERTICAL}),
             ...rest,
         });
-        this._day = new St.Label({style_class: 'tw-date-weekday'});
-        this._num = new St.Label({style_class: 'tw-date-num'});
+        this._day = new St.Label({
+            style_class: 'tw-date-weekday',
+            x_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+        });
+        this._num = new St.Label({
+            style_class: 'tw-date-num',
+            x_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+        });
         this.add_child(this._day);
         this.add_child(this._num);
         this.setDarkText(darkText);

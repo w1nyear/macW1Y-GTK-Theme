@@ -1,5 +1,5 @@
 // Month calendar widget: St grid, today circled. Rebuilds when the day
-// flips (checked once a minute).
+// flips (checked once a minute). Week starts Monday (ISO 8601).
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
@@ -8,7 +8,9 @@ import St from 'gi://St';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+// Mon-first header: M T W T F S S
+const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 const OFFSET_KEYS = [
     'calendar-title-x', 'calendar-title-y',
@@ -31,7 +33,11 @@ class CalendarWidget extends St.Widget {
         this._grid = null;
         this._settings = settings;
         this._offsetId = 0;
-        this._title = new St.Label({style_class: 'tw-cal-title'});
+        this._title = new St.Label({
+            style_class: 'tw-cal-title',
+            x_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+        });
         this.add_child(this._title);
 
         this.connect('destroy', () => this.destroy());
@@ -180,17 +186,21 @@ class CalendarWidget extends St.Widget {
 
         if (this._grid)
             this._grid.destroy();
+
         const grid = new St.Widget({
             style_class: 'tw-cal-grid',
             layout_manager: new Clutter.GridLayout(),
+            x_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
         });
         this.add_child(grid);
         this._grid = grid;
         const lm = grid.layout_manager;
 
         const first = GLib.DateTime.new_local(year, month, 1, 0, 0, 0);
-        // GLib: Sunday=7; US columns start Sunday.
-        const lead = first.get_day_of_week() % 7;
+        // GLib: Mon=1, Tue=2, ..., Sat=6, Sun=7.
+        // Mon-first: column = (day_of_week - 1) % 7 → Mon=0, Tue=1, ..., Sun=6.
+        const lead = (first.get_day_of_week() - 1) % 7;
         const nextMonth = month === 12
             ? GLib.DateTime.new_local(year + 1, 1, 1, 0, 0, 0)
             : GLib.DateTime.new_local(year, month + 1, 1, 0, 0, 0);
@@ -200,10 +210,13 @@ class CalendarWidget extends St.Widget {
             const l = new St.Label({
                 style_class: 'tw-cal-dow' + (this._darkText ? ' tw-dark' : ''),
                 text: wd,
+                x_align: Clutter.ActorAlign.CENTER,
             });
             const cs = this._cellSizeStyle();
             if (cs)
-                l.set_style(cs);
+                l.set_style(cs + 'text-align: center;');
+            else
+                l.set_style('text-align: center;');
             lm.attach(l, col, 0, 1, 1);
         });
 
@@ -216,10 +229,13 @@ class CalendarWidget extends St.Widget {
                     + (d === today ? ' tw-cal-today' : '')
                     + (this._darkText ? ' tw-dark' : ''),
                 text: String(d),
+                x_align: Clutter.ActorAlign.CENTER,
             });
             const cs = this._cellSizeStyle();
             if (cs)
-                l.set_style(cs);
+                l.set_style(cs + 'text-align: center;');
+            else
+                l.set_style('text-align: center;');
             lm.attach(l, col, row, 1, 1);
         }
         this._applyTextOffsets();

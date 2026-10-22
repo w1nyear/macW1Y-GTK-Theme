@@ -54,6 +54,18 @@
 .tw-city {
     font-size: 1.05em;
     font-weight: 600;
+    text-align: center;
+}
+
+/* City label turns into a button — subtle underline hint */
+.tw-city-clickable {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+    padding-bottom: 2px;
+}
+
+.tw-city-clickable:hover {
+    border-bottom-color: rgba(255, 255, 255, 0.75);
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .tw-temp-row {
@@ -63,20 +75,24 @@
 .tw-temp {
     font-size: 3.2em;
     font-weight: 300;
+    text-align: center;
 }
 
 .tw-glyph {
     font-size: 2.2em;
+    text-align: center;
 }
 
 .tw-cond {
     font-size: 0.95em;
     font-weight: 500;
+    text-align: center;
 }
 
 .tw-hilow {
     font-size: 0.9em;
     font-weight: 500;
+    text-align: center;
 }
 
 .tw-cal-title {
@@ -84,6 +100,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     padding-bottom: 6px;
+    text-align: center;
 }
 
 .tw-cal-grid {
@@ -146,8 +163,14 @@
     font-size: 0.9em;
     font-weight: 700;
     color: #ff3b30;
+    text-align: center;
 }
 
+.tw-date-num {
+    font-size: 5.2em;
+    font-weight: 300;
+    text-align: center;
+}
 .tw-date-num {
     font-size: 5.2em;
     font-weight: 300;
@@ -323,4 +346,116 @@
     height: 96px;
     border-radius: 12px;
     background-color: rgba(128, 128, 128, 0.25);
+}
+
+/* ─────────────────────────────────── City search popup ── */
+
+.tw-search-popup {
+    background-color: rgba(22, 22, 26, 0.88);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+    padding: 12px;
+    spacing: 8px;
+    font-family: "SF Pro Text", "SF Pro", Sans-Serif;
+    color: #ffffff;
+    min-width: 320px;
+}
+
+.tw-search-titlerow {
+    spacing: 6px;
+}
+
+.tw-search-title {
+    font-size: 0.95em;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    padding-bottom: 2px;
+}
+
+.tw-search-close {
+    font-size: 1em;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.55);
+    padding: 0 4px;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+}
+
+.tw-search-close:hover {
+    color: #ff3b30;
+    background-color: rgba(255, 59, 48, 0.15);
+}
+
+.tw-search-entry {
+    background-color: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 10px;
+    padding: 8px 12px;
+    color: #ffffff;
+    font-size: 0.95em;
+    selection-background-color: rgba(10, 132, 255, 0.6);
+    caret-color: #ffffff;
+}
+
+.tw-search-entry:focus {
+    border-color: rgba(10, 132, 255, 0.75);
+}
+
+.tw-search-btnrow {
+    spacing: 0;
+}
+
+.tw-search-btn {
+    background-color: rgba(10, 132, 255, 0.85);
+    border-radius: 10px;
+    border: none;
+    color: #ffffff;
+    font-size: 0.9em;
+    font-weight: 700;
+    padding: 7px 18px;
+}
+
+.tw-search-btn:hover {
+    background-color: rgba(10, 132, 255, 1.0);
+}
+
+.tw-search-btn:active {
+    background-color: rgba(9, 110, 210, 1.0);
+}
+
+.tw-search-results {
+    spacing: 2px;
+    padding-top: 4px;
+}
+
+.tw-search-loading,
+.tw-search-noresult {
+    font-size: 0.88em;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 10px 0;
+    text-align: center;
+}
+
+.tw-search-result-item {
+    background-color: transparent;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: left;
+}
+
+.tw-search-result-item:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.tw-search-result-item:active {
+    background-color: rgba(10, 132, 255, 0.25);
+}
+
+.tw-search-result-label {
+    font-size: 0.88em;
+    color: #ffffff;
+    text-align: left;
 }
