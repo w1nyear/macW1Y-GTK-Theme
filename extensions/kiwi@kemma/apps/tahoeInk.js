@@ -63,60 +63,17 @@ function _pushInk(med, cur) {
 // ---- method 1: pick_color ----
 
 function _shooter() {
-    if (!_shot) {
-        try {
-            _shot = new Shell.Screenshot();
-        } catch (_) {
-            _shot = null;
-        }
-    }
-    return _shot;
+    return null;
 }
 
 function _pickLum(x, y) {
-    try {
-        const s = _shooter();
-        if (!s || typeof s.pick_color !== 'function')
-            return -1;
-        const [ok, color] = s.pick_color(Math.round(x), Math.round(y));
-        if (!ok || !color || color.red === undefined)
-            return -1;
-        return (0.2126 * color.red + 0.7152 * color.green + 0.0722 * color.blue) / 255;
-    } catch (_) {
-        return -1;
-    }
+    return -1;
 }
 
 // ---- method 2: area screenshot to temp PNG ----
 
 function _areaLum(rect) {
-    try {
-        const s = _shooter();
-        if (!s || typeof s.screenshot_area !== 'function')
-            return -1;
-        try {
-            GLib.mkdir_with_parents(TMP_DIR, 0o700);
-        } catch (_) {
-            // exists
-        }
-        const path = `${TMP_DIR}/tahoe-ink.png`;
-        const ok = s.screenshot_area(false,
-            Math.round(rect.x), Math.round(rect.y),
-            Math.max(1, Math.round(rect.w)), Math.max(1, Math.round(rect.h)),
-            path);
-        if (!ok)
-            return -1;
-        const lum = _pixbufGridLum(path, 0, 0,
-            Math.round(rect.w), Math.round(rect.h), 1);
-        try {
-            GLib.unlink(path);
-        } catch (_) {
-            // leftover
-        }
-        return lum;
-    } catch (_) {
-        return -1;
-    }
+    return -1;
 }
 
 function _pixbufGridLum(path, ox, oy, w, h, div) {
@@ -241,34 +198,7 @@ function _topbarRect() {
 function _sampleRect(rect) {
     if (!rect || !(rect.w > 0) || !(rect.h > 0))
         return -1;
-    // sticky method: reuse what worked, re-probe on failure
-    const order = _method === 1 ? [1, 2, 3]
-        : _method === 2 ? [2, 1, 3]
-        : _method === 3 ? [3, 1, 2] : [1, 2, 3];
-    for (const m of order) {
-        let lum = -1;
-        try {
-            if (m === 1) {
-                const vals = [];
-                const xs = [0.08, 0.25, 0.42, 0.58, 0.75, 0.92];
-                for (const fx of xs)
-                    vals.push(_pickLum(rect.x + rect.w * fx, rect.y + rect.h / 2));
-                lum = _median(vals);
-            } else if (m === 2) {
-                lum = _areaLum(rect);
-            } else {
-                lum = _wallLum(rect);
-            }
-        } catch (_) {
-            lum = -1;
-        }
-        if (lum >= 0) {
-            _method = m;
-            return lum;
-        }
-    }
-    _method = 4;
-    return -1;
+    return _wallLum(rect);
 }
 
 function _poll() {

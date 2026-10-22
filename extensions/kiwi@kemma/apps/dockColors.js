@@ -203,7 +203,7 @@ function _read() {
     // The first dock that can actually be measured, rather than whichever came
     // first: a dock still being built has no allocation to read yet.
     const band = docks.reduce((found, { container }) => found ?? _band(container), null);
-    if (!band)
+    if (!band || !screenshot)
         return;
 
     const { rect, skip } = band;
@@ -348,7 +348,7 @@ export function enable() {
     enabled = true;
 
     savedColors = Object.fromEntries(SAVED_KEYS.map(key => [key, d2d.get_string(key)]));
-    screenshot = new Shell.Screenshot();
+    screenshot = null;
     bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
 
     for (const [object, signal] of [

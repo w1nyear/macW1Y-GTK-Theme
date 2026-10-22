@@ -9740,28 +9740,20 @@ window.nautilus-window,
 window.nautilus-window.background,
 window.nautilus-window > dialog-host,
 window.nautilus-window overlay-split-view {
-    background-color: transparent;
-    background-image: 
-        linear-gradient(#202022, #202022),
-        linear-gradient(#202022, #202022);
-    background-repeat: no-repeat;
-    background-size: 40px 40px, 40px 40px;
-    background-position: 215px top, 215px bottom;
+    background-color: #202022;
+    background-image: none;
 }
 
-/* Sidebar floating glass card: solid #202022 frame border, rounded on all 4 corners */
+/* Sidebar floating glass card: rounded on all 4 corners */
 window.nautilus-window overlay-split-view > widget.sidebar-pane,
 window.nautilus-window .sidebar-pane,
 window.nautilus-window .sidebar-pane:dir(ltr),
 window.nautilus-window .sidebar-pane:dir(rtl),
 .nautilus-window .sidebar-pane:dir(ltr),
 .nautilus-window .sidebar-pane:dir(rtl) {
-    margin: 0px;
-    border-top: 8px solid #202022;
-    border-left: 8px solid #202022;
-    border-bottom: 8px solid #202022;
-    border-right: 8px solid #202022;
-    border-radius: 24px;
+    margin: 6px 0px 6px 6px;
+    border: none;
+    border-radius: 20px;
     background-color: rgba(30, 30, 34, 0.40);
     background-clip: padding-box;
     box-shadow: none;
@@ -9974,28 +9966,34 @@ window.nautilus-window .content-pane > scrolledwindow {
     background-color: #202022;
     border-left-style: none;
     border-left-width: 0;
-    box-shadow: -30px 0 0 0 #202022;
+    box-shadow: none;
 }
 
 window.nautilus-window .content-pane headerbar {
     background-color: #202022;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    margin-top: 3px;
-    padding-left: 15px;
+    margin-top: 0px;
+    padding-left: 0px;
 }
 
-/* Shift top panel buttons down by 3 pixels and increase width on the left side by 15 pixels */
+/* Shift top panel buttons */
 window.nautilus-window .content-pane headerbar centerbox,
 window.nautilus-window .content-pane headerbar > windowhandle > centerbox,
 window.nautilus-window .content-pane headerbar > windowhandle > box {
-    margin-top: 3px;
+    margin-top: 0px;
 }
 
 window.nautilus-window .content-pane headerbar centerbox > widget > box.start,
 window.nautilus-window .content-pane headerbar box.start,
 window.nautilus-window .content-pane headerbar .linked:first-child,
 window.nautilus-window .content-pane headerbar .start {
-    margin-left: 15px;
+    margin-left: 2px;
+}
+
+window.nautilus-window .nautilus-pathbar,
+window.nautilus-window #NautilusPathBar {
+    min-width: 280px;
+    padding: 3px 12px;
 }
 
 

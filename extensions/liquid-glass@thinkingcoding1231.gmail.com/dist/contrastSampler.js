@@ -184,51 +184,7 @@ export class StageContrastSampler {
     _lastIsBright = null;
     _lastRect = null;
     async sampleLuminance(rect) {
-        if (!rect || rect.width <= 0 || rect.height <= 0)
-            return null;
-        if (!this._screenshot)
-            this._screenshot = new Shell.Screenshot();
-        const shot = await _captureViaScreenshot(this._screenshot, rect);
-        if (!shot) {
-            _reportCapturePath('screenshot capture failed; adaptive text colors will keep their current values');
-            return null;
-        }
-        try {
-            const { data, width, height, stride, channels, step } = shot;
-            const values = [];
-            for (let y = 0; y < height; y += step) {
-                const row = y * stride;
-                for (let x = 0; x < width; x += step) {
-                    const idx = row + x * channels;
-                    if (channels > 3) {
-                        const a = data[idx + 3];
-                        if (a < 32)
-                            continue;
-                        if (a < 255) {
-                            // Un-premultiply before measuring luminance. Kept exactly as
-                            // the original pixbuf loop had it so the sampled value does not
-                            // shift; it only matters for semi-transparent pixels, which the
-                            // opaque desktop behind a menu rarely produces.
-                            const inv = 255.0 / a;
-                            const r = _clamp(Math.round(data[idx + 0] * inv), 0, 255);
-                            const g = _clamp(Math.round(data[idx + 1] * inv), 0, 255);
-                            const b = _clamp(Math.round(data[idx + 2] * inv), 0, 255);
-                            values.push(_luminanceFromRgb(r, g, b));
-                            continue;
-                        }
-                    }
-                    values.push(_luminanceFromRgb(data[idx + 0], data[idx + 1], data[idx + 2]));
-                }
-            }
-            if (values.length === 0) {
-                _reportCapturePath('capture produced no usable pixels (everything below the alpha cutoff)');
-                return null;
-            }
-            return _trimmedMean(values, 0.10);
-        }
-        catch (e) {
-            return null;
-        }
+        return null;
     }
     decideTextColor(luminance, config = AdaptiveContrastConfig) {
         if (luminance === null || luminance === undefined)

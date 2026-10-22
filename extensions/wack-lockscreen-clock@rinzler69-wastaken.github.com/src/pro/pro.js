@@ -763,7 +763,7 @@ export class GdmManager {
         const dialog = this._dialog;
         if (!dialog) return;
 
-        const FADE_DURATION = 900;
+        const FADE_DURATION = 400;
         const FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
 
         // 1. Wallpaper view: smoothly fade in from black

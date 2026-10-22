@@ -2174,8 +2174,9 @@ StEntry StLabel.hint-text {
   width: 15em;
 }
 
-.overview-controls {
-  padding-bottom: 32px;
+.overview-controls,
+.controls-manager {
+  padding-bottom: 82px;
 }
 
 #overview StScrollBar StBin#trough {

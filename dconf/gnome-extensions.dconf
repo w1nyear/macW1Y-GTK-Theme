@@ -59,7 +59,7 @@ blur=false
 sigma=10
 
 [blur-my-shell/overview]
-blur=false
+blur=true
 brightness=1.0
 pipeline='pipeline_default'
 style-components=0

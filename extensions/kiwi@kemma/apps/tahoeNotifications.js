@@ -48,6 +48,7 @@ let syncGlassCaptureClip = () => {};
 let ensureGlassAllocated = () => {};
 let glassRefreshDue = null;
 let glassRefreshDone = null;
+let glassForceRefresh = null;
 
 const _LG_BASE = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist';
 const CARD_BASE_STYLE = 'background-color: rgba(0, 0, 0, 0) !important; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
@@ -80,6 +81,8 @@ import(_LG_BASE + '/utils.js').then(m => {
         glassRefreshDue = m.glassRefreshDue;
     if (m.glassRefreshDone)
         glassRefreshDone = m.glassRefreshDone;
+    if (m.glassForceRefresh)
+        glassForceRefresh = m.glassForceRefresh;
     _utilsDone();
 }).catch(e => {
     _toastGlassDead = true;
@@ -1268,8 +1271,13 @@ function _syncToastGlass(monitor, s) {
             r.baseStrength = fill.a;
         }
         // [GPU-SAVE] Extras-хеш регіонів тостів: зміщення тостів (висування/
-        // згортання стосу, злива HOSTING) миттєво рахується як зміна скла.
-        let extraH = regions.length;
+        // згортання стосу, злива HOSTING) та стан Overview миттєво рахуються як зміна скла.
+        let extraH = regions.length ^ (Main.overview?.visible ? 1337 : 42);
+        try {
+            const ovVal = Main.overview?._controls?._stateAdjustment?.value;
+            if (ovVal !== undefined)
+                extraH = (extraH ^ (Math.round(ovVal * 100) * 10007)) | 0;
+        } catch (_) {}
         for (const r of regions) {
             extraH = (extraH ^ (Math.round(r.x * 4) * 73856093) ^ (Math.round(r.y * 4) * 19349663) ^
                 (Math.round(r.w * 4) * 83492791) ^ (Math.round(r.h * 4) * 2654435761)) | 0;
@@ -1409,6 +1417,30 @@ function _hookToastTray() {
             for (const src of tray.getSources?.() ?? [])
                 hookSource(src);
         } catch (_) {}
+        if (Main.overview) {
+            hook(Main.overview, 'showing', () => {
+                try { if (_toastStack?.bgActor) glassForceRefresh?.(_toastStack.bgActor); } catch (_) {}
+                _toastTickStart();
+            });
+            hook(Main.overview, 'hiding', () => {
+                try { if (_toastStack?.bgActor) glassForceRefresh?.(_toastStack.bgActor); } catch (_) {}
+                _toastTickStart();
+            });
+            hook(Main.overview, 'hidden', () => {
+                try { if (_toastStack?.bgActor) glassForceRefresh?.(_toastStack.bgActor); } catch (_) {}
+                _toastTickStart();
+            });
+            hook(Main.overview, 'shown', () => {
+                try { if (_toastStack?.bgActor) glassForceRefresh?.(_toastStack.bgActor); } catch (_) {}
+                _toastTickStart();
+            });
+        }
+        if (global.display) {
+            hook(global.display, 'restacked', () => {
+                try { if (_toastStack?.bgActor) glassForceRefresh?.(_toastStack.bgActor); } catch (_) {}
+                _toastTickStart();
+            });
+        }
     } catch (_) {}
 }
 

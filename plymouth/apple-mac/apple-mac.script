@@ -245,11 +245,10 @@ fun boot_progress_callback(duration, progress)
     if (is_shutdown || !is_boot)
         return;
 
-    # GDM and desktop initialize when Plymouth progress reaches ~0.45-0.50
-    # Map progress so that 0.48 reaches 100% full (1.0)
-    scaled = progress / 0.48;
-    if (scaled > 1.0)
-        scaled = 1.0;
+    # Progress crawls steadily towards 100% as system services initialize
+    scaled = progress * 1.35;
+    if (scaled > 0.96)
+        scaled = 0.96;
 
     if (scaled > global.target_progress)
     {
@@ -273,7 +272,8 @@ fun refresh_callback()
 
     if (global.fade_out_started)
     {
-        global.fade_out_opacity = global.fade_out_opacity - 0.045;
+        # 0.4s fade out: at 50fps, 0.05 per frame = 20 frames = 0.4s
+        global.fade_out_opacity = global.fade_out_opacity - 0.05;
         if (global.fade_out_opacity < 0.0)
             global.fade_out_opacity = 0.0;
 
@@ -283,29 +283,23 @@ fun refresh_callback()
 
     if (is_boot && !is_shutdown)
     {
-        # Autonomous steady forward crawl so progress never stalls on fast SSDs
+        # Autonomous steady forward crawl so progress fills up to near 100% before GDM
         if (global.target_progress < 0.96)
         {
-            global.target_progress = global.target_progress + 0.0018;
+            global.target_progress = global.target_progress + 0.0022;
         }
 
         if (global.current_progress < global.target_progress)
         {
             diff = global.target_progress - global.current_progress;
-            step = diff * 0.18;
-            if (step < 0.0025)
-                step = 0.0025;
+            step = diff * 0.20;
+            if (step < 0.003)
+                step = 0.003;
             global.current_progress = global.current_progress + step;
             if (global.current_progress > global.target_progress)
                 global.current_progress = global.target_progress;
 
             update_bar(global.current_progress);
-        }
-
-        # Once boot progress reaches near 100%, smoothly start 0.4s fade out to black
-        if (global.current_progress >= 0.98 && global.target_progress >= 1.0)
-        {
-            global.fade_out_started = 1;
         }
     }
 }
@@ -317,11 +311,11 @@ fun quit_callback()
 {
     if (is_boot && !is_shutdown)
     {
-        # Complete progress bar to 100% so it never freezes halfway before GDM
+        # Complete progress bar to 100% full immediately before fade out
         global.target_progress = 1.0;
         global.current_progress = 1.0;
         update_bar(1.0);
-        # Begin smooth 0.4s fade out of Apple logo and boot elements
+        # Begin smooth 0.4s fade out of Apple logo and boot elements exactly when GDM takes over
         global.fade_out_started = 1;
     }
     else

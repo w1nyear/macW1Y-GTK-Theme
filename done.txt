@@ -8602,3 +8602,29 @@ echo "==> Встановлення успішно завершено!"
         * Оновлено styling.json (notif_radius: 16, panel_tint: 0.35) та файл version.
       - Динамічна адаптація шляхів у install.sh:
         * Впроваджено динамічну заміну /home/vitaliy на $TARGET_HOME у ~/.config/gtk-3.0/bookmarks та файлах стилів gtk.css / gtk-Dark.css при інсталяції та інкрементальному оновленні.
+
+98. Усунення падінь сесії Shell.Screenshot, виправлення Nautilus Finder leftbar, оновлення блюру огляду та фону скла тостів (22.10.2026):
+   1. Мета та завдання:
+      - Усунути критичні падіння GNOME Shell (Signal 11 / вихід з сесії) при відкритті Центру керування та виклику самплерів.
+      - Виправити провідник Nautilus: прибрати темну смугу праворуч від leftbar, забезпечити заокруглені кути правої сторони, підняти верхню панель на 3px, збільшити смугу шляху та присунути кнопки навігації назад/вперед впритул до leftbar.
+      - Відновити розмиття (блюр) фону в огляді (Overview) та підняти центральні мініатюри робочих столів у Mission Control, щоб іконки додатків та підписи не перекривалися доком.
+      - Виправити застигання старого фону під скляним шейдером сповіщень (тостів) при переході між робочим столом та оглядом.
+      - Синхронізувати виправлення GDM та Plymouth (плавний перехід без 3-секундної чорної затримки).
+   2. Виконані виправлення:
+      - Ліквідація збоїв Shell.Screenshot:
+        * У kiwi@kemma/apps/tahoeInk.js повністю відключено виклики Shell.Screenshot (pick_color та screenshot_area), що на Wayland у Mutter 50 викликали збій cogl_texture_2d_new_with_size з нульовою текстурою та crash GNOME Shell. Метод _sampleRect переведено на безпечний та швидкий розрахунок за піксбуфом шпалери _wallLum.
+        * У liquid-glass/dist/contrastSampler.js функція sampleLuminance тепер безпечно повертає null, унеможливлюючи виклики Shell.Screenshot.
+        * У kiwi@kemma/apps/dockColors.js встановлено захист проти створення та виклику екземплярів Shell.Screenshot.
+      - Оновлення Nautilus Finder (~/.config/gtk-4.0/gtk.css, gtk-4.0/gtk.css, themes/macW1Y-Dark/):
+        * Видалено box-shadow: -30px 0 0 0 #202022; на content-pane та суцільну border-right: 8px на sidebar-pane, що створювали суцільну смугу та ховали заокруглені кути.
+        * Задано border-radius: 20px; на sidebar-pane з фоном #202022 на overlay-split-view, що проявляє акуратний темний радіус на кутах.
+        * Верхню панель піднято (margin-top: 0px замість 3px).
+        * Кнопки назад/вперед (< | >) зсунуто впритул до правого краю leftbar (margin-left: 2px, padding-left: 0px).
+        * Смугу поточної папки (#NautilusPathBar, .nautilus-pathbar) розширено (min-width: 280px; padding: 3px 12px;).
+      - Огляд та робочі столи (Mission Control):
+        * Увімкнено блюр огляду org.gnome.shell.extensions.blur-my-shell.overview blur true та збережено у dconf-файлах.
+        * У themes/macW1Y-Dark/gnome-shell/gnome-shell.css для .overview-controls та .controls-manager встановлено padding-bottom: 82px;, що підняло робочі столи вгору, гарантуючи, що бірки та іконки вікон не ховаються за доком.
+      - Оновлення фону скла тостів (tahoeNotifications.js):
+        * Імпортовано glassForceRefresh з liquid-glass utils.
+        * До хешу extraH включено стан Main.overview.visible та stateAdjustment.value, що змушує скло негайно оновлювати захоплення сцени при відкритті/закритті огляду.
+        * Додано хуки на showing, hiding, hidden, shown огляду та restacked вікон для виклику glassForceRefresh.
