@@ -747,7 +747,7 @@ export class GdmManager {
         const dialog = this._dialog;
         if (!dialog) return;
 
-        const FADE_DURATION = 900;
+        const FADE_DURATION = 400;
         const FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
 
         // 1. Wallpaper view: smoothly fade in from black
@@ -777,9 +777,14 @@ export class GdmManager {
         // 3. macOS lockscreen clock
         if (this._clockManager?.clockWrapper) {
             this._clockManager.clockWrapper.remove_all_transitions();
-            this._clockManager.clockWrapper.opacity = 255;
+            this._clockManager.clockWrapper.opacity = 0;
             this._clockManager.clockWrapper.visible = true;
             this._clockManager.positionClock();
+            this._clockManager.clockWrapper.ease({
+                opacity: 255,
+                duration: FADE_DURATION,
+                mode: FADE_MODE,
+            });
         }
 
         // 4. Login dialog (account avatar, username, password entry)
@@ -790,6 +795,17 @@ export class GdmManager {
             duration: FADE_DURATION,
             mode: FADE_MODE,
         });
+
+        // 5. Top panel in GDM
+        if (Main.panel) {
+            Main.panel.remove_all_transitions();
+            Main.panel.opacity = 0;
+            Main.panel.ease({
+                opacity: 255,
+                duration: FADE_DURATION,
+                mode: FADE_MODE,
+            });
+        }
     }
 
     _teardown() {

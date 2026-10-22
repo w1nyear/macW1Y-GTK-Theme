@@ -1086,7 +1086,7 @@ export default class EvalHelper extends Extension {
             Main.layoutManager._startupAnimationSession = async function() {
                 this.panelBox.ease({
                     opacity: 255,
-                    duration: 700,
+                    duration: 400,
                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 });
 
@@ -1099,7 +1099,7 @@ export default class EvalHelper extends Extension {
                             if (child.opacity !== 255) {
                                 child.ease({
                                     opacity: 255,
-                                    duration: 700,
+                                    duration: 400,
                                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                                 });
                             }
@@ -1108,7 +1108,7 @@ export default class EvalHelper extends Extension {
 
                     await global.window_group.easeAsync({
                         opacity: 255,
-                        duration: 700,
+                        duration: 400,
                         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                     }).catch(() => {});
                 }

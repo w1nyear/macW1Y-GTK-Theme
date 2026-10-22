@@ -8386,3 +8386,23 @@ echo "==> Встановлення успішно завершено!"
           - У `quit_callback()` при запиті завершення роботи Plymouth прогрес негайно встановлюється на 100% (`update_bar(1.0)`), тому сплеш-фрейм передається до GDM у повному завершеному стані без обриву на середині.
       - Файли оновлено у `/home/vitaliy/MACTHEMEFILES/plymouth/apple-mac/apple-mac.script` та `/usr/share/plymouth/themes/apple-mac/apple-mac.script`.
       - Оновлено initramfs (`sudo update-initramfs -u`), упакувавши нову конфігурацію теми в завантажувальний образ.
+
+19.38. plymouth, GDM (wack-lockscreen-clock), eval-helper: плавний синхронний перехід 0.8с від яблучка завантаження до GDM та стільниці (0.4с fade out, 0.4с fade in)
+   1. Вимоги користувача:
+      - Реалізувати плавний кінематографічний crossfade перехід від сплеш-екрану Plymouth (Apple logo + прогрес-бар) до екрана входу GDM або системи.
+      - В кінці завантаження, коли починає ініціалізуватися меню GDM, елементи завантаження з яблучком мають плавно зникати за прозорістю, і одночасно плавно з'являтися екран входу GDM чи стільниця.
+      - Загальна тривалість переходу — 0.8 секунди: 0.4 секунди на плавне згасання яблучка (`fade out`) і 0.4 секунди на появу екрана системи/GDM (`fade in`).
+   2. Реалізація:
+      - Plymouth (`apple-mac.script`):
+        * Налаштовано крок згасання `global.fade_step = 0.045` за кадр (при 50-60 Гц це складає приблизно 22 кадри = рівно 0.4 секунди / 400 мс).
+        * Плавне згасання активується автоматично при досягненні 100% прогресу (`current_progress >= 0.98 && target_progress >= 1.0`), а також гарантовано при виклику `quit_callback()` системою/GDM (`global.fade_out_started = 1`).
+        * Функція `apply_fade_opacity(alpha)` плавно й синхронно знижує прозорість логотипа Apple, прогрес-бару та рядка verbose до 0.0 протягом 0.4 секунди.
+      - Екран входу GDM (`wack-system/pro/pro.js`):
+        * У функції `_restartDialogFadeIn()` встановлено константу тривалості `const FADE_DURATION = 400` мс із кривою `Clutter.AnimationMode.EASE_OUT_QUAD`.
+        * Налаштовано плавне нарощування прозорості від 0 до 255 для шпалер (`wpGroup`), фонового шару (`bgGroup`), годинника macOS (`clockWrapper`), форми входу (`dialog`) та верхньої панелі GDM (`Main.panel`).
+        * Оновлений `pro.js` синхронізовано з кодовою базою `wack-system/src/pro/pro.js`, системним розширенням `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/pro/pro.js` та локальним каталогом `~/.local/share/gnome-shell/extensions/...`.
+      - Стільниця користувача GNOME Shell (`eval-helper@mactheme/extension.js`):
+        * У хуку запуску сесії `Main.layoutManager._startupAnimationSession` тривалість плавного проявлення панелі (`panelBox`), вікон (`window_group`) та елементів інтерфейсу зменшено з 700 мс до 400 мс (`duration: 400`).
+        * Файл синхронізовано до `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js`.
+      - Оновлено завантажувальний образ `initrd.img-7.0.0-38-generic` за допомогою `sudo update-initramfs -u`.
+      - Суворо дотримано заборону на створення скріншотів `Shell.Screenshot` під час сесії.

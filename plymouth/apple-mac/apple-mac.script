@@ -273,7 +273,7 @@ fun refresh_callback()
 
     if (global.fade_out_started)
     {
-        global.fade_out_opacity = global.fade_out_opacity - 0.04;
+        global.fade_out_opacity = global.fade_out_opacity - 0.045;
         if (global.fade_out_opacity < 0.0)
             global.fade_out_opacity = 0.0;
 
@@ -302,8 +302,8 @@ fun refresh_callback()
             update_bar(global.current_progress);
         }
 
-        # Once boot progress reaches near 100% and quit was requested, fade out cleanly
-        if (global.current_progress >= 0.99 && global.quit_requested)
+        # Once boot progress reaches near 100%, smoothly start 0.4s fade out to black
+        if (global.current_progress >= 0.98 && global.target_progress >= 1.0)
         {
             global.fade_out_started = 1;
         }
@@ -321,7 +321,8 @@ fun quit_callback()
         global.target_progress = 1.0;
         global.current_progress = 1.0;
         update_bar(1.0);
-        global.quit_requested = 1;
+        # Begin smooth 0.4s fade out of Apple logo and boot elements
+        global.fade_out_started = 1;
     }
     else
     {
