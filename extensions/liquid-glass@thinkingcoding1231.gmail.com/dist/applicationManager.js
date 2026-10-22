@@ -5,7 +5,7 @@ import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { LiquidEffect, noteStrandEntry } from './liquidEffect.js';
 import GLib from 'gi://GLib';
-import { UnpickableClone, UnpickableActor, InverseCornerEffect, getWindowActors, isActorValid, InvertedPositionConstraint, getAllocatedSize, setActorVisible, ensureGlassAllocated, isFrameSyncFrozen, getNestedGlassFix, innerGlassEffectOf, isFocusDebugEnabled, setTranslationIfChanged, setSizeIfChanged, setScaleIfChanged, setOpacityIfChanged, isCullSiteEnabled, rectsIntersect, setCloneCulled, createBackgroundMirror, reportClonedWindowActors, releaseClonedWindowActors, ensureWindowActorAllocated } from './utils.js';
+import { UnpickableClone, UnpickableActor, InverseCornerEffect, getWindowActors, isActorValid, InvertedPositionConstraint, getAllocatedSize, setActorVisible, ensureGlassAllocated, isFrameSyncFrozen, getNestedGlassFix, innerGlassEffectOf, isFocusDebugEnabled, setTranslationIfChanged, setSizeIfChanged, setScaleIfChanged, setOpacityIfChanged, isCullSiteEnabled, rectsIntersect, setCloneCulled, createBackgroundMirror, reportClonedWindowActors, releaseClonedWindowActors, ensureWindowActorAllocated, glassRefreshDue, glassRefreshDone } from './utils.js';
 // Padding to allow the shader to draw effects (like refraction and blur) outside the actor's strict bounds.
 // [FIX] How far the glass actor extends beyond the real window bounds, in
 // screen pixels. This is one number with two jobs: it is the sampling
@@ -2098,7 +2098,17 @@ export class ApplicationManager {
                 ensureGlassAllocated(state.bgActor);
                 ensureGlassAllocated(state.baseActor);
                 ensureGlassAllocated(state.cornerOverlay);
-                this._syncState(state);
+                // [GPU-SAVE] _syncState() (клони сусідніх вікон + унінорми ефекту +
+                // контейнери-ортодокс) виконується ЛИШЕ коли фон цього скла дійсно
+                // змінився (пересунувся якусь з вікон, перемалювався вміст, змінилась
+                // геометрія), з межею 60 FPS. У спокої — нуль GPU-роботи на вікно;
+                // Rescue-механіка вище тримає аллокації живими в будь-якому разі.
+                // state.isDirty (власні allocation-сигнали) — додатковий тригер.
+                if (glassRefreshDue(state.bgActor) || state.isDirty) {
+                    state.isDirty = false;
+                    this._syncState(state);
+                    glassRefreshDone(state.bgActor);
+                }
                 if (this._debugFocusLogFrames > 0)
                     this._logFocusDebugInfo(state);
             }

@@ -7,7 +7,7 @@ import Meta from 'gi://Meta';
 import Gio from 'gi://Gio';
 import { LiquidEffect } from './liquidEffect.js';
 import { StageContrastSampler, AdaptiveContrastConfig } from './contrastSampler.js';
-import { UnpickableActor, UILayerSampler, UnpickableWidget, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, resolveMonitorGeometry, isActorValid, getAllocatedSize, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener } from './utils.js';
+import { UnpickableActor, UILayerSampler, UnpickableWidget, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, resolveMonitorGeometry, isActorValid, getAllocatedSize, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, glassRefreshDue, glassRefreshDone, glassForceRefresh } from './utils.js';
 // ========== Configuration Parameters ==========
 // Transparent padding outside the glass area.
 // This prevents the shader distortion or rounded corners from being clipped by the actor bounds.
@@ -554,6 +554,9 @@ export class UIManager {
             this._windowCloneManager?.rebuildClones();
             this._uiSampler?.rebindSelf();
             this._uiSampler?.refresh();
+            // [GPU-SAVE] після повної перебудови наступний тік мусить дати
+            // повний рефреш без очікування межі 60 FPS.
+            glassForceRefresh?.(this.bgActor);
         };
         // Render loop: called every frame while the menu is visible.
         // The reschedule must survive a throw out of _syncGeometry() — see the
@@ -774,7 +777,17 @@ export class UIManager {
         // UILayerSampler handles all uiGroup children — including the overview actors
         // automatically, so no separate overview/isOverview branch is needed.
         this._windowCloneManager?.setOffset(-monitorX, -monitorY);
-        this._uiSampler?.refresh();
+        // [GPU-SAVE] Важка частина (клони + семпли UI + capture-clip) — лише коли
+        // фон дійсно змінився, з межею 60 FPS. Геометрія вище оновлюється щотіка
+        // безкоштовно, тож скло не «відлипає» від меню під час твенів.
+        // Extras: геометрія скла й монітора (bgX/bgY/bgW/bgH/screenW/H) — щоб
+        // перерозміщення/анімація розкриття меню миттєво ловилось як зміна.
+        const q = (v) => Number.isFinite(v) ? Math.round(v * 4) | 0 : 0;
+        const extraH = ((q(bgX) * 73856093) ^ (q(bgY) * 19349663) ^
+            (q(bgW) * 83492791) ^ (q(bgH) * 2654435761) ^
+            ((screenW | 0) * 1274126177) ^ ((screenH | 0) * 1550398307)) | 0;
+        if (!glassRefreshDue?.(this.bgActor, extraH))
+            return;
         // [PERF ①/①b] Clip the offscreen CAPTURE to the region this glass can
         // actually show, and hide the clones that fall outside it. Must sit
         // between setGlassGeometry() (which makes the effect's uniforms describe
@@ -790,6 +803,7 @@ export class UIManager {
         });
         this._uiSampler?.sync(monitorX, monitorY, screenW, screenH);
         this._windowCloneManager?.sync();
+        glassRefreshDone?.(this.bgActor, extraH);
     }
     // Updates the shader resolution based on the current background actor size
     _updateResolution() {

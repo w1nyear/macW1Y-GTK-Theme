@@ -39,6 +39,8 @@ let getTransformedRect = a => {
     return [x, y, a.width, a.height];
 };
 let ensureGlassAllocated = () => {};
+let glassRefreshDue = null;
+let glassRefreshDone = null;
 let syncGlassCaptureClip = () => {};
 let reportFrameLoopError = (ctx, e) => console.error(`[${ctx}] ${e}`);
 const _LG_BASE = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist';
@@ -63,6 +65,10 @@ import(_LG_BASE + '/utils.js').then(m => {
         syncGlassCaptureClip = m.syncGlassCaptureClip;
     if (m.reportFrameLoopError)
         reportFrameLoopError = m.reportFrameLoopError;
+    if (m.glassRefreshDue)
+        glassRefreshDue = m.glassRefreshDue;
+    if (m.glassRefreshDone)
+        glassRefreshDone = m.glassRefreshDone;
 }).catch(e => console.warn(`[tahoe-qs] liquid-glass utils unavailable: ${e}`));
 function _lgReady() {
     return !!(LiquidEffect && UnpickableActor && UILayerSampler && WindowCloneManager);
@@ -85,6 +91,8 @@ export async function ensureLgReady() {
         if (m2?.ensureGlassAllocated) ensureGlassAllocated = m2.ensureGlassAllocated;
         if (m2?.syncGlassCaptureClip) syncGlassCaptureClip = m2.syncGlassCaptureClip;
         if (m2?.reportFrameLoopError) reportFrameLoopError = m2.reportFrameLoopError;
+        if (m2?.glassRefreshDue) glassRefreshDue = m2.glassRefreshDue;
+        if (m2?.glassRefreshDone) glassRefreshDone = m2.glassRefreshDone;
     } catch (e) {
         console.warn(`[tahoe-qs] ensureLgReady error: ${e}`);
     }
@@ -2546,14 +2554,13 @@ async function _startGlass() {
                 // gone
             }
             const isAnimating = (_panel.box?.translation_x !== 0) || _closing;
-            const heavy = isAnimating || ((glass.tickN++ % 4) === 0);
             for (const s of glass.stacks) {
                 try {
                     s.bgActor.opacity = _panel.box.opacity;
-                    if (heavy) {
-                        ensureGlassAllocated(s.bgActor);
-                        _syncStack(s, monitor);
-                    }
+                    // [GPU-SAVE] _syncStack сама вирішує, коли фон реально змінився
+                    // (межа 60 FPS + 1 Гц пульс усередині), тому викликаємо щотіка —
+                    // у спокої це will дорогої роботи.
+                    _syncStack(s, monitor);
                 } catch (e) {
                     reportFrameLoopError(`tahoe-qs-${s.group}`, e);
                 }
@@ -2673,7 +2680,24 @@ function _syncStack(s, monitor) {
         s.liquidBox.set_position(0, 0);
         s.liquidBox.set_size(screenW, screenH);
     }
+    ensureGlassAllocated(s.bgActor);
 
+    // [GPU-SAVE] Extras: кліп-границі регіонів (перетворення hover-accordion
+    // або тумблера миттєво рахуються як зміна).
+    const extraH = (((clip[0] || 0) * 73856093) ^ ((clip[1] || 0) * 19349663) ^
+        ((clip[2] || 0) * 83492791) ^ ((clip[3] || 0) * 2654435761)) | 0;
+    // [GPU-SAVE] Важку частину (клони + семпли UI + capture-clip) виконуємо
+    // лише коли фон дійсно змінився, з жорсткою межею 60 FPS. У спокої
+    // Control Center скло не перемалюється взагалі; пульс 1 Гц забезпечує
+    // узгодежність; анімації панелі оживляють власні хеш-межі.
+    let doHeavy = true;
+    try {
+        doHeavy = glassRefreshDue ? glassRefreshDue(s.bgActor, extraH) : true;
+    } catch (_) {
+        doHeavy = true;
+    }
+    if (!doHeavy)
+        return;
     s.wcm.setOffset(-monitorX, -monitorY);
     syncGlassCaptureClip({
         cloneContainer: s.cloneContainer,
@@ -2686,6 +2710,9 @@ function _syncStack(s, monitor) {
     s.uiSampler.refresh();
     s.uiSampler.sync(monitorX, monitorY, screenW, screenH);
     s.wcm.sync();
+    try {
+        glassRefreshDone(s.bgActor, extraH);
+    } catch (_) {}
 }
 
 function _destroyGlass() {

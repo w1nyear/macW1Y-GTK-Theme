@@ -3565,6 +3565,8 @@ export class WindowCloneManager {
             let metaWindow = w.get_meta_window();
             if (!metaWindow || metaWindow.minimized || !w.visible)
                 continue;
+            if (metaWindow.get_window_type?.() === 1 || metaWindow.get_gtk_application_id?.() === 'com.rastersoft.ding')
+                continue;
             // Read position/size directly rather than via the more expensive
             // get_transformed_position(). Size comes from the allocation, not
             // w.width/w.height: those fall back to the preferred size while a
@@ -4248,4 +4250,295 @@ export function syncGlassCaptureClip(opts) {
     windowCloneManager?.applyBgCloneClip(isCaptureClipEnabled() ? screenRect : null);
     uiSampler?.setCullRect(screenRect);
     windowCloneManager?.setCullRect(screenRect);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [GPU-SAVE] Оновлення фона скла за ПРИНЦИПОМ «ЛІШЕ ЗМІНИ — РЕФРЕШ», а не за
+// кожен кадр дисплея.
+//
+// Раніше кожен менеджер скла (BackdropGlass, DockManager, UIManager,
+// ApplicationManager, TahoeGlass, скляний центр сповіщень kiwi) на КОЖНОМУ
+// кадрі виконував ensureGlassAllocated() + оновлення семпliровщика UI +
+// синхронізацію клонів вікон + переклад capture-clip. Цей сміття-бій викликав
+// queue_repaint() на LiquidEffect → повний цикл blur·composite шейдерів
+// ~60 р/с НА КОЖНУ поверхню, навіть на нерухомому столі. Саме це давало
+// 50–80% GPU.
+//
+// Політика:
+//   • У спокої (stage-фingerprint і геометрія скла не змінюються) — дорогий
+//     рефреш НЕ виконується взагалі. GPU → 0%. Залишається лише «пульс» 1 Гц —
+//     страховка, гарантія узгодженості (заклопотані аллокації, семпли UI,
+//     шпалерні кросфейди тощо все одно навертаються ≤ за 1 с).
+//   • При БУДЬ-ЯКІЙ зміні (вікно зсунулося хоч на 1px, вміст вікна
+//     перемалювався — 'damaged', змінlул. Монітори, шпалери, анімація меню)
+//     — повний рефреш НЕ частіше ніж 60 FPS (16.666 мс), незалежно від
+//     частоти екрана. «Не частіше» — бо запит на зміну хапає стан pending
+//     і виконується на першому тіку після межі: нічого не губиться.
+//   • Не видно / з Gabriнах скло — цикл тіка вимкнено самим менеджером
+//     (show()/hide.connwood() мають повний контроль).
+//
+// Джерела правдування (все чисте JS-CPU, нуль GPU):
+//   1. спільний stage-хеш: кількість + геометрія + mapped/visible/opacity
+//      всіх MetaWindowActor (memo-кеш 4 мс на процес, щоб N поверхів не
+//      повторювали одну й ту ж роботу в межах одного кадру);
+//   2. глобальний лічильник 'damaged' для кожного актора вікна (вміст вікна
+//      змінюється — відео, курсор, анімація) — сіровой 'stream' змін вмісту;
+//   3. кількість дітей backgroundGroup (GNOME зміна шпалер міняє дітей);
+//   4. геометрія моніторів;
+//   5. власна геометрія/opacity скла (позиція, розмір, translation) — щоб
+//      меню не «відлипало» від свого контейнера під час твен-анімацій.
+//
+// Escape-гач для A/B-тестування з EvalHelper:
+//     globalThis._macGlassEventDriven = false;  // назад до кожнобій(web)
+//     globalThis._macGlassStats();              // лічильники для аналізу
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const GLASS_REFRESH_60FPS_INTERVAL_US = 16666; // жорстка межа 1/60 с
+export const GLASS_REFRESH_HEARTBEAT_US = 1000000;    // пульс узгодженості: 1 с
+
+let _backdropDamageVersion = 0;
+let _backdropFailCounter = 0;
+let _backdropSurfaceCount = 0;
+let _backdropRefreshCount = 0;
+const _backdropDamageHooked = new WeakSet();
+let _eventDrivenDefault = true;
+
+/** Вміст вікна перемалювався — глобальний трigгер для всіх скляних поверхів. */
+export function noteWindowContentDamaged() {
+    _backdropDamageVersion++;
+}
+
+/** A/B-перемикач: false → кожен виклик glassRefreshDue повертає true
+ *  (стара покадрова поведінка) — для швидкого порівняння навантаження. */
+export function setGlassEventDriven(enabled) {
+    _eventDrivenDefault = !!enabled;
+}
+
+export function isGlassEventDriven() {
+    if (typeof globalThis._macGlassEventDriven === 'boolean')
+        return globalThis._macGlassEventDriven;
+    return _eventDrivenDefault;
+}
+
+/** 32-бітний міксуванний хеш з накопиченням, без алокаци. NaN і нечислові
+ *  значення зводяться до 0: на випадкових NaN під час твенів хеш_trackован
+ *  випадково змінювано — максимум один зайвий рефреш, безпечний. */
+function _hmix(h, v) {
+    const n = Number.isFinite(v) ? (v | 0) : 0;
+    return (h ^ (n + 0x9E3779B9 + ((h << 6) | (h >>> 26)))) | 0;
+}
+
+// Спільний скан stage-фона. Переобчислюється НЕ частіше ніж раз за 4 мс
+// (один кадр 120 Гц), щоб 17+ скляних поверхів не повторювали ту саму роботу
+// в межах одного кадру.
+let _stageScan = { at: -1e12, h: 0 };
+function _stageBackdropHash(nowUs) {
+    if (nowUs - _stageScan.at < 4000)
+        return _stageScan.h;
+    let h = 1234567;
+    try {
+        // 1. Усі MetaWindowActor: геометрія, статус, opacity.
+        const actors = global.get_window_actors?.() ?? [];
+        h = _hmix(h, actors.length);
+        for (let i = 0; i < actors.length; i++) {
+            const a = actors[i];
+            try {
+                if (!isActorValid(a)) {
+                    h = _hmix(h, -i);
+                    continue;
+                }
+                // Хук 'damaged' навішується один раз на актора: зміна вмісту
+                // вікна (наприклад, відео під склом) → глобальний bump.
+                _hookWindowDamage(a);
+                const r = a.get_buffer_rect?.();
+                if (r) {
+                    h = _hmix(h, r.x); h = _hmix(h, r.y);
+                    h = _hmix(h, r.width); h = _hmix(h, r.height);
+                }
+                h = _hmix(h, a.visible ? 1 : 0);
+                h = _hmix(h, a.mapped ? 1 : 0);
+                h = _hmix(h, a.get_opacity?.());
+            } catch (_) {
+                h = _hmix(h, i * 1000 + 7);
+            }
+        }
+        // 2. Монітори (коло Honest-дисплеїв, злиття, роздільність).
+        const lm = Main.layoutManager;
+        const mons = lm?.monitors ?? [];
+        h = _hmix(h, mons.length);
+        for (let i = 0; i < mons.length; i++) {
+            const m = mons[i];
+            if (!m)
+                continue;
+            h = _hmix(h, m.x); h = _hmix(h, m.y);
+            h = _hmix(h, m.width); h = _hmix(h, m.height);
+        }
+        // 3. Зміна шпалер: GNOME змінює дітей backgroundGroup під час кросфейду.
+        try {
+            const bg = lm?.backgroundGroup;
+            h = _hmix(h, bg && isActorValid(bg) ? bg.get_n_children() : 0);
+        } catch (_) {
+            h = _hmix(h, -3);
+        }
+    } catch (_) {
+        // Будь-яка неясність діагностики → смілушний змінний хеш: ланцюг
+        // обязан видати 'due'. Безпечність важливіша за економію.
+        return _hmix(_stageScan.h, ++_backdropFailCounter);
+    }
+    _stageScan = { at: nowUs, h };
+    return h;
+}
+
+function _hookWindowDamage(actor) {
+    try {
+        if (_backdropDamageHooked.has(actor))
+            return;
+        _backdropDamageHooked.add(actor);
+        actor.connect('damaged', () => {
+            noteWindowContentDamaged();
+        });
+    } catch (_) {}
+}
+
+/** Хеш власної геометрії скла (позиція, розмір, translation, opacity). */
+function _ownGlassHash(actor) {
+    if (!actor)
+        return 0;
+    let h = 1;
+    try {
+        if (!isActorValid(actor))
+            return -1;
+        h = _hmix(h, actor.get_x?.());
+        h = _hmix(h, actor.get_y?.());
+        h = _hmix(h, actor.get_width?.());
+        h = _hmix(h, actor.get_height?.());
+        h = _hmix(h, actor.translation_x);
+        h = _hmix(h, actor.translation_y);
+        h = _hmix(h, actor.opacity);
+    } catch (_) {
+        return -2;
+    }
+    return h;
+}
+
+const _backdropPolls = new WeakMap();
+
+function _newPollState() {
+    _backdropSurfaceCount++;
+    return { lastScanH: 0, lastDamage: -1, lastOwnH: -1, dirty: false, lastFull: 0 };
+}
+
+/**
+ * Вирішує, ЧИ виконувати дорогий рефреш (клони + семплировщик + capture-clip)
+ * на ЦЬОМУ тіку для конкретного скла.
+ *
+ * Повертає true КОЛИ:
+ *   • dirty-pénding (зміна з'явилася минулого тіка, але межа 60 FPS не дозволяла
+ *     рефреш), і від останнього рефрешу минуло ≥16.666 мс;
+ *   • пульс: від останнього повного рефрешу минуло ≥1 с (страховка
+ *     узгодженості: затягнуті аллокації, зміни семплов UI тощо);
+ *   • перший виклик для цього скла (нульове попередньо-hash значення) — так
+ *     перший рефреш після build/show не затримується.
+ *
+ * Використання в менеджері:
+ *     if (!glassRefreshDue(bgActor)) { reschedule; return; }
+ *     ... повний рефреш: ensureGlassAllocated, sampler.refresh/sync,
+ *         windowClones.sync, syncGlassCaptureClip ...
+ *     glassRefreshDone(bgActor);
+ */
+export function glassRefreshDue(glassActor, extraHash) {
+    try {
+        if (!isGlassEventDriven())
+            return true; // A/B: стара поведінка — кожен тік.
+        let st = _backdropPolls.get(glassActor);
+        if (!st) {
+            st = _newPollState();
+            _backdropPolls.set(glassActor, st);
+        }
+        const nowUs = GLib.get_monotonic_time();
+        const scanH = _stageBackdropHash(nowUs);
+        const dmg = _backdropDamageVersion;
+        const ownH = _hmix(_ownGlassHash(glassActor), extraHash);
+        if (st.lastScanH !== scanH || st.lastDamage !== dmg || st.lastOwnH !== ownH) {
+            st.lastScanH = scanH;
+            st.lastDamage = dmg;
+            st.lastOwnH = ownH;
+            st.dirty = true;
+        }
+        if (!st.lastFull)
+            return true; // перший тік після створення / show().
+        const sinceFull = nowUs - st.lastFull;
+        // У зміні: без катастрофальних обмежень, але не швидше за 60 FPS.
+        if (st.dirty)
+            return sinceFull >= GLASS_REFRESH_60FPS_INTERVAL_US;
+        // У спокої — тільки пульс узгодженості.
+        return sinceFull >= GLASS_REFRESH_HEARTBEAT_US;
+    } catch (_) {
+        // Будь-який збій → рефреш. Безпечність важливіша за економію.
+        return true;
+    }
+}
+
+/** Викликати ПІСЛЯ успішного повного рефрешу. Ставить час останнього
+ *  рефрешу та оновлює опорні хеші на АКТУАЛЬНІ (після рефрешу) значення,
+ *  щоб рефреш сам по собі не викликав фальшиве «зміна» наступного тіка. */
+export function glassRefreshDone(glassActor, extraHash) {
+    try {
+        _backdropRefreshCount++;
+        let st = _backdropPolls.get(glassActor);
+        if (!st) {
+            st = _newPollState();
+            _backdropPolls.set(glassActor, st);
+        }
+        const nowUs = GLib.get_monotonic_time();
+        st.lastFull = nowUs;
+        st.dirty = false;
+        st.lastScanH = _stageBackdropHash(nowUs);
+        st.lastDamage = _backdropDamageVersion;
+        st.lastOwnH = _hmix(_ownGlassHash(glassActor), extraHash);
+    } catch (_) {}
+}
+
+/** Форсувати повний рефреш на наступному тіку (show(), rebuildClones()
+ *  або «скло донедавна не помітило деяку зміну») — без 60-FPS затримки. */
+export function glassForceRefresh(glassActor) {
+    try {
+        let st = _backdropPolls.get(glassActor);
+        if (!st) {
+            st = _newPollState();
+            _backdropPolls.set(glassActor, st);
+        }
+        st.dirty = true;
+        st.lastFull = 0; // наступний тік видає рефреш одразу, без межі
+    } catch (_) {}
+}
+
+/** Лічильники темпу рефрешів: glassPollStats(true)/'false'/'query'. */
+export function glassPollStats(enable) {
+    if (enable === undefined || enable === null)
+        return { refreshes: _backdropRefreshCount, surfaces: _backdropSurfaceCount,
+            damageVersion: _backdropDamageVersion };
+    if (enable) {
+        _backdropRefreshCount = 0;
+        return { refreshes: 0, started: true };
+    }
+    return { refreshes: _backdropRefreshCount, stopped: true };
+}
+
+function _macGlassStats() {
+    try {
+        return JSON.stringify({
+            eventDriven: isGlassEventDriven(),
+            surfaces: _backdropSurfaceCount,
+            damageVersion: _backdropDamageVersion,
+            stageScanCacheMs: Math.max(0, Math.round((GLib.get_monotonic_time() - _stageScan.at) / 1000)),
+            refreshes: _backdropRefreshCount,
+            note: 'eventDriven ON: рефреш лише при змінах (≤60 FPS, пульс 1 Гц)',
+        });
+    } catch (e) {
+        return JSON.stringify({ err: String(e) });
+    }
+}
+if (typeof globalThis._macGlassStats !== 'function') {
+    globalThis._macGlassStats = _macGlassStats;
 }

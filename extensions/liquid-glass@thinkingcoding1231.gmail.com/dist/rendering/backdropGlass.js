@@ -16,7 +16,10 @@ import {
     syncGlassCaptureClip,
     ensureGlassAllocated,
     reportFrameLoopError,
-    isFrameSyncFrozen
+    isFrameSyncFrozen,
+    glassRefreshDue,
+    glassRefreshDone,
+    glassForceRefresh
 } from '../utils.js';
 
 function lgDir() {
@@ -259,6 +262,7 @@ export const BackdropGlass = GObject.registerClass({
         try {
             this._uiSampler?.refresh?.();
             this._windowClones?.rebuildClones?.();
+            glassForceRefresh?.(this);
         } catch (_) {}
     }
 
@@ -266,6 +270,7 @@ export const BackdropGlass = GObject.registerClass({
         try {
             this._uiSampler?.refresh?.();
             this._windowClones?.rebuildClones?.();
+            glassForceRefresh?.(this);
         } catch (_) {}
     }
 
@@ -280,25 +285,37 @@ export const BackdropGlass = GObject.registerClass({
                     .add(Meta.LaterType.BEFORE_REDRAW, tick);
                 return GLib.SOURCE_REMOVE;
             }
+            // [GPU-SAVE] Дешевий rescue аллокації щотіка; дорожній блок
+            // (семпли UI + клони вікон + capture-clip) — лише при реальній зміні
+            // фону, з межею 60 FPS. В спокої тік не має GPU-роботи.
+            let doHeavy = true;
+            try {
+                doHeavy = glassRefreshDue?.(this);
+            } catch (_) {
+                doHeavy = true;
+            }
             try {
                 ensureGlassAllocated?.(this);
-                this._uiSampler?.refresh?.();
-                const mon = Main.layoutManager.primaryMonitor;
-                const monX = mon?.x ?? 0;
-                const monY = mon?.y ?? 0;
-                const monW = Math.max(1, mon?.width ?? 1);
-                const monH = Math.max(1, mon?.height ?? 1);
-                this._windowClones?.setOffset?.(-monX, -monY);
-                syncGlassCaptureClip?.({
-                    cloneContainer: this._cloneContainer,
-                    effect: this._effect,
-                    originX: monX,
-                    originY: monY,
-                    uiSampler: this._uiSampler,
-                    windowCloneManager: this._windowClones,
-                });
-                this._uiSampler?.sync?.(monX, monY, monW, monH);
-                this._windowClones?.sync?.();
+                if (doHeavy) {
+                    this._uiSampler?.refresh?.();
+                    const mon = Main.layoutManager.primaryMonitor;
+                    const monX = mon?.x ?? 0;
+                    const monY = mon?.y ?? 0;
+                    const monW = Math.max(1, mon?.width ?? 1);
+                    const monH = Math.max(1, mon?.height ?? 1);
+                    this._windowClones?.setOffset?.(-monX, -monY);
+                    syncGlassCaptureClip?.({
+                        cloneContainer: this._cloneContainer,
+                        effect: this._effect,
+                        originX: monX,
+                        originY: monY,
+                        uiSampler: this._uiSampler,
+                        windowCloneManager: this._windowClones,
+                    });
+                    this._uiSampler?.sync?.(monX, monY, monW, monH);
+                    this._windowClones?.sync?.();
+                    glassRefreshDone?.(this);
+                }
             } catch (e) {
                 reportFrameLoopError?.(`BackdropGlass_${this._owner}`, e);
             }
@@ -322,6 +339,8 @@ export const BackdropGlass = GObject.registerClass({
         try {
             this._windowClones?.rebuildClones?.();
             this._uiSampler?.refresh?.();
+            // [GPU-SAVE] наступний тік мусить дати повний рефреш одразу.
+            glassForceRefresh?.(this);
             this._startTick();
         } catch (_) {}
     }

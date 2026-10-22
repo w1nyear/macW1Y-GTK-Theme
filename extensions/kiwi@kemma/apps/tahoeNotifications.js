@@ -46,6 +46,8 @@ let WindowCloneManager = null;
 let setClipIfChanged = () => {};
 let syncGlassCaptureClip = () => {};
 let ensureGlassAllocated = () => {};
+let glassRefreshDue = null;
+let glassRefreshDone = null;
 
 const _LG_BASE = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist';
 const CARD_BASE_STYLE = 'background-color: rgba(0, 0, 0, 0) !important; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
@@ -74,6 +76,10 @@ import(_LG_BASE + '/utils.js').then(m => {
         ensureGlassAllocated = m.ensureGlassAllocated;
     if (m.syncGlassCaptureClip)
         syncGlassCaptureClip = m.syncGlassCaptureClip;
+    if (m.glassRefreshDue)
+        glassRefreshDue = m.glassRefreshDue;
+    if (m.glassRefreshDone)
+        glassRefreshDone = m.glassRefreshDone;
     _utilsDone();
 }).catch(e => {
     _toastGlassDead = true;
@@ -1240,8 +1246,7 @@ function _syncToastGlass(monitor, s) {
         s.bgActor.translation_x = _toastBox ? _toastBox.translation_x : 0;
         s.bgActor.translation_y = _toastBox ? _toastBox.translation_y : 0;
         // єдиний тінт скла 12% [0.16, 0.16, 0.18], розмиття, заломлення
-        let glassTint = [0.16, 0.16, 0.18], glassStrength = 0.12;
-        try {
+        let glassTint = [0.16, 0.16, 0.18], glassStrength = 0.12;        try {
             const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
             const raw = String(sset.get_string('glass-tint') || '');
             const nums = raw.match(/[\d.]+/g);
@@ -1262,6 +1267,13 @@ function _syncToastGlass(monitor, s) {
             r.tintB = fill.c[2];
             r.baseStrength = fill.a;
         }
+        // [GPU-SAVE] Extras-хеш регіонів тостів: зміщення тостів (висування/
+        // згортання стосу, злива HOSTING) миттєво рахується як зміна скла.
+        let extraH = regions.length;
+        for (const r of regions) {
+            extraH = (extraH ^ (Math.round(r.x * 4) * 73856093) ^ (Math.round(r.y * 4) * 19349663) ^
+                (Math.round(r.w * 4) * 83492791) ^ (Math.round(r.h * 4) * 2654435761)) | 0;
+        }
         try { s.effect.setCornerRadius(maxR); } catch (_) {}
         s.effect.setGlassRegions(regions);
         s.effect.setResolution(monitor.width, monitor.height);
@@ -1269,6 +1281,17 @@ function _syncToastGlass(monitor, s) {
         s.liquidBox.set_size(monitor.width, monitor.height);
         setClipIfChanged(s.bgActor, 0, 0, monitor.width, monitor.height);
         ensureGlassAllocated(s.bgActor);
+        // [GPU-SAVE] Важку частину виконуємо тільки коли фон дійсно змінився
+        // (регіони/геометрія/opacity тост змінилися як extras), межа 60 FPS;
+        // у спокої скло тостів не перемалюється взагалі.
+        let doHeavy = true;
+        try {
+            doHeavy = glassRefreshDue ? glassRefreshDue(s.bgActor, extraH) : true;
+        } catch (_) {
+            doHeavy = true;
+        }
+        if (!doHeavy)
+            return;
         if (s.wcm)
             s.wcm.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
@@ -1284,6 +1307,9 @@ function _syncToastGlass(monitor, s) {
         s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
         if (s.wcm)
             s.wcm.sync();
+        try {
+            glassRefreshDone(s.bgActor, extraH);
+        } catch (_) {}
     } catch (e) {
         console.error(`[tahoe-nc] _syncToastGlass error: ${e}\n${e?.stack || ''}`);
     }
@@ -1941,12 +1967,29 @@ function _syncCards(p, monitor, s) {
             r.baseStrength = fill.a;
         }
         try { s.effect.setCornerRadius(maxR); } catch (_) {}
+        // [GPU-SAVE] Extras: регіони карток (позиції з transformed_position
+        // самих карток) — зміщення/згортання стосу сповіщень рахується як зміна.
+        let extraH = regions.length;
+        for (const r of regions) {
+            extraH = (extraH ^ (Math.round(r.x * 4) * 73856093) ^ (Math.round(r.y * 4) * 19349663) ^
+                (Math.round(r.w * 4) * 83492791) ^ (Math.round(r.h * 4) * 2654435761)) | 0;
+        }
         s.effect.setGlassRegions(regions);
         s.effect.setResolution(monitor.width, monitor.height);
         s.liquidBox.set_position(0, 0);
         s.liquidBox.set_size(monitor.width, monitor.height);
         if (isFinite(bx) && isFinite(by) && bw > 0 && bh > 0)
             setClipIfChanged(s.bgActor, bx - monitor.x - 200, by - monitor.y - 200, bw + 400, bh + 400);
+        ensureGlassAllocated(s.bgActor);
+        // [GPU-SAVE] важка частина — лишень при реальній зміні; межа 60 FPS.
+        let doHeavy = true;
+        try {
+            doHeavy = glassRefreshDue ? glassRefreshDue(s.bgActor, extraH) : true;
+        } catch (_) {
+            doHeavy = true;
+        }
+        if (!doHeavy)
+            return;
         s.wcm.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,
@@ -1956,10 +1999,12 @@ function _syncCards(p, monitor, s) {
             uiSampler: s.uiSampler,
             windowCloneManager: s.wcm,
         });
-        ensureGlassAllocated(s.bgActor);
         s.uiSampler.refresh();
         s.uiSampler.sync(monitor.x, monitor.y, monitor.width, monitor.height);
         s.wcm.sync();
+        try {
+            glassRefreshDone(s.bgActor, extraH);
+        } catch (_) {}
     } catch (_) {}
 }
 
@@ -1982,17 +2027,31 @@ function _syncGlass(p, monitor, s) {
         else if (alpha === 0 && s.bgActor.visible)
             s.bgActor.hide();
         s.bgActor.opacity = alpha;
+        s.liquidBox.set_position(0, 0);
+        s.liquidBox.set_size(monitor.width, monitor.height);
+        const clip = [(bx - monitor.x) - m - 200, (by - monitor.y) - m - 200,
+            bw + m * 2 + 400, bh + m * 2 + 400];
+        setClipIfChanged(s.bgActor, clip[0], clip[1], clip[2], clip[3]);
+        // [GPU-SAVE] Важку частину виконуємо тільки коли фон (панель над ним,
+        // або геометрія самої поверхні) дійсно змінився; жорстка межа 60 FPS.
+        // У спокої — нуль GPU-роботи від скла центру сповіщень.
+        const extraH = (((bx || 0) * 73856093) ^ ((by || 0) * 19349663) ^
+            ((bw || 0) * 83492791) ^ ((bh || 0) * 2654435761) ^ ((clip[0] || 0) * 1274126177) ^
+            ((clip[1] || 0) * 1550398307)) | 0;
+        let doHeavy = true;
+        try {
+            doHeavy = glassRefreshDue ? glassRefreshDue(s.bgActor, extraH) : true;
+        } catch (_) {
+            doHeavy = true;
+        }
+        if (!doHeavy)
+            return;
         s.effect.setGlassRegions([{
             x: (bx - monitor.x) - m, y: (by - monitor.y) - m,
             w: bw + m * 2, h: bh + m * 2,
             tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
         }]);
         s.effect.setResolution(monitor.width, monitor.height);
-        s.liquidBox.set_position(0, 0);
-        s.liquidBox.set_size(monitor.width, monitor.height);
-        const clip = [(bx - monitor.x) - m - 200, (by - monitor.y) - m - 200,
-            bw + m * 2 + 400, bh + m * 2 + 400];
-        setClipIfChanged(s.bgActor, clip[0], clip[1], clip[2], clip[3]);
         s.wcm.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,
@@ -2005,6 +2064,9 @@ function _syncGlass(p, monitor, s) {
         s.uiSampler.refresh();
         s.uiSampler.sync(monitor.x, monitor.y, monitor.width, monitor.height);
         s.wcm.sync();
+        try {
+            glassRefreshDone(s.bgActor, extraH);
+        } catch (_) {}
     } catch (_) {}
 }
 

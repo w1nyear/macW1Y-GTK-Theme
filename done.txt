@@ -8544,3 +8544,33 @@ echo "==> Встановлення успішно завершено!"
         * Виправлення: видалено створення глобального LD_PRELOAD у конфігураціях користувача та системи.
       - Причина 5 (Синтаксис sed у схемі 10_ubuntu-settings):
         * Виправлено регулярний вираз sed із прапорцем -E для заміни шпалер за замовчуванням у схемі Ubuntu Settings.
+19.44. liquid-glass, appmenu, kiwi, glassGate, gpuSaveLiveApply, gnome-shell: GPU-SAVE — event-driven шлюз для скла/блюру (оновлення СТРОГО при будь-якій зміні, жорсткий ліміт 60 FPS замість герцовки 165 Гц, нуль дорогої роботи у спокої/приховано)
+   1. Вимоги:
+      - Знизити навантаження GPU (GNOME Shell 50 / Wayland / NVIDIA RTX 3050) з 50–80% до ~10%: елементи Blur / Liquid Glass не мають перемальовувати фон постійно.
+      - Рефреш скла — СТРОГО при будь-якій (найменшій) зміні того, що воно показує; жорсткий ліміт 60 FPS — саме 1/60 с (16666 мкс), а не герцовка екрана (eDP-1 працює на 165 Гц, xrandr: 1920x1080 164.83*+); нуль роботи, коли все у спокої або приховано.
+      - A/B-відкат і діагностика без перезавантаження сесії; сувора заборона git push.
+   2. Реалізація (дисковий код — активується після re-login):
+      - liquid-glass dist/utils.js: блок [GPU-SAVE] у кінці файлу (з ~4254-го рядка): GLASS_REFRESH_60FPS_INTERVAL_US=16666 (жорстка межа 1/60 с), GLASS_REFRESH_HEARTBEAT_US=1000000 (пульс 1 Гц як страховка узгодженості); noteWindowContentDamaged; set/isGlassEventDriven; _hmix; _stageBackdropHash (скан усіх MetaWindowActor через global.get_window_actors(): кількість/буфер-рект/mapped/visible/opacity + геометрія моніторів + діти backgroundGroup; memo 4 мс, щоб N поверхонь у межах одного кадру не повторювали скан); _hookWindowDamage ('damaged' на вікно-актори, WeakSet); _ownGlassHash; glassRefreshDue/glassRefreshDone/glassForceRefresh; glassPollStats; globalThis._macGlassStats().
+      - dockManager.js / uiManager.js: важкі хвости _syncGeometry та _dockGlassExtras/екстрас (bgX/bgY/bgW/bgH/screenW/H) під шлюзом; force-рефреш у buildClones.
+      - applicationManager.js: _syncState гейтований per-state: glassRefreshDue(state.bgActor) || state.isDirty (state.isDirty скидається перед синком — власні сигнали аллокації вікна гарантують рефреш).
+      - rendering/backdropGlass.js: gated _startTick; show()/forceRefresh()/syncSources() → glassForceRefresh; оновлено імпорти.
+      - appmenu tahoeGlass.js: gated _startTick з extras this._geoVersion (bump у _syncGeometry при зміні key); show() → glassForceRefresh.
+      - kiwi tahoeNotifications.js: gates у _syncGlass (кліп bx/by/bw/bh), _syncToastGlass (extraH з регіонів тостів), _syncCards (регіони карток); null-fallback імпорти шлюзу.
+      - kiwi tahoeControlCenter.js: gate у _syncStack (ensureGlassAllocated усередині gate, extras з кліпу), спрощено тік (видалено tickN % 4), імпорти glassRefreshDue/glassRefreshDone в обох синтаксичних місцях.
+   3. Живе застосування в поточній сесії (без re-login):
+      - Перешкода: Main.extensionManager.reloadExtension НЕ інвалідує ES-модулі (GJS кешує per-URI; «Extensions can only be imported once»); версіонований re-import ?v= падає на явних GTypeName (LiquidGlassTextureBlitActor, LiquidGlassInverseCornerEffect, InvertedPositionConstraint) та авто-імена (Gjs_dist_utils_UnpickableClone тощо) — GType-реєстр глобальний для процесу й не звільняється ані disable→GC→enable, ані перезавантаженням розширення.
+      - Рішення: нові файли БЕЗ registerClass (завантажуються будь-коли, зокрема версіоновано): dist/glassGate.js — автономний шлюз з тим самим алгоритмом (скан stage з memo 4 мс, damage-хуки, 60 FPS + пульс 1 Гц, fail-open → рефреш при будь-якому збої діагностики), та dist/gpuSaveLiveApply.js — патч прототипів живих КЕШОВАНИХ класів (імпорт './utils.js' з нового файла безпечний — ре-оцінки немає): UILayerSampler.refresh, WindowCloneManager.sync, ApplicationManager._syncState; ідемпотентно через тег _gpuSaveGated; збій шлюзу → виконання оригіналу.
+      - Застосовано через EvalHelper: import('file:///...dist/gpuSaveLiveApply.js?v=gpusave1').applyLivePatch() → {"applied":true,"lines":["patched:refresh","patched:sync","patched:sync","patched:_syncState"]}; повторна перевірка живого стану: {"applied":true,"eventDriven":true}.
+      - Патч прототипів покриває всі інстанси одразу: liquid-glass, kiwi, appmenu імпортують той самий кешований клас dist/utils.js.
+      - Не патчилось: UILayerSampler.prototype.sync (дешеві guarded-записи); тіки менеджерів залишились як були — вони стають дешевими, бо важливі виклики всередині тепер гейтовані на рівні прототипів.
+   4. Вимірювання (живі, EvalHelper; лічильники global._lgGlass.dump() / _macGlassStats()):
+      - Бейзлайн (до патчу): Spotlight відкритий 7 с → paints +42; tahoe-widgets glass ~3 paints/s idle; blur reuse працює (blurRuns ≪ paints; input-switcher: 281 paints / 126 blurRuns).
+      - Після патчу: Spotlight відкритий 6 с → paints +36, blurRuns +15; у спокої за 6 с refreshDelta=0 при damageDelta=10 (пошкодження прихованих вікон не тригерять stage-repaint і не потребують рефрешу — коректно).
+      - Під час змін: damageVersion 54 → 39 повних рефрешів за ~2.4 с — практично 60 FPS cap замість 165 Гц на кожен кадр × кожну поверхню (~2.75× скорочення репейнт-роботи з урахуванням перекриття клонувань: dock 0.98, top window 1.97, middle 5.90, bottom window 13.78 blur+composite chains per frame — коментар у liquidEffect.js).
+      - A/B у спокої: обидві дельти = 0 (тіки не виконуються зовсім — цільова поведінка).
+   5. Експлуатація / стан активації:
+      - Негайно (ця сесія): живий прототип-патч активний; повна активація дискової логіки відбудеться після наступного re-login — файли вже несуть ідентичний шлюз.
+      - Вимкнути оптимізацію: globalThis._macGlassEventDriven = false (стара покадрова поведінка); увімкнути назад: globalThis._macGlassEventDriven = true.
+      - Діагностика: globalThis._macGlassStats() (eventDriven/surfaces/damageVersion/refreshes); globalThis._macGlassLivePatchInfo() (стан живого патчу); форс-рефреш скла: glassForceRefresh(ключ) з glassGate.js.
+      - Синтаксис усіх змінених файлів перевірено strip-check-парсингом (gjs -m; ReferenceError від знятих гі-імпортів — очікувано, не SyntaxError).
+      - Репозиторій синхронізовано з робочою системою (10 змінених runtime-файлів + 2 нові glassGate.js/gpuSaveLiveApply.js), виконано локальний коміт без push.

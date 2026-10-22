@@ -3,10 +3,20 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import { LiquidEffect } from './liquidEffect.js';
-import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js';
+import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, glassRefreshDue, glassRefreshDone, glassForceRefresh } from './utils.js';
 // Padding to allow the shader to draw effects (like refraction and blur) outside the actor's strict bounds.
 const SHADER_PADDING = 20;
 // Utility: Convert HEX color string (e.g., "#ffffff") to normalized RGB array [1.0, 1.0, 1.0]
+// [GPU-SAVE] Extras-хеш геометрії дока: локальні координати скла й монітор.
+// Використовується glassRefreshDue() як «додатковий факт зміни» поряд зі
+// stage-сканом та власною геометрією bgActor.
+function _dockGlassExtras(localBgX, localBgY, bgW, bgH, screenW, screenH) {
+    const q = (v) => Number.isFinite(v) ? Math.round(v * 4) | 0 : 0;
+    return ((q(localBgX) * 73856093) ^ (q(localBgY) * 19349663) ^
+        (q(bgW) * 83492791) ^ (q(bgH) * 2654435761) ^
+        ((screenW | 0) * 1274126177) ^ ((screenH | 0) * 1550398307)) | 0;
+}
+
 function hexToColorArray(hex) {
     if (!hex || typeof hex !== 'string' || !hex.startsWith('#') || hex.length !== 7) {
         return [1.0, 1.0, 1.0];
@@ -366,6 +376,9 @@ export class DashManager {
             this._windowCloneManager?.rebuildClones();
             this._uiSampler?.rebindSelf();
             this._uiSampler?.refresh();
+            // [GPU-SAVE] після повної перебудови наступний тік мусить дати
+            // повний рефреш без очікування межі 60 FPS.
+            glassForceRefresh?.(this.bgActor);
         };
         // The reschedule at the end is what keeps this chain alive, so it must
         // not be reachable-only-on-success: a single throw out of
@@ -833,6 +846,14 @@ export class DashManager {
         // FBO, which maps back to (w.x, w.y) in screen space once bgActor's
         // monitor-origin position is added by Clutter's scene graph. ✓
         this._windowCloneManager?.setOffset(-monitor.x, -monitor.y);
+        // [GPU-SAVE] Важку частину (клони + семпли UI + capture-clip) виконується
+        // тільки коли фон змінився; межа 60 FPS. Геометрія вище оновлюється
+        // щотіка безкоштовно, тому скло не «відлипає» від дока під час твенів.
+        // Extras: докова геометрія (bgX/bgY/bgW/bgH, локальні координати та
+        // монітор) — щоб перетворення конфігурації дока миттєво ловилося.
+        const extraH = _dockGlassExtras(localBgX, localBgY, bgW, bgH, screenW, screenH);
+        if (!glassRefreshDue?.(this.bgActor, extraH))
+            return;
         // [PERF ①/①b] Clip the offscreen CAPTURE to the region this glass can
         // actually show, and hide the clones that fall outside it. Must sit
         // between setGlassGeometry() (which makes the effect's uniforms describe
@@ -851,6 +872,7 @@ export class DashManager {
         this._uiSampler?.refresh();
         this._uiSampler?.sync(monitor.x, monitor.y, screenW, screenH);
         this._windowCloneManager?.sync();
+        glassRefreshDone?.(this.bgActor, extraH);
     }
     // エフェクトを画面から消し、元に戻す処理
     _removeEffect() {

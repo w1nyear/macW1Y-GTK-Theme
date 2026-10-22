@@ -237,9 +237,22 @@ export class TahoeGlass {
                     .add(Meta.LaterType.BEFORE_REDRAW, tick);
                 return GLib.SOURCE_REMOVE;
             }
+            // [GPU-SAVE] Дешевими щотіка лишаються: rescue аллокації та
+            // геометрія (треба, щоб скло «клейлося» до своєї цілі під час твенів).
+            // Дорожня частина (семпли UI + клони вікон + capture-clip) виконується
+            // ТІЛЬКИ коли фон дійсно змінився (будьяка зміна вікон/вмісту/скла),
+            // з жорсткою межею 60 FPS. В спокої — нуль GPU-роботи; пульс 1 Гц
+            // братній догнає будь-який застряглий стан.
             try {
                 this._utils.ensureGlassAllocated?.(this._bgActor);
             } catch (_) {}
+
+            let doHeavy = true;
+            try {
+                doHeavy = this._utils.glassRefreshDue?.(this._bgActor, this._geoVersion) ?? true;
+            } catch (_) {
+                doHeavy = true;
+            }
 
             try {
                 this._syncGeometry();
@@ -250,18 +263,21 @@ export class TahoeGlass {
                         this._effect?.setCornerRadius(wantR);
                     } catch (_) {}
                 }
-                this._windowClones?.setOffset?.(-this._monX, -this._monY);
-                this._uiSampler?.refresh?.();
-                this._utils.syncGlassCaptureClip?.({
-                    cloneContainer: this._cloneContainer,
-                    effect: this._effect,
-                    originX: this._monX,
-                    originY: this._monY,
-                    uiSampler: this._uiSampler,
-                    windowCloneManager: this._windowClones,
-                });
-                this._uiSampler?.sync?.(this._monX, this._monY, this._monW, this._monH);
-                this._windowClones?.sync?.();
+                if (doHeavy) {
+                    this._windowClones?.setOffset?.(-this._monX, -this._monY);
+                    this._uiSampler?.refresh?.();
+                    this._utils.syncGlassCaptureClip?.({
+                        cloneContainer: this._cloneContainer,
+                        effect: this._effect,
+                        originX: this._monX,
+                        originY: this._monY,
+                        uiSampler: this._uiSampler,
+                        windowCloneManager: this._windowClones,
+                    });
+                    this._uiSampler?.sync?.(this._monX, this._monY, this._monW, this._monH);
+                    this._windowClones?.sync?.();
+                    this._utils.glassRefreshDone?.(this._bgActor, this._geoVersion);
+                }
             } catch (e) {
                 this._utils?.reportFrameLoopError?.(`TahoeGlass_${this._owner}`, e);
             }
@@ -312,6 +328,10 @@ export class TahoeGlass {
 
         if (key !== this._last) {
             this._last = key;
+            // [GPU-SAVE] bump версії geometry: glassRefreshDue() бачить extras,
+            // тож capture-clip / cull rect синхронізуються миттєво при зміні
+            // положення/розміру цільової поверхі скла.
+            this._geoVersion = ((this._geoVersion || 0) + 1) >>> 0;
             this._bgActor.set_position(this._monX, this._monY);
             this._bgActor.set_size(this._monW, this._monH);
             this._liquidBox.set_position(0, 0);
@@ -359,6 +379,8 @@ export class TahoeGlass {
             this._startTick();
             this._syncGeometry();
             this._bgActor?.show();
+            // [GPU-SAVE] наступний тік мусить дати повний рефреш одразу.
+            this._utils?.glassForceRefresh?.(this._bgActor);
         } catch (_) {}
     }
 
