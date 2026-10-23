@@ -36,10 +36,20 @@ global.fade_out_opacity = 1.0;
 fun apply_fade_opacity(alpha)
 {
     logo_sprite.SetOpacity(alpha);
-    if (box_sprite)
-        box_sprite.SetOpacity(alpha);
-    if (bar_sprite)
-        bar_sprite.SetOpacity(alpha);
+    if (is_boot && !is_shutdown && global.box_shown)
+    {
+        if (box_sprite)
+            box_sprite.SetOpacity(alpha);
+        if (bar_sprite)
+            bar_sprite.SetOpacity(alpha);
+    }
+    else
+    {
+        if (box_sprite)
+            box_sprite.SetOpacity(0.0);
+        if (bar_sprite)
+            bar_sprite.SetOpacity(0.0);
+    }
 
     if (global.verbose_enabled)
     {
@@ -75,6 +85,7 @@ global.max_verbose_lines = Math.Int(screen_height / global.verbose_line_h);
 if (global.max_verbose_lines < 40)
     global.max_verbose_lines = 40;
 global.verbose_count = 0;
+global.has_kmsg_stream = 0;
 
 fun verbose_message(text)
 {
@@ -122,133 +133,197 @@ fun verbose_message(text)
     }
 }
 
-Plymouth.SetMessageFunction(verbose_message);
-Plymouth.SetUpdateStatusFunction(verbose_message);
-
-# Progress bar dimensions (only in boot mode)
-mode = Plymouth.GetMode();
-is_boot = (mode == "boot" || mode == "");
-
-if (is_boot)
+fun verbose_message_cb(text)
 {
-    bar_w = Math.Int(screen_width * 0.130);
-    if (bar_w < 180)
-        bar_w = 180;
-    if (bar_w > 400)
-        bar_w = 400;
+    global.has_kmsg_stream = 1;
+    verbose_message(text);
+}
 
-    bar_h = Math.Int(screen_height * 0.0056);
-    if (bar_h < 4)
-        bar_h = 4;
-    if (bar_h > 12)
-        bar_h = 12;
+fun verbose_status_cb(text)
+{
+    if (!global.verbose_enabled || !text)
+        return;
 
-    # Vertical position: centered below Apple logo
-    bar_x = screen_x + (screen_width / 2) - (bar_w / 2);
-    bar_y = logo_y + logo_h + 50;
+    # If the kmsg logger stream is active, do not pollute the log with bare unit names
+    if (global.has_kmsg_stream)
+        return;
 
-    # Track sprite (background capsule) - initially HIDDEN until boot progresses
-    box_raw = Image("progress_box.png");
-    box_image = box_raw.Scale(bar_w, bar_h);
-    box_sprite = Sprite(box_image);
-    box_sprite.SetPosition(bar_x, bar_y, 25);
-    box_sprite.SetOpacity(0.0);
+    # Fallback when logger is not active: format bare unit name to descriptive system line
+    verbose_message("systemd[1]: Starting " + text + "...");
+}
 
-    # Fill sprite (foreground white capsule)
-    bar_raw = Image("progress_bar.png");
-    bar_sprite = Sprite();
-    bar_sprite.SetPosition(bar_x, bar_y, 26);
-    bar_sprite.SetOpacity(0.0);
+Plymouth.SetMessageFunction(verbose_message_cb);
+Plymouth.SetUpdateStatusFunction(verbose_status_cb);
 
-    # Track progress and easing
-    global.target_progress = 0.0;
-    global.current_progress = 0.0;
-    global.last_rendered_w = 0;
-    global.box_shown = 0;
+# Progress bar dimensions (Boot, Shutdown, and Reboot support)
+mode = Plymouth.GetMode();
+is_shutdown = (mode == "shutdown" || mode == "reboot");
+is_boot = (mode == "boot" || mode == "" || !is_shutdown);
 
-    fun update_bar(p)
+bar_w = Math.Int(screen_width * 0.14);
+if (bar_w < 180)
+    bar_w = 180;
+if (bar_w > 400)
+    bar_w = 400;
+
+bar_h = Math.Int(screen_height * 0.0056);
+if (bar_h < 4)
+    bar_h = 4;
+if (bar_h > 10)
+    bar_h = 10;
+
+# Position: centered horizontally, placed near the bottom edge of the screen (93% Y)
+bar_x = screen_x + (screen_width / 2) - (bar_w / 2);
+bar_y = screen_y + Math.Int(screen_height * 0.93);
+
+# Track sprite (background capsule)
+box_raw = Image("progress_box.png");
+box_image = box_raw.Scale(bar_w, bar_h);
+box_sprite = Sprite(box_image);
+box_sprite.SetPosition(bar_x, bar_y, 25);
+
+# Fill sprite (foreground white capsule)
+bar_raw = Image("progress_bar.png");
+bar_sprite = Sprite();
+bar_sprite.SetPosition(bar_x, bar_y, 26);
+
+# Initially hidden (always 0.0 opacity on shutdown)
+box_sprite.SetOpacity(0.0);
+bar_sprite.SetOpacity(0.0);
+
+# Track progress and easing
+global.target_progress = 0.0;
+global.current_progress = 0.0;
+global.last_rendered_w = 0;
+global.box_shown = 0;
+global.quit_requested = 0;
+
+fun update_bar(p)
+{
+    # Progress bar MUST NEVER appear on shutdown or reboot
+    if (is_shutdown || !is_boot)
     {
-        # In authentic macOS, progress bar does not appear immediately.
-        # Only when system initialization begins (p >= 0.04), track fades in.
-        if (p < 0.04)
-        {
-            bar_sprite.SetOpacity(0.0);
+        if (box_sprite)
             box_sprite.SetOpacity(0.0);
-            return;
-        }
-
-        if (!global.box_shown)
-        {
-            global.box_shown = 1;
-            box_sprite.SetOpacity(1.0);
-        }
-
-        cur_w = Math.Int(bar_w * p);
-        if (cur_w < bar_h)
-            cur_w = bar_h;
-        if (cur_w > bar_w)
-            cur_w = bar_w;
-
-        if (cur_w != global.last_rendered_w)
-        {
-            global.last_rendered_w = cur_w;
-            scaled_bar = bar_raw.Scale(cur_w, bar_h);
-            bar_sprite.SetImage(scaled_bar);
-            bar_sprite.SetOpacity(1.0);
-        }
+        if (bar_sprite)
+            bar_sprite.SetOpacity(0.0);
+        return;
     }
 
-    fun boot_progress_callback(duration, progress)
+    # In authentic macOS, on boot progress bar doesn't appear immediately.
+    # Only when system initialization begins (p >= 0.02), track fades in.
+    if (p < 0.02)
     {
-        if (progress > global.target_progress)
-        {
-            global.target_progress = progress;
-            if (global.target_progress > 1.0)
-                global.target_progress = 1.0;
-        }
+        bar_sprite.SetOpacity(0.0);
+        box_sprite.SetOpacity(0.0);
+        return;
     }
 
-    fun refresh_callback()
+    if (!global.box_shown)
     {
-        if (global.fade_out_started)
-        {
-            global.fade_out_opacity = global.fade_out_opacity - 0.04;
-            if (global.fade_out_opacity < 0.0)
-                global.fade_out_opacity = 0.0;
+        global.box_shown = 1;
+        box_sprite.SetOpacity(1.0);
+    }
 
-            apply_fade_opacity(global.fade_out_opacity);
-            return;
+    cur_w = Math.Int(bar_w * p);
+    if (cur_w < bar_h)
+        cur_w = bar_h;
+    if (cur_w > bar_w)
+        cur_w = bar_w;
+
+    if (cur_w != global.last_rendered_w)
+    {
+        global.last_rendered_w = cur_w;
+        scaled_bar = bar_raw.Scale(cur_w, bar_h);
+        bar_sprite.SetImage(scaled_bar);
+        bar_sprite.SetOpacity(1.0);
+    }
+}
+
+fun boot_progress_callback(duration, progress)
+{
+    if (is_shutdown || !is_boot)
+        return;
+
+    # Progress crawls steadily towards 100% as system services initialize
+    scaled = progress * 1.35;
+    if (scaled > 0.96)
+        scaled = 0.96;
+
+    if (scaled > global.target_progress)
+    {
+        global.target_progress = scaled;
+    }
+}
+
+fun refresh_callback()
+{
+    # Dynamic mode re-check (in case mode changed to shutdown/reboot on the fly)
+    cur_mode = Plymouth.GetMode();
+    if (cur_mode == "shutdown" || cur_mode == "reboot")
+    {
+        is_shutdown = 1;
+        is_boot = 0;
+        if (box_sprite)
+            box_sprite.SetOpacity(0.0);
+        if (bar_sprite)
+            bar_sprite.SetOpacity(0.0);
+    }
+
+    if (global.fade_out_started)
+    {
+        # 0.4s fade out: at 50fps, 0.05 per frame = 20 frames = 0.4s
+        global.fade_out_opacity = global.fade_out_opacity - 0.05;
+        if (global.fade_out_opacity < 0.0)
+            global.fade_out_opacity = 0.0;
+
+        apply_fade_opacity(global.fade_out_opacity);
+        return;
+    }
+
+    if (is_boot && !is_shutdown)
+    {
+        # Autonomous steady forward crawl so progress fills up to near 100% before GDM
+        if (global.target_progress < 0.96)
+        {
+            global.target_progress = global.target_progress + 0.0022;
         }
 
         if (global.current_progress < global.target_progress)
         {
             diff = global.target_progress - global.current_progress;
-            step = diff * 0.12;
-            if (step < 0.0015)
-                step = 0.0015;
-            global.current_progress += step;
+            step = diff * 0.20;
+            if (step < 0.003)
+                step = 0.003;
+            global.current_progress = global.current_progress + step;
             if (global.current_progress > global.target_progress)
                 global.current_progress = global.target_progress;
 
             update_bar(global.current_progress);
         }
-
-        # Once progress completes (100%), smoothly fade out logo, bar, and verbose text to black
-        if (global.current_progress >= 0.98 && global.target_progress >= 1.0)
-        {
-            global.fade_out_started = 1;
-        }
     }
-
-    Plymouth.SetBootProgressFunction(boot_progress_callback);
-    Plymouth.SetRefreshFunction(refresh_callback);
 }
+
+Plymouth.SetBootProgressFunction(boot_progress_callback);
+Plymouth.SetRefreshFunction(refresh_callback);
 
 fun quit_callback()
 {
-    global.fade_out_started = 1;
-    global.fade_out_opacity = 0.0;
-    apply_fade_opacity(0.0);
+    if (is_boot && !is_shutdown)
+    {
+        # Complete progress bar to 100% full immediately before fade out
+        global.target_progress = 1.0;
+        global.current_progress = 1.0;
+        update_bar(1.0);
+        # Begin smooth 0.4s fade out of Apple logo and boot elements exactly when GDM takes over
+        global.fade_out_started = 1;
+    }
+    else
+    {
+        global.fade_out_started = 1;
+        global.fade_out_opacity = 0.0;
+        apply_fade_opacity(0.0);
+    }
 }
 Plymouth.SetQuitFunction(quit_callback);
 
