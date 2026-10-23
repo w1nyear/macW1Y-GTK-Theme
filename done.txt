@@ -9050,3 +9050,24 @@ echo "==> Встановлення успішно завершено!"
       - kiwi@kemma/apps/tahoeControlCenter.js, tahoeNotifications.js → /home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/
    6. Стан:
       - Завершено кодово. Анімації оновлені для всіх діалогів appmenu + kiwi. Перезавантаження shell не потрібне (динамічні імпорти підхоплять нові файли при наступному відкритті).
+
+116. OSD (volume/brightness): нова архітектура — іконка дії + контекстне меню з слайдером під нею (23.10.2026):
+   1. Мета (запит користувача):
+      - Замість іконки Control Center показувати іконку дії (гучність/яскравість) з fade in/out.
+      - Під іконкою — контекстне меню з модулем слайдера з Control Center (шейдер, border, glass).
+      - Якщо Control Center відкритий — лише рухаємо слайдер там, іконку не міняємо.
+      - Гучність: 3 сегменти (≤33%, ≤66%, ≤100%), маркер овер-ампліфікації (>100%) на 66% позиції.
+   2. Виконані правки (tahoeOSD.js повністю переписано):
+      - Нова структура: іконка (48px) + glass pill під нею зі слайдером TahoeSegSlider.
+      - TahoeSegSlider: 3 сегменти, плавний partial-fill, amber marker при >100% (на 2/3 ширини).
+      - Fade in/out анімація (150 мс EASE_OUT_QUAD) для всього боксу.
+      - Glass stack: перевикористовує _makeGlassStack з tahoeControlCenter (стейм шейдер/rim/sheen).
+      - Авто-hide 1800 мс, придушення стокового OSD через Main.osdWindowManager.hideAll().
+      - Якщо isPanelOpen() (Control Center) — викликаємо _updateCCSlider(kind, value) і виходимо.
+   3. Інтеграція в kiwi:
+      - extension.js: імпорт tahoeOSDEnable/tahoeOSDDisable, виклик у _on_settings_changed та enable/disable.
+      - stylesheet.css: оновлено класи .tahoe-osd, .tahoe-osd-icon-row, .tahoe-osd-icon, .tahoe-osd-bar.
+   4. Синхронізація репозиторію:
+      - extensions/kiwi@kemma/apps/tahoeOSD.js, extension.js, stylesheet.css
+   5. Стан:
+      - Синтаксис OK, enable() спрацьовує. Потрібна перевірка користувачем (Fn+F2/F3/F4/F5).

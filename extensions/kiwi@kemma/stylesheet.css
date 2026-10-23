@@ -1261,8 +1261,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 #panel .screen-sharing-indicator StIcon,
 #panel .panel-button.screen-sharing-indicator StIcon { color: #ffffff; }
 
-/* Tahoe volume/brightness OSD: glass pill (liquid-glass behind, the box
-   itself is transparent so the blur shapes it; hairline + shadow stay) */
+/* Tahoe volume/brightness OSD: icon + glass pill with slider (liquid-glass behind) */
 .tahoe-osd {
     background-color: transparent;
     border-radius: 22px;
@@ -1274,17 +1273,9 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     spacing: 10px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
-.tahoe-osd-head { spacing: 8px; }
-.tahoe-osd-headicon { color: #ffffff; }
-.tahoe-osd-title {
-    font-family: "SF Pro Display";
-    font-size: 0.95em;
-    font-weight: 700;
-    color: #ffffff;
-}
-.tahoe-osd-bar { spacing: 10px; }
-.tahoe-osd-endicon { color: rgba(255, 255, 255, 0.9); }
-.tahoe-osd-endicon-big { color: #ffffff; }
+.tahoe-osd-icon-row { spacing: 0; }
+.tahoe-osd-icon { color: #ffffff; }
+.tahoe-osd-bar { spacing: 0; }
 /* segmented bar draws itself (TahoeSegSlider); no theme needed */
 
 /* Tahoe Notification Center */
