@@ -3132,6 +3132,7 @@ menubar > item {
   padding: 4px 6px;
   border: none;
   border-radius: 3px;
+  font-weight: 400;
 }
 
 menubar > item:hover {

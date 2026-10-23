@@ -2606,20 +2606,17 @@ function _buildPanel(merges = null) {
     // важкий (каптура/семплінг) ніколи не виконується в кадрах руху.
     try {
         box.set_pivot_point(1.0, 0.0);
-        box.scale_x = 1.12;
-        box.scale_y = 1.12;
+        box.translation_x = 480;
         box.opacity = 0;
         panelBg.set_pivot_point(1.0, 0.0);
-        panelBg.scale_x = 1.12;
-        panelBg.scale_y = 1.12;
+        panelBg.translation_x = 480;
         panelBg.opacity = 0;
         for (const s of p.stacks) {
             s.bgActor.opacity = 0;
             s.bgActor.visible = false;
         }
         box.ease({
-            scale_x: 1.0,
-            scale_y: 1.0,
+            translation_x: 0,
             opacity: 255,
             duration: 300,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
@@ -2628,8 +2625,7 @@ function _buildPanel(merges = null) {
             },
         });
         panelBg.ease({
-            scale_x: 1.0,
-            scale_y: 1.0,
+            translation_x: 0,
             opacity: 255,
             duration: 300,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
@@ -2811,9 +2807,9 @@ export function closeNC(immediate = false) {
         return;
     }
 
-    // Scale-up on close: 1.0 -> 1.12 (zoom in while fading out).
+    // Slide-out on close: translation_x 0 -> 480 (slide out right while fading out).
     // Тик уже мертвий (_nc = null на старті closeNC), тому опадність скла
-    // на scale-out ведуть per-stack ease → 0, синхронно з панеллю (260мс).
+    // на slide-out ведуть per-stack ease → 0, синхронно з панеллю (260мс).
     try {
         p.box.remove_all_transitions();
         p.panelBg.remove_all_transitions();
@@ -2835,8 +2831,7 @@ export function closeNC(immediate = false) {
         } catch (_) {}
         try {
             p.panelBg.ease({
-                scale_x: 1.12,
-                scale_y: 1.12,
+                translation_x: 480,
                 opacity: 0,
                 duration: 260,
                 mode: Clutter.AnimationMode.EASE_IN_CUBIC,
@@ -2844,8 +2839,7 @@ export function closeNC(immediate = false) {
         } catch (_) {}
         try {
             p.box.ease({
-                scale_x: 1.12,
-                scale_y: 1.12,
+                translation_x: 480,
                 opacity: 0,
                 duration: 260,
                 mode: Clutter.AnimationMode.EASE_IN_CUBIC,

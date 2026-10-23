@@ -1556,23 +1556,19 @@ function _buildPanel() {
         _startGlass();
     }
     box.set_pivot_point(1.0, 0.0);
-    box.scale_x = 1.12;
-    box.scale_y = 1.12;
+    box.translation_x = 480;
     box.opacity = 0;
     panelBg.set_pivot_point(1.0, 0.0);
-    panelBg.scale_x = 1.12;
-    panelBg.scale_y = 1.12;
+    panelBg.translation_x = 480;
     panelBg.opacity = 0;
     box.ease({
-        scale_x: 1.0,
-        scale_y: 1.0,
+        translation_x: 0,
         opacity: 255,
         duration: 280,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
     });
     panelBg.ease({
-        scale_x: 1.0,
-        scale_y: 1.0,
+        translation_x: 0,
         opacity: 255,
         duration: 280,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
@@ -2840,15 +2836,13 @@ function _closePanel(immediate = false) {
         p.box.set_pivot_point(1.0, 0.0);
         p.panelBg.set_pivot_point(1.0, 0.0);
         p.panelBg.ease({
-            scale_x: 1.12,
-            scale_y: 1.12,
+            translation_x: 480,
             opacity: 0,
             duration: 240,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
         });
         p.box.ease({
-            scale_x: 1.12,
-            scale_y: 1.12,
+            translation_x: 480,
             opacity: 0,
             duration: 240,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
