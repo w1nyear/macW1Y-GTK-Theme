@@ -7,7 +7,7 @@ GRUB_DEFAULT=0
 GRUB_TIMEOUT_STYLE=menu
 GRUB_TIMEOUT=5
 GRUB_DISTRIBUTOR=`( . /etc/os-release && echo ${NAME} )`
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=3 bgrt.disable=1 vt.global_cursor_default=0"
+GRUB_CMDLINE_LINUX_DEFAULT="splash systemd.show_status=1 loglevel=4 bgrt.disable=1 vt.global_cursor_default=0"
 GRUB_CMDLINE_LINUX=""
 
 # If your computer has multiple operating systems installed, then you
@@ -44,3 +44,4 @@ GRUB_GFXPAYLOAD_LINUX=keep
 GRUB_THEME="/boot/grub/themes/apple-mac/theme.txt"
 
 GRUB_DISABLE_SUBMENU=y
+GRUB_DISABLE_MEMTEST=true

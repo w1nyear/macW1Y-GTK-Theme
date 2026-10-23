@@ -8948,3 +8948,25 @@ echo "==> Встановлення успішно завершено!"
    4. Стан:
       - Завершено. Вікна whitelisted програм отримують скло одразу після відкриття; для вже відкритих вікон — просто перевідкрити їх.
       - Скріншот-UI (інтерфейс знімка екрана) — це не вікно, а оверлей Shell; liquid-glass його не покриває. За потреби скло для нього треба окремо додавати в eval-helper (окреме завдання).
+
+111. GRUB: фокус стрілками в macOS Boot Picker — гігантські шестерні замість кнопок Shut Down/Restart (23.10.2026):
+   1. Мета (запит користувача):
+      - У меню GRUB після 5 натискань «вправо» фокус мав потрапити на кнопки перезавантаження/вимкнення, натомість з'являлась іконка на весь екран (гігантські шестерні), яку неможливо закрити — допомагав лише перезапуск.
+   2. Аналіз та першопричина:
+      - Тема apple-mac малює кожен пункт меню як повноекранний мокап (icon_width=1920, icon_height=1080 у theme.txt), тож «влучання» фокусом на «поганий» пункт = показ будь-якої картинки на весь екран.
+      - Першопричина (гігантські шестерні): іконка memtest.png — це пара белих шестерень 64×64 (зі старого набору тем), а пункти «Memory test (mt86+x64)»/«(serial console)» з класом --class memtest потрапляли в меню; grub масштабує icon_width/icon_height → шестерні розтягувались на весь екран 30×.
+      - Дублі екранів «Ubuntu, with Linux …» + «(recovery mode)» (їх шлях через фокус здавався «зависанням»): /etc/grub.d/10_linux.bak_mactheme — стара НЕпатчена копія 10_linux залишилась виконуваною (-rwx), і grub-mkconfig запускав її як звичайний скрипт, додаючи другу пару записів з такими самими id (у їхніх тілах видно не-закоментований echo 'Loading Linux …', чого немає в патченій версії).
+      - Пункти «UEFI Firmware Settings» та «Linux Firmware Updater» не мали класів → без іконки → чорний екран з (чорним) текстом.
+   3. Виконані правки:
+      - GRUB_DISABLE_MEMTEST=true у /etc/default/grub → пункти memtest зникли (схема 20_memtest86+ це поважає).
+      - chmod -x /etc/grub.d/10_linux.bak_mactheme (backup залишений, лише не виконуваний) → дублікати пари Ubuntu/Options зникли.
+      - /etc/grub.d/30_uefi-firmware: entryowi 'UEFI Firmware Settings' додано --class uefi-firmware → тепер малює uefi-firmware.png (мокап Boot Picker з підсвіченим Options).
+      - /etc/grub.d/40_custom: додані два пункти mac Boot Picker:
+        * menuentry 'Shut Down' --class shutdown --class halt → shutdown.png (мокап з підсвіченою кнопкою Shut Down внизу) → команда halt;
+        * menuentry 'Restart' --class reboot --class restart → reboot.png (мокап з підсвіченим Restart) → команда reboot.
+      - Пункти-інжир fwupd («Linux Firmware Updater») сам зник — /var/lib/fwupd/uefi_capsule.conf більше не існує, запис був застарілим.
+      - sudo update-grub: фінальне меню РІВНО 5 пунктів: Ubuntu → Options → UEFI Firmware Settings → Shut Down → Restart.
+      - Стрілкова навігація не ламається: бінопатчі normal.mod та grubx64.efi (UP=boot, LEFT=prev, RIGHT=next) перевірені побайтно — патчі на місці; update-grub лише переписує grub.cfg.
+      - Синхронізація з репозиторієм: grub/grub.default (повна копія /etc/default/grub), grub/40_custom, grub/30_uefi-firmware; іконки /boot/grub/themes/apple-mac == репозиторій (md5-звірка всіх 35 файлів — дублікатів немає).
+   4. Стан:
+      - Завершено. Праворуч відOptions фокус тепер одразу потрапляє на Shut Down (3-е натискання) і Restart (4-е); далі клампиться (за межами списку не відкриває нічого екранного). Шестерень і чорних екранів більше не існує: кожен пункт має повноекранний мокап.
