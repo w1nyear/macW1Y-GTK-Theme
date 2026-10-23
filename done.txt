@@ -9019,6 +9019,6 @@ echo "==> Встановлення успішно завершено!"
       - extension.js реагує на погоду наживо: settings.connect('changed') → _applyItem(item) → item.container.visible = false + пересинхронізація glass. Релогін не потрібний.
    3. Виконані правки:
       - gsettings set org.gnome.shell.extensions.tahoe-widgets weather-visible false — віджет заховався одразу.
-      - Синхронізовано dconf-дампи репозиторію (тsembensі підміни): dconf/gnome-extensions.dconf, dconf/gnome-shell.dconf, dconf/gnome-all.dconf (weather-visible=true → false).
+      - Синхронізовано dconf-дампи репозиторію (точкові підміни): dconf/gnome-extensions.dconf, dconf/gnome-shell.dconf, dconf/gnome-all.dconf (weather-visible=true → false).
    4. Стан:
       - Завершено (верифікація — скріншот користувача). Для повного повернення віджета: gsettings set ... weather-visible true.
