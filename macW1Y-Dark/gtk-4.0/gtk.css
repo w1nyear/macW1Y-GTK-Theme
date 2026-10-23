@@ -9985,8 +9985,13 @@ window.nautilus-window .content-pane > scrolledwindow {
 window.nautilus-window .content-pane headerbar {
     background-color: #202022;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    margin-top: 0px;
+    margin-top: -3px;
     padding-left: 0px;
+}
+
+/* Etap 112: raise the toolbar strip a couple of pixels */
+window.nautilus-window .sidebar-pane headerbar {
+    margin-top: -3px;
 }
 
 /* Shift top panel buttons */
@@ -10005,12 +10010,34 @@ window.nautilus-window .content-pane headerbar .start {
 
 window.nautilus-window .nautilus-pathbar,
 window.nautilus-window #NautilusPathBar {
-    min-width: 280px;
+    min-width: 560px;
     padding: 3px 12px;
 }
 
 
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
+
+/* ============================================================
+   Etap 112: MAC FROSTED LEFTBAR for Nautilus
+   Leftbar translucency so the compositor glass backdrop
+   (liquid-glass application glass / blur-my-shell) shines through.
+   The pane carries the tint (alpha 0.55); inner layers are cleared
+   to avoid double-stacking translucency.
+   ============================================================ */
+window.nautilus-window .sidebar-pane {
+    background-color: rgba(28, 28, 32, 0.55);
+    background-image: none;
+}
+
+window.nautilus-window .sidebar-pane headerbar,
+window.nautilus-window .sidebar-pane placessidebar,
+window.nautilus-window .sidebar-pane placessidebar > scrolledwindow,
+window.nautilus-window .sidebar-pane placessidebar scrolledwindow viewport,
+window.nautilus-window .sidebar-pane .navigation-sidebar,
+window.nautilus-window .sidebar-pane list.navigation-sidebar {
+    background-color: transparent;
+    background-image: none;
+}
 
 /* Alignment for Resources (net.nokyan.Resources) */
 overlay-split-view headerbar {

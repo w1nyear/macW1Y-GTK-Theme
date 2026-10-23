@@ -10001,6 +10001,35 @@ window.nautilus-window .content-pane headerbar .start {
 
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
 
+/* ============================================================
+   Etap 112: MAC FROSTED LEFTBAR + toolbar raise + wider pathbar
+   ============================================================ */
+window.nautilus-window .sidebar-pane {
+    background-color: rgba(28, 28, 32, 0.55);
+    background-image: none;
+}
+
+window.nautilus-window .sidebar-pane headerbar,
+window.nautilus-window .sidebar-pane placessidebar,
+window.nautilus-window .sidebar-pane placessidebar > scrolledwindow,
+window.nautilus-window .sidebar-pane placessidebar scrolledwindow viewport,
+window.nautilus-window .sidebar-pane .navigation-sidebar,
+window.nautilus-window .sidebar-pane list.navigation-sidebar {
+    background-color: transparent;
+    background-image: none;
+}
+
+window.nautilus-window .content-pane headerbar,
+window.nautilus-window .sidebar-pane headerbar {
+    margin-top: -3px;
+}
+
+window.nautilus-window .nautilus-pathbar,
+window.nautilus-window #NautilusPathBar {
+    min-width: 560px;
+    padding: 3px 12px;
+}
+
 /* Alignment for Resources (net.nokyan.Resources) */
 overlay-split-view headerbar {
     margin-top: -4px;

@@ -8970,3 +8970,24 @@ echo "==> Встановлення успішно завершено!"
       - Синхронізація з репозиторієм: grub/grub.default (повна копія /etc/default/grub), grub/40_custom, grub/30_uefi-firmware; іконки /boot/grub/themes/apple-mac == репозиторій (md5-звірка всіх 35 файлів — дублікатів немає).
    4. Стан:
       - Завершено. Праворуч відOptions фокус тепер одразу потрапляє на Shut Down (3-е натискання) і Restart (4-е); далі клампиться (за межами списку не відкриває нічого екранного). Шестерень і чорних екранів більше не існує: кожен пункт має повноекранний мокап.
+
+112. Nautilus: frosted leftbar + підйом тулбару + ширший pill адреси (23.10.2026):
+   1. Мета (запит користувача):
+      - «Leftbar у провіднику все ще немає розмитття» — зробити напівпрозорий розмитий лівбар (frosted, як macOS Finder).
+      - «Ту вищу полоску підніми вверх на чуть пару пікселів» — підняти тулбар (рядок з назад/вперед + адреса) на ~3px вгору.
+      - «За шириною більше збільш те де пише де я зараз є, щоб іконка назад/вперед торкалась» — розширити pill адреси («Домівка»), щоб кнопки назад/вперед прилягали до неї з відступом від лівбару.
+   2. Діагностика:
+      - liquid-glass application glass РАНІШЕ тестували: whitelist містить org.gnome.Nautilus/nautilus (обидва двигуни). Жива перевірка з output-logs: у журналі gnome-shell «[Liquid Glass] window is in whitelist. name = org.gnome.Nautilus» — glass за вікном провідника ПРАЦЮЄ. Після тесту output-logs вимкнено назад (false).
+      - Отже скло є, але лівбар його не пропускає: фон лівбара малюється ЦІЛКОМ непрозорим (базовий libadwaita .sidebar-pane/@sidebar_bg_color).
+   3. Виконані правки (CSS, кінцевий mac-nautilus блок, мітка «Etap 112»):
+      - FROSTED LEFTBAR: window.nautilus-window .sidebar-pane → background-color: rgba(28,28,32,0.55); внутрішні шари (headerbar/placessidebar/scrolledwindow/viewport/.navigation-sidebar/list.navigation-sidebar) → transparent, щоб альфа застосовувалась лише раз (0.55 з панелі) і glass за вікном просвічував; content-pane залишено SOLID #202022 (мак-дизайн: непрозорий контент).
+      - ТУЛБАР ВГОРУ: window.nautilus-window .content-pane headerbar margin-top: 0px → -3px + нове правило window.nautilus-window .sidebar-pane headerbar { margin-top: -3px } (щоб traffic-lights і тулбар лишились в одному рядку; той самий патерн, що вже застосовано дляResources: overlay-split-view headerbar {margin-top:-4px}).
+      - ШИРШИЙ PILL АДРЕСИ: window.nautilus-window .nautilus-pathbar/#NautilusPathBar min-width: 280px → 560px (padding лишився 3px 12px). Pill росте в centerbox в обидві сторони → ліва межа прилягає до кнопок назад/вперед, які мають margin-left 2px від лівбару.
+   4. Верифікація та синхронізація:
+      - Перевірка парсера CSS: запуск nautilus з GTK_THEME=macW1Y-Dark — нових помилок у gtk.css НІ (всі warnings — старий !important-синтаксис до рядка 9916, до правок не стосується; GTK їх ігнорує по-рядково).
+      - strace запуску nautilus встановив, які CSS реально читаються в темному режимі: ~/.config/gtk-4.0/gtk.css + ~/.themes/macW1Y-Dark/gtk-4.0/gtk-dark.css (нижній регістр!). Усі 4 активні CSS пропатчені: config/gtk.css, config/gtk-Dark.css, themes/macW1Y-Dark/gtk.css, themes/macW1Y-Dark/gtk-dark.css.
+      - Репозиторій: config/gtk-4.0/{gtk.css,gtk-Dark.css}, macW1Y-Dark/gtk-4.0/{gtk.css,gtk-dark.css}; /usr/share/themes/macW1Y-Dark/gtk-4.0/{gtk.css,gtk-dark.css} — через sudo -n (роль спадщини збережено: usr gtk.css ← config gtk-Dark, usr gtk-dark ← theme gtk-dark).
+      - nautilus перезапущено після правок (GTK не перечитує CSS наживо).
+   5. Стан:
+      - Завершено кодово. Візуальний скріншот надішле користувач (автоматичний скріншотинг заблоковано в gnome-shell Ubuntu: org.gnome.Shell.Screenshot → «Screenshot is not allowed», gnome-screenshot відсутній).
+      - Якщо alpha 0.55 здається надто прозорою/непрозорою — розкрутити значення rgba у window.nautilus-window .sidebar-pane у CSS-блоці «Etap 112».
