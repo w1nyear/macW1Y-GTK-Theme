@@ -8909,3 +8909,42 @@ echo "==> Встановлення успішно завершено!"
         * Наживо перезавантажено ресурси теми (`Main.reloadThemeResource()`, `Main.loadTheme()`) та розширення `eval-helper@mactheme` без перезапуску сесії користувача.
 
 
+
+109. GDM/Lock Screen: аватарка користувача не малювалась — виправлення нескінченної рекурсії в wack-lockscreen-clock (23.10.2026):
+   1. Мета (запит користувача):
+      - На екрані блокування GDM не відображалась іконка (аватар) користувача.
+   2. Аналіз та першопричина:
+      - У журналах — стек «too much recursion» через gdmAvatarManager.js (system-копія src/pro, рядки 188/131/128).
+      - Нативний Avatar.update() (GNOME 50, userWidget.js) сам встановлює background-image:url(iconFile) або іконку-заглушку; vfunc_style_changed шукає 'icon-size' і знову викликає update(). Наш код перехоплював avatar.update() і ставив inline-стилі безпосередньо на Avatar-актор, тому кожне оновлення стилю знову тригерило update() → головний цикл переходів update → style → update → ... Стиль- імперативна оболонка зациклювалась назавжди, фото не малювалось.
+   3. Виконані правки:
+      - pro/gdmAvatarManager.js повністю переписано (v3, без рекурсії):
+        * Код більше НЕ перехоплює avatar.update() і не ставить жодних inline-стилів на сам Avatar-актор.
+        * Кольори «вібраності» наводяться лише на обгортку St.Button (.wack-avatar-well), яку нативний код не перечитує в style-changed ланцюжку.
+      - src/main/cupertinoPrompt.js:
+        * Видалено override avatar.update() (-avatarEpoch/стилеві підмінки).
+        * Вібраність тепер ставиться на _avatarButton (обгортку), а не на Avatar.
+        * Читабельність іконки AccountsService перевіряється через Gio access::can-read (без считання файлу).
+        * Видалено виклик getPromptBlendOverlay у гпд-гілці та додано destroy-хендлер, без витоку сигналів.
+      - Синхронізація: md5-однакові копії у 6 місцях: ~/.local/share/.../pro/, ~/.local/share/.../src/pro/, /usr/share/.../pro/, /usr/share/.../src/pro/, репозиторії pro/ та src/pro/; system src/main/cupertinoPrompt.js також оновлено. Repo-копію src/main/cupertinoPrompt.js дописано до живої версії (md5 збігається).
+      - gjs-валідація: обидва нові файли парсяться без синтаксичних помилок (GI_TYPELIB_PATH=/usr/lib/gnome-shell:... зі stub-модулями gdmUtils.js/colorUtils.js).
+      - gnome-shell-theme/gdm.css НЕ змінено (icon-size лишається; з неперехопленим update() цикл сходиться).
+   4. Стан:
+      - Кодово завершено. Візуальна перевірка можливa лише після перезаходу у систему (Wayland; живий перезапуск GDM неможливий).
+
+110. Розмиття віокон (glass/blur): розширення списків програм у liquid-glass та blur-my-shell (23.10.2026):
+   1. Мета (запит користувача):
+      - Blur-ефект на фоні мали лише лівсмарки Наутілуса та Параметрів; інші вікна залишились без розмиття (скриншоти: Ресурси, скріншот-UI).
+   2. Аналіз та першопричина:
+      - Два двигуни скла працюють у режимі білих списків (не enable-all): blur-my-shell.applications (whitelist з enable-all=false) та liquid-glass application-window-whitelist.
+      - У списках були лише «системні» GTK-програми (Settings, Nautilus, Disk Utility, Tweaks, Logs, Seahorse, Calculator, SystemMonitor, Characters, FontViewer, TextEditor), тож інші вікна лишались без скла.
+      - net.nokyan.Resources («Ресурси») навіть стояв у blacklist blur-my-shell — саме тому його вікно показувало стіну без blur.
+   3. Виконані правки:
+      - Розширено ОБИДВА білих списки ідентичним набором ПОГОДЖЕНО GTK-програм (не вмикаючи enable-all): net.nokyan.Resources/resources, org.gnome.Ptyxis, org.gnome.Terminal/gnome-terminal(-server), org.gnome.Loupe/loupe, org.gnome.Papers (Evince), evince, org.gnome.Calendar, org.gnome.Clocks, org.gnome.Weather, org.gnome.Contacts, org.gnome.Software, org.gnome.Snapshot/snapshot.
+      - Прибрано net.nokyan.Resources з blacklist blur-my-shell.applications (тепер: Plank, ding, Conky, gjs, Telegram, antigravity, google-chrome, steam).
+      - Живі значення записано через dconf write / gsettings set: liquid-glass.application-window-whitelist, blur-my-shell.applications.whitelist та .blacklist.
+      - Репозторійні dconf-дампи синхронізовано (точкові підміни старих значень у 5 файлах): dconf/blur-my-shell.dconf, dconf/gnome-shell.dconf, dconf/gnome-extensions.dconf, dconf/gnome-all.dconf, dconf/liquid-glass.dconf. Жодних старих списків не залишилось (grep-перевірка).
+      - liquid-glass реагує на зміну whitelist наживо (connectSetting('application-window-whitelist') → _syncWhitelist()) — перезавантаження не потрібне.
+      - Жива перевірка: увімкнено output-logs (тимчасово), запущено Калькулятор — у журналі «[Liquid Glass] window is in whitelist. name = org.gnome.Calculator», скло застосувалось одразу; після тесту output-logs повернено в false, калькулятор закрито.
+   4. Стан:
+      - Завершено. Вікна whitelisted програм отримують скло одразу після відкриття; для вже відкритих вікон — просто перевідкрити їх.
+      - Скріншот-UI (інтерфейс знімка екрана) — це не вікно, а оверлей Shell; liquid-glass його не покриває. За потреби скло для нього треба окремо додавати в eval-helper (окреме завдання).
