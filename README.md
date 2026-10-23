@@ -7,7 +7,7 @@
 ---
 
 <p align="center">
-  <img src="screen.MOV" alt="macW1Y Desktop Preview" width="100%" />
+  <img src="screen.webm" alt="macW1Y Desktop Preview" width="100%" />
 </p>
 
 ---
