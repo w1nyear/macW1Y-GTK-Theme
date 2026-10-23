@@ -9071,3 +9071,27 @@ echo "==> Встановлення успішно завершено!"
       - extensions/kiwi@kemma/apps/tahoeOSD.js, extension.js, stylesheet.css
    5. Стан:
       - Синтаксис OK, enable() спрацьовує. Потрібна перевірка користувачем (Fn+F2/F3/F4/F5).
+
+117. OSD (volume/brightness): відновлення автентичного macOS Tahoe/Sequoia OSD під статус-баром та повне придушення старого OSD (23.10.2026):
+   1. Проблема:
+      - Користувач все ще бачив старе стокове OSD знизу екрана над доком ("Speaker" з синьою смугою, фото 4).
+      - Причина 1: розширення kiwi@kemma впало з синтаксичною помилкою (SyntaxError: catch without try) у tahoeNotifications.js:2834, через що все розширення перейшло у стан ERROR і не завантажилось.
+      - Причина 2: виклику Main.osdWindowManager.hideAll() було недостатньо для придушення стокового OSD при натисканні медіаклавіш (gsd-media-keys викликає ShowOSD через DBus, що безпосередньо викликає Main.osdWindowManager._showOsdWindow).
+      - Причина 3: liquid-glass osdManager окремо рендерив скло для _osdWindows над доком.
+   2. Виконані роботи:
+      - Виправлено синтаксичні помилки в kiwi@kemma/apps/tahoeNotifications.js (зайвий/непарний catch) та tahoeQuickSettings.js (закриття TahoeSlider).
+      - tahoeOSD.js: перехоплено Main.osdWindowManager._showOsdWindow, Main.osdWindowManager.show/showAll/showOne та _osdWindows[i].show(). Будь-який виклик відображення стокового OSD надійно перехоплюється, стокове вікно скасовується та приховується (opacity 0, visible false), а подія гучності або яскравості делегується в Tahoe OSD.
+      - liquid-glass: вимкнено enable-osd-glass через gsettings і live-налаштування для усунення зайвого розмиття навколо стокового OSD та економії кадрів.
+      - Відновлено автентичний дизайн macOS Tahoe / Sequoia згідно з фото 1 та 3:
+        * Розташування: вгорі праворуч під верхньою панеллю, відцентровано рівно під кнопкою Control Center (ydotool-trigger-button).
+        * Верхній рядок: чистий заголовок з лівим вирівнюванням ("Дисплей" для яскравості або назва аудіопристрою "Динаміки MacBook Air" / "Навушники" для звуку).
+        * Нижній рядок: ліва іконка (15px), плавний заокруглений слайдер з фоновим треком, білим наповненням та рядом із 17 ледь помітних крапок знизу, права іконка (20px).
+        * Скляний ефект Liquid Glass: _makeGlassStack з шейдером, відблиском (rim/sheen) та розмиттям Dual-Kawase, контур 1px solid rgba(255, 255, 255, 0.16) та тінь.
+        * Автоматичне приховування через 1800 мс з плавним згасанням (200 мс).
+        * Інтеграція з Control Center: при відкритому Control Center (globalThis._tahoeQSOpen) OSD-попап не показується поверх панелі, слайдери в CC синхронізуються напряму.
+      - extension.js: підключено динамічний імпорт з cache-buster (?v=osd_v3), синхронізовано очищення попередніх екземплярів при оновленнях.
+   3. Верифікація:
+      - Тестування через EvalHelper: виклики ShowOSD, Main.osdWindowManager.showAll, а також пряма зміна гучності через Gvc sink.push_volume().
+      - Стокове OSD на всіх тестах повністю придушене (visible: false, opacity: 0).
+      - Tahoe OSD з'являється у точних координатах [1549, 42, 300, 78] під Control Center, заголовок "Динаміки MacBook Air" або "Дисплей", слайдер і Liquid Glass відображаються плавно.
+      - При відкритому Control Center попап OSD придушується (osdVisibleWhileCcOpen: false).

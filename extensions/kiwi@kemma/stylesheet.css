@@ -1261,21 +1261,34 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 #panel .screen-sharing-indicator StIcon,
 #panel .panel-button.screen-sharing-indicator StIcon { color: #ffffff; }
 
-/* Tahoe volume/brightness OSD: icon + glass pill with slider (liquid-glass behind) */
+/* Tahoe volume/brightness OSD: macOS Sequoia / Tahoe style glass pill */
 .tahoe-osd {
     background-color: transparent;
     border-radius: 22px;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-left: none !important;
-    border-right: none !important;
-    padding: 12px 16px 14px 16px;
-    spacing: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    padding: 10px 14px 12px 14px;
+    spacing: 8px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
-.tahoe-osd-icon-row { spacing: 0; }
-.tahoe-osd-icon { color: #ffffff; }
-.tahoe-osd-bar { spacing: 0; }
+.tahoe-osd-head {
+    spacing: 0;
+    margin-left: 2px;
+}
+.tahoe-osd-title {
+    font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+    font-size: 0.95em;
+    font-weight: 700;
+    color: #ffffff;
+}
+.tahoe-osd-bar {
+    spacing: 10px;
+}
+.tahoe-osd-endicon {
+    color: rgba(255, 255, 255, 0.9);
+}
+.tahoe-osd-endicon-big {
+    color: #ffffff;
+}
 /* segmented bar draws itself (TahoeSegSlider); no theme needed */
 
 /* Tahoe Notification Center */

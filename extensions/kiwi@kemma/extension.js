@@ -16,7 +16,6 @@ import { enable as topbarButtonsEnable, disable as topbarButtonsDisable } from '
 import { enable as reduceWindowAnimationsEnable, disable as reduceWindowAnimationsDisable } from './apps/reduceWindowAnimations.js';
 import { enable as gtkThemeSyncEnable, disable as gtkThemeSyncDisable } from './apps/gtkThemeSync.js';
 import { enable as labelBlurEnable, disable as labelBlurDisable } from './apps/labelBlur.js';
-import { enable as tahoeOSDEnable, disable as tahoeOSDDisable } from './apps/tahoeOSD.js';
 
 export default class KiwiExtension extends Extension {
     _resolveDark() {
@@ -86,9 +85,18 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] labelBlur: ${e}`);
         }
         try {
-            tahoeOSDEnable();
+            const osdUri = this.dir.get_child('apps').get_child('tahoeOSD.js').get_uri() + '?v=osd_v3';
+            import(osdUri).then(mod => {
+                if (this._tahoeOSD && this._tahoeOSD !== mod) {
+                    try { this._tahoeOSD.disable(); } catch (_) {}
+                }
+                this._tahoeOSD = mod;
+                mod.enable();
+            }).catch(e => {
+                console.warn(`[kiwi] tahoeOSD dynamic import failed: ${e}`);
+            });
         } catch (e) {
-            console.warn(`[kiwi] tahoeOSDEnable: ${e}`);
+            console.warn(`[kiwi] tahoeOSD: ${e}`);
         }
 
         try {
@@ -222,7 +230,12 @@ export default class KiwiExtension extends Extension {
             }
             labelBlurDisable();
         } catch (_) {}
-        try { tahoeOSDDisable(); } catch (_) {}
+        try {
+            if (this._tahoeOSD) {
+                this._tahoeOSD.disable();
+                this._tahoeOSD = null;
+            }
+        } catch (_) {}
         try { reduceWindowAnimationsDisable(); } catch (_) {}
         try { gtkThemeSyncDisable(); } catch (_) {}
 

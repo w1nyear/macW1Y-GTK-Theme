@@ -501,7 +501,7 @@ const TahoeSlider = GObject.registerClass({
         cr.fill();   // fill() closes the capsule path
         cr.$dispose();
     }
-}
+});
 
 // full-width card: label + horizontal slider between two end icons
 function _makeSliderCard(title, leftIcon, rightIcon, withEndBtn) {

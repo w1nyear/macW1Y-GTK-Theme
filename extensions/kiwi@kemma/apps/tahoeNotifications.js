@@ -2831,7 +2831,8 @@ export function closeNC(immediate = false) {
                         mode: Clutter.AnimationMode.EASE_IN_CUBIC,
                     });
                 } catch (_) {}
-            } catch (_) {}
+            }
+        } catch (_) {}
         try {
             p.panelBg.ease({
                 scale_x: 1.12,
