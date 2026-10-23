@@ -9010,3 +9010,15 @@ echo "==> Встановлення успішно завершено!"
       - extensions/appmenu@ChathurangaBW.github.io/menuManager.js (md5 af4bae00… = жива), applications/org.gnome.Nautilus.desktop.
    6. Стан:
       - Завершено. Менюбар одразу показує «Finder» для активного Nautilus та для випадку «немає вибраного вікна» (перевірка — скріншот користувача). Після relogin усі шляхи (док/Launchpad/системні списки) показуватимуть Finder; у дока-лайблах і ShellApp-кеші стара назва може журити до перезавантаження.
+
+114. Віджети робочого столу: вимкнення віджета погоди (tahoe-widgets) (23.10.2026):
+   1. Мета (запит користувача):
+      - «Видали віджет погоди на робочому столі» — прибрати віджет погоди (город/City name/5°/погодинний прогноз), інші віджети (календар тощо) лишаються.
+   2. Діагностика:
+      - Віджети малює розширення tahoe-widgets@micronix (clock/calendar/weather/…). Ключ org.gnome.shell.extensions.tahoe-widgets weather-visible (був true).
+      - extension.js реагує на погоду наживо: settings.connect('changed') → _applyItem(item) → item.container.visible = false + пересинхронізація glass. Релогін не потрібний.
+   3. Виконані правки:
+      - gsettings set org.gnome.shell.extensions.tahoe-widgets weather-visible false — віджет заховався одразу.
+      - Синхронізовано dconf-дампи репозиторію (тsembensі підміни): dconf/gnome-extensions.dconf, dconf/gnome-shell.dconf, dconf/gnome-all.dconf (weather-visible=true → false).
+   4. Стан:
+      - Завершено (верифікація — скріншот користувача). Для повного повернення віджета: gsettings set ... weather-visible true.
