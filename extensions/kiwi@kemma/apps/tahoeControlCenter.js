@@ -335,8 +335,8 @@ async function _openWifiSubmenu(sourceActor, state) {
 
         _activeSubmenu = menu;
         menu.actor.opacity = 0;
-        menu.actor.scale_x = 0.94;
-        menu.actor.scale_y = 0.94;
+        menu.actor.scale_x = 1.12;
+        menu.actor.scale_y = 1.12;
         menu.actor.set_pivot_point(1.0, 0.2);
         menu.open(BoxPointer.PopupAnimation.FULL);
         menu.actor.ease({
@@ -391,8 +391,8 @@ async function _openBluetoothSubmenu(sourceActor, state) {
 
         _activeSubmenu = menu;
         menu.actor.opacity = 0;
-        menu.actor.scale_x = 0.94;
-        menu.actor.scale_y = 0.94;
+        menu.actor.scale_x = 1.12;
+        menu.actor.scale_y = 1.12;
         menu.actor.set_pivot_point(1.0, 0.2);
         menu.open(BoxPointer.PopupAnimation.FULL);
         menu.actor.ease({
@@ -506,8 +506,8 @@ async function _openSoundSubmenu(sourceActor, state) {
 
         _activeSubmenu = menu;
         menu.actor.opacity = 0;
-        menu.actor.scale_x = 0.94;
-        menu.actor.scale_y = 0.94;
+        menu.actor.scale_x = 1.12;
+        menu.actor.scale_y = 1.12;
         menu.actor.set_pivot_point(1.0, 0.2);
         menu.open(BoxPointer.PopupAnimation.FULL);
         menu.actor.ease({
@@ -1555,18 +1555,24 @@ function _buildPanel() {
     } catch (_) {
         _startGlass();
     }
-    box.translation_x = W + 30;
+    box.set_pivot_point(1.0, 0.0);
+    box.scale_x = 1.12;
+    box.scale_y = 1.12;
     box.opacity = 0;
-    panelBg.translation_x = W + 30;
+    panelBg.set_pivot_point(1.0, 0.0);
+    panelBg.scale_x = 1.12;
+    panelBg.scale_y = 1.12;
     panelBg.opacity = 0;
     box.ease({
-        translation_x: 0,
+        scale_x: 1.0,
+        scale_y: 1.0,
         opacity: 255,
         duration: 280,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
     });
     panelBg.ease({
-        translation_x: 0,
+        scale_x: 1.0,
+        scale_y: 1.0,
         opacity: 255,
         duration: 280,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
@@ -2828,18 +2834,21 @@ function _closePanel(immediate = false) {
     _closing = true;
     globalThis._tahoeQSOpen = false;
 
-    const W = p.box?.width || PANEL_W;
     try {
         p.box.remove_all_transitions();
         p.panelBg.remove_all_transitions();
+        p.box.set_pivot_point(1.0, 0.0);
+        p.panelBg.set_pivot_point(1.0, 0.0);
         p.panelBg.ease({
-            translation_x: W + 30,
+            scale_x: 1.12,
+            scale_y: 1.12,
             opacity: 0,
             duration: 240,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
         });
         p.box.ease({
-            translation_x: W + 30,
+            scale_x: 1.12,
+            scale_y: 1.12,
             opacity: 0,
             duration: 240,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,

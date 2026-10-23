@@ -1147,8 +1147,8 @@ export const MacSpotlightDialog = GObject.registerClass({
         } else {
             this._box.translation_x = 0;
             this._box.translation_y = 0;
-            this._box.scale_x = 1.08;
-            this._box.scale_y = 1.08;
+            this._box.scale_x = 1.12;
+            this._box.scale_y = 1.12;
         }
         this._box.opacity = 0;
 
@@ -1336,8 +1336,8 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._backdrop.visible = false;
         this._box.ease({
             opacity: 0,
-            scale_x: 0.94,
-            scale_y: 0.94,
+            scale_x: 1.12,
+            scale_y: 1.12,
             duration: 180,
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {

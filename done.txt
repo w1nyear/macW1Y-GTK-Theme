@@ -9022,3 +9022,31 @@ echo "==> Встановлення успішно завершено!"
       - Синхронізовано dconf-дампи репозиторію (точкові підміни): dconf/gnome-extensions.dconf, dconf/gnome-shell.dconf, dconf/gnome-all.dconf (weather-visible=true → false).
    4. Стан:
       - Завершено (верифікація — скріншот користувача). Для повного повернення віджета: gsettings set ... weather-visible true.
+
+115. Анімації відкриття/закриття всіх мак-меню: scale-down на open, scale-up на close (23.10.2026):
+   1. Мета (запит користувача):
+      - «При відкритті має бути поява + віддалення (scale down), при закритті — зникнення + зближення (scale up)».
+      - Застосувати до Spotlight, Clipboard, Applications menu, Control Center, Notification Center, підменю CC (Wi-Fi, BT, Sound).
+   2. Діагностика:
+      - Раніше: open fallback scale 0.94→1.0 (або 1.08→1.0), close 1.0→0.94. Підменю CC теж стартували з 0.94.
+      - Control Center / Notification Center використовували slide-анімацію (translation_x), не scale.
+   3. Виконані правки (scale 1.12 ↔ 1.0, EASE_OUT_CUBIC open / EASE_IN_QUAD close, pivot point у правому верхньому куті для CC/NC):
+      - searchDialog_v5.js (Spotlight v5): fallback open scale 1.12→1.0; close 1.0→1.12.
+      - clipboardDialog_v2.js (Clipboard v2): те саме.
+      - applications_menu_v5b.js (Apps grid/Launchpad): fallback open scale 1.12→1.0; close 1.0→1.12.
+      - searchDialog.js, clipboardDialog.js (v1) — вже мали правильні значення.
+      - tahoeControlCenter.js:
+        * Головна панель: заміна slide (translation_x W+30→0) на scale 1.12→1.0 (open), 1.0→1.12 (close); pivot (1.0, 0.0) — верхній правий кут.
+        * Підменю Wi-Fi / Bluetooth / Sound: start scale 1.12→1.0 замість 0.94→1.0.
+      - tahoeNotifications.js:
+        * Головна панель: slide → scale 1.12→1.0 (open), 1.0→1.12 (close); pivot (1.0, 0.0).
+   4. Верифікація:
+      - Динамічний імпорт всіх 5 файлів — синтаксис OK.
+      - Spotlight: open/close — нова анімація працює (перевірено через EvalHelper toggleMacSpotlight).
+      - Control Center: open/close — нова scale-анімація працює (togglePanel).
+      - Notification Center: open/close — нова scale-анімація працює (модульний import openNC/closeNC).
+   5. Синхронізація репозиторію:
+      - appmenu@ChathurangaBW.github.io/*.js → /home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/
+      - kiwi@kemma/apps/tahoeControlCenter.js, tahoeNotifications.js → /home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/
+   6. Стан:
+      - Завершено кодово. Анімації оновлені для всіх діалогів appmenu + kiwi. Перезавантаження shell не потрібне (динамічні імпорти підхоплять нові файли при наступному відкритті).
