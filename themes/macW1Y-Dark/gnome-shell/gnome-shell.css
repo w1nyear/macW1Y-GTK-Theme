@@ -3477,7 +3477,7 @@ StWidget.focused .app-grid-running-dot {
   background-color: rgba(30, 30, 30, 0.40) !important;
   border-radius: 35px !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.60) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28) !important;
 }
 
 .modal-dialog .modal-dialog-button:last-child,

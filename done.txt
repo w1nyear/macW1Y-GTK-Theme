@@ -8889,3 +8889,23 @@ echo "==> Встановлення успішно завершено!"
       - Оновлення завантажувального образу ядра:
         * Виконано `sudo update-initramfs -u`, оновлений `apple-mac.script` запаковано безпосередньо в initrd (`/boot/initrd.img-7.0.0-38-generic`).
 
+108. Модальні діалоги (EndSessionDialog, ModalDialog, RunDialog): виправлення різких країв тіні та налаштування м'якої тіні macOS (23.10.2026):
+   1. Мета (запит користувача):
+      - Виправити тінь під системними діалоговими вікнами (діалог вимкнення «Вимкнути», виходу тощо), оскільки було чітко видно грубі прямокутні краї тіні навколо вікна.
+   2. Аналіз та першопричина:
+      - У стилях `gnome-shell.css` для `.modal-dialog`, `.end-session-dialog`, `.prompt-dialog`, `.run-dialog`, `.access-dialog` використовувалася надто темна та агресивна тінь: `box-shadow: 0 24px 64px rgba(0, 0, 0, 0.60) !important;`.
+      - Через високу непрозорість (60% чорного) та радіус розмиття 64px рушій St Clutter створював помітний перепад яскравості на межі текстури розмиття, що візуально виглядало як груба прямокутна рамка («halo») навколо заокругленого діалогу.
+      - Крім того, у модулі `eval-helper@mactheme/extension.js` (`syncDialogGlass`) було встановлено штучне жорстке обрізання `CLIP_PAD = 60`, яке прямокутно відсікало будь-які ефекти та тіні на відстані 60px від діалогу. Також шейдер `BackdropGlass` через зв'язування з GSettings міг малювати паразитну внутрішню тінь із різким зрізом.
+   3. Виконані правки:
+      - У `gnome-shell.css` у всіх темах (macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid, системних та локальних директоріях):
+        * Замінено `box-shadow: 0 24px 64px rgba(0, 0, 0, 0.60)` на еталонну м'яку, дифузну тінь macOS: `box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28) !important;` (для темних тем) та `0 16px 36px rgba(0, 0, 0, 0.20) !important;` (для світлих тем).
+        * Завдяки зменшенню непрозорості до 0.28 та радіусу 36px тінь плавно й безшовно розсіюється до повного нуля, не залишаючи жодних прямокутних країв чи темних контурів.
+      - У `extensions/eval-helper@mactheme/extension.js`:
+        * Збільшено `CLIP_PAD` із 60 до 160 пікселів у `syncDialogGlass` та `patchSwitcherPopupLQVisual`, що унеможливлює відсікання тіні чи розмиття.
+        * У `createDialogGlass` та `syncDialogGlass` примусово встановлено нульову інтенсивність тіні шейдера (`shadow_intensity: 0.0`, `shadow_radius: 0.0`, `shadow_max_radius: 0.0`, `ao_intensity: 0.0`), гарантуючи відсутність конфліктів між шейдером скла та CSS-тінню.
+      - Синхронізація та перезбірка:
+        * Оновлено копії файлів у репозиторії, `~/.themes/`, `/usr/share/themes/` та `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/`.
+        * Наново скомпільовано системний ресурс `/usr/share/gnome-shell/theme/macW1Y-Dark/gnome-shell-theme.gresource` через `glib-compile-resources`.
+        * Наживо перезавантажено ресурси теми (`Main.reloadThemeResource()`, `Main.loadTheme()`) та розширення `eval-helper@mactheme` без перезапуску сесії користувача.
+
+

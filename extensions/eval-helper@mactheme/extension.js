@@ -515,7 +515,7 @@ export default class EvalHelper extends Extension {
                                     switcherGlass.setCornerRadius(24.0);
                                     switcherGlass.setGlassGeometry(localX, localY, bgW, bgH);
 
-                                    const CLIP_PAD = 40;
+                                    const CLIP_PAD = 160;
                                     switcherGlass.set_clip(localX - CLIP_PAD, localY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
                                 };
 
@@ -598,6 +598,13 @@ export default class EvalHelper extends Extension {
                     glass.setIsDock(false);
                     glass.setCornerSmoothingEnabled(0.0);
                     glass.setPadding(0);
+                    try {
+                        glass._effect?._setFloat?.('shadow_intensity', 0.0);
+                        glass._effect?._setFloat?.('shadow_radius', 0.0);
+                        glass._effect?._setFloat?.('shadow_max_radius', 0.0);
+                        glass._effect?._setFloat?.('ao_intensity', 0.0);
+                        glass._effect?._setFloat?.('ao_radius', 0.0);
+                    } catch (_) {}
                     glass.hide();
 
                     const state = {
@@ -666,7 +673,16 @@ export default class EvalHelper extends Extension {
                         glass.setPadding(0);
                         glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
 
-                        const CLIP_PAD = 60;
+                        try {
+                            glass._effect?._setFloat?.('shadow_intensity', 0.0);
+                            glass._effect?._setFloat?.('shadow_radius', 0.0);
+                            glass._effect?._setFloat?.('shadow_max_radius', 0.0);
+                            glass._effect?._setFloat?.('ao_intensity', 0.0);
+                            glass._effect?._setFloat?.('ao_radius', 0.0);
+                        } catch (_) {}
+
+                        // Generous clip padding so drop shadows and blur never get hard-clipped
+                        const CLIP_PAD = 160;
                         glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
                     }
 
