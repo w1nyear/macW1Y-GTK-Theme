@@ -543,7 +543,8 @@ export class MenuManager {
         if (this._destroyed)
             return;
 
-        let appName = _("Desktop");
+        // Etap 113: mac Finder naming — no-window fallback shows "Finder" instead of "Desktop"
+        let appName = "Finder";
         let isAppFocused = false;
         let detectedApp = null;
 
@@ -600,6 +601,20 @@ export class MenuManager {
         }
 
         const wmClass = window?.get_wm_class?.() ?? '';
+
+        // Etap 113: mac Finder naming — Nautilus windows are called "Finder"
+        {
+            const appNameLower = String(appName || '').toLowerCase();
+            const appIdLower = (detectedApp?.get_id?.() || '').toLowerCase();
+            const wmClassLower = wmClass.toLowerCase();
+            if (appIdLower.includes('nautilus') ||
+                wmClassLower.includes('nautilus') ||
+                appNameLower.includes('nautilus') ||
+                appNameLower === 'files' || appNameLower === 'файли' || appNameLower === 'файлы') {
+                appName = 'Finder';
+            }
+        }
+
             const realMenuData = this._realMenuManager.updateForWindow(window, appName, detectedApp, wmClass);
             const menuSource = realMenuData?.topLevelMenus?.length
                 ? _('Real exported menus')

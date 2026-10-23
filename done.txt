@@ -8991,3 +8991,22 @@ echo "==> Встановлення успішно завершено!"
    5. Стан:
       - Завершено кодово. Візуальний скріншот надішле користувач (автоматичний скріншотинг заблоковано в gnome-shell Ubuntu: org.gnome.Shell.Screenshot → «Screenshot is not allowed», gnome-screenshot відсутній).
       - Якщо alpha 0.55 здається надто прозорою/непрозорою — розкрутити значення rgba у window.nautilus-window .sidebar-pane у CSS-блоці «Etap 112».
+
+113. Менюбар: назва «Finder» замість «Робочий стіл»/«Файли»/«nautilus» (23.10.2026):
+   1. Мета (запит користувача):
+      - Якщо жодне вікно не вибране — в менюбарі писати «Finder» замість «Робочий стіл».
+      - Активний Nautilus (як і будь-яка варіація назви «nautilus») — теж «Finder».
+      - Системну назву Nautilus замінено на Finder (док, Launchpad, app grid, сам менюбар).
+   2. Діагностика:
+      - Менюбар — розширення appmenu@ChathurangaBW. Кнопка назви застосунку: menuManager.js updateMenuForWindow() → updateMenuForWindow(line 546) має fallback `let appName = _("Desktop")`, а uk_UA .mo перекладає 'Desktop' → «Робочий стіл»; активне Nautilus-вікно давало detectedApp.get_name() → «Файли» (locale uk).
+   3. Виконані правки:
+      - menuManager.js (Etap 113): fallback назви «Робочий стіл» → literal "Finder" (без gettext — не перекладається); нормалізація назв після детекції вікна: appId/wmClass/appName, що містить 'nautilus', або 'Files'/'Файли'/'Файлы' → 'Finder' (works для wmclass-fallback-шляху, де .desktop не знайдено).
+      - ~/.local/share/applications/org.gnome.Nautilus.desktop (override): Name=Finder; прибрано X-Ubuntu-Gettext-Domain=nautilus (інакше uk-локаль знову ж показувала б «Файли» через gettext-домен). GAppInfo тепер display_name: Finder (перевірено через Gio).
+      - update-desktop-database оновлено.
+   4. Живий патч (без relogin):
+      - Через EvalHelper: кнопка appmenu «Файли» → set_text('Finder') прямо в панелі; прототип updateLabel перехоплено (плsavier __finderPatchedUpdateLabel): Desktop/nautilus/Files/Файли/Файлы → Finder до перезавантаження shell.
+      - Після relogin/file-based правю брай берет силова: menuManager.js перезавантажиться, override .desktop підхопиться в GAppInfo/ShellAppSystem.
+   5. Синхронізація репозиторію:
+      - extensions/appmenu@ChathurangaBW.github.io/menuManager.js (md5 af4bae00… = жива), applications/org.gnome.Nautilus.desktop.
+   6. Стан:
+      - Завершено. Менюбар одразу показує «Finder» для активного Nautilus та для випадку «немає вибраного вікна» (перевірка — скріншот користувача). Після relogin усі шляхи (док/Launchpad/системні списки) показуватимуть Finder; у дока-лайблах і ShellApp-кеші стара назва може журити до перезавантаження.
