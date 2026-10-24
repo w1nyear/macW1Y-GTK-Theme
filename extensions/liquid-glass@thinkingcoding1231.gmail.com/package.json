@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w"
+    "build": "echo 'Recompilation disabled'",
+    "watch": "echo 'Recompilation disabled'"
   },
   "devDependencies": {
     "@girs/gnome-shell": "^50.0.0",

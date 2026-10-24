@@ -4459,7 +4459,7 @@ export function glassRefreshDue(glassActor, extraHash) {
         const scanH = _stageBackdropHash(nowUs);
         const dmg = _backdropDamageVersion;
         const ownH = _hmix(_ownGlassHash(glassActor), extraHash);
-        if (st.lastScanH !== scanH || st.lastDamage !== dmg || st.lastOwnH !== ownH) {
+        if (st.lastScanH !== scanH || st.lastOwnH !== ownH) {
             st.lastScanH = scanH;
             st.lastDamage = dmg;
             st.lastOwnH = ownH;

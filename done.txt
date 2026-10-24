@@ -9193,4 +9193,26 @@ echo "==> Встановлення успішно завершено!"
       - Вимірювання через EvalHelper: `gaps = [8, 8, 8, 8, 8, 8, 8, 8, 8, 15]`, `pillW = 701px`, `pillH = 72px`.
       - Скріншот підтвердив щільне, акуратне та автентичне розміщення значків macOS Dock.
 
+126. Усунення зникнення доку після перезапуску, фіксація змін та повне відключення перекомпіляції:
+   1. Причина зникнення доку після рестарту:
+      - У журналі GNOME Shell (`journalctl -b 0 /usr/bin/gnome-shell`) виявлено критичну помилку: `Extension dash2dock-motion@unmade.space: Error: No property spacing on StBoxLayout` у `dash.js:210`.
+      - Конструктор `St.BoxLayout` у GObject/GNOME Shell 50 не має властивості `spacing`. Спроба передати її призводила до виключення під час завантаження розширення при старті системи, через що `dash2dock-motion` переходив у стан `ERROR`.
+   2. Виконані виправлення:
+      - У [extensions/dash2dock-motion@unmade.space/dash.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/dash.js):
+        * Видалено некоректну властивість `spacing: 4` з конструктора `new St.BoxLayout`.
+        * Необхідний крок у 8px між іконками повністю і стабільно забезпечується через CSS-правила (`padding: 4px 1px` для `.overview-icon` та `margin: 0` для контейнерів), без втручання в GObject-конструктор.
+      - Відновлено роботу розширення в сесії: скинуто помилку, стан повернуто в `ACTIVE`.
+      - Повне відключення перекомпіляції:
+        * У [extensions/liquid-glass@thinkingcoding1231.gmail.com/package.json](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/package.json): команди `build` та `watch` замінено на заглушки `echo 'Recompilation disabled'`.
+        * Перевірено відсутність фонових процесів `tsc` та `watch`.
+      - Синхронізація сирцевого та скомпільованого коду:
+        * Усі модифікації розрахунку геометрії капсули та відступів перенесені з `dist/dockManager.js` у [extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts).
+        * Синхронізовано оптимізацію відсутності помилкових перемальовувань від глобального damage у [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js).
+        * Проведено повну звірку (`diff -r`) між репозиторієм та `~/.local/share/gnome-shell/extensions/` — файли ідентичні на 100%.
+   3. Верифікація:
+      - Стан розширень: `dash2dock-motion@unmade.space` — `ACTIVE`, `liquid-glass@thinkingcoding1231.gmail.com` — `ACTIVE`.
+      - У журналі `journalctl` відсутні будь-які помилки дока.
+      - Док, скляний шейдер liquid glass, відступи (8px між значками, 10px з боків, 9px зверху/знизу, висота 72px) та індикаторні точки повністю збережені та захищені від скидання при перезавантаженнях.
+
+
 
