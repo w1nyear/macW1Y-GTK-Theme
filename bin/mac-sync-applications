@@ -620,21 +620,6 @@ class MacAppDaemon:
         print("[MacAppDaemon] Starting macOS Applications Drag-and-Drop Manager...")
         sync()
 
-        # Supervise Dock Trash Drop Overlay for Wayland drag-and-drop bypass
-        overlay_bin = "/usr/local/bin/mac-dock-trash-overlay"
-        if not os.path.exists(overlay_bin):
-            overlay_bin = os.path.expanduser("~/MACTHEMEFILES/bin/mac-dock-trash-overlay")
-        if os.path.exists(overlay_bin):
-            def supervise_overlay():
-                while True:
-                    try:
-                        p = subprocess.Popen([overlay_bin])
-                        p.wait()
-                    except Exception as e:
-                        print(f"[MacAppDaemon] Overlay error: {e}", flush=True)
-                    time.sleep(2)
-            threading.Thread(target=supervise_overlay, daemon=True).start()
-
         # Monitor ~/Applications
         f_apps = Gio.File.new_for_path(APPS_DIR)
         mon_apps = f_apps.monitor_directory(Gio.FileMonitorFlags.NONE, None)

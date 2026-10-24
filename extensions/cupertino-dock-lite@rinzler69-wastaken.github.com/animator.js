@@ -585,8 +585,34 @@ export class Animator {
         this._dragging = true;
         this._pauseForDrag();
       },
-      'drag-end', () => {
+      'drag-end', (_d, eventTime, success) => {
         this._dragging = false;
+
+        // macOS-style "drag out to unpin"
+        if (success === false && this.dashContainer) {
+          try {
+            const [dx, dy] = this.dashContainer.get_transformed_position();
+            const [dw, dh] = this.dashContainer.get_transformed_size();
+            const [px, py] = global.get_pointer();
+            const isOutside = py < (dy - 40) || px < (dx - 40) || px > (dx + dw + 40) || py > (dy + dh + 40);
+            if (isOutside) {
+              const app = draggable.actor?._delegate?.app ?? draggable.actor?.app;
+              if (app && app.get_id && !app.isTrash && !app.location) {
+                const appId = app.get_id();
+                const favs = AppFavorites.getAppFavorites();
+                if (favs.isFavorite(appId)) {
+                  favs.removeFavorite(appId);
+                  try {
+                    global.display.get_sound_player().play_from_theme('trash-empty', 'Unpin', null);
+                  } catch (_) {}
+                }
+              }
+            }
+          } catch (e) {
+            logError(e, 'Failed to unpin dragged-out dock item');
+          }
+        }
+
         if (draggable) {
           draggable.disconnectObject(this);
         }

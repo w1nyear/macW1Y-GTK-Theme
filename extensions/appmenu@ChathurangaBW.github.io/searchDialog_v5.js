@@ -7,6 +7,7 @@ import St from 'gi://St';
 import Pango from 'gi://Pango';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Util from 'resource:///org/gnome/shell/misc/util.js';
+import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
 import { _ } from './i18n.js';
 import { t, tf } from './mac_i18n.js';
 
@@ -1677,6 +1678,23 @@ export const MacSpotlightDialog = GObject.registerClass({
             }
 
             btn.itemData = item;
+            if (item.type === 'app' && item.app) {
+                btn._delegate = {
+                    app: item.app,
+                    getDragActor: () => {
+                        const gicon = item.app.get_icon ? item.app.get_icon() : null;
+                        return gicon ? new St.Icon({ gicon, icon_size: 48 }) : new St.Icon({ icon_name: 'application-x-executable', icon_size: 48 });
+                    },
+                    getDragActorSource: () => btn,
+                };
+                const draggable = DND.makeDraggable(btn, {
+                    restoreOnSuccess: true,
+                    dragActorOpacity: 200,
+                });
+                draggable.connect('drag-begin', () => {
+                    this.close();
+                });
+            }
             btn.connect('clicked', () => {
                 this._activate(item);
             });

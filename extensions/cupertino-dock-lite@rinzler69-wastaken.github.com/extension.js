@@ -19,6 +19,8 @@
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
 import St from 'gi://St';
 import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
@@ -51,9 +53,11 @@ export default class DashAnimatorExtension extends Extension {
 
     this.animator.enable();
     this._connectThemeSettings();
+    this._initWaylandDndBridge();
   }
 
   disable() {
+    Main.xdndHandler.disconnectObject(this);
     this._disconnectThemeSettings();
     if (this.animator) this.animator.disable();
 
@@ -347,7 +351,21 @@ export default class DashAnimatorExtension extends Extension {
         if (app && app.get_id && !app.isTrash) {
           return DND.DragMotionResult.MOVE_DROP;
         }
+        if (this._isExternalDrag(source)) {
+          return DND.DragMotionResult.MOVE_DROP;
+        }
         return DND.DragMotionResult.NO_DROP;
+      }
+
+      // 2. If external drag (from Nautilus) over the dock:
+      if (this._isExternalDrag(source)) {
+        return DND.DragMotionResult.COPY_DROP;
+      }
+
+      // 3. If dragging from Spotlight or other internal app source:
+      const app = this._getDraggedApp(source);
+      if (app && app.get_id && !app.isTrash) {
+        return DND.DragMotionResult.COPY_DROP;
       }
 
       return originalHandleDragOver?.(source, actor, x, y, time) ?? DND.DragMotionResult.CONTINUE;
@@ -374,6 +392,20 @@ export default class DashAnimatorExtension extends Extension {
           return true;
         }
         return false;
+      }
+
+      // 2. If app dropped onto Dock (from Spotlight / Search):
+      const app = this._getDraggedApp(source);
+      if (app && app.get_id && !app.isTrash) {
+        const appId = app.get_id();
+        const favs = AppFavorites.getAppFavorites();
+        if (!favs.isFavorite(appId)) {
+          favs.addFavorite(appId);
+          try {
+            global.display.get_sound_player().play_from_theme('dialog-information', 'Pin', null);
+          } catch (_) {}
+        }
+        return true;
       }
 
       return originalAcceptDrop?.(source, actor, x, y, time) ?? false;
@@ -413,6 +445,130 @@ export default class DashAnimatorExtension extends Extension {
     } catch (e) {
       logError(e, 'Failed to patch intellihide exclusion');
     }
+  }
+
+  _initWaylandDndBridge() {
+    this._activeDndUris = [];
+    Main.xdndHandler.connectObject(
+      'drag-begin', () => {
+        this._activeDndUris = [];
+        this._readDndUris().then(uris => {
+          this._activeDndUris = uris;
+        });
+      },
+      'drag-end', () => {
+        const uris = this._activeDndUris || [];
+        this._activeDndUris = [];
+        if (uris.length === 0) return;
+
+        // 1. Released over Trash -> delete / uninstall
+        if (this._isPointerOverTrash()) {
+          for (const uri of uris) {
+            try {
+              const f = Gio.File.new_for_uri(uri);
+              f.trash(null);
+            } catch (e) {
+              logError(e, 'Failed to trash DND uri: ' + uri);
+            }
+          }
+          try {
+            global.display.get_sound_player().play_from_theme('trash-empty', 'Trash', null);
+          } catch (_) {}
+          return;
+        }
+
+        // 2. Released over Dock -> Pin to favorites
+        if (this._isPointerOverDock()) {
+          for (const uri of uris) {
+            const appId = this._resolveAppIdFromUri(uri);
+            if (appId) {
+              const favs = AppFavorites.getAppFavorites();
+              if (!favs.isFavorite(appId)) {
+                favs.addFavorite(appId);
+                try {
+                  global.display.get_sound_player().play_from_theme('dialog-information', 'Pin', null);
+                } catch (_) {}
+              }
+            }
+          }
+        }
+      },
+      this
+    );
+  }
+
+  _readDndUris() {
+    return new Promise(resolve => {
+      try {
+        const sel = global.display.get_selection();
+        const mimes = sel.get_mimetypes(Meta.SelectionType.SELECTION_DND);
+        if (!mimes.includes('text/uri-list')) {
+          resolve([]);
+          return;
+        }
+        const stream = Gio.MemoryOutputStream.new_resizable();
+        sel.transfer_async(Meta.SelectionType.SELECTION_DND, 'text/uri-list', -1, stream, null, (_obj, res) => {
+          try {
+            const success = sel.transfer_finish(res);
+            if (success) {
+              stream.close(null);
+              const bytes = stream.steal_as_bytes();
+              const text = new TextDecoder().decode(bytes.get_data());
+              const uris = text.split(/[\r\n]+/).map(u => u.trim()).filter(u => u.length > 0 && !u.startsWith('#'));
+              resolve(uris);
+              return;
+            }
+          } catch (_) {}
+          resolve([]);
+        });
+      } catch (_) {
+        resolve([]);
+      }
+    });
+  }
+
+  _resolveAppIdFromUri(uri) {
+    try {
+      const file = Gio.File.new_for_uri(uri);
+      const path = file.get_path();
+      if (!path) return null;
+      if (path.endsWith('.desktop')) {
+        let realAppId = null;
+        try {
+          const [ok, content] = GLib.file_get_contents(path);
+          if (ok) {
+            const lines = new TextDecoder().decode(content).split('\n');
+            for (const l of lines) {
+              if (l.startsWith('X-Mac-Real-Path=')) {
+                const realPath = l.split('=')[1].trim();
+                realAppId = GLib.path_get_basename(realPath);
+                break;
+              }
+            }
+          }
+        } catch (_) {}
+        if (!realAppId) {
+          realAppId = GLib.path_get_basename(path);
+        }
+        const app = Shell.AppSystem.get_default().lookup_app(realAppId) ??
+                    Shell.AppSystem.get_default().lookup_app(GLib.path_get_basename(path));
+        return app ? app.get_id() : realAppId;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  _isPointerOverDock() {
+    if (!this.dashContainer) return false;
+    const [pointerX, pointerY] = global.get_pointer();
+    const [dockX, dockY] = this.dashContainer.get_transformed_position();
+    const [dockWidth, dockHeight] = this.dashContainer.get_transformed_size();
+    return pointerX >= dockX && pointerX <= dockX + dockWidth &&
+           pointerY >= dockY && pointerY <= dockY + dockHeight;
+  }
+
+  _isExternalDrag(source) {
+    return !source || source === Main.xdndHandler || source.constructor?.name === 'XdndHandler';
   }
 
   _canUnpinDraggedFavoriteOnTrash(source) {
