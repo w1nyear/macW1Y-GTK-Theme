@@ -1,7 +1,21 @@
 #!/usr/bin/env python3
-import os, sys, glob, subprocess, warnings
+import os, sys, glob, subprocess, time, shutil, zipfile, tarfile, re, threading, tempfile, warnings
 warnings.filterwarnings("ignore")
-from gi.repository import Gio
+import gi
+gi.require_version("Gio", "2.0")
+from gi.repository import Gio, GLib
+
+HOME = os.path.expanduser("~")
+APPS_DIR = os.path.join(HOME, "Applications")
+TRASH_DIR = os.path.join(HOME, ".local/share/Trash/files")
+TRASH_INFO_DIR = os.path.join(HOME, ".local/share/Trash/info")
+LOCAL_APPS_DIR = os.path.join(HOME, ".local/share/applications")
+APPIMAGES_DIR = os.path.join(HOME, ".local/share/appimages")
+INSTALLED_APPS_DIR = os.path.join(HOME, ".local/share/installed-apps")
+ICONS_DIR = os.path.join(HOME, ".local/share/icons/hicolor/scalable/apps")
+
+for d in [APPS_DIR, APPIMAGES_DIR, INSTALLED_APPS_DIR, ICONS_DIR, LOCAL_APPS_DIR, TRASH_DIR, TRASH_INFO_DIR]:
+    os.makedirs(d, exist_ok=True)
 
 
 def resolve_icon(app_info, desktop_path, home):
@@ -69,8 +83,8 @@ def resolve_icon(app_info, desktop_path, home):
 
 
 def sync():
-    home = os.path.expanduser("~")
-    apps_dir = os.path.join(home, "Applications")
+    home = HOME
+    apps_dir = APPS_DIR
     os.makedirs(apps_dir, exist_ok=True)
     
     # Symlink /Applications -> ~/Applications if root or possible
@@ -124,7 +138,6 @@ def sync():
                 active_links.add(dest_path)
                 
                 # Create or update desktop file as regular file
-                import shutil
                 if os.path.islink(dest_path):
                     try:
                         os.remove(dest_path)
@@ -160,7 +173,7 @@ def sync():
             except Exception:
                 pass
                 
-    # Remove stale symlinks
+    # Remove stale symlinks or deleted apps
     for f in glob.glob(os.path.join(apps_dir, "*.desktop")):
         if f not in active_links:
             try:
@@ -170,5 +183,447 @@ def sync():
 
     print(f"Synced {len(active_links)} applications to {apps_dir}")
 
-if __name__ == "__main__":
+
+def extract_app_name(filename):
+    base = os.path.basename(filename)
+    for ext in ['.appimage', '.AppImage', '.tar.gz', '.tar.xz', '.tgz', '.tar.bz2', '.tar', '.zip', '.deb']:
+        if base.endswith(ext):
+            base = base[:-len(ext)]
+            break
+    clean = re.sub(r'[-_](?:v?[\d\.]+.*|x86_64|amd64|i386|linux|x64|appimage).*$', '', base, flags=re.I)
+    clean = clean.replace('-', ' ').replace('_', ' ').strip().title()
+    return clean or base
+
+
+def wait_for_file_ready(filepath, timeout=20):
+    last_size = -1
+    stable_count = 0
+    start = time.time()
+    while time.time() - start < timeout:
+        if not os.path.exists(filepath):
+            return False
+        try:
+            curr_size = os.path.getsize(filepath)
+            if curr_size > 0 and curr_size == last_size:
+                stable_count += 1
+                if stable_count >= 2:
+                    return True
+            else:
+                stable_count = 0
+                last_size = curr_size
+        except Exception:
+            pass
+        time.sleep(0.5)
+    return os.path.exists(filepath) and os.path.getsize(filepath) > 0
+
+
+def install_appimage(filepath):
+    if not wait_for_file_ready(filepath):
+        return
+    print(f"[Installer] Installing AppImage: {filepath}")
+    clean_name = extract_app_name(filepath)
+    safe_id = "".join(c for c in clean_name if c.isalnum() or c in "-_").lower()
+    dest_binary = os.path.join(APPIMAGES_DIR, os.path.basename(filepath))
+    
+    try:
+        shutil.move(filepath, dest_binary)
+        os.chmod(dest_binary, 0o755)
+    except Exception as e:
+        print(f"[Installer] Move AppImage failed: {e}")
+        return
+
+    icon_path = ""
+    app_comment = f"{clean_name} Application"
+    categories = "Utility;Application;"
+
+    # Attempt to extract icon and desktop metadata from AppImage
+    temp_dir = tempfile.mkdtemp(prefix="appimage_ext_")
+    try:
+        subprocess.run([dest_binary, "--appimage-extract", "*.desktop"], cwd=temp_dir,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=6)
+        subprocess.run([dest_binary, "--appimage-extract", "*.png"], cwd=temp_dir,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=6)
+        subprocess.run([dest_binary, "--appimage-extract", "*.svg"], cwd=temp_dir,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=6)
+        
+        # Check extracted desktop files
+        desktops = glob.glob(os.path.join(temp_dir, "squashfs-root", "**", "*.desktop"), recursive=True)
+        if desktops:
+            with open(desktops[0], "r", errors="ignore") as df:
+                for line in df:
+                    line = line.strip()
+                    if line.startswith("Name=") and not clean_name:
+                        clean_name = line.split("=", 1)[1].strip()
+                    elif line.startswith("Comment="):
+                        app_comment = line.split("=", 1)[1].strip()
+                    elif line.startswith("Categories="):
+                        categories = line.split("=", 1)[1].strip()
+
+        # Check extracted icons
+        icons = glob.glob(os.path.join(temp_dir, "squashfs-root", "**", "*.png"), recursive=True) + \
+                glob.glob(os.path.join(temp_dir, "squashfs-root", "**", "*.svg"), recursive=True)
+        # Filter icons larger than 32px or svg
+        icons.sort(key=lambda x: os.path.getsize(x), reverse=True)
+        for cand in icons:
+            if not cand.endswith(".png") and not cand.endswith(".svg"):
+                continue
+            ext = os.path.splitext(cand)[1]
+            target_icon = os.path.join(ICONS_DIR, f"{safe_id}{ext}")
+            shutil.copy2(cand, target_icon)
+            icon_path = target_icon
+            break
+    except Exception as e:
+        print(f"[Installer] Extraction error: {e}")
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    if not icon_path:
+        icon_path = safe_id
+
+    desktop_content = f"""[Desktop Entry]
+Type=Application
+Name={clean_name}
+Comment={app_comment}
+Exec="{dest_binary}" %U
+Icon={icon_path}
+Terminal=false
+Categories={categories}
+X-Mac-AppImage=true
+X-Mac-Real-Path={dest_binary}
+"""
+    local_desktop = os.path.join(LOCAL_APPS_DIR, f"appimage-{safe_id}.desktop")
+    with open(local_desktop, "w") as df:
+        df.write(desktop_content)
+    os.chmod(local_desktop, 0o755)
+
+    subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()
+    subprocess.run(["notify-send", "-a", "macOS", "-i", icon_path or "application-x-executable",
+                    "Програму встановлено", f"Програма \"{clean_name}\" успішно встановлена!"])
+
+
+def install_archive(filepath):
+    if not wait_for_file_ready(filepath):
+        return
+    print(f"[Installer] Installing Archive: {filepath}")
+    clean_name = extract_app_name(filepath)
+    safe_id = "".join(c for c in clean_name if c.isalnum() or c in "-_").lower()
+    temp_dir = tempfile.mkdtemp(prefix="archive_ext_")
+
+    try:
+        if zipfile.is_zipfile(filepath):
+            with zipfile.ZipFile(filepath, "r") as z:
+                z.extractall(temp_dir)
+        elif tarfile.is_tarfile(filepath):
+            with tarfile.open(filepath, "r") as t:
+                t.extractall(temp_dir)
+        else:
+            return
+    except Exception as e:
+        print(f"[Installer] Archive extraction failed: {e}")
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        return
+
+    # Delete the dropped archive from ~/Applications
+    try:
+        os.remove(filepath)
+    except Exception:
+        pass
+
+    # Find root content folder if archive had a single enclosing folder
+    root_content = temp_dir
+    sub_items = os.listdir(temp_dir)
+    if len(sub_items) == 1 and os.path.isdir(os.path.join(temp_dir, sub_items[0])):
+        root_content = os.path.join(temp_dir, sub_items[0])
+
+    target_app_dir = os.path.join(INSTALLED_APPS_DIR, safe_id)
+    if os.path.exists(target_app_dir):
+        shutil.rmtree(target_app_dir, ignore_errors=True)
+    shutil.copytree(root_content, target_app_dir)
+    shutil.rmtree(temp_dir, ignore_errors=True)
+
+    # Check for installer scripts: setup.sh / install.sh
+    installer_script = None
+    for cand in ["setup.sh", "install.sh", "install", "setup"]:
+        p = os.path.join(target_app_dir, cand)
+        if os.path.isfile(p):
+            installer_script = p
+            break
+
+    if installer_script:
+        os.chmod(installer_script, 0o755)
+        try:
+            subprocess.run(["bash", installer_script], cwd=target_app_dir, timeout=60)
+        except Exception as e:
+            print(f"[Installer] Running installer script error: {e}")
+
+    # Check for .desktop file or main binary
+    main_desktop = None
+    desktops = glob.glob(os.path.join(target_app_dir, "**", "*.desktop"), recursive=True)
+    if desktops:
+        main_desktop = desktops[0]
+
+    # Find main executable
+    main_bin = None
+    for root, _, files in os.walk(target_app_dir):
+        for f in files:
+            fp = os.path.join(root, f)
+            if os.access(fp, os.X_OK) and not fp.endswith((".sh", ".desktop", ".so", ".txt", ".md", ".json")):
+                main_bin = fp
+                break
+        if main_bin:
+            break
+
+    # If no binary found, search for runnable scripts (.sh, .bin, .py)
+    if not main_bin:
+        for root, _, files in os.walk(target_app_dir):
+            for f in files:
+                fp = os.path.join(root, f)
+                if f not in ("install.sh", "setup.sh", "uninstall.sh") and fp.endswith((".sh", ".py", ".bin")):
+                    main_bin = fp
+                    os.chmod(main_bin, 0o755)
+                    break
+            if main_bin:
+                break
+
+    icon_path = ""
+    icons = glob.glob(os.path.join(target_app_dir, "**", "*.png"), recursive=True) + \
+            glob.glob(os.path.join(target_app_dir, "**", "*.svg"), recursive=True)
+    if icons:
+        icons.sort(key=lambda x: os.path.getsize(x), reverse=True)
+        ext = os.path.splitext(icons[0])[1]
+        target_icon = os.path.join(ICONS_DIR, f"{safe_id}{ext}")
+        shutil.copy2(icons[0], target_icon)
+        icon_path = target_icon
+
+    if main_desktop and os.path.exists(main_desktop):
+        # Patch desktop file with full paths
+        with open(main_desktop, "r", errors="ignore") as df:
+            lines = df.readlines()
+        with open(os.path.join(LOCAL_APPS_DIR, f"local-{safe_id}.desktop"), "w") as df:
+            for line in lines:
+                if line.startswith("Exec="):
+                    df.write(f"Exec=\"{main_bin or target_app_dir}\" %U\n")
+                elif line.startswith("Icon=") and icon_path:
+                    df.write(f"Icon={icon_path}\n")
+                else:
+                    df.write(line)
+            df.write(f"\nX-Mac-Installed-App=true\nX-Mac-App-Dir={target_app_dir}\n")
+    elif main_bin:
+        desktop_content = f"""[Desktop Entry]
+Type=Application
+Name={clean_name}
+Exec="{main_bin}" %U
+Icon={icon_path or 'application-x-executable'}
+Terminal=false
+Categories=Utility;Application;
+X-Mac-Installed-App=true
+X-Mac-App-Dir={target_app_dir}
+"""
+        local_desktop = os.path.join(LOCAL_APPS_DIR, f"local-{safe_id}.desktop")
+        with open(local_desktop, "w") as df:
+            df.write(desktop_content)
+        os.chmod(local_desktop, 0o755)
+
+    subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    sync()
+    subprocess.run(["notify-send", "-a", "macOS", "-i", icon_path or "application-x-executable",
+                    "Програму встановлено", f"Програма \"{clean_name}\" успішно розгорнута та додана до списку програм!"])
+
+
+def install_deb(filepath):
+    if not wait_for_file_ready(filepath):
+        return
+    print(f"[Installer] Installing DEB: {filepath}")
+    clean_name = extract_app_name(filepath)
+    res = subprocess.run(["pkexec", "apt-get", "install", "-y", filepath])
+    try:
+        os.remove(filepath)
+    except Exception:
+        pass
+    if res.returncode == 0:
+        sync()
+        subprocess.run(["notify-send", "-a", "macOS", "Встановлено",
+                        f"Пакет \"{clean_name}\" успішно встановлено в систему!"])
+
+
+def handle_trash(trashinfo_path):
+    time.sleep(0.5)
+    if not os.path.exists(trashinfo_path):
+        return
+    try:
+        path_in_trash = None
+        with open(trashinfo_path, "r", errors="ignore") as f:
+            for line in f:
+                if line.startswith("Path="):
+                    path_in_trash = line.strip().split("=", 1)[1]
+                    break
+        
+        if not path_in_trash or not path_in_trash.startswith(APPS_DIR) or not path_in_trash.endswith(".desktop"):
+            return
+
+        base_item = os.path.basename(trashinfo_path).replace(".trashinfo", "")
+        trashed_desktop = os.path.join(TRASH_DIR, base_item)
+        if not os.path.exists(trashed_desktop):
+            return
+
+        print(f"[Uninstaller] Detected trashed application: {trashed_desktop} (orig: {path_in_trash})")
+
+        # Parse desktop details
+        app_name = base_item.replace(".desktop", "")
+        real_path = ""
+        exec_cmd = ""
+        app_dir = ""
+        is_appimage = False
+        is_installed_app = False
+
+        with open(trashed_desktop, "r", errors="ignore") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("Name="):
+                    app_name = line.split("=", 1)[1].strip()
+                elif line.startswith("X-Mac-Real-Path="):
+                    real_path = line.split("=", 1)[1].strip()
+                elif line.startswith("Exec="):
+                    exec_cmd = line.split("=", 1)[1].strip()
+                elif line.startswith("X-Mac-App-Dir="):
+                    app_dir = line.split("=", 1)[1].strip()
+                elif line.startswith("X-Mac-AppImage="):
+                    is_appimage = line.split("=", 1)[1].strip().lower() == "true"
+                elif line.startswith("X-Mac-Installed-App="):
+                    is_installed_app = line.split("=", 1)[1].strip().lower() == "true"
+
+        # Case 1: AppImage
+        if is_appimage or "/appimages/" in real_path or "/appimages/" in exec_cmd:
+            bin_target = real_path if real_path.startswith(APPIMAGES_DIR) else ""
+            if not bin_target:
+                for cand in glob.glob(os.path.join(APPIMAGES_DIR, "*")):
+                    if app_name.lower().replace(" ", "") in os.path.basename(cand).lower().replace(" ", ""):
+                        bin_target = cand
+                        break
+            if bin_target and os.path.exists(bin_target):
+                try:
+                    os.remove(bin_target)
+                except Exception:
+                    pass
+            # Remove desktop file in ~/.local/share/applications
+            for df in glob.glob(os.path.join(LOCAL_APPS_DIR, "*.desktop")):
+                if bin_target and bin_target in open(df, errors="ignore").read():
+                    try:
+                        os.remove(df)
+                    except Exception:
+                        pass
+            try:
+                os.remove(trashed_desktop)
+                os.remove(trashinfo_path)
+            except Exception:
+                pass
+            subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            sync()
+            subprocess.run(["notify-send", "-a", "macOS", "Видалено", f"Програму \"{app_name}\" успішно деінстальовано!"])
+            return
+
+        # Case 2: Archive/Custom installed app
+        if is_installed_app or app_dir:
+            target_dir = app_dir if (app_dir and os.path.exists(app_dir)) else os.path.join(INSTALLED_APPS_DIR, app_name.lower())
+            if os.path.exists(target_dir):
+                # Run uninstall.sh if provided
+                uninst = os.path.join(target_dir, "uninstall.sh")
+                if os.path.exists(uninst):
+                    try:
+                        subprocess.run(["bash", uninst], cwd=target_dir, timeout=30)
+                    except Exception:
+                        pass
+                shutil.rmtree(target_dir, ignore_errors=True)
+            for df in glob.glob(os.path.join(LOCAL_APPS_DIR, "*.desktop")):
+                if target_dir in open(df, errors="ignore").read():
+                    try:
+                        os.remove(df)
+                    except Exception:
+                        pass
+            try:
+                os.remove(trashed_desktop)
+                os.remove(trashinfo_path)
+            except Exception:
+                pass
+            subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            sync()
+            subprocess.run(["notify-send", "-a", "macOS", "Видалено", f"Програму \"{app_name}\" успішно деінстальовано!"])
+            return
+
+        # Case 3: System package (Snap / Flatpak / DEB)
+        if real_path and (real_path.startswith("/snap/") or real_path.startswith("/var/lib/flatpak/") or real_path.startswith("/usr/")):
+            subprocess.Popen(["/usr/local/bin/mac-uninstall-app", trashed_desktop])
+    except Exception as e:
+        print(f"[Uninstaller] Trash handler error: {e}")
+
+
+class MacAppDaemon:
+    def __init__(self):
+        self._sync_timeout_id = 0
+
+    def trigger_sync_debounced(self):
+        if self._sync_timeout_id:
+            GLib.source_remove(self._sync_timeout_id)
+        self._sync_timeout_id = GLib.timeout_add_seconds(1, self._run_sync_cb)
+
+    def _run_sync_cb(self):
+        self._sync_timeout_id = 0
+        sync()
+        return False
+
+    def on_apps_dir_changed(self, monitor, file, other_file, event_type):
+        if event_type not in (Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.CHANGES_DONE_HINT):
+            return
+        path = file.get_path()
+        if not path or not os.path.exists(path):
+            return
+        base = os.path.basename(path).lower()
+        if base.endswith(".appimage"):
+            threading.Thread(target=install_appimage, args=(path,), daemon=True).start()
+        elif any(base.endswith(ext) for ext in [".zip", ".tar.gz", ".tar.xz", ".tgz", ".tar.bz2", ".tar"]):
+            threading.Thread(target=install_archive, args=(path,), daemon=True).start()
+        elif base.endswith(".deb"):
+            threading.Thread(target=install_deb, args=(path,), daemon=True).start()
+
+    def on_trash_info_changed(self, monitor, file, other_file, event_type):
+        if event_type not in (Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.CHANGES_DONE_HINT):
+            return
+        path = file.get_path()
+        if path and path.endswith(".trashinfo"):
+            threading.Thread(target=handle_trash, args=(path,), daemon=True).start()
+
+    def on_system_apps_changed(self, monitor, file, other_file, event_type):
+        self.trigger_sync_debounced()
+
+    def run(self):
+        print("[MacAppDaemon] Starting macOS Applications Drag-and-Drop Manager...")
+        sync()
+
+        # Monitor ~/Applications
+        f_apps = Gio.File.new_for_path(APPS_DIR)
+        mon_apps = f_apps.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+        mon_apps.connect("changed", self.on_apps_dir_changed)
+
+        # Monitor Trash Info
+        f_trash = Gio.File.new_for_path(TRASH_INFO_DIR)
+        mon_trash = f_trash.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+        mon_trash.connect("changed", self.on_trash_info_changed)
+
+        # Monitor desktop directories for system-wide app changes
+        for d in [LOCAL_APPS_DIR, "/usr/share/applications", "/var/lib/snapd/desktop/applications", "/var/lib/flatpak/exports/share/applications"]:
+            if os.path.isdir(d):
+                f_sys = Gio.File.new_for_path(d)
+                m = f_sys.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+                m.connect("changed", self.on_system_apps_changed)
+
+        loop = GLib.MainLoop()
+        loop.run()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "daemon":
+        daemon = MacAppDaemon()
+        daemon.run()
+    else:
+        sync()
