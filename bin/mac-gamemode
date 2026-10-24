@@ -43,6 +43,16 @@ def set_cpu_freq(governor, epp, min_freq):
         gov_path = os.path.join(cpu, 'cpufreq', 'scaling_governor')
         epp_path = os.path.join(cpu, 'cpufreq', 'energy_performance_preference')
         min_path = os.path.join(cpu, 'cpufreq', 'scaling_min_freq')
+        max_path = os.path.join(cpu, 'cpufreq', 'scaling_max_freq')
+        max_info = os.path.join(cpu, 'cpufreq', 'cpuinfo_max_freq')
+        if os.path.exists(max_info) and os.path.exists(max_path):
+            try:
+                with open(max_info, 'r') as f:
+                    max_v = f.read().strip()
+                with open(max_path, 'w') as f:
+                    f.write(f'{max_v}\n')
+            except Exception:
+                pass
         if os.path.exists(gov_path):
             try:
                 with open(gov_path, 'w') as f:
