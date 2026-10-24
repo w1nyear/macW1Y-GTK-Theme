@@ -2887,6 +2887,8 @@ export class UILayerSampler {
                 // would paint the wallpaper into the UI layer a second time.
                 if (child === getSharedBackgroundSource())
                     continue;
+                if (child.name === 'screenshotUIGroup' || child.name?.toLowerCase().includes('screenshot') || child === Main.screenshotUI || child === Main.screenshotUI?.get_parent())
+                    continue;
                 if (this._extraExclusions.has(child))
                     continue;
                 if (dynamicExclusions.has(child))

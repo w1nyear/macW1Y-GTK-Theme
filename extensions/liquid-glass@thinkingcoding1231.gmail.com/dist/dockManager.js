@@ -94,6 +94,13 @@ export class DashManager {
             this.wakeFrameSync();
             this._syncGeometry();
         };
+        if (Main.screenshotUI) {
+            this._signals.push(Main.screenshotUI.connect('notify::visible', () => {
+                if (!Main.screenshotUI.visible) {
+                    this.wakeFrameSync();
+                }
+            }));
+        }
         // 設定の監視を開始
         this._bindSettings();
         // 初回起動時にスイッチがONならエフェクトを適用
@@ -525,70 +532,90 @@ export class DashManager {
         if (Number.isNaN(absX) || Number.isNaN(absY))
             return;
 
-        // macOS Dock: Calculate exact geometry directly from the icon artworks
-        let icons = [];
-        const walkIcons = (a) => {
-            if (!a) return;
-            if (a.constructor?.name === 'St_Icon' && a.is_visible()) {
-                let [ix, iy] = a.get_transformed_position();
-                let [iw, ih] = a.get_transformed_size();
-                if (Number.isFinite(ix) && Number.isFinite(iy) && iw > 0 && ih > 0) {
-                    icons.push({ x: ix, y: iy, w: iw, h: ih });
-                }
-            }
-            for (const ch of (a.get_children ? a.get_children() : [])) {
-                walkIcons(ch);
-            }
-        };
-        walkIcons(this.targetActor);
-
         let monitorIndex = Main.layoutManager.findIndexForActor(this.targetActor);
         if (monitorIndex < 0) {
             monitorIndex = Main.layoutManager.primaryIndex;
         }
         let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
 
-        let hasIconBounds = false;
-        if (icons.length > 0) {
-            icons.sort((a, b) => a.x - b.x);
-            let minX = icons[0].x;
-            let maxX = icons[icons.length - 1].x + icons[icons.length - 1].w;
-            let minY = Infinity, maxY = -Infinity;
-            let baseIconW = 0, baseIconH = 0;
-            for (const ic of icons) {
-                if (ic.y < minY) minY = ic.y;
-                if (ic.y + ic.h > maxY) maxY = ic.y + ic.h;
-                if (baseIconW === 0 || ic.w < baseIconW) baseIconW = ic.w;
-                if (baseIconH === 0 || ic.h < baseIconH) baseIconH = ic.h;
+        // macOS Dock: authoritative geometry directly from dash2dock-motion background slab
+        let hasSlabBounds = false;
+        const slab = this._findDashBackground(this.targetActor.get_parent() || this.targetActor);
+        if (slab && slab.has_allocation()) {
+            const [slW] = slab.get_transformed_size();
+            const [slX] = slab.get_transformed_position();
+            if (Number.isFinite(slX) && Number.isFinite(slW) && slW > 50) {
+                let pillW = slW - 8;
+                let pillX = slX + 4;
+                let pillH = 74; // 74px (+2px dock height calibrated)
+                let pillY = monitor ? (monitor.y + monitor.height - 4 - pillH) : 1002;
+                absX = pillX - 4;
+                absY = pillY - 4;
+                baseW = pillW + 8;
+                baseH = pillH + 8;
+                hasSlabBounds = true;
             }
-            let isHorizontal = (maxX - minX) >= (maxY - minY);
-            let pillX, pillY, pillW, pillH;
-            let sidePad = 10; // smaller side padding (10px)
-            if (isHorizontal) {
-                pillH = baseIconH + 20; // 74px for 54px icons (+2px dock height)
-                let isTop = monitor && (minY - monitor.y < (monitor.y + monitor.height) - maxY);
-                pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - 4 - pillH) : (minY - 11));
-                let sidePadL = sidePad + Math.max(0, (icons[0]?.w || baseIconW) / baseIconW - 1) * 10;
-                let sidePadR = sidePad + Math.max(0, (icons[icons.length - 1]?.w || baseIconW) / baseIconW - 1) * 10;
-                pillX = minX - sidePadL;
-                pillW = (maxX - minX) + sidePadL + sidePadR;
-            } else {
-                pillW = baseIconW + 20;
-                let isLeft = monitor && (minX - monitor.x < (monitor.x + monitor.width) - maxX);
-                pillX = isLeft ? (monitor.x + 4) : (monitor ? (monitor.x + monitor.width - 4 - pillW) : (minX - 11));
-                let sidePadT = sidePad + Math.max(0, (icons[0]?.h || baseIconH) / baseIconH - 1) * 10;
-                let sidePadB = sidePad + Math.max(0, (icons[icons.length - 1]?.h || baseIconH) / baseIconH - 1) * 10;
-                pillY = minY - sidePadT;
-                pillH = (maxY - minY) + sidePadT + sidePadB;
-            }
-            absX = pillX - 4;
-            absY = pillY - 4;
-            baseW = pillW + 8;
-            baseH = pillH + 8;
-            hasIconBounds = true;
         }
 
-        if (!hasIconBounds) {
+        let hasIconBounds = false;
+        if (!hasSlabBounds) {
+            let icons = [];
+            const walkIcons = (a) => {
+                if (!a) return;
+                if ((a.constructor?.name === 'St_Icon' || a.has_style_class_name?.('overview-icon')) && a.visible) {
+                    let [ix, iy] = a.get_transformed_position();
+                    let [iw, ih] = a.get_transformed_size();
+                    if (Number.isFinite(ix) && Number.isFinite(iy) && iw > 0 && ih > 0) {
+                        icons.push({ x: ix, y: iy, w: iw, h: ih });
+                    }
+                }
+                for (const ch of (a.get_children ? a.get_children() : [])) {
+                    walkIcons(ch);
+                }
+            };
+            walkIcons(this.targetActor);
+
+            if (icons.length > 0) {
+                icons.sort((a, b) => a.x - b.x);
+                let minX = icons[0].x;
+                let maxX = icons[icons.length - 1].x + icons[icons.length - 1].w;
+                let minY = Infinity, maxY = -Infinity;
+                let baseIconW = 0, baseIconH = 0;
+                for (const ic of icons) {
+                    if (ic.y < minY) minY = ic.y;
+                    if (ic.y + ic.h > maxY) maxY = ic.y + ic.h;
+                    if (baseIconW === 0 || ic.w < baseIconW) baseIconW = ic.w;
+                    if (baseIconH === 0 || ic.h < baseIconH) baseIconH = ic.h;
+                }
+                let isHorizontal = (maxX - minX) >= (maxY - minY);
+                let pillX, pillY, pillW, pillH;
+                let sidePad = 10; // smaller side padding (10px)
+                if (isHorizontal) {
+                    pillH = (baseIconH || 54) + 20; // 74px for 54px icons (+2px dock height)
+                    let isTop = monitor && (minY - monitor.y < (monitor.y + monitor.height) - maxY);
+                    pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - 4 - pillH) : (minY - 11));
+                    let sidePadL = sidePad + Math.max(0, (icons[0]?.w || baseIconW) / (baseIconW || 54) - 1) * 10;
+                    let sidePadR = sidePad + Math.max(0, (icons[icons.length - 1]?.w || baseIconW) / (baseIconW || 54) - 1) * 10;
+                    pillX = minX - sidePadL;
+                    pillW = (maxX - minX) + sidePadL + sidePadR;
+                } else {
+                    pillW = (baseIconW || 54) + 20;
+                    let isLeft = monitor && (minX - monitor.x < (monitor.x + monitor.width) - maxX);
+                    pillX = isLeft ? (monitor.x + 4) : (monitor ? (monitor.x + monitor.width - 4 - pillW) : (minX - 11));
+                    let sidePadT = sidePad + Math.max(0, (icons[0]?.h || baseIconH) / (baseIconH || 54) - 1) * 10;
+                    let sidePadB = sidePad + Math.max(0, (icons[icons.length - 1]?.h || baseIconH) / (baseIconH || 54) - 1) * 10;
+                    pillY = minY - sidePadT;
+                    pillH = (maxY - minY) + sidePadT + sidePadB;
+                }
+                absX = pillX - 4;
+                absY = pillY - 4;
+                baseW = pillW + 8;
+                baseH = pillH + 8;
+                hasIconBounds = true;
+            }
+        }
+
+        if (!hasSlabBounds && !hasIconBounds) {
             if (sourceActor !== this.targetActor) {
                 let [tX, tY] = this.targetActor.get_transformed_position();
                 let [tW, tH] = this.targetActor.get_size();

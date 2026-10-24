@@ -138,6 +138,20 @@ export class DockMagnifier {
             () => this._setSuspended(false));
         connect(Main.overview, 'item-drag-cancelled',
             () => this._setSuspended(false));
+        if (Main.screenshotUI) {
+            connect(Main.screenshotUI, 'notify::visible', () => {
+                if (Main.screenshotUI.visible) {
+                    if (this._target === 0 && this._envelope > 0) {
+                        this._envelope = 0;
+                        this._velocity = 0;
+                        this._stopTimeline();
+                        this._clearTransforms();
+                    }
+                } else {
+                    this._notifyDockUpdate();
+                }
+            });
+        }
         if (this._settings) {
             const onSettings = () => {
                 this._readSettings();

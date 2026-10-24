@@ -3113,6 +3113,7 @@ export class UILayerSampler {
         // as its own bgClone, so letting the UI-layer sampler clone it too
         // would paint the wallpaper into the UI layer a second time.
         if (child === getSharedBackgroundSource()) continue;
+        if ((child as any).name === 'screenshotUIGroup' || (child as any).name?.toLowerCase().includes('screenshot') || child === Main.screenshotUI || child === (Main.screenshotUI as any)?.get_parent()) continue;
         if (this._extraExclusions.has(child)) continue;
         if (dynamicExclusions.has(child)) continue;
         if (!child.visible || !child.mapped) continue;
