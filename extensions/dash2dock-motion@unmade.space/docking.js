@@ -993,8 +993,8 @@ const DockedDash = GObject.registerClass({
             shouldDwell = (y === this._monitor.y) && (x > workArea.x) &&
                 (x < workArea.x + workArea.width);
         } else if (this._position === St.Side.BOTTOM) {
-            shouldDwell = (y === this._monitor.y + this._monitor.height - 1) &&
-                (x > workArea.x) && (x < workArea.x + workArea.width);
+            shouldDwell = (y >= this._monitor.y + this._monitor.height - 2) &&
+                (x >= workArea.x) && (x <= workArea.x + workArea.width);
         }
 
         if (shouldDwell) {
@@ -1040,13 +1040,6 @@ const DockedDash = GObject.registerClass({
         // is up, so we check the modal count for that. When we are in the
         // overview we have to take the overview's modal push into account
         if (Main.modalCount > (Main.overview.visible ? 1 : 0))
-            return GLib.SOURCE_REMOVE;
-
-        // If the user interacted with the focus window since we started the tray
-        // dwell (by clicking or typing), don't activate the message tray
-        const focusWindow = global.display.focus_window;
-        const currentUserTime = focusWindow ? focusWindow.user_time : 0;
-        if (currentUserTime !== this._dockDwellUserTime)
             return GLib.SOURCE_REMOVE;
 
         // Reuse the pressure version function, the logic is the same

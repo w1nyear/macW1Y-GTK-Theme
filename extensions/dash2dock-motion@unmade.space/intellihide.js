@@ -260,7 +260,8 @@ export class Intellihide {
         const workspaceIndex = workspace.index();
 
         // Depending on the intellihide mode, exclude non-relevent windows
-        switch (Docking.DockManager.settings.intellihideMode) {
+        const mode = Docking.DockManager.settings.get_enum('intellihide-mode');
+        switch (mode) {
         case IntellihideMode.ALL_WINDOWS:
             // Do nothing
             break;

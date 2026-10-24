@@ -501,11 +501,16 @@ export class DashManager {
       d2d = d2d.get_parent();
     }
 
-    // Fullscreen check: hide dock glass completely when monitor is in fullscreen
+    // Fullscreen check: if monitor is in fullscreen, hide dock glass unless dock is actively showing/shown by hover
     if (isFullscreen) {
-      this.bgActor.hide();
-      this.bgActor.opacity = 0;
-      return false;
+      const isD2DShowing = d2d && d2d.visible && d2d.mapped &&
+                           (d2d._dockState === 2 /* SHOWN */ || d2d._dockState === 3 /* SHOWING */) &&
+                           (!d2d._slider || d2d._slider.slide_x > 0.05);
+      if (!isD2DShowing) {
+        this.bgActor.hide();
+        this.bgActor.opacity = 0;
+        return false;
+      }
     }
 
     // If DashToDock is hidden, unmapped, or in HIDDEN state, hide glass immediately

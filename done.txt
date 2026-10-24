@@ -9407,3 +9407,31 @@ echo "==> Встановлення успішно завершено!"
       - Перевірка виходу з повноекранного режиму: стан відновлюється миттєво (`bgActorVisible = true`, `bgActorOpacity = 255`, `lastBgY = 974`).
       - Перевірка приховування дока при автоприховуванні: при переході `d2d.visible = false` або `_dockState = 0` скло надійно вимикається (`bgActorVisible = false`, `bgActorOpacity = 0`).
       - Геометрія дока у спокійному стані повністю збережена та відкалібрована (`lastBgX = 555, lastBgY = 974, lastBgW = 810, lastBgH = 122`, ідеальні відступи 13px зверху та 15px знизу від іконок).
+136. Налаштування та калібрування автоприховування (Autohide / Intellihide) дока та висування при наведенні (24.10.2026):
+   1. Проблема:
+      - Док був зафіксований на екрані (`dock-fixed: true`) і не приховувався, коли вікно перекривало нижню частину екрана (як показано на скріншоті користувача з вікном чату Antigravity).
+      - При розгортанні вікна або перекритті док залишався зверху вікна, перекриваючи поле вводу тексту.
+      - При приховуванні висунути док наведенням миші було складно через жорсткий бар'єр тиску (`require-pressure-to-show: true`) та застарілі блокування часу взаємодії користувача.
+   2. Виконані виправлення:
+      - У [extensions/dash2dock-motion@unmade.space/intellihide.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/intellihide.js):
+        * Виправлено критичний баг читання режиму `intellihideMode`: `Gio.Settings` не має автоматичного camelCase-гетера, тому виклик `settings.intellihideMode` повертав `undefined`, ламаючи вибір режиму перевірки вікон. Замінено на штатний `settings.get_enum('intellihide-mode')`.
+      - У [extensions/dash2dock-motion@unmade.space/docking.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/docking.js):
+        * Розширено зону детекції наведення курсора на нижній край екрана з жорсткого 1 пікселя (`y === height - 1`) до надійного порогу `(y >= this._monitor.y + this._monitor.height - 2)`.
+        * Вилучено застарілу перевірку `currentUserTime !== this._dockDwellUserTime`, яка блокувала активацію дока, якщо користувач паралельно клікав чи вводив текст у вікні.
+      - У [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js) та [src/dockManager.ts](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts):
+        * Оновлено умову повноекранного режиму: у fullscreen док прихований за замовчуванням, але при наведенні курсора на нижній край екрана плашка та скляна капсула тепер коректно і плавно виїжджають разом (`isD2DShowing = true`), а при відведенні курсора — ховаються назад.
+      - Оновлено параметри конфігурації GSettings для `org.gnome.shell.extensions.dash2dock-motion`:
+        * `dock-fixed = false` — док більше не зафіксований намертво поверх робочих вікон.
+        * `autohide = true` — увімкнено штатне автоприховування.
+        * `intellihide = true` — док автоматично ховається при перекритті будь-яким вікном.
+        * `intellihide-mode = 'ALL_WINDOWS'` — враховуються всі вікна на робочому просторі.
+        * `autohide-in-fullscreen = true` — у повноекранному режимі док прихований, але висувається наведенням.
+        * `require-pressure-to-show = false` — вимкнено тугий бар'єр тиску курсора (для висування достатньо просто підвести мишу до нижнього краю екрана).
+        * `show-delay = 0.15` — чутливий та швидкий відгук наведення (150 мс).
+        * `hide-delay = 0.2` — плавне затримання перед хованням.
+   3. Верифікація:
+      - Усі файли синхронізовано до `~/.local/share/gnome-shell/extensions/` та оновлено модулі наживо.
+      - Коли вікно перекриває нижню частину (наприклад, вікно на весь екран або розгорнуте вікно): док та скляна капсула плавно ховаються вниз.
+      - При підведенні миші до нижнього краю екрана: док разом зі склом миттєво і плавно виїжджає нагору.
+      - При відведенні миші назад: док плавно ховається вниз, звільняючи весь простір вікна.
+      - На чистому робочому столі без перекриття вікнами: док залишається видимим.
