@@ -223,6 +223,7 @@ function _sync() {
 }
 
 export function enable(settings) {
+    return;
     if (settings)
         _settings = settings;
     if (_stack) {
