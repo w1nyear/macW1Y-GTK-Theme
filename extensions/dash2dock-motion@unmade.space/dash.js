@@ -216,6 +216,8 @@ export const DockDash = GObject.registerClass({
             y_expand: !this._isHorizontal,
             x_expand: this._isHorizontal,
         });
+        if (this._position === St.Side.BOTTOM)
+            this._box.translation_y = -4;
         this._box._delegate = this;
         this._boxContainer.add_child(this._box);
         Utils.addActor(this._scrollView, this._boxContainer);
@@ -1027,7 +1029,7 @@ export const DockDash = GObject.registerClass({
                     height: this._isHorizontal ? this.iconSize : -1,
                     reactive: true,
                     track_hover: true,
-                    translation_y: -2,
+                    translation_y: 0,
                 });
                 this._separator.connect('notify::hover', a => this._ensureItemVisibility(a));
             }

@@ -586,6 +586,7 @@ export class DashManager {
         if (d2d && (!d2d.visible || !d2d.mapped || d2d._dockState === 0 /* HIDDEN */ || (d2d._slider && d2d._slider.slide_x <= 0.001))) {
             this.bgActor.hide();
             this.bgActor.opacity = 0;
+            this.bgActor.translation_y = 0;
             return false;
         }
 
@@ -755,22 +756,10 @@ export class DashManager {
                 this._lastHidden = false;
                 this._logger.log('[Liquid Glass][dock] glass visible again');
             }
-            this.bgActor.show();
-            this.bgActor.opacity = this.targetActor.opacity;
-        }
-        // Slide bgActor in sync with the dock slide animation so the glass
-        // background follows the dock as it hides/shows instead of staying fixed.
-        {
-            let slideX = 1;
-            if (d2d && d2d._slider && typeof d2d._slider.slide_x === 'number') {
-                slideX = d2d._slider.slide_x;
-            }
-            if (slideX < 0.999) {
-                // Dock height used as the slide distance (bottom dock slides down)
-                const dockSlideH = (hasSlabBounds && this._lastSlabH) ? this._lastSlabH :
-                                   (baseH > 0 ? baseH : 80);
-                this.bgActor.translation_y = Math.round((1 - slideX) * (dockSlideH + 20));
-            } else {
+            const isD2DTransitioning = d2d && (d2d._dockState === 1 /* HIDING */ || d2d._dockState === 3 /* SHOWING */);
+            if (!isD2DTransitioning) {
+                this.bgActor.show();
+                this.bgActor.opacity = this.targetActor.opacity;
                 this.bgActor.translation_y = 0;
             }
         }

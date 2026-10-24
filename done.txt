@@ -9436,3 +9436,8 @@ echo "==> Встановлення успішно завершено!"
       - При відведенні миші назад: док плавно ховається вниз, звільняючи весь простір вікна.
       - На чистому робочому столі без перекриття вікнами: док залишається видимим.
 481. [2026-10-24] Fix dock glass background animation: bgActor now slides down with dock via translation_y proportional to slide_x; icon translation_y changed from 6 to -2 (raised up)
+482. [2026-10-24] Fix dock elements height and synchronized hide/show animation for dock glass capsule:
+   - dash.js: set this._box.translation_y = -4 for bottom dock so all icons, indicator dots and separators are raised up uniformly inside capsule
+   - appIcons.js & dash.js: reset individual translation_y to 0 since _box translates entire container
+   - docking.js: synchronized liquid-glass-bg-actor Clutter ease transitions directly inside _animateIn, _animateOut, and _removeAnimations matching duration, delay, and EASE_OUT_QUAD easing curve exactly
+   - dockManager.js & dockManager.ts: guard _syncGeometry during dock transitions so it does not overwrite ongoing Clutter animations
