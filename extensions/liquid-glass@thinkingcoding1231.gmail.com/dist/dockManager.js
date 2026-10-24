@@ -558,18 +558,19 @@ export class DashManager {
             }
             let isHorizontal = (maxX - minX) >= (maxY - minY);
             let pillX, pillY, pillW, pillH;
+            let sidePad = 10; // smaller side padding (10px)
             if (isHorizontal) {
-                pillH = baseIconH + 22; // 76px for 54px icons (11px top, 11px bottom)
+                pillH = baseIconH + 18; // 72px for 54px icons (9px top, 9px bottom)
                 let isTop = monitor && (minY - monitor.y < (monitor.y + monitor.height) - maxY);
-                pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - 4 - pillH) : (minY - 11));
-                pillX = minX - 14; // 14px padding to first icon
-                pillW = (maxX - minX) + 28; // 14px left + 14px right
+                pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - 4 - pillH) : (minY - 9));
+                pillX = minX - sidePad; // 10px padding to first icon
+                pillW = (maxX - minX) + (sidePad * 2); // 10px left + 10px right
             } else {
-                pillW = baseIconW + 22;
+                pillW = baseIconW + 18;
                 let isLeft = monitor && (minX - monitor.x < (monitor.x + monitor.width) - maxX);
-                pillX = isLeft ? (monitor.x + 4) : (monitor ? (monitor.x + monitor.width - 4 - pillW) : (minX - 11));
-                pillY = minY - 14;
-                pillH = (maxY - minY) + 28;
+                pillX = isLeft ? (monitor.x + 4) : (monitor ? (monitor.x + monitor.width - 4 - pillW) : (minX - 9));
+                pillY = minY - sidePad;
+                pillH = (maxY - minY) + (sidePad * 2);
             }
             absX = pillX - 4;
             absY = pillY - 4;

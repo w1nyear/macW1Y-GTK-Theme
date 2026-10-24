@@ -128,6 +128,9 @@ export const DockAbstractAppIcon = GObject.registerClass({
     _init(app, monitorIndex, iconAnimator) {
         super._init(app);
 
+        if (this.icon)
+            this.icon.translation_y = 3;
+
         // a prefix is required to avoid conflicting with the parent class variable
         this.monitorIndex = monitorIndex;
         this._signalsHandler = new Utils.GlobalSignalsHandler(this);
@@ -1103,10 +1106,16 @@ const DockLocationAppIcon = GObject.registerClass({
  * @param iconAnimator
  */
 export function makeAppIcon(app, monitorIndex, iconAnimator) {
+    let iconActor;
     if (app.appInfo instanceof Locations.LocationAppInfo)
-        return new DockLocationAppIcon(app, monitorIndex, iconAnimator);
+        iconActor = new DockLocationAppIcon(app, monitorIndex, iconAnimator);
+    else
+        iconActor = new DockAppIcon(app, monitorIndex, iconAnimator);
 
-    return new DockAppIcon(app, monitorIndex, iconAnimator);
+    if (iconActor.icon)
+        iconActor.icon.translation_y = 3;
+
+    return iconActor;
 }
 
 /**
@@ -1513,6 +1522,9 @@ export const DockShowAppsIcon = GObject.registerClass({
 , class DockShowAppsIcon extends Dash.ShowAppsIcon {
     _init(position) {
         super._init();
+
+        if (this.icon)
+            this.icon.translation_y = 3;
 
         // Re-use appIcon methods
         const {prototype: appIconPrototype} = AppDisplay.AppIcon;
