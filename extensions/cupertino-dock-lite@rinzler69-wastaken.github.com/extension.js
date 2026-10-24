@@ -171,7 +171,6 @@ export default class DashAnimatorExtension extends Extension {
     this._disconnectIconEvents();
     this.dash = this._findChildByName(this.dashContainer, 'dash');
     this._patchTrashUnpinDrop();
-    this._patchIntellihideExclusion();
     this._iconsDirty = true;
 
     this.dash._box.connectObject(
@@ -419,32 +418,6 @@ export default class DashAnimatorExtension extends Extension {
     this.dash.handleDragOver = patch.handleDragOver;
     this.dash.acceptDrop = patch.acceptDrop;
     this.dash._cupertinoTrashUnpinPatched = null;
-  }
-
-  _patchIntellihideExclusion() {
-    try {
-      const containers = Main.uiGroup.get_children().filter(c => c._intellihide);
-      for (const c of containers) {
-        if (c._intellihide && !c._intellihide._macTrashOverlayPatched) {
-          c._intellihide._macTrashOverlayPatched = true;
-          const orig = c._intellihide._handledWindow.bind(c._intellihide);
-          c._intellihide._handledWindow = function(wa) {
-            const mw = wa.get_meta_window();
-            if (!mw) return false;
-            const title = mw.get_title ? mw.get_title() : '';
-            const wmClass = mw.get_wm_class ? mw.get_wm_class() : '';
-            const appId = mw.get_gtk_application_id ? mw.get_gtk_application_id() : '';
-            if (title === 'mac_dock_trash_overlay' || wmClass === 'mac_dock_trash_overlay' || appId === 'mac_dock_trash_overlay') {
-              return false;
-            }
-            return orig(wa);
-          };
-          c._intellihide.forceUpdate();
-        }
-      }
-    } catch (e) {
-      logError(e, 'Failed to patch intellihide exclusion');
-    }
   }
 
   _initWaylandDndBridge() {
