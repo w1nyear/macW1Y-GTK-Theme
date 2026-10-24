@@ -134,6 +134,12 @@ export default class KiwiExtension extends Extension {
             gtkThemeSyncEnable();
         } catch (_) {}
 
+        try {
+            tahoeGameModeEnable();
+        } catch (e) {
+            console.warn(`[kiwi] tahoeGameModeEnable: ${e}`);
+        }
+
         this._setupMutualExclusion();
         this._on_settings_changed(null);
     }
