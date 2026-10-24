@@ -60,7 +60,7 @@
 <line x1="95.6" y1="28.1" x2="93.4" y2="21.5" stroke="#d1d1d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="106.2" y1="25.3" x2="104.7" y2="18.4" stroke="#d1d1d6" stroke-width="2" stroke-linecap="round"/>
 <line x1="117.0" y1="23.6" x2="116.3" y2="16.6" stroke="#d1d1d6" stroke-width="2" stroke-linecap="round"/>
-<g font-family="SF Pro Display, Cantarell, Sans-Serif" font-weight="600" font-size="37" fill="#3a3a3c" text-anchor="middle" dominant-baseline="central">
+<g font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="37" fill="#3a3a3c" text-anchor="middle" dominant-baseline="central">
 <text x="128.0" y="57.0">12</text>
 <text x="200.0" y="129.0">3</text>
 <text x="128.0" y="201.0">6</text>

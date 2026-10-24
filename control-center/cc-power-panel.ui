@@ -155,6 +155,7 @@ corresponding .blp file and regenerate this file with blueprint-compiler.
 																	<object class="GtkButton" id="gpu_reboot_button">
 																		<property name="label" translatable="yes">Перезавантажити…</property>
 																		<property name="valign">3</property>
+																		<signal name="realize" handler="init_gpu_reboot_button"/>
 																		<signal name="clicked" handler="on_gpu_reboot_clicked"/>
 																		<style>
 																			<class name="suggested-action"/>

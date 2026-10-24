@@ -3,7 +3,7 @@
 }
 
 .wack-date {
-    font-family: SF Pro Display, Cantarell, sans-serif;
+    font-family: 'SF Pro Display', -apple-system, sans-serif;
     color: rgba(255, 255, 255, 0.98);
     font-size: 28px;
     font-weight: 600;
@@ -16,7 +16,7 @@
 
 .wack-time,
 .unlock-dialog-clock-time.wack-time {
-    font-family: Open Runde, SF Pro Rounded, SF Pro Display, Cantarell, sans-serif !important;
+    font-family: 'SF Pro Rounded', 'SF Pro Display', -apple-system, sans-serif !important;
     color: #ffffff !important;
     font-size: 128px !important;
     font-weight: 600 !important;
@@ -31,7 +31,7 @@
 }
 
 .wack-gdm-auth-subtitle {
-    font-family: SF Pro Text, Cantarell, sans-serif !important;
+    font-family: 'SF Pro Text', -apple-system, sans-serif !important;
     font-size: 11px !important;
     font-weight: 400 !important;
     color: rgba(255, 255, 255, 0.72) !important;
@@ -93,7 +93,7 @@
 
 #panel.unlock-screen .panel-button,
 #panel.login-screen .panel-button {
-    font-family: SF Pro Text, Cantarell, sans-serif !important;
+    font-family: 'SF Pro Text', -apple-system, sans-serif !important;
     font-size: 14px !important;
     font-weight: 500 !important;
     color: rgba(255, 255, 255, 0.95) !important;
@@ -121,7 +121,7 @@
 }
 
 .wack-battery-label {
-    font-family: SF Pro Text, Cantarell, sans-serif !important;
+    font-family: 'SF Pro Text', -apple-system, sans-serif !important;
     font-size: 14px !important;
     font-weight: 600 !important;
     color: rgba(255, 255, 255, 0.95) !important;
@@ -249,7 +249,7 @@
 
 /* Rest state: label at full size */
 .wack-cupertino-rest .user-widget-label {
-    font-family: SF Pro Display;
+    font-family: 'SF Pro Display', -apple-system, sans-serif !important;
     font-size: 19px !important;
     font-weight: 600 !important;
     letter-spacing: 0 !important;
@@ -453,7 +453,7 @@
 }
 
 .wack-gdm-power-label {
-    font-family: SF Pro Text, sans-serif;
+    font-family: 'SF Pro Text', -apple-system, sans-serif !important;
     font-size: 12px !important;
     font-weight: 500 !important;
     padding-top: 6px !important;

@@ -60,7 +60,7 @@
 <g transform="translate(91.6 16.0) rotate(342)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
 <g transform="translate(104.2 16.0) rotate(348)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
 <g transform="translate(116.2 16.0) rotate(354)"><rect x="-1.25" y="0" width="2.5" height="8" rx="1" fill="#d1d1d6"/></g>
-<g font-family="SF Pro Display, Cantarell, Sans-Serif" font-weight="600" font-size="34" fill="#3a3a3c" text-anchor="middle" dominant-baseline="central">
+<g font-family="SF Pro Display, -apple-system, sans-serif" font-weight="600" font-size="34" fill="#3a3a3c" text-anchor="middle" dominant-baseline="central">
 <text x="128.0" y="62.0">12</text>
 <text x="195.0" y="129.0">3</text>
 <text x="128.0" y="196.0">6</text>

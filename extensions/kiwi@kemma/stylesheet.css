@@ -1403,7 +1403,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-urgent {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   letter-spacing: 0.6px !important;
@@ -1415,7 +1415,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-app-name {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
   font-size: 14px !important;
   font-weight: 600 !important;
   color: #ffffff !important;
@@ -1424,7 +1424,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-count-badge {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
   background-color: rgba(255, 255, 255, 0.20) !important;
   color: rgba(255, 255, 255, 0.90) !important;
   font-size: 10px !important;
@@ -1435,7 +1435,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-title {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
   font-size: 14px !important;
   font-weight: 700 !important;
   color: #ffffff !important;
@@ -1445,7 +1445,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-body {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
   font-size: 13px !important;
   font-weight: 400 !important;
   color: rgba(255, 255, 255, 0.80) !important;
@@ -1454,7 +1454,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-time {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "SF Pro Text", -apple-system, sans-serif !important;
   font-size: 12px !important;
   font-weight: 400 !important;
   color: rgba(255, 255, 255, 0.55) !important;

@@ -9602,3 +9602,27 @@ echo "==> Встановлення успішно завершено!"
         * Кнопка активної програми (`btn1`, наприклад «Antigravity» або «Finder»): вага шрифту рівна `700` (Bold).
         * Кнопки меню вікна (`btn2..N`, «Файл», «Редагування», «Вигляд», «Перехід», «Вікно» тощо): вага шрифту рівна `400` (Regular).
       - Перевірено збереження типографіки при перемиканні фокусу вікон (активне вікно програми <-> робочий стіл Finder).
+491. [2026-10-24] Fix reboot button in Settings (Power -> Game Mode GPU Allocation) & Install full Apple macfonts pack (141 OTF fonts) across system, fontconfig, themes, and all extensions:
+   1. Проблема:
+      - Кнопка «Перезавантажити…» у розділі «Живлення» -> «Режим гри» (рядок «Потрібно перезавантаження») не спрацьовувала при натисканні, оскільки команда виклику містила оболонковий синтаксис `||`, який у `g_spawn_command_line_async` передавався як аргумент до `systemctl`, спричиняючи помилку «Too many arguments». Також був відсутній прямий виклик SessionManager / login1 DBus.
+      - Необхідно було встановити повний пакет оригінальних шрифтів Apple macfonts (141 OTF-файл з репозиторію https://github.com/fefelixa/macfonts) по всій системі: у системні шрифтові каталоги, користувацькі каталоги, репозиторій проекту, налаштування Fontconfig, GNOME gsettings, тему GNOME Shell та всі розширення (wack-lockscreen-clock, kiwi тощо).
+   2. Виконані виправлення:
+      - Виправлення кнопки перезавантаження:
+        * У `gnome-control-center-overlay/libmac_settings.c` реалізовано повноцінний надійний механізм перезавантаження: звернення через D-Bus до сесійного сервісу `org.gnome.SessionManager` (`Reboot`), системного сервісу `org.freedesktop.login1` (`Reboot(true)`), прямий виклик `systemctl reboot` та `gnome-session-quit --reboot --no-prompt`.
+        * Додано функцію рекурсивного підключення сигналу кнопки `clicked` у рядку `gpu_reboot_row`, а також прямий експортований обробник `init_gpu_reboot_button` у `cc-power-panel.ui`.
+        * Перекомпільовано `libmac_settings.so` та встановлено в `~/.local/lib/`, `/usr/lib/x86_64-linux-gnu/`, `lib/` та `control-center/`.
+        * Оновлено `cc-power-panel.ui` у `~/.local/share/gnome-control-center-overlay/` та `/usr/share/mactheme/gnome-control-center-overlay/`.
+      - Встановлення шрифтового пакунку macfonts:
+        * Завантажено всі 141 оригінальний файл шрифтів Apple з https://github.com/fefelixa/macfonts:
+          `SF Pro Text` (18 накреслень), `SF Pro Display` (18 накреслень), `SF Pro Rounded` (9 накреслень), `SF Compact Text` (18 накреслень), `SF Compact Display` (9 накреслень), `SF Compact Rounded` (9 накреслень), `SF Mono` (12 накреслень), `New York` (48 накреслень: Extra Large, Large, Medium, Small).
+        * Розгорнуто шрифти до всіх цільових директорій:
+          `MACTHEMEFILES/fonts/`, `~/.local/share/fonts/`, `~/.fonts/`, `/usr/local/share/fonts/`, `/usr/share/fonts/opentype/macfonts/`.
+        * Створено та застосовано конфігурацію Fontconfig у `/etc/fonts/local.conf`, `~/.config/fontconfig/fonts.conf` та `config/fonts.conf` з налаштуванням пріоритетів та аліасів для `sans-serif` -> `SF Pro Text`, `serif` -> `New York Medium`, `monospace` -> `SF Mono`, `system-ui` -> `SF Pro Text`, `-apple-system` -> `SF Pro Text`, `BlinkMacSystemFont` -> `SF Pro Text`, `SF Pro` -> `SF Pro Text`, `San Francisco` -> `SF Pro Text`.
+        * Оновлено системний та користувацький кеш шрифтів (`fc-cache -f`).
+        * Налаштовано системні gsettings: `font-name` ('SF Pro Text 11'), `document-font-name` ('SF Pro Text 11'), `monospace-font-name` ('SF Mono 11'), `titlebar-font` ('SF Pro Text Bold 11').
+        * Оновлено всі розширення (wack-lockscreen-clock, kiwi, blur-my-shell) та тему GNOME Shell (`gnome-shell.css`), видалено застарілі прив'язки до Cantarell та Open Runde, встановлено чисті офіційні шрифтові сімейства Apple SF Pro та SF Pro Rounded.
+   3. Верифікація:
+      - Перевірено роботу `fc-match` для всіх категорій: `sans-serif` повертає `SF Pro Text`, `serif` повертає `New York Medium`, `monospace` повертає `SF Mono`, `system-ui` повертає `SF Pro Text`.
+      - Перевірено експорт функцій `init_gpu_reboot_button`, `init_gpu_reboot_row`, `on_gpu_reboot_clicked` у `libmac_settings.so`.
+      - Перевірено наявність методу D-Bus `org.gnome.SessionManager.Reboot`.
+      - Перевірено синхронізацію файлів у проекті та системі.

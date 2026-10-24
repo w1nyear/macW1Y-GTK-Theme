@@ -190,14 +190,14 @@ export const WackClock = GObject.registerClass(
         _applyTextStyle() {
             const timeColor = '#ffffff';
             const dateColor = 'rgba(255, 255, 255, 0.98)';
-            const font = "font-family: Open Runde, SF Pro Rounded, SF Pro Display, Cantarell, sans-serif;";
+            const font = "font-family: 'SF Pro Rounded', 'SF Pro Display', -apple-system, sans-serif;";
             const weight = `font-weight: ${this._weight || '600'};`;
             const timeShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);';
             const dateShadow = 'text-shadow: 0 1px 5px rgba(0, 0, 0, 0.38);';
             const letterSpacing = (this._letterSpacing != null)
                 ? ` letter-spacing: ${this._letterSpacing}px;` : '';
             this._time.set_style(`color: ${timeColor}; ${font} ${weight} ${timeShadow}${letterSpacing}`);
-            this._dateOutput.set_style(`color: ${dateColor}; font-family: SF Pro Display, Cantarell, sans-serif; font-weight: 600; margin-bottom: 0px; ${dateShadow}`);
+            this._dateOutput.set_style(`color: ${dateColor}; font-family: 'SF Pro Display', -apple-system, sans-serif; font-weight: 600; margin-bottom: 0px; ${dateShadow}`);
             // Після зміни стилю шрифт може перерахуватись — піднімаємо двокрапку заново.
             this._applyColonMarkup();
         }

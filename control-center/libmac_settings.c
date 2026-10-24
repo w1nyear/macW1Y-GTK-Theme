@@ -866,18 +866,77 @@ void on_gpu_games_changed(void *widget, void *pspec, gpointer data) {
     trigger_gpu_change();
 }
 
+static void trigger_system_reboot(void) {
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    if (bus) {
+        g_dbus_connection_call(bus,
+                               "org.gnome.SessionManager",
+                               "/org/gnome/SessionManager",
+                               "org.gnome.SessionManager",
+                               "Reboot",
+                               NULL,
+                               NULL,
+                               G_DBUS_CALL_FLAGS_NONE,
+                               -1,
+                               NULL,
+                               NULL,
+                               NULL);
+        g_object_unref(bus);
+    }
+
+    GDBusConnection *sys_bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
+    if (sys_bus) {
+        g_dbus_connection_call(sys_bus,
+                               "org.freedesktop.login1",
+                               "/org/freedesktop/login1",
+                               "org.freedesktop.login1.Manager",
+                               "Reboot",
+                               g_variant_new("(b)", TRUE),
+                               NULL,
+                               G_DBUS_CALL_FLAGS_NONE,
+                               -1,
+                               NULL,
+                               NULL,
+                               NULL);
+        g_object_unref(sys_bus);
+    }
+
+    g_spawn_command_line_async("systemctl reboot", NULL);
+    g_spawn_command_line_async("gnome-session-quit --reboot --no-prompt", NULL);
+}
+
+void on_gpu_reboot_clicked(void *button, gpointer data) {
+    (void)button; (void)data;
+    trigger_system_reboot();
+}
+
+void init_gpu_reboot_button(void *widget, gpointer data) {
+    (void)data;
+    if (widget && GTK_IS_BUTTON(widget)) {
+        g_signal_connect(widget, "clicked", G_CALLBACK(on_gpu_reboot_clicked), NULL);
+    }
+}
+
+static void connect_reboot_button_recursive(GtkWidget *w) {
+    if (!w) return;
+    if (GTK_IS_BUTTON(w)) {
+        g_signal_connect(w, "clicked", G_CALLBACK(on_gpu_reboot_clicked), NULL);
+        return;
+    }
+    for (GtkWidget *c = gtk_widget_get_first_child(w); c != NULL; c = gtk_widget_get_next_sibling(c)) {
+        connect_reboot_button_recursive(c);
+    }
+}
+
 void init_gpu_reboot_row(void *widget, gpointer data) {
     (void)data;
     gpu_reboot_row_w = GTK_WIDGET(widget);
     g_object_add_weak_pointer(G_OBJECT(widget), (gpointer *)&gpu_reboot_row_w);
 
+    connect_reboot_button_recursive(GTK_WIDGET(widget));
+
     gboolean pending = check_pending_reboot();
     gtk_widget_set_visible(GTK_WIDGET(widget), pending);
-}
-
-void on_gpu_reboot_clicked(void *button, gpointer data) {
-    (void)button; (void)data;
-    g_spawn_command_line_async("systemctl reboot || sudo systemctl reboot", NULL);
 }
 
 /* Stubs for backward compatibility if ever referenced */

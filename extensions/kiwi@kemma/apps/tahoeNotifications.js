@@ -432,7 +432,7 @@ function _toastLabel(text, spec) {
     try { l.clutter_text.set_line_wrap(true); } catch (_) {}
     try { l.clutter_text.set_line_wrap_mode(Pango.WrapMode.WORD); } catch (_) {}
     try {
-        l.style = `font-family: "${spec.fam || 'Open Runde'}"; font-size: ${spec.size}px;`
+        l.style = `font-family: "${spec.fam || 'SF Pro Text'}"; font-size: ${spec.size}px;`
             + ` font-weight: ${spec.weight ?? 500}; color: ${spec.color};`;
     } catch (_) {}
     return l;
@@ -667,7 +667,7 @@ function _makeToastCard(item, noglass = false) {
             opacity: 0,
             style: 'margin-top: 6px; margin-bottom: 4px; spacing: 8px;',
         });
-        const btnStyleBase = 'font-family: "Open Runde"; background-color: rgba(255, 255, 255, 0.16); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 9999px; padding: 4px 14px; font-size: 11.5px; font-weight: 500; margin-right: 6px;';
+        const btnStyleBase = 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif; background-color: rgba(255, 255, 255, 0.16); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 9999px; padding: 4px 14px; font-size: 11.5px; font-weight: 500; margin-right: 6px;';
         const btnStyleHover = btnStyleBase.replace('0.16', '0.26').replace('0.14', '0.20');
         for (const action of item.n.actions) {
             const actBtn = new St.Button({

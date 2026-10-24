@@ -180,7 +180,7 @@ export class LockscreenMenuBarManager {
             style_class: 'wack-battery-label kiwi-battery-label',
             text: '--%',
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'font-family: SF Pro Text, Cantarell, sans-serif !important; font-size: 14px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.95) !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;',
+            style: "font-family: 'SF Pro Text', -apple-system, sans-serif !important; font-size: 14px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.95) !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;",
         });
 
         this._batteryIcon = new St.Icon({
@@ -281,7 +281,7 @@ export class LockscreenMenuBarManager {
             dm.container.style = 'margin: 0 !important; padding: 0 6px !important; height: 34px !important; min-height: 34px !important;';
         }
         if (dm._clockDisplay) {
-            dm._clockDisplay.style = 'font-family: SF Pro Text, Cantarell, sans-serif !important; font-size: 14px !important; font-weight: 500 !important; color: rgba(255, 255, 255, 0.95) !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;';
+            dm._clockDisplay.style = "font-family: 'SF Pro Text', -apple-system, sans-serif !important; font-size: 14px !important; font-weight: 500 !important; color: rgba(255, 255, 255, 0.95) !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;";
         }
 
         if (!this._dateMenuClickId) {

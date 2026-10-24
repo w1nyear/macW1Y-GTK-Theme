@@ -333,7 +333,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         const shotTitle = rawTitle || (appName && !appName.includes('Захоплення') ? appName : 'Знімок зроблено');
         titleLabel = new St.Label({
             x_expand: true,
-            style: 'font-family: "Open Runde" !important; color: #ffffff !important; font-size: 13.5px !important; font-weight: 700 !important;',
+            style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 13.5px !important; font-weight: 700 !important;',
         });
         setLabelMarkup(titleLabel, shotTitle);
         try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
@@ -342,7 +342,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         const shotBody = bodyText || 'Знімок збережено в буфер обміну';
         bodyLabel = new St.Label({
             x_expand: true,
-            style: 'font-family: "Open Runde" !important; color: rgba(255, 255, 255, 0.82) !important; font-size: 12px !important; font-weight: 500 !important;',
+            style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.82) !important; font-size: 12px !important; font-weight: 500 !important;',
         });
         setLabelMarkup(bodyLabel, shotBody);
         bodyLabel.clutter_text.single_line_mode = false;
@@ -361,8 +361,8 @@ export function buildNotificationCard(source, notification, options = {}) {
                 y_align: Clutter.ActorAlign.CENTER,
                 x_expand: true,
                 style: isCritical
-                    ? 'font-family: "Open Runde" !important; color: #ff453a !important; font-size: 13px !important; font-weight: 700 !important;'
-                    : 'font-family: "Open Runde" !important; color: rgba(255, 255, 255, 0.60) !important; font-size: 12px !important; font-weight: 600 !important;',
+                    ? 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ff453a !important; font-size: 13px !important; font-weight: 700 !important;'
+                    : 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.60) !important; font-size: 12px !important; font-weight: 600 !important;',
             });
             try { appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
             contentBox.add_child(appLabel);
@@ -373,7 +373,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         if (displayTitle && (!isDuplicateTitle || !hasBody)) {
             titleLabel = new St.Label({
                 x_expand: true,
-                style: 'font-family: "Open Runde" !important; color: #ffffff !important; font-size: 14px !important; font-weight: 700 !important;',
+                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 14px !important; font-weight: 700 !important;',
             });
             setLabelMarkup(titleLabel, displayTitle);
             try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
@@ -383,7 +383,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         if (hasBody) {
             bodyLabel = new St.Label({
                 x_expand: true,
-                style: 'font-family: "Open Runde" !important; color: #ffffff !important; font-size: 13px !important; font-weight: 500 !important;',
+                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 13px !important; font-weight: 500 !important;',
             });
             setLabelMarkup(bodyLabel, bodyText);
             bodyLabel.clutter_text.single_line_mode = false;
@@ -412,8 +412,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         actionsBox.set_width(contentW);
         actionsBox.max_width = contentW;
         const btnStyleBase = isScreenshot
-            ? 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 4px 14px !important; font-size: 11px !important; font-weight: 500 !important; margin-right: 6px !important;'
-            : 'font-family: "Open Runde" !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 5px 16px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px !important;';
+            ? 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 4px 14px !important; font-size: 11px !important; font-weight: 500 !important; margin-right: 6px !important;'
+            : 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 5px 16px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px !important;';
         const btnStyleHover = btnStyleBase.replace('0.16', '0.26').replace('0.14', '0.20');
 
         for (const action of notification.actions) {
@@ -443,7 +443,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         text: formatToastAge(notification.datetime),
         x_align: Clutter.ActorAlign.END,
         y_align: Clutter.ActorAlign.START,
-        style: 'font-family: "Open Runde" !important; color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important; margin-top: 5px !important; margin-right: 5px !important;',
+        style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important; margin-top: 5px !important; margin-right: 5px !important;',
     });
     try { timeLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
 
