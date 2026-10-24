@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Mac Applications Sync
-Exec=/usr/local/bin/mac-sync-applications
+Exec=/usr/local/bin/mac-sync-applications daemon
 Terminal=false
 X-GNOME-Autostart-enabled=true
 NoDisplay=true
