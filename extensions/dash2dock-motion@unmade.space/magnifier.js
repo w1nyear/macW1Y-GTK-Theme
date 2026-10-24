@@ -360,6 +360,7 @@ export class DockMagnifier {
 
         this._stretchBackground(bounds[0], bounds[n],
             newBounds[0] + shift, newBounds[n] + shift, padL, padR);
+        this._notifyDockUpdate();
     }
 
     /**
@@ -618,6 +619,16 @@ export class DockMagnifier {
         }
         for (const child of labelTargets)
             child.updateLabelPosition?.();
+
+        this._notifyDockUpdate();
+    }
+
+    _notifyDockUpdate() {
+        if (typeof global._liquidGlassDockSync === 'function') {
+            try {
+                global._liquidGlassDockSync();
+            } catch (_) {}
+        }
     }
 
     // ---- test hooks -------------------------------------------------------

@@ -9214,5 +9214,29 @@ echo "==> Встановлення успішно завершено!"
       - У журналі `journalctl` відсутні будь-які помилки дока.
       - Док, скляний шейдер liquid glass, відступи (8px між значками, 10px з боків, 9px зверху/знизу, висота 72px) та індикаторні точки повністю збережені та захищені від скидання при перезавантаженнях.
 
+127. Збільшення висоти доку на 2px без зміщення іконок та плавна 60 FPS синхронізація анімації розширення доку під час magnify:
+   1. Завдання:
+      - Збільшити висоту скляного доку на 2 пікселі (з 72px до 74px), суворо не рухаючи значки та індикаторні точки всередині.
+      - Усунути стрибок доку без анімації при наведенні курсору: забезпечити плавне синхронне розширення та звуження капсули скла разом з іконками під час анімації збільшення magnify.
+   2. Виконані зміни:
+      - Збільшення висоти доку на 2px без зсуву елементів:
+        * У [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js) та сирцевому [extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts):
+          висоту капсули `pillH` змінено з `baseIconH + 18` (72px) на `baseIconH + 20` (**74px**).
+        * Нижня межа доку залишається фіксованою на координаті 1076px (4px від нижнього краю екрана 1080px).
+        * Позиція іконок по вертикалі (`minY = 1010, maxY = 1064`) та індикаторної точки Chrome/Antigravity (`y ≈ 1069`) не зрушилася ні на один піксель.
+        * Верхній внутрішній відступ капсули отримав комфортні збалансовані 8px (замість 6px), як в оригінальному macOS Dock.
+      - Усунення стрибка без анімації та повна синхронізація magnify:
+        * Причина проблеми: розширення `dash2dock-motion` анімує сплеск збільшення значків через власний таймлайн `Clutter.Timeline` (spring physics), проте `liquid-glass` не отримував сповіщень на кожному кадрі таймлайна, а його цикл `frameTick` засинав після 8 тактів при зупинці руху миші, через що док розширювався ривком лише після секундного таймера.
+        * У [extensions/dash2dock-motion@unmade.space/magnifier.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/magnifier.js):
+          додано виклик `_notifyDockUpdate()` наприкінці методу `update()` (виконується на кожному кадрі анімації) та при завершенні колапсу `_clearTransforms()`.
+        * У [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js):
+          зареєстровано міжекстеншн-міст `global._liquidGlassDockSync`, який пробуджує `wakeFrameSync()` і викликає перерахунок геометрії шейдера `_syncGeometry()` синхронно з кожним кадром аніматора.
+        * У `_syncGeometry()`: додано сортування іконок за віссю `x`, точне динамічне визначення зовнішніх меж `minX`/`maxX` для довільного масштабу активної іконки та адаптивне збільшення бічних полів `sidePadL`/`sidePadR` при наближенні курсору до крайніх значків (Finder/Trash).
+      - Усі зміни синхронізовано з `~/.local/share/gnome-shell/extensions/` та підключено наживо в сесії.
+   3. Верифікація:
+      - Геометрія в спокої: `pillH = 74px` (+2px), `pillY = 1002px`, нижня межа = 1076px (відступ від краю 4px), іконки залишаються на 1010..1064px, крапка на 1069px.
+      - Покрокова перевірка magnify через EvalHelper: при зміні envelope від 0.0 до 1.0 ширина капсули `pillW` плавно зростає з 699px до 859px симетрично від центру (959.5px), без ривків і затримок.
+
+
 
 

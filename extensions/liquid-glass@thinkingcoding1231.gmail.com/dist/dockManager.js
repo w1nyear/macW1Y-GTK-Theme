@@ -90,6 +90,10 @@ export class DashManager {
     setup() {
         if (!this.targetActor || !this._settings)
             return;
+        global._liquidGlassDockSync = () => {
+            this.wakeFrameSync();
+            this._syncGeometry();
+        };
         // 設定の監視を開始
         this._bindSettings();
         // 初回起動時にスイッチがONならエフェクトを適用
@@ -546,11 +550,12 @@ export class DashManager {
 
         let hasIconBounds = false;
         if (icons.length > 0) {
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            icons.sort((a, b) => a.x - b.x);
+            let minX = icons[0].x;
+            let maxX = icons[icons.length - 1].x + icons[icons.length - 1].w;
+            let minY = Infinity, maxY = -Infinity;
             let baseIconW = 0, baseIconH = 0;
             for (const ic of icons) {
-                if (ic.x < minX) minX = ic.x;
-                if (ic.x + ic.w > maxX) maxX = ic.x + ic.w;
                 if (ic.y < minY) minY = ic.y;
                 if (ic.y + ic.h > maxY) maxY = ic.y + ic.h;
                 if (baseIconW === 0 || ic.w < baseIconW) baseIconW = ic.w;
@@ -560,17 +565,21 @@ export class DashManager {
             let pillX, pillY, pillW, pillH;
             let sidePad = 10; // smaller side padding (10px)
             if (isHorizontal) {
-                pillH = baseIconH + 18; // 72px for 54px icons (9px top, 9px bottom)
+                pillH = baseIconH + 20; // 74px for 54px icons (+2px dock height)
                 let isTop = monitor && (minY - monitor.y < (monitor.y + monitor.height) - maxY);
-                pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - 4 - pillH) : (minY - 9));
-                pillX = minX - sidePad; // 10px padding to first icon
-                pillW = (maxX - minX) + (sidePad * 2); // 10px left + 10px right
+                pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - 4 - pillH) : (minY - 11));
+                let sidePadL = sidePad + Math.max(0, (icons[0]?.w || baseIconW) / baseIconW - 1) * 10;
+                let sidePadR = sidePad + Math.max(0, (icons[icons.length - 1]?.w || baseIconW) / baseIconW - 1) * 10;
+                pillX = minX - sidePadL;
+                pillW = (maxX - minX) + sidePadL + sidePadR;
             } else {
-                pillW = baseIconW + 18;
+                pillW = baseIconW + 20;
                 let isLeft = monitor && (minX - monitor.x < (monitor.x + monitor.width) - maxX);
-                pillX = isLeft ? (monitor.x + 4) : (monitor ? (monitor.x + monitor.width - 4 - pillW) : (minX - 9));
-                pillY = minY - sidePad;
-                pillH = (maxY - minY) + (sidePad * 2);
+                pillX = isLeft ? (monitor.x + 4) : (monitor ? (monitor.x + monitor.width - 4 - pillW) : (minX - 11));
+                let sidePadT = sidePad + Math.max(0, (icons[0]?.h || baseIconH) / baseIconH - 1) * 10;
+                let sidePadB = sidePad + Math.max(0, (icons[icons.length - 1]?.h || baseIconH) / baseIconH - 1) * 10;
+                pillY = minY - sidePadT;
+                pillH = (maxY - minY) + sidePadT + sidePadB;
             }
             absX = pillX - 4;
             absY = pillY - 4;
@@ -1078,6 +1087,11 @@ export class DashManager {
     }
     cleanup() {
         this._torndown = true;
+        this._teardownStep('globalSync', () => {
+            if (global._liquidGlassDockSync) {
+                delete global._liquidGlassDockSync;
+            }
+        });
         // 毎フレームの later チェーンを最初に、無条件で止める。_removeEffect()
         // の途中で throw しても孤児チェーンが残らないようにするため
         // （_teardownStep のコメント参照）。
