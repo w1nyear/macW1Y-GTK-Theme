@@ -335,8 +335,8 @@ export class CupertinoPromptManager {
                     this.restPromptContainer.remove_all_transitions();
                     this.restPromptContainer.opacity = 0;
                     this.restPromptContainer.visible = true;
-                    if (hintBoxWrapper) { hintBoxWrapper.remove_all_transitions(); hintBoxWrapper.opacity = 255; }
-                    if (nameLabel) { nameLabel.remove_all_transitions(); nameLabel.opacity = 255; }
+                    if (hintBoxWrapper) { hintBoxWrapper.remove_all_transitions(); hintBoxWrapper.opacity = 255; hintBoxWrapper.visible = true; }
+                    if (nameLabel) { nameLabel.remove_all_transitions(); nameLabel.opacity = 255; nameLabel.translation_y = 0; }
                     this.restPromptContainer.ease({
                         opacity: 255,
                         duration: CROSSFADE_TIME,
@@ -347,8 +347,8 @@ export class CupertinoPromptManager {
                     this.restPromptContainer.opacity = 255;
                     this.restPromptContainer.visible = true;
                     if (!this._extension._promptActive) {
-                        if (hintBoxWrapper) { hintBoxWrapper.remove_all_transitions(); hintBoxWrapper.opacity = 255; }
-                        if (nameLabel) { nameLabel.remove_all_transitions(); nameLabel.opacity = 255; }
+                        if (hintBoxWrapper) { hintBoxWrapper.remove_all_transitions(); hintBoxWrapper.opacity = 255; hintBoxWrapper.visible = true; }
+                        if (nameLabel) { nameLabel.remove_all_transitions(); nameLabel.opacity = 255; nameLabel.translation_y = 0; }
                     }
                 }
             }

@@ -9445,3 +9445,16 @@ echo "==> Встановлення успішно завершено!"
    - blur-my-shell applications.js: updated SYSTEM_SIDEBAR_WIDTHS from 260px to 280px for org.gnome.Settings, gnome-control-center and libadwaita split-view apps
    - gnome-control-center-overlay: set min-sidebar-width and max-sidebar-width to 280px in cc-window.ui and libmac_settings.c to prevent sidebar width mismatch and eliminate the unblurred scrollbar gap
    - Recompiled libmac_settings.so and synced to ~/.local/lib and project repository
+484. [2026-10-24] Fix in-session lockscreen account overlay and avatar duplication (macOS style):
+   - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/unlockDialogController.js:
+     * Hidden authPrompt._userWell (opacity = 0) so native AuthPrompt never draws a duplicate avatar or duplicate user name over WackCupertinoRestPrompt
+     * Faded restPrompt._hintBoxWrapper out during prompt activation (opacity = 255 * (1 - progress)), preventing hint text ("TouchID або пароль") from being overlaid under the password entry field
+     * Smoothly translated restPrompt's account name label slightly up (translation_y = -10 * progress), elegantly creating space for the password input field directly below it
+     * Restored authPrompt._message display below the password entry field for PAM warning/error messages (e.g. wrong password), clearing it upon typing
+   - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/avatarManager.js:
+     * Kept authPrompt._userWell and child promptUserWidget at opacity 0 in setupCupertinoAvatarOverride()
+   - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/cupertinoPromptManager.js:
+     * Ensured nameLabel.translation_y = 0 and hintBoxWrapper is visible upon returning to rest mode
+   - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/stylesheet.css:
+     * Set opacity: 0 on .unlock-dialog .wack-cupertino-prompt .user-widget.vertical and .user-widget-label to enforce zero duplicate avatar/name rendering while preserving its 88px layout spacing
+   - Synced all modifications across wack-system, ~/.local/share/gnome-shell/extensions, and /usr/share/gnome-shell/extensions; hot-reloaded running GNOME Shell modules and theme resource.

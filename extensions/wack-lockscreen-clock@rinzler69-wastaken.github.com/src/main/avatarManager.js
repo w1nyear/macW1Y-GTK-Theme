@@ -19,16 +19,24 @@ export class AvatarManager {
             this.origUpdateUser = authPrompt[methodName].bind(authPrompt);
             authPrompt[methodName] = (user) => {
                 this.origUpdateUser(user);
-                const uw = authPrompt._userWell?.get_child();
-                if (uw && uw._avatar) {
-                    uw._avatar.visible = true;
-                    uw._avatar.opacity = 255;
+                if (authPrompt._userWell) {
+                    authPrompt._userWell.opacity = 0;
+                    const uw = authPrompt._userWell.get_child();
+                    if (uw) {
+                        uw.opacity = 0;
+                        if (uw._avatar) uw._avatar.opacity = 0;
+                        if (uw._label) uw._label.opacity = 0;
+                    }
                 }
             };
-            const promptUserWidget = authPrompt._userWell?.get_child();
-            if (promptUserWidget?._avatar) {
-                promptUserWidget._avatar.visible = true;
-                promptUserWidget._avatar.opacity = 255;
+            if (authPrompt._userWell) {
+                authPrompt._userWell.opacity = 0;
+                const promptUserWidget = authPrompt._userWell.get_child();
+                if (promptUserWidget) {
+                    promptUserWidget.opacity = 0;
+                    if (promptUserWidget._avatar) promptUserWidget._avatar.opacity = 0;
+                    if (promptUserWidget._label) promptUserWidget._label.opacity = 0;
+                }
             }
         }
 
@@ -46,10 +54,20 @@ export class AvatarManager {
         this.origUpdateUser = null;
         this.origMethodName = null;
 
-        const promptUserWidget = authPrompt?._userWell?.get_child();
-        if (promptUserWidget?._avatar) {
-            promptUserWidget._avatar.visible = true;
-            promptUserWidget._avatar.opacity = 255;
+        if (authPrompt?._userWell) {
+            authPrompt._userWell.opacity = 255;
+            const promptUserWidget = authPrompt._userWell.get_child();
+            if (promptUserWidget) {
+                promptUserWidget.opacity = 255;
+                if (promptUserWidget._avatar) {
+                    promptUserWidget._avatar.visible = true;
+                    promptUserWidget._avatar.opacity = 255;
+                }
+                if (promptUserWidget._label) {
+                    promptUserWidget._label.visible = true;
+                    promptUserWidget._label.opacity = 255;
+                }
+            }
         }
         this.cupertinoAvatarSetup = false;
     }

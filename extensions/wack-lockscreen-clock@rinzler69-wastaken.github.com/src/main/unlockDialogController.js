@@ -32,6 +32,15 @@ export class UnlockDialogController {
         if (!authPrompt) return;
 
         if (this._extension._lockscreenMode === 'cupertino') {
+            if (authPrompt._userWell) {
+                authPrompt._userWell.opacity = 0;
+                const uw = authPrompt._userWell.get_child();
+                if (uw) {
+                    uw.opacity = 0;
+                    if (uw._avatar) uw._avatar.opacity = 0;
+                    if (uw._label) uw._label.opacity = 0;
+                }
+            }
             if (authPrompt._message) {
                 authPrompt._message.add_style_class_name('wack-cupertino-message');
                 authPrompt._message.opacity = 0;
@@ -52,19 +61,12 @@ export class UnlockDialogController {
                 authPrompt.setMessage = (message, type, wiggleParameters) => {
                     origSetMessage(message, type, wiggleParameters);
                     if (authPrompt._message) {
-                        authPrompt._message.opacity = 0;
-                        authPrompt._message.visible = false;
-                        authPrompt._message.y_expand = false;
-                    }
-                    if (cupertinoMgr?.restPrompt?._hintLabel) {
                         if (message && message.trim().length > 0) {
-                            cupertinoMgr.restPrompt._hintLabel.text = message;
-                            cupertinoMgr.restPrompt._hintLabel.add_style_class_name('wack-gdm-auth-subtitle-warning');
-                            if (cupertinoMgr.restPrompt._hintBoxWrapper)
-                                cupertinoMgr.restPrompt._hintBoxWrapper.opacity = 255;
+                            authPrompt._message.opacity = 255;
+                            authPrompt._message.visible = true;
                         } else {
-                            cupertinoMgr.restPrompt._hintLabel.text = getAuthSubtitleText(userName);
-                            cupertinoMgr.restPrompt._hintLabel.remove_style_class_name('wack-gdm-auth-subtitle-warning');
+                            authPrompt._message.opacity = 0;
+                            authPrompt._message.visible = false;
                         }
                     }
                     if (this._extension._promptStyling)
@@ -75,10 +77,9 @@ export class UnlockDialogController {
             const promptEntry = authPrompt._entry ?? (authPrompt.get_children ? authPrompt.get_children().find(c => c.has_style_class_name?.('login-dialog-prompt-entry')) : null);
             if (promptEntry?.clutter_text && !promptEntry._wackTextChangeId) {
                 promptEntry._wackTextChangeId = promptEntry.clutter_text.connect('text-changed', () => {
-                    if (cupertinoMgr?.restPrompt?._hintLabel &&
-                        cupertinoMgr.restPrompt._hintLabel.has_style_class_name('wack-gdm-auth-subtitle-warning')) {
-                        cupertinoMgr.restPrompt._hintLabel.text = getAuthSubtitleText(userName);
-                        cupertinoMgr.restPrompt._hintLabel.remove_style_class_name('wack-gdm-auth-subtitle-warning');
+                    if (authPrompt._message && authPrompt._message.visible) {
+                        authPrompt._message.opacity = 0;
+                        authPrompt._message.visible = false;
                     }
                 });
             }
@@ -396,6 +397,15 @@ export class UnlockDialogController {
                 }
 
                 const authPrompt = dialog._authPrompt ?? dialog._promptBox?._authPrompt;
+                if (authPrompt?._userWell) {
+                    authPrompt._userWell.opacity = 0;
+                    const uw = authPrompt._userWell.get_child();
+                    if (uw) {
+                        uw.opacity = 0;
+                        if (uw._avatar) uw._avatar.opacity = 0;
+                        if (uw._label) uw._label.opacity = 0;
+                    }
+                }
                 const mainBox = authPrompt?._mainBox;
                 const cupertinoMgr = this._extension._cupertinoPromptManager;
 
@@ -408,13 +418,15 @@ export class UnlockDialogController {
                         cupertinoMgr.restPromptContainer.opacity = targetOpacity;
                         cupertinoMgr.restPromptContainer.visible = targetOpacity > 0;
                         if (cupertinoMgr.restPrompt?._hintBoxWrapper) {
-                            cupertinoMgr.restPrompt._hintBoxWrapper.opacity = 255;
-                            cupertinoMgr.restPrompt._hintBoxWrapper.visible = true;
+                            const hintOpacity = Math.round(255 * (1 - progress));
+                            cupertinoMgr.restPrompt._hintBoxWrapper.opacity = hintOpacity;
+                            cupertinoMgr.restPrompt._hintBoxWrapper.visible = hintOpacity > 0;
                         }
                         const nameLabel = cupertinoMgr.restPrompt?._userWell?.get_child()?._label;
                         if (nameLabel) {
                             nameLabel.opacity = 255;
                             nameLabel.visible = true;
+                            nameLabel.translation_y = Math.round(-10 * progress);
                         }
                     }
                 }
