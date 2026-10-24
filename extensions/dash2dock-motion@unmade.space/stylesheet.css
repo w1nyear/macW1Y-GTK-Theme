@@ -35,25 +35,24 @@
     height: 0;
     margin-bottom: 4px; }
   #dashtodockContainer.bottom #dash #dashtodockDashContainer {
-    padding: 0 12px;
-    padding-bottom: 0;
-    padding-top: 0; }
+    padding: 0 10px !important;
+    padding-bottom: 0 !important;
+    padding-top: 0 !important; }
   #dashtodockContainer.bottom #dash .dash-item-container {
     /* Disable all margins defined upstream, we handle them here */
-    margin: 0 3px; }
+    margin: 0 2px !important; }
     #dashtodockContainer.bottom #dash .dash-item-container > * {
       margin: 0; }
     #dashtodockContainer.bottom #dash .dash-item-container:ltr:first-child, #dashtodockContainer.bottom #dash .dash-item-container:rtl:last-child {
-      margin-left: 0px; }
+      margin-left: 0px !important; }
     #dashtodockContainer.bottom #dash .dash-item-container:ltr:last-child, #dashtodockContainer.bottom #dash .dash-item-container:rtl:first-child {
-      margin-right: 0px; }
+      margin-right: 0px !important; }
     #dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
     #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
     #dashtodockContainer.bottom #dash .dash-item-container .overview-tile {
-      padding: 0px 0px;
-      /* macOS-стиль: іконки зміщено на 7px нижче від базової позиції (компенсація +10/-7) */
-      padding-bottom: 21px;
-      padding-top: 10px; }
+      padding: 0px 0px !important;
+      padding-top: 11px !important;
+      padding-bottom: 11px !important; }
       #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:ltr:first-child, #dashtodockContainer.bottom #dash .dash-item-container .app-well-app:rtl:last-child,
       #dashtodockContainer.bottom #dash .dash-item-container .show-apps:ltr:first-child,
       #dashtodockContainer.bottom #dash .dash-item-container .show-apps:rtl:last-child,
@@ -1556,4 +1555,23 @@
     background-color: transparent !important;
     background-image: none !important;
     box-shadow: none !important;
+}
+
+/* macOS Dock perfect proportions calibration */
+#dashtodockDashContainer {
+    padding: 0 10px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+#dashtodockContainer.bottom .dash-item-container .app-well-app,
+#dashtodockContainer.bottom .dash-item-container .show-apps,
+#dashtodockContainer.bottom .dash-item-container .overview-tile {
+    padding: 0 !important;
+    padding-top: 11px !important;
+    padding-bottom: 11px !important;
+}
+
+#dashtodockContainer.bottom .dash-item-container {
+    margin: 0 2px !important;
 }

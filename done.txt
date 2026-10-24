@@ -9132,3 +9132,29 @@ echo "==> Встановлення успішно завершено!"
         * Перетягування програми на Смітник доку — деінсталяція/видалення з комп'ютера.
    4. Верифікація:
       - Live Eval перевірка підтвердила: bgActor, liquidBox та LiquidEffect активні на сцені [536, 949, 847, 147], скляний шейдер працює стабільно.
+
+123. Калібрування габаритів Доку (висота, ширина, відступи) до автентичних пропорцій macOS Sonoma/Sequoia:
+   1. Проблема:
+      - Док мав вигляд надмірно масивної та громіздкої «бочки» (висота ~104–113px, внутрішні відступи до 32px зверху та 30px знизу).
+      - Зайві бічні поля (padding 26–32px) робили капсулу надто широкою для поточної кількості значків.
+   2. Виявлені причини:
+      - У CSS тем macW1Y-Dark, macW1Y-Dark-solid, dash2dock-motion та cupertino-dock-lite контейнер #dashtodockDashContainer мав примусовий `padding: 10px 10px !important; margin-bottom: 10px !important;`.
+      - Елементи .dash-item-container .app-well-app мали `padding-top: 13px !important; padding-bottom: 18px !important;` (сумарно 31px!), що штучно розтягувало слот до 93px.
+      - У dockManager.js метод _syncGeometry орієнтувався на габарити підкладки dash-background та referenceActor (IndicatorDrawingArea), що призводило до зрізання або завищення розмірів капсули шейдера.
+      - Параметр edge-distance у dash2dock-motion дорівнював -6 (зсув донизу за межі екрана).
+   3. Виконані виправлення:
+      - У всіх CSS-темах (macW1Y-Dark, macW1Y-Dark-solid, dash2dock-motion, cupertino-dock-lite) скинуто паразитарні відступи:
+        * #dashtodockDashContainer: `padding: 0 10px !important; margin: 0 !important;`.
+        * .dash-item-container .app-well-app, .show-apps, .overview-tile: `padding: 0 !important; padding-top: 11px !important; padding-bottom: 11px !important;`.
+        * .dash-item-container: `margin: 0 2px !important;`.
+      - У gsettings dash2dock-motion встановлено edge-distance 0.
+      - У extensions/liquid-glass/dist/dockManager.js додано прямий розрахунок геометрії шейдера за реальними координатами значків (walkIcons за St_Icon):
+        * Висота капсули дорівнює baseIconH + 22px (рівно 76px при розмірі іконок 54px).
+        * Вертикальна симетрія: 11px від верхнього краю скла до значків, 11px від значків до нижнього краю скла (симетричне розташування 4px індикатора запущеної програми).
+        * Горизонтальні відступи капсули: рівно 14px зліва від Finder та 14px справа від Смітника.
+        * Зазор від нижнього краю екрана до нижнього борту капсули: акуратні 4px елегантного плавання над шпалерами.
+      - Зміни синхронізовано в ~/.local/share/gnome-shell/extensions/ та застосовано в робочій сесії GNOME Shell.
+   4. Верифікація:
+      - Живі вимірювання в GNOME Shell: pillW = 789px, pillH = 76px, topGap = 11px, bottomGap = 11px, leftGap = 14px, rightGap = 14px, clearance = 4px.
+      - Скріншот підтвердив бездоганний автентичний вигляд скляної капсули macOS Sonoma/Sequoia.
+
