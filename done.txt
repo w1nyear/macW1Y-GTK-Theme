@@ -9345,3 +9345,24 @@ echo "==> Встановлення успішно завершено!"
       - `gnome-extensions list --enabled`: віджети відсутні, система працює стабільно.
       - Повний пошук `grep -rn "tahoe-widgets"` по репозиторію: збігів немає (ALL CLEAN).
       - Робоче дерево та дампи готові до інтеграції нових віджетів.
+133. Опускання іконок і крапки запуску в доці, чисте кришталеве скло для сповіщень (24.10.2026):
+   1. Завдання:
+      - Опустити вниз у капсулу дока всі іконки та індикаторну крапку (running dot).
+      - Усунути білястий/молочний наліт у карток Центру сповіщень та банерів-тостів, повернувши 100% чисте прозоре скло («чисте скло»).
+   2. Виконані зміни:
+      - Док (іконки та індикатори запущених застосунків):
+        * У [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js): зміщено `this.icon.translation_y` з 4 на 6px (класи `DockAbstractAppIcon`, `makeAppIcon`, `DockShowAppsIcon`), що опустило всі іконки на 2px вниз.
+        * У [extensions/dash2dock-motion@unmade.space/dash.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/dash.js): встановлено `this._separator.translation_y = 6` для ідеальної паралельності розділювача з іконками.
+        * У [extensions/dash2dock-motion@unmade.space/appIconIndicators.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIconIndicators.js): збільшено `dotGap` з 6 на 8px (`this._area.translation_y = dotGap`), змістивши синю/акцентну крапку запущених додатків на 2px вниз синхронно з іконками зі збереженням симетричного інтервалу.
+        * Синхронізовано з `~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/` та застосовано наживо через EvalHelper без необхідності перезавантаження.
+      - Сповіщення (чисте рідке скло без білого фону):
+        * У [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js):
+          - У `_widgetGlassFill()` та `_cardFill()` повернуто чистий прозорий колір `{c: [0, 0, 0], a: 0}` без підмішування білястого тінту.
+          - У `_applyWidgetGlassParams(effect)`: задано `setTintColor(0, 0, 0)` та `setTintStrength(0)`.
+          - У `_ensureNcCards(p)` та `_ensureToastGlass()`: створення скляного стеку переведено в чистий режим (`pure = true`).
+          - У `_syncToastGlass()`: обнулено `glassStrength = 0` та `glassTint = [0, 0, 0]` для всіх активних тост-регіонів.
+        * У [extensions/kiwi@kemma/apps/tahoeNotificationCard.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotificationCard.js), [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js) та [extensions/kiwi@kemma/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css): замінено некоректні St CSS директиви `border-left: none` / `border-right: none` на валідні числові `border-left: 0px !important; border-right: 0px !important;`.
+        * Оновлено інкремент версії динамічного завантажувача Kiwi `notif_v14` в [extensions/kiwi@kemma/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/extension.js), всі файли синхронізовано в `~/.local/share/gnome-shell/extensions/kiwi@kemma/` та перезавантажено модуль наживо.
+   3. Верифікація:
+      - Перевірка живого дока: `iconTransYs: [6, 6, ...]`, `dotTransYs: [8, 8, ...]`, `sep: 6`, `showApps: 6`. Навіть після виклику `d.dash._redisplay()` координати зберігаються бездоганно.
+      - Перевірка уніформів шейдера карток сповіщень: `tint_r = 0, tint_g = 0, tint_b = 0, tint_strength = 0, baseStrength = 0`. Білий/сірий шар повністю зник, заломлення відбувається на чистому кришталевому склі.

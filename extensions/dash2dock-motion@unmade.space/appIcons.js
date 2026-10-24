@@ -129,7 +129,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
         super._init(app);
 
         if (this.icon)
-            this.icon.translation_y = 4;
+            this.icon.translation_y = 6;
 
         // a prefix is required to avoid conflicting with the parent class variable
         this.monitorIndex = monitorIndex;
@@ -1113,7 +1113,7 @@ export function makeAppIcon(app, monitorIndex, iconAnimator) {
         iconActor = new DockAppIcon(app, monitorIndex, iconAnimator);
 
     if (iconActor.icon)
-        iconActor.icon.translation_y = 4;
+        iconActor.icon.translation_y = 6;
 
     return iconActor;
 }
@@ -1524,7 +1524,7 @@ export const DockShowAppsIcon = GObject.registerClass({
         super._init();
 
         if (this.icon)
-            this.icon.translation_y = 4;
+            this.icon.translation_y = 6;
 
         // Re-use appIcon methods
         const {prototype: appIconPrototype} = AppDisplay.AppIcon;

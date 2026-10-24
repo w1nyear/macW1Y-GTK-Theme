@@ -540,7 +540,7 @@ function _makeToastCard(item, noglass = false) {
         y_expand: true,
         x_align: Clutter.ActorAlign.FILL,
         y_align: Clutter.ActorAlign.FILL,
-        style: 'background-color: rgba(0, 0, 0, 0) !important; padding: 14px 14px 16px 14px; border-radius: 24px; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important; box-shadow: none !important;',
+        style: 'background-color: rgba(0, 0, 0, 0) !important; padding: 14px 14px 16px 14px; border-radius: 24px; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: 0px !important; border-right: 0px !important; box-shadow: none !important;',
     });
     try { content.set_reactive(true); } catch (_) {}
     try { content.set_width(TOAST_W); } catch (_) {}
@@ -1105,7 +1105,7 @@ function _flushToastQueue() {
 function _applyWidgetGlassParams(effect) {
     if (!effect)
         return;
-    let tint = [0.16, 0.16, 0.18], strength = 0.12, blur = 4, sat = 1.0;
+    let blur = 4, sat = 1.0;
     // для фону з вікнами беремо свій notification-blur (8) - саме
     // його LiquidGlass-автори поставили для банерів
     try {
@@ -1113,8 +1113,8 @@ function _applyWidgetGlassParams(effect) {
         blur = Math.min(60, Math.max(0, _readIntSetting(lgset, 'notification-blur-radius', 8)));
     } catch (_) {}
     try { effect.setBlurRadius(blur); } catch (_) {}
-    try { effect.setTintColor(tint[0], tint[1], tint[2]); } catch (_) {}
-    try { effect.setTintStrength(strength); } catch (_) {}
+    try { effect.setTintColor(0, 0, 0); } catch (_) {}
+    try { effect.setTintStrength(0); } catch (_) {}
     try { effect.setBrightness(1.0); } catch (_) {}
     try { effect.setContrast(1.0); } catch (_) {}
     try { effect.setSaturation(sat); } catch (_) {}
@@ -1158,7 +1158,7 @@ function _ensureToastGlass() {
             return false;
         if (!LiquidEffect || !UnpickableActor || !UILayerSampler || !WindowCloneManager)
             return false;
-        const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', false, 0, false);
+        const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', true, 0, false);
         _applyWidgetGlassParams(s.effect);
         // тости НЕ мають заломлюватись у власному склі: UILayerSampler
         // клонує всіх дітей uiGroup, тому без виключення самі слоти
@@ -1233,8 +1233,8 @@ function _syncToastGlass(monitor, s) {
         s.bgActor.opacity = alpha;
         s.bgActor.translation_x = _toastBox ? _toastBox.translation_x : 0;
         s.bgActor.translation_y = _toastBox ? _toastBox.translation_y : 0;
-        // єдиний тінт скла 12% [0.16, 0.16, 0.18], розмиття, заломлення
-        let glassTint = [0.16, 0.16, 0.18], glassStrength = 0.12;
+        // чисте прозоре скло без білого тінту
+        let glassTint = [0, 0, 0], glassStrength = 0;
         const fill = {c: glassTint, a: glassStrength};
         for (const r of regions) {
             r.tintR = fill.c[0];
@@ -1616,7 +1616,7 @@ function _ensureNcCards(p) {
         const monitor = Main.layoutManager.primaryMonitor;
         if (!monitor)
             return false;
-        const cards = _makeGlassStack(monitor, 24, 'nc-cards', false);
+        const cards = _makeGlassStack(monitor, 24, 'nc-cards', true);
         try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
         try {
             p.overlay.insert_child_at_index(cards.bgActor, 2);
@@ -2104,13 +2104,12 @@ function _watchTray(p) {
 }
 
 function _widgetGlassFill() {
-    // єдиний тінт і сила [0.16, 0.16, 0.18] 12%
-    let tint = [0.16, 0.16, 0.18], strength = 0.12;
-    return {c: tint, a: strength};
+    // чисте прозоре скло без тінту
+    return {c: [0, 0, 0], a: 0};
 }
 
 function _cardFill() {
-    return {c: [0.16, 0.16, 0.18], a: 0.12};
+    return {c: [0, 0, 0], a: 0};
 }
 
 function _syncCards(p, monitor, s) {

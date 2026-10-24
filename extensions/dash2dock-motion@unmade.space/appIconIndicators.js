@@ -305,7 +305,7 @@ class RunningIndicatorDots extends RunningIndicatorBase {
         // the icon art's bottom edge. Shift the whole area outwards - in the
         // direction the drawn dot faces after the rotation above - so the dot
         // clears the icon instead of overlapping it.
-        const dotGap = 6;
+        const dotGap = 8;
 
         switch (this._side) {
         case St.Side.TOP:
