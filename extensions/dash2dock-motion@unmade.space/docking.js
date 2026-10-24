@@ -1795,8 +1795,14 @@ const WorkspaceIsolation = class DashToDockWorkspaceIsolation {
 
 export class DockManager {
     constructor(extension) {
-        if (DockManager._singleton)
-            throw new Error('DashToDock has been already initialized');
+        if (DockManager._singleton) {
+            try {
+                DockManager._singleton.destroy();
+            } catch (e) {
+                console.warn('Destroying previous DockManager singleton failed', e);
+            }
+            DockManager._singleton = null;
+        }
         DockManager._singleton = this;
         this._extension = extension;
         this._signalsHandler = new Utils.GlobalSignalsHandler(this);

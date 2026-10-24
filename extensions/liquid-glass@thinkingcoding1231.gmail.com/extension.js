@@ -157,6 +157,18 @@ export default class LiquidGlassExtension extends Extension {
       this._scheduleDashRescan();
     });
 
+    this._uiGroupChildAddedId = Main.layoutManager.uiGroup.connect('child-added', (group, actor) => {
+      if (actor && (actor.name === 'dashtodockContainer' || actor.name === 'dashtodockBox')) {
+        this._scheduleDashRescan();
+      }
+    });
+
+    this._extStateChangedId = Main.extensionManager.connect('extension-state-changed', (mgr, ext) => {
+      if (ext && ext.uuid && ext.uuid.includes('dock')) {
+        this._scheduleDashRescan();
+      }
+    });
+
     // Dash to Dock might not be fully loaded when this extension is enabled at startup.
     // We set a 2-second (2000ms) delay before searching for its UI container.
     this._timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
@@ -382,6 +394,16 @@ export default class LiquidGlassExtension extends Extension {
     if (this._monitorsChangedId) {
       Main.layoutManager.disconnect(this._monitorsChangedId);
       this._monitorsChangedId = 0;
+    }
+
+    if (this._uiGroupChildAddedId) {
+      try { Main.layoutManager.uiGroup.disconnect(this._uiGroupChildAddedId); } catch (e) { }
+      this._uiGroupChildAddedId = 0;
+    }
+
+    if (this._extStateChangedId) {
+      try { Main.extensionManager.disconnect(this._extStateChangedId); } catch (e) { }
+      this._extStateChangedId = 0;
     }
 
     if (this._timeoutId !== 0) {
