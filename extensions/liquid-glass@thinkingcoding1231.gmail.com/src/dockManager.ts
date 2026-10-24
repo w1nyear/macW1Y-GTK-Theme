@@ -437,13 +437,83 @@ export class DashManager {
     });
     this._signals.push(mapSignalId);
 
+    try {
+      let rId = (global.display as any).connect('restacked', () => this.wakeFrameSync());
+      this._signals.push({ disconnect: () => { try { (global.display as any).disconnect(rId); } catch (_) {} } });
+    } catch (_) {}
+    try {
+      let fsId = (global.display as any).connect('in-fullscreen-changed', () => this.wakeFrameSync());
+      this._signals.push({ disconnect: () => { try { (global.display as any).disconnect(fsId); } catch (_) {} } });
+    } catch (_) {}
+    try {
+      let fwId = (global.display as any).connect('notify::focus-window', () => this.wakeFrameSync());
+      this._signals.push({ disconnect: () => { try { (global.display as any).disconnect(fwId); } catch (_) {} } });
+    } catch (_) {}
+    let d2dInit = this.targetActor as any;
+    while (d2dInit && d2dInit.constructor?.name !== 'DashToDock') {
+      d2dInit = d2dInit.get_parent();
+    }
+    if (d2dInit) {
+      try {
+        this._signals.push(d2dInit.connect('showing', () => this.wakeFrameSync()));
+        this._signals.push(d2dInit.connect('hiding', () => this.wakeFrameSync()));
+        this._signals.push(d2dInit.connect('notify::translation-y', () => this.wakeFrameSync()));
+        this._signals.push(d2dInit.connect('notify::visible', () => this.wakeFrameSync()));
+        if (d2dInit._slider) {
+          this._signals.push(d2dInit._slider.connect('notify::slide-x', () => this.wakeFrameSync()));
+          this._signals.push(d2dInit._slider.connect('notify::y', () => this.wakeFrameSync()));
+        }
+      } catch (_) {}
+    }
     if (this.targetActor.mapped) {
       startFrameSync();
     }
   }
 
   _syncGeometry() {
-    if (!this.bgActor || !this.targetActor || !this.targetActor.mapped) return;
+    if (!this.bgActor || !this.targetActor || !this.targetActor.mapped) {
+      if (this.bgActor) {
+        this.bgActor.hide();
+        this.bgActor.opacity = 0;
+      }
+      return false;
+    }
+
+    let monitorIndex = Main.layoutManager.findIndexForActor(this.targetActor);
+    if (monitorIndex < 0) {
+      monitorIndex = Main.layoutManager.primaryIndex;
+    }
+    let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
+    let marginBottom = this._settings ? this._settings.get_int('dock-margin-bottom') : 8;
+    if (!Number.isFinite(marginBottom) || marginBottom < 0) marginBottom = 8;
+
+    // Fullscreen check
+    let isFullscreen = false;
+    try {
+      isFullscreen = (monitorIndex >= 0 && (global.display as any).get_monitor_in_fullscreen(monitorIndex)) ||
+                     (global.display as any).get_monitor_in_fullscreen(Main.layoutManager.primaryIndex) ||
+                     !!(monitor as any)?.inFullscreen;
+    } catch (_) {}
+
+    // Find DashToDock ancestor
+    let d2d = this.targetActor as any;
+    while (d2d && d2d.constructor?.name !== 'DashToDock') {
+      d2d = d2d.get_parent();
+    }
+
+    // Fullscreen check: hide dock glass completely when monitor is in fullscreen
+    if (isFullscreen) {
+      this.bgActor.hide();
+      this.bgActor.opacity = 0;
+      return false;
+    }
+
+    // If DashToDock is hidden, unmapped, or in HIDDEN state, hide glass immediately
+    if (d2d && (!d2d.visible || !d2d.mapped || d2d._dockState === 0 /* HIDDEN */ || (d2d._slider && d2d._slider.slide_x <= 0.001))) {
+      this.bgActor.hide();
+      this.bgActor.opacity = 0;
+      return false;
+    }
 
     let sourceActor = this.targetActor;
     let children = this.targetActor.get_children() as St.Widget[];
@@ -454,43 +524,38 @@ export class DashManager {
       }
     }
 
-
     // 1. まず元の背景のサイズと位置を取得
     let [baseW, baseH] = sourceActor.get_size();
     let [absX, absY] = sourceActor.get_transformed_position();
-    if (Number.isNaN(absX) || Number.isNaN(absY)) return;
-
-    let monitorIndex = Main.layoutManager.findIndexForActor(this.targetActor);
-    if (monitorIndex < 0) {
-      monitorIndex = Main.layoutManager.primaryIndex;
-    }
-    let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
-    let marginBottom = this._settings ? this._settings.get_int('dock-margin-bottom') : 8;
-    if (!Number.isFinite(marginBottom) || marginBottom < 0) marginBottom = 8;
+    if (Number.isNaN(absX) || Number.isNaN(absY)) return false;
 
     // macOS Dock: authoritative geometry directly from dash2dock-motion background slab
     let hasSlabBounds = false;
     const slab = this._findDashBackground(this.targetActor.get_parent() || this.targetActor);
-    if (slab) {
-      let slW: number | undefined, slX: number | undefined;
+    if (slab && slab.mapped && slab.visible) {
+      let slW: number | undefined, slH: number | undefined, slX: number | undefined, slY: number | undefined;
       try {
-        [slW] = slab.get_transformed_size();
-        [slX] = slab.get_transformed_position();
+        [slW, slH] = slab.get_transformed_size();
+        [slX, slY] = slab.get_transformed_position();
       } catch (_) {}
-      if (Number.isFinite(slX) && Number.isFinite(slW) && slW! > 50) {
+      if (Number.isFinite(slX) && Number.isFinite(slW) && slW! > 50 && Number.isFinite(slY)) {
+        const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
+        // If the slab has slid off the bottom of the screen
+        if (slY! >= screenBottom) {
+          this.bgActor.hide();
+          this.bgActor.opacity = 0;
+          return false;
+        }
+
         this._lastSlabW = slW;
         this._lastSlabX = slX;
-      } else if (Number.isFinite(this._lastSlabW) && Number.isFinite(this._lastSlabX)) {
-        slW = this._lastSlabW;
-        slX = this._lastSlabX;
-      }
-      if (Number.isFinite(slX) && Number.isFinite(slW) && slW! > 50) {
+
         let pillW = slW! - 8;
         let pillX = slX! + 4;
         let pillH = 74; // 74px (+2px dock height calibrated)
-        let pillY = monitor ? (monitor.y + monitor.height - marginBottom - pillH) : (1080 - marginBottom - pillH);
+        // Follow vertical translation/sliding with slab
         absX = pillX - 4;
-        absY = pillY - 4;
+        absY = slY! + 2;
         baseW = pillW + 8;
         baseH = pillH + 8;
         hasSlabBounds = true;
@@ -527,13 +592,20 @@ export class DashManager {
           if (baseIconW === 0 || ic.w < baseIconW) baseIconW = ic.w;
           if (baseIconH === 0 || ic.h < baseIconH) baseIconH = ic.h;
         }
+        const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
+        if (minY >= screenBottom) {
+          this.bgActor.hide();
+          this.bgActor.opacity = 0;
+          return false;
+        }
+
         let isHorizontal = (maxX - minX) >= (maxY - minY);
         let pillX: number, pillY: number, pillW: number, pillH: number;
         let sidePad = 10; // smaller side padding (10px)
         if (isHorizontal) {
           pillH = 74; // 74px fixed height (+2px dock height calibrated)
           let isTop = monitor && (minY - monitor.y < (monitor.y + monitor.height) - maxY);
-          pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - marginBottom - pillH) : (1080 - marginBottom - pillH));
+          pillY = isTop ? (monitor.y + 4) : (minY - 4);
           let sidePadL = sidePad + Math.max(0, (icons[0]?.w || baseIconW) / (baseIconW || 54) - 1) * 10;
           let sidePadR = sidePad + Math.max(0, (icons[icons.length - 1]?.w || baseIconW) / (baseIconW || 54) - 1) * 10;
           pillX = minX - sidePadL;
@@ -555,248 +627,11 @@ export class DashManager {
       }
     }
 
+    // If neither slab nor icons exist or are visible, DO NOT fabricate a ghost pill!
     if (!hasSlabBounds && !hasIconBounds) {
-      let pillH = 74;
-      let pillY = monitor ? (monitor.y + monitor.height - marginBottom - pillH) : (1080 - marginBottom - pillH);
-      absY = pillY - 4;
-      baseH = pillH + 8;
-      if (sourceActor !== this.targetActor) {
-        let [tX, tY] = this.targetActor.get_transformed_position();
-        let [tW, tH] = this.targetActor.get_size();
-
-        // 親コンテナからはみ出した分をカットし、本来のサイズに強制する
-        if (absX < tX) { baseW -= (tX - absX); absX = tX; }
-        if (absY < tY) { baseH -= (tY - absY); absY = tY; }
-        if (absX + baseW > tX + tW) { baseW = (tX + tW) - absX; }
-        if (absY + baseH > tY + tH) { baseH = (tY + tH) - absY; }
-      }
-      // this._logger.log(`[Raw] ${absX}, ${absY}, ${baseW}, ${baseH}`);
-
-
-      let minCenterDist = -1;
-      let distLeftCenter: number = 0;
-      let distRightCenter: number = 0;
-      let distTopCenter: number = 0;
-      let distBottomCenter: number = 0;
-
-      if (monitor) {
-        let dockCenterX = absX + (baseW / 2);
-        let dockCenterY = absY + (baseH / 2);
-
-        distLeftCenter = dockCenterX - monitor.x;
-        distRightCenter = (monitor.x + monitor.width) - dockCenterX;
-        distTopCenter = dockCenterY - monitor.y;
-        distBottomCenter = (monitor.y + monitor.height) - dockCenterY;
-
-        minCenterDist = Math.min(distLeftCenter, distRightCenter, distTopCenter, distBottomCenter);
-      }
-      if (this._lastBaseW !== undefined && this._lastBaseH !== undefined) {
-        let isHorizontalDock = (minCenterDist === distTopCenter || minCenterDist === distBottomCenter);
-
-        if (isHorizontalDock) {
-          // ▼ 上・下ドックの場合：異常に膨張するのは H（厚み）
-          // Hの変化量が「ちょうど marginValue 分」だった場合のみ、そのジャンプを無効化（<= 1 に修正）
-          if (Math.abs(Math.abs(baseH - this._lastBaseH) - this._marginValue) <= 1) {
-            baseH = this._lastBaseH;
-          }
-        } else {
-          // ▼ 左・右ドックの場合：異常に膨張するのは W（厚み）
-          // Wの変化量が「ちょうど marginValue 分」だった場合のみ無効化
-          if (Math.abs(Math.abs(baseW - this._lastBaseW) - this._marginValue) <= 1) {
-            baseW = this._lastBaseW;
-          }
-        }
-      }
-      this._lastBaseW = baseW;
-      this._lastBaseH = baseH;
-      let refActor = this._findReferenceActor(this.targetActor);
-      if (refActor) {
-        let [refW, refH] = refActor.get_size();
-        let [refX, refY] = refActor.get_transformed_position();
-        // this._logger.log(`refActor [Raw]: ${refX}, ${refY}, ${refW}, ${refH}`);
-
-        if (!Number.isNaN(refX) && !Number.isNaN(refY) && refW > 0 && refH > 0) {
-
-          let topGap = refY - absY;
-          let bottomGap = (absY + baseH) - (refY + refH);
-
-          // For when the dock is upside down
-          if (topGap < 0 || bottomGap < 0) {
-            // 原点が下端にあるため、真の左上Y座標は refY - refH になる
-            let trueRefY = refY - refH;
-            // ギャップを再計算して正常化
-            topGap = trueRefY - absY;
-            bottomGap = (absY + baseH) - (trueRefY + refH);
-          }
-
-          let leftGap = refX - absX;
-          let rightGap = (absX + baseW) - (refX + refW);
-
-          // ▼ X軸が反転（左右ミラー）しているかの検知と補正（左/右ドック用）
-          if (leftGap < 0 || rightGap < 0) {
-            let trueRefX = refX - refW;
-            leftGap = trueRefX - absX;
-            rightGap = (absX + baseW) - (trueRefX + refW);
-          }
-
-          if (baseW >= baseH) {
-            // ▼ 横長ドック（上・下ドック）▼
-            let diff = Math.abs(bottomGap - topGap);
-
-            // 異常値(高さを超えるようなズレ)は無視する安全装置
-            if (diff > 0 && diff < baseH / 2) {
-              if (bottomGap > topGap) {
-                // 下の隙間の方が広い -> 下を削る
-                baseH -= diff;
-              } else {
-                // 上の隙間の方が広い -> 開始位置(上)を下げて、高さも削る
-                absY += diff;
-                baseH -= diff;
-              }
-            }
-          } else {
-            // ▼ 縦長ドック（左・右ドック）▼
-            let diff = Math.abs(rightGap - leftGap);
-
-            if (diff > 0 && diff < baseW / 2) {
-
-              if (minCenterDist === distLeftCenter) {
-                // 左ドック: 中央方向（右側）の余白のみ削る
-                // leftGap > rightGap になっても absX を右にズラしてはいけない
-                if (rightGap > leftGap) {
-                  baseW -= diff;
-                }
-                // leftGap > rightGap の場合は何もしない（誤補正防止）
-              } else {
-                // 右ドック: 中央方向（左側）の余白を削る
-                if (rightGap > leftGap) {
-                  baseW -= diff;
-                } else {
-                  absX += diff;
-                  baseW -= diff;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    // this._logger.log(`[Gap] ${absX}, ${absY}, ${baseW}, ${baseH}`);
-    // --------------------------------------------------------------------
-    // --------------------------------------------------------------------
-    let marginValue = this._settings.get_int('dock-margin-bottom') || 0;
-
-    if (monitor && marginValue > 0) {
-
-      // アプリ起動時の微小揺れ（誤動作の元）を完全に無視するため、閾値を大きく設定
-      let isMoving = false;
-      if (this._lastAbsX !== undefined && this._lastAbsY !== undefined) {
-        let diffX = Math.abs(absX - this._lastAbsX);
-        let diffY = Math.abs(absY - this._lastAbsY);
-        if (diffX > 1.0 || diffY > 1.0) {
-          isMoving = true;
-        }
-      }
-
-      // Fix hiding animation bug
-      // isMoving = false;
-      this._lastAbsX = absX;
-      this._lastAbsY = absY;
-
-      let [tW, tH] = this.targetActor.get_size();
-      if (this._stableDeltaW === undefined || this._lastTW !== tW) {
-        this._stableDeltaW = baseW - tW;
-        this._lastTW = tW;
-      }
-      if (this._stableDeltaH === undefined || this._lastTH !== tH) {
-        this._stableDeltaH = baseH - tH;
-        this._lastTH = tH;
-      }
-
-      let stableBaseW = tW + this._stableDeltaW;
-      let stableBaseH = tH + this._stableDeltaH;
-
-      if (!isMoving) {
-        if (minCenterDist === distBottomCenter) {
-          // 下ドック
-          let expectedBottom = monitor.y + monitor.height - marginValue;
-          if (absY + baseH > expectedBottom) {
-            let overflow = (absY + baseH) - expectedBottom;
-            baseH -= overflow;
-          }
-          if (baseH > stableBaseH) baseH = stableBaseH; // Experimental
-        } else if (minCenterDist === distTopCenter) {
-          // 上ドック
-          let expectedTop = monitor.y + marginValue;
-          if (absY < expectedTop) {
-            let diff = expectedTop - absY;
-            absY = expectedTop;
-            baseH -= diff;
-          }
-          if (baseH > stableBaseH) baseH = stableBaseH;
-        } else if (minCenterDist === distRightCenter) {
-          // 右ドック
-          let expectedRight = monitor.x + monitor.width - marginValue;
-          if (absX + baseW > expectedRight) {
-            let overflow = (absX + baseW) - expectedRight;
-            baseW -= overflow;
-          }
-          if (baseW > stableBaseW) baseW = stableBaseW; // Experimental
-        } else {
-          // 左ドック
-          let expectedLeft = monitor.x + marginValue;
-          if (absX < expectedLeft) {
-            let diff = expectedLeft - absX;
-            absX = expectedLeft;
-            baseW -= diff;
-          }
-          if (baseW > stableBaseW) baseW = stableBaseW;
-        }
-      }
-    }
-    // this._logger.log(`[Final] ${absX}, ${absY}, ${baseW}, ${baseH}`);
-    // --------------------------------------------------------------------
-
-    // dash2dock-motion magnifies the icons in place (set_scale + translation;
-    // allocations never change) and stretches its own .dash-background slab
-    // so the grown strip never overhangs it. The rect above comes from the
-    // icon container's allocation, which stays put, so the glass stayed
-    // short and the magnified icons spilled out of it. Grow the rect along
-    // the dock's axis to the slab's *visual* bounds (transformed origin
-    // scaled by its current scale) so the glass tracks the stretch. Only
-    // the axis is touched: thickness was tuned by the gap/margin
-    // corrections above, and the slab never grows that way anyway.
-    {
-      const slab = this._findDashBackground(this.targetActor.get_parent() ?? this.targetActor);
-      if (slab) {
-        if (!slab.visible) {
-          try { slab.show(); } catch (e) { }
-        }
-        if (slab.has_allocation()) {
-          const [slW, slH] = slab.get_size();
-          const [slX, slY] = slab.get_transformed_position();
-          const slSX = slab.scale_x || 1;
-          const slSY = slab.scale_y || 1;
-          if (Number.isFinite(slX) && Number.isFinite(slY) && slW > 0 && slH > 0) {
-            const horizontalDock = (minCenterDist === distTopCenter || minCenterDist === distBottomCenter);
-            if (horizontalDock) {
-              const slabL = slX;
-              const slabR = slX + slW * slSX;
-              const newL = Math.min(absX, slabL);
-              const newR = Math.max(absX + baseW, slabR);
-              baseW = newR - newL;
-              absX = newL;
-            } else {
-              const slabT = slY;
-              const slabB = slY + slH * slSY;
-              const newT = Math.min(absY, slabT);
-              const newB = Math.max(absY + baseH, slabB);
-              baseH = newB - newT;
-              absY = newT;
-            }
-          }
-        }
-      }
+      this.bgActor.hide();
+      this.bgActor.opacity = 0;
+      return false;
     }
 
     // 補正されたサイズを適用
@@ -805,27 +640,16 @@ export class DashManager {
 
     if (baseW <= 9 || baseH <= 9) {
       this.bgActor.hide();
+      this.bgActor.opacity = 0;
       // stateをリセットして、次の表示時に必ずガードを通過させる 
       // Reset state to guard against the next frame tick from applying the guard.
       this._lastBgW = undefined;
       this._lastBgH = undefined;
       this._lastBgX = undefined;
       this._lastBgY = undefined;
-      return;
-    } else {
-      this.bgActor.show();
+      return false;
     }
 
-    this.bgActor.opacity = this.targetActor.opacity;
-
-
-    /*
-    let monitorIndex = Main.layoutManager.findIndexForActor(this.targetActor);
-    if (monitorIndex < 0) {
-        monitorIndex = Main.layoutManager.primaryIndex;
-    }
-    let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
-    */
     let visibleW = baseW;
     let visibleH = baseH;
     if (monitor) {
@@ -835,13 +659,6 @@ export class DashManager {
       if (absY + baseH > monitor.y + monitor.height) visibleH -= ((absY + baseH) - (monitor.y + monitor.height));
     }
 
-    // [FIX] Was `<= 5`. The guard exists to avoid drawing a glass for a dock
-    // that has been reduced to nothing, but 5px is wide enough to catch a dock
-    // that is merely sitting flush against a screen edge — which is exactly
-    // what a small dock-margin-bottom produces, and it made the glass vanish
-    // while the margin was being tuned. Only a genuinely degenerate box is
-    // rejected now, and the decision is logged on transition so a dock that
-    // still disappears says why.
     if (visibleW <= 1 || visibleH <= 1) {
       if (this._lastHidden !== true) {
         this._lastHidden = true;
@@ -852,11 +669,14 @@ export class DashManager {
           `margin=${this._marginValue}`);
       }
       this.bgActor.opacity = 0;
+      this.bgActor.hide();
+      return false;
     } else {
       if (this._lastHidden === true) {
         this._lastHidden = false;
         this._logger.log('[Liquid Glass][dock] glass visible again');
       }
+      this.bgActor.show();
       this.bgActor.opacity = this.targetActor.opacity;
     }
 

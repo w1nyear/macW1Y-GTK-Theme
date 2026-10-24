@@ -9382,3 +9382,28 @@ echo "==> Встановлення успішно завершено!"
    4. Верифікація:
       - Запущено Counter-Strike 2 через Steam: помилка Vulkan повністю зникла, гра успішно стартує.
       - Перевірка через `nvidia-smi`: процес `cs2` (`PID 274234`) стабільно працює безпосередньо на дискретній графіці `NVIDIA GeForce RTX 3050 6GB Laptop GPU` (активний C+G режим, прямий апаратний Vulkan-рендеринг).
+135. Виправлення показу порожньої скляної капсули дока у повноекранному режимі (Fullscreen) та синхронізація ховання (24.10.2026):
+   1. Проблема:
+      - При розгортанні будь-якого вікна на весь екран (зокрема в іграх як CS2, браузері в F11, медіаплеєрах тощо) внизу екрана поверх гри продовжувала висіти порожня скляна капсула дока без іконок всередині, яка не ховалася і не реагувала на події.
+   2. Діагностика:
+      - У розширенні `liquid-glass` (менеджер `DashManager` у `dockManager.js`):
+        * Було відсутнє відстеження повноекранного режиму монітора (`global.display.get_monitor_in_fullscreen` або `monitor.inFullscreen`).
+        * При переході гри в повноекранний режим Mutter/GNOME Shell ховає іконки та елементи chrome-дока (`DashToDock.visible = false`), проте `liquid-glass` тримав FBO-актор `bgActor` у `Main.layoutManager.uiGroup` з фіксованою непрозорістю `opacity = 255`.
+        * У методі `_syncGeometry()` координата Y дока була жорстко захардкоджена формулою `pillY = monitor.y + monitor.height - marginBottom - pillH` (998px). Вона повністю ігнорувала реальну координату `slY` фонової плашки, стан приховування `DashToDock` (`_dockState === HIDDEN`) та статус `d2d.visible`.
+        * Навіть за повної відсутності іконок та плашки спрацьовував резервний fallback-блок, який примусово малював порожню плашку на екрані з `visibleH = 82px > 1`.
+   3. Виконані виправлення:
+      - У [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js) та вихідному [extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts):
+        * Підключено підписку на системні сигнали Mutter: `global.display.connect('in-fullscreen-changed')` та `global.display.connect('notify::focus-window')` для негайного пробудження циклу синхронізації `wakeFrameSync()`.
+        * Підключено спостереження за батьківським контейнером `DashToDock`: сигнали `showing`, `hiding`, `notify::translation-y`, `notify::visible`, а також `notify::slide-x` та `notify::y` слайдера `_slider`.
+        * На початку `_syncGeometry()` додано жорсткі перевірки:
+          1) Якщо монітор перебуває у повноекранному режимі (`isFullscreen === true`), капсула скла негайно приховується (`bgActor.hide()`, `bgActor.opacity = 0`, повернення `false`).
+          2) Якщо `DashToDock` прихований або слайдер висунутий (`!d2d.visible || !d2d.mapped || d2d._dockState === 0 || d2d._slider.slide_x <= 0.001`), скло негайно приховується.
+        * Координата `absY` тепер динамічно прив'язана до реального положення плашки `slY`: `absY = slY + 2`. Коли док плавно виїжджає або ховається вниз, скляна капсула рухається синхронно з іконками дока піксель-в-піксель.
+        * Якщо `slY >= screenBottom` або видима висота `visibleH <= 1`, скло повністю вимикається (`bgActor.hide()`, `opacity = 0`).
+        * Повністю видалено старий 230-рядковий fallback-блок фабрикації штучної порожньої плашки за відсутності елементів: тепер, якщо плашка та іконки відсутні (`!hasSlabBounds && !hasIconBounds`), скло безумовно приховується.
+      - Усі зміни синхронізовано до встановленого розширення `~/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/` та успішно застосовано наживо до робочого середовища GNOME Shell без перезапуску сесії.
+   4. Верифікація:
+      - Перевірка поведінки у повноекранному режимі: при `inFullscreen = true` стан `bgActorVisible = false`, `bgActorOpacity = 0`. Порожня капсула скла поверх повноекранних ігор та додатків повністю зникає.
+      - Перевірка виходу з повноекранного режиму: стан відновлюється миттєво (`bgActorVisible = true`, `bgActorOpacity = 255`, `lastBgY = 974`).
+      - Перевірка приховування дока при автоприховуванні: при переході `d2d.visible = false` або `_dockState = 0` скло надійно вимикається (`bgActorVisible = false`, `bgActorOpacity = 0`).
+      - Геометрія дока у спокійному стані повністю збережена та відкалібрована (`lastBgX = 555, lastBgY = 974, lastBgW = 810, lastBgH = 122`, ідеальні відступи 13px зверху та 15px знизу від іконок).
