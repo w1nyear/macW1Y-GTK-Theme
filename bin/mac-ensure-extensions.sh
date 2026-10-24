@@ -18,7 +18,6 @@ REQUIRED_EXTENSIONS=(
     "volume-percentage-quick-settings@imdarktom"
     "quick-settings-scroll@diskmth.fr"
     "wifi-hotspot-quick-settings@aryan10.github.io"
-    "tahoe-widgets@micronix"
     "dash2dock-motion@unmade.space"
     "top-bar-organizer@julian.gse.jsts.xyz"
     "run-cmd@custom.extension"

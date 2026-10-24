@@ -65,11 +65,9 @@
 5. **[`eval-helper@mactheme`](file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/)**
    - D-Bus інтерфейс `org.gnome.Shell.Extensions.EvalHelper` за шляхом `/org/gnome/Shell/Extensions/EvalHelper`.
    - Дозволяє виконувати довільний JavaScript у контексті GNOME Shell з python-скриптів.
-6. **[`tahoe-widgets@micronix`](file:///home/vitaliy/.local/share/gnome-shell/extensions/tahoe-widgets@micronix/)**
-   - Віджети на робочому столі (Погода, Календар, Годинник, Дата) з рідким склом.
-7. **[`wack-lockscreen-clock@rinzler69-wastaken.github.com`](file:///home/vitaliy/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/)**
+6. **[`wack-lockscreen-clock@rinzler69-wastaken.github.com`](file:///home/vitaliy/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/)**
    - Екран блокування та GDM гретер у стилі Cupertino.
-8. **[`dash2dock-motion@unmade.space`](file:///home/vitaliy/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/) та [`cupertino-dock-lite`](file:///home/vitaliy/.local/share/gnome-shell/extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/)**
+7. **[`dash2dock-motion@unmade.space`](file:///home/vitaliy/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/) та [`cupertino-dock-lite`](file:///home/vitaliy/.local/share/gnome-shell/extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/)**
    - Нижня Dock-панель із фізикою збільшення іконок та скляним матовим тінтом.
 
 ---

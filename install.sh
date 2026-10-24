@@ -637,7 +637,6 @@ install_extensions() {
         "volume-percentage-quick-settings@imdarktom"
         "quick-settings-scroll@diskmth.fr"
         "wifi-hotspot-quick-settings@aryan10.github.io"
-        "tahoe-widgets@micronix"
         "dash2dock-motion@unmade.space"
         "top-bar-organizer@julian.gse.jsts.xyz"
         "run-cmd@custom.extension"
@@ -689,16 +688,17 @@ install_extensions() {
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com desktop-menu-tint-strength 0.02 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com osd-tint-strength 0.02 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-toggle-tint-strength 0.02 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-tint-strength 0.02 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-tint-strength 0.12 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-tint-strength 0.02 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com notification-tint-strength 0.02 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com notification-tint-strength 0.12 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 48 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock autohide true 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock intellihide true 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock intellihide-mode 'ALL_WINDOWS' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock require-pressure-to-show false 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-corner-radius 24.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-corner-radius 26.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-margin-bottom 8 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super>m']" 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.appmenu clipboard-shortcut "['<Super>v']" 2>/dev/null || true
     log_success "Розширення GNOME Shell успішно налаштовано!"
@@ -1576,7 +1576,6 @@ run_incremental_update() {
             "volume-percentage-quick-settings@imdarktom"
             "quick-settings-scroll@diskmth.fr"
             "wifi-hotspot-quick-settings@aryan10.github.io"
-            "tahoe-widgets@micronix"
             "dash2dock-motion@unmade.space"
             "top-bar-organizer@julian.gse.jsts.xyz"
             "run-cmd@custom.extension"

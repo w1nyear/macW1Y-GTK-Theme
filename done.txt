@@ -9322,3 +9322,26 @@ echo "==> Встановлення успішно завершено!"
       - `slabTransPos` змістився з 996 на 992px.
       - `bgY` змістився з 978 на 974px (pillY з 1002 на 998px).
       - Нижня кромка капсули доку тепер знаходиться на позначці 1072px, утворюючи акуратний симетричний 8px зазор до нижнього краю екрана (1080px).
+132. Повне видалення старих віджетів (tahoe-widgets) із системи та репозиторію проекту, синхронізація доку (24.10.2026):
+   1. Завдання:
+      - Повністю видалити старі віджети робочого столу (`tahoe-widgets@micronix`) з поточної системи та з файлів проекту перед заміною на нові віджети.
+      - Синхронізувати останні прийняті параметри дока (`dock-margin-bottom=8`, `dock-tint-strength=0.12`, `dock-corner-radius=26.0`) з репозиторієм та установником `install.sh`.
+   2. Виконані зміни:
+      - Видалення з живої системи:
+        * Розширення `tahoe-widgets@micronix` вимкнено через `gnome-extensions disable`.
+        * Видалено робочий каталог `~/.local/share/gnome-shell/extensions/tahoe-widgets@micronix`.
+        * Очищено конфігурацію в DConf через `dconf reset -f /org/gnome/shell/extensions/tahoe-widgets/`.
+        * Вилучено `tahoe-widgets@micronix` зі списку `disabled-extensions` та `enabled-extensions` у `org.gnome.shell`.
+        * Перевірено групу фону `Main.layoutManager._backgroundGroup`: усі контейнери віджетів та шар рідкого скла `liquid-glass-bg-actor-tahoe-widgets` безслідно видалено.
+      - Очищення та видалення з файлів репозиторію:
+        * Повністю видалено директорію розширення: [extensions/tahoe-widgets@micronix/](file:///home/vitaliy/MACTHEMEFILES/extensions/tahoe-widgets@micronix/).
+        * У [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh): вилучено `tahoe-widgets@micronix` зі списків `EXT_LIST` та валідації; синхронізовано калібрування дока (`dock-margin-bottom 8`, `dock-tint-strength 0.12`, `dock-corner-radius 26.0`).
+        * У [bin/mac-ensure-extensions.sh](file:///home/vitaliy/MACTHEMEFILES/bin/mac-ensure-extensions.sh) та `~/.local/bin/mac-ensure-extensions.sh`: вилучено `tahoe-widgets@micronix` зі списку автозапуску.
+        * У [macos-gdm/99_mactheme.gschema.override](file:///home/vitaliy/MACTHEMEFILES/macos-gdm/99_mactheme.gschema.override) та `/usr/share/glib-2.0/schemas/99_mactheme.gschema.override`: вилучено з системних списків `enabled-extensions` та скомпільовано схеми (`glib-compile-schemas`).
+        * Усі дампи DConf синхронізовано з живою системою без старих віджетів: [dconf/gnome-all.dconf](file:///home/vitaliy/MACTHEMEFILES/dconf/gnome-all.dconf), [dconf/gnome-extensions.dconf](file:///home/vitaliy/MACTHEMEFILES/dconf/gnome-extensions.dconf), [dconf/gnome-shell.dconf](file:///home/vitaliy/MACTHEMEFILES/dconf/gnome-shell.dconf), [dconf/liquid-glass.dconf](file:///home/vitaliy/MACTHEMEFILES/dconf/liquid-glass.dconf).
+        * У [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js): вилучено звернення до схеми віджетів, закріплено єдині константи скляного тінту сповіщень `[0.16, 0.16, 0.18]` (12%).
+        * У [AI_INSTRUCTIONS.md](file:///home/vitaliy/MACTHEMEFILES/AI_INSTRUCTIONS.md): прибрано згадку про старе розширення віджетів.
+   3. Верифікація:
+      - `gnome-extensions list --enabled`: віджети відсутні, система працює стабільно.
+      - Повний пошук `grep -rn "tahoe-widgets"` по репозиторію: збігів немає (ALL CLEAN).
+      - Робоче дерево та дампи готові до інтеграції нових віджетів.

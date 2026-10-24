@@ -1101,29 +1101,11 @@ function _flushToastQueue() {
 // --- скло тостів: мультирегіон-стек LiquidEffect ---
 
 
-// === Скло тостів = точний конфіг віджетів робочого столу
-// (tahoe-widgets@micronix): той самий .frag, слабкий тінт користувача,
-// refraction ior 2.4 / displacement 92 / rim-набір. Головне — НЕ наш
-// білий тінт: фон картки дає лишей шейдер скла.
+// === Скло тостів: Liquid Glass мультирегіон-стек
 function _applyWidgetGlassParams(effect) {
     if (!effect)
         return;
     let tint = [0.16, 0.16, 0.18], strength = 0.12, blur = 4, sat = 1.0;
-    try {
-        const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
-        try {
-            const raw = String(sset.get_string('glass-tint') || '');
-            const nums = raw.match(/[\d.]+/g);
-            if (nums && nums.length >= 3) {
-                const c = nums.slice(0, 3).map((x) => Math.min(1, Math.max(0, parseFloat(x) / 255)));
-                if (c.every((v) => isFinite(v)))
-                    tint = c;
-            }
-        } catch (_) {}
-        try { strength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 12) / 100)); } catch (_) {}
-        try { blur = Math.min(60, Math.max(0, _readIntSetting(sset, 'glass-blur', blur))); } catch (_) {}
-        try { sat = Math.min(2, Math.max(0.2, _readIntSetting(sset, 'glass-saturation', 100) / 100)); } catch (_) {}
-    } catch (_) {}
     // для фону з вікнами беремо свій notification-blur (8) - саме
     // його LiquidGlass-автори поставили для банерів
     try {
@@ -1252,20 +1234,7 @@ function _syncToastGlass(monitor, s) {
         s.bgActor.translation_x = _toastBox ? _toastBox.translation_x : 0;
         s.bgActor.translation_y = _toastBox ? _toastBox.translation_y : 0;
         // єдиний тінт скла 12% [0.16, 0.16, 0.18], розмиття, заломлення
-        let glassTint = [0.16, 0.16, 0.18], glassStrength = 0.12;        try {
-            const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
-            const raw = String(sset.get_string('glass-tint') || '');
-            const nums = raw.match(/[\d.]+/g);
-            if (nums && nums.length >= 3) {
-                const c = nums;
-                if (c && c.length >= 3) {
-                    const cc = c.slice(0, 3).map((x) => Math.min(1, Math.max(0, parseFloat(x) / 255)));
-                    if (cc.every((v) => isFinite(v)))
-                        glassTint = cc;
-                }
-            }
-            glassStrength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 12) / 100));
-        } catch (_) {}
+        let glassTint = [0.16, 0.16, 0.18], glassStrength = 0.12;
         const fill = {c: glassTint, a: glassStrength};
         for (const r of regions) {
             r.tintR = fill.c[0];
@@ -2137,19 +2106,6 @@ function _watchTray(p) {
 function _widgetGlassFill() {
     // єдиний тінт і сила [0.16, 0.16, 0.18] 12%
     let tint = [0.16, 0.16, 0.18], strength = 0.12;
-    try {
-        const sset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.tahoe-widgets' });
-        try {
-            const raw = String(sset.get_string('glass-tint') || '');
-            const nums = raw.match(/[\d.]+/g);
-            if (nums && nums.length >= 3) {
-                const c = nums.slice(0, 3).map((x) => Math.min(1, Math.max(0, parseFloat(x) / 255)));
-                if (c.every((v) => isFinite(v)))
-                    tint = c;
-            }
-        } catch (_) {}
-        try { strength = Math.min(1, Math.max(0, _readIntSetting(sset, 'glass-tint-strength', 12) / 100)); } catch (_) {}
-    } catch (_) {}
     return {c: tint, a: strength};
 }
 
