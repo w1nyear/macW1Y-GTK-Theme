@@ -4642,41 +4642,12 @@ scrolledwindow viewport.frame .frame > textview > text {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-scrolledwindow > overshoot.top {
-  background-image: radial-gradient(farthest-side at top, alpha(currentColor,0.12) 85%, alpha(currentColor,0)), radial-gradient(farthest-side at top, alpha(currentColor,0.05), alpha(currentColor,0));
-  background-size: 100% 3%, 100% 50%;
-  background-repeat: no-repeat;
-  background-position: top;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-scrolledwindow > overshoot.bottom {
-  background-image: radial-gradient(farthest-side at bottom, alpha(currentColor,0.12) 85%, alpha(currentColor,0)), radial-gradient(farthest-side at bottom, alpha(currentColor,0.05), alpha(currentColor,0));
-  background-size: 100% 3%, 100% 50%;
-  background-repeat: no-repeat;
-  background-position: bottom;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-scrolledwindow > overshoot.left {
-  background-image: radial-gradient(farthest-side at left, alpha(currentColor,0.12) 85%, alpha(currentColor,0)), radial-gradient(farthest-side at left, alpha(currentColor,0.05), alpha(currentColor,0));
-  background-size: 3% 100%, 50% 100%;
-  background-repeat: no-repeat;
-  background-position: left;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-
+scrolledwindow > overshoot.top,
+scrolledwindow > overshoot.bottom,
+scrolledwindow > overshoot.left,
 scrolledwindow > overshoot.right {
-  background-image: radial-gradient(farthest-side at right, alpha(currentColor,0.12) 85%, alpha(currentColor,0)), radial-gradient(farthest-side at right, alpha(currentColor,0.05), alpha(currentColor,0));
-  background-size: 3% 100%, 50% 100%;
-  background-repeat: no-repeat;
-  background-position: right;
+  background: none;
+  background-image: none;
   background-color: transparent;
   border: none;
   box-shadow: none;

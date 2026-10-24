@@ -81,3 +81,51 @@ menuitem:hover,
   background-color: @theme_selected_bg_color;
   color: @theme_selected_fg_color;
 }
+
+/* ============================================================
+   Completely remove overscroll glow (overshoot) and fake gradients
+   across all GTK3 applications
+   ============================================================ */
+overshoot,
+overshoot.top,
+overshoot.bottom,
+overshoot.left,
+overshoot.right,
+scrolledwindow overshoot,
+scrolledwindow overshoot.top,
+scrolledwindow overshoot.bottom,
+scrolledwindow overshoot.left,
+scrolledwindow overshoot.right,
+scrolledwindow > overshoot,
+scrolledwindow > overshoot.top,
+scrolledwindow > overshoot.bottom,
+scrolledwindow > overshoot.left,
+scrolledwindow > overshoot.right {
+  background: none;
+  background-image: none;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+undershoot,
+undershoot.top,
+undershoot.bottom,
+undershoot.left,
+undershoot.right,
+scrolledwindow undershoot,
+scrolledwindow undershoot.top,
+scrolledwindow undershoot.bottom,
+scrolledwindow undershoot.left,
+scrolledwindow undershoot.right,
+scrolledwindow > undershoot,
+scrolledwindow > undershoot.top,
+scrolledwindow > undershoot.bottom,
+scrolledwindow > undershoot.left,
+scrolledwindow > undershoot.right {
+  background: none;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+

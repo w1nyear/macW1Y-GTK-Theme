@@ -111,3 +111,61 @@ popover.menu listview > row:active {
   background-color: var(--accent-bg-color, #3584e4);
   color: var(--accent-fg-color, #ffffff);
 }
+
+/* ============================================================
+   Completely remove overscroll glow (overshoot) and fake gradients
+   across all GTK4/Libadwaita applications (Settings, Nautilus, etc.)
+   ============================================================ */
+overshoot,
+overshoot.top,
+overshoot.bottom,
+overshoot.left,
+overshoot.right,
+scrolledwindow > overshoot,
+scrolledwindow > overshoot.top,
+scrolledwindow > overshoot.bottom,
+scrolledwindow > overshoot.left,
+scrolledwindow > overshoot.right,
+scrolledwindow overshoot,
+scrolledwindow overshoot.top,
+scrolledwindow overshoot.bottom,
+scrolledwindow overshoot.left,
+scrolledwindow overshoot.right,
+viewport > overshoot,
+viewport overshoot {
+  background: none;
+  background-image: none;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+undershoot,
+undershoot.top,
+undershoot.bottom,
+undershoot.left,
+undershoot.right,
+scrolledwindow > undershoot,
+scrolledwindow > undershoot.top,
+scrolledwindow > undershoot.bottom,
+scrolledwindow > undershoot.left,
+scrolledwindow > undershoot.right,
+scrolledwindow undershoot,
+scrolledwindow undershoot.top,
+scrolledwindow undershoot.bottom,
+scrolledwindow undershoot.left,
+scrolledwindow undershoot.right,
+.sidebar-pane undershoot,
+.sidebar-pane undershoot.top,
+.sidebar-pane undershoot.bottom,
+.sidebar-pane scrolledwindow > undershoot.top,
+.sidebar-pane scrolledwindow > undershoot.bottom,
+.content-pane undershoot,
+.content-pane scrolledwindow > undershoot.top,
+.content-pane scrolledwindow > undershoot.bottom {
+  background: none;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+

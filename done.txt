@@ -9555,3 +9555,19 @@ echo "==> Встановлення успішно завершено!"
       - Перевірено завантаження випадаючих списків `AdwComboRow`: відображаються реальні відеокарти користувача замість статичних заглушок.
       - Перевірено збереження конфігурації при перемиканні пунктів та автоматичну появу рядка перезавантаження з кнопкою «Перезавантажити…».
       - Перевірено відсутність збоїв, зависань чи помилок у роботі `gnome-control-center power`.
+489. [2026-10-24] Completely eliminate overscroll glow and radial gradients (overshoot/undershoot) across all GTK4/Libadwaita and GTK3 applications (Settings, Nautilus, etc.):
+   1. Проблема:
+      - При прокручуванні списку до кінця (вгору, вниз чи вбік) у GNOME Settings («Параметри»), Nautilus чи інших програмах при подальшому натягуванні списку з'являлося яскраве біле радіальне сяйво (дугоподібний градієнт GTK overscroll glow `scrolledwindow > overshoot`).
+      - Це сяйво формувалося правилами `radial-gradient(farthest-side at top, alpha(currentColor,0.12) 85%, ...)` та `-gtk-gradient(radial, ...)` і псувало автентичний вигляд розмитого скла macOS Sonoma/Tahoe.
+   2. Виконані виправлення:
+      - У конфігураціях користувача `~/.config/gtk-4.0/gtk.css` та `~/.config/gtk-3.0/gtk.css`:
+        * Виправлено 16 синтаксичних помилок парсера GTK CSS (вилучено непідтримувані модифікатори `!important` для властивостей `border-radius`, `transition`, `background-clip`).
+        * Замінено вихідні правила `scrolledwindow > overshoot.*` на чисті прозорі властивості (`background: none; background-image: none; border: none; box-shadow: none;`).
+        * Додано глобальні термінальні правила для повного вимкнення `overshoot` та `undershoot` у всіх напрямках (top, bottom, left, right) для `scrolledwindow`, `viewport`, `.sidebar-pane` та `.content-pane`.
+      - Оновлено всі файли розширення Kiwi та теми:
+        * `extensions/kiwi@kemma/css/fixes4.css`, `extensions/kiwi@kemma/css/fixes3.css` та їх копії в `config/` і `gtk-*/`.
+        * Усі варіанти тем `macW1Y-Dark`, `macW1Y-Light`, `macW1Y-Dark-solid`, `macW1Y-Light-solid` (для GTK 4.0 та GTK 3.0).
+        * Синхронізовано оновлені стилі до `~/.themes/` та системного каталогу `/usr/share/themes/`.
+   3. Верифікація:
+      - Перевірено запуск `gnome-control-center` та інших GTK-програм: відсутні будь-які помилки парсера CSS.
+      - Перевірено поведінку списків при досягненні меж: сяйво та градієнтні смуги повністю відсутні у всіх напрямках прокрутки.

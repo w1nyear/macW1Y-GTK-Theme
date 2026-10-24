@@ -4038,41 +4038,12 @@ scrolledwindow viewport.frame > box.vertical list.frame list > row.activatable, 
   border-radius: 0;
 }
 
-scrolledwindow overshoot.top {
-  background-image: -gtk-gradient(radial, center top, 0, center top, 0.5, to(rgba(255, 255, 255, 0.12)), to(rgba(255, 255, 255, 0))), -gtk-gradient(radial, center top, 0, center top, 0.6, from(rgba(218, 218, 218, 0.07)), to(rgba(218, 218, 218, 0)));
-  background-size: 100% 5%, 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center top;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-scrolledwindow overshoot.bottom {
-  background-image: -gtk-gradient(radial, center bottom, 0, center bottom, 0.5, to(rgba(255, 255, 255, 0.12)), to(rgba(255, 255, 255, 0))), -gtk-gradient(radial, center bottom, 0, center bottom, 0.6, from(rgba(218, 218, 218, 0.07)), to(rgba(218, 218, 218, 0)));
-  background-size: 100% 5%, 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center bottom;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-scrolledwindow overshoot.left {
-  background-image: -gtk-gradient(radial, left center, 0, left center, 0.5, to(rgba(255, 255, 255, 0.12)), to(rgba(255, 255, 255, 0))), -gtk-gradient(radial, left center, 0, left center, 0.6, from(rgba(218, 218, 218, 0.07)), to(rgba(218, 218, 218, 0)));
-  background-size: 5% 100%, 100% 100%;
-  background-repeat: no-repeat;
-  background-position: left center;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-
+scrolledwindow overshoot.top,
+scrolledwindow overshoot.bottom,
+scrolledwindow overshoot.left,
 scrolledwindow overshoot.right {
-  background-image: -gtk-gradient(radial, right center, 0, right center, 0.5, to(rgba(255, 255, 255, 0.12)), to(rgba(255, 255, 255, 0))), -gtk-gradient(radial, right center, 0, right center, 0.6, from(rgba(218, 218, 218, 0.07)), to(rgba(218, 218, 218, 0)));
-  background-size: 5% 100%, 100% 100%;
-  background-repeat: no-repeat;
-  background-position: right center;
+  background: none;
+  background-image: none;
   background-color: transparent;
   border: none;
   box-shadow: none;
