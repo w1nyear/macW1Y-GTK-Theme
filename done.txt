@@ -9308,3 +9308,17 @@ echo "==> Встановлення успішно завершено!"
    4. Верифікація:
       - Проведено покадрове логування (60 кадрів / 1200 мс) під час запуску та анімації появи нової програми: `uniqueHeights` = [122] (рівно 74px висоти капсули), `uniqueYs` = [978] (без найменшого коливання по вертикалі), капсула плавно розширюється по горизонталі (з 747px до 809px) і акуратно повертається після закриття.
       - Усі 11 іконок доку та сепаратор опущені на 1px донизу зі збереженням бездоганного macOS вигляду.
+131. Відступ усього доку від нижнього краю екрана (24.10.2026):
+   1. Завдання:
+      - Збільшити відступ усього доку від нижнього краю екрана на кілька пікселів (зробити плаваючий док вище над рамкою дисплея).
+   2. Виконані зміни:
+      - У [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js) та [src/dockManager.ts](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts):
+        * Замість жорстко зашитого 4px відступу у розрахунку `pillY = monitor.y + monitor.height - 4 - pillH` інтегровано динамічне зчитування параметра `dock-margin-bottom` (за замовчуванням 8px): `pillY = monitor.y + monitor.height - marginBottom - pillH`.
+        * Значення `dock-margin-bottom` у dconf/GSettings встановлено на 8px (збільшено на 4px від попередніх 4px).
+        * Завдяки механізму `_applyMargin()` весь контейнер доку `dashtodockDashContainer` отримав `margin-bottom: 8px;`, синхронно піднявши вгору на 4px графіку всіх значків, крапки відкритих програм, розділювач та підкладку `dash-background`.
+      - Синхронізовано файли з `~/.local/share/gnome-shell/extensions/`, зміни гаряче застосовано в сесії.
+   3. Верифікація:
+      - `targetTransPos` змістився з 992 на 988px.
+      - `slabTransPos` змістився з 996 на 992px.
+      - `bgY` змістився з 978 на 974px (pillY з 1002 на 998px).
+      - Нижня кромка капсули доку тепер знаходиться на позначці 1072px, утворюючи акуратний симетричний 8px зазор до нижнього краю екрана (1080px).

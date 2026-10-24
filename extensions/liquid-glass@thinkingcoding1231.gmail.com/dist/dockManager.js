@@ -537,6 +537,8 @@ export class DashManager {
             monitorIndex = Main.layoutManager.primaryIndex;
         }
         let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
+        let marginBottom = this._settings ? this._settings.get_int('dock-margin-bottom') : 8;
+        if (!Number.isFinite(marginBottom) || marginBottom < 0) marginBottom = 8;
 
         // macOS Dock: authoritative geometry directly from dash2dock-motion background slab
         let hasSlabBounds = false;
@@ -558,7 +560,7 @@ export class DashManager {
                 let pillW = slW - 8;
                 let pillX = slX + 4;
                 let pillH = 74; // 74px (+2px dock height calibrated)
-                let pillY = monitor ? (monitor.y + monitor.height - 4 - pillH) : 1002;
+                let pillY = monitor ? (monitor.y + monitor.height - marginBottom - pillH) : (1080 - marginBottom - pillH);
                 absX = pillX - 4;
                 absY = pillY - 4;
                 baseW = pillW + 8;
@@ -603,7 +605,7 @@ export class DashManager {
                 if (isHorizontal) {
                     pillH = 74; // 74px fixed height (+2px dock height calibrated)
                     let isTop = monitor && (minY - monitor.y < (monitor.y + monitor.height) - maxY);
-                    pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - 4 - pillH) : 1002);
+                    pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - marginBottom - pillH) : (1080 - marginBottom - pillH));
                     let sidePadL = sidePad + Math.max(0, (icons[0]?.w || baseIconW) / (baseIconW || 54) - 1) * 10;
                     let sidePadR = sidePad + Math.max(0, (icons[icons.length - 1]?.w || baseIconW) / (baseIconW || 54) - 1) * 10;
                     pillX = minX - sidePadL;
@@ -627,7 +629,7 @@ export class DashManager {
 
         if (!hasSlabBounds && !hasIconBounds) {
             let pillH = 74;
-            let pillY = monitor ? (monitor.y + monitor.height - 4 - pillH) : 1002;
+            let pillY = monitor ? (monitor.y + monitor.height - marginBottom - pillH) : (1080 - marginBottom - pillH);
             absY = pillY - 4;
             baseH = pillH + 8;
             if (sourceActor !== this.targetActor) {
