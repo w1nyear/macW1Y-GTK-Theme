@@ -85,7 +85,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] labelBlur: ${e}`);
         }
         try {
-            const osdUri = this.dir.get_child('apps').get_child('tahoeOSD.js').get_uri() + '?v=osd_v3';
+            const osdUri = this.dir.get_child('apps').get_child('tahoeOSD.js').get_uri() + '?v=osd_v4';
             import(osdUri).then(mod => {
                 if (this._tahoeOSD && this._tahoeOSD !== mod) {
                     try { this._tahoeOSD.disable(); } catch (_) {}

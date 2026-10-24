@@ -9458,3 +9458,15 @@ echo "==> Встановлення успішно завершено!"
    - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/stylesheet.css:
      * Set opacity: 0 on .unlock-dialog .wack-cupertino-prompt .user-widget.vertical and .user-widget-label to enforce zero duplicate avatar/name rendering while preserving its 88px layout spacing
    - Synced all modifications across wack-system, ~/.local/share/gnome-shell/extensions, and /usr/share/gnome-shell/extensions; hot-reloaded running GNOME Shell modules and theme resource.
+485. [2026-10-24] Fix OSD menu shadow rendered under inner elements instead of beneath the glass shader menu (macOS Tahoe style):
+   - extensions/kiwi@kemma/stylesheet.css:
+     * Set `box-shadow: none !important;` on `.tahoe-osd` container, completely removing the inner drop shadow previously cast onto the frosted glass surface underneath the elements (title, icons, slider)
+     * Added `.tahoe-osd-shadow` with `border-radius: 22px; background-color: transparent; border: none !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.20);` for an authentic macOS Tahoe/Sequoia ambient drop shadow
+   - extensions/kiwi@kemma/apps/tahoeOSD.js and apps/tahoeOnScreenDisplay.js:
+     * Created dedicated background shadow actor `_osdShadow` (`St.Widget`) with `style_class: 'tahoe-osd-shadow'`
+     * Stacked `_osdShadow` beneath `s.bgActor` (the LiquidEffect glass shader stack) in `Main.layoutManager.uiGroup`, ensuring the drop shadow projects onto the desktop wallpaper and windows behind the OSD pill
+     * Added `_osdShadow` to `s.uiSampler.addExclusion()` to prevent shadow texture from being sampled into the background blur texture
+     * Synchronized geometry, position (`set_position`), size (`set_size`), easing (`ease`), and visibility (`show`/`hide`) of `_osdShadow` with `_box`
+   - extensions/kiwi@kemma/extension.js:
+     * Bumped cache-busting query parameter for `tahoeOSD.js` to `?v=osd_v4`
+   - Synced all modified files to `~/.local/share/gnome-shell/extensions/kiwi@kemma/` and live-reloaded the theme and OSD module in GNOME Shell.

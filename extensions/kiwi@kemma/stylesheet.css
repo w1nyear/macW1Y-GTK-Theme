@@ -1262,13 +1262,23 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 #panel .panel-button.screen-sharing-indicator StIcon { color: #ffffff; }
 
 /* Tahoe volume/brightness OSD: macOS Sequoia / Tahoe style glass pill */
+.tahoe-osd-shadow {
+    border-radius: 22px;
+    background-color: transparent;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.20);
+}
 .tahoe-osd {
     background-color: transparent;
     border-radius: 22px;
     border: 1px solid rgba(255, 255, 255, 0.16) !important;
     padding: 10px 14px 12px 14px;
     spacing: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    box-shadow: none !important;
 }
 .tahoe-osd-head {
     spacing: 0;

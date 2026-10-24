@@ -113,6 +113,7 @@ const TahoeSegSlider = GObject.registerClass({
 });
 
 let _box = null;
+let _osdShadow = null;
 let _title = null;
 let _iconL = null;
 let _iconR = null;
@@ -315,6 +316,14 @@ function _ensureGlass() {
         try {
             s.bgActor.hide();
         } catch (_) {}
+        if (_osdShadow) {
+            try {
+                Main.layoutManager.uiGroup.set_child_below_sibling(_osdShadow, s.bgActor);
+            } catch (_) {}
+            try {
+                s.uiSampler.addExclusion(_osdShadow);
+            } catch (_) {}
+        }
         try {
             Main.layoutManager.uiGroup.set_child_below_sibling(s.bgActor, _box);
         } catch (_) {}
@@ -344,6 +353,15 @@ function _syncGlass() {
         const bw = _box.width, bh = _box.height;
         if (!(bw > 0) || !(bh > 0) || !isFinite(bx) || !isFinite(by))
             return false;
+
+        if (_osdShadow) {
+            _osdShadow.set_position(bx, by);
+            _osdShadow.set_size(bw, bh);
+            try {
+                Main.layoutManager.uiGroup.set_child_below_sibling(_osdShadow, s.bgActor);
+                Main.layoutManager.uiGroup.set_child_below_sibling(s.bgActor, _box);
+            } catch (_) {}
+        }
 
         s.bgActor.set_position(monitor.x, monitor.y);
         if (!s.bgActor.visible)
@@ -402,13 +420,32 @@ function _destroyGlass() {
 
 function _hideNow() {
     _hideId = 0;
-    if (!_box)
-        return GLib.SOURCE_REMOVE;
     if (_glass) {
         try {
             _glass.bgActor.hide();
         } catch (_) {}
     }
+    if (_osdShadow) {
+        try {
+            _osdShadow.ease({
+                opacity: 0,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => {
+                    try {
+                        if (_osdShadow)
+                            _osdShadow.hide();
+                    } catch (_) {}
+                },
+            });
+        } catch (_) {
+            try {
+                _osdShadow.hide();
+            } catch (_) {}
+        }
+    }
+    if (!_box)
+        return GLib.SOURCE_REMOVE;
     try {
         _box.ease({
             opacity: 0,
@@ -443,6 +480,11 @@ function _show(kind, title, iconL, iconR, value) {
                     _box.hide();
                 } catch (_) {}
             }
+            if (_osdShadow?.visible) {
+                try {
+                    _osdShadow.hide();
+                } catch (_) {}
+            }
             if (_glass) {
                 try {
                     _glass.bgActor.hide();
@@ -468,7 +510,15 @@ function _show(kind, title, iconL, iconR, value) {
         const panelH = Math.round(Main.layoutManager.panelBox?.height ?? 34);
         const cx = Math.max(monitor.x + OSD_W / 2,
             Math.min(monitor.x + monitor.width - OSD_W / 2, _anchorX(monitor)));
-        _box.set_position(Math.round(cx - OSD_W / 2), monitor.y + panelH + 8);
+        const boxX = Math.round(cx - OSD_W / 2);
+        const boxY = monitor.y + panelH + 8;
+        _box.set_position(boxX, boxY);
+        if (_osdShadow) {
+            _osdShadow.set_position(boxX, boxY);
+            _osdShadow.set_width(OSD_W);
+            if (_box.height > 0)
+                _osdShadow.set_height(_box.height);
+        }
 
         const firstShow = !_box.visible;
         try {
@@ -479,6 +529,10 @@ function _show(kind, title, iconL, iconR, value) {
         if (firstShow) {
             _box.opacity = 0;
             _box.show();
+            if (_osdShadow) {
+                _osdShadow.opacity = 0;
+                _osdShadow.show();
+            }
             let tries = 0;
             const step = () => {
                 let ok = false;
@@ -492,6 +546,12 @@ function _show(kind, title, iconL, iconR, value) {
                             opacity: 255, duration: 150,
                             mode: Clutter.AnimationMode.EASE_OUT_QUAD
                         });
+                        if (_osdShadow && _osdShadow.visible) {
+                            _osdShadow.ease({
+                                opacity: 255, duration: 150,
+                                mode: Clutter.AnimationMode.EASE_OUT_QUAD
+                            });
+                        }
                         return GLib.SOURCE_REMOVE;
                     }
                 } catch (_) {
@@ -502,10 +562,21 @@ function _show(kind, title, iconL, iconR, value) {
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 16, step);
         } else {
             _box.remove_all_transitions();
+            if (_osdShadow)
+                _osdShadow.remove_all_transitions();
             if (_box.opacity < 255) {
                 try {
                     _box.ease({opacity: 255, duration: 100, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
                 } catch (_) {}
+            }
+            if (_osdShadow) {
+                if (!_osdShadow.visible)
+                    _osdShadow.show();
+                if (_osdShadow.opacity < 255) {
+                    try {
+                        _osdShadow.ease({opacity: 255, duration: 100, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+                    } catch (_) {}
+                }
             }
             if (_glass?.bgActor && !_glass.bgActor.visible) {
                 try {
@@ -588,6 +659,12 @@ function _onBrightness(v) {
 export function enable() {
     disable();
     try {
+        const oldShadows = Main.layoutManager.uiGroup.get_children().filter(c =>
+            c.has_style_class_name && c.has_style_class_name('tahoe-osd-shadow')
+        );
+        for (const s of oldShadows) {
+            try { s.destroy(); } catch (_) {}
+        }
         const oldBoxes = Main.layoutManager.uiGroup.get_children().filter(c =>
             c.has_style_class_name && c.has_style_class_name('tahoe-osd')
         );
@@ -596,6 +673,15 @@ export function enable() {
         }
     } catch (_) {}
     try {
+        _osdShadow = new St.Widget({
+            style_class: 'tahoe-osd-shadow',
+            visible: false,
+            opacity: 0,
+            reactive: false,
+        });
+        _osdShadow.set_width(OSD_W);
+        Main.layoutManager.uiGroup.add_child(_osdShadow);
+
         _box = new St.BoxLayout({
             style_class: 'tahoe-osd',
             vertical: true,
@@ -740,6 +826,12 @@ export function disable() {
             _box.destroy();
         } catch (_) {}
         _box = null;
+    }
+    if (_osdShadow) {
+        try {
+            _osdShadow.destroy();
+        } catch (_) {}
+        _osdShadow = null;
     }
     _title = null;
     _iconL = null;
