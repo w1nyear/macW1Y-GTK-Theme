@@ -1,10 +1,11 @@
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as UserWidget from 'resource:///org/gnome/shell/ui/userWidget.js';
-import { getPromptBlendOverlay, getUserLabelStyle, getHintTextStyle } from './colorUtils.js';
+import { getUserLabelStyle, getHintTextStyle } from './colorUtils.js';
 
 export const WackCupertinoRestPrompt = GObject.registerClass(
     class WackCupertinoRestPrompt extends St.BoxLayout {
@@ -64,11 +65,6 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
                     this._user.disconnectObject(this);
                     this._user = null;
                 }
-                const avatar = this._avatarButton?.get_child();
-                if (avatar && avatar._wackOrigUpdate) {
-                    avatar.update = avatar._wackOrigUpdate;
-                    delete avatar._wackOrigUpdate;
-                }
             }, this);
 
             this.setUser(user);
@@ -82,18 +78,8 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
             this._user = user;
             if (this._user) {
                 this._user.connectObject(
-                    'notify::is-loaded', () => {
-                        const avatar = this._avatarButton?.get_child();
-                        if (avatar && typeof avatar.update === 'function')
-                            avatar.update();
-                        this.updateAvatarVibrancy();
-                    },
-                    'changed', () => {
-                        const avatar = this._avatarButton?.get_child();
-                        if (avatar && typeof avatar.update === 'function')
-                            avatar.update();
-                        this.updateAvatarVibrancy();
-                    },
+                    'notify::is-loaded', () => this.updateAvatarVibrancy(),
+                    'changed', () => this.updateAvatarVibrancy(),
                     this
                 );
             }
@@ -101,11 +87,6 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
             const oldChild = this._userWell.get_child();
             if (oldChild) {
                 if (this._avatarButton) {
-                    const oldAvatar = this._avatarButton.get_child();
-                    if (oldAvatar && oldAvatar._wackOrigUpdate) {
-                        oldAvatar.update = oldAvatar._wackOrigUpdate;
-                        delete oldAvatar._wackOrigUpdate;
-                    }
                     this._avatarButton.disconnectObject(this);
                     this._avatarButton = null;
                 }
@@ -127,21 +108,9 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
                     reactive: true,
                 });
                 userWidget.insert_child_at_index(this._avatarButton, 0);
-
-                if (!avatar._wackOrigUpdate) {
-                    avatar._wackOrigUpdate = avatar.update.bind(avatar);
-                    avatar.update = () => {
-                        if (avatar._wackUpdating)
-                            return;
-                        avatar._wackUpdating = true;
-                        try {
-                            avatar._wackOrigUpdate();
-                            this.updateAvatarVibrancy();
-                        } finally {
-                            avatar._wackUpdating = false;
-                        }
-                    };
-                }
+                /* ВАЖЛИВО (fix recursion): avatar.update() НІКОЛИ не перезаписується.
+                   Нативний Avatar.update() сам рендерить фото icon-file та
+                   фолбек person-icon; наші кольори — лише на this._avatarButton. */
 
                 this._avatarButton.connectObject('clicked', () => {
                     if (!this._extension?._promptActive) {
@@ -203,16 +172,37 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
 
         _getIconFile(avatar) {
             if (!avatar) return null;
-            let iconFile = avatar._user?.get_icon_file ? avatar._user.get_icon_file() : null;
-            if (iconFile && GLib.file_test(iconFile, GLib.FileTest.EXISTS)) return iconFile;
-            const userName = avatar._user?.get_user_name ? avatar._user.get_user_name() : (this._user?.get_user_name?.() || GLib.get_user_name());
+            const iconFile = avatar._user?.get_icon_file ? avatar._user.get_icon_file() : null;
+            if (iconFile && this._pathReadable(iconFile))
+                return iconFile;
+            const userName = avatar._user?.get_user_name() ?? this._user?.get_user_name?.();
             if (userName) {
                 const asIcon = `/var/lib/AccountsService/icons/${userName}`;
-                if (GLib.file_test(asIcon, GLib.FileTest.EXISTS)) return asIcon;
+                if (this._pathReadable(asIcon))
+                    return asIcon;
             }
             return null;
         }
 
+        /* Файл має бути не лише наявним, а й читабельним для gdm-процесу,
+           інакше St не намалює фото і користувач побачить порожнє коло. */
+        _pathReadable(candidatePath) {
+            try {
+                if (!candidatePath || !GLib.file_test(candidatePath, GLib.FileTest.EXISTS))
+                    return false;
+                return Gio.File.new_for_path(candidatePath)
+                    .query_info(Gio.FILE_ATTRIBUTE_ACCESS_CAN_READ, Gio.FileQueryInfoFlags.NONE, null)
+                    .get_attribute_boolean(Gio.FILE_ATTRIBUTE_ACCESS_CAN_READ);
+            } catch (_) {
+                return false;
+            }
+        }
+
+        /* Вібраність (fix recursion 23.10.2026): кольори ставимо ЛИШЕ на
+           this._avatarButton (St.Button). Актcr Avatar чіпаємо хіба що для
+           visibility/opacity — більше жодних avatar.set_style/child=null,
+           бо нативний vfunc_style_changed → update() перетворює такий
+           обмін стилями на «too much recursion». */
         updateAvatarVibrancy(avatarColor) {
             if (avatarColor)
                 this._lastAvatarColor = avatarColor;
@@ -222,54 +212,41 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
             this._updatingVibrancy = true;
             const avatar = this._avatarButton.get_child();
             const iconFile = this._getIconFile(avatar);
-            if (iconFile) {
-                if (avatar) {
-                    avatar.child = null;
-                    avatar.add_style_class_name('user-avatar');
-                    avatar.style = `
-                        background-image: url("${iconFile}");
-                        background-size: cover;
-                        border-radius: 999px !important;
-                    `;
-                    avatar.visible = true;
-                    avatar.opacity = 255;
-                }
-                if (this._avatarButton) {
-                    this._avatarButton.set_style('border-radius: 999px !important; background-color: transparent !important;');
+
+            const TRANSPARENT_WELL = 'background-color: transparent !important; border-radius: 999px !important;';
+
+            try {
+                if (iconFile) {
+                    // Фото рендериться нативно — кнопка лишається прозорою.
                     this._avatarButton.remove_style_class_name('wack-vibrancied');
+                    if (this._avatarButton.get_style() !== TRANSPARENT_WELL)
+                        this._avatarButton.set_style(TRANSPARENT_WELL);
                     this._avatarButton.visible = true;
                     this._avatarButton.opacity = 255;
-                }
-            } else if (color) {
-                this._avatarButton.add_style_class_name('wack-vibrancied');
-                const bgRgba = color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`;
-                const btnStyle = `background-color: ${bgRgba} !important; border-radius: 999px !important;`;
-                if (this._avatarButton.get_style() !== btnStyle)
-                    this._avatarButton.set_style(btnStyle);
-                let overlayRgba = color.overlayRgba;
-                if (!overlayRgba) {
-                    if (color.overlayR != null && color.overlayAlpha != null) {
-                        overlayRgba = `rgba(${color.overlayR}, ${color.overlayG}, ${color.overlayB}, ${color.overlayAlpha})`;
-                    } else {
-                        const overlay = getPromptBlendOverlay({ r: color.r, g: color.g, b: color.b });
-                        overlayRgba = `rgba(${overlay.overlayR}, ${overlay.overlayG}, ${overlay.overlayB}, ${overlay.blendAlpha.toFixed(4)})`;
+                    if (avatar) {
+                        avatar.visible = true;
+                        avatar.opacity = 255;
                     }
+                } else if (color) {
+                    this._avatarButton.add_style_class_name('wack-vibrancied');
+                    const bgRgba = color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`;
+                    const btnStyle = `background-color: ${bgRgba} !important; border-radius: 999px !important;`;
+                    if (this._avatarButton.get_style() !== btnStyle)
+                        this._avatarButton.set_style(btnStyle);
+                    this._avatarButton.visible = true;
+                    this._avatarButton.opacity = 255;
+                    if (avatar) {
+                        avatar.visible = true;
+                        avatar.opacity = 255;
+                    }
+                } else {
+                    this._avatarButton.remove_style_class_name('wack-vibrancied');
+                    if (this._avatarButton.get_style() !== TRANSPARENT_WELL)
+                        this._avatarButton.set_style(TRANSPARENT_WELL);
                 }
-                const avOverlayStyle = `background-color: ${overlayRgba} !important; border-radius: 999px !important;`;
-                if (avatar && avatar.get_style() !== avOverlayStyle)
-                    avatar.set_style(avOverlayStyle);
-                if (avatar)
-                    avatar.clip_to_allocation = false;
-                if (this._avatarButton)
-                    this._avatarButton.clip_to_allocation = false;
-                const child = avatar?.get_child();
-                if (child) {
-                    const iconStyle = 'background-color: transparent !important; border-radius: 999px !important;';
-                    if (child.get_style() !== iconStyle)
-                        child.set_style(iconStyle);
-                }
+            } finally {
+                this._updatingVibrancy = false;
             }
-            this._updatingVibrancy = false;
         }
 
 

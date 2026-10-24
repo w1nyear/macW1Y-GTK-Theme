@@ -80,6 +80,62 @@
     icon-size: 24px;
 }
 
+#panel.unlock-screen,
+#panel.login-screen {
+    background-color: transparent !important;
+    background-gradient-direction: none !important;
+    background-gradient-start: transparent !important;
+    background-gradient-end: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    height: 34px !important;
+}
+
+#panel.unlock-screen .panel-button,
+#panel.login-screen .panel-button {
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;
+    padding: 0 8px !important;
+    height: 34px !important;
+}
+
+#panel.unlock-screen .panel-button:hover,
+#panel.login-screen .panel-button:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    border-radius: 6px !important;
+}
+
+.wack-lockscreen-battery {
+    margin: 0 !important;
+    padding: 0 6px !important;
+    height: 34px !important;
+}
+
+.wack-battery-box {
+    spacing: 6px;
+    padding: 0 4px;
+}
+
+.wack-battery-label {
+    font-family: SF Pro Text, Cantarell, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;
+}
+
+.wack-battery-icon {
+    icon-size: 20px !important;
+}
+
+.wack-cc-icon {
+    icon-size: 18px !important;
+}
+
 #panel.unlock-screen .panel-button StIcon,
 #panel.unlock-screen .panel-button .system-status-icon {
     icon-shadow: 0 0px 12px 2px rgba(0, 0, 0, 0.08);

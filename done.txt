@@ -9494,3 +9494,29 @@ echo "==> Встановлення успішно завершено!"
       - Стилі теми та модулі оновлено наживо через `EvalHelper` без необхідності перезапуску GNOME Shell.
       - Перевірено відкриття та закриття Notification Center: активний лише чистий стек розмиття карток `cards`, фоновий прямокутний backdrop відсутній, фон карток прозорий із чистим скляним шейдером.
       - Перевірено Control Center: ореол backdrop відсутній, пілюлі та картки відображаються на чистому рідкому склі без білої заливки та без 2px смуг.
+487. [2026-10-24] Update lockscreen menu bar in-session (unlock-dialog) and out-of-session (GDM): leave only Notification Center, Control Center, and Battery with authentic macOS look:
+   1. Проблема:
+      - На екрані блокування («при сесії» — `unlock-dialog`) та на екрані входу GDM («поза сесією» — `gdm`) менюбар відображався стандартним для GNOME Shell: у правому кутку виводився індикатор клавіатури «uk» (як видно на фото користувача), кнопки спеціальних можливостей (a11y) та dwellClick, а Центр керування та батарея були відсутні.
+      - У GDM годинник та дата (`dateMenu`) помилково виводилися по центру екрана, дублюючи великий годинник macOS Sonoma на шпалерах.
+      - Звичайні розширення робочого столу (`kiwi@kemma`, `run-cmd` тощо) не вмикаються на локскріні через обмеження `session-modes` у `metadata.json`, а `blur-my-shell` при переході в `unlock-dialog` цілеспрямовано вимикає `MenuBarController`, знищуючи кастомні віджети.
+   2. Виконані виправлення:
+      - Створено виділений менеджер менюбара локскріну `extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/lockscreenMenuBar.js` (`LockscreenMenuBarManager`):
+        * Працює як для сесійного локскріну (`unlock-dialog`), так і для системного екрана входу (`gdm`).
+        * При активації блокування перевизначає структуру `Main.sessionMode.panel`:
+          `{ left: [], center: [], right: ['quickSettings', 'dateMenu'] }`.
+        * Ліва (`_leftBox`) та центральна (`_centerBox`) секції менюбара повністю очищені від зайвих елементів.
+        * У правій секції (`_rightBox`) залишено виключно три елементи в оригінальному порядку macOS:
+          1) **Батарея**: динамічний віджет `wack-lockscreen-battery` із підключенням до системної шини UPower D-Bus (`/org/freedesktop/UPower`), що зчитує відсоток заряду (наприклад, `100%`) та відповідну іконку стану (`battery-level-100-charged-symbolic`), стилізований шрифтом SF Pro Text 14px (font-weight: 600, тінь тексту).
+          2) **Центр керування**: нативна кнопка `quickSettings`, у якій приховано стандартну купу системних піктограм (`_indicators`) та додано піктограму тумблерів macOS Control Center (`/usr/share/mactheme/icons/controlcenter.png`, розмір 18px), яка по кліку відкриває меню керування.
+          3) **Центр сповіщень**: кнопка дати й часу (`dateMenu`), зафіксована крайньою праворуч, зі шрифтом SF Pro Text 14px (font-weight: 500) та кліком для виклику/перемикання сповіщень локскріну.
+        * Усі інші елементи (`keyboard` / «uk», `a11y`, `dwellClick`, трей-іконки) примусово приховані.
+        * Підключено спостереження `actor-added` для захисту від раптової появи сторонніх індикаторів при перемиканні розкладки чи системних подіях.
+      - Інтегровано `LockscreenMenuBarManager` у:
+        * `extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/unlockDialogController.js` (сесійний локскрін `unlock-dialog`).
+        * `extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/pro.js` та `pro/pro.js` (системний екран входу GDM).
+      - У `stylesheet.css`, `src/pro/gdm.css` та `pro/gdm.css`:
+        * Додано стилі для `#panel.unlock-screen` та `#panel.login-screen`: прозорий фон, відсутність меж та градієнтів, висота 34px, точні macOS відступи та стилізація віджетів батареї й Центру керування.
+      - Усі зміни синхронізовано до `wack-system/`, локального каталогу `~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/` та системного `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`.
+   3. Верифікація:
+      - Успішно перевірено створення `LockscreenMenuBarManager`, читання батареї через UPower D-Bus, створення іконки Центру керування та застосування стилів годинника в GNOME Shell.
+      - Перевірено фільтрацію: активні лише Батарея, Центр керування та Центр сповіщень, індикатор «uk» та інші GNOME-іконки повністю приховано.

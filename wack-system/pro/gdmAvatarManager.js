@@ -2,9 +2,49 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
-import { _log } from './gdmUtils.js';
 import { getUserLabelStyle } from '../main/colorUtils.js';
-import { getAuthSubtitleText } from '../main/mainUtils.js';
+import { _log } from './gdmUtils.js';
+
+/**
+ * macW1Y GDM Avatar Manager v3 — без рекурсії стилів (23.10.2026)
+ *
+ * ПЕРВОПРИЧИНА БАГА «too much recursion» (журнал gnome-shell, 22.10.2026):
+ *   Нативний Avatar (resource:///org/gnome/shell/ui/userWidget.js, GNOME 50)
+ *   у vfunc_style_changed() шукає в темі параметр 'icon-size' і викликає
+ *   this.update(). Нативний update() САМ ставить background-image для фото
+ *   користувача (гілка icon-file) або скидає this.style = null (fallback).
+ *   Попередня версія менеджера ПЕРЕЗАПИСУВАЛА avatar.update() і одразу після
+ *   нативного оновлення ставила власні inline-стилі (кольорове коло / фон фото).
+ *   Отримувався вічний цикл: native змінює стиль → vfunc_style_changed →
+ *   знову update → наш стиль → style_changed → … «too much recursion».
+ *   Оболонка обривала рендер рядка, і фото аватарки так і не намальовувалось —
+ *   користувач бачив лишк білий person-icon на темному крузі.
+ *
+ * ПРАВИЛА ЦІЄЇ ВЕРСІЇ (безпечні щодо нативного циклу стилів):
+ *   1. Ми НІКОЛИ не перезаписуємо avatar.update() — нативний рендеринг
+ *      прекрасно сам малює фото icon-file (cover) та person-icon (fallback).
+ *   2. Ми НІКОЛИ не встановлюємо inline-стилі на актор Avatar — бо саме вони
+ *      тригерять vfunc_style_changed. Усі кольори «вібраності» ставимо лише
+ *      на обгортку-кнопку '.wack-avatar-well' (звичайний St.Button, поза
+ *      класною ієрархією Avatar — цикл неможливий).
+ *   3. Реакції на пізню появу фото робимо підписками на сигнали
+ *      AccountsService ('notify::is-loaded' / 'changed'), які викликають
+ *      ЛИШЕ updateAvatarVibrancy(), а не avatar.update().
+ */
+
+// Хелпер: файл існує ТА gdm-процес може його прочитати (інакше St не намалює фото).
+function _readableIconPath(candidatePath) {
+    try {
+        if (!candidatePath || !GLib.file_test(candidatePath, GLib.FileTest.EXISTS))
+            return false;
+        const file = Gio.File.new_for_path(candidatePath);
+        const info = file.query_info(
+            Gio.FILE_ATTRIBUTE_ACCESS_CAN_READ, Gio.FileQueryInfoFlags.NONE, null);
+        return info ? info.get_attribute_boolean(Gio.FILE_ATTRIBUTE_ACCESS_CAN_READ) : false;
+    } catch (_) {
+        return false;
+    }
+}
 
 export class GdmAvatarManager {
     constructor(gdmManager) {
@@ -16,6 +56,7 @@ export class GdmAvatarManager {
         this._lastAvatarColor = null;
         this._connectedUser = null;
         this._dialog = null;
+        this._updatingVibrancy = false;
     }
 
     setup(dialog = null) {
@@ -64,8 +105,8 @@ export class GdmAvatarManager {
 
         if (authPrompt && authPrompt._userWell && this.gdmOrigUserWellYAlign !== undefined && this.gdmOrigUserWellYAlign !== null) {
             authPrompt._userWell.y_align = this.gdmOrigUserWellYAlign;
-            this.gdmOrigUserWellYAlign = null;
         }
+        this.gdmOrigUserWellYAlign = null;
 
         if (authPrompt && this.gdmOrigUpdateUser && this.gdmOrigMethodName) {
             authPrompt[this.gdmOrigMethodName] = this.gdmOrigUpdateUser;
@@ -80,32 +121,22 @@ export class GdmAvatarManager {
 
         this.unwrapGdmAvatar();
 
-        // Disconnect from userList and clear any vibrancy styles and update wrappers
+        // Відключення від user list і зняття вібраності зі стилів кнопки-обгортки
         const userList = this._dialog?._userList || this._gdm._dialog?._userList;
         if (userList) {
             userList.disconnectObject(this);
             if (userList._items) {
                 for (const item of userList._items.values()) {
-                    const avatar = item._userWidget?._avatar;
-                    const user = avatar?._user || item._userWidget?._user;
+                    const userWidget = item?._userWidget;
+                    const label = userWidget?._label;
+                    const user = userWidget?._user;
                     if (user)
                         user.disconnectObject(this);
-                    if (item._userWidget?._wackSubtitle) {
-                        item._userWidget._wackSubtitle.destroy();
-                        delete item._userWidget._wackSubtitle;
-                    }
-                    if (avatar) {
-                        if (avatar._wackOrigUpdate) {
-                            avatar.update = avatar._wackOrigUpdate;
-                            delete avatar._wackOrigUpdate;
-                        }
-                        delete avatar._wackUpdating;
-                        delete avatar._wackSettingStyle;
-                        if (avatar._wackHasVibrancy) {
-                            avatar.set_style(null);
-                        }
-                        delete avatar._wackHasVibrancy;
-                    }
+                    if (label)
+                        label.set_style(null);
+
+                    // Скасувати обгортку-кнопку аватарки у бірці списку
+                    this._unwrapAvatarWell(userWidget);
                 }
             }
         }
@@ -115,138 +146,120 @@ export class GdmAvatarManager {
         this._dialog = null;
     }
 
+    /* ── Обгортка аватарки у пілюлю-кнопку «.wack-avatar-well» ─────────────
+       Працює для auth prompt well І для бірок списку користувачів.
+       Кольори вібраності ставимо на КНОПКУ (St.Button) — це НЕ Avatar,
+       отже цикл vfunc_style_changed → update() неможливий за визначенням. */
+    _wrapAvatarInWell(userWidget, opts = {}) {
+        if (!userWidget?._avatar)
+            return null;
+
+        const existingWell = userWidget._wackAvatarWell;
+        if (existingWell && existingWell.get_child() === userWidget._avatar)
+            return existingWell;
+
+        const avatar = userWidget._avatar;
+        userWidget.remove_child(avatar);
+
+        const well = new St.Button({
+            style_class: opts.clickable ? 'wack-avatar-well wack-avatar-clickable' : 'wack-avatar-well',
+            x_expand: false,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.START,
+            can_focus: false,
+            child: avatar,
+            reactive: Boolean(opts.clickable),
+        });
+        userWidget._wackAvatarWell = well;
+        userWidget.insert_child_at_index(well, 0);
+        return well;
+    }
+
+    _unwrapAvatarWell(userWidget) {
+        const well = userWidget?._wackAvatarWell;
+        if (!well) return;
+        const avatar = well.get_child();
+        well.set_style(null);
+        if (avatar) {
+            well.set_child(null);
+            userWidget.remove_child(well);
+            userWidget.insert_child_at_index(avatar, 0);
+        }
+        delete userWidget._wackAvatarWell;
+    }
+
     _setupUserListItem(item) {
-        const avatar = item?._userWidget?._avatar;
-        if (!avatar) return;
+        if (!item) return;
 
-        if (!avatar._wackOrigUpdate) {
-            avatar._wackOrigUpdate = avatar.update.bind(avatar);
-            avatar.update = () => {
-                if (avatar._wackSettingStyle || avatar._wackUpdating)
-                    return;
-                avatar._wackUpdating = true;
-                try {
-                    avatar._wackOrigUpdate();
-                    this._applyStyleToUserListItemAvatar(avatar);
-                } finally {
-                    avatar._wackUpdating = false;
-                }
-            };
+        const userWidget = item._userWidget;
+        const avatar = userWidget?._avatar;
 
-            const user = avatar._user || item?._userWidget?._user;
-            if (user && !user.is_loaded) {
-                user.connectObject(
-                    'notify::is-loaded', () => {
-                        if (avatar && typeof avatar.update === 'function')
-                            avatar.update();
-                        this._applyStyleToUserListItemAvatar(avatar);
-                    },
-                    'changed', () => {
-                        if (avatar && typeof avatar.update === 'function')
-                            avatar.update();
-                        this._applyStyleToUserListItemAvatar(avatar);
-                    },
-                    this
-                );
+        if (userWidget) {
+            try {
+                if (typeof userWidget.set_vertical === 'function')
+                    userWidget.set_vertical(true);
+            } catch (_) {}
+            try {
+                userWidget.orientation = Clutter.Orientation.VERTICAL;
+                userWidget.x_align = Clutter.ActorAlign.CENTER;
+                userWidget.style_class = 'user-widget vertical';
+            } catch (_) {}
+
+            if (avatar)
+                avatar.x_align = Clutter.ActorAlign.CENTER;
+
+            if (userWidget._wackSubtitle) {
+                userWidget._wackSubtitle.destroy();
+                delete userWidget._wackSubtitle;
             }
         }
 
-        const label = item?._userWidget?._label;
+        if (!avatar) return;
+
+        // Обгортка-кнопка: фарбування кола поза циклом стилів Avatar.
+        const well = this._wrapAvatarInWell(userWidget, {});
+
+        // Фото рендериться нативно; реакція на пізню загрузку — лише колір.
+        const user = avatar._user || userWidget?._user;
+        if (user && !user.is_loaded) {
+            user.connectObject(
+                'notify::is-loaded', () => this.updateAvatarVibrancy(),
+                'changed', () => this.updateAvatarVibrancy(),
+                this
+            );
+        }
+
+        const label = userWidget?._label;
         if (label) {
             label.set_style(this._lastAvatarColor ? getUserLabelStyle(this._lastAvatarColor) : null);
         }
 
-        if (item?._userWidget) {
-            try {
-                if (typeof item._userWidget.set_vertical === 'function')
-                    item._userWidget.set_vertical(true);
-            } catch (_) {}
-            try {
-                item._userWidget.orientation = Clutter.Orientation.VERTICAL;
-                item._userWidget.x_align = Clutter.ActorAlign.CENTER;
-                item._userWidget.style_class = 'user-widget vertical';
-                if (avatar) {
-                    avatar.x_align = Clutter.ActorAlign.CENTER;
-                }
-            } catch (_) {}
-
-            if (item._userWidget._wackSubtitle) {
-                item._userWidget._wackSubtitle.destroy();
-                delete item._userWidget._wackSubtitle;
-            }
-        }
-
-        this._applyStyleToUserListItemAvatar(avatar);
+        if (well)
+            this._colorForWell(well, this._lastAvatarColor);
     }
 
-    _applyStyleToUserListItemAvatar(avatar) {
-        if (!avatar || avatar._wackSettingStyle) return;
+    /* Стилі вібраності: КОЛЬРИ — тільки на кнопці-обгортці.
+       На самій аватарці жодних inline-стилів (правило без рекурсії). */
+    _colorForWell(well, color) {
+        if (!well) return;
+        const targetBg = color
+            ? (color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`)
+            : null;
+        const targetStyle = targetBg
+            ? `background-color: ${targetBg} !important; border-radius: 999px !important;`
+            : 'background-color: transparent !important;';
 
-        const iconFile = this._getIconFile(avatar);
-        if (iconFile) {
-            avatar._wackSettingStyle = true;
-            try {
-                if (avatar.child !== null)
-                    avatar.child = null;
-                avatar.add_style_class_name('user-avatar');
-                avatar.style = `
-                    background-image: url("${iconFile}");
-                    background-size: cover;
-                    border-radius: 999px !important;
-                `;
-                avatar.visible = true;
-                avatar.opacity = 255;
-                delete avatar._wackHasVibrancy;
-            } finally {
-                avatar._wackSettingStyle = false;
-            }
-            return;
-        }
-
-        // If user info is still loading via AccountsService, wait until it's loaded before styling
-        const user = avatar._user;
-        if (user && !user.is_loaded)
-            return;
-
-        const color = this._lastAvatarColor;
-        const bgRgba = color ? (color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`) : null;
-        const buttonStyle = bgRgba ? `background-color: ${bgRgba} !important; border-radius: 999px !important;` : null;
-
-        avatar._wackSettingStyle = true;
+        // Якщо в користувача є фото — кнопка лишається прозорою,
+        // а фото намалюється нативно самою аватаркою.
         try {
-            if (avatar.get_style() !== buttonStyle) {
-                avatar.set_style(buttonStyle);
-                if (buttonStyle)
-                    avatar._wackHasVibrancy = true;
-                else
-                    delete avatar._wackHasVibrancy;
-            }
-            avatar.clip_to_allocation = true;
-            const child = avatar.get_child();
-            if (child) {
-                const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
-                if (child.get_style() !== iconStyle)
-                    child.set_style(iconStyle);
-            }
-        } finally {
-            avatar._wackSettingStyle = false;
-        }
-    }
+            if (this._getIconFile(well.get_child()))
+                return;
+        } catch (_) {}
 
-    _hasImageAvatar(avatar) {
-        return Boolean(this._getIconFile(avatar));
-    }
-
-    _getIconFile(avatar) {
-        if (!avatar) return null;
-        let iconFile = avatar._user?.get_icon_file ? avatar._user.get_icon_file() : null;
-        if (iconFile && GLib.file_test(iconFile, GLib.FileTest.EXISTS)) return iconFile;
-        const userName = avatar._user?.get_user_name ? avatar._user.get_user_name() : (this._dialog?._user?.get_user_name?.() || GLib.get_user_name());
-        if (userName) {
-            const asIcon = `/var/lib/AccountsService/icons/${userName}`;
-            if (GLib.file_test(asIcon, GLib.FileTest.EXISTS)) return asIcon;
-        }
-        return null;
+        if (well.get_style() !== targetStyle)
+            well.set_style(targetStyle);
+        well.visible = true;
+        well.opacity = 255;
     }
 
     updateAvatarVibrancy(avatarColor) {
@@ -254,75 +267,22 @@ export class GdmAvatarManager {
             this._lastAvatarColor = avatarColor;
         if (this._updatingVibrancy) return;
 
-        const color = this._lastAvatarColor;
         this._updatingVibrancy = true;
-        const bgRgba = color ? (color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`) : null;
-        const buttonStyle = bgRgba ? `background-color: ${bgRgba} !important; border-radius: 999px !important;` : null;
 
-        const applyToWell = (uw) => {
-            if (!uw) return;
-            const avatar = uw._avatar || uw._avatarButton?.get_child();
-            const avatarButton = uw._avatarButton;
-            if (!avatarButton) return;
-
-            const iconFile = this._getIconFile(avatar);
-            if (iconFile) {
-                if (avatar) {
-                    avatar.child = null;
-                    avatar.add_style_class_name('user-avatar');
-                    avatar.style = `
-                        background-image: url("${iconFile}");
-                        background-size: cover;
-                        border-radius: 999px !important;
-                    `;
-                    avatar.visible = true;
-                    avatar.opacity = 255;
-                }
-                avatarButton.set_style('border-radius: 999px !important; background-color: transparent !important;');
-                avatarButton.visible = true;
-                avatarButton.opacity = 255;
-                delete avatar?._wackHasVibrancy;
-            } else {
-                if (avatarButton.get_style() !== buttonStyle)
-                    avatarButton.set_style(buttonStyle);
-                // Apply to the avatar widget directly for placeholder/symbolic avatars
-                if (avatar) {
-                    if (avatar.get_style() !== buttonStyle) {
-                        avatar._wackSettingStyle = true;
-                        avatar.set_style(buttonStyle);
-                        avatar._wackSettingStyle = false;
-                        if (buttonStyle)
-                            avatar._wackHasVibrancy = true;
-                        else
-                            delete avatar._wackHasVibrancy;
-                    }
-                    avatar.clip_to_allocation = true;
-                    const child = avatar.get_child();
-                    if (child) {
-                        const iconStyle = buttonStyle ? 'background-color: transparent !important; border-radius: 999px !important;' : null;
-                        if (child.get_style() !== iconStyle)
-                            child.set_style(iconStyle);
-                    }
-                }
-                if (avatarButton)
-                    avatarButton.clip_to_allocation = true;
-            }
-        };
+        const color = this._lastAvatarColor;
 
         const authPrompt = this._dialog?._authPrompt || this._gdm._dialog?._authPrompt;
-        const authPromptWell = authPrompt?._userWell?.get_child();
-        applyToWell(authPromptWell);
-        if (authPromptWell?._label) {
-            authPromptWell._label.set_style(color ? getUserLabelStyle(color) : null);
+        const userWidget = authPrompt?._userWell?.get_child();
+
+        // Обгортка поточної версії; підтримка легасі-_avatarButton (без стилів на Avatar)
+        const well = userWidget?._wackAvatarWell || userWidget?._avatarButton || null;
+        if (well)
+            this._colorForWell(well, color);
+
+        if (userWidget?._label) {
+            userWidget._label.set_style(color ? getUserLabelStyle(color) : null);
         }
 
-        if (this._gdm._cupertinoRestPrompt?.updateVisuals) {
-            this._gdm._cupertinoRestPrompt.updateVisuals(color);
-        } else {
-            applyToWell(this._gdm._cupertinoRestPrompt?._userWell?.get_child());
-        }
-
-        // Also apply to empty-avatar tiles in the user selection list.
         this.updateUserListVibrancy();
         this._updatingVibrancy = false;
     }
@@ -332,10 +292,16 @@ export class GdmAvatarManager {
         if (!userList?._items) return;
 
         for (const item of userList._items.values()) {
-            this._setupUserListItem(item);
+            const userWidget = item?._userWidget;
+            const well = userWidget?._wackAvatarWell ?? this._wrapAvatarInWell(userWidget, {});
+            if (well)
+                this._colorForWell(well, this._lastAvatarColor);
+
+            const label = userWidget?._label;
+            if (label && this._lastAvatarColor)
+                label.set_style(getUserLabelStyle(this._lastAvatarColor));
         }
     }
-
 
     wrapGdmAvatar() {
         const authPrompt = this._dialog?._authPrompt || this._gdm._dialog?._authPrompt;
@@ -345,40 +311,15 @@ export class GdmAvatarManager {
         }
 
         const uw = authPrompt._userWell?.get_child();
-        if (uw && uw._avatar && !uw._avatarButton) {
-            const avatar = uw._avatar;
-            uw.remove_child(avatar);
+        if (uw && uw._avatar) {
+            // Основна обгортка (нова, без recursion)
+            const well = this._wrapAvatarInWell(uw, {});
+            if (well) uw._avatarButton = well;
 
-            uw._avatarButton = new St.Button({
-                style_class: 'wack-avatar-well',
-                x_expand: false,
-                x_align: Clutter.ActorAlign.CENTER,
-                y_align: Clutter.ActorAlign.START,
-                can_focus: false,
-                child: avatar,
-                reactive: false,
-            });
-            uw.insert_child_at_index(uw._avatarButton, 0);
-
-            if (avatar && !avatar._wackOrigUpdate) {
-                avatar._wackOrigUpdate = avatar.update.bind(avatar);
-                avatar.update = () => {
-                    if (avatar._wackSettingStyle || avatar._wackUpdating)
-                        return;
-                    avatar._wackUpdating = true;
-                    try {
-                        avatar._wackOrigUpdate();
-                        this.updateAvatarVibrancy();
-                    } finally {
-                        avatar._wackUpdating = false;
-                    }
-                };
-            }
-
+            // Лейаут-хак заголовка: форсуємо алокацію лейблів по ширині контейнера.
             const label = uw?._label;
-            if (label && label.vfunc_allocate) {
-                if (label._wackOrigVfuncAllocate === undefined)
-                    label._wackOrigVfuncAllocate = label.vfunc_allocate;
+            if (label && label.vfunc_allocate && label._wackOrigVfuncAllocate === undefined) {
+                label._wackOrigVfuncAllocate = label.vfunc_allocate;
                 label.vfunc_allocate = function (box) {
                     this.set_allocation(box);
                     const availWidth = box.x2 - box.x1;
@@ -391,23 +332,19 @@ export class GdmAvatarManager {
                     this._userNameLabel.allocate(childBox);
                 };
             }
-            if (this._connectedUser) {
-                this._connectedUser.disconnectObject(this);
-                this._connectedUser = null;
-            }
-            if (avatar && avatar._user) {
-                this._connectedUser = avatar._user;
-                this._connectedUser.connectObject(
-                    'notify::is-loaded', () => {
-                        if (avatar && typeof avatar.update === 'function')
-                            avatar.update();
-                        this.updateAvatarVibrancy();
-                    },
-                    'changed', () => {
-                        if (avatar && typeof avatar.update === 'function')
-                            avatar.update();
-                        this.updateAvatarVibrancy();
-                    },
+
+            // Реакція на пізню загрузку AccountsService (фото з'явилось раптом).
+            const avatar = uw._avatar;
+            const user = avatar?._user;
+            if (user) {
+                if (this._connectedUser) {
+                    this._connectedUser.disconnectObject(this);
+                    this._connectedUser = null;
+                }
+                this._connectedUser = user;
+                user.connectObject(
+                    'notify::is-loaded', () => this.updateAvatarVibrancy(),
+                    'changed', () => this.updateAvatarVibrancy(),
                     this
                 );
             }
@@ -433,27 +370,34 @@ export class GdmAvatarManager {
             delete label._wackOrigVfuncAllocate;
         }
 
-        if (uw && uw._avatarButton) {
-            const button = uw._avatarButton;
-            button.set_style(null);
-            const avatar = button.get_child();
-            if (avatar) {
-                if (avatar._wackOrigUpdate) {
-                    avatar.update = avatar._wackOrigUpdate;
-                    delete avatar._wackOrigUpdate;
-                }
-                delete avatar._wackUpdating;
-                delete avatar._wackSettingStyle;
-                if (avatar._wackHasVibrancy) {
-                    avatar.set_style(null);
-                }
-                delete avatar._wackHasVibrancy;
-                button.set_child(null);
-                uw.remove_child(button);
-                uw.insert_child_at_index(avatar, 0);
-            }
+        if (uw) {
+            this._unwrapAvatarWell(uw);
             uw._avatarButton = null;
         }
     }
-}
 
+    _hasImageAvatar(avatar) {
+        return Boolean(this._getIconFile(avatar));
+    }
+
+    /* Шлях до фото користувача — РОБОЧИЙ для будь-якого імені:
+       1) те, що каже AccountsService; 2) еталонний шлях
+       /var/lib/AccountsService/icons/<username>; перевіряємо І існування,
+       І читабельність (0644), бо gdm-процес не може зчитувати 0640-файли. */
+    _getIconFile(avatar) {
+        if (!avatar) return null;
+        const user = avatar._user || null;
+
+        let iconFile = user?.get_icon_file ? user.get_icon_file() : null;
+        if (iconFile && _readableIconPath(iconFile))
+            return iconFile;
+
+        const userName = user?.get_user_name ? user.get_user_name() : (this._dialog?._user?.get_user_name?.() || null);
+        if (userName) {
+            const asIcon = `/var/lib/AccountsService/icons/${userName}`;
+            if (_readableIconPath(asIcon))
+                return asIcon;
+        }
+        return null;
+    }
+}

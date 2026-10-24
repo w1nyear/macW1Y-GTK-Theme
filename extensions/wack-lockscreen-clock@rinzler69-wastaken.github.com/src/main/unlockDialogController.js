@@ -12,6 +12,7 @@ import {
 } from './constants.js';
 import { applyClockAnimation, applyPromptAnimation } from './anims.js';
 import { _setActorVisible, getAuthSubtitleText } from './mainUtils.js';
+import { LockscreenMenuBarManager } from './lockscreenMenuBar.js';
 
 export class UnlockDialogController {
     constructor(extension) {
@@ -26,6 +27,7 @@ export class UnlockDialogController {
         this.finishTimeoutId = null;
         this.finishFallbackId = null;
         this.windowFadeContainer = null;
+        this._menuBarManager = null;
     }
 
     _setupAuthPrompt(authPrompt) {
@@ -117,15 +119,10 @@ export class UnlockDialogController {
             };
         }
 
-        // Ensure no leftover menu bar items (e.g. appmenu Apple icon) appear in leftBox while locked
-        if (Main.panel?._leftBox) {
-            for (const child of Main.panel._leftBox.get_children()) {
-                const isActivities = child === Main.panel.statusArea?.activities?.container ||
-                                     child === Main.panel.statusArea?.activities;
-                if (!isActivities) {
-                    child.visible = false;
-                }
-            }
+        // Manage top menu bar for authentic macOS lockscreen (Battery, Control Center, DateMenu)
+        if (!this._menuBarManager) {
+            this._menuBarManager = new LockscreenMenuBarManager(this._extension);
+            this._menuBarManager.setup();
         }
 
         // AuthPrompt lifecycle & PAM message intercept
@@ -545,6 +542,11 @@ export class UnlockDialogController {
         if (dialog && this.origKeyPressEvent) {
             dialog.vfunc_key_press_event = this.origKeyPressEvent;
             this.origKeyPressEvent = null;
+        }
+
+        if (this._menuBarManager) {
+            this._menuBarManager.teardown();
+            this._menuBarManager = null;
         }
 
         if (Main.sessionMode) {

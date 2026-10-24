@@ -17,6 +17,7 @@ import { GdmAvatarManager } from './gdmAvatarManager.js';
 import { GdmAnimationController } from './gdmAnimationController.js';
 import { GdmPowerButtons } from './gdmPowerButtons.js';
 import { PasswordIndicators, connectFailureShake } from '../main/passwordField.js';
+import { LockscreenMenuBarManager } from '../main/lockscreenMenuBar.js';
 
 const MESSAGE_PROMPT_GAP = 48;
 
@@ -28,6 +29,7 @@ export class GdmManager {
         this._active = false;
         this._dialog = null;
         this._dialogParent = null;
+        this._menuBarManager = null;
 
         // Subsystems
         this._clockManager = new GdmClockManager(this);
@@ -304,6 +306,12 @@ export class GdmManager {
             this._userListManager.setup(dialog);
             this._avatarManager.setup(dialog);
             // this._powerButtons.setup(dialog); // Disabled per user request
+
+            if (!this._menuBarManager) {
+                this._menuBarManager = new LockscreenMenuBarManager(this._extension);
+                this._menuBarManager.setup();
+            }
+
             _log('[WACK/GdmManager] Sub-managers setup completed');
         } catch (subErr) {
             _logError(`[WACK/GdmManager] Sub-manager setup error: ${subErr.stack || subErr}`);
@@ -833,6 +841,12 @@ export class GdmManager {
         this._powerButtons.teardown();
         this._passwordIndicators?.destroy();
         this._passwordIndicators = null;
+
+        if (this._menuBarManager) {
+            this._menuBarManager.teardown();
+            this._menuBarManager = null;
+        }
+
         Main.panel.remove_style_class_name('wack-status-corner');
         dialog?._authPrompt?._userVerifier?.disconnectObject(this);
 
