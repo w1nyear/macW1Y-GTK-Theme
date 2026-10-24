@@ -9435,3 +9435,4 @@ echo "==> Встановлення успішно завершено!"
       - При підведенні миші до нижнього краю екрана: док разом зі склом миттєво і плавно виїжджає нагору.
       - При відведенні миші назад: док плавно ховається вниз, звільняючи весь простір вікна.
       - На чистому робочому столі без перекриття вікнами: док залишається видимим.
+481. [2026-10-24] Fix dock glass background animation: bgActor now slides down with dock via translation_y proportional to slide_x; icon translation_y changed from 6 to -2 (raised up)

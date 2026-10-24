@@ -76,6 +76,7 @@ export class DashManager {
   private _lastBaseW: number | undefined;
   private _lastBaseH: number | undefined;
   private _lastSlabW: number | undefined;
+  private _lastSlabH: number | undefined;
   private _lastSlabX: number | undefined;
 
   private _outputLogs: boolean = false;
@@ -553,6 +554,7 @@ export class DashManager {
         }
 
         this._lastSlabW = slW;
+        this._lastSlabH = slH;
         this._lastSlabX = slX;
 
         let pillW = slW! - 8;
@@ -683,6 +685,22 @@ export class DashManager {
       }
       this.bgActor.show();
       this.bgActor.opacity = this.targetActor.opacity;
+    }
+
+    // Slide bgActor in sync with the dock slide animation so the glass
+    // background follows the dock as it hides/shows instead of staying fixed.
+    {
+      let slideX = 1;
+      if (d2d && (d2d as any)._slider && typeof (d2d as any)._slider.slide_x === 'number') {
+        slideX = (d2d as any)._slider.slide_x;
+      }
+      if (slideX < 0.999) {
+        const dockSlideH = (hasSlabBounds && this._lastSlabH) ? this._lastSlabH :
+                           (baseH > 0 ? baseH : 80);
+        (this.bgActor as any).translation_y = Math.round((1 - slideX) * (dockSlideH + 20));
+      } else {
+        (this.bgActor as any).translation_y = 0;
+      }
     }
 
     let bgW = Math.max(1.0, w + (SHADER_PADDING * 2) + (this._glassExpand * 2));

@@ -1027,7 +1027,7 @@ export const DockDash = GObject.registerClass({
                     height: this._isHorizontal ? this.iconSize : -1,
                     reactive: true,
                     track_hover: true,
-                    translation_y: 6,
+                    translation_y: -2,
                 });
                 this._separator.connect('notify::hover', a => this._ensureItemVisibility(a));
             }
