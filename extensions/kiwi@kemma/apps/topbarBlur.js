@@ -39,6 +39,7 @@ let _settings = null;
 let _stack = null;
 let _frameId = 0;
 let _monitorsId = 0;
+let _wakeSignals = null;
 
 function _blur() {
     try {
@@ -336,6 +337,7 @@ export function enable(settings) {
                 // window-aware output regions + sampler work: heavy, ~10fps.
                 // Cached by key, so idle frames cost nothing here.
                 if (n === 0) {
+                    let changed = false;
                     try {
                         const m = monitor ?? Main.layoutManager.primaryMonitor;
                         if (m) {
@@ -346,6 +348,7 @@ export function enable(settings) {
                                 const show = segs.rects.length > 0;
                                 if (_stack.bgActor.visible !== show)
                                     _stack.bgActor.visible = show;
+                                changed = true;
                             }
                         }
                     } catch (_) {
@@ -378,20 +381,66 @@ export function enable(settings) {
                     } catch (_) {
                         // no ui group
                     }
-                    _stack.uiSampler.refresh();
-                    _stack.wcm.sync();
+                    if (changed || !_stack.initialSynced) {
+                        _stack.initialSynced = true;
+                        _stack.uiSampler.refresh();
+                        _stack.wcm.sync();
+                        _stack.idleFrames = 0;
+                    } else {
+                        _stack.idleFrames = (_stack.idleFrames || 0) + 1;
+                    }
                 }
             } catch (_) {
                 // tearing down
             }
             try {
-                _frameId = global.compositor.get_laters().add(
-                    Meta.LaterType.BEFORE_REDRAW, tick);
+                if (_stack && (_stack.idleFrames || 0) >= 12) {
+                    _frameId = 0;
+                    if (!_stack.heartbeatId) {
+                        _stack.heartbeatId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
+                            if (_stack) {
+                                _stack.heartbeatId = 0;
+                                wake();
+                            }
+                            return GLib.SOURCE_REMOVE;
+                        });
+                    }
+                } else {
+                    _frameId = global.compositor.get_laters().add(
+                        Meta.LaterType.BEFORE_REDRAW, tick);
+                }
             } catch (_) {
                 _frameId = 0;
             }
             return GLib.SOURCE_REMOVE;
         };
+        const wake = () => {
+            if (!_stack) return;
+            _stack.idleFrames = 0;
+            if (_stack.heartbeatId) {
+                try { GLib.source_remove(_stack.heartbeatId); } catch (_) {}
+                _stack.heartbeatId = 0;
+            }
+            if (_frameId === 0) {
+                try {
+                    _frameId = global.compositor.get_laters().add(
+                        Meta.LaterType.BEFORE_REDRAW, tick);
+                } catch (_) {
+                    _frameId = 0;
+                }
+            }
+        };
+        _stack.wake = wake;
+        if (!_wakeSignals) {
+            _wakeSignals = [];
+            try {
+                _wakeSignals.push(global.display.connect('restacked', () => _stack?.wake?.()));
+                _wakeSignals.push(Main.overview.connect('showing', () => _stack?.wake?.()));
+                _wakeSignals.push(Main.overview.connect('hiding', () => _stack?.wake?.()));
+                _wakeSignals.push(Main.panel.connect('enter-event', () => _stack?.wake?.()));
+                _wakeSignals.push(Main.panel.connect('leave-event', () => _stack?.wake?.()));
+            } catch (_) {}
+        }
         try {
             _frameId = global.compositor.get_laters().add(
                 Meta.LaterType.BEFORE_REDRAW, tick);
@@ -404,6 +453,20 @@ export function enable(settings) {
 }
 
 export function disable() {
+    if (_stack?.heartbeatId) {
+        try { GLib.source_remove(_stack.heartbeatId); } catch (_) {}
+        _stack.heartbeatId = 0;
+    }
+    if (_wakeSignals) {
+        try {
+            global.display.disconnect(_wakeSignals[0]);
+            Main.overview.disconnect(_wakeSignals[1]);
+            Main.overview.disconnect(_wakeSignals[2]);
+            Main.panel.disconnect(_wakeSignals[3]);
+            Main.panel.disconnect(_wakeSignals[4]);
+        } catch (_) {}
+        _wakeSignals = null;
+    }
     if (_frameId) {
         try {
             global.compositor.get_laters().remove(_frameId);

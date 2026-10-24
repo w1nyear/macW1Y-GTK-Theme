@@ -1036,6 +1036,7 @@ export class ApplicationManager {
             constraints,
         };
         this._states.set(windowActor, state);
+        this._startFrameSync();
         this._rebuildWindowClones(state);
         // Immediate sync connections for resize/move using allocation property
         state.signals.push({
@@ -2007,6 +2008,10 @@ export class ApplicationManager {
         // chain running forever against destroyed window actors.
         if (this._torndown)
             return;
+        if (!this._states || this._states.size === 0) {
+            this._frameSyncId = 0;
+            return;
+        }
         // [DIAG] See setFrameSyncFrozen() in utils.ts. Reschedules but does
         // nothing, so the cost of this poll can be measured directly.
         if (isFrameSyncFrozen()) {

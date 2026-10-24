@@ -3,7 +3,8 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import { LiquidEffect } from './liquidEffect.js';
-import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, glassRefreshDue, glassRefreshDone, glassForceRefresh } from './utils.js';
+import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js';
+import { glassRefreshDue, glassRefreshDone, glassForceRefresh } from './glassGate.js';
 // Padding to allow the shader to draw effects (like refraction and blur) outside the actor's strict bounds.
 const SHADER_PADDING = 20;
 // Utility: Convert HEX color string (e.g., "#ffffff") to normalized RGB array [1.0, 1.0, 1.0]
@@ -414,17 +415,48 @@ export class DashManager {
             // has settled by now and this frame's sync has not dirtied anything
             // yet. See ensureGlassAllocated().
             ensureGlassAllocated(this.bgActor);
+            let didRefresh = false;
             try {
-                this._syncGeometry();
+                didRefresh = !!this._syncGeometry();
             }
             catch (e) {
                 reportFrameLoopError('DockManager', e);
             }
-            this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            if (didRefresh) {
+                this._idleCount = 0;
+            } else {
+                this._idleCount = (this._idleCount || 0) + 1;
+            }
+            if (this._idleCount < 8) {
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            } else {
+                this._frameSyncId = 0;
+                this._scheduleIdleHeartbeat();
+            }
             return GLib.SOURCE_REMOVE;
         };
+        this.wakeFrameSync = () => {
+            this._idleCount = 0;
+            if (this._idleTimeoutId) {
+                GLib.source_remove(this._idleTimeoutId);
+                this._idleTimeoutId = 0;
+            }
+            if (this._frameSyncId === 0 && !this._torndown && this.bgActor && this.targetActor?.mapped) {
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            }
+        };
+        this._scheduleIdleHeartbeat = () => {
+            if (this._idleTimeoutId || this._torndown)
+                return;
+            this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
+                this._idleTimeoutId = 0;
+                this.wakeFrameSync();
+                return GLib.SOURCE_REMOVE;
+            });
+        };
         let startFrameSync = () => {
-            if (this._frameSyncId === 0) {
+            this.wakeFrameSync();
+            if (this._frameSyncId === 0 && !this._torndown && this.bgActor && this.targetActor?.mapped) {
                 buildClones();
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
@@ -437,23 +469,44 @@ export class DashManager {
                 if (this._frameSyncId !== 0) {
                     this._frameSyncId = 0;
                 }
+                if (this._idleTimeoutId) {
+                    GLib.source_remove(this._idleTimeoutId);
+                    this._idleTimeoutId = 0;
+                }
             }
         });
         this._signals.push(mapSignalId);
         this._signals.push(this.targetActor.connect('notify::allocation', () => {
+            this.wakeFrameSync();
             try {
                 this._applyAdaptiveRadius();
             } catch (e) {
                 // effect gone
             }
         }));
+        this._signals.push(this.targetActor.connect('enter-event', () => {
+            this.wakeFrameSync();
+            return false;
+        }));
+        this._signals.push(this.targetActor.connect('leave-event', () => {
+            this.wakeFrameSync();
+            return false;
+        }));
+        this._signals.push(this.targetActor.connect('motion-event', () => {
+            this.wakeFrameSync();
+            return false;
+        }));
+        try {
+            let rId = global.display.connect('restacked', () => this.wakeFrameSync());
+            this._signals.push({ disconnect: () => { try { global.display.disconnect(rId); } catch(_) {} } });
+        } catch (_) {}
         if (this.targetActor.mapped) {
             startFrameSync();
         }
     }
     _syncGeometry() {
         if (!this.bgActor || !this.targetActor || !this.targetActor.mapped)
-            return;
+            return false;
         let sourceActor = this.targetActor;
         let children = this.targetActor.get_children();
         for (let i = 0; i < children.length; i++) {
@@ -853,7 +906,7 @@ export class DashManager {
         // монітор) — щоб перетворення конфігурації дока миттєво ловилося.
         const extraH = _dockGlassExtras(localBgX, localBgY, bgW, bgH, screenW, screenH);
         if (!glassRefreshDue?.(this.bgActor, extraH))
-            return;
+            return false;
         // [PERF ①/①b] Clip the offscreen CAPTURE to the region this glass can
         // actually show, and hide the clones that fall outside it. Must sit
         // between setGlassGeometry() (which makes the effect's uniforms describe
@@ -873,6 +926,7 @@ export class DashManager {
         this._uiSampler?.sync(monitor.x, monitor.y, screenW, screenH);
         this._windowCloneManager?.sync();
         glassRefreshDone?.(this.bgActor, extraH);
+        return true;
     }
     // エフェクトを画面から消し、元に戻す処理
     _removeEffect() {
@@ -880,11 +934,19 @@ export class DashManager {
             return;
         this._isEffectActive = false;
         this._currentMarginStyle = undefined;
+        if (this._idleTimeoutId) {
+            GLib.source_remove(this._idleTimeoutId);
+            this._idleTimeoutId = 0;
+        }
         // Safely try to remove styles/signals. If targetActor is already destroyed, 
         // this will fail safely without breaking the rest of the cleanup.
         try {
             for (let sigId of this._signals) {
-                this.targetActor.disconnect(sigId);
+                if (typeof sigId === 'object' && sigId && typeof sigId.disconnect === 'function') {
+                    sigId.disconnect();
+                } else if (typeof sigId === 'number') {
+                    this.targetActor.disconnect(sigId);
+                }
             }
             this.targetActor.remove_style_class_name('liquid-glass-transparent');
             if (this._originalStyle !== undefined) {
@@ -975,6 +1037,10 @@ export class DashManager {
                 if (global.compositor?.get_laters)
                     global.compositor.get_laters().remove(this._frameSyncId);
                 this._frameSyncId = 0;
+            }
+            if (this._idleTimeoutId) {
+                GLib.source_remove(this._idleTimeoutId);
+                this._idleTimeoutId = 0;
             }
         });
         // エフェクトを解除

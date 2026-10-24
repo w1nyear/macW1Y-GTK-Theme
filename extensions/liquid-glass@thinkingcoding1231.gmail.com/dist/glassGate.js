@@ -173,7 +173,7 @@ export function glassRefreshDue(glassActor, extraHash) {
         const scanH = _stageBackdropHash(nowUs);
         const dmg = _backdropDamageVersion;
         const ownH = _hmix(_ownGlassHash(glassActor), extraHash);
-        if (st.lastScanH !== scanH || st.lastDamage !== dmg || st.lastOwnH !== ownH) {
+        if (st.lastScanH !== scanH || st.lastOwnH !== ownH) {
             st.lastScanH = scanH;
             st.lastDamage = dmg;
             st.lastOwnH = ownH;
@@ -185,8 +185,8 @@ export function glassRefreshDue(glassActor, extraHash) {
         if (st.dirty)
             return sinceFull >= GLASS_REFRESH_60FPS_INTERVAL_US;
         return sinceFull >= GLASS_REFRESH_HEARTBEAT_US;
-    } catch (_) {
-        // Будь-який збій → рефреш. Безпечність важливіша за економію.
+    } catch (e) {
+        globalThis._lastDueError = `${e?.message || e}\n${e?.stack || ''}`;
         return true;
     }
 }
@@ -247,6 +247,10 @@ function _macGlassStats() {
     } catch (e) {
         return JSON.stringify({ err: String(e) });
     }
+}
+
+export function getActorPollState(actor) {
+    return _backdropPolls.get(actor);
 }
 
 if (typeof globalThis._macGlassStats !== 'function')
