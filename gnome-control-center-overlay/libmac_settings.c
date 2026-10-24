@@ -756,6 +756,10 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     find_navigation_split_view(GTK_WIDGET(window), &split_view);
     if (!split_view) return G_SOURCE_REMOVE;
 
+    /* Lock sidebar width to 280px to match blur and prevent unblurred scrollbar gaps */
+    adw_navigation_split_view_set_min_sidebar_width(split_view, 280.0);
+    adw_navigation_split_view_set_max_sidebar_width(split_view, 280.0);
+
     if (!g_object_get_data(G_OBJECT(split_view), "mac_signals_connected")) {
         g_signal_connect(split_view, "notify::content", G_CALLBACK(on_content_changed_cb), split_view);
         g_object_set_data(G_OBJECT(split_view), "mac_signals_connected", GINT_TO_POINTER(1));

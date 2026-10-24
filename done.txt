@@ -9441,3 +9441,7 @@ echo "==> Встановлення успішно завершено!"
    - appIcons.js & dash.js: reset individual translation_y to 0 since _box translates entire container
    - docking.js: synchronized liquid-glass-bg-actor Clutter ease transitions directly inside _animateIn, _animateOut, and _removeAnimations matching duration, delay, and EASE_OUT_QUAD easing curve exactly
    - dockManager.js & dockManager.ts: guard _syncGeometry during dock transitions so it does not overwrite ongoing Clutter animations
+483. [2026-10-24] Fix missing blur at the scrollbar area in Settings/leftbar sidebar:
+   - blur-my-shell applications.js: updated SYSTEM_SIDEBAR_WIDTHS from 260px to 280px for org.gnome.Settings, gnome-control-center and libadwaita split-view apps
+   - gnome-control-center-overlay: set min-sidebar-width and max-sidebar-width to 280px in cc-window.ui and libmac_settings.c to prevent sidebar width mismatch and eliminate the unblurred scrollbar gap
+   - Recompiled libmac_settings.so and synced to ~/.local/lib and project repository

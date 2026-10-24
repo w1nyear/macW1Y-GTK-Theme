@@ -50,20 +50,20 @@ function matchesAnyPattern(value, patterns) {
 }
 
 const SYSTEM_SIDEBAR_WIDTHS = {
-    'org.gnome.Settings': 260,
-    'gnome-control-center': 260,
+    'org.gnome.Settings': 280,
+    'gnome-control-center': 280,
     'org.gnome.Nautilus': 240,
     'nautilus': 240,
-    'org.gnome.DiskUtility': 260,
-    'gnome-disks': 260,
-    'org.gnome.baobab': 260,
-    'baobab': 260,
+    'org.gnome.DiskUtility': 280,
+    'gnome-disks': 280,
+    'org.gnome.baobab': 280,
+    'baobab': 280,
     'org.gnome.tweaks': 240,
     'gnome-tweaks': 240,
-    'org.gnome.Logs': 260,
-    'gnome-logs': 260,
-    'org.gnome.seahorse.Application': 260,
-    'seahorse': 260,
+    'org.gnome.Logs': 280,
+    'gnome-logs': 280,
+    'org.gnome.seahorse.Application': 280,
+    'seahorse': 280,
 };
 
 export const ApplicationsBlur = class ApplicationsBlur {
