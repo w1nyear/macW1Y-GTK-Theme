@@ -1,8 +1,26 @@
-/* AppMenu panel button label */
+/* AppMenu panel button label - regular weight for standard menubar items */
 .panel-button-label {
-    font-weight: bold;
+    font-weight: 400 !important;
     font-size: 10pt;
     padding: 0 6px;
+}
+
+/* Active Application Name in panel: macOS Sonoma/Tahoe authentic bold title */
+.appmenu-app-name-button,
+.appmenu-app-name-button .panel-button-label,
+.appmenu-app-name-label,
+.panel-button.appmenu-app-name-button StLabel,
+#panel .appmenu-app-name-button StLabel {
+    font-weight: 700 !important;
+}
+
+/* Window/App Menu Items (File, Edit, View, Window, Help, etc.): macOS authentic regular/plain weight */
+.appmenu-menu-item-button,
+.appmenu-menu-item-button .panel-button-label,
+.appmenu-menu-item-label,
+.panel-button.appmenu-menu-item-button StLabel,
+#panel .appmenu-menu-item-button StLabel {
+    font-weight: 400 !important;
 }
 
 /* Tighter panel spacing for AppMenu buttons */

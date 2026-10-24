@@ -2416,8 +2416,17 @@ StEntry StLabel.hint-text {
 }
 
 #panel Gjs_ui_panel_AppMenuButton.panel-button,
-#panel .desktop-name-label {
-  font-weight: bold !important;
+#panel .desktop-name-label,
+#panel .appmenu-app-name-button,
+#panel .appmenu-app-name-button StLabel,
+#panel .appmenu-app-name-label {
+  font-weight: 700 !important;
+}
+
+#panel .appmenu-menu-item-button,
+#panel .appmenu-menu-item-button StLabel,
+#panel .appmenu-menu-item-label {
+  font-weight: 400 !important;
 }
 
 #panel Gjs_status_keyboard_InputSourceIndicator.panel-button {

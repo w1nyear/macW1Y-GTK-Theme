@@ -59,7 +59,7 @@ function _getStaticMenus() {
 
 const TopLevelMenuButton = GObject.registerClass(
   class TopLevelMenuButton extends PanelMenu.Button {
-    _init(label, children, appInstance = null, menuManagerInstance = null) {
+    _init(label, children, appInstance = null, menuManagerInstance = null, isAppName = false) {
       super._init(0.0, label);
       this.add_style_class_name('appmenu-panel-button');
       this.menu.actor.add_style_class_name('appmenu-popup-menu');
@@ -67,6 +67,7 @@ const TopLevelMenuButton = GObject.registerClass(
       this._appInstance = appInstance;
       this._menuManagerInstance = menuManagerInstance;
       this._isIcon = false;
+      this._isAppName = Boolean(isAppName);
 
       // Determine if label is an icon name (e.g. distributor-logo-ubuntu)
        if (label && (label.includes('distributor-logo') || label.includes('-logo') || label.toLowerCase().includes('apple') || label === DEFAULT_ICON)) {
@@ -92,8 +93,37 @@ const TopLevelMenuButton = GObject.registerClass(
       this._subMenuSignalIds = [];
       this._destroyed = false;
 
+      this.setIsAppName(this._isAppName);
       this._setMenuOpenHandler(null);
       this._buildSubMenu(children, this.menu);
+    }
+
+    setIsAppName(isAppName) {
+        this._isAppName = Boolean(isAppName);
+        if (this._isIcon) {
+            this.remove_style_class_name('appmenu-app-name-button');
+            this.remove_style_class_name('appmenu-menu-item-button');
+            this.add_style_class_name('appmenu-icon-button');
+            return;
+        }
+        this.remove_style_class_name('appmenu-icon-button');
+        if (this._isAppName) {
+            this.remove_style_class_name('appmenu-menu-item-button');
+            this.add_style_class_name('appmenu-app-name-button');
+            if (this._titleWidget && this._titleWidget.set_text) {
+                this._titleWidget.remove_style_class_name('appmenu-menu-item-label');
+                this._titleWidget.add_style_class_name('appmenu-app-name-label');
+                this._titleWidget.set_style('font-weight: 700 !important;');
+            }
+        } else {
+            this.remove_style_class_name('appmenu-app-name-button');
+            this.add_style_class_name('appmenu-menu-item-button');
+            if (this._titleWidget && this._titleWidget.set_text) {
+                this._titleWidget.remove_style_class_name('appmenu-app-name-label');
+                this._titleWidget.add_style_class_name('appmenu-menu-item-label');
+                this._titleWidget.set_style('font-weight: 400 !important;');
+            }
+        }
     }
 
     _executeNativeAction(action, closeMenu = true) {
@@ -165,6 +195,20 @@ const TopLevelMenuButton = GObject.registerClass(
                 style_class: 'system-status-icon',
             });
             this.add_child(this._titleWidget);
+            this.setIsAppName(this._isAppName);
+        } else if (!isIconName && this._isIcon) {
+            this._isIcon = false;
+            if (this._titleWidget) {
+                this.remove_child(this._titleWidget);
+                this._titleWidget.destroy();
+            }
+            let title = new St.Label({
+                y_align: Clutter.ActorAlign.CENTER,
+                style_class: 'panel-button-label'
+            });
+            this.add_child(title);
+            this._titleWidget = title;
+            this.setIsAppName(this._isAppName);
         }
         if (this._isIcon) {
             this._loadIcon(label);
@@ -733,11 +777,12 @@ export class MenuManager {
         while (this._buttons.length < newMenuData.length) {
             const idx = this._buttons.length;
             const data = newMenuData[idx];
+            const isAppName = (idx === 1);
             // Start empty; the update loop below builds each menu exactly once.
             // Passing data.children here would build in the constructor and then
             // immediately remove/rebuild, which causes disposed PopupMenuItem
             // warnings during extension reloads.
-            const btn = new TopLevelMenuButton(data.label, [], detectedApp, this);
+            const btn = new TopLevelMenuButton(data.label, [], detectedApp, this, isAppName);
             Main.panel.addToStatusArea(`${this.uuid}-${idx}`, btn, idx + 1, 'left');
             this._buttons.push(btn);
         }
@@ -749,6 +794,7 @@ export class MenuManager {
             const data = newMenuData[i];
 
             btn._appInstance = detectedApp;
+            btn.setIsAppName(i === 1);
             btn.updateLabel(data.label);
             btn.rebuildMenu(data.children, data.onOpen ?? null);
         }

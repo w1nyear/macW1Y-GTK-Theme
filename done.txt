@@ -9571,3 +9571,34 @@ echo "==> Встановлення успішно завершено!"
    3. Верифікація:
       - Перевірено запуск `gnome-control-center` та інших GTK-програм: відсутні будь-які помилки парсера CSS.
       - Перевірено поведінку списків при досягненні меж: сяйво та градієнтні смуги повністю відсутні у всіх напрямках прокрутки.
+490. [2026-10-24] Fix top-left menu bar typography: active app name in BOLD (700) and window/menu items in REGULAR/PLAIN (400):
+   1. Проблема:
+      - У лівому верхньому меню барі всі кнопки меню («Файл», «Редагування», «Вигляд», «Вікно» тощо) та назва активної програми мали однакове жирне накреслення (`font-weight: bold`), оскільки у `.panel-button-label` розширення AppMenu було жорстко задано `font-weight: bold`.
+      - На автентичній macOS (Sonoma / Tahoe) назва активної програми має чіткий жирний шрифт (Bold, 700), а подальші кнопки дій/меню вікна («Файл», «Редагування», «Вигляд», «Вікно», «Довідка») мають стандартне звичайне накреслення (Regular / Normal, 400).
+   2. Виконані виправлення:
+      - У `extensions/appmenu@ChathurangaBW.github.io/stylesheet.css`:
+        * Оновлено базовий клас `.panel-button-label`: встановлено `font-weight: 400 !important;` за замовчуванням.
+        * Додано селектори для назви активної програми (`.appmenu-app-name-button`, `.appmenu-app-name-label`, `#panel .appmenu-app-name-button StLabel`) з вагою `font-weight: 700 !important;`.
+        * Додано селектори для пунктів меню вікна (`.appmenu-menu-item-button`, `.appmenu-menu-item-label`, `#panel .appmenu-menu-item-button StLabel`) з вагою `font-weight: 400 !important;`.
+      - У `extensions/appmenu@ChathurangaBW.github.io/menuManager.js`:
+        * Оновлено конструктор `TopLevelMenuButton`, додано параметр `isAppName` та метод `setIsAppName(isAppName)`.
+        * Метод `setIsAppName` динамічно призначає відповідні класи (`appmenu-app-name-button` та `appmenu-app-name-label` або `appmenu-menu-item-button` та `appmenu-menu-item-label`) та інлайн-стилі `font-weight: 700 !important;` або `font-weight: 400 !important;`.
+        * Оновлено створення та повторне використання кнопок у `updateMenuForWindow`: для кнопки з індексом 1 (назва програми) гарантовано встановлюється `isAppName = true`, а для всіх інших кнопок меню — `isAppName = false`.
+        * Оновлено обробку в `updateLabel` при переході між іконкою та текстовою міткою.
+      - У `gnome-shell-theme/gnome-shell.css`:
+        * Додано правила для `#panel .appmenu-app-name-button` / `StLabel` (`font-weight: 700 !important;`) та `#panel .appmenu-menu-item-button` / `StLabel` (`font-weight: 400 !important;`).
+      - Синхронізовано оновлені файли до системи:
+        * `~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/`
+        * `~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css`
+        * `~/.themes/macW1Y-Dark-solid/gnome-shell/gnome-shell.css`
+        * `~/.themes/macW1Y-Light/gnome-shell/gnome-shell.css`
+        * `~/.themes/macW1Y-Light-solid/gnome-shell/gnome-shell.css`
+        * `/usr/share/themes/macW1Y-Dark/gnome-shell/gnome-shell.css`
+        * `/usr/share/themes/macW1Y-Dark-solid/gnome-shell/gnome-shell.css`
+        * `/usr/share/themes/macW1Y-Light/gnome-shell/gnome-shell.css`
+        * `/usr/share/themes/macW1Y-Light-solid/gnome-shell/gnome-shell.css`
+   3. Верифікація:
+      - Проведено перевірку шрифтових властивостей кнопок у живому середовищі GNOME Shell через DBus EvalHelper:
+        * Кнопка активної програми (`btn1`, наприклад «Antigravity» або «Finder»): вага шрифту рівна `700` (Bold).
+        * Кнопки меню вікна (`btn2..N`, «Файл», «Редагування», «Вигляд», «Перехід», «Вікно» тощо): вага шрифту рівна `400` (Regular).
+      - Перевірено збереження типографіки при перемиканні фокусу вікон (активне вікно програми <-> робочий стіл Finder).
