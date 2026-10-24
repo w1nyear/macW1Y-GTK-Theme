@@ -456,21 +456,28 @@ def handle_trash(trashinfo_path):
         with open(trashinfo_path, "r", errors="ignore") as f:
             for line in f:
                 if line.startswith("Path="):
-                    path_in_trash = line.strip().split("=", 1)[1]
+                    raw_val = line.strip().split("=", 1)[1]
+                    import urllib.parse
+                    path_in_trash = urllib.parse.unquote(raw_val)
                     break
         
-        if not path_in_trash or not path_in_trash.startswith(APPS_DIR) or not path_in_trash.endswith(".desktop"):
+        if not path_in_trash or not (path_in_trash.startswith(APPS_DIR) or path_in_trash.startswith(LOCAL_APPS_DIR)) or not path_in_trash.endswith(".desktop"):
             return
 
         base_item = os.path.basename(trashinfo_path).replace(".trashinfo", "")
+        # base_item could be URL encoded in filename or standard
+        import urllib.parse
+        unquoted_base = urllib.parse.unquote(base_item)
         trashed_desktop = os.path.join(TRASH_DIR, base_item)
         if not os.path.exists(trashed_desktop):
-            return
+            trashed_desktop = os.path.join(TRASH_DIR, unquoted_base)
+            if not os.path.exists(trashed_desktop):
+                return
 
         print(f"[Uninstaller] Detected trashed application: {trashed_desktop} (orig: {path_in_trash})")
 
         # Parse desktop details
-        app_name = base_item.replace(".desktop", "")
+        app_name = unquoted_base.replace(".desktop", "")
         real_path = ""
         exec_cmd = ""
         app_dir = ""
@@ -492,6 +499,19 @@ def handle_trash(trashinfo_path):
                     is_appimage = line.split("=", 1)[1].strip().lower() == "true"
                 elif line.startswith("X-Mac-Installed-App="):
                     is_installed_app = line.split("=", 1)[1].strip().lower() == "true"
+
+        # Fallbacks based on Exec command path
+        if not app_dir and INSTALLED_APPS_DIR in exec_cmd:
+            clean_exec = exec_cmd.strip('"\'').split()[0]
+            rel = os.path.relpath(clean_exec, INSTALLED_APPS_DIR)
+            folder_name = rel.split(os.sep)[0]
+            app_dir = os.path.join(INSTALLED_APPS_DIR, folder_name)
+            is_installed_app = True
+
+        if not real_path and APPIMAGES_DIR in exec_cmd:
+            clean_exec = exec_cmd.strip('"\'').split()[0]
+            real_path = clean_exec
+            is_appimage = True
 
         # Case 1: AppImage
         if is_appimage or "/appimages/" in real_path or "/appimages/" in exec_cmd:
@@ -599,6 +619,21 @@ class MacAppDaemon:
     def run(self):
         print("[MacAppDaemon] Starting macOS Applications Drag-and-Drop Manager...")
         sync()
+
+        # Supervise Dock Trash Drop Overlay for Wayland drag-and-drop bypass
+        overlay_bin = "/usr/local/bin/mac-dock-trash-overlay"
+        if not os.path.exists(overlay_bin):
+            overlay_bin = os.path.expanduser("~/MACTHEMEFILES/bin/mac-dock-trash-overlay")
+        if os.path.exists(overlay_bin):
+            def supervise_overlay():
+                while True:
+                    try:
+                        p = subprocess.Popen([overlay_bin])
+                        p.wait()
+                    except Exception as e:
+                        print(f"[MacAppDaemon] Overlay error: {e}", flush=True)
+                    time.sleep(2)
+            threading.Thread(target=supervise_overlay, daemon=True).start()
 
         # Monitor ~/Applications
         f_apps = Gio.File.new_for_path(APPS_DIR)
