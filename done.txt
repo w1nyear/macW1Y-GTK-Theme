@@ -9470,3 +9470,27 @@ echo "==> Встановлення успішно завершено!"
    - extensions/kiwi@kemma/extension.js:
      * Bumped cache-busting query parameter for `tahoeOSD.js` to `?v=osd_v4`
    - Synced all modified files to `~/.local/share/gnome-shell/extensions/kiwi@kemma/` and live-reloaded the theme and OSD module in GNOME Shell.
+486. [2026-10-24] Remove white background and stripes from notifications and Control Center, leaving only pure clean liquid glass shader (macOS Tahoe crystal glass):
+   1. Проблема:
+      - У картках сповіщень (Notification Center та спливаючих toasts) був присутній напівпрозорий білуватий/сірий непрозорий фон (`rgba(45, 45, 47, 0.76)`), а зверху та знизу малювалися яскраві білі лінії товщиною 2px (`border-top/bottom: 2px solid rgba(200, 200, 200, 0.50)`). Крім того, в Notification Center одночасно працювали два скляних стеки (`nc-backdrop` під усією панеллю та `nc-cards` під кожною карткою), через що розмиття накладалося двічі, утворюючи каламутну білу димку.
+      - У центрі керування (Control Center) був увімкнений 80-піксельний фоновий стек розмиття (`backdrop`, `radius: 82`), який розмивав робочий стіл навколо панелі та створював широку білу пляму ліворуч, а на кожній пілюлі та картці були такі ж штучні 2px білі смуги замість єдиного тонкого контуру скла.
+   2. Виконані виправлення:
+      - У `extensions/kiwi@kemma/stylesheet.css`:
+        * Для `.mac-notification-banner`, `.tahoe-nc-list .mac-notification-banner` та `.tahoe-nc-panel .mac-notification-banner` видалено всі непрозорі фони (`background-color: transparent !important;`), прибрано `box-shadow` та замінено подвійні смуги 2px на витончену скляну рамку: `border: 1px solid rgba(255, 255, 255, 0.16) !important;` (радіус заокруглення 24px).
+        * Для пілюль, дисків, медіаплеєра та карток Control Center (`.tahoe-qs-pill`, `.tahoe-qs-pill.tahoe-qs-pill-priv`, `.tahoe-qs-circle`, `.tahoe-qs-music`, `.tahoe-qs-card`, `.tahoe-qs-edit`) видалено `border-top/bottom: 2px solid rgba(200, 200, 200, 0.50)` і встановлено `border: 1px solid rgba(255, 255, 255, 0.16) !important;`.
+      - У `extensions/kiwi@kemma/apps/tahoeNotificationCard.js` та `apps/tahoeNotifications.js`:
+        * Оновлено константу `CARD_BASE_STYLE` та інлайн-стилі спливаючих банерів: встановлено `background-color: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: none !important;`.
+        * У `_buildPanel` повністю вилучено скляний стек `nc-backdrop` (`_makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0)`), залишивши лише цільовий стек розмиття карток `nc-cards`. Завдяки цьому усунено подвійний блюр та білу каламутність навколо сповіщень.
+      - У `extensions/kiwi@kemma/apps/tahoeControlCenter.js`:
+        * Вилучено групу `{name: 'backdrop', radius: 82}` зі списку `GLASS_GROUPS`, повністю ліквідувавши 80-піксельний ореол розмиття навколо центру керування.
+        * Замінено `SURF_LIGHT` з `{c: [0.78, 0.78, 0.80], a: 0.10}` на нейтральний темний тінт `{c: [0.16, 0.16, 0.18], a: 0.10}`, що запобігає 78% білому підсвічуванню елементів.
+        * Знижено яскравість `_qsGlassBrightness()` зі 130% до 1.0 (100%), у `_makeGlassStack` тінт за замовчуванням встановлено у `(0.16, 0.16, 0.18)` замість білого `(1, 1, 1)`.
+      - У `extensions/kiwi@kemma/apps/tahoeApps.js`, `extensions/liquid-glass@thinkingcoding1231.gmail.com/stylesheet.css`, `extensions/blur-my-shell@aunetx/components/mac_input_switcher_v11.js`:
+        * Очищено залишки штучних 2px смуг та уніфіковано вигляд під чистий 1px скляний контур `border: 1px solid rgba(255, 255, 255, 0.16) !important;`.
+      - У `extensions/kiwi@kemma/extension.js`:
+        * Оновлено версії кешування для динамічного імпорту модулів: `tahoeNotifications.js?v=notif_v15` та `tahoeControlCenter.js?v=tahoe_v8`.
+   3. Верифікація:
+      - Усі файли синхронізовано до робочих каталогів розширень `~/.local/share/gnome-shell/extensions/`.
+      - Стилі теми та модулі оновлено наживо через `EvalHelper` без необхідності перезапуску GNOME Shell.
+      - Перевірено відкриття та закриття Notification Center: активний лише чистий стек розмиття карток `cards`, фоновий прямокутний backdrop відсутній, фон карток прозорий із чистим скляним шейдером.
+      - Перевірено Control Center: ореол backdrop відсутній, пілюлі та картки відображаються на чистому рідкому склі без білої заливки та без 2px смуг.

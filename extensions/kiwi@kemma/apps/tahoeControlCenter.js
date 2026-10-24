@@ -117,7 +117,7 @@ const CLIP_PADDING = 200;
 
 // per-region fill colors (painted by the shader under each element):
 // light tint in the light theme, dark tint in the dark one. Subtle.
-const SURF_LIGHT = {c: [0.78, 0.78, 0.80], a: 0.10};
+const SURF_LIGHT = {c: [0.16, 0.16, 0.18], a: 0.10};
 const SURF_DARK = {c: [0.05, 0.05, 0.07], a: 0.10};
 const CIRCLE_ON = {c: [1, 1, 1], a: 0.45};
 
@@ -132,10 +132,6 @@ const GLASS_GROUPS = [
     {name: 'priv', radius: 18},
     // edit button has its own stack: shallower corners than the pill
     {name: 'edit', radius: 15},
-    // backdrop LAST: index-1 inserts paint it deepest, right above panelBg.
-    // Pure backdrop blur under the whole panel + shadow, fading out at the
-    // edges (edge_smoothing gradient, no tint/refraction/rim at all).
-    {name: 'backdrop', radius: 82},
 ];
 export const BACKDROP_PAD = 60;
 // backdrop region margin: covers the whole panel shadow (blur 22 + glow 70),
@@ -205,9 +201,9 @@ function _qsGlassBlur() {
 }
 function _qsGlassBrightness() {
     try {
-        return (_settings?.get_int?.('tahoe-qs-glass-brightness') ?? 130) / 100;
+        return (_settings?.get_int?.('tahoe-qs-glass-brightness') ?? 100) / 100;
     } catch (_) {
-        return _isDark() ? 1.0 : 1.3;
+        return 1.0;
     }
 }
 // int setting with fallback (glass tuning sliders)
@@ -2430,10 +2426,9 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         effect.setBrightness(1.0);
         effect.setContrast(1.0);
         effect.setSaturation(1.0);
-    } else if (_isDark())
+    } else {
         effect.setTintColor(0.16, 0.16, 0.18);
-    else
-        effect.setTintColor(1, 1, 1);
+    }
     if (!pure) {
         effect.setTintStrength(_qsGlassTint());
         effect.setBrightness(_qsGlassBrightness());

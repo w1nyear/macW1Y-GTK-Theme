@@ -1358,10 +1358,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .mac-notification-banner {
   min-height: 74px !important;
   padding: 0 !important;
-  border-radius: 16px !important;
-  background-color: rgba(45, 45, 47, 0.76) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
+  border-radius: 24px !important;
+  background-color: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: none !important;
   color: white !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
   transition-duration: 150ms;
@@ -1370,27 +1370,21 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-nc-list .mac-notification-banner,
 .tahoe-nc-panel .mac-notification-banner {
   background-color: transparent !important;
-  border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-  border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-  border-left: 0px !important;
-  border-right: 0px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   box-shadow: none !important;
 }
 
 .tahoe-nc-list .mac-notification-banner:hover,
 .tahoe-nc-panel .mac-notification-banner:hover {
   background-color: transparent !important;
-  border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-  border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-  border-left: 0px !important;
-  border-right: 0px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow: none !important;
 }
 
 .mac-notification-banner:hover {
-  background-color: rgba(56, 56, 58, 0.84) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.42) !important;
+  background-color: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: none !important;
 }
 
 .mac-notification-icon-bin {
@@ -1546,10 +1540,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     border-radius: 999px;
     padding: 10px 12px 10px 10px;
     box-shadow: none;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-left: none !important;
-    border-right: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
 }
 .tahoe-qs-dark .tahoe-qs-pill { box-shadow: none; }
 .tahoe-qs-pill-circle {
@@ -1577,10 +1568,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 /* privacy pill is slim (lower than regular pills) */
 .tahoe-qs-pill.tahoe-qs-pill-priv {
     padding: 4px 10px;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-left: none !important;
-    border-right: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
 }
 .tahoe-qs-pill-priv .tahoe-qs-pill-circle { width: 20px; height: 20px; }
 .tahoe-qs-pill-priv .tahoe-qs-pill-glyph { icon-size: 12px; }
@@ -1592,10 +1580,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     background-color: transparent;
     border-radius: 999px;
     box-shadow: none;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-left: none !important;
-    border-right: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
 }
 .tahoe-qs-dark .tahoe-qs-circle { box-shadow: none; }
 .tahoe-qs-circle-icon { icon-size: 24px; color: #1d1d1f; }
@@ -1615,10 +1600,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     border-radius: 28px;
     padding: 10px 8px;
     box-shadow: none;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-left: none !important;
-    border-right: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
 }
 .tahoe-qs-dark .tahoe-qs-music { box-shadow: none; }
 .tahoe-qs-music-box { spacing: 1px; }
@@ -1642,10 +1624,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     padding: 10px 14px;
     spacing: 6px;
     box-shadow: none;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-left: none !important;
-    border-right: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
 }
 .tahoe-qs-dark .tahoe-qs-card { box-shadow: none; }
 .tahoe-qs-card-label { font-size: 0.9em; font-weight: 700; color: #1d1d1f; }
@@ -1695,10 +1674,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     font-weight: 700;
     color: #1d1d1f;
     box-shadow: none;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-left: none !important;
-    border-right: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
 }
 .tahoe-qs-dark .tahoe-qs-edit { box-shadow: none; }
 

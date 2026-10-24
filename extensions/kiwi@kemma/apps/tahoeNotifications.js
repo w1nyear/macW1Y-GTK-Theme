@@ -51,7 +51,7 @@ let glassRefreshDone = null;
 let glassForceRefresh = null;
 
 const _LG_BASE = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist';
-const CARD_BASE_STYLE = 'background-color: rgba(0, 0, 0, 0) !important; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: none !important; border-right: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
+const CARD_BASE_STYLE = 'background-color: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
 
 import(_LG_BASE + '/liquidEffect.js').then(m => {
     if (m.LiquidEffect)
@@ -540,7 +540,7 @@ function _makeToastCard(item, noglass = false) {
         y_expand: true,
         x_align: Clutter.ActorAlign.FILL,
         y_align: Clutter.ActorAlign.FILL,
-        style: 'background-color: rgba(0, 0, 0, 0) !important; padding: 14px 14px 16px 14px; border-radius: 24px; border-top: 2px solid rgba(200, 200, 200, 0.50) !important; border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; border-left: 0px !important; border-right: 0px !important; box-shadow: none !important;',
+        style: 'background-color: transparent !important; padding: 14px 14px 16px 14px; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: none !important;',
     });
     try { content.set_reactive(true); } catch (_) {}
     try { content.set_width(TOAST_W); } catch (_) {}
@@ -2485,20 +2485,20 @@ function _buildPanel(merges = null) {
         p.allocId = 0;
     }
 
-    // Glass stacks: CC-style backdrop (pure blur) створюємо одразу; стек скла
-    // карток відкладаємо до settle — дорога побудова (wcm.rebuildClones,
-    // семплінг, каптура) у кадрах слайду давала фризи відкриття.
+    // Glass stack: чисте скло карток сповіщень (без паразитичного nc-backdrop)
     try {
-        const bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
-        overlay.insert_child_at_index(bd.bgActor, 1);
+        const cards = _makeGlassStack(monitor, 24, 'nc-cards', true);
+        cards.kind = 'cards';
+        try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
+        overlay.insert_child_at_index(cards.bgActor, 1);
         try {
-            overlay.set_child_above_sibling(panelBg, bd.bgActor);
+            overlay.set_child_above_sibling(panelBg, cards.bgActor);
         } catch (_) {}
 
-        _setupNcStack(p, bd);
-        bd.bgActor.opacity = 0;
-        bd.bgActor.visible = false;
-        p.stacks = [bd];
+        _setupNcStack(p, cards);
+        cards.bgActor.opacity = 0;
+        cards.bgActor.visible = false;
+        p.stacks = [cards];
 
         const tick = () => {
             p.tickId = 0;

@@ -280,10 +280,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._capsuleBox = new St.Widget({
             style: 'background-color: transparent !important; ' +
                    'border-radius: 14px !important; ' +
-                   'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-                   'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-                   'border-left: none !important; ' +
-                   'border-right: none !important; ' +
+                   'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
                    'box-shadow: none !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
             width: W_capsule,
@@ -380,10 +377,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._osdBox = new St.Widget({
             style: 'background-color: transparent !important; ' +
                    'border-radius: 22px !important; ' +
-                   'border-top: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-                   'border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important; ' +
-                   'border-left: none !important; ' +
-                   'border-right: none !important; ' +
+                   'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
                    'box-shadow: none !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
             width: this._osdW,
