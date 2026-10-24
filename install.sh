@@ -1103,8 +1103,8 @@ _install_hardware_extras() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
         linux-firmware fwupd fwupdate 2>/dev/null || true
 
-    # ── GameMode конфіг (оптимізований для gamer системи) ──────────────────
-    log_info "Встановлення GameMode конфігурації..."
+    # ── GameMode конфіг (чистий стиль Windows 11 Game Mode) ──────────────────
+    log_info "Встановлення GameMode конфігурації (стиль Windows 11)..."
     cat > "$TARGET_HOME/.config/gamemode.ini" << 'GAMEMODE_CFG'
 [general]
 reaper_freq=5
@@ -1112,7 +1112,7 @@ desiredgov=performance
 defaultgov=powersave
 igpu_desiredgov=powersave
 igpu_power_threshold=0.3
-softrealtime=off
+softrealtime=auto
 renice=10
 ioprio=0
 inhibit_screensaver=1
@@ -1129,83 +1129,8 @@ apply_gpu_optimisations=accept-responsibility
 gpu_device=0
 nv_powermizer_mode=1
 amd_performance_level=high
-
-[custom]
-start=/usr/local/bin/game-focus-start.sh
-end=/usr/local/bin/game-focus-end.sh
-
-[script]
-script_timeout=5
 GAMEMODE_CFG
     chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/gamemode.ini" 2>/dev/null || true
-
-    # ── game-focus-start.sh ────────────────────────────────────────────────
-    sudo tee /usr/local/bin/game-focus-start.sh > /dev/null << 'GF_START'
-#!/usr/bin/env bash
-# game-focus-start.sh — v0.4: вимикає системні GPU ефекти при активній грі
-DBUS_ADDR="unix:path=/run/user/$(id -u "${SUDO_USER:-$USER}")/bus"
-TARGET_USER="${SUDO_USER:-$USER}"
-
-# Вимкнути blur-my-shell
-for key in panel overview applications; do
-    DBUS_SESSION_BUS_ADDRESS="$DBUS_ADDR" sudo -u "$TARGET_USER" \
-        gsettings set org.gnome.shell.extensions.blur-my-shell.$key blur false 2>/dev/null || true
-done
-
-# Повідомити kiwi extension
-DBUS_SESSION_BUS_ADDRESS="$DBUS_ADDR" sudo -u "$TARGET_USER" \
-    gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell \
-    --method org.gnome.Shell.Eval \
-    "globalThis._tahoeGameMode=true;globalThis._tahoeBlurEnabled=false;if(globalThis._tahoeGameModeModule)globalThis._tahoeGameModeModule.onGameStart();" 2>/dev/null || true
-
-# NVIDIA — заблокувати клоки для max FPS
-nvidia-smi --persistence-mode=1 2>/dev/null || true
-nvidia-smi --lock-gpu-clocks=0,9999 2>/dev/null || true
-
-# CPU governor
-for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-    echo performance > "$cpu" 2>/dev/null || true
-done
-
-echo "[$(date '+%F %T')] GameMode STARTED" >> /tmp/macw1y-gamemode.log
-GF_START
-
-    sudo tee /usr/local/bin/game-focus-end.sh > /dev/null << 'GF_END'
-#!/usr/bin/env bash
-# game-focus-end.sh — v0.4: відновлює системні GPU ефекти після гри
-DBUS_ADDR="unix:path=/run/user/$(id -u "${SUDO_USER:-$USER}")/bus"
-TARGET_USER="${SUDO_USER:-$USER}"
-
-# Відновити blur-my-shell
-for key in panel overview applications; do
-    DBUS_SESSION_BUS_ADDRESS="$DBUS_ADDR" sudo -u "$TARGET_USER" \
-        gsettings set org.gnome.shell.extensions.blur-my-shell.$key blur true 2>/dev/null || true
-done
-
-# Повідомити kiwi extension
-DBUS_SESSION_BUS_ADDRESS="$DBUS_ADDR" sudo -u "$TARGET_USER" \
-    gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell \
-    --method org.gnome.Shell.Eval \
-    "globalThis._tahoeGameMode=false;globalThis._tahoeBlurEnabled=true;if(globalThis._tahoeGameModeModule)globalThis._tahoeGameModeModule.onGameEnd();" 2>/dev/null || true
-
-# NVIDIA — розблокувати клоки
-nvidia-smi --reset-gpu-clocks 2>/dev/null || true
-
-# CPU governor
-for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-    echo powersave > "$cpu" 2>/dev/null || true
-done
-
-echo "[$(date '+%F %T')] GameMode ENDED" >> /tmp/macw1y-gamemode.log
-GF_END
-
-    sudo chmod +x /usr/local/bin/game-focus-start.sh /usr/local/bin/game-focus-end.sh
-    log_success "game-focus скрипти встановлено"
-
-    # ── gamemoded sudoers (щоб скрипти могли змінювати governor) ─────────
-    echo "${TARGET_USER} ALL=(root) NOPASSWD: /usr/local/bin/game-focus-start.sh, /usr/local/bin/game-focus-end.sh, /usr/bin/nvidia-smi, /bin/bash /usr/local/bin/game-focus-start.sh, /bin/bash /usr/local/bin/game-focus-end.sh" | \
-        sudo tee /etc/sudoers.d/99-macw1y-gamemode > /dev/null
-    sudo chmod 440 /etc/sudoers.d/99-macw1y-gamemode
 
     # ── Активувати gamemoded ──────────────────────────────────────────────
     sudo -u "$TARGET_USER" systemctl --user enable gamemoded 2>/dev/null || true
@@ -1214,7 +1139,7 @@ GF_END
     # ── Додати користувача до групи gamemode ──────────────────────────────
     sudo usermod -aG gamemode "$TARGET_USER" 2>/dev/null || true
 
-    log_success "v0.4: Апаратні оптимізації встановлено (CPU мікрокод + GameMode + game-focus)"
+    log_success "v0.4: Апаратні оптимізації встановлено (CPU мікрокод + GameMode Windows 11 стиль)"
 }
 
 # ------------------------------------------------------------------------------

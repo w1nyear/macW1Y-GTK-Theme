@@ -23,11 +23,6 @@ export const BlurPaintSignal = GObject.registerClass({
     },
 }, class BlurPaintSignal extends Clutter.Effect {
     vfunc_paint(node, paintContext, paintFlags) {
-        // Якщо гра у фокусі — не emit update-blur (економимо GPU)
-        if (globalThis._tahoeGameMode || globalThis._tahoeBlurEnabled === false) {
-            super.vfunc_paint(node, paintContext, paintFlags);
-            return;
-        }
         this.emit('update-blur');
         super.vfunc_paint(node, paintContext, paintFlags);
     }
