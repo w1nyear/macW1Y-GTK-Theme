@@ -9366,3 +9366,19 @@ echo "==> Встановлення успішно завершено!"
    3. Верифікація:
       - Перевірка живого дока: `iconTransYs: [6, 6, ...]`, `dotTransYs: [8, 8, ...]`, `sep: 6`, `showApps: 6`. Навіть після виклику `d.dash._redisplay()` координати зберігаються бездоганно.
       - Перевірка уніформів шейдера карток сповіщень: `tint_r = 0, tint_g = 0, tint_b = 0, tint_strength = 0, baseStrength = 0`. Білий/сірий шар повністю зник, заломлення відбувається на чистому кришталевому склі.
+134. Виправлення помилки ініціалізації Vulkan для CS2 та всіх ігор у Steam (24.10.2026):
+   1. Проблема:
+      - При запуску CS2 (та інших ігор у Steam) виникала помилка «Помилка ініціалізації Vulkan. Переконайтеся, що ваші драйвери та графічний процесор підтримують Vulkan 1.2+».
+   2. Діагностика:
+      - У системному лаунчері `/usr/local/bin/steam` було залишене старе призначення змінних `VK_DRIVER_FILES="/usr/share/vulkan/icd.d/nvidia_icd.json"` та `VK_ICD_FILENAMES`.
+      - Оскільки Steam працює у Snap-контейнері, а ігри запускаються в ізольованому середовищі `SteamLinuxRuntime_sniper` (`pressure-vessel`), шлях хоста `/usr/share/vulkan/icd.d/nvidia_icd.json` всередині контейнера гри не існував.
+      - Змінна `VK_DRIVER_FILES` блокувала штатний механізм пошуку драйверів завантажувача Vulkan, позбавляючи контейнер доступу до відеокарти (`vkCreateInstance failed with ERROR_INCOMPATIBLE_DRIVER (-9)`), що ламало запуск усіх ігор на рушіях Vulkan/DXVK.
+   3. Виконані виправлення:
+      - Оновлено лаунчер `/usr/local/bin/steam` з актуальної версії [bin/steam](file:///home/vitaliy/MACTHEMEFILES/bin/steam):
+        * Видалено старі призначення `VK_DRIVER_FILES`, `VK_ICD_FILENAMES` та `MESA_VK_DEVICE_SELECT`.
+        * Додано обов'язкове очищення `unset VK_DRIVER_FILES` та `unset VK_ICD_FILENAMES`, завдяки чому `pressure-vessel` автоматично та безпомилково монтує ICD-маніфести всередину пісочниці.
+        * Збережено повне нативне прискорення дискретної відеокарти: `__NV_PRIME_RENDER_OFFLOAD=1`, `__GLX_VENDOR_LIBRARY_NAME=nvidia`, `__VK_LAYER_NV_optimus=NVIDIA_only`, `VK_LOADER_DRIVERS_SELECT="*nvidia*"`, `PROTON_ENABLE_NVAPI=1`, `DXVK_ENABLE_NVAPI=1`.
+      - Клієнт Steam перезапущено з новим чистим середовищем виконання.
+   4. Верифікація:
+      - Запущено Counter-Strike 2 через Steam: помилка Vulkan повністю зникла, гра успішно стартує.
+      - Перевірка через `nvidia-smi`: процес `cs2` (`PID 274234`) стабільно працює безпосередньо на дискретній графіці `NVIDIA GeForce RTX 3050 6GB Laptop GPU` (активний C+G режим, прямий апаратний Vulkan-рендеринг).
