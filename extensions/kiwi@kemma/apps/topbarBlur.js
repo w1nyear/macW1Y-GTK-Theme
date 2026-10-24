@@ -312,14 +312,14 @@ export function enable(settings) {
             if (!_stack)
                 return GLib.SOURCE_REMOVE;
 
-            // v0.4: Якщо гра у фокусі — пропустити весь рендер blur (0% GPU від системи)
+            // v0.4: Якщо гра у фокусі — приховати бар і не перевантажувати композитор
             if (globalThis._tahoeGameMode) {
                 try {
-                    _frameId = global.compositor.get_laters().add(
-                        Meta.LaterType.BEFORE_REDRAW, tick);
-                } catch (_) {
-                    _frameId = 0;
-                }
+                    if (_stack.bgActor)
+                        _stack.bgActor.visible = false;
+                } catch (_) {}
+                // Перевіряємо раз на 500 мс замість безперервного циклу BEFORE_REDRAW
+                _frameId = GLib.timeout_add(GLib.PRIORITY_LOW, 500, tick);
                 return GLib.SOURCE_REMOVE;
             }
 
