@@ -541,9 +541,19 @@ export class DashManager {
         // macOS Dock: authoritative geometry directly from dash2dock-motion background slab
         let hasSlabBounds = false;
         const slab = this._findDashBackground(this.targetActor.get_parent() || this.targetActor);
-        if (slab && slab.has_allocation()) {
-            const [slW] = slab.get_transformed_size();
-            const [slX] = slab.get_transformed_position();
+        if (slab) {
+            let slW, slX;
+            try {
+                [slW] = slab.get_transformed_size();
+                [slX] = slab.get_transformed_position();
+            } catch (_) {}
+            if (Number.isFinite(slX) && Number.isFinite(slW) && slW > 50) {
+                this._lastSlabW = slW;
+                this._lastSlabX = slX;
+            } else if (Number.isFinite(this._lastSlabW) && Number.isFinite(this._lastSlabX)) {
+                slW = this._lastSlabW;
+                slX = this._lastSlabX;
+            }
             if (Number.isFinite(slX) && Number.isFinite(slW) && slW > 50) {
                 let pillW = slW - 8;
                 let pillX = slX + 4;
@@ -591,9 +601,9 @@ export class DashManager {
                 let pillX, pillY, pillW, pillH;
                 let sidePad = 10; // smaller side padding (10px)
                 if (isHorizontal) {
-                    pillH = (baseIconH || 54) + 20; // 74px for 54px icons (+2px dock height)
+                    pillH = 74; // 74px fixed height (+2px dock height calibrated)
                     let isTop = monitor && (minY - monitor.y < (monitor.y + monitor.height) - maxY);
-                    pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - 4 - pillH) : (minY - 11));
+                    pillY = isTop ? (monitor.y + 4) : (monitor ? (monitor.y + monitor.height - 4 - pillH) : 1002);
                     let sidePadL = sidePad + Math.max(0, (icons[0]?.w || baseIconW) / (baseIconW || 54) - 1) * 10;
                     let sidePadR = sidePad + Math.max(0, (icons[icons.length - 1]?.w || baseIconW) / (baseIconW || 54) - 1) * 10;
                     pillX = minX - sidePadL;
@@ -616,6 +626,10 @@ export class DashManager {
         }
 
         if (!hasSlabBounds && !hasIconBounds) {
+            let pillH = 74;
+            let pillY = monitor ? (monitor.y + monitor.height - 4 - pillH) : 1002;
+            absY = pillY - 4;
+            baseH = pillH + 8;
             if (sourceActor !== this.targetActor) {
                 let [tX, tY] = this.targetActor.get_transformed_position();
                 let [tW, tH] = this.targetActor.get_size();

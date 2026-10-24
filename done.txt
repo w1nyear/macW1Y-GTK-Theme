@@ -9286,3 +9286,25 @@ echo "==> Встановлення успішно завершено!"
 
 
 
+130. Виправлення підстрибування висоти доку при відкритті нової програми та опускання іконок на 1px нижче (24.10.2026):
+   1. Завдання:
+      - Усунути стрибки висоти скляної капсули доку під час запуску/анімації нової програми.
+      - Опустити всі іконки в доці на 1 піксель нижче (translation_y з 3 до 4), зберігши точку індикатора запущеної програми на місці.
+   2. Першопричина підстрибування висоти доку:
+      - При запуску незакріпленої програми створюється новий значок у контейнері `dash._box`, що викликає інвалідацію розміщення (`queue_relayout()`).
+      - Внаслідок цього виклик `slab.has_allocation()` у `_syncGeometry()` повертав `false` протягом кількох кадрів циклу компонування.
+      - Через перевірку `slab && slab.has_allocation()` алгоритм переходив у резервні гілки (`walkIcons` та необмежений `sourceActor`), де висота доку зчитувалася як 84-88px (замість каліброваних 74px) та зміщувалася вгору на 6px (y: 992 замість 998, bgY: 972 замість 978), через що док підстрибував вгору синхронно з launch bounce анімацією іконки.
+   3. Виконані зміни:
+      - Стабілізація висоти та геометрії доку:
+        * У [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js) та [src/dockManager.ts](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts):
+          вилучено штучне блокування `slab.has_allocation()`, оскільки матричні координати `get_transformed_size()` / `get_transformed_position()` повертають коректні значення навіть під час проміжних кроків релейауту. Додано кешування `_lastSlabW` та `_lastSlabX`.
+          У горизонтальному режимі висоту капсули доку жорстко зафіксовано на еталонних 74px (baseH = 82px, bgH = 122px, pillY = 1002px, absY = 998px, bgY = 978px), що повністю виключає будь-які вертикальні стрибки.
+      - Опускання іконок на 1 піксель нижче:
+        * У [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js):
+          для всіх класів значків (`DockAbstractAppIcon`, `makeAppIcon`, `DockShowAppsIcon`) вертикальний зсув `this.icon.translation_y` змінено з 3 на 4. Графіка іконок опустилася рівно на 1px, а індикатор відкритої програми (`IndicatorDrawingArea`) залишився нерухомим.
+        * У [extensions/dash2dock-motion@unmade.space/dash.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/dash.js):
+          для вертикального розділювача `dash-separator` значення `translation_y` також скориговано з 3 на 4.
+      - Усі файли синхронізовано з `~/.local/share/gnome-shell/extensions/`, зміни гаряче активовано в сесії.
+   4. Верифікація:
+      - Проведено покадрове логування (60 кадрів / 1200 мс) під час запуску та анімації появи нової програми: `uniqueHeights` = [122] (рівно 74px висоти капсули), `uniqueYs` = [978] (без найменшого коливання по вертикалі), капсула плавно розширюється по горизонталі (з 747px до 809px) і акуратно повертається після закриття.
+      - Усі 11 іконок доку та сепаратор опущені на 1px донизу зі збереженням бездоганного macOS вигляду.
