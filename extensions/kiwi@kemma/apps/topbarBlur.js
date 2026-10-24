@@ -311,6 +311,18 @@ export function enable(settings) {
         const tick = () => {
             if (!_stack)
                 return GLib.SOURCE_REMOVE;
+
+            // v0.4: Якщо гра у фокусі — пропустити весь рендер blur (0% GPU від системи)
+            if (globalThis._tahoeGameMode) {
+                try {
+                    _frameId = global.compositor.get_laters().add(
+                        Meta.LaterType.BEFORE_REDRAW, tick);
+                } catch (_) {
+                    _frameId = 0;
+                }
+                return GLib.SOURCE_REMOVE;
+            }
+
             try {
                 ensureGlassAllocated(_stack.bgActor);
             } catch (_) {

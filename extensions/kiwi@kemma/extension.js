@@ -16,6 +16,7 @@ import { enable as topbarButtonsEnable, disable as topbarButtonsDisable } from '
 import { enable as reduceWindowAnimationsEnable, disable as reduceWindowAnimationsDisable } from './apps/reduceWindowAnimations.js';
 import { enable as gtkThemeSyncEnable, disable as gtkThemeSyncDisable } from './apps/gtkThemeSync.js';
 import { enable as labelBlurEnable, disable as labelBlurDisable } from './apps/labelBlur.js';
+import { enable as tahoeGameModeEnable, disable as tahoeGameModeDisable } from './apps/tahoeGameMode.js';
 
 export default class KiwiExtension extends Extension {
     _resolveDark() {
@@ -105,6 +106,13 @@ export default class KiwiExtension extends Extension {
             else
                 reduceWindowAnimationsDisable();
         } catch (_) {}
+
+        // Game Mode — відстеження фокусу ігор та вимкнення GPU ефектів
+        try {
+            tahoeGameModeEnable();
+        } catch (e) {
+            console.warn(`[kiwi] tahoeGameModeEnable: ${e}`);
+        }
     }
 
     enable() {
@@ -238,6 +246,7 @@ export default class KiwiExtension extends Extension {
         } catch (_) {}
         try { reduceWindowAnimationsDisable(); } catch (_) {}
         try { gtkThemeSyncDisable(); } catch (_) {}
+        try { tahoeGameModeDisable(); } catch (_) {}
 
         this._settings = null;
     }
