@@ -16,7 +16,10 @@ from gi.repository import Gtk, Gdk, GLib, Gio
 class MacDockTrashOverlay:
     def __init__(self):
         self.win = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+        GLib.set_prgname("mac_dock_trash_overlay")
+        GLib.set_application_name("mac_dock_trash_overlay")
         self.win.set_title("mac_dock_trash_overlay")
+        self.win.set_role("mac_dock_trash_overlay")
         self.win.set_decorated(False)
         self.win.set_skip_taskbar_hint(True)
         self.win.set_skip_pager_hint(True)
@@ -51,12 +54,17 @@ class MacDockTrashOverlay:
         self.win.connect('drag-data-received', self.on_drag_data_received)
         self.win.connect('button-press-event', self.on_button_press)
 
-        self.last_coords = None
+        self.cur_x = None
+        self.cur_y = None
+        self.cur_w = None
+        self.cur_h = None
+        self.cur_visible = None
+
         self.update_position()
         self.win.show_all()
 
-        # Sync position every 300ms
-        GLib.timeout_add(300, self.update_position)
+        # Check for dock movements every 500ms
+        GLib.timeout_add(500, self.update_position)
 
     def get_trash_coords(self):
         try:
@@ -96,7 +104,6 @@ class MacDockTrashOverlay:
     def update_position(self):
         coords = self.get_trash_coords()
         if coords:
-            self.last_coords = coords
             is_visible = (
                 coords.get('is_mapped', True) and
                 coords.get('opacity', 255) > 50 and
@@ -107,11 +114,19 @@ class MacDockTrashOverlay:
                 y = coords['y']
                 w = coords['w']
                 h = coords['h']
-                self.win.move(x, y)
-                self.win.resize(w, h)
-                self.win.set_keep_above(True)
+                if not self.cur_visible or x != self.cur_x or y != self.cur_y or w != self.cur_w or h != self.cur_h:
+                    self.win.move(x, y)
+                    self.win.resize(w, h)
+                    self.win.set_keep_above(True)
+                    self.cur_x = x
+                    self.cur_y = y
+                    self.cur_w = w
+                    self.cur_h = h
+                    self.cur_visible = True
             else:
-                self.win.move(-1000, -1000)
+                if self.cur_visible or self.cur_visible is None:
+                    self.win.move(-2000, -2000)
+                    self.cur_visible = False
         return True
 
     def on_drag_motion(self, widget, context, x, y, time):

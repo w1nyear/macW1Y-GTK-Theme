@@ -318,6 +318,14 @@ export class Intellihide {
         if (!metaWindow)
             return false;
 
+        const wmClass = metaWindow.get_wm_class?.() ?? '';
+        const title = metaWindow.get_title?.() ?? '';
+        const wmApp = metaWindow.get_gtk_application_id?.() ?? '';
+        if (wmClass === 'mac_dock_trash_overlay' ||
+            title === 'mac_dock_trash_overlay' ||
+            wmApp === 'mac_dock_trash_overlay')
+            return false;
+
         // The DING extension desktop window needs to be excluded
         // so we match its window by application id and window property.
         const wmApp = metaWindow.get_gtk_application_id();
