@@ -42,7 +42,7 @@
 
 #dashtodockContainer.bottom.shrink #dash .dash-item-container {
   /* Disable all margins defined upstream, we handle them here */
-  margin: 0 2px !important;
+  margin: 0 1px !important;
 }
 
 #dashtodockContainer.bottom #dash .dash-item-container>*,

@@ -1,7 +1,7 @@
 .dash-item-container .overview-tile .overview-icon,
 .dash-item-container .show-apps .overview-icon {
   background-color: rgba(255, 255, 255, 0);
-  padding: 2px 2px; }
+  padding: 4px 1px !important; }
 
 .dash-item-container .overview-tile:hover .overview-icon,
 .dash-item-container .overview-tile.focused .overview-icon,
@@ -40,9 +40,9 @@
     padding-top: 0 !important; }
   #dashtodockContainer.bottom #dash .dash-item-container {
     /* Disable all margins defined upstream, we handle them here */
-    margin: 0 2px !important; }
+    margin: 0 !important; }
     #dashtodockContainer.bottom #dash .dash-item-container > * {
-      margin: 0; }
+      margin: 0 !important; }
     #dashtodockContainer.bottom #dash .dash-item-container:ltr:first-child, #dashtodockContainer.bottom #dash .dash-item-container:rtl:last-child {
       margin-left: 0px !important; }
     #dashtodockContainer.bottom #dash .dash-item-container:ltr:last-child, #dashtodockContainer.bottom #dash .dash-item-container:rtl:first-child {
@@ -1570,8 +1570,9 @@
     padding: 0 !important;
     padding-top: 11px !important;
     padding-bottom: 11px !important;
+    margin: 0 !important;
 }
 
 #dashtodockContainer.bottom .dash-item-container {
-    margin: 0 2px !important;
+    margin: 0 !important;
 }
