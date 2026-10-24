@@ -3,8 +3,10 @@ import sys
 import os
 import subprocess
 import pwd
+import json
 
 STATE_FILE = '/etc/mac-gpu.state'
+TARGETS_FILE = '/etc/mac-gpu-targets.json'
 ENV_FILE = '/etc/environment.d/99-mac-gpu.conf'
 
 MODES = ['hybrid', 'apps_nvidia', 'nvidia', 'intel']
@@ -32,6 +34,25 @@ def run_cmd(cmd):
     except Exception:
         return ''
 
+def get_current_boot_id():
+    try:
+        with open('/proc/sys/kernel/random/boot_id', 'r') as f:
+            return f.read().strip()
+    except Exception:
+        return ''
+
+def is_pending_reboot():
+    if not os.path.exists(TARGETS_FILE):
+        return False
+    try:
+        with open(TARGETS_FILE, 'r') as f:
+            data = json.load(f)
+            pending_id = data.get('pending_boot_id', '')
+            cur_id = get_current_boot_id()
+            return bool(pending_id and cur_id and pending_id == cur_id)
+    except Exception:
+        return False
+
 def get_current_prime():
     return run_cmd(['prime-select', 'query']).lower()
 
@@ -56,6 +77,36 @@ def get_current_mode():
         return 'apps_nvidia'
     else:
         return 'hybrid'
+
+def get_targets():
+    defaults = {"system": 0, "apps": 0, "games": 1}
+    cur_mode = get_current_mode()
+    if cur_mode == 'nvidia':
+        defaults = {"system": 1, "apps": 1, "games": 1}
+    elif cur_mode == 'apps_nvidia':
+        defaults = {"system": 0, "apps": 1, "games": 1}
+    elif cur_mode == 'intel':
+        defaults = {"system": 0, "apps": 0, "games": 0}
+
+    if os.path.exists(TARGETS_FILE):
+        try:
+            with open(TARGETS_FILE, 'r') as f:
+                data = json.load(f)
+                sys_val = int(data.get('system', defaults['system']))
+                apps_val = int(data.get('apps', defaults['apps']))
+                games_val = int(data.get('games', defaults['games']))
+                pending = is_pending_reboot()
+                return {
+                    "system": sys_val,
+                    "apps": apps_val,
+                    "games": games_val,
+                    "pending_reboot": pending
+                }
+        except Exception:
+            pass
+
+    defaults["pending_reboot"] = False
+    return defaults
 
 def apply_user_systemd_env(enable=True):
     for u in pwd.getpwall():
@@ -122,15 +173,82 @@ def set_mode(mode):
 
     print(f"Mode set to: {mode} ({MODE_DESCRIPTIONS[mode]})")
 
+def set_targets(sys_idx, apps_idx, games_idx):
+    sys_val = int(sys_idx)
+    apps_val = int(apps_idx)
+    games_val = int(games_idx)
+
+    boot_id = get_current_boot_id()
+    targets_data = {
+        "system": sys_val,
+        "apps": apps_val,
+        "games": games_val,
+        "pending_boot_id": boot_id
+    }
+
+    try:
+        with open(TARGETS_FILE, 'w') as f:
+            json.dump(targets_data, f, indent=2)
+            f.write('\n')
+    except Exception as e:
+        print(f"Warning: Failed to write {TARGETS_FILE}: {e}", file=sys.stderr)
+
+    os.makedirs('/etc/environment.d', exist_ok=True)
+    current_prime = get_current_prime()
+
+    # 1. System target (compositor / X11 / Wayland desktop)
+    if sys_val == 1:
+        if current_prime != 'nvidia':
+            subprocess.run(['prime-select', 'nvidia'], check=False)
+    else:
+        if current_prime != 'on-demand':
+            subprocess.run(['prime-select', 'on-demand'], check=False)
+
+    # 2. Apps target (default user applications)
+    if apps_val == 1:
+        with open(ENV_FILE, 'w') as f:
+            for k, v in NVIDIA_ENV_VARS.items():
+                f.write(f'{k}={v}\n')
+        apply_user_systemd_env(enable=True)
+    else:
+        if os.path.exists(ENV_FILE):
+            try:
+                os.remove(ENV_FILE)
+            except OSError:
+                pass
+        apply_user_systemd_env(enable=False)
+
+    # 3. Derive legacy state
+    if sys_val == 1:
+        mode = 'nvidia'
+    elif apps_val == 1:
+        mode = 'apps_nvidia'
+    elif games_val == 1:
+        mode = 'hybrid'
+    else:
+        mode = 'intel'
+
+    try:
+        with open(STATE_FILE, 'w') as f:
+            f.write(f"{mode}\n")
+    except Exception:
+        pass
+
+    print(f"Targets configured: System={sys_val}, Apps={apps_val}, Games={games_val} (Mode: {mode})")
+    print("Reboot is pending to fully apply all graphical changes.")
+
 def print_status():
     mode = get_current_mode()
     prime = get_current_prime()
+    targets = get_targets()
     print("=" * 50)
     print("  macOS Style GPU Manager for Hybrid Laptops")
     print("=" * 50)
     print(f"Active Mode        : {mode} ({MODE_DESCRIPTIONS.get(mode, 'Unknown')})")
     print(f"prime-select state : {prime}")
     print(f"Global NVIDIA Env  : {'Enabled (/etc/environment.d/99-mac-gpu.conf)' if os.path.exists(ENV_FILE) else 'Disabled (Default to Intel UHD)'}")
+    print(f"Targets            : Система={targets['system']}, Програми={targets['apps']}, Ігри={targets['games']}")
+    print(f"Pending Reboot     : {'YES' if targets['pending_reboot'] else 'NO'}")
     print("=" * 50)
 
 def main():
@@ -156,6 +274,26 @@ def main():
             print(0)
         sys.exit(0)
 
+    elif action in ('get-targets', 'targets'):
+        targets = get_targets()
+        print(json.dumps(targets, indent=2))
+        sys.exit(0)
+
+    elif action in ('set-targets', 'target'):
+        if len(sys.argv) < 5:
+            print("Usage: mac-gpu-manager set-targets <system_idx> <apps_idx> <games_idx>", file=sys.stderr)
+            sys.exit(1)
+        set_targets(sys.argv[2], sys.argv[3], sys.argv[4])
+        sys.exit(0)
+
+    elif action in ('is-pending-reboot', 'pending-reboot'):
+        if is_pending_reboot():
+            print("yes")
+            sys.exit(0)
+        else:
+            print("no")
+            sys.exit(1)
+
     elif action == 'set':
         if len(sys.argv) < 3:
             print("Usage: mac-gpu-manager set <hybrid|apps_nvidia|nvidia|intel>", file=sys.stderr)
@@ -171,7 +309,7 @@ def main():
         print_status()
 
     else:
-        print("Usage: mac-gpu-manager {get|get-index|set <mode>|status}", file=sys.stderr)
+        print("Usage: mac-gpu-manager {get|get-index|get-targets|set <mode>|set-targets <s> <a> <g>|is-pending-reboot|status}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == '__main__':

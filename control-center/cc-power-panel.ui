@@ -80,30 +80,6 @@ corresponding .blp file and regenerate this file with blueprint-compiler.
 													</object>
 												</child>
 												<child>
-													<object class="AdwPreferencesGroup" id="gpu_management_section">
-														<property name="title" translatable="yes">Графіка та відеокарти (GPU)</property>
-														<property name="description" translatable="yes">Розподіл навантаження між енергоефективною Intel UHD Graphics та дискретною NVIDIA GeForce RTX 3050</property>
-														<child>
-															<object class="AdwComboRow" id="gpu_mode_row">
-																<property name="title" translatable="yes">Режим розподілу GPU</property>
-																<property name="subtitle" translatable="yes">Гібридний: Intel для системи • RTX 3050 для ігор та важких додатків</property>
-																<property name="model">
-																	<object class="GtkStringList">
-																		<items>
-																			<item translatable="yes">Гібридний (Intel — система • RTX 3050 — ігри та важкі)</item>
-																			<item translatable="yes">Всі програми на RTX 3050 (Intel — система • RTX 3050 — всі інші)</item>
-																			<item translatable="yes">Повна продуктивність (Все на RTX 3050)</item>
-																			<item translatable="yes">Енергозбереження (Тільки Intel UHD)</item>
-																		</items>
-																	</object>
-																</property>
-																<signal name="realize" handler="init_gpu_mode"/>
-																<signal name="notify::selected" handler="on_gpu_mode_changed"/>
-															</object>
-														</child>
-													</object>
-												</child>
-												<child>
 													<object class="AdwPreferencesGroup" id="game_mode_section">
 														<property name="title" translatable="yes">Режим гри</property>
 														<property name="description" translatable="yes">Оптимізація ресурсів процесора, графічного стека та пам'яті для усунення мікрофрізів (не залежить від джерела живлення)</property>
@@ -116,23 +92,40 @@ corresponding .blp file and regenerate this file with blueprint-compiler.
 															</object>
 														</child>
 														<child>
-															<object class="AdwActionRow">
-																<property name="title" translatable="yes">Графіка для ігор</property>
-																<property name="subtitle" translatable="yes">NVIDIA GeForce RTX 3050 6GB (Примусово)</property>
+															<object class="AdwComboRow" id="gpu_system_row">
+																<property name="title" translatable="yes">Система</property>
+																<property name="subtitle" translatable="yes">Відеокарта для інтерфейсу, робочого столу та вікон</property>
+																<signal name="realize" handler="init_gpu_system"/>
+																<signal name="notify::selected" handler="on_gpu_system_changed"/>
 																<child type="prefix">
 																	<object class="GtkImage">
-																		<property name="icon-name">video-display-symbolic</property>
+																		<property name="icon-name">video-single-display-symbolic</property>
 																	</object>
 																</child>
 															</object>
 														</child>
 														<child>
-															<object class="AdwActionRow">
-																<property name="title" translatable="yes">Графіка для робочого столу</property>
-																<property name="subtitle" translatable="yes">Intel UHD Graphics Raptor Lake (Примусово)</property>
+															<object class="AdwComboRow" id="gpu_apps_row">
+																<property name="title" translatable="yes">Програми</property>
+																<property name="subtitle" translatable="yes">Відеокарта для робочих програм та мультимедіа</property>
+																<signal name="realize" handler="init_gpu_apps"/>
+																<signal name="notify::selected" handler="on_gpu_apps_changed"/>
 																<child type="prefix">
 																	<object class="GtkImage">
-																		<property name="icon-name">video-single-display-symbolic</property>
+																		<property name="icon-name">applications-system-symbolic</property>
+																	</object>
+																</child>
+															</object>
+														</child>
+														<child>
+															<object class="AdwComboRow" id="gpu_games_row">
+																<property name="title" translatable="yes">Ігри</property>
+																<property name="subtitle" translatable="yes">Відеокарта для 3D-ігор, Steam та Proton</property>
+																<signal name="realize" handler="init_gpu_games"/>
+																<signal name="notify::selected" handler="on_gpu_games_changed"/>
+																<child type="prefix">
+																	<object class="GtkImage">
+																		<property name="icon-name">applications-games-symbolic</property>
 																	</object>
 																</child>
 															</object>
@@ -143,7 +136,29 @@ corresponding .blp file and regenerate this file with blueprint-compiler.
 																<property name="subtitle" translatable="yes">P-ядра (0-7) закріплено за іграми • E-ядра (8-11) для фонових задач ОС</property>
 																<child type="prefix">
 																	<object class="GtkImage">
-																		<property name="icon-name">applications-games-symbolic</property>
+																		<property name="icon-name">cpu-symbolic</property>
+																	</object>
+																</child>
+															</object>
+														</child>
+														<child>
+															<object class="AdwActionRow" id="gpu_reboot_row">
+																<property name="title" translatable="yes">Потрібно перезавантаження</property>
+																<property name="subtitle" translatable="yes">Щоб прийняти зміни конфігурації відеокарт, перезавантажте комп'ютер</property>
+																<signal name="realize" handler="init_gpu_reboot_row"/>
+																<child type="prefix">
+																	<object class="GtkImage">
+																		<property name="icon-name">system-reboot-symbolic</property>
+																	</object>
+																</child>
+																<child type="suffix">
+																	<object class="GtkButton" id="gpu_reboot_button">
+																		<property name="label" translatable="yes">Перезавантажити…</property>
+																		<property name="valign">3</property>
+																		<signal name="clicked" handler="on_gpu_reboot_clicked"/>
+																		<style>
+																			<class name="suggested-action"/>
+																		</style>
 																	</object>
 																</child>
 															</object>

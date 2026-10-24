@@ -9520,3 +9520,38 @@ echo "==> Встановлення успішно завершено!"
    3. Верифікація:
       - Успішно перевірено створення `LockscreenMenuBarManager`, читання батареї через UPower D-Bus, створення іконки Центру керування та застосування стилів годинника в GNOME Shell.
       - Перевірено фільтрацію: активні лише Батарея, Центр керування та Центр сповіщень, індикатор «uk» та інші GNOME-іконки повністю приховано.
+488. [2026-10-24] Dynamic hardware GPU detection and 3-way allocation (System, Applications, Games) with reboot prompt in GNOME Settings (Power panel):
+   1. Проблема:
+      - У панелі «Живлення» (Power) налаштувань GNOME Settings (секція «Режим гри») відображалися статичні рядки з жорстко закодованими назвами відеокарт («Графіка для ігор: NVIDIA GeForce RTX 3050 6GB», «Графіка для робочого столу: Intel UHD Graphics Raptor Lake»).
+      - Користувач не міг бачити реальні встановлені відеокарти на своєму комп'ютері, обирати яку відеокарту використовувати для яких завдань через випадаючі меню, а також була відсутня можливість підтвердження змін перезавантаженням комп'ютера.
+   2. Виконані виправлення:
+      - У `gnome-control-center-overlay/cc-power-panel.ui` та `control-center/cc-power-panel.ui`:
+        * Замінено статичні інформаційні рядки трьома інтерактивними віджетами `AdwComboRow`:
+          1) **Система** (`gpu_system_row`): вибір відеокарти для графічного інтерфейсу, робочого столу та композитора mutter (іконка `video-single-display-symbolic`).
+          2) **Програми** (`gpu_apps_row`): вибір відеокарти за замовчуванням для запуску робочих програм, браузера та мультимедіа (іконка `applications-system-symbolic`).
+          3) **Ігри** (`gpu_games_row`): вибір відеокарти для 3D-ігор, Steam, Proton та емуляторів (іконка `applications-games-symbolic`).
+        * Збережено тумблер «Режим гри» (`game_mode_switch`) та рядок «Топологія процесора».
+        * Додано рядок перезавантаження `AdwActionRow` (`gpu_reboot_row`):
+          - Заголовок: «Потрібно перезавантаження».
+          - Підзаголовок: «Щоб прийняти зміни конфігурації відеокарт, перезавантажте комп'ютер».
+          - Префікс: іконка `system-reboot-symbolic`.
+          - Суфікс: кнопка `GtkButton` («Перезавантажити…», клас `suggested-action`, обробник `on_gpu_reboot_clicked`).
+      - У `gnome-control-center-overlay/libmac_settings.c` та `control-center/libmac_settings.c`:
+        * Реалізовано динамічне апаратне визначення відеокарт (`detect_system_gpus`): запит до системного сервісу D-Bus `net.hadess.SwitcherooControl` із резервним зчитуванням `lspci`.
+        * Реалізовано інтелектуальне очищення назв відеокарт (`prettify_gpu_name`): видалення знаків `™`/`®`, надлишкових слів «Laptop GPU», витяг чистої моделі з дужок та коректний префікс вендора (наприклад: `Intel UHD Graphics`, `NVIDIA GeForce RTX 3050 6GB`).
+        * Створено модель списку `create_gpu_string_list()` та реалізовано обробники сигналів: `init_gpu_system`, `init_gpu_apps`, `init_gpu_games`, `on_gpu_system_changed`, `on_gpu_apps_changed`, `on_gpu_games_changed`.
+        * Додано захист від хибних спрацьовувань під час початкової побудови віджетів (`in_gpu_init`, `all_gpus_initialized`).
+        * Реалізовано збереження конфігурації у `/etc/mac-gpu-targets.json` та `~/.config/mac-gpu-targets.json`.
+        * Реалізовано відстеження необхідності перезавантаження через UUID сесії `/proc/sys/kernel/random/boot_id`: рядок перезавантаження відображається, коли конфігурація змінена у поточній сесії, та автоматично приховується після перезавантаження.
+        * Обробник `on_gpu_reboot_clicked` викликає `systemctl reboot`.
+      - У `bin/mac-gpu-manager` та `/usr/local/bin/mac-gpu-manager`:
+        * Додано команди `get-targets`, `set-targets <sys> <apps> <games>` та `is-pending-reboot`.
+        * При зміні конфігурації налаштовується `prime-select` (`nvidia` для дискретної системи, `on-demand` для гібридної) та оновлюється глобальний файл змінних оточення `/etc/environment.d/99-mac-gpu.conf` разом із системними користувацькими змінними через `systemctl --user set/unset-environment`.
+      - Скомпільовано та встановлено бібліотеку `libmac_settings.so` в усі цільові каталоги:
+        `lib/libmac_settings.so`, `~/.local/lib/libmac_settings.so`, `/usr/lib/x86_64-linux-gnu/libmac_settings.so`.
+      - Встановлено оновлений `cc-power-panel.ui` у `~/.local/share/gnome-control-center-overlay/cc-power-panel.ui` та `/usr/share/mactheme/gnome-control-center-overlay/cc-power-panel.ui`.
+   3. Верифікація:
+      - Успішно протестовано визначення реальних відеокарт користувача: виявлено GPU 0 (`Intel UHD Graphics`) та GPU 1 (`NVIDIA GeForce RTX 3050 6GB`).
+      - Перевірено завантаження випадаючих списків `AdwComboRow`: відображаються реальні відеокарти користувача замість статичних заглушок.
+      - Перевірено збереження конфігурації при перемиканні пунктів та автоматичну появу рядка перезавантаження з кнопкою «Перезавантажити…».
+      - Перевірено відсутність збоїв, зависань чи помилок у роботі `gnome-control-center power`.

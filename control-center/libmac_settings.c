@@ -481,6 +481,414 @@ void on_game_mode_changed(void *widget, void *pspec, gpointer data) {
     }
 }
 
+/* ========================================================================= */
+/* Dynamic Real GPU Allocation (System, Applications, Games) & Reboot Row   */
+/* ========================================================================= */
+
+typedef struct {
+    char pretty_name[128];
+    char raw_name[128];
+    gboolean is_discrete;
+} MacGPUInfo;
+
+static MacGPUInfo g_detected_gpus[8];
+static int g_detected_gpu_count = 0;
+
+static GtkWidget *combo_gpu_system_w = NULL;
+static GtkWidget *combo_gpu_apps_w = NULL;
+static GtkWidget *combo_gpu_games_w = NULL;
+static GtkWidget *gpu_reboot_row_w = NULL;
+
+static char *prettify_gpu_name(const char *raw) {
+    if (!raw) return g_strdup("Невідома відеокарта");
+
+    char clean[256];
+    g_strlcpy(clean, raw, sizeof(clean));
+
+    /* Strip multibyte trademark (™: \xe2\x84\xa2) and registered (®: \xc2\xae) */
+    char *tm;
+    while ((tm = strstr(clean, "\xe2\x84\xa2")) != NULL) {
+        memmove(tm, tm + 3, strlen(tm + 3) + 1);
+    }
+    while ((tm = strstr(clean, "\xc2\xae")) != NULL) {
+        memmove(tm, tm + 2, strlen(tm + 2) + 1);
+    }
+
+    /* Extract bracketed model name, e.g. [GeForce RTX 3050 6GB Laptop GPU] or [UHD Graphics] */
+    char *bracket_start = strchr(clean, '[');
+    char *bracket_end = bracket_start ? strchr(bracket_start, ']') : NULL;
+    char model_extracted[128] = {0};
+    if (bracket_start && bracket_end && bracket_end > bracket_start + 1) {
+        int len = bracket_end - (bracket_start + 1);
+        if (len < (int)sizeof(model_extracted)) {
+            strncpy(model_extracted, bracket_start + 1, len);
+            model_extracted[len] = '\0';
+        }
+    }
+
+    gboolean is_nvidia = (strcasestr(clean, "NVIDIA") != NULL);
+    gboolean is_intel = (strcasestr(clean, "Intel") != NULL);
+    gboolean is_amd = (strcasestr(clean, "AMD") != NULL || strcasestr(clean, "Radeon") != NULL);
+
+    if (model_extracted[0] != '\0') {
+        char *lap = strcasestr(model_extracted, " Laptop GPU");
+        if (lap) *lap = '\0';
+        lap = strcasestr(model_extracted, " laptop GPU");
+        if (lap) *lap = '\0';
+
+        if (is_nvidia && !strcasestr(model_extracted, "NVIDIA")) {
+            return g_strdup_printf("NVIDIA %s", model_extracted);
+        } else if (is_intel && !strcasestr(model_extracted, "Intel")) {
+            return g_strdup_printf("Intel %s", model_extracted);
+        } else if (is_amd && !strcasestr(model_extracted, "AMD")) {
+            return g_strdup_printf("AMD %s", model_extracted);
+        } else {
+            return g_strdup(model_extracted);
+        }
+    }
+
+    return g_strdup(clean);
+}
+
+static void detect_system_gpus(void) {
+    if (g_detected_gpu_count > 0) return;
+
+    /* 1. SwitcherooControl D-Bus */
+    GError *err = NULL;
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &err);
+    if (bus) {
+        GVariant *res = g_dbus_connection_call_sync(bus,
+            "net.hadess.SwitcherooControl",
+            "/net/hadess/SwitcherooControl",
+            "org.freedesktop.DBus.Properties",
+            "Get",
+            g_variant_new("(ss)", "net.hadess.SwitcherooControl", "GPUs"),
+            G_VARIANT_TYPE("(v)"),
+            G_DBUS_CALL_FLAGS_NONE,
+            -1, NULL, &err);
+        if (res) {
+            GVariant *val = NULL;
+            g_variant_get(res, "(v)", &val);
+            if (val) {
+                GVariantIter iter;
+                g_variant_iter_init(&iter, val);
+                GVariant *dict = NULL;
+                while ((dict = g_variant_iter_next_value(&iter)) && g_detected_gpu_count < 8) {
+                    const char *raw = NULL;
+                    gboolean disc = FALSE;
+                    g_variant_lookup(dict, "Name", "&s", &raw);
+                    g_variant_lookup(dict, "Discrete", "b", &disc);
+                    if (raw) {
+                        char *pretty = prettify_gpu_name(raw);
+                        g_strlcpy(g_detected_gpus[g_detected_gpu_count].pretty_name, pretty, 128);
+                        g_strlcpy(g_detected_gpus[g_detected_gpu_count].raw_name, raw, 128);
+                        g_detected_gpus[g_detected_gpu_count].is_discrete = disc;
+                        g_detected_gpu_count++;
+                        g_free(pretty);
+                    }
+                    g_variant_unref(dict);
+                }
+                g_variant_unref(val);
+            }
+            g_variant_unref(res);
+        } else if (err) {
+            g_clear_error(&err);
+        }
+        g_object_unref(bus);
+    }
+
+    /* 2. Fallback: lspci */
+    if (g_detected_gpu_count == 0) {
+        FILE *fp = popen("lspci 2>/dev/null", "r");
+        if (fp) {
+            char line[256];
+            while (fgets(line, sizeof(line), fp) && g_detected_gpu_count < 8) {
+                if (strstr(line, "VGA compatible controller:") || strstr(line, "3D controller:")) {
+                    char *colon = strchr(line, ':');
+                    if (colon) {
+                        colon = strchr(colon + 1, ':');
+                        if (colon) {
+                            char *raw = colon + 1;
+                            while (*raw == ' ') raw++;
+                            g_strstrip(raw);
+                            char *pretty = prettify_gpu_name(raw);
+                            gboolean disc = (strcasestr(line, "3D") || strcasestr(line, "NVIDIA") || strcasestr(line, "AMD"));
+                            g_strlcpy(g_detected_gpus[g_detected_gpu_count].pretty_name, pretty, 128);
+                            g_strlcpy(g_detected_gpus[g_detected_gpu_count].raw_name, raw, 128);
+                            g_detected_gpus[g_detected_gpu_count].is_discrete = disc;
+                            g_detected_gpu_count++;
+                            g_free(pretty);
+                        }
+                    }
+                }
+            }
+            pclose(fp);
+        }
+    }
+
+    /* 3. Fallback: default entry */
+    if (g_detected_gpu_count == 0) {
+        g_strlcpy(g_detected_gpus[0].pretty_name, "Інтегрована відеокарта", 128);
+        g_detected_gpus[0].is_discrete = FALSE;
+        g_detected_gpu_count = 1;
+    }
+}
+
+static GtkStringList *create_gpu_string_list(void) {
+    detect_system_gpus();
+    GtkStringList *sl = gtk_string_list_new(NULL);
+    for (int i = 0; i < g_detected_gpu_count; i++) {
+        gtk_string_list_append(sl, g_detected_gpus[i].pretty_name);
+    }
+    return sl;
+}
+
+static gboolean check_pending_reboot(void) {
+    char cur_boot_id[64] = {0};
+    FILE *bf = fopen("/proc/sys/kernel/random/boot_id", "r");
+    if (bf) {
+        if (fgets(cur_boot_id, sizeof(cur_boot_id), bf)) {
+            g_strstrip(cur_boot_id);
+        }
+        fclose(bf);
+    }
+    if (cur_boot_id[0] == '\0') return FALSE;
+
+    char *user_path = g_build_filename(g_get_home_dir(), ".config", "mac-gpu-targets.json", NULL);
+    const char *paths[] = { "/etc/mac-gpu-targets.json", user_path, NULL };
+    gboolean pending = FALSE;
+
+    for (int i = 0; i < 2; i++) {
+        if (!paths[i] || !g_file_test(paths[i], G_FILE_TEST_EXISTS)) continue;
+        JsonParser *parser = json_parser_new();
+        if (json_parser_load_from_file(parser, paths[i], NULL)) {
+            JsonNode *root = json_parser_get_root(parser);
+            if (JSON_NODE_HOLDS_OBJECT(root)) {
+                JsonObject *obj = json_node_get_object(root);
+                if (json_object_has_member(obj, "pending_boot_id")) {
+                    const char *p_id = json_object_get_string_member(obj, "pending_boot_id");
+                    if (p_id && strcmp(p_id, cur_boot_id) == 0) {
+                        pending = TRUE;
+                    }
+                }
+            }
+        }
+        g_object_unref(parser);
+        if (pending) break;
+    }
+    g_free(user_path);
+    return pending;
+}
+
+static void load_gpu_targets(guint *out_sys, guint *out_apps, guint *out_games) {
+    detect_system_gpus();
+    guint default_disc = (g_detected_gpu_count > 1) ? 1 : 0;
+    *out_sys = 0;
+    *out_apps = 0;
+    *out_games = default_disc;
+
+    char *user_path = g_build_filename(g_get_home_dir(), ".config", "mac-gpu-targets.json", NULL);
+    const char *paths[] = { "/etc/mac-gpu-targets.json", user_path, NULL };
+    gboolean loaded = FALSE;
+
+    for (int i = 0; i < 2; i++) {
+        if (!paths[i] || !g_file_test(paths[i], G_FILE_TEST_EXISTS)) continue;
+        JsonParser *parser = json_parser_new();
+        if (json_parser_load_from_file(parser, paths[i], NULL)) {
+            JsonNode *root = json_parser_get_root(parser);
+            if (JSON_NODE_HOLDS_OBJECT(root)) {
+                JsonObject *obj = json_node_get_object(root);
+                if (json_object_has_member(obj, "system"))
+                    *out_sys = (guint)json_object_get_int_member(obj, "system");
+                if (json_object_has_member(obj, "apps"))
+                    *out_apps = (guint)json_object_get_int_member(obj, "apps");
+                if (json_object_has_member(obj, "games"))
+                    *out_games = (guint)json_object_get_int_member(obj, "games");
+                loaded = TRUE;
+            }
+        }
+        g_object_unref(parser);
+        if (loaded) break;
+    }
+    g_free(user_path);
+
+    if (!loaded) {
+        FILE *sf = fopen("/etc/mac-gpu.state", "r");
+        if (sf) {
+            char mode[32] = {0};
+            if (fgets(mode, sizeof(mode), sf)) {
+                g_strstrip(mode);
+                if (strcmp(mode, "nvidia") == 0) {
+                    *out_sys = default_disc;
+                    *out_apps = default_disc;
+                    *out_games = default_disc;
+                } else if (strcmp(mode, "apps_nvidia") == 0) {
+                    *out_sys = 0;
+                    *out_apps = default_disc;
+                    *out_games = default_disc;
+                } else if (strcmp(mode, "intel") == 0) {
+                    *out_sys = 0;
+                    *out_apps = 0;
+                    *out_games = 0;
+                } else {
+                    *out_sys = 0;
+                    *out_apps = 0;
+                    *out_games = default_disc;
+                }
+            }
+            fclose(sf);
+        }
+    }
+
+    if (*out_sys >= (guint)g_detected_gpu_count) *out_sys = 0;
+    if (*out_apps >= (guint)g_detected_gpu_count) *out_apps = 0;
+    if (*out_games >= (guint)g_detected_gpu_count) *out_games = default_disc;
+}
+
+static void save_gpu_targets(guint sys, guint apps, guint games) {
+    char cur_boot_id[64] = {0};
+    FILE *bf = fopen("/proc/sys/kernel/random/boot_id", "r");
+    if (bf) {
+        if (fgets(cur_boot_id, sizeof(cur_boot_id), bf)) {
+            g_strstrip(cur_boot_id);
+        }
+        fclose(bf);
+    }
+
+    char *user_dir = g_build_filename(g_get_home_dir(), ".config", NULL);
+    g_mkdir_with_parents(user_dir, 0755);
+    char *user_path = g_build_filename(user_dir, "mac-gpu-targets.json", NULL);
+    g_free(user_dir);
+
+    char *json_content = g_strdup_printf(
+        "{\n  \"system\": %u,\n  \"apps\": %u,\n  \"games\": %u,\n  \"pending_boot_id\": \"%s\"\n}\n",
+        sys, apps, games, cur_boot_id
+    );
+    g_file_set_contents(user_path, json_content, -1, NULL);
+    g_free(user_path);
+    g_free(json_content);
+
+    char *cmd = g_strdup_printf("sudo /usr/local/bin/mac-gpu-manager set-targets %u %u %u", sys, apps, games);
+    g_spawn_command_line_async(cmd, NULL);
+    g_free(cmd);
+}
+
+static int in_gpu_init = 0;
+static gboolean all_gpus_initialized = FALSE;
+
+static void trigger_gpu_change(void) {
+    if (in_gpu_init > 0 || in_init || !all_gpus_initialized) return;
+    if (!combo_gpu_system_w || !combo_gpu_apps_w || !combo_gpu_games_w) return;
+
+    guint sys_idx = adw_combo_row_get_selected(ADW_COMBO_ROW(combo_gpu_system_w));
+    guint apps_idx = adw_combo_row_get_selected(ADW_COMBO_ROW(combo_gpu_apps_w));
+    guint games_idx = adw_combo_row_get_selected(ADW_COMBO_ROW(combo_gpu_games_w));
+
+    save_gpu_targets(sys_idx, apps_idx, games_idx);
+
+    if (gpu_reboot_row_w) {
+        gtk_widget_set_visible(gpu_reboot_row_w, TRUE);
+    }
+}
+
+void init_gpu_system(void *widget, gpointer data) {
+    (void)data;
+    combo_gpu_system_w = GTK_WIDGET(widget);
+    g_object_add_weak_pointer(G_OBJECT(widget), (gpointer *)&combo_gpu_system_w);
+
+    in_gpu_init++;
+    GtkStringList *sl = create_gpu_string_list();
+    adw_combo_row_set_model(ADW_COMBO_ROW(widget), G_LIST_MODEL(sl));
+    g_object_unref(sl);
+
+    guint s = 0, a = 0, g = 0;
+    load_gpu_targets(&s, &a, &g);
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), s);
+    in_gpu_init--;
+
+    if (combo_gpu_system_w && combo_gpu_apps_w && combo_gpu_games_w) {
+        all_gpus_initialized = TRUE;
+    }
+}
+
+void on_gpu_system_changed(void *widget, void *pspec, gpointer data) {
+    (void)widget; (void)pspec; (void)data;
+    trigger_gpu_change();
+}
+
+void init_gpu_apps(void *widget, gpointer data) {
+    (void)data;
+    combo_gpu_apps_w = GTK_WIDGET(widget);
+    g_object_add_weak_pointer(G_OBJECT(widget), (gpointer *)&combo_gpu_apps_w);
+
+    in_gpu_init++;
+    GtkStringList *sl = create_gpu_string_list();
+    adw_combo_row_set_model(ADW_COMBO_ROW(widget), G_LIST_MODEL(sl));
+    g_object_unref(sl);
+
+    guint s = 0, a = 0, g = 0;
+    load_gpu_targets(&s, &a, &g);
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), a);
+    in_gpu_init--;
+
+    if (combo_gpu_system_w && combo_gpu_apps_w && combo_gpu_games_w) {
+        all_gpus_initialized = TRUE;
+    }
+}
+
+void on_gpu_apps_changed(void *widget, void *pspec, gpointer data) {
+    (void)widget; (void)pspec; (void)data;
+    trigger_gpu_change();
+}
+
+void init_gpu_games(void *widget, gpointer data) {
+    (void)data;
+    combo_gpu_games_w = GTK_WIDGET(widget);
+    g_object_add_weak_pointer(G_OBJECT(widget), (gpointer *)&combo_gpu_games_w);
+
+    in_gpu_init++;
+    GtkStringList *sl = create_gpu_string_list();
+    adw_combo_row_set_model(ADW_COMBO_ROW(widget), G_LIST_MODEL(sl));
+    g_object_unref(sl);
+
+    guint s = 0, a = 0, g = 0;
+    load_gpu_targets(&s, &a, &g);
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), g);
+    in_gpu_init--;
+
+    if (combo_gpu_system_w && combo_gpu_apps_w && combo_gpu_games_w) {
+        all_gpus_initialized = TRUE;
+    }
+}
+
+void on_gpu_games_changed(void *widget, void *pspec, gpointer data) {
+    (void)widget; (void)pspec; (void)data;
+    trigger_gpu_change();
+}
+
+void init_gpu_reboot_row(void *widget, gpointer data) {
+    (void)data;
+    gpu_reboot_row_w = GTK_WIDGET(widget);
+    g_object_add_weak_pointer(G_OBJECT(widget), (gpointer *)&gpu_reboot_row_w);
+
+    gboolean pending = check_pending_reboot();
+    gtk_widget_set_visible(GTK_WIDGET(widget), pending);
+}
+
+void on_gpu_reboot_clicked(void *button, gpointer data) {
+    (void)button; (void)data;
+    g_spawn_command_line_async("systemctl reboot || sudo systemctl reboot", NULL);
+}
+
+/* Stubs for backward compatibility if ever referenced */
+void init_gpu_mode(void *widget, gpointer data) {
+    (void)widget; (void)data;
+}
+
+void on_gpu_mode_changed(void *widget, void *pspec, gpointer data) {
+    (void)widget; (void)pspec; (void)data;
+}
+
 static void load_touchpad_conf_full(int *drag_mode, int *copy_paste, int *delay_ms) {
     *drag_mode = 0;
     *copy_paste = 1;
@@ -755,6 +1163,10 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     AdwNavigationSplitView *split_view = NULL;
     find_navigation_split_view(GTK_WIDGET(window), &split_view);
     if (!split_view) return G_SOURCE_REMOVE;
+
+    /* Lock sidebar width to 280px to match blur and prevent unblurred scrollbar gaps */
+    adw_navigation_split_view_set_min_sidebar_width(split_view, 280.0);
+    adw_navigation_split_view_set_max_sidebar_width(split_view, 280.0);
 
     if (!g_object_get_data(G_OBJECT(split_view), "mac_signals_connected")) {
         g_signal_connect(split_view, "notify::content", G_CALLBACK(on_content_changed_cb), split_view);
