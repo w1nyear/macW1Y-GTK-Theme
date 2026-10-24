@@ -411,14 +411,26 @@ class TahoeWidgets {
                 for (const item of this._items.values()) {
                     try {
                         const c = item.container;
-                        if (!c.visible || !c.mapped)
+                        if (!c.visible)
                             continue;
-                        const [ax, ay, w, h] = g.getTransformedRect(c);
-                        if (!(w > 0) || !(h > 0) || Number.isNaN(ax) || Number.isNaN(ay))
+                        let [w, h] = c.get_size();
+                        if (!(w > 0) || !(h > 0)) {
+                            w = c.width > 0 ? c.width : (c.allocation ? c.allocation.get_width() : 0);
+                            h = c.height > 0 ? c.height : (c.allocation ? c.allocation.get_height() : 0);
+                        }
+                        if (!(w > 0) || !(h > 0)) {
+                            const [tw, th] = this._footprint(item.def);
+                            const s = this._scaleOf(item.def.key) || 1;
+                            w = Math.round(tw * s);
+                            h = Math.round(th * s);
+                        }
+                        let cx = (item.x !== undefined && Number.isFinite(item.x) && item.x >= 0) ? item.x : c.x;
+                        let cy = (item.y !== undefined && Number.isFinite(item.y) && item.y >= 0) ? item.y : c.y;
+                        if (!Number.isFinite(cx) || !Number.isFinite(cy) || !(w > 0) || !(h > 0))
                             continue;
                         const [tr, tg, tb] = this._glassTintRgb();
-                        const rx = (ax - monitor.x) - GLASS_MARGIN;
-                        const ry = (ay - monitor.y) - GLASS_MARGIN;
+                        const rx = (cx - monitor.x) - GLASS_MARGIN;
+                        const ry = (cy - monitor.y) - GLASS_MARGIN;
                         const rw = w + GLASS_MARGIN * 2;
                         const rh = h + GLASS_MARGIN * 2;
                         regions.push({
@@ -701,6 +713,7 @@ class TahoeWidgets {
                     // gone
                 }
             }
+            this._syncWidgetGlass();
             return GLib.SOURCE_CONTINUE;
         });
 
@@ -772,6 +785,7 @@ class TahoeWidgets {
                         // gone
                     }
                 }
+                this._syncWidgetGlass();
             });
         } catch (e) {
             this._overviewHiddenId = 0;
@@ -989,6 +1003,7 @@ class TahoeWidgets {
         } catch (e) {
             // read-only settings
         }
+        this._syncWidgetGlass();
     }
 
     disable() {
