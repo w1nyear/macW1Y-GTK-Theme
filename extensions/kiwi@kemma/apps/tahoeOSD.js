@@ -163,7 +163,11 @@ function _hideStockOsd() {
 
 function _interceptStockOsd() {
     const mgr = Main.osdWindowManager;
-    if (!mgr || _origShowOsdWindow)
+    if (!mgr)
+        return;
+    if (mgr._showOsdWindow && mgr._showOsdWindow._isTahoeOSD)
+        return;
+    if (_origShowOsdWindow)
         return;
 
     _origShowOsdWindow = mgr._showOsdWindow;
@@ -181,7 +185,7 @@ function _interceptStockOsd() {
         }
     }
 
-    mgr._showOsdWindow = function(monitorIndex, icon, label, level, maxLevel) {
+    const handler = function(monitorIndex, icon, label, level, maxLevel) {
         try {
             if (this._osdWindows && this._osdWindows[monitorIndex]) {
                 const w = this._osdWindows[monitorIndex];
@@ -196,6 +200,8 @@ function _interceptStockOsd() {
             return _origShowOsdWindow.call(this, monitorIndex, icon, label, level, maxLevel);
         }
     };
+    handler._isTahoeOSD = true;
+    mgr._showOsdWindow = handler;
 }
 
 function _restoreStockOsd() {
@@ -308,6 +314,12 @@ function _ensureGlass() {
     if (_glass)
         return true;
     try {
+        const oldGlassActors = Main.layoutManager.uiGroup.get_children().filter(c =>
+            c.name && c.name === 'liquid-glass-bg-actor-osd'
+        );
+        for (const g of oldGlassActors) {
+            try { g.destroy(); } catch (_) {}
+        }
         const monitor = Main.layoutManager.primaryMonitor;
         if (!monitor)
             return false;
@@ -351,7 +363,9 @@ function _syncGlass() {
             return false;
         const [bx, by] = _box.get_transformed_position();
         const bw = _box.width, bh = _box.height;
-        if (!(bw > 0) || !(bh > 0) || !isFinite(bx) || !isFinite(by))
+        if (typeof bx !== 'number' || typeof by !== 'number' || !Number.isFinite(bx) || !Number.isFinite(by) || bx <= 0 || by <= 0)
+            return false;
+        if (typeof bw !== 'number' || typeof bh !== 'number' || !Number.isFinite(bw) || !Number.isFinite(bh) || bw <= 0 || bh <= 0)
             return false;
 
         if (_osdShadow) {
@@ -402,19 +416,27 @@ function _syncGlass() {
 function _destroyGlass() {
     const s = _glass;
     _glass = null;
-    if (!s)
-        return;
+    if (s) {
+        try {
+            s.effect?.cleanup?.();
+        } catch (_) {}
+        try {
+            s.uiSampler?.destroy?.();
+        } catch (_) {}
+        try {
+            s.wcm?.destroy?.();
+        } catch (_) {}
+        try {
+            s.bgActor?.destroy?.();
+        } catch (_) {}
+    }
     try {
-        s.effect?.cleanup?.();
-    } catch (_) {}
-    try {
-        s.uiSampler?.destroy?.();
-    } catch (_) {}
-    try {
-        s.wcm?.destroy?.();
-    } catch (_) {}
-    try {
-        s.bgActor?.destroy?.();
+        const leftovers = Main.layoutManager.uiGroup.get_children().filter(c =>
+            c.name && c.name === 'liquid-glass-bg-actor-osd'
+        );
+        for (const l of leftovers) {
+            try { l.destroy(); } catch (_) {}
+        }
     } catch (_) {}
 }
 
@@ -670,6 +692,12 @@ export function enable() {
         );
         for (const b of oldBoxes) {
             try { b.destroy(); } catch (_) {}
+        }
+        const oldGlassActors = Main.layoutManager.uiGroup.get_children().filter(c =>
+            c.name && c.name === 'liquid-glass-bg-actor-osd'
+        );
+        for (const g of oldGlassActors) {
+            try { g.destroy(); } catch (_) {}
         }
     } catch (_) {}
     try {
