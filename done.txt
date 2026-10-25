@@ -10233,3 +10233,35 @@ Task 499: Повне полірування екрана блокування (m
         * `nautilus_deep_folder_800.png` (глибока вкладена папка при 800px: шлях акуратно скорочується, всі кнопки на місці).
         * `nautilus_1050_normal.png` (звичайний розмір 1050px: бездоганний макет).
       - Сесія користувача та стан системи залишені без змін.
+
+512. Рефакторинг сторінки «Mac стилізація» у Параметрах (GNOME Control Center):
+   1. Вимоги користувача:
+      - «У параметрі нам потрібно оновити пункт Mac стилізація. Видали там всі групи і перемикачі окрім тих двох verbose і grub у пункті bootloader. Додай наступне: група меню бар. Змінити там можна від 0-100 затемнення градієнтне, розмиття. Друга група це Liquid Glass і групу Blur у цих групах можна окремо змінити від 0 до 100 розмиття, затемнення яке накладається разом з шейдером чи розмиття У ВСІХ елементах де є розмиття чи шейдер. Без винятків. А в низу буде ось цей пункт що є стосовно bootloader (його не міняєм)».
+      - Ніколи не виходити із сесії.
+      - Не чіпати керування кулерами/фанами.
+   2. Нова структура та логіка:
+      - Старі групи (Док-панель, стара версія Меню-бару, Центр керування, Повідомлення) видалено.
+      - Створено 4 групи:
+        1) «Меню-бар»:
+           - Повзунок «Затемнення градієнтне» (0–100%): керує `background-gradient-start: rgba(0, 0, 0, alpha)` у CSS меню-бару та `top_darkness` ефекту `gradient_panel` у Blur-My-Shell з живим оновленням оболонки.
+           - Повзунок «Розмиття» (0–100%): керує розмиттям меню-бару через `update-bms-menubar-blur` та `sigma` у `blur-my-shell.panel`.
+        2) «Liquid Glass»:
+           - Повзунок «Розмиття» (0–100%): керує радіусом розмиття шейдера рідкого скла для ВСІХ елементів без винятку (`dock-blur-radius`, `quick-settings-blur-radius`, `panel-menu-blur-radius`, `menu-blur-radius`, `desktop-menu-blur-radius`, `notification-blur-radius`, `application-blur-radius`, `osd-blur-radius`).
+           - Повзунок «Затемнення» (0–100%): керує силою тінтування шейдера для ВСІХ елементів без винятку (`dock-tint-strength`, `quick-settings-tint-strength`, `quick-settings-toggle-tint-strength`, `panel-menu-tint-strength`, `menu-tint-strength`, `desktop-menu-tint-strength`, `notification-tint-strength`, `application-tint-strength`, `osd-tint-strength`).
+        3) «Blur»:
+           - Повзунок «Розмиття» (0–100%): керує силою розмиття `sigma` у ВСІХ елементах blur-my-shell без винятку (root, `applications`, `dash-to-dock`, `overview`, `lockscreen`, `appfolder`, `screenshot`, `popup`, `window-list`).
+           - Повзунок «Затемнення» (0–100%): керує рівнем фонового затемнення та тінтування у ВСІХ елементах з розмиттям (`brightness`, `color` та фони плашок у CSS).
+        4) «Завантажувач (Bootloader)»:
+           - Збережено у повному обсязі внизу сторінки: перемикач «Режим verbose» (`boot_verbose_switch`) та перемикач «Меню GRUB» (`boot_grub_switch`).
+   3. Виконані роботи:
+      - Оновлено `cc-system-panel.ui` у `MACTHEMEFILES/gnome-control-center-overlay/`, `MACTHEMEFILES/control-center/`, `~/.local/share/gnome-control-center-overlay/` та `/usr/share/mactheme/gnome-control-center-overlay/`.
+      - Оновлено `libmac_settings.c`: реалізовано нові структури даних `MacStylingData`, парсинг та збереження `~/.config/mac-styling/styling.json`, обробники сигналів `init_*` та `on_*_changed`, безпечну взаємодію з GSettings-схемами без збоїв.
+      - Створено скрипт `bin/update-mac-styling-css` для автоматичного оновлення кольорів і градієнтів у файлах CSS та гарячого перезавантаження таблиці стилів через `user-theme`.
+      - Скомпільовано та інстальовано `libmac_settings.so` у всі системні директорії (`~/.local/lib/`, `~/.local/share/gnome-control-center-overlay/`, `/usr/lib/x86_64-linux-gnu/`).
+      - Синхронізовано автономний додаток `bin/mac-styling-settings`.
+   4. Верифікація:
+      - Усі файли XML пройшли валідацію `xmllint`.
+      - Запущено GNOME Control Center та знято контрольний скріншот:
+        * `mac_styling_new_page.png` — оновлена сторінка «Mac стилізація» з 4 оновленими групами та повзунками 0-100.
+      - Перевірено збереження значень у `~/.config/mac-styling/styling.json` та зміну параметрів у реальному часі.
+      - Сеанс користувача залишився активним, керування вентиляторами не зачіпалося.

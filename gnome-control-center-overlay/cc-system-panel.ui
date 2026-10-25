@@ -126,47 +126,16 @@
             <property name="content">
               <object class="AdwPreferencesPage">
 
-                <!-- 1. Док-панель (Dock) -->
+                                <!-- 1. Меню-бар -->
                 <child>
                   <object class="AdwPreferencesGroup">
-                    <property name="title">Док-панель (Dock)</property>
-                    <property name="description">Налаштування розмиття та скла нижньої панелі</property>
+                    <property name="title">Меню-бар</property>
+                    <property name="description">Налаштування затемнення та розмиття верхньої панелі</property>
                     <child>
-                      <object class="AdwSwitchRow" id="dock_blur_switch">
-                        <property name="title">Розмиття тла (Dynamic Blur)</property>
-                        <property name="subtitle">Розмивати вікна та шпалери за доком</property>
-                        <signal name="realize" handler="init_dock_blur"/>
-                        <signal name="notify::active" handler="on_dock_blur_changed"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwActionRow" id="dock_sigma_row">
-                        <property name="title">Сила розмиття (Blur Sigma)</property>
+                      <object class="AdwActionRow" id="menubar_tint_row">
+                        <property name="title">Затемнення градієнтне</property>
                         <child type="suffix">
-                          <object class="GtkScale" id="dock_sigma_scale">
-                            <property name="orientation">0</property>
-                            <property name="draw-value">true</property>
-                            <property name="width-request">200</property>
-                            <property name="adjustment">
-                              <object class="GtkAdjustment">
-                                <property name="lower">5</property>
-                                <property name="upper">100</property>
-                                <property name="step-increment">1</property>
-                                <property name="page-increment">5</property>
-                                <property name="value">30</property>
-                              </object>
-                            </property>
-                            <signal name="realize" handler="init_dock_sigma"/>
-                            <signal name="value-changed" handler="on_dock_sigma_changed"/>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwActionRow" id="dock_tint_row">
-                        <property name="title">Тінт / Затемнення плашки</property>
-                        <child type="suffix">
-                          <object class="GtkScale" id="dock_tint_scale">
+                          <object class="GtkScale" id="menubar_tint_scale">
                             <property name="orientation">0</property>
                             <property name="draw-value">true</property>
                             <property name="width-request">200</property>
@@ -176,34 +145,34 @@
                                 <property name="upper">100</property>
                                 <property name="step-increment">1</property>
                                 <property name="page-increment">5</property>
-                                <property name="value">36</property>
+                                <property name="value">35</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_dock_tint"/>
-                            <signal name="value-changed" handler="on_dock_tint_changed"/>
+                            <signal name="realize" handler="init_menubar_tint"/>
+                            <signal name="value-changed" handler="on_menubar_tint_changed"/>
                           </object>
                         </child>
                       </object>
                     </child>
                     <child>
-                      <object class="AdwActionRow" id="dock_radius_row">
-                        <property name="title">Радіус заокруглення кутів (px)</property>
+                      <object class="AdwActionRow" id="menubar_blur_row">
+                        <property name="title">Розмиття</property>
                         <child type="suffix">
-                          <object class="GtkScale" id="dock_radius_scale">
+                          <object class="GtkScale" id="menubar_blur_scale">
                             <property name="orientation">0</property>
                             <property name="draw-value">true</property>
                             <property name="width-request">200</property>
                             <property name="adjustment">
                               <object class="GtkAdjustment">
                                 <property name="lower">0</property>
-                                <property name="upper">50</property>
+                                <property name="upper">100</property>
                                 <property name="step-increment">1</property>
                                 <property name="page-increment">5</property>
-                                <property name="value">28</property>
+                                <property name="value">10</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_dock_radius"/>
-                            <signal name="value-changed" handler="on_dock_radius_changed"/>
+                            <signal name="realize" handler="init_menubar_blur"/>
+                            <signal name="value-changed" handler="on_menubar_blur_changed"/>
                           </object>
                         </child>
                       </object>
@@ -211,46 +180,16 @@
                   </object>
                 </child>
 
-                <!-- 2. Меню-бар (Верхня панель) -->
+                <!-- 2. Liquid Glass -->
                 <child>
                   <object class="AdwPreferencesGroup">
-                    <property name="title">Меню-бар (Верхня панель)</property>
-                    <property name="description">Стилізація рядка меню та годинника</property>
+                    <property name="title">Liquid Glass</property>
+                    <property name="description">Параметри шейдера Liquid Glass для всіх елементів</property>
                     <child>
-                      <object class="AdwSwitchRow" id="panel_blur_switch">
-                        <property name="title">Розмиття верхньої панелі</property>
-                        <signal name="realize" handler="init_panel_blur"/>
-                        <signal name="notify::active" handler="on_panel_blur_changed"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwActionRow" id="panel_sigma_row">
-                        <property name="title">Сила розмиття панелі</property>
+                      <object class="AdwActionRow" id="liquid_blur_row">
+                        <property name="title">Розмиття</property>
                         <child type="suffix">
-                          <object class="GtkScale" id="panel_sigma_scale">
-                            <property name="orientation">0</property>
-                            <property name="draw-value">true</property>
-                            <property name="width-request">200</property>
-                            <property name="adjustment">
-                              <object class="GtkAdjustment">
-                                <property name="lower">5</property>
-                                <property name="upper">100</property>
-                                <property name="step-increment">1</property>
-                                <property name="page-increment">5</property>
-                                <property name="value">30</property>
-                              </object>
-                            </property>
-                            <signal name="realize" handler="init_panel_sigma"/>
-                            <signal name="value-changed" handler="on_panel_sigma_changed"/>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwActionRow" id="panel_tint_row">
-                        <property name="title">Тінт / Прозорість панелі</property>
-                        <child type="suffix">
-                          <object class="GtkScale" id="panel_tint_scale">
+                          <object class="GtkScale" id="liquid_blur_scale">
                             <property name="orientation">0</property>
                             <property name="draw-value">true</property>
                             <property name="width-request">200</property>
@@ -263,102 +202,17 @@
                                 <property name="value">20</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_panel_tint"/>
-                            <signal name="value-changed" handler="on_panel_tint_changed"/>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-
-                <!-- 3. Центр керування (Control Center) -->
-                <child>
-                  <object class="AdwPreferencesGroup">
-                    <property name="title">Центр керування (Control Center)</property>
-                    <property name="description">Розмиття кнопок та меню швидких налаштувань</property>
-                    <child>
-                      <object class="AdwActionRow" id="qs_sigma_row">
-                        <property name="title">Сила розмиття пілюль (Sigma)</property>
-                        <child type="suffix">
-                          <object class="GtkScale" id="qs_sigma_scale">
-                            <property name="orientation">0</property>
-                            <property name="draw-value">true</property>
-                            <property name="width-request">200</property>
-                            <property name="adjustment">
-                              <object class="GtkAdjustment">
-                                <property name="lower">5</property>
-                                <property name="upper">100</property>
-                                <property name="step-increment">1</property>
-                                <property name="page-increment">5</property>
-                                <property name="value">30</property>
-                              </object>
-                            </property>
-                            <signal name="realize" handler="init_qs_sigma"/>
-                            <signal name="value-changed" handler="on_qs_sigma_changed"/>
+                            <signal name="realize" handler="init_liquid_blur"/>
+                            <signal name="value-changed" handler="on_liquid_blur_changed"/>
                           </object>
                         </child>
                       </object>
                     </child>
                     <child>
-                      <object class="AdwComboRow" id="qs_anim_row">
-                        <property name="title">Режим анімації відкриття</property>
-                        <property name="subtitle">Ефект Magic Lamp: цільне вікно або окремі елементи</property>
-                        <property name="model">
-                          <object class="GtkStringList">
-                            <items>
-                              <item>Цільне вікно</item>
-                              <item>Окремі елементи</item>
-                            </items>
-                          </object>
-                        </property>
-                        <signal name="realize" handler="init_qs_anim"/>
-                        <signal name="notify::selected" handler="on_qs_anim_changed"/>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-
-                <!-- 4. Повідомлення (Notifications) -->
-                <child>
-                  <object class="AdwPreferencesGroup">
-                    <property name="title">Повідомлення (Notifications)</property>
-                    <property name="description">Стиль банерів, анімація виїзду справа та розмиття</property>
-                    <child>
-                      <object class="AdwSwitchRow" id="notif_blur_switch">
-                        <property name="title">Розмиття фону повідомлень</property>
-                        <signal name="realize" handler="init_notif_blur"/>
-                        <signal name="notify::active" handler="on_notif_blur_changed"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwActionRow" id="notif_sigma_row">
-                        <property name="title">Сила розмиття (Blur Sigma)</property>
+                      <object class="AdwActionRow" id="liquid_tint_row">
+                        <property name="title">Затемнення</property>
                         <child type="suffix">
-                          <object class="GtkScale" id="notif_sigma_scale">
-                            <property name="orientation">0</property>
-                            <property name="draw-value">true</property>
-                            <property name="width-request">200</property>
-                            <property name="adjustment">
-                              <object class="GtkAdjustment">
-                                <property name="lower">5</property>
-                                <property name="upper">100</property>
-                                <property name="step-increment">1</property>
-                                <property name="page-increment">5</property>
-                                <property name="value">30</property>
-                              </object>
-                            </property>
-                            <signal name="realize" handler="init_notif_sigma"/>
-                            <signal name="value-changed" handler="on_notif_sigma_changed"/>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwActionRow" id="notif_tint_row">
-                        <property name="title">Тінт / Затемнення повідомлень</property>
-                        <child type="suffix">
-                          <object class="GtkScale" id="notif_tint_scale">
+                          <object class="GtkScale" id="liquid_tint_scale">
                             <property name="orientation">0</property>
                             <property name="draw-value">true</property>
                             <property name="width-request">200</property>
@@ -368,47 +222,11 @@
                                 <property name="upper">100</property>
                                 <property name="step-increment">1</property>
                                 <property name="page-increment">5</property>
-                                <property name="value">68</property>
+                                <property name="value">12</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_notif_tint"/>
-                            <signal name="value-changed" handler="on_notif_tint_changed"/>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwActionRow" id="notif_radius_row">
-                        <property name="title">Радіус заокруглення кутів (px)</property>
-                        <child type="suffix">
-                          <object class="GtkScale" id="notif_radius_scale">
-                            <property name="orientation">0</property>
-                            <property name="draw-value">true</property>
-                            <property name="width-request">200</property>
-                            <property name="adjustment">
-                              <object class="GtkAdjustment">
-                                <property name="lower">0</property>
-                                <property name="upper">40</property>
-                                <property name="step-increment">1</property>
-                                <property name="page-increment">5</property>
-                                <property name="value">18</property>
-                              </object>
-                            </property>
-                            <signal name="realize" handler="init_notif_radius"/>
-                            <signal name="value-changed" handler="on_notif_radius_changed"/>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwActionRow" id="test_notif_row">
-                        <property name="title">Тестування сповіщення</property>
-                        <property name="subtitle">Перевірити виїзд з правого краю та розмиття</property>
-                        <child type="suffix">
-                          <object class="GtkButton" id="test_notif_btn">
-                            <property name="label">Надіслати</property>
-                            <property name="valign">3</property>
-                            <signal name="clicked" handler="on_test_notif_clicked"/>
+                            <signal name="realize" handler="init_liquid_tint"/>
+                            <signal name="value-changed" handler="on_liquid_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -416,7 +234,61 @@
                   </object>
                 </child>
 
-                <!-- 5. Завантажувач (Bootloader) -->
+                <!-- 3. Blur -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Blur</property>
+                    <property name="description">Глобальні параметри фонового розмиття та затемнення</property>
+                    <child>
+                      <object class="AdwActionRow" id="blur_sigma_row">
+                        <property name="title">Розмиття</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="blur_sigma_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">30</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_blur_sigma"/>
+                            <signal name="value-changed" handler="on_blur_sigma_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="blur_tint_row">
+                        <property name="title">Затемнення</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="blur_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">36</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_blur_tint"/>
+                            <signal name="value-changed" handler="on_blur_tint_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- 4. Завантажувач (Bootloader) -->
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Завантажувач (Bootloader)</property>

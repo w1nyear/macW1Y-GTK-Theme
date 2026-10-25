@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+import sys
+import os
+import re
+import subprocess
+import time
+
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: update-mac-styling-css <menubar_tint_0_100> <blur_tint_0_100>")
+        sys.exit(1)
+
+    try:
+        p_val = float(sys.argv[1])
+        b_val = float(sys.argv[2])
+    except ValueError:
+        sys.exit(1)
+
+    p_tint = max(0.0, min(1.0, p_val / 100.0))
+    b_tint = max(0.0, min(1.0, b_val / 100.0))
+
+    paths = [
+        os.path.expanduser("~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css"),
+        os.path.expanduser("~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css")
+    ]
+
+    for css_path in paths:
+        if not os.path.exists(css_path):
+            continue
+        try:
+            with open(css_path, "r", encoding="utf-8") as f:
+                c = f.read()
+
+            # Menubar gradient darkness
+            c = re.sub(
+                r'(#panel\s*\{[^}]*?background-gradient-start:\s*rgba\(0,\s*0,\s*0,\s*)[0-9.]+(\)\s*!important;)',
+                rf'\g<1>{p_tint:.2f}\g<2>',
+                c
+            )
+
+            # Dock background tint
+            c = re.sub(
+                r'(#dash\s+\.dash-background\s*\{[^}]*?background-color:\s*rgba\(36,\s*36,\s*36,\s*)[0-9.,]+(\)\s*!important;)',
+                rf'\g<1>{b_tint:.2f}\g<2>',
+                c
+            )
+
+            with open(css_path, "w", encoding="utf-8") as f:
+                f.write(c)
+        except Exception as e:
+            print(f"Error updating {css_path}: {e}")
+
+    # Reload theme in GNOME Shell
+    try:
+        cur_theme = subprocess.check_output(
+            ["gsettings", "get", "org.gnome.shell.extensions.user-theme", "name"],
+            text=True
+        ).strip().strip("'\"")
+        if not cur_theme:
+            cur_theme = "macW1Y-Dark"
+
+        subprocess.run(["gsettings", "set", "org.gnome.shell.extensions.user-theme", "name", "''"], check=False)
+        time.sleep(0.05)
+        subprocess.run(["gsettings", "set", "org.gnome.shell.extensions.user-theme", "name", cur_theme], check=False)
+    except Exception as e:
+        print(f"Error reloading user-theme: {e}")
+
+if __name__ == "__main__":
+    main()
