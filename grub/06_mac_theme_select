@@ -1,37 +1,98 @@
 #! /bin/sh
 set -e
 
-# macOS Startup Manager: Theme selector & dynamic USB transition animation
+# macOS Startup Manager: Theme selector & dynamic USB / Thunderbolt device detection
 
 esp_uuid="$(findmnt -no UUID /boot/efi 2>/dev/null || echo "B621-3DF3")"
 esp_uuid_lower="$(echo "$esp_uuid" | tr '[:upper:]' '[:lower:]')"
 
 cat << EOF
-# macOS Apple Silicon Startup Manager: Dynamic USB Scan & Animation
+# Ensure all partition and filesystem drivers are loaded for USB, Thunderbolt, NVMe and external SATA
+insmod part_gpt
+insmod part_msdos
+insmod fat
+insmod exfat
+insmod ntfs
+insmod ext2
+insmod iso9660
+insmod udf
+insmod chain
+
+# macOS Apple Silicon Startup Manager: Dynamic Device Scan (USB & Thunderbolt)
 set mac_has_usb=0
-set mac_usb_dev=""
-set mac_usb_path=""
+set mac_ext_count=0
+set mac_ext1_dev=""
+set mac_ext1_path=""
+set mac_ext1_name=""
+set mac_ext1_class="usb"
+set mac_ext2_dev=""
+set mac_ext2_path=""
+set mac_ext2_name=""
+set mac_ext2_class="usb2"
 
 for dev in (*); do
     if [ "\$dev" != "(\$root)" -a "\$dev" != "proc" -a "\$dev" != "memdisk" ]; then
-        for path in /EFI/BOOT/BOOTX64.EFI /efi/boot/bootx64.efi /EFI/BOOT/grubx64.efi /efi/boot/grubx64.efi /bootmgr.efi; do
-            if [ -f "\$dev\$path" ]; then
-                probe --fs-uuid "\$dev" --set=found_uuid
-                if [ "\$found_uuid" != "$esp_uuid" -a "\$found_uuid" != "$esp_uuid_lower" -a "\$found_uuid" != "\$root_uuid" ]; then
+        probe --fs-uuid "\$dev" --set=dev_uuid
+        if [ "\$dev_uuid" != "$esp_uuid" -a "\$dev_uuid" != "$esp_uuid_lower" -a "\$dev_uuid" != "\$root_uuid" -a "\$dev_uuid" != "f4b30137-e957-4560-bf5a-e8dfd9164736" ]; then
+            set dev_boot_path=""
+            for p in /EFI/BOOT/BOOTX64.EFI /efi/boot/bootx64.efi /EFI/BOOT/bootx64.efi /EFI/BOOT/BOOTX64.efi /EFI/BOOT/grubx64.efi /efi/boot/grubx64.efi /EFI/Microsoft/Boot/bootmgfw.efi /efi/microsoft/boot/bootmgfw.efi /EFI/ubuntu/grubx64.efi /efi/ubuntu/grubx64.efi /EFI/fedora/grubx64.efi /efi/arch/grubx64.efi /EFI/systemd/systemd-bootx64.efi /bootmgr.efi /ventoy/ventoy.disk; do
+                if [ -f "\$dev\$p" ]; then
+                    set dev_boot_path="\$p"
+                    break
+                fi
+            done
+
+            if [ -n "\$dev_boot_path" ]; then
+                set dev_name=""
+                probe --label "\$dev" --set=dev_name
+                set dev_cls="usb"
+                if [ -z "\$dev_name" ]; then
+                    if [ "\$dev_boot_path" = "/EFI/Microsoft/Boot/bootmgfw.efi" -o "\$dev_boot_path" = "/efi/microsoft/boot/bootmgfw.efi" -o "\$dev_boot_path" = "/bootmgr.efi" ]; then
+                        set dev_name="Windows"
+                        set dev_cls="windows"
+                    elif [ "\$dev_boot_path" = "/EFI/ubuntu/grubx64.efi" -o "\$dev_boot_path" = "/efi/ubuntu/grubx64.efi" ]; then
+                        set dev_name="Ubuntu Live"
+                        set dev_cls="ubuntu"
+                    elif [ "\$dev_boot_path" = "/EFI/fedora/grubx64.efi" ]; then
+                        set dev_name="Fedora Live"
+                        set dev_cls="fedora"
+                    elif [ "\$dev_boot_path" = "/EFI/arch/grubx64.efi" ]; then
+                        set dev_name="Arch Linux"
+                        set dev_cls="arch"
+                    else
+                        if [ "\$mac_ext_count" = "0" ]; then
+                            set dev_name="EFI Boot"
+                            set dev_cls="usb"
+                        else
+                            set dev_name="EFI Boot 2"
+                            set dev_cls="usb2"
+                        fi
+                    fi
+                fi
+
+                if [ "\$mac_ext_count" = "0" ]; then
                     set mac_has_usb=1
-                    set mac_usb_dev="\$dev"
-                    set mac_usb_path="\$path"
+                    set mac_ext_count=1
+                    set mac_ext1_dev="\$dev"
+                    set mac_ext1_path="\$dev_boot_path"
+                    set mac_ext1_name="\$dev_name"
+                    set mac_ext1_class="\$dev_cls"
+                elif [ "\$mac_ext_count" = "1" ]; then
+                    set mac_ext_count=2
+                    set mac_ext2_dev="\$dev"
+                    set mac_ext2_path="\$dev_boot_path"
+                    set mac_ext2_name="\$dev_name"
+                    set mac_ext2_class="\$dev_cls"
                     break
                 fi
             fi
-        done
-        if [ "\$mac_has_usb" = "1" ]; then
-            break
         fi
     fi
 done
 
-if [ "\$mac_has_usb" = "1" ]; then
+if [ "\$mac_ext_count" = "2" ]; then
+    set theme=(\$root)/boot/grub/themes/apple-mac-usb2/theme.txt
+elif [ "\$mac_ext_count" = "1" ]; then
     if [ "\$mac_play_anim" = "1" ]; then
         set mac_play_anim=0
         insmod gfxterm_background

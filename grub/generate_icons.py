@@ -287,6 +287,33 @@ def render_4item_screen(selected, os_name='Ubuntu'):
 
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
+def render_5item_screen(selected, ext1_name='EFI Boot 1', ext2_name='EFI Boot 2', os_name='Ubuntu'):
+    im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
+    d = ImageDraw.Draw(im)
+    draw_top_bar(im, d)
+    draw_bottom_power(im, d, selected)
+
+    items = [
+        ('usb1', ext1_name, usb_clean, 520 * S),
+        ('usb2', ext2_name, usb_clean, 740 * S),
+        ('os', os_name, disk_clean, 960 * S),
+        ('uefi', 'UEFI Settings', uefi_clean, 1180 * S),
+        ('options', 'Options', gear_clean, 1400 * S),
+    ]
+
+    for key, label, icon, cx in items:
+        is_sel = (selected == key)
+        if is_sel:
+            draw_selection_card(im, cx, center_y)
+            btn_y = center_y + card_h // 2 + int(round(14 * S))
+            im.paste(btn_continue, (cx - btn_continue.width // 2, btn_y), btn_continue)
+
+        im.paste(icon, (cx - icon.width // 2, icon_y - icon.height // 2), icon)
+        bbox = d.textbbox((0, 0), label, font=f_label)
+        d.text((cx - (bbox[2] - bbox[0]) // 2, label_y), label, font=f_label, fill=(255, 255, 255) if is_sel else (210, 210, 215))
+
+    return im.resize((W, H), Image.Resampling.LANCZOS)
+
 def render_transition_frame(progress, os_name='Ubuntu'):
     im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
     d = ImageDraw.Draw(im)
@@ -333,12 +360,18 @@ def main():
         '/boot/grub/themes/apple-mac-usb',
         '/home/vitaliy/MACTHEMEFILES/grub/apple-mac-usb'
     ]
+    usb2_dirs = [
+        '/boot/grub/themes/apple-mac-usb2',
+        '/home/vitaliy/MACTHEMEFILES/grub/apple-mac-usb2'
+    ]
 
     for b in base_dirs:
         os.makedirs(f'{b}/icons', exist_ok=True)
         os.makedirs(f'{b}/anim', exist_ok=True)
     for u in usb_dirs:
         os.makedirs(f'{u}/icons', exist_ok=True)
+    for u2 in usb2_dirs:
+        os.makedirs(f'{u2}/icons', exist_ok=True)
 
     # 1. 3-card layout screens (Standard without USB)
     print("1. Rendering 3-card layout screens...")
@@ -433,6 +466,64 @@ def main():
         trans_1px.save(f'{u}/select_c.png')
         trans_1px.save(f'{u}/select_w.png')
         trans_1px.save(f'{u}/select_e.png')
+
+    # 4. 5-card layout screens (Dual boot choices on external drive)
+    print("4. Rendering 5-card layout screens (2 external choices)...")
+    s5_usb1 = render_5item_screen('usb1')
+    s5_usb2 = render_5item_screen('usb2')
+    s5_ubuntu = render_5item_screen('os', os_name='Ubuntu')
+    s5_uefi = render_5item_screen('uefi')
+    s5_options = render_5item_screen('options')
+    s5_shutdown = render_5item_screen('shutdown')
+    s5_restart = render_5item_screen('restart')
+
+    import shutil
+    import glob
+
+    for u2 in usb2_dirs:
+        # Copy theme.txt, background.png, and all *.pf2 fonts from apple-mac
+        src_dir = '/boot/grub/themes/apple-mac'
+        if os.path.exists(f'{src_dir}/theme.txt'):
+            shutil.copy2(f'{src_dir}/theme.txt', f'{u2}/theme.txt')
+        if os.path.exists(f'{src_dir}/background.png'):
+            shutil.copy2(f'{src_dir}/background.png', f'{u2}/background.png')
+        for pf2 in glob.glob(f'{src_dir}/*.pf2'):
+            shutil.copy2(pf2, u2)
+
+        icons_dir = f'{u2}/icons'
+        s5_usb1.save(f'{icons_dir}/usb.png')
+        s5_usb1.save(f'{icons_dir}/usb1.png')
+        s5_usb1.save(f'{icons_dir}/external.png')
+        s5_usb1.save(f'{icons_dir}/drive.png')
+
+        s5_usb2.save(f'{icons_dir}/usb2.png')
+
+        s5_ubuntu.save(f'{icons_dir}/ubuntu.png')
+        s5_ubuntu.save(f'{icons_dir}/gnu-linux.png')
+        s5_ubuntu.save(f'{icons_dir}/linux.png')
+
+        s5_uefi.save(f'{icons_dir}/uefi-firmware.png')
+        s5_uefi.save(f'{icons_dir}/uefi.png')
+        s5_uefi.save(f'{icons_dir}/efi.png')
+
+        s5_options.save(f'{icons_dir}/options.png')
+        s5_options.save(f'{icons_dir}/recovery.png')
+        s5_options.save(f'{icons_dir}/safe-mode.png')
+
+        s5_shutdown.save(f'{icons_dir}/shutdown.png')
+        s5_shutdown.save(f'{icons_dir}/poweroff.png')
+        s5_shutdown.save(f'{icons_dir}/halt.png')
+
+        s5_restart.save(f'{icons_dir}/restart.png')
+        s5_restart.save(f'{icons_dir}/reboot.png')
+
+        trans = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+        trans.save(f'{icons_dir}/rescan.png')
+
+        trans_1px = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
+        trans_1px.save(f'{u2}/select_c.png')
+        trans_1px.save(f'{u2}/select_w.png')
+        trans_1px.save(f'{u2}/select_e.png')
 
     print("All theme assets generated successfully!")
 
