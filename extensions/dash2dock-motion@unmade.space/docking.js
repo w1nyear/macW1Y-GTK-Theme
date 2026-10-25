@@ -932,6 +932,7 @@ const DockedDash = GObject.registerClass({
     _animateIn(time, delay) {
         if (this._intellihideIsEnabled)
             this._disableUnredirect();
+        const wasHidden = (this._dockState === State.HIDDEN);
         this._dockState = State.SHOWING;
         this.dash.iconAnimator.start();
         this._delayedHide = false;
@@ -939,14 +940,14 @@ const DockedDash = GObject.registerClass({
         const glassBg = this._getGlassBg();
         if (glassBg) {
             glassBg.remove_all_transitions();
-            glassBg.show();
-            if (this._dockState === State.HIDDEN || !glassBg.visible || glassBg.opacity === 0) {
-                const dist = (this._isHorizontal ? (this.height > 0 ? this.height : 92) : (this.width > 0 ? this.width : 92)) + 20;
-                const offset = this._getSlideOffset(dist);
+            const dist = this._isHorizontal ? (this.height > 0 ? this.height : 92) : (this.width > 0 ? this.width : 92);
+            const offset = this._getSlideOffset(dist);
+            if (wasHidden || !glassBg.visible || glassBg.opacity === 0) {
                 glassBg.translation_x = offset.translation_x;
                 glassBg.translation_y = offset.translation_y;
                 glassBg.opacity = 0;
             }
+            glassBg.show();
             glassBg.ease({
                 translation_x: 0,
                 translation_y: 0,
@@ -987,7 +988,7 @@ const DockedDash = GObject.registerClass({
         const glassBg = this._getGlassBg();
         if (glassBg) {
             glassBg.remove_all_transitions();
-            const dist = (this._isHorizontal ? (this.height > 0 ? this.height : 92) : (this.width > 0 ? this.width : 92)) + 20;
+            const dist = this._isHorizontal ? (this.height > 0 ? this.height : 92) : (this.width > 0 ? this.width : 92);
             const offset = this._getSlideOffset(dist);
             glassBg.ease({
                 translation_x: offset.translation_x,

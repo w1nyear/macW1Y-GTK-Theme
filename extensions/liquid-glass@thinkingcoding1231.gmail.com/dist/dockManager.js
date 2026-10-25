@@ -67,6 +67,10 @@ export class DashManager {
     _lastBgY;
     _lastBaseW;
     _lastBaseH;
+    _lastRestingAbsX;
+    _lastRestingAbsY;
+    _lastRestingBaseW;
+    _lastRestingBaseH;
     _outputLogs = false;
     _marginValue = 0;
     // Tracks the hide/show transition so the reason is logged once, not per frame.
@@ -570,11 +574,16 @@ export class DashManager {
             d2d = d2d.get_parent();
         }
 
+        const isD2DTransitioning = Boolean(d2d && (
+            d2d._dockState === 1 /* HIDING */ ||
+            d2d._dockState === 3 /* SHOWING */
+        ));
+
         // Fullscreen check: if monitor is in fullscreen, hide dock glass unless dock is actively showing/shown by hover
         if (isFullscreen) {
             const isD2DShowing = d2d && d2d.visible && d2d.mapped &&
                                  (d2d._dockState === 2 /* SHOWN */ || d2d._dockState === 3 /* SHOWING */) &&
-                                 (!d2d._slider || d2d._slider.slide_x > 0.05);
+                                 (d2d._dockState === 3 || !d2d._slider || d2d._slider.slide_x > 0.05);
             if (!isD2DShowing) {
                 this.bgActor.hide();
                 this.bgActor.opacity = 0;
@@ -582,8 +591,8 @@ export class DashManager {
             }
         }
 
-        // If DashToDock is hidden, unmapped, or in HIDDEN state, hide glass immediately
-        if (d2d && (!d2d.visible || !d2d.mapped || d2d._dockState === 0 /* HIDDEN */ || (d2d._slider && d2d._slider.slide_x <= 0.001))) {
+        // If DashToDock is hidden, unmapped, or in HIDDEN state, hide glass immediately (skip if transitioning)
+        if (d2d && !isD2DTransitioning && (!d2d.visible || !d2d.mapped || d2d._dockState === 0 /* HIDDEN */ || (d2d._slider && d2d._slider.slide_x <= 0.001))) {
             this.bgActor.hide();
             this.bgActor.opacity = 0;
             this.bgActor.translation_y = 0;
@@ -615,8 +624,8 @@ export class DashManager {
             } catch (_) {}
             if (Number.isFinite(slX) && Number.isFinite(slW) && slW > 50 && Number.isFinite(slY)) {
                 const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
-                // If the slab has slid off the bottom of the screen
-                if (slY >= screenBottom) {
+                // If the slab has slid off the bottom of the screen (skip if transitioning)
+                if (!isD2DTransitioning && slY >= screenBottom) {
                     this.bgActor.hide();
                     this.bgActor.opacity = 0;
                     return false;
@@ -640,7 +649,7 @@ export class DashManager {
         }
 
         let hasIconBounds = false;
-        if (!hasSlabBounds) {
+        if (!hasSlabBounds && !isD2DTransitioning) {
             let icons = [];
             const walkIcons = (a) => {
                 if (!a) return;
@@ -670,7 +679,7 @@ export class DashManager {
                     if (baseIconH === 0 || ic.h < baseIconH) baseIconH = ic.h;
                 }
                 const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
-                if (minY >= screenBottom) {
+                if (!isD2DTransitioning && minY >= screenBottom) {
                     this.bgActor.hide();
                     this.bgActor.opacity = 0;
                     return false;
@@ -702,6 +711,20 @@ export class DashManager {
                 baseH = pillH + 8;
                 hasIconBounds = true;
             }
+        }
+
+        // Freeze geometry to resting coordinates during transitions so shader does not jitter or compound translation
+        if (isD2DTransitioning && this._lastRestingAbsY !== undefined) {
+            absX = this._lastRestingAbsX;
+            absY = this._lastRestingAbsY;
+            baseW = this._lastRestingBaseW;
+            baseH = this._lastRestingBaseH;
+            hasSlabBounds = true;
+        } else if (hasSlabBounds || hasIconBounds) {
+            this._lastRestingAbsX = absX;
+            this._lastRestingAbsY = absY;
+            this._lastRestingBaseW = baseW;
+            this._lastRestingBaseH = baseH;
         }
 
         // If neither slab nor icons exist or are visible, DO NOT fabricate a ghost pill!
@@ -756,9 +779,8 @@ export class DashManager {
                 this._lastHidden = false;
                 this._logger.log('[Liquid Glass][dock] glass visible again');
             }
-            const isD2DTransitioning = d2d && (d2d._dockState === 1 /* HIDING */ || d2d._dockState === 3 /* SHOWING */);
+            this.bgActor.show();
             if (!isD2DTransitioning) {
-                this.bgActor.show();
                 this.bgActor.opacity = this.targetActor.opacity;
                 this.bgActor.translation_y = 0;
             }

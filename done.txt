@@ -9693,3 +9693,29 @@ echo "==> Встановлення успішно завершено!"
         * Без USB: 0: `Ubuntu`, 1: `UEFI Settings`, 2: `Options`, 3: `Shut Down`, 4: `Restart`, 5: `Rescan`.
         * З USB: 0: `EFI Boot`, 1: `Ubuntu`, 2: `UEFI Settings`, 3: `Options`, 4: `Shut Down`, 5: `Restart`, 6: `Rescan`.
       - Сесію користувача повністю збережено без жодного виходу чи перезавантаження.
+
+494. [2026-10-25] Synchronize Dock Glass Appearance Animation with Dock Elements & Lower Dock Icons by 3px:
+   1. Завдання:
+      - Користувач повідомив, що під час анімації появи дока скло (liquid glass capsule) з'являлося без анімації (миттєво вскакувало), не синхронно з елементами, хоча анімація зникнення працювала плавно разом із елементами.
+      - Необхідно опустити іконки та елементи дока на 3 пікселі нижче для ідеального вертикального центрування всередині капсули скла.
+      - Критичне обмеження: не виходити з сесії, не перезавантажувати GNOME Shell / GDM / ПК до 26 жовтня.
+   2. Виправлення та реалізація:
+      - Зниження іконок на 3 пікселі:
+        * У `dash2dock-motion@unmade.space/dash.js` для `this._position === St.Side.BOTTOM` змінено зсув `this._box.translation_y` з `-4` до `-1` (`-4 + 3 = -1`), що точно опустило весь ряд іконок, індикаторів та сепараторів на 3px донизу.
+        * Застосовано наживо через EvalHelper без перезапуску сесії: `dash._box.translation_y = -1;` (позиція Y змінилася з 984 на 987).
+      - Синхронізація анімації появи скла (liquid-glass-bg-actor) з елементами:
+        * Виявлено причину раптової появи скла: у `dockManager.js` (`_syncGeometry()`) під час запуску показу дока (`_dockState === 3` SHOWING) значення `slide_x` починалося з 0. Рядок `(d2d._slider && d2d._slider.slide_x <= 0.001)` примусово ховав актор скла (`this.bgActor.hide(); this.bgActor.opacity = 0;`), руйнуючи початкову анімацію ease. Також умови `slY >= screenBottom` та `minY >= screenBottom` переривали показ та ховали скло, а умова `!isD2DTransitioning` у блоці відображення не викликала `this.bgActor.show()`.
+        * У `dash2dock-motion@unmade.space/docking.js`:
+          - У методі `_animateIn` додано фіксацію попереднього стану `const wasHidden = (this._dockState === State.HIDDEN);` перед зміною стану на `SHOWING`.
+          - Відкориговано дистанцію анімації `dist = this._isHorizontal ? (this.height > 0 ? this.height : 92) : (this.width > 0 ? this.width : 92);` в `_animateIn` та `_animateOut` без паразитного зміщення `+ 20`, досягнувши математичної відповідності переміщення 92px.
+          - Додано перевірку `if (wasHidden || !glassBg.visible || glassBg.opacity === 0)` для точного виставлення початкового зміщення та нульової прозорості, виклику `glassBg.show()` та плавного `glassBg.ease({...})`.
+        * У `liquid-glass@thinkingcoding1231.gmail.com` (`dist/dockManager.js` та `src/dockManager.ts`):
+          - Впроваджено кешування геометрії спокою (`_lastRestingAbsX`, `_lastRestingAbsY`, `_lastRestingBaseW`, `_lastRestingBaseH`).
+          - Додано захист `isD2DTransitioning = Boolean(d2d && (d2d._dockState === 1 || d2d._dockState === 3))` від передчасного приховування під час `SHOWING` та `HIDING`.
+          - Під час перехідних станів геометрія шейдера фіксується на координатах спокою, дозволяючи нативному механізму Clutter ease плавно транскодувати `translation_y` від 92 до 0 та `opacity` від 0 до 255.
+          - Забезпечено виклик `this.bgActor.show()` під час переходу без перезапису значень прозорості та зміщення.
+   3. Верифікація:
+      - Проведено інтроспекційний замір кадрів через EvalHelper: при показі дока `slideX`, `glassOpacity` та `glassTransY` плавно та синхронно змінюються у повному унісоні (0.37 -> 0.70 -> 1.0; opacity 95 -> 179 -> 255; transY 57.4 -> 27.3 -> 0).
+      - Створено скріншот капсули та іконок дока.
+      - Усі файли синхронізовано між живою системою (`~/.local/share/gnome-shell/extensions/...`) та репозиторієм (`/home/vitaliy/MACTHEMEFILES/...`).
+      - Сесію користувача повністю збережено без жодного виходу чи перезавантаження.

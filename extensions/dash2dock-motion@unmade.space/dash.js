@@ -217,7 +217,7 @@ export const DockDash = GObject.registerClass({
             x_expand: this._isHorizontal,
         });
         if (this._position === St.Side.BOTTOM)
-            this._box.translation_y = -4;
+            this._box.translation_y = -1;
         this._box._delegate = this;
         this._boxContainer.add_child(this._box);
         Utils.addActor(this._scrollView, this._boxContainer);
