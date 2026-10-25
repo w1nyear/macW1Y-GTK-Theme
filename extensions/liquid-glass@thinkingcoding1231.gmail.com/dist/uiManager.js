@@ -618,8 +618,13 @@ export class UIManager {
             // that does not depend on cleanup() getting that far.
             if (this._torndown)
                 return GLib.SOURCE_REMOVE;
-            if (!this.bgActor || !this.targetActor.mapped)
+            if (!this.bgActor || !this.targetActor.mapped || (this.menu && !this.menu.isOpen)) {
+                if (this.bgActor && this.bgActor.visible) {
+                    this.bgActor.hide();
+                    this.bgActor.opacity = 0;
+                }
                 return GLib.SOURCE_REMOVE;
+            }
             // [DIAG] See setFrameSyncFrozen() in utils.ts. Reschedules but does
             // nothing, so the cost of this poll can be measured directly.
             if (isFrameSyncFrozen()) {
@@ -666,6 +671,14 @@ export class UIManager {
                 }
                 else {
                     this._stopAdaptiveColorSampling();
+                    stopFrameSync();
+                    if (this.bgActor) {
+                        this.bgActor.hide();
+                        this.bgActor.opacity = 0;
+                    }
+                    if (this.animActor) {
+                        this.animActor.opacity = 0;
+                    }
                 }
             })
         });
@@ -674,6 +687,34 @@ export class UIManager {
             target: this.menu.actor,
             id: this.menu.actor.connect('notify::mapped', () => {
                 if (!this.menu.actor.mapped) {
+                    stopFrameSync();
+                    if (this.bgActor) {
+                        this.bgActor.hide();
+                        this.bgActor.opacity = 0;
+                    }
+                    if (this.animActor) {
+                        this.animActor.opacity = 0;
+                    }
+                }
+            })
+        });
+        this._signals.push({
+            target: this.menu,
+            id: this.menu.connect('menu-closed', () => {
+                stopFrameSync();
+                if (this.bgActor) {
+                    this.bgActor.hide();
+                    this.bgActor.opacity = 0;
+                }
+                if (this.animActor) {
+                    this.animActor.opacity = 0;
+                }
+            })
+        });
+        this._signals.push({
+            target: this.menu.actor,
+            id: this.menu.actor.connect('notify::visible', () => {
+                if (!this.menu.actor.visible) {
                     stopFrameSync();
                     if (this.bgActor) {
                         this.bgActor.hide();
@@ -1046,6 +1087,9 @@ export class UIManager {
                 this.bgActor.remove_all_transitions();
                 this.bgActor.opacity = isClosing ? 0 : 255;
                 this.bgActor.visible = !isClosing;
+                if (isClosing) {
+                    this.bgActor.hide();
+                }
                 this.bgActor.set_scale(1.0, 1.0);
                 if (this.animActor) {
                     this.animActor.remove_all_transitions();

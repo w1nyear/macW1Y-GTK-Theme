@@ -9626,3 +9626,36 @@ echo "==> Встановлення успішно завершено!"
       - Перевірено експорт функцій `init_gpu_reboot_button`, `init_gpu_reboot_row`, `on_gpu_reboot_clicked` у `libmac_settings.so`.
       - Перевірено наявність методу D-Bus `org.gnome.SessionManager.Reboot`.
       - Перевірено синхронізацію файлів у проекті та системі.
+492. [2026-10-25] Fix screen dimming / pale overlay over desktop and windows & Add anti-dimming watchdog (Preserving active session):
+   1. Проблема:
+      - Користувач повідомив, що на екрані з'явився шар/елемент над робочим столом і вікнами, який приглушував яскравість усього екрана і робив усе зображення блідим (clamped to max RGB ~192, тобто 75% яскравості).
+      - Критична умова: не виходити з сесії, не перезавантажувати систему та зберегти активну сесію користувача.
+   2. Дослідження та виявлення причини:
+      - Піксельний аналіз скріншоту виявив діапазон каналів `((0, 197), (0, 191), (0, 194), (255, 255))`, жоден елемент на екрані не досягав чистого білого кольору (255).
+      - За допомогою внутрішньої інтроспекції через EvalHelper виявлено, що в `Main.uiGroup` перебував фоновий актор `liquid-glass-bg-actor` (індекс 41) із дочірнім актором `liquid-box` розміром 1920x1080 та активним шейдером `LiquidEffect` (`owner: 'menu'`).
+      - Цей актор був створений менеджером `UIManager` (розширення `liquid-glass@thinkingcoding1231.gmail.com`) для відмальовки скла спадних меню верхнього менюбара (зокрема DateMenu / PanelMenu).
+      - Виявлено критичний дефект у логіці закриття `UIManager`:
+        * При закритті меню (`open-state-changed` із `isOpen = false`) `UIManager` не викликав приховування `bgActor.hide()` і не скидав його `opacity = 0`, а покладався лише на подію `notify::mapped`.
+        * У циклі `frameTick` стояла перевірка: `if (!this.bgActor || !this.targetActor.mapped) return GLib.SOURCE_REMOVE;`. Як тільки меню закривалося і ставало незведеним (unmapped), `frameTick` миттєво переривав цикл перерисовки ще ДО того, як встигав викликатися `_syncGeometry()`, який міг би приховати актор.
+        * Сигнал `notify::mapped` у Clutter 46 не надсилався надійно при звичайному приховуванні BoxPointer.
+        * В результаті актор `liquid-glass-bg-actor` із шейдером `LiquidEffect` залишався видимим на весь екран (1920x1080) при `opacity = 255`, перекривав усі вікна й робочий стіл, постійно приглушуючи яскравість екрана на 25%.
+        * Аналогічний дефект виявлено у `quickSettingsManager`, де в `_startAnimation` при вимкненій анімації навіть під час закриття безумовно виставлялося `this.bgActor.opacity = 255`.
+   3. Виконані виправлення:
+      - У `extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js` та `src/uiManager.ts`:
+        * У `frameTick` додано обов'язкове приховування актора: якщо `!this.targetActor.mapped` або `!this.menu.isOpen`, гарантовано викликається `this.bgActor.hide(); this.bgActor.opacity = 0;`.
+        * В обробнику `open-state-changed` додано пряме приховування: при `isOpen === false` викликається `stopFrameSync(); this.bgActor.hide(); this.bgActor.opacity = 0; this.animActor.opacity = 0;`.
+        * Додано підключення до сигналів `menu-closed` та `notify::visible` для миттєвого гарантованого приховування скляного шару при закритті спливаючого вікна.
+        * У `_startAnimation` при `isClosing` додано `this.bgActor.hide();`.
+      - У `extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/quickSettingsManager.js` та `src/quickSettingsManager.ts`:
+        * У `frameTick` додано приховування `bgActor` при втраті `mapped`.
+        * У `_startAnimation` виправлено збереження прозорості: при `isClosing` виставляється `opacity = 0` та `hide()`.
+      - У `extensions/eval-helper@mactheme/extension.js`:
+        * У перехоплювач `BoxPointer.prototype.close` (`finalizeClose`) додано захисний аудит: після закриття будь-якого BoxPointer гарантовано перевіряються та приховуються будь-які залишкові скляні актори меню, якщо немає відкритих меню.
+        * В `enable()` реалізовано фоновий анти-диммер сторож (`_dimmerWatchdogId`), який періодично перевіряє актори `liquid-glass-bg-actor` і миттєво приховує ті, чиє меню не є відкритим.
+      - Синхронізовано всі змінені файли між `~/.local/share/gnome-shell/extensions/` та репозиторієм проекту `MACTHEMEFILES`.
+      - Наживо підключено захисні обробники до активного екземпляра `UIManager` у пам'яті GNOME Shell без перезавантаження та виходу з сесії.
+   4. Верифікація:
+      - Знято тестові знімки екрана наживо через D-Bus API `Shell.Screenshot`.
+      - Перевірено екстремуми пікселів екрана: максимальна яскравість каналів R, G, B піднялася з 192-197 до 255 (`((0, 255), (0, 255), (0, 255), (255, 255))`).
+      - Перевірено багаторазове відкриття та закриття меню верхнього менюбара: екстремум яскравості залишається стабільно 255, екран чистий, яскравий і контрастний.
+      - Сесію користувача повністю збережено.

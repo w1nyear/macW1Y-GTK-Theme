@@ -534,8 +534,13 @@ export class QuickSettingsManager {
             // that does not depend on cleanup() getting that far.
             if (this._torndown)
                 return GLib.SOURCE_REMOVE;
-            if (!this.bgActor || !this.targetActor.mapped)
+            if (!this.bgActor || !this.targetActor.mapped) {
+                if (this.bgActor && this.bgActor.visible) {
+                    this.bgActor.hide();
+                    this.bgActor.opacity = 0;
+                }
                 return GLib.SOURCE_REMOVE;
+            }
             // [DIAG] See setFrameSyncFrozen() in utils.ts. Reschedules but does
             // nothing, so the cost of this poll can be measured directly.
             if (isFrameSyncFrozen()) {
@@ -804,8 +809,13 @@ export class QuickSettingsManager {
             // that does not depend on cleanup() getting that far.
             if (this._torndown)
                 return GLib.SOURCE_REMOVE;
-            if (!this.bgActor || !this.targetActor.mapped)
+            if (!this.bgActor || !this.targetActor.mapped) {
+                if (this.bgActor && this.bgActor.visible) {
+                    this.bgActor.hide();
+                    this.bgActor.opacity = 0;
+                }
                 return GLib.SOURCE_REMOVE;
+            }
             // Repair the subtree if Clutter has stopped allocating it. Sampled
             // here, at the top of the tick, because the previous frame's relayout
             // has settled by now and this frame's sync has not dirtied anything
@@ -2522,11 +2532,16 @@ export class QuickSettingsManager {
         if (!this._enableAnimation) {
             if (this.bgActor) {
                 this.bgActor.remove_all_transitions();
-                this.bgActor.opacity = 255;
+                const isClosing = (targetValue === 0);
+                this.bgActor.opacity = isClosing ? 0 : 255;
+                this.bgActor.visible = !isClosing;
+                if (isClosing) {
+                    this.bgActor.hide();
+                }
                 this.bgActor.set_scale(1.0, 1.0);
                 if (this.animActor) {
                     this.animActor.set_scale(1.0, 1.0);
-                    this.animActor.opacity = 255;
+                    this.animActor.opacity = isClosing ? 0 : 255;
                 }
             }
             return;
