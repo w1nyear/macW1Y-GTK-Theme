@@ -66,8 +66,10 @@ class DockDashItemContainer extends Dash.DashItemContainer {
     // Called by the magnifier each frame so a visible label keeps tracking
     // the magnified edge of its icon.
     updateLabelPosition() {
-        if (this.label?.visible && this._labelText && this.label.get_stage())
+        if (this.label?.visible && this._labelText && this.label.get_stage()) {
             AppIcons.positionItemLabel(this);
+            this.label.get_effect?.('tahoe-label-blur')?.queue_repaint?.();
+        }
     }
 
     // we override the method show taken from:

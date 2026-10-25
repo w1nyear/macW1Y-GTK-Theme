@@ -1769,6 +1769,10 @@ export function itemShowLabel() {
 
     positionItemLabel(this);
 
+    // Queue repaint on blur effect so it captures fresh background at new position
+    const blurEff = this.label.get_effect?.('tahoe-label-blur');
+    blurEff?.queue_repaint?.();
+
     this.label.remove_all_transitions();
     this.label.ease({
         opacity: 255,

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Adds a 5px hardware-accelerated rounded blur effect to dock labels and overview window captions.
+// Adds a hardware-accelerated rounded frosted glass blur effect (28px radius) to dock labels and overview window captions.
 
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -16,6 +16,9 @@ try {
 } catch (_) {}
 
 const EFFECT_NAME = 'tahoe-label-blur';
+const LABEL_BLUR_RADIUS = 28;
+const LABEL_CORNER_RADIUS = 14;
+const LABEL_BRIGHTNESS = 0.95;
 let childAddedId = 0;
 let overviewShowingId = 0;
 let overviewShownId = 0;
@@ -36,24 +39,44 @@ export function applyLabelBlur(actor) {
 
     try {
         const effects = actor.get_effects ? actor.get_effects() : [];
-        if (effects.some(e => e.name === EFFECT_NAME))
+        const existing = effects.find(e => e.name === EFFECT_NAME);
+        if (existing) {
+            existing.radius = LABEL_BLUR_RADIUS;
+            if ('corner_radius' in existing)
+                existing.corner_radius = LABEL_CORNER_RADIUS;
+            if ('brightness' in existing)
+                existing.brightness = LABEL_BRIGHTNESS;
             return;
+        }
 
+        let effect = null;
         if (Blur?.BlurEffect) {
-            const effect = new Blur.BlurEffect({
+            effect = new Blur.BlurEffect({
                 name: EFFECT_NAME,
                 mode: 1, // GB_BLUR_MODE_BACKGROUND
-                radius: 5,
-                corner_radius: 9999,
+                radius: LABEL_BLUR_RADIUS,
+                corner_radius: LABEL_CORNER_RADIUS,
+                brightness: LABEL_BRIGHTNESS,
             });
-            actor.add_effect(effect);
         } else if (Shell?.BlurEffect) {
-            const effect = new Shell.BlurEffect({
+            effect = new Shell.BlurEffect({
                 name: EFFECT_NAME,
                 mode: Shell.BlurMode.BACKGROUND,
-                radius: 5,
+                radius: LABEL_BLUR_RADIUS,
             });
+        }
+
+        if (effect) {
             actor.add_effect(effect);
+            if (actor.connectObject) {
+                actor.connectObject(
+                    'notify::visible', () => {
+                        if (actor.visible && effect.queue_repaint)
+                            effect.queue_repaint();
+                    },
+                    actor
+                );
+            }
         }
     } catch (e) {
         console.warn(`[kiwi] Failed to apply label blur: ${e}`);
@@ -64,6 +87,8 @@ export function removeLabelBlur(actor) {
     if (!actor || !actor.get_effects)
         return;
     try {
+        if (actor.disconnectObject)
+            actor.disconnectObject(actor);
         const effects = actor.get_effects();
         for (const eff of effects) {
             if (eff.name === EFFECT_NAME)
