@@ -41,7 +41,7 @@ r_raw = Image.open(f'{assets_dir}/restart.png').convert('RGBA')
 scale_d = (80 * S) / disk_raw.height
 disk_clean = disk_raw.resize((int(round(disk_raw.width * scale_d)), int(round(disk_raw.height * scale_d))), Image.Resampling.LANCZOS)
 
-scale_g = (74 * S) / gear_raw.height
+scale_g = (76 * S) / gear_raw.height
 gear_clean = gear_raw.resize((int(round(gear_raw.width * scale_g)), int(round(gear_raw.height * scale_g))), Image.Resampling.LANCZOS)
 
 scale_p = (27 * S) / p_raw.height
@@ -167,12 +167,12 @@ def make_continue_btn():
 
 btn_continue = make_continue_btn()
 
-# Card geometry
+# Card geometry: moved lower down per user request
 card_w = int(round(176 * S))
 card_h = int(round(210 * S))
-center_y = int(round(475 * S))
-icon_y = int(round(425 * S))
-label_y = int(round(535 * S))
+center_y = int(round(515 * S))
+icon_y = int(round(465 * S))
+label_y = int(round(575 * S))
 
 def draw_selection_card(im, cx, cy):
     card_im = Image.new('RGBA', (card_w, card_h), (0, 0, 0, 0))
@@ -323,7 +323,7 @@ def render_transition_frame(progress, os_name='Ubuntu'):
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
 def main():
-    print("Generating macOS Apple Silicon GRUB theme assets...")
+    print("Generating macOS Apple Silicon GRUB theme assets (lower placement & unclipped gear)...")
 
     base_dirs = [
         '/boot/grub/themes/apple-mac',
