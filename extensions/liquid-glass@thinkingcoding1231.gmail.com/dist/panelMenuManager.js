@@ -1,7 +1,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import GLib from 'gi://GLib';
-import { UIManager } from './uiManager.js?v=lg13';
+import { UIManager } from './uiManager.js?v=lg15';
 // GSettings namespace for every detected panel dropdown. Separate from the
 // Calendar's `menu-*` so these can be tuned without moving the date menu —
 // the same split quick-settings-*, notification-*, osd-* and dock-* already
@@ -37,37 +37,41 @@ export class PanelMenuManager {
             PopupMenu.PopupMenu.prototype.open = function(animate) {
                 try {
                     if (self._active && !this._liquidGlassUIManager && this.actor && this.box) {
-                        const reserved = new Set([
-                            Main.panel.statusArea.dateMenu?.menu,
-                            Main.panel.statusArea.quickSettings?.menu,
-                        ]);
-                        if (!reserved.has(this)) {
-                            // [RELOAD-STAB] Після reloadExtension попередній manager може
-                            // лишатись закріпленим за меню з СТАРОГО модуля (стара логіка
-                            // не підчіплює новий код). Чистимо старий і вішаємо новий.
-                            const prev = this._liquidGlassUIManager;
-                            if (prev) {
-                                try { prev.cleanup(); } catch (_) {}
-                                this._liquidGlassUIManager = null;
-                            }
-                            const mgr = new UIManager(
-                                self._path,
-                                self._settings,
-                                self._logger,
-                                { menu: this },
-                                false,
-                                'enable-extra-menu-glass',
-                                PANEL_MENU_PREFIX,
-                                'popup-menu'
-                            );
-                            this._liquidGlassUIManager = mgr;
-                            mgr.setup();
-                            this.actor.connect('destroy', () => {
-                                try {
-                                    this._liquidGlassUIManager?.cleanup();
+                        const existing = self._menus.get(this);
+                        if (existing?.manager) {
+                            this._liquidGlassUIManager = existing.manager;
+                        } else {
+                            const reserved = new Set([
+                                Main.panel.statusArea.dateMenu?.menu,
+                                Main.panel.statusArea.quickSettings?.menu,
+                            ]);
+                            if (!reserved.has(this)) {
+                                const prev = this._liquidGlassUIManager;
+                                if (prev) {
+                                    try { prev.cleanup(); } catch (_) {}
                                     this._liquidGlassUIManager = null;
-                                } catch (_) {}
-                            });
+                                }
+                                const mgr = new UIManager(
+                                    self._path,
+                                    self._settings,
+                                    self._logger,
+                                    { menu: this },
+                                    false,
+                                    'enable-extra-menu-glass',
+                                    PANEL_MENU_PREFIX,
+                                    'popup-menu'
+                                );
+                                this._liquidGlassUIManager = mgr;
+                                self._menus.set(this, { name: 'popup-menu', manager: mgr });
+                                mgr.setup();
+                                this.actor.connect('destroy', () => {
+                                    try {
+                                        this._liquidGlassUIManager?.cleanup();
+                                        this._liquidGlassUIManager = null;
+                                        self._menus.delete(this);
+                                    } catch (_) {}
+                                });
+                            }
                         }
                     }
                 } catch (e) {
@@ -148,6 +152,9 @@ export class PanelMenuManager {
             if (wanted.has(menu))
                 continue;
             this._menus.delete(menu);
+            if (menu._liquidGlassUIManager === entry.manager) {
+                menu._liquidGlassUIManager = null;
+            }
             try {
                 entry.manager.cleanup();
             }
@@ -156,14 +163,20 @@ export class PanelMenuManager {
             }
         }
         for (const [menu, button] of wanted) {
-            if (this._menus.has(menu))
+            if (menu._liquidGlassUIManager && menu._liquidGlassUIManager._torndown) {
+                menu._liquidGlassUIManager = null;
+            }
+            if (this._menus.has(menu)) {
+                menu._liquidGlassUIManager = this._menus.get(menu)?.manager ?? null;
                 continue;
+            }
             const name = wantedNames.get(menu) ?? '?';
             let manager = null;
             try {
                 manager = new UIManager(this._path, this._settings, this._logger, button, false, 'enable-extra-menu-glass', PANEL_MENU_PREFIX, `menu:${name}`);
                 manager.setup();
                 this._menus.set(menu, { name, manager });
+                menu._liquidGlassUIManager = manager;
             }
             catch (e) {
                 try {
@@ -226,8 +239,12 @@ export class PanelMenuManager {
             this._buttons.clear();
         });
         // One step per menu: a menu that throws must not strand the others.
-        for (const { name, manager } of [...this._menus.values()])
+        for (const [menu, { name, manager }] of this._menus) {
+            if (menu._liquidGlassUIManager === manager) {
+                menu._liquidGlassUIManager = null;
+            }
             this._teardownStep(`menu(${name})`, () => manager.cleanup());
+        }
         this._menus.clear();
         this._teardownStep('popupMenuHook', () => {
             if (this._origOpen && PopupMenu?.PopupMenu?.prototype) {

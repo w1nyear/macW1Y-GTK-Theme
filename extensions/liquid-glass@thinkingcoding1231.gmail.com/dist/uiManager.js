@@ -9,7 +9,7 @@ import Meta from 'gi://Meta';
 import Gio from 'gi://Gio';
 import { LiquidEffect } from './liquidEffect.js';
 import { StageContrastSampler, AdaptiveContrastConfig } from './contrastSampler.js';
-import { UnpickableActor, UILayerSampler, UnpickableWidget, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, resolveMonitorGeometry, isActorValid, getAllocatedSize, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, glassRefreshDue, glassRefreshDone, glassForceRefresh } from './utils.js';
+import { UnpickableActor, UILayerSampler, UnpickableWidget, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, resolveMonitorGeometry, isActorValid, getAllocatedSize, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, glassRefreshDue, glassRefreshDone, glassForceRefresh } from './utils.js?v=lg15';
 // ========== Configuration Parameters ==========
 // Transparent padding outside the glass area.
 // This prevents the shader distortion or rounded corners from being clipped by the actor bounds.
@@ -618,11 +618,15 @@ export class UIManager {
             // that does not depend on cleanup() getting that far.
             if (this._torndown)
                 return GLib.SOURCE_REMOVE;
-            if (!this.bgActor || !this.targetActor.mapped || (this.menu && !this.menu.isOpen)) {
+            if (!this.bgActor || (this.menu && !this.menu.isOpen)) {
                 if (this.bgActor && this.bgActor.visible) {
                     this.bgActor.hide();
                     this.bgActor.opacity = 0;
                 }
+                return GLib.SOURCE_REMOVE;
+            }
+            if (!this.targetActor.mapped) {
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
                 return GLib.SOURCE_REMOVE;
             }
             // [DIAG] See setFrameSyncFrozen() in utils.ts. Reschedules but does
@@ -658,6 +662,27 @@ export class UIManager {
                 this._frameSyncId = 0;
             }
         };
+        const resetOnClose = () => {
+            this._stopAdaptiveColorSampling();
+            stopFrameSync();
+            this._stableBaseW = undefined;
+            this._stableBaseH = undefined;
+            this._lastValidAnimAbsX = undefined;
+            this._lastValidAnimAbsY = undefined;
+            this._lastBgW = undefined;
+            this._lastBgH = undefined;
+            this._lastBgX = undefined;
+            this._lastBgY = undefined;
+            this._windowCloneManager?.setCullRect(null);
+            this._uiSampler?.setCullRect(null);
+            if (this.bgActor) {
+                this.bgActor.hide();
+                this.bgActor.opacity = 0;
+            }
+            if (this.animActor) {
+                this.animActor.opacity = 0;
+            }
+        };
         // Clear the cached size whenever the menu opens so it can recalculate
         // based on any new notifications or calendar events
         this._signals.push({
@@ -670,59 +695,34 @@ export class UIManager {
                     this._startAdaptiveColorSampling(true);
                 }
                 else {
-                    this._stopAdaptiveColorSampling();
-                    stopFrameSync();
-                    if (this.bgActor) {
-                        this.bgActor.hide();
-                        this.bgActor.opacity = 0;
-                    }
-                    if (this.animActor) {
-                        this.animActor.opacity = 0;
-                    }
+                    resetOnClose();
                 }
             })
         });
-        // Stop the render loop when the menu is fully hidden (mapped = false)
+        // Stop the render loop when the menu is fully hidden (mapped = false), or restart when mapped
         this._signals.push({
             target: this.menu.actor,
             id: this.menu.actor.connect('notify::mapped', () => {
-                if (!this.menu.actor.mapped) {
-                    stopFrameSync();
-                    if (this.bgActor) {
-                        this.bgActor.hide();
-                        this.bgActor.opacity = 0;
+                if (this.menu.actor.mapped) {
+                    if (this.menu && this.menu.isOpen) {
+                        startFrameSync();
                     }
-                    if (this.animActor) {
-                        this.animActor.opacity = 0;
-                    }
+                } else {
+                    resetOnClose();
                 }
             })
         });
         this._signals.push({
             target: this.menu,
             id: this.menu.connect('menu-closed', () => {
-                stopFrameSync();
-                if (this.bgActor) {
-                    this.bgActor.hide();
-                    this.bgActor.opacity = 0;
-                }
-                if (this.animActor) {
-                    this.animActor.opacity = 0;
-                }
+                resetOnClose();
             })
         });
         this._signals.push({
             target: this.menu.actor,
             id: this.menu.actor.connect('notify::visible', () => {
                 if (!this.menu.actor.visible) {
-                    stopFrameSync();
-                    if (this.bgActor) {
-                        this.bgActor.hide();
-                        this.bgActor.opacity = 0;
-                    }
-                    if (this.animActor) {
-                        this.animActor.opacity = 0;
-                    }
+                    resetOnClose();
                 }
             })
         });
@@ -740,11 +740,13 @@ export class UIManager {
             }
             return;
         }
-        if (!this.bgActor.visible) {
-            this.bgActor.show();
-        }
         if (!this._enableAnimation) {
             this.bgActor.opacity = this.targetActor.opacity;
+        }
+        if (this.bgActor.opacity > 0 && !this.bgActor.visible) {
+            this.bgActor.show();
+        } else if (this.bgActor.opacity === 0 && this.bgActor.visible) {
+            this.bgActor.hide();
         }
         let [inW, inH] = this.animActor.get_size();
         let [outW, outH] = this.targetActor.get_size();
@@ -776,8 +778,27 @@ export class UIManager {
         let h = Math.max(1, this._stableBaseH * scaleY);
         // Get the absolute position of the inner content actor
         let [animAbsX, animAbsY] = this.animActor.get_transformed_position();
+        let isUnpositioned = Number.isNaN(animAbsX) || Number.isNaN(animAbsY) ||
+                             (animAbsX <= 10 && animAbsY <= 10) || animAbsY < 20;
+
+        if (isUnpositioned && this.menu) {
+            const bp = this.menu._boxPointer;
+            if (bp && bp._sourceActor && bp._sourceActor.mapped && typeof bp._reposition === 'function') {
+                try {
+                    const box = new Clutter.ActorBox();
+                    bp._reposition(box);
+                    const bpThemeNode = bp.get_theme_node();
+                    const borderWidth = bpThemeNode ? bpThemeNode.get_length('-arrow-border-width') : 0;
+                    const rise = bpThemeNode ? bpThemeNode.get_length('-arrow-rise') : 0;
+                    animAbsX = box.x1 + borderWidth + this._menuXoffset;
+                    animAbsY = box.y1 + borderWidth + (bp._arrowSide === St.Side.TOP ? rise : 0) + this._menuYoffset;
+                    isUnpositioned = false;
+                } catch (_) {}
+            }
+        }
+
         // Advanced Fallback Logic for NaN Coordinates
-        if (Number.isNaN(animAbsX) || Number.isNaN(animAbsY)) {
+        if (isUnpositioned) {
             if (this._lastValidAnimAbsX !== undefined && this._lastValidAnimAbsY !== undefined) {
                 animAbsX = this._lastValidAnimAbsX;
                 animAbsY = this._lastValidAnimAbsY;
@@ -1085,8 +1106,9 @@ export class UIManager {
         if (!this._enableAnimation) {
             if (this.bgActor) {
                 this.bgActor.remove_all_transitions();
-                this.bgActor.opacity = isClosing ? 0 : 255;
-                this.bgActor.visible = !isClosing;
+                const initialOpacity = isClosing ? 0 : (this.targetActor ? this.targetActor.opacity : 255);
+                this.bgActor.opacity = initialOpacity;
+                this.bgActor.visible = !isClosing && initialOpacity > 0;
                 if (isClosing) {
                     this.bgActor.hide();
                 }
@@ -1094,7 +1116,7 @@ export class UIManager {
                 if (this.animActor) {
                     this.animActor.remove_all_transitions();
                     this.animActor.set_scale(1.0, 1.0);
-                    this.animActor.opacity = isClosing ? 0 : 255;
+                    this.animActor.opacity = initialOpacity;
                 }
                 if (isClosing && this.menu?.actor) {
                     this.menu.actor.hide();

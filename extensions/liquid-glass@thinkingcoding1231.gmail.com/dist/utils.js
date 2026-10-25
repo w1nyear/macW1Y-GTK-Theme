@@ -3395,6 +3395,7 @@ export class WindowCloneManager {
     rebuildClones() {
         if (!isActorValid(this.container))
             return;
+        this._cullRect = null;
         if (isActorValid(this.bgClone)) {
             this.bgClone.destroy();
         }

@@ -3652,6 +3652,8 @@ export class WindowCloneManager {
   rebuildClones() {
     if (!isActorValid(this.container)) return;
 
+    this._cullRect = null;
+
     if (isActorValid(this.bgClone)) { this.bgClone!.destroy(); }
     if (isActorValid(this.windowClonesContainer)) { this.windowClonesContainer!.destroy(); }
     // destroy() above fires each clone's 'destroy' handler, which prunes

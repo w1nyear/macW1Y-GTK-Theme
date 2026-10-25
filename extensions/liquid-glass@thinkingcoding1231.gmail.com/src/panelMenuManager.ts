@@ -37,29 +37,36 @@ export class PanelMenuManager {
       (PopupMenu as any).PopupMenu.prototype.open = function(animate: any) {
         try {
           if (self._active && !this._liquidGlassUIManager && this.actor && this.box) {
-            const reserved = new Set([
-              (Main.panel.statusArea as any).dateMenu?.menu,
-              (Main.panel.statusArea as any).quickSettings?.menu,
-            ]);
-            if (!reserved.has(this)) {
-              const mgr = new UIManager(
-                self._path,
-                self._settings,
-                self._logger,
-                { menu: this } as any,
-                false,
-                'enable-extra-menu-glass',
-                PANEL_MENU_PREFIX,
-                'popup-menu'
-              );
-              mgr.setup();
-              this._liquidGlassUIManager = mgr;
-              this.actor.connect('destroy', () => {
-                try {
-                  this._liquidGlassUIManager?.cleanup();
-                  this._liquidGlassUIManager = null;
-                } catch (_) {}
-              });
+            const existing = self._menus.get(this);
+            if (existing?.manager) {
+              this._liquidGlassUIManager = existing.manager;
+            } else {
+              const reserved = new Set([
+                (Main.panel.statusArea as any).dateMenu?.menu,
+                (Main.panel.statusArea as any).quickSettings?.menu,
+              ]);
+              if (!reserved.has(this)) {
+                const mgr = new UIManager(
+                  self._path,
+                  self._settings,
+                  self._logger,
+                  { menu: this } as any,
+                  false,
+                  'enable-extra-menu-glass',
+                  PANEL_MENU_PREFIX,
+                  'popup-menu'
+                );
+                this._liquidGlassUIManager = mgr;
+                self._menus.set(this, { name: 'popup-menu', manager: mgr });
+                mgr.setup();
+                this.actor.connect('destroy', () => {
+                  try {
+                    this._liquidGlassUIManager?.cleanup();
+                    this._liquidGlassUIManager = null;
+                    self._menus.delete(this);
+                  } catch (_) {}
+                });
+              }
             }
           }
         } catch (e) {
@@ -139,10 +146,19 @@ export class PanelMenuManager {
     for (const [menu, entry] of this._menus) {
       if (wanted.has(menu)) continue;
       this._menus.delete(menu);
+      if ((menu as any)._liquidGlassUIManager === entry.manager) {
+        (menu as any)._liquidGlassUIManager = null;
+      }
       try { entry.manager.cleanup(); } catch (e) { this._logger.log(`[Liquid Glass] Menu cleanup (${entry.name}): ${e}`); }
     }
     for (const [menu, button] of wanted) {
-      if (this._menus.has(menu)) continue;
+      if ((menu as any)._liquidGlassUIManager && (menu as any)._liquidGlassUIManager._torndown) {
+        (menu as any)._liquidGlassUIManager = null;
+      }
+      if (this._menus.has(menu)) {
+        (menu as any)._liquidGlassUIManager = this._menus.get(menu)?.manager ?? null;
+        continue;
+      }
       const name = wantedNames.get(menu) ?? '?';
       let manager: UIManager | null = null;
       try {
@@ -150,6 +166,7 @@ export class PanelMenuManager {
           'enable-extra-menu-glass', PANEL_MENU_PREFIX, `menu:${name}`);
         manager.setup();
         this._menus.set(menu, { name, manager });
+        (menu as any)._liquidGlassUIManager = manager;
       } catch (e) {
         try { manager?.cleanup(); } catch (_) { /* partial setup */ }
         this._logger.log(`[Liquid Glass] Could not attach panel menu glass to "${name}": ${e}`);
@@ -205,8 +222,12 @@ export class PanelMenuManager {
     });
 
     // One step per menu: a menu that throws must not strand the others.
-    for (const { name, manager } of [...this._menus.values()])
+    for (const [menu, { name, manager }] of this._menus) {
+      if ((menu as any)._liquidGlassUIManager === manager) {
+        (menu as any)._liquidGlassUIManager = null;
+      }
       this._teardownStep(`menu(${name})`, () => manager.cleanup());
+    }
     this._menus.clear();
 
     this._teardownStep('popupMenuHook', () => {
