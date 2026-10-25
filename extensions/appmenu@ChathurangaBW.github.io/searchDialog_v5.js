@@ -471,7 +471,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._resultsBox = new St.BoxLayout({
             vertical: true,
             x_expand: true,
-            style: 'padding: 0 18px 14px 10px;',
+            style: 'padding: 0 18px 0px 10px;',
         });
         this._scrollView.add_child(this._resultsBox);
 
@@ -515,7 +515,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._filesContentBox = new St.BoxLayout({
             vertical: true,
             x_expand: true,
-            style: 'padding: 0 18px 18px 18px;',
+            style: 'padding: 0 18px 0px 18px;',
         });
         this._filesScrollView.add_child(this._filesContentBox);
 
@@ -541,7 +541,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._appsContentBox = new St.BoxLayout({
             vertical: true,
             x_expand: true,
-            style: 'padding: 10px 18px 18px 18px;',
+            style: 'padding: 10px 18px 0px 18px;',
         });
         this._appsScrollView.add_child(this._appsContentBox);
 
@@ -567,7 +567,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._clipboardContentBox = new St.BoxLayout({
             vertical: true,
             x_expand: true,
-            style: 'padding: 10px 18px 18px 18px;',
+            style: 'padding: 10px 18px 0px 18px;',
         });
         this._clipboardScrollView.add_child(this._clipboardContentBox);
 

@@ -260,7 +260,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
             'border: 1px solid rgba(255, 255, 255, 0.30) !important; ' +
-            'padding: 16px 2px 14px 2px; ' +
+            'padding: 16px 2px 0px 2px; ' +
             'box-shadow: none !important;'
         );
         this.add_child(this._box);
@@ -401,7 +401,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             layout_manager: new Clutter.BinLayout(),
             x_expand: true,
             y_expand: true,
-            style: 'height: 382px; min-height: 382px; max-height: 382px;',
+            style: 'height: 419px; min-height: 419px; max-height: 419px;',
         });
         this._box.add_child(this._scrollWrapper);
 
@@ -412,7 +412,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'height: 382px; padding-bottom: 4px; -st-vfade-offset: 44px;',
+            style: 'height: 419px; min-height: 419px; max-height: 419px; padding-bottom: 0px; -st-vfade-offset: 44px;',
         });
         this._scrollWrapper.add_child(this._scrollView);
 
@@ -660,7 +660,7 @@ export const MacApplicationsDialog = GObject.registerClass({
                 'background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
                 'border: none !important; ' +
-                'padding: 16px 2px 14px 2px; ' +
+                'padding: 16px 2px 0px 2px; ' +
                 'box-shadow: none !important;'
             );
 
@@ -1058,11 +1058,12 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         let appIdx = 0;
         for (let r = 0; r < numRows; r++) {
+            const isLastRow = (r === numRows - 1);
             const rowBox = new St.BoxLayout({
                 vertical: false,
                 x_expand: true,
                 x_align: Clutter.ActorAlign.CENTER,
-                style: 'margin-bottom: 8px;',
+                style: isLastRow ? 'margin-bottom: 0px;' : 'margin-bottom: 8px;',
             });
 
             for (let c = 0; c < COLUMNS; c++) {
