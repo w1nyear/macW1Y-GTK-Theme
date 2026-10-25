@@ -1385,6 +1385,12 @@ install_grub() {
         sudo mkdir -p "$GRUB_TARGET"
         sudo cp -r "$SCRIPT_DIR/grub/apple-mac/"* "$GRUB_TARGET/"
     fi
+
+    local GRUB_USB_TARGET="/boot/grub/themes/apple-mac-usb"
+    if [ -d "$SCRIPT_DIR/grub/apple-mac-usb" ]; then
+        sudo mkdir -p "$GRUB_USB_TARGET"
+        sudo cp -r "$SCRIPT_DIR/grub/apple-mac-usb/"* "$GRUB_USB_TARGET/"
+    fi
     
     [ -f /etc/default/grub ] && [ ! -f /etc/default/grub.bak_mactheme ] && sudo cp /etc/default/grub /etc/default/grub.bak_mactheme
     [ -f /etc/grub.d/10_linux ] && [ ! -f /etc/grub.d/10_linux.bak_mactheme ] && sudo cp /etc/grub.d/10_linux /etc/grub.d/10_linux.bak_mactheme
@@ -1395,9 +1401,29 @@ install_grub() {
         sudo sed -i "s/^GRUB_THEME=.*/GRUB_THEME=\"\/boot\/grub\/themes\/apple-mac\/theme.txt\"/" /etc/default/grub
     fi
     
+    if [ -f "$SCRIPT_DIR/grub/06_mac_theme_select" ]; then
+        sudo cp "$SCRIPT_DIR/grub/06_mac_theme_select" /etc/grub.d/06_mac_theme_select
+        sudo chmod 755 /etc/grub.d/06_mac_theme_select
+    fi
+
+    if [ -f "$SCRIPT_DIR/grub/08_mac_usb_entry" ]; then
+        sudo cp "$SCRIPT_DIR/grub/08_mac_usb_entry" /etc/grub.d/08_mac_usb_entry
+        sudo chmod 755 /etc/grub.d/08_mac_usb_entry
+    fi
+
     if [ -f "$SCRIPT_DIR/grub/10_linux" ]; then
         sudo cp "$SCRIPT_DIR/grub/10_linux" /etc/grub.d/10_linux
         sudo chmod 755 /etc/grub.d/10_linux
+    fi
+
+    if [ -f "$SCRIPT_DIR/grub/30_uefi-firmware" ]; then
+        sudo cp "$SCRIPT_DIR/grub/30_uefi-firmware" /etc/grub.d/30_uefi-firmware
+        sudo chmod 644 /etc/grub.d/30_uefi-firmware
+    fi
+
+    if [ -f "$SCRIPT_DIR/grub/40_custom" ]; then
+        sudo cp "$SCRIPT_DIR/grub/40_custom" /etc/grub.d/40_custom
+        sudo chmod 755 /etc/grub.d/40_custom
     fi
 
     if [ -f "$SCRIPT_DIR/grub/patch_grub_keys.py" ]; then
@@ -1843,8 +1869,19 @@ EOF
     if [ -d "$SCRIPT_DIR/grub/apple-mac" ]; then
         sync_directory_tree "$SCRIPT_DIR/grub/apple-mac" "/boot/grub/themes/apple-mac" true
     fi
+    if [ -d "$SCRIPT_DIR/grub/apple-mac-usb" ]; then
+        sync_directory_tree "$SCRIPT_DIR/grub/apple-mac-usb" "/boot/grub/themes/apple-mac-usb" true
+    fi
+    [ -f "$SCRIPT_DIR/grub/grub.default" ] && sync_or_update_file "$SCRIPT_DIR/grub/grub.default" "/etc/default/grub" true
+    [ -f "$SCRIPT_DIR/grub/06_mac_theme_select" ] && sync_or_update_file "$SCRIPT_DIR/grub/06_mac_theme_select" "/etc/grub.d/06_mac_theme_select" true
+    [ -f "$SCRIPT_DIR/grub/08_mac_usb_entry" ] && sync_or_update_file "$SCRIPT_DIR/grub/08_mac_usb_entry" "/etc/grub.d/08_mac_usb_entry" true
     [ -f "$SCRIPT_DIR/grub/10_linux" ] && sync_or_update_file "$SCRIPT_DIR/grub/10_linux" "/etc/grub.d/10_linux" true
+    [ -f "$SCRIPT_DIR/grub/30_uefi-firmware" ] && sync_or_update_file "$SCRIPT_DIR/grub/30_uefi-firmware" "/etc/grub.d/30_uefi-firmware" true
+    [ -f "$SCRIPT_DIR/grub/40_custom" ] && sync_or_update_file "$SCRIPT_DIR/grub/40_custom" "/etc/grub.d/40_custom" true
     [ -f "$SCRIPT_DIR/systemd/mac-grub-status.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-grub-status.service" "/etc/systemd/system/mac-grub-status.service" true
+    sudo chmod 755 /etc/grub.d/06_mac_theme_select /etc/grub.d/08_mac_usb_entry /etc/grub.d/10_linux /etc/grub.d/40_custom 2>/dev/null || true
+    sudo chmod 644 /etc/grub.d/30_uefi-firmware 2>/dev/null || true
+    sudo update-grub 2>/dev/null || true
 
     log_info "Оновлення системних кешів..."
     chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.themes" "$TARGET_HOME/.local/share/fonts" "$TARGET_HOME/.local/share/icons" "$EXT_USER_DIR" "$OVERLAY_DIR" "$LOCAL_BIN" "$LOCAL_LIB" "$APP_DIR" "$SVC_DIR" "$CFG_DIR" 2>/dev/null || true

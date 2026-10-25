@@ -176,7 +176,7 @@ linux_entry ()
 	          title="$(gettext_printf "%s, with Linux %s" "${os}" "${version}")"
 	      fi ;;
       esac
-      if [ x"$title" = x"$GRUB_ACTUAL_DEFAULT" ] || [ x"Previous Linux versions>$title" = x"$GRUB_ACTUAL_DEFAULT" ]; then
+      if [ "x$GRUB_DISABLE_SUBMENU" != "xtrue" ] && { [ x"$title" = x"$GRUB_ACTUAL_DEFAULT" ] || [ x"Previous Linux versions>$title" = x"$GRUB_ACTUAL_DEFAULT" ]; }; then
 	  replacement_title="$(echo "Advanced options for ${OS}" | sed 's,>,>>,g')>$(echo "$title" | sed 's,>,>>,g')"
 	  quoted="$(echo "$GRUB_ACTUAL_DEFAULT" | grub_quote)"
 	  title_correction_code="${title_correction_code}if [ \"x\$default\" = '$quoted' ]; then default='$(echo "$replacement_title" | grub_quote)'; fi;"
@@ -488,6 +488,21 @@ for linux in ${reverse_sorted_list}; do
 
   linux_entry "${OS}" "${version}" advanced \
               "${GRUB_CMDLINE_LINUX} ${GRUB_CMDLINE_LINUX_DEFAULT}"
+
+  # macOS Startup Manager: Card 2 — UEFI Settings
+  if [ "x$is_top_level" = xtrue ]; then
+    cat << 'EOF'
+if [ "$grub_platform" = "efi" ]; then
+	fwsetup --is-supported
+	if [ "$?" = 0 ]; then
+		menuentry 'UEFI Settings' --class uefi-firmware --class uefi --class efi $menuentry_id_option 'uefi-firmware' {
+			fwsetup
+		}
+	fi
+fi
+EOF
+  fi
+
   if [ "x${GRUB_DISABLE_RECOVERY}" != "xtrue" ]; then
     linux_entry "${OS}" "${version}" recovery \
                 "${GRUB_CMDLINE_LINUX_RECOVERY} ${GRUB_CMDLINE_LINUX}"

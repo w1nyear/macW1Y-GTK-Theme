@@ -1,0 +1,49 @@
+#! /bin/sh
+set -e
+
+# macOS Startup Manager: Theme selector & dynamic USB transition animation
+
+esp_uuid="$(findmnt -no UUID /boot/efi 2>/dev/null || echo "B621-3DF3")"
+esp_uuid_lower="$(echo "$esp_uuid" | tr '[:upper:]' '[:lower:]')"
+
+cat << EOF
+# macOS Apple Silicon Startup Manager: Dynamic USB Scan & Animation
+set mac_has_usb=0
+set mac_usb_dev=""
+set mac_usb_path=""
+
+for dev in (*); do
+    if [ "\$dev" != "(\$root)" -a "\$dev" != "proc" -a "\$dev" != "memdisk" ]; then
+        for path in /EFI/BOOT/BOOTX64.EFI /efi/boot/bootx64.efi /EFI/BOOT/grubx64.efi /efi/boot/grubx64.efi /bootmgr.efi; do
+            if [ -f "\$dev\$path" ]; then
+                probe --fs-uuid "\$dev" --set=found_uuid
+                if [ "\$found_uuid" != "$esp_uuid" -a "\$found_uuid" != "$esp_uuid_lower" -a "\$found_uuid" != "\$root_uuid" ]; then
+                    set mac_has_usb=1
+                    set mac_usb_dev="\$dev"
+                    set mac_usb_path="\$path"
+                    break
+                fi
+            fi
+        done
+        if [ "\$mac_has_usb" = "1" ]; then
+            break
+        fi
+    fi
+done
+
+if [ "\$mac_has_usb" = "1" ]; then
+    if [ "\$mac_play_anim" = "1" ]; then
+        set mac_play_anim=0
+        insmod gfxterm_background
+        background_image -m stretch (\$root)/boot/grub/themes/apple-mac/anim/frame1.png
+        background_image -m stretch (\$root)/boot/grub/themes/apple-mac/anim/frame2.png
+        background_image -m stretch (\$root)/boot/grub/themes/apple-mac/anim/frame3.png
+        background_image -m stretch (\$root)/boot/grub/themes/apple-mac/anim/frame4.png
+        background_image -m stretch (\$root)/boot/grub/themes/apple-mac/anim/frame5.png
+    fi
+    set theme=(\$root)/boot/grub/themes/apple-mac-usb/theme.txt
+else
+    set theme=(\$root)/boot/grub/themes/apple-mac/theme.txt
+fi
+export theme
+EOF

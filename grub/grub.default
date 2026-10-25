@@ -3,7 +3,7 @@
 # For full documentation of the options in these files, see:
 # info -f grub -n 'Simple configuration'
 
-GRUB_DEFAULT=0
+GRUB_DEFAULT="Ubuntu"
 GRUB_TIMEOUT_STYLE=menu
 GRUB_TIMEOUT=5
 GRUB_DISTRIBUTOR=`( . /etc/os-release && echo ${NAME} )`

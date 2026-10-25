@@ -1,0 +1,33 @@
+#! /bin/sh
+set -e
+
+# macOS Startup Manager: USB Boot Entry (Card 1 when external USB connected)
+
+esp_uuid="$(findmnt -no UUID /boot/efi 2>/dev/null || echo "B621-3DF3")"
+esp_uuid_lower="$(echo "$esp_uuid" | tr '[:upper:]' '[:lower:]')"
+
+cat << EOF
+if [ "\$mac_has_usb" = "1" ]; then
+    menuentry 'EFI Boot' --class usb --class external --class drive \$menuentry_id_option 'macw1y-usb-boot' {
+        insmod chain
+        if [ -z "\$mac_usb_dev" ]; then
+            for dev in (*); do
+                if [ "\$dev" != "(\$root)" -a "\$dev" != "proc" -a "\$dev" != "memdisk" ]; then
+                    for path in /EFI/BOOT/BOOTX64.EFI /efi/boot/bootx64.efi /EFI/BOOT/grubx64.efi /efi/boot/grubx64.efi /bootmgr.efi; do
+                        if [ -f "\$dev\$path" ]; then
+                            probe --fs-uuid "\$dev" --set=found_uuid
+                            if [ "\$found_uuid" != "$esp_uuid" -a "\$found_uuid" != "$esp_uuid_lower" -a "\$found_uuid" != "\$root_uuid" ]; then
+                                set mac_usb_dev="\$dev"
+                                set mac_usb_path="\$path"
+                                break
+                            fi
+                        fi
+                    done
+                fi
+            done
+        fi
+        set root="\$mac_usb_dev"
+        chainloader "\$mac_usb_path"
+    }
+fi
+EOF

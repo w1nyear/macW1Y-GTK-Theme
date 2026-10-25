@@ -32,7 +32,7 @@ terminal-border: "0"
   width = 100%
   align = "center"
   id = "__timeout__"
-  text = "Завантаження через %d с..."
-  color = "#404045"
+  text = "Завантаження через %d с... (R — оновити носії)"
+  color = "#808085"
   font = "sfpro-16"
 }

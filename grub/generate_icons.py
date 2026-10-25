@@ -1,124 +1,133 @@
 #!/usr/bin/env python3
+"""
+generate_icons.py — macOS Apple Silicon Startup Manager Theme Generator for GRUB 2
+Generates:
+1. 3-card layout icons (Ubuntu, UEFI Settings, Options + Shut Down/Restart)
+2. 4-card layout icons with USB drive (USB Boot, Ubuntu, UEFI Settings, Options + Shut Down/Restart)
+3. 5-frame smooth slide transition animations (sliding cards right and introducing USB on left)
+"""
+
 import os
 import sys
 import datetime
-import subprocess
-from collections import deque
 from PIL import Image, ImageDraw, ImageFont
 
-crops_dir = '/home/vitaliy/.gemini/antigravity/brain/312b44e9-b044-46b8-aca4-b03b8564e079/grub_crops'
-font_dir = '/home/vitaliy/.fonts/ubuntu-mimic-macos/fonts/SF_Pro'
-if not os.path.isdir(font_dir):
-    font_dir = '/usr/share/fonts/opentype'
-
-# Extract pure transparent RGBA from crops with black background
-def extract_transparent_crop(im_path, max_bg_lum=15):
-    im = Image.open(im_path).convert('RGBA')
-    w, h = im.size
-    bg_mask = [[False]*w for _ in range(h)]
-    queue = deque([(0, 0), (w-1, 0), (0, h-1), (w-1, h-1)])
-    for x, y in queue:
-        bg_mask[y][x] = True
-        
-    while queue:
-        cx, cy = queue.popleft()
-        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            nx, ny = cx + dx, cy + dy
-            if 0 <= nx < w and 0 <= ny < h and not bg_mask[ny][nx]:
-                r, g, b, a = im.getpixel((nx, ny))
-                lum = max(r, g, b)
-                if lum <= max_bg_lum:
-                    bg_mask[ny][nx] = True
-                    queue.append((nx, ny))
-                    
-    out = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    for y in range(h):
-        for x in range(w):
-            if bg_mask[y][x]:
-                out.putpixel((x, y), (0, 0, 0, 0))
-            else:
-                r, g, b, a = im.getpixel((x, y))
-                is_edge = any(0 <= x+dx < w and 0 <= y+dy < h and bg_mask[y+dy][x+dx] for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)])
-                lum = max(r, g, b)
-                if is_edge and lum < 60:
-                    alpha = int(round(lum / 60.0 * 255))
-                    factor = 255.0 / max(alpha, 1)
-                    out.putpixel((x, y), (min(255, int(r*factor)), min(255, int(g*factor)), min(255, int(b*factor)), alpha))
-                else:
-                    out.putpixel((x, y), (r, g, b, 255))
-    return out
-
-# Prepare cleaned icons without background if crops exist
-d_clean = None
-o_clean = None
-p_clean = None
-r_clean = None
-if os.path.isdir(crops_dir) and os.path.exists(f'{crops_dir}/disk.png'):
-    try:
-        d_clean = extract_transparent_crop(f'{crops_dir}/disk.png')
-        o_clean = extract_transparent_crop(f'{crops_dir}/options.png')
-        p_clean = extract_transparent_crop(f'{crops_dir}/shutdown_icon.png')
-        r_clean = extract_transparent_crop(f'{crops_dir}/restart_icon.png')
-    except Exception as e:
-        print(f"Warning: could not extract crops: {e}")
-
 W, H = 1920, 1080
-S = 2 # 2x supersampling (3840x2160 internal canvas downsampled with Lanczos for 4K Retina quality)
+S = 2  # 2x supersampling downscaled with Lanczos for 4K Retina sharpness
 SW, SH = W * S, H * S
 
-# Load genuine SF Pro fonts at 2x scale
-f_label = ImageFont.truetype(f'{font_dir}/SF-Pro-Display-Medium.otf', int(round(15 * S)))
-f_continue = ImageFont.truetype(f'{font_dir}/SF-Pro-Text-Medium.otf', int(round(12.5 * S)))
-f_power = ImageFont.truetype(f'{font_dir}/SF-Pro-Text-Regular.otf', int(round(12.5 * S)))
-f_time = ImageFont.truetype(f'{font_dir}/SF-Pro-Text-Medium.otf', int(round(13.5 * S)))
-f_abc = ImageFont.truetype(f'{font_dir}/SF-Pro-Text-Semibold.otf', int(round(12.5 * S)))
+# Font configuration
+font_display = '/home/vitaliy/.local/share/fonts/SF_Pro_Display/SF-Pro-Display-Medium.otf'
+font_text = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/SF-Pro-Text-Medium.otf'
+font_regular = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/SF-Pro-Text-Regular.otf'
+font_semibold = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/SF-Pro-Text-Semibold.otf'
+font_bold = '/home/vitaliy/.local/share/fonts/SF_Pro_Display/SF-Pro-Display-Bold.otf'
 
-# Target scaling for icons
-scale = 1.85 * 0.75 * S
-if d_clean:
-    disk_scaled = d_clean.resize((int(round(d_clean.width * scale)), int(round(d_clean.height * scale))), Image.Resampling.LANCZOS)
-    opt_scaled = o_clean.resize((int(round(o_clean.width * scale)), int(round(o_clean.height * scale))), Image.Resampling.LANCZOS)
-    p_scaled = p_clean.resize((int(round(p_clean.width * scale)), int(round(p_clean.height * scale))), Image.Resampling.LANCZOS)
-    r_scaled = r_clean.resize((int(round(r_clean.width * scale)), int(round(r_clean.height * scale))), Image.Resampling.LANCZOS)
-else:
-    disk_scaled, opt_scaled, p_scaled, r_scaled = None, None, None, None
+f_label = ImageFont.truetype(font_display, int(round(15 * S)))
+f_continue = ImageFont.truetype(font_text, int(round(12.5 * S)))
+f_power = ImageFont.truetype(font_regular, int(round(12.5 * S)))
+f_time = ImageFont.truetype(font_text, int(round(13.5 * S)))
+f_abc = ImageFont.truetype(font_semibold, int(round(12.5 * S)))
 
-# Render horizontal battery icon from Ubuntu Yaru theme
-def get_battery_icon():
-    cap = 100
-    try:
-        bat_dirs = [d for d in os.listdir('/sys/class/power_supply') if d.startswith('BAT')]
-        if bat_dirs:
-            with open(f'/sys/class/power_supply/{bat_dirs[0]}/capacity') as f:
-                cap = int(f.read().strip())
-    except Exception:
-        pass
-    
-    try:
-        level = min(100, max(0, int(round(cap / 10.0) * 10)))
-        svg_path = f'/usr/share/icons/Yaru/scalable/status/battery-level-{level}-symbolic.svg'
-        if not os.path.exists(svg_path):
-            svg_path = f'/usr/share/icons/Adwaita/symbolic/status/battery-level-{level}-symbolic.svg'
-            
-        tmp_png = '/tmp/bat_grub_square.png'
-        bw, bh = int(round(22 * S)), int(round(22 * S))
-        res = subprocess.run(['rsvg-convert', '-w', str(bw), '-h', str(bh), svg_path, '-o', tmp_png], capture_output=True)
-        if res.returncode == 0 and os.path.exists(tmp_png):
-            raw = Image.open(tmp_png).convert('RGBA')
-            alpha = raw.split()[3]
-            white_bat = Image.new('RGBA', raw.size, (230, 230, 235, 255))
-            white_bat.putalpha(alpha)
-            # Rotate 90 deg clockwise to orient horizontally with terminal on the right
-            rot = white_bat.transpose(Image.Transpose.ROTATE_270)
-            bbox = rot.getbbox()
-            return rot.crop(bbox)
-    except Exception:
-        pass
-    return None
+# 1. Base clean assets
+disk_clean = Image.open('/tmp/disk_clean.png').convert('RGBA').resize((210 * S, 165 * S), Image.Resampling.LANCZOS)
+gear_clean = Image.open('/tmp/gear_clean.png').convert('RGBA').resize((210 * S, 165 * S), Image.Resampling.LANCZOS)
+p_clean = Image.open('/tmp/p_clean.png').convert('RGBA').resize((90 * S, 60 * S), Image.Resampling.LANCZOS)
+r_clean = Image.open('/tmp/r_clean.png').convert('RGBA').resize((90 * S, 60 * S), Image.Resampling.LANCZOS)
 
-bat_im = get_battery_icon()
+# 2. Generate UEFI Chip icon (210*S, 165*S)
+def create_uefi_chip_icon():
+    uefi_im = Image.new('RGBA', (210 * S, 165 * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(uefi_im)
 
-# Vector Continue button pill
+    chip_w, chip_h = 130 * S, 130 * S
+    cx, cy = (210 * S) // 2, (165 * S) // 2
+    x0, y0 = cx - chip_w // 2, cy - chip_h // 2
+    x1, y1 = cx + chip_w // 2, cy + chip_h // 2
+
+    pin_len = 10 * S
+    pin_w = 4 * S
+    pin_gap = 10 * S
+
+    for px in range(x0 + 16 * S, x1 - 16 * S, pin_gap):
+        d.rounded_rectangle([px, y0 - pin_len, px + pin_w, y0], radius=1 * S, fill=(185, 185, 190, 255))
+        d.rounded_rectangle([px, y1, px + pin_w, y1 + pin_len], radius=1 * S, fill=(185, 185, 190, 255))
+
+    for py in range(y0 + 16 * S, y1 - 16 * S, pin_gap):
+        d.rounded_rectangle([x0 - pin_len, py, x0, py + pin_w], radius=1 * S, fill=(185, 185, 190, 255))
+        d.rounded_rectangle([x1, py, x1 + pin_len, py + pin_w], radius=1 * S, fill=(185, 185, 190, 255))
+
+    d.rounded_rectangle([x0, y0, x1, y1], radius=16 * S, fill=(24, 24, 27, 255), outline=(90, 90, 96, 255), width=2 * S)
+    d.rounded_rectangle([x0 + 4 * S, y0 + 4 * S, x1 - 4 * S, y1 - 4 * S], radius=12 * S, fill=(30, 30, 34, 255), outline=(60, 60, 65, 255), width=1 * S)
+
+    d.ellipse([x0 + 12 * S, y0 + 12 * S, x0 + 18 * S, y0 + 18 * S], fill=(120, 120, 128, 255))
+
+    f_u = ImageFont.truetype(font_bold, 26 * S)
+    f_s = ImageFont.truetype(font_text, 11 * S)
+
+    d.line([cx - 36 * S, cy - 24 * S, cx + 36 * S, cy - 24 * S], fill=(140, 140, 148, 180), width=1 * S)
+    d.line([cx - 36 * S, cy + 24 * S, cx + 36 * S, cy + 24 * S], fill=(140, 140, 148, 180), width=1 * S)
+
+    d.text((cx, cy - 8 * S), 'UEFI', font=f_u, fill=(245, 245, 250, 255), anchor='mm')
+    d.text((cx, cy + 14 * S), 'FIRMWARE', font=f_s, fill=(160, 160, 168, 255), anchor='mm')
+    return uefi_im
+
+uefi_clean = create_uefi_chip_icon()
+
+# 3. Generate macOS External USB Drive icon (210*S, 165*S)
+def create_usb_drive_icon():
+    raw_disk = Image.open('/tmp/disk_clean.png').convert('RGBA')
+    w, h = raw_disk.size
+    usb_im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = raw_disk.getpixel((x, y))
+            lum = (r + g + b) // 3
+            if lum > 15:
+                factor = lum / 255.0
+                or_r = int(min(255, round(255 * factor)))
+                or_g = int(min(255, round(145 * factor + 15 * factor**2)))
+                or_b = int(min(255, round(25 * factor)))
+                usb_im.putpixel((x, y), (or_r, or_g, or_b, 255))
+            else:
+                usb_im.putpixel((x, y), (0, 0, 0, 0))
+
+    d = ImageDraw.Draw(usb_im)
+    cx, cy = w // 2, h // 2 - 8
+
+    stem_top = cy - 20
+    stem_bot = cy + 18
+    d.line([cx, stem_top, cx, stem_bot], fill=(255, 255, 255, 230), width=3)
+    d.ellipse([cx - 4, stem_bot - 1, cx + 4, stem_bot + 7], fill=(255, 255, 255, 230))
+    d.polygon([(cx, stem_top - 7), (cx - 6, stem_top), (cx + 6, stem_top)], fill=(255, 255, 255, 230))
+
+    d.arc([cx - 16, cy - 8, cx, cy + 8], start=90, end=180, fill=(255, 255, 255, 230), width=3)
+    d.line([cx - 16, cy - 8, cx - 16, cy - 14], fill=(255, 255, 255, 230), width=3)
+    d.rounded_rectangle([cx - 19, cy - 20, cx - 13, cy - 14], radius=1, fill=(255, 255, 255, 230))
+
+    d.arc([cx, cy - 8, cx + 16, cy + 8], start=0, end=90, fill=(255, 255, 255, 230), width=3)
+    d.line([cx + 16, cy - 8, cx + 16, cy - 14], fill=(255, 255, 255, 230), width=3)
+    d.ellipse([cx + 13, cy - 20, cx + 19, cy - 14], fill=(255, 255, 255, 230))
+
+    return usb_im.resize((210 * S, 165 * S), Image.Resampling.LANCZOS)
+
+usb_clean = create_usb_drive_icon()
+
+# 4. Status Bar Widgets
+def make_battery_icon():
+    bw = int(round(26 * S))
+    bh = int(round(13 * S))
+    bat = Image.new('RGBA', (bw, bh), (0, 0, 0, 0))
+    d = ImageDraw.Draw(bat)
+    d.rounded_rectangle([0, 0, bw - 4 * S, bh - 1], radius=3 * S, outline=(230, 230, 235, 220), width=max(1, int(round(1.5 * S))))
+    d.rounded_rectangle([bw - 3 * S, bh // 2 - 2 * S, bw - 1, bh // 2 + 2 * S], radius=1 * S, fill=(230, 230, 235, 220))
+    fill_w = int(round((bw - 8 * S) * 0.85))
+    d.rounded_rectangle([2 * S, 2 * S, 2 * S + fill_w, bh - 1 - 2 * S], radius=2 * S, fill=(230, 230, 235, 240))
+    return bat
+
+bat_im = make_battery_icon()
+
 def make_continue_btn():
     bw = int(round(100 * S))
     bh = int(round(26 * S))
@@ -133,11 +142,8 @@ def make_continue_btn():
 
 btn_continue = make_continue_btn()
 
-# Card geometry
-card_w = int(round(126 * 1.85 * 0.75 * S))
-card_h = int(round(121 * 1.85 * 0.75 * S))
-cx1 = (W // 2 - int(round(140 * 0.75))) * S
-cx2 = (W // 2 + int(round(140 * 0.75))) * S
+card_w = int(round(175 * S))
+card_h = int(round(168 * S))
 center_y = 470 * S
 
 def draw_selection_card(im, cx, cy):
@@ -147,16 +153,11 @@ def draw_selection_card(im, cx, cy):
     cd.rounded_rectangle([0, 0, card_w - 1, card_h - 1], radius=radius, fill=(28, 28, 30, 230), outline=(85, 85, 90, 255), width=int(round(2 * S)))
     im.paste(card_im, (cx - card_w // 2, cy - card_h // 2), card_im)
 
-def create_screen(selected, os_name='Ubuntu'):
-    im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
-    d = ImageDraw.Draw(im)
-
-    # 1. Top Right Status Bar (ABC, Battery, Time)
+def draw_top_bar(im, d):
     top_y_center = int(round(24 * S))
     margin_right = int(round(24 * S))
     gap_items = int(round(16 * S))
 
-    # Rightmost: Time in SF Pro
     now_str = datetime.datetime.now().strftime('%H:%M')
     time_box = d.textbbox((0, 0), now_str, font=f_time)
     time_tw = time_box[2] - time_box[0]
@@ -165,12 +166,10 @@ def create_screen(selected, os_name='Ubuntu'):
     time_y = top_y_center - time_th // 2 - int(round(2 * S))
     d.text((time_x, time_y), now_str, font=f_time, fill=(230, 230, 235))
 
-    # Middle: Battery icon to the left of Time
     bat_x = time_x - gap_items - bat_im.width
     bat_y = top_y_center - bat_im.height // 2
     im.paste(bat_im, (bat_x, bat_y), bat_im)
 
-    # Left: ABC keyboard badge to the left of Battery
     abc_text = 'ABC'
     abc_box = d.textbbox((0, 0), abc_text, font=f_abc)
     abc_tw = abc_box[2] - abc_box[0]
@@ -189,105 +188,216 @@ def create_screen(selected, os_name='Ubuntu'):
     d.rounded_rectangle([kx, ky, kx + key_w, ky + key_h], radius=int(round(3 * S)), outline=(180, 180, 185), width=max(1, int(round(1.5 * S))))
     d.line([kx + int(round(3.5 * S)), ky + int(round(7.5 * S)), kx + key_w - int(round(3.5 * S)), ky + int(round(7.5 * S))], fill=(180, 180, 185), width=max(1, int(round(1.5 * S))))
 
-    # 2. Left OS Disk
-    disk_y = center_y - int(round(25 * 0.75 * S))
-    if selected == 'os':
-        draw_selection_card(im, cx1, center_y)
-        btn_y = center_y + card_h // 2 + int(round(12 * S))
-        im.paste(btn_continue, (cx1 - btn_continue.width // 2, btn_y), btn_continue)
-
-    im.paste(disk_scaled, (cx1 - disk_scaled.width // 2, disk_y - disk_scaled.height // 2), disk_scaled)
-    bbox1 = d.textbbox((0, 0), os_name, font=f_label)
-    d.text((cx1 - (bbox1[2] - bbox1[0]) // 2, disk_y + disk_scaled.height // 2 + int(round(10 * S))), os_name, font=f_label, fill=(255, 255, 255) if selected == 'os' else (210, 210, 215))
-
-    # 3. Right Options Gear
-    opt_y = center_y - int(round(25 * 0.75 * S))
-    if selected == 'options':
-        draw_selection_card(im, cx2, center_y)
-        btn_y = center_y + card_h // 2 + int(round(12 * S))
-        im.paste(btn_continue, (cx2 - btn_continue.width // 2, btn_y), btn_continue)
-
-    im.paste(opt_scaled, (cx2 - opt_scaled.width // 2, opt_y - opt_scaled.height // 2), opt_scaled)
-    bbox2 = d.textbbox((0, 0), 'Options', font=f_label)
-    d.text((cx2 - (bbox2[2] - bbox2[0]) // 2, opt_y + opt_scaled.height // 2 + int(round(12 * S))), 'Options', font=f_label, fill=(255, 255, 255) if selected == 'options' else (210, 210, 215))
-
-    # 4. Bottom Power Buttons (Shut Down & Restart)
+def draw_bottom_power(im, d, selected):
     bot_y = SH - int(round((110 * 0.75 + 10) * S))
-    sd_x = (W // 2 - int(round(65 * 0.75 + 15))) * S
-    im.paste(p_scaled, (sd_x - p_scaled.width // 2, bot_y), p_scaled)
+    sd_x = (960 - 75) * S
+    im.paste(p_clean, (sd_x - p_clean.width // 2, bot_y), p_clean)
     sd_box = d.textbbox((0, 0), 'Shut Down', font=f_power)
-    d.text((sd_x - (sd_box[2] - sd_box[0]) // 2, bot_y + p_scaled.height + int(round(6 * S))), 'Shut Down', font=f_power, fill=(255, 255, 255) if selected == 'shutdown' else (215, 215, 220))
+    d.text((sd_x - (sd_box[2] - sd_box[0]) // 2, bot_y + p_clean.height + int(round(6 * S))), 'Shut Down', font=f_power, fill=(255, 255, 255) if selected == 'shutdown' else (215, 215, 220))
 
-    rst_x = (W // 2 + int(round(65 * 0.75 + 15))) * S
-    im.paste(r_scaled, (rst_x - r_scaled.width // 2, bot_y), r_scaled)
+    rst_x = (960 + 75) * S
+    im.paste(r_clean, (rst_x - r_clean.width // 2, bot_y), r_clean)
     rst_box = d.textbbox((0, 0), 'Restart', font=f_power)
-    d.text((rst_x - (rst_box[2] - rst_box[0]) // 2, bot_y + r_scaled.height + int(round(6 * S))), 'Restart', font=f_power, fill=(255, 255, 255) if selected == 'restart' else (215, 215, 220))
+    d.text((rst_x - (rst_box[2] - rst_box[0]) // 2, bot_y + r_clean.height + int(round(6 * S))), 'Restart', font=f_power, fill=(255, 255, 255) if selected == 'restart' else (215, 215, 220))
 
     if selected == 'shutdown':
         box_pad = int(round(8 * S))
-        d.rounded_rectangle([sd_x - (sd_box[2] - sd_box[0]) // 2 - box_pad, bot_y - box_pad, sd_x + (sd_box[2] - sd_box[0]) // 2 + box_pad, bot_y + p_scaled.height + (sd_box[3] - sd_box[1]) + box_pad * 2], radius=int(round(8 * S)), outline=(120, 120, 130), width=int(round(2 * S)))
+        d.rounded_rectangle([sd_x - (sd_box[2] - sd_box[0]) // 2 - box_pad, bot_y - box_pad, sd_x + (sd_box[2] - sd_box[0]) // 2 + box_pad, bot_y + p_clean.height + (sd_box[3] - sd_box[1]) + box_pad * 2], radius=int(round(8 * S)), outline=(120, 120, 130), width=int(round(2 * S)))
     elif selected == 'restart':
         box_pad = int(round(8 * S))
-        d.rounded_rectangle([rst_x - (rst_box[2] - rst_box[0]) // 2 - box_pad, bot_y - box_pad, rst_x + (rst_box[2] - rst_box[0]) // 2 + box_pad, bot_y + r_scaled.height + (rst_box[3] - rst_box[1]) + box_pad * 2], radius=int(round(8 * S)), outline=(120, 120, 130), width=int(round(2 * S)))
+        d.rounded_rectangle([rst_x - (rst_box[2] - rst_box[0]) // 2 - box_pad, bot_y - box_pad, rst_x + (rst_box[2] - rst_box[0]) // 2 + box_pad, bot_y + r_clean.height + (rst_box[3] - rst_box[1]) + box_pad * 2], radius=int(round(8 * S)), outline=(120, 120, 130), width=int(round(2 * S)))
 
-    # Downsample from 2x (3840x2160) to 1920x1080 with Lanczos for razor-sharp Retina/4K text
+def render_3item_screen(selected, os_name='Ubuntu'):
+    im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
+    d = ImageDraw.Draw(im)
+    draw_top_bar(im, d)
+    draw_bottom_power(im, d, selected)
+
+    items = [
+        ('os', os_name, disk_clean, 740 * S),
+        ('uefi', 'UEFI Settings', uefi_clean, 960 * S),
+        ('options', 'Options', gear_clean, 1180 * S),
+    ]
+
+    item_y = center_y - int(round(25 * 0.75 * S))
+
+    for key, label, icon, cx in items:
+        is_sel = (selected == key)
+        if is_sel:
+            draw_selection_card(im, cx, center_y)
+            btn_y = center_y + card_h // 2 + int(round(12 * S))
+            im.paste(btn_continue, (cx - btn_continue.width // 2, btn_y), btn_continue)
+
+        im.paste(icon, (cx - icon.width // 2, item_y - icon.height // 2), icon)
+        bbox = d.textbbox((0, 0), label, font=f_label)
+        d.text((cx - (bbox[2] - bbox[0]) // 2, item_y + icon.height // 2 + int(round(10 * S))), label, font=f_label, fill=(255, 255, 255) if is_sel else (210, 210, 215))
+
+    return im.resize((W, H), Image.Resampling.LANCZOS)
+
+def render_4item_screen(selected, os_name='Ubuntu'):
+    im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
+    d = ImageDraw.Draw(im)
+    draw_top_bar(im, d)
+    draw_bottom_power(im, d, selected)
+
+    items = [
+        ('usb', 'EFI Boot', usb_clean, 630 * S),
+        ('os', os_name, disk_clean, 850 * S),
+        ('uefi', 'UEFI Settings', uefi_clean, 1070 * S),
+        ('options', 'Options', gear_clean, 1290 * S),
+    ]
+
+    item_y = center_y - int(round(25 * 0.75 * S))
+
+    for key, label, icon, cx in items:
+        is_sel = (selected == key)
+        if is_sel:
+            draw_selection_card(im, cx, center_y)
+            btn_y = center_y + card_h // 2 + int(round(12 * S))
+            im.paste(btn_continue, (cx - btn_continue.width // 2, btn_y), btn_continue)
+
+        im.paste(icon, (cx - icon.width // 2, item_y - icon.height // 2), icon)
+        bbox = d.textbbox((0, 0), label, font=f_label)
+        d.text((cx - (bbox[2] - bbox[0]) // 2, item_y + icon.height // 2 + int(round(10 * S))), label, font=f_label, fill=(255, 255, 255) if is_sel else (210, 210, 215))
+
+    return im.resize((W, H), Image.Resampling.LANCZOS)
+
+def render_transition_frame(progress, os_name='Ubuntu'):
+    im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
+    d = ImageDraw.Draw(im)
+    draw_top_bar(im, d)
+    draw_bottom_power(im, d, None)
+
+    item_y = center_y - int(round(25 * 0.75 * S))
+    shift = int(round(110 * progress))
+
+    items = [
+        (os_name, disk_clean, (740 + shift) * S),
+        ('UEFI Settings', uefi_clean, (960 + shift) * S),
+        ('Options', gear_clean, (1180 + shift) * S),
+    ]
+    for label, icon, cx in items:
+        im.paste(icon, (cx - icon.width // 2, item_y - icon.height // 2), icon)
+        bbox = d.textbbox((0, 0), label, font=f_label)
+        d.text((cx - (bbox[2] - bbox[0]) // 2, item_y + icon.height // 2 + int(round(10 * S))), label, font=f_label, fill=(210, 210, 215))
+
+    if progress > 0.05:
+        usb_cx = int(round((520 + 110 * progress) * S))
+        alpha = int(round(255 * (progress ** 0.8)))
+        usb_trans = usb_clean.copy()
+        r_ch, g_ch, b_ch, a_ch = usb_trans.split()
+        a_ch = a_ch.point(lambda p: int(p * alpha / 255))
+        usb_trans.putalpha(a_ch)
+        im.paste(usb_trans, (usb_cx - usb_trans.width // 2, item_y - usb_trans.height // 2), usb_trans)
+
+        lbl = 'EFI Boot'
+        bbox = d.textbbox((0, 0), lbl, font=f_label)
+        d.text((usb_cx - (bbox[2] - bbox[0]) // 2, item_y + usb_clean.height // 2 + int(round(10 * S))), lbl, font=f_label, fill=(210, 210, 215, alpha))
+
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
 def main():
-    target_dirs = [
-        '/boot/grub/themes/apple-mac/icons',
-        '/home/vitaliy/MACTHEMEFILES/grub/apple-mac/icons'
+    print("Generating macOS Apple Silicon GRUB theme assets...")
+
+    # Output directories
+    base_dirs = [
+        '/boot/grub/themes/apple-mac',
+        '/home/vitaliy/MACTHEMEFILES/grub/apple-mac'
+    ]
+    usb_dirs = [
+        '/boot/grub/themes/apple-mac-usb',
+        '/home/vitaliy/MACTHEMEFILES/grub/apple-mac-usb'
     ]
 
-    for d in target_dirs:
-        os.makedirs(d, exist_ok=True)
-        print(f'Generating icons into {d}...')
-        # OS screens
-        screen_ubuntu = create_screen('os', 'Ubuntu')
-        screen_ubuntu.save(f'{d}/ubuntu.png')
-        screen_ubuntu.save(f'{d}/gnu-linux.png')
-        screen_ubuntu.save(f'{d}/linux.png')
+    for b in base_dirs:
+        os.makedirs(f'{b}/icons', exist_ok=True)
+        os.makedirs(f'{b}/anim', exist_ok=True)
+    for u in usb_dirs:
+        os.makedirs(f'{u}/icons', exist_ok=True)
 
-        create_screen('os', 'Windows').save(f'{d}/windows.png')
-        create_screen('os', 'Arch Linux').save(f'{d}/arch.png')
-        create_screen('os', 'Arch Linux').save(f'{d}/archlinux.png')
-        create_screen('os', 'Debian').save(f'{d}/debian.png')
-        create_screen('os', 'Fedora').save(f'{d}/fedora.png')
-        create_screen('os', 'Linux Mint').save(f'{d}/linuxmint.png')
-        create_screen('os', 'macOS').save(f'{d}/macos.png')
-        create_screen('os', 'macOS').save(f'{d}/macosx.png')
-        create_screen('os', 'macOS').save(f'{d}/osx.png')
-        create_screen('os', 'macOS').save(f'{d}/darwin.png')
-        create_screen('os', 'Pop!_OS').save(f'{d}/pop-os.png')
-        create_screen('os', 'Manjaro').save(f'{d}/manjaro.png')
+    # 1. 3-card layout screens (Standard without USB)
+    print("1. Rendering 3-card layout screens...")
+    s3_ubuntu = render_3item_screen('os', 'Ubuntu')
+    s3_uefi = render_3item_screen('uefi')
+    s3_options = render_3item_screen('options')
+    s3_shutdown = render_3item_screen('shutdown')
+    s3_restart = render_3item_screen('restart')
+    s3_neutral = render_3item_screen(None)
 
-        # Special screens
-        screen_options = create_screen('options')
-        screen_options.save(f'{d}/recovery.png')
-        screen_options.save(f'{d}/options.png')
-        screen_options.save(f'{d}/safe-mode.png')
-        screen_options.save(f'{d}/uefi-firmware.png')
-        screen_options.save(f'{d}/efi.png')
-        screen_options.save(f'{d}/terminal.png')
+    for b in base_dirs:
+        icons_dir = f'{b}/icons'
+        s3_ubuntu.save(f'{icons_dir}/ubuntu.png')
+        s3_ubuntu.save(f'{icons_dir}/gnu-linux.png')
+        s3_ubuntu.save(f'{icons_dir}/linux.png')
 
-        screen_restart = create_screen('restart')
-        screen_restart.save(f'{d}/restart.png')
-        screen_restart.save(f'{d}/reboot.png')
+        s3_uefi.save(f'{icons_dir}/uefi-firmware.png')
+        s3_uefi.save(f'{icons_dir}/uefi.png')
+        s3_uefi.save(f'{icons_dir}/efi.png')
 
-        screen_shutdown = create_screen('shutdown')
-        screen_shutdown.save(f'{d}/shutdown.png')
-        screen_shutdown.save(f'{d}/poweroff.png')
-        screen_shutdown.save(f'{d}/halt.png')
+        s3_options.save(f'{icons_dir}/options.png')
+        s3_options.save(f'{icons_dir}/recovery.png')
+        s3_options.save(f'{icons_dir}/safe-mode.png')
 
-    # Also update background.png to clean pitch black
-    bg = Image.new('RGBA', (W, H), (0, 0, 0, 255))
-    bg.save('/boot/grub/themes/apple-mac/background.png')
-    bg.save('/home/vitaliy/MACTHEMEFILES/grub/apple-mac/background.png')
+        s3_shutdown.save(f'{icons_dir}/shutdown.png')
+        s3_shutdown.save(f'{icons_dir}/poweroff.png')
+        s3_shutdown.save(f'{icons_dir}/halt.png')
 
-    print('All GRUB icons and background generated successfully with 4K SSAA!')
+        s3_restart.save(f'{icons_dir}/restart.png')
+        s3_restart.save(f'{icons_dir}/reboot.png')
+
+        s3_neutral.save(f'{icons_dir}/rescan.png')
+
+    # 2. 5 Animation Frames
+    print("2. Rendering slide animation frames...")
+    frames = [
+        render_transition_frame(0.2),
+        render_transition_frame(0.4),
+        render_transition_frame(0.6),
+        render_transition_frame(0.8),
+        render_transition_frame(1.0)
+    ]
+    for b in base_dirs:
+        for idx, f in enumerate(frames):
+            f.save(f'{b}/anim/frame{idx + 1}.png')
+
+    # 3. 4-card layout screens (With USB drive)
+    print("3. Rendering 4-card layout screens (USB connected)...")
+    s4_usb = render_4item_screen('usb')
+    s4_ubuntu = render_4item_screen('os', 'Ubuntu')
+    s4_uefi = render_4item_screen('uefi')
+    s4_options = render_4item_screen('options')
+    s4_shutdown = render_4item_screen('shutdown')
+    s4_restart = render_4item_screen('restart')
+    s4_neutral = render_4item_screen(None)
+
+    for u in usb_dirs:
+        icons_dir = f'{u}/icons'
+        s4_usb.save(f'{icons_dir}/usb.png')
+        s4_usb.save(f'{icons_dir}/external.png')
+        s4_usb.save(f'{icons_dir}/drive.png')
+
+        s4_ubuntu.save(f'{icons_dir}/ubuntu.png')
+        s4_ubuntu.save(f'{icons_dir}/gnu-linux.png')
+        s4_ubuntu.save(f'{icons_dir}/linux.png')
+
+        s4_uefi.save(f'{icons_dir}/uefi-firmware.png')
+        s4_uefi.save(f'{icons_dir}/uefi.png')
+        s4_uefi.save(f'{icons_dir}/efi.png')
+
+        s4_options.save(f'{icons_dir}/options.png')
+        s4_options.save(f'{icons_dir}/recovery.png')
+        s4_options.save(f'{icons_dir}/safe-mode.png')
+
+        s4_shutdown.save(f'{icons_dir}/shutdown.png')
+        s4_shutdown.save(f'{icons_dir}/poweroff.png')
+        s4_shutdown.save(f'{icons_dir}/halt.png')
+
+        s4_restart.save(f'{icons_dir}/restart.png')
+        s4_restart.save(f'{icons_dir}/reboot.png')
+
+        s4_neutral.save(f'{icons_dir}/rescan.png')
+
+    print("All theme assets generated successfully!")
 
 if __name__ == '__main__':
-    if d_clean is None:
-        print("Note: grub crops not found, keeping existing high-res icons.")
-        sys.exit(0)
     main()
