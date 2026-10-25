@@ -33,6 +33,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
+import { applyGradientBlurFade } from './gradientBlurFade.js';
 import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
@@ -2443,6 +2444,7 @@ function _buildPanel(merges = null) {
         y_expand: false,
     });
     scroll.style = `max-height: ${maxH}px; -st-vfade-offset: 36px;`;
+    applyGradientBlurFade(scroll, 36, 36);
     try {
         scroll.vscrollbar_policy = St.PolicyType.AUTOMATIC;
         scroll.hscrollbar_policy = St.PolicyType.NEVER;

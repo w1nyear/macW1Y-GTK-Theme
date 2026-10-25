@@ -9,6 +9,7 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import { applyGradientBlurFade } from './gradientBlurFade.js';
 import {
     SHELL_HAS_SYSTEM_DND,
     suppressBuiltinDndIndicator,
@@ -598,6 +599,7 @@ class NotificationWidget extends St.BoxLayout {
             style: '-st-vfade-offset: 36px;',
             vscrollbar_policy: St.PolicyType.EXTERNAL,
         });
+        applyGradientBlurFade(this._scroll, 36, 36);
     }
 
     _createHeader() {

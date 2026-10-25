@@ -8986,13 +8986,18 @@ navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 dialog-host scrolledwindow.undershoot-top > undershoot.top,
 navigation-view-page scrolledwindow.undershoot-top > undershoot.top,
 .content-pane scrolledwindow.undershoot-top > undershoot.top,
-.sidebar-pane .content-pane scrolledwindow.undershoot-top > undershoot.top {
+.sidebar-pane .content-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
+scrolledwindow.undershoot-top > undershoot.top,
+scrolledwindow > undershoot.top {
   box-shadow: none;
-  min-height: 28px;
+  min-height: 56px;
   background: linear-gradient(to bottom,
     @window_bg_color 0%,
-    alpha(@window_bg_color, 0.85) 30%,
-    alpha(@window_bg_color, 0.4) 65%,
+    alpha(@window_bg_color, 0.96) 20%,
+    alpha(@window_bg_color, 0.82) 40%,
+    alpha(@window_bg_color, 0.55) 60%,
+    alpha(@window_bg_color, 0.22) 80%,
     transparent 100%);
 }
 
@@ -9003,39 +9008,50 @@ navigation-view-page toolbarview.undershoot-bottom scrolledwindow > undershoot.b
 dialog-host scrolledwindow.undershoot-bottom > undershoot.bottom,
 navigation-view-page scrolledwindow.undershoot-bottom > undershoot.bottom,
 .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-.sidebar-pane .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom {
+.sidebar-pane .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom,
+scrolledwindow.undershoot-bottom > undershoot.bottom,
+scrolledwindow > undershoot.bottom {
   box-shadow: none;
-  min-height: 28px;
+  min-height: 48px;
   background: linear-gradient(to top,
     @window_bg_color 0%,
-    alpha(@window_bg_color, 0.85) 30%,
-    alpha(@window_bg_color, 0.4) 65%,
+    alpha(@window_bg_color, 0.96) 20%,
+    alpha(@window_bg_color, 0.82) 40%,
+    alpha(@window_bg_color, 0.55) 60%,
+    alpha(@window_bg_color, 0.22) 80%,
     transparent 100%);
 }
 
 .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
-.content-pane .sidebar-pane scrolledwindow.undershoot-top > undershoot.top {
+.content-pane .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top {
   box-shadow: none;
-  min-height: 28px;
+  min-height: 56px;
   background: linear-gradient(to bottom,
     @sidebar_bg_color 0%,
-    alpha(@sidebar_bg_color, 0.85) 30%,
-    alpha(@sidebar_bg_color, 0.4) 65%,
-        transparent 100%);
+    alpha(@sidebar_bg_color, 0.96) 20%,
+    alpha(@sidebar_bg_color, 0.82) 40%,
+    alpha(@sidebar_bg_color, 0.55) 60%,
+    alpha(@sidebar_bg_color, 0.22) 80%,
+    transparent 100%);
 }
 
 .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 .content-pane .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-.content-pane .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom {
+.content-pane .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom {
   box-shadow: none;
-  min-height: 28px;
+  min-height: 48px;
   background: linear-gradient(to top,
     @sidebar_bg_color 0%,
-    alpha(@sidebar_bg_color, 0.85) 30%,
-    alpha(@sidebar_bg_color, 0.4) 65%,
+    alpha(@sidebar_bg_color, 0.96) 20%,
+    alpha(@sidebar_bg_color, 0.82) 40%,
+    alpha(@sidebar_bg_color, 0.55) 60%,
+    alpha(@sidebar_bg_color, 0.22) 80%,
     transparent 100%);
 }
 
@@ -9802,9 +9818,61 @@ navigation-split-view > widget:not(.sidebar) headerbar,
 navigation-split-view adw-navigation-view headerbar,
 navigation-split-view toolbarview > .top-bar headerbar,
 navigation-split-view toolbarview > .top-bar .collapse-spacing headerbar,
-navigation-split-view toolbarview > .top-bar .collapse-spacing headerbar.default-decoration {
+navigation-split-view toolbarview > .top-bar .collapse-spacing headerbar.default-decoration,
+window.nautilus-window .content-pane headerbar,
+window.nautilus-window .sidebar-pane headerbar {
     min-height: 48px;
     margin-top: 3px;
+    background: transparent;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-bottom: none;
+    box-shadow: none;
+}
+
+/* Redesign: Replace top bar static background with list dissolve shader gradient (0px -> 3px -> 5px blur & dissolve) */
+window.mac-settings-window toolbarview > .top-bar,
+window.mac-settings-window toolbarview > .top-bar.raised,
+window.mac-settings-window toolbarview > .top-bar.raised.border,
+navigation-split-view toolbarview > .top-bar,
+navigation-split-view toolbarview > .top-bar.raised,
+navigation-split-view toolbarview > .top-bar.raised.border,
+window.nautilus-window .content-pane toolbarview > .top-bar,
+window.nautilus-window toolbarview > .top-bar {
+    background: linear-gradient(to bottom,
+        @window_bg_color 0%,
+        alpha(@window_bg_color, 0.95) 25%,
+        alpha(@window_bg_color, 0.72) 50%,
+        alpha(@window_bg_color, 0.30) 75%,
+        transparent 100%);
+    background-color: transparent;
+    border: none;
+    border-bottom: none;
+    box-shadow: none;
+}
+
+window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
+window.mac-settings-window .sidebar-pane toolbarview > .top-bar.raised,
+navigation-split-view .sidebar-pane toolbarview > .top-bar,
+window.nautilus-window .sidebar-pane toolbarview > .top-bar {
+    background: linear-gradient(to bottom,
+        @sidebar_bg_color 0%,
+        alpha(@sidebar_bg_color, 0.95) 25%,
+        alpha(@sidebar_bg_color, 0.72) 50%,
+        alpha(@sidebar_bg_color, 0.30) 75%,
+        transparent 100%);
+    background-color: transparent;
+    border: none;
+    border-bottom: none;
+    box-shadow: none;
+}
+
+/* Content padding so content begins below floating headerbar when scroll = 0 */
+window.mac-settings-window preferencespage > scrolledwindow > viewport,
+window.mac-settings-window preferencespage > scrolledwindow > viewport > clamp {
+    padding-top: 36px;
+    padding-bottom: 24px;
 }
 
 window.mac-settings-window headerbar > windowhandle > box,
@@ -10007,8 +10075,10 @@ window.nautilus-window .content-pane > scrolledwindow {
 }
 
 window.nautilus-window .content-pane headerbar {
-    background-color: #202022;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: transparent;
+    background-color: transparent;
+    border-bottom: none;
+    box-shadow: none;
     margin-top: 3px;
     padding-left: 15px;
 }

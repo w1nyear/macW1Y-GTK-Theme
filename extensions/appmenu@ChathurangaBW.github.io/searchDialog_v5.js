@@ -10,6 +10,7 @@ import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
 import { _ } from './i18n.js';
 import { t, tf } from './mac_i18n.js';
+import { applyGradientBlurFade } from './gradientBlurFade.js';
 
 const RECENT_ITEMS_FILE = GLib.build_filenamev([GLib.get_user_data_dir(), 'recently-used.xbel']);
 const CLIPBOARD_CACHE_FILE = GLib.build_filenamev([GLib.get_home_dir(), '.cache', 'mac-clipboard', 'history.json']);
@@ -466,6 +467,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             y_expand: true,
             style: 'max-height: 460px; -st-vfade-offset: 40px;',
         });
+        applyGradientBlurFade(this._scrollView, 40, 40);
         this._scrollWrapper.add_child(this._scrollView);
 
         this._resultsBox = new St.BoxLayout({
@@ -510,6 +512,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             y_expand: true,
             style: 'max-height: 414px; -st-vfade-offset: 40px;',
         });
+        applyGradientBlurFade(this._filesScrollView, 40, 40);
         this._filesView.add_child(this._filesScrollView);
 
         this._filesContentBox = new St.BoxLayout({
@@ -536,6 +539,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             y_expand: true,
             style: 'max-height: 460px; -st-vfade-offset: 40px;',
         });
+        applyGradientBlurFade(this._appsScrollView, 40, 40);
         this._appsView.add_child(this._appsScrollView);
 
         this._appsContentBox = new St.BoxLayout({
@@ -562,6 +566,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             y_expand: true,
             style: 'max-height: 460px; -st-vfade-offset: 40px;',
         });
+        applyGradientBlurFade(this._clipboardScrollView, 40, 40);
         this._clipboardView.add_child(this._clipboardScrollView);
 
         this._clipboardContentBox = new St.BoxLayout({

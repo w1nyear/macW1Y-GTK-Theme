@@ -1227,6 +1227,33 @@ static void find_navigation_views(GtkWidget *widget, GList **list)
     }
 }
 
+static void find_scrolled_windows(GtkWidget *widget, GList **list)
+{
+    if (!widget) return;
+    if (GTK_IS_SCROLLED_WINDOW(widget)) {
+        *list = g_list_append(*list, widget);
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_scrolled_windows(child, list);
+    }
+}
+
+static void configure_toolbar_views_recursive(GtkWidget *widget)
+{
+    if (!widget) return;
+    if (ADW_IS_TOOLBAR_VIEW(widget)) {
+        AdwToolbarView *tv = ADW_TOOLBAR_VIEW(widget);
+        adw_toolbar_view_set_extend_content_to_top_edge(tv, TRUE);
+        adw_toolbar_view_set_extend_content_to_bottom_edge(tv, TRUE);
+        adw_toolbar_view_set_top_bar_style(tv, ADW_TOOLBAR_FLAT);
+        adw_toolbar_view_set_bottom_bar_style(tv, ADW_TOOLBAR_FLAT);
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        configure_toolbar_views_recursive(child);
+    }
+}
+
 static void update_panel_headerbar(AdwNavigationSplitView *split_view);
 
 static void on_visible_page_changed_cb(GObject *gobject G_GNUC_UNUSED, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data)
@@ -1238,6 +1265,7 @@ static void on_visible_page_changed_cb(GObject *gobject G_GNUC_UNUSED, GParamSpe
 static void update_panel_headerbar(AdwNavigationSplitView *split_view)
 {
     if (!split_view) return;
+    configure_toolbar_views_recursive(GTK_WIDGET(split_view));
     GtkWidget *search_btn = g_object_get_data(G_OBJECT(split_view), "mac_search_btn");
     GtkWidget *menu_btn = g_object_get_data(G_OBJECT(split_view), "mac_menu_btn");
     if (!search_btn || !menu_btn) return;
@@ -1309,6 +1337,20 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     gtk_widget_set_visible(menu_btn, TRUE);
     gtk_widget_set_visible(search_btn, TRUE);
 
+    if (g_getenv("MAC_SETTINGS_TEST_SCROLL")) {
+        GList *sws = NULL;
+        find_scrolled_windows(target_root, &sws);
+        for (GList *l = sws; l != NULL; l = l->next) {
+            GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW(l->data);
+            GtkAdjustment *vadj = gtk_scrolled_window_get_vadjustment(sw);
+            if (vadj) {
+                double val = g_ascii_strtod(g_getenv("MAC_SETTINGS_TEST_SCROLL"), NULL);
+                gtk_adjustment_set_value(vadj, val > 0.0 ? val : 150.0);
+            }
+        }
+        g_list_free(sws);
+    }
+
     g_list_free(content_bars);
 }
 
@@ -1376,6 +1418,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         g_list_free(sidebar_bars);
     }
 
+    configure_toolbar_views_recursive(GTK_WIDGET(window));
     update_panel_headerbar(split_view);
     return G_SOURCE_REMOVE;
 }

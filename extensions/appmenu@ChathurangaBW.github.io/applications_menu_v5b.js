@@ -9,6 +9,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
 import { getAppFavorites } from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
+import { applyGradientBlurFade } from './gradientBlurFade.js';
 
 const _gobjectToString = GObject.Object.prototype.toString;
 
@@ -414,6 +415,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             y_expand: true,
             style: 'height: 419px; min-height: 419px; max-height: 419px; padding-bottom: 0px; -st-vfade-offset: 44px;',
         });
+        applyGradientBlurFade(this._scrollView, 44, 44);
         this._scrollWrapper.add_child(this._scrollView);
 
         this._gridContainer = new St.BoxLayout({
