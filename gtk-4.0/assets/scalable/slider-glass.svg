@@ -1,3 +1,35 @@
-<svg width="80" height="52" version="1.1" viewBox="0 0 80 52" xmlns="http://www.w3.org/2000/svg">
- <path d="m5.0078 10.617c-3.1514 4.3019-5.0078 9.618-5.0078 15.383s1.8564 11.081 5.0078 15.383l-0.078076-0.383c-2-8.0002 4.0997-8.9998 9.0703-8.9998h5c3.324 0 6-2.676 6-6s-2.676-6-6-6h-5c-4.9706 0-11.099-2.0004-9.0992-9.0002l0.10701-0.38262z"/>
+<svg width="84" height="56" viewBox="0 0 84 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="glassBody" x1="42" y1="2" x2="42" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="25%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="65%" stop-color="#0a0e17" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#050810" stop-opacity="0.50"/>
+    </linearGradient>
+    <radialGradient id="topGlare" cx="42" cy="9" r="36" fx="42" fy="5" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.80"/>
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="edgeStroke" x1="42" y1="1" x2="42" y2="55" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.80"/>
+      <stop offset="30%" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="70%" stop-color="#ffffff" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.40"/>
+    </linearGradient>
+    <linearGradient id="innerRim" x1="42" y1="2" x2="42" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.75"/>
+      <stop offset="20%" stop-color="#ffffff" stop-opacity="0.15"/>
+      <stop offset="75%" stop-color="#000000" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.40"/>
+    </linearGradient>
+  </defs>
+  <!-- Glass body -->
+  <rect x="2" y="2" width="80" height="52" rx="26" fill="url(#glassBody)"/>
+  <!-- Specular top glare -->
+  <ellipse cx="42" cy="12" rx="34" ry="8" fill="url(#topGlare)"/>
+  <!-- Inner rim highlight -->
+  <rect x="3" y="3" width="78" height="50" rx="25" stroke="url(#innerRim)" stroke-width="1.5" fill="none"/>
+  <!-- Outer rim stroke -->
+  <rect x="2" y="2" width="80" height="52" rx="26" stroke="url(#edgeStroke)" stroke-width="1.2" fill="none"/>
 </svg>
