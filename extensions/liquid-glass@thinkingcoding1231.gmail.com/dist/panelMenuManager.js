@@ -36,6 +36,36 @@ export class PanelMenuManager {
             const self = this;
             PopupMenu.PopupMenu.prototype.open = function(animate) {
                 try {
+                    if (this.box) {
+                        this.box.opacity = 255;
+                        this.box.set_scale(1.0, 1.0);
+                    }
+                    if (this._liquidGlassUIManager) {
+                        if (this._liquidGlassUIManager.animActor) {
+                            this._liquidGlassUIManager.animActor.opacity = 255;
+                            this._liquidGlassUIManager.animActor.set_scale(1.0, 1.0);
+                        }
+                        if (this._liquidGlassUIManager.bgActor) {
+                            this._liquidGlassUIManager.bgActor.opacity = 255;
+                            this._liquidGlassUIManager.bgActor.visible = true;
+                        }
+                    }
+                    if (!this._lgForceBoxOpacity) {
+                        this._lgForceBoxOpacity = this.connect('open-state-changed', (m, open) => {
+                            if (open) {
+                                if (m.box) {
+                                    m.box.opacity = 255;
+                                    m.box.set_scale(1.0, 1.0);
+                                }
+                                if (m._liquidGlassUIManager?.animActor) {
+                                    m._liquidGlassUIManager.animActor.opacity = 255;
+                                    m._liquidGlassUIManager.animActor.set_scale(1.0, 1.0);
+                                }
+                            }
+                        });
+                    }
+                } catch (_) {}
+                try {
                     if (self._active && !this._liquidGlassUIManager && this.actor && this.box) {
                         const existing = self._menus.get(this);
                         if (existing?.manager) {

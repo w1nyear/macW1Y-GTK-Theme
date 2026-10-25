@@ -689,6 +689,14 @@ export class UIManager {
             target: this.menu,
             id: this.menu.connect('open-state-changed', (menu, isOpen) => {
                 if (isOpen) {
+                    if (this.animActor) {
+                        this.animActor.opacity = 255;
+                        this.animActor.set_scale(1.0, 1.0);
+                    }
+                    if (this.bgActor) {
+                        this.bgActor.opacity = 255;
+                        this.bgActor.visible = true;
+                    }
                     this._stableBaseW = undefined;
                     this._stableBaseH = undefined;
                     startFrameSync();
@@ -1106,7 +1114,7 @@ export class UIManager {
         if (!this._enableAnimation) {
             if (this.bgActor) {
                 this.bgActor.remove_all_transitions();
-                const initialOpacity = isClosing ? 0 : (this.targetActor ? this.targetActor.opacity : 255);
+                const initialOpacity = isClosing ? 0 : 255;
                 this.bgActor.opacity = initialOpacity;
                 this.bgActor.visible = !isClosing && initialOpacity > 0;
                 if (isClosing) {

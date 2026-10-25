@@ -70,7 +70,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] topbarButtonsEnable: ${e}`);
         }
         try {
-            const lbUri = this.dir.get_child('apps').get_child('labelBlur.js').get_uri() + '?v=lb_v2';
+            const lbUri = this.dir.get_child('apps').get_child('labelBlur.js').get_uri() + '?v=lb_v3';
             import(lbUri).then(mod => {
                 if (this._labelBlurMod && this._labelBlurMod !== mod) {
                     try { this._labelBlurMod.disable(); } catch (_) {}
@@ -85,7 +85,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] labelBlur: ${e}`);
         }
         try {
-            const osdUri = this.dir.get_child('apps').get_child('tahoeOSD.js').get_uri() + '?v=osd_v4';
+            const osdUri = this.dir.get_child('apps').get_child('tahoeOSD.js').get_uri() + '?v=osd_v6';
             import(osdUri).then(mod => {
                 if (this._tahoeOSD && this._tahoeOSD !== mod) {
                     try { this._tahoeOSD.disable(); } catch (_) {}

@@ -16,8 +16,8 @@ try {
 } catch (_) {}
 
 const EFFECT_NAME = 'tahoe-label-blur';
-const LABEL_BLUR_RADIUS = 28;
-const LABEL_CORNER_RADIUS = 14;
+const LABEL_BLUR_RADIUS = 3;
+const LABEL_CORNER_RADIUS = 12;
 const LABEL_BRIGHTNESS = 0.95;
 let childAddedId = 0;
 let overviewShowingId = 0;
@@ -46,6 +46,8 @@ export function applyLabelBlur(actor) {
                 existing.corner_radius = LABEL_CORNER_RADIUS;
             if ('brightness' in existing)
                 existing.brightness = LABEL_BRIGHTNESS;
+            if (existing.queue_repaint)
+                existing.queue_repaint();
             return;
         }
 
