@@ -2408,7 +2408,7 @@ export const MenuBarController = class MenuBarController {
             for (const bg of found) {
                 bg.set_style(style);
                 bg.opacity = 0;
-                bg.visible = false;
+                bg.visible = true;
             }
         } catch (e) {
             console.error('[MenuBarController] Error updating dock realtime:', e);

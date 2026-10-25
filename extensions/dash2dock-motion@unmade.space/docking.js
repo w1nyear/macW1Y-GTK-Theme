@@ -845,11 +845,17 @@ const DockedDash = GObject.registerClass({
     _onOverviewHiding() {
         this._intellihide.enable();
         this._updateDashVisibility();
+        this._magnifier?._clearTransforms();
+        this._magnifier?._notifyDockUpdate();
     }
 
     _onOverviewHidden() {
         this.remove_style_class_name('overview');
+        this._ignoreHover = false;
+        this._box.sync_hover();
         this._updateDashVisibility();
+        this._magnifier?._clearTransforms();
+        this._magnifier?._notifyDockUpdate();
     }
 
     _onMenuOpened() {

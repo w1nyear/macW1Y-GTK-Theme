@@ -332,6 +332,9 @@ export default class EvalHelper extends Extension {
                 }
                 // Connect window movement and overview signals to immediately refresh dock glass
                 const triggerAllDocks = (durationMs = 500) => {
+                    if (typeof global._liquidGlassDockSync === 'function') {
+                        try { global._liquidGlassDockSync(); } catch (_) {}
+                    }
                     if (!global._lgGlass?.glassObjects) return;
                     for (const g of global._lgGlass.glassObjects()) {
                         if (g._owner === 'dock' && g.mapped && g.visible && g.width > 10) {

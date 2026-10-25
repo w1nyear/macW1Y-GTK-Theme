@@ -616,7 +616,10 @@ export class DashManager {
         // macOS Dock: authoritative geometry directly from dash2dock-motion background slab
         let hasSlabBounds = false;
         const slab = this._findDashBackground(this.targetActor.get_parent() || this.targetActor);
-        if (slab && slab.mapped && slab.visible) {
+        if (slab) {
+            if (!slab.visible) {
+                try { slab.show(); } catch (_) {}
+            }
             let slW, slH, slX, slY;
             try {
                 [slW, slH] = slab.get_transformed_size();
@@ -687,13 +690,13 @@ export class DashManager {
 
                 let isHorizontal = (maxX - minX) >= (maxY - minY);
                 let pillX, pillY, pillW, pillH;
-                let sidePad = 10; // smaller side padding (10px)
+                let sidePad = 6; // authentic dock side padding (6px to match slab pillX = slX + 4)
                 if (isHorizontal) {
                     pillH = 74; // 74px fixed height (+2px dock height calibrated)
                     let isTop = monitor && (minY - monitor.y < (monitor.y + monitor.height) - maxY);
                     pillY = isTop ? (monitor.y + 4) : (minY - 4);
-                    let sidePadL = sidePad + Math.max(0, (icons[0]?.w || baseIconW) / (baseIconW || 54) - 1) * 10;
-                    let sidePadR = sidePad + Math.max(0, (icons[icons.length - 1]?.w || baseIconW) / (baseIconW || 54) - 1) * 10;
+                    let sidePadL = sidePad;
+                    let sidePadR = sidePad;
                     pillX = minX - sidePadL;
                     pillW = (maxX - minX) + sidePadL + sidePadR;
                 } else {
