@@ -108,23 +108,40 @@ scrolledwindow > overshoot.right {
   box-shadow: none;
 }
 
-undershoot,
-undershoot.top,
-undershoot.bottom,
 undershoot.left,
 undershoot.right,
-scrolledwindow undershoot,
-scrolledwindow undershoot.top,
-scrolledwindow undershoot.bottom,
 scrolledwindow undershoot.left,
 scrolledwindow undershoot.right,
-scrolledwindow > undershoot,
-scrolledwindow > undershoot.top,
-scrolledwindow > undershoot.bottom,
 scrolledwindow > undershoot.left,
 scrolledwindow > undershoot.right {
   background: none;
   background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+undershoot.top,
+scrolledwindow undershoot.top,
+scrolledwindow > undershoot.top {
+  min-height: 28px;
+  background: linear-gradient(to bottom,
+    @theme_bg_color 0%,
+    alpha(@theme_bg_color, 0.85) 30%,
+    alpha(@theme_bg_color, 0.4) 65%,
+    transparent 100%);
+  border: none;
+  box-shadow: none;
+}
+
+undershoot.bottom,
+scrolledwindow undershoot.bottom,
+scrolledwindow > undershoot.bottom {
+  min-height: 28px;
+  background: linear-gradient(to top,
+    @theme_bg_color 0%,
+    alpha(@theme_bg_color, 0.85) 30%,
+    alpha(@theme_bg_color, 0.4) 65%,
+    transparent 100%);
   border: none;
   box-shadow: none;
 }

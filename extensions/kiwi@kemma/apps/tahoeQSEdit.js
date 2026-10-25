@@ -174,6 +174,7 @@ function _buildSidebar() {
 // ── content pane ─────────────────────────────────────────────────────
 function _buildContent() {
     const scroll = new St.ScrollView({style_class: 'tahoe-qse-scroll',
+        style: '-st-vfade-offset: 36px;',
         x_expand: true, y_expand: true, overlay_scrollbars: true});
     const content = new St.BoxLayout({vertical: true, x_expand: true,
         style_class: 'tahoe-qse-content'});

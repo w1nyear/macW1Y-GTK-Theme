@@ -762,6 +762,7 @@ class TahoeApps {
             `spacing: ${4 * S}px; padding: ${4 * S}px ${pad22}px 0 ${pad22}px;`);
         const scroll = new St.ScrollView({
             style_class: 'tahoe-scroll',
+            style: '-st-vfade-offset: 40px;',
             x_expand: true,
             y_expand: true,
             clip_to_allocation: true,

@@ -464,7 +464,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 460px;',
+            style: 'max-height: 460px; -st-vfade-offset: 40px;',
         });
         this._scrollWrapper.add_child(this._scrollView);
 
@@ -476,12 +476,8 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._scrollView.add_child(this._resultsBox);
 
         this._bottomFade = new St.Widget({
-            style: 'background-gradient-direction: vertical; ' +
-                   'background-gradient-start: rgba(18, 18, 18, 0.0); ' +
-                   'background-gradient-end: rgba(18, 18, 18, 0.25); ' +
-                   'border-bottom-left-radius: 26px; ' +
-                   'border-bottom-right-radius: 26px;',
-            height: 38,
+            style: 'background: none !important; background-color: transparent !important;',
+            height: 0,
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.END,
             reactive: false,
@@ -512,7 +508,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 414px;',
+            style: 'max-height: 414px; -st-vfade-offset: 40px;',
         });
         this._filesView.add_child(this._filesScrollView);
 
@@ -538,7 +534,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 460px;',
+            style: 'max-height: 460px; -st-vfade-offset: 40px;',
         });
         this._appsView.add_child(this._appsScrollView);
 
@@ -564,7 +560,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 460px;',
+            style: 'max-height: 460px; -st-vfade-offset: 40px;',
         });
         this._clipboardView.add_child(this._clipboardScrollView);
 

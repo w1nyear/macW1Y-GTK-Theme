@@ -375,7 +375,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'height: 382px; padding-bottom: 4px;',
+            style: 'height: 382px; padding-bottom: 4px; -st-vfade-offset: 44px;',
         });
         this._scrollWrapper.add_child(this._scrollView);
 

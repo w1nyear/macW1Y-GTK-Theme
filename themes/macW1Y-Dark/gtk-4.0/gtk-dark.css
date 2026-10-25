@@ -8982,38 +8982,62 @@ toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
 
 dialog-host toolbarview.undershoot-top scrolledwindow > undershoot.top,
 navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
-.sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top, .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-.content-pane .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-.sidebar-pane .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top {
-  box-shadow: inset 0 1px alpha(currentColor,0.12);
-  background: linear-gradient(to bottom, alpha(rgba(0, 0, 0, 0.2),0.25), transparent 6px);
+.content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
+.sidebar-pane .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
+dialog-host scrolledwindow.undershoot-top > undershoot.top,
+navigation-view-page scrolledwindow.undershoot-top > undershoot.top,
+.content-pane scrolledwindow.undershoot-top > undershoot.top,
+.sidebar-pane .content-pane scrolledwindow.undershoot-top > undershoot.top {
+  box-shadow: none;
+  min-height: 28px;
+  background: linear-gradient(to bottom,
+    @window_bg_color 0%,
+    alpha(@window_bg_color, 0.85) 30%,
+    alpha(@window_bg_color, 0.4) 65%,
+    transparent 100%);
 }
 
 dialog-host toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 navigation-view-page toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-.sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom, .content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-.content-pane .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-.sidebar-pane .content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
-  box-shadow: inset 0 -1px alpha(currentColor,0.12);
-  background: linear-gradient(to top, alpha(rgba(0, 0, 0, 0.2),0.25), transparent 6px);
-}
-
-dialog-host scrolledwindow.undershoot-top > undershoot.top,
-navigation-view-page scrolledwindow.undershoot-top > undershoot.top,
-.sidebar-pane scrolledwindow.undershoot-top > undershoot.top, .content-pane scrolledwindow.undershoot-top > undershoot.top,
-.content-pane .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
-.sidebar-pane .content-pane scrolledwindow.undershoot-top > undershoot.top {
-  box-shadow: inset 0 1px alpha(currentColor,0.12);
-  background: linear-gradient(to bottom, alpha(rgba(0, 0, 0, 0.2),0.25), transparent 6px);
-}
-
+.content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+.sidebar-pane .content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 dialog-host scrolledwindow.undershoot-bottom > undershoot.bottom,
 navigation-view-page scrolledwindow.undershoot-bottom > undershoot.bottom,
-.sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom, .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-.content-pane .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+.content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
 .sidebar-pane .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom {
-  box-shadow: inset 0 -1px alpha(currentColor,0.12);
-  background: linear-gradient(to top, alpha(rgba(0, 0, 0, 0.2),0.25), transparent 6px);
+  box-shadow: none;
+  min-height: 28px;
+  background: linear-gradient(to top,
+    @window_bg_color 0%,
+    alpha(@window_bg_color, 0.85) 30%,
+    alpha(@window_bg_color, 0.4) 65%,
+    transparent 100%);
+}
+
+.sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
+.content-pane .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
+.sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
+.content-pane .sidebar-pane scrolledwindow.undershoot-top > undershoot.top {
+  box-shadow: none;
+  min-height: 28px;
+  background: linear-gradient(to bottom,
+    @sidebar_bg_color 0%,
+    alpha(@sidebar_bg_color, 0.85) 30%,
+    alpha(@sidebar_bg_color, 0.4) 65%,
+    transparent 100%);
+}
+
+.sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+.content-pane .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+.sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+.content-pane .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom {
+  box-shadow: none;
+  min-height: 28px;
+  background: linear-gradient(to top,
+    @sidebar_bg_color 0%,
+    alpha(@sidebar_bg_color, 0.85) 30%,
+    alpha(@sidebar_bg_color, 0.4) 65%,
+    transparent 100%);
 }
 
 dialog-host scrolledwindow.undershoot-start:dir(ltr) > undershoot.left,

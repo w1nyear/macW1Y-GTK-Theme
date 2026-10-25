@@ -1322,7 +1322,8 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     color: #1d1d1f;
 }
 .tahoe-qs-dark .tahoe-nc-title-big { color: #ffffff; }
-.tahoe-nc-scroll { }
+.tahoe-nc-scroll { -st-vfade-offset: 36px; }
+.kiwi-notification-scroll { -st-vfade-offset: 36px; }
 .tahoe-nc-list { spacing: 10px; }
 .tahoe-nc-empty {
     font-family: "SF Pro Display";

@@ -2442,7 +2442,7 @@ function _buildPanel(merges = null) {
         x_expand: true,
         y_expand: false,
     });
-    scroll.style = `max-height: ${maxH}px;`;
+    scroll.style = `max-height: ${maxH}px; -st-vfade-offset: 36px;`;
     try {
         scroll.vscrollbar_policy = St.PolicyType.AUTOMATIC;
         scroll.hscrollbar_policy = St.PolicyType.NEVER;

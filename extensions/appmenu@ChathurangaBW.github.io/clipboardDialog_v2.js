@@ -635,7 +635,7 @@ export const MacClipboardDialog = GObject.registerClass({
         // 4. Scrollable Container for Clipboard Entries
         this._scrollView = new St.ScrollView({
             style_class: 'mac-clipboard-scroll',
-            style: 'padding: 6px 0;',
+            style: 'padding: 6px 0; -st-vfade-offset: 40px;',
             x_expand: true,
             y_expand: true,
             hscrollbar_policy: St.PolicyType.NEVER,

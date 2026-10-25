@@ -595,6 +595,7 @@ class NotificationWidget extends St.BoxLayout {
             y_expand: true,
             child: this._list,
             style_class: 'kiwi-notification-scroll',
+            style: '-st-vfade-offset: 36px;',
             vscrollbar_policy: St.PolicyType.EXTERNAL,
         });
     }
