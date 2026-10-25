@@ -1263,19 +1263,19 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 /* Tahoe volume/brightness OSD: macOS Sequoia / Tahoe style glass pill */
 .tahoe-osd-shadow {
-    border-radius: 18px;
+    border-radius: 22px;
     background-color: transparent;
     border: none !important;
     border-top: none !important;
     border-bottom: none !important;
     border-left: none !important;
     border-right: none !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.20);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.20);
 }
 .tahoe-osd {
-    background-color: rgba(28, 28, 34, 0.45) !important;
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.20) !important;
+    background-color: transparent;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
     padding: 10px 14px 12px 14px;
     spacing: 8px;
     box-shadow: none !important;
@@ -1285,17 +1285,16 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     margin-left: 2px;
 }
 .tahoe-osd-title {
-    font-family: "SF Pro Display", -apple-system, system-ui, sans-serif !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    color: #ffffff !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+    font-size: 0.95em;
+    font-weight: 700;
+    color: #ffffff;
 }
 .tahoe-osd-bar {
-    spacing: 8px;
+    spacing: 10px;
 }
 .tahoe-osd-endicon {
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.9);
 }
 .tahoe-osd-endicon-big {
     color: #ffffff;
@@ -1359,10 +1358,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .mac-notification-banner {
   min-height: 74px !important;
   padding: 0 !important;
-  border-radius: 24px !important;
-  background-color: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  box-shadow: none !important;
+  border-radius: 16px !important;
+  background-color: rgba(45, 45, 47, 0.76) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
   color: white !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
   transition-duration: 150ms;
@@ -1371,21 +1370,27 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-nc-list .mac-notification-banner,
 .tahoe-nc-panel .mac-notification-banner {
   background-color: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+  border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+  border-left: 0px !important;
+  border-right: 0px !important;
   box-shadow: none !important;
 }
 
 .tahoe-nc-list .mac-notification-banner:hover,
 .tahoe-nc-panel .mac-notification-banner:hover {
   background-color: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+  border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+  border-left: 0px !important;
+  border-right: 0px !important;
   box-shadow: none !important;
 }
 
 .mac-notification-banner:hover {
-  background-color: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  box-shadow: none !important;
+  background-color: rgba(56, 56, 58, 0.84) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.42) !important;
 }
 
 .mac-notification-icon-bin {
@@ -1404,7 +1409,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-urgent {
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   letter-spacing: 0.6px !important;
@@ -1416,7 +1421,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-app-name {
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
   font-size: 14px !important;
   font-weight: 600 !important;
   color: #ffffff !important;
@@ -1425,7 +1430,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-count-badge {
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
   background-color: rgba(255, 255, 255, 0.20) !important;
   color: rgba(255, 255, 255, 0.90) !important;
   font-size: 10px !important;
@@ -1436,7 +1441,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-title {
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
   font-size: 14px !important;
   font-weight: 700 !important;
   color: #ffffff !important;
@@ -1446,7 +1451,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-body {
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
   font-size: 13px !important;
   font-weight: 400 !important;
   color: rgba(255, 255, 255, 0.80) !important;
@@ -1455,7 +1460,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-time {
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "SF Pro Text", Cantarell, sans-serif !important;
   font-size: 12px !important;
   font-weight: 400 !important;
   color: rgba(255, 255, 255, 0.55) !important;
@@ -1541,7 +1546,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     border-radius: 999px;
     padding: 10px 12px 10px 10px;
     box-shadow: none;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-pill { box-shadow: none; }
 .tahoe-qs-pill-circle {
@@ -1569,7 +1577,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 /* privacy pill is slim (lower than regular pills) */
 .tahoe-qs-pill.tahoe-qs-pill-priv {
     padding: 4px 10px;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-pill-priv .tahoe-qs-pill-circle { width: 20px; height: 20px; }
 .tahoe-qs-pill-priv .tahoe-qs-pill-glyph { icon-size: 12px; }
@@ -1581,7 +1592,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     background-color: transparent;
     border-radius: 999px;
     box-shadow: none;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-circle { box-shadow: none; }
 .tahoe-qs-circle-icon { icon-size: 24px; color: #1d1d1f; }
@@ -1601,7 +1615,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     border-radius: 28px;
     padding: 10px 8px;
     box-shadow: none;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-music { box-shadow: none; }
 .tahoe-qs-music-box { spacing: 1px; }
@@ -1625,7 +1642,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     padding: 10px 14px;
     spacing: 6px;
     box-shadow: none;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-card { box-shadow: none; }
 .tahoe-qs-card-label { font-size: 0.9em; font-weight: 700; color: #1d1d1f; }
@@ -1675,7 +1695,10 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     font-weight: 700;
     color: #1d1d1f;
     box-shadow: none;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-edit { box-shadow: none; }
 

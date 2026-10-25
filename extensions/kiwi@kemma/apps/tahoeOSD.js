@@ -30,17 +30,18 @@ import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/l
         syncGlassCaptureClip = m.syncGlassCaptureClip;
 }).catch(e => console.warn(`[tahoe-osd] liquid-glass utils unavailable: ${e}`));
 
-const OSD_W = 280;
+const OSD_W = 300;
 const HIDE_MS = 1800;
-const OSD_PAD = 0;
-const OSD_RADIUS = 18;
+const OSD_PAD = 20;
+const OSD_RADIUS = 22;
 
-// Modern Apple capsule slider for Tahoe OSD
+// Segmented bar (Tahoe OSD): solid fill + a dots row beneath. Dots at/left
+// of the value are bold and opaque, the rest small and faint.
 const TahoeSegSlider = GObject.registerClass({
     GTypeName: `TahoeSegSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
 }, class TahoeSegSlider extends St.DrawingArea {
     _init() {
-        super._init({reactive: false, height: 22});
+        super._init({reactive: false, height: 28});
         this._v = 0;
         this.connect('repaint', () => {
             try {
@@ -80,21 +81,26 @@ const TahoeSegSlider = GObject.registerClass({
             cr.scale(k, k);
             const v = this._v;
 
-            // Sleek Apple capsule slider
-            const barH = 14;
-            const barY = Math.round((h - barH) / 2);
-            const r = barH / 2;
-
-            // Background track
-            cr.setSourceRGBA(1, 1, 1, 0.22);
-            this._rr(cr, 0, barY, w, barH, r);
+            // solid background track
+            const barY = Math.round(h * 0.28), barH = 5;
+            cr.setSourceRGBA(1, 1, 1, 0.28);
+            this._rr(cr, 0, barY, w, barH, barH / 2);
             cr.fill();
 
-            // Active filled bar
+            // filled bar
             if (v > 0.001) {
-                cr.setSourceRGBA(1, 1, 1, 1.0);
-                const fillW = Math.max(barH, Math.min(w, Math.round(w * v)));
-                this._rr(cr, 0, barY, fillW, barH, r);
+                cr.setSourceRGBA(1, 1, 1, 1);
+                this._rr(cr, 0, barY, Math.max(barH, Math.round(w * v)), barH, barH / 2);
+                cr.fill();
+            }
+
+            // dots row beneath: 17 faint small dots
+            const n = 17;
+            const dy = h * 0.78;
+            for (let i = 0; i < n; i++) {
+                const x = (i + 0.5) * w / n;
+                cr.setSourceRGBA(1, 1, 1, 0.35);
+                cr.arc(x, dy, 1.5, 0, Math.PI * 2);
                 cr.fill();
             }
             cr.restore();
@@ -361,19 +367,20 @@ function _syncGlass() {
         if (!s.bgActor.visible)
             s.bgActor.show();
         s.bgActor.opacity = 255;
-        const rx = Math.round(bx - monitor.x);
-        const ry = Math.round(by - monitor.y);
+        const rx = (bx - monitor.x) - OSD_PAD;
+        const ry = (by - monitor.y) - OSD_PAD;
         const surf = _osdSurf();
 
         s.effect.setGlassRegions([{
-            x: rx, y: ry, w: Math.round(bw), h: Math.round(bh),
+            x: rx, y: ry, w: bw + OSD_PAD * 2, h: bh + OSD_PAD * 2,
             tintR: surf.c[0], tintG: surf.c[1], tintB: surf.c[2],
             baseStrength: surf.a,
         }]);
         s.effect.setResolution(monitor.width, monitor.height);
         s.liquidBox.set_position(0, 0);
         s.liquidBox.set_size(monitor.width, monitor.height);
-        setClipIfChanged(s.bgActor, rx - 20, ry - 20, Math.round(bw) + 40, Math.round(bh) + 40);
+        setClipIfChanged(s.bgActor, rx - 100, ry - 100,
+            bw + OSD_PAD * 2 + 200, bh + OSD_PAD * 2 + 200);
         s.wcm.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,
@@ -506,14 +513,11 @@ function _show(kind, title, iconL, iconR, value) {
         const boxX = Math.round(cx - OSD_W / 2);
         const boxY = monitor.y + panelH + 8;
         _box.set_position(boxX, boxY);
-        _box.set_height(-1);
-        const [, naturalH] = _box.get_preferred_height(OSD_W);
-        const bh = Math.max(naturalH || 0, 72);
-        _box.set_height(bh);
         if (_osdShadow) {
             _osdShadow.set_position(boxX, boxY);
             _osdShadow.set_width(OSD_W);
-            _osdShadow.set_height(bh);
+            if (_box.height > 0)
+                _osdShadow.set_height(_box.height);
         }
 
         const firstShow = !_box.visible;
@@ -688,20 +692,16 @@ export function enable() {
         _box.set_width(OSD_W);
 
         const headRow = new St.BoxLayout({style_class: 'tahoe-osd-head'});
-        _title = new St.Label({
-            style_class: 'tahoe-osd-title',
-            text: '',
-            style: 'color: #ffffff !important; font-weight: 600; font-size: 13px;',
-        });
+        _title = new St.Label({style_class: 'tahoe-osd-title', text: ''});
         try {
             _title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         } catch (_) {}
         headRow.add_child(_title);
 
-        const barRow = new St.BoxLayout({style_class: 'tahoe-osd-bar', y_align: Clutter.ActorAlign.CENTER});
+        const barRow = new St.BoxLayout({style_class: 'tahoe-osd-bar'});
         _iconL = new St.Icon({
             style_class: 'tahoe-osd-endicon',
-            icon_size: 16,
+            icon_size: 15,
             y_align: Clutter.ActorAlign.CENTER,
         });
         _slider = new TahoeSegSlider();
@@ -713,7 +713,7 @@ export function enable() {
         } catch (_) {}
         _iconR = new St.Icon({
             style_class: 'tahoe-osd-endicon-big',
-            icon_size: 18,
+            icon_size: 20,
             y_align: Clutter.ActorAlign.CENTER,
         });
         barRow.add_child(_iconL);
