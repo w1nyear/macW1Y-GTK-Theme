@@ -29,88 +29,113 @@ f_power = ImageFont.truetype(font_regular, int(round(12.5 * S)))
 f_time = ImageFont.truetype(font_text, int(round(13.5 * S)))
 f_abc = ImageFont.truetype(font_semibold, int(round(12.5 * S)))
 
-# 1. Base clean assets
-disk_clean = Image.open('/tmp/disk_clean.png').convert('RGBA').resize((210 * S, 165 * S), Image.Resampling.LANCZOS)
-gear_clean = Image.open('/tmp/gear_clean.png').convert('RGBA').resize((210 * S, 165 * S), Image.Resampling.LANCZOS)
-p_clean = Image.open('/tmp/p_clean.png').convert('RGBA').resize((90 * S, 60 * S), Image.Resampling.LANCZOS)
-r_clean = Image.open('/tmp/r_clean.png').convert('RGBA').resize((90 * S, 60 * S), Image.Resampling.LANCZOS)
+# 1. Base clean assets from permanent directory
+assets_dir = '/home/vitaliy/MACTHEMEFILES/grub/assets'
+disk_raw = Image.open(f'{assets_dir}/disk.png').convert('RGBA')
+gear_raw = Image.open(f'{assets_dir}/gear.png').convert('RGBA')
+p_raw = Image.open(f'{assets_dir}/power.png').convert('RGBA')
+r_raw = Image.open(f'{assets_dir}/restart.png').convert('RGBA')
 
-# 2. Generate UEFI Chip icon (210*S, 165*S)
+# Target scaling: icons aligned "під лінійку"
+# Disk height ~80px in 1x space (160px in 2x space)
+scale_d = (80 * S) / disk_raw.height
+disk_clean = disk_raw.resize((int(round(disk_raw.width * scale_d)), int(round(disk_raw.height * scale_d))), Image.Resampling.LANCZOS)
+
+scale_g = (74 * S) / gear_raw.height
+gear_clean = gear_raw.resize((int(round(gear_raw.width * scale_g)), int(round(gear_raw.height * scale_g))), Image.Resampling.LANCZOS)
+
+scale_p = (27 * S) / p_raw.height
+p_clean = p_raw.resize((int(round(p_raw.width * scale_p)), int(round(p_raw.height * scale_p))), Image.Resampling.LANCZOS)
+r_clean = r_raw.resize((int(round(r_raw.width * scale_p)), int(round(r_raw.height * scale_p))), Image.Resampling.LANCZOS)
+
+# 2. Generate UEFI Chip icon aligned "під лінійку" with disk and gear
 def create_uefi_chip_icon():
-    uefi_im = Image.new('RGBA', (210 * S, 165 * S), (0, 0, 0, 0))
+    total_w = 80 * S
+    total_h = 80 * S
+    uefi_im = Image.new('RGBA', (total_w, total_h), (0, 0, 0, 0))
     d = ImageDraw.Draw(uefi_im)
 
-    chip_w, chip_h = 130 * S, 130 * S
-    cx, cy = (210 * S) // 2, (165 * S) // 2
+    chip_w, chip_h = 66 * S, 66 * S
+    cx, cy = total_w // 2, total_h // 2
     x0, y0 = cx - chip_w // 2, cy - chip_h // 2
     x1, y1 = cx + chip_w // 2, cy + chip_h // 2
 
-    pin_len = 10 * S
-    pin_w = 4 * S
-    pin_gap = 10 * S
+    pin_len = 6 * S
+    pin_w = 2.5 * S
+    pin_gap = 5.5 * S
 
-    for px in range(x0 + 16 * S, x1 - 16 * S, pin_gap):
+    # Horizontal pins (top and bottom)
+    px = x0 + 8 * S
+    while px <= x1 - 8 * S:
         d.rounded_rectangle([px, y0 - pin_len, px + pin_w, y0], radius=1 * S, fill=(185, 185, 190, 255))
         d.rounded_rectangle([px, y1, px + pin_w, y1 + pin_len], radius=1 * S, fill=(185, 185, 190, 255))
+        px += pin_gap
 
-    for py in range(y0 + 16 * S, y1 - 16 * S, pin_gap):
+    # Vertical pins (left and right)
+    py = y0 + 8 * S
+    while py <= y1 - 8 * S:
         d.rounded_rectangle([x0 - pin_len, py, x0, py + pin_w], radius=1 * S, fill=(185, 185, 190, 255))
         d.rounded_rectangle([x1, py, x1 + pin_len, py + pin_w], radius=1 * S, fill=(185, 185, 190, 255))
+        py += pin_gap
 
-    d.rounded_rectangle([x0, y0, x1, y1], radius=16 * S, fill=(24, 24, 27, 255), outline=(90, 90, 96, 255), width=2 * S)
-    d.rounded_rectangle([x0 + 4 * S, y0 + 4 * S, x1 - 4 * S, y1 - 4 * S], radius=12 * S, fill=(30, 30, 34, 255), outline=(60, 60, 65, 255), width=1 * S)
+    # Outer chip body
+    d.rounded_rectangle([x0, y0, x1, y1], radius=8 * S, fill=(24, 24, 27, 255), outline=(90, 90, 96, 255), width=int(round(1.5 * S)))
+    # Inner bevel
+    d.rounded_rectangle([x0 + 2.5 * S, y0 + 2.5 * S, x1 - 2.5 * S, y1 - 2.5 * S], radius=6 * S, fill=(30, 30, 34, 255), outline=(60, 60, 65, 255), width=1 * S)
 
-    d.ellipse([x0 + 12 * S, y0 + 12 * S, x0 + 18 * S, y0 + 18 * S], fill=(120, 120, 128, 255))
+    # Pin 1 indicator dot
+    d.ellipse([x0 + 6 * S, y0 + 6 * S, x0 + 10 * S, y0 + 10 * S], fill=(120, 120, 128, 255))
 
-    f_u = ImageFont.truetype(font_bold, 26 * S)
-    f_s = ImageFont.truetype(font_text, 11 * S)
+    f_u = ImageFont.truetype(font_bold, int(round(13 * S)))
+    f_s = ImageFont.truetype(font_text, int(round(6 * S)))
 
-    d.line([cx - 36 * S, cy - 24 * S, cx + 36 * S, cy - 24 * S], fill=(140, 140, 148, 180), width=1 * S)
-    d.line([cx - 36 * S, cy + 24 * S, cx + 36 * S, cy + 24 * S], fill=(140, 140, 148, 180), width=1 * S)
+    # Thin accent lines
+    d.line([cx - 18 * S, cy - 12 * S, cx + 18 * S, cy - 12 * S], fill=(140, 140, 148, 180), width=1 * S)
+    d.line([cx - 18 * S, cy + 12 * S, cx + 18 * S, cy + 12 * S], fill=(140, 140, 148, 180), width=1 * S)
 
-    d.text((cx, cy - 8 * S), 'UEFI', font=f_u, fill=(245, 245, 250, 255), anchor='mm')
-    d.text((cx, cy + 14 * S), 'FIRMWARE', font=f_s, fill=(160, 160, 168, 255), anchor='mm')
+    d.text((cx, cy - 4 * S), 'UEFI', font=f_u, fill=(245, 245, 250, 255), anchor='mm')
+    d.text((cx, cy + 7 * S), 'FIRMWARE', font=f_s, fill=(160, 160, 168, 255), anchor='mm')
     return uefi_im
 
 uefi_clean = create_uefi_chip_icon()
 
-# 3. Generate macOS External USB Drive icon (210*S, 165*S)
+# 3. Generate macOS External USB Drive icon
 def create_usb_drive_icon():
-    raw_disk = Image.open('/tmp/disk_clean.png').convert('RGBA')
-    w, h = raw_disk.size
+    w, h = disk_clean.size
     usb_im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
 
     for y in range(h):
         for x in range(w):
-            r, g, b, a = raw_disk.getpixel((x, y))
-            lum = (r + g + b) // 3
-            if lum > 15:
+            r, g, b, a = disk_clean.getpixel((x, y))
+            if a > 15:
+                lum = (r + g + b) // 3
                 factor = lum / 255.0
                 or_r = int(min(255, round(255 * factor)))
                 or_g = int(min(255, round(145 * factor + 15 * factor**2)))
                 or_b = int(min(255, round(25 * factor)))
-                usb_im.putpixel((x, y), (or_r, or_g, or_b, 255))
-            else:
-                usb_im.putpixel((x, y), (0, 0, 0, 0))
+                usb_im.putpixel((x, y), (or_r, or_g, or_b, a))
 
     d = ImageDraw.Draw(usb_im)
-    cx, cy = w // 2, h // 2 - 8
+    cx, cy = w // 2, h // 2 - int(round(4 * S))
 
-    stem_top = cy - 20
-    stem_bot = cy + 18
-    d.line([cx, stem_top, cx, stem_bot], fill=(255, 255, 255, 230), width=3)
-    d.ellipse([cx - 4, stem_bot - 1, cx + 4, stem_bot + 7], fill=(255, 255, 255, 230))
-    d.polygon([(cx, stem_top - 7), (cx - 6, stem_top), (cx + 6, stem_top)], fill=(255, 255, 255, 230))
+    # Draw USB trident symbol
+    stem_top = cy - int(round(18 * S))
+    stem_bot = cy + int(round(16 * S))
+    line_w = max(2, int(round(2.5 * S)))
+    d.line([cx, stem_top, cx, stem_bot], fill=(255, 255, 255, 230), width=line_w)
+    d.ellipse([cx - int(round(3.5*S)), stem_bot - 1, cx + int(round(3.5*S)), stem_bot + int(round(6*S))], fill=(255, 255, 255, 230))
+    d.polygon([(cx, stem_top - int(round(7*S))), (cx - int(round(5*S)), stem_top), (cx + int(round(5*S)), stem_top)], fill=(255, 255, 255, 230))
 
-    d.arc([cx - 16, cy - 8, cx, cy + 8], start=90, end=180, fill=(255, 255, 255, 230), width=3)
-    d.line([cx - 16, cy - 8, cx - 16, cy - 14], fill=(255, 255, 255, 230), width=3)
-    d.rounded_rectangle([cx - 19, cy - 20, cx - 13, cy - 14], radius=1, fill=(255, 255, 255, 230))
+    # Left branch (rectangle)
+    d.arc([cx - int(round(14*S)), cy - int(round(8*S)), cx, cy + int(round(8*S))], start=90, end=180, fill=(255, 255, 255, 230), width=line_w)
+    d.line([cx - int(round(14*S)), cy - int(round(8*S)), cx - int(round(14*S)), cy - int(round(14*S))], fill=(255, 255, 255, 230), width=line_w)
+    d.rounded_rectangle([cx - int(round(17*S)), cy - int(round(20*S)), cx - int(round(11*S)), cy - int(round(14*S))], radius=1*S, fill=(255, 255, 255, 230))
 
-    d.arc([cx, cy - 8, cx + 16, cy + 8], start=0, end=90, fill=(255, 255, 255, 230), width=3)
-    d.line([cx + 16, cy - 8, cx + 16, cy - 14], fill=(255, 255, 255, 230), width=3)
-    d.ellipse([cx + 13, cy - 20, cx + 19, cy - 14], fill=(255, 255, 255, 230))
-
-    return usb_im.resize((210 * S, 165 * S), Image.Resampling.LANCZOS)
+    # Right branch (circle)
+    d.arc([cx, cy - int(round(8*S)), cx + int(round(14*S)), cy + int(round(8*S))], start=0, end=90, fill=(255, 255, 255, 230), width=line_w)
+    d.line([cx + int(round(14*S)), cy - int(round(8*S)), cx + int(round(14*S)), cy - int(round(14*S))], fill=(255, 255, 255, 230), width=line_w)
+    d.ellipse([cx + int(round(11*S)), cy - int(round(20*S)), cx + int(round(17*S)), cy - int(round(14*S))], fill=(255, 255, 255, 230))
+    return usb_im
 
 usb_clean = create_usb_drive_icon()
 
@@ -142,9 +167,12 @@ def make_continue_btn():
 
 btn_continue = make_continue_btn()
 
-card_w = int(round(175 * S))
-card_h = int(round(168 * S))
-center_y = 470 * S
+# Card geometry
+card_w = int(round(176 * S))
+card_h = int(round(210 * S))
+center_y = int(round(475 * S))
+icon_y = int(round(425 * S))
+label_y = int(round(535 * S))
 
 def draw_selection_card(im, cx, cy):
     card_im = Image.new('RGBA', (card_w, card_h), (0, 0, 0, 0))
@@ -189,16 +217,17 @@ def draw_top_bar(im, d):
     d.line([kx + int(round(3.5 * S)), ky + int(round(7.5 * S)), kx + key_w - int(round(3.5 * S)), ky + int(round(7.5 * S))], fill=(180, 180, 185), width=max(1, int(round(1.5 * S))))
 
 def draw_bottom_power(im, d, selected):
-    bot_y = SH - int(round((110 * 0.75 + 10) * S))
+    # Raised power buttons: 125*S from bottom
+    bot_y = SH - int(round(125 * S))
     sd_x = (960 - 75) * S
     im.paste(p_clean, (sd_x - p_clean.width // 2, bot_y), p_clean)
     sd_box = d.textbbox((0, 0), 'Shut Down', font=f_power)
-    d.text((sd_x - (sd_box[2] - sd_box[0]) // 2, bot_y + p_clean.height + int(round(6 * S))), 'Shut Down', font=f_power, fill=(255, 255, 255) if selected == 'shutdown' else (215, 215, 220))
+    d.text((sd_x - (sd_box[2] - sd_box[0]) // 2, bot_y + p_clean.height + int(round(8 * S))), 'Shut Down', font=f_power, fill=(255, 255, 255) if selected == 'shutdown' else (215, 215, 220))
 
     rst_x = (960 + 75) * S
     im.paste(r_clean, (rst_x - r_clean.width // 2, bot_y), r_clean)
     rst_box = d.textbbox((0, 0), 'Restart', font=f_power)
-    d.text((rst_x - (rst_box[2] - rst_box[0]) // 2, bot_y + r_clean.height + int(round(6 * S))), 'Restart', font=f_power, fill=(255, 255, 255) if selected == 'restart' else (215, 215, 220))
+    d.text((rst_x - (rst_box[2] - rst_box[0]) // 2, bot_y + r_clean.height + int(round(8 * S))), 'Restart', font=f_power, fill=(255, 255, 255) if selected == 'restart' else (215, 215, 220))
 
     if selected == 'shutdown':
         box_pad = int(round(8 * S))
@@ -219,18 +248,16 @@ def render_3item_screen(selected, os_name='Ubuntu'):
         ('options', 'Options', gear_clean, 1180 * S),
     ]
 
-    item_y = center_y - int(round(25 * 0.75 * S))
-
     for key, label, icon, cx in items:
         is_sel = (selected == key)
         if is_sel:
             draw_selection_card(im, cx, center_y)
-            btn_y = center_y + card_h // 2 + int(round(12 * S))
+            btn_y = center_y + card_h // 2 + int(round(14 * S))
             im.paste(btn_continue, (cx - btn_continue.width // 2, btn_y), btn_continue)
 
-        im.paste(icon, (cx - icon.width // 2, item_y - icon.height // 2), icon)
+        im.paste(icon, (cx - icon.width // 2, icon_y - icon.height // 2), icon)
         bbox = d.textbbox((0, 0), label, font=f_label)
-        d.text((cx - (bbox[2] - bbox[0]) // 2, item_y + icon.height // 2 + int(round(10 * S))), label, font=f_label, fill=(255, 255, 255) if is_sel else (210, 210, 215))
+        d.text((cx - (bbox[2] - bbox[0]) // 2, label_y), label, font=f_label, fill=(255, 255, 255) if is_sel else (210, 210, 215))
 
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
@@ -247,18 +274,16 @@ def render_4item_screen(selected, os_name='Ubuntu'):
         ('options', 'Options', gear_clean, 1290 * S),
     ]
 
-    item_y = center_y - int(round(25 * 0.75 * S))
-
     for key, label, icon, cx in items:
         is_sel = (selected == key)
         if is_sel:
             draw_selection_card(im, cx, center_y)
-            btn_y = center_y + card_h // 2 + int(round(12 * S))
+            btn_y = center_y + card_h // 2 + int(round(14 * S))
             im.paste(btn_continue, (cx - btn_continue.width // 2, btn_y), btn_continue)
 
-        im.paste(icon, (cx - icon.width // 2, item_y - icon.height // 2), icon)
+        im.paste(icon, (cx - icon.width // 2, icon_y - icon.height // 2), icon)
         bbox = d.textbbox((0, 0), label, font=f_label)
-        d.text((cx - (bbox[2] - bbox[0]) // 2, item_y + icon.height // 2 + int(round(10 * S))), label, font=f_label, fill=(255, 255, 255) if is_sel else (210, 210, 215))
+        d.text((cx - (bbox[2] - bbox[0]) // 2, label_y), label, font=f_label, fill=(255, 255, 255) if is_sel else (210, 210, 215))
 
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
@@ -268,7 +293,6 @@ def render_transition_frame(progress, os_name='Ubuntu'):
     draw_top_bar(im, d)
     draw_bottom_power(im, d, None)
 
-    item_y = center_y - int(round(25 * 0.75 * S))
     shift = int(round(110 * progress))
 
     items = [
@@ -276,30 +300,31 @@ def render_transition_frame(progress, os_name='Ubuntu'):
         ('UEFI Settings', uefi_clean, (960 + shift) * S),
         ('Options', gear_clean, (1180 + shift) * S),
     ]
+
     for label, icon, cx in items:
-        im.paste(icon, (cx - icon.width // 2, item_y - icon.height // 2), icon)
+        im.paste(icon, (cx - icon.width // 2, icon_y - icon.height // 2), icon)
         bbox = d.textbbox((0, 0), label, font=f_label)
-        d.text((cx - (bbox[2] - bbox[0]) // 2, item_y + icon.height // 2 + int(round(10 * S))), label, font=f_label, fill=(210, 210, 215))
+        d.text((cx - (bbox[2] - bbox[0]) // 2, label_y), label, font=f_label, fill=(210, 210, 215))
 
     if progress > 0.05:
-        usb_cx = int(round((520 + 110 * progress) * S))
-        alpha = int(round(255 * (progress ** 0.8)))
+        alpha = int(round(min(255, progress * 255 * 1.2)))
+        usb_cx = int(round((630 - 60 * (1.0 - progress)) * S))
+
         usb_trans = usb_clean.copy()
         r_ch, g_ch, b_ch, a_ch = usb_trans.split()
-        a_ch = a_ch.point(lambda p: int(p * alpha / 255))
+        a_ch = a_ch.point(lambda p: int(round(p * alpha / 255)))
         usb_trans.putalpha(a_ch)
-        im.paste(usb_trans, (usb_cx - usb_trans.width // 2, item_y - usb_trans.height // 2), usb_trans)
+        im.paste(usb_trans, (usb_cx - usb_trans.width // 2, icon_y - usb_trans.height // 2), usb_trans)
 
         lbl = 'EFI Boot'
         bbox = d.textbbox((0, 0), lbl, font=f_label)
-        d.text((usb_cx - (bbox[2] - bbox[0]) // 2, item_y + usb_clean.height // 2 + int(round(10 * S))), lbl, font=f_label, fill=(210, 210, 215, alpha))
+        d.text((usb_cx - (bbox[2] - bbox[0]) // 2, label_y), lbl, font=f_label, fill=(210, 210, 215, alpha))
 
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
 def main():
     print("Generating macOS Apple Silicon GRUB theme assets...")
 
-    # Output directories
     base_dirs = [
         '/boot/grub/themes/apple-mac',
         '/home/vitaliy/MACTHEMEFILES/grub/apple-mac'
@@ -322,7 +347,6 @@ def main():
     s3_options = render_3item_screen('options')
     s3_shutdown = render_3item_screen('shutdown')
     s3_restart = render_3item_screen('restart')
-    s3_neutral = render_3item_screen(None)
 
     for b in base_dirs:
         icons_dir = f'{b}/icons'
@@ -345,7 +369,15 @@ def main():
         s3_restart.save(f'{icons_dir}/restart.png')
         s3_restart.save(f'{icons_dir}/reboot.png')
 
-        s3_neutral.save(f'{icons_dir}/rescan.png')
+        # Dummy transparent for rescan
+        trans = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+        trans.save(f'{icons_dir}/rescan.png')
+
+        # Create transparent 1x1 select_*.png so GRUB never draws default boxes
+        trans_1px = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
+        trans_1px.save(f'{b}/select_c.png')
+        trans_1px.save(f'{b}/select_w.png')
+        trans_1px.save(f'{b}/select_e.png')
 
     # 2. 5 Animation Frames
     print("2. Rendering slide animation frames...")
@@ -368,7 +400,6 @@ def main():
     s4_options = render_4item_screen('options')
     s4_shutdown = render_4item_screen('shutdown')
     s4_restart = render_4item_screen('restart')
-    s4_neutral = render_4item_screen(None)
 
     for u in usb_dirs:
         icons_dir = f'{u}/icons'
@@ -395,7 +426,13 @@ def main():
         s4_restart.save(f'{icons_dir}/restart.png')
         s4_restart.save(f'{icons_dir}/reboot.png')
 
-        s4_neutral.save(f'{icons_dir}/rescan.png')
+        trans = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+        trans.save(f'{icons_dir}/rescan.png')
+
+        trans_1px = Image.new('RGBA', (1, 1), (0, 0, 0, 0))
+        trans_1px.save(f'{u}/select_c.png')
+        trans_1px.save(f'{u}/select_w.png')
+        trans_1px.save(f'{u}/select_e.png')
 
     print("All theme assets generated successfully!")
 
