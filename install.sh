@@ -934,7 +934,7 @@ install_gamemode() {
     require_root
     
     # 1. Встановлення бінарних утиліт та скриптів
-    for bin_file in mac-gamemode gamemoderun nvidia-game-run prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-sanitize-favorites.sh; do
+    for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-sanitize-favorites.sh; do
         if [ -f "$SCRIPT_DIR/bin/$bin_file" ] || [ -L "$SCRIPT_DIR/bin/$bin_file" ]; then
             sudo cp -a "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
             sudo chmod +x "/usr/local/bin/$bin_file" 2>/dev/null || true
@@ -1109,16 +1109,16 @@ _install_hardware_extras() {
 [general]
 reaper_freq=5
 desiredgov=performance
-defaultgov=powersave
-igpu_desiredgov=powersave
+defaultgov=performance
+igpu_desiredgov=performance
 igpu_power_threshold=0.3
 softrealtime=auto
-renice=10
+renice=-10
 ioprio=0
 inhibit_screensaver=1
 
 [filter]
-whitelist=cs2,steam,gamescope,heroic,lutris,wine,wine64
+whitelist=cs2,cstrike,steam,gamescope,heroic,lutris,wine,wine64,watch_dogs2
 
 [cpu]
 park_cores=no
@@ -1126,9 +1126,13 @@ pin_cores=yes
 
 [gpu]
 apply_gpu_optimisations=accept-responsibility
-gpu_device=0
+gpu_device=1
 nv_powermizer_mode=1
 amd_performance_level=high
+
+[custom]
+start=/usr/local/bin/mac-gamemode on
+end=/usr/local/bin/mac-gamemode auto
 GAMEMODE_CFG
     chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/gamemode.ini" 2>/dev/null || true
 
@@ -1767,7 +1771,7 @@ run_incremental_update() {
     [ -f "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" ] && sync_or_update_file "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" "/etc/udev/rules.d/99-uinput.rules" true
     [ -f "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" "/etc/systemd/system/mac-touchpad-daemon.service" true
 
-    for gb in mac-gamemode gamemoderun nvidia-game-run prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-sanitize-favorites.sh; do
+    for gb in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-sanitize-favorites.sh; do
         if [ -f "$SCRIPT_DIR/bin/$gb" ] || [ -L "$SCRIPT_DIR/bin/$gb" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$gb" "/usr/local/bin/$gb" true
             sudo chmod +x "/usr/local/bin/$gb" 2>/dev/null || true

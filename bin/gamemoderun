@@ -12,5 +12,10 @@ export VK_LOADER_DRIVERS_SELECT="*nvidia*"
 export PROTON_ENABLE_NVAPI=1
 export DXVK_ENABLE_NVAPI=1
 export PROTON_HIDE_NVIDIA_GPU=0
+export __GL_SYNC_TO_VBLANK=0
+export vblank_mode=0
+export DXVK_FRAME_RATE=0
+export DXVK_ASYNC=1
+export MANGOHUD_CONFIG="fps_limit=0"
 
 exec /usr/games/gamemoderun "$@"

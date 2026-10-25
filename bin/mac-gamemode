@@ -6,22 +6,74 @@ P_CORES = {0, 1, 2, 3, 4, 5, 6, 7}
 E_CORES = {8, 9, 10, 11}
 ALL_CORES = set(range(12))
 
-GAME_KEYWORDS = [
-    'wine', 'wineserver', 'winedevice.exe', '.exe',
-    'steam_app_', 'gamescope', 'pressure-vessel', 'reaper',
-    'lutris', 'heroic', 'rpcs3', 'yuzu', 'ryujinx', 'cemu',
-    'dolphin-emu', 'pcsx2', 'retroarch', 'dota2', 'cs2', 'hl2_linux'
+GAME_EXCLUDES = {
+    'systemd', 'oom_reaper', 'khungtaskd', 'switcheroo-control',
+    'switcheroo-cont', 'xdg-desktop-portal', 'xdg-document-portal',
+    'ibus-portal', 'python3', 'bash', 'sh', 'zsh', 'gnome-shell',
+    'mutter', 'xwayland', 'pipewire', 'wireplumber', 'pulseaudio'
+}
+
+GAME_REGEXES = [
+    re.compile(r'steam_app_\d+'),
+    re.compile(r'steamapps/common'),
+    re.compile(r'pressure-vessel'),
+    re.compile(r'\.exe($|\s)'),
+    re.compile(r'\bcstrike'),
+    re.compile(r'\bcs2\b'),
+    re.compile(r'\bcsgo\b'),
+    re.compile(r'\bdota2\b'),
+    re.compile(r'\bhl2'),
+    re.compile(r'watch_dogs'),
+    re.compile(r'watchdogs'),
+    re.compile(r'disrupt'),
+    re.compile(r'cyberpunk'),
+    re.compile(r'witcher'),
+    re.compile(r'\bgta'),
+    re.compile(r'gamescope'),
+    re.compile(r'\bwine\b'),
+    re.compile(r'\bwineserver\b'),
+    re.compile(r'\bproton\b'),
+    re.compile(r'\blutris'),
+    re.compile(r'\bheroic'),
+    re.compile(r'rpcs3'),
+    re.compile(r'yuzu'),
+    re.compile(r'ryujinx'),
+    re.compile(r'cemu'),
+    re.compile(r'pcsx2'),
+    re.compile(r'retroarch'),
+    re.compile(r'prismlauncher'),
+    re.compile(r'vkcube'),
+    re.compile(r'superposition'),
+    re.compile(r'unigine')
 ]
 
 BG_KEYWORDS = [
     'tracker-miner', 'tracker-extract', 'updatedb', 'mandb'
 ]
 
-def is_game_process(comm, cmdline):
-    full = (comm + ' ' + cmdline).lower()
-    for kw in GAME_KEYWORDS:
-        if kw in full:
+def is_game_process(comm, cmdline, pid=None):
+    comm_l = comm.lower()
+    cmdline_l = cmdline.lower()
+    if comm_l in GAME_EXCLUDES:
+        return False
+    if any(comm_l.startswith(p) for p in ['xdg-', 'systemd-', 'ibus-']):
+        return False
+    full = comm_l + ' ' + cmdline_l
+    for r in GAME_REGEXES:
+        if r.search(full):
             return True
+            
+    # Check process environment for NVIDIA PRIME Offload / Proton / Steam if PID provided
+    if pid is not None:
+        try:
+            with open(f'/proc/{pid}/environ', 'rb') as f:
+                env_raw = f.read(4096).decode('utf-8', 'ignore')
+                if ('STEAM_COMPAT_DATA_PATH' in env_raw or 
+                    'DXVK_CONFIG_FILE' in env_raw or
+                    'PRESSURE_VESSEL_APP_ID' in env_raw):
+                    return True
+        except Exception:
+            pass
     return False
 
 def is_bg_process(comm, cmdline):
@@ -30,6 +82,57 @@ def is_bg_process(comm, cmdline):
         if kw in full:
             return True
     return False
+
+def get_power_profile():
+    try:
+        res = subprocess.run(['powerprofilesctl', 'get'], capture_output=True, text=True, check=False)
+        return res.stdout.strip()
+    except Exception:
+        return 'balanced'
+
+def is_on_battery():
+    for p in ['/sys/class/power_supply/ACAD/online', '/sys/class/power_supply/AC/online']:
+        if os.path.exists(p):
+            try:
+                with open(p, 'r') as f:
+                    return f.read().strip() == '0'
+            except Exception:
+                pass
+    return False
+
+def set_platform_profile(profile):
+    """
+    Sets the ACPI platform profile (e.g. balanced-performance or balanced).
+    Strictly preserves fan speed and never modifies fan controls.
+    """
+    targets = [
+        '/sys/firmware/acpi/platform_profile',
+        '/sys/devices/platform/acer-wmi/platform-profile/platform-profile-0/profile'
+    ]
+    for p in targets:
+        if os.path.exists(p):
+            try:
+                with open(p, 'w') as f:
+                    f.write(f'{profile}\n')
+            except Exception:
+                pass
+
+def set_intel_igpu_min_freq(freq_mhz):
+    """
+    Sets Intel iGPU minimum frequency to prevent Wayland display buffer starvation
+    and presentation queue bottlenecks when transferring frames from the discrete GPU.
+    """
+    targets = [
+        '/sys/class/drm/card1/gt_min_freq_mhz',
+        '/sys/class/drm/card0/gt_min_freq_mhz'
+    ]
+    for p in targets:
+        if os.path.exists(p):
+            try:
+                with open(p, 'w') as f:
+                    f.write(f'{freq_mhz}\n')
+            except Exception:
+                pass
 
 def apply_sysctl(params):
     for k, v in params.items():
@@ -87,10 +190,25 @@ def set_wifi_powersave(enable):
 def set_gpu_performance(enable):
     try:
         if enable:
+            # 1. Enable NVIDIA persistence mode
             subprocess.run(['nvidia-smi', '-pm', '1'], capture_output=True)
-            subprocess.run(['nvidia-settings', '-a', '[gpu:0]/GPUPowerMizerMode=1'], capture_output=True)
+            # 2. Lock NVIDIA memory clocks to maximum (5411 MHz)
+            subprocess.run(['nvidia-smi', '-lmc', '5411,5411'], capture_output=True)
+            # 3. Lock NVIDIA graphics clocks to boost range (1650 - 2100 MHz)
+            subprocess.run(['nvidia-smi', '-lgc', '1650,2100'], capture_output=True)
+            # 4. Set Intel iGPU minimum frequency to 800 MHz (eliminates presentation lag)
+            set_intel_igpu_min_freq(800)
+            # 5. Set Acer platform profile to balanced-performance (unthrottled EC power limits)
+            set_platform_profile('balanced-performance')
         else:
-            subprocess.run(['nvidia-settings', '-a', '[gpu:0]/GPUPowerMizerMode=0'], capture_output=True)
+            # 1. Reset graphics clocks to dynamic range
+            subprocess.run(['nvidia-smi', '-rgc'], capture_output=True)
+            # 2. Reset memory clocks to dynamic range
+            subprocess.run(['nvidia-smi', '-rmc'], capture_output=True)
+            # 3. Reset Intel iGPU minimum frequency to 100 MHz
+            set_intel_igpu_min_freq(100)
+            # 4. Reset Acer platform profile to balanced
+            set_platform_profile('balanced')
     except Exception:
         pass
 
@@ -107,13 +225,8 @@ def optimize_processes():
             with open(cmd_path, 'r', errors='ignore') as f:
                 cmdline = f.read().replace('\x00', ' ').strip()
             
-            if is_game_process(comm, cmdline):
-                # Pin to P-cores
-                try:
-                    os.sched_setaffinity(pid, P_CORES)
-                except Exception:
-                    pass
-                # Set MMCSS priority (-20)
+            if is_game_process(comm, cmdline, pid):
+                # Set MMCSS priority (-20) on process
                 try:
                     os.setpriority(os.PRIO_PROCESS, pid, -20)
                 except Exception:
@@ -123,8 +236,21 @@ def optimize_processes():
                     subprocess.run(['ionice', '-c', '2', '-n', '0', '-p', str(pid)], capture_output=True)
                 except Exception:
                     pass
+                # Pin main process and ALL child threads to P-cores
+                try:
+                    os.sched_setaffinity(pid, P_CORES)
+                except Exception:
+                    pass
+                task_dir = os.path.join(pid_dir, 'task')
+                if os.path.exists(task_dir):
+                    for tid_str in os.listdir(task_dir):
+                        try:
+                            tid = int(tid_str)
+                            os.sched_setaffinity(tid, P_CORES)
+                        except Exception:
+                            pass
             elif is_bg_process(comm, cmdline):
-                # Move background tasks to E-cores
+                # Move background tasks to E-cores with low priority
                 try:
                     os.sched_setaffinity(pid, E_CORES)
                 except Exception:
@@ -152,6 +278,7 @@ def set_state(val):
 def any_game_running():
     for pid_dir in glob.glob('/proc/[0-9]*'):
         try:
+            pid = int(os.path.basename(pid_dir))
             comm_path = os.path.join(pid_dir, 'comm')
             cmd_path = os.path.join(pid_dir, 'cmdline')
             if not os.path.exists(comm_path):
@@ -160,7 +287,7 @@ def any_game_running():
                 comm = f.read().strip()
             with open(cmd_path, 'r', errors='ignore') as f:
                 cmdline = f.read().replace('\x00', ' ').strip()
-            if is_game_process(comm, cmdline):
+            if is_game_process(comm, cmdline, pid):
                 return True
         except Exception:
             continue
@@ -180,7 +307,7 @@ def turn_on():
     set_gpu_performance(True)
     set_wifi_powersave(False)
     optimize_processes()
-    print('mac-gamemode: ON (P-cores pinned, nice -20, sysctl & GPU max perf applied)')
+    print('mac-gamemode: ON (P-cores pinned, nice -20, sysctl, Intel iGPU & discrete GPU max boost applied)')
 
 def turn_off():
     set_state(False)
@@ -193,29 +320,33 @@ def turn_off():
     })
     set_gpu_performance(False)
     set_wifi_powersave(True)
-    print('mac-gamemode: OFF (Restored standard desktop power profile)')
+    print('mac-gamemode: OFF (Restored balanced desktop power profile)')
 
 def daemon_loop():
-    print('mac-gamemode: daemon started')
+    print('mac-gamemode: daemon started (unified power & GPU management)')
+    current_active = None
+    last_optimize_time = 0
+
     while True:
         try:
             manual_on = get_state()
+            perf_profile = (get_power_profile() == 'performance')
             game_active = any_game_running()
-            if manual_on or game_active:
-                set_cpu_freq('performance', 'performance', 2400000)
-                apply_sysctl({
-                    'vm.max_map_count': '2147483642',
-                    'vm.swappiness': '10',
-                    'vm.vfs_cache_pressure': '50',
-                    'vm.compaction_proactiveness': '0',
-                    'net.ipv4.tcp_slow_start_after_idle': '0',
-                    'net.ipv4.tcp_notsent_lowat': '16384'
-                })
-                set_gpu_performance(True)
-                set_wifi_powersave(False)
-                optimize_processes()
-            else:
-                set_cpu_freq('powersave', 'balance_performance', 800000)
+
+            should_be_on = manual_on or perf_profile or game_active
+
+            if should_be_on != current_active:
+                if should_be_on:
+                    turn_on()
+                else:
+                    turn_off()
+                current_active = should_be_on
+                last_optimize_time = time.time()
+            elif should_be_on:
+                now = time.time()
+                if now - last_optimize_time >= 3.0:
+                    optimize_processes()
+                    last_optimize_time = now
         except Exception:
             pass
         time.sleep(2)
@@ -226,13 +357,26 @@ if __name__ == '__main__':
         turn_on()
     elif cmd == 'off':
         turn_off()
+    elif cmd == 'auto':
+        manual_on = get_state()
+        perf_profile = (get_power_profile() == 'performance')
+        game_active = any_game_running()
+        if manual_on or perf_profile or game_active:
+            turn_on()
+        else:
+            turn_off()
     elif cmd == 'status':
         is_on = get_state()
-        print('ON' if is_on else 'OFF')
-        sys.exit(0 if is_on else 1)
+        perf_profile = (get_power_profile() == 'performance')
+        game_active = any_game_running()
+        print(f"Manual State    : {'ON' if is_on else 'OFF'}")
+        print(f"Power Profile   : {get_power_profile()}")
+        print(f"Game Active     : {'YES' if game_active else 'NO'}")
+        print(f"Effective State : {'PERFORMANCE (MAX)' if (is_on or perf_profile or game_active) else 'BALANCED'}")
+        sys.exit(0 if (is_on or perf_profile or game_active) else 1)
     elif cmd == 'daemon':
         daemon_loop()
     elif cmd == 'optimize':
         optimize_processes()
     else:
-        print('Usage: mac-gamemode [on|off|status|daemon|optimize]')
+        print('Usage: mac-gamemode [on|off|auto|status|daemon|optimize]')

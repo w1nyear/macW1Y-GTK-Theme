@@ -40,10 +40,15 @@ unset VK_ICD_FILENAMES
 unset DRI_PRIME
 unset MESA_VK_DEVICE_SELECT
 
-# 2. Enable NVIDIA features in Proton / DXVK
+# 2. Enable NVIDIA features in Proton / DXVK & Unlock Framerate / Full GPU Power
 export PROTON_ENABLE_NVAPI=1
 export DXVK_ENABLE_NVAPI=1
 export PROTON_HIDE_NVIDIA_GPU=0
+export __GL_SYNC_TO_VBLANK=0
+export vblank_mode=0
+export DXVK_FRAME_RATE=0
+export DXVK_ASYNC=1
+export MANGOHUD_CONFIG="fps_limit=0"
 
 # 3. Prevent shader compilation from starving CPU and freezing desktop
 export FOSSILIZE_THREADS=2
