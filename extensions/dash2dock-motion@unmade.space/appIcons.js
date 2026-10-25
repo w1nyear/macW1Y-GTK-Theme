@@ -57,6 +57,76 @@ const Labels = Object.freeze({
     URGENT_WINDOWS: Symbol('urgent-windows'),
 });
 
+let _cachedRunningComms = null;
+let _cachedCommsTime = 0;
+
+function getRunningProcessComms() {
+    const now = GLib.get_monotonic_time();
+    if (_cachedRunningComms && (now - _cachedCommsTime < 1500000))
+        return _cachedRunningComms;
+
+    const comms = new Set();
+    try {
+        const dir = Gio.File.new_for_path('/proc');
+        const enumerator = dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
+        let info;
+        while ((info = enumerator.next_file(null)) !== null) {
+            const name = info.get_name();
+            if (/^[0-9]+$/.test(name)) {
+                try {
+                    const [ok, comm] = GLib.file_get_contents(`/proc/${name}/comm`);
+                    if (ok)
+                        comms.add(new TextDecoder().decode(comm).trim());
+                } catch (_) {}
+            }
+        }
+    } catch (_) {}
+    _cachedRunningComms = comms;
+    _cachedCommsTime = now;
+    return comms;
+}
+
+function isAppRunningInBackground(app, windowsCount) {
+    if (!app)
+        return false;
+    if (windowsCount > 0)
+        return true;
+    if (app.state === Shell.AppState.RUNNING)
+        return true;
+    const pids = app.get_pids ? app.get_pids() : [];
+    if (pids && pids.length > 0)
+        return true;
+
+    const id = app.get_id ? app.get_id() : '';
+    if (id === 'launchpad.desktop' || id.startsWith('location:'))
+        return false;
+
+    const info = app.get_app_info ? app.get_app_info() : null;
+    if (!info)
+        return false;
+    const exec = info.get_executable ? info.get_executable() : null;
+    if (!exec)
+        return false;
+    const base = GLib.path_get_basename(exec);
+    if (!base || base.endsWith('.sh'))
+        return false;
+
+    const comms = getRunningProcessComms();
+    if (comms.has(base) || comms.has(base.slice(0, 15)))
+        return true;
+
+    if (base.includes('chrome') && (comms.has('chrome') || comms.has('google-chrome')))
+        return true;
+    if (base.includes('telegram') && (comms.has('telegram-deskto') || comms.has('Telegram')))
+        return true;
+    if (base.includes('steam') && (comms.has('steam') || comms.has('steamwebhelper')))
+        return true;
+    if (base.includes('opencode') && (comms.has('opencode') || comms.has('ai.opencode.desktop')))
+        return true;
+
+    return false;
+}
+
 const clickAction = Object.freeze({
     SKIP: 0,
     MINIMIZE: 1,
@@ -147,6 +217,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
 
         this._signalsHandler.add(this.app, 'windows-changed', () => this._updateWindows());
         this._signalsHandler.add(this.app, 'notify::state', () => this._updateRunningState());
+        this.connect('destroy', () => this._stopBackgroundWatcher());
         this._signalsHandler.add(global.display, 'window-demands-attention', (_dpy, window) =>
             this._onWindowDemandsAttention(window));
         this._signalsHandler.add(global.display, 'window-marked-urgent', (_dpy, window) =>
@@ -346,8 +417,38 @@ export const DockAbstractAppIcon = GObject.registerClass({
         }
     }
 
+    _startBackgroundWatcher() {
+        if (this._bgWatcherId)
+            return;
+        this._bgWatcherId = GLib.timeout_add(GLib.PRIORITY_LOW, 2000, () => {
+            if (!this.running || this.windowsCount > 0) {
+                this._bgWatcherId = 0;
+                return GLib.SOURCE_REMOVE;
+            }
+            _cachedRunningComms = null;
+            const stillRunning = isAppRunningInBackground(this.app, this.windowsCount);
+            if (!stillRunning) {
+                this.running = false;
+                this._bgWatcherId = 0;
+                return GLib.SOURCE_REMOVE;
+            }
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+
+    _stopBackgroundWatcher() {
+        if (this._bgWatcherId) {
+            GLib.source_remove(this._bgWatcherId);
+            this._bgWatcherId = 0;
+        }
+    }
+
     _updateRunningState() {
-        this.running = (this.app.state === Shell.AppState.RUNNING) && this.windowsCount;
+        this.running = isAppRunningInBackground(this.app, this.windowsCount);
+        if (this.running && this.windowsCount === 0)
+            this._startBackgroundWatcher();
+        else
+            this._stopBackgroundWatcher();
     }
 
     _updateFocusState() {

@@ -165,7 +165,9 @@ class RunningIndicatorBase extends IndicatorBase {
     }
 
     get _number() {
-        return Math.min(this._source.windowsCount, MAX_WINDOWS_CLASSES);
+        if (!this._source.running)
+            return 0;
+        return Math.max(1, Math.min(this._source.windowsCount, MAX_WINDOWS_CLASSES));
     }
 
     update() {
@@ -305,7 +307,7 @@ class RunningIndicatorDots extends RunningIndicatorBase {
         // the icon art's bottom edge. Shift the whole area outwards - in the
         // direction the drawn dot faces after the rotation above - so the dot
         // clears the icon instead of overlapping it.
-        const dotGap = 8;
+        const dotGap = 3;
 
         switch (this._side) {
         case St.Side.TOP:
@@ -383,52 +385,11 @@ class RunningIndicatorDots extends RunningIndicatorBase {
         this._width = height;
         this._height = width;
 
-        // By default re-use the style - background color, and border width and color -
-        // of the default dot
-        const themeNode = this._source._dot.get_theme_node();
-        this._borderColor = themeNode.get_border_color(this._side);
-        this._borderWidth = themeNode.get_border_width(this._side);
-        this._bodyColor = themeNode.get_background_color();
-
-        const {settings} = Docking.DockManager;
-        if (!settings.applyCustomTheme) {
-            // Adjust for the backlit case
-            const Color = Clutter.Color ?? Cogl.Color;
-
-            if (settings.unityBacklitItems) {
-                // Use dominant color for dots too if the backlit is enables
-                const colorPalette = this._dominantColorExtractor._getColorPalette();
-
-                // Slightly adjust the styling
-                this._borderWidth = 2;
-
-                if (colorPalette) {
-                    [, this._borderColor] = Color.from_string(colorPalette.lighter);
-                    [, this._bodyColor] = Color.from_string(colorPalette.darker);
-                } else {
-                    // Fallback
-                    [, this._borderColor] = Color.from_string('white');
-                    [, this._bodyColor] = Color.from_string('gray');
-                }
-            }
-
-            // Apply dominant color if requested
-            if (settings.runningIndicatorDominantColor) {
-                const colorPalette = this._dominantColorExtractor._getColorPalette();
-                if (colorPalette)
-                    [, this._bodyColor] = Color.from_string(colorPalette.original);
-                else
-                    // Fallback
-                    [, this._bodyColor] = Color.from_string(settings.customThemeRunningDotsColor);
-            }
-
-            // Finally, use customize style if requested
-            if (settings.customThemeCustomizeRunningDots) {
-                [, this._borderColor] = Color.from_string(settings.customThemeRunningDotsBorderColor);
-                this._borderWidth = settings.customThemeRunningDotsBorderWidth;
-                [, this._bodyColor] =  Color.from_string(settings.customThemeRunningDotsColor);
-            }
-        }
+        // All running indicator dots are pure white with no border
+        const Color = Clutter.Color ?? Cogl.Color;
+        [, this._bodyColor] = Color.from_string('rgba(255, 255, 255, 0.95)');
+        [, this._borderColor] = Color.from_string('rgba(255, 255, 255, 0.95)');
+        this._borderWidth = 0;
 
         // Every other length here is derived from the surface size and so
         // follows the oversampled area on its own, but the border width comes

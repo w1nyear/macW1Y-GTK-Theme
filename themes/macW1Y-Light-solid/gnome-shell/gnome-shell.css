@@ -198,7 +198,7 @@ stage {
 }
 
 StWidget.focused .app-well-app-running-dot {
-  background-color: -st-accent-color;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 .page-indicator {
@@ -3175,7 +3175,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 StWidget.focused .app-grid-running-dot {
-  background-color: -st-accent-color;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 .app-folder {
@@ -5442,7 +5442,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #dashtodockContainer #dash StWidget.focused .app-grid-running-dot {
-  background-color: -st-accent-color;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 #dashtodockContainer #dash .show-apps:hover .overview-icon, #dashtodockContainer #dash .show-apps:focus .overview-icon,
@@ -5529,7 +5529,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #dashtodockContainer:overview #dash StWidget.focused .app-grid-running-dot {
-  background-color: -st-accent-color;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 #dashtodockContainer.opaque:overview #dash, #dashtodockContainer.transparent:overview #dash {
