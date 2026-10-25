@@ -1,13 +1,7 @@
 #!/bin/bash
 # mac-steam-shader-optimizer
 # Ensures Steam shader pre-caching always uses the configured GPU (Power -> Game Mode GPU Allocation)
-# and limits CPU concurrency to 4 threads to prevent 100°C CPU overheating and thermal throttling.
-
-STEAM_DIRS=(
-    "$HOME/snap/steam/common/.local/share/Steam"
-    "$HOME/.local/share/Steam"
-    "$HOME/.steam/steam"
-)
+# and limits CPU concurrency to 2 threads with idle priority to prevent 100°C CPU overheating.
 
 SUBDIRS=(
     "ubuntu12_64"
@@ -16,10 +10,38 @@ SUBDIRS=(
     "steamrt32"
 )
 
+get_steam_dirs() {
+    local dirs=()
+    for udir in /home/*; do
+        [ -d "$udir" ] || continue
+        dirs+=(
+            "$udir/snap/steam/common/.local/share/Steam"
+            "$udir/.local/share/Steam"
+            "$udir/.steam/steam"
+        )
+    done
+    if [ -n "$HOME" ] && [ -d "$HOME" ]; then
+        dirs+=(
+            "$HOME/snap/steam/common/.local/share/Steam"
+            "$HOME/.local/share/Steam"
+            "$HOME/.steam/steam"
+        )
+    fi
+    local unique_dirs=()
+    local seen=" "
+    for d in "${dirs[@]}"; do
+        if [ -d "$d" ] && [[ ! "$seen" =~ " $d " ]]; then
+            seen="$seen$d "
+            unique_dirs+=("$d")
+        fi
+    done
+    echo "${unique_dirs[@]}"
+}
+
 WRAPPER_CONTENT='#!/bin/bash
 # Steam Fossilize Replayer Smart Wrapper
 # Offloads shader pre-caching to the target GPU selected in macOS / GNOME Settings
-# Clamps CPU compilation threads to 4 to prevent CPU boiling (100°C) and system lockups
+# Clamps CPU compilation threads to 2 and idle priority to prevent CPU boiling (100°C)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REAL_BIN="$SCRIPT_DIR/fossilize_replay.real"
@@ -34,9 +56,9 @@ fi
 
 # 1. Determine target GPU from macOS / GNOME Settings config
 TARGET_GPU=1
-CONFIG_FILE="$HOME/.config/mac-gpu-targets.json"
-if [ ! -f "$CONFIG_FILE" ]; then
-    CONFIG_FILE="/etc/mac-gpu-targets.json"
+CONFIG_FILE="/etc/mac-gpu-targets.json"
+if [ ! -f "$CONFIG_FILE" ] && [ -f "$HOME/.config/mac-gpu-targets.json" ]; then
+    CONFIG_FILE="$HOME/.config/mac-gpu-targets.json"
 fi
 
 if [ -f "$CONFIG_FILE" ]; then
@@ -77,7 +99,7 @@ else
 fi
 
 # 3. Filter CLI arguments:
-# Remove uncapped --num-threads and inject --num-threads 4
+# Remove uncapped --num-threads and inject --num-threads 2
 # Ensure --device-index 0 is set
 NEW_ARGS=()
 skip_next=0
@@ -103,21 +125,25 @@ for arg in "$@"; do
 done
 
 if [ $is_special -eq 0 ]; then
-    # Limit compilation concurrency to 4 threads (leaving 8 threads free for desktop/smoothness)
-    NEW_ARGS+=("--num-threads" "4")
+    # Limit compilation concurrency to 2 threads (cool, quiet, leaving 10 threads free)
+    NEW_ARGS+=("--num-threads" "2")
     if [ $has_device -eq 0 ]; then
         NEW_ARGS+=("--device-index" "0")
     fi
 fi
 
-# 4. Execute real binary with low CPU & I/O scheduling priority (nice 12, ionice best-effort 7)
-exec nice -n 12 ionice -c 2 -n 7 "$REAL_BIN" "${NEW_ARGS[@]}"
+# 4. Execute real binary with idle scheduling priority (nice 19, ionice idle 3)
+exec nice -n 19 ionice -c 3 "$REAL_BIN" "${NEW_ARGS[@]}"
 '
 
 install_wrappers() {
     local installed_count=0
-    for sdir in "${STEAM_DIRS[@]}"; do
+    local dirs
+    read -r -a dirs <<< "$(get_steam_dirs)"
+    for sdir in "${dirs[@]}"; do
         if [ -d "$sdir" ]; then
+            local owner
+            owner=$(stat -c '%u:%g' "$sdir" 2>/dev/null || echo "1000:1000")
             for sub in "${SUBDIRS[@]}"; do
                 local target_dir="$sdir/$sub"
                 if [ -d "$target_dir" ]; then
@@ -131,16 +157,16 @@ install_wrappers() {
                         cp -f "$foz" "$foz_real"
                         echo "$WRAPPER_CONTENT" > "$foz"
                         chmod 755 "$foz" "$foz_bin" "$foz_real"
+                        chown "$owner" "$foz" "$foz_bin" "$foz_real" 2>/dev/null || true
                         installed_count=$((installed_count + 1))
                     elif [ -f "$foz" ]; then
-                        # Verify that foz_real or foz_bin exists
                         if [ ! -f "$foz_real" ] && [ -f "$foz_bin" ]; then
                             cp -f "$foz_bin" "$foz_real"
                         fi
-                        # Refresh wrapper
                         echo "$WRAPPER_CONTENT" > "$foz"
                         chmod 755 "$foz"
                         [ -f "$foz_real" ] && chmod 755 "$foz_real"
+                        chown "$owner" "$foz" "$foz_real" 2>/dev/null || true
                         installed_count=$((installed_count + 1))
                     fi
                 fi
@@ -151,8 +177,9 @@ install_wrappers() {
 }
 
 clean_stale_caches() {
-    # Remove stale/corrupted Mesa Intel ANV caches that were mistakenly created
-    for sdir in "${STEAM_DIRS[@]}"; do
+    local dirs
+    read -r -a dirs <<< "$(get_steam_dirs)"
+    for sdir in "${dirs[@]}"; do
         if [ -d "$sdir/steamapps/shadercache" ]; then
             find "$sdir/steamapps/shadercache" -maxdepth 4 -type d -name "anv_*" -exec rm -rf {} + 2>/dev/null
             find "$sdir/steamapps/shadercache" -maxdepth 3 -type d -name "mesa_shader_cache_sf" -exec rm -rf {} + 2>/dev/null
@@ -166,7 +193,9 @@ case "$1" in
         clean_stale_caches
         ;;
     status)
-        for sdir in "${STEAM_DIRS[@]}"; do
+        local dirs
+        read -r -a dirs <<< "$(get_steam_dirs)"
+        for sdir in "${dirs[@]}"; do
             if [ -d "$sdir" ]; then
                 for sub in "${SUBDIRS[@]}"; do
                     if [ -f "$sdir/$sub/fossilize_replay" ]; then
