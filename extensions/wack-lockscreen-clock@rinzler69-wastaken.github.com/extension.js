@@ -117,6 +117,20 @@ export default class WackLockscreenClockExtension extends Extension {
             }
         }).catch(() => {});
 
+        this._AvatarManagerClass = AvatarManager;
+        import(`./src/main/avatarManager.js?t=${Date.now()}`).then(m => {
+            if (m?.AvatarManager) {
+                this._AvatarManagerClass = m.AvatarManager;
+            }
+        }).catch(() => {});
+
+        this._CupertinoPromptManagerClass = CupertinoPromptManager;
+        import(`./src/main/cupertinoPromptManager.js?t=${Date.now()}`).then(m => {
+            if (m?.CupertinoPromptManager) {
+                this._CupertinoPromptManagerClass = m.CupertinoPromptManager;
+            }
+        }).catch(() => {});
+
         if (Main.screenShield) {
             this._origEnsureUnlockDialog = Main.screenShield._ensureUnlockDialog;
             Main.screenShield._ensureUnlockDialog = (allowCancel) => {
@@ -151,6 +165,14 @@ export default class WackLockscreenClockExtension extends Extension {
                     this._teardownDialog();
                 }
             }, this);
+
+            if (Main.screenShield._dialog) {
+                try {
+                    this._setupDialog(Main.screenShield._dialog);
+                } catch (e) {
+                    console.error(`[WACK] _setupDialog error on enable: ${e}\n${e.stack}`);
+                }
+            }
 
             if (Main.screenShield._loginManager) {
                 Main.screenShield._loginManager.connectObject('prepare-for-sleep', (_lm, aboutToSuspend) => {
@@ -205,8 +227,10 @@ export default class WackLockscreenClockExtension extends Extension {
         this._clockLayoutManager = new ClockLayoutManager(this);
         this._messageManager = new LockscreenMessageManager(this);
         this._promptStyling = new PromptStyling(this);
-        this._avatarManager = new AvatarManager(this);
-        this._cupertinoPromptManager = new CupertinoPromptManager(this);
+        const AvClass = this._AvatarManagerClass || AvatarManager;
+        this._avatarManager = new AvClass(this);
+        const CpClass = this._CupertinoPromptManagerClass || CupertinoPromptManager;
+        this._cupertinoPromptManager = new CpClass(this);
         const ControllerClass = this._UnlockDialogControllerClass || UnlockDialogController;
         this._unlockDialogController = new ControllerClass(this);
         this._notifManager = new NotificationManager(this);

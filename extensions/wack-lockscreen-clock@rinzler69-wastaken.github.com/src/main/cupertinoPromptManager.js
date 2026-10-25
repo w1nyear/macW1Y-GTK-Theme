@@ -8,6 +8,12 @@ import { WackCupertinoRestPrompt } from './cupertinoPrompt.js';
 import { CROSSFADE_TIME, NOTIF_BLUR_RADIUS, NOTIF_BLUR_NAME } from './constants.js';
 import { _logError, _setActorVisible, getAuthSubtitleText } from './mainUtils.js';
 
+let _RestPromptClass = WackCupertinoRestPrompt;
+import(`./cupertinoPrompt.js?t=${Date.now()}`).then(m => {
+    if (m?.WackCupertinoRestPrompt)
+        _RestPromptClass = m.WackCupertinoRestPrompt;
+}).catch(() => {});
+
 const shellGettext = Gettext.domain('gnome-shell').gettext.bind(Gettext.domain('gnome-shell'));
 
 export class CupertinoPromptManager {
@@ -53,28 +59,7 @@ export class CupertinoPromptManager {
             reactive: false,
         });
 
-        this.restPrompt = new WackCupertinoRestPrompt(this._extension._dialog._user, this._extension);
-        if (this.restPrompt?._avatarButton) {
-            this.restPrompt._avatarButton.reactive = true;
-            this.restPrompt._avatarButton.add_style_class_name('wack-avatar-clickable');
-            this.restPrompt._avatarButton.connectObject('clicked', () => {
-                if (!this._extension?._promptActive) {
-                    this._extension?._dialog?._showPrompt();
-                } else {
-                    this._extension?.triggerSwitchUser();
-                }
-            }, this);
-        }
-        if (this.restPrompt?._userWell) {
-            this.restPrompt._userWell.reactive = true;
-            this.restPrompt._userWell.connectObject('button-press-event', (_actor, event) => {
-                if (event.get_button() === 1 && !this._extension?._promptActive) {
-                    this._extension?._dialog?._showPrompt();
-                    return Clutter.EVENT_STOP;
-                }
-                return Clutter.EVENT_PROPAGATE;
-            }, this);
-        }
+        this.restPrompt = new (_RestPromptClass || WackCupertinoRestPrompt)(this._extension._dialog._user, this._extension);
         if (this._extension._lastPromptColor || this._extension._lastClockAlpha != null) {
             this.restPrompt.updateVisuals(this._extension._lastPromptColor, this._extension._lastClockAlpha);
         }

@@ -14,6 +14,12 @@ import { applyClockAnimation, applyPromptAnimation } from './anims.js';
 import { _setActorVisible, getAuthSubtitleText } from './mainUtils.js';
 import { LockscreenMenuBarManager } from './lockscreenMenuBar.js';
 
+let _LockscreenMenuBarManagerClass = LockscreenMenuBarManager;
+import(`./lockscreenMenuBar.js?t=${Date.now()}`).then(m => {
+    if (m?.LockscreenMenuBarManager)
+        _LockscreenMenuBarManagerClass = m.LockscreenMenuBarManager;
+}).catch(() => {});
+
 export class UnlockDialogController {
     constructor(extension) {
         this._extension = extension;
@@ -34,13 +40,17 @@ export class UnlockDialogController {
         if (!authPrompt) return;
 
         if (this._extension._lockscreenMode === 'cupertino') {
-            if (authPrompt._userWell) {
+            if (this._extension._avatarManager) {
+                this._extension._avatarManager.setupCupertinoAvatarOverride();
+            } else if (authPrompt._userWell) {
+                authPrompt._userWell.visible = false;
                 authPrompt._userWell.opacity = 0;
                 const uw = authPrompt._userWell.get_child();
                 if (uw) {
+                    uw.visible = false;
                     uw.opacity = 0;
-                    if (uw._avatar) uw._avatar.opacity = 0;
-                    if (uw._label) uw._label.opacity = 0;
+                    if (uw._avatar) { uw._avatar.visible = false; uw._avatar.opacity = 0; }
+                    if (uw._label) { uw._label.visible = false; uw._label.opacity = 0; }
                 }
             }
             if (authPrompt._message) {
@@ -130,7 +140,8 @@ export class UnlockDialogController {
         // Manage top menu bar for authentic macOS lockscreen (Battery, Control Center, DateMenu)
         if (!this._menuBarManager) {
             try {
-                this._menuBarManager = new LockscreenMenuBarManager(this._extension);
+                const MBClass = _LockscreenMenuBarManagerClass || LockscreenMenuBarManager;
+                this._menuBarManager = new MBClass(this._extension);
                 this._menuBarManager.setup();
             } catch (e) {
                 console.error(`[WACK] LockscreenMenuBarManager setup error: ${e}\n${e.stack}`);
@@ -407,12 +418,14 @@ export class UnlockDialogController {
 
                 const authPrompt = dialog._authPrompt ?? dialog._promptBox?._authPrompt;
                 if (authPrompt?._userWell) {
+                    authPrompt._userWell.visible = false;
                     authPrompt._userWell.opacity = 0;
                     const uw = authPrompt._userWell.get_child();
                     if (uw) {
+                        uw.visible = false;
                         uw.opacity = 0;
-                        if (uw._avatar) uw._avatar.opacity = 0;
-                        if (uw._label) uw._label.opacity = 0;
+                        if (uw._avatar) { uw._avatar.visible = false; uw._avatar.opacity = 0; }
+                        if (uw._label) { uw._label.visible = false; uw._label.opacity = 0; }
                     }
                 }
                 const mainBox = authPrompt?._mainBox;
@@ -450,7 +463,10 @@ export class UnlockDialogController {
                     this._extension._promptActor.visible = progress > 0;
                 }
 
-                if (mainBox) mainBox.opacity = Math.round(255 * progress);
+                if (mainBox) {
+                    mainBox.opacity = Math.round(255 * progress);
+                    mainBox.visible = progress > 0;
+                }
 
                 const messageActor = this._extension._getLockscreenMessageActor();
                 const messageManager = this._extension._messageManager;

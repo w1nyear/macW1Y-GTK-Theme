@@ -54,6 +54,8 @@ export class LockscreenMenuBarManager {
             if (currentMode === 'unlock-dialog' || currentMode === 'gdm' || Main.sessionMode.isLocked || Main.sessionMode.isGreeter) {
                 Main.sessionMode.panel = desiredPanel;
                 this._applyMenuBar();
+            } else {
+                this._restoreDesktopPanel();
             }
         }, this);
         this._signals.push({ obj: Main.sessionMode, id });
@@ -295,16 +297,67 @@ export class LockscreenMenuBarManager {
 
         if (!this._dateMenuClickId) {
             this._dateMenuClickId = dm.connect('button-press-event', () => {
-                try {
-                    this._extension?.triggerToggleNotifications?.();
-                } catch (_) {}
-                return Clutter.EVENT_STOP;
+                const currentMode = Main.sessionMode?.currentMode;
+                const isLockscreen = currentMode === 'unlock-dialog' || currentMode === 'gdm' || (Main.screenShield && Main.screenShield.active);
+                if (isLockscreen) {
+                    try {
+                        this._extension?.triggerToggleNotifications?.();
+                    } catch (_) {}
+                    return Clutter.EVENT_STOP;
+                }
+                return Clutter.EVENT_PROPAGATE;
             });
+        }
+    }
+
+    _restoreDesktopPanel() {
+        if (this._panelIdleId) {
+            GLib.source_remove(this._panelIdleId);
+            this._panelIdleId = 0;
+        }
+
+        if (this._batteryWidget) {
+            try {
+                const p = this._batteryWidget.get_parent();
+                if (p) p.remove_child(this._batteryWidget);
+            } catch (_) {}
+        }
+
+        if (this._ccIcon) {
+            try {
+                const p = this._ccIcon.get_parent();
+                if (p) p.remove_child(this._ccIcon);
+            } catch (_) {}
+        }
+
+        const qs = Main.panel?.statusArea?.quickSettings;
+        if (qs?._indicators) {
+            qs._indicators.visible = true;
+            qs._indicators.opacity = 255;
+            qs._indicators.style = null;
+        }
+
+        if (this._origSessionModePanel && Main.sessionMode) {
+            Main.sessionMode.panel = this._origSessionModePanel;
+        }
+
+        const boxes = [Main.panel?._leftBox, Main.panel?._centerBox, Main.panel?._rightBox].filter(Boolean);
+        for (const box of boxes) {
+            for (const child of box.get_children()) {
+                if (child === this._batteryWidget) continue;
+                child.visible = true;
+                child.show();
+                child.opacity = 255;
+            }
         }
     }
 
     _applyMenuBar() {
         if (!this._isActive || this._isApplying) return;
+        const currentMode = Main.sessionMode?.currentMode;
+        const isLockscreen = currentMode === 'unlock-dialog' || currentMode === 'gdm' || (Main.screenShield && Main.screenShield.active);
+        if (!isLockscreen) return;
+
         this._isApplying = true;
 
         try {
@@ -387,10 +440,7 @@ export class LockscreenMenuBarManager {
         if (!this._isActive) return;
         this._isActive = false;
 
-        if (this._panelIdleId) {
-            GLib.source_remove(this._panelIdleId);
-            this._panelIdleId = 0;
-        }
+        this._restoreDesktopPanel();
 
         if (this._batteryChangedId && this._batteryProxy) {
             try { this._batteryProxy.disconnect(this._batteryChangedId); } catch (_) {}
@@ -416,7 +466,7 @@ export class LockscreenMenuBarManager {
             this._ccIcon = null;
         }
 
-        const dm = Main.panel.statusArea?.dateMenu;
+        const dm = Main.panel?.statusArea?.dateMenu;
         if (dm && this._dateMenuClickId) {
             try { dm.disconnect(this._dateMenuClickId); } catch (_) {}
             this._dateMenuClickId = 0;
@@ -429,17 +479,5 @@ export class LockscreenMenuBarManager {
             } catch (_) {}
         }
         this._signals = [];
-
-        if (this._origSessionModePanel && Main.sessionMode) {
-            Main.sessionMode.panel = this._origSessionModePanel;
-            this._origSessionModePanel = null;
-        }
-
-        const qs = Main.panel?.statusArea?.quickSettings;
-        if (qs?._indicators) {
-            qs._indicators.visible = true;
-            qs._indicators.opacity = 255;
-            qs._indicators.style = null;
-        }
     }
 }

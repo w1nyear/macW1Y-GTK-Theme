@@ -4,10 +4,29 @@ export class AvatarManager {
         this.cupertinoAvatarSetup = false;
         this.origUpdateUser = null;
         this.origMethodName = null;
+        this._childAddedId = 0;
+    }
+
+    _suppressUserWell(authPrompt) {
+        if (!authPrompt?._userWell) return;
+        authPrompt._userWell.visible = false;
+        authPrompt._userWell.opacity = 0;
+        const uw = authPrompt._userWell.get_child();
+        if (uw) {
+            uw.visible = false;
+            uw.opacity = 0;
+            if (uw._avatar) {
+                uw._avatar.visible = false;
+                uw._avatar.opacity = 0;
+            }
+            if (uw._label) {
+                uw._label.visible = false;
+                uw._label.opacity = 0;
+            }
+        }
     }
 
     setupCupertinoAvatarOverride() {
-        if (this.cupertinoAvatarSetup) return;
         const dialog = this._extension._dialog;
         const authPrompt = dialog?._authPrompt ?? dialog?._promptBox?._authPrompt;
         if (!authPrompt) return;
@@ -19,26 +38,17 @@ export class AvatarManager {
             this.origUpdateUser = authPrompt[methodName].bind(authPrompt);
             authPrompt[methodName] = (user) => {
                 this.origUpdateUser(user);
-                if (authPrompt._userWell) {
-                    authPrompt._userWell.opacity = 0;
-                    const uw = authPrompt._userWell.get_child();
-                    if (uw) {
-                        uw.opacity = 0;
-                        if (uw._avatar) uw._avatar.opacity = 0;
-                        if (uw._label) uw._label.opacity = 0;
-                    }
-                }
+                this._suppressUserWell(authPrompt);
             };
-            if (authPrompt._userWell) {
-                authPrompt._userWell.opacity = 0;
-                const promptUserWidget = authPrompt._userWell.get_child();
-                if (promptUserWidget) {
-                    promptUserWidget.opacity = 0;
-                    if (promptUserWidget._avatar) promptUserWidget._avatar.opacity = 0;
-                    if (promptUserWidget._label) promptUserWidget._label.opacity = 0;
-                }
-            }
         }
+
+        if (authPrompt._userWell && !this._childAddedId) {
+            this._childAddedId = authPrompt._userWell.connect('child-added', () => {
+                this._suppressUserWell(authPrompt);
+            });
+        }
+
+        this._suppressUserWell(authPrompt);
 
         authPrompt.connectObject('destroy', () => this.teardownCupertinoAvatarOverride(), this);
     }
@@ -48,6 +58,11 @@ export class AvatarManager {
         const authPrompt = dialog?._authPrompt ?? dialog?._promptBox?._authPrompt;
         if (authPrompt) authPrompt.disconnectObject(this);
 
+        if (authPrompt?._userWell && this._childAddedId) {
+            try { authPrompt._userWell.disconnect(this._childAddedId); } catch (_) {}
+            this._childAddedId = 0;
+        }
+
         if (authPrompt && this.origUpdateUser && this.origMethodName) {
             authPrompt[this.origMethodName] = this.origUpdateUser;
         }
@@ -55,9 +70,11 @@ export class AvatarManager {
         this.origMethodName = null;
 
         if (authPrompt?._userWell) {
+            authPrompt._userWell.visible = true;
             authPrompt._userWell.opacity = 255;
             const promptUserWidget = authPrompt._userWell.get_child();
             if (promptUserWidget) {
+                promptUserWidget.visible = true;
                 promptUserWidget.opacity = 255;
                 if (promptUserWidget._avatar) {
                     promptUserWidget._avatar.visible = true;

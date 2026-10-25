@@ -171,15 +171,22 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
         }
 
         _getIconFile(avatar) {
-            if (!avatar) return null;
-            const iconFile = avatar._user?.get_icon_file ? avatar._user.get_icon_file() : null;
+            const user = avatar?._user ?? this._user;
+            const iconFile = user?.get_icon_file ? user.get_icon_file() : null;
             if (iconFile && this._pathReadable(iconFile))
                 return iconFile;
-            const userName = avatar._user?.get_user_name() ?? this._user?.get_user_name?.();
+
+            const userName = user?.get_user_name ? user.get_user_name() : GLib.get_user_name();
             if (userName) {
-                const asIcon = `/var/lib/AccountsService/icons/${userName}`;
-                if (this._pathReadable(asIcon))
-                    return asIcon;
+                const candidates = [
+                    `/var/lib/AccountsService/icons/${userName}`,
+                    `${GLib.get_home_dir()}/.face`,
+                    `${GLib.get_home_dir()}/.face.icon`,
+                ];
+                for (const p of candidates) {
+                    if (this._pathReadable(p))
+                        return p;
+                }
             }
             return null;
         }
@@ -198,11 +205,8 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
             }
         }
 
-        /* Вібраність (fix recursion 23.10.2026): кольори ставимо ЛИШЕ на
-           this._avatarButton (St.Button). Актcr Avatar чіпаємо хіба що для
-           visibility/opacity — більше жодних avatar.set_style/child=null,
-           бо нативний vfunc_style_changed → update() перетворює такий
-           обмін стилями на «too much recursion». */
+        /* Вібраність (fix recursion 23.10.2026): кольори ставимо на this._avatarButton.
+           Коли є iconFile, явно задаємо background-image на avatar та очищуємо avatar.child. */
         updateAvatarVibrancy(avatarColor) {
             if (avatarColor)
                 this._lastAvatarColor = avatarColor;
@@ -217,16 +221,28 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
 
             try {
                 if (iconFile) {
-                    // Фото рендериться нативно — кнопка лишається прозорою.
+                    if (avatar) {
+                        if (avatar.get_n_children && avatar.get_n_children() > 0) {
+                            for (const c of avatar.get_children()) {
+                                c.destroy();
+                            }
+                        } else if (avatar.child) {
+                            avatar.child.destroy();
+                            avatar.child = null;
+                        }
+                        avatar.add_style_class_name('user-avatar');
+                        const avStyle = `background-image: url("${iconFile}"); background-size: cover; border-radius: 999px !important;`;
+                        if (avatar.get_style() !== avStyle)
+                            avatar.set_style(avStyle);
+                        avatar.visible = true;
+                        avatar.opacity = 255;
+                    }
+
                     this._avatarButton.remove_style_class_name('wack-vibrancied');
                     if (this._avatarButton.get_style() !== TRANSPARENT_WELL)
                         this._avatarButton.set_style(TRANSPARENT_WELL);
                     this._avatarButton.visible = true;
                     this._avatarButton.opacity = 255;
-                    if (avatar) {
-                        avatar.visible = true;
-                        avatar.opacity = 255;
-                    }
                 } else if (color) {
                     this._avatarButton.add_style_class_name('wack-vibrancied');
                     const bgRgba = color.rgba || `rgba(${color.r}, ${color.g}, ${color.b}, 1.0)`;

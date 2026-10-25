@@ -9879,3 +9879,43 @@ echo "==> Встановлення успішно завершено!"
         * Запуск тестового Vulkan-процесу (`vkcube`) автоматично перемкнув систему в режим `GAME_BOOST (MAX)`, розблокувавши 100% потужності GPU на дискретній карті.
         * Після завершення процесу система миттєво повернулася у холодний `DESKTOP_PERFORMANCE`.
       - Сесію користувача повністю збережено.
+
+Task 499: Повне полірування екрана блокування (macOS Cupertino Auth & Lockscreen Menu Bar):
+   1. Вимоги користувача:
+      - Продовжити доопрацювання екрана блокування (lock screen) після виправлення зависання та Steam.
+      - Відображати реальне фото аватара користувача (`/var/lib/AccountsService/icons/vitaliy` або `~/.face`) замість стандартного силуету (`avatar-default-symbolic`).
+      - Усунути двоїння аватара та імені («Віталій»), а також накладання підказки («TouchID або пароль») на поле введення пароля при переході до автентифікації.
+      - Забезпечити аутентичний рядок меню macOS на екрані блокування: лише Батарея, Центр керування та Дата/Час, без мовних індикаторів («uk») чи a11y, з чистим відновленням панелі робочого столу при розблокуванні.
+      - Повна стабільність без виходу з сесії та без змін швидкості вентиляторів.
+   2. Виявлені причини дефектів:
+      - В `cupertinoPrompt.js` функція `updateAvatarVibrancy` помилково вважала, що фото малюється нативно, і не призначала `background-image` на `avatar`, якщо AccountsService завантажувався асинхронно або повертав локальну іконку.
+      - У GNOME Shell нативний метод `AuthPrompt.setUser()` щоразу створював новий `UserWidget` з `opacity: 255`. Через це паралельно відображалися і аватар з іменем з `WackCupertinoRestPrompt`, і аватар з іменем з нативного `AuthPrompt._userWell`, створюючи двоїння та зсув.
+      - Підказка `restPrompt._hintBoxWrapper` не ховалася при переході `progress > 0`, накладаючись на `authPrompt._mainBox`.
+      - `LockscreenMenuBarManager._applyMenuBar` не мав захисту режиму сесії та міг приховувати елементи на робочому столі при ініціалізації поза локскріном, а при виході з блокування не повертав видимість віджетам панелі.
+   3. Виконані виправлення:
+      - **Коректний рендеринг фото аватара в `cupertinoPrompt.js`**:
+        * Розширено пошук файлу іконки: `avatar._user.get_icon_file()`, `/var/lib/AccountsService/icons/${userName}`, `~/.face` та `~/.face.icon`.
+        * У `updateAvatarVibrancy` при наявності `iconFile` очищується нативний дочірній силует (`avatar.child = null`), додається клас `user-avatar` і призначається стиль `background-image: url("${iconFile}"); background-size: cover; border-radius: 999px !important;`.
+        * Підключено слухачі `notify::is-loaded` та `changed` на об'єкті користувача.
+      - **Усунення подвійного аватара та імені в `avatarManager.js` та `unlockDialogController.js`**:
+        * Реалізовано метод `_suppressUserWell`: `authPrompt._userWell.visible = false; authPrompt._userWell.opacity = 0;` та приховано всі дочірні елементи.
+        * Підключено перехоплювач викликів `authPrompt.setUser` та сигнал `child-added` на `_userWell`, щоб будь-які створювані оболонкою віджети миттєво ставали невидимими.
+        * В анімації переходу (`_setTransitionProgress`):
+          - Єдиний аватар користувача з `restPrompt` лишається непорушним та видимим (`opacity: 255`).
+          - Ім'я користувача плавно зміщується на -10 пікселів угору (`translation_y = -10 * progress`).
+          - Підказка («TouchID або пароль») плавно зникає (`opacity = 255 * (1 - progress)` та `visible = false` при `progress = 1`).
+          - Поле введення пароля (`authPrompt._mainBox`) плавно з'являється (`opacity = 255 * progress`) безпосередньо під зміщеним ім'ям, заповнюючи простір без накладань.
+      - **macOS Lockscreen Menu Bar у `lockscreenMenuBar.js`**:
+        * Впроваджено суворий захист: панель змінюється ТІЛЬКИ у режимах `unlock-dialog`, `gdm` або при `Main.screenShield.active`.
+        * Додано метод `_restoreDesktopPanel()`, який повністю відновлює всі елементи `_leftBox`, `_centerBox` та `_rightBox`, видаляє тимчасовий віджет батареї локскріна, видаляє іконку центру керування та повертає нативні індикатори `quickSettings._indicators`.
+        * Підключено автоматичне перемикання при зміні режиму сесії (`sessionMode.connectObject('updated')`).
+        * Клік по `dateMenu` перехоплюється виключно на локскріні і не блокує календар на робочому столі.
+      - **Синхронізація розширення**:
+        * Оновлено файли розширення в `/home/vitaliy/MACTHEMEFILES/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/` та `~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`.
+        * Оновлено прототипи в пам'яті GNOME Shell без розриву поточної сесії.
+   4. Верифікація результатів:
+      - Перевірено стан `restPrompt`: аватар відображає фото `/var/lib/AccountsService/icons/vitaliy`, дефолтний силует відсутній (`avatarChildCount: 0`).
+      - Перевірено перехід `progress = 0` -> `1`: `authUserWell` повністю прихований, підказка зникає (`hintVisible: false`, `opacity: 0`), ім'я плавно зміщується (`translation_y = -10`), поле вводу стає повністю видимим (`opacity: 255`).
+      - Перевірено перемикання режиму `pushMode('unlock-dialog')`: у правому куті лишаються рівно 3 елементи (`wack-lockscreen-battery`, `quickSettings`, `St_Bin`), зліва 0 елементів.
+      - Перевірено повернення на робочий стіл `popMode('unlock-dialog')`: 100% елементів робочого столу відновлено (`desktopLeftVisible: true`, `desktopRightVisible: true`), віджет батареї локскріна видалено.
+      - Сесію користувача `vitaliy` збережено без перезавантаження. Швидкість вентиляторів не змінювалася.
