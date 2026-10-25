@@ -4,9 +4,9 @@ import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
-import { LiquidEffect } from './liquidEffect.js';
+import { LiquidEffect } from './liquidEffect.js?v=fix1';
 import { StageContrastSampler, AdaptiveContrastConfig } from './contrastSampler.js';
-import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isActorValid, resolveMonitorGeometry, LayoutOpaqueActor, UnpickableStyledWidget, getAllocatedSize, getTransformedRect, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener } from './utils.js';
+import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isActorValid, resolveMonitorGeometry, LayoutOpaqueActor, UnpickableStyledWidget, getAllocatedSize, getTransformedRect, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener } from './utils.js?v=fix1';
 // ========== Configuration Parameters ==========
 // Transparent padding outside the glass area.
 // This prevents the shader distortion or rounded corners from being clipped by the actor bounds.

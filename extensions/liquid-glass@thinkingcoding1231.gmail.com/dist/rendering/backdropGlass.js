@@ -8,7 +8,7 @@ import Gio from 'gi://Gio';
 import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import { LiquidEffect } from '../liquidEffect.js';
+import { LiquidEffect } from '../liquidEffect.js?v=fix1';
 import {
     UnpickableActor,
     WindowCloneManager,
@@ -20,7 +20,7 @@ import {
     glassRefreshDue,
     glassRefreshDone,
     glassForceRefresh
-} from '../utils.js';
+} from '../utils.js?v=fix1';
 
 function lgDir() {
     try {
@@ -47,9 +47,17 @@ function lgSettings() {
     }
 }
 
-export const BackdropGlass = GObject.registerClass({
-    GTypeName: 'MacTahoeBackdropGlass',
-}, class BackdropGlass extends UnpickableActor {
+function _registerBackdropGlass(cls) {
+    if (globalThis.__LiquidGlass_classes?.BackdropGlass) return globalThis.__LiquidGlass_classes.BackdropGlass;
+    if (!globalThis.__LiquidGlass_classes) globalThis.__LiquidGlass_classes = {};
+    try {
+        return (globalThis.__LiquidGlass_classes.BackdropGlass = GObject.registerClass({ GTypeName: 'MacTahoeBackdropGlass' }, cls));
+    } catch (_) {
+        return (globalThis.__LiquidGlass_classes.BackdropGlass = GObject.registerClass({ GTypeName: 'MacTahoeBackdropGlass_' + Date.now() }, cls));
+    }
+}
+
+export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends UnpickableActor {
     _init({ extensionPath, settings, logger, owner = 'dialog', excludeActors = [] } = {}) {
         super._init({
             name: 'liquid-glass-bg-actor',

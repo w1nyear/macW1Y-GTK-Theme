@@ -2,8 +2,8 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
-import { LiquidEffect } from './liquidEffect.js';
-import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js';
+import { LiquidEffect } from './liquidEffect.js?v=fix1';
+import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js?v=fix1';
 import { glassRefreshDue, glassRefreshDone, glassForceRefresh } from './glassGate.js';
 // Padding to allow the shader to draw effects (like refraction and blur) outside the actor's strict bounds.
 const SHADER_PADDING = 20;

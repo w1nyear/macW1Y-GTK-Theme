@@ -1279,11 +1279,41 @@ function releaseSelfExcludingSnapshot(sourceActor, hideActor) {
         _selfExcludingSnapshotRegistry.delete(sourceActor);
     }
 }
+if (!globalThis.__LiquidGlass_classes) {
+    globalThis.__LiquidGlass_classes = {};
+}
+
+function _safeRegisterClass(key, metaOrClass, maybeClass) {
+    if (globalThis.__LiquidGlass_classes[key]) {
+        return globalThis.__LiquidGlass_classes[key];
+    }
+    try {
+        if (maybeClass) {
+            globalThis.__LiquidGlass_classes[key] = GObject.registerClass(metaOrClass, maybeClass);
+        } else {
+            globalThis.__LiquidGlass_classes[key] = GObject.registerClass(metaOrClass);
+        }
+    } catch (e) {
+        const fallbackName = `LG_${key}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        try {
+            if (maybeClass) {
+                const meta = Object.assign({}, metaOrClass, { GTypeName: fallbackName });
+                globalThis.__LiquidGlass_classes[key] = GObject.registerClass(meta, maybeClass);
+            } else {
+                globalThis.__LiquidGlass_classes[key] = GObject.registerClass({ GTypeName: fallbackName }, metaOrClass);
+            }
+        } catch (_) {
+            globalThis.__LiquidGlass_classes[key] = maybeClass || metaOrClass;
+        }
+    }
+    return globalThis.__LiquidGlass_classes[key];
+}
+
 /**
  * A Clutter.Clone whose pick pass is a no-op, so Looking Glass's actor
  * picker sees through it to whatever is behind.
  */
-export const UnpickableClone = GObject.registerClass(class UnpickableClone extends Clutter.Clone {
+export const UnpickableClone = _safeRegisterClass('UnpickableClone', class UnpickableClone extends Clutter.Clone {
     vfunc_pick(_pickContext) {
         // No-op: never respond to picking.
     }
@@ -1293,7 +1323,7 @@ export const UnpickableClone = GObject.registerClass(class UnpickableClone exten
  * UnpickableClone. Uses Clutter.Actor rather than St.Widget to avoid St's
  * CSS/theming padding interfering with pixel-precise layout.
  */
-export const UnpickableActor = GObject.registerClass(class UnpickableActor extends Clutter.Actor {
+export const UnpickableActor = _safeRegisterClass('UnpickableActor', class UnpickableActor extends Clutter.Actor {
     vfunc_pick(_pickContext) {
         // No-op: never respond to picking.
     }
@@ -1423,7 +1453,7 @@ export const UnpickableActor = GObject.registerClass(class UnpickableActor exten
  * background actors at their live opacities, exactly as cloning
  * _backgroundGroup used to.
  */
-export const BackgroundMirror = GObject.registerClass(class BackgroundMirror extends Clutter.Actor {
+export const BackgroundMirror = _safeRegisterClass('BackgroundMirror', class BackgroundMirror extends Clutter.Actor {
     _init(params = {}) {
         super._init(params);
         this._mirrors = new Map();
@@ -1805,7 +1835,7 @@ function ensureSharedBackgroundSource() {
  * Only windows currently cloned into a glass get one, and the effect is
  * dropped again as soon as the last clone of them goes away.
  */
-export const CullOptOutEffect = GObject.registerClass(
+export const CullOptOutEffect = _safeRegisterClass('CullOptOutEffect',
 // Deliberately empty: ClutterEffectClass->paint defaults to
 // clutter_effect_real_paint(), which ends in add_actor_node() — a plain
 // pass-through. The effect exists only to be counted by has_active_effects().
@@ -1956,7 +1986,7 @@ export function createBackgroundMirror(name) {
  * Caveat: only selectors that match on the class itself apply; a rule written
  * as a descendant selector against the real widget's ancestry will not.
  */
-export const UnpickableStyledWidget = GObject.registerClass(class UnpickableStyledWidget extends St.Widget {
+export const UnpickableStyledWidget = _safeRegisterClass('UnpickableStyledWidget', class UnpickableStyledWidget extends St.Widget {
     vfunc_pick(_pickContext) {
         // No-op: never respond to picking.
     }
@@ -1995,7 +2025,7 @@ export const UnpickableStyledWidget = GObject.registerClass(class UnpickableStyl
  * child — callers reposition it explicitly every frame regardless (see
  * quickSettingsManager.ts's animActor counter-transform), so that's fine.
  */
-export const LayoutOpaqueActor = GObject.registerClass(class LayoutOpaqueActor extends UnpickableActor {
+export const LayoutOpaqueActor = _safeRegisterClass('LayoutOpaqueActor', class LayoutOpaqueActor extends UnpickableActor {
     vfunc_get_preferred_width(_forHeight) {
         return [0, 0];
     }
@@ -2007,7 +2037,7 @@ export const LayoutOpaqueActor = GObject.registerClass(class LayoutOpaqueActor e
  * St.Widget variant of the same "invisible to picking" behavior, for cases
  * that need St's styling/layout features.
  */
-export const UnpickableWidget = GObject.registerClass(class UnpickableWidget extends St.Widget {
+export const UnpickableWidget = _safeRegisterClass('UnpickableWidget', class UnpickableWidget extends St.Widget {
     vfunc_pick(_pickContext) {
         // No-op: never respond to picking.
     }
@@ -2020,7 +2050,7 @@ export const UnpickableWidget = GObject.registerClass(class UnpickableWidget ext
  * this never re-evaluates the source's effect chain, so it can't cause the
  * "two consumers" ownership conflict described on SelfExcludingSnapshotCapture.
  */
-export const TextureBlitActor = GObject.registerClass({
+export const TextureBlitActor = _safeRegisterClass('LiquidGlassTextureBlitActor', {
     GTypeName: 'LiquidGlassTextureBlitActor',
 }, class TextureBlitActor extends Clutter.Actor {
     _init(params = {}) {
@@ -3769,7 +3799,7 @@ export class WindowCloneManager {
  * content and fed a clone of the true (unblurred) background, it reveals
  * exactly the true corner pixels while leaving the rest of the window alone.
  */
-export const InverseCornerEffect = GObject.registerClass({
+export const InverseCornerEffect = _safeRegisterClass('LiquidGlassInverseCornerEffect', {
     GTypeName: 'LiquidGlassInverseCornerEffect',
 }, class InverseCornerEffect extends Clutter.ShaderEffect {
     _radius = 0;
@@ -4027,7 +4057,7 @@ export function resolveMonitorGeometry(candidates) {
     }
     return layoutManager.monitors[layoutManager.primaryIndex] || layoutManager.primaryMonitor;
 }
-export const InvertedPositionConstraint = GObject.registerClass({
+export const InvertedPositionConstraint = _safeRegisterClass('InvertedPositionConstraint', {
     GTypeName: 'InvertedPositionConstraint',
     Properties: {
         'source': GObject.ParamSpec.object('source', 'Source', 'Source Actor', GObject.ParamFlags.READWRITE, Clutter.Actor.$gtype),

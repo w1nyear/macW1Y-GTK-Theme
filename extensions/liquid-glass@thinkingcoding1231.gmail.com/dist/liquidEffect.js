@@ -119,7 +119,7 @@ import Cogl from 'gi://Cogl';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { setBmsMode, BMS_MODE, computeCaptureLayout, setFrameSyncFrozen, isFrameSyncFrozen, setDiffWritesEnabled, isDiffWritesEnabled, setCaptureClipEnabled, isCaptureClipEnabled, setCloneCullEnabled, isCloneCullEnabled, setCullSiteEnabled, isCullSiteEnabled, setAdaptiveColorMode, getAdaptiveColorMode, setNestedGlassFix, getNestedGlassFix, setFocusDebugEnabled, isFocusDebugEnabled, setBackgroundMirrorEnabled, isBackgroundMirrorEnabled, setCullOptOutEnabled, isCullOptOutEnabled, setWindowActorRescueMode, getWindowActorRescueMode } from './utils.js';
+import { setBmsMode, BMS_MODE, computeCaptureLayout, setFrameSyncFrozen, isFrameSyncFrozen, setDiffWritesEnabled, isDiffWritesEnabled, setCaptureClipEnabled, isCaptureClipEnabled, setCloneCullEnabled, isCloneCullEnabled, setCullSiteEnabled, isCullSiteEnabled, setAdaptiveColorMode, getAdaptiveColorMode, setNestedGlassFix, getNestedGlassFix, setFocusDebugEnabled, isFocusDebugEnabled, setBackgroundMirrorEnabled, isBackgroundMirrorEnabled, setCullOptOutEnabled, isCullOptOutEnabled, setWindowActorRescueMode, getWindowActorRescueMode } from './utils.js?v=fix1';
 // ─── Looking Glass diagnostics ───────────────────────────────────────────────
 //
 // Every live LiquidEffect registers itself here so its last resolved frame
@@ -867,10 +867,17 @@ function _registerGlassDebugHooks() {
         },
     };
 }
+function _registerLiquidEffect(cls) {
+    if (globalThis.__LiquidGlass_classes?.LiquidEffect) return globalThis.__LiquidGlass_classes.LiquidEffect;
+    if (!globalThis.__LiquidGlass_classes) globalThis.__LiquidGlass_classes = {};
+    try {
+        return (globalThis.__LiquidGlass_classes.LiquidEffect = GObject.registerClass({ GTypeName: 'LiquidGlassEffect' }, cls));
+    } catch (_) {
+        return (globalThis.__LiquidGlass_classes.LiquidEffect = GObject.registerClass({ GTypeName: 'LiquidGlassEffect_' + Date.now() }, cls));
+    }
+}
 // ─── Main class ───────────────────────────────────────────────────────────────
-export const LiquidEffect = GObject.registerClass({
-    GTypeName: 'LiquidGlassEffect',
-}, class LiquidEffect extends Clutter.OffscreenEffect {
+export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clutter.OffscreenEffect {
     // Must match glass.frag's `#define MAX_GLASS_REGIONS 16`.
     static MAX_GLASS_REGIONS = 16;
     // ─── _init ──────────────────────────────────────────────────────────────────

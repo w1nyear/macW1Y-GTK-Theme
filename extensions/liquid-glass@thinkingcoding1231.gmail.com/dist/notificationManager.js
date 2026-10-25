@@ -4,9 +4,9 @@ import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
-import { LiquidEffect } from './liquidEffect.js';
+import { LiquidEffect } from './liquidEffect.js?v=fix1';
 import { StageContrastSampler, AdaptiveContrastConfig } from './contrastSampler.js';
-import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, getTransformedRect, resolveMonitorGeometry, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, } from './utils.js';
+import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, getTransformedRect, resolveMonitorGeometry, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, } from './utils.js?v=fix1';
 // ========== Configuration Parameters (Defaults, overridden by settings) ==========
 const SHADER_PADDING = 20;
 export class NotificationManager {

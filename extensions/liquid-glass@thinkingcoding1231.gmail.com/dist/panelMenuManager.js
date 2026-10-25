@@ -1,7 +1,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import GLib from 'gi://GLib';
-import { UIManager } from './uiManager.js?v=lg15';
+import { UIManager } from './uiManager.js?v=fix1';
 // GSettings namespace for every detected panel dropdown. Separate from the
 // Calendar's `menu-*` so these can be tuned without moving the date menu —
 // the same split quick-settings-*, notification-*, osd-* and dock-* already

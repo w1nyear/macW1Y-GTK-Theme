@@ -5,7 +5,7 @@ import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { LiquidEffect, noteStrandEntry } from './liquidEffect_v2.js';
 import GLib from 'gi://GLib';
-import { UnpickableClone, UnpickableActor, InverseCornerEffect, getWindowActors, isActorValid, InvertedPositionConstraint, getAllocatedSize, setActorVisible, ensureGlassAllocated, isFrameSyncFrozen, getNestedGlassFix, innerGlassEffectOf, isFocusDebugEnabled, setTranslationIfChanged, setSizeIfChanged, setScaleIfChanged, setOpacityIfChanged, isCullSiteEnabled, rectsIntersect, setCloneCulled, createBackgroundMirror, reportClonedWindowActors, releaseClonedWindowActors, ensureWindowActorAllocated } from './utils.js';
+import { UnpickableClone, UnpickableActor, InverseCornerEffect, getWindowActors, isActorValid, InvertedPositionConstraint, getAllocatedSize, setActorVisible, ensureGlassAllocated, isFrameSyncFrozen, getNestedGlassFix, innerGlassEffectOf, isFocusDebugEnabled, setTranslationIfChanged, setSizeIfChanged, setScaleIfChanged, setOpacityIfChanged, isCullSiteEnabled, rectsIntersect, setCloneCulled, createBackgroundMirror, reportClonedWindowActors, releaseClonedWindowActors, ensureWindowActorAllocated } from './utils.js?v=fix1';
 // Padding to allow the shader to draw effects (like refraction and blur) outside the actor's strict bounds.
 // [FIX] How far the glass actor extends beyond the real window bounds, in
 // screen pixels. This is one number with two jobs: it is the sampling

@@ -9919,3 +9919,42 @@ Task 499: Повне полірування екрана блокування (m
       - Перевірено перемикання режиму `pushMode('unlock-dialog')`: у правому куті лишаються рівно 3 елементи (`wack-lockscreen-battery`, `quickSettings`, `St_Bin`), зліва 0 елементів.
       - Перевірено повернення на робочий стіл `popMode('unlock-dialog')`: 100% елементів робочого столу відновлено (`desktopLeftVisible: true`, `desktopRightVisible: true`), віджет батареї локскріна видалено.
       - Сесію користувача `vitaliy` збережено без перезавантаження. Швидкість вентиляторів не змінювалася.
+
+500. [2026-10-25] Відновлення Liquid Glass шейдерів, Центру Керування macOS, Центру Повідомлень, Tahoe OSD (Fn+F2) та повна ліквідація старого вигляду GNOME DE:
+   1. Вимоги:
+      - Виправити відсутність шейдера рідкого скла (Liquid Glass) та збій візуального вигляду.
+      - Відновити показ сповіщень та сучасний Центр Повідомлень macOS (замість старого стокового календаря).
+      - Відновити сучасне Tahoe OSD меню для комбінацій медіаклавіш (Fn+F2/F3 гучність/яскравість) замість старого OSD знизу.
+      - Відновити працездатність Центру Керування macOS (клік на кнопку перемикачів у топбарі).
+      - Видалити весь старий вигляд GNOME DE та унеможливити його повторну появу.
+      - Суворі обмеження: не виходити з сесії до 26 жовтня, зберегти живу сесію користувача `vitaliy`, не змінювати швидкість вентиляторів.
+   2. Виявлені причини:
+      - **Крах розширення `liquid-glass@thinkingcoding1231.gmail.com`**:
+        * Розширення впало в стан `state: 3` (ERROR) через фатальну помилку `Error: Type name Gjs_dist_utils_UnpickableClone is already registered`.
+        * Помилка виникла через те, що `uiManager.js` імпортував `./utils.js?v=lg15`, тоді як інші файли імпортували `./utils.js`. При оцінці модуля в GJS класи `UnpickableClone`, `UnpickableActor`, `BackgroundMirror` тощо реєструвалися повторно через `GObject.registerClass`, що призводило до фатального краху всього рушія шейдерів рідкого скла на меню, доці та вікнах.
+      - **Перезапис `kiwi@kemma` стоковою версією з GNOME Extensions (EGO)**:
+        * О 16:41 служба оновлень GNOME Shell (SweetTooth/EGO) автоматично завантажила нову стокову версію 61 розширення `kiwi@kemma`, повністю стерши всі модифікації macOS Tahoe Suite (`tahoeControlCenter.js`, `tahoeNotifications.js`, `tahoeOSD.js`, `topbarButtons.js`, `stylesheet.css` тощо).
+        * Через це глобальний обробник `_tahoeQSToggle` став недоступним, Центр Керування перестав відкриватися, Центр Повідомлень зник і відкотився до старого календаря, а при натисканні Fn+F2 виводився старий стоковий OSD.
+   3. Виконані виправлення:
+      - **Захист реєстрації класів у `liquid-glass` (`utils.js`, `liquidEffect.js`, `backdropGlass.js`)**:
+        * Впроваджено функцію `_safeRegisterClass` з глобальним кешем `globalThis.__LiquidGlass_classes`.
+        * Якщо клас уже зареєстровано, повертається існуючий конструктор без повторного виклику `GObject.registerClass`. При конфлікті імені GType виконується fallback-реєстрація з унікальним суфіксом `LG_${key}_${Date.now()}`.
+        * Усі класи (`UnpickableClone`, `UnpickableActor`, `BackgroundMirror`, `CullOptOutEffect`, `UnpickableStyledWidget`, `LayoutOpaqueActor`, `UnpickableWidget`, `TextureBlitActor`, `InverseCornerEffect`, `InvertedPositionConstraint`, `LiquidEffect`, `BackdropGlass`) переведено на безпечну реєстрацію.
+        * Усі внутрішні імпорти синхронізовано з версійним параметром, ліквідовано розбіжність модульного графа.
+        * Розширення `liquid-glass` успішно перезавантажено в пам'яті: стан `1` (ACTIVE), помилок `0`.
+      - **Відновлення та блокування оновлень `kiwi@kemma`**:
+        * Повністю відновлено весь набір додатків Tahoe Suite: `tahoeControlCenter.js`, `tahoeNotifications.js`, `tahoeOSD.js`, `tahoeQuickSettings.js`, `tahoeNotificationCard.js`, `topbarButtons.js`, `labelBlur.js`, `topbarBlur.js`, `stylesheet.css`, іконки та локалі.
+        * У `metadata.json` встановлено версію `"version": 99999`, що назавжди блокує SweetTooth/EGO та GNOME Software від автоматичного перезапису чи скидання налаштувань розширення.
+        * Розширення `kiwi@kemma` успішно активовано: `_tahoeQSToggle` та `_tahoeNCToggle` активні.
+      - **Ліквідація елементів старого DE в топбарі та OSD**:
+        * Кнопку пошуку Spotlight `kiwi-search-button` [🔍] та віджет батареї `kiwi-wifi-button` [100% ⚡] відновлено у правому боксі топбару.
+        * Кнопку виклику Центру Керування `ydotool-trigger-button` [🎛] розміщено перед годинником.
+        * Стокові індикатори GNOME Quick Settings (`quickSettings`), автономні перемикачі `macWifi`, `macBluetooth`, `macVolume` та `macBattery` приховано.
+        * Клік по `dateMenu` надійно відкриває Центр Повідомлень Tahoe Notification Center.
+        * Для Fn+F2/F3 та інших медіаклавіш стоковий OSD знизу екрана повністю придушено, відображається плавне OSD Tahoe під топбаром.
+   4. Верифікація результатів:
+      - `liquid-glass`: стан 1 (ACTIVE), активний шейдер Dual-Kawase, рефракція та розмиття на меню підтверджено скріншотом `menu_glass_verified.png`.
+      - Топбар: підтверджено скріншотом `top_panel_restored.png` автентичний вигляд: `[A]  [uk]  [🔍]  [100% ⚡]  [🎛]  [нд, 25 жовтня 17:03]`.
+      - Центр Керування macOS Tahoe: перевірено відкриття/закриття через `globalThis._tahoeQSToggle()`, підтверджено скріншотом `control_center_live.png`.
+      - Центр Повідомлень macOS: перевірено відкриття/закриття через `globalThis._tahoeNCToggle()`, підтверджено скріншотом `notification_center_live.png`.
+      - Живу сесію збережено (без виходу до 26 жовтня), вентилятори не чіпали.

@@ -19,7 +19,7 @@
 // Ідемпотентно: повторний apply робить nothing (обгортки позначені).
 // A/B через globalThis._macGlassEventDriven = false.
 
-import { UILayerSampler, WindowCloneManager, reportFrameLoopError } from './utils.js';
+import { UILayerSampler, WindowCloneManager, reportFrameLoopError } from './utils.js?v=fix1';
 import { ApplicationManager } from './applicationManager.js';
 import * as Gate from './glassGate.js';
 
