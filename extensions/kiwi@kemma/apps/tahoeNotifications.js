@@ -1617,6 +1617,7 @@ function _ensureNcCards(p) {
         if (!monitor)
             return false;
         const cards = _makeGlassStack(monitor, 24, 'nc-cards', true);
+        cards.kind = 'cards';
         try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
         try {
             p.overlay.insert_child_at_index(cards.bgActor, 2);
@@ -1815,6 +1816,8 @@ function _rebuild(merges = null) {
             p.list.add_child(empty);
             return;
         }
+
+        _ensureNcCards(p);
 
         // Кожне сповіщення — окрема картка (стеки-групи видалено,
         // переробимо заново пізніше). Каскадна поява: 240мс EASE_OUT_CUBIC,
@@ -2278,15 +2281,30 @@ function _syncGlass(p, monitor, s) {
         // ДЕШЕВИЙ шлях (щокадрово): регіон і кліп їдуть разом із панеллю,
         // захоплений кадр при цьому МАЛЮЄТЬСЯ не заново — фон за панеллю
         // не змінюється від слайду, тож стара каптура лишається правильною.
+        let rx = (bx - monitor.x) - m;
+        let ry = (by - monitor.y) - m;
+        let rw = bw + m * 2;
+        let rh = bh + m * 2;
+        let topEdge = 0;
+        try {
+            topEdge = Math.round(Main.layoutManager.panelBox?.height ?? 34) + 10;
+        } catch (_) {
+            topEdge = 44;
+        }
+        if (ry < topEdge) {
+            const cut = topEdge - ry;
+            ry = topEdge;
+            rh -= cut;
+        }
         s.effect.setGlassRegions([{
-            x: (bx - monitor.x) - m, y: (by - monitor.y) - m,
-            w: bw + m * 2, h: bh + m * 2,
+            x: rx, y: ry,
+            w: rw, h: rh,
             tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
         }]);
         s.effect.setResolution(monitor.width, monitor.height);
-        const clip = [(bx - monitor.x) - m - 200, (by - monitor.y) - m - 200,
-            bw + m * 2 + 400, bh + m * 2 + 400];
+        const clip = [rx - 200, ry - 200, rw + 400, rh + 400];
         setClipIfChanged(s.bgActor, clip[0], clip[1], clip[2], clip[3]);
+        ensureGlassAllocated(s.bgActor);
         // [GPU-SAVE] Важку частину виконуємо тільки коли фон дійсно змінився
         // (перший кадр стеку, зміна вікна/шпалер під склом) або коли реально
         // змінився РОЗМІР панелі (вміст списку). Слайд bx/by у хеш НЕ входить:
@@ -2300,7 +2318,7 @@ function _syncGlass(p, monitor, s) {
         }
         if (!doHeavy)
             return;
-        s.wcm.setOffset(-monitor.x, -monitor.y);
+        s.wcm?.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,
             effect: s.effect,
@@ -2309,9 +2327,9 @@ function _syncGlass(p, monitor, s) {
             uiSampler: s.uiSampler,
             windowCloneManager: s.wcm,
         });
-        s.uiSampler.refresh();
-        s.uiSampler.sync(monitor.x, monitor.y, monitor.width, monitor.height);
-        s.wcm.sync();
+        s.uiSampler?.refresh();
+        s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
+        s.wcm?.sync();
         try {
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
@@ -2485,20 +2503,20 @@ function _buildPanel(merges = null) {
         p.allocId = 0;
     }
 
-    // Glass stack: чисте скло карток сповіщень (без паразитичного nc-backdrop)
+    // Glass stacks: CC-style backdrop (pure blur) створюємо одразу; стек скла
+    // карток створюється при settle чи якщо є сповіщення.
     try {
-        const cards = _makeGlassStack(monitor, 24, 'nc-cards', true);
-        cards.kind = 'cards';
-        try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
-        overlay.insert_child_at_index(cards.bgActor, 1);
+        const bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
+        bd.kind = 'backdrop';
+        overlay.insert_child_at_index(bd.bgActor, 1);
         try {
-            overlay.set_child_above_sibling(panelBg, cards.bgActor);
+            overlay.set_child_above_sibling(panelBg, bd.bgActor);
         } catch (_) {}
 
-        _setupNcStack(p, cards);
-        cards.bgActor.opacity = 0;
-        cards.bgActor.visible = false;
-        p.stacks = [cards];
+        _setupNcStack(p, bd);
+        bd.bgActor.opacity = 0;
+        bd.bgActor.visible = false;
+        p.stacks = [bd];
 
         const tick = () => {
             p.tickId = 0;

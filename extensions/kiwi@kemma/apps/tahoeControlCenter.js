@@ -132,6 +132,10 @@ const GLASS_GROUPS = [
     {name: 'priv', radius: 18},
     // edit button has its own stack: shallower corners than the pill
     {name: 'edit', radius: 15},
+    // backdrop LAST: index-1 inserts paint it deepest, right above panelBg.
+    // Pure backdrop blur under the whole panel + shadow, fading out at the
+    // edges (edge_smoothing gradient, no tint/refraction/rim at all).
+    {name: 'backdrop', radius: 82},
 ];
 export const BACKDROP_PAD = 60;
 // backdrop region margin: covers the whole panel shadow (blur 22 + glow 70),

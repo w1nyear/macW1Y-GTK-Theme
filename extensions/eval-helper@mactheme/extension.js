@@ -792,14 +792,14 @@ export default class EvalHelper extends Extension {
                         if (state === 1 /* OverviewControls.ControlsState.WINDOW_PICKER */) {
                             const baseBox = box || this._workAreaBox;
                             const [w, h] = baseBox.get_size();
-                            // Perfectly symmetric vertical framing (96px top buffer for Spaces Bar, 96px bottom buffer for Dock on 1080p)
-                            // Workspaces are centered, enlarged to ~900px height, and never jump when menubar expands/collapses!
-                            const vBuffer = Math.max(88, Math.round(h * 0.0888));
+                            // Raised workspaces: compact top buffer below Spaces Bar, generous bottom buffer to clear Dock and app icon badges!
+                            const topBuffer = Math.max(48, Math.round(h * 0.046));
+                            const bottomBuffer = Math.max(145, Math.round(h * 0.138));
                             const res = baseBox.copy();
                             res.x1 = baseBox.x1 || 0;
-                            res.y1 = (baseBox.y1 || 0) + vBuffer;
+                            res.y1 = (baseBox.y1 || 0) + topBuffer;
                             res.x2 = res.x1 + w;
-                            res.y2 = Math.max(res.y1 + 100, (baseBox.y1 || 0) + h - vBuffer);
+                            res.y2 = Math.max(res.y1 + 100, (baseBox.y1 || 0) + h - bottomBuffer);
                             return res;
                         }
                         return origCompute.call(this, state, box, ...rest);
