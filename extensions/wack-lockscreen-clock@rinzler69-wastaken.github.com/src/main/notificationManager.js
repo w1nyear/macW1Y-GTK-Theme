@@ -327,7 +327,11 @@ export class NotificationManager {
 
                 if (this._extension) {
                     this._extension._idleAdd(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                        if (!this._extension) return GLib.SOURCE_REMOVE;
+                        if (!this._extension || !nb) return GLib.SOURCE_REMOVE;
+                        try {
+                            if (Object.prototype.toString.call(nb).includes('DISPOSED')) return GLib.SOURCE_REMOVE;
+                            const _ = nb.visible;
+                        } catch (_) { return GLib.SOURCE_REMOVE; }
                         this.enforceCardLimit(nb);
                         this._extension._updateCupertinoRestState();
                         return GLib.SOURCE_REMOVE;
@@ -339,7 +343,13 @@ export class NotificationManager {
     }
 
     enforceCardLimit(nb) {
-        if (nb._players.size > 0)
+        if (!nb || !nb._notificationBox) return;
+        try {
+            if (Object.prototype.toString.call(nb).includes('DISPOSED')) return;
+            const _ = nb.visible;
+        } catch (_) { return; }
+
+        if (nb._players?.size > 0)
             this._enforceMediaLimit(nb);
 
         const children = nb._notificationBox.get_children();

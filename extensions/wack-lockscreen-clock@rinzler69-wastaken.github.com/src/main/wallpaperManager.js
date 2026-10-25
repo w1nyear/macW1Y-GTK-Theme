@@ -45,7 +45,7 @@ export class WallpaperManager {
                 }
 
                 dialog.add_child(this.customWallpaperOverlay);
-                if (dialog._backgroundGroup)
+                if (dialog._backgroundGroup && dialog._backgroundGroup.get_parent() === dialog)
                     dialog.set_child_above_sibling(this.customWallpaperOverlay, dialog._backgroundGroup);
 
                 const progress = dialog._adjustment?.value ?? 0;

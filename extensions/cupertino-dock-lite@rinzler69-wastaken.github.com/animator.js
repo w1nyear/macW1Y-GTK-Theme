@@ -646,27 +646,44 @@ export class Animator {
     this._draggableHooks = [];
   }
 
+  _isActorValid(actor) {
+    if (!actor) return false;
+    try {
+      if (Object.prototype.toString.call(actor).includes('DISPOSED')) return false;
+      const _ = actor.visible;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   _getD2dBadgeBin(appwell) {
     const container = appwell?._iconContainer;
     if (!container) return null;
-    if (container._notificationBadgeBin) return container._notificationBadgeBin;
+    if (this._isActorValid(container._notificationBadgeBin)) return container._notificationBadgeBin;
+    container._notificationBadgeBin = null;
 
-    const children = container.get_children();
-    const badgeBin = children.find(child => {
-      const grandChildren = child.get_children();
-      return grandChildren.some(c => c.has_style_class_name('notification-badge'));
-    }) ?? null;
+    try {
+      const children = container.get_children();
+      const badgeBin = children.find(child => {
+        try {
+          const grandChildren = child.get_children();
+          return grandChildren.some(c => c.has_style_class_name('notification-badge'));
+        } catch (_) { return false; }
+      }) ?? null;
 
-    if (badgeBin) {
-      container._notificationBadgeBin = badgeBin;
-    }
-    return badgeBin;
+      if (badgeBin && this._isActorValid(badgeBin)) {
+        container._notificationBadgeBin = badgeBin;
+        return badgeBin;
+      }
+    } catch (_) {}
+    return null;
   }
 
   _setD2dBadgeOpacity(appwell, opacity) {
     try {
       const badgeBin = this._getD2dBadgeBin(appwell);
-      if (badgeBin && !badgeBin.is_finalized?.()) {
+      if (this._isActorValid(badgeBin)) {
         if (opacity === 0) {
           badgeBin.translation_x = -9999;
         } else {

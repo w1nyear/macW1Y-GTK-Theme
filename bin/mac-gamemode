@@ -10,7 +10,8 @@ GAME_EXCLUDES = {
     'systemd', 'oom_reaper', 'khungtaskd', 'switcheroo-control',
     'switcheroo-cont', 'xdg-desktop-portal', 'xdg-document-portal',
     'ibus-portal', 'python3', 'bash', 'sh', 'zsh', 'gnome-shell',
-    'mutter', 'xwayland', 'pipewire', 'wireplumber', 'pulseaudio'
+    'mutter', 'xwayland', 'pipewire', 'wireplumber', 'pulseaudio',
+    'fossilize_replay', 'fossilize_repla', 'fossilize', 'steamwebhelper'
 }
 
 GAME_REGEXES = [
@@ -42,6 +43,12 @@ GAME_REGEXES = [
     re.compile(r'pcsx2'),
     re.compile(r'retroarch'),
     re.compile(r'prismlauncher'),
+    re.compile(r'bottles'),
+    re.compile(r'gamemoderun'),
+    re.compile(r'nvidia-game-run'),
+    re.compile(r'unityplayer'),
+    re.compile(r'unrealengine'),
+    re.compile(r'minecraft'),
     re.compile(r'vkcube'),
     re.compile(r'superposition'),
     re.compile(r'unigine')
@@ -141,7 +148,13 @@ def apply_sysctl(params):
         except Exception:
             pass
 
-def set_cpu_freq(governor, epp, min_freq):
+def set_cpu_freq(governor, epp, min_freq=800000):
+    """
+    Configures Intel P-State scaling.
+    Uses powersave governor (HWP Autonomous mode) with EPP hints so that the CPU
+    scales up to 4.60 GHz instantly under load while allowing idle cores to enter deep
+    C-states and drop to 800 MHz, eliminating thermal throttling and boiling at 100°C.
+    """
     for cpu in glob.glob('/sys/devices/system/cpu/cpu[0-9]*'):
         gov_path = os.path.join(cpu, 'cpufreq', 'scaling_governor')
         epp_path = os.path.join(cpu, 'cpufreq', 'energy_performance_preference')
@@ -188,6 +201,12 @@ def set_wifi_powersave(enable):
         pass
 
 def set_gpu_performance(enable):
+    """
+    Configures NVIDIA GPU clocks.
+    Boost clocks (5411 MHz memory and 1650-2100 MHz graphics) are engaged ONLY during
+    active 3D gaming. On desktop or passive tasks, dynamic clocks are restored to keep
+    the shared cooling system and CPU at cool idle temperatures (45-50°C).
+    """
     try:
         if enable:
             # 1. Enable NVIDIA persistence mode
@@ -207,8 +226,9 @@ def set_gpu_performance(enable):
             subprocess.run(['nvidia-smi', '-rmc'], capture_output=True)
             # 3. Reset Intel iGPU minimum frequency to 100 MHz
             set_intel_igpu_min_freq(100)
-            # 4. Reset Acer platform profile to balanced
-            set_platform_profile('balanced')
+            # 4. Reset Acer platform profile based on power profile
+            perf_profile = (get_power_profile() == 'performance')
+            set_platform_profile('balanced-performance' if perf_profile else 'balanced')
     except Exception:
         pass
 
@@ -262,18 +282,33 @@ def optimize_processes():
         except Exception:
             continue
 
-def get_state():
+def get_manual_override():
+    """
+    Returns None if no manual override, True if forced ON, False if forced OFF.
+    """
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE, 'r') as f:
-                return f.read().strip() == '1'
+                content = f.read().strip()
+                if content == '1':
+                    return True
+                elif content == '0':
+                    return False
         except Exception:
             pass
-    return False
+    return None
 
-def set_state(val):
-    with open(STATE_FILE, 'w') as f:
-        f.write('1\n' if val else '0\n')
+def set_manual_override(val):
+    try:
+        with open(STATE_FILE, 'w') as f:
+            if val is True:
+                f.write('1\n')
+            elif val is False:
+                f.write('0\n')
+            else:
+                f.write('auto\n')
+    except Exception:
+        pass
 
 def any_game_running():
     for pid_dir in glob.glob('/proc/[0-9]*'):
@@ -293,9 +328,9 @@ def any_game_running():
             continue
     return False
 
-def turn_on():
-    set_state(True)
-    set_cpu_freq('performance', 'performance', 2400000)
+def apply_full_game_mode():
+    """Mode 1: Active 3D gaming - Maximum performance, unlocked clocks, P-cores MMCSS"""
+    set_cpu_freq('powersave', 'performance', 800000)
     apply_sysctl({
         'vm.max_map_count': '2147483642',
         'vm.swappiness': '10',
@@ -307,10 +342,21 @@ def turn_on():
     set_gpu_performance(True)
     set_wifi_powersave(False)
     optimize_processes()
-    print('mac-gamemode: ON (P-cores pinned, nice -20, sysctl, Intel iGPU & discrete GPU max boost applied)')
 
-def turn_off():
-    set_state(False)
+def apply_desktop_performance_mode():
+    """Mode 2: Desktop with 'Performance' power profile - Responsive CPU, dynamic GPU to prevent idle heating"""
+    set_cpu_freq('powersave', 'performance', 800000)
+    apply_sysctl({
+        'vm.swappiness': '60',
+        'vm.vfs_cache_pressure': '100',
+        'vm.compaction_proactiveness': '20',
+        'net.ipv4.tcp_slow_start_after_idle': '1'
+    })
+    set_gpu_performance(False)
+    set_wifi_powersave(False)
+
+def apply_desktop_balanced_mode():
+    """Mode 3: Desktop Balanced / Power-saver - Quiet, cool, maximum energy efficiency"""
     set_cpu_freq('powersave', 'balance_performance', 800000)
     apply_sysctl({
         'vm.swappiness': '60',
@@ -320,30 +366,54 @@ def turn_off():
     })
     set_gpu_performance(False)
     set_wifi_powersave(True)
-    print('mac-gamemode: OFF (Restored balanced desktop power profile)')
+
+def ensure_steam_shader_wrappers():
+    try:
+        if os.path.exists('/usr/local/bin/mac-steam-shader-optimizer'):
+            subprocess.run(['/usr/local/bin/mac-steam-shader-optimizer'], capture_output=True)
+    except Exception:
+        pass
 
 def daemon_loop():
-    print('mac-gamemode: daemon started (unified power & GPU management)')
-    current_active = None
+    print('mac-gamemode: daemon started (unified power, GPU & thermal management)')
+    current_mode = None
     last_optimize_time = 0
+    last_wrapper_check = 0
+
+    ensure_steam_shader_wrappers()
 
     while True:
         try:
-            manual_on = get_state()
+            now = time.time()
+            if now - last_wrapper_check >= 60.0:
+                ensure_steam_shader_wrappers()
+                last_wrapper_check = now
+
+            manual_ovr = get_manual_override()
             perf_profile = (get_power_profile() == 'performance')
             game_active = any_game_running()
 
-            should_be_on = manual_on or perf_profile or game_active
+            target_mode = None
+            if manual_ovr is True or game_active:
+                target_mode = 'GAME_BOOST'
+            elif perf_profile:
+                target_mode = 'DESKTOP_PERFORMANCE'
+            else:
+                target_mode = 'DESKTOP_BALANCED'
 
-            if should_be_on != current_active:
-                if should_be_on:
-                    turn_on()
+            if target_mode != current_mode:
+                if target_mode == 'GAME_BOOST':
+                    apply_full_game_mode()
+                    print('mac-gamemode: Mode -> GAME_BOOST (Max GPU boost, P-cores MMCSS, zero thermal throttle)')
+                elif target_mode == 'DESKTOP_PERFORMANCE':
+                    apply_desktop_performance_mode()
+                    print('mac-gamemode: Mode -> DESKTOP_PERFORMANCE (Instant CPU response, cool dynamic GPU)')
                 else:
-                    turn_off()
-                current_active = should_be_on
-                last_optimize_time = time.time()
-            elif should_be_on:
-                now = time.time()
+                    apply_desktop_balanced_mode()
+                    print('mac-gamemode: Mode -> DESKTOP_BALANCED (Optimal energy efficiency & thermal balance)')
+                current_mode = target_mode
+                last_optimize_time = now
+            elif target_mode == 'GAME_BOOST':
                 if now - last_optimize_time >= 3.0:
                     optimize_processes()
                     last_optimize_time = now
@@ -354,26 +424,31 @@ def daemon_loop():
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'status'
     if cmd == 'on':
-        turn_on()
+        set_manual_override(True)
+        apply_full_game_mode()
+        print('mac-gamemode: Manual ON (Forced GAME_BOOST mode)')
     elif cmd == 'off':
-        turn_off()
+        set_manual_override(False)
+        apply_desktop_balanced_mode()
+        print('mac-gamemode: Manual OFF (Forced balanced desktop mode)')
     elif cmd == 'auto':
-        manual_on = get_state()
-        perf_profile = (get_power_profile() == 'performance')
-        game_active = any_game_running()
-        if manual_on or perf_profile or game_active:
-            turn_on()
-        else:
-            turn_off()
+        set_manual_override(None)
+        print('mac-gamemode: Switched to AUTO mode')
     elif cmd == 'status':
-        is_on = get_state()
+        ovr = get_manual_override()
         perf_profile = (get_power_profile() == 'performance')
         game_active = any_game_running()
-        print(f"Manual State    : {'ON' if is_on else 'OFF'}")
+        ovr_str = 'None (Auto)'
+        if ovr is True: ovr_str = 'Forced ON'
+        elif ovr is False: ovr_str = 'Forced OFF'
+        effective = 'DESKTOP_BALANCED'
+        if ovr is True or game_active: effective = 'GAME_BOOST (MAX)'
+        elif perf_profile: effective = 'DESKTOP_PERFORMANCE'
+        print(f"Manual Override : {ovr_str}")
         print(f"Power Profile   : {get_power_profile()}")
         print(f"Game Active     : {'YES' if game_active else 'NO'}")
-        print(f"Effective State : {'PERFORMANCE (MAX)' if (is_on or perf_profile or game_active) else 'BALANCED'}")
-        sys.exit(0 if (is_on or perf_profile or game_active) else 1)
+        print(f"Effective Mode  : {effective}")
+        sys.exit(0 if (ovr is True or game_active or perf_profile) else 1)
     elif cmd == 'daemon':
         daemon_loop()
     elif cmd == 'optimize':

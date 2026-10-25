@@ -5138,6 +5138,8 @@ export const MenuBarController = class MenuBarController {
         this._reorderTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, 50, () => {
             this._reorderTimeoutId = null;
             if (this.enabled) {
+                if (Main.sessionMode?.isLocked || Main.sessionMode?.currentMode === 'unlock-dialog' || Main.screenShield?.locked || Main.screenShield?.active)
+                    return GLib.SOURCE_REMOVE;
                 this._reorderRightBox();
             }
             return GLib.SOURCE_REMOVE;
@@ -5146,6 +5148,7 @@ export const MenuBarController = class MenuBarController {
 
     _reorderRightBox() {
         if (!Main.panel?._rightBox || !this.enabled) return;
+        if (Main.sessionMode?.isLocked || Main.sessionMode?.currentMode === 'unlock-dialog' || Main.screenShield?.locked || Main.screenShield?.active) return;
         const rightBox = Main.panel._rightBox;
         const dateMenu = Main.panel.statusArea?.dateMenu;
         const quickSettings = Main.panel.statusArea?.quickSettings;

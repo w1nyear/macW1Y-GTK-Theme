@@ -122,7 +122,11 @@ export default class WackLockscreenClockExtension extends Extension {
             Main.screenShield._ensureUnlockDialog = (allowCancel) => {
                 const res = this._origEnsureUnlockDialog.call(Main.screenShield, allowCancel);
                 if (Main.screenShield._dialog && this._dialog !== Main.screenShield._dialog) {
-                    this._setupDialog(Main.screenShield._dialog);
+                    try {
+                        this._setupDialog(Main.screenShield._dialog);
+                    } catch (e) {
+                        console.error(`[WACK] _setupDialog error: ${e}\n${e.stack}`);
+                    }
                 }
                 return res;
             };
@@ -130,12 +134,21 @@ export default class WackLockscreenClockExtension extends Extension {
             Main.screenShield.connectObject('active-changed', () => {
                 if (Main.screenShield.active) {
                     if (Main.screenShield._dialog && this._dialog !== Main.screenShield._dialog) {
-                        this._setupDialog(Main.screenShield._dialog);
+                        try {
+                            this._setupDialog(Main.screenShield._dialog);
+                        } catch (e) {
+                            console.error(`[WACK] _setupDialog error on active-changed: ${e}\n${e.stack}`);
+                        }
                     }
-                    this._updateCustomWallpaperOverlay();
-                    this._updateClockAlphaAndPromptColor();
+                    try {
+                        this._updateCustomWallpaperOverlay();
+                        this._updateClockAlphaAndPromptColor();
+                    } catch (e) {
+                        console.error(`[WACK] wallpaper/alpha error on active-changed: ${e}`);
+                    }
                 } else {
                     this._stopSlideClock();
+                    this._teardownDialog();
                 }
             }, this);
 
@@ -198,7 +211,7 @@ export default class WackLockscreenClockExtension extends Extension {
         this._unlockDialogController = new ControllerClass(this);
         this._notifManager = new NotificationManager(this);
 
-        this._themeManager.applyUserTheme();
+        try { this._themeManager.applyUserTheme(); } catch (e) { console.error(`[WACK] applyUserTheme: ${e}`); }
 
         this._originalClock = dialog._clock;
         this._injectionManager = new InjectionManager();
@@ -207,43 +220,60 @@ export default class WackLockscreenClockExtension extends Extension {
         this._animationState = createAnimationState();
 
         // Clock replacement & setup
-        if (dialog._clock && dialog._stack) {
-            dialog._stack.remove_child(dialog._clock);
-        }
-        this._clock = new WackClock();
-        dialog._clock = this._clock;
-        this._clock.setDateStyle(this._dateStyle ?? 'full');
-        if (lockDialogGroup) {
-            lockDialogGroup.add_child(this._clock);
+        try {
+            if (dialog._clock && dialog._stack) {
+                dialog._stack.remove_child(dialog._clock);
+            }
+            this._clock = new WackClock();
+            dialog._clock = this._clock;
+            this._clock.setDateStyle(this._dateStyle ?? 'full');
+            if (lockDialogGroup) {
+                lockDialogGroup.add_child(this._clock);
+            }
+        } catch (e) {
+            console.error(`[WACK] Clock setup error: ${e}`);
         }
 
-        this._unblankManager = new UnblankManager(this);
-        this._clockLayoutManager.setup(dialog, lockDialogGroup);
-        this._notifManager.setupNotifBlur(dialog._notificationsBox);
+        try {
+            this._unblankManager = new UnblankManager(this);
+            this._clockLayoutManager.setup(dialog, lockDialogGroup);
+            this._notifManager.setupNotifBlur(dialog._notificationsBox);
+        } catch (e) {
+            console.error(`[WACK] ClockLayout/Notif setup error: ${e}`);
+        }
+
         this._promptActor = dialog._promptBox ?? dialog._stack;
         if (this._promptActor)
             this._promptActor.set_pivot_point(0.5, 0.5);
 
         // Wallpaper settings
-        if (!this._bgSettings)
-            this._bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
-        if (!this._interfaceSettings)
-            this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
-        const syncAlpha = () => this._updateClockAlpha();
-        this._bgSettings.connectObject(
-            'changed::picture-uri', syncAlpha,
-            'changed::picture-uri-dark', syncAlpha,
-            'changed::picture-options', syncAlpha,
-            this
-        );
-        this._interfaceSettings.connectObject(
-            'changed::color-scheme', syncAlpha,
-            this
-        );
-        this._updateClockAlpha();
+        try {
+            if (!this._bgSettings)
+                this._bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
+            if (!this._interfaceSettings)
+                this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            const syncAlpha = () => this._updateClockAlpha();
+            this._bgSettings.connectObject(
+                'changed::picture-uri', syncAlpha,
+                'changed::picture-uri-dark', syncAlpha,
+                'changed::picture-options', syncAlpha,
+                this
+            );
+            this._interfaceSettings.connectObject(
+                'changed::color-scheme', syncAlpha,
+                this
+            );
+            this._updateClockAlpha();
+        } catch (e) {
+            console.error(`[WACK] bgSettings error: ${e}`);
+        }
 
         // Install UnlockDialog controller hooks
-        this._unlockDialogController.install(dialog, lockDialogGroup);
+        try {
+            this._unlockDialogController.install(dialog, lockDialogGroup);
+        } catch (e) {
+            console.error(`[WACK] unlockDialogController install error: ${e}`);
+        }
 
         // Disable fullscreen ClickGesture so clicking wallpaper/clock does not reveal prompt
         this._disabledClickGestures = [];
@@ -266,20 +296,24 @@ export default class WackLockscreenClockExtension extends Extension {
         }
 
         // Setup MainBox layout and lockscreen message
-        const mainBox = dialog._stack?.get_parent() ?? dialog.get_child_at_index(dialog.get_n_children() - 1);
-        if (mainBox) {
-            this._origLayout = mainBox.layout_manager;
-            this._messageManager.setup(mainBox);
-            mainBox.layout_manager = new WackLayout(
-                this,
-                dialog._stack,
-                dialog._notificationsBox,
-                dialog._otherUserButton,
-                this._messageManager.scrollView
-            );
-            mainBox.queue_relayout();
-            this._mainBox = mainBox;
-            this._messageManager.update();
+        try {
+            const mainBox = dialog._stack?.get_parent() ?? dialog.get_child_at_index(dialog.get_n_children() - 1);
+            if (mainBox) {
+                this._origLayout = mainBox.layout_manager;
+                this._messageManager.setup(mainBox);
+                mainBox.layout_manager = new WackLayout(
+                    this,
+                    dialog._stack,
+                    dialog._notificationsBox,
+                    dialog._otherUserButton,
+                    this._messageManager.scrollView
+                );
+                mainBox.queue_relayout();
+                this._mainBox = mainBox;
+                this._messageManager.update();
+            }
+        } catch (e) {
+            console.error(`[WACK] MainBox layout error: ${e}`);
         }
 
         // Input handling
@@ -321,11 +355,18 @@ export default class WackLockscreenClockExtension extends Extension {
                     }
                     return Clutter.EVENT_STOP;
                 }
+
+                if (keysym === Clutter.KEY_Return || keysym === Clutter.KEY_KP_Enter || keysym === Clutter.KEY_space) {
+                    this._dialog?._showPrompt();
+                    return Clutter.EVENT_STOP;
+                }
             }
 
             if (!this._promptActive) {
-                // In rest mode: do NOT reveal password prompt on arbitrary key presses;
-                // user must click on the account to reveal the password prompt.
+                if (keysym >= Clutter.KEY_space && keysym <= Clutter.KEY_asciitilde) {
+                    this._dialog?._showPrompt();
+                    return Clutter.EVENT_PROPAGATE;
+                }
                 return Clutter.EVENT_STOP;
             }
 
@@ -334,9 +375,9 @@ export default class WackLockscreenClockExtension extends Extension {
 
         dialog.connectObject('destroy', () => this._teardownDialog(), this);
 
-        this._applyPromptModeLayout();
-        this._positionClock();
-        this._positionHint();
+        try { this._applyPromptModeLayout(); } catch (e) { console.error(`[WACK] applyPromptModeLayout error: ${e}`); }
+        try { this._positionClock(); } catch (e) { console.error(`[WACK] positionClock error: ${e}`); }
+        try { this._positionHint(); } catch (e) { console.error(`[WACK] positionHint error: ${e}`); }
     }
 
     _loadSettings() {
@@ -899,128 +940,171 @@ export default class WackLockscreenClockExtension extends Extension {
     }
 
     _teardownDialog() {
-        if (!this._dialog) return;
+        const dialog = this._dialog;
+        if (!dialog) return;
+        this._dialog = null;
 
-        if (this._unblankManager) {
-            this._unblankManager.destroy();
-            this._unblankManager = null;
-        }
-
-        if (this._idleSources) {
-            for (const id of this._idleSources) GLib.source_remove(id);
-            this._idleSources.clear();
-        }
-
-        if (this._unlockDialogController) {
-            this._unlockDialogController.uninstall(this._dialog);
-            this._unlockDialogController = null;
-        }
-
-        if (this._wallpaperManager) {
-            this._wallpaperManager.teardown();
-            this._wallpaperManager = null;
-        }
-
-        if (this._notifManager) {
-            this._notifManager.teardownNotifBlur();
-            this._notifManager = null;
-        }
-
-        if (this._cupertinoPromptManager) {
-            this._cupertinoPromptManager.teardown();
-            this._cupertinoPromptManager = null;
-        }
-
-        if (this._avatarManager) {
-            this._avatarManager.teardownCupertinoAvatarOverride();
-            this._avatarManager = null;
-        }
-
-        if (this._promptStyling) {
-            this._promptStyling.teardown();
-            this._promptStyling = null;
-        }
-
-        if (this._themeManager) {
-            this._themeManager.teardown();
-            this._themeManager = null;
-        }
-
-        resetAnimationActors(this._clockWrapper, this._promptActor);
-        const authPrompt = this._dialog?._authPrompt ?? this._dialog?._promptBox?._authPrompt;
-        const mainBox = authPrompt?._mainBox;
-        if (mainBox) mainBox.opacity = 255;
-        if (this._dialog) this._dialog.opacity = 255;
-
-        if (this._injectionManager) {
-            this._injectionManager.clear();
-            this._injectionManager = null;
-        }
-
-        if (this._disabledClickGestures) {
-            for (const action of this._disabledClickGestures) {
-                try { action.enabled = true; } catch (_) {}
+        try {
+            if (this._unblankManager) {
+                this._unblankManager.destroy();
+                this._unblankManager = null;
             }
-            this._disabledClickGestures = null;
-        }
+        } catch (_) {}
 
-        if (Main.sessionMode) {
-            try { Main.sessionMode.emit('updated'); } catch (_) {}
-        }
+        try {
+            if (this._idleSources) {
+                for (const id of this._idleSources) GLib.source_remove(id);
+                this._idleSources.clear();
+            }
+        } catch (_) {}
 
-        if (this._dialog._notificationsBox) {
-            this._dialog._notificationsBox.disconnectObject(this);
-        }
-        this._dialog.disconnectObject(this);
+        try {
+            if (this._unlockDialogController) {
+                this._unlockDialogController.uninstall(dialog);
+                this._unlockDialogController = null;
+            }
+        } catch (_) {}
+
+        try {
+            if (this._wallpaperManager) {
+                this._wallpaperManager.teardown();
+                this._wallpaperManager = null;
+            }
+        } catch (_) {}
+
+        try {
+            if (this._notifManager) {
+                this._notifManager.teardownNotifBlur();
+                this._notifManager = null;
+            }
+        } catch (_) {}
+
+        try {
+            if (this._cupertinoPromptManager) {
+                this._cupertinoPromptManager.teardown();
+                this._cupertinoPromptManager = null;
+            }
+        } catch (_) {}
+
+        try {
+            if (this._avatarManager) {
+                this._avatarManager.teardownCupertinoAvatarOverride();
+                this._avatarManager = null;
+            }
+        } catch (_) {}
+
+        try {
+            if (this._promptStyling) {
+                this._promptStyling.teardown();
+                this._promptStyling = null;
+            }
+        } catch (_) {}
+
+        try {
+            if (this._themeManager) {
+                this._themeManager.teardown();
+                this._themeManager = null;
+            }
+        } catch (_) {}
+
+        try {
+            resetAnimationActors(this._clockWrapper, this._promptActor);
+            const authPrompt = dialog?._authPrompt ?? dialog?._promptBox?._authPrompt;
+            const mainBox = authPrompt?._mainBox;
+            if (mainBox) mainBox.opacity = 255;
+            if (dialog) dialog.opacity = 255;
+        } catch (_) {}
+
+        try {
+            if (this._injectionManager) {
+                this._injectionManager.clear();
+                this._injectionManager = null;
+            }
+        } catch (_) {}
+
+        try {
+            if (this._disabledClickGestures) {
+                for (const action of this._disabledClickGestures) {
+                    try { action.enabled = true; } catch (_) {}
+                }
+                this._disabledClickGestures = null;
+            }
+        } catch (_) {}
+
+        try {
+            if (Main.sessionMode) {
+                Main.sessionMode.emit('updated');
+            }
+        } catch (_) {}
+
+        try {
+            if (dialog && !Object.prototype.toString.call(dialog).includes('DISPOSED')) {
+                if (dialog._notificationsBox) {
+                    try { dialog._notificationsBox.disconnectObject(this); } catch (_) {}
+                }
+                try { dialog.disconnectObject(this); } catch (_) {}
+            }
+        } catch (_) {}
 
         const lockDialogGroup = Main.screenShield ? Main.screenShield._lockDialogGroup : null;
 
-        if (this._clockLayoutManager) {
-            this._clockLayoutManager.teardown(this._dialog, lockDialogGroup);
-            this._clockLayoutManager = null;
-        }
-
-        if (this._clock) {
-            if (lockDialogGroup) {
-                lockDialogGroup.remove_child(this._clock);
+        try {
+            if (this._clockLayoutManager) {
+                this._clockLayoutManager.teardown(dialog, lockDialogGroup);
+                this._clockLayoutManager = null;
             }
-            this._clock.destroy();
-            this._clock = null;
-        }
+        } catch (_) {}
 
-        if (this._dialog && this._originalClock) {
-            this._dialog._clock = this._originalClock;
-            if (this._dialog._stack)
-                this._dialog._stack.add_child(this._originalClock);
-        }
+        try {
+            if (this._clock) {
+                if (lockDialogGroup) {
+                    try { lockDialogGroup.remove_child(this._clock); } catch (_) {}
+                }
+                this._clock.destroy();
+                this._clock = null;
+            }
+        } catch (_) {}
 
-        if (this._messageManager) {
-            this._messageManager.teardown(this._mainBox);
-            this._messageManager = null;
-        }
+        try {
+            if (dialog && !Object.prototype.toString.call(dialog).includes('DISPOSED') && this._originalClock) {
+                dialog._clock = this._originalClock;
+                if (dialog._stack)
+                    dialog._stack.add_child(this._originalClock);
+            }
+        } catch (_) {}
 
-        if (this._mainBox && this._origLayout) {
-            const oldLayout = this._mainBox.layout_manager;
-            this._mainBox.layout_manager = this._origLayout;
-            if (oldLayout && oldLayout !== this._origLayout) oldLayout._extension = null;
-            this._mainBox.opacity = 255;
-            this._mainBox.queue_relayout();
-        }
+        try {
+            if (this._messageManager) {
+                this._messageManager.teardown(this._mainBox);
+                this._messageManager = null;
+            }
+        } catch (_) {}
 
-        this._dialog = null;
+        try {
+            if (this._mainBox && this._origLayout) {
+                const oldLayout = this._mainBox.layout_manager;
+                this._mainBox.layout_manager = this._origLayout;
+                if (oldLayout && oldLayout !== this._origLayout) oldLayout._extension = null;
+                this._mainBox.opacity = 255;
+                this._mainBox.queue_relayout();
+            }
+        } catch (_) {}
+
         this._originalClock = null;
         this._mainBox = null;
         this._origLayout = null;
         this._showingInhibitHint = false;
 
-        if (this._promptActor) {
-            if (this._origPromptActorYAlign !== undefined) {
-                this._promptActor.y_align = this._origPromptActorYAlign;
-                this._origPromptActorYAlign = undefined;
+        try {
+            if (this._promptActor) {
+                if (this._origPromptActorYAlign !== undefined) {
+                    this._promptActor.y_align = this._origPromptActorYAlign;
+                    this._origPromptActorYAlign = undefined;
+                }
+                this._promptActor.remove_style_class_name('wack-cupertino-prompt');
+                this._promptActor = null;
             }
-            this._promptActor.remove_style_class_name('wack-cupertino-prompt');
-            this._promptActor = null;
-        }
+        } catch (_) {}
         this._animationState = null;
         this._wasPromptActive = false;
         this._lastPromptColor = null;

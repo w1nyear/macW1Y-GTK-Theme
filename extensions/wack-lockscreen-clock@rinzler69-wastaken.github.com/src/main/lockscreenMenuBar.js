@@ -18,6 +18,7 @@ export class LockscreenMenuBarManager {
         this._origSessionModePanel = null;
         this._dateMenuClickId = 0;
         this._isApplying = false;
+        this._panelIdleId = 0;
     }
 
     setup() {
@@ -61,14 +62,20 @@ export class LockscreenMenuBarManager {
     _watchPanelBoxes() {
         const boxes = [Main.panel?._leftBox, Main.panel?._centerBox, Main.panel?._rightBox].filter(Boolean);
         for (const box of boxes) {
-            const id = box.connect('actor-added', () => {
-                if (!this._isActive || this._isApplying) return;
-                GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                    if (this._isActive) this._applyMenuBar();
-                    return GLib.SOURCE_REMOVE;
+            try {
+                const id = box.connect('child-added', () => {
+                    if (!this._isActive || this._isApplying) return;
+                    if (this._panelIdleId) return;
+                    this._panelIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                        this._panelIdleId = 0;
+                        if (this._isActive) this._applyMenuBar();
+                        return GLib.SOURCE_REMOVE;
+                    });
                 });
-            });
-            this._signals.push({ obj: box, id });
+                this._signals.push({ obj: box, id });
+            } catch (e) {
+                console.error(`[WACK] Error connecting child-added on panel box: ${e}`);
+            }
         }
     }
 
@@ -207,52 +214,54 @@ export class LockscreenMenuBarManager {
             qs._indicators.style = 'margin: 0 !important; padding: 0 !important; width: 0px !important; min-width: 0px !important; height: 0px !important; min-height: 0px !important;';
         }
 
-        // Clean up previous CC icon if any
-        if (this._ccIcon) {
-            try {
-                if (this._ccIcon.get_parent() === qs)
-                    qs.remove_child(this._ccIcon);
-                this._ccIcon.destroy();
-            } catch (_) {}
-            this._ccIcon = null;
-        }
-
-        const CC_PATHS = [
-            '/usr/share/mactheme/icons/controlcenter.png',
-            '/home/vitaliy/.themes/macW1Y-Dark/icons/control-center.png',
-            '/home/vitaliy/.themes/MacTahoe-Dark/icons/control-center.png',
-            GLib.get_home_dir() + '/.themes/macW1Y-Dark/icons/control-center.png',
-        ];
-        let ccFile = null;
-        for (const p of CC_PATHS) {
-            if (GLib.file_test(p, GLib.FileTest.EXISTS)) {
-                ccFile = p;
-                break;
+        // Attach or update CC icon if needed
+        if (!this._ccIcon || this._ccIcon.get_parent() !== qs) {
+            if (this._ccIcon) {
+                try {
+                    if (this._ccIcon.get_parent())
+                        this._ccIcon.get_parent().remove_child(this._ccIcon);
+                    this._ccIcon.destroy();
+                } catch (_) {}
+                this._ccIcon = null;
             }
-        }
 
-        if (ccFile) {
-            const f = Gio.File.new_for_path(ccFile);
-            this._ccIcon = new St.Icon({
-                gicon: new Gio.FileIcon({ file: f }),
-                style_class: 'system-status-icon mac-control-center-icon wack-cc-icon',
-                icon_size: 18,
-                x_align: Clutter.ActorAlign.CENTER,
-                y_align: Clutter.ActorAlign.CENTER,
-            });
-        } else {
-            this._ccIcon = new St.Icon({
-                icon_name: 'preferences-system-symbolic',
-                style_class: 'system-status-icon mac-control-center-icon wack-cc-icon',
-                icon_size: 18,
-                x_align: Clutter.ActorAlign.CENTER,
-                y_align: Clutter.ActorAlign.CENTER,
-            });
-        }
+            const CC_PATHS = [
+                '/usr/share/mactheme/icons/controlcenter.png',
+                '/home/vitaliy/.themes/macW1Y-Dark/icons/control-center.png',
+                '/home/vitaliy/.themes/MacTahoe-Dark/icons/control-center.png',
+                GLib.get_home_dir() + '/.themes/macW1Y-Dark/icons/control-center.png',
+            ];
+            let ccFile = null;
+            for (const p of CC_PATHS) {
+                if (GLib.file_test(p, GLib.FileTest.EXISTS)) {
+                    ccFile = p;
+                    break;
+                }
+            }
 
-        this._ccIcon.visible = true;
-        this._ccIcon.show();
-        qs.insert_child_at_index(this._ccIcon, 0);
+            if (ccFile) {
+                const f = Gio.File.new_for_path(ccFile);
+                this._ccIcon = new St.Icon({
+                    gicon: new Gio.FileIcon({ file: f }),
+                    style_class: 'system-status-icon mac-control-center-icon wack-cc-icon',
+                    icon_size: 18,
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
+            } else {
+                this._ccIcon = new St.Icon({
+                    icon_name: 'preferences-system-symbolic',
+                    style_class: 'system-status-icon mac-control-center-icon wack-cc-icon',
+                    icon_size: 18,
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
+            }
+
+            this._ccIcon.visible = true;
+            this._ccIcon.show();
+            qs.insert_child_at_index(this._ccIcon, 0);
+        }
 
         qs.visible = true;
         qs.show();
@@ -350,9 +359,11 @@ export class LockscreenMenuBarManager {
                 if (!allowed.includes(child)) {
                     child.visible = false;
                     child.hide();
+                    child.opacity = 0;
                 } else {
                     child.visible = true;
                     child.show();
+                    child.opacity = 255;
                 }
             }
 
@@ -375,6 +386,11 @@ export class LockscreenMenuBarManager {
     teardown() {
         if (!this._isActive) return;
         this._isActive = false;
+
+        if (this._panelIdleId) {
+            GLib.source_remove(this._panelIdleId);
+            this._panelIdleId = 0;
+        }
 
         if (this._batteryChangedId && this._batteryProxy) {
             try { this._batteryProxy.disconnect(this._batteryChangedId); } catch (_) {}

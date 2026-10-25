@@ -1,0 +1,183 @@
+#!/bin/bash
+# mac-steam-shader-optimizer
+# Ensures Steam shader pre-caching always uses the configured GPU (Power -> Game Mode GPU Allocation)
+# and limits CPU concurrency to 4 threads to prevent 100°C CPU overheating and thermal throttling.
+
+STEAM_DIRS=(
+    "$HOME/snap/steam/common/.local/share/Steam"
+    "$HOME/.local/share/Steam"
+    "$HOME/.steam/steam"
+)
+
+SUBDIRS=(
+    "ubuntu12_64"
+    "ubuntu12_32"
+    "steamrt64"
+    "steamrt32"
+)
+
+WRAPPER_CONTENT='#!/bin/bash
+# Steam Fossilize Replayer Smart Wrapper
+# Offloads shader pre-caching to the target GPU selected in macOS / GNOME Settings
+# Clamps CPU compilation threads to 4 to prevent CPU boiling (100°C) and system lockups
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REAL_BIN="$SCRIPT_DIR/fossilize_replay.real"
+if [ ! -x "$REAL_BIN" ]; then
+    REAL_BIN="$SCRIPT_DIR/fossilize_replay.bin"
+fi
+
+if [ ! -x "$REAL_BIN" ]; then
+    echo "Fossilize real binary not found in $SCRIPT_DIR" >&2
+    exit 1
+fi
+
+# 1. Determine target GPU from macOS / GNOME Settings config
+TARGET_GPU=1
+CONFIG_FILE="$HOME/.config/mac-gpu-targets.json"
+if [ ! -f "$CONFIG_FILE" ]; then
+    CONFIG_FILE="/etc/mac-gpu-targets.json"
+fi
+
+if [ -f "$CONFIG_FILE" ]; then
+    G_VAL=$(grep -o '"games"[[:space:]]*:[[:space:]]*[0-9]*' "$CONFIG_FILE" 2>/dev/null | grep -o '[0-9]*$')
+    if [ -n "$G_VAL" ]; then
+        TARGET_GPU="$G_VAL"
+    fi
+fi
+
+# 2. Configure Vulkan Driver & Offload based on selected GPU
+if [ "$TARGET_GPU" -eq 1 ]; then
+    # Discrete NVIDIA GPU selected
+    export __NV_PRIME_RENDER_OFFLOAD=1
+    export __GLX_VENDOR_LIBRARY_NAME=nvidia
+    export __VK_LAYER_NV_optimus=NVIDIA_only
+    export VK_LOADER_DRIVERS_SELECT="*nvidia*"
+    unset DRI_PRIME
+    unset MESA_VK_DEVICE_SELECT
+    unset MESA_GLSL_CACHE_DIR
+    
+    if [ -f "/var/lib/snapd/lib/vulkan/icd.d/nvidia_icd.json" ]; then
+        export VK_DRIVER_FILES="/var/lib/snapd/lib/vulkan/icd.d/nvidia_icd.json"
+        export VK_ICD_FILENAMES="/var/lib/snapd/lib/vulkan/icd.d/nvidia_icd.json"
+    elif [ -f "/usr/share/vulkan/icd.d/nvidia_icd.json" ]; then
+        export VK_DRIVER_FILES="/usr/share/vulkan/icd.d/nvidia_icd.json"
+        export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/nvidia_icd.json"
+    fi
+else
+    # Integrated Intel GPU selected
+    unset __NV_PRIME_RENDER_OFFLOAD
+    unset __GLX_VENDOR_LIBRARY_NAME
+    unset __VK_LAYER_NV_optimus
+    export VK_LOADER_DRIVERS_SELECT="*intel*"
+    if [ -f "/usr/share/vulkan/icd.d/intel_icd.json" ]; then
+        export VK_DRIVER_FILES="/usr/share/vulkan/icd.d/intel_icd.json"
+        export VK_ICD_FILENAMES="/usr/share/vulkan/icd.d/intel_icd.json"
+    fi
+fi
+
+# 3. Filter CLI arguments:
+# Remove uncapped --num-threads and inject --num-threads 4
+# Ensure --device-index 0 is set
+NEW_ARGS=()
+skip_next=0
+has_device=0
+is_special=0
+
+for arg in "$@"; do
+    if [ "$arg" = "--help" ] || [ "$arg" = "-h" ] || [ "$arg" = "--version" ]; then
+        is_special=1
+    fi
+    if [ $skip_next -eq 1 ]; then
+        skip_next=0
+        continue
+    fi
+    if [ "$arg" = "--num-threads" ]; then
+        skip_next=1
+        continue
+    fi
+    if [ "$arg" = "--device-index" ]; then
+        has_device=1
+    fi
+    NEW_ARGS+=("$arg")
+done
+
+if [ $is_special -eq 0 ]; then
+    # Limit compilation concurrency to 4 threads (leaving 8 threads free for desktop/smoothness)
+    NEW_ARGS+=("--num-threads" "4")
+    if [ $has_device -eq 0 ]; then
+        NEW_ARGS+=("--device-index" "0")
+    fi
+fi
+
+# 4. Execute real binary with low CPU & I/O scheduling priority (nice 12, ionice best-effort 7)
+exec nice -n 12 ionice -c 2 -n 7 "$REAL_BIN" "${NEW_ARGS[@]}"
+'
+
+install_wrappers() {
+    local installed_count=0
+    for sdir in "${STEAM_DIRS[@]}"; do
+        if [ -d "$sdir" ]; then
+            for sub in "${SUBDIRS[@]}"; do
+                local target_dir="$sdir/$sub"
+                if [ -d "$target_dir" ]; then
+                    local foz="$target_dir/fossilize_replay"
+                    local foz_real="$target_dir/fossilize_replay.real"
+                    local foz_bin="$target_dir/fossilize_replay.bin"
+
+                    # If fossilize_replay exists and is an ELF executable
+                    if [ -f "$foz" ] && head -c 4 "$foz" | grep -q 'ELF'; then
+                        cp -f "$foz" "$foz_bin"
+                        cp -f "$foz" "$foz_real"
+                        echo "$WRAPPER_CONTENT" > "$foz"
+                        chmod 755 "$foz" "$foz_bin" "$foz_real"
+                        installed_count=$((installed_count + 1))
+                    elif [ -f "$foz" ]; then
+                        # Verify that foz_real or foz_bin exists
+                        if [ ! -f "$foz_real" ] && [ -f "$foz_bin" ]; then
+                            cp -f "$foz_bin" "$foz_real"
+                        fi
+                        # Refresh wrapper
+                        echo "$WRAPPER_CONTENT" > "$foz"
+                        chmod 755 "$foz"
+                        [ -f "$foz_real" ] && chmod 755 "$foz_real"
+                        installed_count=$((installed_count + 1))
+                    fi
+                fi
+            done
+        fi
+    done
+    echo "mac-steam-shader-optimizer: Verified $installed_count fossilize_replay wrappers."
+}
+
+clean_stale_caches() {
+    # Remove stale/corrupted Mesa Intel ANV caches that were mistakenly created
+    for sdir in "${STEAM_DIRS[@]}"; do
+        if [ -d "$sdir/steamapps/shadercache" ]; then
+            find "$sdir/steamapps/shadercache" -maxdepth 4 -type d -name "anv_*" -exec rm -rf {} + 2>/dev/null
+            find "$sdir/steamapps/shadercache" -maxdepth 3 -type d -name "mesa_shader_cache_sf" -exec rm -rf {} + 2>/dev/null
+        fi
+    done
+    echo "mac-steam-shader-optimizer: Cleaned stale Mesa Intel shader caches."
+}
+
+case "$1" in
+    clean)
+        clean_stale_caches
+        ;;
+    status)
+        for sdir in "${STEAM_DIRS[@]}"; do
+            if [ -d "$sdir" ]; then
+                for sub in "${SUBDIRS[@]}"; do
+                    if [ -f "$sdir/$sub/fossilize_replay" ]; then
+                        echo "Found: $sdir/$sub/fossilize_replay ($(file -b "$sdir/$sub/fossilize_replay"))"
+                    fi
+                done
+            fi
+        done
+        ;;
+    *)
+        install_wrappers
+        clean_stale_caches
+        ;;
+esac

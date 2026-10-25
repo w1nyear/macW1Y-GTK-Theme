@@ -1,7 +1,14 @@
 #!/bin/bash
-# Steam master launcher with native NVIDIA PRIME Offload and system stability optimizations
+# Steam master launcher with dynamic GPU target selection and system stability optimizations
 
-# Find real steam binary
+# 1. Ensure Fossilize shader pre-caching wrappers and GPU routing are installed & active
+if [ -x "/usr/local/bin/mac-steam-shader-optimizer" ]; then
+    /usr/local/bin/mac-steam-shader-optimizer >/dev/null 2>&1
+elif [ -x "$HOME/MACTHEMEFILES/bin/mac-steam-shader-optimizer" ]; then
+    "$HOME/MACTHEMEFILES/bin/mac-steam-shader-optimizer" >/dev/null 2>&1
+fi
+
+# 2. Find real steam binary
 REAL_STEAM=""
 if [ -x "/snap/bin/steam" ]; then
     REAL_STEAM="/snap/bin/steam"
@@ -26,21 +33,40 @@ fi
 # Unset any broken LD_PRELOAD that might corrupt game processes or 32-bit runtimes
 unset LD_PRELOAD
 
-# 1. Force discrete NVIDIA GeForce RTX 3050 GPU for all Vulkan and OpenGL games
-if which nvidia-smi >/dev/null 2>&1; then
+# 3. Read target GPU configured in macOS / GNOME Settings (Power -> Game Mode GPU Allocation)
+TARGET_GAME_GPU=1
+CONFIG_FILE="$HOME/.config/mac-gpu-targets.json"
+if [ ! -f "$CONFIG_FILE" ]; then
+    CONFIG_FILE="/etc/mac-gpu-targets.json"
+fi
+
+if [ -f "$CONFIG_FILE" ]; then
+    G_VAL=$(grep -o '"games"[[:space:]]*:[[:space:]]*[0-9]*' "$CONFIG_FILE" 2>/dev/null | grep -o '[0-9]*$')
+    if [ -n "$G_VAL" ]; then
+        TARGET_GAME_GPU="$G_VAL"
+    fi
+fi
+
+if [ "$TARGET_GAME_GPU" -eq 1 ] && which nvidia-smi >/dev/null 2>&1; then
+    # Route all Vulkan and OpenGL games to Discrete NVIDIA GeForce RTX 3050 GPU
     export __NV_PRIME_RENDER_OFFLOAD=1
     export __GLX_VENDOR_LIBRARY_NAME=nvidia
     export __VK_LAYER_NV_optimus=NVIDIA_only
     export VK_LOADER_DRIVERS_SELECT="*nvidia*"
+    unset DRI_PRIME
+    unset MESA_VK_DEVICE_SELECT
+else
+    # Route games to Integrated Intel UHD Graphics
+    unset __NV_PRIME_RENDER_OFFLOAD
+    unset __GLX_VENDOR_LIBRARY_NAME
+    unset __VK_LAYER_NV_optimus
+    export VK_LOADER_DRIVERS_SELECT="*intel*"
 fi
+
 unset VK_DRIVER_FILES
 unset VK_ICD_FILENAMES
 
-# Explicitly unset DRI_PRIME and MESA device selectors so Mesa does NOT hijack rendering into Zink (OpenGL-on-Vulkan)
-unset DRI_PRIME
-unset MESA_VK_DEVICE_SELECT
-
-# 2. Enable NVIDIA features in Proton / DXVK & Unlock Framerate / Full GPU Power
+# 4. Enable NVIDIA features in Proton / DXVK & Unlock Framerate / Full GPU Power
 export PROTON_ENABLE_NVAPI=1
 export DXVK_ENABLE_NVAPI=1
 export PROTON_HIDE_NVIDIA_GPU=0
@@ -50,8 +76,8 @@ export DXVK_FRAME_RATE=0
 export DXVK_ASYNC=1
 export MANGOHUD_CONFIG="fps_limit=0"
 
-# 3. Prevent shader compilation from starving CPU and freezing desktop
-export FOSSILIZE_THREADS=2
+# 5. Prevent shader compilation from starving CPU and freezing desktop (cap threads to 4)
+export FOSSILIZE_THREADS=4
 
-# 4. Launch Steam executable
+# 6. Launch Steam executable
 exec $REAL_STEAM "$@"

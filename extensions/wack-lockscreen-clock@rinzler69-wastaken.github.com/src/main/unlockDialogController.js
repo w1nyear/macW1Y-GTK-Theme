@@ -110,8 +110,16 @@ export class UnlockDialogController {
                         this._extension?.triggerToggleNotifications?.();
                         return Clutter.EVENT_STOP;
                     }
+                    if (keyval === Clutter.KEY_Return || keyval === Clutter.KEY_KP_Enter || keyval === Clutter.KEY_space) {
+                        dialog._showPrompt();
+                        return Clutter.EVENT_STOP;
+                    }
                     if (keyval === Clutter.KEY_Escape) {
                         return Clutter.EVENT_STOP;
+                    }
+                    if (keyval >= Clutter.KEY_space && keyval <= Clutter.KEY_asciitilde) {
+                        dialog._showPrompt();
+                        return this.origKeyPressEvent(event);
                     }
                     return Clutter.EVENT_STOP;
                 }
@@ -121,8 +129,12 @@ export class UnlockDialogController {
 
         // Manage top menu bar for authentic macOS lockscreen (Battery, Control Center, DateMenu)
         if (!this._menuBarManager) {
-            this._menuBarManager = new LockscreenMenuBarManager(this._extension);
-            this._menuBarManager.setup();
+            try {
+                this._menuBarManager = new LockscreenMenuBarManager(this._extension);
+                this._menuBarManager.setup();
+            } catch (e) {
+                console.error(`[WACK] LockscreenMenuBarManager setup error: ${e}\n${e.stack}`);
+            }
         }
 
         // AuthPrompt lifecycle & PAM message intercept
