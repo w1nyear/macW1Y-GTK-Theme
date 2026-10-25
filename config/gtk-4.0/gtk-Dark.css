@@ -9998,7 +9998,7 @@ window.nautilus-window .sidebar-pane headerbar {
 
 window.nautilus-window .nautilus-pathbar,
 window.nautilus-window #NautilusPathBar {
-    min-width: 560px;
+    min-width: 0;
     padding: 3px 12px;
 }
 
