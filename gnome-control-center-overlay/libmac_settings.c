@@ -1272,6 +1272,8 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     if (!content_bars) return;
 
     AdwHeaderBar *target_hb = ADW_HEADER_BAR(content_bars->data);
+    gtk_widget_add_css_class(GTK_WIDGET(target_hb), "mac-settings-content-headerbar");
+    gtk_widget_set_margin_top(GTK_WIDGET(target_hb), 3);
 
     /* Remove from previous parent if different */
     GtkWidget *p_menu = gtk_widget_get_parent(menu_btn);
@@ -1299,6 +1301,11 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     if (gtk_widget_get_parent(search_btn) != GTK_WIDGET(target_hb)) {
         adw_header_bar_pack_end(target_hb, search_btn);
     }
+    gtk_widget_set_margin_end(menu_btn, 8);
+    gtk_widget_set_margin_top(menu_btn, 0);
+    gtk_widget_set_margin_bottom(menu_btn, 0);
+    gtk_widget_set_margin_top(search_btn, 0);
+    gtk_widget_set_margin_bottom(search_btn, 0);
     gtk_widget_set_visible(menu_btn, TRUE);
     gtk_widget_set_visible(search_btn, TRUE);
 
@@ -1315,6 +1322,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
 {
     GtkWindow *window = GTK_WINDOW(user_data);
     if (!window || !GTK_IS_WINDOW(window)) return G_SOURCE_REMOVE;
+    gtk_widget_add_css_class(GTK_WIDGET(window), "mac-settings-window");
 
     AdwNavigationSplitView *split_view = NULL;
     find_navigation_split_view(GTK_WIDGET(window), &split_view);
@@ -1341,6 +1349,8 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     find_headerbars_recursive(GTK_WIDGET(sidebar), &sidebar_bars);
     if (sidebar_bars) {
         AdwHeaderBar *sidebar_hb = ADW_HEADER_BAR(sidebar_bars->data);
+        gtk_widget_add_css_class(GTK_WIDGET(sidebar_hb), "mac-settings-sidebar-headerbar");
+        gtk_widget_set_margin_top(GTK_WIDGET(sidebar_hb), 3);
 
         /* 1. Hide title and any title labels in sidebar headerbar */
         adw_header_bar_set_show_title(sidebar_hb, FALSE);

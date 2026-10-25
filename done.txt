@@ -10265,3 +10265,30 @@ Task 499: Повне полірування екрана блокування (m
         * `mac_styling_new_page.png` — оновлена сторінка «Mac стилізація» з 4 оновленими групами та повзунками 0-100.
       - Перевірено збереження значень у `~/.config/mac-styling/styling.json` та зміну параметрів у реальному часі.
       - Сеанс користувача залишився активним, керування вентиляторами не зачіпалося.
+
+513. Опускання верхньої панелі та кнопок керування у додатку «Параметри» (GNOME Control Center) за аналогією з Nautilus:
+   1. Проблема:
+      - У вікні «Параметри» (gnome-control-center) кнопки керування у верхній панелі (пошук, меню, навігація назад та світлофор) були притиснуті майже впритул до верхнього заокругленого краю вікна (відступ лише ~2px від рамки, вісь на y = 19.5–22px).
+      - У Nautilus верхня панель і кнопки мають комфортний відступ (~15–16px від верхнього краю рамки, центральна вісь на y ≈ 32–33px), що забезпечує акуратний вигляд навколо заокруглених кутів вікна в стилі macOS.
+   2. Причина:
+      - У GTK4 CSS правило navigation-split-view headerbar містило margin-top: -4px, яке зміщувало всі заголовки вікна вгору.
+      - Клас .default-decoration для AdwToolbarView у gnome-control-center примусово зменшував min-height заголовка до 32px та обнуляв padding-top і padding-bottom.
+   3. Вирішено:
+      - Оновлено libmac_settings.c:
+        * Вікну додано стиль-клас mac-settings-window.
+        * Заголовку контентної панелі (target_hb) додано клас mac-settings-content-headerbar та задано верхній відступ margin-top: 3px.
+        * Бічному заголовку (sidebar_hb) додано клас mac-settings-sidebar-headerbar та задано margin-top: 3px.
+        * Кнопкам пошуку та меню встановлено margin-top: 0, margin-bottom: 0 та margin-end: 8px.
+      - Скомпільовано та інстальовано бібліотеку libmac_settings.so у ~/.local/lib/, ~/.local/share/gnome-control-center-overlay/ та /usr/lib/x86_64-linux-gnu/.
+      - Оновлено таблиці стилів GTK4 (gtk.css, gtk-Dark.css, gtk-dark.css) у конфігурації користувача та темі macW1Y-Dark:
+        * Виправлено селектор navigation-split-view headerbar, щоб він не підтягував заголовок вгору на -4px.
+        * Задано для заголовків navigation-split-view та mac-settings-window висоту min-height: 48px; margin-top: 3px; та внутрішні відступи padding-top: 6px; padding-bottom: 6px; margin-top: 3px;.
+        * Світлофору вікна встановлено вирівнювання margin-top: -3px; margin-left: 5px;.
+   4. Верифікація:
+      - Виміряно точні координати елементів за скріншотами активних вікон (exact_frame_settings_test3.png проти compare_nautilus_top.png):
+        * Світлофор (червона кнопка): Nautilus center_y = 32.0px, Параметри center_y = 32.5px.
+        * Кнопки пошуку / меню: Nautilus center_y = 33.0px, Параметри center_y = 33.0px (ідеальний збіг 1-в-1).
+        * Верхній край кнопок: Nautilus y = 16px, Параметри y = 15px.
+        * Кнопка «Назад» <: center_y = 32.5px.
+      - Створено артефакти порівняння: buttons_nautilus_vs_settings.png, trafficlights_nautilus_vs_settings.png, nautilus_vs_settings_perfect_stacked.png.
+      - Сеанс користувача залишився активним, керування вентиляторами не зачіпалося.
