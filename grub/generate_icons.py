@@ -167,12 +167,12 @@ def make_continue_btn():
 
 btn_continue = make_continue_btn()
 
-# Card geometry: moved lower down per user request
+# Card geometry: compact authentic Apple Silicon layout with close icon-label spacing
 card_w = int(round(176 * S))
-card_h = int(round(210 * S))
-center_y = int(round(515 * S))
-icon_y = int(round(465 * S))
-label_y = int(round(575 * S))
+card_h = int(round(176 * S))
+center_y = int(round(498 * S))
+icon_y = int(round(482 * S))
+label_y = int(round(534 * S))
 
 def draw_selection_card(im, cx, cy):
     card_im = Image.new('RGBA', (card_w, card_h), (0, 0, 0, 0))
