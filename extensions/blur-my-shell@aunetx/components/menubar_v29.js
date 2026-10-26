@@ -294,11 +294,6 @@ const WifiButton = GObject.registerClass({
             }
         }, this);
 
-        this._pollTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => {
-            if (this._icon) this._sync();
-            return GLib.SOURCE_CONTINUE;
-        });
-
         this.connect('destroy', () => {
             if (this._pollTimerId) {
                 GLib.source_remove(this._pollTimerId);
@@ -348,12 +343,18 @@ const WifiButton = GObject.registerClass({
     }
 
     _sync() {
+        if (!this._icon) return;
+        const setIcon = name => {
+            if (this._icon.icon_name !== name)
+                this._icon.icon_name = name;
+        };
+
         if (!this._nmClient || !this._nmClient.wireless_enabled) {
-            this._icon.icon_name = 'network-wireless-disabled-symbolic';
+            setIcon('network-wireless-disabled-symbolic');
             return;
         }
         if (!this._wifiDevice) {
-            this._icon.icon_name = 'network-wireless-offline-symbolic';
+            setIcon('network-wireless-offline-symbolic');
             return;
         }
 
@@ -363,17 +364,17 @@ const WifiButton = GObject.registerClass({
                 this._connectAp();
             const strength = ap.get_strength();
             if (strength > 75)
-                this._icon.icon_name = 'network-wireless-signal-excellent-symbolic';
+                setIcon('network-wireless-signal-excellent-symbolic');
             else if (strength > 50)
-                this._icon.icon_name = 'network-wireless-signal-good-symbolic';
+                setIcon('network-wireless-signal-good-symbolic');
             else if (strength > 25)
-                this._icon.icon_name = 'network-wireless-signal-ok-symbolic';
+                setIcon('network-wireless-signal-ok-symbolic');
             else
-                this._icon.icon_name = 'network-wireless-signal-weak-symbolic';
+                setIcon('network-wireless-signal-weak-symbolic');
         } else if (this._wifiDevice.get_state() === NM.DeviceState.ACTIVATING) {
-            this._icon.icon_name = 'network-wireless-acquiring-symbolic';
+            setIcon('network-wireless-acquiring-symbolic');
         } else {
-            this._icon.icon_name = 'network-wireless-offline-symbolic';
+            setIcon('network-wireless-offline-symbolic');
         }
     }
 
@@ -445,11 +446,6 @@ const BluetoothButton = GObject.registerClass({
                 this._populateMenu();
         }, this);
 
-        this._pollTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => {
-            if (this._icon) this._sync();
-            return GLib.SOURCE_CONTINUE;
-        });
-
         this.connect('destroy', () => {
             if (this._pollTimerId) {
                 GLib.source_remove(this._pollTimerId);
@@ -463,7 +459,9 @@ const BluetoothButton = GObject.registerClass({
 
     _sync() {
         const powered = Boolean(this._btClient?.default_adapter_powered);
-        this._icon.icon_name = powered ? 'bluetooth-active-symbolic' : 'bluetooth-disabled-symbolic';
+        const name = powered ? 'bluetooth-active-symbolic' : 'bluetooth-disabled-symbolic';
+        if (this._icon && this._icon.icon_name !== name)
+            this._icon.icon_name = name;
     }
 
     _populateMenu() {
@@ -572,11 +570,6 @@ const VolumeButton = GObject.registerClass({
                 this._populateMenu();
         }, this);
 
-        this._pollTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 2, () => {
-            if (this._icon) this._sync();
-            return GLib.SOURCE_CONTINUE;
-        });
-
         this.connect('destroy', () => {
             if (this._pollTimerId) {
                 GLib.source_remove(this._pollTimerId);
@@ -597,8 +590,14 @@ const VolumeButton = GObject.registerClass({
         if (sink !== this._currentSink) {
             this._connectSink();
         }
+        if (!this._icon) return;
+        const setIcon = name => {
+            if (this._icon.icon_name !== name)
+                this._icon.icon_name = name;
+        };
+
         if (!sink) {
-            this._icon.icon_name = 'audio-volume-muted-symbolic';
+            setIcon('audio-volume-muted-symbolic');
             return;
         }
 
@@ -607,13 +606,13 @@ const VolumeButton = GObject.registerClass({
         const isMuted = sink.get_is_muted();
 
         if (isMuted || vol <= 0.01) {
-            this._icon.icon_name = 'audio-volume-muted-symbolic';
+            setIcon('audio-volume-muted-symbolic');
         } else if (vol < 0.34) {
-            this._icon.icon_name = 'audio-volume-low-symbolic';
+            setIcon('audio-volume-low-symbolic');
         } else if (vol < 0.67) {
-            this._icon.icon_name = 'audio-volume-medium-symbolic';
+            setIcon('audio-volume-medium-symbolic');
         } else {
-            this._icon.icon_name = 'audio-volume-high-symbolic';
+            setIcon('audio-volume-high-symbolic');
         }
     }
 
@@ -818,11 +817,6 @@ const BatteryWidget = GObject.registerClass({
                 this._populateMenu();
         }, this);
 
-        this._pollTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
-            if (this._icon) this._sync();
-            return GLib.SOURCE_CONTINUE;
-        });
-
         this.connect('destroy', () => {
             if (this._pollTimerId) {
                 GLib.source_remove(this._pollTimerId);
@@ -835,9 +829,10 @@ const BatteryWidget = GObject.registerClass({
     }
 
     _sync() {
-        if (!this._upowerDevice) return;
+        if (!this._upowerDevice || !this._icon) return;
         const iconName = this._upowerDevice.icon_name || 'battery-full-symbolic';
-        this._icon.icon_name = iconName;
+        if (this._icon.icon_name !== iconName)
+            this._icon.icon_name = iconName;
 
         let showPercentage = false;
         try {
@@ -846,10 +841,14 @@ const BatteryWidget = GObject.registerClass({
         } catch (_e) {}
 
         if (showPercentage) {
-            this._label.text = `${Math.round(this._upowerDevice.percentage)}%`;
-            this._label.visible = true;
+            const pctText = `${Math.round(this._upowerDevice.percentage)}%`;
+            if (this._label.text !== pctText)
+                this._label.text = pctText;
+            if (!this._label.visible)
+                this._label.visible = true;
         } else {
-            this._label.visible = false;
+            if (this._label.visible)
+                this._label.visible = false;
         }
 
         const isCharging = (

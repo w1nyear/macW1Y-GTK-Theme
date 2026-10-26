@@ -395,7 +395,7 @@ export class DockMagnifier {
         // the dock container width and position remain 100% STATIC and LOCKED,
         // preventing lateral drift / jitter and completely eliminating 60 FPS
         // liquid-glass shader re-rendering.
-        const maxDeltaW = (this._maxScale - 1) * (Math.min(baseSpan, effectWidth / 2) + 24);
+        const maxDeltaW = (this._maxScale - 1) * Math.min(baseSpan, effectWidth / 2);
         const deltaW = maxDeltaW * this._envelope;
         const fixedSpan = baseSpan + deltaW;
         const targetL = (baseCenter - fixedSpan / 2) - basePadL;
