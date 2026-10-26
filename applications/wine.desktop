@@ -5,6 +5,7 @@ Comment=Run Windows applications seamlessly on macOS Modpack
 Exec=/usr/local/bin/mac-wine-runner %f
 Icon=wine
 Terminal=false
+StartupNotify=true
 NoDisplay=true
 MimeType=application/x-ms-dos-executable;application/x-msdownload;application/x-msi;application/x-bat;application/vnd.microsoft.portable-executable;
 Categories=System;Emulator;

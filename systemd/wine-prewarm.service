@@ -1,0 +1,14 @@
+[Unit]
+Description=Wine Windows Subsystem Prewarm Daemon
+Documentation=https://www.winehq.org/
+After=graphical-session.target
+
+[Service]
+Type=forking
+ExecStart=/usr/local/bin/wineserver -p
+ExecStop=/usr/local/bin/wineserver -k
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

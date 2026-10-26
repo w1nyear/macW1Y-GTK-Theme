@@ -116,10 +116,6 @@ fi
 unset VK_DRIVER_FILES
 unset VK_ICD_FILENAMES
 
-# Visual feedback notification for GUI launch
-if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
-    notify-send -a "macOS" -i "application-x-ms-dos-executable" "Запуск Windows програми" "Запуск \"$APP_NAME\" ($GPU_LABEL)..." 2>/dev/null || true
-fi
 
 cd "$WORK_DIR"
 

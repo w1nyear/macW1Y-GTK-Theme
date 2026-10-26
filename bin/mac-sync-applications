@@ -19,6 +19,65 @@ ICONS_DIR = os.path.join(HOME, ".local/share/icons/hicolor/scalable/apps")
 for d in [APPS_DIR, APPIMAGES_DIR, INSTALLED_APPS_DIR, WINE_APPS_DIR, WINE_INSTALLERS_CACHE, ICONS_DIR, LOCAL_APPS_DIR, TRASH_DIR, TRASH_INFO_DIR]:
     os.makedirs(d, exist_ok=True)
 
+APP_STORE_ICON = os.path.join(HOME, ".local/share/icons/MacTahoe/apps/scalable/snap-store.svg")
+if not os.path.exists(APP_STORE_ICON):
+    APP_STORE_ICON = os.path.join(HOME, ".local/share/icons/MacTahoe/apps/scalable/software-center.svg")
+if not os.path.exists(APP_STORE_ICON):
+    APP_STORE_ICON = "snap-store"
+
+_trash_lock = threading.Lock()
+_processing_trash = set()
+_recently_trashed = {}
+
+
+def is_safe_to_delete(folder):
+    if not folder or not os.path.isabs(folder):
+        return False
+    norm = os.path.realpath(folder)
+
+    forbidden = [
+        os.path.realpath(HOME),
+        os.path.realpath(APPS_DIR),
+        os.path.realpath(LOCAL_APPS_DIR),
+        os.path.realpath(os.path.join(HOME, ".local")),
+        os.path.realpath(os.path.join(HOME, ".local", "share")),
+        os.path.realpath(os.path.join(HOME, ".config")),
+        os.path.realpath(os.path.join(HOME, "Desktop")),
+        os.path.realpath(os.path.join(HOME, "Downloads")),
+        os.path.realpath("/"),
+        os.path.realpath("/usr"),
+        os.path.realpath("/bin"),
+        os.path.realpath("/etc"),
+        os.path.realpath("/home"),
+        os.path.realpath("/var"),
+        os.path.realpath(os.path.join(HOME, ".wine")),
+        os.path.realpath(os.path.join(HOME, ".wine", "drive_c")),
+        os.path.realpath(os.path.join(HOME, ".wine", "drive_c", "windows")),
+        os.path.realpath(os.path.join(HOME, ".wine", "drive_c", "users")),
+    ]
+    if norm in forbidden:
+        return False
+    for f in forbidden:
+        if f.startswith(norm):
+            return False
+
+    if norm.startswith(os.path.realpath(INSTALLED_APPS_DIR) + os.sep):
+        return True
+    if norm.startswith(os.path.realpath(WINE_APPS_DIR) + os.sep):
+        return True
+
+    wine_c = os.path.realpath(os.path.join(HOME, ".wine", "drive_c"))
+    if norm.startswith(wine_c + os.sep):
+        rel = os.path.relpath(norm, wine_c)
+        parts = rel.split(os.sep)
+        if parts[0].lower() in ["windows", "dosdevices"]:
+            return False
+        if parts[0].lower() == "users" and len(parts) < 3:
+            return False
+        return len(parts) >= 2
+
+    return False
+
 
 def resolve_icon(app_info, desktop_path, home):
     icon = app_info.get_icon() if app_info else None
@@ -301,6 +360,7 @@ Terminal=false
 Categories={categories}
 X-Mac-AppImage=true
 X-Mac-Real-Path={dest_binary}
+StartupNotify=true
 """
     local_desktop = os.path.join(LOCAL_APPS_DIR, f"appimage-{safe_id}.desktop")
     with open(local_desktop, "w") as df:
@@ -309,7 +369,7 @@ X-Mac-Real-Path={dest_binary}
 
     subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()
-    subprocess.run(["notify-send", "-a", "macOS", "-i", icon_path or "application-x-executable",
+    subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
                     "Програму встановлено", f"Програма \"{clean_name}\" успішно встановлена!"])
 
 
@@ -419,7 +479,7 @@ def install_archive(filepath):
                     df.write(f"Icon={icon_path}\n")
                 else:
                     df.write(line)
-            df.write(f"\nX-Mac-Installed-App=true\nX-Mac-App-Dir={target_app_dir}\n")
+            df.write(f"\nX-Mac-Installed-App=true\nX-Mac-App-Dir={target_app_dir}\nStartupNotify=true\n")
     elif main_bin:
         desktop_content = f"""[Desktop Entry]
 Type=Application
@@ -430,6 +490,7 @@ Terminal=false
 Categories=Utility;Application;
 X-Mac-Installed-App=true
 X-Mac-App-Dir={target_app_dir}
+StartupNotify=true
 """
         local_desktop = os.path.join(LOCAL_APPS_DIR, f"local-{safe_id}.desktop")
         with open(local_desktop, "w") as df:
@@ -438,7 +499,7 @@ X-Mac-App-Dir={target_app_dir}
 
     subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()
-    subprocess.run(["notify-send", "-a", "macOS", "-i", icon_path or "application-x-executable",
+    subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
                     "Програму встановлено", f"Програма \"{clean_name}\" успішно розгорнута та додана до списку програм!"])
 
 
@@ -454,7 +515,7 @@ def install_deb(filepath):
         pass
     if res.returncode == 0:
         sync()
-        subprocess.run(["notify-send", "-a", "macOS", "Встановлено",
+        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, "Встановлено",
                         f"Пакет \"{clean_name}\" успішно встановлено в систему!"])
 
 
@@ -547,6 +608,7 @@ X-Mac-Wine-App=true
 X-Mac-Real-Path={dest_binary}
 PrefersNonDefaultGPU=true
 X-KDE-RunOnDiscreteGpu=true
+StartupNotify=true
 """
         local_desktop = os.path.join(LOCAL_APPS_DIR, f"wine-{safe_id}.desktop")
         with open(local_desktop, "w") as df:
@@ -555,7 +617,7 @@ X-KDE-RunOnDiscreteGpu=true
 
         subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         sync()
-        subprocess.run(["notify-send", "-a", "macOS", "-i", icon_path or "application-x-ms-dos-executable",
+        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
                         "Програму додано", f"Windows програма \"{clean_name}\" готова до запуску!"])
         return
 
@@ -662,6 +724,7 @@ X-Mac-Wine-App=true
 X-Mac-Real-Path={installed_exe}
 PrefersNonDefaultGPU=true
 X-KDE-RunOnDiscreteGpu=true
+StartupNotify=true
 """
             with open(created_desktop, "w") as df:
                 df.write(desktop_content)
@@ -677,6 +740,8 @@ X-KDE-RunOnDiscreteGpu=true
                 clean_lines.append("X-Mac-Wine-App=true\n")
             if not any(l.startswith("PrefersNonDefaultGPU=") for l in clean_lines):
                 clean_lines.append("PrefersNonDefaultGPU=true\nX-KDE-RunOnDiscreteGpu=true\n")
+            if not any(l.startswith("StartupNotify=") for l in clean_lines):
+                clean_lines.append("StartupNotify=true\n")
             with open(created_desktop, "w") as f:
                 f.writelines(clean_lines)
             if not icon_path:
@@ -689,7 +754,7 @@ X-KDE-RunOnDiscreteGpu=true
 
     subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()
-    subprocess.run(["notify-send", "-a", "macOS", "-i", icon_path or "application-x-ms-dos-executable",
+    subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
                     "Програму встановлено", f"Windows програма \"{clean_name}\" успішно встановлена!"])
 
 
@@ -711,7 +776,6 @@ def handle_trash(trashinfo_path):
             return
 
         base_item = os.path.basename(trashinfo_path).replace(".trashinfo", "")
-        # base_item could be URL encoded in filename or standard
         import urllib.parse
         unquoted_base = urllib.parse.unquote(base_item)
         trashed_desktop = os.path.join(TRASH_DIR, base_item)
@@ -719,6 +783,14 @@ def handle_trash(trashinfo_path):
             trashed_desktop = os.path.join(TRASH_DIR, unquoted_base)
             if not os.path.exists(trashed_desktop):
                 return
+
+        now = time.time()
+        dedup_key = unquoted_base.lower().replace(".desktop", "")
+        with _trash_lock:
+            if dedup_key in _recently_trashed and now - _recently_trashed[dedup_key] < 8:
+                print(f"[Uninstaller] Ignoring duplicate trash event for {dedup_key}")
+                return
+            _recently_trashed[dedup_key] = now
 
         print(f"[Uninstaller] Detected trashed application: {trashed_desktop} (orig: {path_in_trash})")
 
@@ -777,11 +849,12 @@ def handle_trash(trashinfo_path):
                     pass
             # Remove desktop file in ~/.local/share/applications
             for df in glob.glob(os.path.join(LOCAL_APPS_DIR, "*.desktop")):
-                if bin_target and bin_target in open(df, errors="ignore").read():
-                    try:
+                try:
+                    content = open(df, errors="ignore").read()
+                    if bin_target and bin_target in content and "X-Mac-AppImage=true" in content:
                         os.remove(df)
-                    except Exception:
-                        pass
+                except Exception:
+                    pass
             try:
                 os.remove(trashed_desktop)
                 os.remove(trashinfo_path)
@@ -789,14 +862,13 @@ def handle_trash(trashinfo_path):
                 pass
             subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             sync()
-            subprocess.run(["notify-send", "-a", "macOS", "Видалено", f"Програму \"{app_name}\" успішно деінстальовано!"])
+            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, "Видалено", f"Програму \"{app_name}\" успішно деінстальовано!"])
             return
 
         # Case 2: Archive/Custom installed app
         if is_installed_app or app_dir:
             target_dir = app_dir if (app_dir and os.path.exists(app_dir)) else os.path.join(INSTALLED_APPS_DIR, app_name.lower())
-            if os.path.exists(target_dir):
-                # Run uninstall.sh if provided
+            if is_safe_to_delete(target_dir):
                 uninst = os.path.join(target_dir, "uninstall.sh")
                 if os.path.exists(uninst):
                     try:
@@ -805,11 +877,12 @@ def handle_trash(trashinfo_path):
                         pass
                 shutil.rmtree(target_dir, ignore_errors=True)
             for df in glob.glob(os.path.join(LOCAL_APPS_DIR, "*.desktop")):
-                if target_dir in open(df, errors="ignore").read():
-                    try:
+                try:
+                    content = open(df, errors="ignore").read()
+                    if target_dir and target_dir in content and "X-Mac-Installed-App=true" in content:
                         os.remove(df)
-                    except Exception:
-                        pass
+                except Exception:
+                    pass
             try:
                 os.remove(trashed_desktop)
                 os.remove(trashinfo_path)
@@ -817,7 +890,7 @@ def handle_trash(trashinfo_path):
                 pass
             subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             sync()
-            subprocess.run(["notify-send", "-a", "macOS", "Видалено", f"Програму \"{app_name}\" успішно деінстальовано!"])
+            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, "Видалено", f"Програму \"{app_name}\" успішно деінстальовано!"])
             return
 
         # Case 3: Wine Application
@@ -826,10 +899,11 @@ def handle_trash(trashinfo_path):
             if "/wine-apps/" in real_path or "/wine-apps/" in exec_cmd:
                 for cand in glob.glob(os.path.join(WINE_APPS_DIR, "*")):
                     if app_name.lower().replace(" ", "") in os.path.basename(cand).lower().replace(" ", ""):
-                        shutil.rmtree(cand, ignore_errors=True)
+                        if is_safe_to_delete(cand):
+                            shutil.rmtree(cand, ignore_errors=True)
             elif app_dir or real_path:
                 target_folder = app_dir or (os.path.dirname(real_path) if real_path else "")
-                if target_folder and os.path.exists(target_folder) and ".wine/drive_c/windows" not in target_folder:
+                if is_safe_to_delete(target_folder):
                     uninst = None
                     for u in ["unins000.exe", "uninstall.exe", "uninst.exe"]:
                         up = os.path.join(target_folder, u)
@@ -841,14 +915,28 @@ def handle_trash(trashinfo_path):
                             subprocess.run(["wine", uninst, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"], timeout=30)
                         except Exception:
                             pass
-                    if os.path.exists(target_folder) and ".wine/drive_c/windows" not in target_folder:
+                    if is_safe_to_delete(target_folder):
                         shutil.rmtree(target_folder, ignore_errors=True)
 
-            for df in glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True):
+            # Safely delete specific matching desktop files in LOCAL_APPS_DIR
+            clean_candidates = [
+                os.path.join(LOCAL_APPS_DIR, f"{base_item}.desktop"),
+                os.path.join(LOCAL_APPS_DIR, f"wine-{base_item}.desktop"),
+                os.path.join(LOCAL_APPS_DIR, base_item if base_item.endswith(".desktop") else f"{base_item}.desktop"),
+            ]
+            for cand_f in clean_candidates:
+                if os.path.exists(cand_f):
+                    try:
+                        os.remove(cand_f)
+                    except Exception:
+                        pass
+
+            for df in glob.glob(os.path.join(LOCAL_APPS_DIR, "*.desktop")):
                 try:
                     content = open(df, errors="ignore").read()
-                    if (app_name in df) or (real_path and real_path in content) or (app_name in content and "wine" in content):
-                        os.remove(df)
+                    if "X-Mac-Wine-App=true" in content:
+                        if (real_path and real_path in content) or (target_folder and target_folder in content):
+                            os.remove(df)
                 except Exception:
                     pass
 
@@ -860,7 +948,7 @@ def handle_trash(trashinfo_path):
 
             subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             sync()
-            subprocess.run(["notify-send", "-a", "macOS", "Видалено", f"Windows програму \"{app_name}\" успішно деінстальовано!"])
+            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, "Видалено", f"Windows програму \"{app_name}\" успішно деінстальовано!"])
             return
 
         # Case 4: System package (Snap / Flatpak / DEB)
@@ -904,8 +992,22 @@ class MacAppDaemon:
         if event_type not in (Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.CHANGES_DONE_HINT):
             return
         path = file.get_path()
-        if path and path.endswith(".trashinfo"):
-            threading.Thread(target=handle_trash, args=(path,), daemon=True).start()
+        if not path or not path.endswith(".trashinfo"):
+            return
+        now = time.time()
+        with _trash_lock:
+            if path in _processing_trash or (now - _recently_trashed.get(path, 0) < 5):
+                return
+            _processing_trash.add(path)
+            _recently_trashed[path] = now
+        threading.Thread(target=self._run_handle_trash, args=(path,), daemon=True).start()
+
+    def _run_handle_trash(self, path):
+        try:
+            handle_trash(path)
+        finally:
+            with _trash_lock:
+                _processing_trash.discard(path)
 
     def on_system_apps_changed(self, monitor, file, other_file, event_type):
         self.trigger_sync_debounced()
