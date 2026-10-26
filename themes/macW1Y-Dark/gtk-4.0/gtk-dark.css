@@ -9856,7 +9856,7 @@ window.nautilus-window .sidebar-pane headerbar {
     box-shadow: none;
 }
 
-/* Redesign: Top bar containers carry the list dissolve shader gradient (0px -> 3px -> 5px blur & dissolve simulation) */
+/* Redesign: Top bar containers are fully transparent without solid backgrounds across all applications */
 window toolbarview > .top-bar,
 window toolbarview > revealer.top-bar,
 window toolbarview > .top-bar:backdrop,
@@ -9870,13 +9870,9 @@ navigation-split-view toolbarview > .top-bar,
 overlay-split-view toolbarview > .top-bar,
 window.nautilus-window .content-pane toolbarview > .top-bar,
 window.nautilus-window toolbarview > .top-bar {
-    background: linear-gradient(to bottom,
-        @window_bg_color 0%,
-        alpha(@window_bg_color, 0.95) 25%,
-        alpha(@window_bg_color, 0.72) 50%,
-        alpha(@window_bg_color, 0.30) 75%,
-        transparent 100%);
+    background: none;
     background-color: transparent;
+    background-image: none;
     border: none;
     border-bottom: none;
     box-shadow: none;
@@ -10228,17 +10224,29 @@ scrolledwindow undershoot.right {
    macOS Tahoe / Sequoia style gradient fade for scrolled lists
    Smooth edge dissolution at scroll limits (Settings, Nautilus, etc.)
    ============================================================ */
-undershoot.top,
-scrolledwindow > undershoot.top,
-scrolledwindow.undershoot-top > undershoot.top,
-toolbarview.undershoot-top scrolledwindow > undershoot.top,
-navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
-.content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-.content-pane scrolledwindow > undershoot.top,
-overlay-split-view toolbarview.undershoot-top scrolledwindow > undershoot.top,
+/* Scrolled content top dissolution under transparent floating top bar */
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
+window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .content-pane scrolledwindow > undershoot.top,
+window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window scrolledwindow > undershoot.top {
+    min-height: 88px;
+    background: linear-gradient(to bottom,
+        @window_bg_color 0%,
+        alpha(@window_bg_color, 0.95) 28px,
+        alpha(@window_bg_color, 0.75) 48px,
+        alpha(@window_bg_color, 0.40) 68px,
+        alpha(@window_bg_color, 0.12) 80px,
+        transparent 88px);
+    border: none;
+    box-shadow: none;
+}
+
+navigation-split-view .content-pane scrolledwindow.undershoot-top > undershoot.top,
+overlay-split-view .content-pane scrolledwindow.undershoot-top > undershoot.top,
 overlay-split-view scrolledwindow.undershoot-top > undershoot.top,
-window scrolledwindow.undershoot-top > undershoot.top,
-window scrolledwindow > undershoot.top {
+window.nautilus-window .content-pane scrolledwindow.undershoot-top > undershoot.top {
     min-height: 56px;
     background: linear-gradient(to bottom,
         @window_bg_color 0%,
@@ -10251,26 +10259,7 @@ window scrolledwindow > undershoot.top {
     box-shadow: none;
 }
 
-/* Settings: Scrolled window extends behind the 48px headerbar, so undershoot.top extends 104px (48px behind header + 56px dissolve band) */
-window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
-window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window .content-pane scrolledwindow > undershoot.top,
-window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window scrolledwindow > undershoot.top {
-    min-height: 104px;
-    background: linear-gradient(to bottom,
-        @window_bg_color 0%,
-        @window_bg_color 48px,
-        alpha(@window_bg_color, 0.96) 62px,
-        alpha(@window_bg_color, 0.82) 76px,
-        alpha(@window_bg_color, 0.55) 88px,
-        alpha(@window_bg_color, 0.22) 98px,
-        transparent 104px);
-    border: none;
-    box-shadow: none;
-}
-
+/* Remove bottom undershoot fog/glow across all applications */
 undershoot.bottom,
 scrolledwindow > undershoot.bottom,
 scrolledwindow.undershoot-bottom > undershoot.bottom,
@@ -10279,16 +10268,33 @@ navigation-view-page toolbarview.undershoot-bottom scrolledwindow > undershoot.b
 .content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 .content-pane scrolledwindow > undershoot.bottom,
 window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom {
-    min-height: 48px;
-    background: linear-gradient(to top,
-        @window_bg_color 0%,
-        alpha(@window_bg_color, 0.96) 20%,
-        alpha(@window_bg_color, 0.82) 40%,
-        alpha(@window_bg_color, 0.55) 60%,
-        alpha(@window_bg_color, 0.22) 80%,
-        transparent 100%);
+    background: none;
+    background-image: none;
+    background-color: transparent;
     border: none;
     box-shadow: none;
+    min-height: 0px;
+}
+
+/* Remove white/light glow from treeviews, textviews, dialogs, popovers, and frames */
+dialog scrolledwindow undershoot,
+dialog-host scrolledwindow undershoot,
+window.dialog scrolledwindow undershoot,
+messagedialog scrolledwindow undershoot,
+scrolledwindow.frame undershoot,
+scrolledwindow > treeview ~ undershoot,
+scrolledwindow > textview ~ undershoot,
+treeview ~ undershoot,
+textview ~ undershoot,
+popover scrolledwindow undershoot,
+columnview ~ undershoot {
+    background: none;
+    background-image: none;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    min-height: 0px;
+    min-width: 0px;
 }
 
 .sidebar-pane undershoot.top,

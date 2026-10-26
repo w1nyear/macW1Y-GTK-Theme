@@ -20,8 +20,14 @@ corresponding .blp file and regenerate this file with blueprint-compiler.
 				</child>
 				<property name="child">
 					<object class="AdwToolbarView">
+						<property name="extend-content-to-top-edge">True</property>
+						<property name="extend-content-to-bottom-edge">True</property>
+						<property name="top-bar-style">flat</property>
 						<child type="top">
 							<object class="AdwHeaderBar" id="header_bar">
+								<style>
+									<class name="flat"/>
+								</style>
 								<property name="title-widget">
 									<object class="GtkStack" id="title_stack">
 										<child>

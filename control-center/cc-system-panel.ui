@@ -7,8 +7,15 @@
         <property name="title" translatable="yes">System</property>
         <property name="child">
           <object class="AdwToolbarView">
+            <property name="extend-content-to-top-edge">True</property>
+            <property name="extend-content-to-bottom-edge">True</property>
+            <property name="top-bar-style">flat</property>
             <child type="top">
-              <object class="AdwHeaderBar"/>
+              <object class="AdwHeaderBar">
+                <style>
+                  <class name="flat"/>
+                </style>
+              </object>
             </child>
             <property name="content">
               <object class="AdwPreferencesPage">
@@ -120,8 +127,15 @@
         <property name="tag">mac-styling</property>
         <property name="child">
           <object class="AdwToolbarView">
+            <property name="extend-content-to-top-edge">True</property>
+            <property name="extend-content-to-bottom-edge">True</property>
+            <property name="top-bar-style">flat</property>
             <child type="top">
-              <object class="AdwHeaderBar"/>
+              <object class="AdwHeaderBar">
+                <style>
+                  <class name="flat"/>
+                </style>
+              </object>
             </child>
             <property name="content">
               <object class="AdwPreferencesPage">
