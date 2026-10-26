@@ -8,12 +8,13 @@ import json
 STATE_FILE = '/etc/mac-gpu.state'
 TARGETS_FILE = '/etc/mac-gpu-targets.json'
 ENV_FILE = '/etc/environment.d/99-mac-gpu.conf'
+UDEV_POWER_RULE = '/etc/udev/rules.d/99-mac-nvidia-power.rules'
 
 MODES = ['hybrid', 'apps_nvidia', 'nvidia', 'intel']
 
 MODE_DESCRIPTIONS = {
-    'hybrid': 'Гібридний (Intel — система • RTX 3050 — ігри та важкі програми)',
-    'apps_nvidia': 'Всі програми на RTX 3050 (Intel — система • RTX 3050 — всі інші програми)',
+    'hybrid': 'Гібридний (Intel — система • RTX 3050 — ігри)',
+    'apps_nvidia': 'Програми та HDMI на RTX 3050 (RTX 3050 постійно активна • вивід HDMI)',
     'nvidia': 'Повна продуктивність (Все на RTX 3050)',
     'intel': 'Енергозбереження (Тільки Intel UHD Graphics)'
 }
@@ -129,6 +130,69 @@ def apply_user_systemd_env(enable=True):
                 cmd = ['sudo', '-u', u.pw_name, 'env', f'XDG_RUNTIME_DIR=/run/user/{uid}', 'systemctl', '--user', 'unset-environment'] + var_names
                 subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+def disable_nvidia_sleep():
+    """Keep NVIDIA GPU continuously powered so that HDMI hotplug and display stream work without sleeping."""
+    # 1. Remove runtimepm configs that set NVreg_DynamicPowerManagement=0x02
+    for p in ['/etc/modprobe.d/nvidia-runtimepm.conf', '/lib/modprobe.d/nvidia-runtimepm.conf']:
+        if os.path.exists(p):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+
+    # 2. Add udev rule to prevent PCI runtime power suspension
+    os.makedirs('/etc/udev/rules.d', exist_ok=True)
+    rule_content = '# Prevent NVIDIA GPU and HDMI audio from entering RTD3 sleep\nACTION=="add", SUBSYSTEM=="pci", ATTRS{vendor}=="0x10de", ATTR{power/control}="on"\n'
+    try:
+        with open(UDEV_POWER_RULE, 'w') as f:
+            f.write(rule_content)
+        subprocess.run(['udevadm', 'control', '--reload'], check=False)
+    except Exception:
+        pass
+
+    # 3. Ensure modeset=1 and fbdev=1 in kms config
+    kms_conf = '/etc/modprobe.d/nvidia-graphics-drivers-kms.conf'
+    if os.path.exists(kms_conf):
+        try:
+            with open(kms_conf, 'r') as f:
+                content = f.read()
+            if 'fbdev=1' not in content:
+                with open(kms_conf, 'a') as f:
+                    f.write('options nvidia_drm fbdev=1\n')
+        except Exception:
+            pass
+
+    # 4. Immediately wake up and lock PCI power control in live system
+    for pci_path in ['/sys/bus/pci/devices/0000:01:00.0/power/control',
+                     '/sys/bus/pci/devices/0000:01:00.1/power/control']:
+        if os.path.exists(pci_path):
+            try:
+                with open(pci_path, 'w') as f:
+                    f.write('on\n')
+            except Exception:
+                pass
+
+    # 5. Enable nvidia-persistenced service
+    subprocess.run(['systemctl', 'enable', '--now', 'nvidia-persistenced'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+def enable_nvidia_sleep():
+    """Allow NVIDIA to sleep in hybrid on-demand mode when no games are running."""
+    if os.path.exists(UDEV_POWER_RULE):
+        try:
+            os.remove(UDEV_POWER_RULE)
+            subprocess.run(['udevadm', 'control', '--reload'], check=False)
+        except OSError:
+            pass
+
+    for pci_path in ['/sys/bus/pci/devices/0000:01:00.0/power/control',
+                     '/sys/bus/pci/devices/0000:01:00.1/power/control']:
+        if os.path.exists(pci_path):
+            try:
+                with open(pci_path, 'w') as f:
+                    f.write('auto\n')
+            except Exception:
+                pass
+
 def set_mode(mode):
     if mode not in MODES:
         print(f"Error: Invalid mode '{mode}'. Choose from: {', '.join(MODES)}", file=sys.stderr)
@@ -138,6 +202,7 @@ def set_mode(mode):
     current_prime = get_current_prime()
 
     if mode == 'hybrid':
+        enable_nvidia_sleep()
         if current_prime != 'on-demand':
             subprocess.run(['prime-select', 'on-demand'], check=False)
         if os.path.exists(ENV_FILE):
@@ -148,14 +213,16 @@ def set_mode(mode):
         apply_user_systemd_env(enable=False)
 
     elif mode == 'apps_nvidia':
-        if current_prime != 'on-demand':
-            subprocess.run(['prime-select', 'on-demand'], check=False)
+        disable_nvidia_sleep()
+        if current_prime != 'nvidia':
+            subprocess.run(['prime-select', 'nvidia'], check=False)
         with open(ENV_FILE, 'w') as f:
             for k, v in NVIDIA_ENV_VARS.items():
                 f.write(f'{k}={v}\n')
         apply_user_systemd_env(enable=True)
 
     elif mode == 'nvidia':
+        disable_nvidia_sleep()
         if current_prime != 'nvidia':
             subprocess.run(['prime-select', 'nvidia'], check=False)
         with open(ENV_FILE, 'w') as f:
@@ -164,6 +231,7 @@ def set_mode(mode):
         apply_user_systemd_env(enable=True)
 
     elif mode == 'intel':
+        enable_nvidia_sleep()
         if current_prime != 'intel':
             subprocess.run(['prime-select', 'intel'], check=False)
         if os.path.exists(ENV_FILE):
@@ -201,15 +269,22 @@ def set_targets(sys_idx, apps_idx, games_idx):
     os.makedirs('/etc/environment.d', exist_ok=True)
     current_prime = get_current_prime()
 
-    # 1. System target (compositor / X11 / Wayland desktop)
-    if sys_val == 1:
+    # 1. Profile selection & NVIDIA sleep prevention
+    # If Apps (which controls HDMI) or System is assigned to NVIDIA (index 1), keep NVIDIA permanently active
+    if sys_val == 1 or apps_val == 1:
+        disable_nvidia_sleep()
         if current_prime != 'nvidia':
             subprocess.run(['prime-select', 'nvidia'], check=False)
     else:
-        if current_prime != 'on-demand':
-            subprocess.run(['prime-select', 'on-demand'], check=False)
+        enable_nvidia_sleep()
+        if games_val == 1:
+            if current_prime != 'on-demand':
+                subprocess.run(['prime-select', 'on-demand'], check=False)
+        else:
+            if current_prime != 'intel':
+                subprocess.run(['prime-select', 'intel'], check=False)
 
-    # 2. Apps target (default user applications)
+    # 2. Apps target (default user applications & environment)
     if apps_val == 1:
         with open(ENV_FILE, 'w') as f:
             for k, v in NVIDIA_ENV_VARS.items():
@@ -239,7 +314,7 @@ def set_targets(sys_idx, apps_idx, games_idx):
     except Exception:
         pass
 
-    print(f"Targets configured: System={sys_val}, Apps={apps_val}, Games={games_val} (Mode: {mode})")
+    print(f"Targets configured: System={sys_val}, Apps/HDMI={apps_val}, Games={games_val} (Mode: {mode})")
     print("Reboot is pending to fully apply all graphical changes.")
 
 def print_status():

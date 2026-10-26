@@ -107,7 +107,7 @@ corresponding .blp file and regenerate this file with blueprint-compiler.
 														<child>
 															<object class="AdwComboRow" id="gpu_apps_row">
 																<property name="title" translatable="yes">Програми</property>
-																<property name="subtitle" translatable="yes">Відеокарта для робочих програм та мультимедіа</property>
+																<property name="subtitle" translatable="yes">Відеокарта для робочих програм, мультимедіа та виводу HDMI</property>
 																<signal name="realize" handler="init_gpu_apps"/>
 																<signal name="notify::selected" handler="on_gpu_apps_changed"/>
 																<child type="prefix">

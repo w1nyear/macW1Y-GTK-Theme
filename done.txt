@@ -10711,3 +10711,33 @@ Task 499: Повне полірування екрана блокування (m
         * Steam зі згорнутим у трей вікном (`running: true, windowsCount: 0`): клік по іконці в доці миттєво відновив головне вікно Steam (`windowsCount: 1`).
         * При вже відкритому вікні: фокусування та мінімізація продовжують працювати бездоганно.
       - Сеанс користувача залишився активним, керування вентиляторами не зачіпалося.
+
+- [x] Завдання 530: Забезпечення безперервної роботи NVIDIA та виводу HDMI при виборі відеокарти для «Програм» (NVIDIA Performance & HDMI stream keep-alive)
+   1. Вимоги:
+      - При підключенні кабелю HDMI до ноутбука (Acer Nitro з гібридною графікою Intel UHD Graphics + NVIDIA GeForce RTX 3050 Laptop GPU) відбувалася системна анімація підключення та перебудова дока, проте зображення на зовнішній монітор/телевізор не виводилося («Немає сигналу» / чорний екран).
+      - Причина: у режимі `prime-select on-demand` дискретна відеокарта NVIDIA, до якої фізично розпаяно роз'єм HDMI (`card0-HDMI-A-2`), перебувала у стані глибокого енергозберігаючого сну RTD3 D3cold (`NVreg_DynamicPowerManagement=0x02`), що призводило до вимикання живлення контролера порту HDMI. Під час підключення графічний сервер Wayland (Mutter) не міг захопити монопольне керування DRM-пристроєм `/dev/dri/card0` через блокування (`Failed to reopen '/dev/dri/card0': Device or resource busy (EBUSY)`), і трансляція сигналу скасовувалася.
+      - Забезпечити, щоб при виборі дискретної відеокарти у пункті «Програми» в параметрах живлення автоматично вмикався профіль продуктивності NVIDIA (`prime-select nvidia`), відеокарта не засинала і роз'єм HDMI залишався постійно активним та готовим до трансляції відеопотоку. Пункт «Програми» має також відповідати за HDMI-потік.
+      - Не виходити з сесії користувача ніколи, не чіпати керування вентиляторами.
+   2. Реалізація:
+      - У скрипті керування графікою `bin/mac-gpu-manager` та системному `/usr/local/bin/mac-gpu-manager`:
+        * Створено функції `disable_nvidia_sleep()` та `enable_nvidia_sleep()`.
+        * `disable_nvidia_sleep()` видаляє конфігурації `nvidia-runtimepm.conf`, які примусово виставляли режим сну `NVreg_DynamicPowerManagement=0x02`; генерує правило udev `/etc/udev/rules.d/99-mac-nvidia-power.rules` (`ACTION=="add", SUBSYSTEM=="pci", ATTRS{vendor}=="0x10de", ATTR{power/control}="on"`), що запобігає переведенню ядра в стан D3hot/D3cold; гарантує наявність параметрів `modeset=1` та `fbdev=1` у `/etc/modprobe.d/nvidia-graphics-drivers-kms.conf`; миттєво встановлює `on` у файли керування живленням `/sys/bus/pci/devices/0000:01:00.0/power/control` (GPU) та `0000:01:00.1/power/control` (HDMI Audio); активує системну службу `nvidia-persistenced`.
+        * Оновлено логіку `set_targets()` та `set_mode()`: якщо для пункту «Програми» (`apps_val == 1`) або «Система» (`sys_val == 1`) вибрано NVIDIA RTX 3050, система автоматично перемикає `prime-select nvidia`, викликає `disable_nvidia_sleep()` та гарантує постійну активність GPU для виводу на HDMI.
+        * Режим сну `on-demand` зберігається виключно для сценарію, коли NVIDIA використовується тільки для «Ігор» (`games_val == 1` при `apps_val == 0` та `sys_val == 0`).
+      - У файлах розмітки інтерфейсу налаштувань `control-center/cc-power-panel.ui` та `gnome-control-center-overlay/cc-power-panel.ui`:
+        * Для пункту `gpu_apps_row` оновлено підзаголовок: `Відеокарта для робочих програм, мультимедіа та виводу HDMI`.
+        * Синхронізовано оновлені файли до каталогів оверлеїв `~/.local/share/gnome-control-center-overlay/` та `/usr/share/mactheme/gnome-control-center-overlay/`.
+      - Застосовано налаштування у поточній живій системі:
+        * Активовано профіль `prime-select nvidia`.
+        * Створено udev-правило `99-mac-nvidia-power.rules` та оновлено конфігурацію udevadm.
+        * Видалено застарілий конфіг `/etc/modprobe.d/nvidia-runtimepm.conf`.
+        * Вузли живлення PCI `/sys/bus/pci/devices/0000:01:00.0/power/control` та `0000:01:00.1/power/control` переведено в активний стан `on`.
+   3. Верифікація:
+      - Команда `prime-select query` повертає `nvidia`.
+      - Контроль живлення шини PCI: `cat /sys/bus/pci/devices/0000:01:00.0/power/control` підтверджено `on` (заборона засинання).
+      - Стан шини PCI: `cat /sys/bus/pci/devices/0000:01:00.0/power/runtime_status` підтверджено `active` (відеокарта активна та живить HDMI-контролер).
+      - Статус менеджера `/usr/local/bin/mac-gpu-manager status` підтверджує:
+        `Active Mode: apps_nvidia (Програми та HDMI на RTX 3050 (RTX 3050 постійно активна • вивід HDMI))`,
+        `prime-select state: nvidia`,
+        `Targets: Система=0, Програми=1, Ігри=1`.
+      - Сеанс користувача залишився активним, керування вентиляторами не зачіпалося.
