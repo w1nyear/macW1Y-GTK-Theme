@@ -64,6 +64,10 @@ const SYSTEM_SIDEBAR_WIDTHS = {
     'gnome-logs': 280,
     'org.gnome.seahorse.Application': 280,
     'seahorse': 280,
+    'net.nokyan.Resources': 345,
+    'resources': 345,
+    'org.gnome.SystemMonitor': 280,
+    'gnome-system-monitor': 280,
 };
 
 export const ApplicationsBlur = class ApplicationsBlur {
@@ -283,7 +287,7 @@ export const ApplicationsBlur = class ApplicationsBlur {
                     blur_actor.y = monitor.y - buffer.y;
 
                     const wm_class = meta_window.get_wm_class();
-                    const sidebarWidth = SYSTEM_SIDEBAR_WIDTHS[wm_class];
+                    const sidebarWidth = SYSTEM_SIDEBAR_WIDTHS[wm_class] || (wm_class && SYSTEM_SIDEBAR_WIDTHS[wm_class.toLowerCase()]);
                     const clipW = sidebarWidth ? Math.min(sidebarWidth, frame.width) : frame.width;
 
                     // set_clip(x-offset, y-offset, width, height)
@@ -292,15 +296,16 @@ export const ApplicationsBlur = class ApplicationsBlur {
                     const allocation = this.compute_allocation(meta_window);
                     blur_actor.x = allocation.x;
                     blur_actor.y = allocation.y;
-                    blur_actor.width = allocation.width;
                     blur_actor.height = allocation.height;
 
                     const wm_class = meta_window.get_wm_class();
-                    const sidebarWidth = SYSTEM_SIDEBAR_WIDTHS[wm_class];
+                    const sidebarWidth = SYSTEM_SIDEBAR_WIDTHS[wm_class] || (wm_class && SYSTEM_SIDEBAR_WIDTHS[wm_class.toLowerCase()]);
                     if (sidebarWidth) {
                         const maxSidebar = Math.min(sidebarWidth, allocation.width);
+                        blur_actor.width = maxSidebar;
                         blur_actor.set_clip(0, 0, maxSidebar, allocation.height);
                     } else {
+                        blur_actor.width = allocation.width;
                         blur_actor.remove_clip();
                     }
                 }
@@ -506,7 +511,7 @@ export const ApplicationsBlur = class ApplicationsBlur {
             blur_actor.hide();
 
         const wm_class = meta_window.get_wm_class();
-        const is_sidebar_system_app = Boolean(wm_class && SYSTEM_SIDEBAR_WIDTHS[wm_class]);
+        const is_sidebar_system_app = Boolean(wm_class && (SYSTEM_SIDEBAR_WIDTHS[wm_class] || SYSTEM_SIDEBAR_WIDTHS[wm_class.toLowerCase()]));
         const target_opacity = is_sidebar_system_app ? 255 : (show_blur ? this.settings.applications.OPACITY : 255);
 
         this.set_window_opacity(window_actor, target_opacity);

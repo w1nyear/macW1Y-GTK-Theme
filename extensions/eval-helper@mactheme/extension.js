@@ -330,40 +330,24 @@ export default class EvalHelper extends Extension {
                         }
                     }
                 }
-                // Connect window movement and overview signals to immediately refresh dock glass
-                const triggerAllDocks = (durationMs = 500) => {
+                // Gentle dock glass sync on workspace switch / overview transitions without hammering GPU
+                const syncDockGlass = () => {
                     if (typeof global._liquidGlassDockSync === 'function') {
                         try { global._liquidGlassDockSync(); } catch (_) {}
-                    }
-                    if (!global._lgGlass?.glassObjects) return;
-                    for (const g of global._lgGlass.glassObjects()) {
-                        if (g._owner === 'dock' && g.mapped && g.visible && g.width > 10) {
-                            g._copier?.clear();
-                            if (typeof g.forceRefresh === 'function') g.forceRefresh(durationMs);
-                            if (typeof g.syncSources === 'function') g.syncSources(true);
-                            g.queue_redraw();
-                        }
                     }
                 };
 
                 if (!this._macDockSignalsConnected) {
                     this._macDockSignalsConnected = true;
-                    this._dockSignals = [
-                        global.display.connect('restacked', () => triggerAllDocks(400)),
-                        global.display.connect('grab-op-begin', () => triggerAllDocks(1000)),
-                        global.display.connect('grab-op-end', () => triggerAllDocks(500)),
-                    ];
+                    this._dockSignals = [];
                     if (global.window_manager) {
                         this._dockSignals.push(
-                            global.window_manager.connect('size-change', () => triggerAllDocks(500)),
-                            global.window_manager.connect('switch-workspace', () => triggerAllDocks(600))
+                            global.window_manager.connect('switch-workspace', () => syncDockGlass())
                         );
                     }
                     this._dockSignals.push(
-                        Main.overview.connect('showing', () => triggerAllDocks(600)),
-                        Main.overview.connect('hiding', () => triggerAllDocks(600)),
-                        Main.overview.connect('shown', () => triggerAllDocks(400)),
-                        Main.overview.connect('hidden', () => triggerAllDocks(600))
+                        Main.overview.connect('shown', () => syncDockGlass()),
+                        Main.overview.connect('hidden', () => syncDockGlass())
                     );
                 }
             } catch (_) {}
