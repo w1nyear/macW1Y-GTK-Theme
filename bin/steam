@@ -79,5 +79,23 @@ export MANGOHUD_CONFIG="fps_limit=0"
 # 5. Prevent shader compilation from starving CPU and freezing desktop (cap threads to 4)
 export FOSSILIZE_THREADS=4
 
-# 6. Launch Steam executable
+# 6. Wayland & display scaling optimizations for SDL3 games (e.g. Counter-Strike 2)
+export SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY=1
+export SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR=0
+
+# Ensure CS2 launcher script uses native Wayland to prevent mouse snapping/locking
+fix_cs2_script() {
+    local cs2_paths=(
+        "$HOME/snap/steam/common/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/game/cs2.sh"
+        "$HOME/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/game/cs2.sh"
+    )
+    for cs2_sh in "${cs2_paths[@]}"; do
+        if [ -f "$cs2_sh" ] && grep -q 'export SDL_VIDEO_DRIVER=x11' "$cs2_sh"; then
+            sed -i 's/export SDL_VIDEO_DRIVER=x11/unset DISABLE_WAYLAND\n\t\texport SDL_VIDEO_DRIVER=wayland\n\t\texport SDL_VIDEODRIVER=wayland\n\t\texport SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY=1\n\t\texport SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR=0/g' "$cs2_sh"
+        fi
+    done
+}
+fix_cs2_script >/dev/null 2>&1 &
+
+# 7. Launch Steam executable
 exec $REAL_STEAM "$@"

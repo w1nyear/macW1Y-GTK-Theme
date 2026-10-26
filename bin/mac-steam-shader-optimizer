@@ -188,6 +188,29 @@ clean_stale_caches() {
     echo "mac-steam-shader-optimizer: Cleaned stale Mesa Intel shader caches."
 }
 
+verify_cs2_config() {
+    local dirs
+    read -r -a dirs <<< "$(get_steam_dirs)"
+    for sdir in "${dirs[@]}"; do
+        local cs2_sh="$sdir/steamapps/common/Counter-Strike Global Offensive/game/cs2.sh"
+        if [ -f "$cs2_sh" ] && grep -q 'export SDL_VIDEO_DRIVER=x11' "$cs2_sh"; then
+            sed -i 's/export SDL_VIDEO_DRIVER=x11/unset DISABLE_WAYLAND\n\t\texport SDL_VIDEO_DRIVER=wayland\n\t\texport SDL_VIDEODRIVER=wayland\n\t\texport SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY=1\n\t\texport SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR=0/g' "$cs2_sh"
+            echo "mac-steam-shader-optimizer: Updated CS2 launcher to native Wayland."
+        fi
+        local autoexec="$sdir/steamapps/common/Counter-Strike Global Offensive/game/csgo/cfg/autoexec.cfg"
+        if [ -f "$autoexec" ] && ! grep -q 'bind "MOUSE_X" "yaw"' "$autoexec"; then
+            cat << 'EOF' >> "$autoexec"
+
+// Wayland & Linux Mouse Input / Camera Rotation Fix
+bind "MOUSE_X" "yaw"
+bind "MOUSE_Y" "pitch"
+input_filter_relative_analog_inputs 0
+EOF
+            echo "mac-steam-shader-optimizer: Added mouse yaw/pitch binds to CS2 autoexec.cfg."
+        fi
+    done
+}
+
 case "$1" in
     clean)
         clean_stale_caches
@@ -208,5 +231,6 @@ case "$1" in
     *)
         install_wrappers
         clean_stale_caches
+        verify_cs2_config
         ;;
 esac
