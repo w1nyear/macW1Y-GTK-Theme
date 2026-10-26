@@ -1,8 +1,74 @@
 #!/bin/bash
-# Discrete GPU wrapper for Wine64
+# Dynamic GPU wrapper for Wine64 (respects Power Settings GPU selection)
+
+# Detect and apply GPU environment configured in Power Settings (~/.config/mac-gpu-targets.json)
+CONFIG_FILE="$HOME/.config/mac-gpu-targets.json"
+[ -f "$CONFIG_FILE" ] || CONFIG_FILE="/etc/mac-gpu-targets.json"
+
+IS_GAME=0
+if echo "$@" | grep -qi -E "game|steam|lutris|heroic|epic|gog|darksouls|cyberpunk|gta|witcher|cs2|cstrike|cstrike_online|rdr|elden"; then
+    IS_GAME=1
+fi
+
+TARGET_GPU=""
+if [ -f "$CONFIG_FILE" ]; then
+    if [ "$IS_GAME" -eq 1 ]; then
+        TARGET_GPU=$(grep -o '"games"[[:space:]]*:[[:space:]]*[0-9]*' "$CONFIG_FILE" 2>/dev/null | grep -o '[0-9]*$')
+    fi
+    if [ -z "$TARGET_GPU" ]; then
+        TARGET_GPU=$(grep -o '"apps"[[:space:]]*:[[:space:]]*[0-9]*' "$CONFIG_FILE" 2>/dev/null | grep -o '[0-9]*$')
+    fi
+    if [ -z "$TARGET_GPU" ]; then
+        TARGET_GPU=$(grep -o '"system"[[:space:]]*:[[:space:]]*[0-9]*' "$CONFIG_FILE" 2>/dev/null | grep -o '[0-9]*$')
+    fi
+fi
+
+if [ -z "$TARGET_GPU" ] && [ -f "/etc/mac-gpu.state" ]; then
+    STATE=$(cat /etc/mac-gpu.state 2>/dev/null)
+    if [ "$STATE" = "nvidia" ] || [ "$STATE" = "apps_nvidia" ]; then
+        TARGET_GPU=1
+    else
+        TARGET_GPU=0
+    fi
+fi
+
+[ -z "$TARGET_GPU" ] && TARGET_GPU=0
+
+if [ "$TARGET_GPU" -eq 1 ] && command -v nvidia-smi >/dev/null 2>&1; then
+    export __NV_PRIME_RENDER_OFFLOAD=1
+    export __GLX_VENDOR_LIBRARY_NAME=nvidia
+    export __VK_LAYER_NV_optimus=NVIDIA_only
+    export VK_LOADER_DRIVERS_SELECT="*nvidia*"
+    export PROTON_ENABLE_NVAPI=1
+    export DXVK_ENABLE_NVAPI=1
+    export PROTON_HIDE_NVIDIA_GPU=0
+    export __GL_SYNC_TO_VBLANK=0
+    export vblank_mode=0
+    export DXVK_FRAME_RATE=0
+    export DXVK_ASYNC=1
+    export MANGOHUD_CONFIG="fps_limit=0"
+    unset DRI_PRIME
+    unset MESA_VK_DEVICE_SELECT
+else
+    unset __NV_PRIME_RENDER_OFFLOAD
+    unset __GLX_VENDOR_LIBRARY_NAME
+    unset __VK_LAYER_NV_optimus
+    unset PROTON_ENABLE_NVAPI
+    unset DXVK_ENABLE_NVAPI
+    unset DXVK_FRAME_RATE
+    unset DXVK_ASYNC
+    unset MESA_VK_DEVICE_SELECT
+    export DRI_PRIME=0
+    export MESA_LOADER_DRIVER_OVERRIDE=iris
+    export VK_LOADER_DRIVERS_SELECT="*intel*"
+fi
+
+unset VK_DRIVER_FILES
+unset VK_ICD_FILENAMES
+
 REAL_BIN=$(PATH=$(echo "$PATH" | sed -e 's|/usr/local/bin||g' -e 's|::|:|g') which wine64 2>/dev/null)
 if [ -n "$REAL_BIN" ] && [ -x "$REAL_BIN" ]; then
-    exec /usr/local/bin/prime-run "$REAL_BIN" "$@"
+    exec "$REAL_BIN" "$@"
 else
     echo "Wine64 is not installed." >&2
     exit 1

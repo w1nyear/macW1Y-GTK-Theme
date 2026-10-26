@@ -1,6 +1,7 @@
 #!/bin/bash
 # mac-wine-runner: Seamless background runner for Windows executables (.exe, .msi, .bat, .cmd)
-# Runs via discrete GPU / prime-run, manages wineboot silently, handles desktop launches.
+# Dynamically selects GPU based on Power Settings (mac-gpu-targets.json)
+# Manages working directory, wineboot, and desktop notifications.
 
 set -e
 
@@ -47,18 +48,80 @@ if [ ! -d "$WINEPREFIX" ]; then
     wineboot -u >/dev/null 2>&1 || true
 fi
 
+# Read target GPU configured in Power Settings (Параметри -> Живлення)
+CONFIG_FILE="$HOME/.config/mac-gpu-targets.json"
+[ -f "$CONFIG_FILE" ] || CONFIG_FILE="/etc/mac-gpu-targets.json"
+
+IS_GAME=0
+if echo "$ABS_TARGET $@" | grep -qi -E "game|steam|lutris|heroic|epic|gog|darksouls|cyberpunk|gta|witcher|cs2|cstrike|cstrike_online|rdr|elden"; then
+    IS_GAME=1
+fi
+
+TARGET_GPU=""
+if [ -f "$CONFIG_FILE" ]; then
+    if [ "$IS_GAME" -eq 1 ]; then
+        TARGET_GPU=$(grep -o '"games"[[:space:]]*:[[:space:]]*[0-9]*' "$CONFIG_FILE" 2>/dev/null | grep -o '[0-9]*$')
+    fi
+    if [ -z "$TARGET_GPU" ]; then
+        TARGET_GPU=$(grep -o '"apps"[[:space:]]*:[[:space:]]*[0-9]*' "$CONFIG_FILE" 2>/dev/null | grep -o '[0-9]*$')
+    fi
+    if [ -z "$TARGET_GPU" ]; then
+        TARGET_GPU=$(grep -o '"system"[[:space:]]*:[[:space:]]*[0-9]*' "$CONFIG_FILE" 2>/dev/null | grep -o '[0-9]*$')
+    fi
+fi
+
+if [ -z "$TARGET_GPU" ] && [ -f "/etc/mac-gpu.state" ]; then
+    STATE=$(cat /etc/mac-gpu.state 2>/dev/null)
+    if [ "$STATE" = "nvidia" ] || [ "$STATE" = "apps_nvidia" ]; then
+        TARGET_GPU=1
+    else
+        TARGET_GPU=0
+    fi
+fi
+
+[ -z "$TARGET_GPU" ] && TARGET_GPU=0
+
+GPU_LABEL="Intel"
+if [ "$TARGET_GPU" -eq 1 ] && command -v nvidia-smi >/dev/null 2>&1; then
+    GPU_LABEL="NVIDIA RTX 3050"
+    export __NV_PRIME_RENDER_OFFLOAD=1
+    export __GLX_VENDOR_LIBRARY_NAME=nvidia
+    export __VK_LAYER_NV_optimus=NVIDIA_only
+    export VK_LOADER_DRIVERS_SELECT="*nvidia*"
+    export PROTON_ENABLE_NVAPI=1
+    export DXVK_ENABLE_NVAPI=1
+    export PROTON_HIDE_NVIDIA_GPU=0
+    export __GL_SYNC_TO_VBLANK=0
+    export vblank_mode=0
+    export DXVK_FRAME_RATE=0
+    export DXVK_ASYNC=1
+    export MANGOHUD_CONFIG="fps_limit=0"
+    unset DRI_PRIME
+    unset MESA_VK_DEVICE_SELECT
+else
+    GPU_LABEL="Intel Graphics"
+    unset __NV_PRIME_RENDER_OFFLOAD
+    unset __GLX_VENDOR_LIBRARY_NAME
+    unset __VK_LAYER_NV_optimus
+    unset PROTON_ENABLE_NVAPI
+    unset DXVK_ENABLE_NVAPI
+    unset DXVK_FRAME_RATE
+    unset DXVK_ASYNC
+    unset MESA_VK_DEVICE_SELECT
+    export DRI_PRIME=0
+    export MESA_LOADER_DRIVER_OVERRIDE=iris
+    export VK_LOADER_DRIVERS_SELECT="*intel*"
+fi
+
+unset VK_DRIVER_FILES
+unset VK_ICD_FILENAMES
+
 # Visual feedback notification for GUI launch
 if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
-    notify-send -a "macOS" -i "application-x-ms-dos-executable" "Запуск Windows програми" "Запуск \"$APP_NAME\" через Wine..." 2>/dev/null || true
+    notify-send -a "macOS" -i "application-x-ms-dos-executable" "Запуск Windows програми" "Запуск \"$APP_NAME\" ($GPU_LABEL)..." 2>/dev/null || true
 fi
 
 cd "$WORK_DIR"
-
-# Check GPU runner: prefer prime-run if available
-RUNNER=""
-if [ -x "/usr/local/bin/prime-run" ] && command -v nvidia-smi >/dev/null 2>&1; then
-    RUNNER="/usr/local/bin/prime-run"
-fi
 
 REAL_WINE=$(PATH=$(echo "$PATH" | sed -e 's|/usr/local/bin||g' -e 's|::|:|g') which wine 2>/dev/null || which wine 2>/dev/null)
 if [ -z "$REAL_WINE" ] || [ ! -x "$REAL_WINE" ]; then
@@ -75,24 +138,12 @@ fi
 
 case "$EXT_LOWER" in
     msi)
-        if [ -n "$RUNNER" ]; then
-            exec "$RUNNER" "$REAL_WINE" msiexec /i "$ABS_TARGET" "$@"
-        else
-            exec "$REAL_WINE" msiexec /i "$ABS_TARGET" "$@"
-        fi
+        exec "$REAL_WINE" msiexec /i "$ABS_TARGET" "$@"
         ;;
     bat|cmd)
-        if [ -n "$RUNNER" ]; then
-            exec "$RUNNER" "$REAL_WINE" cmd /c "$ABS_TARGET" "$@"
-        else
-            exec "$REAL_WINE" cmd /c "$ABS_TARGET" "$@"
-        fi
+        exec "$REAL_WINE" cmd /c "$ABS_TARGET" "$@"
         ;;
     *)
-        if [ -n "$RUNNER" ]; then
-            exec "$RUNNER" "$REAL_WINE" "$ABS_TARGET" "$@"
-        else
-            exec "$REAL_WINE" "$ABS_TARGET" "$@"
-        fi
+        exec "$REAL_WINE" "$ABS_TARGET" "$@"
         ;;
 esac

@@ -975,7 +975,7 @@ install_gamemode() {
     require_root
     
     # 1. Встановлення бінарних утиліт та скриптів
-    for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-sanitize-favorites.sh; do
+    for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh; do
         if [ -f "$SCRIPT_DIR/bin/$bin_file" ] || [ -L "$SCRIPT_DIR/bin/$bin_file" ]; then
             sudo cp -a "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
             sudo chmod +x "/usr/local/bin/$bin_file" 2>/dev/null || true
@@ -1819,7 +1819,7 @@ run_incremental_update() {
     [ -f "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" ] && sync_or_update_file "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" "/etc/udev/rules.d/99-uinput.rules" true
     [ -f "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" "/etc/systemd/system/mac-touchpad-daemon.service" true
 
-    for gb in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-sanitize-favorites.sh; do
+    for gb in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh; do
         if [ -f "$SCRIPT_DIR/bin/$gb" ] || [ -L "$SCRIPT_DIR/bin/$gb" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$gb" "/usr/local/bin/$gb" true
             sudo chmod +x "/usr/local/bin/$gb" 2>/dev/null || true
