@@ -198,7 +198,7 @@ stage {
 }
 
 StWidget.focused .app-well-app-running-dot {
-  background-color: -st-accent-color;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 .page-indicator {
@@ -2235,7 +2235,7 @@ StEntry StLabel.hint-text {
   height: 34px !important;
   background-color: transparent !important;
   background-gradient-direction: vertical !important;
-  background-gradient-start: rgba(0, 0, 0, 0.35) !important;
+  background-gradient-start: rgba(0, 0, 0, 0.20) !important;
   background-gradient-end: rgba(0, 0, 0, 0.0) !important;
   border-bottom: none !important;
   box-shadow: none !important;
@@ -3196,7 +3196,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 StWidget.focused .app-grid-running-dot {
-  background-color: -st-accent-color;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 .app-folder {
@@ -3374,7 +3374,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #dash .dash-background {
-  background-color: rgba(36, 36, 36, 0,36) !important;
+  background-color: rgba(36, 36, 36, 0.29) !important;
   border-radius: 28px !important;
   padding-top: 2px !important;
   padding-bottom: 2px !important;
@@ -5217,7 +5217,16 @@ StWidget.focused .app-grid-running-dot {
   height: 14px;
   background: white;
   border-radius: 9999px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition-duration: 300ms;
+}
+
+.toggle-switch:active .handle {
+  margin: 0px;
+  width: 28px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.40);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   transition-duration: 100ms;
 }
 
@@ -5233,6 +5242,15 @@ StWidget.focused .app-grid-running-dot {
 
 .toggle-switch:checked .handle {
   background: white;
+}
+
+.toggle-switch:checked:active .handle {
+  margin: 0px;
+  width: 28px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.40);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition-duration: 100ms;
 }
 
 .window-picker {
@@ -5504,7 +5522,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #dashtodockContainer #dash StWidget.focused .app-grid-running-dot {
-  background-color: -st-accent-color;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 #dashtodockContainer #dash .show-apps:hover .overview-icon, #dashtodockContainer #dash .show-apps:focus .overview-icon,
@@ -5602,7 +5620,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 #dashtodockContainer:overview #dash StWidget.focused .app-grid-running-dot {
-  background-color: -st-accent-color;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 #dashtodockContainer.opaque:overview #dash, #dashtodockContainer.transparent:overview #dash {

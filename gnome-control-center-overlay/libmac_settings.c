@@ -23,6 +23,9 @@ typedef struct {
     int blur_sigma;     /* 0 - 100 */
     int blur_tint;      /* 0 - 100 */
 
+    int menu_tint;      /* 0 - 100 */
+    int menu_blur;      /* 0 - 100 */
+
     /* Legacy fields for backward compatibility */
     int dock_blur;
     int dock_sigma;
@@ -49,6 +52,9 @@ static MacStylingData state = {
     .blur_sigma = 30,
     .blur_tint = 36,
 
+    .menu_tint = 35,
+    .menu_blur = 30,
+
     .dock_blur = 1,
     .dock_sigma = 30,
     .dock_tint = 0.36,
@@ -68,7 +74,15 @@ static MacStylingData state = {
 };
 
 static int in_init = 0;
+static guint json_timer_id = 0;
 static guint css_timer_id = 0;
+static guint menubar_blur_timer_id = 0;
+static guint liquid_blur_timer_id = 0;
+static guint liquid_tint_timer_id = 0;
+static guint blur_sigma_timer_id = 0;
+static guint blur_tint_timer_id = 0;
+static guint menu_blur_timer_id = 0;
+static guint menu_tint_timer_id = 0;
 
 static void load_config(void) {
     const char *home = g_get_home_dir();
@@ -121,6 +135,17 @@ static void load_config(void) {
                 state.blur_tint = (int)json_object_get_int_member(obj, "blur_tint");
             else if (json_object_has_member(obj, "dock_tint"))
                 state.blur_tint = (int)round(json_object_get_double_member(obj, "dock_tint") * 100.0);
+
+            /* Group 4: Context Menu */
+            if (json_object_has_member(obj, "menu_tint"))
+                state.menu_tint = (int)json_object_get_int_member(obj, "menu_tint");
+            else
+                state.menu_tint = 35;
+
+            if (json_object_has_member(obj, "menu_blur"))
+                state.menu_blur = (int)json_object_get_int_member(obj, "menu_blur");
+            else
+                state.menu_blur = 30;
 
             /* Legacy */
             if (json_object_has_member(obj, "dock_blur"))
@@ -182,6 +207,8 @@ static void save_styling_json(void) {
         "  \"liquid_tint\": %d,\n"
         "  \"blur_sigma\": %d,\n"
         "  \"blur_tint\": %d,\n"
+        "  \"menu_tint\": %d,\n"
+        "  \"menu_blur\": %d,\n"
         "  \"dock_blur\": %s,\n"
         "  \"dock_sigma\": %d,\n"
         "  \"dock_tint\": %s,\n"
@@ -201,6 +228,8 @@ static void save_styling_json(void) {
         state.liquid_tint,
         state.blur_sigma,
         state.blur_tint,
+        state.menu_tint,
+        state.menu_blur,
         (state.blur_sigma > 0) ? "true" : "false",
         state.blur_sigma,
         dock_tint_buf,
@@ -220,6 +249,20 @@ static void save_styling_json(void) {
     g_free(dir);
 }
 
+static gboolean save_json_cb(gpointer user_data) {
+    (void)user_data;
+    json_timer_id = 0;
+    save_styling_json();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_json_save(void) {
+    if (json_timer_id != 0) {
+        g_source_remove(json_timer_id);
+    }
+    json_timer_id = g_timeout_add(250, (GSourceFunc)save_json_cb, NULL);
+}
+
 static gboolean save_css_cb(gpointer user_data) {
     (void)user_data;
     css_timer_id = 0;
@@ -236,7 +279,7 @@ static void schedule_css_save(void) {
     if (css_timer_id != 0) {
         g_source_remove(css_timer_id);
     }
-    css_timer_id = g_timeout_add(400, (GSourceFunc)save_css_cb, NULL);
+    css_timer_id = g_timeout_add(350, (GSourceFunc)save_css_cb, NULL);
 }
 
 static void apply_menubar_blur(void) {
@@ -253,6 +296,19 @@ static void apply_menubar_blur(void) {
         g_settings_set_int(bms_panel, "sigma", state.menubar_blur);
         g_settings_set_boolean(bms_panel, "blur", state.menubar_blur > 0);
         g_object_unref(bms_panel);
+    }
+}
+
+static gboolean apply_menubar_blur_cb(gpointer user_data) {
+    (void)user_data;
+    menubar_blur_timer_id = 0;
+    apply_menubar_blur();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_menubar_blur_apply(void) {
+    if (menubar_blur_timer_id == 0) {
+        menubar_blur_timer_id = g_timeout_add(60, (GSourceFunc)apply_menubar_blur_cb, NULL);
     }
 }
 
@@ -283,6 +339,19 @@ static void apply_liquid_blur(void) {
     g_object_unref(lg);
 }
 
+static gboolean apply_liquid_blur_cb(gpointer user_data) {
+    (void)user_data;
+    liquid_blur_timer_id = 0;
+    apply_liquid_blur();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_liquid_blur_apply(void) {
+    if (liquid_blur_timer_id == 0) {
+        liquid_blur_timer_id = g_timeout_add(60, (GSourceFunc)apply_liquid_blur_cb, NULL);
+    }
+}
+
 static void apply_liquid_tint(void) {
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
     if (!src || !g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE))
@@ -310,6 +379,19 @@ static void apply_liquid_tint(void) {
     g_object_unref(lg);
 }
 
+static gboolean apply_liquid_tint_cb(gpointer user_data) {
+    (void)user_data;
+    liquid_tint_timer_id = 0;
+    apply_liquid_tint();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_liquid_tint_apply(void) {
+    if (liquid_tint_timer_id == 0) {
+        liquid_tint_timer_id = g_timeout_add(60, (GSourceFunc)apply_liquid_tint_cb, NULL);
+    }
+}
+
 static void apply_blur_sigma(void) {
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
     if (!src) return;
@@ -333,6 +415,19 @@ static void apply_blur_sigma(void) {
             g_settings_set_int(s, "sigma", state.blur_sigma);
             g_object_unref(s);
         }
+    }
+}
+
+static gboolean apply_blur_sigma_cb(gpointer user_data) {
+    (void)user_data;
+    blur_sigma_timer_id = 0;
+    apply_blur_sigma();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_blur_sigma_apply(void) {
+    if (blur_sigma_timer_id == 0) {
+        blur_sigma_timer_id = g_timeout_add(60, (GSourceFunc)apply_blur_sigma_cb, NULL);
     }
 }
 
@@ -367,6 +462,96 @@ static void apply_blur_tint(void) {
     }
 }
 
+static gboolean apply_blur_tint_cb(gpointer user_data) {
+    (void)user_data;
+    blur_tint_timer_id = 0;
+    apply_blur_tint();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_blur_tint_apply(void) {
+    if (blur_tint_timer_id == 0) {
+        blur_tint_timer_id = g_timeout_add(60, (GSourceFunc)apply_blur_tint_cb, NULL);
+    }
+}
+
+/* Group 4: Context Menu (apply to liquid-glass & blur-my-shell) */
+static void apply_menu_blur(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src) return;
+
+    if (g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE)) {
+        GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
+        int radius = (state.menu_blur > 0) ? (int)round((double)state.menu_blur * 30.0 / 100.0) : 0;
+        if (state.menu_blur > 0 && radius < 1) radius = 1;
+
+        g_settings_set_int(lg, "menu-blur-radius", radius);
+        g_settings_set_int(lg, "desktop-menu-blur-radius", radius);
+        g_settings_set_int(lg, "panel-menu-blur-radius", radius);
+        g_object_unref(lg);
+    }
+
+    if (g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.blur-my-shell.popup", TRUE)) {
+        GSettings *bms_popup = g_settings_new("org.gnome.shell.extensions.blur-my-shell.popup");
+        g_settings_set_int(bms_popup, "sigma", state.menu_blur);
+        g_settings_set_boolean(bms_popup, "blur", state.menu_blur > 0);
+        g_object_unref(bms_popup);
+    }
+}
+
+static gboolean apply_menu_blur_cb(gpointer user_data) {
+    (void)user_data;
+    menu_blur_timer_id = 0;
+    apply_menu_blur();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_menu_blur_apply(void) {
+    if (menu_blur_timer_id == 0) {
+        menu_blur_timer_id = g_timeout_add(60, (GSourceFunc)apply_menu_blur_cb, NULL);
+    }
+}
+
+static void apply_menu_tint(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src) return;
+
+    double tint = (double)state.menu_tint / 100.0;
+    double brightness = 1.0 - (tint * 0.5);
+    if (brightness < 0.2) brightness = 0.2;
+    if (brightness > 1.0) brightness = 1.0;
+
+    if (g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE)) {
+        GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
+        g_settings_set_double(lg, "menu-tint-strength", tint);
+        g_settings_set_double(lg, "desktop-menu-tint-strength", tint);
+        g_settings_set_double(lg, "panel-menu-tint-strength", tint);
+        g_settings_set_double(lg, "menu-brightness", brightness);
+        g_settings_set_double(lg, "desktop-menu-brightness", brightness);
+        g_settings_set_double(lg, "panel-menu-brightness", brightness);
+        g_object_unref(lg);
+    }
+
+    if (g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.blur-my-shell.popup", TRUE)) {
+        GSettings *bms_popup = g_settings_new("org.gnome.shell.extensions.blur-my-shell.popup");
+        g_settings_set_double(bms_popup, "brightness", brightness);
+        g_object_unref(bms_popup);
+    }
+}
+
+static gboolean apply_menu_tint_cb(gpointer user_data) {
+    (void)user_data;
+    menu_tint_timer_id = 0;
+    apply_menu_tint();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_menu_tint_apply(void) {
+    if (menu_tint_timer_id == 0) {
+        menu_tint_timer_id = g_timeout_add(60, (GSourceFunc)apply_menu_tint_cb, NULL);
+    }
+}
+
 /* Initialization signals from GtkBuilder (realize) */
 
 /* Group 1: Меню-бар */
@@ -384,8 +569,8 @@ void on_menubar_tint_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
     state.menubar_tint = (int)lround(gtk_range_get_value(widget));
-    save_styling_json();
     schedule_css_save();
+    schedule_json_save();
 }
 
 void init_menubar_blur(void *widget, gpointer data) {
@@ -401,8 +586,8 @@ void on_menubar_blur_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
     state.menubar_blur = (int)lround(gtk_range_get_value(widget));
-    save_styling_json();
-    apply_menubar_blur();
+    schedule_menubar_blur_apply();
+    schedule_json_save();
 }
 
 /* Group 2: Liquid Glass */
@@ -419,8 +604,8 @@ void on_liquid_blur_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
     state.liquid_blur = (int)lround(gtk_range_get_value(widget));
-    save_styling_json();
-    apply_liquid_blur();
+    schedule_liquid_blur_apply();
+    schedule_json_save();
 }
 
 void init_liquid_tint(void *widget, gpointer data) {
@@ -436,8 +621,8 @@ void on_liquid_tint_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
     state.liquid_tint = (int)lround(gtk_range_get_value(widget));
-    save_styling_json();
-    apply_liquid_tint();
+    schedule_liquid_tint_apply();
+    schedule_json_save();
 }
 
 /* Group 3: Blur */
@@ -454,8 +639,8 @@ void on_blur_sigma_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
     state.blur_sigma = (int)lround(gtk_range_get_value(widget));
-    save_styling_json();
-    apply_blur_sigma();
+    schedule_blur_sigma_apply();
+    schedule_json_save();
 }
 
 void init_blur_tint(void *widget, gpointer data) {
@@ -471,9 +656,45 @@ void on_blur_tint_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
     state.blur_tint = (int)lround(gtk_range_get_value(widget));
-    save_styling_json();
-    apply_blur_tint();
+    schedule_blur_tint_apply();
     schedule_css_save();
+    schedule_json_save();
+}
+
+/* Group 4: Context Menu */
+void init_menu_tint(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.menu_tint);
+    in_init = 0;
+}
+
+void on_menu_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.menu_tint = (int)lround(gtk_range_get_value(widget));
+    schedule_menu_tint_apply();
+    schedule_json_save();
+}
+
+void init_menu_blur(void *widget, gpointer data) {
+    (void)data;
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.menu_blur);
+    in_init = 0;
+}
+
+void on_menu_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.menu_blur = (int)lround(gtk_range_get_value(widget));
+    schedule_menu_blur_apply();
+    schedule_json_save();
 }
 
 /* Legacy stubs so unresolved symbol errors never occur */
