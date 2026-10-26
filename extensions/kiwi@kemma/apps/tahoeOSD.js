@@ -35,14 +35,46 @@ const HIDE_MS = 1800;
 const OSD_PAD = 20;
 const OSD_RADIUS = 22;
 
+function _getAccentColor() {
+    try {
+        const iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
+        const name = iface.get_string('accent-color') || 'blue';
+        const ACCENT_MAP = {
+            'blue':   [0.05, 0.56, 1.00], // #0c8eff / #007aff macOS vibrant blue
+            'teal':   [0.13, 0.56, 0.64],
+            'green':  [0.20, 0.78, 0.35], // #34c759
+            'yellow': [1.00, 0.80, 0.00], // #ffcc00
+            'orange': [1.00, 0.58, 0.00], // #ff9500
+            'red':    [1.00, 0.23, 0.19], // #ff3b30
+            'pink':   [1.00, 0.18, 0.33], // #ff2d55
+            'purple': [0.69, 0.32, 0.87], // #af52de
+            'slate':  [0.56, 0.56, 0.58], // #8e8e93
+        };
+        return ACCENT_MAP[name] || ACCENT_MAP['blue'];
+    } catch (_) {
+        return [0.05, 0.56, 1.00];
+    }
+}
+
+function _isOverampAllowed() {
+    try {
+        const soundSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.sound'});
+        return soundSettings.get_boolean('allow-volume-above-100-percent');
+    } catch (_) {
+        return false;
+    }
+}
+
 // Segmented bar (Tahoe OSD): solid fill + a dots row beneath. Dots at/left
 // of the value are bold and opaque, the rest small and faint.
+// Aligned with 16 discrete steps of volume/brightness.
 const TahoeSegSlider = GObject.registerClass({
     GTypeName: `TahoeSegSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
 }, class TahoeSegSlider extends St.DrawingArea {
     _init() {
         super._init({reactive: false, height: 28});
         this._v = 0;
+        this._isOveramp = false;
         this.connect('repaint', () => {
             try {
                 this._paint();
@@ -50,11 +82,13 @@ const TahoeSegSlider = GObject.registerClass({
         });
     }
 
-    setValue(v) {
-        const nv = Math.max(0, Math.min(1, v));
-        if (Math.abs(nv - this._v) < 0.0005)
+    setValue(v, isOveramp = false) {
+        const nv = Math.max(0, Math.min(1.53, v));
+        const noa = !!isOveramp;
+        if (Math.abs(nv - this._v) < 0.0005 && this._isOveramp === noa)
             return;
         this._v = nv;
+        this._isOveramp = noa;
         try {
             this.queue_repaint();
         } catch (_) {}
@@ -79,28 +113,53 @@ const TahoeSegSlider = GObject.registerClass({
             const k = sw / (w || 1);
             cr.save();
             cr.scale(k, k);
-            const v = this._v;
+            let v = this._v;
+            const isOveramp = this._isOveramp || v > 1.0001;
 
             // solid background track
             const barY = Math.round(h * 0.28), barH = 5;
+            const r = barH / 2;
             cr.setSourceRGBA(1, 1, 1, 0.28);
-            this._rr(cr, 0, barY, w, barH, barH / 2);
+            this._rr(cr, 0, barY, w, barH, r);
             cr.fill();
 
+            // Colors: RED if overamplified (100%+), selected system accent color if <= 100%
+            const RED = [1.00, 0.23, 0.19];
+            const ACCENT = _getAccentColor();
+            const [colorR, colorG, colorB] = isOveramp ? RED : ACCENT;
+
+            // Step snapping for 16 segments (matching volume/brightness stops)
+            const n = 16;
+            const stepIdx = Math.max(0, Math.min(n, Math.round(v * n)));
+            const snappedV = stepIdx / n;
+            if (Math.abs(v - snappedV) < 0.02)
+                v = snappedV;
+
             // filled bar
-            if (v > 0.001) {
-                cr.setSourceRGBA(1, 1, 1, 1);
-                this._rr(cr, 0, barY, Math.max(barH, Math.round(w * v)), barH, barH / 2);
+            let fillW = 0;
+            if (isOveramp) {
+                fillW = w;
+                cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
+                this._rr(cr, 0, barY, fillW, barH, r);
+                cr.fill();
+            } else if (v > 0.001) {
+                fillW = Math.max(barH, Math.min(w, Math.round(r + v * (w - 2 * r) + r)));
+                cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
+                this._rr(cr, 0, barY, fillW, barH, r);
                 cr.fill();
             }
 
-            // dots row beneath: 17 faint small dots
-            const n = 17;
+            // dots row beneath: 16 dots precisely aligned with the 16 stops
             const dy = h * 0.78;
-            for (let i = 0; i < n; i++) {
-                const x = (i + 0.5) * w / n;
-                cr.setSourceRGBA(1, 1, 1, 0.35);
-                cr.arc(x, dy, 1.5, 0, Math.PI * 2);
+            for (let i = 1; i <= n; i++) {
+                const dotX = r + i * (w - 2 * r) / n;
+                const isActive = isOveramp || (dotX <= fillW + 1.0);
+                if (isActive) {
+                    cr.setSourceRGBA(colorR, colorG, colorB, 0.95);
+                } else {
+                    cr.setSourceRGBA(1, 1, 1, 0.28);
+                }
+                cr.arc(dotX, dy, 1.5, 0, Math.PI * 2);
                 cr.fill();
             }
             cr.restore();
@@ -279,21 +338,28 @@ function _handleOsdCall(monitorIndex, icon, label, level, maxLevel) {
     if (isVolume) {
         let val = 0;
         let isMuted = iconName.includes('muted');
+        const overampAllowed = _isOverampAllowed();
+        const maxLimit = overampAllowed ? 1.53 : 1.0;
+
         if (level !== undefined && level !== null) {
-            val = (maxLevel && maxLevel > 0) ? (level / maxLevel) : level;
+            if (maxLevel && maxLevel > 0) {
+                val = maxLevel === 150 ? (level / 100) : (level / maxLevel);
+            } else {
+                val = level;
+            }
             if (val <= 0)
                 isMuted = true;
         } else if (_control && _control.get_state() === Gvc.MixerControlState.READY && _control.get_default_sink()) {
             const sink = _control.get_default_sink();
-            const max = _control.get_vol_max_norm() || 65536;
-            val = sink.volume / max;
+            const maxNorm = _control.get_vol_max_norm() || 65536;
+            val = sink.volume / maxNorm;
             isMuted = !!sink.is_muted;
         }
-        val = Math.max(0, Math.min(1, val));
+        val = Math.max(0, Math.min(maxLimit, val));
         const title = _getAudioDeviceTitle();
         _show('volume', title,
-            isMuted ? 'audio-volume-muted-symbolic' : 'audio-volume-low-symbolic',
-            isMuted ? 'audio-volume-muted-symbolic' : 'audio-volume-high-symbolic',
+            isMuted ? 'audio-volume-muted-symbolic' : (val > 1.0001 ? 'audio-volume-overamplified-symbolic' : 'audio-volume-low-symbolic'),
+            isMuted ? 'audio-volume-muted-symbolic' : (val > 1.0001 ? 'audio-volume-overamplified-symbolic' : 'audio-volume-high-symbolic'),
             isMuted ? 0 : val);
         return true;
     }
@@ -519,10 +585,15 @@ function _show(kind, title, iconL, iconR, value) {
     _hideStockOsd();
 
     try {
-        _title.text = title;
+        const isOveramp = (kind === 'volume' && value > 1.0001);
+        if (isOveramp) {
+            _title.text = `${title} · ${Math.round(value * 100)}%`;
+        } else {
+            _title.text = title;
+        }
         _iconL.icon_name = iconL;
         _iconR.icon_name = iconR;
-        _slider.setValue(value);
+        _slider.setValue(value, isOveramp);
     } catch (_) {}
 
     try {
@@ -636,8 +707,10 @@ function _onVolume() {
         const sink = _control.get_default_sink();
         if (!sink)
             return;
-        const max = _control.get_vol_max_norm() || 65536;
-        const v = Math.max(0, Math.min(1, sink.volume / max));
+        const maxNorm = _control.get_vol_max_norm() || 65536;
+        const overampAllowed = _isOverampAllowed();
+        const maxLimit = overampAllowed ? 1.53 : 1.0;
+        const v = Math.max(0, Math.min(maxLimit, sink.volume / maxNorm));
         if (!_sinkReady) {
             _sinkReady = true;
             return;
@@ -645,8 +718,8 @@ function _onVolume() {
         const title = _getAudioDeviceTitle();
         const muted = !!sink.is_muted;
         _show('volume', title,
-            muted ? 'audio-volume-muted-symbolic' : 'audio-volume-low-symbolic',
-            muted ? 'audio-volume-muted-symbolic' : 'audio-volume-high-symbolic',
+            muted ? 'audio-volume-muted-symbolic' : (v > 1.0001 ? 'audio-volume-overamplified-symbolic' : 'audio-volume-low-symbolic'),
+            muted ? 'audio-volume-muted-symbolic' : (v > 1.0001 ? 'audio-volume-overamplified-symbolic' : 'audio-volume-high-symbolic'),
             muted ? 0 : v);
     } catch (_) {}
 }
