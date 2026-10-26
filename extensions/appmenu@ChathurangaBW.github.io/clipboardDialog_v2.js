@@ -647,7 +647,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._listContainer = new St.BoxLayout({
             vertical: true,
             x_expand: true,
-            style: 'padding: 4px 8px 4px 8px;',
+            style: 'padding: 4px 8px 20px 8px;',
         });
         this._scrollView.set_child(this._listContainer);
 

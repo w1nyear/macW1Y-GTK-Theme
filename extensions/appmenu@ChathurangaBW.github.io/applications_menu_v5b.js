@@ -422,7 +422,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             vertical: true,
             x_expand: true,
             y_expand: true,
-            style: 'padding: 0;',
+            style: 'padding: 0 0 20px 0;',
         });
         this._scrollView.add_child(this._gridContainer);
 
