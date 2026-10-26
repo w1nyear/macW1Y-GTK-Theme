@@ -9,10 +9,10 @@
 </info>
 
 <!-- ::: CONSTANTS ::: -->
-<constant name="C_titlebar_gradient_a" value="gtk:custom(titlebar_gradient_a,shade/gtk:bg[NORMAL]/1.07)"/>
-<constant name="C_titlebar_gradient_b" value="gtk:custom(titlebar_gradient_b,gtk:bg[NORMAL])"/>
-<constant name="C_border_focused" value="gtk:custom(wm_border_focused,shade/gtk:bg[NORMAL]/0.65)"/>
-<constant name="C_border_unfocused" value="gtk:custom(wm_border_unfocused,shade/gtk:bg[NORMAL]/0.75)"/>
+<constant name="C_titlebar_gradient_a" value="#242424"/>
+<constant name="C_titlebar_gradient_b" value="#242424"/>
+<constant name="C_border_focused" value="#242424"/>
+<constant name="C_border_unfocused" value="#242424"/>
 <constant name="C_title_focused" value="gtk:custom(wm_title_focused,blend/gtk:fg[NORMAL]/gtk:bg[NORMAL]/0.3)"/>
 <constant name="C_title_focused_shadow" value="gtk:custom(wm_title_focused_shadow,shade/gtk:bg[NORMAL]/1.1)"/>
 <constant name="C_title_unfocused" value="gtk:custom(wm_title_unfocused,blend/gtk:fg[NORMAL]/gtk:bg[NORMAL]/0.6)"/>
@@ -29,8 +29,8 @@
 	<distance name="right_titlebar_edge" value="6" />
 	<distance name="title_vertical_pad" value="0" />
 	<aspect_ratio name="button" value="1.0" />
-	<border name="title_border" left="10" right="10" top="6" bottom="6" />
-	<border name="button_border" left="2" right="2" top="6" bottom="6" />
+	<border name="title_border" left="10" right="10" top="2" bottom="2" />
+	<border name="button_border" left="2" right="2" top="2" bottom="2" />
 </frame_geometry>
 
 <frame_geometry name="normal_unfocused" title_scale="medium" rounded_top_left="10" rounded_top_right="10" parent="normal" />
@@ -51,7 +51,7 @@
 
 <frame_geometry name="small" title_scale="small" rounded_top_left="8" rounded_top_right="8" parent="normal">
 	<distance name="title_vertical_pad" value="0" />
-	<border name="title_border" left="16" right="16" top="6" bottom="6" />
+	<border name="title_border" left="16" right="16" top="2" bottom="2" />
 	<border name="button_border" left="2" right="2" top="0" bottom="0" />
 </frame_geometry>
 
@@ -82,8 +82,8 @@
 
 <frame_geometry name="modal" title_scale="medium" hide_buttons="false" rounded_top_left="10" rounded_top_right="10" rounded_bottom_right="false" rounded_bottom_left="false" parent="small">
 	<distance name="title_vertical_pad" value="0" />
-	<border name="title_border" left="10" right="10" top="6" bottom="6" />
-	<border name="button_border" left="2" right="2" top="6" bottom="6" />
+	<border name="title_border" left="10" right="10" top="2" bottom="2" />
+	<border name="button_border" left="2" right="2" top="2" bottom="2" />
 </frame_geometry>
 
 <frame_geometry name="attached" title_scale="small" hide_buttons="true" rounded_top_left="8" rounded_top_right="8" parent="small">
@@ -134,29 +134,23 @@
 
 <!-- ::: WINDOW DECORATIONS ::: -->
 <draw_ops name="entire_background_focused">
-	<rectangle color="C_titlebar_gradient_b" x="0" y="0" width="width" height="height" filled="true" />
+	<rectangle color="#242424" x="0" y="0" width="width" height="height" filled="true" />
 </draw_ops>
 
 <draw_ops name="entire_background_unfocused">
-	<include name="entire_background_focused" />
+	<rectangle color="#242424" x="0" y="0" width="width" height="height" filled="true" />
 </draw_ops>
 
 <draw_ops name="titlebar_fill_focused">
-	<gradient type="vertical" x="0" y="0" width="width" height="title_height">
-	<color value="C_titlebar_gradient_a" />
-	<color value="C_titlebar_gradient_b" />
-	</gradient>
+	<rectangle color="#242424" x="0" y="0" width="width" height="title_height" filled="true" />
 </draw_ops>
 
 <draw_ops name="titlebar_fill_attached_focused">
-	<include name="entire_background_focused" />
+	<rectangle color="#242424" x="0" y="0" width="width" height="title_height" filled="true" />
 </draw_ops>
 
 <draw_ops name="titlebar_fill_unfocused">
-	<gradient type="vertical" x="0" y="0" width="width" height="title_height">
-	<color value="C_titlebar_gradient_a" />
-	<color value="C_titlebar_gradient_b" />
-	</gradient>
+	<rectangle color="#242424" x="0" y="0" width="width" height="title_height" filled="true" />
 </draw_ops>
 
 <draw_ops name="titlebar_focused">

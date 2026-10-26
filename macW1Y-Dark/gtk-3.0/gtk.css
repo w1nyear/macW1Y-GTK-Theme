@@ -1,10 +1,3 @@
-@import url("gtk-dark.css");
-
-/* Kiwi (is not Apple) - managed imports: begin */
-@import url("titlebuttons3.css");
-@import url("titlebuttons-size-small3.css");
-@import url("fixes3.css");
-/* Kiwi (is not Apple) - managed imports: end */
 /* --- MAC-STYLING-START --- */
 /* macOS Tahoe Context Menus (Desktop and System GTK Applications) */
 window.desktopmenu,
@@ -320,3 +313,178 @@ windowcontrols button.maximize:active {
   background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-active-dark.png");
 }
 /* --- MAC-TRAFFIC-LIGHTS-END --- */
+
+/* ============================================================
+   Completely remove overscroll glow (overshoot) and fake gradients
+   across all GTK3 applications
+   ============================================================ */
+overshoot,
+overshoot.top,
+overshoot.bottom,
+overshoot.left,
+overshoot.right,
+scrolledwindow overshoot,
+scrolledwindow overshoot.top,
+scrolledwindow overshoot.bottom,
+scrolledwindow overshoot.left,
+scrolledwindow overshoot.right,
+scrolledwindow > overshoot,
+scrolledwindow > overshoot.top,
+scrolledwindow > overshoot.bottom,
+scrolledwindow > overshoot.left,
+scrolledwindow > overshoot.right {
+    background: none;
+    background-image: none;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+undershoot.left,
+undershoot.right,
+scrolledwindow undershoot.left,
+scrolledwindow undershoot.right,
+scrolledwindow > undershoot.left,
+scrolledwindow > undershoot.right {
+    background: none;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+}
+
+undershoot.top,
+scrolledwindow undershoot.top,
+scrolledwindow > undershoot.top {
+    min-height: 28px;
+    background: linear-gradient(to bottom,
+        @theme_bg_color 0%,
+        alpha(@theme_bg_color, 0.85) 30%,
+        alpha(@theme_bg_color, 0.4) 65%,
+        transparent 100%);
+    border: none;
+    box-shadow: none;
+}
+
+undershoot.bottom,
+scrolledwindow undershoot.bottom,
+scrolledwindow > undershoot.bottom {
+    min-height: 28px;
+    background: linear-gradient(to top,
+        @theme_bg_color 0%,
+        alpha(@theme_bg_color, 0.85) 30%,
+        alpha(@theme_bg_color, 0.4) 65%,
+        transparent 100%);
+    border: none;
+    box-shadow: none;
+}
+
+/* Keep dialogs and treeviews in GTK3 free of white glow */
+messagedialog scrolledwindow undershoot,
+dialog scrolledwindow undershoot,
+treeview ~ undershoot,
+textview ~ undershoot {
+    background: none;
+    background-image: none;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    min-height: 0px;
+    min-width: 0px;
+}
+
+/* Settings app transparent headerbar with list dissolve */
+window.mac-settings-window headerbar,
+window.mac-settings-window .titlebar,
+window.mac-settings-window headerbar.titlebar,
+window.mac-settings-window headerbar:backdrop,
+window.mac-settings-window .titlebar:backdrop {
+    background: none;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-bottom: none;
+    box-shadow: none;
+}
+
+/* Solid compact headerbars and titlebars across applications */
+headerbar,
+.titlebar,
+headerbar.titlebar,
+window.titlebar,
+window:not(.mac-settings-window) headerbar,
+window:not(.mac-settings-window) .titlebar {
+    background-color: #242424 !important;
+    background-image: none !important;
+    border: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    min-height: 28px !important;
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
+}
+
+headerbar:backdrop,
+.titlebar:backdrop,
+headerbar.titlebar:backdrop,
+window.titlebar:backdrop {
+    background-color: #242424 !important;
+    background-image: none !important;
+}
+
+/* Compact solid notebook tab bars (GTK3 tabs) */
+notebook > header,
+notebook > header.top,
+notebook > header.bottom,
+notebook > header.left,
+notebook > header.right,
+window.background:not(.solid-csd):not(.csd) > notebook > header,
+.nautilus-window notebook > header,
+.dynamic-notebook > notebook > header {
+    background-color: #242424 !important;
+    background-image: none !important;
+    min-height: 24px !important;
+    margin: 0 !important;
+    padding: 1px 4px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+notebook > header > tabs > tab,
+window.background:not(.solid-csd):not(.csd) > notebook > header > tabs > tab,
+.dynamic-notebook > notebook > header > tabs > tab {
+    min-height: 22px !important;
+    padding: 1px 8px !important;
+    margin: 1px 2px !important;
+    background-color: #2c2c2e !important;
+    background-image: none !important;
+    border: none !important;
+    border-radius: 5px !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    box-shadow: none !important;
+}
+
+notebook > header > tabs > tab:checked,
+notebook > header > tabs > tab:selected,
+window.background:not(.solid-csd):not(.csd) > notebook > header > tabs > tab:selected,
+.dynamic-notebook > notebook > header > tabs > tab:checked {
+    background-color: #3a3a3c !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+notebook > header > tabs > tab:hover:not(:checked):not(:selected) {
+    background-color: #343438 !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+notebook > header > tabs > tab button.flat,
+notebook > header > tabs > tab button.close-button,
+notebook > header > tabs > tab button.image-button.flat {
+    min-height: 16px !important;
+    min-width: 16px !important;
+    padding: 0 !important;
+    border-radius: 9999px !important;
+}
+
+

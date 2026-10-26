@@ -9,10 +9,10 @@
 </info>
 
 <!-- CONSTANTS -->
-<constant name="C_titlebar" value="#373737" />
-<constant name="C_titlebar_unfocused" value="#373737" />
-<constant name="C_border_focused" value="#373737" />
-<constant name="C_border_unfocused" value="#373737" />
+<constant name="C_titlebar" value="#242424" />
+<constant name="C_titlebar_unfocused" value="#242424" />
+<constant name="C_border_focused" value="#242424" />
+<constant name="C_border_unfocused" value="#242424" />
 <constant name="C_title_focused" value="#f5f5f5" />
 <constant name="C_title_unfocused" value="#dedede" />
 
@@ -34,10 +34,10 @@
 	<distance name="bottom_height" value="1" />
 	<distance name="left_titlebar_edge" value="5" />
 	<distance name="right_titlebar_edge" value="5" />
-	<distance name="title_vertical_pad" value="4" />
+	<distance name="title_vertical_pad" value="0" />
 	<aspect_ratio name="button" value="1.0" />
-	<border name="title_border" left="4" right="4" top="4" bottom="4" />
-	<border name="button_border" left="0" right="0" top="4" bottom="4" />
+	<border name="title_border" left="4" right="4" top="2" bottom="2" />
+	<border name="button_border" left="0" right="0" top="2" bottom="2" />
 </frame_geometry>
 
 <!-- Unfocused window -->
