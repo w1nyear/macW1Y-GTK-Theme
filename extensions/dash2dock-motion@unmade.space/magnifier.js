@@ -245,10 +245,14 @@ export class DockMagnifier {
 
     _advanceCursor(dt) {
         const raw = this._pointerAxis();
-        if (this._cursor === null)
+        if (this._cursor === null) {
             this._cursor = raw;
-        else
+            this._cursorMoved = true;
+        } else {
+            const prev = this._cursor;
             this._cursor += (raw - this._cursor) * (1 - Math.exp(-dt / CURSOR_TAU));
+            this._cursorMoved = Math.abs(this._cursor - prev) > 0.05 || Math.abs(raw - this._cursor) > 0.1;
+        }
     }
 
     _onFrame() {
@@ -261,6 +265,7 @@ export class DockMagnifier {
 
         this._advanceCursor(dt);
 
+        const prevEnvelope = this._envelope;
         // Critically damped spring toward the target envelope.
         const w = SPRING_OMEGA;
         this._velocity += (-2 * w * this._velocity -
@@ -268,6 +273,14 @@ export class DockMagnifier {
         this._envelope += this._velocity * dt;
         if (this._envelope < 0)
             this._envelope = 0;
+
+        // When entering dock, lock envelope to 1.0 once settled to avoid floating-point drift
+        if (this._target === 1 &&
+            Math.abs(this._envelope - 1) < SETTLE_ENVELOPE &&
+            Math.abs(this._velocity) < SETTLE_VELOCITY) {
+            this._envelope = 1;
+            this._velocity = 0;
+        }
 
         if (this._target === 0 &&
             Math.abs(this._envelope) < SETTLE_ENVELOPE &&
@@ -278,6 +291,11 @@ export class DockMagnifier {
             this._clearTransforms();
             return;
         }
+
+        // If cursor is stationary and envelope has settled, do not waste GPU recomputing transforms
+        const envelopeChanged = Math.abs(this._envelope - prevEnvelope) > 0.0001;
+        if (!envelopeChanged && !this._cursorMoved)
+            return;
 
         this.update();
     }
@@ -369,12 +387,22 @@ export class DockMagnifier {
         const bgP2 = dashP + (horizontal ? bgActor.allocation.x2 : bgActor.allocation.y2);
         const basePadL = Math.max(2, bounds[0] - bgP1);
         const basePadR = Math.max(2, bgP2 - bounds[n]);
-        const padL = basePadL + Math.max(0, elements[0].scale - 1) * 22;
-        const padR = basePadR + Math.max(0, elements[n - 1].scale - 1) * 22;
+        const baseSpan = bounds[n] - bounds[0];
+
+        // FIXED DOCK CONTAINER WIDTH ON HOVER:
+        // Width expansion depends SOLELY on this._envelope, completely independent
+        // of horizontal cursor position. When moving the cursor across icons,
+        // the dock container width and position remain 100% STATIC and LOCKED,
+        // preventing lateral drift / jitter and completely eliminating 60 FPS
+        // liquid-glass shader re-rendering.
+        const maxDeltaW = (this._maxScale - 1) * (Math.min(baseSpan, effectWidth / 2) + 24);
+        const deltaW = maxDeltaW * this._envelope;
+        const fixedSpan = baseSpan + deltaW;
+        const targetL = (baseCenter - fixedSpan / 2) - basePadL;
+        const targetR = (baseCenter + fixedSpan / 2) + basePadR;
 
         this._stretchBackground(bounds[0], bounds[n],
-            newBounds[0] + shift, newBounds[n] + shift, padL, padR);
-        this._notifyDockUpdate();
+            targetL + basePadL, targetR - basePadR, basePadL, basePadR);
     }
 
     /**
@@ -541,6 +569,17 @@ export class DockMagnifier {
         const scale = (targetR - targetL) / baseSize;
         const translation = targetL - bgP1;
 
+        // [GPU OPTIMIZATION] If dock container scale and translation haven't changed,
+        // DO NOT mutate Clutter actors, DO NOT call _stretchBlurGroup, and DO NOT
+        // notify liquid-glass! Only icons redraw, keeping GPU at ~3-5%.
+        if (this._lastBgScale !== undefined &&
+            Math.abs(this._lastBgScale - scale) < 0.0005 &&
+            Math.abs(this._lastBgTrans - translation) < 0.05) {
+            return;
+        }
+        this._lastBgScale = scale;
+        this._lastBgTrans = translation;
+
         if (!this._transformed.has(bg)) {
             bg.pivot_point = new Graphene.Point({x: 0, y: 0});
             const destroyId = bg.connect('destroy',
@@ -556,6 +595,7 @@ export class DockMagnifier {
         }
 
         this._stretchBlurGroup(bgP1, scale, translation);
+        this._notifyDockUpdate();
     }
 
     /**
@@ -609,6 +649,10 @@ export class DockMagnifier {
     }
 
     _clearTransforms() {
+        this._lastBgScale = undefined;
+        this._lastBgTrans = undefined;
+        this._cursor = null;
+        this._cursorMoved = false;
         for (const [actor, destroyId] of this._transformed) {
             actor.disconnect(destroyId);
             actor.set_scale(1, 1);

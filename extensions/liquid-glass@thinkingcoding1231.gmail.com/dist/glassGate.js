@@ -193,7 +193,9 @@ export function glassRefreshDue(glassActor, extraHash) {
             const dueInterval = ownChanged ? GLASS_REFRESH_ACTIVE_INTERVAL_US : GLASS_REFRESH_BACKGROUND_INTERVAL_US;
             return sinceFull >= dueInterval;
         }
-        return sinceFull >= GLASS_REFRESH_HEARTBEAT_US;
+        // [GPU-OPTIMIZE] У спокої, коли нічого не брудне (st.dirty === false),
+        // не виконувати дорогі оновлення взагалі (0% GPU в idle).
+        return false;
     } catch (e) {
         globalThis._lastDueError = `${e?.message || e}\n${e?.stack || ''}`;
         return true;

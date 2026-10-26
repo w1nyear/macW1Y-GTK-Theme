@@ -656,7 +656,6 @@ export class UIManager {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             } else {
                 this._frameSyncId = 0;
-                this._scheduleIdleHeartbeat();
             }
             return GLib.SOURCE_REMOVE;
         };
@@ -671,13 +670,7 @@ export class UIManager {
             }
         };
         this._scheduleIdleHeartbeat = () => {
-            if (this._idleTimeoutId || this._torndown)
-                return;
-            this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
-                this._idleTimeoutId = 0;
-                this.wakeFrameSync();
-                return GLib.SOURCE_REMOVE;
-            });
+            // [GPU-OPTIMIZE] No-op in idle.
         };
         // Starts the render loop and builds fresh clones when the menu is opened
         let startFrameSync = () => {

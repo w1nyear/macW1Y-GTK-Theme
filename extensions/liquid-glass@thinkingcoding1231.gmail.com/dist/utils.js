@@ -4512,8 +4512,9 @@ export function glassRefreshDue(glassActor, extraHash) {
             const dueInterval = ownChanged ? GLASS_REFRESH_ACTIVE_INTERVAL_US : GLASS_REFRESH_BACKGROUND_INTERVAL_US;
             return sinceFull >= dueInterval;
         }
-        // У спокої — тільки пульс узгодженості.
-        return sinceFull >= GLASS_REFRESH_HEARTBEAT_US;
+        // [GPU-OPTIMIZE] У спокої, коли нічого не брудне (st.dirty === false),
+        // не виконувати дорогі оновлення взагалі (0% GPU в idle).
+        return false;
     } catch (_) {
         // Будь-який збій → рефреш. Безпечність важливіша за економію.
         return true;

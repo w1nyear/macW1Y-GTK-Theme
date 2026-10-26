@@ -348,7 +348,6 @@ export class NotificationManager {
                 this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
             } else {
                 this._frameSyncId = 0;
-                this._scheduleIdleHeartbeat();
             }
             return GLib.SOURCE_REMOVE;
         };
@@ -363,13 +362,7 @@ export class NotificationManager {
             }
         };
         this._scheduleIdleHeartbeat = () => {
-            if (this._idleTimeoutId || this._torndown)
-                return;
-            this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
-                this._idleTimeoutId = 0;
-                this.wakeFrameSync();
-                return GLib.SOURCE_REMOVE;
-            });
+            // [GPU-OPTIMIZE] No-op in idle.
         };
         this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
         this._isFirstAdaptiveRun = true;

@@ -4,7 +4,7 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import { LiquidEffect } from './liquidEffect.js?v=fix1';
 import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js?v=fix1';
-import { glassRefreshDue, glassRefreshDone, glassForceRefresh } from './glassGate.js';
+import { glassRefreshDue, glassRefreshDone, glassForceRefresh } from './glassGate.js?v=fix2';
 // Padding to allow the shader to draw effects (like refraction and blur) outside the actor's strict bounds.
 const SHADER_PADDING = 20;
 // Utility: Convert HEX color string (e.g., "#ffffff") to normalized RGB array [1.0, 1.0, 1.0]
@@ -446,7 +446,6 @@ export class DashManager {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             } else {
                 this._frameSyncId = 0;
-                this._scheduleIdleHeartbeat();
             }
             return GLib.SOURCE_REMOVE;
         };
@@ -461,13 +460,7 @@ export class DashManager {
             }
         };
         this._scheduleIdleHeartbeat = () => {
-            if (this._idleTimeoutId || this._torndown)
-                return;
-            this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
-                this._idleTimeoutId = 0;
-                this.wakeFrameSync();
-                return GLib.SOURCE_REMOVE;
-            });
+            // [GPU-OPTIMIZE] No-op in idle: real events (window restack, hover, geometry) wake sync.
         };
         let startFrameSync = () => {
             this.wakeFrameSync();
@@ -504,10 +497,6 @@ export class DashManager {
             return false;
         }));
         this._signals.push(this.targetActor.connect('leave-event', () => {
-            this.wakeFrameSync();
-            return false;
-        }));
-        this._signals.push(this.targetActor.connect('motion-event', () => {
             this.wakeFrameSync();
             return false;
         }));

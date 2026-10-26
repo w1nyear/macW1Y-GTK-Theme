@@ -298,12 +298,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
     }
 
     _scheduleIdleHeartbeat() {
-        if (this._idleTimeoutId || this._cleanedUp || !this.visible) return;
-        this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
-            this._idleTimeoutId = 0;
-            this.wakeFrameSync();
-            return GLib.SOURCE_REMOVE;
-        });
+        // [GPU-OPTIMIZE] No-op in idle.
     }
 
     _startTick() {
@@ -365,7 +360,6 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
                     .add(Meta.LaterType.BEFORE_REDRAW, tick);
             } else {
                 this._frameSyncId = 0;
-                this._scheduleIdleHeartbeat();
             }
             return GLib.SOURCE_REMOVE;
         };
