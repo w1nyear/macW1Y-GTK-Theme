@@ -11,19 +11,28 @@
 #include <json-glib/json-glib.h>
 
 
+#include <math.h>
+
 typedef struct {
+    int menubar_tint;   /* 0 - 100 */
+    int menubar_blur;   /* 0 - 100 */
+
+    int liquid_blur;    /* 0 - 100 */
+    int liquid_tint;    /* 0 - 100 */
+
+    int blur_sigma;     /* 0 - 100 */
+    int blur_tint;      /* 0 - 100 */
+
+    /* Legacy fields for backward compatibility */
     int dock_blur;
     int dock_sigma;
     double dock_tint;
     int dock_radius;
-
     int panel_blur;
     int panel_sigma;
     double panel_tint;
-
     int qs_sigma;
-    int qs_anim; /* 0: "window", 1: "elements" */
-
+    int qs_anim;
     int notif_blur;
     int notif_sigma;
     double notif_tint;
@@ -31,17 +40,26 @@ typedef struct {
 } MacStylingData;
 
 static MacStylingData state = {
+    .menubar_tint = 35,
+    .menubar_blur = 10,
+
+    .liquid_blur = 20,
+    .liquid_tint = 12,
+
+    .blur_sigma = 30,
+    .blur_tint = 36,
+
     .dock_blur = 1,
     .dock_sigma = 30,
     .dock_tint = 0.36,
     .dock_radius = 28,
 
     .panel_blur = 1,
-    .panel_sigma = 30,
-    .panel_tint = 0.20,
+    .panel_sigma = 10,
+    .panel_tint = 0.35,
 
     .qs_sigma = 30,
-    .qs_anim = 0, /* default "window" */
+    .qs_anim = 0,
 
     .notif_blur = 1,
     .notif_sigma = 30,
@@ -66,6 +84,45 @@ static void load_config(void) {
         JsonNode *root = json_parser_get_root(parser);
         if (JSON_NODE_HOLDS_OBJECT(root)) {
             JsonObject *obj = json_node_get_object(root);
+
+            /* Group 1: Menubar */
+            if (json_object_has_member(obj, "menubar_tint"))
+                state.menubar_tint = (int)json_object_get_int_member(obj, "menubar_tint");
+            else if (json_object_has_member(obj, "panel_tint"))
+                state.menubar_tint = (int)round(json_object_get_double_member(obj, "panel_tint") * 100.0);
+
+            if (json_object_has_member(obj, "menubar_blur"))
+                state.menubar_blur = (int)json_object_get_int_member(obj, "menubar_blur");
+            else if (json_object_has_member(obj, "panel_sigma"))
+                state.menubar_blur = (int)json_object_get_int_member(obj, "panel_sigma");
+
+            /* Group 2: Liquid Glass */
+            if (json_object_has_member(obj, "liquid_blur"))
+                state.liquid_blur = (int)json_object_get_int_member(obj, "liquid_blur");
+            else if (json_object_has_member(obj, "dock_glass_strength"))
+                state.liquid_blur = (int)round(json_object_get_double_member(obj, "dock_glass_strength") * 100.0);
+            else
+                state.liquid_blur = 20;
+
+            if (json_object_has_member(obj, "liquid_tint"))
+                state.liquid_tint = (int)json_object_get_int_member(obj, "liquid_tint");
+            else if (json_object_has_member(obj, "dock_tint_strength"))
+                state.liquid_tint = (int)round(json_object_get_double_member(obj, "dock_tint_strength") * 100.0);
+            else
+                state.liquid_tint = 12;
+
+            /* Group 3: Blur */
+            if (json_object_has_member(obj, "blur_sigma"))
+                state.blur_sigma = (int)json_object_get_int_member(obj, "blur_sigma");
+            else if (json_object_has_member(obj, "dock_sigma"))
+                state.blur_sigma = (int)json_object_get_int_member(obj, "dock_sigma");
+
+            if (json_object_has_member(obj, "blur_tint"))
+                state.blur_tint = (int)json_object_get_int_member(obj, "blur_tint");
+            else if (json_object_has_member(obj, "dock_tint"))
+                state.blur_tint = (int)round(json_object_get_double_member(obj, "dock_tint") * 100.0);
+
+            /* Legacy */
             if (json_object_has_member(obj, "dock_blur"))
                 state.dock_blur = json_object_get_boolean_member(obj, "dock_blur");
             if (json_object_has_member(obj, "dock_sigma"))
@@ -109,76 +166,59 @@ static void save_styling_json(void) {
     char *dir = g_build_filename(home, ".config", "mac-styling", NULL);
     g_mkdir_with_parents(dir, 0755);
     char *path = g_build_filename(dir, "styling.json", NULL);
-    char *anim_path = g_build_filename(dir, "control-center-animation.json", NULL);
-
-    const char *anim_str = (state.qs_anim == 1) ? "elements" : "window";
-
-    char dock_tint_buf[G_ASCII_DTOSTR_BUF_SIZE];
-    char panel_tint_buf[G_ASCII_DTOSTR_BUF_SIZE];
-    char notif_tint_buf[G_ASCII_DTOSTR_BUF_SIZE];
-    g_ascii_formatd(dock_tint_buf, sizeof(dock_tint_buf), "%.2f", state.dock_tint);
-    g_ascii_formatd(panel_tint_buf, sizeof(panel_tint_buf), "%.2f", state.panel_tint);
-    g_ascii_formatd(notif_tint_buf, sizeof(notif_tint_buf), "%.2f", state.notif_tint);
 
     char *json = g_strdup_printf(
         "{\n"
+        "  \"menubar_tint\": %d,\n"
+        "  \"menubar_blur\": %d,\n"
+        "  \"liquid_blur\": %d,\n"
+        "  \"liquid_tint\": %d,\n"
+        "  \"blur_sigma\": %d,\n"
+        "  \"blur_tint\": %d,\n"
         "  \"dock_blur\": %s,\n"
         "  \"dock_sigma\": %d,\n"
-        "  \"dock_tint\": %s,\n"
+        "  \"dock_tint\": %.2f,\n"
         "  \"dock_radius\": %d,\n"
         "  \"panel_blur\": %s,\n"
         "  \"panel_sigma\": %d,\n"
-        "  \"panel_tint\": %s,\n"
+        "  \"panel_tint\": %.2f,\n"
         "  \"qs_sigma\": %d,\n"
-        "  \"qs_anim\": \"%s\",\n"
         "  \"notif_blur\": %s,\n"
         "  \"notif_sigma\": %d,\n"
-        "  \"notif_tint\": %s,\n"
+        "  \"notif_tint\": %.2f,\n"
         "  \"notif_radius\": %d\n"
         "}\n",
-        state.dock_blur ? "true" : "false",
-        state.dock_sigma,
-        dock_tint_buf,
-        state.dock_radius,
-        state.panel_blur ? "true" : "false",
-        state.panel_sigma,
-        panel_tint_buf,
-        state.qs_sigma,
-        anim_str,
-        state.notif_blur ? "true" : "false",
-        state.notif_sigma,
-        notif_tint_buf,
-        state.notif_radius
+        state.menubar_tint,
+        state.menubar_blur,
+        state.liquid_blur,
+        state.liquid_tint,
+        state.blur_sigma,
+        state.blur_tint,
+        (state.blur_sigma > 0) ? "true" : "false",
+        state.blur_sigma,
+        (double)state.blur_tint / 100.0,
+        28,
+        (state.menubar_blur > 0) ? "true" : "false",
+        state.menubar_blur,
+        (double)state.menubar_tint / 100.0,
+        state.blur_sigma,
+        (state.blur_sigma > 0) ? "true" : "false",
+        state.blur_sigma,
+        (double)state.blur_tint / 100.0,
+        18
     );
     g_file_set_contents(path, json, -1, NULL);
     g_free(json);
     g_free(path);
-
-    char *anim_json = g_strdup_printf("{\n  \"mode\": \"%s\"\n}\n", anim_str);
-    g_file_set_contents(anim_path, anim_json, -1, NULL);
-    g_free(anim_json);
-    g_free(anim_path);
     g_free(dir);
 }
 
 static gboolean save_css_cb(gpointer user_data) {
+    (void)user_data;
     css_timer_id = 0;
     char *cmd = g_strdup_printf(
-        "python3 -c '\n"
-        "import re, os\n"
-        "css_path = os.path.expanduser(\"~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css\")\n"
-        "if os.path.exists(css_path):\n"
-        "    with open(css_path, \"r\") as f: c = f.read()\n"
-        "    c = re.sub(r\"(#dashtodockContainer\\.dashtodock #dash \\.dash-background \\{\\s*background-color:\\s*rgba\\(36,\\s*36,\\s*36,\\s*)[0-9.]+(\\) !important;\\s*border: 1px solid rgba\\(255, 255, 255, 0\\.16\\) !important;\\s*box-shadow: 0 8px 32px 0 rgba\\(0, 0, 0, 0\\.35\\) !important;\\s*border-radius:\\s*)[0-9]+px( !important;\\s*\\})\", rf\"\\g<1>%.2f\\g<2>%dpx\\g<3>\", c)\n"
-        "    c = re.sub(r\"(#dash \\.dash-background \\{\\s*background-color:\\s*rgba\\(36,\\s*36,\\s*36,\\s*)[0-9.]+(\\) !important;\\s*border-radius:\\s*)[0-9]+px( !important;)\", rf\"\\g<1>%.2f\\g<2>%dpx\\g<3>\", c)\n"
-        "    c = re.sub(r\"(\\.mac-notification-banner \\{\\s*width: 395px !important;\\s*min-height: 56px !important;\\s*padding: 10px 14px !important;\\s*border-radius:\\s*)[0-9]+px( !important;\\s*background-color:\\s*rgba\\(36,\\s*36,\\s*36,\\s*)[0-9.]+(\\) !important;)\", rf\"\\g<1>%dpx\\g<2>%.2f\\g<3>\", c)\n"
-        "    c = re.sub(r\"(#panel \\{\\s*font-weight: 500;\\s*color: white;\\s*transition-duration: 250ms;\\s*height: 34px !important;\\s*background-color:\\s*)[^;]+(;)\", rf\"\\g<1>rgba(36, 36, 36, %.2f) !important\\g<2>\", c)\n"
-        "    with open(css_path, \"w\") as f: f.write(c)\n"
-        "'",
-        state.dock_tint, state.dock_radius,
-        state.dock_tint, state.dock_radius,
-        state.notif_radius, state.notif_tint,
-        state.panel_tint
+        "/home/vitaliy/MACTHEMEFILES/bin/update-mac-styling-css %d %d",
+        state.menubar_tint, state.blur_tint
     );
     g_spawn_command_line_async(cmd, NULL);
     g_free(cmd);
@@ -192,206 +232,259 @@ static void schedule_css_save(void) {
     css_timer_id = g_timeout_add(400, (GSourceFunc)save_css_cb, NULL);
 }
 
-static void run_dconf_write(const char *path, const char *val) {
-    char *cmd = g_strdup_printf("dconf write %s \"%s\"", path, val);
+static void apply_menubar_blur(void) {
+    char *cmd = g_strdup_printf(
+        "/home/vitaliy/MACTHEMEFILES/bin/update-bms-menubar-blur %d",
+        state.menubar_blur
+    );
     g_spawn_command_line_async(cmd, NULL);
     g_free(cmd);
+
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (src && g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.blur-my-shell.panel", TRUE)) {
+        GSettings *bms_panel = g_settings_new("org.gnome.shell.extensions.blur-my-shell.panel");
+        g_settings_set_int(bms_panel, "sigma", state.menubar_blur);
+        g_settings_set_boolean(bms_panel, "blur", state.menubar_blur > 0);
+        g_object_unref(bms_panel);
+    }
+}
+
+static void apply_liquid_blur(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src || !g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE))
+        return;
+
+    GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
+    int radius = (state.liquid_blur > 0) ? (int)round((double)state.liquid_blur * 30.0 / 100.0) : 0;
+    if (state.liquid_blur > 0 && radius < 1) radius = 1;
+
+    const char *keys[] = {
+        "dock-blur-radius",
+        "quick-settings-blur-radius",
+        "panel-menu-blur-radius",
+        "menu-blur-radius",
+        "desktop-menu-blur-radius",
+        "notification-blur-radius",
+        "application-blur-radius",
+        "osd-blur-radius",
+        NULL
+    };
+
+    for (int i = 0; keys[i] != NULL; i++) {
+        g_settings_set_int(lg, keys[i], radius);
+    }
+    g_object_unref(lg);
+}
+
+static void apply_liquid_tint(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src || !g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE))
+        return;
+
+    GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
+    double tint = (double)state.liquid_tint / 100.0;
+
+    const char *keys[] = {
+        "dock-tint-strength",
+        "quick-settings-tint-strength",
+        "quick-settings-toggle-tint-strength",
+        "panel-menu-tint-strength",
+        "menu-tint-strength",
+        "desktop-menu-tint-strength",
+        "notification-tint-strength",
+        "application-tint-strength",
+        "osd-tint-strength",
+        NULL
+    };
+
+    for (int i = 0; keys[i] != NULL; i++) {
+        g_settings_set_double(lg, keys[i], tint);
+    }
+    g_object_unref(lg);
+}
+
+static void apply_blur_sigma(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src) return;
+
+    const char *schemas[] = {
+        "org.gnome.shell.extensions.blur-my-shell",
+        "org.gnome.shell.extensions.blur-my-shell.applications",
+        "org.gnome.shell.extensions.blur-my-shell.dash-to-dock",
+        "org.gnome.shell.extensions.blur-my-shell.overview",
+        "org.gnome.shell.extensions.blur-my-shell.lockscreen",
+        "org.gnome.shell.extensions.blur-my-shell.appfolder",
+        "org.gnome.shell.extensions.blur-my-shell.screenshot",
+        "org.gnome.shell.extensions.blur-my-shell.popup",
+        "org.gnome.shell.extensions.blur-my-shell.window-list",
+        NULL
+    };
+
+    for (int i = 0; schemas[i] != NULL; i++) {
+        if (g_settings_schema_source_lookup(src, schemas[i], TRUE)) {
+            GSettings *s = g_settings_new(schemas[i]);
+            g_settings_set_int(s, "sigma", state.blur_sigma);
+            g_object_unref(s);
+        }
+    }
+}
+
+static void apply_blur_tint(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src) return;
+
+    double tint = (double)state.blur_tint / 100.0;
+    double brightness = 1.0 - (tint * 0.5);
+    if (brightness < 0.2) brightness = 0.2;
+    if (brightness > 1.0) brightness = 1.0;
+
+    const char *schemas[] = {
+        "org.gnome.shell.extensions.blur-my-shell",
+        "org.gnome.shell.extensions.blur-my-shell.applications",
+        "org.gnome.shell.extensions.blur-my-shell.dash-to-dock",
+        "org.gnome.shell.extensions.blur-my-shell.overview",
+        "org.gnome.shell.extensions.blur-my-shell.lockscreen",
+        "org.gnome.shell.extensions.blur-my-shell.appfolder",
+        "org.gnome.shell.extensions.blur-my-shell.screenshot",
+        "org.gnome.shell.extensions.blur-my-shell.popup",
+        "org.gnome.shell.extensions.blur-my-shell.window-list",
+        NULL
+    };
+
+    for (int i = 0; schemas[i] != NULL; i++) {
+        if (g_settings_schema_source_lookup(src, schemas[i], TRUE)) {
+            GSettings *s = g_settings_new(schemas[i]);
+            g_settings_set_double(s, "brightness", brightness);
+            g_object_unref(s);
+        }
+    }
 }
 
 /* Initialization signals from GtkBuilder (realize) */
-void init_dock_blur(void *widget, gpointer data) {
+
+/* Group 1: Меню-бар */
+void init_menubar_tint(void *widget, gpointer data) {
+    (void)data;
     load_config();
     in_init = 1;
-    adw_switch_row_set_active(widget, state.dock_blur);
+    gtk_range_set_value(widget, (double)state.menubar_tint);
     in_init = 0;
 }
 
-void init_dock_sigma(void *widget, gpointer data) {
-    in_init = 1;
-    gtk_range_set_value(widget, (double)state.dock_sigma);
-    in_init = 0;
-}
-
-void init_dock_tint(void *widget, gpointer data) {
-    in_init = 1;
-    gtk_range_set_value(widget, state.dock_tint * 100.0);
-    in_init = 0;
-}
-
-void init_dock_radius(void *widget, gpointer data) {
-    in_init = 1;
-    gtk_range_set_value(widget, (double)state.dock_radius);
-    in_init = 0;
-}
-
-void init_panel_blur(void *widget, gpointer data) {
-    in_init = 1;
-    adw_switch_row_set_active(widget, state.panel_blur);
-    in_init = 0;
-}
-
-void init_panel_sigma(void *widget, gpointer data) {
-    in_init = 1;
-    gtk_range_set_value(widget, (double)state.panel_sigma);
-    in_init = 0;
-}
-
-void init_panel_tint(void *widget, gpointer data) {
-    in_init = 1;
-    gtk_range_set_value(widget, state.panel_tint * 100.0);
-    in_init = 0;
-}
-
-void init_qs_sigma(void *widget, gpointer data) {
-    in_init = 1;
-    gtk_range_set_value(widget, (double)state.qs_sigma);
-    in_init = 0;
-}
-
-void init_qs_anim(void *widget, gpointer data) {
-    in_init = 1;
-    adw_combo_row_set_selected(widget, (unsigned int)state.qs_anim);
-    in_init = 0;
-}
-
-void init_notif_blur(void *widget, gpointer data) {
-    in_init = 1;
-    adw_switch_row_set_active(widget, state.notif_blur);
-    in_init = 0;
-}
-
-void init_notif_sigma(void *widget, gpointer data) {
-    in_init = 1;
-    gtk_range_set_value(widget, (double)state.notif_sigma);
-    in_init = 0;
-}
-
-void init_notif_tint(void *widget, gpointer data) {
-    in_init = 1;
-    gtk_range_set_value(widget, state.notif_tint * 100.0);
-    in_init = 0;
-}
-
-void init_notif_radius(void *widget, gpointer data) {
-    in_init = 1;
-    gtk_range_set_value(widget, (double)state.notif_radius);
-    in_init = 0;
-}
-
-/* Event handlers on user change */
-void on_dock_blur_changed(void *widget, void *pspec, gpointer data) {
+void on_menubar_tint_changed(void *widget, gpointer data) {
+    (void)data;
     if (in_init) return;
-    state.dock_blur = adw_switch_row_get_active(widget);
-    save_styling_json();
-    run_dconf_write("/org/gnome/shell/extensions/blur-my-shell/dash-to-dock/blur",
-                    state.dock_blur ? "true" : "false");
-}
-
-void on_dock_sigma_changed(void *widget, gpointer data) {
-    if (in_init) return;
-    state.dock_sigma = (int)gtk_range_get_value(widget);
-    save_styling_json();
-    char val[16];
-    snprintf(val, sizeof(val), "%d", state.dock_sigma);
-    run_dconf_write("/org/gnome/shell/extensions/blur-my-shell/dash-to-dock/sigma", val);
-}
-
-void on_dock_tint_changed(void *widget, gpointer data) {
-    if (in_init) return;
-    state.dock_tint = gtk_range_get_value(widget) / 100.0;
+    state.menubar_tint = (int)gtk_range_get_value(widget);
     save_styling_json();
     schedule_css_save();
 }
 
-void on_dock_radius_changed(void *widget, gpointer data) {
+void init_menubar_blur(void *widget, gpointer data) {
+    (void)data;
+    in_init = 1;
+    gtk_range_set_value(widget, (double)state.menubar_blur);
+    in_init = 0;
+}
+
+void on_menubar_blur_changed(void *widget, gpointer data) {
+    (void)data;
     if (in_init) return;
-    state.dock_radius = (int)gtk_range_get_value(widget);
+    state.menubar_blur = (int)gtk_range_get_value(widget);
     save_styling_json();
-    char val[16];
-    snprintf(val, sizeof(val), "%d", state.dock_radius);
-    run_dconf_write("/org/gnome/shell/extensions/blur-my-shell/dash-to-dock/corner-radius", val);
+    apply_menubar_blur();
+}
+
+/* Group 2: Liquid Glass */
+void init_liquid_blur(void *widget, gpointer data) {
+    (void)data;
+    in_init = 1;
+    gtk_range_set_value(widget, (double)state.liquid_blur);
+    in_init = 0;
+}
+
+void on_liquid_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.liquid_blur = (int)gtk_range_get_value(widget);
+    save_styling_json();
+    apply_liquid_blur();
+}
+
+void init_liquid_tint(void *widget, gpointer data) {
+    (void)data;
+    in_init = 1;
+    gtk_range_set_value(widget, (double)state.liquid_tint);
+    in_init = 0;
+}
+
+void on_liquid_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.liquid_tint = (int)gtk_range_get_value(widget);
+    save_styling_json();
+    apply_liquid_tint();
+}
+
+/* Group 3: Blur */
+void init_blur_sigma(void *widget, gpointer data) {
+    (void)data;
+    in_init = 1;
+    gtk_range_set_value(widget, (double)state.blur_sigma);
+    in_init = 0;
+}
+
+void on_blur_sigma_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.blur_sigma = (int)gtk_range_get_value(widget);
+    save_styling_json();
+    apply_blur_sigma();
+}
+
+void init_blur_tint(void *widget, gpointer data) {
+    (void)data;
+    in_init = 1;
+    gtk_range_set_value(widget, (double)state.blur_tint);
+    in_init = 0;
+}
+
+void on_blur_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.blur_tint = (int)gtk_range_get_value(widget);
+    save_styling_json();
+    apply_blur_tint();
     schedule_css_save();
 }
 
-void on_panel_blur_changed(void *widget, void *pspec, gpointer data) {
-    if (in_init) return;
-    state.panel_blur = adw_switch_row_get_active(widget);
-    save_styling_json();
-    run_dconf_write("/org/gnome/shell/extensions/blur-my-shell/panel/blur",
-                    state.panel_blur ? "true" : "false");
-}
-
-void on_panel_sigma_changed(void *widget, gpointer data) {
-    if (in_init) return;
-    state.panel_sigma = (int)gtk_range_get_value(widget);
-    save_styling_json();
-    char val[16];
-    snprintf(val, sizeof(val), "%d", state.panel_sigma);
-    run_dconf_write("/org/gnome/shell/extensions/blur-my-shell/panel/sigma", val);
-}
-
-void on_panel_tint_changed(void *widget, gpointer data) {
-    if (in_init) return;
-    state.panel_tint = gtk_range_get_value(widget) / 100.0;
-    save_styling_json();
-    schedule_css_save();
-}
-
-void on_qs_sigma_changed(void *widget, gpointer data) {
-    if (in_init) return;
-    state.qs_sigma = (int)gtk_range_get_value(widget);
-    save_styling_json();
-    char val[16];
-    snprintf(val, sizeof(val), "%d", state.qs_sigma);
-    run_dconf_write("/org/gnome/shell/extensions/blur-my-shell/quick-settings/sigma", val);
-}
-
-void on_qs_anim_changed(void *widget, void *pspec, gpointer data) {
-    if (in_init) return;
-    state.qs_anim = (int)adw_combo_row_get_selected(widget);
-    save_styling_json();
-    const char *mode = (state.qs_anim == 1) ? "elements" : "window";
-    char val[32];
-    snprintf(val, sizeof(val), "'%s'", mode);
-    run_dconf_write("/org/gnome/shell/extensions/blur-my-shell/quick-settings/animation-mode", val);
-}
-
-void on_notif_blur_changed(void *widget, void *pspec, gpointer data) {
-    if (in_init) return;
-    state.notif_blur = adw_switch_row_get_active(widget);
-    save_styling_json();
-    run_dconf_write("/org/gnome/shell/extensions/blur-my-shell/notification/blur",
-                    state.notif_blur ? "true" : "false");
-}
-
-void on_notif_sigma_changed(void *widget, gpointer data) {
-    if (in_init) return;
-    state.notif_sigma = (int)gtk_range_get_value(widget);
-    save_styling_json();
-    char val[16];
-    snprintf(val, sizeof(val), "%d", state.notif_sigma);
-    run_dconf_write("/org/gnome/shell/extensions/blur-my-shell/notification/sigma", val);
-}
-
-void on_notif_tint_changed(void *widget, gpointer data) {
-    if (in_init) return;
-    state.notif_tint = gtk_range_get_value(widget) / 100.0;
-    save_styling_json();
-    schedule_css_save();
-}
-
-void on_notif_radius_changed(void *widget, gpointer data) {
-    if (in_init) return;
-    state.notif_radius = (int)gtk_range_get_value(widget);
-    save_styling_json();
-    schedule_css_save();
-}
-
-void on_test_notif_clicked(void *widget, gpointer data) {
-    save_styling_json();
-    schedule_css_save();
-    g_spawn_command_line_async("notify-send \"macOS Notification\" \"Тестове повідомлення з плавним виїздом з правого краю та Liquid Glass розмиттям!\"", NULL);
-}
+/* Legacy stubs so unresolved symbol errors never occur */
+void init_dock_blur(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_dock_blur_changed(void *widget, void *pspec, gpointer data) { (void)widget; (void)pspec; (void)data; }
+void init_dock_sigma(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_dock_sigma_changed(void *widget, gpointer data) { (void)widget; (void)data; }
+void init_dock_tint(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_dock_tint_changed(void *widget, gpointer data) { (void)widget; (void)data; }
+void init_dock_radius(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_dock_radius_changed(void *widget, gpointer data) { (void)widget; (void)data; }
+void init_panel_blur(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_panel_blur_changed(void *widget, void *pspec, gpointer data) { (void)widget; (void)pspec; (void)data; }
+void init_panel_sigma(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_panel_sigma_changed(void *widget, gpointer data) { (void)widget; (void)data; }
+void init_panel_tint(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_panel_tint_changed(void *widget, gpointer data) { (void)widget; (void)data; }
+void init_qs_sigma(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_qs_sigma_changed(void *widget, gpointer data) { (void)widget; (void)data; }
+void init_qs_anim(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_qs_anim_changed(void *widget, void *pspec, gpointer data) { (void)widget; (void)pspec; (void)data; }
+void init_notif_blur(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_notif_blur_changed(void *widget, void *pspec, gpointer data) { (void)widget; (void)pspec; (void)data; }
+void init_notif_sigma(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_notif_sigma_changed(void *widget, gpointer data) { (void)widget; (void)data; }
+void init_notif_tint(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_notif_tint_changed(void *widget, gpointer data) { (void)widget; (void)data; }
+void init_notif_radius(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_notif_radius_changed(void *widget, gpointer data) { (void)widget; (void)data; }
+void on_test_notif_clicked(void *widget, gpointer data) { (void)widget; (void)data; }
 
 void init_boot_verbose(void *widget, gpointer data) {
     in_init = 1;
@@ -1134,6 +1227,38 @@ static void find_navigation_views(GtkWidget *widget, GList **list)
     }
 }
 
+static void find_scrolled_windows(GtkWidget *widget, GList **list)
+{
+    if (!widget) return;
+    if (GTK_IS_SCROLLED_WINDOW(widget)) {
+        *list = g_list_append(*list, widget);
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_scrolled_windows(child, list);
+    }
+}
+
+static void configure_toolbar_views_recursive(GtkWidget *widget, gboolean is_sidebar)
+{
+    if (!widget) return;
+    if (ADW_IS_TOOLBAR_VIEW(widget)) {
+        AdwToolbarView *tv = ADW_TOOLBAR_VIEW(widget);
+        if (is_sidebar) {
+            adw_toolbar_view_set_extend_content_to_top_edge(tv, FALSE);
+            adw_toolbar_view_set_extend_content_to_bottom_edge(tv, FALSE);
+        } else {
+            adw_toolbar_view_set_extend_content_to_top_edge(tv, TRUE);
+            adw_toolbar_view_set_extend_content_to_bottom_edge(tv, TRUE);
+        }
+        adw_toolbar_view_set_top_bar_style(tv, ADW_TOOLBAR_FLAT);
+        adw_toolbar_view_set_bottom_bar_style(tv, ADW_TOOLBAR_FLAT);
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        configure_toolbar_views_recursive(child, is_sidebar);
+    }
+}
+
 static void update_panel_headerbar(AdwNavigationSplitView *split_view);
 
 static void on_visible_page_changed_cb(GObject *gobject G_GNUC_UNUSED, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data)
@@ -1145,6 +1270,14 @@ static void on_visible_page_changed_cb(GObject *gobject G_GNUC_UNUSED, GParamSpe
 static void update_panel_headerbar(AdwNavigationSplitView *split_view)
 {
     if (!split_view) return;
+    AdwNavigationPage *sidebar_p = adw_navigation_split_view_get_sidebar(split_view);
+    if (sidebar_p) {
+        configure_toolbar_views_recursive(GTK_WIDGET(sidebar_p), TRUE);
+    }
+    AdwNavigationPage *content_p = adw_navigation_split_view_get_content(split_view);
+    if (content_p) {
+        configure_toolbar_views_recursive(GTK_WIDGET(content_p), FALSE);
+    }
     GtkWidget *search_btn = g_object_get_data(G_OBJECT(split_view), "mac_search_btn");
     GtkWidget *menu_btn = g_object_get_data(G_OBJECT(split_view), "mac_menu_btn");
     if (!search_btn || !menu_btn) return;
@@ -1163,6 +1296,10 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             g_signal_connect(nv, "notify::visible-page", G_CALLBACK(on_visible_page_changed_cb), split_view);
             g_object_set_data(G_OBJECT(nv), "mac_connected", GINT_TO_POINTER(1));
         }
+        if (g_getenv("MAC_SETTINGS_OPEN_STYLING") && !g_object_get_data(G_OBJECT(nv), "mac_styling_pushed")) {
+            g_object_set_data(G_OBJECT(nv), "mac_styling_pushed", GINT_TO_POINTER(1));
+            adw_navigation_view_push_by_tag(nv, "mac-styling");
+        }
         AdwNavigationPage *vis_p = adw_navigation_view_get_visible_page(nv);
         if (vis_p) {
             target_root = GTK_WIDGET(vis_p);
@@ -1175,6 +1312,8 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     if (!content_bars) return;
 
     AdwHeaderBar *target_hb = ADW_HEADER_BAR(content_bars->data);
+    gtk_widget_add_css_class(GTK_WIDGET(target_hb), "mac-settings-content-headerbar");
+    gtk_widget_set_margin_top(GTK_WIDGET(target_hb), 3);
 
     /* Remove from previous parent if different */
     GtkWidget *p_menu = gtk_widget_get_parent(menu_btn);
@@ -1202,8 +1341,27 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     if (gtk_widget_get_parent(search_btn) != GTK_WIDGET(target_hb)) {
         adw_header_bar_pack_end(target_hb, search_btn);
     }
+    gtk_widget_set_margin_end(menu_btn, 8);
+    gtk_widget_set_margin_top(menu_btn, 0);
+    gtk_widget_set_margin_bottom(menu_btn, 0);
+    gtk_widget_set_margin_top(search_btn, 0);
+    gtk_widget_set_margin_bottom(search_btn, 0);
     gtk_widget_set_visible(menu_btn, TRUE);
     gtk_widget_set_visible(search_btn, TRUE);
+
+    if (g_getenv("MAC_SETTINGS_TEST_SCROLL")) {
+        GList *sws = NULL;
+        find_scrolled_windows(target_root, &sws);
+        for (GList *l = sws; l != NULL; l = l->next) {
+            GtkScrolledWindow *sw = GTK_SCROLLED_WINDOW(l->data);
+            GtkAdjustment *vadj = gtk_scrolled_window_get_vadjustment(sw);
+            if (vadj) {
+                double val = g_ascii_strtod(g_getenv("MAC_SETTINGS_TEST_SCROLL"), NULL);
+                gtk_adjustment_set_value(vadj, val > 0.0 ? val : 150.0);
+            }
+        }
+        g_list_free(sws);
+    }
 
     g_list_free(content_bars);
 }
@@ -1218,6 +1376,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
 {
     GtkWindow *window = GTK_WINDOW(user_data);
     if (!window || !GTK_IS_WINDOW(window)) return G_SOURCE_REMOVE;
+    gtk_widget_add_css_class(GTK_WIDGET(window), "mac-settings-window");
 
     AdwNavigationSplitView *split_view = NULL;
     find_navigation_split_view(GTK_WIDGET(window), &split_view);
@@ -1244,6 +1403,8 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     find_headerbars_recursive(GTK_WIDGET(sidebar), &sidebar_bars);
     if (sidebar_bars) {
         AdwHeaderBar *sidebar_hb = ADW_HEADER_BAR(sidebar_bars->data);
+        gtk_widget_add_css_class(GTK_WIDGET(sidebar_hb), "mac-settings-sidebar-headerbar");
+        gtk_widget_set_margin_top(GTK_WIDGET(sidebar_hb), 3);
 
         /* 1. Hide title and any title labels in sidebar headerbar */
         adw_header_bar_set_show_title(sidebar_hb, FALSE);
@@ -1269,6 +1430,13 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         g_list_free(sidebar_bars);
     }
 
+    if (sidebar) {
+        configure_toolbar_views_recursive(GTK_WIDGET(sidebar), TRUE);
+    }
+    AdwNavigationPage *content_page = adw_navigation_split_view_get_content(split_view);
+    if (content_page) {
+        configure_toolbar_views_recursive(GTK_WIDGET(content_page), FALSE);
+    }
     update_panel_headerbar(split_view);
     return G_SOURCE_REMOVE;
 }

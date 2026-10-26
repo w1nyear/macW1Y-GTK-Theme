@@ -9720,7 +9720,11 @@ tooltip label {
 window.nautilus-window,
 window.nautilus-window.background,
 window.nautilus-window > dialog-host,
-window.nautilus-window overlay-split-view {
+window.nautilus-window overlay-split-view,
+window.mac-settings-window,
+window.mac-settings-window.background,
+window.mac-settings-window > dialog-host,
+window.mac-settings-window navigation-split-view {
     background-color: #202022;
     background-image: none;
 }
@@ -9731,12 +9735,38 @@ window.nautilus-window .sidebar-pane,
 window.nautilus-window .sidebar-pane:dir(ltr),
 window.nautilus-window .sidebar-pane:dir(rtl),
 .nautilus-window .sidebar-pane:dir(ltr),
-.nautilus-window .sidebar-pane:dir(rtl) {
+.nautilus-window .sidebar-pane:dir(rtl),
+window.mac-settings-window navigation-split-view > widget.sidebar-pane,
+window.mac-settings-window navigation-split-view .sidebar-pane,
+window.mac-settings-window .sidebar-pane,
+window.mac-settings-window .sidebar-pane:dir(ltr),
+window.mac-settings-window .sidebar-pane:dir(rtl),
+navigation-split-view > widget.sidebar-pane,
+navigation-split-view .sidebar-pane {
     margin: 6px 0px 6px 6px;
     border: none;
     border-radius: 20px;
     background-color: rgba(30, 30, 34, 0.40);
     background-clip: padding-box;
+    box-shadow: none;
+}
+
+window.mac-settings-window .sidebar-pane toolbarview,
+window.mac-settings-window .sidebar-pane headerbar,
+window.mac-settings-window .sidebar-pane scrolledwindow,
+window.mac-settings-window .sidebar-pane viewport,
+window.mac-settings-window .sidebar-pane list.navigation-sidebar,
+window.mac-settings-window .sidebar-pane listbox,
+navigation-split-view .sidebar-pane toolbarview,
+navigation-split-view .sidebar-pane headerbar,
+navigation-split-view .sidebar-pane scrolledwindow,
+navigation-split-view .sidebar-pane viewport,
+navigation-split-view .sidebar-pane list.navigation-sidebar,
+navigation-split-view .sidebar-pane listbox {
+    border-radius: 20px;
+    background-color: transparent;
+    background-image: none;
+    border: none;
     box-shadow: none;
 }
 
@@ -9818,13 +9848,8 @@ window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
 window.mac-settings-window .sidebar-pane toolbarview > .top-bar.raised,
 navigation-split-view .sidebar-pane toolbarview > .top-bar,
 window.nautilus-window .sidebar-pane toolbarview > .top-bar {
-    background: linear-gradient(to bottom,
-        @sidebar_bg_color 0%,
-        alpha(@sidebar_bg_color, 0.95) 25%,
-        alpha(@sidebar_bg_color, 0.72) 50%,
-        alpha(@sidebar_bg_color, 0.30) 75%,
-        transparent 100%);
     background-color: transparent;
+    background-image: none;
     border: none;
     border-bottom: none;
     box-shadow: none;
@@ -10205,15 +10230,11 @@ window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom 
 .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
 navigation-split-view > .sidebar-pane undershoot.top,
 navigation-split-view > .sidebar-pane scrolledwindow > undershoot.top,
-window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top {
-    min-height: 56px;
-    background: linear-gradient(to bottom,
-        @sidebar_bg_color 0%,
-        alpha(@sidebar_bg_color, 0.96) 20%,
-        alpha(@sidebar_bg_color, 0.82) 40%,
-        alpha(@sidebar_bg_color, 0.55) 60%,
-        alpha(@sidebar_bg_color, 0.22) 80%,
-        transparent 100%);
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .sidebar-pane undershoot.top {
+    min-height: 0px;
+    background-color: transparent;
+    background-image: none;
     border: none;
     box-shadow: none;
 }
@@ -10223,15 +10244,11 @@ window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undersh
 .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 navigation-split-view > .sidebar-pane undershoot.bottom,
 navigation-split-view > .sidebar-pane scrolledwindow > undershoot.bottom,
-window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom {
-    min-height: 48px;
-    background: linear-gradient(to top,
-        @sidebar_bg_color 0%,
-        alpha(@sidebar_bg_color, 0.96) 20%,
-        alpha(@sidebar_bg_color, 0.82) 40%,
-        alpha(@sidebar_bg_color, 0.55) 60%,
-        alpha(@sidebar_bg_color, 0.22) 80%,
-        transparent 100%);
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .sidebar-pane undershoot.bottom {
+    min-height: 0px;
+    background-color: transparent;
+    background-image: none;
     border: none;
     box-shadow: none;
 }

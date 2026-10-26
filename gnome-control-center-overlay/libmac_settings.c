@@ -1239,18 +1239,23 @@ static void find_scrolled_windows(GtkWidget *widget, GList **list)
     }
 }
 
-static void configure_toolbar_views_recursive(GtkWidget *widget)
+static void configure_toolbar_views_recursive(GtkWidget *widget, gboolean is_sidebar)
 {
     if (!widget) return;
     if (ADW_IS_TOOLBAR_VIEW(widget)) {
         AdwToolbarView *tv = ADW_TOOLBAR_VIEW(widget);
-        adw_toolbar_view_set_extend_content_to_top_edge(tv, TRUE);
-        adw_toolbar_view_set_extend_content_to_bottom_edge(tv, TRUE);
+        if (is_sidebar) {
+            adw_toolbar_view_set_extend_content_to_top_edge(tv, FALSE);
+            adw_toolbar_view_set_extend_content_to_bottom_edge(tv, FALSE);
+        } else {
+            adw_toolbar_view_set_extend_content_to_top_edge(tv, TRUE);
+            adw_toolbar_view_set_extend_content_to_bottom_edge(tv, TRUE);
+        }
         adw_toolbar_view_set_top_bar_style(tv, ADW_TOOLBAR_FLAT);
         adw_toolbar_view_set_bottom_bar_style(tv, ADW_TOOLBAR_FLAT);
     }
     for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
-        configure_toolbar_views_recursive(child);
+        configure_toolbar_views_recursive(child, is_sidebar);
     }
 }
 
@@ -1265,7 +1270,14 @@ static void on_visible_page_changed_cb(GObject *gobject G_GNUC_UNUSED, GParamSpe
 static void update_panel_headerbar(AdwNavigationSplitView *split_view)
 {
     if (!split_view) return;
-    configure_toolbar_views_recursive(GTK_WIDGET(split_view));
+    AdwNavigationPage *sidebar_p = adw_navigation_split_view_get_sidebar(split_view);
+    if (sidebar_p) {
+        configure_toolbar_views_recursive(GTK_WIDGET(sidebar_p), TRUE);
+    }
+    AdwNavigationPage *content_p = adw_navigation_split_view_get_content(split_view);
+    if (content_p) {
+        configure_toolbar_views_recursive(GTK_WIDGET(content_p), FALSE);
+    }
     GtkWidget *search_btn = g_object_get_data(G_OBJECT(split_view), "mac_search_btn");
     GtkWidget *menu_btn = g_object_get_data(G_OBJECT(split_view), "mac_menu_btn");
     if (!search_btn || !menu_btn) return;
@@ -1418,7 +1430,13 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         g_list_free(sidebar_bars);
     }
 
-    configure_toolbar_views_recursive(GTK_WIDGET(window));
+    if (sidebar) {
+        configure_toolbar_views_recursive(GTK_WIDGET(sidebar), TRUE);
+    }
+    AdwNavigationPage *content_page = adw_navigation_split_view_get_content(split_view);
+    if (content_page) {
+        configure_toolbar_views_recursive(GTK_WIDGET(content_page), FALSE);
+    }
     update_panel_headerbar(split_view);
     return G_SOURCE_REMOVE;
 }

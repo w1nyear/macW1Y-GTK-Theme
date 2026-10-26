@@ -10423,3 +10423,33 @@ Task 499: Повне полірування екрана блокування (m
         * live_ref_pressed_thumb.png — вимір вертикального спану синіх пікселів підтвердив: номінальна лінія 6px (y=[23, 28]) на крайових 2 пікселях (x=34..35) розтягується до 9-10px (y=[21, 30]), тобто на 2px вгору та на 2px вниз;
         * live_refined_verified_triptych.png — повний цикл: стан спокою (Idle 28x18px, 412 білих пікселів), утримання ЛКМ (Pressed 42x28px, без верхньої плями, з оптичним заломленням), та плавне відпускання (Released, повернення білої капсули).
       - Сеанс користувача залишився активним, керування вентиляторами не зачіпалося.
+
+- [x] Завдання 519: Відновлення круглого Leftbar (border-radius: 20px) у Параметрах (gnome-control-center) та повне видалення білого сяйва над списком
+   1. Вимоги:
+      - У додатку «Параметри» (gnome-control-center) повернути кругле заокруглення Leftbar (бокової панелі), як було раніше та як реалізовано в Nautilus.
+      - Повністю видалити біле/сіре градієнтне сяйво над списком розділів (зокрема над пунктом «Сповіщення»).
+      - Не виходити з сесії користувача, не чіпати керування вентиляторами.
+   2. Діагностика причин:
+      - Біле сяйво зверху списку:
+        * У селекторах window.mac-settings-window .sidebar-pane toolbarview > .top-bar та .sidebar-pane scrolledwindow.undershoot-top > undershoot.top було застосовано linear-gradient з кольором @sidebar_bg_color, який у темній темі є світлішим (48, 47, 52), ніж напівпрозорий фон бічної панелі (30, 30, 33). Це створювало помітну світлу смугу висотою 56px прямо над елементами списку.
+        * У перехоплювачі libmac_settings.c виклик adw_toolbar_view_set_extend_content_to_top_edge(tv, TRUE) рекурсивно застосовувався до toolbarview бічної панелі, що змушувало список заїжджати під хедербар і кнопки світлофорів.
+      - Квадратний кут Leftbar:
+        * Бокова панель .sidebar-pane у NavigationSplitView Settings не мала правил плавного заокруглення border-radius: 20px та margin: 6px 0 6px 6px (як у Nautilus), через що верхній лівий кут рендерився прямим під 90 градусів, а прямокутний градієнт top-bar перекривав скруглення вікна.
+   3. Реалізація:
+      - Оновлення libmac_settings.c:
+        * Розділено налаштування toolbarview для контентної частини та для бокової панелі: функція configure_toolbar_views_recursive(widget, is_sidebar) тепер встановлює extend_content_to_top_edge = FALSE та extend_content_to_bottom_edge = FALSE для бічної панелі, і TRUE — виключно для контентної панелі праворуч.
+        * Завдяки цьому список розділів починається строго під панеллю керування без наїзду на світлофори.
+        * Перекомпільовано libmac_settings.so та встановлено в ~/.local/lib/, ~/.local/share/gnome-control-center-overlay/ та /usr/lib/x86_64-linux-gnu/.
+      - Оновлення GTK4 CSS (gtk.css, gtk-Dark.css, gtk-dark.css):
+        * Для вікна window.mac-settings-window та навігаційного контейнера встановлено системне фонове обрамлення #202022.
+        * Для .sidebar-pane, navigation-split-view > widget.sidebar-pane та .sidebar-pane:dir(ltr) застосовано автентичну плаваючу форму Nautilus: margin: 6px 0px 6px 6px; border-radius: 20px; background-color: rgba(30, 30, 34, 0.40); background-clip: padding-box;.
+        * Усі внутрішні контейнери (toolbarview, headerbar, scrolledwindow, viewport, list.navigation-sidebar, listbox) отримали border-radius: 20px та прозорий фон.
+        * Повністю прибрано градієнт з .sidebar-pane toolbarview > .top-bar (встановлено background-color: transparent; background-image: none;).
+        * Обнулено верхній та нижній undershoot бічної панелі (.sidebar-pane undershoot.top / undershoot.bottom: min-height: 0px; background: transparent;).
+        * Синхронізовано стилі до всіх каталогів користувача (~/.config/gtk-4.0/, ~/.themes/macW1Y-Dark/) та системного /usr/share/themes/macW1Y-Dark/gtk-4.0/.
+   4. Верифікація:
+      - Знято контрольні скріншоти живого вікна «Параметри» (settings_leftbar_round_crop.png, settings_leftbar_verified.png).
+      - Зафіксовано точний 20px радіус заокруглення плаваючої капсули Leftbar (x=[6..26], y=[6..26]).
+      - Зафіксовано повну відсутність білого сяйва: яскравість фону над пунктом «Сповіщення» (y=[10..80]) абсолютно рівномірна (30, 30, 33).
+      - Сформовано порівняльний артефакт leftbar_settings_before_after.png (знімок користувача «до» vs оновлений результат «після»).
+      - Сеанс користувача залишився активним, керування вентиляторами не зачіпалося.
