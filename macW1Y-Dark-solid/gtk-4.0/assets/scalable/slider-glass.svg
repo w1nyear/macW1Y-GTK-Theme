@@ -23,14 +23,7 @@
       <stop offset="100%" stop-color="#000000" stop-opacity="0.25"/>
     </linearGradient>
 
-    <!-- Left side optical refraction: stretches track 1-2px up and 1-2px down at the boundary -->
-    <linearGradient id="leftRefractBlue" x1="3" y1="28" x2="15" y2="28" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#38a8ff" stop-opacity="0.95"/>
-      <stop offset="40%" stop-color="#0c8eff" stop-opacity="0.85"/>
-      <stop offset="75%" stop-color="#0c8eff" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#0c8eff" stop-opacity="0.0"/>
-    </linearGradient>
-
+    <!-- Left side optical refraction: stretches blue track vertically at the boundary -->
     <linearGradient id="leftVerticalStretch" x1="5" y1="18" x2="5" y2="38" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#70c4ff" stop-opacity="0.0"/>
       <stop offset="15%" stop-color="#38a8ff" stop-opacity="0.85"/>
@@ -39,13 +32,39 @@
       <stop offset="100%" stop-color="#70c4ff" stop-opacity="0.0"/>
     </linearGradient>
 
-    <!-- Right side optical refraction: stretches track 1-2px up and 1-2px down at the boundary -->
+    <linearGradient id="leftRefractBlue" x1="3" y1="28" x2="15" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38a8ff" stop-opacity="0.95"/>
+      <stop offset="40%" stop-color="#0c8eff" stop-opacity="0.85"/>
+      <stop offset="75%" stop-color="#0c8eff" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#0c8eff" stop-opacity="0.0"/>
+    </linearGradient>
+
+    <!-- Middle Blue Track Line -->
+    <linearGradient id="trackBlueLine" x1="14" y1="28" x2="42" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0c8eff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0c8eff" stop-opacity="0.98"/>
+    </linearGradient>
+
+    <!-- Middle White Track Line -->
+    <linearGradient id="trackWhiteLine" x1="42" y1="28" x2="70" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.92"/>
+    </linearGradient>
+
+    <!-- Right side optical refraction: stretches white track vertically at the boundary -->
     <linearGradient id="rightVerticalStretch" x1="79" y1="18" x2="79" y2="38" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.0"/>
-      <stop offset="15%" stop-color="#d0d8e8" stop-opacity="0.65"/>
-      <stop offset="50%" stop-color="#788090" stop-opacity="0.80"/>
-      <stop offset="85%" stop-color="#d0d8e8" stop-opacity="0.65"/>
+      <stop offset="15%" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.98"/>
+      <stop offset="85%" stop-color="#ffffff" stop-opacity="0.85"/>
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0.0"/>
+    </linearGradient>
+
+    <linearGradient id="rightRefractWhite" x1="81" y1="28" x2="69" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98"/>
+      <stop offset="40%" stop-color="#f4f8ff" stop-opacity="0.90"/>
+      <stop offset="75%" stop-color="#e8f0fe" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#e8f0fe" stop-opacity="0.0"/>
     </linearGradient>
 
     <!-- Side lens caustics: meniscus light arcs along curved semicircles -->
@@ -58,9 +77,9 @@
     </linearGradient>
 
     <linearGradient id="causticRight" x1="80" y1="14" x2="74" y2="42" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.40"/>
-      <stop offset="50%" stop-color="#c8d2e2" stop-opacity="0.70"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.50"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.90"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.35"/>
     </linearGradient>
   </defs>
 
@@ -70,20 +89,28 @@
   <!-- 2. Glass body (clean, NO spotlight on top!) -->
   <rect x="2" y="2" width="80" height="52" rx="26" fill="url(#glassBody)"/>
 
-  <!-- 3. Left Side Refraction: 2-3 pixels at boundary stretch vertically by 1-2px up and 1-2px down (y=18 to y=38) -->
-  <path d="M 3 28 C 3 22, 4 18, 6 18 C 8 18, 11 22, 14 22 L 14 34 C 11 34, 8 38, 6 38 C 4 38, 3 34, 3 28 Z" fill="url(#leftVerticalStretch)"/>
-  <path d="M 3 28 C 3 22, 4 19, 6 19 C 8 19, 10 22, 13 22 L 13 34 C 10 34, 8 37, 6 37 C 4 37, 3 34, 3 28 Z" fill="url(#leftRefractBlue)"/>
+  <!-- 3. Left Side Refraction: stretches blue track vertically at the boundary (y=18 to y=38) -->
+  <path d="M 3 28 C 3 21, 4 18, 6 18 C 9 18, 11 24, 14 24 L 14 32 C 11 32, 9 38, 6 38 C 4 38, 3 35, 3 28 Z" fill="url(#leftVerticalStretch)"/>
+  <path d="M 3 28 C 3 22, 4 19, 6 19 C 9 19, 11 24.5, 14 24.5 L 14 31.5 C 11 31.5, 9 37, 6 37 C 4 37, 3 34, 3 28 Z" fill="url(#leftRefractBlue)"/>
 
-  <!-- 4. Right Side Refraction: stretches track vertically by 1-2px up and 1-2px down (y=18 to y=38) -->
-  <path d="M 81 28 C 81 22, 80 18, 78 18 C 76 18, 73 22, 70 22 L 70 34 C 73 34, 76 38, 78 38 C 80 38, 81 34, 81 28 Z" fill="url(#rightVerticalStretch)"/>
+  <!-- 4. Middle Track: BLUE on the left half (x=14..42), WHITE on the right half (x=42..70) -->
+  <rect x="14" y="21" width="28" height="14" rx="3" fill="#38a8ff" fill-opacity="0.22"/>
+  <rect x="42" y="21" width="28" height="14" rx="3" fill="#ffffff" fill-opacity="0.20"/>
+  <rect x="14" y="24" width="28" height="8" fill="url(#trackBlueLine)"/>
+  <rect x="42" y="24" width="28" height="8" fill="url(#trackWhiteLine)"/>
+  <line x1="42" y1="21" x2="42" y2="35" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.55"/>
 
-  <!-- 5. Optical Lens Caustic Arcs at Left and Right curved glass semicircles -->
+  <!-- 5. Right Side Refraction: stretches white track vertically at the boundary (y=18 to y=38) -->
+  <path d="M 81 28 C 81 21, 80 18, 78 18 C 75 18, 73 24, 70 24 L 70 32 C 73 32, 75 38, 78 38 C 80 38, 81 35, 81 28 Z" fill="url(#rightVerticalStretch)"/>
+  <path d="M 81 28 C 81 22, 80 19, 78 19 C 75 19, 73 24.5, 70 24.5 L 70 31.5 C 73 31.5, 75 37, 78 37 C 80 37, 81 34, 81 28 Z" fill="url(#rightRefractWhite)"/>
+
+  <!-- 6. Optical Lens Caustic Arcs at Left and Right curved glass semicircles -->
   <path d="M 12 14 C 6 18, 4 24, 4 28 C 4 32, 6 38, 12 42" stroke="url(#causticLeft)" stroke-width="1.6" stroke-linecap="round" fill="none"/>
   <path d="M 72 14 C 78 18, 80 24, 80 28 C 80 32, 78 38, 72 42" stroke="url(#causticRight)" stroke-width="1.6" stroke-linecap="round" fill="none"/>
 
-  <!-- 6. Inner rim reflection -->
+  <!-- 7. Inner rim reflection -->
   <rect x="3" y="3" width="78" height="50" rx="25" stroke="url(#innerRim)" stroke-width="1.2" fill="none"/>
 
-  <!-- 7. Outer rim stroke -->
+  <!-- 8. Outer rim stroke -->
   <rect x="2" y="2" width="80" height="52" rx="26" stroke="url(#edgeStroke)" stroke-width="1.2" fill="none"/>
 </svg>
