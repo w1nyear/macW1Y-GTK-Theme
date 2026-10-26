@@ -9,5 +9,6 @@ sudo apt-get install -y \
     plymouth plymouth-themes \
     grub2-common os-prober \
     dconf-cli gnome-tweaks gnome-shell-extension-manager \
-    mesa-utils nvidia-prime
+    mesa-utils nvidia-prime \
+    wine wine64 wine32:i386 winetricks icoutils
 echo "==> Залежності успішно встановлено!"

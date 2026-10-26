@@ -1,0 +1,98 @@
+#!/bin/bash
+# mac-wine-runner: Seamless background runner for Windows executables (.exe, .msi, .bat, .cmd)
+# Runs via discrete GPU / prime-run, manages wineboot silently, handles desktop launches.
+
+set -e
+
+if [ $# -lt 1 ]; then
+    if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+        if command -v zenity >/dev/null 2>&1; then
+            TARGET=$(zenity --file-selection --title="Оберіть Windows програму (.exe, .msi)" --file-filter="Windows файли (*.exe, *.msi, *.bat, *.cmd) | *.exe *.EXE *.msi *.MSI *.bat *.BAT *.cmd *.CMD" 2>/dev/null || true)
+            if [ -z "$TARGET" ]; then
+                exit 0
+            fi
+        fi
+    fi
+    if [ -z "$TARGET" ]; then
+        echo "Використання: mac-wine-runner <шлях_до_файлу.exe|msi|bat> [аргументи...]" >&2
+        exit 1
+    fi
+else
+    TARGET="$1"
+    shift
+fi
+
+if [ ! -e "$TARGET" ]; then
+    echo "Помилка: файл '$TARGET' не знайдено." >&2
+    exit 1
+fi
+
+# Resolve absolute path and parent directory
+ABS_TARGET="$(realpath "$TARGET")"
+WORK_DIR="$(dirname "$ABS_TARGET")"
+FILE_NAME="$(basename "$ABS_TARGET")"
+APP_NAME="${FILE_NAME%.*}"
+EXT="${FILE_NAME##*.}"
+EXT_LOWER="$(echo "$EXT" | tr '[:upper:]' '[:lower:]')"
+
+# Ensure WINEPREFIX is set and directory exists
+export WINEPREFIX="${WINEPREFIX:-$HOME/.wine}"
+export WINEDEBUG="${WINEDEBUG:--all}"
+
+# If wine prefix doesn't exist yet, run silent wineboot
+if [ ! -d "$WINEPREFIX" ]; then
+    if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+        notify-send -a "macOS" -i "system-software-install" "Налаштування Wine" "Ініціалізація середовища Windows вперше..." 2>/dev/null || true
+    fi
+    wineboot -u >/dev/null 2>&1 || true
+fi
+
+# Visual feedback notification for GUI launch
+if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+    notify-send -a "macOS" -i "application-x-ms-dos-executable" "Запуск Windows програми" "Запуск \"$APP_NAME\" через Wine..." 2>/dev/null || true
+fi
+
+cd "$WORK_DIR"
+
+# Check GPU runner: prefer prime-run if available
+RUNNER=""
+if [ -x "/usr/local/bin/prime-run" ] && command -v nvidia-smi >/dev/null 2>&1; then
+    RUNNER="/usr/local/bin/prime-run"
+fi
+
+REAL_WINE=$(PATH=$(echo "$PATH" | sed -e 's|/usr/local/bin||g' -e 's|::|:|g') which wine 2>/dev/null || which wine 2>/dev/null)
+if [ -z "$REAL_WINE" ] || [ ! -x "$REAL_WINE" ]; then
+    if [ -x "/usr/bin/wine" ]; then
+        REAL_WINE="/usr/bin/wine"
+    fi
+fi
+
+if [ -z "$REAL_WINE" ]; then
+    notify-send -u critical -a "macOS" "Помилка Wine" "Wine не встановлено в системі." 2>/dev/null || true
+    echo "Wine is not installed." >&2
+    exit 1
+fi
+
+case "$EXT_LOWER" in
+    msi)
+        if [ -n "$RUNNER" ]; then
+            exec "$RUNNER" "$REAL_WINE" msiexec /i "$ABS_TARGET" "$@"
+        else
+            exec "$REAL_WINE" msiexec /i "$ABS_TARGET" "$@"
+        fi
+        ;;
+    bat|cmd)
+        if [ -n "$RUNNER" ]; then
+            exec "$RUNNER" "$REAL_WINE" cmd /c "$ABS_TARGET" "$@"
+        else
+            exec "$REAL_WINE" cmd /c "$ABS_TARGET" "$@"
+        fi
+        ;;
+    *)
+        if [ -n "$RUNNER" ]; then
+            exec "$RUNNER" "$REAL_WINE" "$ABS_TARGET" "$@"
+        else
+            exec "$REAL_WINE" "$ABS_TARGET" "$@"
+        fi
+        ;;
+esac

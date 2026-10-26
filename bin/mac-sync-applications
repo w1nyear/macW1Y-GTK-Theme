@@ -12,9 +12,11 @@ TRASH_INFO_DIR = os.path.join(HOME, ".local/share/Trash/info")
 LOCAL_APPS_DIR = os.path.join(HOME, ".local/share/applications")
 APPIMAGES_DIR = os.path.join(HOME, ".local/share/appimages")
 INSTALLED_APPS_DIR = os.path.join(HOME, ".local/share/installed-apps")
+WINE_APPS_DIR = os.path.join(HOME, ".local/share/wine-apps")
+WINE_INSTALLERS_CACHE = os.path.join(HOME, ".cache/wine-installers")
 ICONS_DIR = os.path.join(HOME, ".local/share/icons/hicolor/scalable/apps")
 
-for d in [APPS_DIR, APPIMAGES_DIR, INSTALLED_APPS_DIR, ICONS_DIR, LOCAL_APPS_DIR, TRASH_DIR, TRASH_INFO_DIR]:
+for d in [APPS_DIR, APPIMAGES_DIR, INSTALLED_APPS_DIR, WINE_APPS_DIR, WINE_INSTALLERS_CACHE, ICONS_DIR, LOCAL_APPS_DIR, TRASH_DIR, TRASH_INFO_DIR]:
     os.makedirs(d, exist_ok=True)
 
 
@@ -98,7 +100,8 @@ def sync():
         "/usr/share/applications",
         "/var/lib/snapd/desktop/applications",
         "/var/lib/flatpak/exports/share/applications",
-        os.path.join(home, ".local/share/applications")
+        os.path.join(home, ".local/share/applications"),
+        os.path.join(home, ".local/share/applications/wine/Programs")
     ]
     
     seen_ids = set()
@@ -108,70 +111,77 @@ def sync():
     for sdir in search_dirs:
         if not os.path.isdir(sdir):
             continue
-        for f in sorted(glob.glob(os.path.join(sdir, "*.desktop"))):
-            base = os.path.basename(f)
-            if base in seen_ids:
-                continue
-            try:
-                app_info = Gio.DesktopAppInfo.new_from_filename(f)
-                if not app_info or not app_info.should_show():
+        for root, _, files in os.walk(sdir):
+            for file in sorted(files):
+                if not file.endswith(".desktop"):
                     continue
-                seen_ids.add(base)
-                
-                name = app_info.get_name()
-                if not name:
-                    name = base.replace(".desktop", "")
-                
-                # Sanitize filename
-                safe_name = "".join(c for c in name if c not in '/\\:*?"<>|').strip()
-                if not safe_name:
-                    safe_name = base.replace(".desktop", "")
+                f = os.path.join(root, file)
+                base = file
+                if base in seen_ids:
+                    continue
+                try:
+                    app_info = Gio.DesktopAppInfo.new_from_filename(f)
+                    if not app_info or not app_info.should_show():
+                        continue
+                    seen_ids.add(base)
                     
-                target_filename = f"{safe_name}.desktop"
-                count = 1
-                while target_filename in used_names:
-                    target_filename = f"{safe_name} ({count}).desktop"
-                    count += 1
-                used_names.add(target_filename)
-                
-                dest_path = os.path.join(apps_dir, target_filename)
-                active_links.add(dest_path)
-                
-                # Create or update desktop file as regular file
-                if os.path.islink(dest_path):
+                    name = app_info.get_name()
+                    if not name:
+                        name = base.replace(".desktop", "")
+                    
+                    # Sanitize filename
+                    safe_name = "".join(c for c in name if c not in '/\\:*?"<>|').strip()
+                    if not safe_name:
+                        safe_name = base.replace(".desktop", "")
+                        
+                    target_filename = f"{safe_name}.desktop"
+                    count = 1
+                    while target_filename in used_names:
+                        target_filename = f"{safe_name} ({count}).desktop"
+                        count += 1
+                    used_names.add(target_filename)
+                    
+                    dest_path = os.path.join(apps_dir, target_filename)
+                    active_links.add(dest_path)
+                    
+                    # Create or update desktop file as regular file
+                    if os.path.islink(dest_path):
+                        try:
+                            os.remove(dest_path)
+                        except Exception:
+                            pass
                     try:
-                        os.remove(dest_path)
+                        shutil.copy2(f, dest_path)
+                        os.chmod(dest_path, 0o755)
+                        cats = app_info.get_categories() or ""
+                        cmdline = app_info.get_commandline() or ""
+                        is_game = ("Game" in cats) or ("game" in base.lower()) or ("steam" in base.lower()) or ("steam://" in cmdline)
+                        is_wine = ("wine" in base.lower()) or ("wine" in cmdline.lower())
+                        with open(dest_path, "a") as df:
+                            df.write(f"\nX-Mac-Real-Path={f}\n")
+                            if is_wine:
+                                df.write("X-Mac-Wine-App=true\n")
+                            if is_game or is_wine:
+                                df.write("PrefersNonDefaultGPU=true\nX-KDE-RunOnDiscreteGpu=true\n")
                     except Exception:
                         pass
-                try:
-                    shutil.copy2(f, dest_path)
-                    os.chmod(dest_path, 0o755)
-                    cats = app_info.get_categories() or ""
-                    cmdline = app_info.get_commandline() or ""
-                    is_game = ("Game" in cats) or ("game" in base.lower()) or ("steam" in base.lower()) or ("steam://" in cmdline)
-                    with open(dest_path, "a") as df:
-                        df.write(f"\nX-Mac-Real-Path={f}\n")
-                        if is_game:
-                            df.write("PrefersNonDefaultGPU=true\nX-KDE-RunOnDiscreteGpu=true\n")
+                        
+                    # Set icon metadata
+                    res_icon = resolve_icon(app_info, f, home)
+                    if res_icon:
+                        subprocess.run(["gio", "set", dest_path, "metadata::custom-icon", res_icon],
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        subprocess.run(["gio", "set", "-t", "unset", dest_path, "metadata::custom-icon-name"],
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    else:
+                        icon = app_info.get_icon()
+                        if icon:
+                            icon_str = icon.to_string()
+                            if icon_str:
+                                subprocess.run(["gio", "set", dest_path, "metadata::custom-icon-name", icon_str],
+                                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 except Exception:
                     pass
-                    
-                # Set icon metadata
-                res_icon = resolve_icon(app_info, f, home)
-                if res_icon:
-                    subprocess.run(["gio", "set", dest_path, "metadata::custom-icon", res_icon],
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    subprocess.run(["gio", "set", "-t", "unset", dest_path, "metadata::custom-icon-name"],
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                else:
-                    icon = app_info.get_icon()
-                    if icon:
-                        icon_str = icon.to_string()
-                        if icon_str:
-                            subprocess.run(["gio", "set", dest_path, "metadata::custom-icon-name", icon_str],
-                                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            except Exception:
-                pass
                 
     # Remove stale symlinks or deleted apps
     for f in glob.glob(os.path.join(apps_dir, "*.desktop")):
@@ -186,11 +196,12 @@ def sync():
 
 def extract_app_name(filename):
     base = os.path.basename(filename)
-    for ext in ['.appimage', '.AppImage', '.tar.gz', '.tar.xz', '.tgz', '.tar.bz2', '.tar', '.zip', '.deb']:
+    for ext in ['.appimage', '.AppImage', '.tar.gz', '.tar.xz', '.tgz', '.tar.bz2', '.tar', '.zip', '.deb', '.exe', '.EXE', '.msi', '.MSI', '.bat', '.cmd']:
         if base.endswith(ext):
             base = base[:-len(ext)]
             break
-    clean = re.sub(r'[-_](?:v?[\d\.]+.*|x86_64|amd64|i386|linux|x64|appimage).*$', '', base, flags=re.I)
+    clean = re.sub(r'[-_](?:v?[\d\.]+.*|x86_64|amd64|i386|linux|x64|x86|win32|win64|win|setup|installer|install|appimage).*$', '', base, flags=re.I)
+    clean = re.sub(r'(?:[-_]?(?:setup|installer|install))+$', '', clean, flags=re.I)
     clean = clean.replace('-', ' ').replace('_', ' ').strip().title()
     return clean or base
 
@@ -447,6 +458,241 @@ def install_deb(filepath):
                         f"Пакет \"{clean_name}\" успішно встановлено в систему!"])
 
 
+def extract_exe_icon(exe_path, app_id):
+    if not exe_path or not os.path.exists(exe_path):
+        return ""
+    if not shutil.which("wrestool") or not shutil.which("icotool"):
+        return ""
+    temp_dir = tempfile.mkdtemp(prefix="wine_icon_")
+    try:
+        raw_ico = os.path.join(temp_dir, "app.ico")
+        # Extract group icon resource (type 14) or icon (type 3)
+        subprocess.run(["wrestool", "-x", "-t14", exe_path, "-o", raw_ico],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if not os.path.exists(raw_ico) or os.path.getsize(raw_ico) == 0:
+            subprocess.run(["wrestool", "-x", "-t3", exe_path, "-o", raw_ico],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if os.path.exists(raw_ico) and os.path.getsize(raw_ico) > 0:
+            subprocess.run(["icotool", "-x", "-o", temp_dir, raw_ico],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            pngs = glob.glob(os.path.join(temp_dir, "*.png"))
+            if pngs:
+                pngs.sort(key=lambda x: os.path.getsize(x), reverse=True)
+                target_icon = os.path.join(ICONS_DIR, f"{app_id}.png")
+                shutil.copy2(pngs[0], target_icon)
+                return target_icon
+    except Exception as e:
+        print(f"[Wine Installer] Icon extraction error: {e}")
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+    return ""
+
+
+def is_windows_installer(filepath):
+    ext = os.path.splitext(filepath)[1].lower()
+    if ext == ".msi":
+        return True
+    base = os.path.basename(filepath).lower()
+    for kw in ["setup", "install", "installer", "update", "patch"]:
+        if kw in base:
+            return True
+    try:
+        with open(filepath, "rb") as f:
+            header = f.read(5 * 1024 * 1024)
+            if b"Inno Setup" in header or b"Nullsoft" in header or b"NSIS" in header or b"InstallShield" in header or b"WiX" in header:
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def install_wine_installer(filepath):
+    if not wait_for_file_ready(filepath):
+        return
+    print(f"[Wine Installer] Processing Windows executable: {filepath}")
+    clean_name = extract_app_name(filepath)
+    safe_id = "".join(c for c in clean_name if c.isalnum() or c in "-_").lower() or "winapp"
+    ext = os.path.splitext(filepath)[1].lower()
+
+    wine_runner = "/usr/local/bin/mac-wine-runner"
+    if not os.path.exists(wine_runner):
+        wine_runner = "wine"
+
+    env = os.environ.copy()
+    env["WINEDEBUG"] = "-all"
+    env["WINEPREFIX"] = os.path.join(HOME, ".wine")
+
+    # If it is NOT an installer, treat as portable application
+    if not is_windows_installer(filepath):
+        print(f"[Wine Installer] Detected portable application: {clean_name}")
+        app_target_dir = os.path.join(WINE_APPS_DIR, safe_id)
+        os.makedirs(app_target_dir, exist_ok=True)
+        dest_binary = os.path.join(app_target_dir, os.path.basename(filepath))
+        try:
+            shutil.move(filepath, dest_binary)
+        except Exception as e:
+            print(f"[Wine Installer] Move failed: {e}")
+            return
+
+        icon_path = extract_exe_icon(dest_binary, safe_id)
+        desktop_content = f"""[Desktop Entry]
+Type=Application
+Name={clean_name}
+Comment={clean_name} Windows Application
+Exec=/usr/local/bin/mac-wine-runner "{dest_binary}" %U
+Icon={icon_path or 'application-x-ms-dos-executable'}
+Terminal=false
+Categories=Utility;Application;
+X-Mac-Wine-App=true
+X-Mac-Real-Path={dest_binary}
+PrefersNonDefaultGPU=true
+X-KDE-RunOnDiscreteGpu=true
+"""
+        local_desktop = os.path.join(LOCAL_APPS_DIR, f"wine-{safe_id}.desktop")
+        with open(local_desktop, "w") as df:
+            df.write(desktop_content)
+        os.chmod(local_desktop, 0o755)
+
+        subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        sync()
+        subprocess.run(["notify-send", "-a", "macOS", "-i", icon_path or "application-x-ms-dos-executable",
+                        "Програму додано", f"Windows програма \"{clean_name}\" готова до запуску!"])
+        return
+
+    # Case: Windows Installer (.exe / .msi)
+    # Move installer into cache directory so it immediately disappears from ~/Applications
+    installer_name = os.path.basename(filepath)
+    cached_installer = os.path.join(WINE_INSTALLERS_CACHE, installer_name)
+    try:
+        shutil.move(filepath, cached_installer)
+    except Exception as e:
+        print(f"[Wine Installer] Move to cache failed: {e}")
+        cached_installer = filepath
+
+    subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
+                    "Встановлення програми", f"Встановлення Windows програми \"{clean_name}\"..."])
+
+    # Record desktop files before installation
+    before_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
+
+    silent_args = []
+    if ext == ".msi":
+        silent_args = ["msiexec", "/i", cached_installer, "/qn", "/norestart"]
+    else:
+        # Detect installer type
+        is_inno = False
+        is_nsis = False
+        try:
+            with open(cached_installer, "rb") as f:
+                header = f.read(5 * 1024 * 1024)
+                if b"Inno Setup" in header:
+                    is_inno = True
+                elif b"Nullsoft" in header or b"NSIS" in header:
+                    is_nsis = True
+        except Exception:
+            pass
+
+        if is_inno:
+            silent_args = [cached_installer, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-"]
+        elif is_nsis:
+            silent_args = [cached_installer, "/S"]
+        else:
+            silent_args = [cached_installer, "/S"]
+
+    cmd = [wine_runner] + silent_args
+    print(f"[Wine Installer] Executing silent install: {' '.join(cmd)}")
+    res = subprocess.run(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # If silent install failed and it was an .exe, run interactive installer so user isn't stuck
+    if res.returncode != 0 and ext != ".msi":
+        print(f"[Wine Installer] Silent install returned {res.returncode}, launching standard installer...")
+        subprocess.run([wine_runner, cached_installer], env=env)
+
+    # Wait for Wine registry/desktop flush
+    time.sleep(2)
+    after_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
+    new_desktops = [d for d in (after_desktops - before_desktops) if not os.path.basename(d).startswith("wine-")]
+
+    created_desktop = None
+    icon_path = ""
+
+    if new_desktops:
+        created_desktop = new_desktops[0]
+        # Copy to LOCAL_APPS_DIR if nested in wine/Programs
+        dest_desktop = os.path.join(LOCAL_APPS_DIR, f"wine-{safe_id}.desktop")
+        try:
+            shutil.copy2(created_desktop, dest_desktop)
+            created_desktop = dest_desktop
+        except Exception:
+            pass
+    else:
+        # Check newly created .exe in drive_c
+        wine_c = os.path.join(HOME, ".wine", "drive_c")
+        recent_exes = []
+        if os.path.isdir(wine_c):
+            now = time.time()
+            for prog_dir in ["Program Files", "Program Files (x86)", "users"]:
+                pdir = os.path.join(wine_c, prog_dir)
+                if not os.path.isdir(pdir):
+                    continue
+                for root, _, files in os.walk(pdir):
+                    for f in files:
+                        if f.lower().endswith(".exe") and not f.lower().startswith(("unins", "setup", "install")):
+                            fp = os.path.join(root, f)
+                            try:
+                                mtime = os.path.getmtime(fp)
+                                if now - mtime < 600:
+                                    recent_exes.append((fp, mtime))
+                            except Exception:
+                                pass
+        if recent_exes:
+            recent_exes.sort(key=lambda x: x[1], reverse=True)
+            installed_exe = recent_exes[0][0]
+            icon_path = extract_exe_icon(installed_exe, safe_id)
+
+            created_desktop = os.path.join(LOCAL_APPS_DIR, f"wine-{safe_id}.desktop")
+            desktop_content = f"""[Desktop Entry]
+Type=Application
+Name={clean_name}
+Exec=/usr/local/bin/mac-wine-runner "{installed_exe}" %U
+Icon={icon_path or 'application-x-ms-dos-executable'}
+Terminal=false
+Categories=Utility;Application;
+X-Mac-Wine-App=true
+X-Mac-Real-Path={installed_exe}
+PrefersNonDefaultGPU=true
+X-KDE-RunOnDiscreteGpu=true
+"""
+            with open(created_desktop, "w") as df:
+                df.write(desktop_content)
+            os.chmod(created_desktop, 0o755)
+
+    if created_desktop and os.path.exists(created_desktop):
+        # Patch desktop file: ensure NoDisplay is removed and GPU/mac flags are added
+        try:
+            with open(created_desktop, "r", errors="ignore") as f:
+                lines = f.readlines()
+            clean_lines = [l for l in lines if not l.startswith("NoDisplay=")]
+            if not any(l.startswith("X-Mac-Wine-App=") for l in clean_lines):
+                clean_lines.append("X-Mac-Wine-App=true\n")
+            if not any(l.startswith("PrefersNonDefaultGPU=") for l in clean_lines):
+                clean_lines.append("PrefersNonDefaultGPU=true\nX-KDE-RunOnDiscreteGpu=true\n")
+            with open(created_desktop, "w") as f:
+                f.writelines(clean_lines)
+            if not icon_path:
+                for l in clean_lines:
+                    if l.startswith("Icon="):
+                        icon_path = l.strip().split("=", 1)[1]
+                        break
+        except Exception:
+            pass
+
+    subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    sync()
+    subprocess.run(["notify-send", "-a", "macOS", "-i", icon_path or "application-x-ms-dos-executable",
+                    "Програму встановлено", f"Windows програма \"{clean_name}\" успішно встановлена!"])
+
+
 def handle_trash(trashinfo_path):
     time.sleep(0.5)
     if not os.path.exists(trashinfo_path):
@@ -483,6 +729,7 @@ def handle_trash(trashinfo_path):
         app_dir = ""
         is_appimage = False
         is_installed_app = False
+        is_wine_app = False
 
         with open(trashed_desktop, "r", errors="ignore") as f:
             for line in f:
@@ -499,6 +746,8 @@ def handle_trash(trashinfo_path):
                     is_appimage = line.split("=", 1)[1].strip().lower() == "true"
                 elif line.startswith("X-Mac-Installed-App="):
                     is_installed_app = line.split("=", 1)[1].strip().lower() == "true"
+                elif line.startswith("X-Mac-Wine-App="):
+                    is_wine_app = line.split("=", 1)[1].strip().lower() == "true"
 
         # Fallbacks based on Exec command path
         if not app_dir and INSTALLED_APPS_DIR in exec_cmd:
@@ -571,7 +820,50 @@ def handle_trash(trashinfo_path):
             subprocess.run(["notify-send", "-a", "macOS", "Видалено", f"Програму \"{app_name}\" успішно деінстальовано!"])
             return
 
-        # Case 3: System package (Snap / Flatpak / DEB)
+        # Case 3: Wine Application
+        if is_wine_app or "/.wine/" in real_path or "/.wine/" in exec_cmd or "/wine-apps/" in real_path:
+            print(f"[Uninstaller] Detected Wine application: {app_name}")
+            if "/wine-apps/" in real_path or "/wine-apps/" in exec_cmd:
+                for cand in glob.glob(os.path.join(WINE_APPS_DIR, "*")):
+                    if app_name.lower().replace(" ", "") in os.path.basename(cand).lower().replace(" ", ""):
+                        shutil.rmtree(cand, ignore_errors=True)
+            elif app_dir or real_path:
+                target_folder = app_dir or (os.path.dirname(real_path) if real_path else "")
+                if target_folder and os.path.exists(target_folder) and ".wine/drive_c/windows" not in target_folder:
+                    uninst = None
+                    for u in ["unins000.exe", "uninstall.exe", "uninst.exe"]:
+                        up = os.path.join(target_folder, u)
+                        if os.path.exists(up):
+                            uninst = up
+                            break
+                    if uninst:
+                        try:
+                            subprocess.run(["wine", uninst, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"], timeout=30)
+                        except Exception:
+                            pass
+                    if os.path.exists(target_folder) and ".wine/drive_c/windows" not in target_folder:
+                        shutil.rmtree(target_folder, ignore_errors=True)
+
+            for df in glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True):
+                try:
+                    content = open(df, errors="ignore").read()
+                    if (app_name in df) or (real_path and real_path in content) or (app_name in content and "wine" in content):
+                        os.remove(df)
+                except Exception:
+                    pass
+
+            try:
+                os.remove(trashed_desktop)
+                os.remove(trashinfo_path)
+            except Exception:
+                pass
+
+            subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            sync()
+            subprocess.run(["notify-send", "-a", "macOS", "Видалено", f"Windows програму \"{app_name}\" успішно деінстальовано!"])
+            return
+
+        # Case 4: System package (Snap / Flatpak / DEB)
         if real_path and (real_path.startswith("/snap/") or real_path.startswith("/var/lib/flatpak/") or real_path.startswith("/usr/")):
             subprocess.Popen(["/usr/local/bin/mac-uninstall-app", trashed_desktop])
     except Exception as e:
@@ -605,6 +897,8 @@ class MacAppDaemon:
             threading.Thread(target=install_archive, args=(path,), daemon=True).start()
         elif base.endswith(".deb"):
             threading.Thread(target=install_deb, args=(path,), daemon=True).start()
+        elif base.endswith(".exe") or base.endswith(".msi"):
+            threading.Thread(target=install_wine_installer, args=(path,), daemon=True).start()
 
     def on_trash_info_changed(self, monitor, file, other_file, event_type):
         if event_type not in (Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.CHANGES_DONE_HINT):

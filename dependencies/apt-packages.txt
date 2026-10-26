@@ -38,3 +38,8 @@ libvulkan1
 libvulkan1:i386
 mesa-vulkan-drivers:i386
 ubuntu-drivers-common
+wine
+wine64
+wine32:i386
+winetricks
+icoutils

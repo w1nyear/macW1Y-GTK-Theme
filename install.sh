@@ -442,6 +442,18 @@ EOF_NAUT
         run_as_user xdg-mime default mac-app-launcher.desktop application/x-desktop 2>/dev/null || true
         run_as_user gio mime application/x-desktop mac-app-launcher.desktop 2>/dev/null || true
     fi
+    if [ -f "$SCRIPT_DIR/applications/wine.desktop" ]; then
+        sudo cp -f "$SCRIPT_DIR/applications/wine.desktop" /usr/share/applications/wine.desktop
+        for mt in application/x-ms-dos-executable application/x-msdownload application/x-msi application/x-bat application/vnd.microsoft.portable-executable; do
+            run_as_user xdg-mime default wine.desktop "$mt" 2>/dev/null || true
+            run_as_user gio mime "$mt" wine.desktop 2>/dev/null || true
+        done
+    fi
+    if [ -f "/usr/share/applications/winetricks.desktop" ]; then
+        if ! grep -q "NoDisplay=true" /usr/share/applications/winetricks.desktop; then
+            sudo sed -i '/^\[Desktop Entry\]/a NoDisplay=true' /usr/share/applications/winetricks.desktop 2>/dev/null || true
+        fi
+    fi
     if [ -f "$SCRIPT_DIR/bin/mac-generate-bookmarks.sh" ]; then
         sudo cp -f "$SCRIPT_DIR/bin/mac-generate-bookmarks.sh" /usr/local/bin/mac-generate-bookmarks.sh
         sudo chmod 755 /usr/local/bin/mac-generate-bookmarks.sh
@@ -963,7 +975,7 @@ install_gamemode() {
     require_root
     
     # 1. Встановлення бінарних утиліт та скриптів
-    for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-sanitize-favorites.sh; do
+    for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-sanitize-favorites.sh; do
         if [ -f "$SCRIPT_DIR/bin/$bin_file" ] || [ -L "$SCRIPT_DIR/bin/$bin_file" ]; then
             sudo cp -a "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
             sudo chmod +x "/usr/local/bin/$bin_file" 2>/dev/null || true
@@ -1807,7 +1819,7 @@ run_incremental_update() {
     [ -f "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" ] && sync_or_update_file "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" "/etc/udev/rules.d/99-uinput.rules" true
     [ -f "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" "/etc/systemd/system/mac-touchpad-daemon.service" true
 
-    for gb in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-sanitize-favorites.sh; do
+    for gb in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-sanitize-favorites.sh; do
         if [ -f "$SCRIPT_DIR/bin/$gb" ] || [ -L "$SCRIPT_DIR/bin/$gb" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$gb" "/usr/local/bin/$gb" true
             sudo chmod +x "/usr/local/bin/$gb" 2>/dev/null || true
@@ -1878,6 +1890,18 @@ EOF_NAUT
         sync_or_update_file "$SCRIPT_DIR/applications/mac-app-launcher.desktop" "/usr/share/applications/mac-app-launcher.desktop" true
         run_as_user xdg-mime default mac-app-launcher.desktop application/x-desktop 2>/dev/null || true
         run_as_user gio mime application/x-desktop mac-app-launcher.desktop 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/applications/wine.desktop" ]; then
+        sync_or_update_file "$SCRIPT_DIR/applications/wine.desktop" "/usr/share/applications/wine.desktop" true
+        for mt in application/x-ms-dos-executable application/x-msdownload application/x-msi application/x-bat application/vnd.microsoft.portable-executable; do
+            run_as_user xdg-mime default wine.desktop "$mt" 2>/dev/null || true
+            run_as_user gio mime "$mt" wine.desktop 2>/dev/null || true
+        done
+    fi
+    if [ -f "/usr/share/applications/winetricks.desktop" ]; then
+        if ! grep -q "NoDisplay=true" /usr/share/applications/winetricks.desktop; then
+            sudo sed -i '/^\[Desktop Entry\]/a NoDisplay=true' /usr/share/applications/winetricks.desktop 2>/dev/null || true
+        fi
     fi
     if [ -f "$SCRIPT_DIR/bin/mac-generate-bookmarks.sh" ]; then
         sudo cp -f "$SCRIPT_DIR/bin/mac-generate-bookmarks.sh" /usr/local/bin/mac-generate-bookmarks.sh
