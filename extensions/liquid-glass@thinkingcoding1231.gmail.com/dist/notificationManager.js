@@ -324,21 +324,52 @@ export class NotificationManager {
             // has settled by now and this frame's sync has not dirtied anything
             // yet. See ensureGlassAllocated().
             ensureGlassAllocated(this.bgActor);
+            let didRefresh = false;
             try {
-                this._syncGeometry();
+                didRefresh = !!this._syncGeometry();
                 // Hover tint animation (notification-specific behaviour preserved)
                 let isHovered = this.currentBanner.hover;
                 let targetTint = isHovered ? (this._baseTint + 0.1) : this._baseTint;
                 if (Math.abs(this._currentTint - targetTint) > 0.001) {
                     this._currentTint += (targetTint - this._currentTint) * 0.1;
                     this.effect?.setTintStrength(this._currentTint);
+                    didRefresh = true;
                 }
             }
             catch (e) {
                 reportFrameLoopError('NotificationManager', e);
             }
-            this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
+            if (didRefresh) {
+                this._idleCount = 0;
+            } else {
+                this._idleCount = (this._idleCount || 0) + 1;
+            }
+            if (this._idleCount < 8) {
+                this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
+            } else {
+                this._frameSyncId = 0;
+                this._scheduleIdleHeartbeat();
+            }
             return GLib.SOURCE_REMOVE;
+        };
+        this.wakeFrameSync = () => {
+            this._idleCount = 0;
+            if (this._idleTimeoutId) {
+                GLib.source_remove(this._idleTimeoutId);
+                this._idleTimeoutId = 0;
+            }
+            if (this._frameSyncId === 0 && !this._torndown && this.bgActor && this.currentBanner) {
+                this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
+            }
+        };
+        this._scheduleIdleHeartbeat = () => {
+            if (this._idleTimeoutId || this._torndown)
+                return;
+            this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
+                this._idleTimeoutId = 0;
+                this.wakeFrameSync();
+                return GLib.SOURCE_REMOVE;
+            });
         };
         this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
         this._isFirstAdaptiveRun = true;
@@ -408,9 +439,10 @@ export class NotificationManager {
             this._lastScreenW = screenW;
             this._lastScreenH = screenH;
         }
-        // ── Sync clones every frame (dockManager pattern) ────────────────────────
+        // ── Sync clones (gated by glassRefreshDue) ────────────────────────
         this._windowCloneManager?.setOffset(-monitorX, -monitorY);
-        this._uiSampler?.refresh();
+        if (!glassRefreshDue?.(this.bgActor))
+            return false;
         // [PERF ①/①b] Clip the offscreen CAPTURE to the region this glass can
         // actually show, and hide the clones that fall outside it. Must sit
         // between setGlassGeometry() (which makes the effect's uniforms describe
@@ -424,8 +456,12 @@ export class NotificationManager {
             uiSampler: this._uiSampler,
             windowCloneManager: this._windowCloneManager,
         });
+        this._uiSampler?.refresh();
         this._uiSampler?.sync(monitorX, monitorY, screenW, screenH);
         this._windowCloneManager?.sync();
+        this.effect?.markBackdropDirty?.();
+        glassRefreshDone?.(this.bgActor);
+        return true;
     }
     // Called once when the banner effect is first set up (and after monitor changes).
     // Applies mutual exclusions between multiple Liquid Glass bgActors, then
@@ -461,6 +497,10 @@ export class NotificationManager {
         if (this.currentBanner) {
             this.currentBanner.remove_style_class_name('liquid-glass-transparent');
             this.currentBanner = null;
+        }
+        if (this._idleTimeoutId) {
+            GLib.source_remove(this._idleTimeoutId);
+            this._idleTimeoutId = 0;
         }
         if (this._frameSyncId !== 0) {
             if (global.compositor?.get_laters)
@@ -537,7 +577,11 @@ export class NotificationManager {
     cleanup() {
         this._torndown = true;
         this._teardownStep('frameSync', () => {
-            if (this._frameSyncId !== 0) {
+            if (this._idleTimeoutId) {
+            GLib.source_remove(this._idleTimeoutId);
+            this._idleTimeoutId = 0;
+        }
+        if (this._frameSyncId !== 0) {
                 if (global.compositor?.get_laters)
                     global.compositor.get_laters().remove(this._frameSyncId);
                 this._frameSyncId = 0;

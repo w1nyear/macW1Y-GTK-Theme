@@ -640,23 +640,58 @@ export class UIManager {
             // has settled by now and this frame's sync has not dirtied anything
             // yet. See ensureGlassAllocated().
             ensureGlassAllocated(this.bgActor);
+            let didRefresh = false;
             try {
-                this._syncGeometry();
+                didRefresh = !!this._syncGeometry();
             }
             catch (e) {
                 reportFrameLoopError('UIManager', e);
             }
-            this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            if (didRefresh || (this._tickId && this._tickId !== 0)) {
+                this._idleCount = 0;
+            } else {
+                this._idleCount = (this._idleCount || 0) + 1;
+            }
+            if (this._idleCount < 8) {
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            } else {
+                this._frameSyncId = 0;
+                this._scheduleIdleHeartbeat();
+            }
             return GLib.SOURCE_REMOVE;
+        };
+        this.wakeFrameSync = () => {
+            this._idleCount = 0;
+            if (this._idleTimeoutId) {
+                GLib.source_remove(this._idleTimeoutId);
+                this._idleTimeoutId = 0;
+            }
+            if (this._frameSyncId === 0 && !this._torndown && this.bgActor && this.targetActor?.mapped) {
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            }
+        };
+        this._scheduleIdleHeartbeat = () => {
+            if (this._idleTimeoutId || this._torndown)
+                return;
+            this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
+                this._idleTimeoutId = 0;
+                this.wakeFrameSync();
+                return GLib.SOURCE_REMOVE;
+            });
         };
         // Starts the render loop and builds fresh clones when the menu is opened
         let startFrameSync = () => {
+            this.wakeFrameSync();
             if (this._frameSyncId === 0) {
                 buildClones();
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
         let stopFrameSync = () => {
+            if (this._idleTimeoutId) {
+                GLib.source_remove(this._idleTimeoutId);
+                this._idleTimeoutId = 0;
+            }
             if (this._frameSyncId !== 0) {
                 laterRemove(this._frameSyncId);
                 this._frameSyncId = 0;
@@ -900,7 +935,7 @@ export class UIManager {
             (q(bgW) * 83492791) ^ (q(bgH) * 2654435761) ^
             ((screenW | 0) * 1274126177) ^ ((screenH | 0) * 1550398307)) | 0;
         if (!glassRefreshDue?.(this.bgActor, extraH))
-            return;
+            return false;
         // [PERF ①/①b] Clip the offscreen CAPTURE to the region this glass can
         // actually show, and hide the clones that fall outside it. Must sit
         // between setGlassGeometry() (which makes the effect's uniforms describe
@@ -916,7 +951,9 @@ export class UIManager {
         });
         this._uiSampler?.sync(monitorX, monitorY, screenW, screenH);
         this._windowCloneManager?.sync();
+        this.effect?.markBackdropDirty?.();
         glassRefreshDone?.(this.bgActor, extraH);
+        return true;
     }
     // Updates the shader resolution based on the current background actor size
     _updateResolution() {

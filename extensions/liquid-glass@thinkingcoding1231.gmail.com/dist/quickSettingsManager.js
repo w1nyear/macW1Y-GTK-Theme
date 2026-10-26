@@ -552,23 +552,58 @@ export class QuickSettingsManager {
             // has settled by now and this frame's sync has not dirtied anything
             // yet. See ensureGlassAllocated().
             ensureGlassAllocated(this.bgActor);
+            let didRefresh = false;
             try {
-                this._syncGeometry();
+                didRefresh = !!this._syncGeometry();
             }
             catch (e) {
                 reportFrameLoopError('QuickSettingsManager', e);
             }
-            this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            if (didRefresh || (this._tickId && this._tickId !== 0)) {
+                this._idleCount = 0;
+            } else {
+                this._idleCount = (this._idleCount || 0) + 1;
+            }
+            if (this._idleCount < 8) {
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            } else {
+                this._frameSyncId = 0;
+                this._scheduleIdleHeartbeat();
+            }
             return GLib.SOURCE_REMOVE;
+        };
+        this.wakeFrameSync = () => {
+            this._idleCount = 0;
+            if (this._idleTimeoutId) {
+                GLib.source_remove(this._idleTimeoutId);
+                this._idleTimeoutId = 0;
+            }
+            if (this._frameSyncId === 0 && !this._torndown && this.bgActor && this.targetActor?.mapped) {
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            }
+        };
+        this._scheduleIdleHeartbeat = () => {
+            if (this._idleTimeoutId || this._torndown)
+                return;
+            this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
+                this._idleTimeoutId = 0;
+                this.wakeFrameSync();
+                return GLib.SOURCE_REMOVE;
+            });
         };
         // Starts the render loop and builds fresh clones when the menu is opened
         let startFrameSync = () => {
+            this.wakeFrameSync();
             if (this._frameSyncId === 0) {
                 buildClones();
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
         let stopFrameSync = () => {
+            if (this._idleTimeoutId) {
+                GLib.source_remove(this._idleTimeoutId);
+                this._idleTimeoutId = 0;
+            }
             if (this._frameSyncId !== 0) {
                 laterRemove(this._frameSyncId);
                 this._frameSyncId = 0;
@@ -821,22 +856,57 @@ export class QuickSettingsManager {
             // has settled by now and this frame's sync has not dirtied anything
             // yet. See ensureGlassAllocated().
             ensureGlassAllocated(this.bgActor);
+            let didRefresh = false;
             try {
-                this._syncToggleRegions();
+                didRefresh = !!this._syncToggleRegions();
             }
             catch (e) {
                 reportFrameLoopError('QuickSettingsManager(toggles)', e);
             }
-            this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            if (didRefresh) {
+                this._idleCount = 0;
+            } else {
+                this._idleCount = (this._idleCount || 0) + 1;
+            }
+            if (this._idleCount < 8) {
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            } else {
+                this._frameSyncId = 0;
+                this._scheduleIdleHeartbeat();
+            }
             return GLib.SOURCE_REMOVE;
         };
+        this.wakeFrameSync = () => {
+            this._idleCount = 0;
+            if (this._idleTimeoutId) {
+                GLib.source_remove(this._idleTimeoutId);
+                this._idleTimeoutId = 0;
+            }
+            if (this._frameSyncId === 0 && !this._torndown && this.bgActor && this.targetActor?.mapped) {
+                this._frameSyncId = laterAdd(frameLaterType, frameTick);
+            }
+        };
+        this._scheduleIdleHeartbeat = () => {
+            if (this._idleTimeoutId || this._torndown)
+                return;
+            this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
+                this._idleTimeoutId = 0;
+                this.wakeFrameSync();
+                return GLib.SOURCE_REMOVE;
+            });
+        };
         let startFrameSync = () => {
+            this.wakeFrameSync();
             if (this._frameSyncId === 0) {
                 buildClones();
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
         let stopFrameSync = () => {
+            if (this._idleTimeoutId) {
+                GLib.source_remove(this._idleTimeoutId);
+                this._idleTimeoutId = 0;
+            }
             if (this._frameSyncId !== 0) {
                 laterRemove(this._frameSyncId);
                 this._frameSyncId = 0;
@@ -2029,6 +2099,8 @@ export class QuickSettingsManager {
         this._uiSampler?.refresh();
         this._uiSampler?.sync(monitorX, monitorY, screenW, screenH);
         this._windowCloneManager?.sync();
+        this.effect?.markBackdropDirty?.();
+        return true;
     }
     // ── Geometry synchronisation ────────────────────────────────────────────────
     // Calculates and synchronizes the position/size of the glass background every frame
@@ -2178,6 +2250,8 @@ export class QuickSettingsManager {
             this._uiSampler?.refresh();
             this._uiSampler?.sync(monitorX, monitorY, screenW, screenH);
             this._windowCloneManager?.sync();
+            this.effect?.markBackdropDirty?.();
+            return true;
         }
         // Scale-aware corner radius
         // Use the smaller of the X/Y scales to prevent corners from squishing incorrectly

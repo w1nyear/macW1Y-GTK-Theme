@@ -4326,8 +4326,10 @@ export function syncGlassCaptureClip(opts) {
 //     globalThis._macGlassStats();              // лічильники для аналізу
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const GLASS_REFRESH_60FPS_INTERVAL_US = 16666; // жорстка межа 1/60 с
-export const GLASS_REFRESH_HEARTBEAT_US = 1000000;    // пульс узгодженості: 1 с
+export const GLASS_REFRESH_ACTIVE_INTERVAL_US = 8333;   // до 120 FPS під час активного руху/трансформації (Apple ProMotion)
+export const GLASS_REFRESH_BACKGROUND_INTERVAL_US = 33333; // 30 FPS для фонових змін під статичним склом
+export const GLASS_REFRESH_60FPS_INTERVAL_US = 16666;      // звичайна межа 60 FPS
+export const GLASS_REFRESH_HEARTBEAT_US = 1000000;         // пульс узгодженості: 1 с
 
 let _backdropDamageVersion = 0;
 let _backdropFailCounter = 0;
@@ -4366,7 +4368,7 @@ function _hmix(h, v) {
 // в межах одного кадру.
 let _stageScan = { at: -1e12, h: 0 };
 function _stageBackdropHash(nowUs) {
-    if (nowUs - _stageScan.at < 4000)
+    if (nowUs - _stageScan.at < 8000)
         return _stageScan.h;
     let h = 1234567;
     try {
@@ -4492,7 +4494,9 @@ export function glassRefreshDue(glassActor, extraHash) {
         const scanH = _stageBackdropHash(nowUs);
         const dmg = _backdropDamageVersion;
         const ownH = _hmix(_ownGlassHash(glassActor), extraHash);
-        if (st.lastScanH !== scanH || st.lastOwnH !== ownH) {
+        const scanChanged = (st.lastScanH !== scanH);
+        const ownChanged = (st.lastOwnH !== ownH);
+        if (scanChanged || ownChanged) {
             st.lastScanH = scanH;
             st.lastDamage = dmg;
             st.lastOwnH = ownH;
@@ -4501,9 +4505,13 @@ export function glassRefreshDue(glassActor, extraHash) {
         if (!st.lastFull)
             return true; // перший тік після створення / show().
         const sinceFull = nowUs - st.lastFull;
-        // У зміні: без катастрофальних обмежень, але не швидше за 60 FPS.
-        if (st.dirty)
-            return sinceFull >= GLASS_REFRESH_60FPS_INTERVAL_US;
+        if (st.dirty) {
+            // Apple ProMotion Dynamic Adaptivity:
+            // Активний рух власної геометрії скла -> до 120 FPS (8.3 мс)
+            // Фонова зміна під нерухомим склом -> 30 FPS (33.3 мс, економія 75% GPU)
+            const dueInterval = ownChanged ? GLASS_REFRESH_ACTIVE_INTERVAL_US : GLASS_REFRESH_BACKGROUND_INTERVAL_US;
+            return sinceFull >= dueInterval;
+        }
         // У спокої — тільки пульс узгодженості.
         return sinceFull >= GLASS_REFRESH_HEARTBEAT_US;
     } catch (_) {

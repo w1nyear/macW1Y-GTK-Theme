@@ -891,6 +891,7 @@ export class DashManager {
         this._uiSampler?.refresh();
         this._uiSampler?.sync(monitor.x, monitor.y, screenW, screenH);
         this._windowCloneManager?.sync();
+        this.effect?.markBackdropDirty?.();
         glassRefreshDone?.(this.bgActor, extraH);
         return true;
     }

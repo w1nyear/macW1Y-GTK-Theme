@@ -96,7 +96,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
         // Liquid Effect instance
         this._effect = new LiquidEffect({
             extensionPath: extensionPath || lgDir(),
-            settings: this._settings,
+            settings: lgSettings() || this._settings,
             owner: this._owner,
         });
 
@@ -249,12 +249,14 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             this._effect?.setResolution(w, h);
             this.set_size(w, h);
             this._liquidBox?.set_size(w, h);
+            this.wakeFrameSync();
         } catch (_) {}
     }
 
     setGlassGeometry(x, y, w, h) {
         try {
             this._effect?.setGlassGeometry(x, y, w, h);
+            this.wakeFrameSync();
         } catch (_) {}
     }
 
@@ -271,6 +273,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             this._uiSampler?.refresh?.();
             this._windowClones?.rebuildClones?.();
             glassForceRefresh?.(this);
+            this.wakeFrameSync();
         } catch (_) {}
     }
 
@@ -279,7 +282,28 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             this._uiSampler?.refresh?.();
             this._windowClones?.rebuildClones?.();
             glassForceRefresh?.(this);
+            this.wakeFrameSync();
         } catch (_) {}
+    }
+
+    wakeFrameSync() {
+        this._idleCount = 0;
+        if (this._idleTimeoutId) {
+            GLib.source_remove(this._idleTimeoutId);
+            this._idleTimeoutId = 0;
+        }
+        if (this._frameSyncId === 0 && !this._cleanedUp && this.visible) {
+            this._startTick();
+        }
+    }
+
+    _scheduleIdleHeartbeat() {
+        if (this._idleTimeoutId || this._cleanedUp || !this.visible) return;
+        this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, 1000, () => {
+            this._idleTimeoutId = 0;
+            this.wakeFrameSync();
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     _startTick() {
@@ -295,7 +319,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             }
             // [GPU-SAVE] Дешевий rescue аллокації щотіка; дорожній блок
             // (семпли UI + клони вікон + capture-clip) — лише при реальній зміні
-            // фону, з межею 60 FPS. В спокої тік не має GPU-роботи.
+            // фону, з динамічною ProMotion частотою. В спокої тік не має GPU-роботи.
             let doHeavy = true;
             try {
                 doHeavy = glassRefreshDue?.(this);
@@ -322,14 +346,27 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
                     });
                     this._uiSampler?.sync?.(monX, monY, monW, monH);
                     this._windowClones?.sync?.();
+                    this._effect?.markBackdropDirty?.();
                     glassRefreshDone?.(this);
                 }
             } catch (e) {
                 reportFrameLoopError?.(`BackdropGlass_${this._owner}`, e);
             }
-            this._frameSyncId = global.compositor
-                .get_laters()
-                .add(Meta.LaterType.BEFORE_REDRAW, tick);
+
+            // Idle sleep pattern (Apple Core Animation principle)
+            if (doHeavy) {
+                this._idleCount = 0;
+            } else {
+                this._idleCount = (this._idleCount || 0) + 1;
+            }
+            if (this._idleCount < 8) {
+                this._frameSyncId = global.compositor
+                    .get_laters()
+                    .add(Meta.LaterType.BEFORE_REDRAW, tick);
+            } else {
+                this._frameSyncId = 0;
+                this._scheduleIdleHeartbeat();
+            }
             return GLib.SOURCE_REMOVE;
         };
 
@@ -347,13 +384,16 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
         try {
             this._windowClones?.rebuildClones?.();
             this._uiSampler?.refresh?.();
-            // [GPU-SAVE] наступний тік мусить дати повний рефреш одразу.
             glassForceRefresh?.(this);
-            this._startTick();
+            this.wakeFrameSync();
         } catch (_) {}
     }
 
     hide() {
+        if (this._idleTimeoutId) {
+            GLib.source_remove(this._idleTimeoutId);
+            this._idleTimeoutId = 0;
+        }
         if (this._frameSyncId !== 0) {
             try {
                 global.compositor.get_laters().remove(this._frameSyncId);
