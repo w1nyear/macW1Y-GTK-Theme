@@ -127,6 +127,8 @@ class MacStylingWindow(Adw.ApplicationWindow):
         scale.set_value(cur_val)
         scale.set_size_request(200, -1)
         scale.set_draw_value(True)
+        scale.set_digits(0)
+        scale.set_round_digits(0)
         scale.connect("value-changed", self.on_setting_changed)
         row.add_suffix(scale)
         group.add(row)

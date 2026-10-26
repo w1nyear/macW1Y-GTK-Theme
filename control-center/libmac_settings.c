@@ -167,6 +167,13 @@ static void save_styling_json(void) {
     g_mkdir_with_parents(dir, 0755);
     char *path = g_build_filename(dir, "styling.json", NULL);
 
+    char dock_tint_buf[16];
+    char panel_tint_buf[16];
+    char notif_tint_buf[16];
+    g_ascii_formatd(dock_tint_buf, sizeof(dock_tint_buf), "%.2f", (double)state.blur_tint / 100.0);
+    g_ascii_formatd(panel_tint_buf, sizeof(panel_tint_buf), "%.2f", (double)state.menubar_tint / 100.0);
+    g_ascii_formatd(notif_tint_buf, sizeof(notif_tint_buf), "%.2f", (double)state.blur_tint / 100.0);
+
     char *json = g_strdup_printf(
         "{\n"
         "  \"menubar_tint\": %d,\n"
@@ -177,15 +184,15 @@ static void save_styling_json(void) {
         "  \"blur_tint\": %d,\n"
         "  \"dock_blur\": %s,\n"
         "  \"dock_sigma\": %d,\n"
-        "  \"dock_tint\": %.2f,\n"
+        "  \"dock_tint\": %s,\n"
         "  \"dock_radius\": %d,\n"
         "  \"panel_blur\": %s,\n"
         "  \"panel_sigma\": %d,\n"
-        "  \"panel_tint\": %.2f,\n"
+        "  \"panel_tint\": %s,\n"
         "  \"qs_sigma\": %d,\n"
         "  \"notif_blur\": %s,\n"
         "  \"notif_sigma\": %d,\n"
-        "  \"notif_tint\": %.2f,\n"
+        "  \"notif_tint\": %s,\n"
         "  \"notif_radius\": %d\n"
         "}\n",
         state.menubar_tint,
@@ -196,15 +203,15 @@ static void save_styling_json(void) {
         state.blur_tint,
         (state.blur_sigma > 0) ? "true" : "false",
         state.blur_sigma,
-        (double)state.blur_tint / 100.0,
+        dock_tint_buf,
         28,
         (state.menubar_blur > 0) ? "true" : "false",
         state.menubar_blur,
-        (double)state.menubar_tint / 100.0,
+        panel_tint_buf,
         state.blur_sigma,
         (state.blur_sigma > 0) ? "true" : "false",
         state.blur_sigma,
-        (double)state.blur_tint / 100.0,
+        notif_tint_buf,
         18
     );
     g_file_set_contents(path, json, -1, NULL);
@@ -367,6 +374,8 @@ void init_menubar_tint(void *widget, gpointer data) {
     (void)data;
     load_config();
     in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
     gtk_range_set_value(widget, (double)state.menubar_tint);
     in_init = 0;
 }
@@ -374,7 +383,7 @@ void init_menubar_tint(void *widget, gpointer data) {
 void on_menubar_tint_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
-    state.menubar_tint = (int)gtk_range_get_value(widget);
+    state.menubar_tint = (int)lround(gtk_range_get_value(widget));
     save_styling_json();
     schedule_css_save();
 }
@@ -382,6 +391,8 @@ void on_menubar_tint_changed(void *widget, gpointer data) {
 void init_menubar_blur(void *widget, gpointer data) {
     (void)data;
     in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
     gtk_range_set_value(widget, (double)state.menubar_blur);
     in_init = 0;
 }
@@ -389,7 +400,7 @@ void init_menubar_blur(void *widget, gpointer data) {
 void on_menubar_blur_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
-    state.menubar_blur = (int)gtk_range_get_value(widget);
+    state.menubar_blur = (int)lround(gtk_range_get_value(widget));
     save_styling_json();
     apply_menubar_blur();
 }
@@ -398,6 +409,8 @@ void on_menubar_blur_changed(void *widget, gpointer data) {
 void init_liquid_blur(void *widget, gpointer data) {
     (void)data;
     in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
     gtk_range_set_value(widget, (double)state.liquid_blur);
     in_init = 0;
 }
@@ -405,7 +418,7 @@ void init_liquid_blur(void *widget, gpointer data) {
 void on_liquid_blur_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
-    state.liquid_blur = (int)gtk_range_get_value(widget);
+    state.liquid_blur = (int)lround(gtk_range_get_value(widget));
     save_styling_json();
     apply_liquid_blur();
 }
@@ -413,6 +426,8 @@ void on_liquid_blur_changed(void *widget, gpointer data) {
 void init_liquid_tint(void *widget, gpointer data) {
     (void)data;
     in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
     gtk_range_set_value(widget, (double)state.liquid_tint);
     in_init = 0;
 }
@@ -420,7 +435,7 @@ void init_liquid_tint(void *widget, gpointer data) {
 void on_liquid_tint_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
-    state.liquid_tint = (int)gtk_range_get_value(widget);
+    state.liquid_tint = (int)lround(gtk_range_get_value(widget));
     save_styling_json();
     apply_liquid_tint();
 }
@@ -429,6 +444,8 @@ void on_liquid_tint_changed(void *widget, gpointer data) {
 void init_blur_sigma(void *widget, gpointer data) {
     (void)data;
     in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
     gtk_range_set_value(widget, (double)state.blur_sigma);
     in_init = 0;
 }
@@ -436,7 +453,7 @@ void init_blur_sigma(void *widget, gpointer data) {
 void on_blur_sigma_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
-    state.blur_sigma = (int)gtk_range_get_value(widget);
+    state.blur_sigma = (int)lround(gtk_range_get_value(widget));
     save_styling_json();
     apply_blur_sigma();
 }
@@ -444,6 +461,8 @@ void on_blur_sigma_changed(void *widget, gpointer data) {
 void init_blur_tint(void *widget, gpointer data) {
     (void)data;
     in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
     gtk_range_set_value(widget, (double)state.blur_tint);
     in_init = 0;
 }
@@ -451,7 +470,7 @@ void init_blur_tint(void *widget, gpointer data) {
 void on_blur_tint_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
-    state.blur_tint = (int)gtk_range_get_value(widget);
+    state.blur_tint = (int)lround(gtk_range_get_value(widget));
     save_styling_json();
     apply_blur_tint();
     schedule_css_save();
