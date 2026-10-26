@@ -135,6 +135,29 @@ def set_platform_profile(profile):
             except Exception:
                 pass
 
+def set_rapl_power_limits(pl1_watts=45, pl2_watts=55):
+    """
+    Applies Intel RAPL (Running Average Power Limit) package power envelopes
+    mimicking Windows Intel DTT / DPTF policies:
+    - Standard Sustained (PL1): 35W - 45W (official 45W TDP of i5-13420H)
+    - Short Burst (PL2): 50W - 55W (prevents 100W+ thermal spikes)
+    - Thermal Guard: drops to 30W if temperatures reach 90°C
+    """
+    p0 = '/sys/class/powercap/intel-rapl/intel-rapl:0/constraint_0_power_limit_uw'
+    p1 = '/sys/class/powercap/intel-rapl/intel-rapl:0/constraint_1_power_limit_uw'
+    if os.path.exists(p0):
+        try:
+            with open(p0, 'w') as f:
+                f.write(f'{int(pl1_watts * 1000000)}\n')
+        except Exception:
+            pass
+    if os.path.exists(p1):
+        try:
+            with open(p1, 'w') as f:
+                f.write(f'{int(pl2_watts * 1000000)}\n')
+        except Exception:
+            pass
+
 def set_intel_igpu_min_freq(freq_mhz):
     """
     Sets Intel iGPU minimum frequency.
@@ -359,9 +382,12 @@ def any_game_running():
     return False
 
 def apply_full_game_mode(throttled=False):
-    """Mode 1: Active 3D gaming — capped to 2.0-2.4 GHz, Turbo disabled, thermal guard <= 90°C"""
+    """Mode 1: Active 3D gaming — Windows DTT profile, capped to 2.0-2.4 GHz, Turbo disabled, thermal guard <= 90°C"""
     max_f = THROTTLE_MAX_FREQ if throttled else TARGET_MAX_FREQ
     epp = 'balance_power' if throttled else 'balance_performance'
+    pl1 = 30 if throttled else 45
+    pl2 = 45 if throttled else 55
+    set_rapl_power_limits(pl1, pl2)
     set_cpu_freq('powersave', epp, TARGET_MIN_FREQ, max_f)
     apply_sysctl({
         'vm.max_map_count': '2147483642',
@@ -376,9 +402,12 @@ def apply_full_game_mode(throttled=False):
     optimize_processes()
 
 def apply_desktop_mode(throttled=False):
-    """Desktop Mode: Cool operation (<= 65°C), dynamic GPU, CPU 2.0-2.4 GHz, Turbo disabled"""
+    """Desktop Mode: Windows DTT-style cool operation (<= 65°C), dynamic GPU, CPU 2.0-2.4 GHz, Turbo disabled"""
     max_f = THROTTLE_MAX_FREQ if throttled else TARGET_MAX_FREQ
-    epp = 'balance_power' if throttled else 'balance_performance'
+    epp = 'balance_power' if throttled or is_on_battery() else 'balance_performance'
+    pl1 = 30 if throttled else (35 if is_on_battery() else 45)
+    pl2 = 45 if throttled else (45 if is_on_battery() else 55)
+    set_rapl_power_limits(pl1, pl2)
     set_cpu_freq('powersave', epp, TARGET_MIN_FREQ, max_f)
     apply_sysctl({
         'vm.swappiness': '60',
