@@ -616,8 +616,37 @@ install_extensions() {
     if [ -f "$SCRIPT_DIR/dconf/gnome-all.dconf" ]; then
         log_info "Імпорт конфігурацій Dconf..."
         local PREV_FAVS=""
+        local PREV_SOURCES=""
+        local PREV_MRU_SOURCES=""
+        local PREV_XKB_OPTS=""
         PREV_FAVS="$(run_as_user gsettings get org.gnome.shell favorite-apps 2>/dev/null || true)"
-        run_as_user dconf load / < "$SCRIPT_DIR/dconf/gnome-all.dconf"
+        PREV_SOURCES="$(run_as_user gsettings get org.gnome.desktop.input-sources sources 2>/dev/null || true)"
+        PREV_MRU_SOURCES="$(run_as_user gsettings get org.gnome.desktop.input-sources mru-sources 2>/dev/null || true)"
+        PREV_XKB_OPTS="$(run_as_user gsettings get org.gnome.desktop.input-sources xkb-options 2>/dev/null || true)"
+
+        # Імпортуємо конфігурацію Dconf із гарантованим виключенням секції розкладки клавіатури
+        if command -v awk >/dev/null 2>&1; then
+            awk '
+                BEGIN { skip=0 }
+                /^\[org\/gnome\/desktop\/input-sources\]/ { skip=1; next }
+                /^\[/ { skip=0 }
+                !skip { print }
+            ' "$SCRIPT_DIR/dconf/gnome-all.dconf" | run_as_user dconf load /
+        else
+            run_as_user dconf load / < "$SCRIPT_DIR/dconf/gnome-all.dconf"
+        fi
+
+        # Відновлюємо нативну розкладку клавіатури користувача (щоб ніколи не змінювати мову/клавіатуру користувача)
+        if [ -n "$PREV_SOURCES" ] && [ "$PREV_SOURCES" != "@a(ss) []" ]; then
+            run_as_user gsettings set org.gnome.desktop.input-sources sources "$PREV_SOURCES" 2>/dev/null || true
+        fi
+        if [ -n "$PREV_MRU_SOURCES" ] && [ "$PREV_MRU_SOURCES" != "@a(ss) []" ]; then
+            run_as_user gsettings set org.gnome.desktop.input-sources mru-sources "$PREV_MRU_SOURCES" 2>/dev/null || true
+        fi
+        if [ -n "$PREV_XKB_OPTS" ] && [ "$PREV_XKB_OPTS" != "@as []" ]; then
+            run_as_user gsettings set org.gnome.desktop.input-sources xkb-options "$PREV_XKB_OPTS" 2>/dev/null || true
+        fi
+
         if [ -f "$SCRIPT_DIR/bin/mac-sanitize-favorites.sh" ]; then
             sudo cp "$SCRIPT_DIR/bin/mac-sanitize-favorites.sh" /usr/local/bin/mac-sanitize-favorites.sh
             sudo chmod +x /usr/local/bin/mac-sanitize-favorites.sh

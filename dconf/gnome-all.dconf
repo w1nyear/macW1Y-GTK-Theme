@@ -109,10 +109,6 @@ duration-seconds=uint32 300
 interval-seconds=uint32 1800
 play-sound=true
 
-[org/gnome/desktop/input-sources]
-mru-sources=[('xkb', 'ua'), ('xkb', 'us')]
-sources=[('xkb', 'us'), ('xkb', 'ua')]
-
 [org/gnome/desktop/interface]
 accent-color='blue'
 clock-show-weekday=true
