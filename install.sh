@@ -1090,6 +1090,13 @@ EOF
         sudo sysctl -p /etc/sysctl.d/99-macw1y-performance.conf 2>/dev/null || true
     fi
 
+    # 6.1. Теплові та частотні обмеження CPU (Windows DTT / RAPL, No Turbo, 2.0-2.4 GHz)
+    if [ -f "$SCRIPT_DIR/etc/tmpfiles.d/cpu-power-limits.conf" ]; then
+        sudo mkdir -p /etc/tmpfiles.d
+        sudo cp "$SCRIPT_DIR/etc/tmpfiles.d/cpu-power-limits.conf" /etc/tmpfiles.d/
+        sudo systemd-tmpfiles --create /etc/tmpfiles.d/cpu-power-limits.conf 2>/dev/null || true
+    fi
+
     # 7. Очищення застарілих фонових служб nautilus (використовується системний preload)
     rm -f "$TARGET_HOME/.config/autostart/nautilus-daemon.desktop" 2>/dev/null || true
     sudo rm -f /etc/xdg/autostart/nautilus-daemon.desktop 2>/dev/null || true
@@ -1822,6 +1829,10 @@ run_incremental_update() {
     if [ -f "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" ]; then
         sync_or_update_file "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" "/etc/sysctl.d/99-macw1y-performance.conf" true
         sudo sysctl -p /etc/sysctl.d/99-macw1y-performance.conf 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/etc/tmpfiles.d/cpu-power-limits.conf" ]; then
+        sync_or_update_file "$SCRIPT_DIR/etc/tmpfiles.d/cpu-power-limits.conf" "/etc/tmpfiles.d/cpu-power-limits.conf" true
+        sudo systemd-tmpfiles --create /etc/tmpfiles.d/cpu-power-limits.conf 2>/dev/null || true
     fi
     if [ -f "$SCRIPT_DIR/etc/modprobe.d/nvidia-runtimepm.conf" ]; then
         sync_or_update_file "$SCRIPT_DIR/etc/modprobe.d/nvidia-runtimepm.conf" "/etc/modprobe.d/nvidia-runtimepm.conf" true
