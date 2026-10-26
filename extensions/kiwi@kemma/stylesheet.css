@@ -1283,12 +1283,14 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-osd-head {
     spacing: 0;
     margin-left: 2px;
+    max-width: 268px;
 }
 .tahoe-osd-title {
     font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
     font-size: 0.95em;
     font-weight: 700;
     color: #ffffff;
+    max-width: 268px;
 }
 .tahoe-osd-bar {
     spacing: 10px;

@@ -31,9 +31,30 @@ import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/l
 }).catch(e => console.warn(`[tahoe-osd] liquid-glass utils unavailable: ${e}`));
 
 const OSD_W = 300;
+const MAX_TITLE_W = OSD_W - 32; // 268px
 const HIDE_MS = 1800;
 const OSD_PAD = 20;
 const OSD_RADIUS = 22;
+
+function _setTitleText(text) {
+    if (!_title)
+        return;
+    _title.text = text;
+    try {
+        _title.set_width(MAX_TITLE_W);
+        if (_title.clutter_text) {
+            _title.clutter_text.set_width(MAX_TITLE_W);
+            _title.clutter_text.single_line_mode = true;
+            _title.clutter_text.line_wrap = false;
+            _title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+            const layout = _title.clutter_text.get_layout();
+            if (layout) {
+                layout.set_width(MAX_TITLE_W * Pango.SCALE);
+                layout.set_ellipsize(Pango.EllipsizeMode.END);
+            }
+        }
+    } catch (_) {}
+}
 
 function _getAccentColor() {
     try {
@@ -281,22 +302,33 @@ function _restoreStockOsd() {
 
 function _getAudioDeviceTitle() {
     try {
-        if (_control && _control.get_state() === Gvc.MixerControlState.READY) {
-            const sink = _control.get_default_sink();
+        const ctrl = (_control && _control.get_state() === Gvc.MixerControlState.READY)
+            ? _control
+            : (Main.panel.statusArea.quickSettings?._volumeOutput?._control ?? null);
+
+        if (ctrl) {
+            const sink = ctrl.get_default_sink();
             if (sink) {
-                const desc = (sink.description ?? '').toString();
-                if (/bluetooth|bluez|buds|airpods|headset|headphone/i.test(desc)) {
-                    return desc || 'Навушники';
+                let desc = '';
+                if (typeof sink.get_description === 'function')
+                    desc = (sink.get_description() ?? '').toString().trim();
+                if (!desc && sink.description)
+                    desc = (sink.description ?? '').toString().trim();
+
+                if (!desc) {
+                    try {
+                        const port = sink.get_port ? sink.get_port() : null;
+                        if (port)
+                            desc = (port.human_name || port.port || '').toString().trim();
+                    } catch (_) {}
                 }
-                if (/speaker|cavs|internal|built-in|alc|analog/i.test(desc)) {
-                    return 'Динаміки MacBook Air';
-                }
+
                 if (desc)
                     return desc;
             }
         }
     } catch (_) {}
-    return 'Динаміки MacBook Air';
+    return 'Динаміки';
 }
 
 function _handleOsdCall(monitorIndex, icon, label, level, maxLevel) {
@@ -586,11 +618,8 @@ function _show(kind, title, iconL, iconR, value) {
 
     try {
         const isOveramp = (kind === 'volume' && value > 1.0001);
-        if (isOveramp) {
-            _title.text = `${title} · ${Math.round(value * 100)}%`;
-        } else {
-            _title.text = title;
-        }
+        const fullTitle = isOveramp ? `${title} · ${Math.round(value * 100)}%` : title;
+        _setTitleText(fullTitle);
         _iconL.icon_name = iconL;
         _iconR.icon_name = iconR;
         _slider.setValue(value, isOveramp);
@@ -792,9 +821,22 @@ export function enable() {
         });
         _box.set_width(OSD_W);
 
-        const headRow = new St.BoxLayout({style_class: 'tahoe-osd-head'});
-        _title = new St.Label({style_class: 'tahoe-osd-title', text: ''});
+        const headRow = new St.BoxLayout({
+            style_class: 'tahoe-osd-head',
+            x_expand: false,
+        });
+        headRow.set_width(MAX_TITLE_W);
+
+        _title = new St.Label({
+            style_class: 'tahoe-osd-title',
+            text: '',
+            x_expand: false,
+        });
+        _title.set_width(MAX_TITLE_W);
         try {
+            _title.clutter_text.set_width(MAX_TITLE_W);
+            _title.clutter_text.single_line_mode = true;
+            _title.clutter_text.line_wrap = false;
             _title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         } catch (_) {}
         headRow.add_child(_title);
