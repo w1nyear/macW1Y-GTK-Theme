@@ -23,6 +23,10 @@ else
     shift
 fi
 
+if [[ "$TARGET" =~ ^file:// ]]; then
+    TARGET=$(python3 -c "import urllib.parse, sys; print(urllib.parse.unquote(urllib.parse.urlsplit(sys.argv[1]).path))" "$TARGET" 2>/dev/null || echo "$TARGET")
+fi
+
 if [ ! -e "$TARGET" ]; then
     echo "Помилка: файл '$TARGET' не знайдено." >&2
     exit 1

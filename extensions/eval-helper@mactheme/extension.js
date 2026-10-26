@@ -1248,20 +1248,19 @@ export default class EvalHelper extends Extension {
         try {
             const { getAppFavorites } = await import('resource:///org/gnome/shell/ui/appFavorites.js');
             const favs = getAppFavorites();
-            if (favs && !this._origRemoveFavorite) {
-                this._origRemoveFavorite = favs.removeFavorite;
+            if (favs) {
+                const proto = Object.getPrototypeOf(favs);
                 favs.removeFavorite = function(appId) {
                     if (appId === 'launchpad.desktop') {
                         return; // Disallow unpinning Launchpad
                     }
-                    return this._origRemoveFavorite.call(this, appId);
+                    return proto.removeFavorite.call(this, appId);
                 };
 
-                this._origMoveFavoriteToPos = favs.moveFavoriteToPos;
                 favs.moveFavoriteToPos = function(appId, pos) {
                     globalThis._isMovingFavorite = true;
                     try {
-                        return this._origMoveFavoriteToPos.call(this, appId, pos);
+                        return proto.moveFavoriteToPos.call(this, appId, pos);
                     } finally {
                         globalThis._isMovingFavorite = false;
                     }

@@ -2196,18 +2196,17 @@ export const MenuBarController = class MenuBarController {
             try {
                 import('resource:///org/gnome/shell/ui/appFavorites.js').then(({ getAppFavorites }) => {
                     const favs = getAppFavorites();
-                    if (favs && !favs._origRemoveFavorite) {
-                        favs._origRemoveFavorite = favs.removeFavorite;
+                    if (favs) {
+                        const proto = Object.getPrototypeOf(favs);
                         favs.removeFavorite = function(appId) {
                             if (appId === 'launchpad.desktop') return;
-                            return this._origRemoveFavorite.call(this, appId);
+                            return proto.removeFavorite.call(this, appId);
                         };
 
-                        favs._origMoveFavoriteToPos = favs.moveFavoriteToPos;
                         favs.moveFavoriteToPos = function(appId, pos) {
                             globalThis._isMovingFavorite = true;
                             try {
-                                return this._origMoveFavoriteToPos.call(this, appId, pos);
+                                return proto.moveFavoriteToPos.call(this, appId, pos);
                             } finally {
                                 globalThis._isMovingFavorite = false;
                             }

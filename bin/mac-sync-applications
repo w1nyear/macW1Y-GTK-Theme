@@ -178,6 +178,8 @@ def sync():
                 base = file
                 if base in seen_ids:
                     continue
+                if base in ('wine.desktop', 'winetricks.desktop') or base.startswith(('winecfg', 'wine-wineboot', 'winefile', 'wineconsole', 'winedbg', 'winepath')):
+                    continue
                 try:
                     app_info = Gio.DesktopAppInfo.new_from_filename(f)
                     if not app_info or not app_info.should_show():
@@ -637,38 +639,34 @@ StartupNotify=true
     # Record desktop files before installation
     before_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
 
-    silent_args = []
     if ext == ".msi":
-        silent_args = ["msiexec", "/i", cached_installer, "/qn", "/norestart"]
+        cmd = [wine_runner, "msiexec", "/i", cached_installer, "/qn", "/norestart"]
+        print(f"[Wine Installer] Executing silent MSI install: {' '.join(cmd)}")
+        res = subprocess.run(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if res.returncode != 0:
+            print(f"[Wine Installer] Silent MSI returned {res.returncode}, launching interactive installer...")
+            subprocess.run([wine_runner, "msiexec", "/i", cached_installer], env=env)
     else:
-        # Detect installer type
         is_inno = False
-        is_nsis = False
         try:
             with open(cached_installer, "rb") as f:
                 header = f.read(5 * 1024 * 1024)
                 if b"Inno Setup" in header:
                     is_inno = True
-                elif b"Nullsoft" in header or b"NSIS" in header:
-                    is_nsis = True
         except Exception:
             pass
 
         if is_inno:
-            silent_args = [cached_installer, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-"]
-        elif is_nsis:
-            silent_args = [cached_installer, "/S"]
+            cmd = [wine_runner, cached_installer, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-"]
+            print(f"[Wine Installer] Executing silent Inno install: {' '.join(cmd)}")
+            res = subprocess.run(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if res.returncode != 0:
+                print(f"[Wine Installer] Silent install returned {res.returncode}, launching standard installer...")
+                subprocess.run([wine_runner, cached_installer], env=env)
         else:
-            silent_args = [cached_installer, "/S"]
-
-    cmd = [wine_runner] + silent_args
-    print(f"[Wine Installer] Executing silent install: {' '.join(cmd)}")
-    res = subprocess.run(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    # If silent install failed and it was an .exe, run interactive installer so user isn't stuck
-    if res.returncode != 0 and ext != ".msi":
-        print(f"[Wine Installer] Silent install returned {res.returncode}, launching standard installer...")
-        subprocess.run([wine_runner, cached_installer], env=env)
+            # Standard installer: do not force silent mode, launch interactively
+            print(f"[Wine Installer] Launching standard interactive installer: {cached_installer}")
+            subprocess.run([wine_runner, cached_installer], env=env)
 
     # Wait for Wine registry/desktop flush
     time.sleep(2)

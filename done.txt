@@ -11264,3 +11264,25 @@ Task 499: Повне полірування екрана блокування (m
         * Відновлено ярлик `snap-store_snap-store.desktop` (Центр застосунків / App Store) до обраних на Dock поруч з Launchpad (`org.gnome.shell favorite-apps`).
         * Оновлено базу даних ярликів `update-desktop-database` та пересинхронізовано `~/Applications` (40 застосунків із оригінальними macOS назвами та іконками).
 
+550. Скасування примусового тихого режиму для EXE інсталяторів, закриття CapCut, реєстрація подвійного кліку для Windows файлів та виправлення відшпилення програм з Dock:
+   1. Проблема:
+      - Інсталятор CapCut не підтримує тихий прапорець `/S`, через що завис у фоні, заблокував м'ютекс і показував вікно помилки «There is already a CapCut installer running».
+      - Примусове встановлення прапорця тихого режиму для довільних інсталяторів призводило до помилок або неможливості взаємодіяти з Майстром встановлення.
+      - Подвійний клік по `.exe`, `.msi`, `.bat` у Nautilus не відкривав файли автоматично через прапорець `NoDisplay=true` у `wine.desktop` (`should_show() == false` у GIO).
+      - При спробі відшпилити будь-яку закріплену програму з Dock («Відшпилити») дія не спрацьовувала через виникнення внутрішньої помилки `too much recursion` у перехопленні `AppFavorites.removeFavorite`.
+   2. Вирішення:
+      - **Закриття завислого інсталятора CapCut та перезапуск Wine**:
+        * Завершено всі фонові процеси CapCut, скинуто завислі процеси `wineserver -k` та перезапущено сервіс `wine-prewarm.service`.
+      - **Гнучкий запуск інсталяторів у `mac-sync-applications`**:
+        * Скасовано жорстке форсування прапорця `/S` для загальних `.exe`. Тепер тихий режим застосовується виключно до сумісних пакунків (InnoSetup з `/VERYSILENT`, MSI з `/qn`), а всі інші `.exe` інсталятори запускаються безпосередньо у стандартному графічному режимі, що дозволяє користувачеві самостійно пройти етапи встановлення.
+      - **Реєстрація подвійного кліку для `.exe`, `.msi`, `.bat`, `.cmd`**:
+        * У `applications/wine.desktop` встановлено `NoDisplay=false` та оновлено команду запуску на `mac-wine-runner %F`. Завдяки цьому GIO та Nautilus повертають `should_show() == true` та вважають `wine.desktop` повноцінним типовим обробником.
+        * У `mac-wine-runner` впроваджено підтримку автоматичного декодування `file://` URI-шляхів.
+        * Оновлено конфігурацію `~/.config/mimeapps.list` для асоціації `wine.desktop` з `application/x-ms-dos-executable`, `application/x-msdownload`, `application/x-msi`, `application/x-bat`, `application/vnd.microsoft.portable-executable`, `application/x-msdos-program`.
+        * Щоб сам завантажувач Wine залишався невидимим у системних меню (як просив користувач), `wine.desktop` та Winetricks виключено з вибірки Launchpad (`applications_menu_v5.js`) та синхронізації теки «Програми» (`mac-sync-applications`).
+      - **Виправлення відшпилення програм з Dock**:
+        * Виявлено причину блокування кнопки «Відшпилити»: циклічна рекурсія між перехоплювачами у `eval-helper` та `blur-my-shell`, де `favs.removeFavorite` викликав сам себе через замикання на `this._origRemoveFavorite`.
+        * Оновлено реалізацію в `eval-helper@mactheme/extension.js` та `blur-my-shell@aunetx/components/menubar_v29.js` із прямим зверненням до прототипу `Object.getPrototypeOf(favs).removeFavorite.call(this, appId)`. Захист від відшпилення залишено виключно для системної іконки Launchpad (`launchpad.desktop`).
+        * Будь-які інші програми тепер безперешкодно відшпилюються з Dock як через пункт контекстного меню «Відшпилити», так і перетягуванням за межі панелі.
+
+
