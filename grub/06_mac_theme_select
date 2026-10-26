@@ -17,6 +17,7 @@ insmod ext2
 insmod iso9660
 insmod udf
 insmod chain
+insmod probe
 
 # macOS Apple Silicon Startup Manager: Dynamic Device Scan (USB & Thunderbolt)
 set mac_has_usb=0
@@ -24,7 +25,7 @@ set mac_ext_count=0
 set mac_ext1_dev=""
 set mac_ext1_path=""
 set mac_ext1_name=""
-set mac_ext1_class="usb"
+set mac_ext1_class="usb1"
 set mac_ext2_dev=""
 set mac_ext2_path=""
 set mac_ext2_name=""
@@ -45,27 +46,20 @@ for dev in (*); do
             if [ -n "\$dev_boot_path" ]; then
                 set dev_name=""
                 probe --label "\$dev" --set=dev_name
-                set dev_cls="usb"
                 if [ -z "\$dev_name" ]; then
                     if [ "\$dev_boot_path" = "/EFI/Microsoft/Boot/bootmgfw.efi" -o "\$dev_boot_path" = "/efi/microsoft/boot/bootmgfw.efi" -o "\$dev_boot_path" = "/bootmgr.efi" ]; then
                         set dev_name="Windows"
-                        set dev_cls="windows"
                     elif [ "\$dev_boot_path" = "/EFI/ubuntu/grubx64.efi" -o "\$dev_boot_path" = "/efi/ubuntu/grubx64.efi" ]; then
                         set dev_name="Ubuntu Live"
-                        set dev_cls="ubuntu"
                     elif [ "\$dev_boot_path" = "/EFI/fedora/grubx64.efi" ]; then
                         set dev_name="Fedora Live"
-                        set dev_cls="fedora"
                     elif [ "\$dev_boot_path" = "/EFI/arch/grubx64.efi" ]; then
                         set dev_name="Arch Linux"
-                        set dev_cls="arch"
                     else
                         if [ "\$mac_ext_count" = "0" ]; then
-                            set dev_name="EFI Boot"
-                            set dev_cls="usb"
+                            set dev_name="VTOYEFI"
                         else
-                            set dev_name="EFI Boot 2"
-                            set dev_cls="usb2"
+                            set dev_name="MACOS"
                         fi
                     fi
                 fi
@@ -76,13 +70,13 @@ for dev in (*); do
                     set mac_ext1_dev="\$dev"
                     set mac_ext1_path="\$dev_boot_path"
                     set mac_ext1_name="\$dev_name"
-                    set mac_ext1_class="\$dev_cls"
+                    set mac_ext1_class="usb1"
                 elif [ "\$mac_ext_count" = "1" ]; then
                     set mac_ext_count=2
                     set mac_ext2_dev="\$dev"
                     set mac_ext2_path="\$dev_boot_path"
                     set mac_ext2_name="\$dev_name"
-                    set mac_ext2_class="\$dev_cls"
+                    set mac_ext2_class="usb2"
                     break
                 fi
             fi

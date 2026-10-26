@@ -5,18 +5,18 @@ set -e
 
 cat << EOF
 if [ "\$mac_ext_count" = "1" ]; then
-    menuentry "\$mac_ext1_name" --class \$mac_ext1_class --class usb --class external --class drive \$menuentry_id_option 'macw1y-usb-boot1' {
+    menuentry "\$mac_ext1_name" --class usb --class external --class drive \$menuentry_id_option 'macw1y-usb-boot1' {
         insmod chain
         set root="\$mac_ext1_dev"
         chainloader "\$mac_ext1_path"
     }
 elif [ "\$mac_ext_count" = "2" ]; then
-    menuentry "\$mac_ext1_name" --class \$mac_ext1_class --class usb --class external --class drive \$menuentry_id_option 'macw1y-usb-boot1' {
+    menuentry "\$mac_ext1_name" --class usb1 --class external --class drive \$menuentry_id_option 'macw1y-usb-boot1' {
         insmod chain
         set root="\$mac_ext1_dev"
         chainloader "\$mac_ext1_path"
     }
-    menuentry "\$mac_ext2_name" --class \$mac_ext2_class --class usb2 --class usb --class external --class drive \$menuentry_id_option 'macw1y-usb-boot2' {
+    menuentry "\$mac_ext2_name" --class usb2 --class external --class drive \$menuentry_id_option 'macw1y-usb-boot2' {
         insmod chain
         set root="\$mac_ext2_dev"
         chainloader "\$mac_ext2_path"

@@ -261,14 +261,43 @@ def render_3item_screen(selected, os_name='Ubuntu'):
 
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
-def render_4item_screen(selected, os_name='Ubuntu'):
+def get_external_boot_labels():
+    labels = []
+    try:
+        import subprocess, json
+        res = subprocess.run(['lsblk', '-J', '-o', 'NAME,TYPE,LABEL,MOUNTPOINT,FSTYPE'], capture_output=True, text=True)
+        data = json.loads(res.stdout)
+        for dev in data.get('blockdevices', []):
+            name = dev.get('name', '')
+            if name.startswith('nvme') or name.startswith('loop'):
+                continue
+            for part in dev.get('children', []):
+                lbl = part.get('label')
+                mount = part.get('mountpoint')
+                is_boot = False
+                if mount and (os.path.isdir(f'{mount}/EFI') or os.path.isdir(f'{mount}/efi')):
+                    is_boot = True
+                elif lbl and any(x in lbl.upper() for x in ['VTOYEFI', 'MACOS', 'BOOT', 'EFI']):
+                    is_boot = True
+                if is_boot and lbl and lbl not in labels:
+                    labels.append(lbl)
+    except Exception as e:
+        print(f"Error detecting labels: {e}")
+    
+    if len(labels) >= 2:
+        return labels[0], labels[1]
+    elif len(labels) == 1:
+        return labels[0], 'MACOS'
+    return 'VTOYEFI', 'MACOS'
+
+def render_4item_screen(selected, ext_name='VTOYEFI', os_name='Ubuntu'):
     im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
     d = ImageDraw.Draw(im)
     draw_top_bar(im, d)
     draw_bottom_power(im, d, selected)
 
     items = [
-        ('usb', 'EFI Boot', usb_clean, 630 * S),
+        ('usb', ext_name, usb_clean, 630 * S),
         ('os', os_name, disk_clean, 850 * S),
         ('uefi', 'UEFI Settings', uefi_clean, 1070 * S),
         ('options', 'Options', gear_clean, 1290 * S),
@@ -287,7 +316,7 @@ def render_4item_screen(selected, os_name='Ubuntu'):
 
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
-def render_5item_screen(selected, ext1_name='EFI Boot 1', ext2_name='EFI Boot 2', os_name='Ubuntu'):
+def render_5item_screen(selected, ext1_name='VTOYEFI', ext2_name='MACOS', os_name='Ubuntu'):
     im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
     d = ImageDraw.Draw(im)
     draw_top_bar(im, d)
@@ -314,7 +343,7 @@ def render_5item_screen(selected, ext1_name='EFI Boot 1', ext2_name='EFI Boot 2'
 
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
-def render_transition_frame(progress, os_name='Ubuntu'):
+def render_transition_frame(progress, ext_name='VTOYEFI', os_name='Ubuntu'):
     im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
     d = ImageDraw.Draw(im)
     draw_top_bar(im, d)
@@ -343,7 +372,7 @@ def render_transition_frame(progress, os_name='Ubuntu'):
         usb_trans.putalpha(a_ch)
         im.paste(usb_trans, (usb_cx - usb_trans.width // 2, icon_y - usb_trans.height // 2), usb_trans)
 
-        lbl = 'EFI Boot'
+        lbl = ext_name
         bbox = d.textbbox((0, 0), lbl, font=f_label)
         d.text((usb_cx - (bbox[2] - bbox[0]) // 2, label_y), lbl, font=f_label, fill=(210, 210, 215, alpha))
 
@@ -412,27 +441,30 @@ def main():
         trans_1px.save(f'{b}/select_w.png')
         trans_1px.save(f'{b}/select_e.png')
 
+    ext1_name, ext2_name = get_external_boot_labels()
+    print(f"Detected external labels: ext1='{ext1_name}', ext2='{ext2_name}'")
+
     # 2. 5 Animation Frames
     print("2. Rendering slide animation frames...")
     frames = [
-        render_transition_frame(0.2),
-        render_transition_frame(0.4),
-        render_transition_frame(0.6),
-        render_transition_frame(0.8),
-        render_transition_frame(1.0)
+        render_transition_frame(0.2, ext_name=ext1_name),
+        render_transition_frame(0.4, ext_name=ext1_name),
+        render_transition_frame(0.6, ext_name=ext1_name),
+        render_transition_frame(0.8, ext_name=ext1_name),
+        render_transition_frame(1.0, ext_name=ext1_name)
     ]
     for b in base_dirs:
         for idx, f in enumerate(frames):
             f.save(f'{b}/anim/frame{idx + 1}.png')
 
     # 3. 4-card layout screens (With USB drive)
-    print("3. Rendering 4-card layout screens (USB connected)...")
-    s4_usb = render_4item_screen('usb')
-    s4_ubuntu = render_4item_screen('os', 'Ubuntu')
-    s4_uefi = render_4item_screen('uefi')
-    s4_options = render_4item_screen('options')
-    s4_shutdown = render_4item_screen('shutdown')
-    s4_restart = render_4item_screen('restart')
+    print(f"3. Rendering 4-card layout screens (USB connected: {ext1_name})...")
+    s4_usb = render_4item_screen('usb', ext_name=ext1_name)
+    s4_ubuntu = render_4item_screen('os', ext_name=ext1_name, os_name='Ubuntu')
+    s4_uefi = render_4item_screen('uefi', ext_name=ext1_name)
+    s4_options = render_4item_screen('options', ext_name=ext1_name)
+    s4_shutdown = render_4item_screen('shutdown', ext_name=ext1_name)
+    s4_restart = render_4item_screen('restart', ext_name=ext1_name)
 
     for u in usb_dirs:
         icons_dir = f'{u}/icons'
@@ -468,14 +500,14 @@ def main():
         trans_1px.save(f'{u}/select_e.png')
 
     # 4. 5-card layout screens (Dual boot choices on external drive)
-    print("4. Rendering 5-card layout screens (2 external choices)...")
-    s5_usb1 = render_5item_screen('usb1')
-    s5_usb2 = render_5item_screen('usb2')
-    s5_ubuntu = render_5item_screen('os', os_name='Ubuntu')
-    s5_uefi = render_5item_screen('uefi')
-    s5_options = render_5item_screen('options')
-    s5_shutdown = render_5item_screen('shutdown')
-    s5_restart = render_5item_screen('restart')
+    print(f"4. Rendering 5-card layout screens (Dual boot: {ext1_name}, {ext2_name})...")
+    s5_usb1 = render_5item_screen('usb1', ext1_name=ext1_name, ext2_name=ext2_name)
+    s5_usb2 = render_5item_screen('usb2', ext1_name=ext1_name, ext2_name=ext2_name)
+    s5_ubuntu = render_5item_screen('os', ext1_name=ext1_name, ext2_name=ext2_name, os_name='Ubuntu')
+    s5_uefi = render_5item_screen('uefi', ext1_name=ext1_name, ext2_name=ext2_name)
+    s5_options = render_5item_screen('options', ext1_name=ext1_name, ext2_name=ext2_name)
+    s5_shutdown = render_5item_screen('shutdown', ext1_name=ext1_name, ext2_name=ext2_name)
+    s5_restart = render_5item_screen('restart', ext1_name=ext1_name, ext2_name=ext2_name)
 
     import shutil
     import glob
@@ -491,12 +523,18 @@ def main():
             shutil.copy2(pf2, u2)
 
         icons_dir = f'{u2}/icons'
-        s5_usb1.save(f'{icons_dir}/usb.png')
         s5_usb1.save(f'{icons_dir}/usb1.png')
+        s5_usb2.save(f'{icons_dir}/usb2.png')
+
+        # Remove ambiguous usb.png in 5-item theme so usb2 never falls back to usb.png
+        if os.path.exists(f'{icons_dir}/usb.png'):
+            try:
+                os.remove(f'{icons_dir}/usb.png')
+            except OSError:
+                pass
+
         s5_usb1.save(f'{icons_dir}/external.png')
         s5_usb1.save(f'{icons_dir}/drive.png')
-
-        s5_usb2.save(f'{icons_dir}/usb2.png')
 
         s5_ubuntu.save(f'{icons_dir}/ubuntu.png')
         s5_ubuntu.save(f'{icons_dir}/gnu-linux.png')
