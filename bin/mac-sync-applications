@@ -697,16 +697,25 @@ StartupNotify=true
                     continue
                 for root, _, files in os.walk(pdir):
                     for f in files:
-                        if f.lower().endswith(".exe") and not f.lower().startswith(("unins", "setup", "install")):
+                        f_low = f.lower()
+                        ignored = ("unins", "setup", "install", "helper", "service", "crash", "update", "diff", "daemon", "agent", "renderer", "broker", "proxy")
+                        if f_low.endswith(".exe") and not any(f_low.startswith(p) for p in ignored):
                             fp = os.path.join(root, f)
                             try:
                                 mtime = os.path.getmtime(fp)
-                                if now - mtime < 600:
+                                if now - mtime < 1200:
                                     recent_exes.append((fp, mtime))
                             except Exception:
                                 pass
         if recent_exes:
-            recent_exes.sort(key=lambda x: x[1], reverse=True)
+            def exe_priority(item):
+                fp, mtime = item
+                fn = os.path.basename(fp).lower()
+                clean_target = f"{clean_name.lower().replace(' ', '')}.exe"
+                is_exact = fn == clean_target
+                is_sub = safe_id in fn
+                return (2 if is_exact else (1 if is_sub else 0), mtime)
+            recent_exes.sort(key=exe_priority, reverse=True)
             installed_exe = recent_exes[0][0]
             icon_path = extract_exe_icon(installed_exe, safe_id)
 

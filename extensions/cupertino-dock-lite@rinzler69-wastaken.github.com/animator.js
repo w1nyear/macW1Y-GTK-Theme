@@ -50,12 +50,23 @@ export class Animator {
     };
 
     this._appSystemId = Shell.AppSystem.get_default().connectObject('app-state-changed', (sys, app) => {
+      const appId = app?.get_id?.();
+      if (appId === 'launchpad.desktop') {
+        return;
+      }
       if (app.get_state() === Shell.AppState.STARTING) {
+        if (!this._launchingApps) this._launchingApps = new Set();
+        this._launchingApps.add(app);
         const icon = this._findCloneForApp(app);
         if (icon) {
           icon._clickJump = 1.0;
-          this._startAnimation();
-          if (this.dashContainer?._animateIn) this.dashContainer._animateIn(0.2, 0);
+          icon._launchBounceCount = 0;
+        }
+        this._startAnimation();
+        if (this.dashContainer?._animateIn) this.dashContainer._animateIn(0.2, 0);
+      } else {
+        if (this._launchingApps) {
+          this._launchingApps.delete(app);
         }
       }
     }, this);
@@ -70,6 +81,7 @@ export class Animator {
       Shell.AppSystem.get_default().disconnectObject(this);
       this._appSystemId = null;
     }
+    this._launchingApps = null;
     if (this._iconsContainer) {
       Main.uiGroup.remove_child(this._iconsContainer);
       this._iconsContainer.destroy();
@@ -232,6 +244,11 @@ export class Animator {
         uiIcon.pivot_point = pivot; uiIcon._bin = bin; uiIcon._appwell = c._appwell; uiIcon._label = c._label;
         uiIcon._wasActive = false;
         uiIcon._introJump = 0;
+        const cAppId = c._appwell?.app?.get_id?.();
+        if (cAppId !== 'launchpad.desktop' && c._appwell?.app && (c._appwell.app.get_state() === Shell.AppState.STARTING || this._launchingApps?.has(c._appwell.app))) {
+          uiIcon._clickJump = 1.0;
+          uiIcon._launchBounceCount = 0;
+        }
 
         if (bin.first_child) {
           let img = new St.Icon({ name: 'icon', icon_name: bin.first_child.icon_name || null, gicon: bin.first_child.gicon || null });
@@ -245,8 +262,15 @@ export class Animator {
           uiIcon._appwell.connectObject(
             'clicked',
             () => {
+              const clickedAppId = uiIcon._appwell.app?.get_id?.();
+              if (clickedAppId === 'launchpad.desktop') {
+                return; // Launchpad opens dialog directly, do not bounce
+              }
               if (uiIcon._appwell.app && uiIcon._appwell.app.get_n_windows() === 0) {
+                if (!this._launchingApps) this._launchingApps = new Set();
+                this._launchingApps.add(uiIcon._appwell.app);
                 uiIcon._clickJump = 1.0;
+                uiIcon._launchBounceCount = 0;
                 this._startAnimation();
                 if (this.dashContainer?._animateIn) this.dashContainer._animateIn(0.2, 0);
               }
@@ -343,14 +367,23 @@ export class Animator {
       if (icon._clickJump > 0) {
         icon._clickJump -= 0.0275 * ANIM_JUMP_SPEED;
         if (icon._clickJump <= 0) {
-          // Re-arm only when dock is visible and no hide is pending.
-          // If hide was requested mid-loop, let this arc finish landing then stop —
-          // _endAnimation will fire _firePendingHide once everything settles.
           const pendingHide = !!this.extension?._pendingHide;
-          if (!isHidden && !pendingHide && icon._appwell?.app?.get_state() === Shell.AppState.STARTING) {
+          const jumpAppId = icon._appwell?.app?.get_id?.();
+          icon._launchBounceCount = (icon._launchBounceCount || 0) + 1;
+          const isStillStarting = (jumpAppId !== 'launchpad.desktop') &&
+            (icon._launchBounceCount < 8) &&
+            icon._appwell?.app && (
+              icon._appwell.app.get_state() === Shell.AppState.STARTING ||
+              (this._launchingApps?.has(icon._appwell.app) && icon._appwell.app.get_n_windows() === 0)
+            );
+          if (!isHidden && !pendingHide && isStillStarting) {
             icon._clickJump = 1.0;
           } else {
             icon._clickJump = 0;
+            icon._launchBounceCount = 0;
+            if (this._launchingApps && icon._appwell?.app) {
+              this._launchingApps.delete(icon._appwell.app);
+            }
           }
         }
         didAnimate = true;
