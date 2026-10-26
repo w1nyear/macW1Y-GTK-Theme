@@ -67,20 +67,10 @@
       <stop offset="100%" stop-color="#e8f0fe" stop-opacity="0.0"/>
     </linearGradient>
 
-    <!-- Side lens caustics: meniscus light arcs along curved semicircles -->
-    <linearGradient id="causticLeft" x1="4" y1="14" x2="10" y2="42" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.40"/>
-      <stop offset="35%" stop-color="#55b5ff" stop-opacity="0.75"/>
-      <stop offset="50%" stop-color="#75c8ff" stop-opacity="0.85"/>
-      <stop offset="65%" stop-color="#55b5ff" stop-opacity="0.75"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.25"/>
-    </linearGradient>
-
-    <linearGradient id="causticRight" x1="80" y1="14" x2="74" y2="42" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.50"/>
-      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.90"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.35"/>
-    </linearGradient>
+    <!-- 0.2px subtle blur filter for natural optical refraction diffusion -->
+    <filter id="opticalBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="0.2"/>
+    </filter>
   </defs>
 
   <!-- 1. Soft depth shadow -->
@@ -89,28 +79,27 @@
   <!-- 2. Glass body (clean, NO spotlight on top!) -->
   <rect x="2" y="2" width="80" height="52" rx="26" fill="url(#glassBody)"/>
 
-  <!-- 3. Left Side Refraction: stretches blue track vertically at the boundary (y=18 to y=38) -->
-  <path d="M 3 28 C 3 21, 4 18, 6 18 C 9 18, 11 24, 14 24 L 14 32 C 11 32, 9 38, 6 38 C 4 38, 3 35, 3 28 Z" fill="url(#leftVerticalStretch)"/>
-  <path d="M 3 28 C 3 22, 4 19, 6 19 C 9 19, 11 24.5, 14 24.5 L 14 31.5 C 11 31.5, 9 37, 6 37 C 4 37, 3 34, 3 28 Z" fill="url(#leftRefractBlue)"/>
+  <!-- 3. Optical Refraction Track with 0.2px blur (whiskers removed!) -->
+  <g filter="url(#opticalBlur)">
+    <!-- Left Side Refraction: stretches blue track vertically at the boundary (y=18 to y=38) -->
+    <path d="M 3 28 C 3 21, 4 18, 6 18 C 9 18, 11 24, 14 24 L 14 32 C 11 32, 9 38, 6 38 C 4 38, 3 35, 3 28 Z" fill="url(#leftVerticalStretch)"/>
+    <path d="M 3 28 C 3 22, 4 19, 6 19 C 9 19, 11 24.5, 14 24.5 L 14 31.5 C 11 31.5, 9 37, 6 37 C 4 37, 3 34, 3 28 Z" fill="url(#leftRefractBlue)"/>
 
-  <!-- 4. Middle Track: BLUE on the left half (x=14..42), WHITE on the right half (x=42..70) -->
-  <rect x="14" y="21" width="28" height="14" rx="3" fill="#38a8ff" fill-opacity="0.22"/>
-  <rect x="42" y="21" width="28" height="14" rx="3" fill="#ffffff" fill-opacity="0.20"/>
-  <rect x="14" y="24" width="28" height="8" fill="url(#trackBlueLine)"/>
-  <rect x="42" y="24" width="28" height="8" fill="url(#trackWhiteLine)"/>
-  <line x1="42" y1="21" x2="42" y2="35" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.55"/>
+    <!-- Middle Track: BLUE on the left half (x=14..42), WHITE on the right half (x=42..70) -->
+    <rect x="14" y="21" width="28" height="14" rx="3" fill="#38a8ff" fill-opacity="0.22"/>
+    <rect x="42" y="21" width="28" height="14" rx="3" fill="#ffffff" fill-opacity="0.20"/>
+    <rect x="14" y="24" width="28" height="8" fill="url(#trackBlueLine)"/>
+    <rect x="42" y="24" width="28" height="8" fill="url(#trackWhiteLine)"/>
+    <line x1="42" y1="21" x2="42" y2="35" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.55"/>
 
-  <!-- 5. Right Side Refraction: stretches white track vertically at the boundary (y=18 to y=38) -->
-  <path d="M 81 28 C 81 21, 80 18, 78 18 C 75 18, 73 24, 70 24 L 70 32 C 73 32, 75 38, 78 38 C 80 38, 81 35, 81 28 Z" fill="url(#rightVerticalStretch)"/>
-  <path d="M 81 28 C 81 22, 80 19, 78 19 C 75 19, 73 24.5, 70 24.5 L 70 31.5 C 73 31.5, 75 37, 78 37 C 80 37, 81 34, 81 28 Z" fill="url(#rightRefractWhite)"/>
+    <!-- Right Side Refraction: stretches white track vertically at the boundary (y=18 to y=38) -->
+    <path d="M 81 28 C 81 21, 80 18, 78 18 C 75 18, 73 24, 70 24 L 70 32 C 73 32, 75 38, 78 38 C 80 38, 81 35, 81 28 Z" fill="url(#rightVerticalStretch)"/>
+    <path d="M 81 28 C 81 22, 80 19, 78 19 C 75 19, 73 24.5, 70 24.5 L 70 31.5 C 73 31.5, 75 37, 78 37 C 80 37, 81 34, 81 28 Z" fill="url(#rightRefractWhite)"/>
+  </g>
 
-  <!-- 6. Optical Lens Caustic Arcs at Left and Right curved glass semicircles -->
-  <path d="M 12 14 C 6 18, 4 24, 4 28 C 4 32, 6 38, 12 42" stroke="url(#causticLeft)" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-  <path d="M 72 14 C 78 18, 80 24, 80 28 C 80 32, 78 38, 72 42" stroke="url(#causticRight)" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-
-  <!-- 7. Inner rim reflection -->
+  <!-- 4. Inner rim reflection -->
   <rect x="3" y="3" width="78" height="50" rx="25" stroke="url(#innerRim)" stroke-width="1.2" fill="none"/>
 
-  <!-- 8. Outer rim stroke -->
+  <!-- 5. Outer rim stroke -->
   <rect x="2" y="2" width="80" height="52" rx="26" stroke="url(#edgeStroke)" stroke-width="1.2" fill="none"/>
 </svg>
