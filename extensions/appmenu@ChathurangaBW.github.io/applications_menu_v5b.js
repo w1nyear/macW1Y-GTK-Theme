@@ -413,9 +413,9 @@ export const MacApplicationsDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'height: 419px; min-height: 419px; max-height: 419px; padding-bottom: 0px; -st-vfade-offset: 44px;',
+            style: 'height: 419px; min-height: 419px; max-height: 419px; padding-bottom: 0px;',
         });
-        applyGradientBlurFade(this._scrollView, 44, 44);
+        applyGradientBlurFade(this._scrollView, 44, 36);
         this._scrollWrapper.add_child(this._scrollView);
 
         this._gridContainer = new St.BoxLayout({

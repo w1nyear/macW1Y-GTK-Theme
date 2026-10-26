@@ -465,9 +465,9 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 460px; -st-vfade-offset: 40px;',
+            style: 'max-height: 460px;',
         });
-        applyGradientBlurFade(this._scrollView, 40, 40);
+        applyGradientBlurFade(this._scrollView, 40, 36);
         this._scrollWrapper.add_child(this._scrollView);
 
         this._resultsBox = new St.BoxLayout({
@@ -510,9 +510,9 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 414px; -st-vfade-offset: 40px;',
+            style: 'max-height: 414px;',
         });
-        applyGradientBlurFade(this._filesScrollView, 40, 40);
+        applyGradientBlurFade(this._filesScrollView, 40, 36);
         this._filesView.add_child(this._filesScrollView);
 
         this._filesContentBox = new St.BoxLayout({
@@ -537,9 +537,9 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 460px; -st-vfade-offset: 40px;',
+            style: 'max-height: 460px;',
         });
-        applyGradientBlurFade(this._appsScrollView, 40, 40);
+        applyGradientBlurFade(this._appsScrollView, 40, 36);
         this._appsView.add_child(this._appsScrollView);
 
         this._appsContentBox = new St.BoxLayout({
@@ -564,9 +564,9 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 460px; -st-vfade-offset: 40px;',
+            style: 'max-height: 460px;',
         });
-        applyGradientBlurFade(this._clipboardScrollView, 40, 40);
+        applyGradientBlurFade(this._clipboardScrollView, 40, 36);
         this._clipboardView.add_child(this._clipboardScrollView);
 
         this._clipboardContentBox = new St.BoxLayout({

@@ -25,6 +25,27 @@ function _isActorValid(actor) {
     }
 }
 
+// Спільний морф-стейт для плавних переходів між меню (ЦП/Спотлайт/Буфер)
+function _saveMorphFrom(actor) {
+    try {
+        const b = actor ? actor._box : null;
+        if (!b) return;
+        globalThis._macMorphFrom = { x: b.x, y: b.y, w: b.width, h: b.height, t: Date.now() };
+    } catch (_) {}
+}
+
+function _consumeMorphFrom() {
+    try {
+        const m = globalThis._macMorphFrom;
+        globalThis._macMorphFrom = null;
+        if (!m) return null;
+        if (Date.now() - m.t > 900) return null;
+        return m;
+    } catch (_) {
+        return null;
+    }
+}
+
 function _isGlassAlive(glass) {
     if (!glass) return false;
     try {
@@ -239,8 +260,8 @@ export const MacApplicationsDialog = GObject.registerClass({
             'background-color: transparent !important; ' +
             'background: none !important; ' +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: none !important; ' +
-            'padding: 16px 2px 14px 2px; ' +
+            'border: 1px solid rgba(255, 255, 255, 0.30) !important; ' +
+            'padding: 16px 2px 0px 2px; ' +
             'box-shadow: none !important;'
         );
         this.add_child(this._box);
@@ -287,13 +308,15 @@ export const MacApplicationsDialog = GObject.registerClass({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
-            style: 'height: 44px; margin-bottom: 12px; margin-left: 18px; margin-right: 18px;',
+            style: 'height: 36px; margin-left: 18px; margin-right: 18px;',
         });
         this._box.add_child(this._headerRow);
 
-        // App Store icon matching reference image
+        // Glyph icon 'A' (simple line SVG as on the macOS Tahoe reference photo)
         let appIconGIcon = null;
         try {
+            let extDirPath = null;
+            try { extDirPath = new URL('.', import.meta.url).pathname; } catch (_) {}
             const home = GLib.get_home_dir();
             const candidates = [
                 `${home}/.local/share/icons/MacTahoe/apps/scalable/Appstore.svg`,
@@ -302,7 +325,7 @@ export const MacApplicationsDialog = GObject.registerClass({
                 `/usr/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
             ];
             for (const p of candidates) {
-                if (GLib.file_test(p, GLib.FileTest.EXISTS)) {
+                if (p && GLib.file_test(p, GLib.FileTest.EXISTS)) {
                     appIconGIcon = Gio.FileIcon.new(Gio.File.new_for_path(p));
                     break;
                 }
@@ -351,6 +374,20 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         this._headerRow.add_child(this._moreIcon);
 
+        // Вирівнювання шапки по середині висоти: іконку/три крапки/набір тексту трохи підняти вгору
+        try {
+            this._appLogo.translation_y = -3;
+            this._entry.translation_y = -3;
+            this._moreIcon.translation_y = -3;
+        } catch (_) {}
+
+        // Тонка лінія-розділювач під полем вводу (як на фото‑референсі)
+        this._headerDivider = new St.Widget({
+            x_expand: true,
+            style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.10); margin-left: 18px; margin-right: 18px; margin-bottom: 12px;',
+        });
+        this._box.add_child(this._headerDivider);
+
         // 4. Category Filter Bar (4 rounded pills matching reference image)
         this._categoryRow = new St.BoxLayout({
             vertical: false,
@@ -365,7 +402,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             layout_manager: new Clutter.BinLayout(),
             x_expand: true,
             y_expand: true,
-            style: 'height: 382px; min-height: 382px; max-height: 382px;',
+            style: 'height: 419px; min-height: 419px; max-height: 419px;',
         });
         this._box.add_child(this._scrollWrapper);
 
@@ -376,9 +413,9 @@ export const MacApplicationsDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'height: 382px; padding-bottom: 4px; -st-vfade-offset: 44px;',
+            style: 'height: 419px; min-height: 419px; max-height: 419px; padding-bottom: 0px;',
         });
-        applyGradientBlurFade(this._scrollView, 44, 44);
+        applyGradientBlurFade(this._scrollView, 44, 36);
         this._scrollWrapper.add_child(this._scrollView);
 
         this._gridContainer = new St.BoxLayout({
@@ -625,7 +662,7 @@ export const MacApplicationsDialog = GObject.registerClass({
                 'background: none !important; ' +
                 `border-radius: ${CORNER_RADIUS}px !important; ` +
                 'border: none !important; ' +
-                'padding: 16px 2px 14px 2px; ' +
+                'padding: 16px 2px 0px 2px; ' +
                 'box-shadow: none !important;'
             );
 
@@ -1023,11 +1060,12 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         let appIdx = 0;
         for (let r = 0; r < numRows; r++) {
+            const isLastRow = (r === numRows - 1);
             const rowBox = new St.BoxLayout({
                 vertical: false,
                 x_expand: true,
                 x_align: Clutter.ActorAlign.CENTER,
-                style: 'margin-bottom: 8px;',
+                style: isLastRow ? 'margin-bottom: 0px;' : 'margin-bottom: 8px;',
             });
 
             for (let c = 0; c < COLUMNS; c++) {
@@ -1050,6 +1088,15 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
 
             this._gridContainer.add_child(rowBox);
+
+            // Друга тонка лінія — під сімома останніми програмами (лише у звичайному стані)
+            if (r === 0 && !this._currentQuery && !this._selectedCategory && apps.length > 0) {
+                const gridDivider = new St.Widget({
+                    x_expand: true,
+                    style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.10); margin: 2px 18px 10px 18px;',
+                });
+                this._gridContainer.add_child(gridDivider);
+            }
         }
     }
 
@@ -1118,10 +1165,25 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._box.set_position(targetX, targetY);
         this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);
-        // macOS Tahoe style: fade-in + slight "recede" (start larger at 1.06, settle to 1.0)
+        // Єдина intro: морф з попереднього меню або fade+scale 0.94→1.0
         this._box.set_pivot_point(0.5, 0.5);
-        this._box.scale_x = 1.06;
-        this._box.scale_y = 1.06;
+        const _mFrom = _consumeMorphFrom();
+        if (_mFrom) {
+            const fromCx = _mFrom.x + Math.round(_mFrom.w / 2);
+            const fromCy = _mFrom.y + Math.round(_mFrom.h / 2);
+            const toCx = targetX + Math.round(DIALOG_WIDTH / 2);
+            const toCy = targetY + Math.round(DIALOG_HEIGHT / 2);
+            const s0 = Math.max(0.60, Math.min(1.15, _mFrom.w / DIALOG_WIDTH));
+            this._box.translation_x = fromCx - toCx;
+            this._box.translation_y = fromCy - toCy;
+            this._box.scale_x = s0;
+            this._box.scale_y = s0;
+        } else {
+            this._box.translation_x = 0;
+            this._box.translation_y = 0;
+            this._box.scale_x = 1.12;
+            this._box.scale_y = 1.12;
+        }
         this._box.opacity = 0;
         this._headerRow.opacity = 255;
         this._categoryRow.opacity = 255;
@@ -1190,6 +1252,8 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._box.ease({
             opacity: 255,
+            translation_x: 0,
+            translation_y: 0,
             scale_x: 1.0,
             scale_y: 1.0,
             duration: 220,
@@ -1198,6 +1262,10 @@ export const MacApplicationsDialog = GObject.registerClass({
                 this._syncGlass();
             },
             onComplete: () => {
+                this._box.translation_x = 0;
+                this._box.translation_y = 0;
+                this._box.scale_x = 1.0;
+                this._box.scale_y = 1.0;
                 this._syncGlass();
             },
         });
@@ -1206,6 +1274,8 @@ export const MacApplicationsDialog = GObject.registerClass({
     close(immediate = false) {
         if (!this._isOpen) return;
         this._isOpen = false;
+        // Запам'ятати геометрію для морф-переходу в інше меню (діє 900мс)
+        _saveMorphFrom(this);
 
         this._backdrop.visible = false;
         if (this._stageSignalId) {
@@ -1246,8 +1316,8 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._box.ease({
             opacity: 0,
-            scale_x: 1.06,
-            scale_y: 1.06,
+            scale_x: 1.12,
+            scale_y: 1.12,
             duration: 180,
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {

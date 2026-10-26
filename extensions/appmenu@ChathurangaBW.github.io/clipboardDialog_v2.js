@@ -7,6 +7,7 @@ import St from 'gi://St';
 import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Util from 'resource:///org/gnome/shell/misc/util.js';
+import { applyGradientBlurFade } from './gradientBlurFade.js';
 
 const CACHE_DIR = GLib.build_filenamev([GLib.get_home_dir(), '.cache', 'mac-clipboard']);
 const IMAGES_DIR = GLib.build_filenamev([CACHE_DIR, 'images']);
@@ -635,12 +636,13 @@ export const MacClipboardDialog = GObject.registerClass({
         // 4. Scrollable Container for Clipboard Entries
         this._scrollView = new St.ScrollView({
             style_class: 'mac-clipboard-scroll',
-            style: 'padding: 6px 0; -st-vfade-offset: 40px;',
+            style: 'padding: 6px 0;',
             x_expand: true,
             y_expand: true,
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
         });
+        applyGradientBlurFade(this._scrollView, 40, 36);
         this._scrollWrapper = this._scrollView;
         this._box.add_child(this._scrollView);
 

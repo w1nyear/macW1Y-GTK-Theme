@@ -20,7 +20,8 @@ const GRADIENT_BLUR_FADE_SHADER = `
         }
         if (fade_edges_bottom > 0.5 && y > (height - fade_offset_bottom) && fade_offset_bottom > 0.0) {
             float dist_bottom = height - y;
-            t = max(t, clamp(1.0 - (dist_bottom / fade_offset_bottom), 0.0, 1.0));
+            float p_bottom = clamp(1.0 - (dist_bottom / fade_offset_bottom), 0.0, 1.0);
+            t = max(t, p_bottom * p_bottom);
         }
 
         // Gradient blur: 0px at start (t=0.0), 3px at mid (t=0.5), 5px at end (t=1.0)
