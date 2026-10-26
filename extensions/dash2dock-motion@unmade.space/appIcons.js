@@ -678,6 +678,18 @@ export const DockAbstractAppIcon = GObject.registerClass({
         // This variable keeps track of this
         let shouldHideOverview = true;
 
+        // If the application is running in the background with no interesting windows,
+        // restore/activate it from the background instead of failing on undefined window.
+        if (this.running && windows.length === 0) {
+            const allWindows = this.getWindows();
+            if (allWindows.length > 0)
+                Main.activateWindow(allWindows[0]);
+            this._activateFromBackground();
+            if (shouldHideOverview)
+                Main.overview.hide();
+            return;
+        }
+
         // We customize the action only when the application is already running
         if (this.running) {
             const hasUrgentWindows = !!this._urgentWindows.size;
@@ -703,7 +715,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                     }
                 } else {
                     const [w] = windows;
-                    Main.activateWindow(w);
+                    if (w) Main.activateWindow(w);
                 }
                 break;
 
@@ -721,7 +733,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                         }
                     } else {
                         // Window is minimized, raise it
-                        Main.activateWindow(w);
+                        if (w) Main.activateWindow(w);
                     }
                     // Launch overview when multiple windows are present
                     // TODO: only show current app windows when gnome shell API will allow it
@@ -738,7 +750,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                     } else {
                         // Activate the first window
                         const [w] = windows;
-                        Main.activateWindow(w);
+                        if (w) Main.activateWindow(w);
                     }
                 } else {
                     this.app.activate();
@@ -752,7 +764,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                 } else {
                     // Activate the first window
                     const [w] = windows;
-                    Main.activateWindow(w);
+                    if (w) Main.activateWindow(w);
                 }
                 break;
 
@@ -765,7 +777,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                 } else {
                     // Activate the first window
                     const [w] = windows;
-                    Main.activateWindow(w);
+                    if (w) Main.activateWindow(w);
                 }
                 break;
 
@@ -780,7 +792,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                     // (no modifiers, no middle click).
                     if (singleOrUrgentWindows && !modifiers && button === 1) {
                         const [w] = windows;
-                        Main.activateWindow(w);
+                        if (w) Main.activateWindow(w);
                     } else {
                         this._windowPreviews();
                     }
@@ -802,7 +814,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                             this._minimizeWindow(w);
                         } else {
                             // Window is minimized, raise it
-                            Main.activateWindow(w);
+                            if (w) Main.activateWindow(w);
                         }
                     } else {
                         // Launch previews when multiple windows are present
@@ -819,7 +831,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                     Docking.DockManager.getDefault().appSpread.toggle(this.app);
                 } else {
                     // Activate the first window
-                    Main.activateWindow(windows[0]);
+                    if (windows[0]) Main.activateWindow(windows[0]);
                 }
                 break;
 
@@ -829,7 +841,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                     Docking.DockManager.getDefault().appSpread.toggle(this.app);
                 } else if (!this.focused) {
                     // Activate the first window
-                    Main.activateWindow(windows[0]);
+                    if (windows[0]) Main.activateWindow(windows[0]);
                 } else {
                     this._minimizeWindow();
                 }
@@ -840,7 +852,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                 break;
 
             case clickAction.SKIP:
-                Main.activateWindow(windows[0]);
+                if (windows[0]) Main.activateWindow(windows[0]);
                 break;
             }
         } else {
@@ -962,6 +974,76 @@ export const DockAbstractAppIcon = GObject.registerClass({
                 });
             },
         });
+    }
+
+    _activateFromBackground() {
+        this.animateLaunch();
+
+        // 1. Try to open via matching AppIndicator / StatusNotifierItem in the panel (menu bar)
+        let indicatorActivated = false;
+        try {
+            const appId = (this.app.get_id() || '').toLowerCase();
+            const appName = (this.app.get_name() || '').toLowerCase();
+            const appInfo = this.app.get_app_info();
+            const execPath = appInfo && appInfo.get_executable ? appInfo.get_executable() : '';
+            const baseExec = execPath ? GLib.path_get_basename(execPath).toLowerCase() : '';
+
+            const clean = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            const cAppId = clean(appId);
+            const cAppName = clean(appName);
+            const cExec = clean(baseExec);
+
+            const sa = Main.panel?.statusArea;
+            if (sa) {
+                for (const [key, item] of Object.entries(sa)) {
+                    if (!item || !item._indicator)
+                        continue;
+                    const cId = clean(item._indicator.id);
+                    const cTitle = clean(item._indicator.title);
+
+                    const isMatch = (
+                        (cId && (cAppId.includes(cId) || cId.includes(cExec) || (cExec && cExec.includes(cId)))) ||
+                        (cTitle && (cAppName.includes(cTitle) || cTitle.includes(cAppName))) ||
+                        (cAppId.includes('telegram') && cId.includes('telegram')) ||
+                        (cAppId.includes('steam') && cId.includes('steam')) ||
+                        (cAppId.includes('discord') && cId.includes('discord'))
+                    );
+
+                    if (isMatch) {
+                        if (typeof item._indicator.open === 'function') {
+                            item._indicator.open(0, 0, 0);
+                            indicatorActivated = true;
+                        } else if (item._indicator._proxy && typeof item._indicator._proxy.ActivateAsync === 'function') {
+                            item._indicator._proxy.ActivateAsync(0, 0, null).catch?.(() => {});
+                            indicatorActivated = true;
+                        }
+
+                        if (!indicatorActivated && item.menu && typeof item.menu._getMenuItems === 'function') {
+                            const menuItems = item.menu._getMenuItems();
+                            const openItem = menuItems.find(mi => {
+                                const text = (mi.label?.text || mi._label?.text || '').toLowerCase().trim();
+                                return /^(відкрити|показати|open|show|main|головне|вікно|window|library|бібліотека)/i.test(text);
+                            });
+                            if (openItem && typeof openItem.activate === 'function') {
+                                openItem.activate(Clutter.get_current_event());
+                                indicatorActivated = true;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (_) {}
+
+        // 2. Also trigger standard application activation / launch
+        try {
+            if (this.app.state === Shell.AppState.RUNNING && this.app.can_open_new_window()) {
+                this.app.open_new_window(-1);
+            } else {
+                this.app.activate();
+            }
+        } catch (_) {
+            try { this.app.activate(); } catch (_) {}
+        }
     }
 
     // Try to do the right thing when attempting to launch a new window of an app. In
