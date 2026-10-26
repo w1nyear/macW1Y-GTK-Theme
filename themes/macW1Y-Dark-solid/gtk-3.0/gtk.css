@@ -1,10 +1,3 @@
-@import url("gtk-dark.css");
-
-/* Kiwi (is not Apple) - managed imports: begin */
-@import url("titlebuttons3.css");
-@import url("titlebuttons-size-small3.css");
-@import url("fixes3.css");
-/* Kiwi (is not Apple) - managed imports: end */
 /* --- MAC-STYLING-START --- */
 /* macOS Tahoe Context Menus (Desktop and System GTK Applications) */
 window.desktopmenu,
@@ -320,3 +313,87 @@ windowcontrols button.maximize:active {
   background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-active-dark.png");
 }
 /* --- MAC-TRAFFIC-LIGHTS-END --- */
+
+/* ============================================================
+   Completely remove overscroll glow (overshoot) and fake gradients
+   across all GTK3 applications
+   ============================================================ */
+overshoot,
+overshoot.top,
+overshoot.bottom,
+overshoot.left,
+overshoot.right,
+scrolledwindow overshoot,
+scrolledwindow overshoot.top,
+scrolledwindow overshoot.bottom,
+scrolledwindow overshoot.left,
+scrolledwindow overshoot.right,
+scrolledwindow > overshoot,
+scrolledwindow > overshoot.top,
+scrolledwindow > overshoot.bottom,
+scrolledwindow > overshoot.left,
+scrolledwindow > overshoot.right {
+    background: none;
+    background-image: none;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+undershoot.left,
+undershoot.right,
+scrolledwindow undershoot.left,
+scrolledwindow undershoot.right,
+scrolledwindow > undershoot.left,
+scrolledwindow > undershoot.right {
+    background: none;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+}
+
+undershoot.top,
+scrolledwindow undershoot.top,
+scrolledwindow > undershoot.top {
+    min-height: 28px;
+    background: linear-gradient(to bottom,
+        @theme_bg_color 0%,
+        alpha(@theme_bg_color, 0.85) 30%,
+        alpha(@theme_bg_color, 0.4) 65%,
+        transparent 100%);
+    border: none;
+    box-shadow: none;
+}
+
+undershoot.bottom,
+scrolledwindow undershoot.bottom,
+scrolledwindow > undershoot.bottom {
+    min-height: 28px;
+    background: linear-gradient(to top,
+        @theme_bg_color 0%,
+        alpha(@theme_bg_color, 0.85) 30%,
+        alpha(@theme_bg_color, 0.4) 65%,
+        transparent 100%);
+    border: none;
+    box-shadow: none;
+}
+
+/* Universal macOS transparent headerbar with top-bar list blur / dissolve shader */
+headerbar,
+.titlebar,
+headerbar.titlebar,
+headerbar:backdrop,
+.titlebar:backdrop {
+    background: linear-gradient(to bottom,
+        @theme_bg_color 0%,
+        alpha(@theme_bg_color, 0.95) 25%,
+        alpha(@theme_bg_color, 0.72) 50%,
+        alpha(@theme_bg_color, 0.30) 75%,
+        transparent 100%) !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+
+

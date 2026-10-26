@@ -634,6 +634,13 @@ export const MacClipboardDialog = GObject.registerClass({
         this._box.add_child(_separator);
 
         // 4. Scrollable Container for Clipboard Entries
+        this._scrollWrapper = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            y_expand: true,
+        });
+        this._box.add_child(this._scrollWrapper);
+
         this._scrollView = new St.ScrollView({
             style_class: 'mac-clipboard-scroll',
             style: 'padding: 6px 0;',
@@ -642,9 +649,8 @@ export const MacClipboardDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
         });
-        applyGradientBlurFade(this._scrollView, 40, 36);
-        this._scrollWrapper = this._scrollView;
-        this._box.add_child(this._scrollView);
+        this._scrollWrapper.add_child(this._scrollView);
+        applyGradientBlurFade(this._scrollWrapper, 40, 36, this._scrollView);
 
         this._listContainer = new St.BoxLayout({
             vertical: true,

@@ -16,7 +16,9 @@ const GRADIENT_BLUR_FADE_SHADER = `
         
         float t = 0.0;
         if (fade_edges_top > 0.5 && y < fade_offset_top && fade_offset_top > 0.0) {
-            t = max(t, clamp(1.0 - (y / fade_offset_top), 0.0, 1.0));
+            float dist_top = y;
+            float p_top = clamp(1.0 - (dist_top / fade_offset_top), 0.0, 1.0);
+            t = max(t, p_top * p_top);
         }
         if (fade_edges_bottom > 0.5 && y > (height - fade_offset_bottom) && fade_offset_bottom > 0.0) {
             float dist_bottom = height - y;
@@ -57,81 +59,105 @@ const GRADIENT_BLUR_FADE_SHADER = `
     }
 `;
 
-export const GradientBlurFadeEffect = GObject.registerClass(
-class KiwiGradientBlurFadeEffect extends Clutter.ShaderEffect {
-    constructor(topOffset = 44.0, bottomOffset = 44.0) {
-        super();
-        this.set_shader_source(GRADIENT_BLUR_FADE_SHADER);
-        this._topOffset = topOffset;
-        this._bottomOffset = bottomOffset;
-        this._fadeTop = false;
-        this._fadeBottom = false;
-        this._targetActor = null;
-        this._adj = null;
-    }
+function _setFloat(effect, name, val) {
+    try {
+        // GJS converts whole numbers to G_TYPE_INT which fails in Cogl against GLSL 'uniform float'.
+        // Adding 0.0001 forces GJS to pass G_TYPE_DOUBLE / float.
+        effect.set_uniform_value(name, parseFloat(val) + 0.0001);
+    } catch (_) {}
+}
 
-    attachTo(scrollView) {
-        if (!scrollView) return;
-        this._targetActor = scrollView;
-        scrollView.add_effect(this);
-
-        scrollView.connectObject('notify::allocation', () => this.updateBounds(), this);
-        scrollView.connectObject('destroy', () => this.detach(), this);
-
-        const adj = scrollView.vadjustment || (scrollView.get_vscroll_bar && scrollView.get_vscroll_bar().get_adjustment());
-        if (adj) {
-            this._adj = adj;
-            const onAdjChanged = () => {
-                const val = adj.value;
-                const upper = adj.upper;
-                const page = adj.page_size;
-                const canScroll = upper > page + 1.0;
-
-                const fadeTop = canScroll && val > 1.0;
-                const fadeBottom = canScroll && val < (upper - page - 1.0);
-
-                if (fadeTop !== this._fadeTop || fadeBottom !== this._fadeBottom) {
-                    this._fadeTop = fadeTop;
-                    this._fadeBottom = fadeBottom;
-                    this.set_uniform_value('fade_edges_top', fadeTop ? 1.0 : 0.0);
-                    this.set_uniform_value('fade_edges_bottom', fadeBottom ? 1.0 : 0.0);
-                    this.queue_repaint();
-                }
-            };
-            adj.connectObject('changed', onAdjChanged, 'notify::value', onAdjChanged, this);
-            onAdjChanged();
-        }
-        this.updateBounds();
-    }
-
-    detach() {
-        if (this._adj) {
-            this._adj.disconnectObject(this);
+let EffectClass = globalThis.__AppmenuGradientBlurFadeEffect;
+if (!EffectClass) {
+    EffectClass = GObject.registerClass(
+    class AppmenuGradientBlurFadeEffect extends Clutter.ShaderEffect {
+        constructor(topOffset = 44.0, bottomOffset = 36.0) {
+            super();
+            this.set_shader_source(GRADIENT_BLUR_FADE_SHADER);
+            this._topOffset = topOffset;
+            this._bottomOffset = bottomOffset;
+            this._fadeTop = false;
+            this._fadeBottom = false;
+            this._targetActor = null;
             this._adj = null;
         }
-        if (this._targetActor) {
-            this._targetActor.disconnectObject(this);
-            this._targetActor = null;
+    });
+    globalThis.__AppmenuGradientBlurFadeEffect = EffectClass;
+}
+
+EffectClass.prototype.attachTo = function(actor, scrollView = null) {
+    if (!actor) return;
+    this._targetActor = actor;
+    actor.add_effect(this);
+
+    actor.connectObject('notify::allocation', () => this.updateBounds(), this);
+    actor.connectObject('destroy', () => this.detach(), this);
+
+    const sv = scrollView || (actor.vadjustment ? actor : (actor.get_children && actor.get_children().find(c => c.vadjustment)));
+    const adj = sv ? (sv.vadjustment || (sv.get_vscroll_bar && sv.get_vscroll_bar().get_adjustment())) : null;
+    if (adj) {
+        this._adj = adj;
+        const onAdjChanged = () => {
+            const val = adj.value;
+            const upper = adj.upper;
+            const page = adj.page_size;
+            const canScroll = upper > page + 1.0;
+
+            const fadeTop = canScroll && val > 1.0;
+            const fadeBottom = canScroll && val < (upper - page - 1.0);
+
+            if (fadeTop !== this._fadeTop || fadeBottom !== this._fadeBottom) {
+                this._fadeTop = fadeTop;
+                this._fadeBottom = fadeBottom;
+                _setFloat(this, 'fade_edges_top', fadeTop ? 1.0 : 0.0);
+                _setFloat(this, 'fade_edges_bottom', fadeBottom ? 1.0 : 0.0);
+                this.queue_repaint();
+            }
+        };
+        adj.connectObject('changed', onAdjChanged, 'notify::value', onAdjChanged, this);
+        onAdjChanged();
+    }
+    this.updateBounds();
+};
+
+EffectClass.prototype.detach = function() {
+    if (this._adj) {
+        this._adj.disconnectObject(this);
+        this._adj = null;
+    }
+    if (this._targetActor) {
+        this._targetActor.disconnectObject(this);
+        this._targetActor = null;
+    }
+};
+
+EffectClass.prototype.updateBounds = function() {
+    if (!this._targetActor) return;
+    const [w, h] = this._targetActor.get_size();
+    if (w > 0 && h > 0) {
+        _setFloat(this, 'width', w);
+        _setFloat(this, 'height', h);
+        _setFloat(this, 'fade_offset_top', this._topOffset);
+        _setFloat(this, 'fade_offset_bottom', this._bottomOffset);
+        _setFloat(this, 'fade_edges_top', this._fadeTop ? 1.0 : 0.0);
+        _setFloat(this, 'fade_edges_bottom', this._fadeBottom ? 1.0 : 0.0);
+    }
+};
+
+export const GradientBlurFadeEffect = EffectClass;
+
+export function applyGradientBlurFade(actor, topOffset = 44.0, bottomOffset = 36.0, scrollView = null) {
+    if (!actor) return null;
+    let target = actor;
+    let scroll = scrollView;
+
+    if (!scroll && actor.vadjustment) {
+        scroll = actor;
+        if (actor.get_parent()) {
+            target = actor.get_parent();
         }
     }
-
-    updateBounds() {
-        if (!this._targetActor) return;
-        const [w, h] = this._targetActor.get_size();
-        if (w > 0 && h > 0) {
-            this.set_uniform_value('width', parseFloat(w));
-            this.set_uniform_value('height', parseFloat(h));
-            this.set_uniform_value('fade_offset_top', parseFloat(this._topOffset));
-            this.set_uniform_value('fade_offset_bottom', parseFloat(this._bottomOffset));
-            this.set_uniform_value('fade_edges_top', this._fadeTop ? 1.0 : 0.0);
-            this.set_uniform_value('fade_edges_bottom', this._fadeBottom ? 1.0 : 0.0);
-        }
-    }
-});
-
-export function applyGradientBlurFade(scrollView, topOffset = 44.0, bottomOffset = 44.0) {
-    if (!scrollView) return null;
     const effect = new GradientBlurFadeEffect(topOffset, bottomOffset);
-    effect.attachTo(scrollView);
+    effect.attachTo(target, scroll);
     return effect;
 }

@@ -10741,3 +10741,36 @@ Task 499: Повне полірування екрана блокування (m
         `prime-select state: nvidia`,
         `Targets: Система=0, Програми=1, Ігри=1`.
       - Сеанс користувача залишився активним, керування вентиляторами не зачіпалося.
+
+- [x] Завдання 531: Прозорі верхні панелі у всіх програмах (GTK4/Libadwaita/GTK3), встановлення шейдера розмиття списку та виправлення верхнього шейдера розчинення у Spotlight/Меню програм
+   1. Вимоги:
+      - У всіх програмах, де є панель зверху (headerbar, toolbarview > .top-bar, navigation/overlay split-view), повністю видалити статичний непрозорий сірий фон (#3a3a3c), щоб заголовок і кнопки плавали прозоро над контентом вікна, як це було реалізовано в Параметрах (фото 1: net.nokyan.Resources).
+      - На місце верхньої панелі встановити шейдер розмиття списку (плавний багатоточковий градієнт розчинення 0% @window_bg_color -> 95% -> 72% -> 30% -> transparent з імітацією розмиття 0px -> 3px -> 5px), щоб скролюваний контент м'яко заходив під верхній бар і розчинявся у фоні.
+      - У меню, схожих на Spotlight («Програми» / Launchpad, пошук, файли, буфер обміну), додати/увімкнути цей шейдер розмиття списку вгорі, оскільки під панеллю категорій («Утиліти», «Спілкування» тощо) верхній рядок іконок обрізався різкою жорсткою лінією без розмиття та розчинення (фото 2).
+      - Не виходити з сесії користувача ніколи, не чіпати керування вентиляторами.
+   2. Аналіз та першопричина:
+      - Верхні панелі програм (GTK4/Libadwaita/GTK3): у стилях тем `gtk.css` селектори `headerbar`, `headerbar:backdrop`, `headerbar.default-decoration` мали явний фон `background-color: @headerbar_bg_color;` (#3a3a3c у темній темі), а градієнтний розчин `toolbarview > .top-bar` у завданні 515 був обмежений лише класами `window.mac-settings-window` та `window.nautilus-window`. Через це програми на базі `AdwOverlaySplitView` (наприклад, `net.nokyan.Resources`), а також більшість сторонніх та системних утиліт зберігали масивний непрозорий верхній бар.
+      - Меню, схожі на Spotlight (GNOME Shell): виявлено дві критичні причини відсутності верхнього розмиття:
+        1) У GLSL-ефекті `AppmenuGradientBlurFadeEffect` метод `set_uniform_value` у середовищі GJS перетворював цілі числа (`1.0`, `0.0`, `44.0`, `36.0`, `708`, `419`) на значення `G_TYPE_INT`. У графічній підсистемі Cogl/Mutter цілочисельний тип не узгоджувався з `uniform float` у шейдері, через що передача уніформ тихо блокувалася, і значення `fade_edges_top` залишалося `0.0`.
+        2) Внутрішній клас віджета `St.ScrollView` реалізує власний низькорівневий цикл малювання (`st_scroll_view_paint`), який відсікає вміст у viewport і не транслює ClutterEffect на своїх прямих нащадків. Ефект працює коректно лише при підключенні до контейнера-обгортки (`_scrollWrapper`).
+   3. Реалізація:
+      - Стилі GTK4 / Libadwaita / GTK3 (`~/.config/gtk-4.0/gtk.css`, `~/.themes/macW1Y-Dark/gtk-4.0/`, `/usr/share/themes/macW1Y-Dark/gtk-4.0/`, `themes/macW1Y-Dark/` та відповідні `gtk-3.0`):
+        * Селектори `headerbar`, `headerbar:backdrop`, `headerbar.default-decoration`, `headerbar.flat`, `toolbarview > .top-bar headerbar` переведено на `background: transparent !important; background-color: transparent !important; background-image: none !important; border: none !important; border-bottom: none !important; box-shadow: none !important;`.
+        * На `toolbarview > .top-bar`, `.top-bar` та автономні `headerbar` по всіх вікнах накладено наскрізний макосівський градієнт розчинення списку (`@window_bg_color 0% -> 95% -> 72% -> 30% -> transparent 100%`).
+        * Для бічних панелей (`.sidebar-pane toolbarview > .top-bar`, `overlay-split-view > widget:first-child`, `navigation-split-view .sidebar-pane`) зафіксовано чистий прозорий фон без затемнення.
+        * Для `undershoot.top` та `scrolledwindow.undershoot-top > undershoot.top` по всіх вікнах встановлено симуляцію розмиття списку (0px -> 3px -> 5px) висотою 56px.
+      - Розширення GNOME Shell (`appmenu@ChathurangaBW.github.io` та `kiwi@kemma`):
+        * У `gradientBlurFade.js`: додано захисну функцію `_setFloat(effect, name, val)` з форсуванням дійсного типу (`parseFloat(val) + 0.0001`), що гарантує безпомилкове передавання float-уніформ у Cogl.
+        * Реалізовано стійку реєстрацію класу через кеш `globalThis.__AppmenuGradientBlurFadeEffect`, що унеможливлює збої `Type name is already registered` при перезавантаженні розширення.
+        * У методі `attachTo(actor, scrollView)` реалізовано автоматичне знаходження `St.ScrollView` та прив'язку до `vadjustment`, а в `applyGradientBlurFade` — пріоритетну прив'язку шейдера до контейнера `_scrollWrapper`.
+        * Оновлено криву розчинення верхнього краю: `float dist_top = y; float p_top = clamp(1.0 - (dist_top / fade_offset_top), 0.0, 1.0); t = max(t, p_top * p_top);`, що забезпечує ідеальне поєднання зі зворотним нижнім градієнтом.
+        * У `applications_menu_v5b.js`, `applications_menu_v5.js`, `searchDialog_v5.js` та `clipboardDialog_v2.js` додано контейнери-обгортки `_scrollWrapper` / `_filesScrollWrapper` / `_appsScrollWrapper` / `_clipboardScrollWrapper` та оновлено виклики `applyGradientBlurFade`.
+      - Синхронізовано файли до робочих каталогів розширень `~/.local/share/gnome-shell/extensions/` та системних тем, оновлено інстанси в живому середовищі без виходу з сесії.
+   4. Верифікація:
+      - Проведено піксельні вимірювання вікна `net.nokyan.Resources`:
+        * Статичний темно-сірий фон верхнього бару повністю усунуто; фон став повністю прозорим із плавним градієнтним переходом (пікселі (500, 25): 127, (500, 45): 85, контент: 42).
+      - Проведено піксельні заміри меню «Програми» під час скролу (`val = 25`):
+        * Верхній рядок іконок отримує плавне наростання розмиття та прозорості (dist=3px: 102; dist=8px: 132; dist=13px: 160; dist=18px: 188; dist=23px: 211).
+        * У нульовому стані (`val = 0`) верхній шейдер автоматично вимикається (`fadeTop = false`), і перший рядок залишається кришталево чітким.
+      - Створено порівняльний артефакт `top_bar_and_spotlight_blur_comparison.png`.
+      - Сеанс користувача залишився активним, керування вентиляторами не зачіпалося.

@@ -467,8 +467,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             y_expand: true,
             style: 'max-height: 460px;',
         });
-        applyGradientBlurFade(this._scrollView, 40, 36);
         this._scrollWrapper.add_child(this._scrollView);
+        applyGradientBlurFade(this._scrollWrapper, 40, 36, this._scrollView);
 
         this._resultsBox = new St.BoxLayout({
             vertical: true,
@@ -503,6 +503,14 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._filesView.add_child(this._filterPillsRow);
         this._initFilterPills();
 
+        this._filesScrollWrapper = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            y_expand: true,
+            style: 'max-height: 414px;',
+        });
+        this._filesView.add_child(this._filesScrollWrapper);
+
         this._filesScrollView = new St.ScrollView({
             style_class: 'mac-spotlight-scroll',
             overlay_scrollbars: true,
@@ -512,8 +520,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             y_expand: true,
             style: 'max-height: 414px;',
         });
-        applyGradientBlurFade(this._filesScrollView, 40, 36);
-        this._filesView.add_child(this._filesScrollView);
+        this._filesScrollWrapper.add_child(this._filesScrollView);
+        applyGradientBlurFade(this._filesScrollWrapper, 40, 36, this._filesScrollView);
 
         this._filesContentBox = new St.BoxLayout({
             vertical: true,
@@ -530,6 +538,14 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._resultsWrapper.add_child(this._appsView);
 
+        this._appsScrollWrapper = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            y_expand: true,
+            style: 'max-height: 460px;',
+        });
+        this._appsView.add_child(this._appsScrollWrapper);
+
         this._appsScrollView = new St.ScrollView({
             style_class: 'mac-spotlight-scroll',
             overlay_scrollbars: true,
@@ -539,8 +555,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             y_expand: true,
             style: 'max-height: 460px;',
         });
-        applyGradientBlurFade(this._appsScrollView, 40, 36);
-        this._appsView.add_child(this._appsScrollView);
+        this._appsScrollWrapper.add_child(this._appsScrollView);
+        applyGradientBlurFade(this._appsScrollWrapper, 40, 36, this._appsScrollView);
 
         this._appsContentBox = new St.BoxLayout({
             vertical: true,
@@ -557,6 +573,14 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._resultsWrapper.add_child(this._clipboardView);
 
+        this._clipboardScrollWrapper = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            y_expand: true,
+            style: 'max-height: 460px;',
+        });
+        this._clipboardView.add_child(this._clipboardScrollWrapper);
+
         this._clipboardScrollView = new St.ScrollView({
             style_class: 'mac-spotlight-scroll',
             overlay_scrollbars: true,
@@ -566,8 +590,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             y_expand: true,
             style: 'max-height: 460px;',
         });
-        applyGradientBlurFade(this._clipboardScrollView, 40, 36);
-        this._clipboardView.add_child(this._clipboardScrollView);
+        this._clipboardScrollWrapper.add_child(this._clipboardScrollView);
+        applyGradientBlurFade(this._clipboardScrollWrapper, 40, 36, this._clipboardScrollView);
 
         this._clipboardContentBox = new St.BoxLayout({
             vertical: true,

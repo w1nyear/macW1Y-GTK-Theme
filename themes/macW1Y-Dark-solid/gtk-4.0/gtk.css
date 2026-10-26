@@ -2401,23 +2401,43 @@ headerbar {
   padding: 0;
   margin: 0;
   color: @headerbar_fg_color;
-  background-color: @headerbar_bg_color;
-  border-bottom: 1px solid @headerbar_darker_shade_color;
-  box-shadow: none;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 headerbar:backdrop {
   opacity: 1;
   transition: 150ms ease-out;
   color: color-mix(in srgb, @headerbar_fg_color 70%, @headerbar_backdrop_color);
-  background-color: @headerbar_backdrop_color;
-  border-color: @headerbar_shade_color;
-  box-shadow: none;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+headerbar.default-decoration,
+headerbar.default-decoration:backdrop {
+  min-height: 32px;
+  padding: 0;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 headerbar.flat, headerbar.flat:backdrop {
-  border: none;
-  background: none;
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
 
 headerbar .title {
@@ -9802,6 +9822,19 @@ navigationview.sidebar headerbar windowcontrols.start:dir(ltr),
 }
 
 /* Mac Settings headerbar alignment matching Nautilus */
+/* Global Top Bar Transparency & macOS List Dissolve Shader across all apps */
+headerbar,
+headerbar:backdrop,
+headerbar.default-decoration,
+headerbar.default-decoration:backdrop,
+headerbar.flat,
+headerbar.flat:backdrop,
+toolbarview > .top-bar headerbar,
+toolbarview > .top-bar headerbar:backdrop,
+.sidebar-pane headerbar,
+.sidebar-pane headerbar:backdrop,
+.content-pane headerbar,
+.content-pane headerbar:backdrop,
 window.mac-settings-window headerbar,
 window.mac-settings-window .mac-settings-content-headerbar,
 window.mac-settings-window .mac-settings-sidebar-headerbar,
@@ -9811,25 +9844,28 @@ navigation-split-view adw-navigation-view headerbar,
 navigation-split-view toolbarview > .top-bar headerbar,
 navigation-split-view toolbarview > .top-bar .collapse-spacing headerbar,
 navigation-split-view toolbarview > .top-bar .collapse-spacing headerbar.default-decoration,
+overlay-split-view toolbarview > .top-bar headerbar,
 window.nautilus-window .content-pane headerbar,
 window.nautilus-window .sidebar-pane headerbar {
     min-height: 48px;
-    margin-top: 3px;
-    background: transparent;
-    background-color: transparent;
-    background-image: none;
-    border: none;
-    border-bottom: none;
-    box-shadow: none;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
 }
 
 /* Redesign: Replace top bar static background with list dissolve shader gradient (0px -> 3px -> 5px blur & dissolve) */
+toolbarview > .top-bar,
+toolbarview > .top-bar:backdrop,
+toolbarview > .top-bar.raised,
+toolbarview > .top-bar.raised.border,
+.top-bar,
+headerbar:not(.flat):not(toolbarview > .top-bar headerbar):not(.sidebar-pane headerbar):not(navigation-split-view > .sidebar-pane headerbar):not(overlay-split-view > .sidebar-pane headerbar),
 window.mac-settings-window toolbarview > .top-bar,
-window.mac-settings-window toolbarview > .top-bar.raised,
-window.mac-settings-window toolbarview > .top-bar.raised.border,
 navigation-split-view toolbarview > .top-bar,
-navigation-split-view toolbarview > .top-bar.raised,
-navigation-split-view toolbarview > .top-bar.raised.border,
+overlay-split-view toolbarview > .top-bar,
 window.nautilus-window .content-pane toolbarview > .top-bar,
 window.nautilus-window toolbarview > .top-bar {
     background: linear-gradient(to bottom,
@@ -9837,22 +9873,28 @@ window.nautilus-window toolbarview > .top-bar {
         alpha(@window_bg_color, 0.95) 25%,
         alpha(@window_bg_color, 0.72) 50%,
         alpha(@window_bg_color, 0.30) 75%,
-        transparent 100%);
-    background-color: transparent;
-    border: none;
-    border-bottom: none;
-    box-shadow: none;
+        transparent 100%) !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
 }
 
-window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
-window.mac-settings-window .sidebar-pane toolbarview > .top-bar.raised,
+/* Sidebar top-bars remain clean transparent without gradient */
+.sidebar-pane toolbarview > .top-bar,
+.sidebar-pane toolbarview > .top-bar.raised,
 navigation-split-view .sidebar-pane toolbarview > .top-bar,
+navigation-split-view > .sidebar toolbarview > .top-bar,
+overlay-split-view > widget:first-child toolbarview > .top-bar,
+overlay-split-view > .sidebar-pane toolbarview > .top-bar,
+window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
 window.nautilus-window .sidebar-pane toolbarview > .top-bar {
-    background-color: transparent;
-    background-image: none;
-    border: none;
-    border-bottom: none;
-    box-shadow: none;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
 }
 
 /* Content padding so content begins below floating headerbar when scroll = 0 */
@@ -10192,17 +10234,19 @@ toolbarview.undershoot-top scrolledwindow > undershoot.top,
 navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane scrolledwindow > undershoot.top,
-window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top {
-    min-height: 56px;
+overlay-split-view toolbarview.undershoot-top scrolledwindow > undershoot.top,
+overlay-split-view scrolledwindow.undershoot-top > undershoot.top,
+window scrolledwindow.undershoot-top > undershoot.top {
+    min-height: 56px !important;
     background: linear-gradient(to bottom,
         @window_bg_color 0%,
         alpha(@window_bg_color, 0.96) 20%,
         alpha(@window_bg_color, 0.82) 40%,
         alpha(@window_bg_color, 0.55) 60%,
         alpha(@window_bg_color, 0.22) 80%,
-        transparent 100%);
-    border: none;
-    box-shadow: none;
+        transparent 100%) !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 undershoot.bottom,
