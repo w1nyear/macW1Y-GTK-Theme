@@ -379,6 +379,11 @@ scrolledwindow > undershoot.bottom {
 }
 
 /* Universal macOS transparent headerbar with top-bar list blur / dissolve shader */
+window headerbar,
+window .titlebar,
+window headerbar.titlebar,
+window headerbar:backdrop,
+window .titlebar:backdrop,
 headerbar,
 .titlebar,
 headerbar.titlebar,
@@ -389,11 +394,11 @@ headerbar:backdrop,
         alpha(@theme_bg_color, 0.95) 25%,
         alpha(@theme_bg_color, 0.72) 50%,
         alpha(@theme_bg_color, 0.30) 75%,
-        transparent 100%) !important;
-    background-color: transparent !important;
-    border: none !important;
-    border-bottom: none !important;
-    box-shadow: none !important;
+        transparent 100%);
+    background-color: transparent;
+    border: none;
+    border-bottom: none;
+    box-shadow: none;
 }
 
 

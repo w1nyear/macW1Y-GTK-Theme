@@ -2401,43 +2401,43 @@ headerbar {
   padding: 0;
   margin: 0;
   color: @headerbar_fg_color;
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  border-bottom: none !important;
-  box-shadow: none !important;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
 }
 
 headerbar:backdrop {
   opacity: 1;
   transition: 150ms ease-out;
   color: color-mix(in srgb, @headerbar_fg_color 70%, @headerbar_backdrop_color);
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  border-bottom: none !important;
-  box-shadow: none !important;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
 }
 
 headerbar.default-decoration,
 headerbar.default-decoration:backdrop {
   min-height: 32px;
   padding: 0;
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  box-shadow: none !important;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
 }
 
 headerbar.flat, headerbar.flat:backdrop {
-  border: none !important;
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
+  border: none;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
 }
 
 headerbar .title {
@@ -9827,43 +9827,45 @@ headerbar,
 headerbar:backdrop,
 headerbar.default-decoration,
 headerbar.default-decoration:backdrop,
-headerbar.flat,
-headerbar.flat:backdrop,
-toolbarview > .top-bar headerbar,
-toolbarview > .top-bar headerbar:backdrop,
-.sidebar-pane headerbar,
-.sidebar-pane headerbar:backdrop,
-.content-pane headerbar,
-.content-pane headerbar:backdrop,
+/* All headerbars across all windows are completely transparent without grey background */
+window headerbar,
+window headerbar:backdrop,
+window headerbar.flat,
+window headerbar.flat:backdrop,
+window headerbar.default-decoration,
+window headerbar.default-decoration:backdrop,
+window .top-bar headerbar,
+window toolbarview > .top-bar headerbar,
+window .sidebar-pane headerbar,
+window .content-pane headerbar,
 window.mac-settings-window headerbar,
 window.mac-settings-window .mac-settings-content-headerbar,
 window.mac-settings-window .mac-settings-sidebar-headerbar,
 window.mac-settings-window navigation-split-view headerbar,
-navigation-split-view > widget:not(.sidebar) headerbar,
-navigation-split-view adw-navigation-view headerbar,
-navigation-split-view toolbarview > .top-bar headerbar,
-navigation-split-view toolbarview > .top-bar .collapse-spacing headerbar,
-navigation-split-view toolbarview > .top-bar .collapse-spacing headerbar.default-decoration,
+navigation-split-view headerbar,
+overlay-split-view headerbar,
 overlay-split-view toolbarview > .top-bar headerbar,
 window.nautilus-window .content-pane headerbar,
 window.nautilus-window .sidebar-pane headerbar {
     min-height: 48px;
-    background: transparent !important;
-    background-color: transparent !important;
-    background-image: none !important;
-    border: none !important;
-    border-bottom: none !important;
-    box-shadow: none !important;
+    background: none;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-bottom: none;
+    box-shadow: none;
 }
 
-/* Redesign: Replace top bar static background with list dissolve shader gradient (0px -> 3px -> 5px blur & dissolve) */
-toolbarview > .top-bar,
-toolbarview > .top-bar:backdrop,
-toolbarview > .top-bar.raised,
-toolbarview > .top-bar.raised.border,
-.top-bar,
-headerbar:not(.flat):not(toolbarview > .top-bar headerbar):not(.sidebar-pane headerbar):not(navigation-split-view > .sidebar-pane headerbar):not(overlay-split-view > .sidebar-pane headerbar),
+/* Redesign: Top bar containers carry the list dissolve shader gradient (0px -> 3px -> 5px blur & dissolve simulation) */
+window toolbarview > .top-bar,
+window toolbarview > revealer.top-bar,
+window toolbarview > .top-bar:backdrop,
+window toolbarview > .top-bar.raised,
+window toolbarview > .top-bar.raised.border,
+window .top-bar,
 window.mac-settings-window toolbarview > .top-bar,
+window.mac-settings-window toolbarview > .top-bar.flat,
+window.mac-settings-window toolbarview > revealer.top-bar,
 navigation-split-view toolbarview > .top-bar,
 overlay-split-view toolbarview > .top-bar,
 window.nautilus-window .content-pane toolbarview > .top-bar,
@@ -9873,28 +9875,27 @@ window.nautilus-window toolbarview > .top-bar {
         alpha(@window_bg_color, 0.95) 25%,
         alpha(@window_bg_color, 0.72) 50%,
         alpha(@window_bg_color, 0.30) 75%,
-        transparent 100%) !important;
-    background-color: transparent !important;
-    border: none !important;
-    border-bottom: none !important;
-    box-shadow: none !important;
+        transparent 100%);
+    background-color: transparent;
+    border: none;
+    border-bottom: none;
+    box-shadow: none;
 }
 
 /* Sidebar top-bars remain clean transparent without gradient */
-.sidebar-pane toolbarview > .top-bar,
-.sidebar-pane toolbarview > .top-bar.raised,
-navigation-split-view .sidebar-pane toolbarview > .top-bar,
-navigation-split-view > .sidebar toolbarview > .top-bar,
-overlay-split-view > widget:first-child toolbarview > .top-bar,
-overlay-split-view > .sidebar-pane toolbarview > .top-bar,
+window .sidebar-pane toolbarview > .top-bar,
+window .sidebar-pane toolbarview > .top-bar.raised,
+window navigation-split-view .sidebar-pane toolbarview > .top-bar,
+window overlay-split-view > widget:first-child toolbarview > .top-bar,
+window overlay-split-view > .sidebar-pane toolbarview > .top-bar,
 window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
 window.nautilus-window .sidebar-pane toolbarview > .top-bar {
-    background: transparent !important;
-    background-color: transparent !important;
-    background-image: none !important;
-    border: none !important;
-    border-bottom: none !important;
-    box-shadow: none !important;
+    background: none;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    border-bottom: none;
+    box-shadow: none;
 }
 
 /* Content padding so content begins below floating headerbar when scroll = 0 */
@@ -10236,17 +10237,38 @@ navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane scrolledwindow > undershoot.top,
 overlay-split-view toolbarview.undershoot-top scrolledwindow > undershoot.top,
 overlay-split-view scrolledwindow.undershoot-top > undershoot.top,
-window scrolledwindow.undershoot-top > undershoot.top {
-    min-height: 56px !important;
+window scrolledwindow.undershoot-top > undershoot.top,
+window scrolledwindow > undershoot.top {
+    min-height: 56px;
     background: linear-gradient(to bottom,
         @window_bg_color 0%,
         alpha(@window_bg_color, 0.96) 20%,
         alpha(@window_bg_color, 0.82) 40%,
         alpha(@window_bg_color, 0.55) 60%,
         alpha(@window_bg_color, 0.22) 80%,
-        transparent 100%) !important;
-    border: none !important;
-    box-shadow: none !important;
+        transparent 100%);
+    border: none;
+    box-shadow: none;
+}
+
+/* Settings: Scrolled window extends behind the 48px headerbar, so undershoot.top extends 104px (48px behind header + 56px dissolve band) */
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
+window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .content-pane scrolledwindow > undershoot.top,
+window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window scrolledwindow > undershoot.top {
+    min-height: 104px;
+    background: linear-gradient(to bottom,
+        @window_bg_color 0%,
+        @window_bg_color 48px,
+        alpha(@window_bg_color, 0.96) 62px,
+        alpha(@window_bg_color, 0.82) 76px,
+        alpha(@window_bg_color, 0.55) 88px,
+        alpha(@window_bg_color, 0.22) 98px,
+        transparent 104px);
+    border: none;
+    box-shadow: none;
 }
 
 undershoot.bottom,

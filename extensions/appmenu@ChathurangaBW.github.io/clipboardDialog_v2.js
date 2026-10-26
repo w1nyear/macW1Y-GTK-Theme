@@ -650,7 +650,7 @@ export const MacClipboardDialog = GObject.registerClass({
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
         });
         this._scrollWrapper.add_child(this._scrollView);
-        applyGradientBlurFade(this._scrollWrapper, 40, 36, this._scrollView);
+        applyGradientBlurFade(this._scrollWrapper, 44.0, 72.0, this._scrollView);
 
         this._listContainer = new St.BoxLayout({
             vertical: true,
