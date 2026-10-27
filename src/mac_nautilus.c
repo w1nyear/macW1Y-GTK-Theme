@@ -3,6 +3,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dlfcn.h>
+#include <sys/stat.h>
+#include <sys/xattr.h>
+#include <time.h>
 #include <gtk/gtk.h>
 #include <adwaita.h>
 #include <gio/gio.h>
@@ -26,6 +29,238 @@ void init_mac_nautilus(void)
     if (is_nautilus()) {
         unsetenv("LD_PRELOAD");
     }
+}
+
+static gboolean (*orig_g_file_copy)(GFile *source,
+                                    GFile *destination,
+                                    GFileCopyFlags flags,
+                                    GCancellable *cancellable,
+                                    GFileProgressCallback progress_callback,
+                                    gpointer progress_callback_data,
+                                    GError **error) = NULL;
+
+static gboolean (*orig_g_file_move)(GFile *source,
+                                    GFile *destination,
+                                    GFileCopyFlags flags,
+                                    GCancellable *cancellable,
+                                    GFileProgressCallback progress_callback,
+                                    gpointer progress_callback_data,
+                                    GError **error) = NULL;
+
+static gboolean is_installer_extension(const char *path)
+{
+    if (!path) return FALSE;
+    const char *dot = strrchr(path, '.');
+    if (!dot) return FALSE;
+    char ext[16] = {0};
+    size_t i;
+    for (i = 0; i < sizeof(ext) - 1 && dot[i]; i++) {
+        ext[i] = (char)g_ascii_tolower(dot[i]);
+    }
+    ext[i] = '\0';
+    if (strcmp(ext, ".exe") == 0 ||
+        strcmp(ext, ".msi") == 0 ||
+        strcmp(ext, ".bat") == 0 ||
+        strcmp(ext, ".cmd") == 0 ||
+        strcmp(ext, ".sh") == 0 ||
+        strcmp(ext, ".bash") == 0 ||
+        strcmp(ext, ".bin") == 0 ||
+        strcmp(ext, ".run") == 0 ||
+        strcmp(ext, ".appimage") == 0) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static void mac_record_app_drop(GFile *source, GFile *destination, gboolean is_move)
+{
+    if (!source || !destination) return;
+    char *src_path = g_file_get_path(source);
+    char *dest_path = g_file_get_path(destination);
+    if (!src_path || !dest_path) {
+        g_free(src_path);
+        g_free(dest_path);
+        return;
+    }
+
+    const char *home = g_get_home_dir();
+    if (!home) {
+        g_free(src_path);
+        g_free(dest_path);
+        return;
+    }
+
+    char apps_dir[512];
+    snprintf(apps_dir, sizeof(apps_dir), "%s/Applications", home);
+    size_t apps_len = strlen(apps_dir);
+
+    /* Check if destination is inside ~/Applications and source is outside */
+    if (strncmp(dest_path, apps_dir, apps_len) == 0 &&
+        (dest_path[apps_len] == '/' || dest_path[apps_len] == '\0') &&
+        !(strncmp(src_path, apps_dir, apps_len) == 0 && (src_path[apps_len] == '/' || src_path[apps_len] == '\0'))) {
+
+        char *src_dir = g_path_get_dirname(src_path);
+        char *base_name = g_path_get_basename(dest_path);
+
+        /* 1. Write metadata JSON into /run/user/<uid>/mac-app-sources/<basename>.json */
+        const char *runtime_dir = g_get_user_runtime_dir();
+        if (runtime_dir) {
+            char meta_dir[512];
+            snprintf(meta_dir, sizeof(meta_dir), "%s/mac-app-sources", runtime_dir);
+            g_mkdir_with_parents(meta_dir, 0700);
+            char meta_file[1024];
+            snprintf(meta_file, sizeof(meta_file), "%s/%s.json", meta_dir, base_name);
+
+            char *json_content = g_strdup_printf(
+                "{\n"
+                "  \"dest_basename\": \"%s\",\n"
+                "  \"dest_path\": \"%s\",\n"
+                "  \"source_path\": \"%s\",\n"
+                "  \"source_dir\": \"%s\",\n"
+                "  \"is_move\": %s,\n"
+                "  \"timestamp\": %ld\n"
+                "}\n",
+                base_name, dest_path, src_path, src_dir,
+                is_move ? "true" : "false", (long)time(NULL)
+            );
+            if (json_content) {
+                g_file_set_contents(meta_file, json_content, -1, NULL);
+                g_free(json_content);
+            }
+        }
+
+        /* 2. Mirror into ~/.cache/mac-app-sources/<basename>.json */
+        char cache_meta_dir[512];
+        snprintf(cache_meta_dir, sizeof(cache_meta_dir), "%s/.cache/mac-app-sources", home);
+        g_mkdir_with_parents(cache_meta_dir, 0700);
+        char cache_meta_file[1024];
+        snprintf(cache_meta_file, sizeof(cache_meta_file), "%s/%s.json", cache_meta_dir, base_name);
+        char *cache_json = g_strdup_printf(
+            "{\n"
+            "  \"dest_basename\": \"%s\",\n"
+            "  \"dest_path\": \"%s\",\n"
+            "  \"source_path\": \"%s\",\n"
+            "  \"source_dir\": \"%s\",\n"
+            "  \"is_move\": %s,\n"
+            "  \"timestamp\": %ld\n"
+            "}\n",
+            base_name, dest_path, src_path, src_dir,
+            is_move ? "true" : "false", (long)time(NULL)
+        );
+        if (cache_json) {
+            g_file_set_contents(cache_meta_file, cache_json, -1, NULL);
+            g_free(cache_json);
+        }
+
+        g_free(src_dir);
+        g_free(base_name);
+    }
+
+    g_free(src_path);
+    g_free(dest_path);
+}
+
+gboolean g_file_copy(GFile *source,
+                     GFile *destination,
+                     GFileCopyFlags flags,
+                     GCancellable *cancellable,
+                     GFileProgressCallback progress_callback,
+                     gpointer progress_callback_data,
+                     GError **error)
+{
+    if (!orig_g_file_copy) {
+        orig_g_file_copy = dlsym(RTLD_NEXT, "g_file_copy");
+    }
+
+    if (is_nautilus()) {
+        mac_record_app_drop(source, destination, FALSE);
+    }
+
+    if (orig_g_file_copy) {
+        gboolean res = orig_g_file_copy(source, destination, flags, cancellable,
+                                        progress_callback, progress_callback_data, error);
+        if (res && is_nautilus() && destination && source) {
+            char *dpath = g_file_get_path(destination);
+            char *spath = g_file_get_path(source);
+            if (dpath && spath) {
+                setxattr(dpath, "user.mac_source_path", spath, strlen(spath), 0);
+                char *sdir = g_path_get_dirname(spath);
+                if (sdir) {
+                    setxattr(dpath, "user.mac_source_dir", sdir, strlen(sdir), 0);
+                    g_free(sdir);
+                }
+            }
+            g_free(dpath);
+            g_free(spath);
+        }
+        return res;
+    }
+    return FALSE;
+}
+
+gboolean g_file_move(GFile *source,
+                     GFile *destination,
+                     GFileCopyFlags flags,
+                     GCancellable *cancellable,
+                     GFileProgressCallback progress_callback,
+                     gpointer progress_callback_data,
+                     GError **error)
+{
+    if (!orig_g_file_move) {
+        orig_g_file_move = dlsym(RTLD_NEXT, "g_file_move");
+    }
+    if (!orig_g_file_copy) {
+        orig_g_file_copy = dlsym(RTLD_NEXT, "g_file_copy");
+    }
+
+    if (is_nautilus() && source && destination) {
+        char *src_p = g_file_get_path(source);
+        char *dest_p = g_file_get_path(destination);
+        const char *home = g_get_home_dir();
+
+        if (src_p && dest_p && home) {
+            char apps_dir[512];
+            snprintf(apps_dir, sizeof(apps_dir), "%s/Applications", home);
+            size_t apps_len = strlen(apps_dir);
+
+            /* If moving an installer/executable into Applications from outside:
+               DO NOT DESTROY THE ORIGINAL FILE IN SOURCE DIRECTORY!
+               Record the source info, and COPY the file instead of moving it! */
+            if (strncmp(dest_p, apps_dir, apps_len) == 0 &&
+                (dest_p[apps_len] == '/' || dest_p[apps_len] == '\0') &&
+                !(strncmp(src_p, apps_dir, apps_len) == 0 && (src_p[apps_len] == '/' || src_p[apps_len] == '\0')) &&
+                is_installer_extension(src_p)) {
+
+                mac_record_app_drop(source, destination, TRUE);
+
+                if (orig_g_file_copy) {
+                    gboolean res = orig_g_file_copy(source, destination, flags | G_FILE_COPY_OVERWRITE,
+                                                    cancellable, progress_callback, progress_callback_data, error);
+                    if (res) {
+                        setxattr(dest_p, "user.mac_source_path", src_p, strlen(src_p), 0);
+                        char *sdir = g_path_get_dirname(src_p);
+                        if (sdir) {
+                            setxattr(dest_p, "user.mac_source_dir", sdir, strlen(sdir), 0);
+                            g_free(sdir);
+                        }
+                    }
+                    g_free(src_p);
+                    g_free(dest_p);
+                    return res;
+                }
+            }
+        }
+        g_free(src_p);
+        g_free(dest_p);
+
+        mac_record_app_drop(source, destination, TRUE);
+    }
+
+    if (orig_g_file_move) {
+        return orig_g_file_move(source, destination, flags, cancellable,
+                                progress_callback, progress_callback_data, error);
+    }
+    return FALSE;
 }
 
 static void (*orig_gtk_list_box_set_sort_func)(GtkListBox *box,

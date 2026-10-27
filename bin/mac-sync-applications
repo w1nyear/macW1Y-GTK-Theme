@@ -734,6 +734,114 @@ def is_windows_installer(filepath):
     return False
 
 
+def get_file_source_info(filepath):
+    """
+    Retrieves the original source path and directory for a file dropped into ~/Applications.
+    Checks:
+    1. Per-file metadata JSON in /run/user/<uid>/mac-app-sources/<basename>.json
+    2. Per-file metadata JSON in ~/.cache/mac-app-sources/<basename>.json
+    3. GIO xattr metadata (xattr::user.mac_source_path, xattr::user.mac_source_dir)
+    4. Heuristic search: check mounted drives and Downloads for matching basename and sibling data
+    """
+    base_name = os.path.basename(filepath)
+    now = time.time()
+
+    # 1. Check runtime dir
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
+    meta_json = os.path.join(runtime_dir, "mac-app-sources", f"{base_name}.json")
+    if os.path.isfile(meta_json):
+        try:
+            with open(meta_json, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            sp = data.get("source_path")
+            sd = data.get("source_dir")
+            ts = data.get("timestamp", 0)
+            if sp and sd and (now - ts < 7200):
+                print(f"[SourceInfo] Found runtime metadata for {base_name}: source_dir={sd}")
+                return sp, sd
+        except Exception as e:
+            print(f"[SourceInfo] Error reading {meta_json}: {e}")
+
+    # 2. Check ~/.cache/mac-app-sources/
+    cache_meta_json = os.path.join(HOME, ".cache", "mac-app-sources", f"{base_name}.json")
+    if os.path.isfile(cache_meta_json):
+        try:
+            with open(cache_meta_json, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            sp = data.get("source_path")
+            sd = data.get("source_dir")
+            ts = data.get("timestamp", 0)
+            if sp and sd and (now - ts < 7200):
+                print(f"[SourceInfo] Found cache metadata for {base_name}: source_dir={sd}")
+                return sp, sd
+        except Exception as e:
+            print(f"[SourceInfo] Error reading {cache_meta_json}: {e}")
+
+    # 3. Check GIO xattrs
+    try:
+        gf = Gio.File.new_for_path(filepath)
+        gi_info = gf.query_info("xattr::user.mac_source_path,xattr::user.mac_source_dir", Gio.FileQueryInfoFlags.NONE, None)
+        sp = gi_info.get_attribute_string("xattr::user.mac_source_path")
+        sd = gi_info.get_attribute_string("xattr::user.mac_source_dir")
+        if sp and sd and os.path.isdir(sd):
+            print(f"[SourceInfo] Found GIO xattr metadata for {base_name}: source_dir={sd}")
+            return sp, sd
+    except Exception:
+        pass
+
+    # 4. Intelligent heuristic fallback: search mounted volumes and Downloads
+    try:
+        target_size = os.path.getsize(filepath) if os.path.exists(filepath) else 0
+        search_roots = []
+        user = os.environ.get("USER") or "vitaliy"
+        for media_dir in [f"/run/media/{user}", f"/media/{user}", "/mnt"]:
+            if os.path.isdir(media_dir):
+                search_roots.append(media_dir)
+        search_roots.append(os.path.join(HOME, "Downloads"))
+        search_roots.append(os.path.join(HOME, "Завантаження"))
+
+        candidates = []
+        for root_dir in search_roots:
+            for root, dirs, files in os.walk(root_dir):
+                depth = root[len(root_dir):].count(os.sep)
+                if depth > 8:
+                    dirs.clear()
+                    continue
+                if base_name in files:
+                    cand_path = os.path.join(root, base_name)
+                    if ".Trash" in cand_path:
+                        continue
+                    try:
+                        cand_size = os.path.getsize(cand_path)
+                        siblings = [item for item in os.listdir(root) if item != base_name]
+                        has_sibling_data = any(
+                            s.lower() in ("data", "payload", "bin", "lib", "setup", "install") or
+                            s.lower().endswith((".cab", ".bin", ".iso", ".dat", ".pak", ".assets", ".xml"))
+                            for s in siblings
+                        )
+                        score = 0
+                        if target_size > 0 and cand_size == target_size:
+                            score += 10
+                        if has_sibling_data:
+                            score += 5
+                        if len(siblings) > 0:
+                            score += 2
+                        if score > 0:
+                            candidates.append((score, cand_path, root))
+                    except Exception:
+                        pass
+
+        if candidates:
+            candidates.sort(key=lambda x: x[0], reverse=True)
+            best_cand = candidates[0]
+            print(f"[SourceInfo] Heuristic detected source for {base_name}: {best_cand[1]} (dir: {best_cand[2]})")
+            return best_cand[1], best_cand[2]
+    except Exception as e:
+        print(f"[SourceInfo] Heuristic search error: {e}")
+
+    return None, None
+
+
 def install_wine_installer(filepath):
     if not wait_for_file_ready(filepath):
         return
@@ -741,6 +849,9 @@ def install_wine_installer(filepath):
     clean_name = extract_app_name(filepath)
     safe_id = "".join(c for c in clean_name if c.isalnum() or c in "-_").lower() or "winapp"
     ext = os.path.splitext(filepath)[1].lower()
+
+    source_path, source_dir = get_file_source_info(filepath)
+    has_source = bool(source_path and source_dir and os.path.isdir(source_dir))
 
     wine_runner = "/usr/local/bin/mac-wine-runner"
     if not os.path.exists(wine_runner):
@@ -750,17 +861,50 @@ def install_wine_installer(filepath):
     env["WINEDEBUG"] = "-all"
     env["WINEPREFIX"] = os.path.join(HOME, ".wine")
 
-    # If it is NOT an installer, treat as portable application
-    if not is_windows_installer(filepath):
-        print(f"[Wine Installer] Detected portable application: {clean_name}")
-        app_target_dir = os.path.join(WINE_APPS_DIR, safe_id)
-        os.makedirs(app_target_dir, exist_ok=True)
-        dest_binary = os.path.join(app_target_dir, os.path.basename(filepath))
+    if has_source:
+        print(f"[Wine Installer] Origin detected: {source_path} in {source_dir}")
+        if not os.path.exists(source_path):
+            try:
+                shutil.copy2(filepath, source_path)
+                print(f"[Wine Installer] Restored missing source file at {source_path}")
+            except Exception as e:
+                print(f"[Wine Installer] Restore failed: {e}")
+
+        target_path = source_path
+        target_cwd = source_dir
+
         try:
-            shutil.move(filepath, dest_binary)
-        except Exception as e:
-            print(f"[Wine Installer] Move failed: {e}")
-            return
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception:
+            pass
+
+        meta_json = os.path.join(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"), "mac-app-sources", f"{os.path.basename(filepath)}.json")
+        try:
+            if os.path.exists(meta_json):
+                os.remove(meta_json)
+        except Exception:
+            pass
+    else:
+        target_path = filepath
+        target_cwd = os.path.dirname(filepath)
+
+    # If it is NOT an installer, treat as portable application
+    if not is_windows_installer(target_path):
+        print(f"[Wine Installer] Detected portable application: {clean_name}")
+        if has_source:
+            dest_binary = target_path
+            dest_cwd = target_cwd
+        else:
+            app_target_dir = os.path.join(WINE_APPS_DIR, safe_id)
+            os.makedirs(app_target_dir, exist_ok=True)
+            dest_binary = os.path.join(app_target_dir, os.path.basename(target_path))
+            dest_cwd = app_target_dir
+            try:
+                shutil.move(target_path, dest_binary)
+            except Exception as e:
+                print(f"[Wine Installer] Move failed: {e}")
+                return
 
         icon_path = extract_exe_icon(dest_binary, safe_id)
         desktop_content = f"""[Desktop Entry]
@@ -768,6 +912,7 @@ Type=Application
 Name={clean_name}
 Comment={clean_name} Windows Application
 Exec=/usr/local/bin/mac-wine-runner "{dest_binary}" %U
+Path={dest_cwd}
 Icon={icon_path or 'application-x-ms-dos-executable'}
 Terminal=false
 Categories=Utility;Application;
@@ -789,51 +934,47 @@ StartupNotify=true
         return
 
     # Case: Windows Installer (.exe / .msi)
-    # Move installer into cache directory so it immediately disappears from ~/Applications
-    installer_name = os.path.basename(filepath)
-    cached_installer = os.path.join(WINE_INSTALLERS_CACHE, installer_name)
-    try:
-        shutil.move(filepath, cached_installer)
-    except Exception as e:
-        print(f"[Wine Installer] Move to cache failed: {e}")
-        cached_installer = filepath
+    if not has_source:
+        installer_name = os.path.basename(filepath)
+        cached_installer = os.path.join(WINE_INSTALLERS_CACHE, installer_name)
+        try:
+            shutil.move(filepath, cached_installer)
+        except Exception as e:
+            print(f"[Wine Installer] Move to cache failed: {e}")
+            cached_installer = filepath
+        target_path = cached_installer
+        target_cwd = WINE_INSTALLERS_CACHE
 
     subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
                     "Встановлення програми", f"Встановлення Windows програми \"{clean_name}\"..."])
 
-    # Record desktop files before installation
     before_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
 
     if ext == ".msi":
-        cmd = [wine_runner, "msiexec", "/i", cached_installer, "/qn", "/norestart"]
-        print(f"[Wine Installer] Executing silent MSI install: {' '.join(cmd)}")
-        res = subprocess.run(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if res.returncode != 0:
-            print(f"[Wine Installer] Silent MSI returned {res.returncode}, launching interactive installer...")
-            subprocess.run([wine_runner, "msiexec", "/i", cached_installer], env=env)
+        cmd = [wine_runner, "msiexec", "/i", target_path]
+        print(f"[Wine Installer] Executing MSI install in {target_cwd}: {' '.join(cmd)}")
+        subprocess.run(cmd, env=env, cwd=target_cwd)
     else:
         is_inno = False
         try:
-            with open(cached_installer, "rb") as f:
+            with open(target_path, "rb") as f:
                 header = f.read(5 * 1024 * 1024)
                 if b"Inno Setup" in header:
                     is_inno = True
         except Exception:
             pass
 
-        if is_inno:
-            cmd = [wine_runner, cached_installer, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-"]
+        if is_inno and not has_source:
+            cmd = [wine_runner, target_path, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-"]
             print(f"[Wine Installer] Executing silent Inno install: {' '.join(cmd)}")
-            res = subprocess.run(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            res = subprocess.run(cmd, env=env, cwd=target_cwd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if res.returncode != 0:
                 print(f"[Wine Installer] Silent install returned {res.returncode}, launching standard installer...")
-                subprocess.run([wine_runner, cached_installer], env=env)
+                subprocess.run([wine_runner, target_path], env=env, cwd=target_cwd)
         else:
-            # Standard installer: do not force silent mode, launch interactively
-            print(f"[Wine Installer] Launching standard interactive installer: {cached_installer}")
-            subprocess.run([wine_runner, cached_installer], env=env)
+            print(f"[Wine Installer] Launching standard installer in {target_cwd}: {target_path}")
+            subprocess.run([wine_runner, target_path], env=env, cwd=target_cwd)
 
-    # Wait for Wine registry/desktop flush
     time.sleep(2)
     after_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
     new_desktops = [d for d in (after_desktops - before_desktops) if not os.path.basename(d).startswith("wine-")]
@@ -843,7 +984,6 @@ StartupNotify=true
 
     if new_desktops:
         created_desktop = new_desktops[0]
-        # Copy to LOCAL_APPS_DIR if nested in wine/Programs
         dest_desktop = os.path.join(LOCAL_APPS_DIR, f"wine-{safe_id}.desktop")
         try:
             shutil.copy2(created_desktop, dest_desktop)
@@ -851,7 +991,6 @@ StartupNotify=true
         except Exception:
             pass
     else:
-        # Check newly created .exe in drive_c
         wine_c = os.path.join(HOME, ".wine", "drive_c")
         recent_exes = []
         if os.path.isdir(wine_c):
@@ -880,7 +1019,6 @@ StartupNotify=true
                 is_exact = fn == clean_target
                 is_sub = safe_id in fn
 
-                # Prefer root app launcher over versioned subfolder (e.g. Apps/CapCut.exe over Apps/7.5.0/CapCut.exe)
                 parent_dir = os.path.dirname(fp)
                 grandparent_dir = os.path.dirname(parent_dir)
                 is_subversion = False
@@ -918,7 +1056,6 @@ StartupNotify=true
             os.chmod(created_desktop, 0o755)
 
     if created_desktop and os.path.exists(created_desktop):
-        # Patch desktop file: ensure NoDisplay is removed and GPU/mac flags are added
         try:
             with open(created_desktop, "r", errors="ignore") as f:
                 lines = f.readlines()
@@ -943,6 +1080,244 @@ StartupNotify=true
     sync()
     subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
                     "Програму встановлено", f"Windows програма \"{clean_name}\" успішно встановлена!"])
+
+
+def install_shell_script(filepath):
+    if not wait_for_file_ready(filepath):
+        return
+    print(f"[Shell Installer] Processing shell script: {filepath}")
+    clean_name = extract_app_name(filepath)
+    safe_id = "".join(c for c in clean_name if c.isalnum() or c in "-_").lower() or "shellapp"
+
+    source_path, source_dir = get_file_source_info(filepath)
+    has_source = bool(source_path and source_dir and os.path.isdir(source_dir))
+
+    if has_source:
+        print(f"[Shell Installer] Origin detected: {source_path} in {source_dir}")
+        if not os.path.exists(source_path):
+            try:
+                shutil.copy2(filepath, source_path)
+            except Exception:
+                pass
+        target_script = source_path
+        target_cwd = source_dir
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception:
+            pass
+        meta_json = os.path.join(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"), "mac-app-sources", f"{os.path.basename(filepath)}.json")
+        try:
+            if os.path.exists(meta_json):
+                os.remove(meta_json)
+        except Exception:
+            pass
+    else:
+        target_app_dir = os.path.join(INSTALLED_APPS_DIR, safe_id)
+        os.makedirs(target_app_dir, exist_ok=True)
+        target_script = os.path.join(target_app_dir, os.path.basename(filepath))
+        target_cwd = target_app_dir
+        try:
+            shutil.move(filepath, target_script)
+        except Exception:
+            target_script = filepath
+            target_cwd = os.path.dirname(filepath)
+
+    try:
+        os.chmod(target_script, 0o755)
+    except Exception:
+        pass
+
+    base_lower = os.path.basename(target_script).lower()
+    is_installer = any(k in base_lower for k in ["install", "setup"])
+
+    if is_installer:
+        subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
+                        "Встановлення програми", f"Запуск установника \"{clean_name}\"..."])
+        before_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
+        try:
+            subprocess.run(["bash", target_script], cwd=target_cwd)
+        except Exception as e:
+            print(f"[Shell Installer] Error executing {target_script}: {e}")
+        time.sleep(1)
+        after_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
+        if after_desktops - before_desktops:
+            sync()
+        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+                        "Встановлено", f"Установник \"{clean_name}\" завершив роботу!"])
+    else:
+        icons = glob.glob(os.path.join(target_cwd, "**", "*.png"), recursive=True) + \
+                glob.glob(os.path.join(target_cwd, "**", "*.svg"), recursive=True)
+        icon_path = ""
+        if icons:
+            icons.sort(key=lambda x: os.path.getsize(x), reverse=True)
+            ext = os.path.splitext(icons[0])[1]
+            target_icon = os.path.join(ICONS_DIR, f"{safe_id}{ext}")
+            try:
+                shutil.copy2(icons[0], target_icon)
+                icon_path = target_icon
+            except Exception:
+                pass
+
+        desktop_content = f"""[Desktop Entry]
+Type=Application
+Name={clean_name}
+Exec="{target_script}" %U
+Path={target_cwd}
+Icon={icon_path or 'application-x-executable'}
+Terminal=false
+Categories=Utility;Application;
+X-Mac-Installed-App=true
+X-Mac-Real-Path={target_script}
+StartupNotify=true
+"""
+        local_desktop = os.path.join(LOCAL_APPS_DIR, f"local-{safe_id}.desktop")
+        with open(local_desktop, "w") as df:
+            df.write(desktop_content)
+        os.chmod(local_desktop, 0o755)
+        subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        sync()
+        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+                        "Програму додано", f"Скрипт \"{clean_name}\" додано до програм!"])
+
+
+def install_batch_script(filepath):
+    if not wait_for_file_ready(filepath):
+        return
+    print(f"[Batch Installer] Processing Windows batch file: {filepath}")
+    clean_name = extract_app_name(filepath)
+    safe_id = "".join(c for c in clean_name if c.isalnum() or c in "-_").lower() or "winbatch"
+
+    source_path, source_dir = get_file_source_info(filepath)
+    has_source = bool(source_path and source_dir and os.path.isdir(source_dir))
+
+    wine_runner = "/usr/local/bin/mac-wine-runner"
+    if not os.path.exists(wine_runner):
+        wine_runner = "wine"
+
+    if has_source:
+        print(f"[Batch Installer] Origin detected: {source_path} in {source_dir}")
+        if not os.path.exists(source_path):
+            try:
+                shutil.copy2(filepath, source_path)
+            except Exception:
+                pass
+        target_script = source_path
+        target_cwd = source_dir
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception:
+            pass
+        meta_json = os.path.join(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"), "mac-app-sources", f"{os.path.basename(filepath)}.json")
+        try:
+            if os.path.exists(meta_json):
+                os.remove(meta_json)
+        except Exception:
+            pass
+    else:
+        app_target_dir = os.path.join(WINE_APPS_DIR, safe_id)
+        os.makedirs(app_target_dir, exist_ok=True)
+        target_script = os.path.join(app_target_dir, os.path.basename(filepath))
+        target_cwd = app_target_dir
+        try:
+            shutil.move(filepath, target_script)
+        except Exception:
+            target_script = filepath
+            target_cwd = os.path.dirname(filepath)
+
+    base_lower = os.path.basename(target_script).lower()
+    is_installer = any(k in base_lower for k in ["install", "setup"])
+
+    if is_installer:
+        subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
+                        "Встановлення програми", f"Запуск пакета Windows \"{clean_name}\"..."])
+        cmd = [wine_runner, "cmd", "/c", target_script]
+        try:
+            subprocess.run(cmd, cwd=target_cwd)
+        except Exception as e:
+            print(f"[Batch Installer] Error: {e}")
+        sync()
+        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+                        "Встановлено", f"Пакет \"{clean_name}\" завершив роботу!"])
+    else:
+        desktop_content = f"""[Desktop Entry]
+Type=Application
+Name={clean_name}
+Exec=/usr/local/bin/mac-wine-runner cmd /c "{target_script}" %U
+Path={target_cwd}
+Icon=application-x-ms-dos-executable
+Terminal=false
+Categories=Utility;Application;
+X-Mac-Wine-App=true
+X-Mac-Real-Path={target_script}
+StartupNotify=true
+"""
+        local_desktop = os.path.join(LOCAL_APPS_DIR, f"wine-{safe_id}.desktop")
+        with open(local_desktop, "w") as df:
+            df.write(desktop_content)
+        os.chmod(local_desktop, 0o755)
+        subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        sync()
+        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+                        "Програму додано", f"Windows скрипт \"{clean_name}\" готовий до запуску!"])
+
+
+def install_binary_installer(filepath):
+    if not wait_for_file_ready(filepath):
+        return
+    print(f"[Binary Installer] Processing Linux binary installer: {filepath}")
+    clean_name = extract_app_name(filepath)
+    safe_id = "".join(c for c in clean_name if c.isalnum() or c in "-_").lower() or "binapp"
+
+    source_path, source_dir = get_file_source_info(filepath)
+    has_source = bool(source_path and source_dir and os.path.isdir(source_dir))
+
+    if has_source:
+        print(f"[Binary Installer] Origin detected: {source_path} in {source_dir}")
+        if not os.path.exists(source_path):
+            try:
+                shutil.copy2(filepath, source_path)
+            except Exception:
+                pass
+        target_bin = source_path
+        target_cwd = source_dir
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception:
+            pass
+        meta_json = os.path.join(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"), "mac-app-sources", f"{os.path.basename(filepath)}.json")
+        try:
+            if os.path.exists(meta_json):
+                os.remove(meta_json)
+        except Exception:
+            pass
+    else:
+        target_app_dir = os.path.join(INSTALLED_APPS_DIR, safe_id)
+        os.makedirs(target_app_dir, exist_ok=True)
+        target_bin = os.path.join(target_app_dir, os.path.basename(filepath))
+        target_cwd = target_app_dir
+        try:
+            shutil.move(filepath, target_bin)
+        except Exception:
+            target_bin = filepath
+            target_cwd = os.path.dirname(filepath)
+
+    try:
+        os.chmod(target_bin, 0o755)
+    except Exception:
+        pass
+
+    subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
+                    "Встановлення програми", f"Запуск інсталятора \"{clean_name}\"..."])
+    try:
+        subprocess.run([target_bin], cwd=target_cwd)
+    except Exception as e:
+        print(f"[Binary Installer] Error: {e}")
+    sync()
+    subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+                    "Встановлено", f"Інсталятор \"{clean_name}\" завершив роботу!"])
 
 
 def handle_trash(trashinfo_path):
@@ -1174,6 +1549,12 @@ class MacAppDaemon:
             threading.Thread(target=install_deb, args=(path,), daemon=True).start()
         elif base.endswith(".exe") or base.endswith(".msi"):
             threading.Thread(target=install_wine_installer, args=(path,), daemon=True).start()
+        elif base.endswith(".sh") or base.endswith(".bash"):
+            threading.Thread(target=install_shell_script, args=(path,), daemon=True).start()
+        elif base.endswith(".bat") or base.endswith(".cmd"):
+            threading.Thread(target=install_batch_script, args=(path,), daemon=True).start()
+        elif base.endswith(".run") or base.endswith(".bin"):
+            threading.Thread(target=install_binary_installer, args=(path,), daemon=True).start()
 
     def on_trash_info_changed(self, monitor, file, other_file, event_type):
         if event_type not in (Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.CHANGES_DONE_HINT):

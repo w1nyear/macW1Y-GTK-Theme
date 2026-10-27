@@ -410,6 +410,9 @@ install_themes() {
     
     # Налаштування macOS Nautilus Finder Sidebar та розділу Програми
     log_info "Встановлення macOS Nautilus Finder Sidebar та розширень..."
+    if [ -f "$SCRIPT_DIR/src/mac_nautilus.c" ] && command -v gcc >/dev/null 2>&1; then
+        gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_nautilus.so" "$SCRIPT_DIR/src/mac_nautilus.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 gio-2.0 2>/dev/null) -ldl 2>/dev/null || true
+    fi
     if [ -f "$SCRIPT_DIR/lib/libmac_nautilus.so" ]; then
         sudo cp -f "$SCRIPT_DIR/lib/libmac_nautilus.so" /usr/lib/x86_64-linux-gnu/libmac_nautilus.so 2>/dev/null || true
         sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_nautilus.so 2>/dev/null || true
@@ -1871,6 +1874,9 @@ run_incremental_update() {
 
     # Nautilus Finder Sidebar та розширення
     log_info "Оновлення macOS Nautilus Finder Sidebar..."
+    if [ -f "$SCRIPT_DIR/src/mac_nautilus.c" ] && command -v gcc >/dev/null 2>&1; then
+        gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_nautilus.so" "$SCRIPT_DIR/src/mac_nautilus.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 gio-2.0 2>/dev/null) -ldl 2>/dev/null || true
+    fi
     if [ -f "$SCRIPT_DIR/lib/libmac_nautilus.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_nautilus.so" "/usr/lib/x86_64-linux-gnu/libmac_nautilus.so" true
         sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_nautilus.so 2>/dev/null || true
