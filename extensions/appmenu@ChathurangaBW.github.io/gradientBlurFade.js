@@ -11,12 +11,24 @@ const GRADIENT_BLUR_FADE_SHADER = `
     uniform float fade_edges_top;
     uniform float fade_edges_bottom;
 
-    // Linear-sampling Gaussian weights and offsets from Control Center background blur
-    const float GAUSSIAN_OFFSET_1 = 1.3846153846;
-    const float GAUSSIAN_OFFSET_2 = 3.2307692308;
-    const float GAUSSIAN_WEIGHT_0 = 0.2270270270;
-    const float GAUSSIAN_WEIGHT_1 = 0.3162162162;
-    const float GAUSSIAN_WEIGHT_2 = 0.0702702703;
+    // 16-tap Vogel spiral offsets uniformly distributed inside a circle of radius 1.0
+    // Eliminates multi-tap discrete echo rings and ghosting artifacts.
+    const vec2 V_00 = vec2( 0.176777,  0.000000);
+    const vec2 V_01 = vec2(-0.225772,  0.206826);
+    const vec2 V_02 = vec2( 0.034558, -0.393771);
+    const vec2 V_03 = vec2( 0.284571,  0.371173);
+    const vec2 V_04 = vec2(-0.522223, -0.092374);
+    const vec2 V_05 = vec2( 0.494695, -0.314685);
+    const vec2 V_06 = vec2(-0.165466,  0.615525);
+    const vec2 V_07 = vec2(-0.315561, -0.607594);
+    const vec2 V_08 = vec2( 0.684642,  0.250030);
+    const vec2 V_09 = vec2(-0.712256,  0.294009);
+    const vec2 V_10 = vec2( 0.343354, -0.733729);
+    const vec2 V_11 = vec2( 0.253730,  0.808932);
+    const vec2 V_12 = vec2(-0.764746, -0.443186);
+    const vec2 V_13 = vec2( 0.897134, -0.197232);
+    const vec2 V_14 = vec2(-0.547507,  0.778772);
+    const vec2 V_15 = vec2(-0.126487, -0.976090);
 
     void main() {
         vec2 uv = cogl_tex_coord_in[0].st;
@@ -40,55 +52,35 @@ const GRADIENT_BLUR_FADE_SHADER = `
             return;
         }
 
-        // 5.0px Gaussian blur pass (Control Center background blur kernel)
+        // Dynamic progressive single-pass blur:
+        // As content reaches the boundary (t: 0 -> 1), blur radius expands smoothly from 0 to 5.0px.
+        // Bilinear texture filtering merges the tightly spaced 16 Vogel taps into a continuous optical blur
+        // without discrete echo rings or ghost images.
         vec2 px_step = vec2(1.0 / max(1.0, width), 1.0 / max(1.0, height));
-        float o1 = GAUSSIAN_OFFSET_1 * 5.0;
-        float o2 = GAUSSIAN_OFFSET_2 * 5.0;
+        vec2 blur_r = px_step * (t * 5.0);
 
-        vec2 v1 = vec2(0.0, o1 * px_step.y);
-        vec2 v2 = vec2(0.0, o2 * px_step.y);
-        vec2 h1 = vec2(o1 * px_step.x, 0.0);
-        vec2 h2 = vec2(o2 * px_step.x, 0.0);
-        vec2 d1 = vec2(o1 * 0.7071 * px_step.x, o1 * 0.7071 * px_step.y);
-        vec2 d2 = vec2(o2 * 0.7071 * px_step.x, o2 * 0.7071 * px_step.y);
-        vec2 d1b = vec2(-d1.x, d1.y);
-        vec2 d2b = vec2(-d2.x, d2.y);
+        vec4 blurred = vec4(0.0);
+        blurred += texture2D(tex, clamp(uv + V_00 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_01 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_02 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_03 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_04 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_05 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_06 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_07 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_08 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_09 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_10 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_11 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_12 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_13 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_14 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred += texture2D(tex, clamp(uv + V_15 * blur_r, vec2(0.0), vec2(1.0)));
+        blurred *= 0.0625; // 1.0 / 16.0
 
-        vec4 blurred = sharp * GAUSSIAN_WEIGHT_0;
-        float w1_half = GAUSSIAN_WEIGHT_1 * 0.25;
-        float w2_half = GAUSSIAN_WEIGHT_2 * 0.25;
-
-        // Orthogonal axes (Horizontal & Vertical)
-        blurred += (texture2D(tex, clamp(uv + h1, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv - h1, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv + v1, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv - v1, vec2(0.0), vec2(1.0)))) * w1_half;
-
-        blurred += (texture2D(tex, clamp(uv + h2, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv - h2, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv + v2, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv - v2, vec2(0.0), vec2(1.0)))) * w2_half;
-
-        // Diagonal axes (45 degree angles)
-        blurred += (texture2D(tex, clamp(uv + d1, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv - d1, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv + d1b, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv - d1b, vec2(0.0), vec2(1.0)))) * w1_half;
-
-        blurred += (texture2D(tex, clamp(uv + d2, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv - d2, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv + d2b, vec2(0.0), vec2(1.0))) +
-                    texture2D(tex, clamp(uv - d2b, vec2(0.0), vec2(1.0)))) * w2_half;
-
-        // Control Center logic: smooth transition from sharp to blurred across the dissipation zone
-        float blur_mix = smoothstep(0.0, 0.65, t);
-        vec4 col = mix(sharp, blurred, blur_mix);
-
-        // Gentle edge opacity dissolve at the very end
+        // Smooth opacity dissolve at the very edge (dissolves cleanly into the background)
         float alpha_fade = 1.0 - smoothstep(0.40, 1.0, t);
-        col *= clamp(alpha_fade, 0.0, 1.0);
-
-        cogl_color_out = col;
+        cogl_color_out = blurred * clamp(alpha_fade, 0.0, 1.0);
     }
 `;
 
