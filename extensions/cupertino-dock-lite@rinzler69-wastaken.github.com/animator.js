@@ -4,6 +4,7 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import St from 'gi://St';
 import Graphene from 'gi://Graphene';
 import Shell from 'gi://Shell';
+import Clutter from 'gi://Clutter';
 
 const Point = Graphene.Point;
 
@@ -256,6 +257,18 @@ export class Animator {
         if (bin.first_child) {
           let img = new St.Icon({ name: 'icon', icon_name: bin.first_child.icon_name || null, gicon: bin.first_child.gicon || null });
           img._source = bin; img.set_icon_size(iconSize * ANIM_ICON_QUALITY); img.set_scale(1 / ANIM_ICON_QUALITY, 1 / ANIM_ICON_QUALITY);
+          try {
+            img.set_content_scaling_filters(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR);
+            img.connect('notify::content', () => {
+              try { img.set_content_scaling_filters(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR); } catch (_) {}
+            });
+            img.connect('child-added', (_, child) => {
+              try { child.set_content_scaling_filters(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR); } catch (_) {}
+            });
+            img.get_children().forEach(child => {
+              try { child.set_content_scaling_filters(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR); } catch (_) {}
+            });
+          } catch (_) {}
           uiIcon.add_child(img);
           if (this._badgeManager) this._badgeManager.attachToIcon(uiIcon);
         }

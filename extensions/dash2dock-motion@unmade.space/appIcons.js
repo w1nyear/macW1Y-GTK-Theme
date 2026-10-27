@@ -915,6 +915,47 @@ export const DockAbstractAppIcon = GObject.registerClass({
         const icon = this.app.create_icon_texture(
             iconSize * Utils.getIconOversample());
         icon.set_size(iconSize, iconSize);
+
+        // Hardware anti-aliasing (trilinear filtering with mipmaps)
+        try {
+            if (typeof icon.set_content_scaling_filters === 'function') {
+                icon.set_content_scaling_filters(
+                    Clutter.ScalingFilter.TRILINEAR,
+                    Clutter.ScalingFilter.LINEAR
+                );
+            }
+            icon.connect('notify::content', () => {
+                try {
+                    icon.set_content_scaling_filters(
+                        Clutter.ScalingFilter.TRILINEAR,
+                        Clutter.ScalingFilter.LINEAR
+                    );
+                } catch (_) {}
+            });
+            icon.connect('child-added', (_, child) => {
+                try {
+                    if (typeof child.set_content_scaling_filters === 'function') {
+                        child.set_content_scaling_filters(
+                            Clutter.ScalingFilter.TRILINEAR,
+                            Clutter.ScalingFilter.LINEAR
+                        );
+                    }
+                } catch (_) {}
+            });
+            if (typeof icon.get_children === 'function') {
+                icon.get_children().forEach(child => {
+                    try {
+                        if (typeof child.set_content_scaling_filters === 'function') {
+                            child.set_content_scaling_filters(
+                                Clutter.ScalingFilter.TRILINEAR,
+                                Clutter.ScalingFilter.LINEAR
+                            );
+                        }
+                    } catch (_) {}
+                });
+            }
+        } catch (_) {}
+
         // Kiwi icon tint: macOS-style accent recolor, live.
         const unwatch = IconTint.watchIconTint(() => IconTint.refreshIconTint(icon));
         icon.connect('destroy', () => {

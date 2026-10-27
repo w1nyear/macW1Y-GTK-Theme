@@ -44,6 +44,68 @@ const PILL_EXPANDED_STYLE =
 
 const _gobjectToString = GObject.Object.prototype.toString;
 
+function applyActorSmoothing(actor) {
+    if (!actor) return actor;
+    try {
+        if (typeof actor.set_content_scaling_filters === 'function') {
+            actor.set_content_scaling_filters(
+                Clutter.ScalingFilter.TRILINEAR,
+                Clutter.ScalingFilter.LINEAR
+            );
+        }
+    } catch (_) {}
+
+    try {
+        if (typeof actor.connect === 'function') {
+            actor.connect('notify::content', () => {
+                try {
+                    actor.set_content_scaling_filters(
+                        Clutter.ScalingFilter.TRILINEAR,
+                        Clutter.ScalingFilter.LINEAR
+                    );
+                } catch (_) {}
+            });
+            actor.connect('child-added', (_, child) => {
+                applyActorSmoothing(child);
+            });
+        }
+    } catch (_) {}
+
+    try {
+        if (typeof actor.get_children === 'function') {
+            actor.get_children().forEach(applyActorSmoothing);
+        }
+    } catch (_) {}
+
+    return actor;
+}
+
+function createSmoothAppIcon(app, targetSize = 32) {
+    const renderSize = targetSize * 2;
+
+    let icon = null;
+    try {
+        if (typeof app?.create_icon_texture === 'function') {
+            icon = app.create_icon_texture(renderSize);
+        }
+    } catch (_) {}
+
+    if (!icon) {
+        icon = new St.Icon({
+            gicon: app?.get_icon?.() || null,
+            icon_name: 'application-x-executable',
+            icon_size: renderSize,
+        });
+    }
+
+    icon.set_size(targetSize, targetSize);
+    icon.x_align = Clutter.ActorAlign.CENTER;
+    icon.y_align = Clutter.ActorAlign.CENTER;
+
+    applyActorSmoothing(icon);
+    return icon;
+}
+
 function _isActorValid(actor) {
     if (!actor) return false;
     try {
@@ -1637,22 +1699,17 @@ export const MacSpotlightDialog = GObject.registerClass({
 
             let iconActor;
             if (item.type === 'app' && item.app) {
-                const gicon = item.app.get_icon ? item.app.get_icon() : null;
-                if (gicon) {
-                    iconActor = new St.Icon({ gicon, icon_size: 32 });
-                } else if (item.app.create_icon_texture) {
-                    iconActor = item.app.create_icon_texture(32);
-                } else {
-                    iconActor = new St.Icon({ icon_name: 'application-x-executable', icon_size: 32 });
-                }
+                iconActor = createSmoothAppIcon(item.app, 32);
             } else if (item.iconName) {
                 iconActor = new St.Icon({
                     icon_name: item.iconName,
-                    icon_size: 24,
+                    icon_size: 48,
                     style: item.type === 'fallback-gemini' ? 'color: #388bfd;' : 'color: rgba(255, 255, 255, 0.90);',
                     x_align: Clutter.ActorAlign.CENTER,
                     y_align: Clutter.ActorAlign.CENTER,
                 });
+                iconActor.set_size(24, 24);
+                applyActorSmoothing(iconActor);
             } else {
                 iconActor = new St.Icon({
                     icon_name: 'text-x-generic',
@@ -1707,8 +1764,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 btn._delegate = {
                     app: item.app,
                     getDragActor: () => {
-                        const gicon = item.app.get_icon ? item.app.get_icon() : null;
-                        return gicon ? new St.Icon({ gicon, icon_size: 48 }) : new St.Icon({ icon_name: 'application-x-executable', icon_size: 48 });
+                        return createSmoothAppIcon(item.app, 48);
                     },
                     getDragActorSource: () => btn,
                 };
@@ -2073,15 +2129,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             });
             btn.set_child(col);
 
-            const gicon = app.get_icon ? app.get_icon() : null;
-            let iconTexture;
-            if (gicon) {
-                iconTexture = new St.Icon({ gicon, icon_size: 46 });
-            } else if (app.create_icon_texture) {
-                iconTexture = app.create_icon_texture(46);
-            } else {
-                iconTexture = new St.Icon({ icon_name: 'application-x-executable', icon_size: 46 });
-            }
+            const iconTexture = createSmoothAppIcon(app, 46);
             iconTexture.x_align = Clutter.ActorAlign.CENTER;
             col.add_child(iconTexture);
 

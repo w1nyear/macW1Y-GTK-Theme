@@ -63,9 +63,79 @@ const DIALOG_HEIGHT = 530;
 const COLUMNS = 7;
 const COLUMN_WIDTH = 94;
 const ICON_SIZE = 52;
+const ICON_OVERSAMPLE = 2; // 2x supersampling for high-DPI smooth anti-aliased curves
 const CORNER_RADIUS = 26.0;
 const TINT_STRENGTH = 0.04;
 const BLUR_RADIUS = 8.0;
+
+/**
+ * Enable hardware anti-aliasing (trilinear filtering with mipmaps) on an actor and all its children.
+ * This completely eliminates pixel staircasing ("драбинки") on rounded corners and diagonal lines.
+ */
+function applyActorSmoothing(actor) {
+    if (!actor) return actor;
+    try {
+        if (typeof actor.set_content_scaling_filters === 'function') {
+            actor.set_content_scaling_filters(
+                Clutter.ScalingFilter.TRILINEAR,
+                Clutter.ScalingFilter.LINEAR
+            );
+        }
+    } catch (_) {}
+
+    try {
+        if (typeof actor.connect === 'function') {
+            actor.connect('notify::content', () => {
+                try {
+                    actor.set_content_scaling_filters(
+                        Clutter.ScalingFilter.TRILINEAR,
+                        Clutter.ScalingFilter.LINEAR
+                    );
+                } catch (_) {}
+            });
+            actor.connect('child-added', (_, child) => {
+                applyActorSmoothing(child);
+            });
+        }
+    } catch (_) {}
+
+    try {
+        if (typeof actor.get_children === 'function') {
+            actor.get_children().forEach(applyActorSmoothing);
+        }
+    } catch (_) {}
+
+    return actor;
+}
+
+/**
+ * Creates an application icon with 2x supersampling and trilinear anti-aliasing filtering.
+ */
+function createSmoothAppIcon(app, targetSize = ICON_SIZE) {
+    const renderSize = targetSize * ICON_OVERSAMPLE;
+
+    let icon = null;
+    try {
+        if (typeof app?.create_icon_texture === 'function') {
+            icon = app.create_icon_texture(renderSize);
+        }
+    } catch (_) {}
+
+    if (!icon) {
+        icon = new St.Icon({
+            gicon: app?.get_icon?.() || null,
+            icon_name: 'application-x-executable',
+            icon_size: renderSize,
+        });
+    }
+
+    icon.set_size(targetSize, targetSize);
+    icon.x_align = Clutter.ActorAlign.CENTER;
+    icon.y_align = Clutter.ActorAlign.CENTER;
+
+    applyActorSmoothing(icon);
+    return icon;
+}
 
 const CATEGORIES = [
     {
@@ -341,10 +411,12 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._appLogo = new St.Icon({
             gicon: appIconGIcon,
             icon_name: appIconGIcon ? null : 'applications-other-symbolic',
-            icon_size: 26,
+            icon_size: 26 * ICON_OVERSAMPLE,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'margin-left: 4px; margin-right: 12px; opacity: 0.95; icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);',
         });
+        this._appLogo.set_size(26, 26);
+        applyActorSmoothing(this._appLogo);
         this._headerRow.add_child(this._appLogo);
 
         // Search Entry
@@ -904,20 +976,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         item.set_child(box);
 
-        let iconActor = null;
-        try {
-            iconActor = app.create_icon_texture?.(ICON_SIZE);
-        } catch (_) {}
-
-        if (!iconActor) {
-            iconActor = new St.Icon({
-                gicon: app.get_icon?.() || null,
-                icon_name: 'application-x-executable',
-                icon_size: ICON_SIZE,
-            });
-        }
-        iconActor.x_align = Clutter.ActorAlign.CENTER;
-        iconActor.y_align = Clutter.ActorAlign.CENTER;
+        const iconActor = createSmoothAppIcon(app, ICON_SIZE);
         iconActor.set_style('margin-bottom: 5px; icon-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);');
         box.add_child(iconActor);
 
@@ -967,15 +1026,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         item.app = app;
         item.is_window_backed = () => false;
         item.getDragActor = () => {
-            let dragIcon = null;
-            try {
-                dragIcon = app.create_icon_texture?.(ICON_SIZE);
-            } catch (_) {}
-            return dragIcon || new St.Icon({
-                gicon: app.get_icon?.() || null,
-                icon_name: 'application-x-executable',
-                icon_size: ICON_SIZE,
-            });
+            return createSmoothAppIcon(app, ICON_SIZE);
         };
         item.getDragActorSource = () => item;
 
