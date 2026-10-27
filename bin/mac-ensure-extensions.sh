@@ -1,5 +1,13 @@
 #!/bin/bash
 # mac-ensure-extensions.sh - Self-healing watchdog on session startup
+# Wait for GNOME Shell session and D-Bus readiness (up to 15s)
+for i in {1..30}; do
+    if gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.freedesktop.DBus.Peer.Ping >/dev/null 2>&1; then
+        break
+    fi
+    sleep 0.5
+done
+
 gsettings set org.gnome.shell disable-user-extensions false
 gsettings set org.gnome.shell disable-extension-version-validation true
 

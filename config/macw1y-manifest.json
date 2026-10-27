@@ -1,0 +1,81 @@
+{
+  "_version": "1.0",
+  "_description": "macW1Y Single Source of Truth (SSOT) Master Configuration",
+  "theme": {
+    "gtk_theme": "macW1Y-Dark",
+    "icon_theme": "MacTahoe-dark",
+    "cursor_theme": "macOS",
+    "font_name": "SF Pro Text 11",
+    "document_font_name": "SF Pro Text 11",
+    "monospace_font_name": "SF Mono 11",
+    "wm_theme": "macW1Y-Dark",
+    "button_layout": "close,minimize,maximize:",
+    "shell_theme": "macW1Y-Dark",
+    "sound_theme": "macOS",
+    "color_scheme": "prefer-dark",
+    "wallpaper_uri": "file:///usr/share/backgrounds/GoldenGate_Day.jpg"
+  },
+  "liquid_glass": {
+    "schema": "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com",
+    "dock_corner_radius": 26.0,
+    "dock_margin_bottom": 8,
+    "dock_tint_strength": 0.12,
+    "panel_menu_tint_strength": 0.05,
+    "panel_menu_blur_radius": 9,
+    "menu_tint_strength": 0.02,
+    "quick_settings_corner_radius": 26.0,
+    "quick_settings_tint_strength": 0.02,
+    "application_tint_strength": 0.02,
+    "application_content_opacity": 0.90,
+    "application_corner_radius": 24.0,
+    "shadow_intensity": 0.55,
+    "shadow_radius": 30.0
+  },
+  "blur_my_shell": {
+    "panel": {
+      "blur": true,
+      "sigma": 9,
+      "static_blur": true
+    },
+    "applications": {
+      "blur": true,
+      "sigma": 10,
+      "corner_radius": 24,
+      "brightness": 0.855,
+      "opacity": 255
+    }
+  },
+  "extensions": {
+    "required": [
+      "user-theme@gnome-shell-extensions.gcampax.github.com",
+      "ubuntu-appindicators@ubuntu.com",
+      "compiz-alike-magic-lamp-effect@hermes83.github.com",
+      "Rounded_Corners@lennart-k",
+      "macos-touchpad-gestures@mactheme",
+      "custom-command-toggle@storageb.github.com",
+      "volume-percentage-quick-settings@imdarktom",
+      "quick-settings-scroll@diskmth.fr",
+      "wifi-hotspot-quick-settings@aryan10.github.io",
+      "dash2dock-motion@unmade.space",
+      "top-bar-organizer@julian.gse.jsts.xyz",
+      "run-cmd@custom.extension",
+      "cupertino-dock-lite@rinzler69-wastaken.github.com",
+      "wack-lockscreen-clock@rinzler69-wastaken.github.com",
+      "ding@rastersoft.com",
+      "eval-helper@mactheme",
+      "blur-my-shell@aunetx",
+      "liquid-glass@thinkingcoding1231.gmail.com",
+      "appmenu@ChathurangaBW.github.io",
+      "kiwi@kemma"
+    ],
+    "disabled_bloat": [
+      "stage-manager@gnome-stage-manager",
+      "snapd-prompting@canonical.com",
+      "snapd-search-provider@canonical.com",
+      "web-search-provider@ubuntu.com",
+      "tiling-assistant@ubuntu.com",
+      "ubuntu-dock@ubuntu.com",
+      "dash-to-dock@micxgx.gmail.com"
+    ]
+  }
+}

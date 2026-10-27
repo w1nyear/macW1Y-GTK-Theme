@@ -476,6 +476,31 @@ const TahoeSlider = GObject.registerClass({
     GTypeName: `TahoeSlider_${_sliderUid}`,
 }, class TahoeSlider extends Slider {
 
+    _init(value) {
+        super._init(value);
+        this._isDragging = false;
+        this.connect('drag-begin', () => {
+            this._isDragging = true;
+            this.queue_repaint();
+        });
+        this.connect('drag-end', () => {
+            this._isDragging = false;
+            this.queue_repaint();
+        });
+    }
+
+    vfunc_button_press_event(event) {
+        this._isDragging = true;
+        this.queue_repaint();
+        return super.vfunc_button_press_event(event);
+    }
+
+    vfunc_button_release_event(event) {
+        this._isDragging = false;
+        this.queue_repaint();
+        return super.vfunc_button_release_event(event);
+    }
+
     vfunc_repaint() {
         // bar via the grandparent (skip Slider's own dot)
         Object.getPrototypeOf(Slider.prototype).vfunc_repaint.call(this);
@@ -485,8 +510,10 @@ const TahoeSlider = GObject.registerClass({
         const [width, height] = this.get_surface_size();
         const rtl = this.get_text_direction() === Clutter.TextDirection.RTL;
 
-        const h = 2 * this._handleRadius;   // pill height (from css)
-        const w = Math.round(h * 1.7);      // pill width ~24
+        const isHeld = Boolean(this._isDragging || this._grab);
+        const baseH = (this._handleRadius > 0) ? (2 * this._handleRadius) : 16;
+        const h = isHeld ? Math.round(baseH * 1.35) : baseH;
+        const w = isHeld ? Math.round(h * 2.2) : Math.round(baseH * 1.7);
         const hw = w / 2;
         const handleY = height / 2;
         // position by the pill half-width so the ends never clip
@@ -495,10 +522,49 @@ const TahoeSlider = GObject.registerClass({
             handleX = width - handleX;
 
         const r = h / 2;
-        cr.setSourceColor(themeNode.get_foreground_color());
-        cr.arc(handleX - hw + r, handleY, r, Math.PI / 2, Math.PI * 1.5);
-        cr.arc(handleX + hw - r, handleY, r, -Math.PI / 2, Math.PI / 2);
-        cr.fill();   // fill() closes the capsule path
+
+        if (isHeld) {
+            let cairo = imports.gi.cairo;
+
+            // 1. Soft depth drop shadow
+            cr.save();
+            cr.setSourceRGBA(0, 0, 0, 0.40);
+            cr.arc(handleX - hw + r, handleY + 2, r, Math.PI / 2, Math.PI * 1.5);
+            cr.arc(handleX + hw - r, handleY + 2, r, -Math.PI / 2, Math.PI / 2);
+            cr.fill();
+            cr.restore();
+
+            // 2. Liquid Glass Body (translucent depth gradient)
+            let pat = new cairo.LinearGradient(handleX, handleY - r, handleX, handleY + r);
+            pat.addColorStopRGBA(0.0, 1.0, 1.0, 1.0, 0.25);
+            pat.addColorStopRGBA(0.3, 1.0, 1.0, 1.0, 0.10);
+            pat.addColorStopRGBA(0.7, 0.05, 0.08, 0.15, 0.25);
+            pat.addColorStopRGBA(1.0, 0.02, 0.04, 0.08, 0.45);
+            cr.setSource(pat);
+            cr.arc(handleX - hw + r, handleY, r, Math.PI / 2, Math.PI * 1.5);
+            cr.arc(handleX + hw - r, handleY, r, -Math.PI / 2, Math.PI / 2);
+            cr.fill();
+            pat.$dispose();
+
+            // 3. Delicate glass rim highlight
+            let rimPat = new cairo.LinearGradient(handleX, handleY - r, handleX, handleY + r);
+            rimPat.addColorStopRGBA(0.0, 1.0, 1.0, 1.0, 0.85);
+            rimPat.addColorStopRGBA(0.5, 1.0, 1.0, 1.0, 0.35);
+            rimPat.addColorStopRGBA(1.0, 1.0, 1.0, 1.0, 0.65);
+            cr.setSource(rimPat);
+            cr.setLineWidth(1.3);
+            cr.arc(handleX - hw + r, handleY, r - 0.65, Math.PI / 2, Math.PI * 1.5);
+            cr.arc(handleX + hw - r, handleY, r - 0.65, -Math.PI / 2, Math.PI / 2);
+            cr.stroke();
+            rimPat.$dispose();
+        } else {
+            // Resting clean white capsule pill
+            cr.setSourceColor(themeNode.get_foreground_color());
+            cr.arc(handleX - hw + r, handleY, r, Math.PI / 2, Math.PI * 1.5);
+            cr.arc(handleX + hw - r, handleY, r, -Math.PI / 2, Math.PI / 2);
+            cr.fill();
+        }
+
         cr.$dispose();
     }
 });

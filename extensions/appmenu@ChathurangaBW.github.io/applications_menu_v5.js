@@ -758,7 +758,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         for (const info of installed) {
             const id = info.get_id?.();
-            if (!id || seen.has(id) || id === 'launchpad.desktop') continue;
+            if (!id || seen.has(id) || id === 'launchpad.desktop' || id === 'wine.desktop' || id === 'winetricks.desktop' || id.startsWith('winecfg') || id.startsWith('wine-wineboot')) continue;
             if (info.get_nodisplay?.()) continue;
             if (info.should_show && !info.should_show()) continue;
             seen.add(id);

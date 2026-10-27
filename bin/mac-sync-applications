@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sys, glob, subprocess, time, shutil, zipfile, tarfile, re, threading, tempfile, json, warnings
+import os, sys, fcntl, glob, subprocess, time, shutil, zipfile, tarfile, re, threading, tempfile, json, warnings
 warnings.filterwarnings("ignore")
 import gi
 gi.require_version("Gio", "2.0")
@@ -24,6 +24,32 @@ def get_gpu_targets():
             except Exception:
                 pass
     return {"system": 0, "apps": 1, "games": 1}
+
+
+_daemon_lock_fd = None
+def acquire_daemon_lock():
+    global _daemon_lock_fd
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    lock_file = os.path.join(runtime_dir, "mac-sync-applications-daemon.lock")
+    try:
+        _daemon_lock_fd = open(lock_file, "w")
+        fcntl.flock(_daemon_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _daemon_lock_fd.write(f"{os.getpid()}\n")
+        _daemon_lock_fd.flush()
+        return True
+    except (BlockingIOError, IOError):
+        print("[MacAppDaemon] Another daemon instance is already active. Exiting cleanly.")
+        sys.exit(0)
+
+def acquire_sync_lock():
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    lock_file = os.path.join(runtime_dir, "mac-sync-applications-exec.lock")
+    try:
+        fd = open(lock_file, "w")
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        return fd
+    except Exception:
+        return None
 
 HOME = os.path.expanduser("~")
 APPS_DIR = os.path.join(HOME, "Applications")
@@ -164,6 +190,18 @@ def resolve_icon(app_info, desktop_path, home):
 
 
 def sync():
+    _lock = acquire_sync_lock()
+    try:
+        _sync_internal()
+    finally:
+        if _lock:
+            try:
+                fcntl.flock(_lock, fcntl.LOCK_UN)
+                _lock.close()
+            except Exception:
+                pass
+
+def _sync_internal():
     home = HOME
     apps_dir = APPS_DIR
     os.makedirs(apps_dir, exist_ok=True)
@@ -1162,6 +1200,7 @@ class MacAppDaemon:
         self.trigger_sync_debounced()
 
     def run(self):
+        acquire_daemon_lock()
         print("[MacAppDaemon] Starting macOS Applications Drag-and-Drop Manager...")
         sync()
 

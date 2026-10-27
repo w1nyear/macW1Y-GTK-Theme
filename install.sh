@@ -1736,7 +1736,7 @@ run_incremental_update() {
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-styling-settings gnome-theme-switcher toggle-launchpad.sh extension-manager; do
+    for b in gnome-control-center mac-styling-settings mac-apply-theme mac-extension-guard toggle-launchpad.sh extension-manager; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true
@@ -1996,12 +1996,12 @@ run_clean_update() {
     fi
     require_root
     
-    log_info "1/3 Тимчасове повернення до стандартної теми Yaru..."
-    run_as_user gsettings set org.gnome.desktop.interface gtk-theme "Yaru" 2>/dev/null || true
-    run_as_user gsettings set org.gnome.desktop.interface icon-theme "Yaru" 2>/dev/null || true
-    run_as_user gsettings set org.gnome.desktop.interface cursor-theme "Yaru" 2>/dev/null || true
-    run_as_user gsettings set org.gnome.desktop.wm.preferences theme "Yaru" 2>/dev/null || true
-    run_as_user dconf write /org/gnome/shell/extensions/user-theme/name "" 2>/dev/null || true
+    log_info "1/3 Створення контрольної точки резервної копії перед оновленням..."
+    local BKP_DIR="$TARGET_HOME/.config/macw1y/backups/pre_clean_update_$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$BKP_DIR"
+    [ -d "$TARGET_HOME/.themes" ] && cp -a "$TARGET_HOME/.themes" "$BKP_DIR/themes" 2>/dev/null || true
+    [ -d "$TARGET_HOME/.config/gtk-4.0" ] && cp -a "$TARGET_HOME/.config/gtk-4.0" "$BKP_DIR/gtk-4.0" 2>/dev/null || true
+    run_as_user dconf dump / > "$BKP_DIR/dconf_dump.ini" 2>/dev/null || true
     
     log_info "2/3 Видалення ВСІХ компонентів macW1Y з ПК до нуля..."
     rm -rf "$TARGET_HOME/.themes/macW1Y-Dark"* "$TARGET_HOME/.themes/MacTahoe"*
@@ -2025,7 +2025,7 @@ run_clean_update() {
     rm -rf "$TARGET_HOME/.local/share/sounds/macOS"
     sudo rm -rf /usr/share/sounds/macOS 2>/dev/null || true
     rm -f "$TARGET_HOME/.config/autostart/macos-login-sound.desktop"
-    run_as_user gsettings set org.gnome.desktop.sound theme-name 'Yaru' 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.sound theme-name 'macOS' 2>/dev/null || true
 
     rm -rf "$TARGET_HOME/.local/share/gnome-shell/extensions/macos-touchpad-gestures@mactheme"
     rm -rf "$TARGET_HOME/.local/share/gnome-shell/extensions/eval-helper@mactheme"

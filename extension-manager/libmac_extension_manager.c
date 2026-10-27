@@ -17,8 +17,12 @@ extern void adw_expander_row_set_subtitle(void *row, const char *subtitle);
 extern void adw_expander_row_set_icon_name(void *row, const char *icon_name);
 extern void adw_expander_row_set_expanded(void *row, gboolean expanded);
 extern void adw_expander_row_add_row(void *row, void *child);
+extern void adw_expander_row_add_action(void *row, void *widget);
 extern void adw_preferences_page_add(void *page, void *group);
 extern void *gtk_widget_get_parent(void *widget);
+extern void gtk_widget_set_valign(void *widget, int align);
+extern void gtk_widget_set_tooltip_text(void *widget, const char *text);
+extern void *gtk_button_new_from_icon_name(const char *icon_name);
 extern const char *adw_preferences_group_get_title(void *group);
 extern void *gtk_custom_filter_new(gboolean (*match_func)(gpointer, gpointer), gpointer user_data, GDestroyNotify user_destroy);
 extern void *gtk_filter_list_model_new(void *model, void *filter);
@@ -27,14 +31,25 @@ static const char * const MACW1Y_UUIDS[] = {
     "appmenu@ChathurangaBW.github.io",
     "blur-my-shell@aunetx",
     "compiz-alike-magic-lamp-effect@hermes83.github.com",
+    "cupertino-dock-lite@rinzler69-wastaken.github.com",
+    "custom-command-toggle@storageb.github.com",
     "dash-to-dock@micxgx.gmail.com",
+    "dash2dock-motion@unmade.space",
+    "ding@rastersoft.com",
     "eval-helper@mactheme",
+    "kiwi@kemma",
     "liquid-glass@thinkingcoding1231.gmail.com",
     "macos-touchpad-gestures@mactheme",
+    "quick-settings-scroll@diskmth.fr",
     "Rounded_Corners@lennart-k",
+    "run-cmd@custom.extension",
     "stage-manager@gnome-stage-manager",
+    "top-bar-organizer@julian.gse.jsts.xyz",
+    "ubuntu-appindicators@ubuntu.com",
     "user-theme@gnome-shell-extensions.gcampax.github.com",
+    "volume-percentage-quick-settings@imdarktom",
     "wack-lockscreen-clock@rinzler69-wastaken.github.com",
+    "wifi-hotspot-quick-settings@aryan10.github.io",
     NULL
 };
 
@@ -44,6 +59,35 @@ static gboolean is_macw1y_uuid(const char *uuid) {
         if (strcmp(uuid, MACW1Y_UUIDS[i]) == 0) return TRUE;
     }
     return FALSE;
+}
+
+static gboolean is_extension_update_pending(const char *uuid) {
+    if (!uuid) return FALSE;
+    const char *home = g_get_home_dir();
+    char *path = g_build_filename(home, ".config", "macw1y", "extension-updates.json", NULL);
+    gboolean pending = FALSE;
+    char *content = NULL;
+    if (g_file_get_contents(path, &content, NULL, NULL)) {
+        char *pos = strstr(content, uuid);
+        if (pos) {
+            char *next_block = strstr(pos, "update_available_untested");
+            char *decided = strstr(pos, "keep_current");
+            if (next_block && (!decided || decided > next_block + 300)) {
+                pending = TRUE;
+            }
+        }
+        g_free(content);
+    }
+    g_free(path);
+    return pending;
+}
+
+static void on_warning_badge_clicked(void *btn, gpointer user_data) {
+    const char *uuid = (const char *)user_data;
+    if (!uuid) return;
+    char *cmd = g_strdup_printf("/usr/local/bin/mac-extension-guard dialog '%s'", uuid);
+    g_spawn_command_line_async(cmd, NULL);
+    g_free(cmd);
 }
 
 static gboolean filter_out_macw1y(gpointer item, gpointer user_data) {
@@ -79,6 +123,14 @@ static void populate_macw1y_expander(MacW1YBinding *binding) {
             if (uuid && is_macw1y_uuid(uuid)) {
                 void *row = binding->create_widget_func(item, binding->user_data);
                 if (row) {
+                    if (is_extension_update_pending(uuid)) {
+                        adw_expander_row_set_subtitle(row, "⚠️ Доступне оновлення, але воно ще не перевірене macW1Y");
+                        void *btn = gtk_button_new_from_icon_name("software-update-available-symbolic");
+                        gtk_widget_set_valign(btn, 3);
+                        gtk_widget_set_tooltip_text(btn, "Перевірити неперевірене оновлення macW1Y");
+                        g_signal_connect_data(btn, "clicked", G_CALLBACK(on_warning_badge_clicked), g_strdup(uuid), (GClosureNotify)g_free, 0);
+                        adw_expander_row_add_action(row, btn);
+                    }
                     adw_expander_row_add_row(binding->expander, row);
                     mac_count++;
                 }

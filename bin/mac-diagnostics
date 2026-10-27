@@ -1,0 +1,189 @@
+#!/usr/bin/env python3
+"""
+mac-diagnostics - Comprehensive Health & Integrity Diagnostic Tool for macW1Y
+Audits:
+- Themes, icons, fonts, cursors vs SSOT manifest
+- GNOME extensions status & versions vs extensions.lock.json
+- Menubar & Dock state
+- Liquid Glass & Mutter Blur actors
+- Background daemons & locks
+- One-click safe repair (--fix)
+"""
+
+import os
+import sys
+import json
+import time
+import subprocess
+
+REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
+MANIFEST_PATH = os.path.join(REPO_DIR, "config/macw1y-manifest.json")
+LOCK_PATH = os.path.join(REPO_DIR, "config/extensions.lock.json")
+HOME = os.path.expanduser("~")
+
+C_RESET = "\033[0m"
+C_BOLD = "\033[1m"
+C_GREEN = "\033[1;32m"
+C_RED = "\033[1;31m"
+C_YELLOW = "\033[1;33m"
+C_CYAN = "\033[1;36m"
+
+def get_gsettings(schema, key):
+    try:
+        res = subprocess.check_output(["gsettings", "get", schema, key], text=True, stderr=subprocess.DEVNULL).strip()
+        return res.strip("'\"")
+    except Exception:
+        return "N/A"
+
+def eval_js(js_code):
+    try:
+        res = subprocess.check_output(
+            ["gdbus", "call", "--session", "--dest", "org.gnome.Shell",
+             "--object-path", "/org/gnome/Shell/Extensions/EvalHelper",
+             "--method", "org.gnome.Shell.Extensions.EvalHelper.Eval", js_code],
+            text=True, stderr=subprocess.DEVNULL
+        )
+        return res.strip()
+    except Exception:
+        return None
+
+def run_diagnostics(auto_fix=False):
+    print(f"\n{C_CYAN}{C_BOLD}=== macW1Y СИСТЕМНА ДІАГНОСТИКА ТА ПЕРЕВІРКА ЦІЛІСНОСТІ ==={C_RESET}")
+    print(f"Час: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+
+    issues = []
+    
+    # 1. SSOT Manifest check
+    print(f"{C_BOLD}1. Перевірка теми та зовнішнього вигляду (SSOT):{C_RESET}")
+    if not os.path.exists(MANIFEST_PATH):
+        issues.append("SSOT manifest config/macw1y-manifest.json не знайдено!")
+        print(f"  {C_RED}✖ Маніфест macw1y-manifest.json відсутній!{C_RESET}")
+    else:
+        with open(MANIFEST_PATH, "r") as f:
+            manifest = json.load(f)
+        th = manifest.get("theme", {})
+        
+        checks = [
+            ("GTK Theme", "org.gnome.desktop.interface", "gtk-theme", th["gtk_theme"]),
+            ("Icon Theme", "org.gnome.desktop.interface", "icon-theme", th["icon_theme"]),
+            ("Cursor Theme", "org.gnome.desktop.interface", "cursor-theme", th["cursor_theme"]),
+            ("Font Name", "org.gnome.desktop.interface", "font-name", th["font_name"]),
+            ("Shell Theme", "org.gnome.shell.extensions.user-theme", "name", th["shell_theme"]),
+            ("Sound Theme", "org.gnome.desktop.sound", "theme-name", th["sound_theme"]),
+        ]
+        
+        for label, schema, key, expected in checks:
+            cur = get_gsettings(schema, key)
+            if cur == expected:
+                print(f"  {C_GREEN}✔{C_RESET} {label:<16}: {cur} (OK)")
+            else:
+                print(f"  {C_RED}✖{C_RESET} {label:<16}: {cur} (Очікувалося: {expected})")
+                issues.append(f"{label}: фактично '{cur}', очікувалося '{expected}'")
+
+    # 2. GNOME Extensions Status & Version Lock
+    print(f"\n{C_BOLD}2. Перевірка GNOME Extensions та Version Lock:{C_RESET}")
+    if os.path.exists(LOCK_PATH):
+        with open(LOCK_PATH, "r") as f:
+            lock = json.load(f).get("extensions", {})
+            
+        try:
+            enabled_exts = set(subprocess.check_output(["gnome-extensions", "list", "--enabled"], text=True).splitlines())
+        except Exception:
+            enabled_exts = set()
+            
+        missing_count = 0
+        for uuid, info in lock.items():
+            if uuid not in enabled_exts:
+                print(f"  {C_RED}✖{C_RESET} Розширення {uuid} ВИМКНЕНО!")
+                issues.append(f"Розширення {uuid} не увімкнено")
+                missing_count += 1
+                
+        if missing_count == 0:
+            print(f"  {C_GREEN}✔{C_RESET} Всі {len(lock)} зафіксованих розширень macW1Y активні.")
+            
+        # Verify hashes
+        res_v = subprocess.run(["/usr/local/bin/mac-extension-guard", "verify"], stdout=subprocess.PIPE, text=True)
+        if res_v.returncode == 0:
+            print(f"  {C_GREEN}✔{C_RESET} Цілісність SHA256 усіх розширень відповідає lock-файлу.")
+        else:
+            print(f"  {C_YELLOW}⚠{C_RESET} Виявлено зміни в локальних файлах розширень:")
+            for l in res_v.stdout.splitlines():
+                if "mismatch" in l or "missing" in l:
+                    print(f"    {l}")
+                    issues.append(l)
+    else:
+        issues.append("Lock-файл config/extensions.lock.json відсутній!")
+        print(f"  {C_RED}✖ Lock-файл extensions.lock.json відсутній!{C_RESET}")
+
+    # 3. Menubar & Dock Health
+    print(f"\n{C_BOLD}3. Перевірка компонентів Menubar та Dock:{C_RESET}")
+    # Check AppMenu
+    appmenu_active = "appmenu@ChathurangaBW.github.io" in enabled_exts
+    if appmenu_active:
+        print(f"  {C_GREEN}✔{C_RESET} AppMenu (Global Menubar) активний.")
+    else:
+        print(f"  {C_RED}✖{C_RESET} AppMenu НЕ активний!")
+        issues.append("AppMenu вимкнено")
+        
+    # Check Cupertino / Dash2dock
+    dock_active = ("dash2dock-motion@unmade.space" in enabled_exts) and ("cupertino-dock-lite@rinzler69-wastaken.github.com" in enabled_exts)
+    if dock_active:
+        print(f"  {C_GREEN}✔{C_RESET} macOS Cupertino Glass Dock активний.")
+    else:
+        print(f"  {C_RED}✖{C_RESET} Компоненти Dock (dash2dock-motion або cupertino-dock-lite) вимкнено!")
+        issues.append("Компоненти Dock вимкнено")
+
+    # 4. Liquid Glass & Mutter Blur
+    print(f"\n{C_BOLD}4. Перевірка Liquid Glass та Clutter Blur:{C_RESET}")
+    lg_active = "liquid-glass@thinkingcoding1231.gmail.com" in enabled_exts
+    bms_active = "blur-my-shell@aunetx" in enabled_exts
+    
+    if lg_active:
+        print(f"  {C_GREEN}✔{C_RESET} Liquid Glass shader active.")
+    else:
+        print(f"  {C_RED}✖{C_RESET} Liquid Glass extension вимкнено!")
+        issues.append("Liquid Glass вимкнено")
+        
+    if bms_active:
+        print(f"  {C_GREEN}✔{C_RESET} Blur my Shell (Mutter blur actor) активний.")
+    else:
+        print(f"  {C_RED}✖{C_RESET} Blur my Shell вимкнено!")
+        issues.append("Blur my Shell вимкнено")
+
+    # 5. Background Daemons & Mutex Locks
+    print(f"\n{C_BOLD}5. Перевірка фонових процесів та блокувань:{C_RESET}")
+    try:
+        pids = subprocess.check_output(["pgrep", "-f", "mac-sync-applications daemon"], text=True).splitlines()
+        if len(pids) == 1:
+            print(f"  {C_GREEN}✔{C_RESET} Демон mac-sync-applications працює в єдиному екземплярі (PID {pids[0]}).")
+        elif len(pids) > 1:
+            print(f"  {C_RED}✖{C_RESET} Виявлено подвійний запуск mac-sync-applications: PIDs {pids}")
+            issues.append(f"Подвійний запуск mac-sync-applications (PIDs: {pids})")
+        else:
+            print(f"  {C_YELLOW}⚠{C_RESET} Демон mac-sync-applications не знайдено серед процесів.")
+    except Exception:
+        print(f"  {C_YELLOW}⚠{C_RESET} Демон mac-sync-applications не запущений.")
+
+    # SUMMARY
+    print("\n" + "="*80)
+    if not issues:
+        print(f"{C_GREEN}{C_BOLD}РЕЗУЛЬТАТ: Система стабільна. Всі компоненти macW1Y відповідають еталону.{C_RESET}")
+        return 0
+    else:
+        print(f"{C_RED}{C_BOLD}РЕЗУЛЬТАТ: Виявлено {len(issues)} невідповідностей:{C_RESET}")
+        for iss in issues:
+            print(f"  • {iss}")
+            
+        if auto_fix:
+            print(f"\n{C_CYAN}Запуск автоматичного відновлення (--fix)...{C_RESET}")
+            subprocess.run(["/usr/local/bin/mac-apply-theme"], check=False)
+            subprocess.run(["systemctl", "--user", "restart", "mac-app-manager.service"], check=False)
+            print(f"{C_GREEN}Автоматичне відновлення завершено. Перезапустіть перевірку.{C_RESET}")
+        else:
+            print(f"\n{C_YELLOW}Для автоматичного виправлення запустіть: mac-diagnostics --fix{C_RESET}")
+        return 1
+
+if __name__ == "__main__":
+    fix_mode = len(sys.argv) > 1 and sys.argv[1] == "--fix"
+    code = run_diagnostics(auto_fix=fix_mode)
+    sys.exit(code)

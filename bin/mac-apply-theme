@@ -1,0 +1,225 @@
+#!/usr/bin/env python3
+"""
+mac-apply-theme - Idempotent Master Theme & Settings Applicator for macW1Y
+Reads Single Source of Truth (SSOT) from config/macw1y-manifest.json.
+Guaranteed safe:
+- Never wipes working configs or extensions
+- File locking (flock) prevents parallel race conditions
+- Only applies changes when current values differ (zero-churn idempotency)
+"""
+
+import os
+import sys
+import json
+import fcntl
+import subprocess
+
+REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
+MANIFEST_PATH = os.path.join(REPO_DIR, "config/macw1y-manifest.json")
+HOME = os.path.expanduser("~")
+RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+LOCK_FILE = os.path.join(RUNTIME_DIR, "macw1y-apply.lock")
+
+def acquire_lock():
+    try:
+        fd = open(LOCK_FILE, "w")
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fd.write(f"{os.getpid()}\n")
+        fd.flush()
+        return fd
+    except (BlockingIOError, IOError):
+        print("[mac-apply-theme] Another instance is currently applying theme settings. Exiting cleanly.")
+        sys.exit(0)
+
+def gsettings_get(schema, key):
+    try:
+        res = subprocess.check_output(["gsettings", "get", schema, key], text=True, stderr=subprocess.DEVNULL).strip()
+        return res.strip("'\"")
+    except Exception:
+        return None
+
+def gsettings_set(schema, key, val, val_type=None):
+    cur = gsettings_get(schema, key)
+    if cur is None:
+        return False
+    str_val = str(val)
+    if val_type == "bool" or isinstance(val, bool) or str_val.lower() in ("true", "false"):
+        cur_bool = cur.lower() in ("true", "1")
+        tar_bool = (str_val.lower() == "true") if isinstance(val, str) else bool(val)
+        if cur_bool == tar_bool:
+            return False
+    elif val_type == "float" or isinstance(val, float):
+        try:
+            if abs(float(cur) - float(val)) < 0.001:
+                return False
+        except Exception:
+            pass
+    elif val_type == "int" or isinstance(val, int):
+        try:
+            if int(cur) == int(val):
+                return False
+        except Exception:
+            pass
+    else:
+        if cur == str_val or cur == str_val.strip("'\""):
+            return False
+    try:
+        if val_type == "bool":
+            subprocess.run(["gsettings", "set", schema, key, "true" if val else "false"], check=False)
+        elif val_type == "int":
+            subprocess.run(["gsettings", "set", schema, key, str(val)], check=False)
+        elif val_type == "float":
+            subprocess.run(["gsettings", "set", schema, key, f"{float(val):.2f}"], check=False)
+        else:
+            subprocess.run(["gsettings", "set", schema, key, str_val], check=False)
+        return True
+    except Exception:
+        return False
+
+def update_ini_file(path, key_values):
+    if not os.path.exists(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        lines = ["[Settings]\n"]
+    else:
+        with open(path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+    modified = False
+    existing_keys = set()
+    new_lines = []
+    
+    for l in lines:
+        if "=" in l and not l.strip().startswith("#"):
+            k, v = l.split("=", 1)
+            k = k.strip()
+            existing_keys.add(k)
+            if k in key_values:
+                target_v = str(key_values[k])
+                if v.strip() != target_v:
+                    new_lines.append(f"{k}={target_v}\n")
+                    modified = True
+                else:
+                    new_lines.append(l)
+            else:
+                new_lines.append(l)
+        else:
+            new_lines.append(l)
+
+    for k, v in key_values.items():
+        if k not in existing_keys:
+            new_lines.append(f"{k}={v}\n")
+            modified = True
+
+    if modified:
+        with open(path, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+    return modified
+
+def main():
+    lock_fd = acquire_lock()
+    print("[mac-apply-theme] Applying Single Source of Truth (SSOT)...")
+
+    if not os.path.exists(MANIFEST_PATH):
+        print(f"Error: Manifest {MANIFEST_PATH} not found!")
+        sys.exit(1)
+
+    with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    th = manifest.get("theme", {})
+    changes_count = 0
+
+    # 1. Desktop Interface
+    if gsettings_set("org.gnome.desktop.interface", "gtk-theme", th["gtk_theme"]): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "icon-theme", th["icon_theme"]): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "cursor-theme", th["cursor_theme"]): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "font-name", th["font_name"]): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "document-font-name", th["document_font_name"]): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "monospace-font-name", th["monospace_font_name"]): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "color-scheme", th["color_scheme"]): changes_count += 1
+
+    # 2. WM Preferences
+    if gsettings_set("org.gnome.desktop.wm.preferences", "theme", th["wm_theme"]): changes_count += 1
+    if gsettings_set("org.gnome.desktop.wm.preferences", "button-layout", th["button_layout"]): changes_count += 1
+
+    # 3. User Theme Extension
+    if gsettings_set("org.gnome.shell.extensions.user-theme", "name", th["shell_theme"]): changes_count += 1
+
+    # 4. Sound Theme
+    if gsettings_set("org.gnome.desktop.sound", "theme-name", th["sound_theme"]): changes_count += 1
+    if gsettings_set("org.gnome.desktop.sound", "event-sounds", "true", "bool"): changes_count += 1
+    if gsettings_set("org.gnome.desktop.sound", "input-feedback-sounds", "true", "bool"): changes_count += 1
+
+    # 5. GTK 3.0 & 4.0 settings.ini
+    ini_dict = {
+        "gtk-theme-name": th["gtk_theme"],
+        "gtk-icon-theme-name": th["icon_theme"],
+        "gtk-font-name": th["font_name"],
+        "gtk-cursor-theme-name": th["cursor_theme"],
+        "gtk-decoration-layout": th["button_layout"],
+        "gtk-application-prefer-dark-theme": "1"
+    }
+    for ini_path in [os.path.join(HOME, ".config/gtk-3.0/settings.ini"),
+                     os.path.join(HOME, ".config/gtk-4.0/settings.ini")]:
+        if update_ini_file(ini_path, ini_dict):
+            changes_count += 1
+
+    # 6. Liquid Glass settings
+    lg = manifest.get("liquid_glass", {})
+    lg_schema = lg.get("schema", "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com")
+    try:
+        # Check if schema installed
+        test = subprocess.run(["gsettings", "list-keys", lg_schema], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if test.returncode == 0:
+            for k, v in lg.items():
+                if k == "schema": continue
+                gk = k.replace("_", "-")
+                if isinstance(v, float):
+                    if gsettings_set(lg_schema, gk, v, "float"): changes_count += 1
+                elif isinstance(v, int):
+                    if gsettings_set(lg_schema, gk, v, "int"): changes_count += 1
+                elif isinstance(v, bool):
+                    if gsettings_set(lg_schema, gk, v, "bool"): changes_count += 1
+                else:
+                    if gsettings_set(lg_schema, gk, str(v)): changes_count += 1
+    except Exception:
+        pass
+
+    # 7. Blur-my-shell settings
+    bms = manifest.get("blur_my_shell", {})
+    if "panel" in bms:
+        for k, v in bms["panel"].items():
+            gk = k.replace("_", "-")
+            vt = "bool" if isinstance(v, bool) else ("int" if isinstance(v, int) else None)
+            if gsettings_set("org.gnome.shell.extensions.blur-my-shell.panel", gk, v, vt): changes_count += 1
+    if "applications" in bms:
+        for k, v in bms["applications"].items():
+            gk = k.replace("_", "-")
+            vt = "bool" if isinstance(v, bool) else ("int" if isinstance(v, int) else None)
+            if gsettings_set("org.gnome.shell.extensions.blur-my-shell.applications", gk, v, vt): changes_count += 1
+
+    # 8. Extensions state check
+    exts = manifest.get("extensions", {})
+    req_exts = exts.get("required", [])
+    bloat_exts = exts.get("disabled_bloat", [])
+
+    try:
+        enabled_list = subprocess.check_output(["gnome-extensions", "list", "--enabled"], text=True, stderr=subprocess.DEVNULL).splitlines()
+        enabled_set = set(enabled_list)
+
+        for e in req_exts:
+            if e not in enabled_set:
+                subprocess.run(["gnome-extensions", "enable", e], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                changes_count += 1
+
+        for e in bloat_exts:
+            if e in enabled_set:
+                subprocess.run(["gnome-extensions", "disable", e], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                changes_count += 1
+    except Exception:
+        pass
+
+    print(f"[mac-apply-theme] Completed. Applied {changes_count} changes (0 changes means already perfectly in sync).")
+
+if __name__ == "__main__":
+    main()

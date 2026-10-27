@@ -272,6 +272,7 @@ export const DockDash = GObject.registerClass({
         });
 
         this._appSystem = Shell.AppSystem.get_default();
+        this._startingApps = new Set();
 
         this.iconAnimator = new Docking.IconAnimator(this);
 
@@ -297,7 +298,14 @@ export const DockDash = GObject.registerClass({
         ], [
             this._appSystem,
             'app-state-changed',
-            this._queueRedisplay.bind(this),
+            (sys, app) => {
+                if (app && app.get_state() === Shell.AppState.STARTING) {
+                    this._startingApps.add(app);
+                } else if (app) {
+                    this._startingApps.delete(app);
+                }
+                this._queueRedisplay();
+            },
         ], [
             Main.overview,
             'item-drag-begin',
@@ -839,6 +847,13 @@ export const DockDash = GObject.registerClass({
         const favorites = AppFavorites.getAppFavorites().getFavoriteMap();
 
         let running = this._appSystem.get_running();
+        if (this._startingApps) {
+            for (const app of this._startingApps) {
+                if (app && app.get_state() === Shell.AppState.STARTING && !running.includes(app)) {
+                    running.push(app);
+                }
+            }
+        }
         const dockManager = Docking.DockManager.getDefault();
         const {settings} = dockManager;
 
