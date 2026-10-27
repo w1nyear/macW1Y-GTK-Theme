@@ -2323,9 +2323,21 @@ export class DockManager {
             dash.set({
                 opacity: 0,
                 translation_x: 0,
-                translation_y: 0,
+                translation_y: (dash.height > 0 ? dash.height : 92) + 20,
             });
         });
+
+        const glassBg = this._getGlassBg();
+        if (glassBg) {
+            glassBg.opacity = 0;
+            glassBg.translation_y = 120;
+        }
+
+        const panelBox = Main.layoutManager.panelBox || Main.panel;
+        if (panelBox) {
+            panelBox.opacity = 0;
+            panelBox.translation_y = -(panelBox.height > 0 ? panelBox.height : 34);
+        }
     }
 
     _runStartupAnimation() {
@@ -2340,7 +2352,7 @@ export class DockManager {
                 dash.translation_x = dash.width;
                 break;
             case St.Side.BOTTOM:
-                dash.translation_y = dash.height;
+                dash.translation_y = (dash.height > 0 ? dash.height : 92) + 20;
                 break;
             case St.Side.TOP:
                 dash.translation_y = -dash.height;
@@ -2355,6 +2367,32 @@ export class DockManager {
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             });
         });
+
+        const glassBg = this._getGlassBg();
+        if (glassBg) {
+            glassBg.remove_all_transitions();
+            glassBg.translation_y = 120;
+            glassBg.opacity = 0;
+            glassBg.ease({
+                opacity: 255,
+                translation_y: 0,
+                duration: STARTUP_ANIMATION_TIME,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        }
+
+        const panelBox = Main.layoutManager.panelBox || Main.panel;
+        if (panelBox) {
+            panelBox.remove_all_transitions();
+            panelBox.translation_y = -(panelBox.height > 0 ? panelBox.height : 34);
+            panelBox.opacity = 0;
+            panelBox.ease({
+                opacity: 255,
+                translation_y: 0,
+                duration: STARTUP_ANIMATION_TIME,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        }
     }
 
     _prepareMainDash() {

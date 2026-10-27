@@ -214,12 +214,38 @@ export class UnlockDialogController {
                     const duration = this._extension._cupertinoUnlockFadeDuration;
                     const mode = Clutter.AnimationMode.EASE_OUT_QUAD;
 
-                    if (panel) {
+                    const panelBox = Main.layoutManager.panelBox || Main.panel;
+                    if (panelBox) {
+                        panelBox.remove_all_transitions();
+                        const panelHeight = panelBox.height || 40;
+                        panelBox.translation_y = -panelHeight;
+                        panelBox.opacity = 0;
+                        panelBox.ease({ translation_y: 0, opacity: 255, duration, mode });
+                    }
+                    if (panel && panel !== panelBox) {
                         panel.remove_all_transitions();
-                        const panelHeight = panel.height || 60;
+                        const panelHeight = panel.height || 40;
                         panel.translation_y = -panelHeight;
                         panel.opacity = 255;
                         panel.ease({ translation_y: 0, duration, mode });
+                    }
+
+                    // Animate dock and liquid-glass-bg-actor sliding in from bottom
+                    const dock = Main.layoutManager.uiGroup?.get_children()?.find(c => c.name === 'dashtodockContainer');
+                    const glass = Main.layoutManager.uiGroup?.get_children()?.find(c => c.name === 'liquid-glass-bg-actor');
+                    if (dock) {
+                        dock.remove_all_transitions();
+                        const dist = dock.height > 0 ? dock.height + 40 : 130;
+                        dock.translation_y = dist;
+                        dock.opacity = 0;
+                        dock.ease({ translation_y: 0, opacity: 255, duration, mode });
+                    }
+                    if (glass) {
+                        glass.remove_all_transitions();
+                        const dist = 130;
+                        glass.translation_y = dist;
+                        glass.opacity = 0;
+                        glass.ease({ translation_y: 0, opacity: 255, duration, mode });
                     }
 
                     if (capturedSnapshots.length > 0) {
@@ -272,8 +298,8 @@ export class UnlockDialogController {
 
                     const clockWrapper = this._extension._clockLayoutManager?.clockWrapper;
                     const hintContainer = this._extension._clockLayoutManager?.hintContainer;
-                    const customOverlay = this._extension._wallpaperManager?.customWallpaperOverlay;
-                    const actorsToFade = [clockWrapper, hintContainer, this._extension._mainBox, customOverlay].filter(a => a != null);
+                    // Keep wallpaper overlay steady at opacity 255 to eliminate black flash/flicker
+                    const actorsToFade = [clockWrapper, hintContainer, this._extension._mainBox].filter(a => a != null);
                     actorsToFade.forEach(actor => {
                         actor.ease({ opacity: 0, duration, mode });
                     });

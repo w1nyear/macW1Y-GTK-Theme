@@ -17,14 +17,20 @@ enable-fingerprint-authentication=false
 logo=''
 disable-user-list=false
 
+[com/ubuntu/login-screen]
+background-color='#000000'
+
 [org/gnome/desktop/background]
 picture-uri='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 picture-uri-dark='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 picture-options='zoom'
+primary-color='#000000'
+secondary-color='#000000'
 
 [org/gnome/desktop/screensaver]
 picture-uri='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 picture-options='zoom'
+primary-color='#000000'
 
 [org/gnome/shell/extensions/wack-lockscreen-clock]
 clock-weight='bold'
