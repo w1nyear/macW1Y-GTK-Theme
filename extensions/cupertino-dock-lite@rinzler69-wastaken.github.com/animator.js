@@ -120,9 +120,12 @@ export class Animator {
         realIcon.opacity = 255;
         realIcon.set_scale(1.0, 1.0);
       }
-      if (c._appwell?._indicator?._notificationBadgeBin) {
-        c._appwell._indicator._notificationBadgeBin.translation_x = 0;
-        c._appwell._indicator._notificationBadgeBin.translation_y = 0;
+      const indBadge = c._appwell?._indicator?._notificationBadgeBin;
+      if (this._isActorValid(indBadge)) {
+        indBadge.translation_x = 0;
+        indBadge.translation_y = 0;
+      } else if (c._appwell?._indicator) {
+        c._appwell._indicator._notificationBadgeBin = null;
       }
       this._setD2dBadgeOpacity(c._appwell, 255);
       this._disconnectAppwellHooks(c._appwell);
@@ -533,9 +536,12 @@ export class Animator {
         }
       }
 
-      if (icon._appwell?._indicator?._notificationBadgeBin) {
-        icon._appwell._indicator._notificationBadgeBin.translation_x = jX;
-        icon._appwell._indicator._notificationBadgeBin.translation_y = jY;
+      const indBadge = icon._appwell?._indicator?._notificationBadgeBin;
+      if (this._isActorValid(indBadge)) {
+        indBadge.translation_x = jX;
+        indBadge.translation_y = jY;
+      } else if (icon._appwell?._indicator) {
+        icon._appwell._indicator._notificationBadgeBin = null;
       }
     });
 
@@ -578,9 +584,12 @@ export class Animator {
         realIcon.opacity = 255;
         realIcon.set_scale(1.0, 1.0);
       }
-      if (icon._appwell?._indicator?._notificationBadgeBin) {
-        icon._appwell._indicator._notificationBadgeBin.translation_x = 0;
-        icon._appwell._indicator._notificationBadgeBin.translation_y = 0;
+      const indBadge = icon._appwell?._indicator?._notificationBadgeBin;
+      if (this._isActorValid(indBadge)) {
+        indBadge.translation_x = 0;
+        indBadge.translation_y = 0;
+      } else if (icon._appwell?._indicator) {
+        icon._appwell._indicator._notificationBadgeBin = null;
       }
       this._setD2dBadgeOpacity(icon._appwell, 255);
       if (icon._badge) icon._badge.visible = false;
@@ -601,9 +610,12 @@ export class Animator {
         realIcon.opacity = 255;
         realIcon.set_scale(1.0, 1.0);
       }
-      if (c._appwell?._indicator?._notificationBadgeBin) {
-        c._appwell._indicator._notificationBadgeBin.translation_x = 0;
-        c._appwell._indicator._notificationBadgeBin.translation_y = 0;
+      const indBadge = c._appwell?._indicator?._notificationBadgeBin;
+      if (this._isActorValid(indBadge)) {
+        indBadge.translation_x = 0;
+        indBadge.translation_y = 0;
+      } else if (c._appwell?._indicator) {
+        c._appwell._indicator._notificationBadgeBin = null;
       }
       this._setD2dBadgeOpacity(c._appwell, 255);
       if (this.dashContainer && this.dash) {
@@ -704,8 +716,8 @@ export class Animator {
   _isActorValid(actor) {
     if (!actor) return false;
     try {
-      if (Object.prototype.toString.call(actor).includes('DISPOSED')) return false;
-      const _ = actor.visible;
+      if (typeof actor.get_stage !== 'function' || !actor.get_stage()) return false;
+      if (typeof actor.get_parent !== 'function' || !actor.get_parent()) return false;
       return true;
     } catch (_) {
       return false;
@@ -714,7 +726,7 @@ export class Animator {
 
   _getD2dBadgeBin(appwell) {
     const container = appwell?._iconContainer;
-    if (!container) return null;
+    if (!container || !this._isActorValid(container)) return null;
     if (this._isActorValid(container._notificationBadgeBin)) return container._notificationBadgeBin;
     container._notificationBadgeBin = null;
 
@@ -722,8 +734,9 @@ export class Animator {
       const children = container.get_children();
       const badgeBin = children.find(child => {
         try {
+          if (!this._isActorValid(child)) return false;
           const grandChildren = child.get_children();
-          return grandChildren.some(c => c.has_style_class_name('notification-badge'));
+          return grandChildren.some(c => this._isActorValid(c) && c.has_style_class_name('notification-badge'));
         } catch (_) { return false; }
       }) ?? null;
 

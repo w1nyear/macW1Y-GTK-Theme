@@ -8,6 +8,12 @@ set -e
 # Raise file descriptor limit to prevent EMFILE/STATUS_TOO_MANY_OPENED_FILES (0xc000011f)
 ulimit -n 524288 2>/dev/null || true
 
+# Clean harmful Vulkan loader overrides that break hybrid Intel/NVIDIA swapchains
+unset VK_LOADER_DRIVERS_SELECT
+unset __VK_LAYER_NV_optimus
+unset VK_DRIVER_FILES
+unset VK_ICD_FILENAMES
+
 if [ $# -lt 1 ]; then
     if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
         if command -v zenity >/dev/null 2>&1; then

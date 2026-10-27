@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""
+Custom Switcheroo-Control implementation for hybrid Intel + NVIDIA laptops.
+Guarantees clean discrete GPU environment:
+- Provides __NV_PRIME_RENDER_OFFLOAD=1 and __GLX_VENDOR_LIBRARY_NAME=nvidia
+- Strictly OMITS VK_LOADER_DRIVERS_SELECT and __VK_LAYER_NV_optimus which break Vulkan swapchains on hybrid graphics.
+"""
+import sys
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+from gi.repository import GLib
+
+BUS_NAME = "net.hadess.SwitcherooControl"
+OBJECT_PATH = "/net/hadess/SwitcherooControl"
+
+class SwitcherooControl(dbus.service.Object):
+    def __init__(self, bus):
+        super().__init__(bus, OBJECT_PATH)
+
+    def _get_gpu_properties(self):
+        intel_env = dbus.Array(["DRI_PRIME", "pci-0000_00_02_0"], signature="s")
+        nvidia_env = dbus.Array([
+            "__GLX_VENDOR_LIBRARY_NAME", "nvidia",
+            "__NV_PRIME_RENDER_OFFLOAD", "1"
+        ], signature="s")
+
+        gpu_intel = dbus.Dictionary({
+            "Name": dbus.String("Intel Corporation Raptor Lake-P [UHD Graphics]"),
+            "Environment": intel_env,
+            "Default": dbus.Boolean(True),
+            "Discrete": dbus.Boolean(False)
+        }, signature="sv")
+
+        gpu_nvidia = dbus.Dictionary({
+            "Name": dbus.String("NVIDIA Corporation GA107BM / GN20-P0-R-K2 [GeForce RTX™ 3050 6GB Laptop GPU]"),
+            "Environment": nvidia_env,
+            "Default": dbus.Boolean(False),
+            "Discrete": dbus.Boolean(True)
+        }, signature="sv")
+
+        return {
+            "HasDualGpu": dbus.Boolean(True),
+            "NumGPUs": dbus.UInt32(2),
+            "GPUs": dbus.Array([gpu_intel, gpu_nvidia], signature="a{sv}")
+        }
+
+    @dbus.service.method("org.freedesktop.DBus.Properties", in_signature="ss", out_signature="v")
+    def Get(self, interface_name, property_name):
+        props = self._get_gpu_properties()
+        if property_name in props:
+            return props[property_name]
+        raise dbus.exceptions.DBusException(
+            f"Property {property_name} not found on interface {interface_name}",
+            name="org.freedesktop.DBus.Error.UnknownProperty"
+        )
+
+    @dbus.service.method("org.freedesktop.DBus.Properties", in_signature="s", out_signature="a{sv}")
+    def GetAll(self, interface_name):
+        return self._get_gpu_properties()
+
+    @dbus.service.method("org.freedesktop.DBus.Properties", in_signature="ssv")
+    def Set(self, interface_name, property_name, new_value):
+        raise dbus.exceptions.DBusException(
+            f"Property {property_name} is read-only",
+            name="org.freedesktop.DBus.Error.PropertyReadOnly"
+        )
+
+def main():
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    bus = dbus.SystemBus()
+    name = dbus.service.BusName(BUS_NAME, bus)
+    obj = SwitcherooControl(bus)
+    loop = GLib.MainLoop()
+    print("mac-switcheroo-control: running on net.hadess.SwitcherooControl", flush=True)
+    try:
+        loop.run()
+    except KeyboardInterrupt:
+        pass
+
+if __name__ == "__main__":
+    main()

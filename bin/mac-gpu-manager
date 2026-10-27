@@ -282,8 +282,10 @@ def set_targets(sys_idx, apps_idx, games_idx):
             if current_prime != 'intel':
                 subprocess.run(['prime-select', 'intel'], check=False)
 
-    # 2. Apps target (default user applications & environment)
-    if apps_val == 1:
+    # 2. System session environment:
+    # If sys_val == 1, system session (including gnome-shell) runs globally on NVIDIA.
+    # If sys_val == 0, system session runs on Intel UHD, and applications run on discrete GPU via switcheroo-control / PrefersNonDefaultGPU.
+    if sys_val == 1:
         with open(ENV_FILE, 'w') as f:
             for k, v in NVIDIA_ENV_VARS.items():
                 f.write(f'{k}={v}\n')
@@ -295,6 +297,12 @@ def set_targets(sys_idx, apps_idx, games_idx):
             except OSError:
                 pass
         apply_user_systemd_env(enable=False)
+
+    # 3. Synchronize applications so desktop files match the Apps GPU target
+    try:
+        subprocess.run(['mac-sync-applications'], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
 
     # 3. Derive legacy state
     if sys_val == 1:
