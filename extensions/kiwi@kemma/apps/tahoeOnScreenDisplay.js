@@ -140,14 +140,14 @@ const TahoeSegSlider = GObject.registerClass({
             // solid background track
             const barY = Math.round(h * 0.28), barH = 5;
             const r = barH / 2;
-            cr.setSourceRGBA(1, 1, 1, 0.28);
+            cr.setSourceRGBA(1, 1, 1, 0.18);
             this._rr(cr, 0, barY, w, barH, r);
             cr.fill();
 
-            // Colors: RED if overamplified (100%+), selected system accent color if <= 100%
+            // Colors: RED if overamplified (100%+), solid opaque WHITE if <= 100%
             const RED = [1.00, 0.23, 0.19];
-            const ACCENT = _getAccentColor();
-            const [colorR, colorG, colorB] = isOveramp ? RED : ACCENT;
+            const WHITE = [1.00, 1.00, 1.00];
+            const [colorR, colorG, colorB] = isOveramp ? RED : WHITE;
 
             // Step snapping for 16 segments (matching volume/brightness stops)
             const n = 16;
@@ -170,17 +170,17 @@ const TahoeSegSlider = GObject.registerClass({
                 cr.fill();
             }
 
-            // dots row beneath: 16 dots precisely aligned with the 16 stops
-            const dy = h * 0.78;
+            // dots row beneath: 16 dots precisely aligned with the 16 stops, closer to slider
+            const dy = barY + barH + 3.5;
             for (let i = 1; i <= n; i++) {
                 const dotX = r + i * (w - 2 * r) / n;
                 const isActive = isOveramp || (dotX <= fillW + 1.0);
                 if (isActive) {
-                    cr.setSourceRGBA(colorR, colorG, colorB, 0.95);
+                    cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
                 } else {
-                    cr.setSourceRGBA(1, 1, 1, 0.28);
+                    cr.setSourceRGBA(1, 1, 1, 0.18);
                 }
-                cr.arc(dotX, dy, 1.5, 0, Math.PI * 2);
+                cr.arc(dotX, dy, 1.0, 0, Math.PI * 2);
                 cr.fill();
             }
             cr.restore();
@@ -980,4 +980,8 @@ export function disable() {
     _iconL = null;
     _iconR = null;
     _slider = null;
+}
+
+export function showTest(kind = 'volume', title = 'Raptor Lake-P/U/H cAVS Speaker', iconL = 'audio-volume-low-symbolic', iconR = 'audio-volume-high-symbolic', val = 0.35) {
+    _show(kind, title, iconL, iconR, val);
 }
