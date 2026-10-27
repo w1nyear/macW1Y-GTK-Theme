@@ -2,12 +2,12 @@
 Type=Application
 Name=CapCut
 Comment=CapCut Video Editor
-Exec=/usr/local/bin/mac-wine-runner "/home/vitaliy/.wine/drive_c/users/vitaliy/AppData/Local/CapCut/Apps/7.5.0.3053/CapCut.exe" %U
-Icon=/home/vitaliy/.local/share/icons/hicolor/scalable/apps/capcut.png
+Exec=/usr/local/bin/mac-wine-runner "/home/vitaliy/.wine/drive_c/users/vitaliy/AppData/Local/CapCut/Apps/CapCut.exe" %U
+Icon=capcut
 Terminal=false
 Categories=AudioVideo;Video;AudioVideoEditing;Utility;
 X-Mac-Wine-App=true
-X-Mac-Real-Path=/home/vitaliy/.wine/drive_c/users/vitaliy/AppData/Local/CapCut/Apps/7.5.0.3053/CapCut.exe
+X-Mac-Real-Path=/home/vitaliy/.wine/drive_c/users/vitaliy/AppData/Local/CapCut/Apps/CapCut.exe
 PrefersNonDefaultGPU=true
 X-KDE-RunOnDiscreteGpu=true
 StartupNotify=true

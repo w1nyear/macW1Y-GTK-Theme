@@ -11384,3 +11384,36 @@ Task 499: Повне полірування екрана блокування (m
 
 
 
+
+556. Комплексне виправлення запуску Wine-програм, CapCut та 3D-додатків у гібридній графіці (Intel Iris/UHD + NVIDIA RTX 3050):
+   1. Діагностика:
+      - Користувач повідомив, що програми Wine (зокрема щойно встановлений відеоредактор CapCut та інші програми/ігри) не запускаються або миттєво аварійно завершують роботу при спробі відкриття з робочого столу, дока чи файлового менеджера.
+      - Поглиблений аналіз логів та процесів виявив чотири взаємопов'язані критичні проблеми:
+        1) **Помилка створення поверхні Vulkan (`VK_ERROR_OUT_OF_HOST_MEMORY` / Presentation Swapchain Crash)**:
+           У глобальних конфігураціях (`/etc/environment.d/99-mac-gpu.conf`) та численних обгортках (`bin/mac-gpu-manager`, `bin/mac-wine-runner`, `bin/wine`, `bin/steam`, `bin/gamemoderun` тощо) було жорстко встановлено змінні оточення `VK_LOADER_DRIVERS_SELECT="*nvidia*"` та `__VK_LAYER_NV_optimus="NVIDIA_only"`. На ноутбуках із гібридною графікою (Optimus / PRIME) XWayland та композитинг робочого столу керуються інтегрованою графікою Intel, тоді як NVIDIA RTX 3050 здійснює рендеринг через механізм offloading. Зазначені змінні примусово приховували маніфест драйвера Intel (`intel_icd.json`) від завантажувача Vulkan. Коли DXVK або Wine намагалися створити поверхню презентації (`vkCreateWin32SurfaceKHR` -> `vkCreateXlibSurfaceKHR`), драйвер NVIDIA не міг підключитися до XWayland-поверхні Intel і повертав критичну помилку `Presenter: Failed to create Vulkan surface: VK_ERROR_OUT_OF_HOST_MEMORY`, через що CapCut, CS2, Watch Dogs та будь-які DXVK/Vulkan програми завершували роботу з фатальним збоєм при першому ж кадрі презентації.
+        2) **Вичерпання ліміту файлових дескрипторів Wine (`0xC000011F` / `STATUS_TOO_MANY_OPENED_FILES`)**:
+           Фоновий системний юніт `wine-prewarm.service` запускав `wineserver -p` у системному user slice без перевизначення лімітів процесів, успадковуючи стандартний м'який ліміт у 1024 відкритих файли. Багатопотокові сучасні додатки на базі Chromium Embedded Framework (CEF) та DXVK (зокрема CapCut) створюють сотні дескрипторів сокетів, каналів IPC та файлових ресурсів, миттєво вичерпуючи ліміт 1024 дескрипторів і аварійно завершуючись із помилкою `wine: could not load kernel32.dll, status c000011f`.
+        3) **Збій композиції буферів ANGLE / CEF DirectComposition (`0x887A0004` / `DXGI_ERROR_UNSUPPORTED` / `EGL_BAD_ALLOC`)**:
+           Вбудований у CapCut рушій Chromium (CEF) використовував бекенд ANGLE Direct3D 11 (`SwapChain11.cpp:636`), намагаючись створити поверхні DirectComposition (`dcomp.dll`), які не підтримуються емуляцією DXVK на поверхнях Linux-вікон і викликали циклічні помилки виділення буферів `eglCreateWindowSurface: Bad allocation` та зависання рендерера.
+        4) **Заблокований цикл детекції заліза CapCut та пошкоджені ярлики запуску**:
+           Після первинного падіння від вичерпання файлових дескрипторів процес `VEDetector.exe` записав код збою `3221225477` (`0xC0000005`) у конфіг `User Data/Config/ve_hw_check.ini`. При повторних запусках CapCut читав цей код і відмовлявся стартувати. Крім того, ярлики на робочому столі та в системному меню посилалися на внутрішній 86-кілобайтний заглушковий файл `Apps/7.5.0.3053/CapCut.exe` замість основного 4.96MB завантажувача `Apps/CapCut.exe`, ярлик на робочому столі мав червоний хрестик (був непозначений як довірений у DING) та викликав неіснуючий бінарник `wine-stable`.
+   2. Вирішення:
+      - **Усунення блокування завантажувача Vulkan у гібридній графіці**:
+        * Повністю вилучено параметри `VK_LOADER_DRIVERS_SELECT="*nvidia*"` та `__VK_LAYER_NV_optimus="NVIDIA_only"` з конфігурації `/etc/environment.d/99-mac-gpu.conf`, з сесії користувача (`systemctl --user unset-environment`) та з усіх скриптів-раннерів у репозиторії та `/usr/local/bin/` (`gamemoderun`, `mac-gpu-manager`, `mac-steam-shader-optimizer`, `mac-wine-runner`, `nvidia-game-run`, `nvidia-gpu`, `prime-run`, `steam`, `wine`, `wine64`).
+        * Завдяки цьому завантажувач Vulkan одночасно бачить маніфести Intel та NVIDIA: рендеринг виконується на GPU NVIDIA RTX 3050, а презентація кадрів коректно зв'язується з дисплеєм Intel без помилок вичерпання пам'яті хоста.
+      - **Збільшення лімітів файлових дескрипторів Wine**:
+        * У конфігурацію сервісу `wine-prewarm.service` (як у `systemd/wine-prewarm.service`, так і в `~/.config/systemd/user/wine-prewarm.service`) додано директиви `LimitNOFILE=524288` та `LimitNPROC=65536`.
+        * У скрипти `bin/mac-wine-runner`, `bin/wine` та `bin/wine64` (та відповідні файли в `/usr/local/bin/`) додано команду `ulimit -n 524288 2>/dev/null || true`. Wineserver тепер гарантовано функціонує з максимальним запасом дескрипторів (524288).
+      - **Оптимізація DXVK та відключення DirectComposition для CEF**:
+        * До оверрайдів `WINEDLLOVERRIDES` у `mac-wine-runner`, `wine` та `wine64` додано директиву `dcomp=d` (відключення проблемного stub-модуля DirectComposition).
+        * У `dxvk.conf` додано налаштування `dxgi.deferSurfaceCreation = True` та `dxgi.enableDummyCompositionSwapchain = True`, що повністю усунуло помилки `EGL_BAD_ALLOC` в ANGLE.
+      - **Відновлення конфігурації CapCut та створення довірених ярликів**:
+        * У файлі `User Data/Config/ve_hw_check.ini` очищено коди збоїв (встановлено `0`), а права доступу змінено на `444` (read-only), щоб запобігти повторному блокуванню. У `EnvDetect.json` та `EnvDetectSimulate.json` відключено примусову перевірку середовища (`"need_check": false`).
+        * Створено системний симлінк `/usr/local/bin/wine-stable -> /usr/local/bin/wine`.
+        * Оновлено файли `wine-capcut.desktop` у репозиторії, `~/.local/share/applications/` та `~/Applications/` з прямим викликом `mac-wine-runner` та шляхом до основного бінарника `Apps/CapCut.exe`.
+        * На робочому столі створено чистий ярлик `CapCut.desktop`, встановлено атрибут довіри через `gio set ~/Desktop/CapCut.desktop metadata::trusted true` (видалено червоний значок блокування), а зайвий файл `CapCut.lnk` видалено.
+        * У скрипт `bin/mac-sync-applications` додано автоматичну санітизацію та виставлення довіри (`metadata::trusted true`) для ярликів на робочому столі при синхронізації.
+   3. Перевірка:
+      - Проведено тестовий запуск CapCut через `mac-wine-runner` та перевірено процес: дерево процесів (головний потік, GPU-процес, CEF-рендерери, мережеві служби) працює стабільно без жодних збоїв.
+      - Вікно CapCut (`CapCut [capcut.exe]` розміром `1449x1000`) успішно створюється, реєструється в GNOME Shell і відображається на робочому столі.
+      - Логи `cef_log.log` підтвердили відсутність помилок виділення пам'яті та swapchain, а запуск Windows-додатків через контекстні меню, ярлики та термінал функціонує бездоганно.

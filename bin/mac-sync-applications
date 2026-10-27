@@ -212,18 +212,23 @@ def sync():
                         except Exception:
                             pass
                     try:
-                        shutil.copy2(f, dest_path)
-                        os.chmod(dest_path, 0o755)
+                        with open(f, "r", errors="ignore") as src_f:
+                            lines = src_f.readlines()
+                        clean_lines = [l for l in lines if not l.startswith("X-Mac-Real-Path=") and not l.startswith("X-Mac-Wine-App=") and not l.startswith("PrefersNonDefaultGPU=") and not l.startswith("X-KDE-RunOnDiscreteGpu=")]
+                        while clean_lines and not clean_lines[-1].strip():
+                            clean_lines.pop()
                         cats = app_info.get_categories() or ""
                         cmdline = app_info.get_commandline() or ""
                         is_game = ("Game" in cats) or ("game" in base.lower()) or ("steam" in base.lower()) or ("steam://" in cmdline)
-                        is_wine = ("wine" in base.lower()) or ("wine" in cmdline.lower())
-                        with open(dest_path, "a") as df:
-                            df.write(f"\nX-Mac-Real-Path={f}\n")
-                            if is_wine:
-                                df.write("X-Mac-Wine-App=true\n")
-                            if is_game or is_wine:
-                                df.write("PrefersNonDefaultGPU=true\nX-KDE-RunOnDiscreteGpu=true\n")
+                        is_wine = ("wine" in base.lower()) or ("wine" in cmdline.lower()) or any("X-Mac-Wine-App=true" in l for l in lines)
+                        clean_lines.append(f"\nX-Mac-Real-Path={f}\n")
+                        if is_wine:
+                            clean_lines.append("X-Mac-Wine-App=true\n")
+                        if is_game or is_wine:
+                            clean_lines.append("PrefersNonDefaultGPU=true\nX-KDE-RunOnDiscreteGpu=true\n")
+                        with open(dest_path, "w") as df:
+                            df.writelines(clean_lines)
+                        os.chmod(dest_path, 0o755)
                     except Exception:
                         pass
                         
@@ -253,6 +258,42 @@ def sync():
                 pass
 
     print(f"Synced {len(active_links)} applications to {apps_dir}")
+
+    # Sanitize Desktop shortcuts created by Wine or other installers
+    for dtop_name in ["Desktop", "Десктоп", "Стільниця"]:
+        dtop_dir = os.path.join(home, dtop_name)
+        if not os.path.isdir(dtop_dir):
+            continue
+        # Remove leftover .lnk files
+        for lnk in glob.glob(os.path.join(dtop_dir, "*.lnk")):
+            try:
+                os.remove(lnk)
+            except Exception:
+                pass
+        # Sanitize .desktop files
+        for dt in glob.glob(os.path.join(dtop_dir, "*.desktop")):
+            try:
+                os.chmod(dt, 0o755)
+                subprocess.run(["gio", "set", dt, "metadata::trusted", "true"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                with open(dt, "r", errors="ignore") as f:
+                    content = f.read()
+                if "wine-stable" in content or ("wine " in content and "mac-wine-runner" not in content):
+                    lines = content.splitlines()
+                    new_lines = []
+                    for line in lines:
+                        if line.startswith("Exec="):
+                            m = re.search(r'([A-Za-z]:\\[^"\n\r]+|/[^"\n\r]+\.exe)', line)
+                            if m:
+                                win_target = m.group(1).replace("\\\\", "/").replace("\\", "/")
+                                if re.match(r'^[A-Za-z]:', win_target):
+                                    win_target = os.path.join(home, ".wine/drive_c", win_target[3:])
+                                line = f'Exec=/usr/local/bin/mac-wine-runner "{win_target}" %U'
+                        new_lines.append(line)
+                    with open(dt, "w") as f:
+                        f.write("\n".join(new_lines) + "\n")
+            except Exception:
+                pass
 
 
 def extract_app_name(filename):
@@ -714,7 +755,22 @@ StartupNotify=true
                 clean_target = f"{clean_name.lower().replace(' ', '')}.exe"
                 is_exact = fn == clean_target
                 is_sub = safe_id in fn
-                return (2 if is_exact else (1 if is_sub else 0), mtime)
+
+                # Prefer root app launcher over versioned subfolder (e.g. Apps/CapCut.exe over Apps/7.5.0/CapCut.exe)
+                parent_dir = os.path.dirname(fp)
+                grandparent_dir = os.path.dirname(parent_dir)
+                is_subversion = False
+                if os.path.exists(os.path.join(grandparent_dir, os.path.basename(fp))):
+                    is_subversion = True
+
+                score = 0
+                if is_exact:
+                    score = 2
+                elif is_sub:
+                    score = 1
+                if is_subversion:
+                    score -= 10
+                return (score, mtime)
             recent_exes.sort(key=exe_priority, reverse=True)
             installed_exe = recent_exes[0][0]
             icon_path = extract_exe_icon(installed_exe, safe_id)

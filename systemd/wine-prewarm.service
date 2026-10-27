@@ -9,6 +9,8 @@ ExecStart=/usr/local/bin/wineserver -p
 ExecStop=/usr/local/bin/wineserver -k
 Restart=always
 RestartSec=5
+LimitNOFILE=524288
+LimitNPROC=65536
 
 [Install]
 WantedBy=default.target

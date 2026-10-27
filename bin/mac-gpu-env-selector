@@ -38,7 +38,6 @@ fi
 if [ "$TARGET_GPU" -eq 1 ] && command -v nvidia-smi >/dev/null 2>&1; then
     export __NV_PRIME_RENDER_OFFLOAD=1
     export __GLX_VENDOR_LIBRARY_NAME=nvidia
-    export __VK_LAYER_NV_optimus=NVIDIA_only
     export PROTON_ENABLE_NVAPI=1
     export DXVK_ENABLE_NVAPI=1
     export PROTON_HIDE_NVIDIA_GPU=0

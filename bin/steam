@@ -51,7 +51,6 @@ if [ "$TARGET_GAME_GPU" -eq 1 ] && which nvidia-smi >/dev/null 2>&1; then
     # Route all Vulkan and OpenGL games to Discrete NVIDIA GeForce RTX 3050 GPU
     export __NV_PRIME_RENDER_OFFLOAD=1
     export __GLX_VENDOR_LIBRARY_NAME=nvidia
-    export __VK_LAYER_NV_optimus=NVIDIA_only
     unset DRI_PRIME
     unset MESA_VK_DEVICE_SELECT
 else

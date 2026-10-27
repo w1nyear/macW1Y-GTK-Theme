@@ -1,6 +1,9 @@
 #!/bin/bash
 # Dynamic GPU wrapper for Wine (respects Power Settings GPU selection)
 
+# Raise file descriptor limit to prevent EMFILE/STATUS_TOO_MANY_OPENED_FILES (0xc000011f)
+ulimit -n 524288 2>/dev/null || true
+
 # Detect and apply GPU environment configured in Power Settings (~/.config/mac-gpu-targets.json)
 CONFIG_FILE="$HOME/.config/mac-gpu-targets.json"
 [ -f "$CONFIG_FILE" ] || CONFIG_FILE="/etc/mac-gpu-targets.json"
@@ -37,7 +40,7 @@ fi
 if [ "$TARGET_GPU" -eq 1 ] && command -v nvidia-smi >/dev/null 2>&1; then
     export __NV_PRIME_RENDER_OFFLOAD=1
     export __GLX_VENDOR_LIBRARY_NAME=nvidia
-    export __VK_LAYER_NV_optimus=NVIDIA_only
+    unset __VK_LAYER_NV_optimus
     export PROTON_ENABLE_NVAPI=1
     export DXVK_ENABLE_NVAPI=1
     export PROTON_HIDE_NVIDIA_GPU=0
@@ -57,6 +60,22 @@ else
     unset MESA_VK_DEVICE_SELECT
     export DRI_PRIME=0
     export MESA_LOADER_DRIVER_OVERRIDE=iris
+fi
+
+# Ensure critical runtime overrides are applied for stability.
+# dcomp=d disables DirectComposition to prevent SwapChain11/bad allocation crashes in CEF/ANGLE apps.
+DEFAULT_OVERRIDES="dcomp=d;msvcp140,msvcp140_1,msvcp140_2,msvcp140_codecvt_ids,vcruntime140,vcruntime140_1,vcomp140,concrt140,ucrtbase=n,b;d3d11,dxgi,d3dcompiler_47=n,b"
+if [ -z "$WINEDLLOVERRIDES" ]; then
+    export WINEDLLOVERRIDES="$DEFAULT_OVERRIDES"
+else
+    if [[ ! "$WINEDLLOVERRIDES" =~ dcomp= ]]; then
+        export WINEDLLOVERRIDES="dcomp=d;$WINEDLLOVERRIDES"
+    fi
+fi
+
+# Enable DirectComposition dummy swapchains and deferred surface creation in DXVK
+if [ -z "$DXVK_CONFIG" ]; then
+    export DXVK_CONFIG="dxgi.enableDummyCompositionSwapchain = True; dxgi.deferSurfaceCreation = True"
 fi
 
 REAL_BIN=$(PATH=$(echo "$PATH" | sed -e 's|/usr/local/bin||g' -e 's|::|:|g') which wine 2>/dev/null)
