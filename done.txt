@@ -11726,3 +11726,20 @@ Task 499: Повне полірування екрана блокування (m
    - Розгорнуто оновлені таблиці стилів у `~/.config/gtk-4.0/`, `config/gtk-4.0/`, `~/.themes/macW1Y-Dark/gtk-4.0/` та `/usr/share/themes/macW1Y-Dark/gtk-4.0/`.
    - Оновлено хеші цілісності в `config/extensions.lock.json` для `appmenu@ChathurangaBW.github.io` та `kiwi@kemma`.
    - `/usr/local/bin/mac-extension-guard verify` та `/usr/local/bin/mac-diagnostics` завершились із результатом 100% SUCCESS.
+--------------------------------------------------------------------------------
+574. Впровадження логіки градієнтного розмиття фону Центру керування у шейдер зникнення списку та бічної панелі:
+1. Діагностика та аналіз:
+   - У попередній реалізації GLSL-шейдера розмиття множилося на лінійне занулення непрозорості `col *= (1.0 - t)`, тому на межі, де блюр сягав 5px, колір ставав повністю невидимим, а на початку зони блюр був мізерним і непомітним.
+   - У GTK4 CSS для `undershoot.top` та `undershoot.bottom` був відсутній `backdrop-filter: blur()`, а градієнт був повністю непрозорим у верхній точці, тому елементи списку при прокручуванні не розмивалися.
+2. Впровадження логіки розмиття Центру керування (Liquid Glass Backdrop):
+   - У GLSL-шейдері `gradientBlurFade.js` (у `appmenu` та `kiwi`):
+     * Застосовано лінійно-оптимізоване 17-точкове гаусове ядро на базі констант Центру керування (`gaussian_h.frag` / `gaussian_v.frag`): `GAUSSIAN_WEIGHT_0 = 0.227`, `GAUSSIAN_WEIGHT_1 = 0.316`, `GAUSSIAN_WEIGHT_2 = 0.070` з масштабом оффсетів `blur_radius = 5.0px`.
+     * Реалізовано роздільне змішування за принципом Liquid Glass: спочатку контент за кривою `smoothstep(0.0, 0.65, t)` плавно розмивається з різкого у 5.0px розмите зображення, зберігаючи високу яскравість і видимість, і лише на зовнішній ділянці (`smoothstep(0.40, 1.0, t)`) розчиняється альфа-канал.
+     * Через D-Bus EvalHelper гаряче оновлено прототип `__AppmenuGradientBlurFadeEffect` у живій пам'яті GNOME Shell без перезавантаження сеансу.
+   - У GTK4 CSS (`gtk.css` та `gtk-dark.css`):
+     * Додано `backdrop-filter: blur(10px);` до `undershoot.top` та `undershoot.bottom` як для списків контенту (`preferencespage`, `content-pane`), так і для бічної панелі (`.sidebar-pane`).
+     * Колірний градієнт налаштовано на напівпрозоре накладання (`alpha(@window_bg_color, 0.88)` -> `transparent`), дозволяючи розмиттю контенту під оверлеєм бути чітко видимим.
+3. Синхронізація конфігурацій та перевірка:
+   - Файли синхронізовано з `~/.config/gtk-4.0/`, `config/gtk-4.0/`, `~/.themes/macW1Y-Dark/gtk-4.0/`, `/usr/share/themes/macW1Y-Dark/gtk-4.0/` та каталогами розширень.
+   - Оновлено SHA256 у `config/extensions.lock.json`.
+   - `mac-extension-guard verify` та `mac-diagnostics` підтвердили 100% цілісність системи.

@@ -10,6 +10,13 @@ const GRADIENT_BLUR_FADE_SHADER = `
     uniform float fade_edges_top;
     uniform float fade_edges_bottom;
 
+    // Linear-sampling Gaussian weights and offsets from Control Center background blur
+    const float GAUSSIAN_OFFSET_1 = 1.3846153846;
+    const float GAUSSIAN_OFFSET_2 = 3.2307692308;
+    const float GAUSSIAN_WEIGHT_0 = 0.2270270270;
+    const float GAUSSIAN_WEIGHT_1 = 0.3162162162;
+    const float GAUSSIAN_WEIGHT_2 = 0.0702702703;
+
     void main() {
         vec2 uv = cogl_tex_coord_in[0].st;
         float y = uv.y * max(1.0, height);
@@ -18,38 +25,68 @@ const GRADIENT_BLUR_FADE_SHADER = `
         if (fade_edges_top > 0.5 && y < fade_offset_top && fade_offset_top > 0.0) {
             float dist_top = y;
             float p_top = clamp(1.0 - (dist_top / fade_offset_top), 0.0, 1.0);
-            float curve_top = p_top * p_top * (3.0 - 2.0 * p_top);
-            t = max(t, curve_top);
+            t = max(t, p_top);
         }
         if (fade_edges_bottom > 0.5 && y > (height - fade_offset_bottom) && fade_offset_bottom > 0.0) {
             float dist_bottom = height - y;
             float p_bottom = clamp(1.0 - (dist_bottom / fade_offset_bottom), 0.0, 1.0);
-            float curve_bottom = p_bottom * p_bottom * (3.0 - 2.0 * p_bottom);
-            t = max(t, curve_bottom);
+            t = max(t, p_bottom);
         }
 
-        // Gradient blur effect: 0px at start (t=0.0) up to 5px at the end (t=1.0)
-        float cur_blur = t * 5.0;
-
-        vec4 col = texture2D(tex, uv);
-        if (cur_blur > 0.1) {
-            vec2 px_step = vec2(1.0 / max(1.0, width), 1.0 / max(1.0, height));
-            float total_weight = 1.0;
-            for (int i = 1; i <= 16; i++) {
-                float fi = float(i);
-                float r = sqrt(fi / 16.0);
-                float theta = fi * 2.39996323;
-                vec2 offset = vec2(cos(theta), sin(theta)) * (r * cur_blur) * px_step;
-                vec2 sample_uv = clamp(uv + offset, vec2(0.0), vec2(1.0));
-                float w = exp(-1.5 * r * r);
-                col += texture2D(tex, sample_uv) * w;
-                total_weight += w;
-            }
-            col /= total_weight;
+        vec4 sharp = texture2D(tex, uv);
+        if (t <= 0.001) {
+            cogl_color_out = sharp;
+            return;
         }
 
-        // Smooth opacity dissolve applied purely to the list
-        col *= clamp(1.0 - t, 0.0, 1.0);
+        // 5.0px Gaussian blur pass (Control Center background blur kernel)
+        vec2 px_step = vec2(1.0 / max(1.0, width), 1.0 / max(1.0, height));
+        float o1 = GAUSSIAN_OFFSET_1 * 5.0;
+        float o2 = GAUSSIAN_OFFSET_2 * 5.0;
+
+        vec2 v1 = vec2(0.0, o1 * px_step.y);
+        vec2 v2 = vec2(0.0, o2 * px_step.y);
+        vec2 h1 = vec2(o1 * px_step.x, 0.0);
+        vec2 h2 = vec2(o2 * px_step.x, 0.0);
+        vec2 d1 = vec2(o1 * 0.7071 * px_step.x, o1 * 0.7071 * px_step.y);
+        vec2 d2 = vec2(o2 * 0.7071 * px_step.x, o2 * 0.7071 * px_step.y);
+        vec2 d1b = vec2(-d1.x, d1.y);
+        vec2 d2b = vec2(-d2.x, d2.y);
+
+        vec4 blurred = sharp * GAUSSIAN_WEIGHT_0;
+        float w1_half = GAUSSIAN_WEIGHT_1 * 0.25;
+        float w2_half = GAUSSIAN_WEIGHT_2 * 0.25;
+
+        // Orthogonal axes (Horizontal & Vertical)
+        blurred += (texture2D(tex, clamp(uv + h1, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv - h1, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv + v1, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv - v1, vec2(0.0), vec2(1.0)))) * w1_half;
+
+        blurred += (texture2D(tex, clamp(uv + h2, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv - h2, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv + v2, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv - v2, vec2(0.0), vec2(1.0)))) * w2_half;
+
+        // Diagonal axes (45 degree angles)
+        blurred += (texture2D(tex, clamp(uv + d1, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv - d1, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv + d1b, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv - d1b, vec2(0.0), vec2(1.0)))) * w1_half;
+
+        blurred += (texture2D(tex, clamp(uv + d2, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv - d2, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv + d2b, vec2(0.0), vec2(1.0))) +
+                    texture2D(tex, clamp(uv - d2b, vec2(0.0), vec2(1.0)))) * w2_half;
+
+        // Control Center logic: smooth transition from sharp to blurred across the dissipation zone
+        float blur_mix = smoothstep(0.0, 0.65, t);
+        vec4 col = mix(sharp, blurred, blur_mix);
+
+        // Gentle edge opacity dissolve at the very end
+        float alpha_fade = 1.0 - smoothstep(0.40, 1.0, t);
+        col *= clamp(alpha_fade, 0.0, 1.0);
+
         cogl_color_out = col;
     }
 `;
@@ -89,6 +126,9 @@ EffectClass.prototype.setOffsets = function(topOffset, bottomOffset) {
 
 EffectClass.prototype.attachTo = function(actor, scrollView = null) {
     if (!actor) return;
+    try {
+        this.set_shader_source(GRADIENT_BLUR_FADE_SHADER);
+    } catch (_) {}
     this._targetActor = actor;
     actor.add_effect(this);
 
