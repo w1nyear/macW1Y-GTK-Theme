@@ -52,7 +52,6 @@ if [ "$TARGET_GAME_GPU" -eq 1 ] && which nvidia-smi >/dev/null 2>&1; then
     export __NV_PRIME_RENDER_OFFLOAD=1
     export __GLX_VENDOR_LIBRARY_NAME=nvidia
     export __VK_LAYER_NV_optimus=NVIDIA_only
-    export VK_LOADER_DRIVERS_SELECT="*nvidia*"
     unset DRI_PRIME
     unset MESA_VK_DEVICE_SELECT
 else
@@ -60,11 +59,8 @@ else
     unset __NV_PRIME_RENDER_OFFLOAD
     unset __GLX_VENDOR_LIBRARY_NAME
     unset __VK_LAYER_NV_optimus
-    export VK_LOADER_DRIVERS_SELECT="*intel*"
+    export DRI_PRIME=0
 fi
-
-unset VK_DRIVER_FILES
-unset VK_ICD_FILENAMES
 
 # 4. Enable NVIDIA features in Proton / DXVK & Unlock Framerate / Full GPU Power
 export PROTON_ENABLE_NVAPI=1
@@ -73,29 +69,10 @@ export PROTON_HIDE_NVIDIA_GPU=0
 export __GL_SYNC_TO_VBLANK=0
 export vblank_mode=0
 export DXVK_FRAME_RATE=0
-export DXVK_ASYNC=1
 export MANGOHUD_CONFIG="fps_limit=0"
 
 # 5. Prevent shader compilation from starving CPU and freezing desktop (cap threads to 4)
 export FOSSILIZE_THREADS=4
 
-# 6. Wayland & display scaling optimizations for SDL3 games (e.g. Counter-Strike 2)
-export SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY=1
-export SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR=0
-
-# Ensure CS2 launcher script uses native Wayland to prevent mouse snapping/locking
-fix_cs2_script() {
-    local cs2_paths=(
-        "$HOME/snap/steam/common/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/game/cs2.sh"
-        "$HOME/.local/share/Steam/steamapps/common/Counter-Strike Global Offensive/game/cs2.sh"
-    )
-    for cs2_sh in "${cs2_paths[@]}"; do
-        if [ -f "$cs2_sh" ] && grep -q 'export SDL_VIDEO_DRIVER=x11' "$cs2_sh"; then
-            sed -i 's/export SDL_VIDEO_DRIVER=x11/unset DISABLE_WAYLAND\n\t\texport SDL_VIDEO_DRIVER=wayland\n\t\texport SDL_VIDEODRIVER=wayland\n\t\texport SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY=1\n\t\texport SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR=0/g' "$cs2_sh"
-        fi
-    done
-}
-fix_cs2_script >/dev/null 2>&1 &
-
-# 7. Launch Steam executable
+# 6. Launch Steam executable
 exec $REAL_STEAM "$@"

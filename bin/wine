@@ -38,14 +38,12 @@ if [ "$TARGET_GPU" -eq 1 ] && command -v nvidia-smi >/dev/null 2>&1; then
     export __NV_PRIME_RENDER_OFFLOAD=1
     export __GLX_VENDOR_LIBRARY_NAME=nvidia
     export __VK_LAYER_NV_optimus=NVIDIA_only
-    export VK_LOADER_DRIVERS_SELECT="*nvidia*"
     export PROTON_ENABLE_NVAPI=1
     export DXVK_ENABLE_NVAPI=1
     export PROTON_HIDE_NVIDIA_GPU=0
     export __GL_SYNC_TO_VBLANK=0
     export vblank_mode=0
     export DXVK_FRAME_RATE=0
-    export DXVK_ASYNC=1
     export MANGOHUD_CONFIG="fps_limit=0"
     unset DRI_PRIME
     unset MESA_VK_DEVICE_SELECT
@@ -56,15 +54,10 @@ else
     unset PROTON_ENABLE_NVAPI
     unset DXVK_ENABLE_NVAPI
     unset DXVK_FRAME_RATE
-    unset DXVK_ASYNC
     unset MESA_VK_DEVICE_SELECT
     export DRI_PRIME=0
     export MESA_LOADER_DRIVER_OVERRIDE=iris
-    export VK_LOADER_DRIVERS_SELECT="*intel*"
 fi
-
-unset VK_DRIVER_FILES
-unset VK_ICD_FILENAMES
 
 REAL_BIN=$(PATH=$(echo "$PATH" | sed -e 's|/usr/local/bin||g' -e 's|::|:|g') which wine 2>/dev/null)
 if [ -n "$REAL_BIN" ] && [ -x "$REAL_BIN" ]; then

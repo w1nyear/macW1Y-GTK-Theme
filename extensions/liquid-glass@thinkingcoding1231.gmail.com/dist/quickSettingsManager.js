@@ -648,6 +648,20 @@ export class QuickSettingsManager {
                 }
             })
         });
+        if (Main.layoutManager) {
+            this._signals.push({
+                target: Main.layoutManager,
+                id: Main.layoutManager.connect('monitors-changed', () => {
+                    this._lastScreenW = 0;
+                    this._lastScreenH = 0;
+                    this._lastBgX = null;
+                    this._lastBgY = null;
+                    this._windowCloneManager?.rebuildClones();
+                    this._uiSampler?.rebindSelf();
+                    this._uiSampler?.refresh();
+                }),
+            });
+        }
         this._updateResolution();
         if (this.targetActor.mapped) {
             startFrameSync();
@@ -927,6 +941,20 @@ export class QuickSettingsManager {
                 }
             })
         });
+        if (Main.layoutManager) {
+            this._signals.push({
+                target: Main.layoutManager,
+                id: Main.layoutManager.connect('monitors-changed', () => {
+                    this._lastScreenW = 0;
+                    this._lastScreenH = 0;
+                    this._lastBgX = null;
+                    this._lastBgY = null;
+                    this._windowCloneManager?.rebuildClones();
+                    this._uiSampler?.rebindSelf();
+                    this._uiSampler?.refresh();
+                }),
+            });
+        }
         this._updateResolution();
         if (this.targetActor.mapped) {
             startFrameSync();

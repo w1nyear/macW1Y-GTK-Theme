@@ -245,6 +245,12 @@ export const MacApplicationsDialog = GObject.registerClass({
                 this.close(true);
             }, this);
         }
+        if (Main.layoutManager) {
+            Main.layoutManager.connectObject('monitors-changed', () => {
+                if (this._isOpen)
+                    this.close(true);
+            }, this);
+        }
 
         // 2. Main Floating Applications Container (LQ-Visual Glass)
         this._box = new St.BoxLayout({
@@ -758,7 +764,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         for (const info of installed) {
             const id = info.get_id?.();
-            if (!id || seen.has(id) || id === 'launchpad.desktop') continue;
+            if (!id || seen.has(id) || id === 'launchpad.desktop' || id === 'wine.desktop' || id === 'winetricks.desktop' || id.startsWith('winecfg') || id.startsWith('wine-wineboot')) continue;
             if (info.get_nodisplay?.()) continue;
             if (info.should_show && !info.should_show()) continue;
             seen.add(id);
@@ -1144,11 +1150,13 @@ export const MacApplicationsDialog = GObject.registerClass({
         _hookDockIconsForDrag();
 
         const mon = Main.layoutManager.primaryMonitor;
+        const stageW = global.stage.width;
+        const stageH = global.stage.height;
         this.set_position(0, 0);
-        this.set_size(mon.width, mon.height);
+        this.set_size(stageW, stageH);
 
-        this._backdrop.set_position(mon.x, mon.y);
-        this._backdrop.set_size(mon.width, mon.height);
+        this._backdrop.set_position(0, 0);
+        this._backdrop.set_size(stageW, stageH);
         this._backdrop.visible = true;
 
         const targetX = mon.x + Math.round((mon.width - DIALOG_WIDTH) / 2);
@@ -1338,6 +1346,9 @@ export const MacApplicationsDialog = GObject.registerClass({
     _onDestroy() {
         if (Main.overview) {
             try { Main.overview.disconnectObject(this); } catch (_) {}
+        }
+        if (Main.layoutManager) {
+            try { Main.layoutManager.disconnectObject(this); } catch (_) {}
         }
         if (this._searchTimeoutId) {
             try { GLib.source_remove(this._searchTimeoutId); } catch (_) {}

@@ -262,9 +262,20 @@ export class Animator {
           uiIcon._appwell.connectObject(
             'clicked',
             () => {
-              const clickedAppId = uiIcon._appwell.app?.get_id?.();
-              if (clickedAppId === 'launchpad.desktop') {
-                return; // Launchpad opens dialog directly, do not bounce
+              const clickedAppId = uiIcon._appwell.app?.get_id?.() || '';
+              const isSingleBounceApp = (
+                clickedAppId === 'launchpad.desktop' ||
+                clickedAppId.includes('snap-store') ||
+                clickedAppId.includes('software') ||
+                clickedAppId.includes('store') ||
+                clickedAppId.includes('app-center')
+              );
+              if (isSingleBounceApp) {
+                uiIcon._clickJump = 1.0;
+                uiIcon._launchBounceCount = 0;
+                this._startAnimation();
+                if (this.dashContainer?._animateIn) this.dashContainer._animateIn(0.2, 0);
+                return;
               }
               if (uiIcon._appwell.app && uiIcon._appwell.app.get_n_windows() === 0) {
                 if (!this._launchingApps) this._launchingApps = new Set();
@@ -368,9 +379,16 @@ export class Animator {
         icon._clickJump -= 0.0275 * ANIM_JUMP_SPEED;
         if (icon._clickJump <= 0) {
           const pendingHide = !!this.extension?._pendingHide;
-          const jumpAppId = icon._appwell?.app?.get_id?.();
+          const jumpAppId = icon._appwell?.app?.get_id?.() || '';
           icon._launchBounceCount = (icon._launchBounceCount || 0) + 1;
-          const isStillStarting = (jumpAppId !== 'launchpad.desktop') &&
+          const isSingleBounceApp = (
+            jumpAppId === 'launchpad.desktop' ||
+            jumpAppId.includes('snap-store') ||
+            jumpAppId.includes('software') ||
+            jumpAppId.includes('store') ||
+            jumpAppId.includes('app-center')
+          );
+          const isStillStarting = !isSingleBounceApp &&
             (icon._launchBounceCount < 8) &&
             icon._appwell?.app && (
               icon._appwell.app.get_state() === Shell.AppState.STARTING ||

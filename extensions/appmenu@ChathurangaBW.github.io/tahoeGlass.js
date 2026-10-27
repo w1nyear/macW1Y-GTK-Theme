@@ -313,6 +313,7 @@ export class TahoeGlass {
         }
 
         const monitor =
+            (this._target ? Main.layoutManager.findMonitorForActor?.(this._target) : null) ??
             Main.layoutManager.findMonitorForActor?.(this._parentActor) ??
             Main.layoutManager.primaryMonitor;
         this._monX = monitor?.x ?? 0;

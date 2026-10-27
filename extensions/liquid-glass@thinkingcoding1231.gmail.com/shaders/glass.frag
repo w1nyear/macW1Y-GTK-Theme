@@ -597,12 +597,16 @@ void main() {
         // Same 4-tap RGSS pattern, with the same aa_spread the full path
         // would compute (edgeProximity == 0 => mix(0.75, 2.5, 0) == 0.75).
         vec2 texelFlat = vec2(0.75) / resolution;
-        vec3 flatRgb = (
-            texture2D(cogl_sampler1, blurUV(uvFlat + vec2( 0.375, -0.125) * texelFlat, resolution)).rgb +
-            texture2D(cogl_sampler1, blurUV(uvFlat + vec2( 0.125,  0.375) * texelFlat, resolution)).rgb +
-            texture2D(cogl_sampler1, blurUV(uvFlat + vec2(-0.375,  0.125) * texelFlat, resolution)).rgb +
-            texture2D(cogl_sampler1, blurUV(uvFlat + vec2(-0.125, -0.375) * texelFlat, resolution)).rgb
-        ) * 0.25;
+        vec4 fTap1 = texture2D(cogl_sampler1, blurUV(uvFlat + vec2( 0.375, -0.125) * texelFlat, resolution));
+        vec4 fTap2 = texture2D(cogl_sampler1, blurUV(uvFlat + vec2( 0.125,  0.375) * texelFlat, resolution));
+        vec4 fTap3 = texture2D(cogl_sampler1, blurUV(uvFlat + vec2(-0.375,  0.125) * texelFlat, resolution));
+        vec4 fTap4 = texture2D(cogl_sampler1, blurUV(uvFlat + vec2(-0.125, -0.375) * texelFlat, resolution));
+        vec3 flatRgb = (fTap1.rgb + fTap2.rgb + fTap3.rgb + fTap4.rgb) * 0.25;
+        float fAlpha = (fTap1.a + fTap2.a + fTap3.a + fTap4.a) * 0.25;
+        if (fAlpha < 0.20) {
+            vec3 fallbackBg = vec3(0.12, 0.12, 0.14);
+            flatRgb = mix(fallbackBg, flatRgb, clamp(fAlpha / 0.20, 0.0, 1.0));
+        }
 
         flatRgb = applySCB(flatRgb, brightness, contrast, saturation);
         flatRgb = mix(flatRgb, activeTint, activeBaseStrength);
@@ -928,6 +932,15 @@ void main() {
                         texture2D(cogl_sampler1, SAFE(uvG + off2)).rgb +
                         texture2D(cogl_sampler1, SAFE(uvG + off3)).rgb +
                         texture2D(cogl_sampler1, SAFE(uvG + off4)).rgb) * 0.25;
+    }
+
+    float sampledAlpha = (texture2D(cogl_sampler1, SAFE(uvG + off1)).a +
+                          texture2D(cogl_sampler1, SAFE(uvG + off2)).a +
+                          texture2D(cogl_sampler1, SAFE(uvG + off3)).a +
+                          texture2D(cogl_sampler1, SAFE(uvG + off4)).a) * 0.25;
+    if (sampledAlpha < 0.20) {
+        vec3 fallbackBg = vec3(0.12, 0.12, 0.14);
+        refractedRgb = mix(fallbackBg, refractedRgb, clamp(sampledAlpha / 0.20, 0.0, 1.0));
     }
 
     // Apply color saturation, contrast, brightness

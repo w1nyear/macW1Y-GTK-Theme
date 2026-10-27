@@ -575,6 +575,7 @@ void on_menubar_tint_changed(void *widget, gpointer data) {
 
 void init_menubar_blur(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -593,6 +594,7 @@ void on_menubar_blur_changed(void *widget, gpointer data) {
 /* Group 2: Liquid Glass */
 void init_liquid_blur(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -610,6 +612,7 @@ void on_liquid_blur_changed(void *widget, gpointer data) {
 
 void init_liquid_tint(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -628,6 +631,7 @@ void on_liquid_tint_changed(void *widget, gpointer data) {
 /* Group 3: Blur */
 void init_blur_sigma(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -645,6 +649,7 @@ void on_blur_sigma_changed(void *widget, gpointer data) {
 
 void init_blur_tint(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -682,6 +687,7 @@ void on_menu_tint_changed(void *widget, gpointer data) {
 
 void init_menu_blur(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);

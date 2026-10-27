@@ -1484,6 +1484,9 @@ export const BackgroundMirror = _safeRegisterClass('BackgroundMirror', class Bac
         // flipped the incoming wallpaper sat opaque ON TOP and the glass
         // simply snapped to it while the desktop faded correctly.
         group.connect('notify::first-child', () => this._restack()), group.connect('notify::last-child', () => this._restack()));
+        if (Main.layoutManager) {
+            this._groupHandlers.push(Main.layoutManager.connect('monitors-changed', () => this._onMonitorsChanged()));
+        }
         this.connect('destroy', () => this._onDestroy());
         for (const child of group.get_children())
             this._addMirror(child);
@@ -1695,14 +1698,32 @@ export const BackgroundMirror = _safeRegisterClass('BackgroundMirror', class Bac
         // a wallpaper cross-fade just started.
         utilsLog(`[bg-mirror] restacked ${wanted.length} wallpaper mirror(s)`);
     }
-    _onDestroy() {
-        if (isActorValid(this._sourceGroup)) {
-            for (const id of this._groupHandlers) {
-                try {
-                    this._sourceGroup.disconnect(id);
-                }
-                catch (_) { /* noop */ }
+    _onMonitorsChanged() {
+        if (!isActorValid(this._sourceGroup))
+            return;
+        try {
+            this.set_size(this._sourceGroup.width, this._sourceGroup.height);
+        } catch (_) {}
+        for (const [child, mirror] of this._mirrors) {
+            if (isActorValid(mirror)) {
+                try { mirror.destroy(); } catch (_) {}
             }
+        }
+        this._mirrors.clear();
+        for (const child of this._sourceGroup.get_children()) {
+            this._addMirror(child);
+        }
+        this._restack();
+    }
+    _onDestroy() {
+        for (const id of this._groupHandlers) {
+            try {
+                if (isActorValid(this._sourceGroup))
+                    this._sourceGroup.disconnect(id);
+            } catch (_) {}
+            try {
+                Main.layoutManager?.disconnect(id);
+            } catch (_) {}
         }
         this._groupHandlers = [];
         this._mirrors.clear();
