@@ -259,7 +259,7 @@
     margin: 1px 6px !important;
     font-size: 13px !important;
     font-weight: 500 !important;
-    border-radius: 6px !important;
+    border-radius: 9999px !important;
     spacing: 6px !important;
     color: #ffffff !important;
     text-shadow: none !important;
@@ -285,7 +285,7 @@
 .appmenu-popup-menu-content .popup-menu-item:selected {
     background-color: #007aff !important;
     color: #ffffff !important;
-    border-radius: 6px !important;
+    border-radius: 9999px !important;
     box-shadow: none !important;
 }
 
@@ -295,7 +295,7 @@
 .appmenu-popup-menu-content .popup-menu-item:active {
     background-color: #0062cc !important;
     color: #ffffff !important;
-    border-radius: 6px !important;
+    border-radius: 9999px !important;
 }
 
 .appmenu-popup-menu-item:insensitive,

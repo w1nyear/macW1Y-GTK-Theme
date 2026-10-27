@@ -1355,29 +1355,23 @@ export default class EvalHelper extends Extension {
                     this.set_pivot_point(0.5, 0);
                     this.translation_x = 0;
                     this.translation_y = 0;
+                    this.scale_x = 1.0;
+                    this.scale_y = 1.0;
 
-                    // When animate is false, 0, or FADE (used when switching between adjacent menus in the panel)
-                    // switch instantly without slow ease-in lag.
-                    if (animate === 0 || animate === false || animate === BoxPointer.PopupAnimation.FADE) {
+                    // When animate is explicitly disabled (0 or false), show instantly
+                    if (animate === 0 || animate === false) {
                         this.opacity = 255;
-                        this.scale_x = 1.0;
-                        this.scale_y = 1.0;
                         this._muteInput = false;
                         if (onComplete) onComplete();
                         return;
                     }
 
-                    this.scale_x = 0.95;
-                    this.scale_y = 0.95;
+                    // Authentic macOS fade-in appearance animation via opacity
                     this.opacity = 0;
 
                     this.ease({
                         opacity: 255,
-                        scale_x: 1.0,
-                        scale_y: 1.0,
-                        translation_x: 0,
-                        translation_y: 0,
-                        duration: 250,
+                        duration: 160,
                         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                         onComplete: () => {
                             this._muteInput = false;

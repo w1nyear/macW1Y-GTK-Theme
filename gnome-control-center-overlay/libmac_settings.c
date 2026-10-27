@@ -376,6 +376,9 @@ static void apply_liquid_tint(void) {
     for (int i = 0; keys[i] != NULL; i++) {
         g_settings_set_double(lg, keys[i], tint);
     }
+    g_settings_set_string(lg, "menu-tint-color", "#000000");
+    g_settings_set_string(lg, "desktop-menu-tint-color", "#000000");
+    g_settings_set_string(lg, "panel-menu-tint-color", "#000000");
     g_object_unref(lg);
 }
 
@@ -523,6 +526,9 @@ static void apply_menu_tint(void) {
 
     if (g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE)) {
         GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
+        g_settings_set_string(lg, "menu-tint-color", "#000000");
+        g_settings_set_string(lg, "desktop-menu-tint-color", "#000000");
+        g_settings_set_string(lg, "panel-menu-tint-color", "#000000");
         g_settings_set_double(lg, "menu-tint-strength", tint);
         g_settings_set_double(lg, "desktop-menu-tint-strength", tint);
         g_settings_set_double(lg, "panel-menu-tint-strength", tint);

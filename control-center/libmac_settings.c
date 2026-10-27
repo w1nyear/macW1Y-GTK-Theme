@@ -376,6 +376,9 @@ static void apply_liquid_tint(void) {
     for (int i = 0; keys[i] != NULL; i++) {
         g_settings_set_double(lg, keys[i], tint);
     }
+    g_settings_set_string(lg, "menu-tint-color", "#000000");
+    g_settings_set_string(lg, "desktop-menu-tint-color", "#000000");
+    g_settings_set_string(lg, "panel-menu-tint-color", "#000000");
     g_object_unref(lg);
 }
 
@@ -523,6 +526,9 @@ static void apply_menu_tint(void) {
 
     if (g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE)) {
         GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
+        g_settings_set_string(lg, "menu-tint-color", "#000000");
+        g_settings_set_string(lg, "desktop-menu-tint-color", "#000000");
+        g_settings_set_string(lg, "panel-menu-tint-color", "#000000");
         g_settings_set_double(lg, "menu-tint-strength", tint);
         g_settings_set_double(lg, "desktop-menu-tint-strength", tint);
         g_settings_set_double(lg, "panel-menu-tint-strength", tint);
@@ -575,6 +581,7 @@ void on_menubar_tint_changed(void *widget, gpointer data) {
 
 void init_menubar_blur(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -593,6 +600,7 @@ void on_menubar_blur_changed(void *widget, gpointer data) {
 /* Group 2: Liquid Glass */
 void init_liquid_blur(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -610,6 +618,7 @@ void on_liquid_blur_changed(void *widget, gpointer data) {
 
 void init_liquid_tint(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -628,6 +637,7 @@ void on_liquid_tint_changed(void *widget, gpointer data) {
 /* Group 3: Blur */
 void init_blur_sigma(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -645,6 +655,7 @@ void on_blur_sigma_changed(void *widget, gpointer data) {
 
 void init_blur_tint(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -682,6 +693,7 @@ void on_menu_tint_changed(void *widget, gpointer data) {
 
 void init_menu_blur(void *widget, gpointer data) {
     (void)data;
+    load_config();
     in_init = 1;
     gtk_scale_set_digits(GTK_SCALE(widget), 0);
     gtk_range_set_round_digits(GTK_RANGE(widget), 0);
@@ -787,6 +799,16 @@ void on_boot_grub_changed(void *widget, void *pspec, gpointer data) {
 /* Fallback in case on_mac_styling_clicked is ever invoked directly */
 void on_mac_styling_clicked(void *row, void *user_data) {
     /* If row or template triggered this, navigation is handled by navigation.push */
+}
+
+void on_run_diagnostics_clicked(void *widget, gpointer data) {
+    (void)widget; (void)data;
+    g_spawn_command_line_async("ptyxis -- mac-diagnostics || gnome-terminal -- mac-diagnostics || /usr/local/bin/mac-diagnostics", NULL);
+}
+
+void on_restore_theme_clicked(void *widget, gpointer data) {
+    (void)widget; (void)data;
+    g_spawn_command_line_async("/bin/bash -c '/usr/local/bin/mac-apply-theme && notify-send -i preferences-desktop-theme \"macW1Y\" \"Оформлення успішно відновлено до еталону SSOT!\"'", NULL);
 }
 
 void init_game_mode(void *widget, gpointer data) {

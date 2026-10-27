@@ -80,6 +80,7 @@ menuitem:hover,
 .menuitem:hover {
   background-color: @theme_selected_bg_color;
   color: @theme_selected_fg_color;
+  border-radius: 9999px;
 }
 
 /* ============================================================

@@ -2575,11 +2575,11 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item {
   spacing: 6px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   color: #ffffff !important;
   text-shadow: none !important;
   icon-shadow: none !important;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
   font-weight: 500;
   transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), color 150ms ease;
   transition-duration: 150ms;
@@ -2591,7 +2591,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:checked {
   font-weight: 500;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
   border: none;
   box-shadow: none;
   color: #ffffff !important;
@@ -2603,13 +2603,14 @@ StEntry StLabel.hint-text {
   color: #ffffff !important;
   background-color: -st-accent-color !important;
   background-gradient-direction: none !important;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
   transition-duration: 150ms;
 }
 
 .popup-menu-item:checked:active {
   color: #ffffff !important;
   background-color: -st-accent-color !important;
+  border-radius: 9999px !important;
 }
 
 .popup-menu-item:checked:insensitive {
@@ -2619,7 +2620,7 @@ StEntry StLabel.hint-text {
 .popup-menu-item:focus, .popup-menu-item:hover, .popup-menu-item:selected {
   color: #ffffff !important;
   background-color: #007aff !important;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
   box-shadow: none !important;
   transition: background-color 100ms ease, color 100ms ease;
   transition-duration: 100ms !important;
@@ -2628,7 +2629,7 @@ StEntry StLabel.hint-text {
 .popup-menu-item:active, .popup-menu-item.selected:active {
   color: #ffffff !important;
   background-color: #0062cc !important;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
 }
 
 .popup-menu-item:insensitive {
@@ -6011,8 +6012,8 @@ StWidget.focused .app-grid-running-dot {
 .mac-menu-item-row,
 .mac-cc-submenu-row,
 .mac-cc-submenu-item {
-  border-radius: 8px !important;
-  padding: 6px 10px !important;
+  border-radius: 9999px !important;
+  padding: 6px 12px !important;
   margin: 1px 2px !important;
   min-height: 26px !important;
   box-shadow: none !important;
@@ -6036,7 +6037,7 @@ StWidget.focused .app-grid-running-dot {
 .mac-cc-submenu-item:hover {
   background-color: rgba(255, 255, 255, 0.12) !important;
   color: #ffffff !important;
-  border-radius: 8px !important;
+  border-radius: 9999px !important;
   box-shadow: none !important;
 }
 
@@ -6046,7 +6047,7 @@ StWidget.focused .app-grid-running-dot {
 .mac-cc-submenu-item:active {
   background-color: rgba(255, 255, 255, 0.18) !important;
   color: #ffffff !important;
-  border-radius: 8px !important;
+  border-radius: 9999px !important;
   box-shadow: none !important;
 }
 
@@ -6054,7 +6055,7 @@ StWidget.focused .app-grid-running-dot {
 .mac-menu-item-active {
   background-color: transparent !important;
   color: #ffffff !important;
-  border-radius: 8px !important;
+  border-radius: 9999px !important;
   box-shadow: none !important;
 }
 
@@ -6272,7 +6273,7 @@ StWidget.focused .app-grid-running-dot {
 .popup-menu-item:selected {
   background-color: #007aff !important;
   color: #ffffff !important;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
   box-shadow: none !important;
 }
 
@@ -6280,7 +6281,7 @@ StWidget.focused .app-grid-running-dot {
 .popup-menu-item.selected:active {
   background-color: #0062cc !important;
   color: #ffffff !important;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
 }
 
 /* AppMenu Menubar Popup Menus */
@@ -6303,11 +6304,11 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu .popup-menu-item,
 .appmenu-popup-menu-content .popup-menu-item {
   min-height: 22px !important;
-  padding: 4px 10px !important;
+  padding: 4px 12px !important;
   margin: 1px 4px !important;
   font-size: 13px !important;
   font-weight: 500 !important;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
   spacing: 6px !important;
   color: #dedede !important;
   transition: color 100ms ease !important;
@@ -6324,7 +6325,7 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-content .popup-menu-item:selected {
   background-color: #007aff !important;
   color: #ffffff !important;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
   box-shadow: none !important;
 }
 
@@ -6334,7 +6335,7 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-content .popup-menu-item:active {
   background-color: #0062cc !important;
   color: #ffffff !important;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
 }
 
 .mac-menu-hover-pill {

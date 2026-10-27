@@ -158,9 +158,9 @@ popover > contents {
 
 popover.menu modelbutton {
   min-height: 22px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   margin: 1px 2px;
-  border-radius: 8px;
+  border-radius: 9999px;
   color: #ffffff;
   background-color: transparent;
   font-size: 13px;
@@ -178,7 +178,7 @@ popover.menu modelbutton:focus,
 popover.menu modelbutton:selected {
   background-color: #007aff;
   color: #ffffff;
-  border-radius: 8px;
+  border-radius: 9999px;
   box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
 }
 
