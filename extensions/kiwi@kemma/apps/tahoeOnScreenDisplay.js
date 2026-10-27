@@ -93,7 +93,7 @@ const TahoeSegSlider = GObject.registerClass({
     GTypeName: `TahoeSegSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
 }, class TahoeSegSlider extends St.DrawingArea {
     _init() {
-        super._init({reactive: false, height: 28});
+        super._init({reactive: false, height: 20});
         this._v = 0;
         this._isOveramp = false;
         this.connect('repaint', () => {
@@ -138,7 +138,7 @@ const TahoeSegSlider = GObject.registerClass({
             const isOveramp = this._isOveramp || v > 1.0001;
 
             // solid background track
-            const barY = Math.round(h * 0.28), barH = 5;
+            const barY = 5, barH = 5;
             const r = barH / 2;
             cr.setSourceRGBA(1, 1, 1, 0.18);
             this._rr(cr, 0, barY, w, barH, r);
@@ -152,11 +152,16 @@ const TahoeSegSlider = GObject.registerClass({
             // Step snapping for 16 segments (matching volume/brightness stops)
             const n = 16;
             const stepIdx = Math.max(0, Math.min(n, Math.round(v * n)));
-            const snappedV = stepIdx / n;
-            if (Math.abs(v - snappedV) < 0.02)
-                v = snappedV;
+            if (v <= 1.0001 && Math.abs(v - stepIdx / n) <= 0.038)
+                v = stepIdx / n;
 
-            // filled bar
+            // 17 dots (i = 0 to 16): dot 0 at the start of slider, dot 16 at the end
+            const dotXs = [];
+            for (let i = 0; i <= n; i++) {
+                dotXs.push(r + i * (w - 2 * r) / n);
+            }
+
+            // filled bar: stops exactly where the dot is
             let fillW = 0;
             if (isOveramp) {
                 fillW = w;
@@ -164,17 +169,21 @@ const TahoeSegSlider = GObject.registerClass({
                 this._rr(cr, 0, barY, fillW, barH, r);
                 cr.fill();
             } else if (v > 0.001) {
-                fillW = Math.max(barH, Math.min(w, Math.round(r + v * (w - 2 * r) + r)));
+                if (Math.abs(v - stepIdx / n) < 0.001) {
+                    fillW = (stepIdx === n) ? w : dotXs[stepIdx];
+                } else {
+                    fillW = Math.max(barH, Math.min(w, Math.round(r + v * (w - 2 * r))));
+                }
                 cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
                 this._rr(cr, 0, barY, fillW, barH, r);
                 cr.fill();
             }
 
-            // dots row beneath: 16 dots precisely aligned with the 16 stops, closer to slider
+            // dots row beneath: 17 dots precisely aligned, dot 0 at start, closer to slider
             const dy = barY + barH + 3.5;
-            for (let i = 1; i <= n; i++) {
-                const dotX = r + i * (w - 2 * r) / n;
-                const isActive = isOveramp || (dotX <= fillW + 1.0);
+            for (let i = 0; i <= n; i++) {
+                const dotX = dotXs[i];
+                const isActive = isOveramp || (stepIdx > 0 && i <= stepIdx && fillW > 0);
                 if (isActive) {
                     cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
                 } else {
@@ -847,6 +856,7 @@ export function enable() {
             icon_size: 15,
             y_align: Clutter.ActorAlign.CENTER,
         });
+        _iconL.translation_y = -2;
         _slider = new TahoeSegSlider();
         _slider.x_expand = true;
         _slider.y_align = Clutter.ActorAlign.CENTER;
@@ -859,6 +869,7 @@ export function enable() {
             icon_size: 20,
             y_align: Clutter.ActorAlign.CENTER,
         });
+        _iconR.translation_y = -1;
         barRow.add_child(_iconL);
         barRow.add_child(_slider);
         barRow.add_child(_iconR);
