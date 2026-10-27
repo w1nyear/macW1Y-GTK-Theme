@@ -10255,6 +10255,7 @@ scrolledwindow undershoot.right {
 /* ============================================================
    macOS Tahoe / Sequoia style gradient fade for scrolled lists
    Smooth edge dissolution at scroll limits (Settings, Nautilus, etc.)
+   with gradient blur dissolution (5px smooth dissipation curve)
    ============================================================ */
 undershoot.top,
 scrolledwindow > undershoot.top,
@@ -10310,46 +10311,61 @@ window.mac-settings-window scrolledwindow > undershoot.bottom {
     box-shadow: none;
 }
 
-/* Sidebar / Leftbar: strictly transparent, NO white gradient, NO static bands */
-.sidebar-pane undershoot,
+/* Sidebar / Leftbar: disappearance shader matching dark background, NO white */
 .sidebar-pane undershoot.top,
-.sidebar-pane undershoot.bottom,
-.sidebar-pane scrolledwindow undershoot,
-.sidebar-pane scrolledwindow > undershoot,
+.sidebar-pane scrolledwindow undershoot.top,
 .sidebar-pane scrolledwindow > undershoot.top,
-.sidebar-pane scrolledwindow > undershoot.bottom,
 .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
-.sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
 .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-.sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-navigation-split-view > .sidebar-pane undershoot,
 navigation-split-view > .sidebar-pane undershoot.top,
-navigation-split-view > .sidebar-pane undershoot.bottom,
-navigation-split-view > .sidebar-pane scrolledwindow undershoot,
-navigation-split-view > .sidebar-pane scrolledwindow > undershoot,
+navigation-split-view > .sidebar-pane scrolledwindow undershoot.top,
 navigation-split-view > .sidebar-pane scrolledwindow > undershoot.top,
-navigation-split-view > .sidebar-pane scrolledwindow > undershoot.bottom,
 navigation-split-view > .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
-navigation-split-view > .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window .sidebar-pane scrolledwindow undershoot,
-window.mac-settings-window .sidebar-pane scrolledwindow > undershoot,
-window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.top,
-window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.bottom,
-window.mac-settings-window .sidebar-pane undershoot,
 window.mac-settings-window .sidebar-pane undershoot.top,
-window.mac-settings-window .sidebar-pane undershoot.bottom,
-window.nautilus-window .sidebar-pane undershoot,
+window.mac-settings-window .sidebar-pane scrolledwindow undershoot.top,
+window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.top,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
 window.nautilus-window .sidebar-pane undershoot.top,
-window.nautilus-window .sidebar-pane undershoot.bottom {
-    background: none;
-    background-image: none;
-    background-color: transparent;
+window.nautilus-window .sidebar-pane scrolledwindow undershoot.top,
+window.nautilus-window .sidebar-pane scrolledwindow > undershoot.top {
+    min-height: 38px;
+    background: linear-gradient(to bottom,
+        @window_bg_color 0%,
+        alpha(@window_bg_color, 0.95) 20%,
+        alpha(@window_bg_color, 0.80) 40%,
+        alpha(@window_bg_color, 0.50) 65%,
+        alpha(@window_bg_color, 0.20) 85%,
+        transparent 100%);
     border: none;
     box-shadow: none;
-    min-height: 0px;
-    min-width: 0px;
+}
+
+.sidebar-pane undershoot.bottom,
+.sidebar-pane scrolledwindow undershoot.bottom,
+.sidebar-pane scrolledwindow > undershoot.bottom,
+.sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+.sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+navigation-split-view > .sidebar-pane undershoot.bottom,
+navigation-split-view > .sidebar-pane scrolledwindow undershoot.bottom,
+navigation-split-view > .sidebar-pane scrolledwindow > undershoot.bottom,
+navigation-split-view > .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .sidebar-pane undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.nautilus-window .sidebar-pane undershoot.bottom,
+window.nautilus-window .sidebar-pane scrolledwindow undershoot.bottom,
+window.nautilus-window .sidebar-pane scrolledwindow > undershoot.bottom {
+    min-height: 38px;
+    background: linear-gradient(to top,
+        @window_bg_color 0%,
+        alpha(@window_bg_color, 0.95) 20%,
+        alpha(@window_bg_color, 0.80) 40%,
+        alpha(@window_bg_color, 0.50) 65%,
+        alpha(@window_bg_color, 0.20) 85%,
+        transparent 100%);
+    border: none;
+    box-shadow: none;
 }
 
 /* Keep dialogs, treeviews, textviews, and popovers free of white glow */

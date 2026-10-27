@@ -28,8 +28,8 @@ const GRADIENT_BLUR_FADE_SHADER = `
             t = max(t, curve_bottom);
         }
 
-        // Rich macOS-style gradient blur: 0px at start (t=0.0) up to 16px at edge (t=1.0)
-        float cur_blur = t * 16.0;
+        // Gradient blur effect: 0px at start (t=0.0) up to 5px at the end (t=1.0)
+        float cur_blur = t * 5.0;
 
         vec4 col = texture2D(tex, uv);
         if (cur_blur > 0.1) {
