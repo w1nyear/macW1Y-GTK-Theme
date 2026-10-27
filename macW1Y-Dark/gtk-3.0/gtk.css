@@ -378,6 +378,18 @@ scrolledwindow > undershoot.bottom {
     box-shadow: none;
 }
 
+.sidebar-pane undershoot,
+.sidebar-pane undershoot.top,
+.sidebar-pane undershoot.bottom,
+.sidebar-pane scrolledwindow undershoot,
+placessidebar undershoot {
+    background: none !important;
+    background-image: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    min-height: 0px !important;
+}
+
 /* Keep dialogs and treeviews in GTK3 free of white glow */
 messagedialog scrolledwindow undershoot,
 dialog scrolledwindow undershoot,

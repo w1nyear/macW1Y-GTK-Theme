@@ -28,35 +28,28 @@ const GRADIENT_BLUR_FADE_SHADER = `
             t = max(t, curve_bottom);
         }
 
-        // Gradient blur: 0px at start (t=0.0), 3px at mid (t=0.5), 5px at end (t=1.0)
-        float cur_blur = 0.0;
-        if (t > 0.0) {
-            if (t < 0.5) {
-                cur_blur = mix(0.0, 3.0, t * 2.0);
-            } else {
-                cur_blur = mix(3.0, 5.0, (t - 0.5) * 2.0);
-            }
-        }
+        // Rich macOS-style gradient blur: 0px at start (t=0.0) up to 16px at edge (t=1.0)
+        float cur_blur = t * 16.0;
 
         vec4 col = texture2D(tex, uv);
         if (cur_blur > 0.1) {
             vec2 px_step = vec2(1.0 / max(1.0, width), 1.0 / max(1.0, height));
             float total_weight = 1.0;
-            for (int i = 1; i <= 12; i++) {
+            for (int i = 1; i <= 16; i++) {
                 float fi = float(i);
-                float r = sqrt(fi / 12.0);
+                float r = sqrt(fi / 16.0);
                 float theta = fi * 2.39996323;
                 vec2 offset = vec2(cos(theta), sin(theta)) * (r * cur_blur) * px_step;
                 vec2 sample_uv = clamp(uv + offset, vec2(0.0), vec2(1.0));
-                float w = exp(-2.0 * r * r);
+                float w = exp(-1.5 * r * r);
                 col += texture2D(tex, sample_uv) * w;
                 total_weight += w;
             }
             col /= total_weight;
         }
 
-        // Alpha dissolve into underlying liquid glass
-        col *= (1.0 - t);
+        // Smooth opacity dissolve applied purely to the list
+        col *= clamp(1.0 - t, 0.0, 1.0);
         cogl_color_out = col;
     }
 `;
