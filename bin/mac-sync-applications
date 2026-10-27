@@ -237,6 +237,49 @@ def sync():
                         clean_lines = [l for l in lines if not l.startswith("X-Mac-Real-Path=") and not l.startswith("X-Mac-Wine-App=") and not l.startswith("PrefersNonDefaultGPU=") and not l.startswith("X-KDE-RunOnDiscreteGpu=")]
                         while clean_lines and not clean_lines[-1].strip():
                             clean_lines.pop()
+
+                        # Normalize Icon= for snap apps and known themed apps so GNOME Shell uses MacTahoe theme
+                        normalized_lines = []
+                        for l in clean_lines:
+                            if l.startswith("Icon="):
+                                icon_val = l.strip().split("=", 1)[1]
+                                base_key = base.replace(".desktop", "").lower()
+                                mapped_icon = None
+                                if "steam" in base_key:
+                                    mapped_icon = "steam"
+                                elif "telegram" in base_key:
+                                    mapped_icon = "telegram"
+                                elif "antigravity" in base_key:
+                                    mapped_icon = "antigravity"
+                                elif "snap-store" in base_key:
+                                    mapped_icon = "snap-store"
+                                elif "discord" in base_key:
+                                    mapped_icon = "discord"
+                                elif "firefox" in base_key:
+                                    mapped_icon = "firefox"
+                                elif "zoom" in base_key:
+                                    mapped_icon = "Zoom"
+                                elif "firmware-updater" in base_key:
+                                    mapped_icon = "firmware-updater"
+                                elif "desktop-security-center" in base_key:
+                                    mapped_icon = "desktop-security-center"
+                                elif icon_val.startswith("/snap/"):
+                                    parts = icon_val.split("/")
+                                    if len(parts) > 2 and parts[1] == "snap":
+                                        mapped_icon = parts[2]
+                                
+                                if mapped_icon:
+                                    normalized_lines.append(f"Icon={mapped_icon}\n")
+                                else:
+                                    normalized_lines.append(l)
+                            else:
+                                normalized_lines.append(l)
+                        clean_lines = normalized_lines
+
+                        if "damx" in base.lower() and not any(l.startswith("StartupWMClass=") for l in clean_lines):
+                            clean_lines.append("StartupWMClass=DivAcerManagerMax\n")
+                        if "opencode" in base.lower() and not any(l.startswith("StartupWMClass=") for l in clean_lines):
+                            clean_lines.append("StartupWMClass=ai.opencode.desktop\n")
                         cats = app_info.get_categories() or ""
                         cmdline = app_info.get_commandline() or ""
                         is_game = ("Game" in cats) or ("game" in base.lower()) or ("steam" in base.lower()) or ("steam://" in cmdline)

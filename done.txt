@@ -11475,3 +11475,26 @@ Task 499: Повне полірування екрана блокування (m
    3. Перевірка:
       - Вікно «Ресурси» тепер має показники `window_width: 1337, blur_actor_width: 1337, blur_actor_has_clip: false`.
       - Зроблено контрольні скріншоти (`scratch_resources_patched.png`, `scratch_quicksettings.png`, `scratch_settings.png`): підтверджено повне, плавне матове розмиття всієї площі вікна «Ресурси», включно з графіками GPU та CPU.
+
+559. Відновлення фірмових macOS-іконок на панелі Dock та усунення підміни піктограм для Snap-додатків:
+   1. Діагностика причини «зльоту» нових іконок:
+      - Після синхронізації ярликів у `bin/mac-sync-applications` для додатків Snap (Telegram, Steam, Antigravity тощо) у файли `~/.local/share/applications/*.desktop` та `~/Applications/*.desktop` було записано жорсткі абсолютні шляхи до внутрішніх іконок Snapcraft:
+        * `telegram-desktop_telegram-desktop.desktop`: `Icon=/snap/telegram-desktop/current/meta/gui/icon.png` (стандартне синє коло Telegram замість зеленої піктограми iMessage).
+        * `steam_steam.desktop`: `Icon=/snap/steam/current/usr/share/icons/hicolor/256x256/apps/steam.png` (стандартне синє коло Steam замість червоної піктограми з ракетою).
+        * `antigravity_antigravity.desktop`: `Icon=/snap/antigravity/current/share/icons/hicolor/256x256/apps/antigravity.png` (прозора дуга без білого маківського сквиркла).
+      - Крім того, додаток `damx.desktop` (DivAcerManagerMax) не мав властивості `StartupWMClass=DivAcerManagerMax`, через що GNOME Shell не міг прив'язати запущене вікно до ярлика і відображав запасну піктограму `application-x-executable` (жовту коробку з шестернею), дублюючи значок праворуч від роздільника Dock.
+   2. Реалізація рішення:
+      - **Нормалізація імен іконок у `mac-sync-applications`**:
+        * У `bin/mac-sync-applications` та `/usr/local/bin/mac-sync-applications` додано автоматичне зіставлення іконок для додатків Snap: при виявленні шляхів `/snap/...` або відомих додатків (Steam, Telegram, Antigravity, Snap Store, Discord, Firefox, Zoom) рядок `Icon=` автоматично перетворюється на канонічне ім'я теми (`Icon=telegram`, `Icon=steam`, `Icon=antigravity` тощо).
+        * Додано директиву `StartupWMClass=DivAcerManagerMax` для `damx.desktop` та скопійовано логотип DAMX у тему `MacTahoe` і `MacTahoe-dark`.
+        * Оновлено системну тему піктограм `org.gnome.desktop.interface icon-theme` на `"MacTahoe-dark"`.
+      - **Оновлення кешу ярликів**:
+        * Перегенеровано базу десктоп-файлів через `update-desktop-database ~/.local/share/applications`.
+        * Скинуто стан Dock-елементів.
+   3. Перевірка:
+      - Зроблено контрольний скріншот панелі Dock (`scratch_dock_crop_perfect.png`):
+        * Telegram відображається у стилі iMessage (зелений сквиркл із білою бульбашкою).
+        * Steam відображається у стилі macOS Game Launcher (червоний сквиркл із ракетою).
+        * Antigravity відображається з фірмовою білою підкладкою-сквирклом.
+        * DAMX відображає власну фірмову піктограму замість жовтої коробки.
+        * Зайві дублікати та старі дефолтні круглі значки повністю усунуто.
