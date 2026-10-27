@@ -125,17 +125,144 @@ def is_safe_to_delete(folder):
     return False
 
 
+def install_icon_file(src_icon_path, icon_name):
+    """
+    Installs an icon file into user icon theme directories and updates icon caches.
+    Copies to:
+      ~/.local/share/icons/hicolor/256x256/apps/{icon_name}.{ext}
+      ~/.local/share/icons/hicolor/scalable/apps/{icon_name}.{ext}
+      ~/.local/share/icons/MacTahoe-dark/apps/scalable/{icon_name}.{ext}
+      ~/.local/share/icons/MacTahoe/apps/scalable/{icon_name}.{ext}
+    """
+    if not src_icon_path or not os.path.exists(src_icon_path):
+        return None
+    ext = os.path.splitext(src_icon_path)[1].lower()
+    if ext not in [".png", ".svg", ".xpm"]:
+        ext = ".png"
+
+    dest_paths = [
+        os.path.join(HOME, ".local/share/icons/hicolor/256x256/apps", f"{icon_name}{ext}"),
+        os.path.join(HOME, ".local/share/icons/hicolor/scalable/apps", f"{icon_name}{ext}"),
+        os.path.join(HOME, ".local/share/icons/MacTahoe-dark/apps/scalable", f"{icon_name}{ext}"),
+        os.path.join(HOME, ".local/share/icons/MacTahoe/apps/scalable", f"{icon_name}{ext}"),
+    ]
+    primary_path = dest_paths[0]
+    for dp in dest_paths:
+        try:
+            os.makedirs(os.path.dirname(dp), exist_ok=True)
+            shutil.copy2(src_icon_path, dp)
+        except Exception:
+            pass
+
+    # Ensure index.theme exists in ~/.local/share/icons/hicolor/
+    hicolor_index = os.path.join(HOME, ".local/share/icons/hicolor/index.theme")
+    if not os.path.exists(hicolor_index) and os.path.exists("/usr/share/icons/hicolor/index.theme"):
+        try:
+            shutil.copy2("/usr/share/icons/hicolor/index.theme", hicolor_index)
+        except Exception:
+            pass
+
+    return primary_path
+
+def update_icon_caches():
+    """Updates icon caches for hicolor and MacTahoe themes."""
+    for tdir in [
+        os.path.join(HOME, ".local/share/icons/hicolor"),
+        os.path.join(HOME, ".local/share/icons/MacTahoe-dark"),
+        os.path.join(HOME, ".local/share/icons/MacTahoe")
+    ]:
+        if os.path.exists(tdir):
+            try:
+                subprocess.run(["gtk-update-icon-cache", "-q", "-f", tdir],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+
+def icon_exists_in_theme(icon_name):
+    if not icon_name:
+        return False
+    if os.path.isabs(icon_name) and os.path.exists(icon_name):
+        return True
+    for d in [
+        os.path.join(HOME, ".local/share/icons/MacTahoe/apps/scalable"),
+        os.path.join(HOME, ".local/share/icons/MacTahoe-dark/apps/scalable"),
+        os.path.join(HOME, ".local/share/icons/MacTahoe/apps/48"),
+        os.path.join(HOME, ".local/share/icons/MacTahoe-dark/apps/48"),
+        os.path.join(HOME, ".local/share/icons/hicolor/256x256/apps"),
+        os.path.join(HOME, ".local/share/icons/hicolor/scalable/apps"),
+        "/usr/share/icons/hicolor/scalable/apps",
+        "/usr/share/icons/hicolor/256x256/apps",
+        "/usr/share/icons/hicolor/48x48/apps",
+        "/usr/share/pixmaps"
+    ]:
+        for ext in [".svg", ".png", ".xpm"]:
+            if os.path.exists(os.path.join(d, f"{icon_name}{ext}")):
+                return True
+    return False
+
+def get_pe_metadata(exe_path):
+    """
+    Extracts VS_VERSION_INFO metadata (ProductName, FileDescription, CompanyName, etc.)
+    from Windows PE executables using wrestool.
+    """
+    if not exe_path or not os.path.exists(exe_path) or not shutil.which("wrestool"):
+        return {}
+    try:
+        res = subprocess.run(["wrestool", "--raw", "-x", "-t16", exe_path],
+                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        if res.returncode != 0 or not res.stdout:
+            return {}
+        data = res.stdout
+        meta = {}
+        for key in ["ProductName", "FileDescription", "CompanyName", "InternalName", "OriginalFilename"]:
+            pattern = (key + "\x00").encode("utf-16le")
+            idx = data.find(pattern)
+            if idx != -1:
+                val_start = idx + len(pattern)
+                while val_start < len(data) and data[val_start:val_start+2] == b"\x00\x00":
+                    val_start += 2
+                val_bytes = bytearray()
+                while val_start + 1 < len(data):
+                    pair = data[val_start:val_start+2]
+                    if pair == b"\x00\x00":
+                        break
+                    val_bytes.extend(pair)
+                    val_start += 2
+                val_str = val_bytes.decode("utf-16le", errors="ignore").strip()
+                if val_str:
+                    meta[key] = val_str
+        return meta
+    except Exception:
+        return {}
+
+
 def resolve_icon(app_info, desktop_path, home):
     icon = app_info.get_icon() if app_info else None
     icon_str = icon.to_string() if icon else ""
+
+    # If icon was None, try reading Icon= from desktop_path directly
+    if not icon_str and os.path.exists(desktop_path):
+        try:
+            with open(desktop_path, "r", errors="ignore") as f:
+                for line in f:
+                    if line.startswith("Icon="):
+                        icon_str = line.strip().split("=", 1)[1].strip()
+                        break
+        except Exception:
+            pass
 
     name_hints = []
     base_file = os.path.basename(desktop_path).replace(".desktop", "").lower()
     name_hints.append(base_file)
     if "_" in base_file:
         name_hints.append(base_file.split("_")[0])
+    if "-" in base_file:
+        name_hints.append(base_file.split("-")[0])
     if app_info and app_info.get_name():
-        name_hints.append(app_info.get_name().lower())
+        app_n = app_info.get_name().lower()
+        name_hints.append(app_n)
+        for w in app_n.split():
+            name_hints.append(w)
     if icon_str and not icon_str.startswith("/"):
         name_hints.append(icon_str.lower())
     elif icon_str and icon_str.startswith("/"):
@@ -143,17 +270,23 @@ def resolve_icon(app_info, desktop_path, home):
         if base_icon not in ("icon", "default", "default256"):
             name_hints.append(base_icon)
 
+    # Special well-known mappings
+    if any("steam" in h for h in name_hints):
+        name_hints.insert(0, "steam")
+
     # 1. Prefer macOS Tahoe themed icon if available
     for hint in name_hints:
         for tdir in [
             os.path.join(home, ".local/share/icons/MacTahoe/apps/scalable"),
             os.path.join(home, ".local/share/icons/MacTahoe-dark/apps/scalable"),
             os.path.join(home, ".local/share/icons/MacTahoe/apps/48"),
+            os.path.join(home, ".local/share/icons/MacTahoe-dark/apps/48"),
             "/usr/share/icons/MacTahoe-dark/apps/scalable"
         ]:
-            cand = os.path.join(tdir, f"{hint}.svg")
-            if os.path.exists(cand):
-                return f"file://{cand}"
+            for ext in [".svg", ".png"]:
+                cand = os.path.join(tdir, f"{hint}{ext}")
+                if os.path.exists(cand):
+                    return f"file://{cand}"
 
     # 2. If icon_str is a direct path to an existing file
     if icon_str.startswith("/"):
@@ -168,13 +301,16 @@ def resolve_icon(app_info, desktop_path, home):
     search_dirs = [
         os.path.join(home, ".local/share/icons/MacTahoe/apps/scalable"),
         os.path.join(home, ".local/share/icons/MacTahoe-dark/apps/scalable"),
+        os.path.join(home, ".local/share/icons/hicolor/scalable/apps"),
+        os.path.join(home, ".local/share/icons/hicolor/512x512/apps"),
+        os.path.join(home, ".local/share/icons/hicolor/256x256/apps"),
+        os.path.join(home, ".local/share/icons/hicolor/128x128/apps"),
+        os.path.join(home, ".local/share/icons/hicolor/48x48/apps"),
         "/usr/share/icons/hicolor/scalable/apps",
         "/usr/share/icons/hicolor/512x512/apps",
         "/usr/share/icons/hicolor/256x256/apps",
         "/usr/share/icons/hicolor/128x128/apps",
         "/usr/share/icons/hicolor/48x48/apps",
-        os.path.join(home, ".local/share/icons/hicolor/48x48/apps"),
-        os.path.join(home, ".local/share/icons/hicolor/256x256/apps"),
         "/usr/share/pixmaps"
     ]
 
@@ -185,6 +321,21 @@ def resolve_icon(app_info, desktop_path, home):
                 cand = os.path.join(sdir, k + ext)
                 if os.path.exists(cand):
                     return f"file://{cand}"
+
+    # 4. Gtk.IconTheme lookup
+    try:
+        import gi
+        gi.require_version("Gtk", "3.0")
+        from gi.repository import Gtk
+        theme = Gtk.IconTheme.get_default()
+        for k in all_keys:
+            info = theme.lookup_icon(k, 256, 0)
+            if info:
+                fn = info.get_filename()
+                if fn and os.path.exists(fn):
+                    return f"file://{fn}"
+    except Exception:
+        pass
 
     return None
 
@@ -224,6 +375,7 @@ def _sync_internal():
     seen_ids = set()
     used_names = set()
     active_links = set()
+    seen_targets = {}  # target_key -> (target_filename, dest_path, source_file)
     
     for sdir in search_dirs:
         if not os.path.isdir(sdir):
@@ -252,6 +404,29 @@ def _sync_internal():
                     safe_name = "".join(c for c in name if c not in '/\\:*?"<>|').strip()
                     if not safe_name:
                         safe_name = base.replace(".desktop", "")
+
+                    # Compute target key for deduplication
+                    cmdline = app_info.get_commandline() or ""
+                    m_wine = re.search(r'mac-wine-runner\s+"?([^"]+\.exe)"?', cmdline, re.I)
+                    if m_wine:
+                        target_key = ("wine", os.path.normcase(os.path.realpath(m_wine.group(1)) if os.path.exists(m_wine.group(1)) else m_wine.group(1).lower()))
+                    else:
+                        c_clean = re.sub(r'%[a-zA-Z]', '', cmdline).strip()
+                        c_clean = re.sub(r'^env\s+__NV_PRIME_RENDER_OFFLOAD=1\s+__GLX_VENDOR_LIBRARY_NAME=nvidia\s+', '', c_clean).strip()
+                        parts = c_clean.split()
+                        target_bin = parts[0] if parts else base
+                        target_key = ("bin", os.path.normcase(target_bin))
+
+                    if target_key in seen_targets:
+                        prev_target_fn, prev_dest_path, prev_src = seen_targets[target_key]
+                        # If this is a duplicate entry for the exact same target
+                        # (e.g. wine-capcut.desktop vs CapCut.desktop), skip creating a duplicate!
+                        if base.startswith("wine-") and not os.path.basename(prev_src).startswith("wine-"):
+                            try:
+                                os.remove(f)
+                            except Exception:
+                                pass
+                        continue
                         
                     target_filename = f"{safe_name}.desktop"
                     count = 1
@@ -262,6 +437,7 @@ def _sync_internal():
                     
                     dest_path = os.path.join(apps_dir, target_filename)
                     active_links.add(dest_path)
+                    seen_targets[target_key] = (target_filename, dest_path, f)
                     
                     # Create or update desktop file as regular file
                     if os.path.islink(dest_path):
@@ -277,41 +453,68 @@ def _sync_internal():
                             clean_lines.pop()
 
                         # Normalize Icon= for snap apps and known themed apps so GNOME Shell uses MacTahoe theme
+                        has_icon_line = any(l.startswith("Icon=") for l in clean_lines)
                         normalized_lines = []
+                        base_key = base.replace(".desktop", "").lower()
+                        name_low = name.lower()
+
                         for l in clean_lines:
                             if l.startswith("Icon="):
                                 icon_val = l.strip().split("=", 1)[1]
-                                base_key = base.replace(".desktop", "").lower()
                                 mapped_icon = None
-                                if "steam" in base_key:
+                                if "steam" in base_key or "steam" in name_low:
                                     mapped_icon = "steam"
-                                elif "telegram" in base_key:
+                                elif "telegram" in base_key or "telegram" in name_low:
                                     mapped_icon = "telegram"
-                                elif "antigravity" in base_key:
+                                elif "antigravity" in base_key or "antigravity" in name_low:
                                     mapped_icon = "antigravity"
-                                elif "snap-store" in base_key:
+                                elif "snap-store" in base_key or "app center" in name_low:
                                     mapped_icon = "snap-store"
-                                elif "discord" in base_key:
+                                elif "discord" in base_key or "discord" in name_low:
                                     mapped_icon = "discord"
-                                elif "firefox" in base_key:
+                                elif "firefox" in base_key or "firefox" in name_low:
                                     mapped_icon = "firefox"
-                                elif "zoom" in base_key:
+                                elif "zoom" in base_key or "zoom" in name_low:
                                     mapped_icon = "Zoom"
-                                elif "firmware-updater" in base_key:
-                                    mapped_icon = "firmware-updater"
-                                elif "desktop-security-center" in base_key:
-                                    mapped_icon = "desktop-security-center"
                                 elif icon_val.startswith("/snap/"):
                                     parts = icon_val.split("/")
                                     if len(parts) > 2 and parts[1] == "snap":
-                                        mapped_icon = parts[2]
-                                
+                                        snap_pkg = parts[2]
+                                        if icon_exists_in_theme(snap_pkg):
+                                            mapped_icon = snap_pkg
+                                        elif os.path.exists(icon_val):
+                                            install_icon_file(icon_val, snap_pkg)
+                                            mapped_icon = snap_pkg
+                                        else:
+                                            mapped_icon = icon_val
+                                elif not icon_exists_in_theme(icon_val) and not os.path.isabs(icon_val):
+                                    res_cand = resolve_icon(app_info, f, home)
+                                    if res_cand and res_cand.startswith("file://"):
+                                        real_path = res_cand[7:]
+                                        install_icon_file(real_path, icon_val)
+
                                 if mapped_icon:
                                     normalized_lines.append(f"Icon={mapped_icon}\n")
                                 else:
                                     normalized_lines.append(l)
                             else:
                                 normalized_lines.append(l)
+
+                        if not has_icon_line:
+                            injected_icon = None
+                            if "steam" in base_key or "steam" in name_low:
+                                injected_icon = "steam"
+                            elif icon_exists_in_theme(safe_name.lower()):
+                                injected_icon = safe_name.lower()
+                            elif icon_exists_in_theme(base_key):
+                                injected_icon = base_key
+                            if injected_icon:
+                                normalized_lines.append(f"Icon={injected_icon}\n")
+                            else:
+                                res_cand = resolve_icon(app_info, f, home)
+                                if res_cand and res_cand.startswith("file://"):
+                                    normalized_lines.append(f"Icon={res_cand[7:]}\n")
+
                         clean_lines = normalized_lines
 
                         if "damx" in base.lower() and not any(l.startswith("StartupWMClass=") for l in clean_lines):
@@ -421,6 +624,16 @@ def _sync_internal():
 
 
 def extract_app_name(filename):
+    if os.path.isfile(filename) and filename.lower().endswith(('.exe', '.msi')):
+        pe_meta = get_pe_metadata(filename)
+        prod = pe_meta.get("ProductName", "").strip()
+        desc = pe_meta.get("FileDescription", "").strip()
+        generic_terms = {"setup", "installer", "installation", "update", "updater", "patch", "stub", "bootstrapper", "win32", "win64", "x86", "x64"}
+        if prod and prod.lower() not in generic_terms and len(prod) > 1:
+            return prod
+        if desc and desc.lower() not in generic_terms and len(desc) > 1:
+            return desc
+
     base = os.path.basename(filename)
     for ext in ['.appimage', '.AppImage', '.tar.gz', '.tar.xz', '.tgz', '.tar.bz2', '.tar', '.zip', '.deb', '.exe', '.EXE', '.msi', '.MSI', '.bat', '.cmd']:
         if base.endswith(ext):
@@ -454,6 +667,92 @@ def wait_for_file_ready(filepath, timeout=20):
     return os.path.exists(filepath) and os.path.getsize(filepath) > 0
 
 
+def extract_appimage_metadata(dest_binary, temp_dir):
+    try:
+        subprocess.run([dest_binary, "--appimage-extract"], cwd=temp_dir,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
+    except Exception:
+        pass
+        
+    squashfs_dir = os.path.join(temp_dir, "squashfs-root")
+    if not os.path.isdir(squashfs_dir) and shutil.which("unsquashfs"):
+        try:
+            subprocess.run(["unsquashfs", "-d", squashfs_dir, dest_binary],
+                           cwd=temp_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
+        except Exception:
+            pass
+    if not os.path.isdir(squashfs_dir) and shutil.which("7z"):
+        try:
+            subprocess.run(["7z", "x", f"-o{squashfs_dir}", dest_binary],
+                           cwd=temp_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
+        except Exception:
+            pass
+
+    embedded_meta = {
+        "name": "",
+        "comment": "",
+        "categories": "",
+        "icon": "",
+        "wmclass": "",
+        "icon_file": ""
+    }
+
+    if not os.path.isdir(squashfs_dir):
+        return embedded_meta
+
+    desktops = glob.glob(os.path.join(squashfs_dir, "*.desktop")) + \
+               glob.glob(os.path.join(squashfs_dir, "usr", "share", "applications", "*.desktop"))
+    if not desktops:
+        desktops = glob.glob(os.path.join(squashfs_dir, "**", "*.desktop"), recursive=True)
+
+    if desktops:
+        try:
+            with open(desktops[0], "r", errors="ignore") as df:
+                for line in df:
+                    line = line.strip()
+                    if line.startswith("Name=") and not embedded_meta["name"]:
+                        embedded_meta["name"] = line.split("=", 1)[1].strip()
+                    elif line.startswith("Comment=") and not embedded_meta["comment"]:
+                        embedded_meta["comment"] = line.split("=", 1)[1].strip()
+                    elif line.startswith("Categories=") and not embedded_meta["categories"]:
+                        embedded_meta["categories"] = line.split("=", 1)[1].strip()
+                    elif line.startswith("Icon=") and not embedded_meta["icon"]:
+                        embedded_meta["icon"] = line.split("=", 1)[1].strip()
+                    elif line.startswith("StartupWMClass=") and not embedded_meta["wmclass"]:
+                        embedded_meta["wmclass"] = line.split("=", 1)[1].strip()
+        except Exception:
+            pass
+
+    icon_candidates = []
+    dir_icon = os.path.join(squashfs_dir, ".DirIcon")
+    if os.path.exists(dir_icon) and os.path.getsize(dir_icon) > 0:
+        icon_candidates.append((500, dir_icon))
+
+    target_icon_name = embedded_meta.get("icon", "").lower()
+    for root, _, files in os.walk(squashfs_dir):
+        for f in files:
+            f_low = f.lower()
+            if f_low.endswith((".png", ".svg")):
+                fp = os.path.join(root, f)
+                try:
+                    fsize = os.path.getsize(fp)
+                    score = fsize
+                    base_no_ext = os.path.splitext(f_low)[0]
+                    if target_icon_name and (base_no_ext == target_icon_name):
+                        score += 10000000
+                    elif "256x256" in root or "512x512" in root or "scalable" in root:
+                        score += 5000000
+                    icon_candidates.append((score, fp))
+                except Exception:
+                    pass
+
+    if icon_candidates:
+        icon_candidates.sort(key=lambda x: x[0], reverse=True)
+        embedded_meta["icon_file"] = icon_candidates[0][1]
+
+    return embedded_meta
+
+
 def install_appimage(filepath):
     if not wait_for_file_ready(filepath):
         return
@@ -472,51 +771,38 @@ def install_appimage(filepath):
     icon_path = ""
     app_comment = f"{clean_name} Application"
     categories = "Utility;Application;"
+    startup_wmclass = ""
 
     # Attempt to extract icon and desktop metadata from AppImage
     temp_dir = tempfile.mkdtemp(prefix="appimage_ext_")
     try:
-        subprocess.run([dest_binary, "--appimage-extract", "*.desktop"], cwd=temp_dir,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=6)
-        subprocess.run([dest_binary, "--appimage-extract", "*.png"], cwd=temp_dir,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=6)
-        subprocess.run([dest_binary, "--appimage-extract", "*.svg"], cwd=temp_dir,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=6)
-        
-        # Check extracted desktop files
-        desktops = glob.glob(os.path.join(temp_dir, "squashfs-root", "**", "*.desktop"), recursive=True)
-        if desktops:
-            with open(desktops[0], "r", errors="ignore") as df:
-                for line in df:
-                    line = line.strip()
-                    if line.startswith("Name=") and not clean_name:
-                        clean_name = line.split("=", 1)[1].strip()
-                    elif line.startswith("Comment="):
-                        app_comment = line.split("=", 1)[1].strip()
-                    elif line.startswith("Categories="):
-                        categories = line.split("=", 1)[1].strip()
-
-        # Check extracted icons
-        icons = glob.glob(os.path.join(temp_dir, "squashfs-root", "**", "*.png"), recursive=True) + \
-                glob.glob(os.path.join(temp_dir, "squashfs-root", "**", "*.svg"), recursive=True)
-        # Filter icons larger than 32px or svg
-        icons.sort(key=lambda x: os.path.getsize(x), reverse=True)
-        for cand in icons:
-            if not cand.endswith(".png") and not cand.endswith(".svg"):
-                continue
-            ext = os.path.splitext(cand)[1]
-            target_icon = os.path.join(ICONS_DIR, f"{safe_id}{ext}")
-            shutil.copy2(cand, target_icon)
-            icon_path = target_icon
-            break
+        meta = extract_appimage_metadata(dest_binary, temp_dir)
+        if meta.get("name"):
+            clean_name = meta["name"]
+            safe_id = "".join(c for c in clean_name if c.isalnum() or c in "-_").lower() or safe_id
+        if meta.get("comment"):
+            app_comment = meta["comment"]
+        if meta.get("categories"):
+            categories = meta["categories"]
+        if meta.get("wmclass"):
+            startup_wmclass = meta["wmclass"]
+        if meta.get("icon_file"):
+            install_icon_file(meta["icon_file"], safe_id)
+            if meta.get("icon") and meta["icon"] != safe_id:
+                install_icon_file(meta["icon_file"], meta["icon"])
+                icon_path = meta["icon"]
+            else:
+                icon_path = safe_id
+            update_icon_caches()
     except Exception as e:
-        print(f"[Installer] Extraction error: {e}")
+        print(f"[Installer] AppImage metadata extraction error: {e}")
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
     if not icon_path:
         icon_path = safe_id
 
+    wmclass_line = f"StartupWMClass={startup_wmclass}\n" if startup_wmclass else ""
     desktop_content = f"""[Desktop Entry]
 Type=Application
 Name={clean_name}
@@ -527,7 +813,7 @@ Terminal=false
 Categories={categories}
 X-Mac-AppImage=true
 X-Mac-Real-Path={dest_binary}
-StartupNotify=true
+{wmclass_line}StartupNotify=true
 """
     local_desktop = os.path.join(LOCAL_APPS_DIR, f"appimage-{safe_id}.desktop")
     with open(local_desktop, "w") as df:
@@ -629,10 +915,9 @@ def install_archive(filepath):
             glob.glob(os.path.join(target_app_dir, "**", "*.svg"), recursive=True)
     if icons:
         icons.sort(key=lambda x: os.path.getsize(x), reverse=True)
-        ext = os.path.splitext(icons[0])[1]
-        target_icon = os.path.join(ICONS_DIR, f"{safe_id}{ext}")
-        shutil.copy2(icons[0], target_icon)
-        icon_path = target_icon
+        install_icon_file(icons[0], safe_id)
+        update_icon_caches()
+        icon_path = safe_id
 
     if main_desktop and os.path.exists(main_desktop):
         # Patch desktop file with full paths
@@ -706,9 +991,9 @@ def extract_exe_icon(exe_path, app_id):
             pngs = glob.glob(os.path.join(temp_dir, "*.png"))
             if pngs:
                 pngs.sort(key=lambda x: os.path.getsize(x), reverse=True)
-                target_icon = os.path.join(ICONS_DIR, f"{app_id}.png")
-                shutil.copy2(pngs[0], target_icon)
-                return target_icon
+                install_icon_file(pngs[0], app_id)
+                update_icon_caches()
+                return app_id
     except Exception as e:
         print(f"[Wine Installer] Icon extraction error: {e}")
     finally:
@@ -846,7 +1131,10 @@ def install_wine_installer(filepath):
     if not wait_for_file_ready(filepath):
         return
     print(f"[Wine Installer] Processing Windows executable: {filepath}")
-    clean_name = extract_app_name(filepath)
+    pe_meta = get_pe_metadata(filepath)
+    clean_name = pe_meta.get("ProductName") or pe_meta.get("FileDescription") or extract_app_name(filepath)
+    if clean_name.lower() in ("setup", "installer", "installation", "update", "patch", "stub"):
+        clean_name = extract_app_name(filepath)
     safe_id = "".join(c for c in clean_name if c.isalnum() or c in "-_").lower() or "winapp"
     ext = os.path.splitext(filepath)[1].lower()
 
@@ -918,6 +1206,7 @@ Terminal=false
 Categories=Utility;Application;
 X-Mac-Wine-App=true
 X-Mac-Real-Path={dest_binary}
+StartupWMClass={os.path.basename(dest_binary)}
 PrefersNonDefaultGPU=true
 X-KDE-RunOnDiscreteGpu=true
 StartupNotify=true
@@ -984,12 +1273,7 @@ StartupNotify=true
 
     if new_desktops:
         created_desktop = new_desktops[0]
-        dest_desktop = os.path.join(LOCAL_APPS_DIR, f"wine-{safe_id}.desktop")
-        try:
-            shutil.copy2(created_desktop, dest_desktop)
-            created_desktop = dest_desktop
-        except Exception:
-            pass
+        # Keep created_desktop as the canonical desktop file, do NOT copy to wine-{safe_id}.desktop
     else:
         wine_c = os.path.join(HOME, ".wine", "drive_c")
         recent_exes = []
@@ -1035,6 +1319,12 @@ StartupNotify=true
                 return (score, mtime)
             recent_exes.sort(key=exe_priority, reverse=True)
             installed_exe = recent_exes[0][0]
+
+            inst_pe = get_pe_metadata(installed_exe)
+            if inst_pe.get("ProductName") and inst_pe["ProductName"].lower() not in ("setup", "installer"):
+                clean_name = inst_pe["ProductName"]
+                safe_id = "".join(c for c in clean_name if c.isalnum() or c in "-_").lower() or safe_id
+
             icon_path = extract_exe_icon(installed_exe, safe_id)
 
             created_desktop = os.path.join(LOCAL_APPS_DIR, f"wine-{safe_id}.desktop")
@@ -1047,6 +1337,7 @@ Terminal=false
 Categories=Utility;Application;
 X-Mac-Wine-App=true
 X-Mac-Real-Path={installed_exe}
+StartupWMClass={os.path.basename(installed_exe)}
 PrefersNonDefaultGPU=true
 X-KDE-RunOnDiscreteGpu=true
 StartupNotify=true
