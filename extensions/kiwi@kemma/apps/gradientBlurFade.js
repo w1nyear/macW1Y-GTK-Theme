@@ -1,5 +1,6 @@
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
+import GLib from 'gi://GLib';
 
 const GRADIENT_BLUR_FADE_SHADER = `
     uniform sampler2D tex;
@@ -178,6 +179,44 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
         this._updateAdj = onAdjChanged;
         adj.connectObject('changed', onAdjChanged, 'notify::value', onAdjChanged, 'notify::upper', onAdjChanged, 'notify::page-size', onAdjChanged, this);
         onAdjChanged();
+
+        if (sv) {
+            let targetValue = adj.value;
+            let lastScrollTime = 0;
+            sv.connectObject('scroll-event', (_actor, event) => {
+                const direction = event.get_scroll_direction();
+                let delta = 0;
+                if (direction === Clutter.ScrollDirection.UP) delta = -1;
+                else if (direction === Clutter.ScrollDirection.DOWN) delta = 1;
+                else if (direction === Clutter.ScrollDirection.SMOOTH) {
+                    const [dx, dy] = event.get_scroll_delta();
+                    delta = dy;
+                }
+                if (delta === 0) return Clutter.EVENT_PROPAGATE;
+
+                const lower = adj.lower;
+                const upper = adj.upper;
+                const pageSize = adj.page_size;
+                const maxVal = Math.max(lower, upper - pageSize);
+                if (maxVal <= lower) return Clutter.EVENT_PROPAGATE;
+
+                const now = GLib.get_monotonic_time();
+                if ((now - lastScrollTime) > 300000) {
+                    targetValue = adj.value;
+                }
+                lastScrollTime = now;
+
+                const step = Math.max(50, adj.step_increment || 60);
+                targetValue = Math.clamp(targetValue + delta * step, lower, maxVal);
+
+                adj.ease(targetValue, {
+                    duration: 220,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+
+                return Clutter.EVENT_STOP;
+            }, this);
+        }
     }
     this.updateBounds();
 };

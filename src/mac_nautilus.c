@@ -9,6 +9,7 @@
 #include <gtk/gtk.h>
 #include <adwaita.h>
 #include <gio/gio.h>
+#include <math.h>
 
 static gboolean is_nautilus(void)
 {
@@ -834,6 +835,147 @@ static void shift_start_box(GtkWidget *widget)
     }
 }
 
+typedef struct {
+    GtkAdjustment *vadj;
+    GtkWidget *widget;
+    guint tick_id;
+    double target_val;
+    double current_val;
+    gint64 last_time;
+} SmoothScrollData;
+
+static gboolean smooth_scroll_tick_cb(GtkWidget *widget G_GNUC_UNUSED,
+                                      GdkFrameClock *frame_clock G_GNUC_UNUSED,
+                                      gpointer user_data)
+{
+    SmoothScrollData *data = (SmoothScrollData *)user_data;
+    if (!data || !data->vadj) return G_SOURCE_REMOVE;
+
+    gint64 now = g_get_monotonic_time();
+    double dt = (double)(now - data->last_time) / 1000000.0;
+    data->last_time = now;
+    if (dt <= 0.0) dt = 0.016;
+    if (dt > 0.05) dt = 0.05;
+
+    double diff = data->target_val - data->current_val;
+    if (fabs(diff) < 0.5) {
+        gtk_adjustment_set_value(data->vadj, data->target_val);
+        data->current_val = data->target_val;
+        data->tick_id = 0;
+        return G_SOURCE_REMOVE;
+    }
+
+    double factor = 1.0 - exp(-18.0 * dt);
+    data->current_val += diff * factor;
+    gtk_adjustment_set_value(data->vadj, data->current_val);
+
+    return G_SOURCE_CONTINUE;
+}
+
+static gboolean on_scrolled_window_scroll(GtkEventControllerScroll *controller,
+                                          double dx G_GNUC_UNUSED,
+                                          double dy,
+                                          gpointer user_data)
+{
+    SmoothScrollData *data = (SmoothScrollData *)user_data;
+    if (!data || !data->vadj) return GDK_EVENT_PROPAGATE;
+
+    GtkAdjustment *adj = data->vadj;
+    double page_size = gtk_adjustment_get_page_size(adj);
+    double lower = gtk_adjustment_get_lower(adj);
+    double upper = gtk_adjustment_get_upper(adj);
+    double max_val = MAX(lower, upper - page_size);
+
+    if (max_val <= lower) return GDK_EVENT_PROPAGATE;
+
+    GdkScrollUnit unit = gtk_event_controller_scroll_get_unit(controller);
+    if (unit != GDK_SCROLL_UNIT_WHEEL) {
+        return GDK_EVENT_PROPAGATE;
+    }
+
+    if (dy == 0.0) return GDK_EVENT_PROPAGATE;
+
+    double cur = gtk_adjustment_get_value(adj);
+    if (data->tick_id == 0) {
+        data->target_val = cur;
+        data->current_val = cur;
+    }
+
+    double step = 68.0;
+    data->target_val = CLAMP(data->target_val + dy * step, lower, max_val);
+
+    if (data->tick_id == 0) {
+        data->last_time = g_get_monotonic_time();
+        data->tick_id = gtk_widget_add_tick_callback(data->widget, smooth_scroll_tick_cb, data, NULL);
+    }
+
+    return GDK_EVENT_STOP;
+}
+
+static void free_smooth_scroll_data(gpointer user_data)
+{
+    SmoothScrollData *data = (SmoothScrollData *)user_data;
+    if (data) {
+        if (data->tick_id != 0 && data->widget) {
+            gtk_widget_remove_tick_callback(data->widget, data->tick_id);
+            data->tick_id = 0;
+        }
+        g_free(data);
+    }
+}
+
+static void enable_smooth_scrolling_for_scrolled_window(GtkScrolledWindow *sw)
+{
+    if (!sw || !GTK_IS_SCROLLED_WINDOW(sw)) return;
+    if (g_object_get_data(G_OBJECT(sw), "mac_smooth_scroll_attached")) return;
+    g_object_set_data(G_OBJECT(sw), "mac_smooth_scroll_attached", GINT_TO_POINTER(1));
+
+    GtkAdjustment *vadj = gtk_scrolled_window_get_vadjustment(sw);
+    if (!vadj) return;
+
+    SmoothScrollData *data = g_new0(SmoothScrollData, 1);
+    data->vadj = vadj;
+    data->widget = GTK_WIDGET(sw);
+    data->target_val = gtk_adjustment_get_value(vadj);
+    data->current_val = data->target_val;
+    data->last_time = g_get_monotonic_time();
+
+    GtkEventController *controller = gtk_event_controller_scroll_new(
+        GTK_EVENT_CONTROLLER_SCROLL_VERTICAL | GTK_EVENT_CONTROLLER_SCROLL_DISCRETE);
+    gtk_event_controller_set_propagation_phase(controller, GTK_PHASE_CAPTURE);
+    g_signal_connect(controller, "scroll", G_CALLBACK(on_scrolled_window_scroll), data);
+    gtk_widget_add_controller(GTK_WIDGET(sw), controller);
+
+    g_object_set_data_full(G_OBJECT(sw), "mac_smooth_scroll_data", data, free_smooth_scroll_data);
+}
+
+static void find_and_enable_scrolled_windows(GtkWidget *widget)
+{
+    if (!widget) return;
+    if (GTK_IS_SCROLLED_WINDOW(widget)) {
+        enable_smooth_scrolling_for_scrolled_window(GTK_SCROLLED_WINDOW(widget));
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_and_enable_scrolled_windows(child);
+    }
+}
+
+static void (*orig_gtk_scrolled_window_set_child)(GtkScrolledWindow *sw, GtkWidget *child) = NULL;
+
+void gtk_scrolled_window_set_child(GtkScrolledWindow *sw, GtkWidget *child)
+{
+    if (!orig_gtk_scrolled_window_set_child) {
+        orig_gtk_scrolled_window_set_child = dlsym(RTLD_NEXT, "gtk_scrolled_window_set_child");
+    }
+    if (orig_gtk_scrolled_window_set_child) {
+        orig_gtk_scrolled_window_set_child(sw, child);
+    }
+    if (is_nautilus() && sw) {
+        enable_smooth_scrolling_for_scrolled_window(sw);
+    }
+}
+
 static gboolean mac_fix_nautilus_window(gpointer user_data)
 {
     GtkWindow *window = GTK_WINDOW(user_data);
@@ -908,6 +1050,7 @@ void gtk_window_present(GtkWindow *window)
         orig_gtk_window_present(window);
     }
     if (is_nautilus() && window) {
+        find_and_enable_scrolled_windows(GTK_WIDGET(window));
         mac_fix_nautilus_window(window);
         g_idle_add(mac_fix_nautilus_window, window);
     }
@@ -922,6 +1065,7 @@ void gtk_window_present_with_time(GtkWindow *window, guint32 timestamp)
         orig_gtk_window_present_with_time(window, timestamp);
     }
     if (is_nautilus() && window) {
+        find_and_enable_scrolled_windows(GTK_WIDGET(window));
         mac_fix_nautilus_window(window);
         g_idle_add(mac_fix_nautilus_window, window);
     }
