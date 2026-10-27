@@ -492,6 +492,7 @@ function _syncGlass() {
         const ry = (by - monitor.y) - OSD_PAD;
         const surf = _osdSurf();
 
+        s.effect.setCornerRadius(OSD_RADIUS);
         s.effect.setGlassRegions([{
             x: rx, y: ry, w: bw + OSD_PAD * 2, h: bh + OSD_PAD * 2,
             tintR: surf.c[0], tintG: surf.c[1], tintB: surf.c[2],
