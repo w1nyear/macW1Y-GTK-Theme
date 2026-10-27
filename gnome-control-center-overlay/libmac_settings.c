@@ -795,6 +795,16 @@ void on_mac_styling_clicked(void *row, void *user_data) {
     /* If row or template triggered this, navigation is handled by navigation.push */
 }
 
+void on_run_diagnostics_clicked(void *widget, gpointer data) {
+    (void)widget; (void)data;
+    g_spawn_command_line_async("ptyxis -- mac-diagnostics || gnome-terminal -- mac-diagnostics || /usr/local/bin/mac-diagnostics", NULL);
+}
+
+void on_restore_theme_clicked(void *widget, gpointer data) {
+    (void)widget; (void)data;
+    g_spawn_command_line_async("/bin/bash -c '/usr/local/bin/mac-apply-theme && notify-send -i preferences-desktop-theme \"macW1Y\" \"Оформлення успішно відновлено до еталону SSOT!\"'", NULL);
+}
+
 void init_game_mode(void *widget, gpointer data) {
     in_init = 1;
     int is_active = 0;

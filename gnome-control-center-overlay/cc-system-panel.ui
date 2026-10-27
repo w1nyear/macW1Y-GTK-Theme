@@ -396,6 +396,48 @@
                   </object>
                 </child>
 
+                <!-- 6. Цілісність та діагностика -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Цілісність та діагностика</property>
+                    <property name="description">Контроль еталону SSOT, розширень GNOME та автоматичне відновлення</property>
+                    <child>
+                      <object class="AdwActionRow" id="diag_status_row">
+                        <property name="title">Стан оформлення macW1Y</property>
+                        <property name="subtitle">Всі компоненти відповідають еталону SSOT (OK)</property>
+                        <child type="prefix">
+                          <object class="GtkImage">
+                            <property name="icon-name">emblem-ok-symbolic</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">Дії обслуговування</property>
+                        <property name="subtitle">Перевірити поточний стан або відновити оформлення</property>
+                        <child type="suffix">
+                          <object class="GtkButton" id="btn_run_diagnostics">
+                            <property name="label">Запустити діагностику</property>
+                            <property name="valign">center</property>
+                            <signal name="clicked" handler="on_run_diagnostics_clicked"/>
+                          </object>
+                        </child>
+                        <child type="suffix">
+                          <object class="GtkButton" id="btn_restore_theme">
+                            <property name="label">Відновити оформлення</property>
+                            <property name="valign">center</property>
+                            <style>
+                              <class name="suggested-action"/>
+                            </style>
+                            <signal name="clicked" handler="on_restore_theme_clicked"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
               </object>
             </property>
           </object>
