@@ -11591,3 +11591,16 @@ Task 499: Повне полірування екрана блокування (m
 3. Звуковий зворотний зв'язок регулювання гучності (Volume Pop):
    - У `VolumeButton` (`menubar_v29.js`) додано дебаунсоване відтворення (75 мс) звуку `audio-volume-change.ogg` при прокрутці коліщатка миші над піктограмою гучності у верхньому менюбарі.
 4. Оновлено хеші SHA256 у `config/extensions.lock.json`, діагностика mac-diagnostics підтверджує 100% відповідність усім стандартам.
+
+--------------------------------------------------------------------------------
+566. Видалення нових звукових тригерів (Trash, Camera Shutter, Scroll Volume):
+1. Видалення та відключення активних слухачів у рантаймі:
+   - Відключено та знищено екземпляр `TrashSoundManager` (`Gio.FileMonitor` на `~/.local/share/Trash/files/`) та від'єднано сигнал `screenshot-taken` у `eval-helper@mactheme`.
+   - Видалено з коду `VolumeButton` у `menubar_v29.js` виклик звукового зворотного зв'язку при прокручуванні коліщатка миші.
+2. Видалення аудіофайлів кошика:
+   - Видалено `trash.ogg` та `trash.oga` з `sounds/macOS/stereo/`, `/usr/share/sounds/macOS/stereo/` та `~/.local/share/sounds/macOS/stereo/`.
+   - Базова звукова тема macOS збережена у стандартному стані (системні звуки сповіщень, підключення/відключення живлення, дзвінок тощо).
+3. Синхронізація розширень та оновлення контрольних сум:
+   - Канонічні версії `extensions/eval-helper@mactheme/extension.js` та `extensions/blur-my-shell@aunetx/components/menubar_v29.js` оновлено в системі (`~/.local/share/gnome-shell/extensions/`).
+   - Перераховано хеші SHA256 у `config/extensions.lock.json`.
+   - `mac-diagnostics` підтверджує 100% готовність та цілісність усіх компонентів.

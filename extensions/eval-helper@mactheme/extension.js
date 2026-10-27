@@ -91,111 +91,6 @@ class OverviewWallpaperManager {
     }
 }
 
-class TrashSoundManager {
-    constructor() {
-        this._monitor = null;
-        this._debounceTimer = 0;
-        this._lastCount = -1;
-        this._init();
-    }
-
-    _init() {
-        const trashPath = GLib.build_filenamev([GLib.get_user_data_dir(), 'Trash', 'files']);
-        const trashDir = Gio.File.new_for_path(trashPath);
-        if (!trashDir.query_exists(null)) {
-            try {
-                trashDir.make_directory_with_parents(null);
-            } catch (_) {}
-        }
-
-        this._countFiles(trashDir).then(cnt => {
-            this._lastCount = cnt;
-        });
-
-        try {
-            this._monitor = trashDir.monitor_directory(Gio.FileMonitorFlags.NONE, null);
-            this._monitor.connect('changed', (_mon, file, otherFile, eventType) => {
-                if (eventType === Gio.FileMonitorEvent.CREATED) {
-                    this._onFileAdded(trashDir);
-                } else if (eventType === Gio.FileMonitorEvent.DELETED) {
-                    this._onFileRemoved(trashDir);
-                }
-            });
-        } catch (e) {
-            console.error(`[TrashSoundManager] Error setting up monitor: ${e}`);
-        }
-    }
-
-    _onFileAdded(trashDir) {
-        if (this._debounceTimer)
-            GLib.source_remove(this._debounceTimer);
-        this._debounceTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 120, () => {
-            this._debounceTimer = 0;
-            this._countFiles(trashDir).then(cnt => {
-                if (cnt > this._lastCount && this._lastCount >= 0) {
-                    try {
-                        global.display.get_sound_player().play_from_theme('trash', 'Move to Trash', null);
-                    } catch (_) {
-                        try {
-                            global.display.get_sound_player().play_from_theme('trash-empty', 'Move to Trash', null);
-                        } catch (_) {}
-                    }
-                }
-                this._lastCount = cnt;
-            });
-            return GLib.SOURCE_REMOVE;
-        });
-    }
-
-    _onFileRemoved(trashDir) {
-        if (this._debounceTimer)
-            GLib.source_remove(this._debounceTimer);
-        this._debounceTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
-            this._debounceTimer = 0;
-            this._countFiles(trashDir).then(cnt => {
-                if (cnt === 0 && this._lastCount > 0) {
-                    try {
-                        global.display.get_sound_player().play_from_theme('trash-empty', 'Trash Emptied', null);
-                    } catch (_) {}
-                }
-                this._lastCount = cnt;
-            });
-            return GLib.SOURCE_REMOVE;
-        });
-    }
-
-    async _countFiles(dir) {
-        try {
-            const enumerator = await dir.enumerate_children_async(
-                'standard::name',
-                Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
-                GLib.PRIORITY_DEFAULT,
-                null
-            );
-            let count = 0;
-            while (true) {
-                const files = await enumerator.next_files_async(20, GLib.PRIORITY_DEFAULT, null);
-                if (!files || files.length === 0) break;
-                count += files.length;
-            }
-            return count;
-        } catch (_) {
-            return 0;
-        }
-    }
-
-    destroy() {
-        if (this._debounceTimer) {
-            GLib.source_remove(this._debounceTimer);
-            this._debounceTimer = 0;
-        }
-        if (this._monitor) {
-            this._monitor.cancel();
-            this._monitor = null;
-        }
-    }
-}
-
 export default class EvalHelper extends Extension {
     enable() {
         globalThis.Clutter = Clutter;
@@ -204,25 +99,6 @@ export default class EvalHelper extends Extension {
         globalThis.Meta = Meta;
         globalThis.Main = Main;
         globalThis.Mtk = Mtk;
-
-        // macOS System Sound Integration: Trash and Screenshot
-        try {
-            this._trashSoundManager = new TrashSoundManager();
-        } catch (e) {
-            console.error(`[macW1Y Audio] TrashSoundManager error: ${e}`);
-        }
-
-        try {
-            if (Main.screenshotUI && !this._screenshotTakenSignalId) {
-                this._screenshotTakenSignalId = Main.screenshotUI.connect('screenshot-taken', () => {
-                    try {
-                        global.display.get_sound_player().play_from_theme('screen-capture', 'Screenshot taken', null);
-                    } catch (_) {}
-                });
-            }
-        } catch (e) {
-            console.error(`[macW1Y Audio] Screenshot sound error: ${e}`);
-        }
         try {
             const nodeInfo = Gio.DBusNodeInfo.new_for_xml(EvalIface);
             this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(nodeInfo.interfaces[0], {
@@ -1742,16 +1618,6 @@ export default class EvalHelper extends Extension {
             for (const st of globalThis._macDlgStates) {
                 try { st.glass?.hide(); } catch (_) {}
             }
-        }
-
-        if (this._trashSoundManager) {
-            try { this._trashSoundManager.destroy(); } catch (_) {}
-            this._trashSoundManager = null;
-        }
-
-        if (this._screenshotTakenSignalId && Main.screenshotUI) {
-            try { Main.screenshotUI.disconnect(this._screenshotTakenSignalId); } catch (_) {}
-            this._screenshotTakenSignalId = 0;
         }
     }
 }

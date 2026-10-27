@@ -295,10 +295,6 @@ const WifiButton = GObject.registerClass({
         }, this);
 
         this.connect('destroy', () => {
-            if (this._scrollSoundDebounce) {
-                GLib.source_remove(this._scrollSoundDebounce);
-                this._scrollSoundDebounce = 0;
-            }
             if (this._pollTimerId) {
                 GLib.source_remove(this._pollTimerId);
                 this._pollTimerId = 0;
@@ -451,10 +447,6 @@ const BluetoothButton = GObject.registerClass({
         }, this);
 
         this.connect('destroy', () => {
-            if (this._scrollSoundDebounce) {
-                GLib.source_remove(this._scrollSoundDebounce);
-                this._scrollSoundDebounce = 0;
-            }
             if (this._pollTimerId) {
                 GLib.source_remove(this._pollTimerId);
                 this._pollTimerId = 0;
@@ -570,16 +562,6 @@ const VolumeButton = GObject.registerClass({
             sink.set_volume(current);
             sink.push_volume();
             this._sync();
-
-            if (!this._scrollSoundDebounce) {
-                this._scrollSoundDebounce = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 75, () => {
-                    this._scrollSoundDebounce = 0;
-                    try {
-                        global.display.get_sound_player().play_from_theme('audio-volume-change', 'Volume', null);
-                    } catch (_) {}
-                    return GLib.SOURCE_REMOVE;
-                });
-            }
             return Clutter.EVENT_STOP;
         });
 
@@ -589,10 +571,6 @@ const VolumeButton = GObject.registerClass({
         }, this);
 
         this.connect('destroy', () => {
-            if (this._scrollSoundDebounce) {
-                GLib.source_remove(this._scrollSoundDebounce);
-                this._scrollSoundDebounce = 0;
-            }
             if (this._pollTimerId) {
                 GLib.source_remove(this._pollTimerId);
                 this._pollTimerId = 0;
@@ -840,10 +818,6 @@ const BatteryWidget = GObject.registerClass({
         }, this);
 
         this.connect('destroy', () => {
-            if (this._scrollSoundDebounce) {
-                GLib.source_remove(this._scrollSoundDebounce);
-                this._scrollSoundDebounce = 0;
-            }
             if (this._pollTimerId) {
                 GLib.source_remove(this._pollTimerId);
                 this._pollTimerId = 0;
