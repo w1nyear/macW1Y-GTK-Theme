@@ -11662,3 +11662,22 @@ Task 499: Повне полірування екрана блокування (m
    - Перераховано контрольні суми SHA256 у `config/extensions.lock.json`.
    - `mac-extension-guard verify` та `mac-diagnostics` підтверджують 100% успішну перевірку цілісності.
 
+--------------------------------------------------------------------------------
+570. Уніфікація hover контекстних меню, виправлення затемнення у Menubar та плавна анімація появи:
+1. Уніфікація скруглення Hover на всіх контекстних меню (повний капсульний Pill):
+   - Усунуто конфлікт між подвійними hover-ефектами з різними радіусами: раніше одночасно існували правила з `border-radius: 6px`/`8px` (неповні кути) та `9999px` (повний овал).
+   - Оновлено селектори `.popup-menu-item`, `.popup-menu-item:hover`, `:focus`, `:selected`, `.appmenu-popup-menu-item`, `.mac-menu-item-row`, `popover.menu modelbutton`, `menu menuitem` у темах `macW1Y-Dark`, `macW1Y-Dark-solid`, `macW1Y-Light`, `macW1Y-Light-solid`, `gnome-shell-theme`, GTK 3 (`gtk.css`, `fixes3.css`) та GTK 4 (`gtk.css`).
+   - Усі контекстні меню тепер мають чистий, автентичний вигляд капсули (`border-radius: 9999px !important;` з відступами `padding: 4px 12px;` / `6px 12px;`).
+2. Виправлення затемнення контекстного меню Menubar у «Параметрах» -> «Mac стилізація»:
+   - Виявлено першопричину: ключ `panel-menu-tint-color` у розширенні `liquid-glass` за замовчуванням містив білий колір (`#ffffff`), через що збільшення повзунка «Затемнення» підмішувало білий колір до скляного ефекту панелі.
+   - У функціях `apply_menu_tint()` та `apply_liquid_tint()` (`libmac_settings.c`), а також у маніфесті SSOT (`config/macw1y-manifest.json`) жорстко встановлено чорний відтінок (`#000000`) для `panel-menu-tint-color`, `menu-tint-color` та `desktop-menu-tint-color`.
+   - Бібліотеку `libmac_settings.so` перекомпільовано й розгорнуто в усі системні шляхи. Тепер повзунок затемнення плавно затемнює абсолютно всі контекстні меню, включаючи Menubar.
+3. Плавна анімація появи контекстного меню через прозорість (Fade-in Opacity):
+   - У перехоплювачі `BoxPointer.prototype.open` (`eval-helper@mactheme/extension.js`) усунуто ранній вихід без анімації при типі анімації `BoxPointer.PopupAnimation.FADE`.
+   - Налаштовано плавний перехід непрозорості `opacity: 0 -> 255` тривалістю 160 мс з кривою швидкості `Clutter.AnimationMode.EASE_OUT_QUAD`, що забезпечує м'яку та швидку появу контекстних меню без затримок.
+4. Синхронізація, розгортання та верифікація:
+   - Всі файли тем розгорнуто до `~/.themes/`, `~/.config/gtk-3.0/`, `~/.config/gtk-4.0/` та `/usr/share/themes/`.
+   - Живу таблицю стилів оболонки GNOME Shell перезавантажено через D-Bus без перезапуску сесії.
+   - Оновлено SHA256-хеші розширень `appmenu` та `eval-helper` у `config/extensions.lock.json`.
+   - `mac-extension-guard verify` та `mac-diagnostics` підтвердили 100% відповідність усім стандартам стабільності.
+
