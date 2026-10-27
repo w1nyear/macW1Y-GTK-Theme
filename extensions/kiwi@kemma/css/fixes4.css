@@ -91,8 +91,10 @@ popover.menu modelbutton:focus,
 .context-menu > .menu-item:focus,
 menuitem:focus,
 .menuitem:focus {
-  background-color: var(--accent-bg-color, #3584e4);
-  color: var(--accent-fg-color, #ffffff);
+  background-color: #007aff !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
 }
 
 /* Dropdown selectors (GtkDropDown, GtkComboBox, AdwComboRow) put a listview in a
@@ -108,8 +110,9 @@ popover.menu scrolledwindow > listview > row {
    only the pointer states get the accent. */
 popover.menu listview > row:hover,
 popover.menu listview > row:active {
-  background-color: var(--accent-bg-color, #3584e4);
-  color: var(--accent-fg-color, #ffffff);
+  background-color: #007aff !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
 }
 
 /* ============================================================

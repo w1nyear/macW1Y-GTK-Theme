@@ -78,8 +78,10 @@ popover.menu modelbutton:hover,
 .context-menu > .menu-item:hover,
 menuitem:hover,
 .menuitem:hover {
-  background-color: @theme_selected_bg_color;
-  color: @theme_selected_fg_color;
+  background-color: #007aff !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
 }
 
 /* ============================================================

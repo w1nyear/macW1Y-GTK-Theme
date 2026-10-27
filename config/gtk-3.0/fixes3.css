@@ -8,8 +8,22 @@ headerbar .titlebutton {
   padding: 1px;
 }
 
-headerbar box.horizontal.left {
+headerbar box.horizontal.left,
+headerbar > box.left {
+  padding-left: 0px;
+}
+
+window headerbar,
+window headerbar.titlebar,
+window headerbar.default-decoration,
+headerbar.default-decoration,
+headerbar {
   padding-left: 8px;
+}
+
+headerbar button.titlebutton.close,
+headerbar button.titlebutton:first-child {
+  margin-left: 0px;
 }
 
 /* Geary fixes*/
@@ -78,54 +92,8 @@ popover.menu modelbutton:hover,
 .context-menu > .menu-item:hover,
 menuitem:hover,
 .menuitem:hover {
-  background-color: @theme_selected_bg_color;
-  color: @theme_selected_fg_color;
+  background-color: #007aff !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
 }
-
-/* ============================================================
-   Completely remove overscroll glow (overshoot) and fake gradients
-   across all GTK3 applications
-   ============================================================ */
-overshoot,
-overshoot.top,
-overshoot.bottom,
-overshoot.left,
-overshoot.right,
-scrolledwindow overshoot,
-scrolledwindow overshoot.top,
-scrolledwindow overshoot.bottom,
-scrolledwindow overshoot.left,
-scrolledwindow overshoot.right,
-scrolledwindow > overshoot,
-scrolledwindow > overshoot.top,
-scrolledwindow > overshoot.bottom,
-scrolledwindow > overshoot.left,
-scrolledwindow > overshoot.right {
-  background: none;
-  background-image: none;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-undershoot,
-undershoot.top,
-undershoot.bottom,
-undershoot.left,
-undershoot.right,
-scrolledwindow undershoot,
-scrolledwindow undershoot.top,
-scrolledwindow undershoot.bottom,
-scrolledwindow undershoot.left,
-scrolledwindow undershoot.right,
-scrolledwindow > undershoot,
-scrolledwindow > undershoot.top,
-scrolledwindow > undershoot.bottom,
-scrolledwindow > undershoot.left,
-scrolledwindow > undershoot.right {
-  background: none;
-  background-image: none;
-  border: none;
-  box-shadow: none;
-}
-

@@ -9659,10 +9659,10 @@ popover.menu button,
 popover modelbutton,
 .context-menu modelbutton,
 .popup-menu modelbutton {
-  min-height: 24px;
-  padding: 4px 12px;
-  margin: 2px 6px;
-  border-radius: 9999px;
+  min-height: 22px;
+  padding: 4px 10px;
+  margin: 1px 6px;
+  border-radius: 6px;
   color: #ffffff;
   background-color: transparent;
   font-size: 13px;
@@ -9692,8 +9692,8 @@ popover modelbutton:selected,
 .context-menu modelbutton:selected {
   background-color: #007aff;
   color: #ffffff;
-  border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+  border-radius: 6px;
+  box-shadow: none;
 }
 
 popover.menu modelbutton:hover label,
@@ -9713,7 +9713,7 @@ popover.menu button:active,
 popover modelbutton:active {
   background-color: #0062cc;
   color: #ffffff;
-  border-radius: 9999px;
+  border-radius: 6px;
 }
 
 popover.menu modelbutton:disabled,

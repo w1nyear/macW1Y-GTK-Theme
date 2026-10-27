@@ -11343,6 +11343,30 @@ Task 499: Повне полірування екрана блокування (m
         * У `dash2dock-motion/docking.js` додано захисний запас `padY2 = 64` (та дзеркальні відступи для інших сторін), що повністю виключає будь-яке апаратне зрізання країв іконок чи індикаторів запуску.
         * У `cupertino-dock-lite/stylesheet.css` виправлено синтаксичну помилку (випадковий символ `*/` у селекторі `.running .overview-icon`).
 
+554. Уніфікація стилю hover для всіх контекстних та системних меню під еталонний стиль macOS Tahoe:
+   1. Діагностика:
+      - У системі контекстні меню та випадаючі списки мали різні візуальні стилі підсвічування (hover) на різних рівнях інтерфейсу:
+        * У розширенні AppMenu (глобальне меню верхньої панелі) активний пункт меню мав прямокутне скруглення 6px із системним кольором `-st-accent-color` (`#3584e4`).
+        * У системних спливаючих меню GNOME Shell та контекстному меню дока пункти підсвічувалися як овальні капсули з радіусом `border-radius: 9999px`.
+        * У контекстних меню GTK3 (робочий стіл DING, вікна GTK3) hover мав форму витягнутої капсули `border-radius: 9999px` або `8px` з розмитим зовнішнім блакитним сяйвом `box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40)`.
+        * У контекстних меню GTK4 / Libadwaita (Nautilus, Параметри тощо) деякі елементи підсвічувалися тьмяним сірим кольором `alpha(currentColor, 0.1)`, а інші — овальними капсулами.
+   2. Вирішення:
+      - За вибором користувача стандартизовано фірмовий стиль macOS Blue: однаковий яскравий синій колір `#007aff`, білий текст `#ffffff`, скруглення `border-radius: 6px` та відсутність зайвого розмитого свічення (`box-shadow: none`) для всіх меню в системі.
+      - **GNOME Shell (`macW1Y-Dark/gnome-shell/gnome-shell.css` та `~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css`)**:
+        * Оновлено селектори `.popup-menu-item:hover`, `:focus`, `:selected`: встановлено `background-color: #007aff !important`, `color: #ffffff !important`, `border-radius: 6px !important`, `box-shadow: none !important`.
+        * Оновлено селектори `.popup-menu-item:active` та `.appmenu-popup-menu-item:active` до насиченого відтінку натискання `#0062cc !important` із `border-radius: 6px !important`.
+        * Усунено всі застарілі правила з `border-radius: 9999px`.
+      - **Розширення AppMenu (`extensions/appmenu@ChathurangaBW.github.io/stylesheet.css` та `~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/stylesheet.css`)**:
+        * Для всіх пунктів меню встановлено чіткий колір `#007aff !important` при наведенні (замість змінного `-st-accent-color`), `#0062cc !important` при натисканні, білий колір тексту та радіус 6px.
+      - **GTK 4.0 (`gtk-4.0/gtk.css`, `gtk-4.0/gtk-Dark.css`, `gtk-4.0/fixes4.css` та відповідні файли в `config/gtk-4.0/` і `~/.config/gtk-4.0/`)**:
+        * Уніфіковано `.menu-item:hover`, `popover.menu modelbutton:hover`, `popover.menu button:hover`, `dropdown popover modelbutton:hover`: встановлено `background-color: #007aff !important`, `color: #ffffff !important`, `border-radius: 6px !important`, `box-shadow: none !important`.
+        * Оновлено внутрішні відступи `padding: 4px 10px !important`, поля `margin: 1px 6px !important` та мінімальну висоту `min-height: 22px !important` для ідентичної геометрії меню в додатках GNOME 46/47 (Nautilus, Текстовий редактор, Параметри).
+      - **GTK 3.0 (`gtk-3.0/gtk.css`, `gtk-3.0/fixes3.css` та відповідні файли в `config/gtk-3.0/` і `~/.config/gtk-3.0/`)**:
+        * У меню робочого столу `window.desktopmenu`, системних `menu menuitem:hover` та `popover.menu modelbutton:hover` видалено капсульні радіуси `9999px`/`8px` та свічення `box-shadow`, замінено на чіткі прямокутні плашки з радіусом `6px` та кольором `#007aff` (`#0062cc` при active).
+      - **Гаряче перезавантаження**:
+        * Виконано оновлення теми оболонки GNOME Shell без перезавантаження сесії через EvalHelper (`Main.reloadThemeResource(); Main.loadTheme();`).
+
+
 
 
 

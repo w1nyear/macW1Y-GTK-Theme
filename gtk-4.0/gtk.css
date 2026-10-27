@@ -2401,8 +2401,11 @@ headerbar {
   padding: 0;
   margin: 0;
   color: @headerbar_fg_color;
-  background-color: @headerbar_bg_color;
-  border-bottom: 1px solid @headerbar_darker_shade_color;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-bottom: none;
   box-shadow: none;
 }
 
@@ -2410,14 +2413,31 @@ headerbar:backdrop {
   opacity: 1;
   transition: 150ms ease-out;
   color: color-mix(in srgb, @headerbar_fg_color 70%, @headerbar_backdrop_color);
-  background-color: @headerbar_backdrop_color;
-  border-color: @headerbar_shade_color;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+headerbar.default-decoration,
+headerbar.default-decoration:backdrop {
+  min-height: 32px;
+  padding: 0;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
   box-shadow: none;
 }
 
 headerbar.flat, headerbar.flat:backdrop {
   border: none;
   background: none;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
 }
 
 headerbar .title {
@@ -2717,14 +2737,17 @@ headerbar windowhandle box.linked > button:checked {
 }
 
 .maximized headerbar {
-  background-color: @headerbar_bg_color;
-  border-color: @headerbar_darker_shade_color;
+  background: none;
+  background-color: transparent;
+  border: none;
   box-shadow: none;
 }
 
 .maximized headerbar:backdrop {
-  background-color: @headerbar_backdrop_color;
-  border-color: alpha(@headerbar_darker_shade_color,0.65);
+  background: none;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .maximized headerbar.flat, .maximized headerbar.flat:backdrop {
@@ -3760,36 +3783,65 @@ switch:checked:backdrop {
 }
 
 switch > slider {
-  transition: all 150ms cubic-bezier(0, 0, 0.2, 1), margin 0;
-  min-width: 20px;
-  min-height: 14px;
+  min-width: 22px;
+  min-height: 16px;
   margin: 2px -6px 2px 2px;
   padding: 0;
   border-radius: 9999px;
-  background-color: white;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  background-color: #ffffff;
+  background-image: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22), 0 2px 5px rgba(0, 0, 0, 0.12);
   border: none;
+  transition: margin 300ms cubic-bezier(0.16, 1, 0.3, 1),
+              min-width 300ms cubic-bezier(0.16, 1, 0.3, 1),
+              min-height 300ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 300ms ease,
+              background-image 300ms ease,
+              box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 switch:checked > slider {
   margin: 2px 2px 2px -6px;
-  background-color: white;
+  background-color: #ffffff;
+  background-image: none;
 }
 
 switch:checked:disabled > slider {
   animation: none;
 }
 
-switch:active > slider {
-  margin: 0 -4px 0 0;
+switch:active > slider,
+switch > slider:active {
+  min-width: 32px;
+  min-height: 22px;
+  margin: -1px -8px -1px 0px;
   background-color: transparent;
-  box-shadow: inset 1px 2px 1px -1px @accent_bg_color, inset -1px -1px 1px -1px white;
+  background-image: url("assets/scalable/slider-glass.svg");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  border: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.20);
+  transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1),
+              min-height 100ms cubic-bezier(0, 0, 0.2, 1),
+              background-image 100ms ease-in,
+              box-shadow 100ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-switch:checked:active > slider {
-  margin: 0 0 0 -4px;
-  background-color: rgba(255, 255, 255, 0.25);
-  box-shadow: inset 1px 1px 1px -1px white, inset -1px -1px 1px -1px white;
+switch:checked:active > slider,
+switch:checked > slider:active {
+  min-width: 32px;
+  min-height: 22px;
+  margin: -1px 0px -1px -8px;
+  background-color: transparent;
+  background-image: url("assets/scalable/slider-glass.svg");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  border: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.20);
+  transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1),
+              min-height 100ms cubic-bezier(0, 0, 0.2, 1),
+              background-image 100ms ease-in,
+              box-shadow 100ms cubic-bezier(0, 0, 0.2, 1);
 }
 
 switch:disabled > slider {
@@ -9621,10 +9673,10 @@ popover.menu button,
 popover modelbutton,
 .context-menu modelbutton,
 .popup-menu modelbutton {
-  min-height: 24px;
-  padding: 4px 12px;
-  margin: 2px 6px;
-  border-radius: 9999px;
+  min-height: 22px;
+  padding: 4px 10px;
+  margin: 1px 6px;
+  border-radius: 6px;
   color: #ffffff;
   background-color: transparent;
   font-size: 13px;
@@ -9654,8 +9706,8 @@ popover modelbutton:selected,
 .context-menu modelbutton:selected {
   background-color: #007aff;
   color: #ffffff;
-  border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+  border-radius: 6px;
+  box-shadow: none;
 }
 
 popover.menu modelbutton:hover label,
@@ -9675,7 +9727,7 @@ popover.menu button:active,
 popover modelbutton:active {
   background-color: #0062cc;
   color: #ffffff;
-  border-radius: 9999px;
+  border-radius: 6px;
 }
 
 popover.menu modelbutton:disabled,
@@ -9802,20 +9854,33 @@ navigationview.sidebar headerbar windowcontrols.start:dir(ltr),
 }
 
 /* Mac Settings headerbar alignment matching Nautilus */
+/* Global Top Bar Transparency & macOS List Dissolve Shader across all apps */
+headerbar,
+headerbar:backdrop,
+headerbar.default-decoration,
+headerbar.default-decoration:backdrop,
+/* All headerbars across all windows are completely transparent without grey background */
+window headerbar,
+window headerbar:backdrop,
+window headerbar.flat,
+window headerbar.flat:backdrop,
+window headerbar.default-decoration,
+window headerbar.default-decoration:backdrop,
+window .top-bar headerbar,
+window toolbarview > .top-bar headerbar,
+window .sidebar-pane headerbar,
+window .content-pane headerbar,
 window.mac-settings-window headerbar,
 window.mac-settings-window .mac-settings-content-headerbar,
 window.mac-settings-window .mac-settings-sidebar-headerbar,
 window.mac-settings-window navigation-split-view headerbar,
-navigation-split-view > widget:not(.sidebar) headerbar,
-navigation-split-view adw-navigation-view headerbar,
-navigation-split-view toolbarview > .top-bar headerbar,
-navigation-split-view toolbarview > .top-bar .collapse-spacing headerbar,
-navigation-split-view toolbarview > .top-bar .collapse-spacing headerbar.default-decoration,
+navigation-split-view headerbar,
+overlay-split-view headerbar,
+overlay-split-view toolbarview > .top-bar headerbar,
 window.nautilus-window .content-pane headerbar,
 window.nautilus-window .sidebar-pane headerbar {
     min-height: 48px;
-    margin-top: 3px;
-    background: transparent;
+    background: none;
     background-color: transparent;
     background-image: none;
     border: none;
@@ -9823,31 +9888,37 @@ window.nautilus-window .sidebar-pane headerbar {
     box-shadow: none;
 }
 
-/* Redesign: Replace top bar static background with list dissolve shader gradient (0px -> 3px -> 5px blur & dissolve) */
+/* Redesign: Top bar containers are fully transparent without solid backgrounds across all applications */
+window toolbarview > .top-bar,
+window toolbarview > revealer.top-bar,
+window toolbarview > .top-bar:backdrop,
+window toolbarview > .top-bar.raised,
+window toolbarview > .top-bar.raised.border,
+window .top-bar,
 window.mac-settings-window toolbarview > .top-bar,
-window.mac-settings-window toolbarview > .top-bar.raised,
-window.mac-settings-window toolbarview > .top-bar.raised.border,
+window.mac-settings-window toolbarview > .top-bar.flat,
+window.mac-settings-window toolbarview > revealer.top-bar,
 navigation-split-view toolbarview > .top-bar,
-navigation-split-view toolbarview > .top-bar.raised,
-navigation-split-view toolbarview > .top-bar.raised.border,
+overlay-split-view toolbarview > .top-bar,
 window.nautilus-window .content-pane toolbarview > .top-bar,
 window.nautilus-window toolbarview > .top-bar {
-    background: linear-gradient(to bottom,
-        @window_bg_color 0%,
-        alpha(@window_bg_color, 0.95) 25%,
-        alpha(@window_bg_color, 0.72) 50%,
-        alpha(@window_bg_color, 0.30) 75%,
-        transparent 100%);
+    background: none;
     background-color: transparent;
+    background-image: none;
     border: none;
     border-bottom: none;
     box-shadow: none;
 }
 
+/* Sidebar top-bars remain clean transparent without gradient */
+window .sidebar-pane toolbarview > .top-bar,
+window .sidebar-pane toolbarview > .top-bar.raised,
+window navigation-split-view .sidebar-pane toolbarview > .top-bar,
+window overlay-split-view > widget:first-child toolbarview > .top-bar,
+window overlay-split-view > .sidebar-pane toolbarview > .top-bar,
 window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
-window.mac-settings-window .sidebar-pane toolbarview > .top-bar.raised,
-navigation-split-view .sidebar-pane toolbarview > .top-bar,
 window.nautilus-window .sidebar-pane toolbarview > .top-bar {
+    background: none;
     background-color: transparent;
     background-image: none;
     border: none;
@@ -10192,14 +10263,19 @@ toolbarview.undershoot-top scrolledwindow > undershoot.top,
 navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane scrolledwindow > undershoot.top,
-window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top {
-    min-height: 56px;
+preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+preferencespage > scrolledwindow > undershoot.top,
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
+window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .content-pane scrolledwindow > undershoot.top,
+window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window scrolledwindow > undershoot.top {
+    min-height: 28px;
     background: linear-gradient(to bottom,
         @window_bg_color 0%,
-        alpha(@window_bg_color, 0.96) 20%,
-        alpha(@window_bg_color, 0.82) 40%,
-        alpha(@window_bg_color, 0.55) 60%,
-        alpha(@window_bg_color, 0.22) 80%,
+        alpha(@window_bg_color, 0.85) 30%,
+        alpha(@window_bg_color, 0.4) 65%,
         transparent 100%);
     border: none;
     box-shadow: none;
@@ -10212,14 +10288,19 @@ toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 navigation-view-page toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 .content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 .content-pane scrolledwindow > undershoot.bottom,
-window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom {
-    min-height: 48px;
+preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
+preferencespage > scrolledwindow > undershoot.bottom,
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window preferencespage > scrolledwindow > undershoot.bottom,
+window.mac-settings-window .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .content-pane scrolledwindow > undershoot.bottom,
+window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window scrolledwindow > undershoot.bottom {
+    min-height: 28px;
     background: linear-gradient(to top,
         @window_bg_color 0%,
-        alpha(@window_bg_color, 0.96) 20%,
-        alpha(@window_bg_color, 0.82) 40%,
-        alpha(@window_bg_color, 0.55) 60%,
-        alpha(@window_bg_color, 0.22) 80%,
+        alpha(@window_bg_color, 0.85) 30%,
+        alpha(@window_bg_color, 0.4) 65%,
         transparent 100%);
     border: none;
     box-shadow: none;
@@ -10232,9 +10313,12 @@ navigation-split-view > .sidebar-pane undershoot.top,
 navigation-split-view > .sidebar-pane scrolledwindow > undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
 window.mac-settings-window .sidebar-pane undershoot.top {
-    min-height: 0px;
-    background-color: transparent;
-    background-image: none;
+    min-height: 28px;
+    background: linear-gradient(to bottom,
+        @sidebar_bg_color 0%,
+        alpha(@sidebar_bg_color, 0.85) 30%,
+        alpha(@sidebar_bg_color, 0.4) 65%,
+        transparent 100%);
     border: none;
     box-shadow: none;
 }
@@ -10246,10 +10330,143 @@ navigation-split-view > .sidebar-pane undershoot.bottom,
 navigation-split-view > .sidebar-pane scrolledwindow > undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
 window.mac-settings-window .sidebar-pane undershoot.bottom {
-    min-height: 0px;
-    background-color: transparent;
-    background-image: none;
+    min-height: 28px;
+    background: linear-gradient(to top,
+        @sidebar_bg_color 0%,
+        alpha(@sidebar_bg_color, 0.85) 30%,
+        alpha(@sidebar_bg_color, 0.4) 65%,
+        transparent 100%);
     border: none;
     box-shadow: none;
+}
+
+/* Keep dialogs, treeviews, textviews, and popovers free of white glow */
+dialog scrolledwindow undershoot,
+dialog-host scrolledwindow undershoot,
+window.dialog scrolledwindow undershoot,
+messagedialog scrolledwindow undershoot,
+scrolledwindow.frame undershoot,
+scrolledwindow > treeview ~ undershoot,
+scrolledwindow > textview ~ undershoot,
+treeview ~ undershoot,
+textview ~ undershoot,
+popover scrolledwindow undershoot,
+columnview ~ undershoot {
+    background: none;
+    background-image: none;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    min-height: 0px;
+    min-width: 0px;
+}
+
+/* ==========================================================================
+   Compact Solid Tab Bar Across Applications (Task 545)
+   ========================================================================== */
+
+/* Universal solid background for tab bars */
+tabbar,
+tabbar.inline,
+panelframetabbar,
+panelframetabbar.frameheader.header {
+    background-color: #242424;
+    background-image: none;
+    min-height: 26px;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+}
+
+/* Compact tab bar inner box container */
+tabbar .box,
+tabbar.inline .box {
+    background-color: #1c1c1e;
+    background-image: none;
+    min-height: 24px;
+    margin: 1px 4px;
+    padding: 1px 2px;
+    border-radius: 6px;
+    border: none;
+    box-shadow: none;
+}
+
+tabbar:backdrop .box > scrolledwindow,
+tabbar:backdrop .box > .start-action,
+tabbar:backdrop .box > .end-action {
+    filter: none;
+    opacity: 0.8;
+}
+
+/* Compact tab strip layout */
+tabbar tabbox {
+    min-height: 22px;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* Compact individual tabs */
+tabbar tabbox > tab,
+tabbar tabbox > tabboxchild > tab {
+    min-height: 22px;
+    padding: 1px 8px;
+    margin: 0 1px;
+    border-radius: 5px;
+    background-color: #2c2c2e;
+    background-image: none;
+    color: rgba(255, 255, 255, 0.7);
+    border: none;
+    box-shadow: none;
+    transition: background-color 100ms ease, color 100ms ease;
+}
+
+tabbar tabbox > tab:hover,
+tabbar tabbox > tabboxchild > tab:hover {
+    background-color: #343438;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Selected active tab */
+tabbar tabbox > tab:checked,
+tabbar tabbox > tab:selected,
+tabbar tabbox > tabboxchild > tab:checked,
+tabbar tabbox > tabboxchild > tab:selected {
+    background-color: #3a3a3c;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Close button inside tab */
+tabbar tabbox > tab button.tab-close-button,
+tabbar tabbox > tabboxchild > tab button.tab-close-button {
+    min-height: 16px;
+    min-width: 16px;
+    padding: 0;
+    margin: 0 2px;
+    border-radius: 9999px;
+    background-color: transparent;
+}
+
+tabbar tabbox > tab button.tab-close-button:hover,
+tabbar tabbox > tabboxchild > tab button.tab-close-button:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Start / End action buttons (+ button, dropdowns) */
+tabbar .start-action,
+tabbar .end-action {
+    padding: 1px 2px;
+    background-color: transparent;
+}
+
+tabbar .start-action button,
+tabbar .end-action button {
+    min-height: 22px;
+    min-width: 22px;
+    padding: 1px;
+    border-radius: 4px;
 }
 
