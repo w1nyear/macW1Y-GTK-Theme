@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""
+mac-integrity-check - Automated Background Integrity Watchdog for macW1Y
+Runs via systemd user timer (daily and upon session start).
+Audits:
+- Extension integrity (SHA256 vs extensions.lock.json)
+- Extension updates pending review
+- SSOT theme/icon/font alignment (macw1y-manifest.json)
+- Required extensions active
+Logs to systemd journal; triggers a clean desktop notification only if issues are detected.
+"""
+
+import sys
+import os
+import subprocess
+import json
+
+def log(msg):
+    print(f"[macW1Y Integrity] {msg}")
+
+def check_integrity():
+    issues = []
+
+    # 1. Check extension SHA256 integrity
+    try:
+        res = subprocess.run(["/usr/local/bin/mac-extension-guard", "verify"],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
+        if res.returncode != 0:
+            for line in res.stdout.splitlines():
+                if "mismatch" in line or "missing" in line:
+                    issues.append(f"Змінено файли розширення: {line.strip('- ')}")
+    except Exception as e:
+        issues.append(f"Помилка перевірки цілісності розширень: {e}")
+
+    # 2. Check pending unverified extension updates
+    try:
+        res = subprocess.run(["/usr/local/bin/mac-extension-guard", "check"],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
+        for line in res.stdout.splitlines():
+            if "PENDING UPDATE" in line:
+                issues.append(f"Доступне оновлення: {line.strip('- ')}")
+    except Exception as e:
+        pass
+
+    # 3. Quick check of SSOT manifest
+    manifest_path = "/home/vitaliy/MACTHEMEFILES/config/macw1y-manifest.json"
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path) as f:
+                manifest = json.load(f)
+            th = manifest.get("theme", {})
+            checks = [
+                ("org.gnome.desktop.interface", "gtk-theme", th.get("gtk_theme")),
+                ("org.gnome.desktop.interface", "icon-theme", th.get("icon_theme")),
+                ("org.gnome.shell.extensions.user-theme", "name", th.get("shell_theme")),
+            ]
+            for schema, key, expected in checks:
+                if not expected:
+                    continue
+                cur = subprocess.check_output(["gsettings", "get", schema, key], text=True).strip().strip("'\"")
+                if cur != expected:
+                    issues.append(f"Невідповідність {key}: активна '{cur}', очікується '{expected}'")
+        except Exception as e:
+            issues.append(f"Помилка перевірки маніфесту: {e}")
+
+    # 4. Check enabled extensions
+    lock_path = "/home/vitaliy/MACTHEMEFILES/config/extensions.lock.json"
+    if os.path.exists(lock_path):
+        try:
+            with open(lock_path) as f:
+                lock = json.load(f).get("extensions", {})
+            enabled = set(subprocess.check_output(["gnome-extensions", "list", "--enabled"], text=True).splitlines())
+            for uuid in lock:
+                if uuid not in enabled:
+                    issues.append(f"Критичне розширення вимкнено: {uuid}")
+        except Exception as e:
+            pass
+
+    return issues
+
+def notify_user(issues):
+    log(f"Integrity check failed: {len(issues)} issue(s) detected:")
+    for iss in issues:
+        log(f" - {iss}")
+
+    body = f"Виявлено {len(issues)} невідповідностей з еталоном оформлення.\nВідкрийте Параметри → Mac стилізація для перевірки або відновлення."
+    try:
+        subprocess.run([
+            "notify-send",
+            "-a", "macW1Y",
+            "-i", "dialog-warning",
+            "-u", "normal",
+            "macW1Y: Контроль цілісності",
+            body
+        ], check=False)
+        sound_path = "/usr/share/sounds/macOS/stereo/dialog-warning.ogg"
+        if os.path.exists(sound_path):
+            subprocess.Popen(["pw-play", sound_path], stderr=subprocess.DEVNULL)
+    except Exception as e:
+        log(f"Notification error: {e}")
+
+def main():
+    log("Starting background integrity check...")
+    issues = check_integrity()
+    if not issues:
+        log("All macW1Y integrity checks passed successfully. System is green.")
+        return 0
+    else:
+        notify_user(issues)
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())

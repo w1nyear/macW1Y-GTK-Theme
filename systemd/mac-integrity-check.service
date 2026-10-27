@@ -1,0 +1,11 @@
+[Unit]
+Description=macW1Y Background System & Extension Integrity Check
+Documentation=https://github.com/vitaliy/macW1Y
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mac-integrity-check
+Slice=background.slice
+IOSchedulingClass=idle
+CPUSchedulingPolicy=idle

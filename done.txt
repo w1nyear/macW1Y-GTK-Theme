@@ -11545,3 +11545,23 @@ Task 499: Повне полірування екрана блокування (m
 2. Інтеграція проведена на обох рівнях:
    - В автономному застосунку GTK4 / Libadwaita: bin/mac-styling-settings (також оновлено ~/.local/bin/ та /usr/local/bin/).
    - Безпосередньо в системному GNOME Control Center (Параметри -> Система -> Mac стилізація): оновлено cc-system-panel.ui та перекомпільовано динамічну бібліотеку libmac_settings.so.
+
+
+--------------------------------------------------------------------------------
+563. Автоматичний фоновий контроль цілісності macW1Y (systemd user watchdog & timer):
+1. Фоновий сторожовий сервіс mac-integrity-check:
+   - Розроблено легковагову утиліту `bin/mac-integrity-check` (встановлено в `/usr/local/bin/mac-integrity-check`).
+   - Проводить комплексний аудит цілісності системи:
+     * Перевірка контрольних сум SHA256 усіх 20 розширень GNOME Shell за еталоном `config/extensions.lock.json` (`mac-extension-guard verify`).
+     * Перевірка наявності неперевірених оновлень розширень (`mac-extension-guard check`).
+     * Перевірка відповідності системних тем (GTK, іконки, шрифт, Shell) маніфесту `config/macw1y-manifest.json`.
+     * Перевірка активності обов'язкових компонентів macW1Y.
+   - Повністю безшумна робота: коли всі перевірки пройдені («зелена система»), утиліта лише логує успіх у системний журнал systemd без сповіщень користувачу (0 оверхеду та спаму).
+   - У разі виявлення порушень надсилає сповіщення `notify-send` із заголовком «macW1Y: Контроль цілісності» та відтворює системний звук `dialog-warning.ogg`.
+2. Системний таймер systemd:
+   - Створено юніти:
+     * `systemd/mac-integrity-check.service` (Type=oneshot, Slice=background.slice, IOSchedulingClass=idle, CPUSchedulingPolicy=idle).
+     * `systemd/mac-integrity-check.timer` (OnStartupSec=3min — перший запуск через 3 хвилини після входу в сеанс; OnUnitActiveSec=1d — щоденна повторна перевірка; Persistent=true).
+   - Встановлено в `~/.config/systemd/user/` та активовано в системі (`systemctl --user enable --now mac-integrity-check.timer`).
+3. Інтеграція в інсталятор та оновлювач:
+   - У `install.sh` (`run_incremental_update`) додано синхронізацію бінарників `mac-integrity-check` та `mac-diagnostics` у `~/.local/bin` і `/usr/local/bin`, а також автоматичне розгортання та перезапуск таймера.

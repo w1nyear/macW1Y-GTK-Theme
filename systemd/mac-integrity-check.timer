@@ -1,0 +1,11 @@
+[Unit]
+Description=Scheduled Integrity Watchdog for macW1Y
+Documentation=https://github.com/vitaliy/macW1Y
+
+[Timer]
+OnStartupSec=3min
+OnUnitActiveSec=1d
+Persistent=true
+
+[Install]
+WantedBy=timers.target

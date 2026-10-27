@@ -1736,12 +1736,24 @@ run_incremental_update() {
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-styling-settings mac-apply-theme mac-extension-guard toggle-launchpad.sh extension-manager; do
+    for b in gnome-control-center mac-styling-settings mac-apply-theme mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true
+            sudo cp -f "$SCRIPT_DIR/bin/$b" "/usr/local/bin/$b" 2>/dev/null || true
+            sudo chmod 755 "/usr/local/bin/$b" 2>/dev/null || true
         fi
     done
+
+    # Встановлення та запуск фонового таймера перевірки цілісності macW1Y
+    if [ -f "$SCRIPT_DIR/systemd/mac-integrity-check.service" ] && [ -f "$SCRIPT_DIR/systemd/mac-integrity-check.timer" ]; then
+        local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
+        mkdir -p "$USER_SYSTEMD"
+        sync_or_update_file "$SCRIPT_DIR/systemd/mac-integrity-check.service" "$USER_SYSTEMD/mac-integrity-check.service" false
+        sync_or_update_file "$SCRIPT_DIR/systemd/mac-integrity-check.timer" "$USER_SYSTEMD/mac-integrity-check.timer" false
+        run_as_user systemctl --user daemon-reload 2>/dev/null || true
+        run_as_user systemctl --user enable --now mac-integrity-check.timer 2>/dev/null || true
+    fi
     if [ -x "/usr/bin/google-chrome-stable" ] || [ -x "/usr/bin/google-chrome" ] || [ -x "/snap/bin/google-chrome" ]; then
         [ -f "$SCRIPT_DIR/bin/google-chrome" ] && sync_or_update_file "$SCRIPT_DIR/bin/google-chrome" "$LOCAL_BIN/google-chrome" false && chmod +x "$LOCAL_BIN/google-chrome" 2>/dev/null || true
     else
