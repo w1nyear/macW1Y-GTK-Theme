@@ -275,7 +275,12 @@ export default class DashAnimatorExtension extends Extension {
 
     icons.forEach((c) => {
       const appwell = c.first_child;
-      if (c._appwell === appwell) return; // Already processed
+      if (c._appwell === appwell) {
+        if (c._bin?.get_parent()?.clip_to_view) {
+          c._bin.get_parent().clip_to_view = false;
+        }
+        return; // Already processed
+      }
 
       const widget = appwell.first_child;
       const icongrid = widget.first_child;
@@ -283,6 +288,10 @@ export default class DashAnimatorExtension extends Extension {
       const bin = boxlayout.first_child;
       if (!bin) return;
       const icon = bin.first_child;
+
+      if (boxlayout && boxlayout.clip_to_view !== false) {
+        boxlayout.clip_to_view = false;
+      }
 
       c._bin = bin;
       c._label = c.label;
@@ -317,6 +326,9 @@ export default class DashAnimatorExtension extends Extension {
         const boxlayout = icongrid.first_child;
         const bin = boxlayout.first_child;
         const icon = bin.first_child;
+        if (boxlayout && boxlayout.clip_to_view !== false) {
+          boxlayout.clip_to_view = false;
+        }
         const c = {
           child: widget,
           _bin: bin,

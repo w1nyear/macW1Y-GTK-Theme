@@ -518,6 +518,10 @@ export class Animator {
       }
 
       if (realIcon) {
+        const bl = icon._bin?.get_parent?.();
+        if (bl && bl.clip_to_view) {
+          bl.clip_to_view = false;
+        }
         realIcon.translation_x = jX;
         realIcon.translation_y = jY;
         if (icon._introJump > 0) {

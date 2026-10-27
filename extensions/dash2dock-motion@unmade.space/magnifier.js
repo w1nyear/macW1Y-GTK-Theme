@@ -182,6 +182,15 @@ export class DockMagnifier {
         this._savedOffscreenRedirect = this._dash.offscreen_redirect;
         this._dash.offscreen_redirect =
             Clutter.OffscreenRedirect.AUTOMATIC_FOR_OPACITY;
+
+        if (this._dash?._box) {
+            for (const child of this._dash._box.get_children()) {
+                const appwell = child.child ?? child.first_child;
+                const bl = appwell?.first_child?.first_child?.first_child;
+                if (bl && bl.clip_to_view)
+                    bl.clip_to_view = false;
+            }
+        }
     }
 
     _reclipContainmentChain() {

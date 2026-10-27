@@ -327,19 +327,24 @@ export const ApplicationsBlur = class ApplicationsBlur {
     /// - ? matches any single character
     /// - Matching is case-insensitive
     check_blur(meta_window) {
-        const window_wm_class = meta_window.get_wm_class();
+        const window_wm_class = meta_window.get_wm_class() || '';
+        const app_id = (meta_window.get_gtk_application_id ? meta_window.get_gtk_application_id() : '') || '';
+        const sandboxed_id = (meta_window.get_sandboxed_app_id ? meta_window.get_sandboxed_app_id() : '') || '';
         const enable_all = this.settings.applications.ENABLE_ALL;
-        if (window_wm_class)
-            this._log(`pid ${meta_window.bms_pid} associated to wm class name ${window_wm_class}`);
+        if (window_wm_class || app_id)
+            this._log(`pid ${meta_window.bms_pid} associated to wm class ${window_wm_class}, gtk id ${app_id}`);
 
+        const is_blacklisted = (window_wm_class && matchesAnyPattern(window_wm_class, this._compiled_blacklist))
+            || (app_id && matchesAnyPattern(app_id, this._compiled_blacklist))
+            || (sandboxed_id && matchesAnyPattern(sandboxed_id, this._compiled_blacklist));
 
-        // if we are in blacklist mode and the window is not blacklisted
-        // or if we are in whitelist mode and the window is whitelisted
+        const is_whitelisted = (window_wm_class && matchesAnyPattern(window_wm_class, this._compiled_whitelist))
+            || (app_id && matchesAnyPattern(app_id, this._compiled_whitelist))
+            || (sandboxed_id && matchesAnyPattern(sandboxed_id, this._compiled_whitelist));
+
         if (
-            window_wm_class !== ""
-            && ((enable_all && !matchesAnyPattern(window_wm_class, this._compiled_blacklist))
-                || (!enable_all && matchesAnyPattern(window_wm_class, this._compiled_whitelist))
-            )
+            (window_wm_class !== "" || app_id !== "")
+            && ((enable_all && !is_blacklisted) || (!enable_all && is_whitelisted))
             && [
                 Meta.FrameType.NORMAL,
                 Meta.FrameType.DIALOG,

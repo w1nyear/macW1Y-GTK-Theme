@@ -11324,6 +11324,25 @@ Task 499: Повне полірування екрана блокування (m
         * У всі функції ініціалізації повзунків (`init_menubar_blur`, `init_liquid_blur`, `init_liquid_tint`, `init_blur_sigma`, `init_blur_tint`, `init_menu_blur`) додано обов'язковий виклик `load_config()`, що унеможливлює показ помилкових або максимальних значень при відкритті вікна параметрів.
         * Бібліотеку перекомпільовано та інстальовано у системні каталоги `/usr/lib/x86_64-linux-gnu/libmac_settings.so`, `~/.local/lib/`, `/usr/share/mactheme/`.
 
+553. Виправлення системного розмиття для всіх напівпрозорих вікон (GNOME Boxes тощо) та усунення обрізання іконок на док під час запуску/роботи програм:
+   1. Діагностика:
+      - У налаштуваннях `org.gnome.shell.extensions.blur-my-shell.applications` параметр `enable-all` був встановлений у `false`, а у списку `whitelist` були вказані лише ~25 програм. Через це напівпрозорі вікна GTK4/Libadwaita (зокрема Коробки / `org.gnome.Boxes`, архіватор, переглядач шрифтів, системні діалоги тощо) не отримували фонового розмиття та відображали різкий незаблюрений робочий стіл крізь 75% прозоре тіло вікна.
+      - На док при запуску або підстрибуванні іконки додатка (а також при наведенні курсору та масштабуванні під час запуску), як видно на фотографії користувача, виступаюча частина іконки зрізалася горизонтальною прямою лінією.
+      - Причина полягала в тому, що стандартний контейнер іконки GNOME Shell `BaseIcon._box` (`St.BoxLayout`) за замовчуванням має увімкнену властивість `clip_to_view: true`. Коли аніматор дока `animator.js` підкидав іконку вгору (`translation_y = -off`), `St.BoxLayout` зрізав будь-які пікселі, що виходили за межі його виділеної висоти. Крім того, у `dash2dock-motion` контейнер слайду `DashSlideContainer` мав `padY2 = 0` для нижньої межі відсікання.
+   2. Вирішення:
+      - **Системне розмиття вікон (`blur-my-shell`)**:
+        * Увімкнено `enable-all = true` в `org.gnome.shell.extensions.blur-my-shell.applications` та `blur = true` для папок додатків `appfolder`.
+        * Оновлено `check_blur(meta_window)` у `components/applications.js`: тепер перевірка шаблонів `matchesAnyPattern` виконується комплексно як за `window_wm_class`, так і за `meta_window.get_gtk_application_id()` та `meta_window.get_sandboxed_app_id()`.
+        * Розширено білий список (`*gnome*`, `org.gnome.*`, `*boxes*`, `*calculator*`, `*text-editor*` тощо) та чорний список для виключення важких непрозорих програм і 3D-ігор (браузери, Steam, CS2, Wine, медіаплеєри, CapCut, Antigravity, Discord).
+        * Перевірено через EvalHelper: вікно `org.gnome.Boxes` та всі інші системні вікна тепер отримують повноцінний блюр.
+      - **Усунення обрізання іконок на док (`cupertino-dock-lite` та `dash2dock-motion`)**:
+        * У `cupertino-dock-lite/extension.js` у функції `_findIcons()` для кожної іконки (включаючи ShowApps) примусово встановлено `boxlayout.clip_to_view = false`, що дозволяє іконкам вільно виходити за межі комірки під час будь-якої анімації.
+        * У `cupertino-dock-lite/animator.js` під час підстрибування `realIcon` гарантовано перевіряється та скидається `clip_to_view = false` для батьківського контейнера іконки.
+        * У `dash2dock-motion/dash.js` під час створення нових елементів дока `_createAppItem` автоматично вимикається `clip_to_view` внутрішнього `boxlayout`.
+        * У `dash2dock-motion/magnifier.js` у метод `_unclipContainmentChain()` додано зняття обмеження `clip_to_view` для всіх дочірніх `boxlayout` дока.
+        * У `dash2dock-motion/docking.js` додано захисний запас `padY2 = 64` (та дзеркальні відступи для інших сторін), що повністю виключає будь-яке апаратне зрізання країв іконок чи індикаторів запуску.
+        * У `cupertino-dock-lite/stylesheet.css` виправлено синтаксичну помилку (випадковий символ `*/` у селекторі `.running .overview-icon`).
+
 
 
 

@@ -179,18 +179,22 @@ const DashSlideContainer = GObject.registerClass({
         case St.Side.BOTTOM:
             padX1 = padX2 = along;
             padY1 = childHeight * Magnifier.MAX_PERP_OVERFLOW + 8;
+            padY2 = 64;
             break;
         case St.Side.TOP:
             padX1 = padX2 = along;
             padY2 = childHeight * Magnifier.MAX_PERP_OVERFLOW + 8;
+            padY1 = 64;
             break;
         case St.Side.LEFT:
             padY1 = padY2 = along;
             padX2 = childWidth * Magnifier.MAX_PERP_OVERFLOW + 8;
+            padX1 = 64;
             break;
         case St.Side.RIGHT:
             padY1 = padY2 = along;
             padX1 = childWidth * Magnifier.MAX_PERP_OVERFLOW + 8;
+            padX2 = 64;
             break;
         }
         this.child.set_clip(
