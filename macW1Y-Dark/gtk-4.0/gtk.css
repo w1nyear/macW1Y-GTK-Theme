@@ -10254,59 +10254,57 @@ scrolledwindow undershoot.right {
 
 /* ============================================================
    macOS Tahoe / Sequoia style gradient fade for scrolled lists
-   Pure opacity & blur dissolution at scroll limits without opaque color overlays
+   Smooth edge dissolution at scroll limits (Settings, Nautilus, etc.)
    ============================================================ */
-
-/* Base undershoot default: transparent 0px when not scrolled */
-undershoot,
 undershoot.top,
-undershoot.bottom,
-scrolledwindow > undershoot,
-scrolledwindow undershoot {
-    background: none;
-    background-image: none;
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    min-height: 0px;
-    min-width: 0px;
-}
-
-/* Scrolled list top dissolution with blur & opacity */
+scrolledwindow > undershoot.top,
 scrolledwindow.undershoot-top > undershoot.top,
 toolbarview.undershoot-top scrolledwindow > undershoot.top,
 navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-.content-pane scrolledwindow.undershoot-top > undershoot.top,
+.content-pane scrolledwindow > undershoot.top,
 preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+preferencespage > scrolledwindow > undershoot.top,
 window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
 window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top {
-    min-height: 32px;
-    backdrop-filter: blur(14px);
+window.mac-settings-window .content-pane scrolledwindow > undershoot.top,
+window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window scrolledwindow > undershoot.top {
+    min-height: 38px;
     background: linear-gradient(to bottom,
-        rgba(0, 0, 0, 0.45) 0%,
-        rgba(0, 0, 0, 0.20) 45%,
+        @window_bg_color 0%,
+        alpha(@window_bg_color, 0.95) 20%,
+        alpha(@window_bg_color, 0.80) 40%,
+        alpha(@window_bg_color, 0.50) 65%,
+        alpha(@window_bg_color, 0.20) 85%,
         transparent 100%);
     border: none;
     box-shadow: none;
 }
 
-/* Scrolled list bottom dissolution with blur & opacity */
+undershoot.bottom,
+scrolledwindow > undershoot.bottom,
 scrolledwindow.undershoot-bottom > undershoot.bottom,
 toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 navigation-view-page toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 .content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-.content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+.content-pane scrolledwindow > undershoot.bottom,
 preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
+preferencespage > scrolledwindow > undershoot.bottom,
 window.mac-settings-window preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window preferencespage > scrolledwindow > undershoot.bottom,
 window.mac-settings-window .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom {
-    min-height: 32px;
-    backdrop-filter: blur(14px);
+window.mac-settings-window .content-pane scrolledwindow > undershoot.bottom,
+window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window scrolledwindow > undershoot.bottom {
+    min-height: 38px;
     background: linear-gradient(to top,
-        rgba(0, 0, 0, 0.45) 0%,
-        rgba(0, 0, 0, 0.20) 45%,
+        @window_bg_color 0%,
+        alpha(@window_bg_color, 0.95) 20%,
+        alpha(@window_bg_color, 0.80) 40%,
+        alpha(@window_bg_color, 0.50) 65%,
+        alpha(@window_bg_color, 0.20) 85%,
         transparent 100%);
     border: none;
     box-shadow: none;
