@@ -2320,18 +2320,14 @@ export class DockManager {
             const {dash} = dock;
 
             dock.opacity = 255;
-            dash.set({
-                opacity: 0,
-                translation_x: 0,
-                translation_y: (dash.height > 0 ? dash.height : 92) + 20,
-            });
+            if (dash) {
+                dash.set({
+                    opacity: 0,
+                    translation_x: 0,
+                    translation_y: 0,
+                });
+            }
         });
-
-        const glassBg = this._getGlassBg();
-        if (glassBg) {
-            glassBg.opacity = 0;
-            glassBg.translation_y = 120;
-        }
 
         const panelBox = Main.layoutManager.panelBox || Main.panel;
         if (panelBox) {
@@ -2341,8 +2337,14 @@ export class DockManager {
     }
 
     _runStartupAnimation() {
+        if (this._startupAnimationRan)
+            return;
+        this._startupAnimationRan = true;
+
         DockManager.allDocks.forEach(dock => {
             const {dash} = dock;
+            if (!dash)
+                return;
 
             switch (dock.position) {
             case St.Side.LEFT:
@@ -2352,13 +2354,14 @@ export class DockManager {
                 dash.translation_x = dash.width;
                 break;
             case St.Side.BOTTOM:
-                dash.translation_y = (dash.height > 0 ? dash.height : 92) + 20;
+                dash.translation_y = (dash.height > 0 ? dash.height : 80) + 30;
                 break;
             case St.Side.TOP:
-                dash.translation_y = -dash.height;
+                dash.translation_y = -((dash.height > 0 ? dash.height : 80) + 30);
                 break;
             }
 
+            dash.remove_all_transitions();
             dash.ease({
                 opacity: 255,
                 translation_x: 0,
@@ -2367,19 +2370,6 @@ export class DockManager {
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             });
         });
-
-        const glassBg = this._getGlassBg();
-        if (glassBg) {
-            glassBg.remove_all_transitions();
-            glassBg.translation_y = 120;
-            glassBg.opacity = 0;
-            glassBg.ease({
-                opacity: 255,
-                translation_y: 0,
-                duration: STARTUP_ANIMATION_TIME,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-        }
 
         const panelBox = Main.layoutManager.panelBox || Main.panel;
         if (panelBox) {
@@ -2682,6 +2672,13 @@ export class DockManager {
                     Main.sessionMode.hasOverview = hadOverview;
                     this._runStartupAnimation();
                 });
+
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
+                this._runStartupAnimation();
+                return GLib.SOURCE_REMOVE;
+            });
+        } else {
+            this._runStartupAnimation();
         }
     }
 

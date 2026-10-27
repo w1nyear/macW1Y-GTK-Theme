@@ -230,22 +230,26 @@ export class UnlockDialogController {
                         panel.ease({ translation_y: 0, duration, mode });
                     }
 
-                    // Animate dock and liquid-glass-bg-actor sliding in from bottom
-                    const dock = Main.layoutManager.uiGroup?.get_children()?.find(c => c.name === 'dashtodockContainer');
-                    const glass = Main.layoutManager.uiGroup?.get_children()?.find(c => c.name === 'liquid-glass-bg-actor');
-                    if (dock) {
-                        dock.remove_all_transitions();
-                        const dist = dock.height > 0 ? dock.height + 40 : 130;
-                        dock.translation_y = dist;
-                        dock.opacity = 0;
-                        dock.ease({ translation_y: 0, opacity: 255, duration, mode });
-                    }
-                    if (glass) {
-                        glass.remove_all_transitions();
-                        const dist = 130;
-                        glass.translation_y = dist;
-                        glass.opacity = 0;
-                        glass.ease({ translation_y: 0, opacity: 255, duration, mode });
+                    // Animate dock sliding in from bottom
+                    const d2d = Main.layoutManager.uiGroup?.get_children()?.find(c => c.name === 'dashtodockContainer');
+                    if (d2d) {
+                        // Ensure dashtodockContainer has its correct resting translation_y (-height)
+                        if (d2d.height > 0 && d2d.translation_y === 0) {
+                            d2d.translation_y = -d2d.height;
+                        }
+                        const dash = d2d.dash || d2d._slider?.child;
+                        if (dash) {
+                            dash.remove_all_transitions();
+                            const dist = (dash.height > 0 ? dash.height : 80) + 30;
+                            dash.translation_y = dist;
+                            dash.opacity = 0;
+                            dash.ease({
+                                translation_y: 0,
+                                opacity: 255,
+                                duration,
+                                mode,
+                            });
+                        }
                     }
 
                     if (capturedSnapshots.length > 0) {
