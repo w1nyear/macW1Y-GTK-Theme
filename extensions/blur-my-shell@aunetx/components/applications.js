@@ -64,10 +64,6 @@ const SYSTEM_SIDEBAR_WIDTHS = {
     'gnome-logs': 280,
     'org.gnome.seahorse.Application': 280,
     'seahorse': 280,
-    'net.nokyan.Resources': 345,
-    'resources': 345,
-    'org.gnome.SystemMonitor': 280,
-    'gnome-system-monitor': 280,
 };
 
 export const ApplicationsBlur = class ApplicationsBlur {

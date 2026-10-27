@@ -5,6 +5,7 @@ After=graphical-session.target
 
 [Service]
 Type=forking
+ExecStartPre=/bin/sh -c 'rm -rf /run/user/%U/wine/server-* 2>/dev/null || true'
 ExecStart=/usr/local/bin/wineserver -p
 ExecStop=/usr/local/bin/wineserver -k
 Restart=always
