@@ -104,8 +104,10 @@ if (!EffectClass) {
             this._fadeTop = false;
             this._fadeBottom = false;
             this._targetActor = null;
+            this._scrollView = null;
             this._adj = null;
             this._updateAdj = null;
+            this._scrollTimerId = null;
         }
     });
     globalThis.__AppmenuGradientBlurFadeEffect = EffectClass;
@@ -173,8 +175,21 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
         onAdjChanged();
 
         if (sv) {
+            this._scrollView = sv;
+            let currentValue = adj.value;
             let targetValue = adj.value;
+            let isAnimating = false;
             let lastScrollTime = 0;
+            let lastTickTime = 0;
+
+            const onValChanged = () => {
+                if (!isAnimating) {
+                    currentValue = adj.value;
+                    targetValue = adj.value;
+                }
+            };
+            adj.connectObject('notify::value', onValChanged, this);
+
             sv.connectObject('scroll-event', (_actor, event) => {
                 const direction = event.get_scroll_direction();
                 let delta = 0;
@@ -192,19 +207,65 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
                 const maxVal = Math.max(lower, upper - pageSize);
                 if (maxVal <= lower) return Clutter.EVENT_PROPAGATE;
 
+                const source = (typeof event.get_scroll_source === 'function')
+                    ? event.get_scroll_source()
+                    : Clutter.ScrollSource.UNKNOWN;
+
+                // High-precision trackpad two-finger scrolling (FINGER)
+                if (source === Clutter.ScrollSource.FINGER) {
+                    if (this._scrollTimerId) {
+                        GLib.source_remove(this._scrollTimerId);
+                        this._scrollTimerId = null;
+                    }
+                    const trackpadStep = 24.0;
+                    currentValue = Math.clamp(adj.value + delta * trackpadStep, lower, maxVal);
+                    targetValue = currentValue;
+                    isAnimating = true;
+                    adj.value = currentValue;
+                    isAnimating = false;
+                    return Clutter.EVENT_STOP;
+                }
+
+                // Mouse wheel continuous kinetic scrolling (WHEEL / discrete / high-res)
                 const now = GLib.get_monotonic_time();
-                if ((now - lastScrollTime) > 300000) {
+                if ((delta > 0 && targetValue < currentValue) || (delta < 0 && targetValue > currentValue)) {
+                    targetValue = currentValue;
+                }
+                if ((now - lastScrollTime) > 400000) {
+                    currentValue = adj.value;
                     targetValue = adj.value;
                 }
                 lastScrollTime = now;
 
-                const step = Math.max(50, adj.step_increment || 60);
-                targetValue = Math.clamp(targetValue + delta * step, lower, maxVal);
+                const notchStep = Math.max(50, adj.step_increment || 60);
+                targetValue = Math.clamp(targetValue + delta * notchStep, lower, maxVal);
 
-                adj.ease(targetValue, {
-                    duration: 220,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
+                if (!this._scrollTimerId) {
+                    lastTickTime = GLib.get_monotonic_time();
+                    this._scrollTimerId = GLib.timeout_add(GLib.PRIORITY_HIGH, 10, () => {
+                        const tNow = GLib.get_monotonic_time();
+                        const dt = Math.min(0.04, Math.max(0.001, (tNow - lastTickTime) / 1000000));
+                        lastTickTime = tNow;
+
+                        // Exponential decay: position moves towards target frame-by-frame across every single pixel
+                        const alpha = 1.0 - Math.exp(-15.0 * dt);
+                        currentValue += (targetValue - currentValue) * alpha;
+
+                        if (Math.abs(targetValue - currentValue) < 0.25) {
+                            currentValue = targetValue;
+                            isAnimating = true;
+                            adj.value = currentValue;
+                            isAnimating = false;
+                            this._scrollTimerId = null;
+                            return GLib.SOURCE_REMOVE;
+                        }
+
+                        isAnimating = true;
+                        adj.value = currentValue;
+                        isAnimating = false;
+                        return GLib.SOURCE_CONTINUE;
+                    });
+                }
 
                 return Clutter.EVENT_STOP;
             }, this);
@@ -214,6 +275,14 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
 };
 
 EffectClass.prototype.detach = function() {
+    if (this._scrollTimerId) {
+        GLib.source_remove(this._scrollTimerId);
+        this._scrollTimerId = null;
+    }
+    if (this._scrollView) {
+        this._scrollView.disconnectObject(this);
+        this._scrollView = null;
+    }
     if (this._adj) {
         this._adj.disconnectObject(this);
         this._adj = null;
