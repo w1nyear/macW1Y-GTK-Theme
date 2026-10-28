@@ -248,6 +248,7 @@ export class ApplicationManager {
         this._settingsSignals = [];
         this._frameSyncId = 0;
         this._windowCreatedId = 0;
+        this._mapId = 0;
         this._restackedId = 0;
     }
     setup() {
@@ -255,26 +256,53 @@ export class ApplicationManager {
         // Before anything is built: every actor size below derives from it.
         this._glassMargin = this._computeGlassMargin();
         this._bindSettings();
+
+        const handleActor = (actor) => {
+            if (!actor || !(actor instanceof Meta.WindowActor) || this._states.has(actor))
+                return;
+            const trySetup = () => {
+                if (!isActorValid(actor))
+                    return;
+                if (this._shouldApplyToWindow(actor) && !this._states.has(actor)) {
+                    this._setupWindow(actor);
+                    this._rebuildAllClones();
+                }
+            };
+
+            if (actor.has_first_frame) {
+                trySetup();
+            } else {
+                actor.connect('first-frame', () => trySetup());
+            }
+            actor.connect('notify::mapped', () => {
+                if (actor.is_mapped())
+                    trySetup();
+            });
+            if (actor.is_mapped()) {
+                trySetup();
+            }
+        };
+
         this._windowCreatedId = global.display.connect('window-created', (_d, metaWindow) => {
             this._logger.log(`[Liquid Glass] window-created event: window title = "${metaWindow.get_title()}", class = "${metaWindow.get_wm_class()}"`);
             const obj = metaWindow.get_compositor_private();
-            if (!obj) {
-                this._logger.log("[Liquid Glass] get_compositor_private() returned null");
-                return;
+            if (obj) {
+                handleActor(obj);
+            } else {
+                const notifyId = metaWindow.connect('notify::compositor-private', () => {
+                    const act = metaWindow.get_compositor_private();
+                    if (act) {
+                        metaWindow.disconnect(notifyId);
+                        handleActor(act);
+                    }
+                });
             }
-            if (!(obj instanceof Meta.WindowActor)) {
-                this._logger.log("[Liquid Glass] compositor object is not instance of Meta.WindowActor");
-                return;
-            }
-            this._logger.log("[Liquid Glass] window compositor actor found. Connecting to first-frame.");
-            obj.connect('first-frame', () => {
-                this._logger.log("[Liquid Glass] first-frame event fired for window: " + metaWindow.get_title());
-                if (this._shouldApplyToWindow(obj)) {
-                    this._setupWindow(obj);
-                    this._rebuildAllClones();
-                }
-            });
         });
+
+        this._mapId = global.window_manager.connect('map', (_wm, actor) => {
+            handleActor(actor);
+        });
+
         this._restackedId = global.display.connect('restacked', () => {
             this._rebuildAllClones();
             this._armFocusDebug('restacked');
@@ -323,6 +351,10 @@ export class ApplicationManager {
             if (this._windowCreatedId) {
                 global.display.disconnect(this._windowCreatedId);
                 this._windowCreatedId = 0;
+            }
+            if (this._mapId) {
+                global.window_manager.disconnect(this._mapId);
+                this._mapId = 0;
             }
             if (this._restackedId) {
                 global.display.disconnect(this._restackedId);
@@ -402,7 +434,18 @@ export class ApplicationManager {
         connectSetting('shadow-intensity', () => this._updateGlassMargin());
     }
     _getContentOpacity(profile = 'application') {
-        return this._settings.get_double(this._profileKey(profile, 'content-opacity'));
+        try {
+            const key = this._profileKey(profile, 'content-opacity');
+            if (this._settings.settings_schema?.has_key?.(key)) {
+                return this._settings.get_double(key);
+            }
+        } catch (_) {}
+        try {
+            if (this._settings.settings_schema?.has_key?.('desktop-menu-content-opacity')) {
+                return this._settings.get_double('desktop-menu-content-opacity');
+            }
+        } catch (_) {}
+        return 1.0;
     }
     _updateWindowOpacities() {
         for (let state of this._states.values()) {
@@ -418,7 +461,11 @@ export class ApplicationManager {
     /** Appearance key in a profile's namespace, e.g. `desktop-menu-tint-color`. */
     _profileKey(profile, suffix) {
         if (profile === 'desktop-menu') {
-            return `menu-${suffix}`;
+            const menuKey = `menu-${suffix}`;
+            if (suffix !== 'content-opacity' && this._settings.settings_schema?.has_key?.(menuKey)) {
+                return menuKey;
+            }
+            return `desktop-menu-${suffix}`;
         }
         return `${profile}-${suffix}`;
     }
@@ -546,19 +593,8 @@ export class ApplicationManager {
             return false;
 
         const rootWin = this._getRootWindow(metaWindow);
-        const isDesktop = rootWin?.get_window_type?.() === Meta.WindowType.DESKTOP ||
-                          metaWindow.get_window_type() === Meta.WindowType.DESKTOP;
-        if (isDesktop)
-            return true;
-
-        // Context menus in external / non-system programs must NOT have glass
-        if (this._windowMatchesBlacklist(rootWin) || this._windowMatchesBlacklist(metaWindow)) {
-            return false;
-        }
-
-        // Only whitelisted system applications (e.g. Nautilus, GNOME Settings, etc.) have context menu glass
-        const isSystemApp = this._windowMatchesWhitelist(rootWin) || this._windowMatchesWhitelist(metaWindow);
-        if (!isSystemApp) {
+        // If blacklisted, never apply glass
+        if ((rootWin && this._windowMatchesBlacklist(rootWin)) || this._windowMatchesBlacklist(metaWindow)) {
             return false;
         }
 
@@ -604,12 +640,12 @@ export class ApplicationManager {
         if (parentRect) {
             const popoverCenter = rect.x + (visW * 0.5);
             const parentRight = parentRect.x + parentRect.width;
-            if (rect.x + visW >= parentRight - 15) {
-                const maxOffset = Math.max(0, (visW * 0.5) - 30);
+            if (rect.x + visW >= parentRight - 40) {
+                const maxOffset = Math.max(0, (visW * 0.5) - 25);
                 origin = Math.min(maxOffset, Math.max(0, (parentRight - 35) - popoverCenter));
             }
-            else if (rect.x <= parentRect.x + 15) {
-                const minOffset = -Math.max(0, (visW * 0.5) - 30);
+            else if (rect.x <= parentRect.x + 40) {
+                const minOffset = -Math.max(0, (visW * 0.5) - 25);
                 origin = Math.max(minOffset, Math.min(0, (parentRect.x + 35) - popoverCenter));
             }
         }
@@ -1664,7 +1700,7 @@ export class ApplicationManager {
         if (state.effect) {
             state.effect.setResolution(bgW, bgH);
             if (state.profile === 'desktop-menu') {
-                const arrowCfg = this._getMenuArrowConfig(metaWindow, rect, visW, visH);
+                const arrowCfg = this._getMenuArrowConfig(metaWin, rect, visW, visH);
                 if (arrowCfg.side === 1) {
                     state.effect.setGlassGeometry(0, arrowCfg.rise, bgW, bgH - arrowCfg.rise);
                     state.effect.setArrow(1, arrowCfg.origin, arrowCfg.base, arrowCfg.rise, arrowCfg.radius, arrowCfg.fillet);

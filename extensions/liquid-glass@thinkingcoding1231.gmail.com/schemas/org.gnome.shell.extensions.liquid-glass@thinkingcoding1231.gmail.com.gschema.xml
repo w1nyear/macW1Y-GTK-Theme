@@ -272,6 +272,11 @@
       <default>60.0</default>
       <summary>Corner radius</summary>
     </key>
+    <key name="menu-content-opacity" type="d">
+      <default>1.0</default>
+      <summary>Menu content opacity</summary>
+      <description>Opacity of the menu's own content layer to let the glass effect show through (0.0 to 1.0).</description>
+    </key>
     <key name="menu-brightness" type="d">
       <default>1.0</default>
       <summary>Brightness</summary>
