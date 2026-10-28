@@ -7,6 +7,7 @@ import {
     centerClockLabel,
 } from '../main/constants.js';
 import { GDM_DATETIME_TOP_FRACTION } from './gdmUtils.js';
+import { GdmGlassClock } from './gdmGlassClock.js';
 
 export class GdmClockManager {
     constructor(gdmManager) {
@@ -14,6 +15,7 @@ export class GdmClockManager {
         this.clock = null;
         this.clockWrapper = null;
         this.timeLabel = null;
+        this.glassClock = null;
         this.clockPressed = false;
         this.menuWasOpenOnPress = false;
         this.dateMenuOpenStateId = 0;
@@ -25,6 +27,10 @@ export class GdmClockManager {
         }
 
         // 1. Clean up any existing instances in this manager
+        if (this.glassClock) {
+            try { this.glassClock.destroy(); } catch (_) {}
+            this.glassClock = null;
+        }
         if (this.clockWrapper) {
             try { this.clockWrapper.destroy(); } catch (_) {}
             this.clockWrapper = null;
@@ -96,6 +102,21 @@ export class GdmClockManager {
         this.clockWrapper.add_child(dateLabel);
         this.clockWrapper.add_child(timeLabel);
 
+        // GDM Liquid Glass Clock: replaces the solid fill of the time text with refractive liquid glass
+        try {
+            const extPath = this._gdm?._extension?.path ||
+                Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.path ||
+                '/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com';
+            this.glassClock = new GdmGlassClock(extPath, () => this.positionClock());
+            this.clockWrapper.add_child(this.glassClock.actor);
+            if (this.timeLabel?.text) {
+                this.glassClock.setText(this.timeLabel.text);
+            }
+        } catch (e) {
+            console.error(`[WACK/GDM] Failed to initialize Liquid Glass Clock: ${e}`);
+            this.glassClock = null;
+        }
+
         centerClockLabel(timeLabel, this.clockWrapper);
         centerClockLabel(dateLabel, this.clockWrapper);
 
@@ -119,6 +140,9 @@ export class GdmClockManager {
             this._gdm._connectAllocation(dialog, () => this.positionClock());
 
         this.timeLabel.connectObject('notify::text', () => {
+            if (this.glassClock && this.timeLabel?.text) {
+                this.glassClock.setText(this.timeLabel.text);
+            }
             this.positionClock();
         }, this);
 
@@ -136,6 +160,11 @@ export class GdmClockManager {
     }
 
     teardown() {
+        if (this.glassClock) {
+            this.glassClock.destroy();
+            this.glassClock = null;
+        }
+
         if (this.timeLabel) {
             this.timeLabel.disconnectObject(this);
             this.timeLabel = null;
@@ -197,16 +226,43 @@ export class GdmClockManager {
         const effectiveDateH = Math.max(22, Math.min(60, Math.ceil(preferredDateH)));
         const timeY = effectiveDateH - 4;
 
-        const rawTimeH = this.clock._time.get_preferred_height(-1)[1];
-        const preferredTimeH = (rawTimeH > 0 && rawTimeH < 1000) ? rawTimeH : 150;
-        const effectiveTimeH = Math.max(120, Math.min(250, Math.ceil(preferredTimeH)));
+        this.clock._dateOutput.set_position(0, 0);
+        this.clock._dateOutput.set_size(w, effectiveDateH);
 
-        this.clockWrapper.set_size(w, timeY + effectiveTimeH + 20);
+        if (this.glassClock) {
+            this.glassClock.sync();
+            const [fw, fh] = this.glassClock.fieldSize;
+            const rx = 48; // FIELD_RANGE
+            const ry = 48;
+            const glassX = Math.round((w - fw) / 2);
+            const glassY = Math.round(timeY - ry);
+            this.glassClock.actor.set_position(glassX, glassY);
+            this.glassClock.actor.set_size(fw, fh);
+
+            if (this.glassClock.isReady) {
+                this.timeLabel.visible = false;
+                this.timeLabel.opacity = 0;
+            } else {
+                this.timeLabel.set_position(0, timeY);
+                this.timeLabel.visible = true;
+                this.timeLabel.opacity = 255;
+            }
+
+            const visibleClockH = Math.max(120, fh - 2 * ry);
+            this.clockWrapper.set_size(w, timeY + visibleClockH + 20);
+        } else {
+            const rawTimeH = this.clock._time.get_preferred_height(-1)[1];
+            const preferredTimeH = (rawTimeH > 0 && rawTimeH < 1000) ? rawTimeH : 150;
+            const effectiveTimeH = Math.max(120, Math.min(250, Math.ceil(preferredTimeH)));
+
+            this.clockWrapper.set_size(w, timeY + effectiveTimeH + 20);
+            this.clock._time.set_position(0, timeY);
+            this.timeLabel.visible = true;
+            this.timeLabel.opacity = 255;
+        }
+
         this.clockWrapper.set_position(startX, topY);
         this.clockWrapper.set_pivot_point(0.5, 0.5);
-
-        this.clock._dateOutput.set_position(0, 0);
-        this.clock._time.set_position(0, timeY);
         this.clockWrapper.opacity = 255;
         this.clockWrapper.visible = true;
 

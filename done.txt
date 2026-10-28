@@ -11855,3 +11855,24 @@ Task 499: Повне полірування екрана блокування (m
    - Перевірено поведінку на живому ScrollView у GNOME Shell (`scratch_multi_wheel_sim.json` підтвердив 44 неперервні кадри на 2 імпульси коліщатка без жодних 10px стрибків).
    - Оновлено SHA256 у `config/extensions.lock.json`.
    - `mac-extension-guard verify` та `mac-diagnostics` — 100% SUCCESS.
+--------------------------------------------------------------------------------
+581. Інтеграція шейдера рідкого скла (Liquid Glass Clock) з ryohsuke1231/liquid-glass для тексту часу на екрані блокування GDM:
+1. Дослідження репозиторію та шейдера Glass Clock:
+   - Проаналізовано офіційну реалізацію Liquid Glass Clock з репозиторію `ryohsuke1231/liquid-glass` (розділ документації `### Glass Clock`, демонстраційний знімок `assets/clock.png`).
+   - Вивчено математичну модель шейдера `shaders/glass.frag` з гілкою `#ifdef LG_SHAPE_TEXTURE`: генерація 16-бітної текстури поля знакових відстаней (SDF) для контурів гліфів за допомогою `DigitsMaker` (Cairo/Pango), обчислення градієнта нормалей поверхні B-сплайном третього порядку (`shapeLensSD`), розрахунок заломлення світла за законом Снеліуса, хроматична дисперсія (RGB fringe), дзеркальні відблиски, крайове освітлення фаски (rim lighting) та м'яка тінь.
+2. Портування та інтеграція рушія рідкого скла у розширення wack-lockscreen-clock:
+   - Створено автономний ізольований підкаталог `src/glass/` у `extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`:
+     * Шейдери: `shaders/glass.frag`, `downsample.frag`, `upsample.frag` (з інтегрованим захистом альфи для мультимоніторних конфігурацій).
+     * Конвеєр рендерингу: `rendering/backdropGlass.js`, `rendering/glassRenderer.js`, `rendering/pipelines.js`.
+     * Генерація гліфів: `desktop/glassText.js`, `desktop/fonts.js`, `imaging.js`.
+     * Шрифти та схеми налаштувань.
+   - Вирішено проблему колізії GType у GJS: реалізовано функцію `safeRegisterClass` у `shellVersion.js`, яка запобігає конфліктам типу `Type name ... is already registered` при повторних завантаженнях чи перехресних викликах.
+3. Розробка менеджера GdmGlassClock та впровадження у GDM екран блокування:
+   - Створено модуль `pro/gdmGlassClock.js` (та дублюючий `src/pro/gdmGlassClock.js`), що керує життєвим циклом годинника, його типографікою (`Open Runde SemiBold`, 128px) та оптичними параметрами (розмиття 35px, прозорий скляний блік, фаска, білий скляний тінт 0.08).
+   - Оновлено `pro/gdmClockManager.js` (і `src/pro/gdmClockManager.js`): замість непрозорого білого тексту часу розміщується актор рідкого скла `this.glassClock.actor`, який рендерить цифри через шейдер скла над фоном екрана блокування GDM.
+   - Оновлено `src/main/clockLayoutManager.js` для синхронної підтримки рідкого скла на екрані блокування поточної сесії.
+4. Синхронізація та верифікація:
+   - Всі зміни синхронізовано з `~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/` та `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`.
+   - Оновлено SHA256 хеш у `config/extensions.lock.json` (`50b1254d737d90284150993c7d50afcf353c7b6aebc77cb93a3a11caba3423dd`).
+   - Перевірено успішне виконання `mac-extension-guard verify` (20/20 extensions locked) та `mac-diagnostics`.
+   - Проведено успішне тестування рендерингу в живому GNOME Shell без перезапуску сесії (`scratch_gdm_glass_clock_live.png`).

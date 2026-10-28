@@ -11,6 +11,7 @@ import {
     centerClockLabel,
 } from './constants.js';
 import { getHintTextStyle } from './colorUtils.js';
+import { GdmGlassClock } from '../../pro/gdmGlassClock.js';
 
 export class ClockLayoutManager {
     constructor(extension) {
@@ -18,6 +19,7 @@ export class ClockLayoutManager {
         this.clockWrapper = null;
         this.dateLabel = null;
         this.timeLabel = null;
+        this.glassClock = null;
         this.hintContainer = null;
         this.hint = null;
         this.overflowLabel = null;
@@ -26,6 +28,11 @@ export class ClockLayoutManager {
     }
 
     setup(dialog, lockDialogGroup) {
+        if (this.glassClock) {
+            try { this.glassClock.destroy(); } catch (_) {}
+            this.glassClock = null;
+        }
+
         const dateLabel = dialog._clock._dateOutput;
         const timeLabel = dialog._clock._time;
         dialog._clock.remove_child(dateLabel);
@@ -35,12 +42,32 @@ export class ClockLayoutManager {
         this.clockWrapper.set_pivot_point(0.5, 0.5);
         this.clockWrapper.add_child(dateLabel);
         this.clockWrapper.add_child(timeLabel);
+
+        try {
+            const extPath = this._extension?.path ||
+                Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.path ||
+                '/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com';
+            this.glassClock = new GdmGlassClock(extPath, () => this.positionClock());
+            this.clockWrapper.add_child(this.glassClock.actor);
+            if (timeLabel?.text) {
+                this.glassClock.setText(timeLabel.text);
+            }
+        } catch (e) {
+            console.error(`[WACK] Failed to initialize Liquid Glass Clock: ${e}`);
+            this.glassClock = null;
+        }
+
         lockDialogGroup.add_child(this.clockWrapper);
 
         this.dateLabel = dateLabel;
         this.timeLabel = timeLabel;
 
-        timeLabel.connectObject('notify::text', () => this.positionClock(), this);
+        timeLabel.connectObject('notify::text', () => {
+            if (this.glassClock && timeLabel?.text) {
+                this.glassClock.setText(timeLabel.text);
+            }
+            this.positionClock();
+        }, this);
         centerClockLabel(timeLabel, this.clockWrapper);
         centerClockLabel(dateLabel, this.clockWrapper);
 
@@ -115,7 +142,30 @@ export class ClockLayoutManager {
         const timeY = effectiveDateH - 4;
 
         dateLabel.set_position(0, 0);
-        timeLabel.set_position(0, timeY);
+
+        if (this.glassClock) {
+            this.glassClock.sync();
+            const [fw, fh] = this.glassClock.fieldSize;
+            const rx = 48; // FIELD_RANGE
+            const ry = 48;
+            const glassX = Math.round((monitorWidth - fw) / 2);
+            const glassY = Math.round(timeY - ry);
+            this.glassClock.actor.set_position(glassX, glassY);
+            this.glassClock.actor.set_size(fw, fh);
+
+            if (this.glassClock.isReady) {
+                timeLabel.visible = false;
+                timeLabel.opacity = 0;
+            } else {
+                timeLabel.set_position(0, timeY);
+                timeLabel.visible = true;
+                timeLabel.opacity = 255;
+            }
+        } else {
+            timeLabel.set_position(0, timeY);
+            timeLabel.visible = true;
+            timeLabel.opacity = 255;
+        }
 
         wrapper.set_position(monitorX, topY);
         wrapper.set_width(monitorWidth);
@@ -163,6 +213,11 @@ export class ClockLayoutManager {
     }
 
     teardown(dialog, lockDialogGroup) {
+        if (this.glassClock) {
+            this.glassClock.destroy();
+            this.glassClock = null;
+        }
+
         if (this.timeLabel) {
             this.timeLabel.disconnectObject(this);
         }
