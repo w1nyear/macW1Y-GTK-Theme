@@ -12364,3 +12364,27 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено хеші sha256 у config/extensions.lock.json (dash2dock-motion, kiwi, appmenu).
    - mac-extension-guard verify підтвердив 20/20 зафіксованих розширень (VERIFICATION SUCCESS).
    - mac-diagnostics успішно пройдено на 100% (система стабільна, всі компоненти відповідають еталону).
+
+602. Плавна анімація зникнення (fade-out) та появи (fade-in) іконок меню-бара при вході та виході з режиму огляду (Overview / Mission Control):
+1. Діагностика проблеми:
+   - При переході в режим огляду (Mission Control / Overview) та при поверненні на робочий стіл іконки верхньої панелі меню (ліворуч: логотип Apple, назва активної програми, пункти меню програми; праворуч: трей/AppIndicators, системні індикатори Wi-Fi, звуку, батареї, годинник, Control Center) зникали і з'являлися миттєво без жодної анімації (різкий зріз та поп-ап за 0 мс).
+   - Причина полягала в обробниках _onOverviewShowing() та _onOverviewHiding() у extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js:
+     * У момент настання сигналу 'showing' для кожного дочірнього елемента лівого та правого блоків одразу ж виставлялося child.visible = false, а для панелі SpacesBar виставлялося visible = true.
+     * У момент настання сигналу 'hiding' SpacesBar миттєво робився visible = false, а для прихованих елементів відновлювалося child.visible = true у першому ж мілісекундному кадрі ще до завершення переходу огляду.
+2. Реалізоване рішення:
+   - У extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js:
+     * Підключено відстеження зміни стану через _stateAdjustment (контролер анімації GNOME Shell Overview) з плавним інтерполюванням прогресу переходу від 0.0 (робочий стіл) до 1.0 (огляд).
+     * Впроваджено функцію _applyOverviewTransitionProgress(progress):
+       - Прозорість іконок меню-бара (лівий і правий блоки Main.panel._leftBox, Main.panel._rightBox та будь-які інші елементи _centerBox) плавно змінюється пропорційно (1 - progress): від 255 до 0 при вході в огляд та від 0 до 255 при виході.
+       - Реактивність (клікабельність) меню-бара вимикається під час перебування в огляді (reactive = false) та відновлюється при поверненні на робочий стіл (reactive = true).
+       - Прозорість панелі SpacesBar (_spacesBar) плавно наростає від 0 до 255 при вході в огляд та плавно спадає від 255 до 0 при виході.
+       - Впроваджено захисні fallback-анімації на базі Clutter ease (250мс, EASE_OUT_QUAD) для 'showing' та 'hiding' на випадок відсутності або оновлення _stateAdjustment.
+       - Додано обробники 'shown' та 'hidden' для гарантованої фіксації фінальних значень прозорості та коректного скидання y_align центрального блоку.
+       - У MacMissionControlSpacesBar метод onOverviewHiding() переведено на плавне згортання _collapse(false) тривалістю 200 мс замість миттєвого зрізу висоти панелі.
+       - У _disconnectOverview() забезпечено коректне відключення сигналу notify::value, скидання прогресу в 0.0 та відновлення повної видимості та клікабельності блоків.
+3. Синхронізація та верифікація:
+   - Файл workspaceIndicator.js синхронізовано з ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js.
+   - Оновлено хеш sha256 у config/extensions.lock.json (нова контрольна сума bea13de1d48e3612d2996ef0c1edb0e097dd9df84439c92f7d49af3c1b1e45d4).
+   - mac-extension-guard verify підтвердив відповідність усіх 20 керованих розширень (VERIFICATION SUCCESS).
+   - mac-diagnostics успішно пройдено на 100% (система стабільна, всі компоненти відповідають еталону).
+   - Інструментально протестовано покадрову зміну leftOpacity, rightOpacity та spacesOpacity: зафіксовано плавний перехід без різких зрізів.

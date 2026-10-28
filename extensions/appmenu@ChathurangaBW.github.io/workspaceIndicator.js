@@ -618,7 +618,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             this._activeRenameFinish(true);
         }
         this._isRenaming = false;
-        this._collapse(true);
+        this._collapse(false);
     }
 
     destroy() {
@@ -665,9 +665,8 @@ export class WorkspaceIndicatorController {
         this._signals = [];
         this._settingsSignals = [];
         this._overviewSignals = [];
-        this._hiddenCenterChildren = [];
-        this._hiddenLeftChildren = [];
-        this._hiddenRightChildren = [];
+        this._stateAdjustment = null;
+        this._stateAdjustmentSignalId = 0;
         this._prevCenterBoxYAlign = undefined;
         this._spacesBar = new MacMissionControlSpacesBar();
 
@@ -691,12 +690,27 @@ export class WorkspaceIndicatorController {
     _connectOverview() {
         if (Main.overview) {
             this._setupHideGnomeWorkspaceThumbnails();
+
+            const controls = Main.overview?._overview?.controls ?? Main.overview?._overview?._controls ?? Main.overview?._controls;
+            this._stateAdjustment = controls?._stateAdjustment ?? null;
+            if (this._stateAdjustment) {
+                this._stateAdjustmentSignalId = this._stateAdjustment.connect('notify::value', () => {
+                    this._onOverviewProgressChanged();
+                });
+            }
+
             this._overviewSignals = [
                 Main.overview.connect('showing', () => this._onOverviewShowing()),
+                Main.overview.connect('shown', () => this._onOverviewShown()),
                 Main.overview.connect('hiding', () => this._onOverviewHiding()),
+                Main.overview.connect('hidden', () => this._onOverviewHidden()),
             ];
+
             if (Main.overview.visible) {
                 this._onOverviewShowing();
+                this._applyOverviewTransitionProgress(1.0);
+            } else {
+                this._applyOverviewTransitionProgress(0.0);
             }
         }
     }
@@ -764,56 +778,77 @@ export class WorkspaceIndicatorController {
 
     _disconnectOverview() {
         this._restoreGnomeWorkspaceThumbnails();
+
+        if (this._stateAdjustment && this._stateAdjustmentSignalId) {
+            this._stateAdjustment.disconnect(this._stateAdjustmentSignalId);
+            this._stateAdjustmentSignalId = 0;
+            this._stateAdjustment = null;
+        }
+
         if (Main.overview) {
             for (const id of this._overviewSignals) {
                 Main.overview.disconnect(id);
             }
         }
         this._overviewSignals = [];
-        this._onOverviewHiding();
+
+        this._applyOverviewTransitionProgress(0.0);
+
+        if (Main.panel && Main.panel._centerBox && this._prevCenterBoxYAlign !== undefined) {
+            Main.panel._centerBox.y_align = this._prevCenterBoxYAlign;
+            this._prevCenterBoxYAlign = undefined;
+        }
+    }
+
+    _applyOverviewTransitionProgress(progress) {
+        const v = Math.min(1.0, Math.max(0.0, progress));
+        const iconOpacity = Math.round(255 * (1.0 - v));
+        const barOpacity = Math.round(255 * v);
+
+        // 1. Smoothly fade left box icons (Apple logo, app name, menus)
+        if (Main.panel && Main.panel._leftBox) {
+            Main.panel._leftBox.opacity = iconOpacity;
+            Main.panel._leftBox.reactive = (v <= 0.05);
+        }
+
+        // 2. Smoothly fade right box icons (tray, indicators, clock, quick settings)
+        if (Main.panel && Main.panel._rightBox) {
+            Main.panel._rightBox.opacity = iconOpacity;
+            Main.panel._rightBox.reactive = (v <= 0.05);
+        }
+
+        // 3. Smoothly fade center box other children (excluding spacesBar)
+        if (Main.panel && Main.panel._centerBox) {
+            for (const child of Main.panel._centerBox.get_children()) {
+                if (child === this._spacesBar) continue;
+                child.opacity = iconOpacity;
+                child.reactive = (v <= 0.05);
+            }
+        }
+
+        // 4. Smoothly fade spaces bar
+        if (this._spacesBar) {
+            this._spacesBar.opacity = barOpacity;
+            this._spacesBar.visible = (v > 0.005);
+            this._spacesBar.reactive = (v >= 0.95);
+        }
+    }
+
+    _onOverviewProgressChanged() {
+        if (!this._stateAdjustment) return;
+        this._applyOverviewTransitionProgress(this._stateAdjustment.value);
     }
 
     _onOverviewShowing() {
         this._hideGnomeThumbnails();
-        this._hiddenCenterChildren = [];
-        this._hiddenLeftChildren = [];
-        this._hiddenRightChildren = [];
 
-        // 1. Hide app menus on left box during overview (keep Apple logo at index 0)
-        if (Main.panel && Main.panel._leftBox) {
-            const leftChildren = Main.panel._leftBox.get_children();
-            for (let i = 1; i < leftChildren.length; i++) {
-                const child = leftChildren[i];
-                if (child.visible) {
-                    this._hiddenLeftChildren.push(child);
-                    child.visible = false;
-                }
-            }
-        }
-
-        // 2. Hide all items on right box during overview (Clock, Quick Settings, Tray, etc.)
-        if (Main.panel && Main.panel._rightBox) {
-            const rightChildren = Main.panel._rightBox.get_children();
-            for (const child of rightChildren) {
-                if (child.visible) {
-                    this._hiddenRightChildren.push(child);
-                    child.visible = false;
-                }
-            }
-        }
-
-        // 3. Middle / center box: anchor to top so it does not drop down vertically!
+        // Anchor center box to top so spaces bar aligns with the top bar correctly
         if (Main.panel && Main.panel._centerBox) {
-            this._prevCenterBoxYAlign = Main.panel._centerBox.y_align;
+            if (this._prevCenterBoxYAlign === undefined) {
+                this._prevCenterBoxYAlign = Main.panel._centerBox.y_align;
+            }
             Main.panel._centerBox.y_align = Clutter.ActorAlign.START;
 
-            for (const child of Main.panel._centerBox.get_children()) {
-                if (child === this._spacesBar) continue;
-                if (child.visible) {
-                    this._hiddenCenterChildren.push(child);
-                    child.visible = false;
-                }
-            }
             if (!this._spacesBar.get_parent()) {
                 Main.panel._centerBox.add_child(this._spacesBar);
             }
@@ -821,42 +856,102 @@ export class WorkspaceIndicatorController {
 
         this._spacesBar.visible = true;
         this._spacesBar.update();
+
+        if (this._stateAdjustment) {
+            this._onOverviewProgressChanged();
+        } else {
+            // Fallback if _stateAdjustment is unavailable: Clutter easing
+            if (Main.panel?._leftBox) {
+                Main.panel._leftBox.remove_all_transitions();
+                Main.panel._leftBox.ease({
+                    opacity: 0,
+                    duration: 250,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+                Main.panel._leftBox.reactive = false;
+            }
+            if (Main.panel?._rightBox) {
+                Main.panel._rightBox.remove_all_transitions();
+                Main.panel._rightBox.ease({
+                    opacity: 0,
+                    duration: 250,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+                Main.panel._rightBox.reactive = false;
+            }
+            if (this._spacesBar) {
+                this._spacesBar.remove_all_transitions();
+                this._spacesBar.opacity = 0;
+                this._spacesBar.visible = true;
+                this._spacesBar.ease({
+                    opacity: 255,
+                    duration: 250,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        this._spacesBar.reactive = true;
+                    },
+                });
+            }
+        }
+    }
+
+    _onOverviewShown() {
+        this._applyOverviewTransitionProgress(1.0);
     }
 
     _onOverviewHiding() {
         if (this._spacesBar) {
             this._spacesBar.onOverviewHiding();
-            this._spacesBar.visible = false;
+            this._spacesBar.reactive = false;
         }
 
-        // Restore center box alignment
+        if (this._stateAdjustment) {
+            this._onOverviewProgressChanged();
+        } else {
+            // Fallback if _stateAdjustment is unavailable: Clutter easing
+            if (Main.panel?._leftBox) {
+                Main.panel._leftBox.remove_all_transitions();
+                Main.panel._leftBox.ease({
+                    opacity: 255,
+                    duration: 250,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        Main.panel._leftBox.reactive = true;
+                    },
+                });
+            }
+            if (Main.panel?._rightBox) {
+                Main.panel._rightBox.remove_all_transitions();
+                Main.panel._rightBox.ease({
+                    opacity: 255,
+                    duration: 250,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        Main.panel._rightBox.reactive = true;
+                    },
+                });
+            }
+            if (this._spacesBar) {
+                this._spacesBar.remove_all_transitions();
+                this._spacesBar.ease({
+                    opacity: 0,
+                    duration: 250,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        this._spacesBar.visible = false;
+                    },
+                });
+            }
+        }
+    }
+
+    _onOverviewHidden() {
+        this._applyOverviewTransitionProgress(0.0);
+
         if (Main.panel && Main.panel._centerBox && this._prevCenterBoxYAlign !== undefined) {
             Main.panel._centerBox.y_align = this._prevCenterBoxYAlign;
+            this._prevCenterBoxYAlign = undefined;
         }
-
-        // Restore right box children
-        for (const child of this._hiddenRightChildren) {
-            try {
-                child.visible = true;
-            } catch (_) {}
-        }
-        this._hiddenRightChildren = [];
-
-        // Restore left box children
-        for (const child of this._hiddenLeftChildren) {
-            try {
-                child.visible = true;
-            } catch (_) {}
-        }
-        this._hiddenLeftChildren = [];
-
-        // Restore center box children
-        for (const child of this._hiddenCenterChildren) {
-            try {
-                child.visible = true;
-            } catch (_) {}
-        }
-        this._hiddenCenterChildren = [];
     }
 
     _connect() {
