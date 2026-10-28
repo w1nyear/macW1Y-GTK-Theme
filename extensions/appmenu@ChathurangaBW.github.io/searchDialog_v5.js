@@ -79,7 +79,7 @@ function formatTimeAgo(timestamp) {
 }
 
 const PILL_COLLAPSED_STYLE =
-    'width: 480px; min-width: 480px; max-width: 480px; height: 54px; min-height: 54px; padding: 0 16px; ' +
+    'height: 54px; min-height: 54px; padding: 0 16px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
     'border: none !important; ' +
@@ -87,7 +87,7 @@ const PILL_COLLAPSED_STYLE =
     'box-shadow: none !important;';
 
 const PILL_EXPANDED_STYLE =
-    'width: 714px; min-width: 714px; max-width: 714px; height: 54px; min-height: 54px; padding: 0 16px; ' +
+    'height: 54px; min-height: 54px; padding: 0 16px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
     'border: none !important; ' +
@@ -390,15 +390,24 @@ export const MacSpotlightDialog = GObject.registerClass({
         this.add_child(this._box);
         this._syncLoopId = 0;
         this._isClosing = false;
-        this._box.connect('notify::height', () => this._syncGlass());
-        this._box.connect('notify::width', () => this._syncGlass());
-        this._box.connect('notify::x', () => this._syncGlass());
-        this._box.connect('notify::y', () => this._syncGlass());
-        this._box.connect('notify::scale-x', () => this._syncGlass());
-        this._box.connect('notify::scale-y', () => this._syncGlass());
-        this._box.connect('notify::translation-x', () => this._syncGlass());
-        this._box.connect('notify::translation-y', () => this._syncGlass());
-        this._box.connect('notify::opacity', () => this._syncGlass());
+        this._glassSyncQueued = false;
+        this._appsDefaultLoaded = false;
+        try {
+            this._appSystem.connect('installed-changed', () => {
+                this._appsDefaultLoaded = false;
+            });
+        } catch (_) {}
+
+        const reqSync = () => this._requestGlassSync();
+        this._box.connect('notify::height', reqSync);
+        this._box.connect('notify::width', reqSync);
+        this._box.connect('notify::x', reqSync);
+        this._box.connect('notify::y', reqSync);
+        this._box.connect('notify::scale-x', reqSync);
+        this._box.connect('notify::scale-y', reqSync);
+        this._box.connect('notify::translation-x', reqSync);
+        this._box.connect('notify::translation-y', reqSync);
+        this._box.connect('notify::opacity', reqSync);
 
         this.connect('destroy', () => {
             this._onDestroy();
@@ -431,13 +440,14 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._box.add_child(this._topRow);
 
-        // 3A. Search Pill (Width: 492px collapsed, 680px expanded)
+        // 3A. Search Pill (Width: 480px collapsed, 714px expanded)
         this._searchPill = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             width: COLLAPSED_PILL_WIDTH,
             style: PILL_COLLAPSED_STYLE,
         });
+        this._searchPill.connect('notify::width', reqSync);
         this._topRow.add_child(this._searchPill);
 
         this._searchIcon = new St.Icon({
@@ -506,6 +516,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             if (this._mode === 'files') {
                 this._loadFilesView();
             } else if (this._mode === 'apps') {
+                this._appsDefaultLoaded = false;
                 this._selectedAppsCategory = null;
                 this._buildAppsCategoryButtons();
                 this._loadAppsView();
@@ -1249,15 +1260,28 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._isCollapsing = false;
             try { this._box.remove_all_transitions(); } catch (_) {}
             try { this._resultsWrapper.remove_all_transitions(); } catch (_) {}
+            try { this._searchPill.remove_all_transitions(); } catch (_) {}
             try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
             this._cancelSyncLoop();
         }
         if (this._buttonsCollapsed) return;
         this._buttonsCollapsed = true;
 
-        this._buttonsBox.visible = false;
-        this._buttonsBox.opacity = 0;
-        this._buttonsBox.set_style('width: 0; min-width: 0; max-width: 0; margin: 0; padding: 0;');
+        // Плавне згасання та зміщення круглих кнопок дій (150мс)
+        try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
+        this._buttonsBox.ease({
+            opacity: 0,
+            scale_x: 0.8,
+            scale_y: 0.8,
+            translation_x: 12,
+            duration: 150,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            onComplete: () => {
+                if (this._buttonsCollapsed) {
+                    this._buttonsBox.visible = false;
+                }
+            },
+        });
 
         this._box.set_style(
             'background-color: transparent !important; ' +
@@ -1268,11 +1292,17 @@ export const MacSpotlightDialog = GObject.registerClass({
         );
 
         this._searchPill.set_style(PILL_EXPANDED_STYLE);
-        this._searchPill.width = DIALOG_WIDTH;
+        try { this._searchPill.remove_all_transitions(); } catch (_) {}
+        this._searchPill.ease({
+            width: DIALOG_WIDTH,
+            duration: 300,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+
         // Шапка розгорнутого меню — 54px, єдиний відступ поля вводу та іконки від верху
         this._topRow.set_style('height: 54px; min-height: 54px;');
 
-        try { this._syncGlass(); } catch (_) {}
+        this._requestGlassSync();
     }
 
     _uncollapseButtonsAndContractPill(onComplete) {
@@ -1282,21 +1312,31 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
         this._isCollapsing = true;
 
-        // Плавне згасання та зміщення результатів вниз
+        // Плавне згасання та зміщення результатів вниз (150мс)
         try { this._resultsWrapper.remove_all_transitions(); } catch (_) {}
         this._resultsWrapper.ease({
             opacity: 0,
             translation_y: 8,
-            duration: 160,
+            duration: 150,
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            onComplete: () => {
+                this._resultsWrapper.visible = false;
+            },
         });
 
-        // Плавне зменшення висоти вікна Spotlight до висоти пілюлі 54px із синхронізацією скла
-        this._startSyncLoop(240);
+        // Плавне зменшення ширини пілюлі до 480px за 300мс
+        try { this._searchPill.remove_all_transitions(); } catch (_) {}
+        this._searchPill.ease({
+            width: COLLAPSED_PILL_WIDTH,
+            duration: 300,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+
+        // Плавне зменшення висоти вікна Spotlight до висоти пілюлі 54px за 300мс
         try { this._box.remove_all_transitions(); } catch (_) {}
         this._box.ease({
             height: PILL_HEIGHT,
-            duration: 220,
+            duration: 300,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
                 this._cancelSyncLoop();
@@ -1332,11 +1372,16 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._btnClipboard.scale_y = 1.0;
                 this._btnClipboard.opacity = 255;
                 this._buttonsBox.visible = true;
+                this._buttonsBox.scale_x = 0.8;
+                this._buttonsBox.scale_y = 0.8;
+                this._buttonsBox.translation_x = 0;
                 this._buttonsBox.opacity = 0;
                 try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
                 this._buttonsBox.ease({
                     opacity: 255,
-                    duration: 160,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    duration: 180,
                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 });
 
@@ -1355,19 +1400,19 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
     }
 
-    _startSyncLoop(durationMs = 250) {
-        this._cancelSyncLoop();
-        const startTime = GLib.get_monotonic_time();
-        const durationUs = durationMs * 1000;
-        this._syncGlass();
-        this._syncLoopId = GLib.timeout_add(GLib.PRIORITY_HIGH, 10, () => {
-            const elapsed = GLib.get_monotonic_time() - startTime;
-            this._syncGlass();
-            if (elapsed >= durationUs) {
-                this._syncLoopId = 0;
-                return GLib.SOURCE_REMOVE;
+    _startSyncLoop(_durationMs = 300) {
+        this._requestGlassSync();
+    }
+
+    _requestGlassSync() {
+        if (this._glassSyncQueued) return;
+        this._glassSyncQueued = true;
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            this._glassSyncQueued = false;
+            if (this._isOpen || this._isClosing) {
+                this._syncGlass();
             }
-            return GLib.SOURCE_CONTINUE;
+            return GLib.SOURCE_REMOVE;
         });
     }
 
@@ -1451,7 +1496,10 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const [boxScreenX, boxScreenY] = box.get_transformed_position();
                 const localBgX = Math.round(boxScreenX - mon.x);
                 const localBgY = Math.round(boxScreenY - mon.y);
-                const bgW = Math.round(rawW * scaleX);
+                const activeW = (this._searchPill && this._searchPill.width > 0 && this._searchPill.width < rawW)
+                    ? this._searchPill.width
+                    : rawW;
+                const bgW = Math.round(activeW * scaleX);
                 const bgH = Math.round(rawH * scaleY);
 
                 this._glass.setMultiRegionMode(false);
@@ -1548,17 +1596,16 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._resultsWrapper.visible = true;
             this._resultsWrapper.opacity = 0;
         }
-        // Однотипна анімація появи/зміни вмісту: м'який зсув знизу вгору
+        // Однотипна анімація появи/зміни вмісту: м'який зсув знизу вгору за 300мс
         try { this._resultsWrapper.remove_all_transitions(); } catch (_) {}
-        this._resultsWrapper.translation_y = 8;
+        this._resultsWrapper.translation_y = 10;
 
-        this._startSyncLoop(240);
+        try { this._box.remove_all_transitions(); } catch (_) {}
         this._box.ease({
             height: targetHeight,
-            duration: 220,
+            duration: 300,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
-                this._cancelSyncLoop();
                 this._syncGlass();
             },
         });
@@ -1566,11 +1613,11 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._resultsWrapper.ease({
             opacity: 255,
             translation_y: 0,
-            duration: 200,
-            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            duration: 300,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         });
 
-        try { this._syncGlass(); } catch (_) {}
+        this._requestGlassSync();
     }
 
     open() {
@@ -1611,9 +1658,9 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
         this._box.set_pivot_point(0.5, 0.5);
         this._box.translation_x = 0;
-        this._box.translation_y = 0;
-        this._box.scale_x = 1.12;
-        this._box.scale_y = 1.12;
+        this._box.translation_y = -8;
+        this._box.scale_x = 1.08;
+        this._box.scale_y = 1.08;
         this._box.opacity = 0;
 
         // Reset search pill and buttons
@@ -1710,17 +1757,15 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._entry.grab_key_focus();
 
-        this._startSyncLoop(240);
         this._box.ease({
             opacity: 255,
             translation_x: 0,
             translation_y: 0,
             scale_x: 1.0,
             scale_y: 1.0,
-            duration: 220,
+            duration: 300,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
-                this._cancelSyncLoop();
                 this._box.translation_x = 0;
                 this._box.translation_y = 0;
                 this._box.scale_x = 1.0;
@@ -1787,14 +1832,14 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._isClosing = true;
         this._isCollapsing = false;
-        this._startSyncLoop(200);
         this._backdrop.visible = false;
         this._box.ease({
             opacity: 0,
-            scale_x: 1.12,
-            scale_y: 1.12,
-            duration: 180,
-            mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            scale_x: 1.08,
+            scale_y: 1.08,
+            translation_y: -6,
+            duration: 300,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
                 if (this._isOpen) return;
                 this._cancelSyncLoop();
@@ -2026,19 +2071,17 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._resultsWrapper.ease({
                 opacity: 0,
                 translation_y: 6,
-                duration: 140,
+                duration: 150,
                 mode: Clutter.AnimationMode.EASE_IN_QUAD,
                 onComplete: () => {
                     this._resultsWrapper.visible = false;
                 },
             });
-            this._startSyncLoop(220);
             this._box.ease({
                 height: EXP_PILL_HEIGHT,
-                duration: 200,
+                duration: 300,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 onComplete: () => {
-                    this._cancelSyncLoop();
                     this._syncGlass();
                 },
             });
@@ -2457,9 +2500,16 @@ export const MacSpotlightDialog = GObject.registerClass({
     // APPS VIEW (Dock Applications Menu Authenticity - Photo 1)
     // -------------------------------------------------------------------------
     _loadAppsView(query = '') {
+        const q = (query || '').trim();
+        const hasFilter = !!q || !!this._selectedAppsCategory;
+
+        if (!hasFilter && this._appsDefaultLoaded && this._appsContentBox.get_n_children() > 0) {
+            return;
+        }
+
         this._appsContentBox.destroy_all_children();
 
-        const apps = this._filterApps(query);
+        const apps = this._filterApps(q);
 
         if (apps.length === 0) {
             const emptyLbl = new St.Label({
@@ -2468,6 +2518,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 x_align: Clutter.ActorAlign.CENTER,
             });
             this._appsContentBox.add_child(emptyLbl);
+            if (!hasFilter) this._appsDefaultLoaded = true;
             return;
         }
 
@@ -2485,6 +2536,12 @@ export const MacSpotlightDialog = GObject.registerClass({
             const app = apps[i];
             const btn = this._createAppGridItem(app);
             currentRow.add_child(btn);
+        }
+
+        if (!hasFilter) {
+            this._appsDefaultLoaded = true;
+        } else {
+            this._appsDefaultLoaded = false;
         }
     }
 
