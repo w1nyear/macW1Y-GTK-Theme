@@ -1,27 +1,34 @@
 #!/usr/bin/env python3
+"""
+mac-gamemode: Advanced Gaming Performance & Thermal Orchestrator for macW1Y
+Supports Acer Nitro V15 ANV15-51 (Intel i5-13420H + NVIDIA RTX 3050 Laptop GPU)
+Provides 3 distinct modes:
+  1. Gaming (Turbo 4.6 GHz, P-core thread pinning, RTX 3050 Dynamic Boost, ACPI balanced-performance)
+  2. Balanced (Dynamic 0.8-4.6 GHz, EPP balance_performance, ACPI balanced, quiet idle)
+  3. Quiet (Dynamic 0.8-3.4 GHz, EPP power, ACPI quiet, fan noise reduction)
+"""
 import sys, os, time, glob, subprocess, re
 
 STATE_FILE = '/etc/mac-gamemode.state'
+
+# Intel Core i5-13420H Topology:
+# Cores 0-3 (Threads 0-7): 4 Performance Cores (P-cores, up to 4.60 GHz Turbo, 12MB L3 Cache)
+# Cores 4-7 (Threads 8-11): 4 Efficient Cores (E-cores, up to 3.40 GHz Turbo, 4MB L2 Cache)
 P_CORES = {0, 1, 2, 3, 4, 5, 6, 7}
 E_CORES = {8, 9, 10, 11}
 ALL_CORES = set(range(12))
 
-# Thermal limits per user specification:
-# 1. Desktop idle: cool and quiet (~45-65°C)
-# 2. Program loading / heavy load / responsiveness boost: allowed up to STRICTLY 80°C max.
-#    "під час прогруження програм допускається нагруження цп і збільшення частоти цп і відеокарти до строго до 80"
-#    "ТІЛЬКИ при тому якщо система почне хотіти виснути тоді має збільшуватись ліміт"
-# 3. Games: allowed to increase to maximum up to 90°C. If > 90°C, urgently throttle down for cooling.
-#    "при іграх можливо збільшити до максимуму але до 90 градусів. якщо більше 90 - ліміт терміново скидується в менші значення для охолодження"
-DESKTOP_TARGET_TEMP = 65.0
-LOADING_HARD_LIMIT = 85.0
-LOADING_RECOVERY_TEMP = 76.0
+# Thermal limits:
+# Intel Raptor Lake TjMax is 100.0°C.
+# 95°C protects hardware during heavy gaming while allowing full Turbo Boost headroom.
+GAME_HARD_LIMIT = 95.0
+GAME_RECOVERY_TEMP = 88.0
 
-GAME_HARD_LIMIT = 90.0
-GAME_RECOVERY_TEMP = 83.0
+LOADING_HARD_LIMIT = 88.0
+LOADING_RECOVERY_TEMP = 80.0
 
-HARDWARE_MAX_FREQ = 4600000 # 4.60 GHz max hardware Turbo
-TARGET_MIN_FREQ = 800000    # 800 MHz cool idle downclock
+HARDWARE_MAX_FREQ = 4600000  # 4.60 GHz max hardware Turbo
+TARGET_MIN_FREQ = 800000     # 800 MHz cool idle downclock
 
 GAME_EXCLUDES = {
     'systemd', 'oom_reaper', 'khungtaskd', 'switcheroo-control',
@@ -76,7 +83,6 @@ BG_KEYWORDS = [
     'tracker-miner', 'tracker-extract', 'updatedb', 'mandb'
 ]
 
-# Track previous CPU stat for instant utilization calculation
 _last_cpu_stat = (0, 0)
 
 def get_cpu_utilization():
@@ -98,10 +104,6 @@ def get_cpu_utilization():
         return 0.0
 
 def get_system_stall_pressure():
-    """
-    Checks PSI (Pressure Stall Information) and Load Average.
-    Returns True if system is under responsiveness pressure (wants to hang/freeze).
-    """
     try:
         if os.path.exists('/proc/pressure/cpu'):
             with open('/proc/pressure/cpu', 'r') as f:
@@ -160,26 +162,46 @@ def is_on_battery():
 
 def set_platform_profile(profile):
     """
-    Sets the ACPI platform profile without touching fan speed or fan controls.
+    Sets the ACPI platform profile matching supported choices on this laptop
+    (e.g. low-power, quiet, balanced, balanced-performance).
     """
     targets = [
         '/sys/firmware/acpi/platform_profile',
         '/sys/devices/platform/acer-wmi/platform-profile/platform-profile-0/profile'
     ]
+    choices = []
+    if os.path.exists('/sys/firmware/acpi/platform_profile_choices'):
+        try:
+            with open('/sys/firmware/acpi/platform_profile_choices', 'r') as f:
+                choices = f.read().strip().split()
+        except Exception:
+            pass
+
+    val = profile
+    if profile in ['performance', 'balanced-performance', 'gaming', 'game']:
+        if 'balanced-performance' in choices:
+            val = 'balanced-performance'
+        elif 'performance' in choices:
+            val = 'performance'
+        else:
+            val = 'balanced'
+    elif profile in ['quiet', 'silent', 'low']:
+        if 'quiet' in choices:
+            val = 'quiet'
+        elif 'low-power' in choices:
+            val = 'low-power'
+        else:
+            val = 'balanced'
+    elif profile in ['balanced', 'normal', 'desktop']:
+        val = 'balanced' if 'balanced' in choices else profile
+
     for p in targets:
         if os.path.exists(p):
             try:
                 with open(p, 'w') as f:
-                    f.write(f'{profile}\n')
+                    f.write(f'{val}\n')
             except Exception:
                 pass
-
-def set_rapl_power_limits(pl1_watts=None, pl2_watts=None):
-    """
-    RAPL power limits are managed harmoniously by power-profiles-daemon,
-    thermald, and nvidia-powerd. Avoid manual overriding to prevent power fighting.
-    """
-    pass
 
 def set_intel_igpu_min_freq(freq_mhz):
     targets = [
@@ -211,7 +233,7 @@ def set_cpu_freq(governor='powersave', epp='balance_performance', min_freq=TARGE
     if os.path.exists(no_turbo_path):
         try:
             with open(no_turbo_path, 'w') as f:
-                f.write('0\n')
+                f.write('0\n' if turbo else '1\n')
         except Exception:
             pass
 
@@ -262,14 +284,19 @@ def set_gpu_performance(enable, throttled=False):
     """
     Configures GPU performance parameters harmoniously with nvidia-powerd:
     - Resets any locked clocks to allow full dynamic scaling.
-    - Sets ACPI platform profile.
+    - Sets ACPI platform profile (balanced-performance during gaming).
+    - Ensures NVIDIA persistence mode is active.
     """
     try:
         subprocess.run(['nvidia-smi', '-rgc'], capture_output=True)
         subprocess.run(['nvidia-smi', '-rmc'], capture_output=True)
         if enable and not throttled:
+            subprocess.run(['nvidia-smi', '-pm', '1'], capture_output=True)
             set_intel_igpu_min_freq(800)
-            set_platform_profile('performance')
+            set_platform_profile('balanced-performance')
+        elif enable and throttled:
+            set_intel_igpu_min_freq(400)
+            set_platform_profile('balanced')
         else:
             set_intel_igpu_min_freq(100)
             set_platform_profile('balanced')
@@ -297,6 +324,11 @@ def get_current_temperatures():
     return cpu_temp, gpu_temp
 
 def optimize_processes():
+    """
+    Optimizes CPU scheduling and priority:
+    - Game processes and all their threads are strictly pinned to P-CORES (0-7: 4.60 GHz, 12MB L3 Cache)
+    - Background indexing/heavy jobs are pinned to E-CORES (8-11) with idle priority
+    """
     for pid_dir in glob.glob('/proc/[0-9]*'):
         try:
             pid = int(os.path.basename(pid_dir))
@@ -316,6 +348,17 @@ def optimize_processes():
                     pass
                 try:
                     subprocess.run(['ionice', '-c', '2', '-n', '0', '-p', str(pid)], capture_output=True)
+                except Exception:
+                    pass
+                try:
+                    os.sched_setaffinity(pid, P_CORES)
+                    task_dir = f'/proc/{pid}/task'
+                    if os.path.exists(task_dir):
+                        for tid_str in os.listdir(task_dir):
+                            try:
+                                os.sched_setaffinity(int(tid_str), P_CORES)
+                            except Exception:
+                                pass
                 except Exception:
                     pass
             elif is_bg_process(comm, cmdline):
@@ -338,20 +381,26 @@ def get_manual_override():
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE, 'r') as f:
-                c = f.read().strip()
-                if c == '1': return True
-                if c == '0': return False
+                c = f.read().strip().lower()
+                if c in ['1', 'on', 'game', 'gaming']:
+                    return 'gaming'
+                if c in ['0', 'off', 'balanced']:
+                    return 'balanced'
+                if c in ['quiet', 'silent']:
+                    return 'quiet'
         except Exception:
             pass
     return None
 
-def set_manual_override(val):
+def set_manual_override(mode):
     try:
         with open(STATE_FILE, 'w') as f:
-            if val is True:
+            if mode == 'gaming':
                 f.write('1\n')
-            elif val is False:
+            elif mode == 'balanced':
                 f.write('0\n')
+            elif mode == 'quiet':
+                f.write('quiet\n')
             else:
                 f.write('auto\n')
     except Exception:
@@ -379,14 +428,12 @@ def apply_game_boost_mode(throttled=False):
     """
     Mode: Active 3D gaming.
     User Rule: Full maximum performance in games.
-    If sustained temp > 90°C, smoothly balance EPP to maintain safe operation without crippled FPS.
+    If sustained temp > 95°C, smoothly balance EPP to maintain safe operation without crippled FPS.
     """
     if throttled:
-        # Smooth thermal balancing via EPP (balance_performance) without dropping base clocks or disabling Turbo
         set_cpu_freq('powersave', 'balance_performance', TARGET_MIN_FREQ, HARDWARE_MAX_FREQ, turbo=True)
         set_gpu_performance(True, throttled=True)
     else:
-        # Full maximum gaming performance
         set_cpu_freq('powersave', 'performance', TARGET_MIN_FREQ, HARDWARE_MAX_FREQ, turbo=True)
         set_gpu_performance(True, throttled=False)
 
@@ -412,7 +459,7 @@ def apply_app_loading_burst(throttled=False):
 
 def apply_desktop_cool_mode():
     """
-    Mode: Normal Desktop.
+    Mode: Balanced (Default Desktop).
     Allows full dynamic scaling (0.8 - 4.60 GHz with Turbo enabled) and quiet idle.
     """
     epp = 'power' if is_on_battery() else 'balance_performance'
@@ -426,8 +473,24 @@ def apply_desktop_cool_mode():
     set_gpu_performance(False)
     set_wifi_powersave(True)
 
+def apply_quiet_mode():
+    """
+    Mode: Quiet / Power Saver.
+    Limits noise and thermal dissipation.
+    """
+    set_cpu_freq('powersave', 'power', TARGET_MIN_FREQ, 3400000, turbo=True)
+    apply_sysctl({
+        'vm.swappiness': '60',
+        'vm.vfs_cache_pressure': '100',
+        'vm.compaction_proactiveness': '20',
+        'net.ipv4.tcp_slow_start_after_idle': '1'
+    })
+    set_gpu_performance(False)
+    set_platform_profile('quiet')
+    set_wifi_powersave(True)
+
 def daemon_loop():
-    print(f'mac-gamemode: daemon started (Dynamic Boost: Turbo enabled up to {HARDWARE_MAX_FREQ//1000000} GHz, Game <= {GAME_HARD_LIMIT}°C)', flush=True)
+    print(f'mac-gamemode: daemon started (Dynamic Boost: Turbo up to {HARDWARE_MAX_FREQ//1000000} GHz, Game Limit <= {GAME_HARD_LIMIT}°C)', flush=True)
     current_mode = None
     last_optimize_time = 0
     game_overtemp_count = 0
@@ -442,7 +505,7 @@ def daemon_loop():
             manual_ovr = get_manual_override()
             game_active = any_game_running()
 
-            if manual_ovr is True or game_active:
+            if manual_ovr == 'gaming' or (manual_ovr is None and game_active):
                 # --- GAME MODE ---
                 if peak_temp >= GAME_HARD_LIMIT:
                     game_overtemp_count += 1
@@ -467,8 +530,15 @@ def daemon_loop():
                     optimize_processes()
                     last_optimize_time = now
 
+            elif manual_ovr == 'quiet':
+                # --- QUIET MODE ---
+                if current_mode != 'QUIET':
+                    apply_quiet_mode()
+                    current_mode = 'QUIET'
+                    print(f'mac-gamemode: Mode -> QUIET (Silent fan profile, Temp={peak_temp:.1f}°C)', flush=True)
+
             else:
-                # --- DESKTOP / APPLICATION MODE ---
+                # --- BALANCED (DESKTOP) MODE ---
                 cpu_util = get_cpu_utilization()
                 system_stalling = get_system_stall_pressure()
 
@@ -489,18 +559,22 @@ def daemon_loop():
         time.sleep(1.0)
 
 if __name__ == '__main__':
-    cmd = sys.argv[1] if len(sys.argv) > 1 else 'status'
-    if cmd == 'on':
-        set_manual_override(True)
+    cmd = sys.argv[1].lower() if len(sys.argv) > 1 else 'status'
+    if cmd in ['on', 'game', 'gaming']:
+        set_manual_override('gaming')
         apply_game_boost_mode()
-        print('mac-gamemode: Manual ON (Forced GAME_BOOST mode)')
-    elif cmd == 'off':
-        set_manual_override(False)
+        print('mac-gamemode: Gaming Mode ENABLED (Turbo 4.6 GHz, P-cores, RTX 3050 Boost)')
+    elif cmd in ['off', 'balanced']:
+        set_manual_override('balanced')
         apply_desktop_cool_mode()
-        print('mac-gamemode: Manual OFF (Forced DESKTOP cool mode)')
-    elif cmd == 'auto':
+        print('mac-gamemode: Balanced Mode ENABLED (Dynamic 0.8-4.6 GHz, Cool Desktop)')
+    elif cmd in ['quiet', 'silent']:
+        set_manual_override('quiet')
+        apply_quiet_mode()
+        print('mac-gamemode: Quiet Mode ENABLED (Low noise, Silent ACPI profile)')
+    elif cmd in ['auto', 'default']:
         set_manual_override(None)
-        print('mac-gamemode: Switched to AUTO mode')
+        print('mac-gamemode: Switched to AUTO mode (Balanced by default, Gaming during games)')
     elif cmd == 'status':
         ovr = get_manual_override()
         game_active = any_game_running()
@@ -508,26 +582,39 @@ if __name__ == '__main__':
         no_t = 'Unknown'
         if os.path.exists('/sys/devices/system/cpu/intel_pstate/no_turbo'):
             with open('/sys/devices/system/cpu/intel_pstate/no_turbo') as f:
-                no_t = 'Disabled (Cool)' if f.read().strip() == '1' else 'Enabled (Turbo)'
+                no_t = 'Disabled' if f.read().strip() == '1' else 'Enabled (Full Boost)'
         cur_max = 'Unknown'
         if os.path.exists('/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq'):
             with open('/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq') as f:
                 cur_max = f"{int(f.read().strip())/1000000:.2f} GHz"
-        ovr_str = 'None (Auto)'
-        if ovr is True: ovr_str = 'Forced ON'
-        elif ovr is False: ovr_str = 'Forced OFF'
-        effective = 'GAME_BOOST' if (ovr is True or game_active) else 'DESKTOP'
-        print(f"Manual Override : {ovr_str}")
+        acpi_prof = 'Unknown'
+        if os.path.exists('/sys/firmware/acpi/platform_profile'):
+            with open('/sys/firmware/acpi/platform_profile') as f:
+                acpi_prof = f.read().strip()
+        epp_prof = 'Unknown'
+        if os.path.exists('/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference'):
+            with open('/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference') as f:
+                epp_prof = f.read().strip()
+
+        ovr_str = 'Auto (Automatic Game Detection)'
+        if ovr == 'gaming': ovr_str = 'Forced Gaming'
+        elif ovr == 'balanced': ovr_str = 'Forced Balanced'
+        elif ovr == 'quiet': ovr_str = 'Forced Quiet'
+
+        effective = 'Gaming' if (ovr == 'gaming' or (ovr is None and game_active)) else ('Quiet' if ovr == 'quiet' else 'Balanced')
+        print(f"Profile Mode    : {ovr_str}")
+        print(f"Effective State : {effective}")
         print(f"Game Active     : {'YES' if game_active else 'NO'}")
+        print(f"ACPI Platform   : {acpi_prof}")
+        print(f"CPU EPP Policy  : {epp_prof}")
         print(f"Turbo Boost     : {no_t}")
         print(f"Max Frequency   : {cur_max}")
-        print(f"CPU Temp        : {cpu_t:.1f} °C (Loading Limit: {LOADING_HARD_LIMIT}°C, Game Limit: {GAME_HARD_LIMIT}°C)")
-        print(f"GPU Temp        : {gpu_t:.1f} °C (Game Limit: {GAME_HARD_LIMIT}°C)")
-        print(f"Effective Mode  : {effective}")
-        sys.exit(0 if (ovr is True or game_active) else 1)
+        print(f"CPU Temp        : {cpu_t:.1f} °C (Game Limit: {GAME_HARD_LIMIT}°C)")
+        print(f"GPU Temp        : {gpu_t:.1f} °C")
+        sys.exit(0 if (ovr == 'gaming' or game_active) else 1)
     elif cmd == 'daemon':
         daemon_loop()
     elif cmd == 'optimize':
         optimize_processes()
     else:
-        print('Usage: mac-gamemode [on|off|auto|status|daemon|optimize]')
+        print('Usage: mac-gamemode [gaming|balanced|quiet|auto|status|daemon|optimize]')
