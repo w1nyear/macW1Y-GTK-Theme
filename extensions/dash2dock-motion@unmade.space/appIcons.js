@@ -1972,11 +1972,17 @@ function _ensureLabelTail(label, position) {
         label.add_child(label._arrowTail);
     }
     label._arrowPos = position;
-    if (position === St.Side.TOP) {
-        label._arrowTail.set_position(Math.round((label.width - 24) / 2), -7.5);
-    } else {
-        label._arrowTail.set_position(Math.round((label.width - 24) / 2), label.height - 1.5);
-    }
+    const posX = Math.round((label.width - 24) / 2);
+    const posY = (position === St.Side.TOP) ? -7.5 : (label.height - 1.5);
+    label._arrowTail.set_position(posX, posY);
+    try {
+        const box = new Clutter.ActorBox();
+        box.x1 = posX;
+        box.y1 = posY;
+        box.x2 = posX + 24;
+        box.y2 = posY + 9;
+        label._arrowTail.allocate(box);
+    } catch (_) {}
     label._arrowTail.queue_repaint();
 }
 
@@ -2066,6 +2072,9 @@ export function itemShowLabel() {
         opacity: 255,
         duration: DASH_ITEM_LABEL_SHOW_TIME,
         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        onComplete: () => {
+            blurEff?.queue_repaint?.();
+        },
     });
     /* eslint-enable no-invalid-this */
 }

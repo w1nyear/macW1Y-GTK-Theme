@@ -6,7 +6,7 @@ import { DashManager } from './dist/dockManager.js?v=fix2';
 import { NotificationManager } from './dist/notificationManager.js?v=fix2';
 import { QuickSettingsManager } from './dist/quickSettingsManager.js?v=fix2';
 import { OsdManager } from './dist/osdManager.js?v=fix2';
-import { ApplicationManager } from './dist/applicationManager.js?v=fix4';
+import { ApplicationManager } from './dist/applicationManager.js?v=fix5';
 import { WindowListService } from './dist/windowListService.js?v=fix2';
 import { Logger } from './dist/logger.js?v=fix2';
 import { setUtilsLogger, adaptiveColorTweener, destroySharedBackgroundSource,

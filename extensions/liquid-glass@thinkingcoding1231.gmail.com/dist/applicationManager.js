@@ -1217,7 +1217,7 @@ export class ApplicationManager {
                 this._forceGlassReallocation(state);
             })
         });
-        const metaWin = windowActor.get_meta_window();
+        // metaWin already declared at line 1065
         if (metaWin) {
             state.signals.push({
                 obj: metaWin,
