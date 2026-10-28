@@ -136,6 +136,7 @@ def main():
     if gsettings_set("org.gnome.desktop.interface", "font-name", th["font_name"]): changes_count += 1
     if gsettings_set("org.gnome.desktop.interface", "document-font-name", th["document_font_name"]): changes_count += 1
     if gsettings_set("org.gnome.desktop.interface", "monospace-font-name", th["monospace_font_name"]): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "font-antialiasing", "grayscale"): changes_count += 1
     if gsettings_set("org.gnome.desktop.interface", "color-scheme", th["color_scheme"]): changes_count += 1
 
     # 2. WM Preferences

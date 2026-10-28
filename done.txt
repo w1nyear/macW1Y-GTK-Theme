@@ -12314,3 +12314,27 @@ Task 499: Повне полірування екрана блокування (m
      * Повторне відкриття Spotlight (2nd open): buttonsBox={visible:true, opacity:255, scaleX:1, scaleY:1, transX:0, width:200, allocW:200}, btnApps={opacity:255, scaleX:1, transX:0, allocW:52}. Знято чистий контрольний знімок scratch_spotlight_2nd_open_fixed_crop.png — абсолютна симетрія та точний збіг кнопок і скла.
      * Закриття Центру керування: зафіксовано плавний спад прозорості елементів t=35ms (op:176) -> t=70ms (op:104) -> t=105ms (op:56) -> t=140ms (op:29) -> t=175ms (op:8) -> t=245ms (op:0), одночасно з наближенням масштабу box (1.0 -> 1.06).
    - mac-diagnostics успішно пройдено на 100% (система стабільна, Liquid Glass активний).
+
+600. Увімкнення та нормалізація повного згладження (antialiasing & smoothing) для бірок додатків дока (шрифт, стрілка, рамка та радіус розмиття):
+1. Діагностика проблеми:
+   - На основі аналізу наданого користувачем знімка (media_1793219393820_19e4658a.png) встановлено причини відсутності або спотворення згладження:
+     * Субпіксельний кольоровий аліасинг тексту: системний параметр font-antialiasing був встановлений у 'rgba'. На напівпрозорих темних поверхнях (Liquid Glass) це спричиняло хроматичні аберації шрифту (літери "Telegram" мали сині ліві краї та помаранчеві праві краї замість чистого згладженого білого тексту).
+     * Деструктивне правило border-bottom: none; у stylesheet.css: через відсутність нижньої межі рушій St Clutter ламав розрахунок апаратного заокруглення border-radius: 9999px, що призводило до зрізання нижньої частини пілюлі та східчастих незгладжених країв.
+     * Відсутність налаштувань антиаліасингу Cairo у St.DrawingArea стрілки: контекст cr не мав встановленого режиму zglazhuvannya (cairo.Antialias.SUBPIXEL), використовував гострі з'єднання (MITER) замість ROUND, а також промальовував жорсткі горизонтальні лінії під капсулою (від leftStart до rightEnd), які візуально розривали форму.
+     * Статичний corner_radius: 14 у BlurEffect, який не відповідав точній половині висоти пілюлі (~12px), створюючи грубі зрізи фонового розмиття.
+2. Реалізоване рішення:
+   - Шрифтове згладжування macOS:
+     * Встановлено gsettings set org.gnome.desktop.interface font-antialiasing 'grayscale' (чисте градаційне згладжування Apple, без кольорових ореолів).
+     * Додано підтримку цього параметра у bin/mac-apply-theme для гарантованого збереження в SSOT.
+   - Апаратне згладжування та оптимізація стрілки:
+     * У extensions/dash2dock-motion@unmade.space/appIcons.js імпортовано нативний cairo та активовано cr.setAntialias(cairo.Antialias.SUBPIXEL), cr.setLineCap(cairo.LineCap.ROUND) та cr.setLineJoin(cairo.LineJoin.ROUND).
+     * Перероблено геометрію стрілки: вилучено розривні горизонтальні прямі лінії, створено плавні bezier-переходи горловини (fillet = 2.5), заокруглений кінчик (tipR = 1.2, rise = 7.0px) та додано cr.$dispose().
+   - Відновлення форми пілюлі:
+     * У extensions/dash2dock-motion@unmade.space/stylesheet.css та extensions/kiwi@kemma/stylesheet.css прибрано border-bottom: none; і border-top: none;, завдяки чому пілюля зберігає ідеально згладжену замкнену капсулу.
+   - Динамічний радіус розмиття:
+     * У extensions/kiwi@kemma/apps/labelBlur.js corner_radius розраховується як Math.min(DEFAULT_CORNER_RADIUS, Math.round(actor.height / 2)) з динамічним оновленням на notify::allocation.
+3. Синхронізація та верифікація:
+   - Файли синхронізовано з ~/.local/share/gnome-shell/extensions/.
+   - Оновлено контрольні хеші у config/extensions.lock.json.
+   - mac-extension-guard verify підтвердив 20/20 зафіксованих розширень (VERIFICATION SUCCESS).
+   - mac-diagnostics пройдено на 100% (система стабільна).

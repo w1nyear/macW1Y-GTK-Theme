@@ -93,13 +93,28 @@ export function applyLabelBlur(actor) {
         const brightness = _getCurrentBrightness();
         const active = _isBlurActive() && radius > 0;
 
+        // Mutter offscreen redirection MUST be disabled (0 = NEVER) so GbBlurEffect
+        // samples the true desktop framebuffer beneath the actor rather than an empty offscreen FBO.
+        if (actor.set_offscreen_redirect) {
+            actor.set_offscreen_redirect(0);
+            if (!actor._origSetOffscreenRedirect) {
+                actor._origSetOffscreenRedirect = actor.set_offscreen_redirect.bind(actor);
+                actor.set_offscreen_redirect = function() {
+                    actor._origSetOffscreenRedirect(0);
+                };
+            }
+        }
+
+        const effH = (actor.height && actor.height > 0) ? actor.height : 24;
+        const cornerR = Math.min(DEFAULT_CORNER_RADIUS, Math.round(effH / 2));
+
         const effects = actor.get_effects ? actor.get_effects() : [];
         const existing = effects.find(e => e.name === EFFECT_NAME);
         if (existing) {
             existing.enabled = active;
             existing.radius = active ? radius : 0;
             if ("corner_radius" in existing)
-                existing.corner_radius = DEFAULT_CORNER_RADIUS;
+                existing.corner_radius = cornerR;
             if ("brightness" in existing)
                 existing.brightness = brightness;
             if (existing.queue_repaint)
@@ -116,7 +131,7 @@ export function applyLabelBlur(actor) {
                 name: EFFECT_NAME,
                 mode: 1, // GB_BLUR_MODE_BACKGROUND
                 radius: radius,
-                corner_radius: DEFAULT_CORNER_RADIUS,
+                corner_radius: cornerR,
                 brightness: brightness,
             });
         } else if (Shell?.BlurEffect) {
@@ -131,11 +146,20 @@ export function applyLabelBlur(actor) {
             actor.add_effect(effect);
             if (actor.connectObject) {
                 actor.connectObject(
+                    "notify::allocation", () => {
+                        if (effect && "corner_radius" in effect && actor.height > 0) {
+                            effect.corner_radius = Math.min(DEFAULT_CORNER_RADIUS, Math.round(actor.height / 2));
+                        }
+                    },
                     "notify::visible", () => {
+                        if (actor.set_offscreen_redirect)
+                            actor.set_offscreen_redirect(0);
                         if (actor.visible && effect.queue_repaint)
                             effect.queue_repaint();
                     },
                     "notify::opacity", () => {
+                        if (actor.set_offscreen_redirect)
+                            actor.set_offscreen_redirect(0);
                         if (actor.opacity > 0 && effect.queue_repaint)
                             effect.queue_repaint();
                     },
@@ -156,6 +180,11 @@ export function removeLabelBlur(actor) {
     if (!actor || !actor.get_effects)
         return;
     try {
+        if (actor._origSetOffscreenRedirect) {
+            actor.set_offscreen_redirect = actor._origSetOffscreenRedirect;
+            delete actor._origSetOffscreenRedirect;
+            actor.set_offscreen_redirect(2);
+        }
         if (actor.disconnectObject)
             actor.disconnectObject(actor);
         const effects = actor.get_effects();

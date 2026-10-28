@@ -4,6 +4,8 @@
 // contributors. Distributed under the GNU General Public License,
 // version 2 or later.
 
+import cairo from 'cairo';
+
 import {
     Clutter,
     Gio,
@@ -1917,73 +1919,156 @@ class DockShowAppsIconMenu extends DockAppIconMenu {
     }
 }
 
+function _updateTailPosition(label, position) {
+    const tail = label._arrowTailActor;
+    if (!tail || !label.get_stage())
+        return;
+    label._arrowPos = position;
+
+    const box = label.get_allocation_box();
+    const pillLeft = (box.x2 > box.x1) ? box.x1 : label.x;
+    const pillRight = (box.x2 > box.x1) ? box.x2 : (label.x + label.width);
+    const pillTop = (box.y2 > box.y1) ? box.y1 : label.y;
+    const pillBottom = (box.y2 > box.y1) ? box.y2 : (label.y + 25);
+    const pillWidth = pillRight - pillLeft;
+    if (pillWidth <= 0)
+        return;
+
+    const tailW = pillWidth;
+    const tailH = 10;
+    tail.set_size(tailW, tailH);
+
+    const posX = Math.round(pillLeft);
+    let posY;
+
+    if (position === St.Side.TOP) {
+        posY = Math.round(pillTop - tailH + 1.0);
+    } else {
+        // St.Side.BOTTOM: arrow sits UNDER the pill pointing DOWN towards dock
+        posY = Math.round(pillBottom - 1.0);
+    }
+
+    tail.set_position(posX, posY);
+    try {
+        const tBox = new Clutter.ActorBox();
+        tBox.x1 = posX;
+        tBox.y1 = posY;
+        tBox.x2 = posX + tailW;
+        tBox.y2 = posY + tailH;
+        tail.allocate(tBox);
+    } catch (_) {}
+    tail.queue_repaint();
+}
+
 function _ensureLabelTail(label, position) {
     if (!label)
         return;
-    if (!label._arrowTail) {
-        label._arrowTail = new St.DrawingArea({ style_class: 'dash-label-tail' });
-        label._arrowTail.set_size(24, 9);
-        label._arrowTail.connect('repaint', (area) => {
+
+    // Clean up legacy child tail if attached to label
+    if (label._arrowTail && label.contains(label._arrowTail)) {
+        label.remove_child(label._arrowTail);
+        label._arrowTail.destroy();
+        label._arrowTail = null;
+    }
+
+    if (!label._arrowTailActor) {
+        const tail = new St.DrawingArea({ style_class: 'dash-label-tail' });
+        label._arrowTailActor = tail;
+
+        tail.connect('repaint', (area) => {
             const cr = area.get_context();
+            cr.setAntialias(cairo.Antialias.SUBPIXEL);
+            cr.setLineCap(cairo.LineCap.ROUND);
+            cr.setLineJoin(cairo.LineJoin.ROUND);
+
             const [w, h] = area.get_surface_size();
-            const cx = w / 2;
+            const cx = Math.round(w / 2);
             const themeNode = label.get_theme_node();
             const bg = themeNode ? themeNode.get_background_color() : null;
-            const border = themeNode ? themeNode.get_border_color(St.Side.BOTTOM) : null;
+            const border = themeNode ? themeNode.get_border_color(St.Side.TOP) : null;
 
-            const r = bg ? bg.red / 255 : 0.12;
-            const g = bg ? bg.green / 255 : 0.12;
-            const b = bg ? bg.blue / 255 : 0.14;
-            const a = bg ? bg.alpha / 255 : 0.78;
+            const r = bg ? bg.red / 255 : 0.16;
+            const g = bg ? bg.green / 255 : 0.16;
+            const b = bg ? bg.blue / 255 : 0.18;
+            const a = bg ? bg.alpha / 255 : 0.80;
 
             const br = border ? border.red / 255 : 1.0;
             const bg_c = border ? border.green / 255 : 1.0;
             const bb = border ? border.blue / 255 : 1.0;
             const ba = border ? border.alpha / 255 : 0.22;
 
-            cr.setSourceRGBA(r, g, b, a);
-            const halfBase = 8.5;
-            const rise = h;
-            const fillet = 4.0;
-            const tipR = 2.0;
+            const halfBase = 6.5;
+            const fillet = 2.5;
+            const tipR = 1.2;
+            const rise = 7.0;
 
             if (label._arrowPos === St.Side.TOP) {
+                // Dock on top: arrow sits ABOVE pill pointing UP towards dock
+                // 1. Fill throat overlap & arrow body
                 cr.moveTo(cx - halfBase - fillet, rise);
-                cr.curveTo(cx - halfBase + fillet * 0.5, rise, cx - tipR, tipR * 0.5, cx, 0);
-                cr.curveTo(cx + tipR, tipR * 0.5, cx + halfBase - fillet * 0.5, rise, cx + halfBase + fillet, rise);
+                cr.lineTo(cx + halfBase + fillet, rise);
+                cr.curveTo(cx + halfBase, rise - 0.5, cx + tipR, tipR * 0.5, cx, 0);
+                cr.curveTo(cx - tipR, tipR * 0.5, cx - halfBase, rise - 0.5, cx - halfBase - fillet, rise);
                 cr.closePath();
-                cr.fillPreserve();
+                cr.setSourceRGBA(r, g, b, a);
+                cr.fill();
 
+                // 2. Stroke arrow outer contour with open throat (seamless with pill)
+                cr.newPath();
+                cr.moveTo(cx - halfBase - fillet, rise - 0.5);
+                cr.curveTo(cx - halfBase + fillet * 0.5, rise - 0.5, cx - tipR, tipR * 0.5, cx, 0);
+                cr.curveTo(cx + tipR, tipR * 0.5, cx + halfBase - fillet * 0.5, rise - 0.5, cx + halfBase + fillet, rise - 0.5);
                 cr.setSourceRGBA(br, bg_c, bb, ba);
                 cr.setLineWidth(1.0);
                 cr.stroke();
             } else {
+                // Dock on bottom: arrow sits UNDER pill pointing DOWN towards dock
+                // 1. Fill throat overlap & arrow body
                 cr.moveTo(cx - halfBase - fillet, 0);
-                cr.curveTo(cx - halfBase + fillet * 0.5, 0, cx - tipR, rise - tipR * 0.5, cx, rise);
-                cr.curveTo(cx + tipR, rise - tipR * 0.5, cx + halfBase - fillet * 0.5, 0, cx + halfBase + fillet, 0);
+                cr.lineTo(cx + halfBase + fillet, 0);
+                cr.curveTo(cx + halfBase, 0.5, cx + tipR, rise - tipR * 0.5, cx, rise);
+                cr.curveTo(cx - tipR, rise - tipR * 0.5, cx - halfBase, 0.5, cx - halfBase - fillet, 0);
                 cr.closePath();
-                cr.fillPreserve();
+                cr.setSourceRGBA(r, g, b, a);
+                cr.fill();
 
+                // 2. Stroke arrow outer contour with open throat (seamless with pill)
+                cr.newPath();
+                cr.moveTo(cx - halfBase - fillet, 0.5);
+                cr.curveTo(cx - halfBase + fillet * 0.5, 0.5, cx - tipR, rise - tipR * 0.5, cx, rise);
+                cr.curveTo(cx + tipR, rise - tipR * 0.5, cx + halfBase - fillet * 0.5, 0.5, cx + halfBase + fillet, 0.5);
                 cr.setSourceRGBA(br, bg_c, bb, ba);
                 cr.setLineWidth(1.0);
                 cr.stroke();
             }
+
+            cr.$dispose();
         });
-        label.add_child(label._arrowTail);
+
+        Main.uiGroup.add_child(tail);
+        Main.uiGroup.set_child_above_sibling(tail, label);
+
+        label.bind_property('visible', tail, 'visible', GObject.BindingFlags.SYNC_CREATE);
+        label.bind_property('opacity', tail, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+
+        label.connect('destroy', () => {
+            if (label._arrowTailActor) {
+                Main.uiGroup.remove_child(label._arrowTailActor);
+                label._arrowTailActor.destroy();
+                label._arrowTailActor = null;
+            }
+        });
+
+        label.connect('notify::position', () => {
+            _updateTailPosition(label, label._arrowPos ?? Utils.getPosition());
+        });
+
+        label.connect('notify::allocation', () => {
+            _updateTailPosition(label, label._arrowPos ?? Utils.getPosition());
+        });
     }
-    label._arrowPos = position;
-    const posX = Math.round((label.width - 24) / 2);
-    const posY = (position === St.Side.TOP) ? -7.5 : (label.height - 1.5);
-    label._arrowTail.set_position(posX, posY);
-    try {
-        const box = new Clutter.ActorBox();
-        box.x1 = posX;
-        box.y1 = posY;
-        box.x2 = posX + 24;
-        box.y2 = posY + 9;
-        label._arrowTail.allocate(box);
-    } catch (_) {}
-    label._arrowTail.queue_repaint();
+
+    _updateTailPosition(label, position);
 }
 
 /**
@@ -2060,6 +2145,9 @@ export function itemShowLabel() {
     this.label.opacity = 0;
     this.label.show();
 
+    if (this.label.set_offscreen_redirect)
+        this.label.set_offscreen_redirect(0);
+
     positionItemLabel(this);
     _ensureLabelTail(this.label, Utils.getPosition());
 
@@ -2074,6 +2162,7 @@ export function itemShowLabel() {
         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         onComplete: () => {
             blurEff?.queue_repaint?.();
+            this.label.set_offscreen_redirect?.(0);
         },
     });
     /* eslint-enable no-invalid-this */
