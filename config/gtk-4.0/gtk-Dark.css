@@ -3212,9 +3212,10 @@ popover > arrow,
 popover > contents {
   color: @window_fg_color;
   background-clip: padding-box;
-  background-color: color-mix(in srgb, @popover_bg_color 96%, transparent);
-  box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.15), 0 0 0 1px @headerbar_darker_shade_color;
-  border: 1px solid color-mix(in srgb, #ffffff 8%, color-mix(in srgb, @popover_bg_color 96%, transparent));
+  background-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
 popover, popover:backdrop {
@@ -3336,7 +3337,8 @@ popover.menu box.circular-buttons button.circular.image-button.model:active:focu
 }
 
 popover.menu > arrow, popover.menu.background > contents {
-  background-color: color-mix(in srgb, @popover_bg_color 96%, transparent);
+  background-color: transparent !important;
+  background: transparent !important;
   color: @window_fg_color;
 }
 
@@ -9612,17 +9614,21 @@ menu separator {
   margin: 4px 6px;
 }
 
-/* Popover Arrow: restored macOS Tahoe style */
+/* Popover Arrow: transparent for Liquid Glass shader */
 popover > arrow,
 popover.menu > arrow,
 popover arrow,
 .popover-arrow {
-  min-width: 18px;
-  min-height: 8px;
-  background-color: rgba(30, 30, 34, 0.78);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 4px;
+  min-width: 20px;
+  min-height: 10px;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0;
+  padding: 0;
 }
 
 /* Ensure outer popover node and contents have no background, shadow or padding */
@@ -9630,7 +9636,10 @@ popover,
 popover.menu,
 popover.context-menu,
 popover.background,
+popover.menu.background,
+popover > contents,
 popover.menu > contents,
+popover contents,
 popover.menu contents,
 popover.menu scrolledwindow,
 popover.menu scrolledwindow viewport,
@@ -9638,6 +9647,7 @@ popover.menu stack,
 popover.menu box,
 popover.context-menu > contents,
 popover.background > contents,
+popover.menu.background > contents,
 .nautilus-window popover,
 .nautilus-window popover.menu,
 .nautilus-window popover.menu > contents,
@@ -9646,11 +9656,11 @@ popover.background > contents,
 .nautilus-window popover.menu viewport,
 .nautilus-window popover.menu stack,
 .nautilus-window popover.menu box {
-  background: transparent;
-  background-color: transparent;
-  background-image: none;
-  border: none;
-  box-shadow: none;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
   margin: 0;
 }
 

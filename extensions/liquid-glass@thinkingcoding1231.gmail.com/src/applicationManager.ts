@@ -654,6 +654,72 @@ export class ApplicationManager {
     return true;
   }
 
+  _getMenuArrowConfig(metaWindow: Meta.Window, rect: Meta.Rectangle, visW: number, visH: number): {
+    side: number;
+    origin: number;
+    base: number;
+    rise: number;
+    radius: number;
+    fillet: number;
+  } {
+    const noArrow = { side: 0, origin: 0, base: 0, rise: 0, radius: 0, fillet: 0 };
+    if (!metaWindow)
+      return noArrow;
+
+    const parent = metaWindow.get_transient_for ? metaWindow.get_transient_for() : null;
+    const rootWin = this._getRootWindow(metaWindow);
+    const isDesktop = (rootWin as any)?.get_window_type?.() === Meta.WindowType.DESKTOP ||
+                      metaWindow.get_window_type() === Meta.WindowType.DESKTOP;
+
+    // Desktop right-click context menus never have an arrow
+    if (isDesktop || !parent)
+      return noArrow;
+
+    const winType = metaWindow.get_window_type();
+    const isMenuType = winType === Meta.WindowType.DROPDOWN_MENU ||
+                       winType === Meta.WindowType.POPUP_MENU ||
+                       winType === Meta.WindowType.MENU;
+    if (!isMenuType)
+      return noArrow;
+
+    const rise = 10.0;
+    const base = 20.0;
+    const radius = 2.0;
+    const fillet = 5.0;
+
+    if (visH <= rise * 2)
+      return noArrow;
+
+    let parentRect: Meta.Rectangle | null = null;
+    try {
+      parentRect = parent.get_frame_rect();
+    } catch (_) {}
+
+    let side = 1; // Default to TOP
+    if (parentRect) {
+      if (rect.y + rect.height <= parentRect.y + 60 && rect.y < parentRect.y) {
+        side = 3; // BOTTOM
+      } else {
+        side = 1; // TOP
+      }
+    }
+
+    let origin = 0.0;
+    if (parentRect) {
+      const popoverCenter = rect.x + (visW * 0.5);
+      const parentRight = parentRect.x + parentRect.width;
+      if (rect.x + visW >= parentRight - 15) {
+        const maxOffset = Math.max(0, (visW * 0.5) - 30);
+        origin = Math.min(maxOffset, Math.max(0, (parentRight - 35) - popoverCenter));
+      } else if (rect.x <= parentRect.x + 15) {
+        const minOffset = -Math.max(0, (visW * 0.5) - 30);
+        origin = Math.max(minOffset, Math.min(0, (parentRect.x + 35) - popoverCenter));
+      }
+    }
+
+    return { side, origin, base, rise, radius, fillet };
+  }
+
   /**
    * Which settings namespace should dress this window, or null to leave it
    * alone. The single place that decides; _shouldApplyToWindow() and
@@ -1123,9 +1189,11 @@ export class ApplicationManager {
       effect.setTintColor(1.0, 1.0, 1.0);
       effect.setTintStrength(0.01);
       effect.setBlurRadius(blurRadius || 10);
+      effect.setArrow(0, 0, 0, 0);
       surfaceActor.opacity = 255;
     } else {
       effect.setSurfaceLightEnabled(false);
+      effect.setArrow(0, 0, 0, 0);
     }
     // Keep the drop-shadow within the small padded border around the window,
     // rather than the huge margin dockManager uses for its full-screen FBO.
@@ -1801,7 +1869,22 @@ export class ApplicationManager {
     // animation.
     if (state.effect) {
       state.effect.setResolution(bgW, bgH);
-      state.effect.setGlassGeometry(0, 0, bgW, bgH);
+      if (state.profile === 'desktop-menu') {
+        const arrowCfg = this._getMenuArrowConfig(metaWindow, rect, visW, visH);
+        if (arrowCfg.side === 1) {
+          state.effect.setGlassGeometry(0, arrowCfg.rise, bgW, bgH - arrowCfg.rise);
+          state.effect.setArrow(1, arrowCfg.origin, arrowCfg.base, arrowCfg.rise, arrowCfg.radius, arrowCfg.fillet);
+        } else if (arrowCfg.side === 3) {
+          state.effect.setGlassGeometry(0, 0, bgW, bgH - arrowCfg.rise);
+          state.effect.setArrow(3, arrowCfg.origin, arrowCfg.base, arrowCfg.rise, arrowCfg.radius, arrowCfg.fillet);
+        } else {
+          state.effect.setGlassGeometry(0, 0, bgW, bgH);
+          state.effect.setArrow(0, 0, 0, 0);
+        }
+      } else {
+        state.effect.setGlassGeometry(0, 0, bgW, bgH);
+        state.effect.setArrow(0, 0, 0, 0);
+      }
     }
 
     // The corner radius is a screen-pixel quantity on a box that is now

@@ -3107,6 +3107,15 @@ export const LiquidEffect_v2 = _registerLiquidEffect_v2(class LiquidEffect_v2 ex
         this._setFloat('corner_radius', radius);
         this._queueRepaintIfDirty();
     }
+    setArrow(side = 0, origin = 0, base = 18.0, rise = 8.0, radius = 2.0, fillet = 5.0) {
+        this._setFloat('arrow_side', side);
+        this._setFloat('arrow_origin', origin);
+        this._setFloat('arrow_base', base);
+        this._setFloat('arrow_rise', rise);
+        this._setFloat('arrow_radius', radius);
+        this._setFloat('arrow_fillet', fillet);
+        this._queueRepaintIfDirty();
+    }
     setAnimationScale(scale) {
         const settings = this._settings;
         if (!settings)

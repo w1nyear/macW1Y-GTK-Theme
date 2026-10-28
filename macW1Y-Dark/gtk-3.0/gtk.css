@@ -122,17 +122,21 @@ window.desktopmenu separator {
   border: none;
 }
 
-/* Popover Arrow: restored macOS Tahoe style */
+/* Popover Arrow: transparent for Liquid Glass shader */
 popover > arrow,
 popover.menu > arrow,
 popover arrow,
 .popover-arrow {
-  min-width: 18px;
-  min-height: 8px;
-  background-color: rgba(30, 30, 34, 0.78);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 4px;
+  min-width: 20px;
+  min-height: 10px;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0;
+  padding: 0;
 }
 
 /* GTK Popover menus (system popovers only) */
@@ -142,12 +146,12 @@ popover.context-menu > contents,
 popover.background > contents,
 popover > contents {
   border-radius: 20px;
-  background-color: transparent;
-  background: transparent;
-  background-image: none;
+  background-color: transparent !important;
+  background: transparent !important;
+  background-image: none !important;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: none;
+  border: none !important;
+  box-shadow: none !important;
   padding: 6px 4px;
 }
 

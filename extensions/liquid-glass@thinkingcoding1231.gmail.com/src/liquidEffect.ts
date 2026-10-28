@@ -2694,6 +2694,13 @@ export const LiquidEffect = GObject.registerClass({
       if (ry + rh - iy > y1) y1 = ry + rh - iy;
     }
     if (!(x1 > x0) || !(y1 > y0)) return null;
+    const arrowSide = this._pendingUniforms.get('arrow_side') ?? 0;
+    const arrowRise = this._pendingUniforms.get('arrow_rise') ?? 0;
+    if (arrowSide === 1 && arrowRise > 0) {
+      y0 = Math.max(0, y0 - arrowRise);
+    } else if (arrowSide === 3 && arrowRise > 0) {
+      y1 = y1 + arrowRise;
+    }
     return [x0, y0, x1, y1];
   }
 
