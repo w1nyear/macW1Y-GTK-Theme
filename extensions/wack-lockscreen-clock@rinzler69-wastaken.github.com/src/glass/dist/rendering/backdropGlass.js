@@ -759,6 +759,7 @@ let paintingView = null;
 let paintSignalIds = [];
 
 export function trackViewPaints() {
+    if (paintSignalIds.length > 0) return;
     paintSignalIds = [
         global.stage.connect('before-paint', (_stage, view) => {
             paintingView = view;

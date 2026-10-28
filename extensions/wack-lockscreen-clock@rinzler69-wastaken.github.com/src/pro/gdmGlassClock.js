@@ -2,8 +2,8 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
-import { trackViewPaints } from '../src/glass/dist/rendering/backdropGlass.js';
-import { GlassClock } from '../src/glass/dist/desktop/clock.js';
+import { trackViewPaints } from '../glass/dist/rendering/backdropGlass.js';
+import { GlassClock } from '../glass/dist/desktop/clock.js';
 
 /**
  * GdmGlassClock wraps the liquid glass clock engine from ryohsuke1231/liquid-glass
@@ -34,21 +34,25 @@ export class GdmGlassClock {
         const schema = schemaSource.lookup('org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com', false);
         this._settings = new Gio.Settings({ settings_schema: schema });
 
+        const safeSet = (setter) => {
+            try { setter(); } catch (_) {}
+        };
+
         // Typography: Open Runde SemiBold / SF Pro Rounded (GDM lockscreen design)
-        this._settings.set_string('glass-clock-font', 'Open Runde SemiBold');
-        this._settings.set_int('glass-clock-size', 128);
-        this._settings.set_double('glass-clock-stretch', 1.0);
-        this._settings.set_double('glass-clock-height', 1.0);
-        this._settings.set_string('glass-clock-tall-style', 'even');
-        this._settings.set_boolean('glass-clock-show-date', false); // wack-lockscreen-clock manages dateLabel
+        safeSet(() => this._settings.set_string('glass-clock-font', 'Open Runde SemiBold'));
+        safeSet(() => this._settings.set_int('glass-clock-size', 128));
+        safeSet(() => this._settings.set_double('glass-clock-stretch', 1.0));
+        safeSet(() => this._settings.set_double('glass-clock-height', 1.0));
+        safeSet(() => this._settings.set_string('glass-clock-tall-style', 'even'));
+        safeSet(() => this._settings.set_boolean('glass-clock-show-date', false)); // wack-lockscreen-clock manages dateLabel
 
         // Optical glass parameters: macOS Tahoe liquid glass
-        this._settings.set_string('glass-clock-tint-color', '#ffffff');
-        this._settings.set_double('glass-clock-tint-strength', 0.08);
-        this._settings.set_int('glass-clock-blur-radius', 35);
-        this._settings.set_double('glass-clock-brightness', 1.05);
-        this._settings.set_double('glass-clock-contrast', 1.05);
-        this._settings.set_double('glass-clock-saturation', 1.0);
+        safeSet(() => this._settings.set_string('glass-clock-tint-color', '#ffffff'));
+        safeSet(() => this._settings.set_double('glass-clock-tint-strength', 0.08));
+        safeSet(() => this._settings.set_int('glass-clock-blur-radius', 35));
+        safeSet(() => this._settings.set_double('glass-clock-brightness', 1.05));
+        safeSet(() => this._settings.set_double('glass-clock-contrast', 1.05));
+        safeSet(() => this._settings.set_double('glass-clock-saturation', 1.0));
 
         const env = {
             path: this._glassPath,

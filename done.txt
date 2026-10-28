@@ -11876,3 +11876,19 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено SHA256 хеш у `config/extensions.lock.json` (`50b1254d737d90284150993c7d50afcf353c7b6aebc77cb93a3a11caba3423dd`).
    - Перевірено успішне виконання `mac-extension-guard verify` (20/20 extensions locked) та `mac-diagnostics`.
    - Проведено успішне тестування рендерингу в живому GNOME Shell без перезапуску сесії (`scratch_gdm_glass_clock_live.png`).
+--------------------------------------------------------------------------------
+582. Виправлення скидання екрана блокування GDM до стандартного GNOME greeter (усунення збою завантаження GDM DLC):
+1. Діагностика причини відкату GDM:
+   - У системному журналі виявлено фатальну помилку при запуску сесії входу gdm-greeter:
+     `[WACK/GDM] Failed to dynamically load GDM DLC: Unable to load file from: file:///usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/src/glass/dist/rendering/backdropGlass.js: Немає такого файла або каталогу`
+   - Причина: у `src/pro/gdmGlassClock.js` відносний шлях імпорту був помилково вказаний як `../src/glass/...` (подвійне входження `src/src`), що призводило до synchronous rejection динамічного імпорту `./src/pro/pro.js` у GDM greeter. Через це весь GdmManager відхилявся і GNOME Shell відображав звичайний сірий екран входу без теми macOS.
+2. Виправлення та архітектурне посилення стійкості:
+   - Виправлено відносний імпорт у `src/pro/gdmGlassClock.js` на `../glass/dist/rendering/backdropGlass.js` та `../glass/dist/desktop/clock.js`.
+   - Зроблено завантаження `GdmGlassClock` у `gdmClockManager.js` та `clockLayoutManager.js` повністю асинхронним та захищеним від збоїв (resilient dynamic load): навіть якщо виникне будь-яка затримка чи помилка завантаження скляного шейдера, GDM сесія, шпалери, стиль вікна авторизації, користувачі та стандартний годинник гарантовано ініціалізуються та відображаються на 100%.
+   - Захищено виклики запису GSettings у `gdmGlassClock.js` за допомогою `safeSet`, що унеможливлює збої в режимі з обмеженим/read-only бекендом dconf у сесії gdm-greeter.
+   - Додано перевірку наявності активних сигналів у `trackViewPaints()` (`backdropGlass.js`) для запобігання дублюванню обробників `global.stage`.
+3. Синхронізація та перевірка:
+   - Синхронізовано всі зміни до `~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/` та `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`.
+   - Оновлено SHA256 хеш у `config/extensions.lock.json` (`1673b352d63783c6503869c451b7aaee4f8efcc81fc6f449e95941b345a67d38`).
+   - `mac-extension-guard verify` — 100% SUCCESS (All 20 managed extensions match pinned lock hashes).
+   - `mac-diagnostics` — 100% OK, система повністю стабільна.

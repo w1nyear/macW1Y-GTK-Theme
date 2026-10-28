@@ -7,7 +7,13 @@ import {
     centerClockLabel,
 } from '../main/constants.js';
 import { GDM_DATETIME_TOP_FRACTION } from './gdmUtils.js';
-import { GdmGlassClock } from './gdmGlassClock.js';
+
+let GdmGlassClockClass = null;
+import('./gdmGlassClock.js').then(m => {
+    GdmGlassClockClass = m.GdmGlassClock;
+}).catch(err => {
+    console.error(`[WACK/GDM] Warning: could not pre-load GdmGlassClock: ${err.message}`);
+});
 
 export class GdmClockManager {
     constructor(gdmManager) {
@@ -103,18 +109,33 @@ export class GdmClockManager {
         this.clockWrapper.add_child(timeLabel);
 
         // GDM Liquid Glass Clock: replaces the solid fill of the time text with refractive liquid glass
-        try {
-            const extPath = this._gdm?._extension?.path ||
-                Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.path ||
-                '/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com';
-            this.glassClock = new GdmGlassClock(extPath, () => this.positionClock());
-            this.clockWrapper.add_child(this.glassClock.actor);
-            if (this.timeLabel?.text) {
-                this.glassClock.setText(this.timeLabel.text);
+        const initGlassClock = (Cls) => {
+            if (!Cls || !this.clockWrapper) return;
+            try {
+                const extPath = this._gdm?._extension?.path ||
+                    Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.path ||
+                    '/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com';
+                this.glassClock = new Cls(extPath, () => this.positionClock());
+                this.clockWrapper.add_child(this.glassClock.actor);
+                if (this.timeLabel?.text) {
+                    this.glassClock.setText(this.timeLabel.text);
+                }
+                this.positionClock();
+            } catch (e) {
+                console.error(`[WACK/GDM] Failed to initialize Liquid Glass Clock: ${e}`);
+                this.glassClock = null;
             }
-        } catch (e) {
-            console.error(`[WACK/GDM] Failed to initialize Liquid Glass Clock: ${e}`);
-            this.glassClock = null;
+        };
+
+        if (GdmGlassClockClass) {
+            initGlassClock(GdmGlassClockClass);
+        } else {
+            import('./gdmGlassClock.js').then(m => {
+                GdmGlassClockClass = m.GdmGlassClock;
+                initGlassClock(GdmGlassClockClass);
+            }).catch(e => {
+                console.error(`[WACK/GDM] Failed to dynamically load gdmGlassClock: ${e.message}`);
+            });
         }
 
         centerClockLabel(timeLabel, this.clockWrapper);

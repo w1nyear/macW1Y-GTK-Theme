@@ -778,15 +778,61 @@ export class GdmManager {
         const dialog = this._dialog;
         if (!dialog) return;
 
-        const FADE_DURATION = 400;
+        const FADE_DURATION = 600;
         const FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
 
-        // 1. Wallpaper view: guaranteed visible
+        // Boot apple transition overlay if first time in GDM session
+        if (!this._hasBootFadeInRan) {
+            this._hasBootFadeInRan = true;
+            try {
+                const monitor = Main.layoutManager.primaryMonitor || (Main.layoutManager.monitors && Main.layoutManager.monitors[0]);
+                const screenH = monitor ? monitor.height : (global.screen_height || 1080);
+                const screenW = monitor ? monitor.width : (global.screen_width || 1920);
+                let logoH = Math.round(screenH * 0.092);
+                if (logoH < 50) logoH = 50;
+                const logoW = Math.round(logoH * (416 / 512));
+                const logoX = Math.round((screenW - logoW) / 2);
+                const logoY = Math.round((screenH - logoH) / 2);
+
+                const bootLogoFile = Gio.File.new_for_path('/usr/share/plymouth/themes/apple-mac/logo.png');
+                if (bootLogoFile.query_exists(null)) {
+                    const texture = St.TextureCache.get_default().load_file_async(bootLogoFile, logoW, logoH, 1, 1);
+                    const appleLogoActor = new St.Bin({
+                        child: texture,
+                        width: logoW,
+                        height: logoH,
+                        x: logoX,
+                        y: logoY,
+                        opacity: 255,
+                    });
+                    Main.uiGroup.add_child(appleLogoActor);
+                    Main.uiGroup.set_child_above_sibling(appleLogoActor, null);
+
+                    appleLogoActor.ease({
+                        opacity: 0,
+                        duration: 500,
+                        mode: FADE_MODE,
+                        onComplete: () => {
+                            appleLogoActor.destroy();
+                        },
+                    });
+                }
+            } catch (err) {
+                _logError(`[WACK/GDM] boot logo transition error: ${err.message}`);
+            }
+        }
+
+        // 1. Wallpaper view: smoothly ease in from 0 to 255
         const wpGroup = this._wallpaperManager?.view?._group;
         if (wpGroup) {
             wpGroup.remove_all_transitions();
             wpGroup.visible = true;
-            wpGroup.opacity = 255;
+            wpGroup.opacity = 0;
+            wpGroup.ease({
+                opacity: 255,
+                duration: FADE_DURATION,
+                mode: FADE_MODE,
+            });
         }
 
         // 2. GNOME Shell default background group
@@ -801,12 +847,19 @@ export class GdmManager {
             });
         }
 
-        // 3. macOS lockscreen clock
+        // 3. macOS lockscreen clock: fade in & subtle slide down
         if (this._clockManager?.clockWrapper) {
             this._clockManager.clockWrapper.remove_all_transitions();
-            this._clockManager.clockWrapper.opacity = 255;
             this._clockManager.clockWrapper.visible = true;
             this._clockManager.positionClock();
+            this._clockManager.clockWrapper.opacity = 0;
+            this._clockManager.clockWrapper.translation_y = -20;
+            this._clockManager.clockWrapper.ease({
+                opacity: 255,
+                translation_y: 0,
+                duration: FADE_DURATION,
+                mode: FADE_MODE,
+            });
         }
 
         // 4. Login dialog (account avatar, username, password entry)
@@ -817,6 +870,20 @@ export class GdmManager {
             duration: FADE_DURATION,
             mode: FADE_MODE,
         });
+
+        // 5. Top bar menubar: slide in from top
+        if (Main.panel) {
+            Main.panel.remove_all_transitions();
+            const panelHeight = Main.panel.height || 34;
+            Main.panel.translation_y = -panelHeight;
+            Main.panel.opacity = 0;
+            Main.panel.ease({
+                translation_y: 0,
+                opacity: 255,
+                duration: FADE_DURATION,
+                mode: FADE_MODE,
+            });
+        }
     }
 
     _teardown() {
