@@ -12193,3 +12193,32 @@ Task 499: Повне полірування екрана блокування (m
    - Виміри підтвердили повну відповідність: textTop = 15px в обох станах (textOffsetMatch = true); iconTop = 17px в обох станах (iconOffsetMatch = true).
    - Знято контрольний знімок scratch_spotlight_menu_identical_offset.png з живого сеансу.
    - mac-extension-guard verify та mac-diagnostics — 100% SUCCESS.
+
+--------------------------------------------------------------------------------
+596. Плавні анімації розгортання та згортання між пошуком Spotlight та його меню (Центр програм, Файли, Буфер обміну) і при видаленні пошукового запиту:
+1. Діагностика проблеми:
+   - Раніше при відкритті Spotlight пошуку та натисканні круглої кнопки «Центр програм» (_btnApps) діалог пошуку закривався через this.close(false) та запускав окреме зовнішнє вікно Launchpad з анімацією закриття/відкриття замість плавного розгортання на місці. Аналогічно кнопки «Файли» та «Буфер обміну» викликали зовнішні процеси (Nautilus, toggleMacClipboard).
+   - При введенні тексту в Spotlight меню розгорталося з плавною анімацією розширення висоти (_expandToHeight), проте при повному видаленні тексту (Backspace/очищення) метод _uncollapseButtonsAndContractPill миттєво обривав висоту до 54px через this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT) без будь-якої анімації, що викликало різкий візуальний стрибок.
+   - Була відсутня симетрична анімація згортання підменю назад до компактної пілюлі пошуку з відновленням трьох круглих кнопок.
+2. Реалізоване рішення:
+   - У extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js:
+     * Круглі кнопки _btnApps, _btnFiles, _btnClipboard переведено на вбудовані інтегровані режими Spotlight (this._setMode('apps'), this._setMode('files'), this._setMode('clipboard')), які плавно розгортають відповідні списки (сітку програм, файл-картки з фільтрами, історію буфера) безпосередньо у вікні Spotlight без закриття діалогу.
+     * Іконку в полі вводу (_searchIcon) зроблено інтерактивною (reactive = true): клік по іконці поточного режиму або натискання Escape/Backspace при порожньому тексті повертає Spotlight до основного режиму пошуку (this._setMode('search')).
+     * Перероблено метод _uncollapseButtonsAndContractPill(onComplete):
+       - Додано прапорець стану this._isCollapsing для захисту від переривань та конфліктів.
+       - Впроваджено плавне згасання та зміщення вниз вмісту результатів/підменю (_resultsWrapper.ease opacity: 0, translation_y: 8, duration: 160ms).
+       - Впроваджено плавне зменшення висоти _box до PILL_HEIGHT (54px) за 220мс з кривою EASE_OUT_CUBIC та активною синхронізацією шейдера рідкого скла через _startSyncLoop(240).
+       - У _syncGlass додано перевірку this._isCollapsing, завдяки чому монолітний скляний шейдер плавно стискається разом із вікном до 54px.
+       - Після завершення анімації стискання висоти: пілюля повертається до COLLAPSED_PILL_WIDTH, круглі кнопки з'являються та плавно проявляються через ease opacity: 255 за 160мс, а шейдер безшовно перемикається у мультирегіональний режим (пілюля + 3 кнопки).
+3. Синхронізація та верифікація:
+   - Файл searchDialog_v5.js синхронізовано з ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js.
+   - Оновлено SHA256 хеш у config/extensions.lock.json (5e3ea7d5735c7ae3893a68165962ba223a9b6a744f453ef90dd0b682e8061bac).
+   - Розширення перевірено та перезавантажено в робочому сеансі GNOME Shell.
+   - Тестування в живому сеансі підтвердило:
+     * Клік на «Центр програм»: плавне розгортання висоти з 54px до 530px (boxHeight: 530, mode: "apps", resultsWrapperOpacity: 255).
+     * Клік на іконку/повернення в пошук: плавний перехід із зменшенням висоти з 530px до 54px із синхронізованим склом (boxHeight: 54, mode: "search", buttonsVisible: true, searchPillWidth: 480).
+     * Введення пошукового запиту: розгортання до висоти результатів (boxHeight: 224).
+     * Видалення тексту запиту: плавне зменшення висоти з 224px до 54px (boxHeight: 54, isCollapsing: false, buttonsVisible: true).
+     * Режими «Файли» та «Буфер обміну»: аналогічно розгортаються до 530px та плавно згортаються до 54px.
+   - Знято контрольні знімки scratch_spotlight_apps_mode_live.png та scratch_spotlight_collapsed_live.png.
+   - mac-extension-guard verify (20/20 extensions locked) та mac-diagnostics — 100% SUCCESS.

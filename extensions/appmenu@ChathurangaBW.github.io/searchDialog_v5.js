@@ -286,6 +286,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._isOpen = false;
         this._isAnimating = false;
+        this._isCollapsing = false;
         this._mode = 'search'; // 'search' | 'files' | 'apps' | 'clipboard'
         this._buttonsCollapsed = false;
         this._activeFilter = null; // null | 'preview' | 'pages' | 'pdf' | 'video' | 'text'
@@ -390,6 +391,22 @@ export const MacSpotlightDialog = GObject.registerClass({
             icon_size: 20,
             style: 'color: rgba(255, 255, 255, 0.65); margin-left: 4px; margin-right: 12px;',
             y_align: Clutter.ActorAlign.CENTER,
+            reactive: true,
+            track_hover: true,
+        });
+        this._searchIcon.connect('button-press-event', () => {
+            if (this._mode !== 'search') {
+                this._setMode('search');
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+        this._searchIcon.connect('notify::hover', () => {
+            if (this._mode !== 'search') {
+                this._searchIcon.opacity = this._searchIcon.hover ? 255 : 200;
+            } else {
+                this._searchIcon.opacity = 255;
+            }
         });
         this._searchPill.add_child(this._searchIcon);
 
@@ -454,12 +471,9 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._topRow.add_child(this._buttonsBox);
 
-        // Button 1: Центр програм (App Store 'A' icon) - launches existing system Applications dialog from the dock
+        // Button 1: Центр програм (App Store 'A' icon) - expands to Apps view inside Spotlight
         this._btnApps = this._createCircleButton('mac-spotlight-apps', t('applications', 'Центр програм'), () => {
-            this.close(false);
-            if (typeof globalThis.toggleMacApplications === 'function') {
-                globalThis.toggleMacApplications();
-            }
+            this._setMode(this._mode === 'apps' ? 'search' : 'apps');
         });
         this._buttonsBox.add_child(this._btnApps);
 
@@ -467,13 +481,9 @@ export const MacSpotlightDialog = GObject.registerClass({
         const gap1 = new St.Widget({ width: 10, height: 1 });
         this._buttonsBox.add_child(gap1);
 
-        // Button 2: Файли (Folder icon) - opens existing system Files (Nautilus)
+        // Button 2: Файли (Folder icon) - expands to Files view inside Spotlight
         this._btnFiles = this._createCircleButton('mac-spotlight-files', t('files', 'Файли'), () => {
-            this.close(false);
-            const app = Shell.AppSystem.get_default().lookup_app('org.gnome.Nautilus.desktop');
-            if (app) {
-                app.activate();
-            }
+            this._setMode(this._mode === 'files' ? 'search' : 'files');
         });
         this._buttonsBox.add_child(this._btnFiles);
 
@@ -481,12 +491,9 @@ export const MacSpotlightDialog = GObject.registerClass({
         const gap2 = new St.Widget({ width: 10, height: 1 });
         this._buttonsBox.add_child(gap2);
 
-        // Button 3: Буфер обміну (Clipboard icon) - opens existing system Mac Clipboard dialog
+        // Button 3: Буфер обміну (Clipboard icon) - expands to Clipboard view inside Spotlight
         this._btnClipboard = this._createCircleButton('mac-spotlight-clipboard', t('clipboard', 'Буфер обміну'), () => {
-            this.close(false);
-            if (typeof globalThis.toggleMacClipboard === 'function') {
-                globalThis.toggleMacClipboard();
-            }
+            this._setMode(this._mode === 'clipboard' ? 'search' : 'clipboard');
         });
         this._buttonsBox.add_child(this._btnClipboard);
 
@@ -953,6 +960,13 @@ export const MacSpotlightDialog = GObject.registerClass({
     }
 
     _collapseButtonsAndExpandPill() {
+        if (this._isCollapsing) {
+            this._isCollapsing = false;
+            try { this._box.remove_all_transitions(); } catch (_) {}
+            try { this._resultsWrapper.remove_all_transitions(); } catch (_) {}
+            try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
+            this._cancelSyncLoop();
+        }
         if (this._buttonsCollapsed) return;
         this._buttonsCollapsed = true;
 
@@ -976,38 +990,77 @@ export const MacSpotlightDialog = GObject.registerClass({
         try { this._syncGlass(); } catch (_) {}
     }
 
-    _uncollapseButtonsAndContractPill() {
-        if (!this._buttonsCollapsed) return;
-        this._buttonsCollapsed = false;
+    _uncollapseButtonsAndContractPill(onComplete) {
+        if (!this._buttonsCollapsed || this._isCollapsing) {
+            if (typeof onComplete === 'function') onComplete();
+            return;
+        }
+        this._isCollapsing = true;
 
-        this._box.set_style(
-            'background-color: transparent !important; ' +
-            'background: none !important; ' +
-            `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: none !important; ' +
-            'box-shadow: none !important;'
-        );
+        // Плавне згасання та зміщення результатів вниз
+        try { this._resultsWrapper.remove_all_transitions(); } catch (_) {}
+        this._resultsWrapper.ease({
+            opacity: 0,
+            translation_y: 8,
+            duration: 160,
+            mode: Clutter.AnimationMode.EASE_IN_QUAD,
+        });
 
-        this._searchPill.set_style(PILL_COLLAPSED_STYLE);
-        this._searchPill.width = COLLAPSED_PILL_WIDTH;
-        this._topRow.set_style('height: 54px; min-height: 54px;');
+        // Плавне зменшення висоти вікна Spotlight до висоти пілюлі 54px із синхронізацією скла
+        this._startSyncLoop(240);
+        try { this._box.remove_all_transitions(); } catch (_) {}
+        this._box.ease({
+            height: PILL_HEIGHT,
+            duration: 220,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                this._cancelSyncLoop();
+                this._isCollapsing = false;
+                this._buttonsCollapsed = false;
 
-        this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
-        this._btnApps.translation_x = 0;
-        this._btnApps.opacity = 255;
-        this._btnFiles.translation_x = 0;
-        this._btnFiles.opacity = 255;
-        this._btnClipboard.scale_x = 1.0;
-        this._btnClipboard.scale_y = 1.0;
-        this._btnClipboard.opacity = 255;
-        this._buttonsBox.opacity = 255;
-        this._buttonsBox.visible = true;
+                this._resultsWrapper.visible = false;
+                this._resultsWrapper.opacity = 0;
+                this._resultsWrapper.translation_y = 0;
+                this._resultsBox.destroy_all_children();
+                this._resultButtons = [];
+                this._selectedIndex = -1;
+                this._lastQuery = '';
 
-        this._resultsWrapper.visible = false;
-        this._resultsWrapper.opacity = 0;
-        this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
+                this._box.set_style(
+                    'background-color: transparent !important; ' +
+                    'background: none !important; ' +
+                    `border-radius: ${CORNER_RADIUS}px !important; ` +
+                    'border: none !important; ' +
+                    'box-shadow: none !important;'
+                );
 
-        try { this._syncGlass(); } catch (_) {}
+                this._searchPill.set_style(PILL_COLLAPSED_STYLE);
+                this._searchPill.width = COLLAPSED_PILL_WIDTH;
+                this._topRow.set_style('height: 54px; min-height: 54px;');
+
+                this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
+                this._btnApps.translation_x = 0;
+                this._btnApps.opacity = 255;
+                this._btnFiles.translation_x = 0;
+                this._btnFiles.opacity = 255;
+                this._btnClipboard.scale_x = 1.0;
+                this._btnClipboard.scale_y = 1.0;
+                this._btnClipboard.opacity = 255;
+                this._buttonsBox.visible = true;
+                this._buttonsBox.opacity = 0;
+                try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
+                this._buttonsBox.ease({
+                    opacity: 255,
+                    duration: 160,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+
+                this._syncGlass();
+                if (typeof onComplete === 'function') {
+                    try { onComplete(); } catch (_) {}
+                }
+            },
+        });
     }
 
     _cancelSyncLoop() {
@@ -1064,7 +1117,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
             const hasText = (this._entry && this._entry.get_text) ? this._entry.get_text().trim().length > 0 : false;
             const hasResults = this._resultsWrapper && this._resultsWrapper.visible && (box.height > PILL_HEIGHT + 10);
-            const isExpanded = this._buttonsCollapsed || hasText || hasResults || this._mode !== 'search';
+            const isExpanded = this._buttonsCollapsed || hasText || hasResults || this._mode !== 'search' || this._isCollapsing;
 
             if (!isExpanded && this._searchPill && this._btnApps && this._btnFiles && this._btnClipboard) {
                 const pillPos = this._searchPill.get_transformed_position();
@@ -1139,12 +1192,12 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._entry.hint_text = t('spotlight_search', 'Пошук Spotlight');
             this._optionsBtn.visible = false;
 
-            this._filesView.visible = false;
-            this._appsView.visible = false;
-            this._clipboardView.visible = false;
-            this._searchView.visible = true;
-
-            this._uncollapseButtonsAndContractPill();
+            this._uncollapseButtonsAndContractPill(() => {
+                this._filesView.visible = false;
+                this._appsView.visible = false;
+                this._clipboardView.visible = false;
+                this._searchView.visible = true;
+            });
         } else {
             this._collapseButtonsAndExpandPill();
 
@@ -1229,6 +1282,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
         this._mode = 'search';
         this._buttonsCollapsed = false;
+        this._isCollapsing = false;
         this._activeFilter = null;
 
         const mon = Main.layoutManager.primaryMonitor;
@@ -1400,8 +1454,11 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (immediate) {
             this._cancelSyncLoop();
             this._isClosing = false;
+            this._isCollapsing = false;
+            this._buttonsCollapsed = false;
             hideGlass();
             this._box.remove_all_transitions();
+            this._resultsWrapper.remove_all_transitions();
             this._box.opacity = 0;
             this._box.translation_x = 0;
             this._box.translation_y = 0;
@@ -1418,6 +1475,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
 
         this._isClosing = true;
+        this._isCollapsing = false;
         this._startSyncLoop(200);
         this._backdrop.visible = false;
         this._box.ease({
@@ -1430,6 +1488,8 @@ export const MacSpotlightDialog = GObject.registerClass({
                 if (this._isOpen) return;
                 this._cancelSyncLoop();
                 this._isClosing = false;
+                this._isCollapsing = false;
+                this._buttonsCollapsed = false;
                 this.visible = false;
                 this._entry.text = '';
                 this._resultsWrapper.visible = false;
