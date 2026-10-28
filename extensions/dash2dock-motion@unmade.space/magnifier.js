@@ -221,10 +221,28 @@ export class DockMagnifier {
         }
     }
 
+    _isPointerOverDock() {
+        if (!this._hoverBox || !this._hoverBox.has_allocation())
+            return false;
+        if (this._hoverBox.hover)
+            return true;
+        try {
+            const [x, y] = this._debugPointer ?? global.get_pointer();
+            const [boxX, boxY] = this._hoverBox.get_transformed_position();
+            const [w, h] = this._hoverBox.get_transformed_size?.() || [this._hoverBox.width, this._hoverBox.height];
+            const margin = 12;
+            return x >= boxX - margin && x <= boxX + w + margin &&
+                   y >= boxY - margin && y <= boxY + h + margin;
+        } catch (_) {
+            return false;
+        }
+    }
+
     _syncTarget() {
         if (this._paused || this._suspended)
             return;
-        this._target = this._hoverBox.hover ? 1 : 0;
+        const isOver = this._isPointerOverDock();
+        this._target = isOver ? 1 : 0;
         if (this._target > 0 || this._envelope > 0)
             this._startTimeline();
     }
@@ -273,6 +291,14 @@ export class DockMagnifier {
         const dt = Math.min(this._timeline.get_delta() / 1000, MAX_FRAME_DT);
 
         this._advanceCursor(dt);
+
+        if (!this._paused && !this._suspended) {
+            const isOver = this._isPointerOverDock();
+            if (isOver && this._target === 0)
+                this._target = 1;
+            else if (!isOver && this._target === 1)
+                this._target = 0;
+        }
 
         const prevEnvelope = this._envelope;
         // Critically damped spring toward the target envelope.

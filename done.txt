@@ -12338,3 +12338,29 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено контрольні хеші у config/extensions.lock.json.
    - mac-extension-guard verify підтвердив 20/20 зафіксованих розширень (VERIFICATION SUCCESS).
    - mac-diagnostics пройдено на 100% (система стабільна).
+
+601. Виправлення поведінки зближення (магніфікації) дока при відкритті та роботі Центру програм (Launchpad / Applications):
+1. Діагностика проблеми:
+   - При натисканні на іконку "Програми" (Launchpad) на доку відкривалося вікно Центру програм, після чого зближення дока скидалося в 0 (flat масштаб 1.0) і переставало реагувати на рух миші без виведення курсора за межі дока і повторного наведення.
+   - Аналіз коду виявив дві взаємопов'язані причини:
+     * У extensions/kiwi@kemma/apps/tahoeApps.js та extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js (applications_menu_v5.js) повнорозмірний шар-підкладка overlay / backdrop додавався на вершину uiGroup поверх дока.
+     * У tahoeApps.js викликався ексклюзивний модальний граб Main.pushModal(overlay), через який Clutter відсилав синтетичний leave-event доку (dashtodockBox), скидаючи hover у false, а підкладка overlay перехоплювала всі події миші внизу екрана.
+     * У extensions/dash2dock-motion@unmade.space/magnifier.js рушій зближення _syncTarget спирався виключно на стан Clutter hover прапорця hoverBox, не враховуючи фактичні фізичні координати курсора на екрані при сторонніх змінах фокусу чи відкритті перекриваючих акторів.
+2. Реалізоване рішення:
+   - У extensions/dash2dock-motion@unmade.space/magnifier.js:
+     * Додано метод _isPointerOverDock(): динамічно визначає чи знаходиться курсор миші глобально в межах трансформованих меж контейнера дока (з урахуванням виступу збільшених іконок).
+     * Оновлено _syncTarget(): якщо курсор фізично знаходиться над доком, _target встановлюється в 1, запобігаючи згортанню магніфікації при кліках чи відкритті вікон.
+     * У _onFrame() додано безперервне узгодження цілі: якщо курсор над доком, ефект гарантовано залишається активним.
+   - У extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js та applications_menu_v5.js:
+     * Впроваджено функцію raiseChromeAbove(): док (DashToDock / dashtodockContainer) та верхня панель (panelBox) гарантовано піднімаються у uiGroup поверх вікна додатків та підкладки backdrop.
+     * Додано автоматичне закриття діалогу при зміні активного вікна (notify::focus-window) або робочого столу (active-workspace-changed).
+   - У extensions/kiwi@kemma/apps/tahoeApps.js:
+     * Вилучено блокуючий Main.pushModal(overlay), що знімав фокус з дока.
+     * Забезпечено гарантоване розміщення дока та верхньої панелі над оверлеєм (set_child_above_sibling).
+     * Додано обробники закриття по Escape на global.stage, при зміні фокусу вікон та робочих просторів.
+     * Оновлено toggle() для безпечної авто-ініціалізації екземпляра.
+3. Синхронізація та верифікація:
+   - Файли синхронізовано з ~/.local/share/gnome-shell/extensions/ (magnifier.js, tahoeApps.js, applications_menu_v5b.js, applications_menu_v5.js).
+   - Оновлено хеші sha256 у config/extensions.lock.json (dash2dock-motion, kiwi, appmenu).
+   - mac-extension-guard verify підтвердив 20/20 зафіксованих розширень (VERIFICATION SUCCESS).
+   - mac-diagnostics успішно пройдено на 100% (система стабільна, всі компоненти відповідають еталону).

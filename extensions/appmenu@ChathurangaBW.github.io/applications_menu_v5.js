@@ -287,6 +287,8 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._currentQuery = '';
         this._searchTimeoutId = 0;
         this._stageSignalId = 0;
+        this._focusWindowId = 0;
+        this._workspaceId = 0;
         this._glass = null;
 
         _ensureDashGetAppHook();
@@ -1266,6 +1268,21 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
         this.visible = true;
 
+        const raiseChromeAbove = () => {
+            const docks = Main.layoutManager.uiGroup.get_children().filter(c =>
+                c.constructor?.name === 'DashToDock' || c.name === 'dashtodockContainer');
+            for (const dock of docks) {
+                try {
+                    Main.layoutManager.uiGroup.set_child_above_sibling(dock, this);
+                } catch (_) {}
+            }
+            if (Main.layoutManager.panelBox) {
+                try {
+                    Main.layoutManager.uiGroup.set_child_above_sibling(Main.layoutManager.panelBox, this);
+                } catch (_) {}
+            }
+        };
+
         if (_isGlassAlive(this._glass)) {
             try {
                 this._glass.remove_all_transitions();
@@ -1301,12 +1318,25 @@ export const MacApplicationsDialog = GObject.registerClass({
                     }
                     Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
                     Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
+                    raiseChromeAbove();
                     this._glass.show();
                     this._applyGlassUniforms();
                     this._syncGlass();
                 }).catch(() => {});
             }
         }
+
+        raiseChromeAbove();
+
+        const initialFocusWindow = global.display.focus_window;
+        this._focusWindowId = global.display.connect('notify::focus-window', () => {
+            const cur = global.display.focus_window;
+            if (cur && cur !== initialFocusWindow)
+                this.close();
+        });
+        this._workspaceId = global.workspace_manager.connect('active-workspace-changed', () => {
+            this.close();
+        });
 
         try {
             this._entry.grab_key_focus();
@@ -1342,6 +1372,14 @@ export const MacApplicationsDialog = GObject.registerClass({
         if (this._stageSignalId) {
             try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
             this._stageSignalId = 0;
+        }
+        if (this._focusWindowId) {
+            try { global.display.disconnect(this._focusWindowId); } catch (_) {}
+            this._focusWindowId = 0;
+        }
+        if (this._workspaceId) {
+            try { global.workspace_manager.disconnect(this._workspaceId); } catch (_) {}
+            this._workspaceId = 0;
         }
 
         const hideGlass = () => {

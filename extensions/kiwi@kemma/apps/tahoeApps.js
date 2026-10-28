@@ -10,6 +10,7 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import { dockContainers } from './dockUtils.js';
 
 // Liquid-glass helpers live in another extension. Static
 // `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
@@ -234,6 +235,10 @@ class TahoeApps {
         this._glassState = null;
         this._bgActor = null;
         this._cloneContainerRef = null;
+        this._stageKeyId = 0;
+        this._focusWindowId = 0;
+        this._workspaceId = 0;
+        this._overviewShowingId = 0;
 
         // Redirect showApps / selectApp to our own window.
         this._origShowAppsOwn = Object.hasOwn(Main.overview, 'showApps');
@@ -577,7 +582,11 @@ class TahoeApps {
             width: global.stage.width,
             height: global.stage.height - panelH,
         });
-        overlay.connect('button-press-event', () => {
+        overlay.connect('button-press-event', (actor, event) => {
+            try {
+                if (global.stage.get_event_actor(event) !== actor)
+                    return Clutter.EVENT_PROPAGATE;
+            } catch (_) {}
             if (this._menu)
                 this._closeMenu();
             else
@@ -813,13 +822,50 @@ class TahoeApps {
         win.scale_x = 0.96;
         win.scale_y = 0.96;
         overlay.opacity = 0;
-        Main.layoutManager.uiGroup.add_child(overlay);
+        const docks = dockContainers();
+        if (docks.length > 0 && docks[0].get_parent() === Main.layoutManager.uiGroup) {
+            Main.layoutManager.uiGroup.insert_child_below(overlay, docks[0]);
+        } else {
+            Main.layoutManager.uiGroup.add_child(overlay);
+        }
+        if (Main.layoutManager.panelBox) {
+            try {
+                Main.layoutManager.uiGroup.set_child_below_sibling(overlay, Main.layoutManager.panelBox);
+            } catch (_) {}
+        }
+        for (const dock of docks) {
+            if (dock.get_parent() === Main.layoutManager.uiGroup) {
+                try {
+                    Main.layoutManager.uiGroup.set_child_above_sibling(dock, overlay);
+                } catch (_) {}
+            }
+        }
 
-        this._grab = Main.pushModal(overlay,
-            {actionMode: Shell.ActionMode.NORMAL});
-        if (!this._grab)
-            console.error('[tahoe-apps] pushModal returned no grab');
         entry.grab_key_focus();
+
+        this._stageKeyId = global.stage.connect('key-press-event', (_actor, event) => {
+            if (event.get_key_symbol() === Clutter.KEY_Escape) {
+                if (this._menu)
+                    this._closeMenu();
+                else
+                    this._close();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+
+        const initialFocusWindow = global.display.focus_window;
+        this._focusWindowId = global.display.connect('notify::focus-window', () => {
+            const cur = global.display.focus_window;
+            if (cur && cur !== initialFocusWindow)
+                this._close();
+        });
+        this._workspaceId = global.workspace_manager.connect('active-workspace-changed', () => {
+            this._close();
+        });
+        this._overviewShowingId = Main.overview.connect('showing', () => {
+            this._close();
+        });
 
         overlay.ease({
             opacity: 255,
@@ -1562,6 +1608,31 @@ class TahoeApps {
             this._vadjConn = null;
         }
 
+        if (this._stageKeyId) {
+            try {
+                global.stage.disconnect(this._stageKeyId);
+            } catch (_) {}
+            this._stageKeyId = 0;
+        }
+        if (this._focusWindowId) {
+            try {
+                global.display.disconnect(this._focusWindowId);
+            } catch (_) {}
+            this._focusWindowId = 0;
+        }
+        if (this._workspaceId) {
+            try {
+                global.workspace_manager.disconnect(this._workspaceId);
+            } catch (_) {}
+            this._workspaceId = 0;
+        }
+        if (this._overviewShowingId) {
+            try {
+                Main.overview.disconnect(this._overviewShowingId);
+            } catch (_) {}
+            this._overviewShowingId = 0;
+        }
+
         if (this._grab) {
             try {
                 Main.popModal(this._grab);
@@ -1592,6 +1663,13 @@ export function disable() {
 }
 
 export function toggle() {
+    if (!_instance) {
+        let settings = null;
+        try {
+            settings = new Gio.Settings({schema_id: 'org.gnome.shell.extensions.kiwi'});
+        } catch (_) {}
+        enable(settings);
+    }
     if (_instance)
         _instance._toggle();
 }
