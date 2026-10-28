@@ -373,13 +373,29 @@ export class ApplicationManager {
       if (!actor || !(actor instanceof Meta.WindowActor) || this._states.has(actor))
         return;
       const trySetup = () => {
-        if (!isActorValid(actor)) return;
+        if (!isActorValid(actor) || this._states.has(actor)) return;
+        const mw = typeof actor.get_meta_window === 'function' ? actor.get_meta_window() : null;
+        if (mw) {
+          const r = mw.get_frame_rect();
+          if (!r || r.width <= 0 || r.height <= 0) {
+            return;
+          }
+        }
         if (this._shouldApplyToWindow(actor) && !this._states.has(actor)) {
           this._setupWindow(actor);
           this._rebuildAllClones();
         }
       };
 
+      actor.connect('notify::allocation', () => {
+        if (!this._states.has(actor)) trySetup();
+      });
+      const metaWin = typeof actor.get_meta_window === 'function' ? actor.get_meta_window() : null;
+      if (metaWin) {
+        metaWin.connect('size-changed', () => {
+          if (!this._states.has(actor)) trySetup();
+        });
+      }
       if ((actor as any).has_first_frame) {
         trySetup();
       } else {
@@ -1206,6 +1222,15 @@ export class ApplicationManager {
     }
     clipBox.add_child(bgClone);
 
+    const metaWin = typeof windowActor.get_meta_window === 'function' ? windowActor.get_meta_window() : null;
+    const isSubsurfaceMenu = profile === 'desktop-menu' && metaWin && typeof metaWin.get_transient_for === 'function' && metaWin.get_transient_for();
+    if (isSubsurfaceMenu) {
+      setActorVisible(bgClone, false);
+      if (BASE_LAYER_ENABLED) {
+        setActorVisible(baseClone, false);
+      }
+    }
+
     let effect = new LiquidEffect({
       extensionPath: this.extensionPath,
       settings: this._settings,
@@ -1320,7 +1345,9 @@ export class ApplicationManager {
     };
 
     this._states.set(windowActor, state);
+    this._startFrameSync();
     this._rebuildWindowClones(state);
+    this._syncState(state);
 
     // Immediate sync connections for resize/move using allocation property
     state.signals.push({
@@ -1455,13 +1482,33 @@ export class ApplicationManager {
 
     // Get windows in stacking order (bottom to top)
     for (let actor of getWindowActors()) {
-      // STOP iterating once we reach our own window.
-      // This ensures we ONLY render what is actually BEHIND the app.
-      if (actor === state.windowActor)
+      // STOP iterating once we reach our own window for normal windows.
+      // For desktop menus / popups, NEVER break on own window because Mutter Wayland
+      // may place the newly created popover actor at index 0 before restacking;
+      // instead, continue so all windows behind it are immediately cloned on frame 0.
+      if (actor === state.windowActor) {
+        if (state.profile === 'desktop-menu') {
+          continue;
+        }
         break;
+      }
 
       if (!(actor instanceof Meta.WindowActor))
         continue;
+
+      // Desktop menus / popovers should not clone other popup menus or tooltips
+      if (state.profile === 'desktop-menu') {
+        const mw = typeof actor.get_meta_window === 'function' ? actor.get_meta_window() : null;
+        if (mw) {
+          const type = mw.get_window_type();
+          if (type === Meta.WindowType.DROPDOWN_MENU ||
+              type === Meta.WindowType.POPUP_MENU ||
+              type === Meta.WindowType.MENU ||
+              type === Meta.WindowType.TOOLTIP) {
+            continue;
+          }
+        }
+      }
 
       // [FIX] Skip sources with no valid size. The Clutter-WARNING spam
       // ("needs an allocation") turned out to scale with the number of
