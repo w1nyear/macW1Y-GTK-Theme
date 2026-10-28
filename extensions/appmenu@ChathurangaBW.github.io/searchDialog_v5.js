@@ -338,12 +338,17 @@ export const MacSpotlightDialog = GObject.registerClass({
             'box-shadow: none !important;'
         );
         this.add_child(this._box);
+        this._syncLoopId = 0;
+        this._isClosing = false;
         this._box.connect('notify::height', () => this._syncGlass());
         this._box.connect('notify::width', () => this._syncGlass());
         this._box.connect('notify::x', () => this._syncGlass());
         this._box.connect('notify::y', () => this._syncGlass());
         this._box.connect('notify::scale-x', () => this._syncGlass());
         this._box.connect('notify::scale-y', () => this._syncGlass());
+        this._box.connect('notify::translation-x', () => this._syncGlass());
+        this._box.connect('notify::translation-y', () => this._syncGlass());
+        this._box.connect('notify::opacity', () => this._syncGlass());
 
         this.connect('destroy', () => {
             this._onDestroy();
@@ -1010,9 +1015,32 @@ export const MacSpotlightDialog = GObject.registerClass({
         try { this._syncGlass(); } catch (_) {}
     }
 
+    _cancelSyncLoop() {
+        if (this._syncLoopId) {
+            try { GLib.source_remove(this._syncLoopId); } catch (_) {}
+            this._syncLoopId = 0;
+        }
+    }
+
+    _startSyncLoop(durationMs = 250) {
+        this._cancelSyncLoop();
+        const startTime = GLib.get_monotonic_time();
+        const durationUs = durationMs * 1000;
+        this._syncGlass();
+        this._syncLoopId = GLib.timeout_add(GLib.PRIORITY_HIGH, 10, () => {
+            const elapsed = GLib.get_monotonic_time() - startTime;
+            this._syncGlass();
+            if (elapsed >= durationUs) {
+                this._syncLoopId = 0;
+                return GLib.SOURCE_REMOVE;
+            }
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+
     _syncGlass() {
         try {
-            if (!this._isOpen || !_isGlassAlive(this._glass)) {
+            if ((!this._isOpen && !this._isClosing) || !_isGlassAlive(this._glass)) {
                 return;
             }
 
@@ -1027,11 +1055,11 @@ export const MacSpotlightDialog = GObject.registerClass({
             const rawW = box.width > 0 ? box.width : DIALOG_WIDTH;
             const rawH = box.height > 0 ? box.height : PILL_HEIGHT;
 
-            const targetOpacity = (typeof box.opacity === 'number' && box.opacity > 0) ? box.opacity : 255;
+            const targetOpacity = (typeof box.opacity === 'number') ? Math.max(0, Math.min(255, Math.round(box.opacity))) : 255;
             if (this._glass.opacity !== targetOpacity) {
                 this._glass.opacity = targetOpacity;
             }
-            if (!this._glass.visible) {
+            if (targetOpacity > 0 && !this._glass.visible) {
                 this._glass.show();
             }
 
@@ -1087,15 +1115,11 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._glass.setGlassRegions(regions);
                 this._glass.set_clip(minX - CLIP_PAD, minY - CLIP_PAD, (maxX - minX) + CLIP_PAD * 2, (maxY - minY) + CLIP_PAD * 2);
             } else {
-                const w = Math.round(DIALOG_WIDTH * scaleX);
-                const h = Math.round(rawH * scaleY);
-                const bx = box.x;
-                const by = box.y;
-
-                const localBgX = Math.round(bx - mon.x);
-                const localBgY = Math.round(by - mon.y);
-                const bgW = Math.round(w);
-                const bgH = Math.round(h);
+                const [boxScreenX, boxScreenY] = box.get_transformed_position();
+                const localBgX = Math.round(boxScreenX - mon.x);
+                const localBgY = Math.round(boxScreenY - mon.y);
+                const bgW = Math.round(rawW * scaleX);
+                const bgH = Math.round(rawH * scaleY);
 
                 this._glass.setMultiRegionMode(false);
                 const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
@@ -1169,14 +1193,13 @@ export const MacSpotlightDialog = GObject.registerClass({
         try { this._resultsWrapper.remove_all_transitions(); } catch (_) {}
         this._resultsWrapper.translation_y = 8;
 
+        this._startSyncLoop(240);
         this._box.ease({
             height: targetHeight,
             duration: 220,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            onUpdate: () => {
-                this._syncGlass();
-            },
             onComplete: () => {
+                this._cancelSyncLoop();
                 this._syncGlass();
             },
         });
@@ -1202,6 +1225,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
         }
         this._isOpen = true;
+        this._isClosing = false;
+        this._cancelSyncLoop();
         this._mode = 'search';
         this._buttonsCollapsed = false;
         this._activeFilter = null;
@@ -1298,11 +1323,6 @@ export const MacSpotlightDialog = GObject.registerClass({
                 }
                 this._applyGlassUniforms();
                 this._syncGlass();
-                this._glass.ease({
-                    opacity: 255,
-                    duration: 220,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
             } catch (err) {
                 this._glass = null;
                 this._initGlassPromise = this._initGlass();
@@ -1323,11 +1343,6 @@ export const MacSpotlightDialog = GObject.registerClass({
                     this._glass.show();
                     this._applyGlassUniforms();
                     this._syncGlass();
-                    this._glass.ease({
-                        opacity: 255,
-                        duration: 180,
-                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                    });
                 }).catch(() => {});
             }
         }
@@ -1344,6 +1359,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._entry.grab_key_focus();
 
+        this._startSyncLoop(240);
         this._box.ease({
             opacity: 255,
             translation_x: 0,
@@ -1352,10 +1368,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             scale_y: 1.0,
             duration: 220,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            onUpdate: () => {
-                this._syncGlass();
-            },
             onComplete: () => {
+                this._cancelSyncLoop();
                 this._box.translation_x = 0;
                 this._box.translation_y = 0;
                 this._box.scale_x = 1.0;
@@ -1366,7 +1380,7 @@ export const MacSpotlightDialog = GObject.registerClass({
     }
 
     close(immediate = false) {
-        if (!this._isOpen) return;
+        if (!this._isOpen && !this._isClosing) return;
         this._isOpen = false;
         // Запам'ятати геометрію для морф-переходу в інше меню (діє 900мс)
         _saveMorphFrom(this);
@@ -1398,6 +1412,8 @@ export const MacSpotlightDialog = GObject.registerClass({
         };
 
         if (immediate) {
+            this._cancelSyncLoop();
+            this._isClosing = false;
             hideGlass();
             this._box.remove_all_transitions();
             this._box.opacity = 0;
@@ -1411,16 +1427,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             return;
         }
 
-        if (_isGlassAlive(this._glass)) {
-            this._glass.ease({
-                opacity: 0,
-                duration: 180,
-                mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                onComplete: () => {
-                    hideGlass();
-                },
-            });
-        }
+        this._isClosing = true;
+        this._startSyncLoop(200);
         this._backdrop.visible = false;
         this._box.ease({
             opacity: 0,
@@ -1429,6 +1437,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             duration: 180,
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {
+                this._cancelSyncLoop();
+                this._isClosing = false;
                 this.visible = false;
                 this._entry.text = '';
                 this._resultsWrapper.visible = false;
@@ -1656,14 +1666,13 @@ export const MacSpotlightDialog = GObject.registerClass({
                     this._resultsWrapper.visible = false;
                 },
             });
+            this._startSyncLoop(220);
             this._box.ease({
                 height: EXP_PILL_HEIGHT,
                 duration: 200,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                onUpdate: () => {
-                    this._syncGlass();
-                },
                 onComplete: () => {
+                    this._cancelSyncLoop();
                     this._syncGlass();
                 },
             });
@@ -2282,6 +2291,7 @@ export const MacSpotlightDialog = GObject.registerClass({
     }
 
     _onDestroy() {
+        this._cancelSyncLoop();
         if (Main.overview) {
             try { Main.overview.disconnectObject(this); } catch (_) {}
         }

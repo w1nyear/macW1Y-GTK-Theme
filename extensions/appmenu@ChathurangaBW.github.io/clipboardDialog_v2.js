@@ -504,12 +504,17 @@ export const MacClipboardDialog = GObject.registerClass({
             'box-shadow: none !important;'
         );
         this.add_child(this._box);
+        this._syncLoopId = 0;
+        this._isClosing = false;
         this._box.connect('notify::x', () => this._syncGlass());
         this._box.connect('notify::y', () => this._syncGlass());
         this._box.connect('notify::width', () => this._syncGlass());
         this._box.connect('notify::height', () => this._syncGlass());
         this._box.connect('notify::scale-x', () => this._syncGlass());
         this._box.connect('notify::scale-y', () => this._syncGlass());
+        this._box.connect('notify::translation-x', () => this._syncGlass());
+        this._box.connect('notify::translation-y', () => this._syncGlass());
+        this._box.connect('notify::opacity', () => this._syncGlass());
 
         this.connect('destroy', () => {
             this.destroy();
@@ -819,8 +824,31 @@ export const MacClipboardDialog = GObject.registerClass({
         }
     }
 
+    _cancelSyncLoop() {
+        if (this._syncLoopId) {
+            try { GLib.source_remove(this._syncLoopId); } catch (_) {}
+            this._syncLoopId = 0;
+        }
+    }
+
+    _startSyncLoop(durationMs = 250) {
+        this._cancelSyncLoop();
+        const startTime = GLib.get_monotonic_time();
+        const durationUs = durationMs * 1000;
+        this._syncGlass();
+        this._syncLoopId = GLib.timeout_add(GLib.PRIORITY_HIGH, 10, () => {
+            const elapsed = GLib.get_monotonic_time() - startTime;
+            this._syncGlass();
+            if (elapsed >= durationUs) {
+                this._syncLoopId = 0;
+                return GLib.SOURCE_REMOVE;
+            }
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+
     _syncGlass() {
-        if (!this._isOpen || !this._glass || this._glass.is_finalized?.()) return;
+        if ((!this._isOpen && !this._isClosing) || !this._glass || this._glass.is_finalized?.()) return;
         const box = this._box;
         if (!box || !box.visible) {
             if (this._glass.visible) this._glass.hide();
@@ -833,21 +861,17 @@ export const MacClipboardDialog = GObject.registerClass({
         const rawW = box.width > 0 ? box.width : DIALOG_WIDTH;
         const rawH = box.height > 0 ? box.height : DIALOG_MAX_HEIGHT;
 
-        const w = rawW * scaleX;
-        const h = rawH * scaleY;
-        const bx = box.x + (rawW - w) * 0.5;
-        const by = box.y + (rawH - h) * 0.5;
+        const [boxScreenX, boxScreenY] = box.get_transformed_position();
+        const localBgX = Math.round(boxScreenX - mon.x);
+        const localBgY = Math.round(boxScreenY - mon.y);
+        const bgW = Math.round(rawW * scaleX);
+        const bgH = Math.round(rawH * scaleY);
 
-        const localBgX = Math.round(bx - mon.x);
-        const localBgY = Math.round(by - mon.y);
-        const bgW = Math.round(w);
-        const bgH = Math.round(h);
-
-        const targetOpacity = (typeof box.opacity === 'number' && box.opacity > 0) ? box.opacity : 255;
+        const targetOpacity = (typeof box.opacity === 'number') ? Math.max(0, Math.min(255, Math.round(box.opacity))) : 255;
         if (this._glass.opacity !== targetOpacity) {
             this._glass.opacity = targetOpacity;
         }
-        if (!this._glass.visible) this._glass.show();
+        if (targetOpacity > 0 && !this._glass.visible) this._glass.show();
 
         this._glass.set_position(mon.x, mon.y);
         this._glass.set_size(mon.width, mon.height);
@@ -874,6 +898,8 @@ export const MacClipboardDialog = GObject.registerClass({
             try { globalThis._macSpotlightGlobalInstance?.close?.(true); } catch (_) {}
         }
         this._isOpen = true;
+        this._isClosing = false;
+        this._cancelSyncLoop();
 
         const mon = Main.layoutManager.primaryMonitor;
         this.set_position(0, 0);
@@ -922,11 +948,6 @@ export const MacClipboardDialog = GObject.registerClass({
                 }
                 this._applyGlassUniforms();
                 this._syncGlass();
-                this._glass.ease({
-                    opacity: 255,
-                    duration: 220,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                });
             } catch (_) {
                 try { this._glass?.destroy?.(); } catch (_) {}
                 this._glass = null;
@@ -949,11 +970,6 @@ export const MacClipboardDialog = GObject.registerClass({
                     this._glass.show();
                     this._applyGlassUniforms();
                     this._syncGlass();
-                    this._glass.ease({
-                        opacity: 255,
-                        duration: 180,
-                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                    });
                 }).catch(() => {});
             }
         }
@@ -998,13 +1014,9 @@ export const MacClipboardDialog = GObject.registerClass({
         if (_isGlassAlive(this._glass)) {
             this._glass.opacity = 0;
             this._glass.show();
-            this._glass.ease({
-                opacity: 255,
-                duration: 220,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
         }
 
+        this._startSyncLoop(240);
         this._box.ease({
             opacity: 255,
             translation_x: 0,
@@ -1013,8 +1025,8 @@ export const MacClipboardDialog = GObject.registerClass({
             scale_y: 1.0,
             duration: 220,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            onUpdate: () => this._syncGlass(),
             onComplete: () => {
+                this._cancelSyncLoop();
                 this._box.translation_x = 0;
                 this._box.translation_y = 0;
                 this._box.scale_x = 1.0;
@@ -1025,7 +1037,7 @@ export const MacClipboardDialog = GObject.registerClass({
     }
 
     close(immediate = false) {
-        if (!this._isOpen) return;
+        if (!this._isOpen && !this._isClosing) return;
         this._isOpen = false;
         // Запам'ятати геометрію для морф-переходу в інше меню (діє 900мс)
         _saveMorphFrom(this);
@@ -1045,6 +1057,8 @@ export const MacClipboardDialog = GObject.registerClass({
         }
 
         if (immediate) {
+            this._cancelSyncLoop();
+            this._isClosing = false;
             this._box.remove_all_transitions();
             this._box.opacity = 0;
             if (this._glass && !this._glass.is_finalized?.()) {
@@ -1061,24 +1075,8 @@ export const MacClipboardDialog = GObject.registerClass({
             return;
         }
 
-        if (this._glass && !this._glass.is_finalized?.() && this._glass.visible) {
-            this._glass.ease({
-                opacity: 0,
-                duration: 180,
-                mode: Clutter.AnimationMode.EASE_IN_QUAD,
-                onComplete: () => {
-                    if (this._glass && !this._glass.is_finalized?.()) {
-                        try {
-                            this._glass.remove_all_transitions();
-                            this._glass.visible = false;
-                            this._glass.hide();
-                            this._glass.backdropLocked = false;
-                        } catch (_) {}
-                    }
-                },
-            });
-        }
-
+        this._isClosing = true;
+        this._startSyncLoop(200);
         this._box.ease({
             opacity: 0,
             scale_x: 1.12,
@@ -1086,6 +1084,8 @@ export const MacClipboardDialog = GObject.registerClass({
             duration: 180,
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {
+                this._cancelSyncLoop();
+                this._isClosing = false;
                 this.visible = false;
                 this._backdrop.visible = false;
                 if (this._glass && !this._glass.is_finalized?.()) {
@@ -1328,6 +1328,7 @@ export const MacClipboardDialog = GObject.registerClass({
     }
 
     destroy() {
+        this._cancelSyncLoop();
         if (Main.overview) {
             try { Main.overview.disconnectObject(this); } catch (_) {}
         }
