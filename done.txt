@@ -12151,3 +12151,23 @@ Task 499: Повне полірування екрана блокування (m
      * Сценарій C (Центр програм після Spotlight): trans_x = 0, trans_y = 0, scale_x = 1.12, scale_y = 1.12, y = 173 — відсутнє підстрибування зверху.
      * Сценарій D (Буфер обміну після Spotlight): trans_x = 0, trans_y = 0, scale_x = 1.12, scale_y = 1.12, y = 205 — плавне відкриття на місці.
    - mac-extension-guard verify (20/20 extensions locked) та mac-diagnostics — 100% SUCCESS.
+
+--------------------------------------------------------------------------------
+594. Центрування напису "Пошук Spotlight" та іконки пошуку по середині висоти пілюлі:
+1. Діагностика проблеми:
+   - Напис «Пошук Spotlight» та лупа пошуку всередині згорнутої 54px пілюлі Spotlight були помітно зміщені донизу (відступ зверху складав 20px, а знизу лише 10px).
+   - Корінна причина:
+     * У searchDialog_v5.js для віджетів _entry, _searchIcon та _optionsBtn було задано примусове зміщення translation_y = 5.
+     * За висоти пілюлі 54px та висоти тексту 24px це створювало асиметрію відступів удвічі: 20px зверху проти 10px знизу.
+2. Реалізоване рішення:
+   - У extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js встановлено translation_y = 0 для _entry, _searchIcon та _optionsBtn (як при первинній ініціалізації, так і в методі open()).
+   - Тепер елементи вирівнюються строго по центру пілюлі (y_align: Clutter.ActorAlign.CENTER):
+     * Відступ тексту зверху: 15px, знизу: 15px (15 + 24 + 15 = 54px) — абсолютна математична та візуальна симетрія 50/50.
+     * Відступ іконки-лупи зверху: 17px, знизу: 17px (17 + 20 + 17 = 54px).
+3. Синхронізація та верифікація:
+   - Синхронізовано з ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js.
+   - Оновлено SHA256 хеш у config/extensions.lock.json (2310cdcef22b76c30a877bdee7c5cdef112646c014c90b0c2126ef6938acc252).
+   - Розширення перезавантажено у живому сеансі GNOME Shell через EvalHelper.
+   - Виміри відступів підтвердили ідеальну симетрію: text.top = 15, text.bottom = 15; icon.top = 17, icon.bottom = 17.
+   - Знято контрольний знімок scratch_spotlight_centered_live.png, що підтверджує бездоганне положення напису.
+   - mac-extension-guard verify та mac-diagnostics — 100% SUCCESS.

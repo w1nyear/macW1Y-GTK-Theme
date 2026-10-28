@@ -437,11 +437,11 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._searchPill.add_child(this._optionsBtn);
 
-        // Вирівнювання вмісту пілюлі по середині висоти: трохи опустити вниз
+        // Вирівнювання вмісту пілюлі строго по середині висоти
         try {
-            this._searchIcon.translation_y = 5;
-            this._entry.translation_y = 5;
-            this._optionsBtn.translation_y = 5;
+            this._searchIcon.translation_y = 0;
+            this._entry.translation_y = 0;
+            this._optionsBtn.translation_y = 0;
         } catch (_) {}
 
         // 3B. Buttons Container: Holds the 3 Circular Buttons on the right
@@ -1269,6 +1269,9 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._searchIcon.set_gicon(null);
         this._searchIcon.icon_name = 'system-search-symbolic';
+        this._searchIcon.translation_y = 0;
+        this._entry.translation_y = 0;
+        this._optionsBtn.translation_y = 0;
         this._optionsBtn.visible = false;
 
         this._resultsWrapper.visible = false;
