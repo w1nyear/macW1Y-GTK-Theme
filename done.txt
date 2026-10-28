@@ -12118,3 +12118,36 @@ Task 499: Повне полірування екрана блокування (m
      * Буфер обміну швидке повторне відкриття: scale_x: 1.12, scale_y: 1.12, opacity: 0, trans_x: 0, trans_y: 0 -> повна анімація відкриття.
      * Перехресний морфінг між різними меню (Spotlight -> Центр програм): scale_x: 1, trans_y: -206 -> плавний перехід з позиції спотлайту зберігся без змін.
    - mac-extension-guard verify (20/20 extensions locked) та mac-diagnostics — 100% SUCCESS.
+
+--------------------------------------------------------------------------------
+593. Усунення підстрибування діалогів та виїзду Spotlight знизу екрана при відкритті після закриття інших меню:
+1. Діагностика проблеми:
+   - Якщо відкрити будь-яке меню (Центр програм чи Буфер обміну), закрити його, а потім відкрити пошуковик Spotlight (Ctrl+Space) або інше меню, нове меню при відкритті підстрибувало або виїжджало зі зміщенням (Spotlight починав рух з самого низу екрана і летів угору на +206px, а Центр програм падав згори на -206px).
+   - Корінна причина:
+     1) Механізм міжменюшного морфінгу (_saveMorphFrom / _consumeMorphFrom, впроваджений ще в #102) при закритті будь-якого діалогу зберігав його координати та габарити у globalThis._macMorphFrom.
+     2) Центр програм має висоту 530px (центр Y ~ 438px), тоді як пошукова пілюля Spotlight має висоту 54px (центр Y ~ 232px).
+     3) Коли Spotlight відкривався після Центру програм або Буфера обміну, _consumeMorphFrom() розраховував різницю центрів fromCy - toCy = +206px і встановлював this._box.translation_y = +206px. Потім Clutter ease анімував translation_y до 0, через що Spotlight буквально виїжджав з нижньої частини екрана ("з низу екрана буде виїжджати", "підстрибувати").
+     4) При зворотній послідовності (відкриття Центру програм після Spotlight) різниця складала fromCy - toCy = -206px, спричиняючи підстрибування зверху.
+2. Реалізоване рішення:
+   - Повне скасування міждіалогового зміщення та стрибків:
+     * Функції _saveMorphFrom() та _consumeMorphFrom() нейтралізовано: вони очищають globalThis._macMorphFrom = null та повертають null.
+     * У методі open() усіх трьох діалогів (Spotlight, Центр програм, Буфер обміну) усунено розрахунок динамічного зміщення (fromCx - toCx, fromCy - toCy).
+     * Віджет діалогу тепер завжди ініціалізується строго на своїх штатних системних координатах:
+       - translation_x = 0; translation_y = 0;
+       - scale_x = 1.12; scale_y = 1.12;
+       - opacity = 0;
+     * Clutter ease виконує чисту нативну анімацію macOS: плавне наближення/віддалення (zoom-out scale 1.12 -> 1.0) та появу (opacity 0 -> 255) строго на місці без найменшого зсуву по осях X та Y.
+     * У методі close() (як у варіанті immediate, так і в animated onComplete) додано гарантоване скидання translation_x = 0; translation_y = 0; scale_x = 1.0; scale_y = 1.0;.
+   - Оновлено всі компоненти меню:
+     * extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js (Spotlight Dialog).
+     * extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js та applications_menu_v5.js (Центр програм).
+     * extensions/appmenu@ChathurangaBW.github.io/clipboardDialog_v2.js (Буфер обміну).
+3. Синхронізація та верифікація:
+   - Синхронізовано з ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/.
+   - Оновлено SHA256 хеш у config/extensions.lock.json (9e12c8803745170f8068c4cfd5d1be564ed276fdda5469371155a1c5275ab8e7).
+   - Верифіковано в живому сеансі GNOME Shell через EvalHelper:
+     * Сценарій A (Spotlight після Центру програм): trans_x = 0, trans_y = 0, scale_x = 1.12, scale_y = 1.12, y = 205 — жодного зміщення, ідеальне відкриття на місці.
+     * Сценарій B (Spotlight після Буфера обміну): trans_x = 0, trans_y = 0, scale_x = 1.12, scale_y = 1.12, y = 205 — відсутній виїзд знизу.
+     * Сценарій C (Центр програм після Spotlight): trans_x = 0, trans_y = 0, scale_x = 1.12, scale_y = 1.12, y = 173 — відсутнє підстрибування зверху.
+     * Сценарій D (Буфер обміну після Spotlight): trans_x = 0, trans_y = 0, scale_x = 1.12, scale_y = 1.12, y = 205 — плавне відкриття на місці.
+   - mac-extension-guard verify (20/20 extensions locked) та mac-diagnostics — 100% SUCCESS.

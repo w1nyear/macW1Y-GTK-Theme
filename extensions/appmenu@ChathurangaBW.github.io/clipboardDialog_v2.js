@@ -43,36 +43,17 @@ function _isGlassAlive(glass) {
     }
 }
 
-// Спільний морф-стейт для плавних переходів між меню (ЦП/Спотлайт/Буфер)
-function _saveMorphFrom(sourceOrActor, maybeActor) {
+// Меню відкриваються строго на своєму фіксованому місці з нативним масштабуванням (1.12 -> 1.0) без зсувів і підстрибувань
+function _saveMorphFrom() {
     try {
-        let source = 'clipboard';
-        let actor = sourceOrActor;
-        if (typeof sourceOrActor === 'string') {
-            source = sourceOrActor;
-            actor = maybeActor;
-        }
-        const b = actor ? actor._box : null;
-        if (!b) return;
-        globalThis._macMorphFrom = {
-            source,
-            x: b.x,
-            y: b.y,
-            w: b.width,
-            h: b.height,
-            t: Date.now()
-        };
+        globalThis._macMorphFrom = null;
     } catch (_) {}
 }
 
-function _consumeMorphFrom(targetType = 'clipboard') {
+function _consumeMorphFrom() {
     try {
-        const m = globalThis._macMorphFrom;
         globalThis._macMorphFrom = null;
-        if (!m) return null;
-        if (m.source && m.source === targetType) return null;
-        if (Date.now() - m.t > 900) return null;
-        return m;
+        return null;
     } catch (_) {
         return null;
     }
@@ -1004,25 +985,11 @@ export const MacClipboardDialog = GObject.registerClass({
 
         this._box.set_position(targetX, targetY);
         this._box.set_size(DIALOG_WIDTH, h);
-        // Єдина intro: морф з попереднього меню або fade+scale 0.94→1.0
         this._box.set_pivot_point(0.5, 0.5);
-        const _mFrom = _consumeMorphFrom('clipboard');
-        if (_mFrom) {
-            const fromCx = _mFrom.x + Math.round(_mFrom.w / 2);
-            const fromCy = _mFrom.y + Math.round(_mFrom.h / 2);
-            const toCx = targetX + Math.round(DIALOG_WIDTH / 2);
-            const toCy = targetY + Math.round(h / 2);
-            const s0 = Math.max(0.60, Math.min(1.15, _mFrom.w / DIALOG_WIDTH));
-            this._box.translation_x = fromCx - toCx;
-            this._box.translation_y = fromCy - toCy;
-            this._box.scale_x = s0;
-            this._box.scale_y = s0;
-        } else {
-            this._box.translation_x = 0;
-            this._box.translation_y = 0;
-            this._box.scale_x = 1.12;
-            this._box.scale_y = 1.12;
-        }
+        this._box.translation_x = 0;
+        this._box.translation_y = 0;
+        this._box.scale_x = 1.12;
+        this._box.scale_y = 1.12;
         this._box.opacity = 0;
         this._headerRow.opacity = 255;
         this._scrollWrapper.opacity = 255;
@@ -1077,6 +1044,10 @@ export const MacClipboardDialog = GObject.registerClass({
             this._isClosing = false;
             this._box.remove_all_transitions();
             this._box.opacity = 0;
+            this._box.translation_x = 0;
+            this._box.translation_y = 0;
+            this._box.scale_x = 1.0;
+            this._box.scale_y = 1.0;
             if (this._glass && !this._glass.is_finalized?.()) {
                 try {
                     this._glass.remove_all_transitions();
@@ -1105,6 +1076,10 @@ export const MacClipboardDialog = GObject.registerClass({
                 this._isClosing = false;
                 this.visible = false;
                 this._backdrop.visible = false;
+                this._box.translation_x = 0;
+                this._box.translation_y = 0;
+                this._box.scale_x = 1.0;
+                this._box.scale_y = 1.0;
                 if (this._glass && !this._glass.is_finalized?.()) {
                     try {
                         this._glass.remove_all_transitions();
