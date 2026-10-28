@@ -131,19 +131,34 @@ function _isGlassAlive(glass) {
 }
 
 // Спільний морф-стейт для плавних переходів між меню (ЦП/Спотлайт/Буфер)
-function _saveMorphFrom(actor) {
+function _saveMorphFrom(sourceOrActor, maybeActor) {
     try {
+        let source = 'spotlight';
+        let actor = sourceOrActor;
+        if (typeof sourceOrActor === 'string') {
+            source = sourceOrActor;
+            actor = maybeActor;
+        }
         const b = actor ? actor._box : null;
         if (!b) return;
-        globalThis._macMorphFrom = { x: b.x, y: b.y, w: b.width, h: b.height, t: Date.now() };
+        globalThis._macMorphFrom = {
+            source,
+            x: b.x,
+            y: b.y,
+            w: b.width,
+            h: b.height,
+            t: Date.now()
+        };
     } catch (_) {}
 }
 
-function _consumeMorphFrom() {
+function _consumeMorphFrom(targetType = 'spotlight') {
     try {
         const m = globalThis._macMorphFrom;
         globalThis._macMorphFrom = null;
         if (!m) return null;
+        // Never morph if reopening the SAME menu type! Standard macOS opening animation (scale 1.12 -> 1.0) must play.
+        if (m.source && m.source === targetType) return null;
         if (Date.now() - m.t > 900) return null;
         return m;
     } catch (_) {
@@ -1227,6 +1242,11 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._isOpen = true;
         this._isClosing = false;
         this._cancelSyncLoop();
+        this._box.remove_all_transitions();
+        this.remove_all_transitions();
+        if (_isGlassAlive(this._glass)) {
+            try { this._glass.remove_all_transitions(); } catch (_) {}
+        }
         this._mode = 'search';
         this._buttonsCollapsed = false;
         this._activeFilter = null;
@@ -1246,7 +1266,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
         // Єдина intro: морф з попереднього меню або fade+scale 0.94→1.0
         this._box.set_pivot_point(0.5, 0.5);
-        const _mFrom = _consumeMorphFrom();
+        const _mFrom = _consumeMorphFrom('spotlight');
         if (_mFrom) {
             const fromCx = _mFrom.x + Math.round(_mFrom.w / 2);
             const fromCy = _mFrom.y + Math.round(_mFrom.h / 2);
@@ -1298,9 +1318,6 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._resultsBox.destroy_all_children();
         this._resultButtons = [];
         this._selectedIndex = -1;
-
-        this._box.remove_all_transitions();
-        this.remove_all_transitions();
 
         if (!this.get_parent()) {
             Main.layoutManager.uiGroup.add_child(this);
@@ -1383,7 +1400,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (!this._isOpen && !this._isClosing) return;
         this._isOpen = false;
         // Запам'ятати геометрію для морф-переходу в інше меню (діє 900мс)
-        _saveMorphFrom(this);
+        _saveMorphFrom('spotlight', this);
 
         if (this._stageSignalId) {
             try { global.stage.disconnect(this._stageSignalId); } catch (_) {}
@@ -1437,6 +1454,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             duration: 180,
             mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => {
+                if (this._isOpen) return;
                 this._cancelSyncLoop();
                 this._isClosing = false;
                 this.visible = false;

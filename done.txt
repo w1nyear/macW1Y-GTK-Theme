@@ -12088,3 +12088,33 @@ Task 499: Повне полірування екрана блокування (m
      * Під час закриття Spotlight: boxOpacity та glassOpacity синхронно згасають (252 -> 241 -> 219 -> 180 -> 139 -> 89 -> 27 -> 0), boxScale плавно масштабується з 1.00 -> 1.12, після чого скло чисто ховається.
      * Аналогічна 100% синхронність підтверджена для Центру програм та Буфера обміну.
    - mac-extension-guard verify (20/20 extensions locked) та mac-diagnostics — 100% SUCCESS.
+
+--------------------------------------------------------------------------------
+592. Відновлення анімації відкриття (поява + віддалення/масштабування 1.12 -> 1.0) при швидкому повторному відкритті Spotlight та Spotlight-меню:
+1. Діагностика проблеми:
+   - Якщо закрити Spotlight, Центр програм чи Буфер обміну і відразу (не очікуючи завершення анімації закриття або протягом 900 мс після неї) знову натиснути на відкриття, анімація відкриття не відтворювалася: вікно просто раптово з'являлося на місці без фірмового наближення/віддалення (zoom-out scale 1.12 -> 1.0).
+   - Корінна причина:
+     1) Механізм морфінгу між різними меню (_saveMorphFrom / _consumeMorphFrom) зберігав координати та розміри закритого діалогу в globalThis._macMorphFrom з таймаутом життя 900 мс, але не фіксував джерело (source).
+     2) При відкритті діалогу _consumeMorphFrom() повертав геометрію самого ж цього діалогу. Гілка if (_mFrom) обчислювала зміщення fromCx - toCx = 0, fromCy - toCy = 0 та масштаб s0 = w / DIALOG_WIDTH = 1.0. Через це встановлювався scale_x = 1.0, scale_y = 1.0 і повністю пропускалася гілка else (яка задає початковий scale_x = 1.12, scale_y = 1.12). В результаті Clutter ease запускався з 1.0 до 1.0 без жодного масштабування.
+     3) При відкритті у фазі закриття (коли this._isClosing = true) активний Clutter ease закриття продовжував діяти паралельно, а його onComplete-колбек міг викликати hide() або приховати скло вже після повторного відкриття.
+2. Реалізоване рішення:
+   - Розділення контекстів морфінгу та ідентифікація джерела:
+     * Функція _saveMorphFrom(sourceOrActor, maybeActor) тепер явно реєструє тип джерела ('spotlight', 'applications', 'clipboard').
+     * Функція _consumeMorphFrom(targetType) перевіряє if (m.source && m.source === targetType) return null;. Тобто морфінг застосовується виключно при переходах між різними типами меню (наприклад Spotlight <-> Центр програм <-> Буфер обміну). При повторному відкритті того самого меню повертається null, гарантуючи виконання повноцінної нативної анімації масштабування (scale 1.12 -> 1.0, opacity 0 -> 255).
+   - Безпечний рестарт анімації відкриття у фазі закриття:
+     * На початку open() скасовується попередній цикл синхронізації та видаляються всі активні транзишни (this._box.remove_all_transitions(), this.remove_all_transitions(), this._glass.remove_all_transitions()).
+     * Встановлюються прапорці this._isOpen = true та this._isClosing = false.
+     * У колбеку onComplete методу close() додано захисну умову if (this._isOpen) return;, що виключає приховування діалогу чи скла, якщо меню було відкрито наново до завершення анімації закриття.
+   - Оновлено всі компоненти меню:
+     * extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js (Spotlight Dialog).
+     * extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js та applications_menu_v5.js (Центр програм).
+     * extensions/appmenu@ChathurangaBW.github.io/clipboardDialog_v2.js (Буфер обміну).
+3. Синхронізація та верифікація:
+   - Синхронізовано з ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/.
+   - Оновлено SHA256 хеш у config/extensions.lock.json (80db07a3189e512b9ad525b278ce24f14a712414e9089e7fef40f3f5e2550038).
+   - Проведено верифікацію в живому сеансі GNOME Shell через EvalHelper:
+     * Spotlight швидке повторне відкриття: scale_x: 1.12, scale_y: 1.12, opacity: 0, trans_x: 0, trans_y: 0 -> плавний перехід 1.12 -> 1.0 та 0 -> 255.
+     * Центр програм швидке повторне відкриття: scale_x: 1.12, scale_y: 1.12, opacity: 0, trans_x: 0, trans_y: 0 -> повна анімація відкриття.
+     * Буфер обміну швидке повторне відкриття: scale_x: 1.12, scale_y: 1.12, opacity: 0, trans_x: 0, trans_y: 0 -> повна анімація відкриття.
+     * Перехресний морфінг між різними меню (Spotlight -> Центр програм): scale_x: 1, trans_y: -206 -> плавний перехід з позиції спотлайту зберігся без змін.
+   - mac-extension-guard verify (20/20 extensions locked) та mac-diagnostics — 100% SUCCESS.
