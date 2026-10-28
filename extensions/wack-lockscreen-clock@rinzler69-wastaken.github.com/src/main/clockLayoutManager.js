@@ -186,29 +186,55 @@ export class ClockLayoutManager {
             const [fw, fh] = this.glassClock.fieldSize;
             const rx = 48; // FIELD_RANGE
             const ry = 48;
-            const glassX = Math.round((monitorWidth - fw) / 2);
-            const glassY = Math.round(timeY - ry);
-            this.glassClock.actor.set_position(glassX, glassY);
-            this.glassClock.actor.set_size(fw, fh);
 
-            if (this.glassClock.isReady) {
+            if (this.glassClock.isReady && fw > 1 && fh > 1) {
+                const glassX = Math.round((monitorWidth - fw) / 2);
+                const glassY = Math.round(timeY - ry);
+                this.glassClock.actor.set_position(glassX, glassY);
+                this.glassClock.actor.set_size(fw, fh);
+                this.glassClock.actor.visible = true;
+                this.glassClock.actor.opacity = 255;
+
                 timeLabel.visible = false;
                 timeLabel.opacity = 0;
             } else {
+                this.glassClock.actor.visible = false;
+                this.glassClock.actor.opacity = 0;
+
+                const oldTimeConstraint = timeLabel.get_constraint('wack-clock-center-x');
+                if (oldTimeConstraint) {
+                    timeLabel.remove_constraint(oldTimeConstraint);
+                }
+
                 const [, timeWidth] = timeLabel.get_preferred_width(-1) || [0, 400];
                 const effectiveTimeW = (timeWidth > 0 && timeWidth < monitorWidth) ? Math.ceil(timeWidth) : Math.min(800, monitorWidth);
                 const timeX = Math.round((monitorWidth - effectiveTimeW) / 2);
                 timeLabel.set_position(timeX, timeY);
                 timeLabel.set_size(effectiveTimeW, 150);
+                if (timeLabel.clutter_text) {
+                    timeLabel.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+                    timeLabel.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+                }
+                timeLabel.set_x_align(Clutter.ActorAlign.CENTER);
                 timeLabel.visible = true;
                 timeLabel.opacity = 255;
             }
         } else {
+            const oldTimeConstraint = timeLabel.get_constraint('wack-clock-center-x');
+            if (oldTimeConstraint) {
+                timeLabel.remove_constraint(oldTimeConstraint);
+            }
+
             const [, timeWidth] = timeLabel.get_preferred_width(-1) || [0, 400];
             const effectiveTimeW = (timeWidth > 0 && timeWidth < monitorWidth) ? Math.ceil(timeWidth) : Math.min(800, monitorWidth);
             const timeX = Math.round((monitorWidth - effectiveTimeW) / 2);
             timeLabel.set_position(timeX, timeY);
             timeLabel.set_size(effectiveTimeW, 150);
+            if (timeLabel.clutter_text) {
+                timeLabel.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+                timeLabel.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+            }
+            timeLabel.set_x_align(Clutter.ActorAlign.CENTER);
             timeLabel.visible = true;
             timeLabel.opacity = 255;
         }

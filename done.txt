@@ -11965,3 +11965,23 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено SHA256 хеші у `config/extensions.lock.json` (`appmenu`: `4044fb45...`, `kiwi`: `a02bca81...`).
    - Обидва розширення оновлено на льоту в живому сеансі через `Main.extensionManager.reloadExtension`.
    - Перевірки `mac-extension-guard verify` та `mac-diagnostics` виконані на 100% успішно.
+--------------------------------------------------------------------------------
+587. Виправлення початкового зміщення годинника вправо при запуску ПК (GDM lockscreen):
+1. Діагностика та корінна причина (Async Ready Desync):
+   - При старті ПК / GDM розширення ініціалізує `GlassClock`. Генерація текстур рідкого скла у фоновому воркері є асинхронною (`_glassFor` займає ~50-100мс), тому початковий розмір `_fieldSize` дорівнює `[1, 1]`.
+   - У `positionClock()` горизонтальна позиція розраховувалася від `fw = 1`: `glassX = Math.round((w - 1) / 2) = 960px` (замість ~760px).
+   - Коли фоновий воркер завершував побудову текстури гліфів і встановлював справжній розмір `_fieldSize = [393, 251]`, `_setText` у `clock.js` не викликав `this._env.relayout()`. Через це `positionClock()` не викликався повторно до зміни наступної хвилини, і годинник залишався зміщеним на 200px вправо.
+2. Реалізоване рішення:
+   - У `src/glass/dist/desktop/clock.js`:
+     * У методі `_setText` та `_fitShown` додано гарантований виклик `this._layout()` та `this._env.relayout()` відразу після готовності текстури гліфів.
+   - У `src/pro/gdmGlassClock.js` та `pro/gdmGlassClock.js`:
+     * Властивість `isReady` повертає `true` суворо тоді, коли розмір поля валідний (`this._isReady && this.fieldSize[0] > 1 && this.fieldSize[1] > 1`).
+     * У `relayout` та обробнику `before-update` додано динамічне відстеження переходу від розміру `[1, 1]` до справжніх габаритів тексту з миттєвим сповіщенням `_onRelayout()`.
+   - У `src/pro/gdmClockManager.js`, `pro/gdmClockManager.js` та `src/main/clockLayoutManager.js`:
+     * До готовності рідкого скла (`isReady && fw > 1 && fh > 1`) актор скла прихований (`visible = false; opacity = 0`), а відображається резервний текстовий час, строго центрований без конфліктуючих `AlignConstraint`.
+     * Як тільки текстура скла готова (~50мс), спрацьовує `onRelayout`, розраховується точна позиція `glassX = Math.round((w - fw) / 2)` і скляний годинник плавно з'являється ідеально по центру екрана з першої ж секунди.
+3. Синхронізація та верифікація:
+   - Зміни скопійовано до `~/.local/share/gnome-shell/extensions/...` та `/usr/share/gnome-shell/extensions/...`.
+   - Оновлено SHA256 хеш у `config/extensions.lock.json` (`77044defdc5af317836c0be1af17a0c174cb512a2b98ddefe33e6929b3298547`).
+   - Оновлено базу dconf GDM (`sudo dconf update`).
+   - Перевірки `mac-extension-guard verify` та `mac-diagnostics` виконані на 100% успішно.

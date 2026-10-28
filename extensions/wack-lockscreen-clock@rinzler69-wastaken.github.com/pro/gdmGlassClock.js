@@ -64,6 +64,9 @@ export class GdmGlassClock {
             },
             menu: () => {},
             relayout: () => {
+                if (this._clock && this._clock._fieldSize && this._clock._fieldSize[0] > 1) {
+                    this._isReady = true;
+                }
                 if (typeof this._onRelayout === 'function')
                     this._onRelayout();
             },
@@ -75,7 +78,13 @@ export class GdmGlassClock {
 
         this._stageSignalId = global.stage.connect('before-update', () => {
             if (this._clock && this.actor && this.actor.mapped) {
+                const hadSmall = !this._isReady || (this.fieldSize[0] <= 1);
                 this._clock.sync();
+                if (hadSmall && this.fieldSize[0] > 1) {
+                    this._isReady = true;
+                    if (typeof this._onRelayout === 'function')
+                        this._onRelayout();
+                }
             }
         });
     }
@@ -83,7 +92,9 @@ export class GdmGlassClock {
     setText(timeText) {
         if (!this._clock || !timeText) return;
         this._clock._setText(timeText).then(() => {
-            this._isReady = true;
+            if (this.fieldSize[0] > 1 && this.fieldSize[1] > 1) {
+                this._isReady = true;
+            }
             this._clock.sync();
             if (typeof this._onRelayout === 'function')
                 this._onRelayout();
@@ -93,7 +104,7 @@ export class GdmGlassClock {
     }
 
     get isReady() {
-        return this._isReady;
+        return this._isReady && this.fieldSize[0] > 1 && this.fieldSize[1] > 1;
     }
 
     get fieldSize() {

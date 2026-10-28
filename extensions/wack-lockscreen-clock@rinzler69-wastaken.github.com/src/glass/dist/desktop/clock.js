@@ -169,6 +169,9 @@ export class GlassClock {
         // The glass keeps drawing at the resolution of its field, stretched to its size.
         this._glass.set_size(...size);
         this._sizeChanged = true;
+        this._layout();
+        if (typeof this._env?.relayout === 'function')
+            this._env.relayout();
     }
 
     _loadFont() {
@@ -287,7 +290,10 @@ export class GlassClock {
         this._glass.setGlassGeometry(0, 0, width, height);
         this._glass.setShapeTexture(texture, FIELD_RANGE, band);
         this._sizeChanged = true;
+        this._layout();
         this._adaptive.invalidate();
+        if (typeof this._env?.relayout === 'function')
+            this._env.relayout();
         for (const key of [...this._prepared.keys()]) {
             if (key !== text)
                 this._prepared.delete(key);
