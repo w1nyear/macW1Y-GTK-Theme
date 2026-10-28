@@ -11985,3 +11985,24 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено SHA256 хеш у `config/extensions.lock.json` (`77044defdc5af317836c0be1af17a0c174cb512a2b98ddefe33e6929b3298547`).
    - Оновлено базу dconf GDM (`sudo dconf update`).
    - Перевірки `mac-extension-guard verify` та `mac-diagnostics` виконані на 100% успішно.
+
+--------------------------------------------------------------------------------
+588. macOS Tahoe OSD: центрування по горизонталі на тій самій висоті при повноекранному режимі або прихованому меню-барі:
+1. Вимоги та логіка поведінки:
+   - Якщо активний повноекранний режим програми (F11, ігри, відеопрогравачі) або верхня панель меню-бару згорнута/прихована, меню OSD (індикатори гучності та яскравості) має з'являтися посередині ширини екрана (x = monitor.x + Math.round((monitor.width - OSD_W) / 2) = 810px для 1920x1080), але на тій самій висоті (y = monitor.y + panelH + 8 = 42px).
+   - Якщо вікно просто розгорнуте на весь екран (maximized), але меню-бар не ховається, OSD показується як є (під іконкою quickSettings/трею справа: x ≈ 1549px, y = 42px).
+2. Реалізація:
+   - У extensions/kiwi@kemma/apps/tahoeOSD.js та extensions/kiwi@kemma/apps/tahoeOnScreenDisplay.js:
+     * Реалізовано функцію _isFullscreenOrPanelHidden(monitor): перевіряє monitor.inFullscreen, global.display.get_monitor_in_fullscreen(), focusWin.is_fullscreen(), наявність повноекранних вікон на активному робочому просторі (list_windows().some(w => w.is_fullscreen())), а також прихований/згорнутий стан панелі (!panel.visible, panel.opacity === 0, panel.translation_y < -5, panel.y < -5, !panelBox.visible, panelBox.translation_y < -5, panelBox.y < -5, panelBox.height === 0).
+     * Забезпечено сталість висоти (y = monitor.y + panelH + 8): висота панелі кешується у _lastKnownPanelH = 34 та оновлюється лише коли panelBox.height > 20, що запобігає колапсу висоти до 0px при згорнутій панелі та гарантує точне збереження висоти (42px) у всіх режимах.
+     * Розрахунок координат у _show(): при повноекранному режимі або згорнутому меню-барі OSD горизонтально центрується boxX = Math.round(monitor.x + (monitor.width - OSD_W) / 2) (810px), інакше центрується під системним треєм boxX = Math.round(cx - OSD_W / 2) (1549px).
+     * Шейдер Liquid Glass та тінь (_syncGlass()) автоматично синхронізуються з актуальним положенням _box через get_transformed_position().
+     * В extension.js оновлено версію динамічного завантаження модуля на ?v=osd_v11.
+3. Синхронізація та верифікація:
+   - Синхронізовано з ~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeOSD.js, tahoeOnScreenDisplay.js, extension.js.
+   - Оновлено SHA256 хеш у config/extensions.lock.json (fd43f014da9d03336bcb85f2ce3a1b0f13311ab3d7a429b7ba5534570c3d9716).
+   - Перевірено поведінку через EvalHelper на живому сеансі GNOME Shell:
+     * У звичайному режимі (та з розгорнутим вікном): boxPos = [1549, 42, 300, 63] (під треєм).
+     * У повноекранному режимі (make_fullscreen) та при схованій панелі: boxPos = [810, 42, 300, 63] (по центру екрана).
+     * Знято скріншоти обох станів: scratch_osd_normal_live.png та scratch_osd_fullscreen_live.png.
+   - mac-extension-guard verify (20/20 extensions locked) та mac-diagnostics — 100% SUCCESS.

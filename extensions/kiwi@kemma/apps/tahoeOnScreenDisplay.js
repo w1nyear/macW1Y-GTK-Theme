@@ -217,6 +217,7 @@ let _brightIds = [];
 let _brightReady = false;
 let _screenProxy = null;
 let _origShowOsdWindow = null;
+let _lastKnownPanelH = 34;
 
 function _anchorX(monitor) {
     try {
@@ -231,6 +232,29 @@ function _anchorX(monitor) {
         }
     } catch (_) {}
     return Math.round(monitor.x + monitor.width - 170);
+}
+
+function _isFullscreenOrPanelHidden(monitor) {
+    try {
+        if (monitor && monitor.inFullscreen)
+            return true;
+        if (global.display?.get_monitor_in_fullscreen && monitor &&
+            global.display.get_monitor_in_fullscreen(monitor.index))
+            return true;
+        const focusWin = global.display?.focus_window;
+        if (focusWin && focusWin.is_fullscreen() && (!monitor || focusWin.get_monitor() === monitor.index))
+            return true;
+        const ws = global.workspace_manager?.get_active_workspace();
+        if (ws && ws.list_windows().some(w => w.is_fullscreen() && (!monitor || w.get_monitor() === monitor.index)))
+            return true;
+        const panel = Main.panel;
+        const panelBox = Main.layoutManager?.panelBox;
+        if (!panel || !panel.visible || panel.opacity === 0 || panel.translation_y < -5 || panel.y < -5)
+            return true;
+        if (panelBox && (!panelBox.visible || panelBox.opacity === 0 || panelBox.translation_y < -5 || panelBox.y < -5 || panelBox.height === 0))
+            return true;
+    } catch (_) {}
+    return false;
 }
 
 function _hideStockOsd() {
@@ -636,13 +660,40 @@ function _show(kind, title, iconL, iconR, value) {
     } catch (_) {}
 
     try {
-        const monitor = Main.layoutManager.primaryMonitor;
+        let monitor = Main.layoutManager.primaryMonitor;
+        try {
+            const currentMonIdx = global.display?.get_current_monitor ? global.display.get_current_monitor() : -1;
+            const focusWin = global.display?.focus_window;
+            if (focusWin && focusWin.is_fullscreen()) {
+                const winMonIndex = focusWin.get_monitor();
+                const winMon = Main.layoutManager.monitors[winMonIndex];
+                if (winMon)
+                    monitor = winMon;
+            } else if (currentMonIdx >= 0 && Main.layoutManager.monitors[currentMonIdx]) {
+                const currentMon = Main.layoutManager.monitors[currentMonIdx];
+                if (currentMon && (currentMon.inFullscreen || (global.display.get_monitor_in_fullscreen && global.display.get_monitor_in_fullscreen(currentMonIdx)))) {
+                    monitor = currentMon;
+                }
+            }
+        } catch (_) {}
         if (!monitor)
             return;
-        const panelH = Math.round(Main.layoutManager.panelBox?.height ?? 34);
-        const cx = Math.max(monitor.x + OSD_W / 2,
-            Math.min(monitor.x + monitor.width - OSD_W / 2, _anchorX(monitor)));
-        const boxX = Math.round(cx - OSD_W / 2);
+
+        const curPanelH = Main.layoutManager.panelBox?.height;
+        if (typeof curPanelH === 'number' && curPanelH > 20)
+            _lastKnownPanelH = Math.round(curPanelH);
+        const panelH = _lastKnownPanelH || 34;
+
+        let boxX;
+        if (_isFullscreenOrPanelHidden(monitor)) {
+            // Fullscreen application (not maximized) or hidden menubar: center horizontally across the screen
+            boxX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
+        } else {
+            // Desktop or maximized window with visible menubar: align under the top-right tray / quick settings
+            const cx = Math.max(monitor.x + OSD_W / 2,
+                Math.min(monitor.x + monitor.width - OSD_W / 2, _anchorX(monitor)));
+            boxX = Math.round(cx - OSD_W / 2);
+        }
         const boxY = monitor.y + panelH + 8;
         _box.set_position(boxX, boxY);
         if (_osdShadow) {
