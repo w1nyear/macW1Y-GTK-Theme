@@ -19,7 +19,7 @@ const ICONS_DIR = '/home/vitaliy/macW1Y/icons';
 const SEARCH_DEBOUNCE_MS = 180;
 const DIALOG_WIDTH = 714;
 const PILL_HEIGHT = 54;        // згорнута пілюля (не змінюємо — як було)
-const EXP_PILL_HEIGHT = 36;    // шапка розгорнутого меню — 36px, як у центру програм
+const EXP_PILL_HEIGHT = 54;    // шапка розгорнутого меню — 54px, ідентична згорнутій пілюлі
 const COLLAPSED_PILL_WIDTH = 480;
 const BUTTONS_BOX_WIDTH = 192;
 const BUTTON_SIZE = 50;
@@ -35,7 +35,7 @@ const PILL_COLLAPSED_STYLE =
     'box-shadow: none !important;';
 
 const PILL_EXPANDED_STYLE =
-    'width: 714px; min-width: 714px; max-width: 714px; height: 36px; min-height: 36px; padding: 0 20px; ' +
+    'width: 714px; min-width: 714px; max-width: 714px; height: 54px; min-height: 54px; padding: 0 16px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
     'border: none !important; ' +
@@ -970,8 +970,8 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._searchPill.set_style(PILL_EXPANDED_STYLE);
         this._searchPill.width = DIALOG_WIDTH;
-        // Шапка розгорнутого меню — 36px, як поле вводу центру програм
-        this._topRow.set_style('height: 36px; min-height: 36px;');
+        // Шапка розгорнутого меню — 54px, єдиний відступ поля вводу та іконки від верху
+        this._topRow.set_style('height: 54px; min-height: 54px;');
 
         try { this._syncGlass(); } catch (_) {}
     }
