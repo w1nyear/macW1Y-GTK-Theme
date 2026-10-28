@@ -12280,3 +12280,37 @@ Task 499: Повне полірування екрана блокування (m
      * Закриття: t=50ms (op:162, sc:1.03) -> t=200ms (op:9, sc:1.08) -> t=300ms (op:0, visible: false).
    - Знято контрольні знімки scratch_spotlight_open_live.png та scratch_spotlight_apps_after_300ms_live.png.
    - mac-diagnostics успішно пройдено на 100% (система стабільна, Liquid Glass активний).
+
+--------------------------------------------------------------------------------
+599. Виправлення відображення кнопок пошуку Spotlight при повторному відкритті та реалізація плавного згасання прозорості елементів при закритті Центру керування:
+1. Діагностика проблеми:
+   - Спотворення кнопок Spotlight при 2-му відкритті (Фото 3):
+     * При попередньому закритті Spotlight або переході в розгорнутий режим у _collapseButtonsAndExpandPill() на _buttonsBox накладалася трансформація масштабування scale_x: 0.8, scale_y: 0.8 та зсуву translation_x: 12. При повторному відкритті open() та close() не скидали ці трансформації, через що кнопки _btnApps, _btnFiles, _btnClipboard відображалися стиснутими на 80% і зсунутими вправо.
+     * Крім того, при закритті Spotlight актор _glass (BackdropGlass), який є повноекранним полотном (1920x1080), анімувався з параметрами scale_x: 1.08, scale_y: 1.08, translation_y: -6. При наступному відкритті масштаб 1.08 залишався на _glass і множив екранні координати регіонів на 1.08 (зсув пілюлі на +48px, кнопок на +88..+98px праворуч), створюючи фантомні роздуті вирізи рідкого скла окремо від іконок, як на Фото 3.
+   - Анімація закриття Центру керування («є наближення і зникнення, але елементи не збільшують прозорість для зникнення»):
+     * У extensions/kiwi@kemma/apps/tahoeControlCenter.js панель box закривалася старим бічним виїздом translation_x: 480. При цьому внутрішні картки (Wi-Fi, Bluetooth, повзунки, перемикачі) мали фіксовану непрозорість opacity: 255 і не зменшували її.
+     * Батьківський контейнер box та panelBg не мали прапорця Clutter.OffscreenRedirect.ALWAYS, через що дочірні віджети зі складними CSS-фонами та шейдерами малювалися розрізнено та обривалися в момент onComplete замість плавного розчинення в прозорість.
+2. Реалізоване рішення:
+   - У extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js:
+     * Для _buttonsBox усунено спотворююче масштабування: у _collapseButtonsAndExpandPill() виконується лише чистий фейд opacity: 0 за 150мс.
+     * У open(), close() та _uncollapseButtonsAndContractPill() гарантовано примусовий скид scale_x = 1.0, scale_y = 1.0, translation_x = 0, translation_y = 0, opacity = 255 та remove_all_transitions() для _buttonsBox, _searchPill та кожної кнопки окремо (_btnApps, _btnFiles, _btnClipboard).
+     * Повноекранний актор _glass позбавлено локального масштабування (scale_x = 1.0, scale_y = 1.0, translation_x = 0, translation_y = 0): анімується виключно opacity: 0 за 300мс.
+     * Для _box активовано set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS), а при закритті Spotlight дочірні елементи _searchPill, _buttonsBox та _resultsWrapper плавно згасають у прозорість (opacity: 0 за 260мс).
+   - У extensions/kiwi@kemma/apps/tahoeControlCenter.js:
+     * Для box та panelBg активовано set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS).
+     * У _closePanel() реалізовано аутентичне закриття macOS: плавне наближення scale_x/y (1.0 -> 1.06) та згасання opacity (255 -> 0) за 300мс із опорною точкою (0.9, 0.05).
+     * Впроваджено цикл плавного згасання прозорості кожного окремого дочірнього елемента панелі: усі картки, рядки, повзунки, іконки та текст закриваються з анімацією opacity: 0 за 260мс (збільшують прозорість для зникнення).
+     * Шейдерні стеки рідкого скла glass.stacks синхронно масштабуються та згасають до opacity: 0, виключаючи залишкові ореоли.
+     * Відкриття Центру керування уніфіковано на плавний 300мс вхід (1.06 -> 1.0, opacity: 0 -> 255).
+   - У extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js та applications_menu_v5.js:
+     * Додано set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS) та плавне згасання дочірніх елементів за 260мс при закритті.
+3. Синхронізація та верифікація:
+   - Файли синхронізовано з ~/.local/share/gnome-shell/extensions/ (searchDialog_v5.js, applications_menu_v5b.js, applications_menu_v5.js, tahoeControlCenter.js).
+   - Оновлено SHA256 хеші у config/extensions.lock.json:
+     * appmenu@ChathurangaBW.github.io: 304ac60c1b718177f3e289a13fedd55efee9a98c8cc2bd22adf3d2262da663f4
+     * kiwi@kemma: 83523b1afcc6682e6e7574a8c9706b553fcf25779b81cff47c45dda5501b1fa2
+   - mac-extension-guard verify підтвердив 20/20 активних зафіксованих розширень (VERIFICATION SUCCESS).
+   - Інструментальні телеметричні заміри:
+     * Повторне відкриття Spotlight (2nd open): buttonsBox={visible:true, opacity:255, scaleX:1, scaleY:1, transX:0, width:200, allocW:200}, btnApps={opacity:255, scaleX:1, transX:0, allocW:52}. Знято чистий контрольний знімок scratch_spotlight_2nd_open_fixed_crop.png — абсолютна симетрія та точний збіг кнопок і скла.
+     * Закриття Центру керування: зафіксовано плавний спад прозорості елементів t=35ms (op:176) -> t=70ms (op:104) -> t=105ms (op:56) -> t=140ms (op:29) -> t=175ms (op:8) -> t=245ms (op:0), одночасно з наближенням масштабу box (1.0 -> 1.06).
+   - mac-diagnostics успішно пройдено на 100% (система стабільна, Liquid Glass активний).

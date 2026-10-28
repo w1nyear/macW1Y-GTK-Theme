@@ -387,6 +387,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             'border: none !important; ' +
             'box-shadow: none !important;'
         );
+        this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
         this.add_child(this._box);
         this._syncLoopId = 0;
         this._isClosing = false;
@@ -1267,13 +1268,10 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (this._buttonsCollapsed) return;
         this._buttonsCollapsed = true;
 
-        // Плавне згасання та зміщення круглих кнопок дій (150мс)
+        // Плавне згасання круглих кнопок дій (150мс)
         try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
         this._buttonsBox.ease({
             opacity: 0,
-            scale_x: 0.8,
-            scale_y: 0.8,
-            translation_x: 12,
             duration: 150,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             onComplete: () => {
@@ -1364,23 +1362,27 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._topRow.set_style('height: 54px; min-height: 54px;');
 
                 this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
-                this._btnApps.translation_x = 0;
-                this._btnApps.opacity = 255;
-                this._btnFiles.translation_x = 0;
-                this._btnFiles.opacity = 255;
-                this._btnClipboard.scale_x = 1.0;
-                this._btnClipboard.scale_y = 1.0;
-                this._btnClipboard.opacity = 255;
                 this._buttonsBox.visible = true;
-                this._buttonsBox.scale_x = 0.8;
-                this._buttonsBox.scale_y = 0.8;
+                this._buttonsBox.scale_x = 1.0;
+                this._buttonsBox.scale_y = 1.0;
                 this._buttonsBox.translation_x = 0;
+                this._buttonsBox.translation_y = 0;
                 this._buttonsBox.opacity = 0;
+
+                for (const btn of [this._btnApps, this._btnFiles, this._btnClipboard]) {
+                    if (btn) {
+                        try { btn.remove_all_transitions(); } catch (_) {}
+                        btn.scale_x = 1.0;
+                        btn.scale_y = 1.0;
+                        btn.translation_x = 0;
+                        btn.translation_y = 0;
+                        btn.opacity = 255;
+                    }
+                }
+
                 try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
                 this._buttonsBox.ease({
                     opacity: 255,
-                    scale_x: 1.0,
-                    scale_y: 1.0,
                     duration: 180,
                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 });
@@ -1664,20 +1666,39 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._box.opacity = 0;
 
         // Reset search pill and buttons
+        this._buttonsCollapsed = false;
+        this._isCollapsing = false;
+
+        try { this._searchPill.remove_all_transitions(); } catch (_) {}
         this._searchPill.set_size(COLLAPSED_PILL_WIDTH, PILL_HEIGHT);
         this._searchPill.width = COLLAPSED_PILL_WIDTH;
+        this._searchPill.scale_x = 1.0;
+        this._searchPill.scale_y = 1.0;
+        this._searchPill.translation_x = 0;
+        this._searchPill.translation_y = 0;
+        this._searchPill.opacity = 255;
         this._searchPill.set_style(PILL_COLLAPSED_STYLE);
         this._topRow.set_style('height: 54px; min-height: 54px;');
+
+        try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
         this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
         this._buttonsBox.visible = true;
         this._buttonsBox.opacity = 255;
-        this._btnApps.translation_x = 0;
-        this._btnApps.opacity = 255;
-        this._btnFiles.translation_x = 0;
-        this._btnFiles.opacity = 255;
-        this._btnClipboard.scale_x = 1.0;
-        this._btnClipboard.scale_y = 1.0;
-        this._btnClipboard.opacity = 255;
+        this._buttonsBox.scale_x = 1.0;
+        this._buttonsBox.scale_y = 1.0;
+        this._buttonsBox.translation_x = 0;
+        this._buttonsBox.translation_y = 0;
+
+        for (const btn of [this._btnApps, this._btnFiles, this._btnClipboard]) {
+            if (btn) {
+                try { btn.remove_all_transitions(); } catch (_) {}
+                btn.scale_x = 1.0;
+                btn.scale_y = 1.0;
+                btn.translation_x = 0;
+                btn.translation_y = 0;
+                btn.opacity = 255;
+            }
+        }
 
         this._searchIcon.set_gicon(null);
         this._searchIcon.icon_name = 'system-search-symbolic';
@@ -1708,6 +1729,10 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (_isGlassAlive(this._glass)) {
             try {
                 this._glass.remove_all_transitions();
+                this._glass.scale_x = 1.0;
+                this._glass.scale_y = 1.0;
+                this._glass.translation_x = 0;
+                this._glass.translation_y = 0;
                 if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
                     Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
                 }
@@ -1799,6 +1824,10 @@ export const MacSpotlightDialog = GObject.registerClass({
             try {
                 if (_isGlassAlive(this._glass)) {
                     this._glass.remove_all_transitions();
+                    this._glass.scale_x = 1.0;
+                    this._glass.scale_y = 1.0;
+                    this._glass.translation_x = 0;
+                    this._glass.translation_y = 0;
                     this._glass.opacity = 0;
                     this._glass.visible = false;
                     this._glass.hide();
@@ -1820,6 +1849,29 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._box.translation_y = 0;
             this._box.scale_x = 1.0;
             this._box.scale_y = 1.0;
+            try { this._searchPill.remove_all_transitions(); } catch (_) {}
+            this._searchPill.scale_x = 1.0;
+            this._searchPill.scale_y = 1.0;
+            this._searchPill.translation_x = 0;
+            this._searchPill.translation_y = 0;
+            this._searchPill.opacity = 255;
+            try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
+            this._buttonsBox.scale_x = 1.0;
+            this._buttonsBox.scale_y = 1.0;
+            this._buttonsBox.translation_x = 0;
+            this._buttonsBox.translation_y = 0;
+            this._buttonsBox.opacity = 255;
+            this._buttonsBox.visible = true;
+            for (const btn of [this._btnApps, this._btnFiles, this._btnClipboard]) {
+                if (btn) {
+                    try { btn.remove_all_transitions(); } catch (_) {}
+                    btn.scale_x = 1.0;
+                    btn.scale_y = 1.0;
+                    btn.translation_x = 0;
+                    btn.translation_y = 0;
+                    btn.opacity = 255;
+                }
+            }
             this.visible = false;
             this._backdrop.visible = false;
             this._entry.text = '';
@@ -1833,6 +1885,44 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._isClosing = true;
         this._isCollapsing = false;
         this._backdrop.visible = false;
+
+        // Плавне згасання прозорості елементів пілюлі, кнопок та результатів для зникнення
+        try { this._searchPill.remove_all_transitions(); } catch (_) {}
+        this._searchPill.ease({
+            opacity: 0,
+            duration: 260,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+
+        if (this._buttonsBox.visible) {
+            try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
+            this._buttonsBox.ease({
+                opacity: 0,
+                duration: 260,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
+
+        if (this._resultsWrapper.visible) {
+            try { this._resultsWrapper.remove_all_transitions(); } catch (_) {}
+            this._resultsWrapper.ease({
+                opacity: 0,
+                duration: 260,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
+
+        if (_isGlassAlive(this._glass)) {
+            try {
+                this._glass.remove_all_transitions();
+                this._glass.ease({
+                    opacity: 0,
+                    duration: 300,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+            } catch (_) {}
+        }
+
         this._box.ease({
             opacity: 0,
             scale_x: 1.08,
@@ -1849,6 +1939,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this.visible = false;
                 this._entry.text = '';
                 this._resultsWrapper.visible = false;
+                this._resultsWrapper.opacity = 0;
                 this._resultsBox.destroy_all_children();
                 this._resultButtons = [];
                 this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
@@ -1856,6 +1947,29 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._box.translation_y = 0;
                 this._box.scale_x = 1.0;
                 this._box.scale_y = 1.0;
+                try { this._searchPill.remove_all_transitions(); } catch (_) {}
+                this._searchPill.opacity = 255;
+                this._searchPill.scale_x = 1.0;
+                this._searchPill.scale_y = 1.0;
+                this._searchPill.translation_x = 0;
+                this._searchPill.translation_y = 0;
+                try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
+                this._buttonsBox.opacity = 255;
+                this._buttonsBox.visible = true;
+                this._buttonsBox.scale_x = 1.0;
+                this._buttonsBox.scale_y = 1.0;
+                this._buttonsBox.translation_x = 0;
+                this._buttonsBox.translation_y = 0;
+                for (const btn of [this._btnApps, this._btnFiles, this._btnClipboard]) {
+                    if (btn) {
+                        try { btn.remove_all_transitions(); } catch (_) {}
+                        btn.scale_x = 1.0;
+                        btn.scale_y = 1.0;
+                        btn.translation_x = 0;
+                        btn.translation_y = 0;
+                        btn.opacity = 255;
+                    }
+                }
                 hideGlass();
             },
         });

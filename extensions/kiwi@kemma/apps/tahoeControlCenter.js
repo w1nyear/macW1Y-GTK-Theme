@@ -953,6 +953,7 @@ function _buildPanel() {
     }
     panelBg.set_position(X, Y);
     panelBg.set_size(W, -1);
+    panelBg.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
     overlay.add_child(panelBg);
 
     const box = new St.BoxLayout({style_class: `tahoe-qs-panel${darkCls}`, vertical: true});
@@ -966,6 +967,7 @@ function _buildPanel() {
     box.set_position(X, Y);
     box.set_size(W, -1);
     box.set_style('border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important;');
+    box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
     overlay.add_child(box);
 
     const state = {control: null, nm: null, bt: null,
@@ -1622,22 +1624,28 @@ function _buildPanel() {
     } catch (_) {
         _startGlass();
     }
-    box.set_pivot_point(1.0, 0.0);
-    box.translation_x = 480;
+    box.set_pivot_point(0.9, 0.05);
+    box.scale_x = 1.06;
+    box.scale_y = 1.06;
+    box.translation_x = 0;
     box.opacity = 0;
-    panelBg.set_pivot_point(1.0, 0.0);
-    panelBg.translation_x = 480;
+    panelBg.set_pivot_point(0.9, 0.05);
+    panelBg.scale_x = 1.06;
+    panelBg.scale_y = 1.06;
+    panelBg.translation_x = 0;
     panelBg.opacity = 0;
     box.ease({
-        translation_x: 0,
+        scale_x: 1.0,
+        scale_y: 1.0,
         opacity: 255,
-        duration: 280,
+        duration: 300,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
     });
     panelBg.ease({
-        translation_x: 0,
+        scale_x: 1.0,
+        scale_y: 1.0,
         opacity: 255,
-        duration: 280,
+        duration: 300,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
     });
 }
@@ -2616,15 +2624,21 @@ async function _startGlass() {
                 return GLib.SOURCE_REMOVE;
             if (!_panel.overlay.mapped)
                 return GLib.SOURCE_REMOVE;
-            try {
-                _panel.panelBg.opacity = _panel.box.opacity;
-            } catch (_) {
-                // gone
+            if (!_closing) {
+                try {
+                    _panel.panelBg.opacity = _panel.box.opacity;
+                } catch (_) {}
             }
-            const isAnimating = (_panel.box?.translation_x !== 0) || _closing;
+            const isAnimating = (_panel.box?.translation_x !== 0) || (_panel.box?.scale_x !== 1.0) || _closing;
             for (const s of glass.stacks) {
                 try {
-                    s.bgActor.opacity = _panel.box.opacity;
+                    if (!_closing) {
+                        s.bgActor.opacity = _panel.box.opacity;
+                        if (_panel.box) {
+                            s.bgActor.set_pivot_point(0.9, 0.05);
+                            s.bgActor.set_scale(_panel.box.scale_x, _panel.box.scale_y);
+                        }
+                    }
                     // [GPU-SAVE] _syncStack сама вирішує, коли фон реально змінився
                     // (межа 60 FPS + 1 Гц пульс усередині), тому викликаємо щотіка —
                     // у спокої це will дорогої роботи.
@@ -2903,19 +2917,55 @@ function _closePanel(immediate = false) {
     try {
         p.box.remove_all_transitions();
         p.panelBg.remove_all_transitions();
-        p.box.set_pivot_point(1.0, 0.0);
-        p.panelBg.set_pivot_point(1.0, 0.0);
+        p.box.set_pivot_point(0.9, 0.05);
+        p.panelBg.set_pivot_point(0.9, 0.05);
+
+        // Плавне згасання прозорості кожного окремого елемента всередині панелі для зникнення
+        for (const child of p.box.get_children()) {
+            if (child) {
+                try {
+                    child.remove_all_transitions();
+                    child.ease({
+                        opacity: 0,
+                        duration: 260,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    });
+                } catch (_) {}
+            }
+        }
+
+        // Плавне згасання рідкого скла
+        if (p.glass && p.glass.stacks) {
+            for (const s of p.glass.stacks) {
+                if (s.bgActor) {
+                    try {
+                        s.bgActor.remove_all_transitions();
+                        s.bgActor.set_pivot_point(0.9, 0.05);
+                        s.bgActor.ease({
+                            opacity: 0,
+                            scale_x: 1.06,
+                            scale_y: 1.06,
+                            duration: 300,
+                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        });
+                    } catch (_) {}
+                }
+            }
+        }
+
         p.panelBg.ease({
-            translation_x: 480,
+            scale_x: 1.06,
+            scale_y: 1.06,
             opacity: 0,
-            duration: 240,
-            mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+            duration: 300,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         });
         p.box.ease({
-            translation_x: 480,
+            scale_x: 1.06,
+            scale_y: 1.06,
             opacity: 0,
-            duration: 240,
-            mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+            duration: 300,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
                 _teardownPanel(p);
             },

@@ -335,6 +335,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             'padding: 16px 2px 0px 2px; ' +
             'box-shadow: none !important;'
         );
+        this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
         this.add_child(this._box);
         this._syncLoopId = 0;
         this._isClosing = false;
@@ -1347,6 +1348,10 @@ export const MacApplicationsDialog = GObject.registerClass({
             try {
                 if (_isGlassAlive(this._glass)) {
                     this._glass.remove_all_transitions();
+                    this._glass.scale_x = 1.0;
+                    this._glass.scale_y = 1.0;
+                    this._glass.translation_x = 0;
+                    this._glass.translation_y = 0;
                     this._glass.opacity = 0;
                     this._glass.visible = false;
                     this._glass.hide();
@@ -1370,13 +1375,38 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
 
         this._isClosing = true;
-        this._startSyncLoop(200);
+        this._startSyncLoop(300);
+
+        for (const child of this._box.get_children()) {
+            if (child) {
+                try {
+                    child.remove_all_transitions();
+                    child.ease({
+                        opacity: 0,
+                        duration: 260,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    });
+                } catch (_) {}
+            }
+        }
+
+        if (_isGlassAlive(this._glass)) {
+            try {
+                this._glass.remove_all_transitions();
+                this._glass.ease({
+                    opacity: 0,
+                    duration: 300,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+            } catch (_) {}
+        }
+
         this._box.ease({
             opacity: 0,
-            scale_x: 1.12,
-            scale_y: 1.12,
-            duration: 180,
-            mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            scale_x: 1.08,
+            scale_y: 1.08,
+            duration: 300,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
                 if (this._isOpen) return;
                 this._cancelSyncLoop();
@@ -1386,6 +1416,11 @@ export const MacApplicationsDialog = GObject.registerClass({
                 this._box.translation_y = 0;
                 this._box.scale_x = 1.0;
                 this._box.scale_y = 1.0;
+                for (const child of this._box.get_children()) {
+                    if (child) {
+                        try { child.opacity = 255; } catch (_) {}
+                    }
+                }
                 hideGlass();
             },
         });
