@@ -181,6 +181,9 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
             let isAnimating = false;
             let lastScrollTime = 0;
             let lastTickTime = 0;
+            let lastTrackpadTime = 0;
+            let trackpadVelocity = 0.0;
+            let isFingerDragging = false;
 
             const onValChanged = () => {
                 if (!isAnimating) {
@@ -193,13 +196,19 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
             sv.connectObject('scroll-event', (_actor, event) => {
                 const direction = event.get_scroll_direction();
                 let delta = 0;
-                if (direction === Clutter.ScrollDirection.UP) delta = -1;
-                else if (direction === Clutter.ScrollDirection.DOWN) delta = 1;
-                else if (direction === Clutter.ScrollDirection.SMOOTH) {
-                    const [dx, dy] = event.get_scroll_delta();
+                let dx = 0;
+                let dy = 0;
+                if (direction === Clutter.ScrollDirection.UP) {
+                    delta = -1;
+                } else if (direction === Clutter.ScrollDirection.DOWN) {
+                    delta = 1;
+                } else if (direction === Clutter.ScrollDirection.SMOOTH) {
+                    [dx, dy] = event.get_scroll_delta();
+                    if (Math.abs(dy) === 0 && Math.abs(dx) > 0) {
+                        return Clutter.EVENT_PROPAGATE;
+                    }
                     delta = dy;
                 }
-                if (delta === 0) return Clutter.EVENT_PROPAGATE;
 
                 const lower = adj.lower;
                 const upper = adj.upper;
@@ -210,35 +219,63 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
                 const source = (typeof event.get_scroll_source === 'function')
                     ? event.get_scroll_source()
                     : Clutter.ScrollSource.UNKNOWN;
+                const device = (typeof event.get_source_device === 'function')
+                    ? event.get_source_device()
+                    : null;
+                const isTouchpad = (source === Clutter.ScrollSource.FINGER ||
+                                    source === Clutter.ScrollSource.CONTINUOUS ||
+                                    (device && typeof device.get_device_type === 'function' &&
+                                     device.get_device_type() === Clutter.InputDeviceType.TOUCHPAD_DEVICE));
 
-                // High-precision trackpad two-finger scrolling (FINGER)
-                if (source === Clutter.ScrollSource.FINGER) {
-                    if (this._scrollTimerId) {
-                        GLib.source_remove(this._scrollTimerId);
-                        this._scrollTimerId = null;
+                const now = GLib.get_monotonic_time();
+
+                // Touchpad finger release / gesture end
+                if (isTouchpad && dx === 0 && dy === 0) {
+                    if (isFingerDragging) {
+                        isFingerDragging = false;
+                        const dtSinceLast = (lastTrackpadTime > 0) ? (now - lastTrackpadTime) / 1000000 : 1.0;
+                        if (dtSinceLast < 0.05 && Math.abs(trackpadVelocity) > 160.0) {
+                            const momentum = Math.clamp(trackpadVelocity * 0.18, -500.0, 500.0);
+                            targetValue = Math.clamp(targetValue + momentum, lower, maxVal);
+                        }
+                        trackpadVelocity = 0.0;
                     }
-                    const trackpadStep = 24.0;
-                    currentValue = Math.clamp(adj.value + delta * trackpadStep, lower, maxVal);
-                    targetValue = currentValue;
-                    isAnimating = true;
-                    adj.value = currentValue;
-                    isAnimating = false;
                     return Clutter.EVENT_STOP;
                 }
 
-                // Mouse wheel continuous kinetic scrolling (WHEEL / discrete / high-res)
-                const now = GLib.get_monotonic_time();
+                if (delta === 0) return Clutter.EVENT_PROPAGATE;
+
+                // Immediate directional turnaround: if reversing scroll direction, snap target to current
                 if ((delta > 0 && targetValue < currentValue) || (delta < 0 && targetValue > currentValue)) {
                     targetValue = currentValue;
                 }
-                if ((now - lastScrollTime) > 400000) {
+
+                // If idle for more than 350ms, re-sync target and current from adj.value
+                if ((now - lastScrollTime) > 350000) {
                     currentValue = adj.value;
                     targetValue = adj.value;
+                    trackpadVelocity = 0.0;
+                    isFingerDragging = false;
                 }
                 lastScrollTime = now;
 
-                const notchStep = Math.max(50, adj.step_increment || 60);
-                targetValue = Math.clamp(targetValue + delta * notchStep, lower, maxVal);
+                if (isTouchpad) {
+                    const dtTrackpad = (lastTrackpadTime > 0)
+                        ? Math.max(0.005, Math.min(0.08, (now - lastTrackpadTime) / 1000000))
+                        : 0.016;
+                    lastTrackpadTime = now;
+                    isFingerDragging = true;
+
+                    const trackpadStep = 28.0;
+                    const vInst = (delta * trackpadStep) / dtTrackpad;
+                    trackpadVelocity = trackpadVelocity * 0.35 + vInst * 0.65;
+                    targetValue = Math.clamp(targetValue + delta * trackpadStep, lower, maxVal);
+                } else {
+                    isFingerDragging = false;
+                    trackpadVelocity = 0.0;
+                    const notchStep = Math.max(50, adj.step_increment || 60);
+                    targetValue = Math.clamp(targetValue + delta * notchStep, lower, maxVal);
+                }
 
                 if (!this._scrollTimerId) {
                     lastTickTime = GLib.get_monotonic_time();
@@ -247,8 +284,20 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
                         const dt = Math.min(0.04, Math.max(0.001, (tNow - lastTickTime) / 1000000));
                         lastTickTime = tNow;
 
-                        // Exponential decay: position moves towards target frame-by-frame across every single pixel
-                        const alpha = 1.0 - Math.exp(-15.0 * dt);
+                        // Timeout detection for touchpad: if no event received for 50ms, fingers stopped/lifted
+                        if (isFingerDragging && (tNow - lastTrackpadTime) > 50000) {
+                            isFingerDragging = false;
+                            const dtSince = (tNow - lastTrackpadTime) / 1000000;
+                            if (dtSince < 0.07 && Math.abs(trackpadVelocity) > 180.0) {
+                                const momentum = Math.clamp(trackpadVelocity * 0.18, -500.0, 500.0);
+                                targetValue = Math.clamp(targetValue + momentum, lower, maxVal);
+                            }
+                            trackpadVelocity = 0.0;
+                        }
+
+                        // Responsive decay during active finger drag; gentle decay for mouse wheel & momentum glide
+                        const decay = isFingerDragging ? 26.0 : 15.0;
+                        const alpha = 1.0 - Math.exp(-decay * dt);
                         currentValue += (targetValue - currentValue) * alpha;
 
                         if (Math.abs(targetValue - currentValue) < 0.25) {
@@ -257,6 +306,8 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
                             adj.value = currentValue;
                             isAnimating = false;
                             this._scrollTimerId = null;
+                            isFingerDragging = false;
+                            trackpadVelocity = 0.0;
                             return GLib.SOURCE_REMOVE;
                         }
 
