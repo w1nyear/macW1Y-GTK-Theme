@@ -375,11 +375,21 @@ export class ApplicationManager {
             // Appearance, one set per profile. Both call the same updater, which
             // re-reads each live window through its own namespace.
             for (const suffix of ['tint-color', 'tint-strength', 'blur-radius', 'corner-radius',
-                'brightness', 'contrast', 'saturation'])
+                'brightness', 'contrast', 'saturation']) {
                 connectSetting(this._profileKey(profile, suffix), () => this._updateEffectParams());
+                if (profile === 'desktop-menu') {
+                    connectSetting(`desktop-menu-${suffix}`, () => this._updateEffectParams());
+                    connectSetting(`menu-${suffix}`, () => this._updateEffectParams());
+                }
+            }
             // Opacity of the window's own content layer, so the glass underneath is visible through it.
             connectSetting(this._profileKey(profile, 'content-opacity'), () => this._updateWindowOpacities());
         }
+        connectSetting('enable-menu-glass', () => {
+            this._syncWhitelist();
+            if (this._isEffectEnabled())
+                this._startFrameSync();
+        });
         // Apply to every normal/dialog window, bypassing the whitelist entirely.
         connectSetting('application-glass-all-windows', () => this._syncWhitelist());
         connectSetting('application-window-whitelist', () => this._syncWhitelist());
@@ -407,13 +417,23 @@ export class ApplicationManager {
     }
     /** Appearance key in a profile's namespace, e.g. `desktop-menu-tint-color`. */
     _profileKey(profile, suffix) {
+        if (profile === 'desktop-menu') {
+            return `menu-${suffix}`;
+        }
         return `${profile}-${suffix}`;
     }
     /** The switch that turns one profile on, e.g. `enable-desktop-menu-glass`. */
     _profileEnableKey(profile) {
+        if (profile === 'desktop-menu') {
+            return 'enable-desktop-menu-glass';
+        }
         return `enable-${profile}-glass`;
     }
     _isProfileEnabled(profile) {
+        if (profile === 'desktop-menu') {
+            return this._settings.get_boolean('enable-desktop-menu-glass') ||
+                   this._settings.get_boolean('enable-menu-glass');
+        }
         return this._settings.get_boolean(this._profileEnableKey(profile));
     }
     // [FIX] Whether ANY profile wants glass, not just the application one.
@@ -1019,8 +1039,8 @@ export class ApplicationManager {
         if (profile === 'desktop-menu') {
             effect.setSurfaceLightEnabled(true);
             effect.setCornerRadius(cornerRadius || 20.0);
-            effect.setTintColor(1.0, 1.0, 1.0);
-            effect.setTintStrength(0.01);
+            effect.setTintColor(...this._hexToColorArray(tintColorStr));
+            effect.setTintStrength(tintStrength);
             effect.setBlurRadius(blurRadius || 10);
             effect.setArrow(0, 0, 0, 0);
             surfaceActor.opacity = 255;

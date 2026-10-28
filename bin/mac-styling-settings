@@ -522,6 +522,9 @@ class MacStylingWindow(Adw.ApplicationWindow):
         set_gsetting(LIQUID_SCHEMA, "menu-blur-radius", max(1, int(m_glass * 30)))
         set_gsetting(LIQUID_SCHEMA, "menu-tint-strength", m_tint)
         set_gsetting(LIQUID_SCHEMA, "menu-tint-color", m_col)
+        set_gsetting(LIQUID_SCHEMA, "desktop-menu-blur-radius", max(1, int(m_glass * 30)))
+        set_gsetting(LIQUID_SCHEMA, "desktop-menu-tint-strength", m_tint)
+        set_gsetting(LIQUID_SCHEMA, "desktop-menu-tint-color", m_col)
 
         set_gsetting(LIQUID_SCHEMA, "osd-blur-radius", max(1, int(o_glass * 30)))
         set_gsetting(LIQUID_SCHEMA, "osd-tint-strength", o_tint)

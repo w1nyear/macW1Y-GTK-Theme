@@ -407,13 +407,23 @@ export class ApplicationManager {
     }
     /** Appearance key in a profile's namespace, e.g. `desktop-menu-tint-color`. */
     _profileKey(profile, suffix) {
+        if (profile === 'desktop-menu') {
+            return `menu-${suffix}`;
+        }
         return `${profile}-${suffix}`;
     }
     /** The switch that turns one profile on, e.g. `enable-desktop-menu-glass`. */
     _profileEnableKey(profile) {
+        if (profile === 'desktop-menu') {
+            return 'enable-desktop-menu-glass';
+        }
         return `enable-${profile}-glass`;
     }
     _isProfileEnabled(profile) {
+        if (profile === 'desktop-menu') {
+            return this._settings.get_boolean('enable-desktop-menu-glass') ||
+                   this._settings.get_boolean('enable-menu-glass');
+        }
         return this._settings.get_boolean(this._profileEnableKey(profile));
     }
     // [FIX] Whether ANY profile wants glass, not just the application one.
@@ -968,12 +978,14 @@ export class ApplicationManager {
         if (profile === 'desktop-menu') {
             effect.setSurfaceLightEnabled(true);
             effect.setCornerRadius(cornerRadius || 20.0);
-            effect.setTintColor(1.0, 1.0, 1.0);
-            effect.setTintStrength(0.01);
+            effect.setTintColor(...this._hexToColorArray(tintColorStr));
+            effect.setTintStrength(tintStrength);
             effect.setBlurRadius(blurRadius || 10);
+            effect.setArrow(0, 0, 0, 0);
             surfaceActor.opacity = 255;
         } else {
             effect.setSurfaceLightEnabled(false);
+            effect.setArrow(0, 0, 0, 0);
         }
         // Keep the drop-shadow within the small padded border around the window,
         // rather than the huge margin dockManager uses for its full-screen FBO.

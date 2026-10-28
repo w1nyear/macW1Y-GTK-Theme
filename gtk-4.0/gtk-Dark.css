@@ -3212,10 +3212,10 @@ popover > arrow,
 popover > contents {
   color: @window_fg_color;
   background-clip: padding-box;
-  background-color: transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
+  background-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  border: none;
 }
 
 popover, popover:backdrop {
@@ -3337,8 +3337,8 @@ popover.menu box.circular-buttons button.circular.image-button.model:active:focu
 }
 
 popover.menu > arrow, popover.menu.background > contents {
-  background-color: transparent !important;
-  background: transparent !important;
+  background-color: transparent;
+  background: transparent;
   color: @window_fg_color;
 }
 
@@ -9618,15 +9618,16 @@ menu separator {
 popover > arrow,
 popover.menu > arrow,
 popover arrow,
-.popover-arrow {
+.popover-arrow,
+popover.background > arrow,
+popover.menu.background > arrow {
   min-width: 20px;
   min-height: 10px;
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
   margin: 0;
   padding: 0;
 }
@@ -9656,11 +9657,11 @@ popover.menu.background > contents,
 .nautilus-window popover.menu viewport,
 .nautilus-window popover.menu stack,
 .nautilus-window popover.menu box {
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  box-shadow: none !important;
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
   margin: 0;
 }
 
