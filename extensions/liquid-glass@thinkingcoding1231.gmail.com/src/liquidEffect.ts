@@ -1310,6 +1310,13 @@ export const LiquidEffect = GObject.registerClass({
     this._setFloat('blur_rect_y', 0.0);
     this._setFloat('blur_rect_w', 0.0);
     this._setFloat('blur_rect_h', 0.0);
+    // Popover arrow / beak geometry (used by menus, context popovers and tooltips)
+    this._setFloat('arrow_side', 0.0);
+    this._setFloat('arrow_origin', 0.0);
+    this._setFloat('arrow_base', 0.0);
+    this._setFloat('arrow_rise', 0.0);
+    this._setFloat('arrow_radius', 2.0);
+    this._setFloat('arrow_fillet', 5.0);
 
     this._settingsIds = [];
     if (this._settings) {
@@ -3517,6 +3524,16 @@ export const LiquidEffect = GObject.registerClass({
 
   setCornerRadius(radius: number): void {
     this._setFloat('corner_radius', radius);
+    this._queueRepaintIfDirty();
+  }
+
+  setArrow(side = 0, origin = 0, base = 18.0, rise = 8.0, radius = 2.0, fillet = 5.0): void {
+    this._setFloat('arrow_side', side);
+    this._setFloat('arrow_origin', origin);
+    this._setFloat('arrow_base', base);
+    this._setFloat('arrow_rise', rise);
+    this._setFloat('arrow_radius', radius);
+    this._setFloat('arrow_fillet', fillet);
     this._queueRepaintIfDirty();
   }
 

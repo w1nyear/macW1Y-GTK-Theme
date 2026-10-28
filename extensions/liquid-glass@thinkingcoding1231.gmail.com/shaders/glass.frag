@@ -171,11 +171,72 @@ uniform float region_tint_b[MAX_GLASS_REGIONS];
 // not be resolved at all can simply opt out with 0.
 uniform float region_base_strength[MAX_GLASS_REGIONS];
 
+// Arrow / popover geometry uniforms
+uniform float arrow_side;       // 0 = none, 1 = top, 2 = right, 3 = bottom, 4 = left
+uniform float arrow_origin;     // offset along edge from center (px)
+uniform float arrow_base;       // base width of arrow (px, default 18.0)
+uniform float arrow_rise;       // height/rise of arrow (px, default 8.0)
+uniform float arrow_radius;     // tip radius of arrow (px, default 2.0)
+uniform float arrow_fillet;     // smooth concave fillet radius joining body (px, default 5.0)
+
 // Signed Distance Field (SDF) function for a rounded rectangle.
 // Returns negative values inside the shape, positive outside, and 0 on the exact edge.
 float sdRoundRect(vec2 p, vec2 b, float r) {
     vec2 d = abs(p) - b + vec2(r);
     return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - r;
+}
+
+// Exact analytical 2D triangle SDF
+float sdTriangle(vec2 p, vec2 p0, vec2 p1, vec2 p2) {
+    vec2 e0 = p1 - p0, e1 = p2 - p1, e2 = p0 - p2;
+    vec2 v0 = p - p0,  v1 = p - p1,  v2 = p - p2;
+    vec2 pq0 = v0 - e0 * clamp(dot(v0, e0) / dot(e0, e0), 0.0, 1.0);
+    vec2 pq1 = v1 - e1 * clamp(dot(v1, e1) / dot(e1, e1), 0.0, 1.0);
+    vec2 pq2 = v2 - e2 * clamp(dot(v2, e2) / dot(e2, e2), 0.0, 1.0);
+    float s = sign(e0.x * e2.y - e0.y * e2.x);
+    vec2 d = min(min(vec2(dot(pq0, pq0), s * (v0.x * e0.y - v0.y * e0.x)),
+                     vec2(dot(pq1, pq1), s * (v1.x * e1.y - v1.y * e1.x))),
+                     vec2(dot(pq2, pq2), s * (v2.x * e2.y - v2.y * e2.x)));
+    return -sqrt(d.x) * sign(d.y);
+}
+
+// Polynomial smooth minimum for rounded concave transition fillets
+float smin(float a, float b, float k) {
+    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+// Composite SDF: rounded rectangle with smooth popover arrow / beak
+float sdPopover(vec2 p, vec2 b, float r, float side, float origin, float baseW, float rise, float tipR, float fillet) {
+    float d_box = sdRoundRect(p, b, r);
+    if (side < 0.5 || rise <= 0.0) {
+        return d_box;
+    }
+
+    vec2 pt;
+    vec2 ob;
+    if (side < 1.5) {        // 1 = TOP
+        pt = vec2(p.x, -p.y);
+        ob = b;
+    } else if (side < 2.5) { // 2 = RIGHT
+        pt = vec2(p.y, p.x);
+        ob = vec2(b.y, b.x);
+    } else if (side < 3.5) { // 3 = BOTTOM
+        pt = p;
+        ob = b;
+    } else {                 // 4 = LEFT
+        pt = vec2(p.y, -p.x);
+        ob = vec2(b.y, b.x);
+    }
+
+    vec2 q = vec2(pt.x - origin, pt.y - ob.y);
+    float half_w = max(baseW * 0.5, 1.0);
+    float safeFillet = max(fillet, 1.0);
+    float sunken = max(safeFillet * 1.5, 8.0);
+    float safeTip = clamp(tipR, 0.1, rise * 0.5);
+
+    float d_tri = sdTriangle(q, vec2(-half_w, -sunken), vec2(0.0, rise - safeTip), vec2(half_w, -sunken)) - safeTip;
+    return smin(d_box, d_tri, safeFillet);
 }
 
 // [NEW] Multi-region mode: finds the region nearest to (i.e. most "inside"
@@ -246,7 +307,7 @@ float profileHeight(float t, float zScale) {
 
 // Computes the absolute height at a specific 2D coordinate.
 float getHeight(vec2 p, vec2 b, float r, float zScale) {
-    float d = sdRoundRect(p, b, r);
+    float d = (multi_region_mode > 0.5) ? sdRoundRect(p, b, r) : sdPopover(p, b, r, arrow_side, arrow_origin, arrow_base, arrow_rise, arrow_radius, arrow_fillet);
 
     // [FIX 1] Soft boundary fade instead of a hard step at d=0.
     // A hard "if (d > 0) return 0" causes a discontinuous jump in the height
@@ -295,6 +356,19 @@ vec2 sdRoundRectDir(vec2 p, vec2 b, float r) {
     return sign(p) * normalize(max(q, 0.0) + vec2(1e-6));
 }
 
+// Unit gradient of sdPopover() at p
+vec2 sdPopoverDir(vec2 p, vec2 b, float r, float side, float origin, float baseW, float rise, float tipR, float fillet) {
+    if (side < 0.5 || rise <= 0.0) {
+        return sdRoundRectDir(p, b, r);
+    }
+    float eps = 0.5;
+    float dx = sdPopover(p + vec2(eps, 0.0), b, r, side, origin, baseW, rise, tipR, fillet)
+             - sdPopover(p - vec2(eps, 0.0), b, r, side, origin, baseW, rise, tipR, fillet);
+    float dy = sdPopover(p + vec2(0.0, eps), b, r, side, origin, baseW, rise, tipR, fillet)
+             - sdPopover(p - vec2(0.0, eps), b, r, side, origin, baseW, rise, tipR, fillet);
+    return normalize(vec2(dx, dy) + vec2(1e-6));
+}
+
 // Height gradient of the glass surface at p.
 //
 // The height is a function of the signed distance alone — getHeight(p) is
@@ -327,7 +401,7 @@ vec2 sdRoundRectDir(vec2 p, vec2 b, float r) {
 // that bounded, at a magnitude tied to gradientStep(), which is precisely the
 // smoothing the current look depends on.
 vec2 heightGradient(vec2 p, vec2 b, float r, float zScale, vec2 resolution) {
-    vec2 dir = sdRoundRectDir(p, b, r);
+    vec2 dir = (multi_region_mode > 0.5) ? sdRoundRectDir(p, b, r) : sdPopoverDir(p, b, r, arrow_side, arrow_origin, arrow_base, arrow_rise, arrow_radius, arrow_fillet);
     float e = gradientStep(resolution);
 
     float hOut = getHeight(p + dir * e, b, r, zScale);
@@ -489,8 +563,8 @@ void main() {
             box_size = max(actual_size * 0.5, vec2(1.0));
         }
 
-        // Distance from the current pixel to the rounded rectangle boundary.
-        d = sdRoundRect(local_pos, box_size, corner_radius);
+        // Distance from the current pixel to the rounded rectangle boundary (or popover with smooth beak).
+        d = sdPopover(local_pos, box_size, corner_radius, arrow_side, arrow_origin, arrow_base, arrow_rise, arrow_radius, arrow_fillet);
         activeTint = vec3(tint_r, tint_g, tint_b);
     }
     

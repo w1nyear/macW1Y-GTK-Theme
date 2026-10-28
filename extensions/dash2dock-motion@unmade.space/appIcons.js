@@ -1917,6 +1917,69 @@ class DockShowAppsIconMenu extends DockAppIconMenu {
     }
 }
 
+function _ensureLabelTail(label, position) {
+    if (!label)
+        return;
+    if (!label._arrowTail) {
+        label._arrowTail = new St.DrawingArea({ style_class: 'dash-label-tail' });
+        label._arrowTail.set_size(24, 9);
+        label._arrowTail.connect('repaint', (area) => {
+            const cr = area.get_context();
+            const [w, h] = area.get_surface_size();
+            const cx = w / 2;
+            const themeNode = label.get_theme_node();
+            const bg = themeNode ? themeNode.get_background_color() : null;
+            const border = themeNode ? themeNode.get_border_color(St.Side.BOTTOM) : null;
+
+            const r = bg ? bg.red / 255 : 0.12;
+            const g = bg ? bg.green / 255 : 0.12;
+            const b = bg ? bg.blue / 255 : 0.14;
+            const a = bg ? bg.alpha / 255 : 0.78;
+
+            const br = border ? border.red / 255 : 1.0;
+            const bg_c = border ? border.green / 255 : 1.0;
+            const bb = border ? border.blue / 255 : 1.0;
+            const ba = border ? border.alpha / 255 : 0.22;
+
+            cr.setSourceRGBA(r, g, b, a);
+            const halfBase = 8.5;
+            const rise = h;
+            const fillet = 4.0;
+            const tipR = 2.0;
+
+            if (label._arrowPos === St.Side.TOP) {
+                cr.moveTo(cx - halfBase - fillet, rise);
+                cr.curveTo(cx - halfBase + fillet * 0.5, rise, cx - tipR, tipR * 0.5, cx, 0);
+                cr.curveTo(cx + tipR, tipR * 0.5, cx + halfBase - fillet * 0.5, rise, cx + halfBase + fillet, rise);
+                cr.closePath();
+                cr.fillPreserve();
+
+                cr.setSourceRGBA(br, bg_c, bb, ba);
+                cr.setLineWidth(1.0);
+                cr.stroke();
+            } else {
+                cr.moveTo(cx - halfBase - fillet, 0);
+                cr.curveTo(cx - halfBase + fillet * 0.5, 0, cx - tipR, rise - tipR * 0.5, cx, rise);
+                cr.curveTo(cx + tipR, rise - tipR * 0.5, cx + halfBase - fillet * 0.5, 0, cx + halfBase + fillet, 0);
+                cr.closePath();
+                cr.fillPreserve();
+
+                cr.setSourceRGBA(br, bg_c, bb, ba);
+                cr.setLineWidth(1.0);
+                cr.stroke();
+            }
+        });
+        label.add_child(label._arrowTail);
+    }
+    label._arrowPos = position;
+    if (position === St.Side.TOP) {
+        label._arrowTail.set_position(Math.round((label.width - 24) / 2), -7.5);
+    } else {
+        label._arrowTail.set_position(Math.round((label.width - 24) / 2), label.height - 1.5);
+    }
+    label._arrowTail.queue_repaint();
+}
+
 /**
  * This function is used for both DockShowAppsIcon and DockDashItemContainer
  */
@@ -1960,7 +2023,7 @@ export function positionItemLabel(item) {
         break;
     case St.Side.BOTTOM:
         yOffset = labelOffset;
-        y = stageY - labelHeight - yOffset;
+        y = stageY - labelHeight - yOffset - 7;
         xOffset = Math.floor((itemWidth - labelWidth) / 2);
         x = stageX + xOffset;
         break;
@@ -1992,6 +2055,7 @@ export function itemShowLabel() {
     this.label.show();
 
     positionItemLabel(this);
+    _ensureLabelTail(this.label, Utils.getPosition());
 
     // Queue repaint on blur effect so it captures fresh background at new position
     const blurEff = this.label.get_effect?.('tahoe-label-blur');

@@ -912,6 +912,35 @@ export class UIManager {
             if (typeof this.effect.setAnimationScale === 'function') {
                 this.effect.setAnimationScale(currentScale);
             }
+            const bp = this.menu?._boxPointer;
+            if (bp && typeof bp.get_theme_node === 'function') {
+                try {
+                    const themeNode = bp.get_theme_node();
+                    const rise = themeNode ? themeNode.get_length('-arrow-rise') : 0;
+                    const base = themeNode ? (themeNode.get_length('-arrow-base') || 18.0) : 18.0;
+                    if (rise > 0 && bp._arrowSide !== undefined) {
+                        let sideNum = 0;
+                        if (bp._arrowSide === St.Side.TOP) sideNum = 1;
+                        else if (bp._arrowSide === St.Side.RIGHT) sideNum = 2;
+                        else if (bp._arrowSide === St.Side.BOTTOM) sideNum = 3;
+                        else if (bp._arrowSide === St.Side.LEFT) sideNum = 4;
+
+                        let origin = 0;
+                        if (sideNum === 1 || sideNum === 3) {
+                            origin = (bp._arrowOrigin || (w * 0.5)) - (w * 0.5);
+                        } else {
+                            origin = (bp._arrowOrigin || (h * 0.5)) - (h * 0.5);
+                        }
+                        this.effect.setArrow(sideNum, origin, base * currentScale, rise * currentScale, 2.0, 5.0);
+                    } else {
+                        this.effect.setArrow(0, 0, 0, 0);
+                    }
+                } catch (_) {
+                    this.effect.setArrow(0, 0, 0, 0);
+                }
+            } else {
+                this.effect.setArrow(0, 0, 0, 0);
+            }
         }
         // Clone sync every frame (dockManager pattern).
         // WindowCloneManager handles background + window actor clones.

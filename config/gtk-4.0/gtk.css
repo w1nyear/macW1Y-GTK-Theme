@@ -9612,22 +9612,17 @@ menu separator {
   margin: 4px 6px;
 }
 
-/* Popover Arrow removal: strictly no arrow above context menu or popovers */
+/* Popover Arrow: restored macOS Tahoe style */
 popover > arrow,
 popover.menu > arrow,
 popover arrow,
 .popover-arrow {
-  min-width: 0px;
-  min-height: 0px;
-  background: transparent;
-  background-color: transparent;
-  border: none;
-  border-style: none;
-  box-shadow: none;
-  opacity: 0;
-  -gtk-icon-source: none;
-  margin: 0;
-  padding: 0;
+  min-width: 18px;
+  min-height: 8px;
+  background-color: rgba(30, 30, 34, 0.78);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
 }
 
 /* Ensure outer popover node and contents have no background, shadow or padding */

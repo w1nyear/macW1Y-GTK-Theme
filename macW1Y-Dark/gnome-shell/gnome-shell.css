@@ -2526,12 +2526,12 @@ StEntry StLabel.hint-text {
 
 /* Popovers/Menus */
 .popup-menu-boxpointer {
-  -arrow-border-radius: 24px !important;
+  -arrow-border-radius: 20px !important;
   -arrow-background-color: transparent;
   -arrow-border-width: 0;
   -arrow-border-color: transparent;
-  -arrow-base: 0px;
-  -arrow-rise: 0px;
+  -arrow-base: 18px;
+  -arrow-rise: 8px;
   -arrow-box-shadow: none;
   -boxpointer-gap: 0px;
 }
