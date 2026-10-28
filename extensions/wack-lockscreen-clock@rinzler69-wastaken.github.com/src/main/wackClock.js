@@ -197,7 +197,7 @@ export const WackClock = GObject.registerClass(
             const letterSpacing = (this._letterSpacing != null)
                 ? ` letter-spacing: ${this._letterSpacing}px;` : '';
             this._time.set_style(`color: ${timeColor}; ${font} ${weight} ${timeShadow}${letterSpacing}`);
-            this._dateOutput.set_style(`color: ${dateColor}; font-family: 'SF Pro Display', -apple-system, sans-serif; font-weight: 600; margin-bottom: 0px; ${dateShadow}`);
+            this._dateOutput.set_style(`color: ${dateColor}; font-family: 'SF Pro Display', -apple-system, sans-serif; font-weight: 600; text-align: center; margin-bottom: 0px; ${dateShadow}`);
             // Після зміни стилю шрифт може перерахуватись — піднімаємо двокрапку заново.
             this._applyColonMarkup();
         }

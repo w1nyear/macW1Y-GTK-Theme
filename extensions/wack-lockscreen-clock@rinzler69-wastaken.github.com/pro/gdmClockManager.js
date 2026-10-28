@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { WackClock } from '../main/wackClock.js';
@@ -247,8 +248,21 @@ export class GdmClockManager {
         const effectiveDateH = Math.max(22, Math.min(60, Math.ceil(preferredDateH)));
         const timeY = effectiveDateH - 4;
 
-        this.clock._dateOutput.set_position(0, 0);
-        this.clock._dateOutput.set_size(w, effectiveDateH);
+        const oldDateConstraint = this.clock._dateOutput.get_constraint('wack-clock-center-x');
+        if (oldDateConstraint) {
+            this.clock._dateOutput.remove_constraint(oldDateConstraint);
+        }
+        const [, rawDateW] = this.clock._dateOutput.get_preferred_width(-1);
+        const preferredDateW = (rawDateW > 0 && rawDateW < w) ? Math.ceil(rawDateW) : Math.min(600, w);
+        const dateX = Math.round((w - preferredDateW) / 2);
+
+        this.clock._dateOutput.set_position(dateX, 0);
+        this.clock._dateOutput.set_size(preferredDateW, effectiveDateH);
+        if (this.clock._dateOutput.clutter_text) {
+            this.clock._dateOutput.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+            this.clock._dateOutput.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+        }
+        this.clock._dateOutput.set_x_align(Clutter.ActorAlign.CENTER);
 
         if (this.glassClock) {
             this.glassClock.sync();
@@ -264,7 +278,11 @@ export class GdmClockManager {
                 this.timeLabel.visible = false;
                 this.timeLabel.opacity = 0;
             } else {
-                this.timeLabel.set_position(0, timeY);
+                const [, rawTimeW] = this.clock._time.get_preferred_width(-1);
+                const preferredTimeW = (rawTimeW > 0 && rawTimeW < w) ? Math.ceil(rawTimeW) : Math.min(800, w);
+                const timeX = Math.round((w - preferredTimeW) / 2);
+                this.timeLabel.set_position(timeX, timeY);
+                this.timeLabel.set_size(preferredTimeW, 150);
                 this.timeLabel.visible = true;
                 this.timeLabel.opacity = 255;
             }
@@ -276,8 +294,17 @@ export class GdmClockManager {
             const preferredTimeH = (rawTimeH > 0 && rawTimeH < 1000) ? rawTimeH : 150;
             const effectiveTimeH = Math.max(120, Math.min(250, Math.ceil(preferredTimeH)));
 
+            const oldTimeConstraint = this.clock._time.get_constraint('wack-clock-center-x');
+            if (oldTimeConstraint) {
+                this.clock._time.remove_constraint(oldTimeConstraint);
+            }
+            const [, rawTimeW] = this.clock._time.get_preferred_width(-1);
+            const preferredTimeW = (rawTimeW > 0 && rawTimeW < w) ? Math.ceil(rawTimeW) : Math.min(800, w);
+            const timeX = Math.round((w - preferredTimeW) / 2);
+
             this.clockWrapper.set_size(w, timeY + effectiveTimeH + 20);
-            this.clock._time.set_position(0, timeY);
+            this.clock._time.set_position(timeX, timeY);
+            this.clock._time.set_size(preferredTimeW, effectiveTimeH);
             this.timeLabel.visible = true;
             this.timeLabel.opacity = 255;
         }

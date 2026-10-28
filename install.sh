@@ -1346,7 +1346,7 @@ install_gdm_transition() {
     run_as_user gsettings set org.gnome.login-screen enable-fingerprint-authentication false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-mode 'cupertino' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock cupertino-always-show-user true 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-enable true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-enable false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-path "/usr/share/backgrounds/GoldenGate_Day.jpg" 2>/dev/null || true
     run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/GoldenGate_Day.jpg" 2>/dev/null || true
 

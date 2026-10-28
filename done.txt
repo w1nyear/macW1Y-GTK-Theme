@@ -11892,3 +11892,21 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено SHA256 хеш у `config/extensions.lock.json` (`1673b352d63783c6503869c451b7aaee4f8efcc81fc6f449e95941b345a67d38`).
    - `mac-extension-guard verify` — 100% SUCCESS (All 20 managed extensions match pinned lock hashes).
    - `mac-diagnostics` — 100% OK, система повністю стабільна.
+--------------------------------------------------------------------------------
+583. Виправлення синхронізації шпалер робочого столу в GDM та центрування дати:
+1. Синхронізація шпалер робочого столу в GDM:
+   - Діагностовано причину, чому екран GDM не змінював фон при зміні шпалер робочого столу: параметр `lockscreen-wallpaper-enable` був примусово активований (`true`) і зафіксований на статичному файлі `GoldenGate_Day.jpg`. Через це `CrossSessionManager` ігнорував будь-які зміни в `org.gnome.desktop.background picture-uri`.
+   - Встановлено `lockscreen-wallpaper-enable: false` у системних схемах, override-файлах, dconf базах та скриптах інсталяції (`macos-gdm/99-wack-lockscreen`, `macos-gdm/99_mactheme.gschema.override`, `install.sh`, `dconf/`).
+   - Тепер екран GDM автоматично і миттєво відстежує та транслює активні шпалери користувача з робочого столу (`mendhak-Bluebells_Suspended_In_Time.jpg` успішно згенеровано у `/var/tmp/wack/shared/` для сесії GDM).
+2. Виправлення зміщення дати вліво:
+   - Діагностовано причину зміщення: у `positionClock()` розмір `_dateOutput` встановлювався на всю ширину монітора (`w = 1920px`) з позицією `(0, 0)`, а внутрішній текст `ClutterText` у `St.Label` відмальовувався з вирівнюванням по лівому краю, оскільки в стилях та властивостях був відсутній `text-align: center;`.
+   - Оновлено логіку центрування у `src/pro/gdmClockManager.js`, `pro/gdmClockManager.js` та `src/main/clockLayoutManager.js`:
+     * Знято застарілий `wack-clock-center-x` constraint.
+     * Розраховується точна природна ширина напису `preferredDateW` та горизонтальний зсув `dateX = Math.round((w - preferredDateW) / 2)` (на 1920px моніторі: `dateX = 886`, центр = `960px`, що суворо збігається з центром скляного годинника `glassX + fw/2 = 960px`).
+     * Встановлено `clutter_text.set_line_alignment(Pango.Alignment.CENTER)` та `x_align = Clutter.ActorAlign.CENTER`.
+     * Додано `text-align: center !important;` у `wackClock.js`, `gdm.css` та `stylesheet.css`.
+3. Синхронізація та верифікація:
+   - Зміни синхронізовано з `~/.local/share/gnome-shell/extensions/...` та `/usr/share/gnome-shell/extensions/...`.
+   - Оновлено dconf GDM бази через `sudo dconf update`.
+   - Оновлено SHA256 хеш у `config/extensions.lock.json` (`e49dabcc87b35686ad5d19674a929be9b638ff03208e0efe9e1e8b60c3d16f5b`).
+   - `mac-extension-guard verify` та `mac-diagnostics` — 100% OK.

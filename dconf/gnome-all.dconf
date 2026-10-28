@@ -705,7 +705,7 @@ name='macW1Y-Dark'
 clock-weight='bold'
 cupertino-always-show-user=true
 lockscreen-mode='cupertino'
-lockscreen-wallpaper-enable=true
+lockscreen-wallpaper-enable=false
 lockscreen-wallpaper-path='/usr/share/backgrounds/GoldenGate_Day.jpg'
 
 [org/gnome/shell/keybindings]

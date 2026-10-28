@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
@@ -161,7 +162,21 @@ export class ClockLayoutManager {
         const effectiveDateH = Math.max(20, Math.ceil(dateHeight));
         const timeY = effectiveDateH - 4;
 
-        dateLabel.set_position(0, 0);
+        const oldDateConstraint = dateLabel.get_constraint('wack-clock-center-x');
+        if (oldDateConstraint) {
+            dateLabel.remove_constraint(oldDateConstraint);
+        }
+        const [, dateWidth] = dateLabel.get_preferred_width(-1) || [0, 200];
+        const effectiveDateW = (dateWidth > 0 && dateWidth < monitorWidth) ? Math.ceil(dateWidth) : Math.min(600, monitorWidth);
+        const dateX = Math.round((monitorWidth - effectiveDateW) / 2);
+
+        dateLabel.set_position(dateX, 0);
+        dateLabel.set_size(effectiveDateW, effectiveDateH);
+        if (dateLabel.clutter_text) {
+            dateLabel.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+            dateLabel.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+        }
+        dateLabel.set_x_align(Clutter.ActorAlign.CENTER);
 
         if (this.glassClock) {
             this.glassClock.sync();
@@ -177,12 +192,20 @@ export class ClockLayoutManager {
                 timeLabel.visible = false;
                 timeLabel.opacity = 0;
             } else {
-                timeLabel.set_position(0, timeY);
+                const [, timeWidth] = timeLabel.get_preferred_width(-1) || [0, 400];
+                const effectiveTimeW = (timeWidth > 0 && timeWidth < monitorWidth) ? Math.ceil(timeWidth) : Math.min(800, monitorWidth);
+                const timeX = Math.round((monitorWidth - effectiveTimeW) / 2);
+                timeLabel.set_position(timeX, timeY);
+                timeLabel.set_size(effectiveTimeW, 150);
                 timeLabel.visible = true;
                 timeLabel.opacity = 255;
             }
         } else {
-            timeLabel.set_position(0, timeY);
+            const [, timeWidth] = timeLabel.get_preferred_width(-1) || [0, 400];
+            const effectiveTimeW = (timeWidth > 0 && timeWidth < monitorWidth) ? Math.ceil(timeWidth) : Math.min(800, monitorWidth);
+            const timeX = Math.round((monitorWidth - effectiveTimeW) / 2);
+            timeLabel.set_position(timeX, timeY);
+            timeLabel.set_size(effectiveTimeW, 150);
             timeLabel.visible = true;
             timeLabel.opacity = 255;
         }
