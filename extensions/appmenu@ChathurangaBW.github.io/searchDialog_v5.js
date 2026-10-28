@@ -8,6 +8,7 @@ import Pango from 'gi://Pango';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
+import { getAppFavorites } from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import { _ } from './i18n.js';
 import { t, tf } from './mac_i18n.js';
 import { applyGradientBlurFade } from './gradientBlurFade.js';
@@ -25,6 +26,57 @@ const BUTTONS_BOX_WIDTH = 192;
 const BUTTON_SIZE = 50;
 const CORNER_RADIUS = 26;
 const EDGE_STYLE = '1px solid rgba(255, 255, 255, 0.30)';
+
+const APPS_CATEGORIES = [
+    {
+        id: 'utility',
+        label: 'Утиліти',
+        match: ['utility', 'system', 'settings', 'terminalemulator', 'terminal', 'filemanager', 'archiving', 'monitor', 'security', 'clock', 'calculator', 'preferences', 'help', 'desktopsettings']
+    },
+    {
+        id: 'communication',
+        label: 'Спілкування',
+        match: ['network', 'chat', 'instantmessaging', 'email', 'feed', 'webbrowser', 'ircclient', 'telephony', 'contactmanagement', 'social', 'news']
+    },
+    {
+        id: 'productivity',
+        label: 'Продуктивність',
+        match: ['office', 'development', 'texteditor', 'ide', 'editor', 'graphics', 'audiovideo', 'audio', 'video', 'photography', 'publishing', 'viewer', 'documentation', 'audiovideoediting', 'database']
+    },
+    {
+        id: 'other',
+        label: 'Інше',
+        match: []
+    }
+];
+
+const APPS_COLUMNS = 7;
+const APPS_COLUMN_WIDTH = 94;
+const APPS_ICON_SIZE = 52;
+
+function formatTimeAgo(timestamp) {
+    if (!timestamp) return '';
+    const now = Date.now();
+    const diff = Math.max(0, now - timestamp);
+    const date = new Date(timestamp);
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+
+    if (diff < 60000) {
+        return 'Скопійовано щойно';
+    }
+    const today = new Date();
+    if (date.toDateString() === today.toDateString()) {
+        return `Скопійовано ${hh}:${mm}`;
+    }
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+        return `Вчора ${hh}:${mm}`;
+    }
+    const months = ['січ.', 'лют.', 'бер.', 'квіт.', 'трав.', 'черв.', 'лип.', 'серп.', 'вер.', 'жовт.', 'лист.', 'груд.'];
+    return `${date.getDate()} ${months[date.getMonth()]} ${hh}:${mm}`;
+}
 
 const PILL_COLLAPSED_STYLE =
     'width: 480px; min-width: 480px; max-width: 480px; height: 54px; min-height: 54px; padding: 0 16px; ' +
@@ -290,6 +342,8 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._mode = 'search'; // 'search' | 'files' | 'apps' | 'clipboard'
         this._buttonsCollapsed = false;
         this._activeFilter = null; // null | 'preview' | 'pages' | 'pdf' | 'video' | 'text'
+        this._selectedAppsCategory = null;
+        this._appsCategoryButtons = [];
 
         this._appSystem = Shell.AppSystem.get_default();
         this._resultButtons = [];
@@ -449,8 +503,18 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._optionsBtn.set_child(optionsLbl);
         this._optionsBtn.connect('clicked', () => {
-            // Toggle sort order or refresh files
-            this._loadFilesView();
+            if (this._mode === 'files') {
+                this._loadFilesView();
+            } else if (this._mode === 'apps') {
+                this._selectedAppsCategory = null;
+                this._buildAppsCategoryButtons();
+                this._loadAppsView();
+            } else if (this._mode === 'clipboard') {
+                if (globalThis.macClipboardStore) {
+                    globalThis.macClipboardStore.clear();
+                    this._loadClipboardView();
+                }
+            }
         });
         this._searchPill.add_child(this._optionsBtn);
 
@@ -599,7 +663,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._filesScrollView.add_child(this._filesContentBox);
 
-        // 4C. Apps View
+        // 4C. Apps View (Dock Applications Menu Authenticity - Photo 1)
         this._appsView = new St.BoxLayout({
             vertical: true,
             x_expand: true,
@@ -607,11 +671,27 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._resultsWrapper.add_child(this._appsView);
 
+        // Header Divider under top search bar
+        this._appsDivider = new St.Widget({
+            x_expand: true,
+            style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.10); margin: 0 18px 10px 18px;',
+        });
+        this._appsView.add_child(this._appsDivider);
+
+        // Category Filter Bar (4 rounded pills matching reference photo 1)
+        this._appsCategoryRow = new St.BoxLayout({
+            vertical: false,
+            x_expand: true,
+            style: 'height: 32px; margin-bottom: 12px; margin-left: 18px; margin-right: 18px;',
+        });
+        this._appsView.add_child(this._appsCategoryRow);
+        this._buildAppsCategoryButtons();
+
         this._appsScrollWrapper = new St.Widget({
             layout_manager: new Clutter.BinLayout(),
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 460px;',
+            style: 'height: 418px; min-height: 418px; max-height: 418px;',
         });
         this._appsView.add_child(this._appsScrollWrapper);
 
@@ -622,15 +702,15 @@ export const MacSpotlightDialog = GObject.registerClass({
             hscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
-            style: 'max-height: 460px;',
+            style: 'height: 418px; min-height: 418px; max-height: 418px;',
         });
         this._appsScrollWrapper.add_child(this._appsScrollView);
-        applyGradientBlurFade(this._appsScrollWrapper, 44.0, 72.0, this._appsScrollView);
+        applyGradientBlurFade(this._appsScrollWrapper, 48.0, 76.0, this._appsScrollView);
 
         this._appsContentBox = new St.BoxLayout({
             vertical: true,
             x_expand: true,
-            style: 'padding: 10px 18px 20px 18px;',
+            style: 'padding: 0 14px 20px 14px;',
         });
         this._appsScrollView.add_child(this._appsContentBox);
 
@@ -758,6 +838,211 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
 
         return btn;
+    }
+
+    _buildAppsCategoryButtons() {
+        if (!this._appsCategoryRow) return;
+        this._appsCategoryRow.destroy_all_children();
+        this._appsCategoryButtons = [];
+
+        APPS_CATEGORIES.forEach(cat => {
+            const isSelected = (this._selectedAppsCategory === cat.id);
+            const btn = new St.Button({
+                style_class: 'mac-category-pill',
+                reactive: true,
+                can_focus: true,
+                x_expand: true,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+
+            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)';
+            const pillBorder = 'border: none !important;';
+            const pillShadow = isSelected ? 'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);' : 'box-shadow: none;';
+            btn.set_style(
+                `background-color: ${pillBg}; ` +
+                'color: #ffffff !important; ' +
+                `${pillBorder} ` +
+                `${pillShadow} ` +
+                'border-radius: 10px; ' +
+                'height: 32px; ' +
+                'margin: 0 4px; ' +
+                'font-size: 13px; ' +
+                'font-weight: 600;'
+            );
+
+            const label = new St.Label({
+                text: cat.label,
+                style: 'color: #ffffff !important; font-weight: 600 !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important;',
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            btn.set_child(label);
+
+            btn.connect('clicked', () => {
+                if (this._selectedAppsCategory === cat.id) {
+                    this._selectedAppsCategory = null;
+                } else {
+                    this._selectedAppsCategory = cat.id;
+                }
+                this._buildAppsCategoryButtons();
+                this._loadAppsView(this._entry.text.trim());
+            });
+
+            btn.connect('notify::hover', () => {
+                const hover = btn.hover;
+                const active = (this._selectedAppsCategory === cat.id);
+                if (active) {
+                    btn.set_style(
+                        'background-color: rgba(255, 255, 255, 0.32); ' +
+                        'border: none !important; ' +
+                        'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); ' +
+                        'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
+                    );
+                } else {
+                    const bg = hover ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.12)';
+                    btn.set_style(
+                        `background-color: ${bg}; ` +
+                        'border: none !important; ' +
+                        'box-shadow: none; ' +
+                        'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
+                    );
+                }
+            });
+
+            this._appsCategoryRow.add_child(btn);
+            this._appsCategoryButtons.push(btn);
+        });
+    }
+
+    _getAppCategory(app) {
+        const info = app.get_app_info?.() || app;
+        let catStr = '';
+        try {
+            catStr = (info.get_categories?.() || '').toLowerCase();
+        } catch (_) {}
+
+        const priorityOrder = ['communication', 'productivity', 'utility'];
+        for (const catId of priorityOrder) {
+            const cat = APPS_CATEGORIES.find(c => c.id === catId);
+            if (!cat) continue;
+            for (const m of cat.match) {
+                if (catStr.includes(m)) {
+                    return cat.id;
+                }
+            }
+        }
+        return 'other';
+    }
+
+    _getAllApps() {
+        const installed = this._appSystem.get_installed() || [];
+        const seen = new Set();
+        const apps = [];
+
+        for (const info of installed) {
+            const id = info.get_id?.();
+            if (!id || seen.has(id) || id === 'launchpad.desktop' || id === 'wine.desktop' || id === 'winetricks.desktop' || id.startsWith('winecfg') || id.startsWith('wine-wineboot')) continue;
+            if (info.get_nodisplay?.()) continue;
+            if (info.should_show && !info.should_show()) continue;
+            seen.add(id);
+
+            const app = this._appSystem.lookup_app(id);
+            if (app && app.get_name?.()) {
+                apps.push(app);
+            }
+        }
+
+        return apps;
+    }
+
+    _getRecentApps(allApps) {
+        let usage = null;
+        try { usage = Shell.AppUsage.get_default(); } catch (_) {}
+        const mostUsed = usage?.get_most_used?.() || [];
+        const recent = [];
+        const seen = new Set();
+
+        for (const app of mostUsed) {
+            const id = app?.get_id?.();
+            if (id && id !== 'launchpad.desktop' && allApps.some(a => a.get_id() === id)) {
+                if (!seen.has(id)) {
+                    seen.add(id);
+                    recent.push(app);
+                    if (recent.length >= APPS_COLUMNS) break;
+                }
+            }
+        }
+
+        if (recent.length < APPS_COLUMNS) {
+            try {
+                const favs = getAppFavorites().getFavorites();
+                for (const app of favs) {
+                    const id = app?.get_id?.();
+                    if (id && id !== 'launchpad.desktop' && !seen.has(id) && allApps.some(a => a.get_id() === id)) {
+                        seen.add(id);
+                        recent.push(app);
+                        if (recent.length >= APPS_COLUMNS) break;
+                    }
+                }
+            } catch (_) {}
+        }
+
+        if (recent.length < APPS_COLUMNS) {
+            for (const app of allApps) {
+                const id = app.get_id();
+                if (!seen.has(id)) {
+                    seen.add(id);
+                    recent.push(app);
+                    if (recent.length >= APPS_COLUMNS) break;
+                }
+            }
+        }
+
+        return recent.slice(0, APPS_COLUMNS);
+    }
+
+    _filterApps(query) {
+        const allApps = this._getAllApps();
+        const q = (query || '').toLowerCase().trim();
+        const category = this._selectedAppsCategory;
+
+        if (q) {
+            return allApps.filter(app => {
+                const name = (app.get_name() || '').toLowerCase();
+                const desc = (app.get_description?.() || '').toLowerCase();
+                const exec = (app.get_executable?.() || '').toLowerCase();
+                const id = (app.get_id() || '').toLowerCase();
+                let keywords = '';
+                try {
+                    const info = app.get_app_info?.();
+                    keywords = (info?.get_keywords?.() || []).join(' ').toLowerCase();
+                } catch (_) {}
+
+                const matchesQuery = name.includes(q) ||
+                                     desc.includes(q) ||
+                                     exec.includes(q) ||
+                                     id.includes(q) ||
+                                     keywords.includes(q);
+
+                if (!matchesQuery) return false;
+                if (category && this._getAppCategory(app) !== category) return false;
+                return true;
+            }).sort((a, b) => a.get_name().localeCompare(b.get_name()));
+        }
+
+        if (category) {
+            return allApps.filter(app => this._getAppCategory(app) === category)
+                          .sort((a, b) => a.get_name().localeCompare(b.get_name()));
+        }
+
+        const recentApps = this._getRecentApps(allApps);
+        const recentIds = new Set(recentApps.map(a => a.get_id()));
+
+        const remaining = allApps
+            .filter(a => !recentIds.has(a.get_id()))
+            .sort((a, b) => a.get_name().localeCompare(b.get_name()));
+
+        return [...recentApps, ...remaining];
     }
 
     _initFilterPills() {
@@ -1189,8 +1474,10 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (newMode === 'search') {
             this._searchIcon.set_gicon(null);
             this._searchIcon.icon_name = 'system-search-symbolic';
+            this._searchIcon.icon_size = 20;
             this._entry.hint_text = t('spotlight_search', 'Пошук Spotlight');
             this._optionsBtn.visible = false;
+            this._selectedAppsCategory = null;
 
             this._uncollapseButtonsAndContractPill(() => {
                 this._filesView.visible = false;
@@ -1210,22 +1497,46 @@ export const MacSpotlightDialog = GObject.registerClass({
             if (newMode === 'files') {
                 const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-files.svg`);
                 this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                this._searchIcon.icon_size = 20;
                 this._entry.hint_text = t('files', 'Файли');
                 this._optionsBtn.visible = true;
                 this._loadFilesView();
                 this._expandToHeight(530);
             } else if (newMode === 'apps') {
-                const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-apps.svg`);
-                this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
-                this._entry.hint_text = t('search_apps', 'Пошук програм');
-                this._optionsBtn.visible = false;
+                const home = GLib.get_home_dir();
+                const appstoreCandidates = [
+                    `${home}/.local/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
+                    `${home}/.local/share/icons/MacTahoe/apps/scalable/Appstore.svg`,
+                    `${home}/.local/share/icons/macW1Y-dark/apps/scalable/Appstore.svg`,
+                    `/usr/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
+                ];
+                let appStoreGIcon = null;
+                for (const p of appstoreCandidates) {
+                    if (p && GLib.file_test(p, GLib.FileTest.EXISTS)) {
+                        appStoreGIcon = Gio.FileIcon.new(Gio.File.new_for_path(p));
+                        break;
+                    }
+                }
+                if (appStoreGIcon) {
+                    this._searchIcon.set_gicon(appStoreGIcon);
+                    this._searchIcon.icon_size = 26;
+                } else {
+                    const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-apps.svg`);
+                    this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                    this._searchIcon.icon_size = 20;
+                }
+                this._entry.hint_text = t('applications', 'Програми');
+                this._optionsBtn.visible = true;
+                this._selectedAppsCategory = null;
+                this._buildAppsCategoryButtons();
                 this._loadAppsView();
                 this._expandToHeight(530);
             } else if (newMode === 'clipboard') {
                 const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-clipboard.svg`);
                 this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                this._searchIcon.icon_size = 20;
                 this._entry.hint_text = t('search_clipboard', 'Пошук у буфері');
-                this._optionsBtn.visible = false;
+                this._optionsBtn.visible = true;
                 this._loadClipboardView();
                 this._expandToHeight(530);
             }
@@ -2143,18 +2454,12 @@ export const MacSpotlightDialog = GObject.registerClass({
     }
 
     // -------------------------------------------------------------------------
-    // APPS VIEW (Applications Menu)
+    // APPS VIEW (Dock Applications Menu Authenticity - Photo 1)
     // -------------------------------------------------------------------------
     _loadAppsView(query = '') {
         this._appsContentBox.destroy_all_children();
 
-        const q = query.toLowerCase();
-        const apps = this._appSystem.get_installed().filter(app => {
-            if (!q) return true;
-            const name = (app.get_name() || '').toLowerCase();
-            const desc = (app.get_description() || '').toLowerCase();
-            return name.includes(q) || desc.includes(q);
-        });
+        const apps = this._filterApps(query);
 
         if (apps.length === 0) {
             const emptyLbl = new St.Label({
@@ -2168,65 +2473,97 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         let currentRow = null;
         for (let i = 0; i < apps.length; i++) {
-            if (i % 5 === 0) {
+            if (i % APPS_COLUMNS === 0) {
                 currentRow = new St.BoxLayout({
                     vertical: false,
                     x_expand: true,
-                    style: 'margin-bottom: 12px;',
+                    style: 'margin-bottom: 10px;',
                 });
                 this._appsContentBox.add_child(currentRow);
             }
 
             const app = apps[i];
-            const btn = new St.Button({
-                style: 'width: 124px; min-width: 124px; padding: 10px 4px; border-radius: 12px; margin-right: 4px;',
-                reactive: true,
-                can_focus: true,
-                track_hover: true,
-            });
-
-            const col = new St.BoxLayout({
-                vertical: true,
-                x_expand: true,
-                x_align: Clutter.ActorAlign.CENTER,
-                y_align: Clutter.ActorAlign.CENTER,
-            });
-            btn.set_child(col);
-
-            const iconTexture = createSmoothAppIcon(app, 46);
-            iconTexture.x_align = Clutter.ActorAlign.CENTER;
-            col.add_child(iconTexture);
-
-            const nameLbl = new St.Label({
-                text: app.get_name(),
-                style: 'font-size: 12px; font-weight: 500; color: #ffffff !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; text-align: center; margin-top: 6px; max-width: 112px;',
-                x_align: Clutter.ActorAlign.CENTER,
-            });
-            if (nameLbl.clutter_text) {
-                nameLbl.clutter_text.set_line_wrap(true);
-                nameLbl.clutter_text.set_ellipsize(Pango.EllipsizeMode.END);
-            }
-            col.add_child(nameLbl);
-
-            btn.connect('notify::hover', () => {
-                if (btn.hover) {
-                    btn.set_style('width: 124px; min-width: 124px; padding: 10px 4px; border-radius: 12px; margin-right: 4px; background-color: rgba(255, 255, 255, 0.12);');
-                } else {
-                    btn.set_style('width: 124px; min-width: 124px; padding: 10px 4px; border-radius: 12px; margin-right: 4px; background-color: transparent;');
-                }
-            });
-
-            btn.connect('clicked', () => {
-                this.close();
-                app.activate();
-            });
-
+            const btn = this._createAppGridItem(app);
             currentRow.add_child(btn);
         }
     }
 
+    _createAppGridItem(app) {
+        const item = new St.Button({
+            style_class: 'mac-app-grid-item',
+            reactive: true,
+            can_focus: true,
+            track_hover: true,
+            x_expand: false,
+            y_align: Clutter.ActorAlign.START,
+        });
+
+        item.set_width(APPS_COLUMN_WIDTH);
+        item.width = APPS_COLUMN_WIDTH;
+        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 82px; min-height: 82px; max-height: 82px; margin: 0 1px; padding: 6px 2px 4px 2px; border-radius: 12px;`;
+        item.set_style(`${baseStyle} background-color: transparent;`);
+
+        const box = new St.BoxLayout({
+            vertical: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+        });
+        item.set_child(box);
+
+        const iconActor = createSmoothAppIcon(app, APPS_ICON_SIZE);
+        iconActor.set_style('margin-bottom: 5px; icon-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);');
+        box.add_child(iconActor);
+
+        const label = new St.Label({
+            text: app.get_name() || '',
+            style_class: 'mac-app-title',
+            style: `font-size: 11px !important; color: #ffffff !important; ` +
+                   `text-align: center !important; font-weight: 500 !important; ` +
+                   `text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; ` +
+                   `width: ${APPS_COLUMN_WIDTH - 4}px; max-width: ${APPS_COLUMN_WIDTH - 4}px;`,
+            x_align: Clutter.ActorAlign.CENTER,
+        });
+        if (label.clutter_text) {
+            label.clutter_text.set_line_wrap(false);
+            label.clutter_text.set_ellipsize(Pango.EllipsizeMode.END);
+        }
+        box.add_child(label);
+
+        item.connect('notify::hover', () => {
+            if (item.hover) {
+                item.set_style(`${baseStyle} background-color: rgba(255, 255, 255, 0.12);`);
+            } else {
+                item.set_style(`${baseStyle} background-color: transparent;`);
+            }
+        });
+
+        item.connect('clicked', () => {
+            this.close();
+            app.activate();
+        });
+
+        // DND Support to Dock
+        item._delegate = item;
+        item.app = app;
+        item.is_window_backed = () => false;
+        item.getDragActor = () => createSmoothAppIcon(app, APPS_ICON_SIZE);
+        item.getDragActorSource = () => item;
+        try {
+            const draggable = DND.makeDraggable(item, {
+                restoreOnSuccess: true,
+                dragActorOpacity: 220,
+            });
+            draggable.connect('drag-begin', () => {
+                this.close();
+            });
+        } catch (_) {}
+
+        return item;
+    }
+
     // -------------------------------------------------------------------------
-    // CLIPBOARD VIEW (Clipboard History)
+    // CLIPBOARD VIEW (Clipboard History with Authentic Image Thumbnails)
     // -------------------------------------------------------------------------
     _loadClipboardView(query = '') {
         this._clipboardContentBox.destroy_all_children();
@@ -2263,7 +2600,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         for (const item of items.slice(0, 30)) {
             const rowBtn = new St.Button({
-                style: 'padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; background-color: rgba(255, 255, 255, 0.06);',
+                style: 'padding: 8px 12px; margin-bottom: 4px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.06);',
                 reactive: true,
                 can_focus: true,
                 track_hover: true,
@@ -2277,18 +2614,41 @@ export const MacSpotlightDialog = GObject.registerClass({
             });
             rowBtn.set_child(row);
 
-            // Icon
-            let iconName = 'edit-copy-symbolic';
-            if (item.type === 'image') iconName = 'image-x-generic-symbolic';
-            else if (item.type === 'file') iconName = 'folder-symbolic';
-
-            const icon = new St.Icon({
-                icon_name: iconName,
-                icon_size: 22,
-                style: 'color: rgba(255, 255, 255, 0.75); margin-right: 12px;',
+            // Left Thumbnail / Icon slot (38x38 px)
+            const iconSlot = new St.BoxLayout({
+                style: 'width: 38px; height: 38px; min-width: 38px; min-height: 38px; border-radius: 9px; margin-right: 12px; clip-to-allocation: true;',
+                x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
             });
-            row.add_child(icon);
+
+            if (item.type === 'image' && item.imagePath && GLib.file_test(item.imagePath, GLib.FileTest.EXISTS)) {
+                iconSlot.set_style('width: 38px; height: 38px; min-width: 38px; min-height: 38px; border-radius: 9px; margin-right: 12px; background-color: rgba(0, 0, 0, 0.30); clip-to-allocation: true;');
+                const imgIcon = new St.Icon({
+                    gicon: Gio.FileIcon.new(Gio.File.new_for_path(item.imagePath)),
+                    icon_size: 38,
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
+                applyActorSmoothing(imgIcon);
+                iconSlot.add_child(imgIcon);
+            } else if (item.type === 'color' && item.text) {
+                iconSlot.set_style(`width: 38px; height: 38px; min-width: 38px; min-height: 38px; border-radius: 9px; margin-right: 12px; background-color: ${item.text}; border: 1px solid rgba(255, 255, 255, 0.20);`);
+            } else {
+                iconSlot.set_style('width: 38px; height: 38px; min-width: 38px; min-height: 38px; border-radius: 9px; margin-right: 12px; background-color: rgba(255, 255, 255, 0.06);');
+                let iconName = 'text-x-generic-symbolic';
+                if (item.type === 'file') iconName = 'folder-symbolic';
+                else if (item.type === 'link') iconName = 'emblem-web-symbolic';
+
+                const icon = new St.Icon({
+                    icon_name: iconName,
+                    icon_size: 22,
+                    style: 'color: rgba(255, 255, 255, 0.85);',
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
+                iconSlot.add_child(icon);
+            }
+            row.add_child(iconSlot);
 
             // Text column
             const textBox = new St.BoxLayout({
@@ -2300,7 +2660,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
             const titleLbl = new St.Label({
                 text: item.title || item.text || 'Елемент',
-                style: 'font-size: 13px; font-weight: 500; color: #ffffff;',
+                style: 'font-size: 13.5px; font-weight: 600; color: #ffffff;',
                 x_align: Clutter.ActorAlign.START,
             });
             if (titleLbl.clutter_text) {
@@ -2308,29 +2668,50 @@ export const MacSpotlightDialog = GObject.registerClass({
             }
             textBox.add_child(titleLbl);
 
-            if (item.subtitle) {
+            const timeStr = item.timestamp ? ` • ${formatTimeAgo(item.timestamp)}` : '';
+            const subText = `${item.subtitle || ''}${timeStr}`.trim();
+            if (subText) {
                 const subLbl = new St.Label({
-                    text: item.subtitle,
-                    style: 'font-size: 11px; color: rgba(255, 255, 255, 0.45);',
+                    text: subText,
+                    style: 'font-size: 11px; color: rgba(255, 255, 255, 0.48); margin-top: 2px;',
                     x_align: Clutter.ActorAlign.START,
                 });
                 textBox.add_child(subLbl);
             }
 
-            // Copy Action Button
-            const copyIcon = new St.Icon({
-                icon_name: 'edit-copy-symbolic',
-                icon_size: 16,
-                style: 'color: rgba(255, 255, 255, 0.50); margin-left: 8px;',
+            // Right Copy Button
+            const copyBtn = new St.Button({
+                style_class: 'mac-clipboard-copy-btn',
+                style: 'width: 32px; height: 32px; min-width: 32px; min-height: 32px; border-radius: 9999px; background-color: rgba(255, 255, 255, 0.08); margin-left: 8px;',
+                reactive: true,
+                can_focus: true,
+                track_hover: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
-            row.add_child(copyIcon);
+            const copyIcon = new St.Icon({
+                icon_name: 'edit-copy-symbolic',
+                icon_size: 15,
+                style: 'color: rgba(255, 255, 255, 0.85);',
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            copyBtn.set_child(copyIcon);
+
+            copyBtn.connect('clicked', () => {
+                if (globalThis.macClipboardStore) {
+                    globalThis.macClipboardStore.restore(item);
+                    try { globalThis.macClipboardStore.moveToTop?.(item); } catch (_) {}
+                }
+                copyIcon.icon_name = 'object-select-symbolic';
+                copyIcon.style = 'color: #34c759;';
+            });
+            row.add_child(copyBtn);
 
             rowBtn.connect('notify::hover', () => {
                 if (rowBtn.hover) {
-                    rowBtn.set_style('padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; background-color: rgba(255, 255, 255, 0.16);');
+                    rowBtn.set_style('padding: 8px 12px; margin-bottom: 4px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.16);');
                 } else {
-                    rowBtn.set_style('padding: 8px 12px; margin-bottom: 4px; border-radius: 10px; background-color: rgba(255, 255, 255, 0.06);');
+                    rowBtn.set_style('padding: 8px 12px; margin-bottom: 4px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.06);');
                 }
             });
 
