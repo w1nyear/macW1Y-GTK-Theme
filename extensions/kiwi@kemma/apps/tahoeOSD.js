@@ -319,6 +319,58 @@ function _computeTargetCoordinates(fsOverride = null) {
     return { monitor, targetX, targetY };
 }
 
+let _animTimerId = 0;
+
+function _cancelAnim() {
+    if (_animTimerId) {
+        try {
+            GLib.Source.remove(_animTimerId);
+        } catch (_) {}
+        _animTimerId = 0;
+    }
+}
+
+function _animateReposition(targetX, targetY) {
+    _cancelAnim();
+    if (!_box)
+        return;
+
+    const startX = _box.x;
+    const startY = _box.y;
+    if (startX === targetX && startY === targetY) {
+        _syncGlass();
+        return;
+    }
+
+    const startTime = GLib.get_monotonic_time();
+    const durationUs = 200 * 1000; // 200ms buttery smooth macOS physics
+
+    _animTimerId = GLib.timeout_add(GLib.PRIORITY_HIGH, 10, () => {
+        const elapsed = GLib.get_monotonic_time() - startTime;
+        const progress = Math.min(1.0, elapsed / durationUs);
+        const easeP = 1 - Math.pow(1 - progress, 3);
+        const curX = Math.round(startX + (targetX - startX) * easeP);
+        const curY = Math.round(startY + (targetY - startY) * easeP);
+
+        if (_box)
+            _box.set_position(curX, curY);
+        if (_osdShadow)
+            _osdShadow.set_position(curX, curY);
+        _syncGlass();
+
+        if (progress >= 1.0) {
+            if (_box)
+                _box.set_position(targetX, targetY);
+            if (_osdShadow)
+                _osdShadow.set_position(targetX, targetY);
+            _syncGlass();
+            _animTimerId = 0;
+            return GLib.SOURCE_REMOVE;
+        }
+        return GLib.SOURCE_CONTINUE;
+    });
+}
+
 function _applyPredictedPosition(smoothIfVisible = true, fsOverride = null) {
     if (!_box)
         return;
@@ -330,24 +382,9 @@ function _applyPredictedPosition(smoothIfVisible = true, fsOverride = null) {
 
     if (_box.visible) {
         if (smoothIfVisible) {
-            _box.ease({
-                x: targetX,
-                y: targetY,
-                duration: 150,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-            if (_osdShadow) {
-                _osdShadow.ease({
-                    x: targetX,
-                    y: targetY,
-                    duration: 150,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                });
-            }
-            if (_glass) {
-                _syncGlass();
-            }
+            _animateReposition(targetX, targetY);
         } else {
+            _cancelAnim();
             _box.set_position(targetX, targetY);
             if (_osdShadow)
                 _osdShadow.set_position(targetX, targetY);
@@ -355,6 +392,7 @@ function _applyPredictedPosition(smoothIfVisible = true, fsOverride = null) {
                 _syncGlass();
         }
     } else {
+        _cancelAnim();
         _box.set_position(targetX, targetY);
         if (_osdShadow) {
             _osdShadow.set_position(targetX, targetY);
@@ -694,6 +732,7 @@ function _destroyGlass() {
 
 function _hideNow() {
     _hideId = 0;
+    _cancelAnim();
     if (_glass?.bgActor) {
         try {
             _glass.bgActor.ease({
@@ -799,12 +838,17 @@ function _show(kind, title, iconL, iconR, value) {
             return;
 
         const { targetX: boxX, targetY: boxY } = coords;
-        _box.set_position(boxX, boxY);
-        if (_osdShadow) {
-            _osdShadow.set_position(boxX, boxY);
-            _osdShadow.set_width(OSD_W);
-            if (_box.height > 0)
-                _osdShadow.set_height(_box.height);
+        if (!_box.visible) {
+            _cancelAnim();
+            _box.set_position(boxX, boxY);
+            if (_osdShadow) {
+                _osdShadow.set_position(boxX, boxY);
+                _osdShadow.set_width(OSD_W);
+                if (_box.height > 0)
+                    _osdShadow.set_height(_box.height);
+            }
+        } else if (_box.x !== boxX || _box.y !== boxY) {
+            _animateReposition(boxX, boxY);
         }
 
         const firstShow = !_box.visible;
@@ -1155,6 +1199,7 @@ export function enable() {
 }
 
 export function disable() {
+    _cancelAnim();
     _disconnectTrackedSignals();
     _restoreStockOsd();
     _destroyGlass();
