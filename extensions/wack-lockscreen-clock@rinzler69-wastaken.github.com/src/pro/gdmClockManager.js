@@ -89,9 +89,9 @@ export class GdmClockManager {
         if (typeof this.clock.setWeight === 'function')
             this.clock.setWeight('600'); // Open Runde SemiBold
         if (typeof this.clock.setLetterSpacing === 'function')
-            this.clock.setLetterSpacing(-4); // було -2px у stylesheet — ще щільніше на пару px
+            this.clock.setLetterSpacing(-6); // щільніше розташування цифр
         if (typeof this.clock.setColonRise === 'function')
-            this.clock.setColonRise(12.41); // 0.09695em × 128px — ':' по центру висоти цифр (метрика Open Runde)
+            this.clock.setColonRise(13.0); // ':' точно по центру висоти часу (метрика Open Runde)
 
         const dateLabel = this.clock._dateOutput;
         const timeLabel = this.clock._time;

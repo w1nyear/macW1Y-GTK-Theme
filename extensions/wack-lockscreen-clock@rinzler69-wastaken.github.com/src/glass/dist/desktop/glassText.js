@@ -1275,14 +1275,22 @@ export class GlyphFields {
         const both = await this._tallness();
         const t = both && (ch === ':' ? both.colon : both.digits);
         const tall = t && scaledTall(t, SUPERSAMPLE, t.pen);
-        // The colon's dots are not stretched and drawn back to a dot's thickness,
-        // which leaves a traced outline with corners on them: each is drawn as the
-        // font has it and moved to where the even stretch takes its middle.
+        // The colon's dots are raised to the exact vertical optical center of the digits
+        // and kept unstretched so their dots preserve their pristine circular shape.
         const dots = ch === ':' && !!tall?.even;
         const big = await rasterize(this._face, ch, SUPERSAMPLE, this.stretch, tall?.even && !dots ? tall : null, this.range * SUPERSAMPLE, this.cancellable);
         const { width } = big;
         let { alpha, height, originY } = big;
-        if (dots) {
+        if (ch === ':') {
+            const colonRisePx = Math.round(13 * (this.digitHeight / 98));
+            const shiftFn = dots
+                ? (y => (tallY(tall, y - big.originY) - (y - big.originY)) - colonRisePx * SUPERSAMPLE)
+                : (_y => -colonRisePx * SUPERSAMPLE);
+            const moved = moveInkBands(alpha, width, height, shiftFn);
+            ({ alpha, height } = moved);
+            originY += moved.above;
+        }
+        else if (dots) {
             const moved = moveInkBands(alpha, width, height, y => tallY(tall, y - big.originY) - (y - big.originY));
             ({ alpha, height } = moved);
             originY += moved.above;
@@ -1325,23 +1333,35 @@ export class GlyphFields {
         const b = this._face.bounds(text, 1);
         const offsets = this._face.offsets(text);
         const r = this.range;
+        // Letter spacing: tighten digits closer together for authentic macOS lockscreen appearance
+        const letterSpacing = Math.round(-6 * (this.digitHeight / 98));
+
         // The line's room above and below the digits stays as it was.
         const tall = (await this._tallness())?.digits ?? null;
         const [top, baseline] = this._band;
         const x0 = Math.floor(b.x0 * this.stretch) - r;
         const y0 = Math.floor(tallY(tall, top) - (top - b.y0)) - r;
-        const width = Math.ceil(b.x1 * this.stretch) + r - x0;
-        const height = Math.ceil(tallY(tall, baseline) + (b.y1 - baseline)) + r - y0;
-        const data = new Float32Array(width * height).fill(r);
+
+        let maxGlyphRight = 0;
+        const glyphPlacements = [];
         for (const [index, ch] of Array.from(text).entries()) {
             const glyph = glyphs.get(ch);
             if (!glyph)
                 continue;
+            const left = Math.round((offsets[index] + index * letterSpacing) * this.stretch - glyph.originX - x0);
+            const topYPos = Math.round(-glyph.originY - y0);
+            glyphPlacements.push({ glyph, left, top: topYPos });
+            maxGlyphRight = Math.max(maxGlyphRight, left + glyph.width);
+        }
+
+        const width = Math.max(maxGlyphRight, Math.ceil(b.x1 * this.stretch + (text.length - 1) * letterSpacing) + r - x0);
+        const height = Math.ceil(tallY(tall, baseline) + (b.y1 - baseline)) + r - y0;
+        const data = new Float32Array(width * height).fill(r);
+
+        for (const { glyph, left, top: topYPos } of glyphPlacements) {
             await this.pause();
-            const left = Math.round(offsets[index] * this.stretch - glyph.originX - x0);
-            const top = Math.round(-glyph.originY - y0);
             for (let gy = 0; gy < glyph.height; gy++) {
-                const y = top + gy;
+                const y = topYPos + gy;
                 if (y < 0 || y >= height)
                     continue;
                 for (let gx = 0; gx < glyph.width; gx++) {

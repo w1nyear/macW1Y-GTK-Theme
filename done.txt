@@ -11928,3 +11928,23 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено SHA256 хеш у `config/extensions.lock.json` (`ccaedc8484b5830e1cc537d08658a719f4bcb9aa1755c0d459eab796e2d04c3c`).
    - Проведено успішну компіляцію шейдера та симуляцію рендерингу в живому GNOME Shell без перезапуску сесії.
    - `mac-extension-guard verify` та `mac-diagnostics` — 100% SUCCESS.
+--------------------------------------------------------------------------------
+585. Зближення цифр годинника (кернінг) та вертикальне вирівнювання двокрапки ":" по центру висоти часу:
+1. Зближення цифр годинника (tighter kerning / tracking):
+   - У `src/glass/dist/desktop/glassText.js`:
+     * Впроваджено від'ємний міжсимвольний інтервал (letter spacing): `letterSpacing = Math.round(-6 * (this.digitHeight / 98))` (зсув -6px на кожен символ при розмірі 128px).
+     * Ширина поля `width` динамічно коригується відповідно до фактичних габаритів скомпонованих гліфів: `Math.max(maxGlyphRight, Math.ceil(b.x1 * this.stretch + (text.length - 1) * letterSpacing) + r - x0)`.
+     * Цифри часу розташовані щільно і зібрано, що відповідає дизайну lockscreen macOS Sonoma / Tahoe (ширину годинника зменшено з 422px до 399px).
+   - У `gdmClockManager.js` та `pro/gdmClockManager.js` для резервного годинника `WackClock` також зафіксовано `setLetterSpacing(-6)`.
+2. Підняття двокрапки ":" до оптичного центру висоти цифр:
+   - Досліджено типографіку шрифту Open Runde SemiBold (при 128px цифри мають висоту 98px з центром на Y=78, тоді як крапки двокрапки природно розташовані нижче — центр на Y=90, різниця 12px).
+   - У `src/glass/dist/desktop/glassText.js` (`_buildGlyph`):
+     * Для символу `ch === ':'` додано вертикальний зсув крапок двокрапки вгору через `moveInkBands`:
+       `colonRisePx = Math.round(13 * (this.digitHeight / 98))` (підйом на 13px у 1x / 26px у SUPERSAMPLE).
+     * Крапки двокрапки зберігають ідеальну округлу форму і тепер розташовані точно на вертикальному оптичному центрі цифр часу.
+   - Для резервного годинника `WackClock` встановлено `setColonRise(13.0)`.
+3. Синхронізація та верифікація:
+   - Всі зміни синхронізовано з `~/.local/share/gnome-shell/extensions/...` та `/usr/share/gnome-shell/extensions/...`.
+   - Оновлено SHA256 хеш у `config/extensions.lock.json` (`afbeee8f6d37eae81f7f9a30f5259f9018d4931740ff38f6cdbfd0e0dfb4b13b`).
+   - Успішно перевірено генерацію SDF-поля годинника через EvalHelper.
+   - `mac-extension-guard verify` та `mac-diagnostics` — 100% OK.
