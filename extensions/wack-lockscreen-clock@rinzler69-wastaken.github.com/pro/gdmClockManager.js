@@ -153,6 +153,7 @@ export class GdmClockManager {
 
         this.clockWrapper.visible = true;
         this.clockWrapper.opacity = 255;
+        dateLabel.set_style("color: #ffffff !important; font-family: 'SF Pro Display', -apple-system, sans-serif !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;");
         dateLabel.visible = true;
         dateLabel.opacity = 255;
         timeLabel.visible = true;

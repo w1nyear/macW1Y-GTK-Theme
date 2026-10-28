@@ -854,6 +854,13 @@ void main() {
     // once, and applying it twice darkens the antialiased edge.
     vec3 baseColor = insideBaseColor;
 
+#ifdef LG_SHAPE_TEXTURE
+    // Apple Liquid Glass Clock white luminance boost:
+    // Blend a clean frosted white body into the digits so they are bright white and clearly legible
+    float whiteFrost = mix(0.45, 0.70, clamp(-d / max(lensBand, 1.0), 0.0, 1.0));
+    baseColor = mix(baseColor, vec3(1.0, 1.0, 1.0), whiteFrost);
+#endif
+
     // Inner shadow: darkest at the edge, gone ao_radius px inward. It is
     // applied below, once the rim light is known.
     float aoMask = 1.0 - smoothstep(0.0, max(ao_radius, 0.001), -d);
@@ -897,6 +904,10 @@ void main() {
     float alpha = insideMask;
 
     float addedLight = (specularLight + finalRimLight + idleRim + sheenLight) * surface_light_enabled;
+#ifdef LG_SHAPE_TEXTURE
+    // Enhanced white specular highlight and rim reflection for glass clock digits
+    addedLight += 0.25 * surface_light_enabled;
+#endif
 
     // Screen blend, which cannot blow out a white background the way adding
     // does.

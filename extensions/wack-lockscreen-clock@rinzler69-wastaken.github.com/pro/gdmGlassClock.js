@@ -48,10 +48,10 @@ export class GdmGlassClock {
 
         // Optical glass parameters: macOS Tahoe liquid glass
         safeSet(() => this._settings.set_string('glass-clock-tint-color', '#ffffff'));
-        safeSet(() => this._settings.set_double('glass-clock-tint-strength', 0.08));
+        safeSet(() => this._settings.set_double('glass-clock-tint-strength', 0.35));
         safeSet(() => this._settings.set_int('glass-clock-blur-radius', 35));
-        safeSet(() => this._settings.set_double('glass-clock-brightness', 1.05));
-        safeSet(() => this._settings.set_double('glass-clock-contrast', 1.05));
+        safeSet(() => this._settings.set_double('glass-clock-brightness', 1.20));
+        safeSet(() => this._settings.set_double('glass-clock-contrast', 1.10));
         safeSet(() => this._settings.set_double('glass-clock-saturation', 1.0));
 
         const env = {

@@ -4,7 +4,7 @@
 
 .wack-date {
     font-family: 'SF Pro Display', -apple-system, sans-serif;
-    color: rgba(255, 255, 255, 0.98);
+    color: #ffffff;
     font-size: 28px;
     font-weight: 600;
     letter-spacing: 0px;
@@ -12,7 +12,7 @@
     margin: 0;
     margin-bottom: 0px;
     padding: 0;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);
 }
 
 .wack-time,

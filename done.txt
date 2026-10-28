@@ -11910,3 +11910,21 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено dconf GDM бази через `sudo dconf update`.
    - Оновлено SHA256 хеш у `config/extensions.lock.json` (`e49dabcc87b35686ad5d19674a929be9b638ff03208e0efe9e1e8b60c3d16f5b`).
    - `mac-extension-guard verify` та `mac-diagnostics` — 100% OK.
+--------------------------------------------------------------------------------
+584. Оновлення кольору дати та збільшення білизни шейдера рідкого скла (Liquid Glass Clock):
+1. Синхронізація кольору дати з часом:
+   - У `src/main/wackClock.js`, `stylesheet.css`, `src/pro/gdm.css`, `pro/gdm.css`, `src/pro/gdmClockManager.js` та `src/main/clockLayoutManager.js`:
+     * Колір тексту дати встановлено у чистий білий `#ffffff` (ідентичний кольору цифр часу).
+     * Тінь тексту (`text-shadow`) уніфіковано до `0 1px 10px rgba(0, 0, 0, 0.42)`, що забезпечує однакове м'яке відтінення на будь-якому тлі.
+2. Посилення білизни та люмінесценції шейдера рідкого скла (`glass.frag`):
+   - У `src/glass/shaders/glass.frag` під `#ifdef LG_SHAPE_TEXTURE`:
+     * Додано матове біле свічення тіла цифр: `float whiteFrost = mix(0.45, 0.70, clamp(-d / max(lensBand, 1.0), 0.0, 1.0)); baseColor = mix(baseColor, vec3(1.0, 1.0, 1.0), whiteFrost);`. Цифри набули чіткої білої морозної текстури з виразними заломлювальними скляними фасками.
+     * Посилено дзеркальні бліки та крайові світлові відблиски фаски: `addedLight += 0.25 * surface_light_enabled;`.
+   - У `src/pro/gdmGlassClock.js` та `pro/gdmGlassClock.js`:
+     * Збільшено `glass-clock-tint-strength` з 0.08 до 0.35.
+     * Збільшено яскравість `glass-clock-brightness` з 1.05 до 1.20, а контраст до 1.10.
+3. Синхронізація та верифікація:
+   - Зміни синхронізовано з `~/.local/share/gnome-shell/extensions/...` та `/usr/share/gnome-shell/extensions/...`.
+   - Оновлено SHA256 хеш у `config/extensions.lock.json` (`ccaedc8484b5830e1cc537d08658a719f4bcb9aa1755c0d459eab796e2d04c3c`).
+   - Проведено успішну компіляцію шейдера та симуляцію рендерингу в живому GNOME Shell без перезапуску сесії.
+   - `mac-extension-guard verify` та `mac-diagnostics` — 100% SUCCESS.
