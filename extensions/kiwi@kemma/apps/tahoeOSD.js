@@ -218,6 +218,25 @@ let _brightReady = false;
 let _screenProxy = null;
 let _origShowOsdWindow = null;
 let _lastKnownPanelH = 34;
+let _trackedSignals = [];
+
+function _trackSignal(object, signalName, callback) {
+    if (!object || typeof object.connect !== 'function')
+        return;
+    try {
+        const id = object.connect(signalName, callback);
+        _trackedSignals.push({ object, id });
+    } catch (_) {}
+}
+
+function _disconnectTrackedSignals() {
+    for (const { object, id } of _trackedSignals) {
+        try {
+            object.disconnect(id);
+        } catch (_) {}
+    }
+    _trackedSignals = [];
+}
 
 function _anchorX(monitor) {
     try {
@@ -234,7 +253,11 @@ function _anchorX(monitor) {
     return Math.round(monitor.x + monitor.width - 170);
 }
 
-function _isFullscreenOrPanelHidden(monitor) {
+function _isFullscreenOrPanelHidden(monitor, fsOverride = null) {
+    if (fsOverride === true)
+        return true;
+    if (fsOverride === false)
+        return false;
     try {
         if (monitor && monitor.inFullscreen)
             return true;
@@ -255,6 +278,94 @@ function _isFullscreenOrPanelHidden(monitor) {
             return true;
     } catch (_) {}
     return false;
+}
+
+function _computeTargetCoordinates(fsOverride = null) {
+    let monitor = Main.layoutManager.primaryMonitor;
+    try {
+        const currentMonIdx = global.display?.get_current_monitor ? global.display.get_current_monitor() : -1;
+        const focusWin = global.display?.focus_window;
+        if (focusWin && (fsOverride === true || focusWin.is_fullscreen())) {
+            const winMonIndex = focusWin.get_monitor();
+            const winMon = Main.layoutManager.monitors[winMonIndex];
+            if (winMon)
+                monitor = winMon;
+        } else if (currentMonIdx >= 0 && Main.layoutManager.monitors[currentMonIdx]) {
+            const currentMon = Main.layoutManager.monitors[currentMonIdx];
+            if (currentMon && (currentMon.inFullscreen || (global.display.get_monitor_in_fullscreen && global.display.get_monitor_in_fullscreen(currentMonIdx)))) {
+                monitor = currentMon;
+            }
+        }
+    } catch (_) {}
+    if (!monitor)
+        return null;
+
+    const curPanelH = Main.layoutManager.panelBox?.height;
+    if (typeof curPanelH === 'number' && curPanelH > 20)
+        _lastKnownPanelH = Math.round(curPanelH);
+    const panelH = _lastKnownPanelH || 34;
+
+    let targetX;
+    if (_isFullscreenOrPanelHidden(monitor, fsOverride)) {
+        // Fullscreen application (not maximized) or hidden menubar: center horizontally across the screen
+        targetX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
+    } else {
+        // Desktop or maximized window with visible menubar: align under the top-right tray / quick settings
+        const cx = Math.max(monitor.x + OSD_W / 2,
+            Math.min(monitor.x + monitor.width - OSD_W / 2, _anchorX(monitor)));
+        targetX = Math.round(cx - OSD_W / 2);
+    }
+    const targetY = monitor.y + panelH + 8;
+    return { monitor, targetX, targetY };
+}
+
+function _applyPredictedPosition(smoothIfVisible = true, fsOverride = null) {
+    if (!_box)
+        return;
+    const coords = _computeTargetCoordinates(fsOverride);
+    if (!coords)
+        return;
+
+    const { targetX, targetY } = coords;
+
+    if (_box.visible) {
+        if (smoothIfVisible) {
+            _box.ease({
+                x: targetX,
+                y: targetY,
+                duration: 150,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+            if (_osdShadow) {
+                _osdShadow.ease({
+                    x: targetX,
+                    y: targetY,
+                    duration: 150,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+            }
+            if (_glass) {
+                _syncGlass();
+            }
+        } else {
+            _box.set_position(targetX, targetY);
+            if (_osdShadow)
+                _osdShadow.set_position(targetX, targetY);
+            if (_glass)
+                _syncGlass();
+        }
+    } else {
+        _box.set_position(targetX, targetY);
+        if (_osdShadow) {
+            _osdShadow.set_position(targetX, targetY);
+            _osdShadow.set_width(OSD_W);
+            if (_box.height > 0)
+                _osdShadow.set_height(_box.height);
+        }
+        if (_glass) {
+            _syncGlass();
+        }
+    }
 }
 
 function _hideStockOsd() {
@@ -492,8 +603,11 @@ function _syncGlass() {
         const monitor = Main.layoutManager.primaryMonitor;
         if (!monitor)
             return false;
-        const [bx, by] = _box.get_transformed_position();
-        const bw = _box.width, bh = _box.height;
+        const uiGroup = Main.layoutManager.uiGroup;
+        const bx = (uiGroup?.x ?? 0) + _box.x;
+        const by = (uiGroup?.y ?? 0) + _box.y;
+        const bw = _box.width > 0 ? _box.width : OSD_W;
+        const bh = _box.height > 0 ? _box.height : 63;
         if (typeof bx !== 'number' || typeof by !== 'number' || !Number.isFinite(bx) || !Number.isFinite(by) || bx <= 0 || by <= 0)
             return false;
         if (typeof bw !== 'number' || typeof bh !== 'number' || !Number.isFinite(bw) || !Number.isFinite(bh) || bw <= 0 || bh <= 0)
@@ -509,9 +623,15 @@ function _syncGlass() {
         }
 
         s.bgActor.set_position(monitor.x, monitor.y);
-        if (!s.bgActor.visible)
-            s.bgActor.show();
-        s.bgActor.opacity = 255;
+        if (_box.visible) {
+            if (!s.bgActor.visible)
+                s.bgActor.show();
+        }
+        if (_box.opacity === 0 && !_box.get_transition('opacity')) {
+            s.bgActor.opacity = 0;
+        } else if (_box.opacity === 255 && !_box.get_transition('opacity')) {
+            s.bgActor.opacity = 255;
+        }
         const rx = (bx - monitor.x) - OSD_PAD;
         const ry = (by - monitor.y) - OSD_PAD;
         const surf = _osdSurf();
@@ -574,10 +694,24 @@ function _destroyGlass() {
 
 function _hideNow() {
     _hideId = 0;
-    if (_glass) {
+    if (_glass?.bgActor) {
         try {
-            _glass.bgActor.hide();
-        } catch (_) {}
+            _glass.bgActor.ease({
+                opacity: 0,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => {
+                    try {
+                        if (_glass?.bgActor)
+                            _glass.bgActor.hide();
+                    } catch (_) {}
+                },
+            });
+        } catch (_) {
+            try {
+                _glass.bgActor.hide();
+            } catch (_) {}
+        }
     }
     if (_osdShadow) {
         try {
@@ -660,41 +794,11 @@ function _show(kind, title, iconL, iconR, value) {
     } catch (_) {}
 
     try {
-        let monitor = Main.layoutManager.primaryMonitor;
-        try {
-            const currentMonIdx = global.display?.get_current_monitor ? global.display.get_current_monitor() : -1;
-            const focusWin = global.display?.focus_window;
-            if (focusWin && focusWin.is_fullscreen()) {
-                const winMonIndex = focusWin.get_monitor();
-                const winMon = Main.layoutManager.monitors[winMonIndex];
-                if (winMon)
-                    monitor = winMon;
-            } else if (currentMonIdx >= 0 && Main.layoutManager.monitors[currentMonIdx]) {
-                const currentMon = Main.layoutManager.monitors[currentMonIdx];
-                if (currentMon && (currentMon.inFullscreen || (global.display.get_monitor_in_fullscreen && global.display.get_monitor_in_fullscreen(currentMonIdx)))) {
-                    monitor = currentMon;
-                }
-            }
-        } catch (_) {}
-        if (!monitor)
+        const coords = _computeTargetCoordinates();
+        if (!coords)
             return;
 
-        const curPanelH = Main.layoutManager.panelBox?.height;
-        if (typeof curPanelH === 'number' && curPanelH > 20)
-            _lastKnownPanelH = Math.round(curPanelH);
-        const panelH = _lastKnownPanelH || 34;
-
-        let boxX;
-        if (_isFullscreenOrPanelHidden(monitor)) {
-            // Fullscreen application (not maximized) or hidden menubar: center horizontally across the screen
-            boxX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
-        } else {
-            // Desktop or maximized window with visible menubar: align under the top-right tray / quick settings
-            const cx = Math.max(monitor.x + OSD_W / 2,
-                Math.min(monitor.x + monitor.width - OSD_W / 2, _anchorX(monitor)));
-            boxX = Math.round(cx - OSD_W / 2);
-        }
-        const boxY = monitor.y + panelH + 8;
+        const { targetX: boxX, targetY: boxY } = coords;
         _box.set_position(boxX, boxY);
         if (_osdShadow) {
             _osdShadow.set_position(boxX, boxY);
@@ -716,6 +820,10 @@ function _show(kind, title, iconL, iconR, value) {
                 _osdShadow.opacity = 0;
                 _osdShadow.show();
             }
+            if (_glass?.bgActor) {
+                _glass.bgActor.opacity = 0;
+                _glass.bgActor.show();
+            }
             let tries = 0;
             const step = () => {
                 let ok = false;
@@ -735,6 +843,12 @@ function _show(kind, title, iconL, iconR, value) {
                                 mode: Clutter.AnimationMode.EASE_OUT_QUAD
                             });
                         }
+                        if (_glass?.bgActor && _glass.bgActor.visible) {
+                            _glass.bgActor.ease({
+                                opacity: 255, duration: 150,
+                                mode: Clutter.AnimationMode.EASE_OUT_QUAD
+                            });
+                        }
                         return GLib.SOURCE_REMOVE;
                     }
                 } catch (_) {
@@ -747,6 +861,8 @@ function _show(kind, title, iconL, iconR, value) {
             _box.remove_all_transitions();
             if (_osdShadow)
                 _osdShadow.remove_all_transitions();
+            if (_glass?.bgActor)
+                _glass.bgActor.remove_all_transitions();
             if (_box.opacity < 255) {
                 try {
                     _box.ease({opacity: 255, duration: 100, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
@@ -761,11 +877,14 @@ function _show(kind, title, iconL, iconR, value) {
                     } catch (_) {}
                 }
             }
-            if (_glass?.bgActor && !_glass.bgActor.visible) {
-                try {
+            if (_glass?.bgActor) {
+                if (!_glass.bgActor.visible)
                     _glass.bgActor.show();
-                    _glass.bgActor.opacity = 255;
-                } catch (_) {}
+                if (_glass.bgActor.opacity < 255) {
+                    try {
+                        _glass.bgActor.ease({opacity: 255, duration: 100, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+                    } catch (_) {}
+                }
             }
             try {
                 GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
@@ -993,9 +1112,50 @@ export function enable() {
             _screenProxy = null;
         }
     }
+
+    // Proactive tracking of window state and panel changes
+    _trackSignal(global.display, 'in-fullscreen-changed', () => _applyPredictedPosition(true));
+    _trackSignal(global.display, 'notify::focus-window', () => _applyPredictedPosition(true));
+    _trackSignal(global.window_manager, 'size-changed', () => _applyPredictedPosition(true));
+    _trackSignal(global.window_manager, 'switch-workspace', () => _applyPredictedPosition(true));
+    _trackSignal(global.window_manager, 'size-change', (wm, actor, whichChange) => {
+        if (whichChange === Meta.SizeChange.FULLSCREEN)
+            _applyPredictedPosition(true, true);
+        else if (whichChange === Meta.SizeChange.UNFULLSCREEN)
+            _applyPredictedPosition(true, false);
+        else
+            _applyPredictedPosition(true);
+    });
+    if (Main.panel) {
+        _trackSignal(Main.panel, 'notify::visible', () => _applyPredictedPosition(true));
+        _trackSignal(Main.panel, 'notify::translation-y', () => _applyPredictedPosition(true));
+    }
+    if (Main.layoutManager?.panelBox) {
+        _trackSignal(Main.layoutManager.panelBox, 'notify::visible', () => _applyPredictedPosition(true));
+        _trackSignal(Main.layoutManager.panelBox, 'notify::translation-y', () => _applyPredictedPosition(true));
+    }
+    _trackSignal(Main.layoutManager, 'monitors-changed', () => _applyPredictedPosition(true));
+
+    _trackSignal(global.display, 'window-created', (d, win) => {
+        if (win) {
+            _trackSignal(win, 'notify::fullscreen', () => _applyPredictedPosition(true));
+        }
+    });
+
+    try {
+        const ws = global.workspace_manager?.get_active_workspace();
+        if (ws) {
+            for (const win of ws.list_windows()) {
+                _trackSignal(win, 'notify::fullscreen', () => _applyPredictedPosition(true));
+            }
+        }
+    } catch (_) {}
+
+    _applyPredictedPosition(false);
 }
 
 export function disable() {
+    _disconnectTrackedSignals();
     _restoreStockOsd();
     _destroyGlass();
     if (_hideId) {

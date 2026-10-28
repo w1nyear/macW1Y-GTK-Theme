@@ -12006,3 +12006,29 @@ Task 499: Повне полірування екрана блокування (m
      * У повноекранному режимі (make_fullscreen) та при схованій панелі: boxPos = [810, 42, 300, 63] (по центру екрана).
      * Знято скріншоти обох станів: scratch_osd_normal_live.png та scratch_osd_fullscreen_live.png.
    - mac-extension-guard verify (20/20 extensions locked) та mac-diagnostics — 100% SUCCESS.
+
+--------------------------------------------------------------------------------
+589. Усунення миготіння OSD при вході/виході з повноекранного режиму та проактивне передбачення позиції:
+1. Діагностика проблеми:
+   - При вході в повноекранний режим OSD на частку мілісекунди спалахував справа на старому місці, а потім переміщався в центр; при виході навпаки — спалахував у центрі, а потім стрибав праворуч.
+   - Корінні причини:
+     1) _box.set_position(targetX, targetY) оновлював локальні координати, але _syncGlass() викликав _box.get_transformed_position(), який у Clutter зберігає застарілу матрицю трансформації з попереднього кадру до завершення циклу алокації сцени. Через це Liquid Glass і тінь спочатку малювалися за старими координатами.
+     2) У методі _syncGlass() непрозорість фонового актора рідкого скла форсувалася: s.bgActor.opacity = 255;. Навіть коли сам віджет _box мав opacity: 0 (готуючись до плавного фейду), скляний шейдер миттєво з'являвся на 100% непрозорості в застарілих координатах на 16-32мс.
+     3) OSD перераховував позицію виключно всередині _show() (при натисканні клавіш гучності/яскравості), не відстежуючи стан повного екрану наперед. Коли вікно змінювало режим, прихований віджет OSD залишався на старій позиції і переміщався вже "по факту" виклику.
+2. Реалізоване рішення:
+   - Проактивне передбачення координат наперед (_applyPredictedPosition):
+     * Підключено слухачі системних подій Mutter і GNOME Shell: global.display ('in-fullscreen-changed', 'notify::focus-window', 'window-created'), global.window_manager ('size-changed', 'size-change', 'switch-workspace'), Main.panel ('notify::visible', 'notify::translation-y'), Main.layoutManager.panelBox ('notify::visible', 'notify::translation-y'), Main.layoutManager ('monitors-changed'), а також win.connect('notify::fullscreen') для всіх вікон.
+     * Слухач size-change реагує на події Meta.SizeChange.FULLSCREEN та Meta.SizeChange.UNFULLSCREEN заздалегідь — ще до початку анімації зміни розміру вікна.
+     * Щойно вікно входить або виходить з повноекранного режиму, _applyPredictedPosition() миттєво та безшумно переміщує прихований _box, тінь та шейдерні координати на нову цільову позицію. Коли користувач пізніше натискає клавішу гучності/яскравості, OSD вже знаходиться у потрібному місці.
+     * Якщо OSD вже відображається на екрані під час зміни режиму, він плавно переїжджає на нову позицію через ease().
+   - Ліквідація застарілих координат та синхронізація альфа-каналу в _syncGlass():
+     * _syncGlass() тепер бере координати напряму від актуальних _box.x та _box.y (як дочірнього елемента uiGroup), виключаючи будь-яку залежність від застарілих матриць get_transformed_position().
+     * s.bgActor.opacity синхронізовано з непрозорістю _box.opacity. При появі (firstShow) актор скла стартує з opacity: 0 і плавно з'являється разом із вмістом та тінню; при зникненні (_hideNow) плавно розчиняється до 0.
+3. Синхронізація та верифікація:
+   - Оновлено extensions/kiwi@kemma/apps/tahoeOSD.js, extensions/kiwi@kemma/apps/tahoeOnScreenDisplay.js, extensions/kiwi@kemma/extension.js (?v=osd_v12).
+   - Синхронізовано з ~/.local/share/gnome-shell/extensions/kiwi@kemma/.
+   - Оновлено SHA256 хеш у config/extensions.lock.json (9e3522971d388cb6d1b605136d167f877b824b5ba2fbad3753d6acf795f93431).
+   - Проведено верифікацію через EvalHelper:
+     * Перевірено попереднє переміщення у прихованому стані: вхід у fullscreen миттєво встановлює fsPosPredicted = [810, 42, false], вихід миттєво повертає normalPosPredicted = [1549, 42, false].
+     * Поява OSD відбувається безпосередньо у цільових координатах без жодного спалаху або стрибка з попереднього боку.
+   - mac-extension-guard verify та mac-diagnostics — 100% SUCCESS.
