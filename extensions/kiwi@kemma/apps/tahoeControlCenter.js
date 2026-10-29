@@ -1044,16 +1044,18 @@ function _buildPanel() {
     });
     leftCol.add_child(btPill.btn);
 
-    const air = _makePill('tahoe-airdrop', _('AirDrop'), _('Off'));
-    try {
-        if (_gicons().airdrop)
-            air.icon.gicon = _gicons().airdrop;
-    } catch (_) {
-        // stock glyph stays
-    }
-    air.btn.connect('clicked', () => _toggleAirdrop(state));
-    leftCol.add_child(air.btn);
-    _refreshAirdrop(air);
+    const modePill = _makePill('power-profile-balanced-symbolic', _('Режим'), _('Баланс'));
+    modePill.btn.connect('clicked', () => _cyclePowerMode(state));
+    modePill.btn.connect('button-press-event', (_actor, event) => {
+        if (event.get_button() === 3) {
+            _openPowerModeSubmenu(modePill.btn, state);
+            return Clutter.EVENT_STOP;
+        }
+        return Clutter.EVENT_PROPAGATE;
+    });
+    leftCol.add_child(modePill.btn);
+    _refreshPowerMode(modePill);
+    const air = modePill;
 
     // -- right: music card (132) + [Dark][Lock] circles row (60)
     const music = new St.Button({style_class: 'tahoe-qs-music', reactive: true, x_expand: true});
@@ -1482,7 +1484,7 @@ function _buildPanel() {
         // stays on top
     }
 
-    _panel = {overlay, box, panelBg, state, wifi, bt: btPill, air, focus, dark, lock, shot, logout, disp, snd,
+    _panel = {overlay, box, panelBg, state, wifi, bt: btPill, air: modePill, mode: modePill, focus, dark, lock, shot, logout, disp, snd,
         music, mTitle, mArtist, mPlayIcon: play.icon, mPrevIcon: prev.icon,
         mNextIcon: next.icon, artBin: art, artIcon, artUrl: '',
         priv: privPill, glass: null};
@@ -1685,7 +1687,7 @@ function _applyPanelInk() {
         // gone
     }
     try {
-        _refreshAirdrop(p.air);
+        _refreshPowerMode(p.mode || p.air);
     } catch (_) {
         // gone
     }
@@ -1845,48 +1847,227 @@ function _refreshBt(pill) {
     }
 }
 
-function _refreshAirdrop(air) {
-    // AirDrop pill (no macOS-share backend on Linux): persistent ON/OFF.
-    // Glyph monochrome (ink-following) when OFF, Apple blue when ON.
-    if (!air)
-        return;
+export function _getPowerProfile() {
     try {
-        let on = false;
-        try {
-            on = _settings.get_boolean('tahoe-airdrop-on');
-        } catch (_) {
-            on = !!_panel?.state?.airdropOn;
+        const res = Gio.DBus.system.call_sync(
+            'net.hadess.PowerProfiles',
+            '/net/hadess/PowerProfiles',
+            'org.freedesktop.DBus.Properties',
+            'Get',
+            new GLib.Variant('(ss)', ['net.hadess.PowerProfiles', 'ActiveProfile']),
+            new GLib.VariantType('(v)'),
+            Gio.DBusCallFlags.NONE,
+            1000,
+            null
+        );
+        if (res) {
+            const unpacked = res.deep_unpack();
+            if (unpacked && unpacked[0]) {
+                return String(unpacked[0].deep_unpack());
+            }
         }
-        if (air.subtitle)
-            air.subtitle.text = on ? _('On') : _('Off');
-        _setActive(air.btn, on);
-        try {
-            const g = _gicons();
-            if (g.airdrop && g.airdropBlue)
-                air.icon.gicon = on ? g.airdropBlue : g.airdrop;
-        } catch (_) {
-            // glyph stays
-        }
+    } catch (_) {}
+    return 'balanced';
+}
+
+export function _setPowerProfile(profile) {
+    try {
+        Gio.DBus.system.call(
+            'net.hadess.PowerProfiles',
+            '/net/hadess/PowerProfiles',
+            'org.freedesktop.DBus.Properties',
+            'Set',
+            new GLib.Variant('(ssv)', ['net.hadess.PowerProfiles', 'ActiveProfile', new GLib.Variant('s', profile)]),
+            null,
+            Gio.DBusCallFlags.NONE,
+            -1,
+            null,
+            null
+        );
     } catch (_) {
-        // gone
+        try { GLib.spawn_command_line_async(`powerprofilesctl set ${profile}`); } catch (_) {}
+    }
+
+    try {
+        let modeCmd = 'balanced';
+        if (profile === 'performance') modeCmd = 'on';
+        else if (profile === 'power-saver') modeCmd = 'quiet';
+        GLib.spawn_command_line_async(`sudo /usr/local/bin/mac-gamemode ${modeCmd}`);
+    } catch (_) {}
+
+    const p = _panel;
+    if (p?.mode || p?.air) {
+        _refreshPowerMode(p.mode || p.air);
     }
 }
 
-function _toggleAirdrop(state) {
+function _cyclePowerMode(state) {
+    const cur = _getPowerProfile();
+    let next = 'balanced';
+    if (cur === 'balanced') next = 'performance';
+    else if (cur === 'performance') next = 'power-saver';
+    else if (cur === 'power-saver') next = 'balanced';
+    _setPowerProfile(next);
+}
+
+function _refreshPowerMode(pill) {
+    if (!pill) return;
     try {
-        let on = false;
-        try {
-            on = !_settings.get_boolean('tahoe-airdrop-on');
-            _settings.set_boolean('tahoe-airdrop-on', on);
-        } catch (_) {
-            on = !(state.airdropOn ?? false);
-            state.airdropOn = on;
+        const profile = _getPowerProfile();
+        let subtitle = _('Баланс');
+        let iconName = 'power-profile-balanced-symbolic';
+        let isActive = false;
+
+        if (profile === 'performance') {
+            subtitle = _('Швидкодія');
+            iconName = 'power-profile-performance-symbolic';
+            isActive = true;
+        } else if (profile === 'power-saver') {
+            subtitle = _('Заощадження');
+            iconName = 'power-profile-power-saver-symbolic';
+            isActive = false;
+        } else {
+            subtitle = _('Баланс');
+            iconName = 'power-profile-balanced-symbolic';
+            isActive = false;
         }
-        const p = _panel;
-        if (p)
-            _refreshAirdrop(p.air);
-    } catch (_) {
-        // unavailable
+
+        if (pill.title) pill.title.text = _('Режим');
+        if (pill.subtitle) pill.subtitle.text = subtitle;
+        if (pill.icon) pill.icon.icon_name = iconName;
+        _setActive(pill.btn, isActive);
+    } catch (_) {}
+}
+
+export async function _openPowerModeSubmenu(sourceActor, state) {
+    if (_activeSubmenu) {
+        const wasOpen = _activeSubmenu._sourceActor === sourceActor;
+        _closeActiveSubmenu();
+        if (wasOpen) return;
+    }
+
+    try {
+        const PopupMenu = await import('resource:///org/gnome/shell/ui/popupMenu.js');
+        const BoxPointer = await import('resource:///org/gnome/shell/ui/boxpointer.js');
+        const sharedMod = await import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/mac_menus_shared_v5.js');
+
+        const menu = new PopupMenu.PopupMenu(sourceActor, 0.5, St.Side.RIGHT);
+        menu._sourceActor = sourceActor;
+        Main.uiGroup.add_child(menu.actor);
+        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 14px !important; background-color: rgba(26, 26, 28, 0.88) !important; color: #ffffff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; padding: 6px !important;';
+
+        const curProfile = _getPowerProfile();
+
+        // 1. Header
+        const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+        const headerLbl = new St.Label({
+            text: _('Режим живлення') || 'Режим живлення',
+            style: 'font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: 0.5px !important; margin: 4px 8px !important;',
+        });
+        secHeader.add_child(headerLbl);
+        menu.addMenuItem(secHeader);
+
+        const modes = [
+            {
+                id: 'performance',
+                title: _('Швидкодія') || 'Швидкодія',
+                desc: _('Висока швидкодія та споживання енергії') || 'Висока швидкодія',
+                icon: 'power-profile-performance-symbolic',
+            },
+            {
+                id: 'balanced',
+                title: _('Баланс') || 'Баланс',
+                desc: _('Стандартна швидкодія та споживання енергії') || 'Стандартна швидкодія',
+                icon: 'power-profile-balanced-symbolic',
+            },
+            {
+                id: 'power-saver',
+                title: _('Заощадження') || 'Заощадження',
+                desc: _('Знижена швидкодія та споживання енергії') || 'Знижена швидкодія',
+                icon: 'power-profile-power-saver-symbolic',
+            },
+        ];
+
+        for (const m of modes) {
+            const isSelected = (curProfile === m.id);
+            const item = new PopupMenu.PopupBaseMenuItem({
+                reactive: true,
+                can_focus: false,
+                style_class: isSelected ? 'mac-menu-item-row mac-menu-item-active' : 'mac-menu-item-row',
+            });
+            sharedMod.setupMacMenuItem(item);
+
+            const icon = new St.Icon({
+                icon_name: m.icon,
+                icon_size: 16,
+                style: `margin-right: 8px; color: ${isSelected ? '#007aff !important' : '#ffffff !important'};`,
+            });
+            item.add_child(icon);
+
+            const textBox = new St.BoxLayout({ vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER });
+            const titleLbl = new St.Label({
+                text: m.title,
+                style: `font-size: 13px !important; font-weight: ${isSelected ? '700' : '500'} !important; color: #ffffff !important;`,
+            });
+            const descLbl = new St.Label({
+                text: m.desc,
+                style: 'font-size: 10px !important; color: rgba(255, 255, 255, 0.6) !important; margin-top: -1px;',
+            });
+            textBox.add_child(titleLbl);
+            textBox.add_child(descLbl);
+            item.add_child(textBox);
+
+            if (isSelected) {
+                const check = new St.Icon({
+                    icon_name: 'emblem-ok-symbolic',
+                    icon_size: 14,
+                    style: 'color: #007aff !important;',
+                });
+                item.add_child(check);
+            }
+
+            item.connect('activate', () => {
+                _setPowerProfile(m.id);
+                _closeActiveSubmenu();
+            });
+
+            menu.addMenuItem(item);
+        }
+
+        menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+        // Settings footer
+        const settItem = new PopupMenu.PopupBaseMenuItem({reactive: true, can_focus: false, style_class: 'mac-menu-item-row'});
+        sharedMod.setupMacMenuItem(settItem);
+        const settLbl = new St.Label({
+            text: _('Параметри живлення…') || 'Параметри живлення…',
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: 'color: #ffffff !important;',
+        });
+        settItem.add_child(settLbl);
+        settItem.connect('activate', () => {
+            try { GLib.spawn_command_line_async('gnome-control-center power'); } catch (_) {}
+            _closeActiveSubmenu();
+            _closePanel();
+        });
+        menu.addMenuItem(settItem);
+
+        _activeSubmenu = menu;
+        menu.actor.opacity = 0;
+        menu.actor.scale_x = 1.12;
+        menu.actor.scale_y = 1.12;
+        menu.actor.set_pivot_point(1.0, 0.2);
+        menu.open(BoxPointer.PopupAnimation.FULL);
+        menu.actor.ease({
+            opacity: 255,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            duration: 300,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+    } catch (e) {
+        console.error(`[tahoe-cc] _openPowerModeSubmenu error: ${e}`);
     }
 }
 
@@ -3065,7 +3246,7 @@ function _editCatalog() {
     return [
         {id: 'wifi', title: _('Wi-Fi'), icon: 'network-wireless-symbolic', category: 'connectivity'},
         {id: 'bt', title: _('Bluetooth'), icon: 'bluetooth-active-symbolic', category: 'connectivity'},
-        {id: 'air', title: _('AirDrop'), gicon: g.airdrop ?? g.airdropBlue, icon: 'tahoe-airdrop', category: 'connectivity'},
+        {id: 'air', title: _('Режим'), icon: 'power-profile-performance-symbolic', category: 'connectivity'},
         {id: 'focus', title: _('Focus'), gicon: g.focus, icon: 'weather-clear-night-symbolic', category: 'focus'},
         {id: 'display', title: _('Display'), icon: 'display-brightness-symbolic', category: 'display'},
         {id: 'dark', title: _('Dark Mode'), gicon: g.theme, icon: 'weather-clear-night-symbolic', category: 'display'},

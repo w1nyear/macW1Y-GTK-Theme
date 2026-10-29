@@ -811,28 +811,108 @@ void on_restore_theme_clicked(void *widget, gpointer data) {
     g_spawn_command_line_async("/bin/bash -c '/usr/local/bin/mac-apply-theme && notify-send -i preferences-desktop-theme \"macW1Y\" \"Оформлення успішно відновлено до еталону SSOT!\"'", NULL);
 }
 
-void init_game_mode(void *widget, gpointer data) {
+static void *g_game_mode_switch_w = NULL;
+
+static void update_game_mode_ui_for_profile(const char *profile) {
+    if (!g_game_mode_switch_w) return;
     in_init = 1;
-    int is_active = 0;
-    FILE *f = fopen("/etc/mac-gamemode.state", "r");
-    if (f) {
-        char buf[16];
-        if (fgets(buf, sizeof(buf), f)) {
-            if (buf[0] == '1') is_active = 1;
-        }
-        fclose(f);
+    gboolean is_perf = (g_strcmp0(profile, "performance") == 0);
+    adw_switch_row_set_active(g_game_mode_switch_w, is_perf);
+    if (is_perf) {
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(g_game_mode_switch_w),
+            "Швидкодія: Р-ядра (0-7) закріплено за іграми • Е-ядра (8-11) для фонових задач ОС");
+    } else if (g_strcmp0(profile, "power-saver") == 0) {
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(g_game_mode_switch_w),
+            "Заощадження: знижена частота ядер, тихий режим");
+    } else {
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(g_game_mode_switch_w),
+            "Баланс: стандартна швидкодія та динамічний розподіл ядер");
     }
-    adw_switch_row_set_active(widget, is_active);
     in_init = 0;
 }
 
+static void on_power_profiles_dbus_signal(GDBusConnection *connection,
+                                         const gchar *sender_name,
+                                         const gchar *object_path,
+                                         const gchar *interface_name,
+                                         const gchar *signal_name,
+                                         GVariant *parameters,
+                                         gpointer user_data) {
+    (void)connection; (void)sender_name; (void)object_path; (void)interface_name; (void)signal_name; (void)user_data;
+    if (!g_game_mode_switch_w) return;
+    GVariant *changed_properties = NULL;
+    gchar *iface_name = NULL;
+    g_variant_get(parameters, "(&s@a{sv}^as)", &iface_name, &changed_properties, NULL);
+    if (g_strcmp0(iface_name, "net.hadess.PowerProfiles") == 0 && changed_properties) {
+        GVariant *active_prop = g_variant_lookup_value(changed_properties, "ActiveProfile", G_VARIANT_TYPE_STRING);
+        if (active_prop) {
+            const gchar *profile = g_variant_get_string(active_prop, NULL);
+            update_game_mode_ui_for_profile(profile);
+            g_variant_unref(active_prop);
+        }
+        g_variant_unref(changed_properties);
+    }
+}
+
+void init_game_mode(void *widget, gpointer data) {
+    (void)data;
+    g_game_mode_switch_w = widget;
+    
+    char current_prof[32] = "balanced";
+    GDBusConnection *sys_bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
+    if (sys_bus) {
+        GVariant *v = g_dbus_connection_call_sync(sys_bus,
+            "net.hadess.PowerProfiles",
+            "/net/hadess/PowerProfiles",
+            "org.freedesktop.DBus.Properties",
+            "Get",
+            g_variant_new("(ss)", "net.hadess.PowerProfiles", "ActiveProfile"),
+            G_VARIANT_TYPE("(v)"),
+            G_DBUS_CALL_FLAGS_NONE,
+            1000, NULL, NULL);
+        if (v) {
+            GVariant *inner = NULL;
+            g_variant_get(v, "(v)", &inner);
+            if (inner) {
+                const gchar *s = g_variant_get_string(inner, NULL);
+                if (s) g_strlcpy(current_prof, s, sizeof(current_prof));
+                g_variant_unref(inner);
+            }
+            g_variant_unref(v);
+        }
+
+        static int dbus_subscribed = 0;
+        if (!dbus_subscribed) {
+            dbus_subscribed = 1;
+            g_dbus_connection_signal_subscribe(sys_bus,
+                "net.hadess.PowerProfiles",
+                "org.freedesktop.DBus.Properties",
+                "PropertiesChanged",
+                "/net/hadess/PowerProfiles",
+                NULL,
+                G_DBUS_SIGNAL_FLAGS_NONE,
+                on_power_profiles_dbus_signal,
+                NULL, NULL);
+        }
+    }
+    
+    update_game_mode_ui_for_profile(current_prof);
+}
+
 void on_game_mode_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
     if (in_init) return;
     int active = adw_switch_row_get_active(widget);
     if (active) {
+        g_spawn_command_line_async("powerprofilesctl set performance", NULL);
         g_spawn_command_line_async("sudo /usr/local/bin/mac-gamemode on", NULL);
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(widget),
+            "Швидкодія: Р-ядра (0-7) закріплено за іграми • Е-ядра (8-11) для фонових задач ОС");
     } else {
+        g_spawn_command_line_async("powerprofilesctl set balanced", NULL);
         g_spawn_command_line_async("sudo /usr/local/bin/mac-gamemode off", NULL);
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(widget),
+            "Баланс: стандартна швидкодія та динамічний розподіл ядер");
     }
 }
 

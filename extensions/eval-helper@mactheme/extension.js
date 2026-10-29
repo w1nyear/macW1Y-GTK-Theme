@@ -437,6 +437,73 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
+        // Ensure dialog and modal windows for apps with sidebars (e.g. Nautilus "Empty Trash")
+        // get full-width blur across the entire element instead of being clipped to sidebar width (240px)
+        const setupAppDialogBlurGuard = () => {
+            try {
+                const bmsExt = Main.extensionManager.lookup('blur-my-shell@aunetx');
+                const appsBlur = bmsExt?.stateObj?._applications_blur;
+                if (!appsBlur) return;
+
+                const isDialogOrModalWindow = (meta_window) => {
+                    if (!meta_window) return false;
+                    const type = typeof meta_window.get_window_type === 'function'
+                        ? meta_window.get_window_type()
+                        : meta_window.window_type;
+                    if (type !== Meta.WindowType.NORMAL) return true;
+                    if (typeof meta_window.get_transient_for === 'function' && meta_window.get_transient_for()) return true;
+                    if (typeof meta_window.is_attached_dialog === 'function' && meta_window.is_attached_dialog()) return true;
+                    if (typeof meta_window.can_maximize === 'function' && !meta_window.can_maximize()) return true;
+                    if (typeof meta_window.allows_resize === 'function' && !meta_window.allows_resize()) return true;
+                    return false;
+                };
+
+                const applyFullBlurToDialog = (mw) => {
+                    try {
+                        if (!mw || !isDialogOrModalWindow(mw)) return;
+                        const blur_actor = mw.blur_actor;
+                        if (!blur_actor) return;
+                        const alloc = appsBlur.compute_allocation(mw);
+                        blur_actor.x = alloc.x;
+                        blur_actor.y = alloc.y;
+                        blur_actor.width = alloc.width;
+                        blur_actor.height = alloc.height;
+                        blur_actor.remove_clip?.();
+                    } catch (_) {}
+                };
+
+                const proto = appsBlur.constructor.prototype;
+                if (proto && !this._origBmsUpdateSize) {
+                    this._origBmsUpdateSize = proto.update_size;
+                    const origUpdateSize = proto.update_size;
+                    proto.update_size = function(pid) {
+                        origUpdateSize.call(this, pid);
+                        try {
+                            if (this.meta_window_map?.has(pid)) {
+                                const mw = this.meta_window_map.get(pid);
+                                applyFullBlurToDialog(mw);
+                            }
+                        } catch (_) {}
+                    };
+                }
+
+                if (appsBlur.meta_window_map) {
+                    for (const [pid, mw] of appsBlur.meta_window_map) {
+                        try {
+                            if (isDialogOrModalWindow(mw)) {
+                                appsBlur.update_size(pid);
+                            }
+                        } catch (_) {}
+                    }
+                }
+            } catch (_) {}
+        };
+        setupAppDialogBlurGuard();
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2500, () => {
+            setupAppDialogBlurGuard();
+            return GLib.SOURCE_REMOVE;
+        });
+
 
         // Ensure search-shortcut Ctrl+Space connects to redesigned macOS Liquid Glass Spotlight
         const patchSpotlightKeybinding = async () => {
@@ -1696,6 +1763,17 @@ export default class EvalHelper extends Extension {
                 }
             } catch (_) {}
             this._origIsPointerOverDock = null;
+        }
+
+        if (this._origBmsUpdateSize) {
+            try {
+                const bmsExt = Main.extensionManager.lookup('blur-my-shell@aunetx');
+                const appsBlur = bmsExt?.stateObj?._applications_blur;
+                if (appsBlur?.constructor?.prototype) {
+                    appsBlur.constructor.prototype.update_size = this._origBmsUpdateSize;
+                }
+            } catch (_) {}
+            this._origBmsUpdateSize = null;
         }
 
         if (globalThis._macDlgStageId) {

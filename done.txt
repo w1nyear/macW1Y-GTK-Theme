@@ -12409,28 +12409,34 @@ Task 499: Повне полірування екрана блокування (m
    - Усі змінені файли синхронізовано з ~/.local/share/gnome-shell/extensions/kiwi@kemma/.
    - Перераховано інтеграційний хеш sha256 для kiwi@kemma та оновлено config/extensions.lock.json (новий хеш 66ca1d6f4244c4e7b542ee1aacf8ba5a8a80ee5b5d9d7f7d344bbe5913a308be).
    - mac-extension-guard verify пройшов на 100% успішно (VERIFICATION SUCCESS: All 20 managed extensions match pinned lock hashes).
-   - mac-diagnostics успішно підтвердив еталонний стан усіх компонентів системи.
-   - Інструментально перевірено покадровий скріншот правого меню-бара: кнопка Spotlight відсутня, відсоток батареї приховано згідно з параметрами, плашка розкладки відображається у вигляді заокругленого білого бейджа з наскрізними літерами.
-
-604. Виправлення зависання збільшення (magnification) іконок дока після відкриття та закриття огляду (Overview / Mission Control):
-1. Діагностика проблеми:
-   - Якщо навести курсор на док (активується магніфай іконок), відкрити режим огляду (Mission Control / Overview за клавішею Super або жестом) і потім закрити його, повернувшись на робочий стіл, магніфай іконок залишався завислим у збільшеному стані навіть при виведенні курсора далеко за межі дока.
-   - Щоб скинути збільшення, користувачу доводилося знову перенаводити курсор або клікати в іншому місці дока.
-   - Детальний аналіз стану середовища та коду розширення виявив такі причини:
-     * У extensions/dash2dock-motion@unmade.space/magnifier.js метод _isPointerOverDock() покладався на перевірку if (this._hoverBox.hover) return true;. Під час модальних режимів оболонки (Overview) Clutter-стан hover на контейнері DashToDock не оновлюється і залишається true навіть після того, як курсор залишив межі дока.
-     * У extensions/dash2dock-motion@unmade.space/docking.js методи _onOverviewShowing(), _onOverviewHiding() та _onOverviewHidden() викликали лише _clearTransforms(), але не скидали параметри пружинної анімації (_envelope, _target, _velocity, _cursor). Оскільки _envelope залишався рівним 1.0, наступний же сигнал items-allocated викликав update(), який негайно повертав повне збільшення іконкам під старими координатами курсора без запуску таймлайну згасання (spring decay).
-2. Реалізоване рішення:
-   - У extensions/dash2dock-motion@unmade.space/magnifier.js:
-     * Реалізовано метод reset(): повністю зупиняє активний таймлайн (_stopTimeline()), обнуляє цільове та поточне збільшення (_target = 0, _envelope = 0, _velocity = 0, _cursor = null, _cursorMoved = false) та скидає всі трансформації іконок (_clearTransforms()).
-     * Оновлено метод _isPointerOverDock(): додано перевірку (Main.overview.visibleTarget || Main.overview.visible), яка безумовно повертає false під час активності огляду, вилучено некоректне покладання на hoverBox.hover та реалізовано строгу перевірку реальних фізичних координат миші (global.get_pointer()) відносно трансформованих меж дока з margin 12px.
-     * Підключено прямі сигнали Main.overview ('showing', 'hiding', 'hidden') для зупинки магніфаєра при відкритті та скидання стану при закритті.
-   - У extensions/dash2dock-motion@unmade.space/docking.js:
-     * У методи _onOverviewShowing(), _onOverviewHiding() та _onOverviewHidden() інтегровано виклики this._magnifier?.reset?.(), що гарантує негайне повне очищення магніфаю при будь-яких фазах роботи огляду.
-   - У extensions/eval-helper@mactheme/extension.js:
-     * Додано setupDockMagnifierGuard(): runtime-захисник у живому середовищі оболонки GNOME Shell, який патчить прототип _isPointerOverDock та підключає обробники сигналів огляду безпосередньо до активного екземпляра магніфаєра дока (dashtodockContainer._dock._magnifier), що забезпечує стабільну роботу без зависань.
-3. Синхронізація та верифікація:
-   - Файли синхронізовано з ~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/ та ~/.local/share/gnome-shell/extensions/eval-helper@mactheme/.
-   - Оновлено хеші SHA-256 у config/extensions.lock.json для dash2dock-motion@unmade.space (70648b4a...) та eval-helper@mactheme (eedfa82f...).
-   - mac-extension-guard verify підтвердив відповідність усіх 20 зафіксованих розширень (VERIFICATION SUCCESS).
    - mac-diagnostics успішно пройдено на 100% (система стабільна, всі компоненти відповідають еталону).
    - Живе тестування через DBus підтвердило, що після відкриття та закриття огляду envelope = 0, target = 0, таймлайн вимкнено, а іконки повертаються до нормального розміру без жодних залипань.
+
+605. Виправлення повного розмиття (blur) для діалогів/модальних вікон та заміна кнопки AirDrop на кнопку «Режим» у Центрі керування із синхронізацією параметрів живлення:
+1. Діагностика та вирішення проблеми обрізання розмиття у діалогових вікнах:
+   - У вікні підтвердження очищення кошика Nautilus («Спорожнити смітник?») та подібних модальних діалогах розмиття Blur My Shell обрізалося до ширини бічної панелі (240px) замість покриття повного вікна (300px), оскільки для класу org.gnome.Nautilus у SYSTEM_SIDEBAR_WIDTHS було жорстко зафіксовано 240px для всіх вікон процесу.
+   - У extensions/blur-my-shell@aunetx/components/applications.js реалізовано функцію isDialogOrModalWindow(meta_window), яка аналізує тип вікна (get_window_type), наявність transient_for, is_attached_dialog, can_maximize() та allows_resize(). Якщо вікно є діалогом/модальним, SYSTEM_SIDEBAR_WIDTHS до нього не застосовується, розмиття покриває повні розміри геометрії вікна, а кліп скидається (remove_clip()).
+   - У extensions/eval-helper@mactheme/extension.js додано setupAppDialogBlurGuard() для безшовного динамічного оновлення розмірів розмиття для всіх відкритих та нових діалогових вікон.
+2. Двостороння синхронізація режимів живлення («Режим живлення» / «mac-продуктивність»):
+   - У bin/mac-gamemode реалізовано методи get_system_power_profile() та set_system_power_profile(profile) для прямої взаємодії з D-Bus службою net.hadess.PowerProfiles на системній шині.
+   - Метод set_manual_override(mode) синхронізовано з net.hadess.PowerProfiles: gaming -> performance, quiet -> power-saver, balanced/auto -> balanced.
+   - У циклі daemon_loop() додано відстеження зміни профілю живлення з системних параметрів GNOME Settings: при перемиканні користувачем на «Швидкодія», «Баланс» або «Заощадження» демон автоматично перемикає внутрішній стан mac-gamemode.
+   - Оновлено bin/mac-gamemode у /usr/local/bin/mac-gamemode та перезапущено службу mac-gamemode.service.
+   - У gnome-control-center-overlay/libmac_settings.c реалізовано update_game_mode_ui_for_profile() та підписку на D-Bus сигнал PropertiesChanged від net.hadess.PowerProfiles, завдяки чому перемикач «Режим гри» у Параметрах миттєво синхронізується з вибраним режимом живлення.
+   - Перекомпільовано libmac_settings.so та оновлено бібліотеку в усіх цільових каталогах (/usr/lib/x86_64-linux-gnu/, ~/.local/lib/, ~/.local/share/gnome-control-center-overlay/, /usr/share/mactheme/).
+   - ШВИДКІСТЬ ТА КЕРУВАННЯ ВЕНТИЛЯТОРАМИ ЗАЛИШЕНО НЕЗМІННИМИ (без жодних записів у інтерфейси керування кулерами).
+3. Заміна кнопки AirDrop на капсулу «Режим» у Центрі керування:
+   - У extensions/kiwi@kemma/apps/tahoeControlCenter.js та extensions/kiwi@kemma/apps/tahoeQuickSettings.js замість кнопки AirDrop створено капсулу modePill з назвою «Режим», динамічною іконкою та підзаголовком поточного режиму («Швидкодія», «Баланс», «Заощадження»).
+   - Лівий клік (ЛКМ) циклічно перемикає режими: Баланс -> Швидкодія -> Заощадження -> Баланс.
+   - Правий клік (ПКМ) відкриває спливаюче підменю у стилі macOS Tahoe Liquid Glass з детальним описом кожного режиму:
+     * «Швидкодія» (Висока швидкодія та споживання енергії)
+     * «Баланс» (Стандартна швидкодія та споживання енергії)
+     * «Заощадження» (Знижена швидкодія та споживання енергії)
+     * Відмітка (✓) на поточному активному режимі.
+     * Розділювач та пункт «Параметри живлення…», який відкриває відповідний розділ налаштувань.
+4. Синхронізація та перевірка цілісності:
+   - Оновлено хеші SHA-256 у config/extensions.lock.json для kiwi@kemma, blur-my-shell@aunetx та eval-helper@mactheme.
+   - mac-extension-guard verify підтвердив 100% цілісність усіх 20 розширень (VERIFICATION SUCCESS).
+   - mac-diagnostics успішно пройдено на 100% (система повністю стабільна, SSOT еталон дотримано).
+   - Зміни перевірено на живому оточенні: режим живлення коректно змінюється в обох напрямках і відображається в Центрі керування, діалогові вікна отримують повний блюр без обрізання.
+

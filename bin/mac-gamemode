@@ -377,6 +377,35 @@ def optimize_processes():
         except Exception:
             continue
 
+def get_system_power_profile():
+    try:
+        import dbus
+        bus = dbus.SystemBus()
+        proxy = bus.get_object('net.hadess.PowerProfiles', '/net/hadess/PowerProfiles')
+        props = dbus.Interface(proxy, 'org.freedesktop.DBus.Properties')
+        return str(props.Get('net.hadess.PowerProfiles', 'ActiveProfile'))
+    except Exception:
+        try:
+            res = subprocess.run(['powerprofilesctl', 'get'], capture_output=True, text=True, timeout=1)
+            if res.returncode == 0:
+                return res.stdout.strip()
+        except Exception:
+            pass
+    return None
+
+def set_system_power_profile(profile):
+    try:
+        import dbus
+        bus = dbus.SystemBus()
+        proxy = bus.get_object('net.hadess.PowerProfiles', '/net/hadess/PowerProfiles')
+        props = dbus.Interface(proxy, 'org.freedesktop.DBus.Properties')
+        props.Set('net.hadess.PowerProfiles', 'ActiveProfile', dbus.String(profile))
+    except Exception:
+        try:
+            subprocess.run(['powerprofilesctl', 'set', profile], capture_output=True, timeout=2)
+        except Exception:
+            pass
+
 def get_manual_override():
     if os.path.exists(STATE_FILE):
         try:
@@ -392,7 +421,7 @@ def get_manual_override():
             pass
     return None
 
-def set_manual_override(mode):
+def set_manual_override(mode, sync_dbus=True):
     try:
         with open(STATE_FILE, 'w') as f:
             if mode == 'gaming':
@@ -405,6 +434,14 @@ def set_manual_override(mode):
                 f.write('auto\n')
     except Exception:
         pass
+
+    if sync_dbus:
+        if mode == 'gaming':
+            set_system_power_profile('performance')
+        elif mode == 'quiet':
+            set_system_power_profile('power-saver')
+        elif mode in ['balanced', 'auto']:
+            set_system_power_profile('balanced')
 
 def any_game_running():
     for pid_dir in glob.glob('/proc/[0-9]*'):
@@ -495,6 +532,7 @@ def daemon_loop():
     last_optimize_time = 0
     game_overtemp_count = 0
     is_game_throttling = False
+    last_sys_profile = get_system_power_profile()
 
     while True:
         try:
@@ -502,10 +540,22 @@ def daemon_loop():
             cpu_t, gpu_t = get_current_temperatures()
             peak_temp = max(cpu_t, gpu_t)
 
+            # Check if user changed power profile in GNOME Settings or via powerprofilesctl
+            sys_profile = get_system_power_profile()
+            if sys_profile and sys_profile != last_sys_profile:
+                last_sys_profile = sys_profile
+                if sys_profile == 'performance':
+                    set_manual_override('gaming', sync_dbus=False)
+                elif sys_profile == 'power-saver':
+                    set_manual_override('quiet', sync_dbus=False)
+                elif sys_profile == 'balanced':
+                    set_manual_override('balanced', sync_dbus=False)
+                current_mode = None
+
             manual_ovr = get_manual_override()
             game_active = any_game_running()
 
-            if manual_ovr == 'gaming' or (manual_ovr is None and game_active):
+            if manual_ovr == 'gaming' or (manual_ovr is None and (game_active or sys_profile == 'performance')):
                 # --- GAME MODE ---
                 if peak_temp >= GAME_HARD_LIMIT:
                     game_overtemp_count += 1

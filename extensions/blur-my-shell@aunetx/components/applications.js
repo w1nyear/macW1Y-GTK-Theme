@@ -66,6 +66,25 @@ const SYSTEM_SIDEBAR_WIDTHS = {
     'seahorse': 280,
 };
 
+function isDialogOrModalWindow(meta_window) {
+    if (!meta_window)
+        return false;
+    const windowType = typeof meta_window.get_window_type === 'function'
+        ? meta_window.get_window_type()
+        : meta_window.window_type;
+    if (windowType !== Meta.WindowType.NORMAL)
+        return true;
+    if (typeof meta_window.get_transient_for === 'function' && meta_window.get_transient_for())
+        return true;
+    if (typeof meta_window.is_attached_dialog === 'function' && meta_window.is_attached_dialog())
+        return true;
+    if (typeof meta_window.can_maximize === 'function' && !meta_window.can_maximize())
+        return true;
+    if (typeof meta_window.allows_resize === 'function' && !meta_window.allows_resize())
+        return true;
+    return false;
+}
+
 export const ApplicationsBlur = class ApplicationsBlur {
     constructor(connections, settings, effects_manager) {
         this.connections = connections;
@@ -283,7 +302,8 @@ export const ApplicationsBlur = class ApplicationsBlur {
                     blur_actor.y = monitor.y - buffer.y;
 
                     const wm_class = meta_window.get_wm_class();
-                    const sidebarWidth = SYSTEM_SIDEBAR_WIDTHS[wm_class] || (wm_class && SYSTEM_SIDEBAR_WIDTHS[wm_class.toLowerCase()]);
+                    const isDialog = isDialogOrModalWindow(meta_window);
+                    const sidebarWidth = (!isDialog && (SYSTEM_SIDEBAR_WIDTHS[wm_class] || (wm_class && SYSTEM_SIDEBAR_WIDTHS[wm_class.toLowerCase()]))) || 0;
                     const clipW = sidebarWidth ? Math.min(sidebarWidth, frame.width) : frame.width;
 
                     // set_clip(x-offset, y-offset, width, height)
@@ -295,7 +315,8 @@ export const ApplicationsBlur = class ApplicationsBlur {
                     blur_actor.height = allocation.height;
 
                     const wm_class = meta_window.get_wm_class();
-                    const sidebarWidth = SYSTEM_SIDEBAR_WIDTHS[wm_class] || (wm_class && SYSTEM_SIDEBAR_WIDTHS[wm_class.toLowerCase()]);
+                    const isDialog = isDialogOrModalWindow(meta_window);
+                    const sidebarWidth = (!isDialog && (SYSTEM_SIDEBAR_WIDTHS[wm_class] || (wm_class && SYSTEM_SIDEBAR_WIDTHS[wm_class.toLowerCase()]))) || 0;
                     if (sidebarWidth) {
                         const maxSidebar = Math.min(sidebarWidth, allocation.width);
                         blur_actor.width = maxSidebar;
@@ -512,7 +533,8 @@ export const ApplicationsBlur = class ApplicationsBlur {
             blur_actor.hide();
 
         const wm_class = meta_window.get_wm_class();
-        const is_sidebar_system_app = Boolean(wm_class && (SYSTEM_SIDEBAR_WIDTHS[wm_class] || SYSTEM_SIDEBAR_WIDTHS[wm_class.toLowerCase()]));
+        const isDialog = isDialogOrModalWindow(meta_window);
+        const is_sidebar_system_app = !isDialog && Boolean(wm_class && (SYSTEM_SIDEBAR_WIDTHS[wm_class] || SYSTEM_SIDEBAR_WIDTHS[wm_class.toLowerCase()]));
         const target_opacity = is_sidebar_system_app ? 255 : (show_blur ? this.settings.applications.OPACITY : 255);
 
         this.set_window_opacity(window_actor, target_opacity);
