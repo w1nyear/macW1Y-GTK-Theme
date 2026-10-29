@@ -17,6 +17,7 @@ import { enable as reduceWindowAnimationsEnable, disable as reduceWindowAnimatio
 import { enable as gtkThemeSyncEnable, disable as gtkThemeSyncDisable } from './apps/gtkThemeSync.js';
 import { enable as labelBlurEnable, disable as labelBlurDisable } from './apps/labelBlur.js';
 import { enable as keyboardIndicatorEnable, disable as keyboardIndicatorDisable } from './apps/keyboardIndicator.js';
+import { enable as macWindowManagementEnable, disable as macWindowManagementDisable } from './apps/macWindowManagement.js';
 
 export default class KiwiExtension extends Extension {
     _resolveDark() {
@@ -131,6 +132,22 @@ export default class KiwiExtension extends Extension {
             else
                 reduceWindowAnimationsDisable();
         } catch (_) {}
+
+        try {
+            const wmUri = this.dir.get_child('apps').get_child('macWindowManagement.js').get_uri() + '?v=wm_v1';
+            import(wmUri).then(mod => {
+                if (this._macWindowManagementMod && this._macWindowManagementMod !== mod) {
+                    try { this._macWindowManagementMod.disable(); } catch (_) {}
+                }
+                this._macWindowManagementMod = mod;
+                mod.enable();
+            }).catch(e => {
+                console.warn(`[kiwi] macWindowManagement dynamic import failed: ${e}`);
+                macWindowManagementEnable();
+            });
+        } catch (e) {
+            console.warn(`[kiwi] macWindowManagement: ${e}`);
+        }
     }
 
     enable() {
@@ -277,6 +294,13 @@ export default class KiwiExtension extends Extension {
         } catch (_) {}
         try { reduceWindowAnimationsDisable(); } catch (_) {}
         try { gtkThemeSyncDisable(); } catch (_) {}
+        try {
+            if (this._macWindowManagementMod) {
+                this._macWindowManagementMod.disable();
+                this._macWindowManagementMod = null;
+            }
+            macWindowManagementDisable();
+        } catch (_) {}
 
         this._settings = null;
     }

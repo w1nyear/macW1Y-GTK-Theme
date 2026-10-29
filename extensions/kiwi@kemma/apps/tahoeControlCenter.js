@@ -786,6 +786,7 @@ const TahoeSlider = GObject.registerClass({
     }
 
     vfunc_repaint() {
+        if (!this.get_stage()) return;
         // bar via the grandparent (skip Slider's own dot)
         Object.getPrototypeOf(Slider.prototype).vfunc_repaint.call(this);
 
