@@ -68,6 +68,7 @@ class AppMenuHoverGlide {
     }
 
     setup() {
+        this.menu._macHoverTracker = this;
         this.menu.connectObject('open-state-changed', (_m, open) => {
             if (open) {
                 this.ensurePill();
@@ -97,6 +98,13 @@ class AppMenuHoverGlide {
         const box = this.menu.box;
         const parent = box ? box.get_parent() : null;
         if (!parent) return;
+
+        // Clean up any stray duplicate pills in parent first
+        for (const c of parent.get_children()) {
+            if (c !== this.pill && c.name === 'mac-menu-hover-pill') {
+                try { c.destroy(); } catch (_) {}
+            }
+        }
 
         this.pill = new St.Widget({
             name: 'mac-menu-hover-pill',
@@ -181,23 +189,29 @@ class AppMenuHoverGlide {
             const [cx, cy] = child.get_transformed_position();
             if (isNaN(cx) || isNaN(cy) || isNaN(px) || isNaN(py)) return;
 
-            const relX = cx - px;
-            const relY = cy - py;
             const ab = child.get_allocation_box ? child.get_allocation_box() : null;
             let w = (ab && ab.x2 > ab.x1) ? (ab.x2 - ab.x1) : child.width;
             let h = (ab && ab.y2 > ab.y1) ? (ab.y2 - ab.y1) : child.height;
             if (w <= 0 || h <= 0) return;
 
+            // Correct for pill's own allocation origin inside parent:
+            const pillAb = this.pill.get_allocation_box ? this.pill.get_allocation_box() : null;
+            const originX = (pillAb && pillAb.x2 >= pillAb.x1) ? pillAb.x1 : 0;
+            const originY = (pillAb && pillAb.y2 >= pillAb.y1) ? pillAb.y1 : 0;
+
+            const tx = (cx - px) - originX;
+            const ty = (cy - py) - originY;
+
             this.activeItem = child;
             this.pill.remove_all_transitions();
 
             if (this.pill.opacity === 0) {
-                this.pill.translation_x = relX;
-                this.pill.translation_y = relY;
+                this.pill.translation_x = tx;
+                this.pill.translation_y = ty;
                 this.pill.width = w;
                 this.pill.height = h;
-                this.pill.scale_x = 0.94;
-                this.pill.scale_y = 0.94;
+                this.pill.scale_x = 0.95;
+                this.pill.scale_y = 0.95;
                 this.pill.ease({
                     opacity: 255,
                     scale_x: 1.0,
@@ -207,14 +221,14 @@ class AppMenuHoverGlide {
                 });
             } else {
                 this.pill.ease({
-                    translation_x: relX,
-                    translation_y: relY,
+                    translation_x: tx,
+                    translation_y: ty,
                     width: w,
                     height: h,
                     opacity: 255,
                     scale_x: 1.0,
                     scale_y: 1.0,
-                    duration: 140, // 140ms authentic macOS glide
+                    duration: 130, // 130ms authentic macOS glide
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 });
             }

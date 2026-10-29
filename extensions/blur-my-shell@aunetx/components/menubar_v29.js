@@ -1766,6 +1766,12 @@ class MenuHoverTracker {
         const parent = box ? box.get_parent() : null;
         if (!parent) return;
 
+        for (const c of parent.get_children()) {
+            if (c !== this._pill && c.name === 'mac-menu-hover-pill') {
+                try { c.destroy(); } catch (_) {}
+            }
+        }
+
         this._pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
@@ -1847,23 +1853,29 @@ class MenuHoverTracker {
             const [cx, cy] = child.get_transformed_position();
             if (isNaN(cx) || isNaN(cy) || isNaN(px) || isNaN(py)) return;
 
-            const relX = cx - px;
-            const relY = cy - py;
             const ab = child.get_allocation_box ? child.get_allocation_box() : null;
             let w = (ab && ab.x2 > ab.x1) ? (ab.x2 - ab.x1) : child.width;
             let h = (ab && ab.y2 > ab.y1) ? (ab.y2 - ab.y1) : child.height;
             if (w <= 0 || h <= 0) return;
 
+            // Correct for pill's own allocation origin inside parent:
+            const pillAb = this._pill.get_allocation_box ? this._pill.get_allocation_box() : null;
+            const originX = (pillAb && pillAb.x2 >= pillAb.x1) ? pillAb.x1 : 0;
+            const originY = (pillAb && pillAb.y2 >= pillAb.y1) ? pillAb.y1 : 0;
+
+            const tx = (cx - px) - originX;
+            const ty = (cy - py) - originY;
+
             this._activeItem = child;
             this._pill.remove_all_transitions();
 
             if (this._pill.opacity === 0) {
-                this._pill.translation_x = relX;
-                this._pill.translation_y = relY;
+                this._pill.translation_x = tx;
+                this._pill.translation_y = ty;
                 this._pill.width = w;
                 this._pill.height = h;
-                this._pill.scale_x = 0.94;
-                this._pill.scale_y = 0.94;
+                this._pill.scale_x = 0.95;
+                this._pill.scale_y = 0.95;
                 this._pill.ease({
                     opacity: 255,
                     scale_x: 1.0,
@@ -1873,14 +1885,14 @@ class MenuHoverTracker {
                 });
             } else {
                 this._pill.ease({
-                    translation_x: relX,
-                    translation_y: relY,
+                    translation_x: tx,
+                    translation_y: ty,
                     width: w,
                     height: h,
                     opacity: 255,
                     scale_x: 1.0,
                     scale_y: 1.0,
-                    duration: 140,
+                    duration: 130,
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 });
             }
@@ -5682,7 +5694,7 @@ export const MenuBarController = class MenuBarController {
         this._trackedMenus = new Set();
 
         const attachToMenu = (menu) => {
-            if (!menu || !menu.box || menu._hasHoverTracker) return;
+            if (!menu || !menu.box || menu._hasHoverTracker || menu._macHoverTracker) return;
             const isQuickSettings = menu.constructor.name === 'QuickSettingsMenu' || !!menu._grid;
             if (isQuickSettings) return;
             menu._hasHoverTracker = true;
