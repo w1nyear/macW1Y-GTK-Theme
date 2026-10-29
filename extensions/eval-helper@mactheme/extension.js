@@ -337,9 +337,13 @@ class MacMenuHoverGlide {
             this._pill = null;
         }
         try {
-            if (this._menu?.box) {
-                this._menu.box.remove_style_class_name('mac-menu-hover-glide-active');
-                this._menu.box.disconnectObject(this);
+            if (this._menu) {
+                delete this._menu._macHoverTracker;
+                delete this._menu._hasHoverTracker;
+                if (this._menu.box) {
+                    this._menu.box.remove_style_class_name('mac-menu-hover-glide-active');
+                    this._menu.box.disconnectObject(this);
+                }
             }
         } catch (_) {}
         try { this._menu?.disconnectObject(this); } catch (_) {}
@@ -1807,27 +1811,33 @@ export default class EvalHelper extends Extension {
                     this._muteKeys = false;
                     this.show();
 
-                    this.set_pivot_point(0.5, 0);
+                    const pivotY = (this.arrowSide === St.Side.BOTTOM) ? 1.0 : 0.0;
+                    const pivotX = (this.arrowSide === St.Side.RIGHT) ? 1.0 : (this.arrowSide === St.Side.LEFT ? 0.0 : 0.5);
+                    this.set_pivot_point(pivotX, pivotY);
                     this.translation_x = 0;
                     this.translation_y = 0;
-                    this.scale_x = 1.0;
-                    this.scale_y = 1.0;
 
                     // When animate is explicitly disabled (0 or false), show instantly
                     if (animate === 0 || animate === false) {
                         this.opacity = 255;
+                        this.scale_x = 1.0;
+                        this.scale_y = 1.0;
                         this._muteInput = false;
                         if (onComplete) onComplete();
                         return;
                     }
 
-                    // Authentic macOS fade-in appearance animation via opacity
+                    // Authentic macOS Tahoe appearance animation: scale 0.95 -> 1.0, fade-in 0 -> 255
                     this.opacity = 0;
+                    this.scale_x = 0.95;
+                    this.scale_y = 0.95;
 
                     this.ease({
                         opacity: 255,
-                        duration: 160,
-                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        scale_x: 1.0,
+                        scale_y: 1.0,
+                        duration: 150,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                         onComplete: () => {
                             this._muteInput = false;
                             if (onComplete) onComplete();
@@ -1901,6 +1911,10 @@ export default class EvalHelper extends Extension {
                         finalizeClose();
                         return GLib.SOURCE_REMOVE;
                     });
+
+                    const pivotY = (this.arrowSide === St.Side.BOTTOM) ? 1.0 : 0.0;
+                    const pivotX = (this.arrowSide === St.Side.RIGHT) ? 1.0 : (this.arrowSide === St.Side.LEFT ? 0.0 : 0.5);
+                    this.set_pivot_point(pivotX, pivotY);
 
                     this.ease({
                         opacity: 0,

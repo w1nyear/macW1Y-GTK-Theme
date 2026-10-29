@@ -12555,3 +12555,22 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено контрольні суми SHA-256 у config/extensions.lock.json.
    - mac-extension-guard verify підтвердив успішну валідацію всіх 20 розширень (VERIFICATION SUCCESS).
    - mac-diagnostics успішно пройдено на 100% OK.
+
+
+613. Анімація відкриття та закриття контекстних меню у програмах (поява та зникнення) та синхронізація з macOS Tahoe еталоном:
+1. Реалізація апаратно-прискореної анімації відкриття і закриття контекстних меню (GtkPopover):
+   - У бібліотеках src/mac_popover.c та src/mac_nautilus.c реалізовано перехоплення віртуальних функцій GtkWidgetClass (map, hide, snapshot) для типу GTK_TYPE_POPOVER.
+   - Анімація відкриття (mac_popover_open_tick): плавна поява з прозорості (opacity 0.0 -> 1.0) та масштабування від точки фокусу (scale 0.94 -> 1.0) за 140 мс із кубічним згладжуванням (1 - (1 - p)^3).
+   - Анімація закриття (mac_popover_close_tick): перехоплення klass->hide, під час якого віджет залишається відображеним і плавно зникає (opacity 1.0 -> 0.0, scale 1.0 -> 0.95) за 110 мс із квадратичним згладжуванням (1 - p^2). Лише після досягнення повної прозорості викликається оригінальний hide для фінального unmap.
+   - Динамічне визначення точки прив'язки масштабування (anchor point): на основі gtk_popover_get_position точка прив'язки встановлюється у верхню грань (cy = 0.0) для спадних меню, у нижню (cy = h) для висхідних, або у бічні грані відповідно.
+2. Розгортання та системна інтеграція у додатки:
+   - Скомпільовано lib/libmacpopover.so та lib/libmac_nautilus.so і встановлено до /usr/lib/x86_64-linux-gnu/.
+   - Оновлено обгортки в /usr/local/bin (gnome-control-center, nautilus, gnome-text-editor, loupe, gnome-calculator).
+   - Створено D-Bus сервіси перевизначення в /usr/local/share/dbus-1/services/ (org.gnome.Nautilus, org.gnome.TextEditor, org.gnome.Loupe), що гарантує збереження анімацій навіть під час активації додатків через міжпроцесний D-Bus виклик.
+3. Вдосконалення анімації контекстних меню в оболонці GNOME Shell:
+   - В extensions/eval-helper@mactheme/extension.js оновлено BoxPointer.BoxPointer.prototype.open та close: додано плавне масштабування під час відкриття (scale 0.95 -> 1.0 за 150 мс, EASE_OUT_CUBIC) та закриття з урахуванням сторони стрілки (arrowSide) як точки прив'язки трансформації (set_pivot_point).
+4. Верифікація та цілісність системи:
+   - Зміни синхронізовано з ~/.local/share/gnome-shell/extensions/.
+   - Оновлено хеші блокувань у config/extensions.lock.json.
+   - ./bin/mac-extension-guard verify підтвердив 20/20 відповідність (VERIFICATION SUCCESS).
+   - /usr/local/bin/mac-diagnostics завершено на 100% OK.

@@ -272,9 +272,14 @@ class AppMenuHoverGlide {
             this.pill = null;
         }
         try {
-            if (this.menu && this.menu.box) {
-                this.menu.box.remove_style_class_name('mac-menu-hover-glide-active');
-                this.menu.box.disconnectObject(this);
+            if (this.menu) {
+                delete this.menu._macHoverTracker;
+                delete this.menu._hasHoverTracker;
+                delete this.menu._appMenuHoverGlide;
+                if (this.menu.box) {
+                    this.menu.box.remove_style_class_name('mac-menu-hover-glide-active');
+                    this.menu.box.disconnectObject(this);
+                }
             }
         } catch (_) {}
         try { this.menu?.disconnectObject(this); } catch (_) {}

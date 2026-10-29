@@ -1946,9 +1946,13 @@ class MenuHoverTracker {
             this._pill = null;
         }
         try {
-            if (this._menu && this._menu.box) {
-                this._menu.box.remove_style_class_name('mac-menu-hover-glide-active');
-                this._menu.box.disconnectObject(this);
+            if (this._menu) {
+                delete this._menu._macHoverTracker;
+                delete this._menu._hasHoverTracker;
+                if (this._menu.box) {
+                    this._menu.box.remove_style_class_name('mac-menu-hover-glide-active');
+                    this._menu.box.disconnectObject(this);
+                }
             }
         } catch (_) {}
         try { this._menu?.disconnectObject(this); } catch (_) {}
@@ -5700,6 +5704,7 @@ export const MenuBarController = class MenuBarController {
             menu._hasHoverTracker = true;
             try {
                 const tracker = new MenuHoverTracker(menu);
+                menu._macHoverTracker = tracker;
                 this._trackedMenus.add(tracker);
             } catch (_) {}
         };

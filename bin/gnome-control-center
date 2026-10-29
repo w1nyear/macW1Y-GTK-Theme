@@ -4,6 +4,10 @@ OVERLAY_DIR="/usr/share/mactheme/gnome-control-center-overlay"
 
 export G_RESOURCE_OVERLAYS="/org/gnome/Settings/gtk/cc-window.ui=$OVERLAY_DIR/cc-window.ui:/org/gnome/control-center/system/cc-system-panel.ui=$OVERLAY_DIR/cc-system-panel.ui:/org/gnome/control-center/power/cc-power-panel.ui=$OVERLAY_DIR/cc-power-panel.ui:/org/gnome/control-center/mouse/cc-mouse-panel.ui=$OVERLAY_DIR/cc-mouse-panel.ui"
 
+if [ -f "/usr/lib/x86_64-linux-gnu/libmacpopover.so" ]; then
+    export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmacpopover.so${LD_PRELOAD:+:$LD_PRELOAD}"
+fi
+
 if [ -f "/usr/lib/x86_64-linux-gnu/libmac_settings.so" ]; then
     export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_settings.so${LD_PRELOAD:+:$LD_PRELOAD}"
 elif [ -f "$HOME/.local/lib/libmac_settings.so" ]; then
