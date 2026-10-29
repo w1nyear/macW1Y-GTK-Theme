@@ -952,7 +952,7 @@ function _buildPanel() {
         // stylesheet default shadow stays
     }
     panelBg.set_position(X, Y);
-    panelBg.set_size(W, -1);
+    panelBg.width = W;
     panelBg.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
     overlay.add_child(panelBg);
 
@@ -965,7 +965,7 @@ function _buildPanel() {
         // base (dark) ink stays
     }
     box.set_position(X, Y);
-    box.set_size(W, -1);
+    box.width = W;
     box.set_style('border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important;');
     box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
     overlay.add_child(box);

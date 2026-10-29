@@ -121,9 +121,6 @@ EffectClass.prototype.setOffsets = function(topOffset, bottomOffset) {
 
 EffectClass.prototype.attachTo = function(actor, scrollView = null) {
     if (!actor) return;
-    try {
-        this.set_shader_source(GRADIENT_BLUR_FADE_SHADER);
-    } catch (_) {}
     this._targetActor = actor;
     actor.add_effect(this);
 
@@ -148,6 +145,10 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
             };
             sv = findSv(actor);
         }
+    }
+
+    if (sv && sv !== actor) {
+        sv.connectObject('destroy', () => this.detach(), this);
     }
 
     const adj = sv ? (sv.vadjustment || (sv.get_vscroll_bar && sv.get_vscroll_bar().get_adjustment())) : null;
@@ -330,18 +331,22 @@ EffectClass.prototype.detach = function() {
         GLib.source_remove(this._scrollTimerId);
         this._scrollTimerId = null;
     }
-    if (this._scrollView) {
-        this._scrollView.disconnectObject(this);
-        this._scrollView = null;
+    const sv = this._scrollView;
+    this._scrollView = null;
+    if (sv) {
+        try { sv.disconnectObject(this); } catch (_) {}
     }
-    if (this._adj) {
-        this._adj.disconnectObject(this);
-        this._adj = null;
+    const adj = this._adj;
+    this._adj = null;
+    if (adj) {
+        try { adj.disconnectObject(this); } catch (_) {}
     }
     this._updateAdj = null;
-    if (this._targetActor) {
-        this._targetActor.disconnectObject(this);
-        this._targetActor = null;
+    const target = this._targetActor;
+    this._targetActor = null;
+    if (target) {
+        try { target.disconnectObject(this); } catch (_) {}
+        try { target.remove_effect(this); } catch (_) {}
     }
 };
 

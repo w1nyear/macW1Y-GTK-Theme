@@ -665,7 +665,7 @@ function _buildPanel() {
         // stylesheet default shadow stays
     }
     panelBg.set_position(X, Y);
-    panelBg.set_size(W, -1);
+    panelBg.width = W;
     overlay.add_child(panelBg);
 
     const box = new St.BoxLayout({style_class: `tahoe-qs-panel${darkCls}`, vertical: true});
@@ -677,7 +677,7 @@ function _buildPanel() {
         // base (dark) ink stays
     }
     box.set_position(X, Y);
-    box.set_size(W, -1);
+    box.width = W;
     overlay.add_child(box);
 
     const state = {control: null, nm: null, bt: null,

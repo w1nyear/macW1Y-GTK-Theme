@@ -33,7 +33,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
-import { applyGradientBlurFade } from './gradientBlurFade.js';
+import { applyGradientBlurFade } from './gradientBlurFade.js?v=gbf_v3';
 import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
@@ -154,10 +154,13 @@ function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0, noWin 
     dummy.set_opacity(0);
     liquidBox.add_child(dummy);
 
-    const mirror = new Clutter.Clone({source: Main.layoutManager._backgroundGroup});
-    mirror.set_size(global.stage.width, global.stage.height);
-    mirror.set_position(-monitor.x, -monitor.y);
-    liquidBox.add_child(mirror);
+    let mirror = null;
+    if (noWin) {
+        mirror = new Clutter.Clone({source: Main.layoutManager._backgroundGroup});
+        mirror.set_size(global.stage.width, global.stage.height);
+        mirror.set_position(-monitor.x, -monitor.y);
+        liquidBox.add_child(mirror);
+    }
 
     const cloneContainer = new UnpickableActor();
     cloneContainer.set_name(`clone-container-${name}`);
@@ -1583,7 +1586,7 @@ function _startStackFade(s, ms = 240) {
 
 // Спільна підготовка стеку Центру: виключення з каптура (панель/бокс/столешні
 // іконки) + перший семплінг.
-function _setupNcStack(p, s) {
+function _setupNcStack(p, s, monitor = null) {
     try {
         try { s.uiSampler?.addExclusion?.(p.box); } catch (_) {}
         // сам оверлей (panelBg + бокс) НЕ має бути в каптурі -
@@ -1598,7 +1601,20 @@ function _setupNcStack(p, s) {
             }
         }
         s.uiSampler?.rebindSelf?.();
-        s.uiSampler?.refresh?.();
+
+        if (monitor) {
+            s.wcm?.setOffset(-monitor.x, -monitor.y);
+            s.wcm?.setCullRect(null);
+            s.uiSampler?.setCullRect(null);
+            s.liquidBox.set_position(0, 0);
+            s.liquidBox.set_size(monitor.width, monitor.height);
+            s.effect.setResolution(monitor.width, monitor.height);
+            s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
+            s.uiSampler?.refresh?.();
+            s.wcm?.sync?.();
+        } else {
+            s.uiSampler?.refresh?.();
+        }
         return true;
     } catch (_) {
         return false;
@@ -1680,12 +1696,11 @@ function _ncSettle(p) {
             return;
         p._settleDone = true;
         try {
-            p.box.min_height = -1;
-            p.box.set_size(NC_W, -1);
-            p.panelBg.min_height = -1;
-            p.panelBg.set_size(NC_W, -1);
+            p.box.min_height = 0;
+            p.box.width = NC_W;
+            p.panelBg.min_height = 0;
+            p.panelBg.width = NC_W;
         } catch (_) {}
-        _ensureNcCards(p);
         _ncRideTick(p);
     } catch (_) {}
 }
@@ -2210,6 +2225,12 @@ function _syncCards(p, monitor, s) {
         if (isFinite(bx) && isFinite(by) && bw > 0 && bh > 0)
             setClipIfChanged(s.bgActor, bx - monitor.x - 200, by - monitor.y - 200, bw + 400, bh + 400);
         ensureGlassAllocated(s.bgActor);
+
+        // Під час слайду панелі важку синхронізацію та UI-семплінг пропускаємо,
+        // щоб уникнути мікрофризів, миготіння та переривання анімації
+        if (isSliding)
+            return;
+
         // [GPU-SAVE] важка частина — лишень при реальній зміні; межа 60 FPS.
         let doHeavy = true;
         try {
@@ -2284,6 +2305,17 @@ function _syncGlass(p, monitor, s) {
             tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
         }]);
         s.effect.setResolution(monitor.width, monitor.height);
+
+        const isSliding = !p._settleDone || (p.box?.translation_x !== 0 && Math.abs(p.box?.translation_x ?? 0) > 0.5);
+        if (isSliding) {
+            const targetX = (monitor.width - NC_W - 12) - m;
+            const clipMinX = Math.min(rx, targetX) - 50;
+            const clipMaxX = Math.max(rx + rw, targetX + rw) + 50;
+            setClipIfChanged(s.bgActor, clipMinX, ry - 50, clipMaxX - clipMinX, rh + 100);
+            ensureGlassAllocated(s.bgActor);
+            return;
+        }
+
         const clip = [rx - 200, ry - 200, rw + 400, rh + 400];
         setClipIfChanged(s.bgActor, clip[0], clip[1], clip[2], clip[3]);
         ensureGlassAllocated(s.bgActor);
@@ -2375,7 +2407,7 @@ function _buildPanel(merges = null) {
         y_expand: false,
     });
     panelBg.set_position(X, Y);
-    panelBg.set_size(W, -1);
+    panelBg.width = W;
     overlay.add_child(panelBg);
 
     const box = new St.BoxLayout({
@@ -2385,7 +2417,7 @@ function _buildPanel(merges = null) {
         y_expand: false,
     });
     box.set_position(X, Y);
-    box.set_size(W, -1);
+    box.width = W;
     overlay.add_child(box);
 
     // Заголовок: локалізований великий титул + пілюля «Очистити все» (новий вигляд MacShell)
@@ -2425,7 +2457,6 @@ function _buildPanel(merges = null) {
         y_expand: false,
     });
     scroll.style = `max-height: ${maxH}px; -st-vfade-offset: 36px;`;
-    applyGradientBlurFade(scroll, 36, 36);
     try {
         scroll.vscrollbar_policy = St.PolicyType.AUTOMATIC;
         scroll.hscrollbar_policy = St.PolicyType.NEVER;
@@ -2446,12 +2477,15 @@ function _buildPanel(merges = null) {
         Main.layoutManager.uiGroup.set_child_below_sibling(overlay, Main.layoutManager.panelBox);
     } catch (_) {}
 
+    const gbfEffect = applyGradientBlurFade(scroll, 36, 36);
+
     const p = {
         overlay,
         box,
         panelBg,
         list,
         scroll,
+        gbfEffect,
         stacks: [],
         trayIds: [],
         allocId: 0,
@@ -2486,8 +2520,8 @@ function _buildPanel(merges = null) {
         p.allocId = 0;
     }
 
-    // Glass stacks: CC-style backdrop (pure blur) створюємо одразу; стек скла
-    // карток створюється при settle чи якщо є сповіщення.
+    // Glass stacks: CC-style backdrop (pure blur) та cards створюємо одразу,
+    // щоб уникнути раптового створення та миготіння на settle.
     try {
         const bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
         bd.kind = 'backdrop';
@@ -2496,10 +2530,23 @@ function _buildPanel(merges = null) {
             overlay.set_child_above_sibling(panelBg, bd.bgActor);
         } catch (_) {}
 
-        _setupNcStack(p, bd);
+        _setupNcStack(p, bd, monitor);
         bd.bgActor.opacity = 0;
         bd.bgActor.visible = false;
-        p.stacks = [bd];
+
+        const cards = _makeGlassStack(monitor, 24, 'nc-cards', true);
+        cards.kind = 'cards';
+        try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
+        try {
+            overlay.insert_child_at_index(cards.bgActor, 2);
+        } catch (_) {
+            try { overlay.add_child(cards.bgActor); } catch (_) {}
+        }
+        _setupNcStack(p, cards, monitor);
+        cards.bgActor.opacity = 0;
+        cards.bgActor.visible = false;
+
+        p.stacks = [bd, cards];
 
         const tick = () => {
             p.tickId = 0;
@@ -2633,6 +2680,13 @@ function _destroyNC(p) {
         try { s.wcm?.destroy?.(); } catch (_) {}
         try { s.bgActor?.destroy?.(); } catch (_) {}
     }
+    try {
+        p.gbfEffect?.detach?.();
+        p.gbfEffect = null;
+    } catch (_) {}
+    try {
+        p.scroll?.clear_effects?.();
+    } catch (_) {}
     try {
         p.overlay.destroy();
     } catch (_) {}
