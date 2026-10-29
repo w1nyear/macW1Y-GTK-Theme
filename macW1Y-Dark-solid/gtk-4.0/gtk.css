@@ -9616,9 +9616,10 @@ popover.background > contents,
 popover.menu > contents,
 popover.menu contents,
 popover.context-menu > contents,
-popover > contents {
-  border-radius: 20px;
-  padding: 12px 6px 8px 6px;
+popover > contents,
+.context-menu > contents {
+  border-radius: 20px !important;
+  padding: 14px 6px 12px 6px !important;
 }
 
 popover.menu modelbutton:first-child,
@@ -9640,11 +9641,11 @@ popover.menu button,
 popover modelbutton,
 .context-menu modelbutton,
 .popup-menu modelbutton {
-  min-height: 24px;
+  min-height: 22px;
   padding: 4px 12px;
-  margin: 2px 6px;
-  border-radius: 9999px;
-  color: #ffffff;
+  margin: 1px 6px;
+  border-radius: 9999px !important;
+  color: #ffffff !important;
   background-color: transparent;
   font-size: 13px;
   font-weight: 500;
@@ -9654,57 +9655,65 @@ popover modelbutton,
 popover.menu modelbutton label,
 popover.menu button label,
 popover modelbutton label,
-popover.menu label {
-  color: #ffffff;
+popover.menu label,
+.context-menu label {
+  color: #ffffff !important;
   font-weight: 500;
 }
 
 popover.menu modelbutton:hover,
+popover.menu modelbutton.flat:hover,
 popover.menu modelbutton:focus-visible,
 popover.menu button:hover,
 popover.menu button:focus-visible,
 popover modelbutton:hover,
+popover modelbutton.flat:hover,
 popover modelbutton:focus-visible,
 .context-menu modelbutton:hover,
-.context-menu modelbutton:focus-visible {
-  background-color: #007aff;
-  color: #ffffff;
-  border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+.context-menu modelbutton:focus-visible,
+.popup-menu modelbutton:hover,
+.popup-menu modelbutton:focus-visible {
+  background-color: #007aff !important;
+  background: #007aff !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  box-shadow: none !important;
 }
 
-popover.menu modelbutton:not(:hover):not(:focus-visible),
-popover.menu button:not(:hover):not(:focus-visible),
-popover modelbutton:not(:hover):not(:focus-visible),
-.context-menu modelbutton:not(:hover):not(:focus-visible),
-popover.menu modelbutton:focus:not(:focus-visible),
-popover.menu modelbutton:selected:not(:hover):not(:focus-visible) {
-  background-color: transparent;
-  background: transparent;
-  box-shadow: none;
+popover.menu modelbutton:selected:not(:hover):not(:focus-visible),
+popover.menu modelbutton:focus:not(:hover):not(:focus-visible),
+popover.menu button:selected:not(:hover):not(:focus-visible),
+popover.menu button:focus:not(:hover):not(:focus-visible),
+popover modelbutton:selected:not(:hover):not(:focus-visible),
+popover modelbutton:focus:not(:hover):not(:focus-visible),
+.context-menu modelbutton:selected:not(:hover):not(:focus-visible),
+.context-menu modelbutton:focus:not(:hover):not(:focus-visible) {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #ffffff !important;
 }
 
 popover.menu modelbutton:hover label,
+popover.menu modelbutton.flat:hover label,
 popover.menu modelbutton:focus-visible label,
 popover.menu button:hover label,
 popover.menu button:focus-visible label,
 popover modelbutton:hover label,
-popover modelbutton:focus-visible label {
-  color: #ffffff;
-}
-
-popover.menu modelbutton:not(:hover):not(:focus-visible) label,
-popover.menu button:not(:hover):not(:focus-visible) label,
-popover modelbutton:not(:hover):not(:focus-visible) label {
-  color: #ffffff;
+popover modelbutton.flat:hover label,
+popover modelbutton:focus-visible label,
+.context-menu modelbutton:hover label,
+.context-menu modelbutton:focus-visible label {
+  color: #ffffff !important;
 }
 
 popover.menu modelbutton:active,
 popover.menu button:active,
-popover modelbutton:active {
-  background-color: #0062cc;
-  color: #ffffff;
-  border-radius: 9999px;
+popover modelbutton:active,
+.context-menu modelbutton:active {
+  background-color: #0062cc !important;
+  background: #0062cc !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
 }
 
 popover.menu modelbutton:disabled,

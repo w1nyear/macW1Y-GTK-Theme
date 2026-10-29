@@ -619,55 +619,8 @@ export class ApplicationManager {
         return true;
     }
     _getMenuArrowConfig(metaWindow, rect, visW, visH) {
-        const noArrow = { side: 0, origin: 0, base: 0, rise: 0, radius: 0, fillet: 0 };
-        if (!metaWindow)
-            return noArrow;
-        const parent = metaWindow.get_transient_for ? metaWindow.get_transient_for() : null;
-        const rootWin = this._getRootWindow(metaWindow);
-        const isDesktop = rootWin?.get_window_type?.() === Meta.WindowType.DESKTOP ||
-                          metaWindow.get_window_type() === Meta.WindowType.DESKTOP;
-        if (isDesktop || !parent)
-            return noArrow;
-        const winType = metaWindow.get_window_type();
-        const isMenuType = winType === Meta.WindowType.DROPDOWN_MENU ||
-                           winType === Meta.WindowType.POPUP_MENU ||
-                           winType === Meta.WindowType.MENU;
-        if (!isMenuType)
-            return noArrow;
-        const rise = 10.0;
-        const base = 20.0;
-        const radius = 2.0;
-        const fillet = 5.0;
-        if (visH <= rise * 2)
-            return noArrow;
-        let parentRect = null;
-        try {
-            parentRect = parent.get_frame_rect();
-        }
-        catch (_) {}
-        let side = 1;
-        if (parentRect) {
-            if (rect.y + rect.height <= parentRect.y + 60 && rect.y < parentRect.y) {
-                side = 3;
-            }
-            else {
-                side = 1;
-            }
-        }
-        let origin = 0.0;
-        if (parentRect) {
-            const popoverCenter = rect.x + (visW * 0.5);
-            const parentRight = parentRect.x + parentRect.width;
-            if (rect.x + visW >= parentRight - 40) {
-                const maxOffset = Math.max(0, (visW * 0.5) - 25);
-                origin = Math.min(maxOffset, Math.max(0, (parentRight - 35) - popoverCenter));
-            }
-            else if (rect.x <= parentRect.x + 40) {
-                const minOffset = -Math.max(0, (visW * 0.5) - 25);
-                origin = Math.max(minOffset, Math.min(0, (parentRect.x + 35) - popoverCenter));
-            }
-        }
-        return { side, origin, base, rise, radius, fillet };
+        // macOS Tahoe & Ubuntu context menus never have an arrow (arrows belong only to GNOME Shell panel menus)
+        return { side: 0, origin: 0, base: 0, rise: 0, radius: 0, fillet: 0 };
     }
     /**
      * Which settings namespace should dress this window, or null to leave it

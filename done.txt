@@ -12592,3 +12592,23 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено хеші блокувань у config/extensions.lock.json.
    - ./bin/mac-extension-guard verify підтвердив 20/20 відповідність (VERIFICATION SUCCESS).
    - /usr/local/bin/mac-diagnostics завершено на 100% OK.
+
+
+615. Видалення стрілки у контекстних меню, симетричні комфортні відступи зверху та відновлення синього hover (Stage 615):
+1. Повне видалення стрілки з контекстних меню (arrow removal):
+   - У розширенні Liquid Glass (extensions/liquid-glass@thinkingcoding1231.gmail.com/src/applicationManager.ts та dist/applicationManager.js) у методі _getMenuArrowConfig встановлено безумовне повернення noArrow (side: 0, origin: 0, base: 0, rise: 0). Стрілка в шейдері sdPopover повністю відключена для всіх спливаючих контекстних меню додатків та робочого столу. Стрілки збережено виключно для панелі GNOME Shell (BoxPointer у uiManager), де вони споконвічно присутні в Ubuntu.
+   - У GTK-бібліотеках src/mac_nautilus.c та src/mac_popover.c у виклику mac_popover_map та перехоплювачі gtk_popover_menu_new_from_model додано примусовий виклик gtk_popover_set_has_arrow(GTK_POPOVER(w), FALSE), що вимикає генерацію та резервування місця під стрілку віджетом GtkPopover.
+   - Бібліотеки скомпільовано та інстальовано до /usr/lib/x86_64-linux-gnu/ (libmac_nautilus.so, libmacpopover.so).
+   - У GTK CSS приховано вузли стрілок: popover > arrow, popover.menu > arrow, popover arrow, .popover-arrow, .context-menu > arrow (min-width: 0 !important; min-height: 0 !important; width: 0 !important; height: 0 !important; display: none).
+2. Симетричний відступ та нормальна висота контекстного меню зверху:
+   - Відключення стрілки в Liquid Glass повернуло геометрію скла у повнорозмірний режим state.effect.setGlassGeometry(0, 0, bgW, bgH) без зміщення вниз на 10px, що раніше з'їдало верхній простір меню.
+   - У fixes4.css, ~/.config/gtk-4.0/gtk.css, ~/.config/gtk-4.0/gtk-Dark.css, /usr/share/themes/macW1Y-Dark/gtk-4.0/ та темах репозиторію встановлено внутрішні відступи контейнера: padding: 14px 6px 12px 6px !important, а також margin-top: 4px для першого елемента modelbutton:first-child. Верхній відступ від верхньої межі до першої кнопки («Видобути...») тепер становить комфортні ~18px, що повністю симетрично відповідає відступу внизу меню (~16px).
+3. Відновлення яскраво-синього hover pill (#007aff) у контекстних меню без залипання:
+   - Встановлено найвищий пріоритет (!important) для правил popover.menu modelbutton:hover, popover.menu modelbutton.flat:hover, .context-menu modelbutton:hover (background-color: #007aff !important; color: #ffffff !important; border-radius: 9999px !important).
+   - Усунуто конфлікт зі специфічністю :not(:hover): селектор скидання очищає виключно залишковий стан GTK-селекції та фокусу без наведення курсору (popover.menu modelbutton:selected:not(:hover):not(:focus-visible), popover.menu modelbutton:focus:not(:hover):not(:focus-visible) -> background-color: transparent !important).
+   - Оновлені стилі синхронізовано з /usr/share/themes/macW1Y-Dark/gtk-4.0/ та ~/.config/gtk-4.0/, гарантуючи коректне відображення у Nautilus (AdwApplication) та всіх GTK-застосунках.
+4. Верифікація та цілісність системи:
+   - Розширення kiwi@kemma та liquid-glass перезавантажено через D-Bus EvalHelper без переривання сесії користувача.
+   - Оновлено контрольні суми sha256 у config/extensions.lock.json.
+   - ./bin/mac-extension-guard verify підтвердив 20/20 відповідність (VERIFICATION SUCCESS).
+   - /usr/local/bin/mac-diagnostics підтвердив 100% OK.

@@ -148,6 +148,9 @@ static gboolean mac_popover_open_tick(GtkWidget *widget, GdkFrameClock *clock, g
 }
 
 static void mac_popover_map(GtkWidget *w) {
+    if (GTK_IS_POPOVER(w)) {
+        gtk_popover_set_has_arrow(GTK_POPOVER(w), FALSE);
+    }
     if (orig_popover_map) orig_popover_map(w);
 
     MacPopoverAnimData *d = get_popover_anim_data(w);
@@ -163,6 +166,18 @@ static void mac_popover_map(GtkWidget *w) {
     d->start_time = 0;
     if (d->tick_id) gtk_widget_remove_tick_callback(w, d->tick_id);
     d->tick_id = gtk_widget_add_tick_callback(w, mac_popover_open_tick, d, NULL);
+}
+
+GtkWidget *gtk_popover_menu_new_from_model(GMenuModel *model) {
+    static GtkWidget *(*orig_pnm)(GMenuModel *) = NULL;
+    if (!orig_pnm) {
+        orig_pnm = dlsym(RTLD_NEXT, "gtk_popover_menu_new_from_model");
+    }
+    GtkWidget *w = orig_pnm ? orig_pnm(model) : NULL;
+    if (w && GTK_IS_POPOVER(w)) {
+        gtk_popover_set_has_arrow(GTK_POPOVER(w), FALSE);
+    }
+    return w;
 }
 
 static void mac_popover_hide(GtkWidget *w) {
