@@ -133,21 +133,36 @@ function applyActorSmoothing(actor) {
 }
 
 function createSmoothAppIcon(app, targetSize = 32) {
-    const renderSize = targetSize * 2;
-
     let icon = null;
     try {
-        if (typeof app?.create_icon_texture === 'function') {
-            icon = app.create_icon_texture(renderSize);
+        let shellApp = app;
+        if (shellApp && typeof shellApp.create_icon_texture !== 'function' && typeof shellApp.get_id === 'function') {
+            const id = shellApp.get_id();
+            if (id) {
+                shellApp = Shell.AppSystem.get_default().lookup_app(id);
+            }
+        }
+        if (typeof shellApp?.create_icon_texture === 'function') {
+            icon = shellApp.create_icon_texture(targetSize);
         }
     } catch (_) {}
 
     if (!icon) {
-        icon = new St.Icon({
-            gicon: app?.get_icon?.() || null,
-            icon_name: 'application-x-executable',
-            icon_size: renderSize,
-        });
+        let gicon = null;
+        try {
+            gicon = app?.get_icon?.() || null;
+        } catch (_) {}
+        if (gicon) {
+            icon = new St.Icon({
+                gicon,
+                icon_size: targetSize,
+            });
+        } else {
+            icon = new St.Icon({
+                icon_name: 'application-x-executable',
+                icon_size: targetSize,
+            });
+        }
     }
 
     icon.set_size(targetSize, targetSize);
@@ -2066,20 +2081,32 @@ export const MacSpotlightDialog = GObject.registerClass({
     }
 
     _searchApps(query) {
-        const q = query.toLowerCase();
-        const apps = this._appSystem.get_installed();
+        const q = query.toLowerCase().trim();
+        if (!q) return [];
+        const apps = this._getAllApps();
         const hits = [];
 
         for (const app of apps) {
             const name = app.get_name() || '';
             const desc = app.get_description() || '';
             const id = app.get_id() || '';
-            const exec = (app.get_app_info ? app.get_app_info()?.get_executable?.() : null) || '';
-            const text = `${name} ${desc} ${id} ${exec}`.toLowerCase();
+            const appInfo = app.get_app_info ? app.get_app_info() : null;
+            const exec = appInfo?.get_executable?.() || '';
+            const keywords = (appInfo?.get_keywords?.() || []).join(' ');
+            const text = `${name} ${desc} ${id} ${exec} ${keywords}`.toLowerCase();
 
             let score = 99;
-            if (name.toLowerCase().startsWith(q) || exec.toLowerCase().startsWith(q)) score = 1;
-            else if (text.includes(q)) score = 2;
+            const nameLower = name.toLowerCase();
+            const idLower = id.toLowerCase();
+            const execLower = exec.toLowerCase();
+
+            if (nameLower === q || idLower === q) {
+                score = 1;
+            } else if (nameLower.startsWith(q) || idLower.startsWith(q) || execLower.startsWith(q)) {
+                score = 2;
+            } else if (text.includes(q)) {
+                score = 3;
+            }
 
             if (score < 99) {
                 hits.push({
@@ -2367,7 +2394,36 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         switch (item.type) {
             case 'app':
-                if (item.app) item.app.activate();
+                if (item.app) {
+                    try {
+                        let shellApp = item.app;
+                        if (shellApp && typeof shellApp.activate !== 'function' && typeof shellApp.get_id === 'function') {
+                            const id = shellApp.get_id();
+                            if (id) {
+                                shellApp = Shell.AppSystem.get_default().lookup_app(id);
+                            }
+                        }
+                        if (typeof shellApp?.activate === 'function') {
+                            shellApp.activate();
+                        } else if (typeof shellApp?.open_new_window === 'function') {
+                            shellApp.open_new_window(-1);
+                        } else if (typeof item.app.launch === 'function') {
+                            item.app.launch([], null);
+                        } else {
+                            const appInfo = item.app.get_app_info?.() || item.app;
+                            if (typeof appInfo?.launch === 'function') {
+                                appInfo.launch([], null);
+                            }
+                        }
+                    } catch (e) {
+                        try {
+                            const appInfo = item.app.get_app_info?.() || item.app;
+                            if (typeof appInfo?.launch === 'function') {
+                                appInfo.launch([], null);
+                            }
+                        } catch (_) {}
+                    }
+                }
                 break;
             case 'setting':
                 if (item.panel) Util.spawn(['gnome-control-center', item.panel]);

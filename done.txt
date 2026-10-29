@@ -12473,3 +12473,29 @@ Task 499: Повне полірування екрана блокування (m
    - mac-diagnostics успішно пройдено на 100% (система повністю стабільна, SSOT еталон дотримано).
 
 
+
+608. Усунення миготіння фону під час анімації відкриття Центру повідомлень (Notification Center):
+1. Виявлення та локалізація причин миготіння:
+   - Причина 1 (приховування скляного фону під час руху): У extensions/kiwi@kemma/apps/tahoeNotifications.js у функції _syncGlass була штучна умова isSliding, яка примусово викликала s.bgActor.hide() та обнуляла opacity = 0 протягом усіх 300 мс анімації висування панелі (translation_x). Панель виїжджала абсолютно прозорою, без скляного фону.
+   - Причина 2 (різке скидання та поява після зупинки): Після завершення руху функція _ncSettle викликала _startStackFade(s, 220), яка скидала коефіцієнт згасання в 0 і починала вторинне згасання, а також glassForceRefresh?.(s.bgActor), яка викликала синхронне перехоплення кадру буфера Mutter і різке миготіння скла на екрані.
+   - Причина 3 (щокадровий важкий рефреш для карток): У функції _syncCards обчислення хешу extraH щокадрово враховувало координати карток r.x та r.y під час руху, що змушувало шейдер щокадрово перезахоплювати текстуру UI (uiSampler.refresh()), викликаючи мікрофризи та тремтіння.
+2. Реалізація плавного безшовної анімації:
+   - Усунено умову isSliding з _syncGlass — скляний бекдроп тепер з першого кадру плавно синхронізує свою прозорість з p.box.opacity від 0 до 255 одночасно з тінню панелі p.panelBg та вмістом p.box.
+   - У _syncCards додано захист: під час слайду панелі (isSliding) координати r.x/r.y не враховуються в хеш зміни сцени, завдяки чому UI-семплінг виконується лише один раз на старті і не навантажує GPU під час руху.
+   - У _ncSettle вилучено скидання opacity через _startStackFade та важкий виклик glassForceRefresh. Панель плавно досягає кінцевої позиції без жодного стрибка чи миготіння.
+   - Зміни розгорнуто в ~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeNotifications.js та перезавантажено розширення.
+
+609. Виправлення відображення іконок та запуску програм у Spotlight пошуку (MacSpotlightDialog):
+1. Діагностика причин проблеми (однакові помаранчеві шестерні та відсутність реакції на клік):
+   - У extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js функція _searchApps використовувала apps = this._appSystem.get_installed(), яка в GNOME Shell 46 повертає масив об'єктів Gio.DesktopAppInfo, а не Shell.App.
+   - Об'єкти Gio.DesktopAppInfo не мають методу create_icon_texture(size), через що функція createSmoothAppIcon повертала дефолтну системну іконку application-x-executable (яка в темі WhiteSur/MacTahoe виглядає як помаранчевий квадрат із білою шестернею для всіх програм).
+   - Крім того, Gio.DesktopAppInfo не має методу activate(), через що при натисканні Enter або кліку миші на програму виникала помилка TypeError: item.app.activate is not a function, і програма не запускалася. Також у результатах пошуку з'являлися системні NoDisplay служби (як-от xdg-desktop-portal-gnome.desktop).
+2. Комплексне виправлення та стабілізація запуску:
+   - У _searchApps переведено пошук програм на використання перевіреного методу this._getAllApps(), який повертає валідні об'єкти Shell.App із відфільтрованими NoDisplay-службами.
+   - У createSmoothAppIcon реалізовано автоматичний lookup Shell.App за ID програми, якщо передано Gio.DesktopAppInfo, та коректний виклик create_icon_texture(targetSize), що повертає справжні нативні іконки високої роздільної здатності для кожної програми.
+   - У методі _activate(item) для типу 'app' додано надійний ланцюжок запуску: спроба shellApp.activate() -> shellApp.open_new_window(-1) -> item.app.launch([], null) -> appInfo.launch([], null). Будь-яка програма тепер гарантовано запускається та виводиться на передній план.
+3. Верифікація та цілісність:
+   - Зміни розгорнуто в ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js та перезавантажено розширення.
+   - Оновлено контрольні суми SHA-256 для kiwi@kemma та appmenu@ChathurangaBW.github.io у config/extensions.lock.json.
+   - mac-extension-guard verify підтвердив 100% відповідність усіх 20 зафіксованих розширень (VERIFICATION SUCCESS).
+   - mac-diagnostics підтвердив 100% готовність системи.

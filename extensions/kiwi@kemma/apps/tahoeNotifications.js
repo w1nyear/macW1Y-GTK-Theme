@@ -1673,8 +1673,7 @@ function _ncRideTick(p) {
     } catch (_) {}
 }
 
-// settle слайду: дорога частина лишається поза кадрами руху — тут створюємо
-// скло карток і форсуємо рефреші стеків (один раз, поза анімацією).
+// settle слайду: фіксація розмірів та завершення злиття тостів після завершення анімації
 function _ncSettle(p) {
     try {
         if (!p || p._settleDone)
@@ -1687,17 +1686,6 @@ function _ncSettle(p) {
             p.panelBg.set_size(NC_W, -1);
         } catch (_) {}
         _ensureNcCards(p);
-        for (const s of p.stacks ?? []) {
-            try {
-                _startStackFade(s, 220);
-                glassForceRefresh?.(s.bgActor);
-            } catch (_) {}
-        }
-        try {
-            const cards = p.stacks?.find(s => s.kind === 'cards');
-            if (cards)
-                _startStackFade(cards, 260);
-        } catch (_) {}
         _ncRideTick(p);
     } catch (_) {}
 }
@@ -2203,11 +2191,14 @@ function _syncCards(p, monitor, s) {
         try { s.effect.setCornerRadius(maxR); } catch (_) {}
         // [GPU-SAVE] Extras: регіони карток (позиції з transformed_position
         // самих карток) — зміщення/згортання стосу сповіщень рахується як зміна.
-        // Стек карток існує лише від settle, слайд панелі тому не потрапляє
-        // у хеш; анімації карток (к-enter/expand) чесно рахуються.
+        // Під час слайду панелі (translation_x != 0) рух r.x не рахуємо в хеш,
+        // щоб не тригерити дорогий UI-семплінг щокадрово (інакше фризи й миготіння).
+        const isSliding = !p._settleDone || (p.box?.translation_x !== 0 && Math.abs(p.box?.translation_x ?? 0) > 0.5);
         let extraH = regions.length;
         for (const r of regions) {
-            extraH = (extraH ^ (Math.round(r.x * 4) * 73856093) ^ (Math.round(r.y * 4) * 19349663) ^
+            const dxh = isSliding ? 0 : (Math.round(r.x * 4) * 73856093);
+            const dyh = isSliding ? 0 : (Math.round(r.y * 4) * 19349663);
+            extraH = (extraH ^ dxh ^ dyh ^
                 (Math.round(r.w * 4) * 83492791) ^ (Math.round(r.h * 4) * 2654435761)) | 0;
         }
         // ДЕШЕВИЙ шлях (щокадрово): регіони їдуть разом із картками без
@@ -2260,16 +2251,6 @@ function _syncGlass(p, monitor, s) {
         const m = BACKDROP_PAD;
         const [ovX, ovY] = p.overlay.get_transformed_position();
         s.bgActor.set_position(monitor.x - ovX, monitor.y - ovY);
-
-        // Slide animation protection: while the panel is sliding in (before settle or translation_x != 0),
-        // keep the glass backdrop hidden so unaligned wallpaper clones never flash or tear during movement.
-        const isSliding = (!p._settleDone || (p.box?.translation_x !== 0 && Math.abs(p.box?.translation_x ?? 0) > 1));
-        if (isSliding) {
-            if (s.bgActor.visible)
-                s.bgActor.hide();
-            s.bgActor.opacity = 0;
-            return;
-        }
 
         const alpha = p.box.opacity * _stackFadeK(s);
         if (alpha > 0 && !s.bgActor.visible)
