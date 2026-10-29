@@ -918,6 +918,7 @@ function _buildPanel() {
     const monitor = Main.layoutManager.primaryMonitor;
     const panelH = Main.layoutManager.panelBox?.height ?? 32;
     const W = PANEL_W;
+    const slideOffset = PANEL_W + 40;
     const X = monitor.x + monitor.width - W - 12;
     const Y = monitor.y + panelH + 10;
 
@@ -926,6 +927,7 @@ function _buildPanel() {
         x: 0, y: 0,
         width: global.stage.width, height: global.stage.height,
     });
+    overlay.set_clip(monitor.x, monitor.y, monitor.width, monitor.height);
     overlay.connect('button-press-event', (actor, event) => {
         if (_activeSubmenu) {
             _closeActiveSubmenu();
@@ -954,6 +956,7 @@ function _buildPanel() {
     }
     panelBg.set_position(X, Y);
     panelBg.width = W;
+    panelBg.translation_x = slideOffset;
     panelBg.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
     overlay.add_child(panelBg);
 
@@ -967,6 +970,7 @@ function _buildPanel() {
     }
     box.set_position(X, Y);
     box.width = W;
+    box.translation_x = slideOffset;
     box.set_style('border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important;');
     box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
     overlay.add_child(box);
@@ -1603,7 +1607,8 @@ function _buildPanel() {
             // adaptive ink: sample the real background behind the panel,
             // apply, and follow it while open (open animation covers a flip)
             try {
-                const [px, py] = box.get_transformed_position();
+                const px = box.x;
+                const py = box.y;
                 notePanelRect({x: px, y: py, w: box.width, h: box.height});
             } catch (_) {
                 // unsampled: theme fallback ink stays
@@ -1627,28 +1632,24 @@ function _buildPanel() {
     } catch (_) {
         _startGlass();
     }
-    box.set_pivot_point(0.9, 0.05);
-    box.scale_x = 1.06;
-    box.scale_y = 1.06;
-    box.translation_x = 0;
-    box.opacity = 0;
-    panelBg.set_pivot_point(0.9, 0.05);
-    panelBg.scale_x = 1.06;
-    panelBg.scale_y = 1.06;
-    panelBg.translation_x = 0;
-    panelBg.opacity = 0;
+    box.set_pivot_point(1.0, 0.0);
+    box.scale_x = 1.0;
+    box.scale_y = 1.0;
+    box.translation_x = slideOffset;
+    box.opacity = 255;
+    panelBg.set_pivot_point(1.0, 0.0);
+    panelBg.scale_x = 1.0;
+    panelBg.scale_y = 1.0;
+    panelBg.translation_x = slideOffset;
+    panelBg.opacity = 255;
     box.ease({
-        scale_x: 1.0,
-        scale_y: 1.0,
-        opacity: 255,
-        duration: 300,
+        translation_x: 0,
+        duration: 260,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
     });
     panelBg.ease({
-        scale_x: 1.0,
-        scale_y: 1.0,
-        opacity: 255,
-        duration: 300,
+        translation_x: 0,
+        duration: 260,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
     });
 }
@@ -2797,7 +2798,8 @@ async function _startGlass() {
         _panel.glass = glass;
 
         for (const s of stacks) {
-            s.bgActor.opacity = 0;
+            s.bgActor.opacity = 255;
+            s.bgActor.set_scale(1.0, 1.0);
         }
 
         const tick = () => {
@@ -2814,12 +2816,9 @@ async function _startGlass() {
             const isAnimating = (_panel.box?.translation_x !== 0) || (_panel.box?.scale_x !== 1.0) || _closing;
             for (const s of glass.stacks) {
                 try {
-                    if (!_closing) {
-                        s.bgActor.opacity = _panel.box.opacity;
-                        if (_panel.box) {
-                            s.bgActor.set_pivot_point(0.9, 0.05);
-                            s.bgActor.set_scale(_panel.box.scale_x, _panel.box.scale_y);
-                        }
+                    s.bgActor.opacity = _panel.box.opacity;
+                    if (_panel.box) {
+                        s.bgActor.set_scale(1.0, 1.0);
                     }
                     // [GPU-SAVE] _syncStack сама вирішує, коли фон реально змінився
                     // (межа 60 FPS + 1 Гц пульс усередині), тому викликаємо щотіка —
@@ -3096,58 +3095,24 @@ function _closePanel(immediate = false) {
     _closing = true;
     globalThis._tahoeQSOpen = false;
 
+    const slideOffset = PANEL_W + 40;
     try {
         p.box.remove_all_transitions();
         p.panelBg.remove_all_transitions();
-        p.box.set_pivot_point(0.9, 0.05);
-        p.panelBg.set_pivot_point(0.9, 0.05);
-
-        // Плавне згасання прозорості кожного окремого елемента всередині панелі для зникнення
-        for (const child of p.box.get_children()) {
-            if (child) {
-                try {
-                    child.remove_all_transitions();
-                    child.ease({
-                        opacity: 0,
-                        duration: 260,
-                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                    });
-                } catch (_) {}
-            }
-        }
-
-        // Плавне згасання рідкого скла
-        if (p.glass && p.glass.stacks) {
-            for (const s of p.glass.stacks) {
-                if (s.bgActor) {
-                    try {
-                        s.bgActor.remove_all_transitions();
-                        s.bgActor.set_pivot_point(0.9, 0.05);
-                        s.bgActor.ease({
-                            opacity: 0,
-                            scale_x: 1.06,
-                            scale_y: 1.06,
-                            duration: 300,
-                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                        });
-                    } catch (_) {}
-                }
-            }
-        }
+        p.box.scale_x = 1.0;
+        p.box.scale_y = 1.0;
+        p.panelBg.scale_x = 1.0;
+        p.panelBg.scale_y = 1.0;
 
         p.panelBg.ease({
-            scale_x: 1.06,
-            scale_y: 1.06,
-            opacity: 0,
-            duration: 300,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            translation_x: slideOffset,
+            duration: 230,
+            mode: Clutter.AnimationMode.EASE_IN_CUBIC,
         });
         p.box.ease({
-            scale_x: 1.06,
-            scale_y: 1.06,
-            opacity: 0,
-            duration: 300,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            translation_x: slideOffset,
+            duration: 230,
+            mode: Clutter.AnimationMode.EASE_IN_CUBIC,
             onComplete: () => {
                 _teardownPanel(p);
             },

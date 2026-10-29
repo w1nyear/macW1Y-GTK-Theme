@@ -12788,3 +12788,31 @@ Task 499: Повне полірування екрана блокування (m
    - ./bin/mac-extension-guard verify — 20/20 SUCCESS.
    - /usr/local/bin/mac-diagnostics — 100% OK.
    - Тестування перемикання мови підтвердило стабільність: `haveModal: false, reactive: false`.
+
+--------------------------------------------------------------------------------
+ЕТАП 622: Зміна анімації відкриття і закриття центру керування (macOS Tahoe Control Center) на виїзд з правого краю (Slide-in / Slide-out) замість збільшення та згасання
+
+1. Діагностика та аналіз поведінки:
+   - Раніше при відкритті та закритті Центру керування (extensions/kiwi@kemma/apps/tahoeControlCenter.js) використовувалася анімація масштабування та згасання:
+     * Відкриття: `box.scale_x = 1.06; box.scale_y = 1.06; box.opacity = 0;` з переходом до `scale: 1.0, opacity: 255`.
+     * Закриття: `box.ease({ scale_x: 1.06, scale_y: 1.06, opacity: 0 });` з окремим згасанням дочірніх віджетів та рідкого скла.
+   - Користувач поставив чітке завдання: змінити анімацію відкриття і закриття центру керування просто виїздом з правої сторони замість збільшення і появи.
+
+2. Впроваджені зміни:
+   - Усунуто будь-яке збільшення/масштабування (`scale_x = 1.0, scale_y = 1.0` зафіксовано на всіх етапах).
+   - Усунуто згасання появи (`opacity = 255` постійно).
+   - Реалізовано плавний виїзд із правого краю екрана (Slide-in from right edge):
+     * Початкова позиція зміщення `translation_x = slideOffset` (`PANEL_W + 40` = 360px), що повністю виносить панель за праву межу монітора.
+     * Відкриття: `box.ease({ translation_x: 0, duration: 260, mode: Clutter.AnimationMode.EASE_OUT_CUBIC })` та аналогічно для `panelBg`.
+   - Реалізовано плавний виїзд у правий край при закритті (Slide-out to right edge):
+     * Закриття: `box.ease({ translation_x: slideOffset, duration: 230, mode: Clutter.AnimationMode.EASE_IN_CUBIC, onComplete: () => _teardownPanel(p) })` та `panelBg.ease({ translation_x: slideOffset, duration: 230, mode: Clutter.AnimationMode.EASE_IN_CUBIC })`.
+   - Забезпечено повну синхронізацію рідкого скла Liquid Glass:
+     * Шейдер розмиття у кадровому циклі `tick()` та `_syncStack` автоматично відстежує `getTransformedRect()`, завдяки чому скло та кліп рухаються піксель-у-піксель разом із панеллю.
+     * Для контейнера `overlay` встановлено `overlay.set_clip(monitor.x, monitor.y, monitor.width, monitor.height)`, що запобігає перекриттю сусідніх екранів при зміщенні.
+   - Синхронізовано файл у `~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeControlCenter.js` та гаряче перезавантажено модуль у GNOME Shell.
+   - Оновлено SHA256 хеш розширення kiwi@kemma у `config/extensions.lock.json`.
+
+3. Верифікація:
+   - `./bin/mac-extension-guard verify` — 20/20 SUCCESS.
+   - `/usr/local/bin/mac-diagnostics` — 100% OK.
+   - Тестування `globalThis._tahoeQSToggle()` та `globalThis._tahoeQSClose()` підтвердило плавний та коректний виїзд без візуальних дефектів.
