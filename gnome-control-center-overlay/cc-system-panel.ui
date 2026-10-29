@@ -369,6 +369,63 @@
                         </child>
                       </object>
                     </child>
+                    <child>
+                      <object class="AdwExpanderRow" id="menu_shadow_expander">
+                        <property name="title">Тінь</property>
+                        <property name="subtitle">Розмиття та сила тіні під контекстними вікнами</property>
+                        <property name="expanded">true</property>
+                        <child>
+                          <object class="AdwActionRow" id="menu_shadow_blur_row">
+                            <property name="title">Розмиття тіні</property>
+                            <child type="suffix">
+                              <object class="GtkScale" id="menu_shadow_blur_scale">
+                                <property name="orientation">0</property>
+                                <property name="draw-value">true</property>
+                                <property name="digits">0</property>
+                                <property name="round-digits">0</property>
+                                <property name="width-request">200</property>
+                                <property name="adjustment">
+                                  <object class="GtkAdjustment">
+                                    <property name="lower">0</property>
+                                    <property name="upper">100</property>
+                                    <property name="step-increment">1</property>
+                                    <property name="page-increment">5</property>
+                                    <property name="value">30</property>
+                                  </object>
+                                </property>
+                                <signal name="realize" handler="init_menu_shadow_blur"/>
+                                <signal name="value-changed" handler="on_menu_shadow_blur_changed"/>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow" id="menu_shadow_strength_row">
+                            <property name="title">Сила тіні</property>
+                            <child type="suffix">
+                              <object class="GtkScale" id="menu_shadow_strength_scale">
+                                <property name="orientation">0</property>
+                                <property name="draw-value">true</property>
+                                <property name="digits">0</property>
+                                <property name="round-digits">0</property>
+                                <property name="width-request">200</property>
+                                <property name="adjustment">
+                                  <object class="GtkAdjustment">
+                                    <property name="lower">0</property>
+                                    <property name="upper">100</property>
+                                    <property name="step-increment">1</property>
+                                    <property name="page-increment">5</property>
+                                    <property name="value">55</property>
+                                  </object>
+                                </property>
+                                <signal name="realize" handler="init_menu_shadow_strength"/>
+                                <signal name="value-changed" handler="on_menu_shadow_strength_changed"/>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                 </child>
 

@@ -12440,3 +12440,19 @@ Task 499: Повне полірування екрана блокування (m
    - mac-diagnostics успішно пройдено на 100% (система повністю стабільна, SSOT еталон дотримано).
    - Зміни перевірено на живому оточенні: режим живлення коректно змінюється в обох напрямках і відображається в Центрі керування, діалогові вікна отримують повний блюр без обрізання.
 
+606. Виправлення прозорості скла (Liquid Glass) для контекстних меню робочого столу та додавання налаштувань тіні в Параметри:
+1. Виправлення скляного фону контекстного меню робочого столу (DING + Liquid Glass):
+   - Усунено причину непрозорості в GTK3 CSS: очищено невалідні директиви !important, через які GtkCssProvider відкидав правила прозорості для меню; оновлено stylesheet.css у DING з правилом background-color: transparent, border: none, box-shadow: none.
+   - У extensions/ding-patches/desktopIconsUtil.js у класі DesktopMenu реалізовано очищення фону Cairo (Cairo.Operator.CLEAR) для toplevel вікна та меню під час сигналу draw, а також гарантовано встановлення RGBA візуалу та app_paintable(true). Зміни розгорнуто в /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/desktopIconsUtil.js.
+   - У extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/applicationManager.js та src/applicationManager.ts виправлено логіку isSubsurfaceMenu: раніше для будь-якого меню з transient_for помилково приховувався клон шпалер bgClone (setActorVisible(bgClone, false)). Додано перевірку isParentDesktop — якщо батьківським вікном є Meta.WindowType.DESKTOP, bgClone залишається активним і видимим, завдяки чому шейдер Liquid Glass повноцінно заломлює та розмиває шпалери за меню.
+2. Додавання пункту «Тінь» до Параметрів («Mac стилізація» -> «Контекст меню»):
+   - У gnome-control-center-overlay/cc-system-panel.ui додано AdwExpanderRow «Тінь» (підзаголовок: «Розмиття та сила тіні під контекстними вікнами», expanded="true") із двома повзунками GtkScale:
+     * «Розмиття тіні» (діапазон 0–100, відповідає shadow-radius у px)
+     * «Сила тіні» (діапазон 0–100, відповідає shadow-intensity 0.0–1.0)
+   - У gnome-control-center-overlay/libmac_settings.c додано поля menu_shadow_blur та menu_shadow_strength, збереження/завантаження у ~/.config/mac-styling/styling.json, функцію apply_menu_shadow() для миттєвого оновлення параметрів shadow-radius та shadow-intensity у GSettings схеми org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com, а також обробники сигналів init_menu_shadow_blur, on_menu_shadow_blur_changed, init_menu_shadow_strength, on_menu_shadow_strength_changed.
+   - Бібліотеку libmac_settings.so успішно скомпільовано та розгорнуто в /usr/lib/x86_64-linux-gnu/, ~/.local/lib/, ~/.local/share/gnome-control-center-overlay/, /usr/share/mactheme/.
+3. Синхронізація та верифікація:
+   - Оновлено хеші SHA-256 у config/extensions.lock.json для liquid-glass@thinkingcoding1231.gmail.com та ding@rastersoft.com.
+   - mac-extension-guard verify підтвердив 100% цілісність усіх 20 розширень (VERIFICATION SUCCESS).
+   - mac-diagnostics успішно пройдено на 100% (система стабільна, всі компоненти відповідають еталону).
+

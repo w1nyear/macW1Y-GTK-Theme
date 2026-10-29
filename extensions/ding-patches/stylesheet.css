@@ -40,18 +40,24 @@ window.rename-popup {
     padding: 10px 14px;
 }
 
-/* Desktop Context Menu styling */
-.desktopmenu,
+/* Desktop Context Menu styling (macOS Tahoe Glass) */
 window.desktopmenu,
+window.desktopmenu.background,
+window.desktopmenu.popup,
 window.desktopmenu decoration,
+window.desktopmenu > decoration,
 menu.desktopmenu,
 .desktopmenu menu,
+.desktopmenu,
 menu {
-    border-radius: 24px !important;
-    background-color: transparent !important;
-    background: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.20) !important;
-    box-shadow: none !important;
+    border-radius: 20px;
+    background-color: transparent;
+    background: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 6px 4px;
 }
 
 .desktopmenu menuitem,
@@ -64,8 +70,24 @@ menu menuitem {
     padding: 4px 12px;
     min-height: 24px;
     color: #ffffff;
+    background-color: transparent;
     font-size: 13px;
     font-weight: 500;
+}
+
+.desktopmenu menuitem label,
+window.desktopmenu menuitem label,
+menu.desktopmenu menuitem label,
+menu menuitem label {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.desktopmenu menuitem:disabled,
+.desktopmenu menuitem:disabled label,
+menu menuitem:disabled,
+menu menuitem:disabled label {
+    color: rgba(255, 255, 255, 0.35);
 }
 
 .desktopmenu menuitem:hover,
@@ -86,10 +108,28 @@ menu menuitem:selected {
     box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
 }
 
+.desktopmenu menuitem:hover label,
+.desktopmenu menuitem:focus label,
+.desktopmenu menuitem:selected label,
+menu menuitem:hover label,
+menu menuitem:focus label,
+menu menuitem:selected label {
+    color: #ffffff;
+}
+
 .desktopmenu menuitem:active,
 window.desktopmenu menuitem:active,
 menu menuitem:active {
     background-color: #0062cc;
     color: #ffffff;
     border-radius: 9999px;
+}
+
+.desktopmenu separator,
+window.desktopmenu separator,
+menu separator {
+    min-height: 1px;
+    background-color: rgba(255, 255, 255, 0.12);
+    margin: 4px 6px;
+    border: none;
 }

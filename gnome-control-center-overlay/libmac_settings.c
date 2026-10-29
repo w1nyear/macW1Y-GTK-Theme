@@ -25,6 +25,8 @@ typedef struct {
 
     int menu_tint;      /* 0 - 100 */
     int menu_blur;      /* 0 - 100 */
+    int menu_shadow_blur;     /* 0 - 100 (radius px) */
+    int menu_shadow_strength; /* 0 - 100 (intensity %) */
 
     /* Legacy fields for backward compatibility */
     int dock_blur;
@@ -54,6 +56,8 @@ static MacStylingData state = {
 
     .menu_tint = 35,
     .menu_blur = 30,
+    .menu_shadow_blur = 30,
+    .menu_shadow_strength = 55,
 
     .dock_blur = 1,
     .dock_sigma = 30,
@@ -83,6 +87,7 @@ static guint blur_sigma_timer_id = 0;
 static guint blur_tint_timer_id = 0;
 static guint menu_blur_timer_id = 0;
 static guint menu_tint_timer_id = 0;
+static guint menu_shadow_timer_id = 0;
 
 static void load_config(void) {
     const char *home = g_get_home_dir();
@@ -147,6 +152,16 @@ static void load_config(void) {
             else
                 state.menu_blur = 30;
 
+            if (json_object_has_member(obj, "menu_shadow_blur"))
+                state.menu_shadow_blur = (int)json_object_get_int_member(obj, "menu_shadow_blur");
+            else
+                state.menu_shadow_blur = 30;
+
+            if (json_object_has_member(obj, "menu_shadow_strength"))
+                state.menu_shadow_strength = (int)json_object_get_int_member(obj, "menu_shadow_strength");
+            else
+                state.menu_shadow_strength = 55;
+
             /* Legacy */
             if (json_object_has_member(obj, "dock_blur"))
                 state.dock_blur = json_object_get_boolean_member(obj, "dock_blur");
@@ -209,6 +224,8 @@ static void save_styling_json(void) {
         "  \"blur_tint\": %d,\n"
         "  \"menu_tint\": %d,\n"
         "  \"menu_blur\": %d,\n"
+        "  \"menu_shadow_blur\": %d,\n"
+        "  \"menu_shadow_strength\": %d,\n"
         "  \"dock_blur\": %s,\n"
         "  \"dock_sigma\": %d,\n"
         "  \"dock_tint\": %s,\n"
@@ -230,6 +247,8 @@ static void save_styling_json(void) {
         state.blur_tint,
         state.menu_tint,
         state.menu_blur,
+        state.menu_shadow_blur,
+        state.menu_shadow_strength,
         (state.blur_sigma > 0) ? "true" : "false",
         state.blur_sigma,
         dock_tint_buf,
@@ -558,6 +577,36 @@ static void schedule_menu_tint_apply(void) {
     }
 }
 
+static void apply_menu_shadow(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src) return;
+
+    if (g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE)) {
+        GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
+        double radius = (double)state.menu_shadow_blur;
+        double intensity = (double)state.menu_shadow_strength / 100.0;
+        if (intensity < 0.0) intensity = 0.0;
+        if (intensity > 1.0) intensity = 1.0;
+
+        g_settings_set_double(lg, "shadow-radius", radius);
+        g_settings_set_double(lg, "shadow-intensity", intensity);
+        g_object_unref(lg);
+    }
+}
+
+static gboolean apply_menu_shadow_cb(gpointer user_data) {
+    (void)user_data;
+    menu_shadow_timer_id = 0;
+    apply_menu_shadow();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_menu_shadow_apply(void) {
+    if (menu_shadow_timer_id == 0) {
+        menu_shadow_timer_id = g_timeout_add(60, (GSourceFunc)apply_menu_shadow_cb, NULL);
+    }
+}
+
 /* Initialization signals from GtkBuilder (realize) */
 
 /* Group 1: Меню-бар */
@@ -706,6 +755,42 @@ void on_menu_blur_changed(void *widget, gpointer data) {
     if (in_init) return;
     state.menu_blur = (int)lround(gtk_range_get_value(widget));
     schedule_menu_blur_apply();
+    schedule_json_save();
+}
+
+void init_menu_shadow_blur(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.menu_shadow_blur);
+    in_init = 0;
+}
+
+void on_menu_shadow_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.menu_shadow_blur = (int)lround(gtk_range_get_value(widget));
+    schedule_menu_shadow_apply();
+    schedule_json_save();
+}
+
+void init_menu_shadow_strength(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.menu_shadow_strength);
+    in_init = 0;
+}
+
+void on_menu_shadow_strength_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.menu_shadow_strength = (int)lround(gtk_range_get_value(widget));
+    schedule_menu_shadow_apply();
     schedule_json_save();
 }
 

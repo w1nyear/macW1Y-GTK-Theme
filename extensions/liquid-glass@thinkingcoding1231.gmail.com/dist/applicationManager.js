@@ -1063,11 +1063,18 @@ export class ApplicationManager {
         clipBox.add_child(bgClone);
 
         const metaWin = typeof windowActor.get_meta_window === 'function' ? windowActor.get_meta_window() : null;
-        const isSubsurfaceMenu = profile === 'desktop-menu' && metaWin && typeof metaWin.get_transient_for === 'function' && metaWin.get_transient_for();
+        const parentWin = metaWin && typeof metaWin.get_transient_for === 'function' ? metaWin.get_transient_for() : null;
+        const isParentDesktop = parentWin && typeof parentWin.get_window_type === 'function' && parentWin.get_window_type() === Meta.WindowType.DESKTOP;
+        const isSubsurfaceMenu = profile === 'desktop-menu' && metaWin && parentWin && !isParentDesktop;
         if (isSubsurfaceMenu) {
             setActorVisible(bgClone, false);
             if (BASE_LAYER_ENABLED) {
                 setActorVisible(baseClone, false);
+            }
+        } else if (profile === 'desktop-menu') {
+            setActorVisible(bgClone, true);
+            if (BASE_LAYER_ENABLED) {
+                setActorVisible(baseClone, true);
             }
         }
         let effect = new LiquidEffect({
