@@ -12661,3 +12661,31 @@ Task 499: Повне полірування екрана блокування (m
    - Зміни синхронізовано з ~/.config/gtk-4.0/, ~/.themes/macW1Y-Dark/, /usr/share/themes/macW1Y-Dark/ та каталогами розширень.
    - ./bin/mac-extension-guard verify підтвердив 20/20 відповідність (VERIFICATION SUCCESS).
    - /usr/local/bin/mac-diagnostics підтвердив 100% OK.
+
+
+618. Усунення подвійного програвання звуку запуску під час старту ПК (Stage 618):
+1. Діагностика та першопричина (Root Cause Analysis):
+   - У ході глибокого аналізу системного журналу та коду GNOME Shell виявлено дві незалежні причини дублювання:
+     а) Вбудований механізм Ubuntu у gnome-shell (main.js):
+        При активному ключі org.gnome.shell.ubuntu startup-sound = 'warty-startup' GNOME Shell після входу користувача нативно викликає Mutter sound player (player.play_from_theme('warty-startup')), що через симлінк відтворює автентичний акорд desktop-login.ogg.
+        Одночасно файл ~/.config/autostart/macos-login-sound.desktop запускав /usr/local/bin/mac-login-sound, який також зчитував цей ключ і викликав canberra-gtk-play -i desktop-login. У результаті при кожному вході одночасно лунали два незалежні потоки акорду macOS з ефектом подвійного програвання/відлуння.
+     б) Звук готовності екрана входу GDM (libcanberra-ready-sound.desktop):
+        У /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop служба GDM викликала canberra-gtk-play --id="system-ready". У звуковій темі macOS system-ready та device-ready посилалися на акорд desktop-login.ogg (замість звуку підключення пристроїв device-added.ogg). Це призводило до програвання акорду ще на екрані входу GDM до введення пароля, а потім повторно при переході до робочого столу.
+2. Комплексне усунення дублювання:
+   - Деактивація паралельного автозапуску сесії:
+     У autostart/macos-login-sound.desktop та ~/.config/autostart/macos-login-sound.desktop встановлено X-GNOME-Autostart-enabled=false та Hidden=true, оскільки GNOME Shell 50+ нативно та бездоганно відтворює звук через main.js.
+   - Захист скрипта /usr/local/bin/mac-login-sound та bin/mac-login-sound:
+     Додано перевірку: якщо запущено GNOME Shell (pgrep -u "$(id -u)" -x gnome-shell), скрипт негайно завершує роботу (exit 0), унеможливлюючи повторний запуск сторонніми службами або автозапуском. Збільшено вікно дебаунсу атомарного замка до 15 секунд.
+   - Вимкнення звуку готовності GDM:
+     У /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop прописано X-GNOME-Autostart-enabled=false та Hidden=true.
+   - Виправлення симлінків звукової теми:
+     У sounds/macOS/stereo/, ~/.local/share/sounds/macOS/stereo/ та /usr/share/sounds/macOS/stereo/ симлінки device-ready та system-ready перенаправлено на device-added (короткий м'який звук підключення пристрою замість 4-секундного акорду запуску системи). Тепер акорд запуску звучить виключно для warty-startup та desktop-login.
+   - Оновлено install.sh для автоматичного застосування цих правил при чистій інсталяції та інкрементальному оновленні.
+   - Синхронізовано ~/.config/gtk-3.0/gtk.css для усунення попереджень GTK3 парсера :focus-visible.
+3. Збереження повної синхронізації з Параметрами:
+   - Перемикач «Звук запуску» у Параметри -> Звуки керує ключем org.gnome.shell.ubuntu startup-sound:
+     - Увімкнено (warty-startup): акорд запуску macOS лунає рівно 1 раз.
+     - Вимкнено (""): акорд не лунає взагалі (0 разів).
+4. Верифікація та діагностика:
+   - ./bin/mac-extension-guard verify підтвердив 20/20 відповідність (VERIFICATION SUCCESS).
+   - /usr/local/bin/mac-diagnostics підтвердив 100% OK.

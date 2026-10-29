@@ -1,5 +1,10 @@
 #!/bin/sh
 # mac-login-sound - macOS Boot Chime synchronized with GNOME Settings (org.gnome.shell.ubuntu startup-sound)
+#
+# In Ubuntu GNOME Shell, the startup chime is played natively by gnome-shell (main.js)
+# using Mutter's sound player via 'org.gnome.shell.ubuntu startup-sound' ('warty-startup').
+# To prevent playing the sound twice on startup/login, this script exits when GNOME Shell
+# is running and managing the sound natively.
 
 # 1. Check if startup-sound is enabled in Settings
 STARTUP_SOUND=$(gsettings get org.gnome.shell.ubuntu startup-sound 2>/dev/null | tr -d "'\"")
@@ -9,7 +14,14 @@ if [ -z "$STARTUP_SOUND" ]; then
     exit 0
 fi
 
-# 2. Prevent double chime within 10 seconds (e.g. between GNOME Shell & autostart)
+# 2. Prevent duplicate chime under GNOME Shell
+# When GNOME Shell is active, its internal main.js UI initialization plays the theme sound directly.
+if pgrep -u "$(id -u)" -x gnome-shell >/dev/null 2>&1; then
+    exit 0
+fi
+
+# 3. Fallback for non-GNOME-shell sessions or manual invocation:
+# Prevent double chime within 15 seconds using debounce lock
 LOCK_DIR="/run/user/$(id -u)"
 LOCK_FILE="${LOCK_DIR}/mac-startup-sound.lock"
 
@@ -17,14 +29,14 @@ if [ -f "$LOCK_FILE" ]; then
     NOW=$(date +%s)
     MTIME=$(stat -c %Y "$LOCK_FILE" 2>/dev/null || echo 0)
     DIFF=$((NOW - MTIME))
-    if [ "$DIFF" -ge 0 ] && [ "$DIFF" -lt 10 ]; then
+    if [ "$DIFF" -ge 0 ] && [ "$DIFF" -lt 15 ]; then
         exit 0
     fi
 fi
 
 [ -d "$LOCK_DIR" ] && touch "$LOCK_FILE" 2>/dev/null || true
 
-# 3. Play macOS boot chime
+# Play macOS boot chime
 if command -v canberra-gtk-play >/dev/null 2>&1; then
     canberra-gtk-play -i desktop-login 2>/dev/null || \
     canberra-gtk-play -f /usr/share/sounds/macOS/stereo/desktop-login.ogg 2>/dev/null || \

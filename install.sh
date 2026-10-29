@@ -565,6 +565,13 @@ install_sounds() {
         chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart"
         log_success "Автозапуск стартового звуку macOS додано!"
     fi
+
+    # Вимкнення звуку готовності GDM для запобігання дублюванню стартового звуку
+    if [ -f "/usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop" ]; then
+        sudo sed -i 's/^X-GNOME-Autostart-enabled=.*/X-GNOME-Autostart-enabled=false/' /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop 2>/dev/null || true
+        grep -q "X-GNOME-Autostart-enabled=false" /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop || echo "X-GNOME-Autostart-enabled=false" | sudo tee -a /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop >/dev/null
+        grep -q "Hidden=true" /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop || echo "Hidden=true" | sudo tee -a /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop >/dev/null
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -1636,6 +1643,11 @@ run_incremental_update() {
     fi
     if [ -f "$SCRIPT_DIR/autostart/macos-login-sound.desktop" ]; then
         sync_or_update_file "$SCRIPT_DIR/autostart/macos-login-sound.desktop" "$TARGET_HOME/.config/autostart/macos-login-sound.desktop" false
+    fi
+    if [ -f "/usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop" ]; then
+        sudo sed -i 's/^X-GNOME-Autostart-enabled=.*/X-GNOME-Autostart-enabled=false/' /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop 2>/dev/null || true
+        grep -q "X-GNOME-Autostart-enabled=false" /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop || echo "X-GNOME-Autostart-enabled=false" | sudo tee -a /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop >/dev/null
+        grep -q "Hidden=true" /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop || echo "Hidden=true" | sudo tee -a /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop >/dev/null
     fi
 
     log_info "5/10 Перевірка шпалер..."
