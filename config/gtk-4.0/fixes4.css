@@ -77,17 +77,14 @@ popover.background > arrow,
 popover.menu.background > arrow,
 .context-menu > arrow,
 .context-menu arrow {
-  min-width: 0 !important;
-  min-height: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
+  min-width: 0;
+  min-height: 0;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* Symmetrical generous padding for context menu: top matches bottom */
@@ -96,8 +93,8 @@ popover.menu contents,
 popover.context-menu > contents,
 popover > contents,
 .context-menu > contents {
-  border-radius: 20px !important;
-  padding: 14px 6px 12px 6px !important;
+  border-radius: 20px;
+  padding: 14px 6px 12px 6px;
 }
 
 popover.menu modelbutton:first-child,
@@ -141,11 +138,11 @@ popover modelbutton:focus-visible,
 .popup-menu modelbutton:focus-visible,
 menuitem:focus-visible,
 .menuitem:focus-visible {
-  background-color: #007aff !important;
-  background: #007aff !important;
-  color: #ffffff !important;
-  border-radius: 9999px !important;
-  box-shadow: none !important;
+  background-color: #007aff;
+  background: #007aff;
+  color: #ffffff;
+  border-radius: 9999px;
+  box-shadow: none;
 }
 
 popover.menu modelbutton:hover label,
@@ -157,7 +154,7 @@ popover.menu modelbutton:focus-visible label,
 popover.menu button:focus-visible label,
 popover modelbutton:focus-visible label,
 .context-menu modelbutton:focus-visible label {
-  color: #ffffff !important;
+  color: #ffffff;
 }
 
 /* Clear sticky selected/focus state when cursor leaves the item */
@@ -173,9 +170,9 @@ popover.menu > contents > .menu-item:selected:not(:hover):not(:focus-visible),
 popover.menu contents > .menu-item:selected:not(:hover):not(:focus-visible),
 .menu > .menu-item:selected:not(:hover):not(:focus-visible),
 .context-menu > .menu-item:selected:not(:hover):not(:focus-visible) {
-  background-color: transparent !important;
-  background: transparent !important;
-  color: #ffffff !important;
+  background-color: transparent;
+  background: transparent;
+  color: #ffffff;
 }
 
 /* Dropdown selectors (GtkDropDown, GtkComboBox, AdwComboRow) put a listview in a
@@ -191,9 +188,9 @@ popover.menu scrolledwindow > listview > row {
    only the pointer states get the accent. */
 popover.menu listview > row:hover,
 popover.menu listview > row:active {
-  background-color: #007aff !important;
-  color: #ffffff !important;
-  border-radius: 6px !important;
+  background-color: #007aff;
+  color: #ffffff;
+  border-radius: 6px;
 }
 
 /* ============================================================
@@ -224,32 +221,150 @@ viewport overshoot {
   box-shadow: none;
 }
 
-undershoot,
-undershoot.top,
-undershoot.bottom,
-undershoot.left,
-undershoot.right,
-scrolledwindow > undershoot,
-scrolledwindow > undershoot.top,
-scrolledwindow > undershoot.bottom,
-scrolledwindow > undershoot.left,
-scrolledwindow > undershoot.right,
-scrolledwindow undershoot,
-scrolledwindow undershoot.top,
-scrolledwindow undershoot.bottom,
-scrolledwindow undershoot.left,
-scrolledwindow undershoot.right,
-.sidebar-pane undershoot,
-.sidebar-pane undershoot.top,
-.sidebar-pane undershoot.bottom,
-.sidebar-pane scrolledwindow > undershoot.top,
-.sidebar-pane scrolledwindow > undershoot.bottom,
-.content-pane undershoot,
+/* ============================================================
+   macOS Top Bar & List Dissolve Shader:
+   Gradient starts from the very beginning of the top panel
+   across Settings and all applications
+   ============================================================ */
+window toolbarview > .top-bar,
+window toolbarview > revealer.top-bar,
+window toolbarview > .top-bar.raised,
+window toolbarview > .top-bar.raised.border,
+window .top-bar,
+window.mac-settings-window toolbarview > .top-bar,
+window.mac-settings-window toolbarview > .top-bar.flat,
+window.mac-settings-window toolbarview > revealer.top-bar,
+navigation-split-view toolbarview > .top-bar,
+overlay-split-view toolbarview > .top-bar,
+window.nautilus-window .content-pane toolbarview > .top-bar,
+window.nautilus-window toolbarview > .top-bar,
+window > box.vertical > headerbar,
+window headerbar,
+headerbar,
+headerbar.flat,
+headerbar.default-decoration {
+  background: linear-gradient(to bottom,
+    @window_bg_color 0%,
+    alpha(@window_bg_color, 0.95) 25%,
+    alpha(@window_bg_color, 0.72) 50%,
+    alpha(@window_bg_color, 0.30) 75%,
+    transparent 100%);
+  background-color: transparent;
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+window toolbarview > .top-bar headerbar,
+window toolbarview > revealer.top-bar headerbar,
+navigation-split-view toolbarview > .top-bar headerbar,
+overlay-split-view toolbarview > .top-bar headerbar,
+window.mac-settings-window toolbarview > .top-bar headerbar,
+window.nautilus-window toolbarview > .top-bar headerbar {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* Sidebar top-bars remain clean transparent without gradient */
+window .sidebar-pane toolbarview > .top-bar,
+window .sidebar-pane toolbarview > .top-bar.raised,
+window .sidebar-pane headerbar,
+window navigation-split-view .sidebar-pane toolbarview > .top-bar,
+window navigation-split-view .sidebar-pane headerbar,
+window overlay-split-view > widget:first-child toolbarview > .top-bar,
+window overlay-split-view > .sidebar-pane toolbarview > .top-bar,
+window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
+window.mac-settings-window .mac-settings-sidebar-headerbar,
+window.nautilus-window .sidebar-pane toolbarview > .top-bar,
+window.nautilus-window .sidebar-pane headerbar {
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+/* Settings content list dissolution starting from top of scrolled window */
+preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+preferencespage > scrolledwindow > undershoot.top,
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
+window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .content-pane scrolledwindow > undershoot.top,
+window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window scrolledwindow > undershoot.top {
+  min-height: 84px;
+  background: linear-gradient(to bottom,
+    @window_bg_color 0%,
+    alpha(@window_bg_color, 0.96) 20%,
+    alpha(@window_bg_color, 0.85) 45%,
+    alpha(@window_bg_color, 0.55) 70%,
+    alpha(@window_bg_color, 0.20) 88%,
+    transparent 100%);
+  backdrop-filter: blur(10px);
+  border: none;
+  box-shadow: none;
+}
+
+toolbarview.undershoot-top scrolledwindow > undershoot.top,
+navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
+.content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane scrolledwindow > undershoot.top,
+scrolledwindow.undershoot-top > undershoot.top {
+  min-height: 38px;
+  background: linear-gradient(to bottom,
+    alpha(@window_bg_color, 0.40) 0%,
+    alpha(@window_bg_color, 0.20) 50%,
+    transparent 100%);
+  backdrop-filter: blur(10px);
+  border: none;
+  box-shadow: none;
+}
+
+undershoot.bottom,
+scrolledwindow > undershoot.bottom,
+scrolledwindow.undershoot-bottom > undershoot.bottom,
+.sidebar-pane undershoot.bottom,
+.sidebar-pane scrolledwindow > undershoot.bottom,
+.content-pane undershoot.bottom,
 .content-pane scrolledwindow > undershoot.bottom {
   background: none;
   background-image: none;
   border: none;
   box-shadow: none;
+}
+
+undershoot.left,
+undershoot.right,
+scrolledwindow > undershoot.left,
+scrolledwindow > undershoot.right {
+  background: none;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+dialog scrolledwindow undershoot,
+dialog-host scrolledwindow undershoot,
+window.dialog scrolledwindow undershoot,
+messagedialog scrolledwindow undershoot,
+scrolledwindow.frame undershoot,
+scrolledwindow > treeview ~ undershoot,
+scrolledwindow > textview ~ undershoot,
+treeview ~ undershoot,
+textview ~ undershoot,
+popover scrolledwindow undershoot,
+columnview ~ undershoot {
+  background: none;
+  background-image: none;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  min-height: 0px;
+  min-width: 0px;
 }
 
