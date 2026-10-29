@@ -17,6 +17,34 @@ let _batteryProxy = null;
 let _batteryChangedId = 0;
 let _clickId = 0;
 let _searchButton = null;
+let _interfaceSettings = null;
+let _interfaceChangedId = 0;
+
+function _syncBatteryPercentageVisibility() {
+    if (!_batteryLabel && _batteryButton) {
+        try {
+            const box = _batteryButton.get_child_at_index(0);
+            _batteryLabel = box?.get_children?.()?.find(c => c instanceof St.Label) || null;
+        } catch (_) {}
+    }
+    if (!_batteryLabel && Main.panel.statusArea['kiwi-wifi-button']) {
+        try {
+            const box = Main.panel.statusArea['kiwi-wifi-button'].get_child_at_index(0);
+            _batteryLabel = box?.get_children?.()?.find(c => c instanceof St.Label) || null;
+        } catch (_) {}
+    }
+    if (!_batteryLabel)
+        return;
+    let showPercentage = false;
+    try {
+        if (!_interfaceSettings)
+            _interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        showPercentage = _interfaceSettings.get_boolean('show-battery-percentage');
+    } catch (_) {
+        showPercentage = false;
+    }
+    _batteryLabel.visible = showPercentage;
+}
 
 function _openPowerSettings() {
     // GNOME Settings -> Power panel (macOS: clicking battery opens settings)
@@ -51,6 +79,7 @@ function _updateBattery() {
     try {
         if (!_batteryProxy || !_batteryLabel || !_batteryIcon)
             return;
+        _syncBatteryPercentageVisibility();
         const pctProp = _batteryProxy.get_cached_property('Percentage');
         const stateProp = _batteryProxy.get_cached_property('State');
         if (!pctProp || !stateProp)
@@ -184,31 +213,60 @@ export function enable() {
         // NOTE: role id stays 'kiwi-wifi-button' - topbarStatusIcons.js anchors
         // the airplane indicator to it, so renaming would orphan that icon.
         Main.panel.addToStatusArea('kiwi-wifi-button', _batteryButton, 0, 'right');
+        if (!_interfaceSettings) {
+            try {
+                _interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            } catch (_) {}
+        }
+        if (_interfaceSettings && !_interfaceChangedId) {
+            _interfaceChangedId = _interfaceSettings.connect('changed::show-battery-percentage', () => {
+                _syncBatteryPercentageVisibility();
+            });
+        }
+        _syncBatteryPercentageVisibility();
         _initBatteryProxy();
         _updateBattery();
     } else if (!_batteryButton && Main.panel.statusArea['kiwi-wifi-button']) {
         _batteryButton = Main.panel.statusArea['kiwi-wifi-button'];
+        try {
+            _batteryBox = _batteryButton.get_child_at_index(0);
+            const children = _batteryBox?.get_children?.() || [];
+            _batteryLabel = children.find(c => c instanceof St.Label) || null;
+            _batteryIcon = children.find(c => c instanceof St.Icon) || null;
+        } catch (_) {}
+        if (!_interfaceSettings) {
+            try {
+                _interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            } catch (_) {}
+        }
+        if (_interfaceSettings && !_interfaceChangedId) {
+            _interfaceChangedId = _interfaceSettings.connect('changed::show-battery-percentage', () => {
+                _syncBatteryPercentageVisibility();
+            });
+        }
+        _syncBatteryPercentageVisibility();
+        _initBatteryProxy();
+        _updateBattery();
     }
 
-    if (!_searchButton && !Main.panel.statusArea['kiwi-search-button']) {
-        _searchButton = new PanelMenu.Button(0.0, 'Search', true);
-        const icon = new St.Icon({
-            icon_name: 'edit-find-symbolic',
-            style_class: 'system-status-icon',
-            icon_size: 20,
-        });
-        _searchButton.add_child(icon);
-        _searchButton.connect('button-press-event', () => {
-            _toggleSpotlight();
-            return Clutter.EVENT_STOP;
-        });
-        Main.panel.addToStatusArea('kiwi-search-button', _searchButton, 1, 'right');
-    } else if (!_searchButton && Main.panel.statusArea['kiwi-search-button']) {
-        _searchButton = Main.panel.statusArea['kiwi-search-button'];
+    // Spotlight button removed per user request. Destroy if still in statusArea.
+    if (Main.panel.statusArea['kiwi-search-button']) {
+        try {
+            Main.panel.statusArea['kiwi-search-button'].destroy();
+        } catch (_) {}
     }
+    _searchButton = null;
 }
 
 export function disable() {
+    if (_interfaceChangedId && _interfaceSettings) {
+        try {
+            _interfaceSettings.disconnect(_interfaceChangedId);
+        } catch (_) {}
+        _interfaceChangedId = 0;
+    }
+    _interfaceSettings = null;
+
     if (_batteryChangedId && _batteryProxy) {
         try {
             _batteryProxy.disconnect(_batteryChangedId);
@@ -243,5 +301,10 @@ export function disable() {
             // already gone
         }
         _searchButton = null;
+    }
+    if (Main.panel.statusArea['kiwi-search-button']) {
+        try {
+            Main.panel.statusArea['kiwi-search-button'].destroy();
+        } catch (_) {}
     }
 }

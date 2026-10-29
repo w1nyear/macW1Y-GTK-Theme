@@ -16,6 +16,7 @@ import { enable as topbarButtonsEnable, disable as topbarButtonsDisable } from '
 import { enable as reduceWindowAnimationsEnable, disable as reduceWindowAnimationsDisable } from './apps/reduceWindowAnimations.js';
 import { enable as gtkThemeSyncEnable, disable as gtkThemeSyncDisable } from './apps/gtkThemeSync.js';
 import { enable as labelBlurEnable, disable as labelBlurDisable } from './apps/labelBlur.js';
+import { enable as keyboardIndicatorEnable, disable as keyboardIndicatorDisable } from './apps/keyboardIndicator.js';
 
 export default class KiwiExtension extends Extension {
     _resolveDark() {
@@ -65,9 +66,34 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeQuickSettingsEnable: ${e}`);
         }
         try {
-            topbarButtonsEnable();
+            const tbUri = this.dir.get_child('apps').get_child('topbarButtons.js').get_uri() + '?v=tb_v10';
+            import(tbUri).then(mod => {
+                if (this._topbarButtonsMod && this._topbarButtonsMod !== mod) {
+                    try { this._topbarButtonsMod.disable(); } catch (_) {}
+                }
+                this._topbarButtonsMod = mod;
+                mod.enable();
+            }).catch(e => {
+                console.warn(`[kiwi] topbarButtons dynamic import failed: ${e}`);
+                topbarButtonsEnable();
+            });
         } catch (e) {
-            console.warn(`[kiwi] topbarButtonsEnable: ${e}`);
+            console.warn(`[kiwi] topbarButtons: ${e}`);
+        }
+        try {
+            const kbUri = this.dir.get_child('apps').get_child('keyboardIndicator.js').get_uri() + '?v=kb_v10';
+            import(kbUri).then(mod => {
+                if (this._keyboardIndicatorMod && this._keyboardIndicatorMod !== mod) {
+                    try { this._keyboardIndicatorMod.disable(); } catch (_) {}
+                }
+                this._keyboardIndicatorMod = mod;
+                mod.enable(this._settings);
+            }).catch(e => {
+                console.warn(`[kiwi] keyboardIndicator dynamic import failed: ${e}`);
+                keyboardIndicatorEnable(this._settings);
+            });
+        } catch (e) {
+            console.warn(`[kiwi] keyboardIndicator: ${e}`);
         }
         try {
             const lbUri = this.dir.get_child('apps').get_child('labelBlur.js').get_uri() + '?v=lb_v3';
@@ -207,7 +233,20 @@ export default class KiwiExtension extends Extension {
         }
         this._interfaceSettings = null;
 
-        try { topbarButtonsDisable(); } catch (_) {}
+        try {
+            if (this._topbarButtonsMod) {
+                this._topbarButtonsMod.disable();
+                this._topbarButtonsMod = null;
+            }
+            topbarButtonsDisable();
+        } catch (_) {}
+        try {
+            if (this._keyboardIndicatorMod) {
+                this._keyboardIndicatorMod.disable();
+                this._keyboardIndicatorMod = null;
+            }
+            keyboardIndicatorDisable();
+        } catch (_) {}
         try {
             if (this._tahoeCC) {
                 this._tahoeCC.disable();

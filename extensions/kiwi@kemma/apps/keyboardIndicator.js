@@ -28,7 +28,7 @@ let _state = null;
 
 function _badgeFont() {
     const desc = new Pango.FontDescription();
-    desc.set_family('Sans');
+    desc.set_family('SF Pro Text, Sans');
     desc.set_weight(Pango.Weight.BOLD);
     desc.set_size(BADGE_FONT_PX * Pango.SCALE);
     return desc;
@@ -63,30 +63,18 @@ function _badgeInk(text, cr) {
 }
 
 function _badgeFill() {
-    // Dark pill on light surroundings, light pill on dark ones.
-    // Adaptive ink first, panel classes + theme as fallback.
+    // White rounded badge with cut-out text per macOS Tahoe style
     try {
         const ink = getTopbarInk();
         if (ink === 'dark')
             return [0, 0, 0, 0.85];
-        if (ink === 'light')
-            return [1, 1, 1, 0.92];
     } catch (_) {
         // fall through
     }
     const panel = Main.panel;
     if (panel?.has_style_class_name?.('kiwi-panel-dark-text'))
         return [0, 0, 0, 0.85];
-    if (panel?.has_style_class_name?.('kiwi-panel-light-text'))
-        return [1, 1, 1, 0.92];
-    try {
-        const iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
-        if (iface.get_string('color-scheme') === 'prefer-dark')
-            return [1, 1, 1, 0.92];
-    } catch (_) {
-        // fall through to the dark pill
-    }
-    return [0, 0, 0, 0.85];
+    return [1, 1, 1, 0.95];
 }
 
 function _roundedRect(cr, x, y, w, h, r) {
@@ -220,14 +208,17 @@ function _currentShortName() {
     try {
         const manager = Keyboard.getInputSourceManager();
         const source = manager?.currentSource;
-        const id = source?.id ? String(source.id).match(/^[A-Za-z]+/)?.[0]?.toLowerCase() : null;
-        if (!id)
+        if (!source)
             return '';
-        if (id === 'ru')
-            return 'РУ';
-        if (EN_SET.has(id))
-            return 'A';
-        return id.length <= 3 ? id.toUpperCase() : '';
+        const id = source.id ? String(source.id).match(/^[A-Za-z0-9_-]+/)?.[0]?.toLowerCase() : null;
+        const sn = source.shortName ? String(source.shortName).toLowerCase() : '';
+        if (id === 'ru' || sn === 'ru')
+            return 'ру';
+        if (id === 'ua' || id === 'uk' || sn === 'uk' || sn === 'ua')
+            return 'ук';
+        if (EN_SET.has(id) || sn === 'en' || sn === 'us')
+            return 'en';
+        return sn || id || '';
     } catch (_) {
         return '';
     }
