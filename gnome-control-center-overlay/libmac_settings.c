@@ -1459,6 +1459,687 @@ void init_gpu_reboot_row(void *widget, gpointer data) {
     gtk_widget_set_visible(GTK_WIDGET(widget), pending);
 }
 
+/* ========================================================================= */
+/* Power Mode Fan Speed Control & Dynamic Dual-Thumb Range Sliders          */
+/* ========================================================================= */
+
+typedef struct {
+    int min_val; /* lower fan speed % */
+    int max_val; /* upper fan speed % */
+} FanRange;
+
+typedef struct {
+    FanRange cpu;
+    FanRange gpu;
+} ProfileFanConfig;
+
+static ProfileFanConfig g_fan_configs[3] = {
+    /* 0: Performance (Швидкодія) */
+    { .cpu = {50, 100}, .gpu = {50, 100} },
+    /* 1: Balanced (Баланс) */
+    { .cpu = {30, 50},  .gpu = {30, 50}  },
+    /* 2: Power Saver (Заощадження) */
+    { .cpu = {20, 40},  .gpu = {20, 40}  }
+};
+
+static gboolean g_has_cpu_fan = FALSE;
+static gboolean g_has_gpu_fan = FALSE;
+static int g_cpu_fan_rpm = 0;
+static int g_gpu_fan_rpm = 0;
+static guint g_fan_rpm_timer_id = 0;
+
+typedef enum {
+    THUMB_NONE = 0,
+    THUMB_MIN,
+    THUMB_MAX
+} ActiveThumb;
+
+typedef struct {
+    int profile_index;
+    gboolean is_gpu;
+    GtkWidget *drawing_area;
+    GtkWidget *badge_label;
+    GtkWidget *subtitle_label;
+    ActiveThumb active_thumb;
+    double drag_start_x;
+    int initial_min;
+    int initial_max;
+} DualRangeSliderData;
+
+static GList *g_fan_subrows_data = NULL;
+
+static void load_fan_ranges_config(void) {
+    const char *home = g_get_home_dir();
+    char *path = g_build_filename(home, ".config", "mac-styling", "fan-ranges.json", NULL);
+    if (!g_file_test(path, G_FILE_TEST_EXISTS)) {
+        g_free(path);
+        return;
+    }
+
+    JsonParser *parser = json_parser_new();
+    GError *error = NULL;
+    if (json_parser_load_from_file(parser, path, &error)) {
+        JsonNode *root = json_parser_get_root(parser);
+        if (root && JSON_NODE_HOLDS_OBJECT(root)) {
+            JsonObject *obj = json_node_get_object(root);
+            const char *profiles[3] = {"performance", "balanced", "power-saver"};
+            for (int i = 0; i < 3; i++) {
+                if (json_object_has_member(obj, profiles[i])) {
+                    JsonObject *p_obj = json_object_get_object_member(obj, profiles[i]);
+                    if (p_obj) {
+                        if (json_object_has_member(p_obj, "cpu")) {
+                            JsonObject *cpu_obj = json_object_get_object_member(p_obj, "cpu");
+                            if (cpu_obj) {
+                                if (json_object_has_member(cpu_obj, "min"))
+                                    g_fan_configs[i].cpu.min_val = json_object_get_int_member(cpu_obj, "min");
+                                if (json_object_has_member(cpu_obj, "max"))
+                                    g_fan_configs[i].cpu.max_val = json_object_get_int_member(cpu_obj, "max");
+                            }
+                        }
+                        if (json_object_has_member(p_obj, "gpu")) {
+                            JsonObject *gpu_obj = json_object_get_object_member(p_obj, "gpu");
+                            if (gpu_obj) {
+                                if (json_object_has_member(gpu_obj, "min"))
+                                    g_fan_configs[i].gpu.min_val = json_object_get_int_member(gpu_obj, "min");
+                                if (json_object_has_member(gpu_obj, "max"))
+                                    g_fan_configs[i].gpu.max_val = json_object_get_int_member(gpu_obj, "max");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (error) g_error_free(error);
+    g_object_unref(parser);
+    g_free(path);
+}
+
+static void save_fan_ranges_config(void) {
+    const char *home = g_get_home_dir();
+    char *dir = g_build_filename(home, ".config", "mac-styling", NULL);
+    g_mkdir_with_parents(dir, 0755);
+    char *path = g_build_filename(dir, "fan-ranges.json", NULL);
+    g_free(dir);
+
+    char *json = g_strdup_printf(
+        "{\n"
+        "  \"performance\": {\n"
+        "    \"cpu\": {\"min\": %d, \"max\": %d},\n"
+        "    \"gpu\": {\"min\": %d, \"max\": %d}\n"
+        "  },\n"
+        "  \"balanced\": {\n"
+        "    \"cpu\": {\"min\": %d, \"max\": %d},\n"
+        "    \"gpu\": {\"min\": %d, \"max\": %d}\n"
+        "  },\n"
+        "  \"power-saver\": {\n"
+        "    \"cpu\": {\"min\": %d, \"max\": %d},\n"
+        "    \"gpu\": {\"min\": %d, \"max\": %d}\n"
+        "  }\n"
+        "}\n",
+        g_fan_configs[0].cpu.min_val, g_fan_configs[0].cpu.max_val,
+        g_fan_configs[0].gpu.min_val, g_fan_configs[0].gpu.max_val,
+        g_fan_configs[1].cpu.min_val, g_fan_configs[1].cpu.max_val,
+        g_fan_configs[1].gpu.min_val, g_fan_configs[1].gpu.max_val,
+        g_fan_configs[2].cpu.min_val, g_fan_configs[2].cpu.max_val,
+        g_fan_configs[2].gpu.min_val, g_fan_configs[2].gpu.max_val
+    );
+
+    g_file_set_contents(path, json, -1, NULL);
+    g_free(json);
+    g_free(path);
+}
+
+static void detect_fans(void) {
+    g_has_cpu_fan = FALSE;
+    g_has_gpu_fan = FALSE;
+    g_cpu_fan_rpm = 0;
+    g_gpu_fan_rpm = 0;
+
+    for (int i = 0; i < 16; i++) {
+        char path[128];
+        snprintf(path, sizeof(path), "/sys/class/hwmon/hwmon%d/fan1_input", i);
+        FILE *f = fopen(path, "r");
+        if (f) {
+            g_has_cpu_fan = TRUE;
+            int rpm = 0;
+            if (fscanf(f, "%d", &rpm) == 1 && rpm > 0) {
+                g_cpu_fan_rpm = rpm;
+            }
+            fclose(f);
+        }
+
+        snprintf(path, sizeof(path), "/sys/class/hwmon/hwmon%d/fan2_input", i);
+        f = fopen(path, "r");
+        if (f) {
+            g_has_gpu_fan = TRUE;
+            int rpm = 0;
+            if (fscanf(f, "%d", &rpm) == 1 && rpm > 0) {
+                g_gpu_fan_rpm = rpm;
+            }
+            fclose(f);
+        }
+    }
+
+    if (g_detected_gpu_count == 0) {
+        detect_system_gpus();
+    }
+
+    if (g_detected_gpu_count > 0) {
+        for (int i = 0; i < g_detected_gpu_count; i++) {
+            if (g_detected_gpus[i].is_discrete) {
+                g_has_gpu_fan = TRUE;
+                break;
+            }
+        }
+    }
+
+    if (!g_has_cpu_fan && g_has_gpu_fan) {
+        g_has_cpu_fan = TRUE;
+    }
+}
+
+static void draw_rounded_rect(cairo_t *cr, double x, double y, double w, double h, double r) {
+    if (w < 2 * r) r = w / 2.0;
+    if (h < 2 * r) r = h / 2.0;
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, x + w - r, y + r, r, -G_PI / 2.0, 0);
+    cairo_arc(cr, x + w - r, y + h - r, r, 0, G_PI / 2.0);
+    cairo_arc(cr, x + r, y + h - r, r, G_PI / 2.0, G_PI);
+    cairo_arc(cr, x + r, y + r, r, G_PI, 3.0 * G_PI / 2.0);
+    cairo_close_path(cr);
+}
+
+static void draw_dual_range_slider_cb(GtkDrawingArea *area,
+                                      cairo_t *cr,
+                                      int width,
+                                      int height,
+                                      gpointer user_data) {
+    (void)area;
+    DualRangeSliderData *d = (DualRangeSliderData *)user_data;
+    if (!d) return;
+
+    ProfileFanConfig *cfg = &g_fan_configs[d->profile_index];
+    FanRange *range = d->is_gpu ? &cfg->gpu : &cfg->cpu;
+
+    double pad = 12.0;
+    double track_y = height / 2.0;
+    double track_h = 6.0;
+    double track_len = width - 2.0 * pad;
+    if (track_len < 10.0) return;
+
+    double x_min = pad + (range->min_val / 100.0) * track_len;
+    double x_max = pad + (range->max_val / 100.0) * track_len;
+
+    gboolean is_dark = TRUE;
+    AdwStyleManager *sm = adw_style_manager_get_default();
+    if (sm) {
+        is_dark = adw_style_manager_get_dark(sm);
+    }
+
+    /* 1. Base track */
+    if (is_dark) {
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
+    } else {
+        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.12);
+    }
+    draw_rounded_rect(cr, pad, track_y - track_h / 2.0, track_len, track_h, 3.0);
+    cairo_fill(cr);
+
+    /* 2. Highlighted range bar */
+    if (x_max > x_min) {
+        cairo_set_source_rgb(cr, 0.0, 0.478, 1.0); /* #007aff */
+        draw_rounded_rect(cr, x_min, track_y - track_h / 2.0, x_max - x_min, track_h, 3.0);
+        cairo_fill(cr);
+    }
+
+    /* 3. Min Thumb Knob */
+    double radius = 9.0;
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, is_dark ? 0.35 : 0.2);
+    cairo_arc(cr, x_min, track_y + 1.2, radius, 0, 2 * G_PI);
+    cairo_fill(cr);
+
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_arc(cr, x_min, track_y, radius, 0, 2 * G_PI);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, is_dark ? 0.18 : 0.25);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+
+    cairo_set_source_rgb(cr, 0.0, 0.478, 1.0);
+    cairo_arc(cr, x_min, track_y, 2.5, 0, 2 * G_PI);
+    cairo_fill(cr);
+
+    /* 4. Max Thumb Knob */
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, is_dark ? 0.35 : 0.2);
+    cairo_arc(cr, x_max, track_y + 1.2, radius, 0, 2 * G_PI);
+    cairo_fill(cr);
+
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_arc(cr, x_max, track_y, radius, 0, 2 * G_PI);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, is_dark ? 0.18 : 0.25);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+
+    cairo_set_source_rgb(cr, 0.0, 0.478, 1.0);
+    cairo_arc(cr, x_max, track_y, 2.5, 0, 2 * G_PI);
+    cairo_fill(cr);
+}
+
+static void on_dual_slider_drag_begin(GtkGestureDrag *gesture, double start_x, double start_y, gpointer user_data) {
+    (void)start_y;
+    DualRangeSliderData *d = (DualRangeSliderData *)user_data;
+    if (!d || !d->drawing_area) return;
+
+    ProfileFanConfig *cfg = &g_fan_configs[d->profile_index];
+    FanRange *range = d->is_gpu ? &cfg->gpu : &cfg->cpu;
+
+    int w = gtk_widget_get_width(d->drawing_area);
+    double pad = 12.0;
+    double track_len = w - 2.0 * pad;
+    if (track_len < 10.0) return;
+
+    double x_min = pad + (range->min_val / 100.0) * track_len;
+    double x_max = pad + (range->max_val / 100.0) * track_len;
+
+    double dist_min = fabs(start_x - x_min);
+    double dist_max = fabs(start_x - x_max);
+
+    if (dist_min < dist_max) {
+        d->active_thumb = THUMB_MIN;
+    } else {
+        d->active_thumb = THUMB_MAX;
+    }
+
+    d->drag_start_x = start_x;
+    d->initial_min = range->min_val;
+    d->initial_max = range->max_val;
+
+    if (dist_min > 14.0 && dist_max > 14.0) {
+        int clicked_val = (int)round(((start_x - pad) / track_len) * 100.0);
+        clicked_val = CLAMP(clicked_val, 0, 100);
+        if (d->active_thumb == THUMB_MIN) {
+            range->min_val = CLAMP(clicked_val, 0, range->max_val - 2);
+            d->initial_min = range->min_val;
+        } else {
+            range->max_val = CLAMP(clicked_val, range->min_val + 2, 100);
+            d->initial_max = range->max_val;
+        }
+        if (d->badge_label) {
+            char buf[32];
+            snprintf(buf, sizeof(buf), "%d%% — %d%%", range->min_val, range->max_val);
+            gtk_label_set_text(GTK_LABEL(d->badge_label), buf);
+        }
+        gtk_widget_queue_draw(d->drawing_area);
+    }
+}
+
+static void on_dual_slider_drag_update(GtkGestureDrag *gesture, double offset_x, double offset_y, gpointer user_data) {
+    (void)gesture; (void)offset_y;
+    DualRangeSliderData *d = (DualRangeSliderData *)user_data;
+    if (!d || !d->drawing_area) return;
+
+    ProfileFanConfig *cfg = &g_fan_configs[d->profile_index];
+    FanRange *range = d->is_gpu ? &cfg->gpu : &cfg->cpu;
+
+    int w = gtk_widget_get_width(d->drawing_area);
+    double pad = 12.0;
+    double track_len = w - 2.0 * pad;
+    if (track_len < 10.0) return;
+
+    double delta_pct = (offset_x / track_len) * 100.0;
+
+    if (d->active_thumb == THUMB_MIN) {
+        int new_min = (int)round(d->initial_min + delta_pct);
+        range->min_val = CLAMP(new_min, 0, range->max_val - 2);
+    } else if (d->active_thumb == THUMB_MAX) {
+        int new_max = (int)round(d->initial_max + delta_pct);
+        range->max_val = CLAMP(new_max, range->min_val + 2, 100);
+    }
+
+    if (d->badge_label) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%d%% — %d%%", range->min_val, range->max_val);
+        gtk_label_set_text(GTK_LABEL(d->badge_label), buf);
+    }
+
+    gtk_widget_queue_draw(d->drawing_area);
+}
+
+static void on_dual_slider_drag_end(GtkGestureDrag *gesture, double offset_x, double offset_y, gpointer user_data) {
+    (void)gesture; (void)offset_x; (void)offset_y;
+    DualRangeSliderData *d = (DualRangeSliderData *)user_data;
+    if (!d) return;
+
+    d->active_thumb = THUMB_NONE;
+    save_fan_ranges_config();
+}
+
+static gboolean update_fan_rpms_timer_cb(gpointer user_data) {
+    (void)user_data;
+    detect_fans();
+
+    for (GList *l = g_fan_subrows_data; l != NULL; l = l->next) {
+        DualRangeSliderData *d = (DualRangeSliderData *)l->data;
+        if (!d || !d->subtitle_label) continue;
+        int rpm = d->is_gpu ? g_gpu_fan_rpm : g_cpu_fan_rpm;
+        if (rpm > 0) {
+            char sub_text[128];
+            snprintf(sub_text, sizeof(sub_text), "Авторегулювання швидкості • %d RPM", rpm);
+            gtk_label_set_text(GTK_LABEL(d->subtitle_label), sub_text);
+        }
+    }
+    return G_SOURCE_CONTINUE;
+}
+
+static GtkWidget *create_fan_control_card(int profile_idx, gboolean is_gpu) {
+    GtkWidget *card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+    gtk_widget_set_margin_top(card, 4);
+    gtk_widget_set_margin_bottom(card, 6);
+
+    /* 1. Header Box */
+    GtkWidget *header_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    gtk_widget_set_valign(header_box, GTK_ALIGN_CENTER);
+
+    GtkWidget *icon = gtk_image_new_from_icon_name(is_gpu ? "video-single-display-symbolic" : "cpu-symbolic");
+    gtk_image_set_pixel_size(GTK_IMAGE(icon), 18);
+    gtk_widget_set_opacity(icon, 0.85);
+    gtk_box_append(GTK_BOX(header_box), icon);
+
+    GtkWidget *title_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    GtkWidget *title_lbl = gtk_label_new(is_gpu ? "Вентилятор відеокарти (GPU)" : "Вентилятор процесора (ЦП)");
+    gtk_label_set_xalign(GTK_LABEL(title_lbl), 0.0);
+    gtk_widget_add_css_class(title_lbl, "fan-card-title");
+
+    char sub_text[128];
+    int rpm = is_gpu ? g_gpu_fan_rpm : g_cpu_fan_rpm;
+    if (rpm > 0) {
+        snprintf(sub_text, sizeof(sub_text), "Авторегулювання швидкості • %d RPM", rpm);
+    } else {
+        snprintf(sub_text, sizeof(sub_text), "Динамічний діапазон авторегулювання швидкості");
+    }
+    GtkWidget *sub_lbl = gtk_label_new(sub_text);
+    gtk_label_set_xalign(GTK_LABEL(sub_lbl), 0.0);
+    gtk_widget_add_css_class(sub_lbl, "dim-label");
+    gtk_widget_add_css_class(sub_lbl, "caption");
+
+    gtk_box_append(GTK_BOX(title_box), title_lbl);
+    gtk_box_append(GTK_BOX(title_box), sub_lbl);
+    gtk_widget_set_hexpand(title_box, TRUE);
+    gtk_box_append(GTK_BOX(header_box), title_box);
+
+    /* Badge Label */
+    ProfileFanConfig *cfg = &g_fan_configs[profile_idx];
+    FanRange *range = is_gpu ? &cfg->gpu : &cfg->cpu;
+
+    char badge_text[32];
+    snprintf(badge_text, sizeof(badge_text), "%d%% — %d%%", range->min_val, range->max_val);
+    GtkWidget *badge = gtk_label_new(badge_text);
+    gtk_widget_add_css_class(badge, "fan-range-badge");
+    gtk_box_append(GTK_BOX(header_box), badge);
+
+    gtk_box_append(GTK_BOX(card), header_box);
+
+    /* 2. Drawing Area Dual-Thumb Range Slider */
+    GtkWidget *area = gtk_drawing_area_new();
+    gtk_widget_set_hexpand(area, TRUE);
+    gtk_widget_set_size_request(area, -1, 32);
+
+    DualRangeSliderData *slider_data = g_new0(DualRangeSliderData, 1);
+    slider_data->profile_index = profile_idx;
+    slider_data->is_gpu = is_gpu;
+    slider_data->drawing_area = area;
+    slider_data->badge_label = badge;
+    slider_data->subtitle_label = sub_lbl;
+    slider_data->active_thumb = THUMB_NONE;
+
+    g_fan_subrows_data = g_list_append(g_fan_subrows_data, slider_data);
+
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(area), draw_dual_range_slider_cb, slider_data, NULL);
+
+    GtkGesture *drag = gtk_gesture_drag_new();
+    g_signal_connect(drag, "drag-begin", G_CALLBACK(on_dual_slider_drag_begin), slider_data);
+    g_signal_connect(drag, "drag-update", G_CALLBACK(on_dual_slider_drag_update), slider_data);
+    g_signal_connect(drag, "drag-end", G_CALLBACK(on_dual_slider_drag_end), slider_data);
+    gtk_widget_add_controller(area, GTK_EVENT_CONTROLLER(drag));
+
+    gtk_box_append(GTK_BOX(card), area);
+
+    /* 3. Min / Max Labels */
+    GtkWidget *labels_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_margin_start(labels_box, 12);
+    gtk_widget_set_margin_end(labels_box, 12);
+    gtk_widget_set_margin_top(labels_box, -4);
+
+    GtkWidget *min_lbl = gtk_label_new("Мін: тихий поріг");
+    gtk_label_set_xalign(GTK_LABEL(min_lbl), 0.0);
+    gtk_widget_add_css_class(min_lbl, "dim-label");
+    gtk_widget_add_css_class(min_lbl, "caption");
+    gtk_widget_set_hexpand(min_lbl, TRUE);
+    gtk_box_append(GTK_BOX(labels_box), min_lbl);
+
+    GtkWidget *max_lbl = gtk_label_new("Макс: пікове навантаження");
+    gtk_label_set_xalign(GTK_LABEL(max_lbl), 1.0);
+    gtk_widget_add_css_class(max_lbl, "dim-label");
+    gtk_widget_add_css_class(max_lbl, "caption");
+    gtk_box_append(GTK_BOX(labels_box), max_lbl);
+
+    gtk_box_append(GTK_BOX(card), labels_box);
+
+    if (g_fan_rpm_timer_id == 0) {
+        g_fan_rpm_timer_id = g_timeout_add_seconds(2, update_fan_rpms_timer_cb, NULL);
+    }
+
+    return card;
+}
+
+static void on_fan_revealer_child_revealed_notify(GObject *revealer, GParamSpec *pspec, gpointer user_data) {
+    (void)pspec;
+    GtkWidget *sub_row = GTK_WIDGET(user_data);
+    if (!gtk_revealer_get_reveal_child(GTK_REVEALER(revealer)) &&
+        !gtk_revealer_get_child_revealed(GTK_REVEALER(revealer))) {
+        gtk_widget_set_visible(sub_row, FALSE);
+    }
+}
+
+static GtkWidget *create_fan_subrow_for_profile(int profile_idx) {
+    GtkWidget *sub_row = gtk_list_box_row_new();
+    gtk_list_box_row_set_activatable(GTK_LIST_BOX_ROW(sub_row), FALSE);
+    gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW(sub_row), FALSE);
+    gtk_widget_add_css_class(sub_row, "fan-settings-subrow");
+
+    GtkWidget *revealer = gtk_revealer_new();
+    gtk_revealer_set_transition_type(GTK_REVEALER(revealer), GTK_REVEALER_TRANSITION_TYPE_SLIDE_DOWN);
+    gtk_revealer_set_transition_duration(GTK_REVEALER(revealer), 250);
+    gtk_revealer_set_reveal_child(GTK_REVEALER(revealer), FALSE);
+    g_signal_connect(revealer, "notify::child-revealed", G_CALLBACK(on_fan_revealer_child_revealed_notify), sub_row);
+
+    GtkWidget *container = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_widget_add_css_class(container, "fan-subrow-container");
+
+    detect_fans();
+
+    /* CPU Fan */
+    if (g_has_cpu_fan) {
+        GtkWidget *cpu_card = create_fan_control_card(profile_idx, FALSE);
+        gtk_box_append(GTK_BOX(container), cpu_card);
+    }
+
+    /* Separator if both CPU and GPU fans exist */
+    if (g_has_cpu_fan && g_has_gpu_fan) {
+        GtkWidget *sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+        gtk_widget_set_opacity(sep, 0.4);
+        gtk_widget_set_margin_top(sep, 4);
+        gtk_widget_set_margin_bottom(sep, 4);
+        gtk_box_append(GTK_BOX(container), sep);
+    }
+
+    /* GPU Fan */
+    if (g_has_gpu_fan) {
+        GtkWidget *gpu_card = create_fan_control_card(profile_idx, TRUE);
+        gtk_box_append(GTK_BOX(container), gpu_card);
+    }
+
+    if (!g_has_cpu_fan && !g_has_gpu_fan) {
+        GtkWidget *no_fans_lbl = gtk_label_new("У пристрої не виявлено керованих вентиляторів");
+        gtk_widget_add_css_class(no_fans_lbl, "dim-label");
+        gtk_box_append(GTK_BOX(container), no_fans_lbl);
+    }
+
+    gtk_revealer_set_child(GTK_REVEALER(revealer), container);
+    gtk_list_box_row_set_child(GTK_LIST_BOX_ROW(sub_row), revealer);
+    gtk_widget_set_visible(sub_row, FALSE);
+
+    return sub_row;
+}
+
+static gboolean attach_fan_subrow_idle(gpointer user_data) {
+    GtkWidget *btn = GTK_WIDGET(user_data);
+    if (!btn || !GTK_IS_WIDGET(btn)) return G_SOURCE_REMOVE;
+
+    GtkWidget *row = gtk_widget_get_ancestor(btn, g_type_from_name("AdwActionRow"));
+    if (!row) row = gtk_widget_get_ancestor(btn, GTK_TYPE_LIST_BOX_ROW);
+    if (!row) return G_SOURCE_REMOVE;
+
+    GtkWidget *listbox = gtk_widget_get_ancestor(row, GTK_TYPE_LIST_BOX);
+    if (!listbox) return G_SOURCE_CONTINUE;
+
+    if (g_object_get_data(G_OBJECT(row), "has_fan_subrow")) return G_SOURCE_REMOVE;
+
+    int idx = gtk_list_box_row_get_index(GTK_LIST_BOX_ROW(row));
+    if (idx < 0) return G_SOURCE_CONTINUE;
+
+    g_object_set_data(G_OBJECT(row), "has_fan_subrow", GINT_TO_POINTER(1));
+
+    int profile_idx = 1;
+    typedef int (*CcGetProfileFn)(void *);
+    CcGetProfileFn get_prof = (CcGetProfileFn)dlsym(RTLD_DEFAULT, "cc_power_profile_row_get_profile");
+    if (get_prof) {
+        int p = get_prof(row);
+        if (p >= 0 && p <= 2) profile_idx = p;
+    } else {
+        const char *title = adw_preferences_row_get_title(ADW_PREFERENCES_ROW(row));
+        if (title) {
+            if (strstr(title, "Швидкодія") || strstr(title, "Performance") || strstr(title, "швидкодія")) {
+                profile_idx = 0;
+            } else if (strstr(title, "Заощадження") || strstr(title, "Power") || strstr(title, "заощадження")) {
+                profile_idx = 2;
+            } else {
+                profile_idx = 1;
+            }
+        }
+    }
+
+    load_fan_ranges_config();
+
+    GtkWidget *sub_row = create_fan_subrow_for_profile(profile_idx);
+    g_object_set_data(G_OBJECT(btn), "fan_subrow", sub_row);
+    g_object_set_data(G_OBJECT(sub_row), "parent_row", row);
+
+    gtk_list_box_insert(GTK_LIST_BOX(listbox), sub_row, idx + 1);
+
+    return G_SOURCE_REMOVE;
+}
+
+void mac_power_profile_fan_btn_realize(GtkWidget *btn, gpointer user_data) {
+    (void)user_data;
+    if (!btn) return;
+    g_idle_add(attach_fan_subrow_idle, btn);
+}
+
+void mac_power_profile_fan_btn_toggled(GtkWidget *btn, gpointer user_data) {
+    (void)user_data;
+    if (!btn) return;
+
+    GtkWidget *sub_row = (GtkWidget *)g_object_get_data(G_OBJECT(btn), "fan_subrow");
+    if (!sub_row) {
+        attach_fan_subrow_idle(btn);
+        sub_row = (GtkWidget *)g_object_get_data(G_OBJECT(btn), "fan_subrow");
+    }
+    if (!sub_row) return;
+
+    GtkWidget *revealer = gtk_list_box_row_get_child(GTK_LIST_BOX_ROW(sub_row));
+    if (!revealer || !GTK_IS_REVEALER(revealer)) return;
+
+    gboolean active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(btn));
+    if (active) {
+        gtk_widget_set_visible(sub_row, TRUE);
+        gtk_revealer_set_reveal_child(GTK_REVEALER(revealer), TRUE);
+        gtk_button_set_icon_name(GTK_BUTTON(btn), "pan-up-symbolic");
+    } else {
+        gtk_revealer_set_reveal_child(GTK_REVEALER(revealer), FALSE);
+        gtk_button_set_icon_name(GTK_BUTTON(btn), "pan-down-symbolic");
+    }
+}
+
+static void find_toggle_button_child(GtkWidget *widget, gpointer data) {
+    GtkWidget **found = (GtkWidget **)data;
+    if (*found) return;
+    if (GTK_IS_TOGGLE_BUTTON(widget)) {
+        *found = widget;
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_toggle_button_child(child, data);
+        if (*found) return;
+    }
+}
+
+static void setup_power_profile_row_fan_button(GtkWidget *row) {
+    if (!row || !GTK_IS_WIDGET(row)) return;
+    if (g_object_get_data(G_OBJECT(row), "fan_btn_setup_done")) return;
+    g_object_set_data(G_OBJECT(row), "fan_btn_setup_done", GINT_TO_POINTER(1));
+
+    GtkWidget *btn = NULL;
+    find_toggle_button_child(row, &btn);
+
+    if (!btn) {
+        btn = gtk_toggle_button_new();
+        gtk_button_set_icon_name(GTK_BUTTON(btn), "pan-down-symbolic");
+        gtk_widget_set_valign(btn, GTK_ALIGN_CENTER);
+        gtk_widget_set_tooltip_text(btn, "Швидкість вентиляторів");
+        gtk_widget_add_css_class(btn, "flat");
+        gtk_widget_add_css_class(btn, "circular");
+        adw_action_row_add_suffix(ADW_ACTION_ROW(row), btn);
+    }
+
+    if (btn) {
+        gtk_widget_set_name(btn, "profile_fan_expand_btn");
+        if (!g_object_get_data(G_OBJECT(btn), "signals_hooked")) {
+            g_object_set_data(G_OBJECT(btn), "signals_hooked", GINT_TO_POINTER(1));
+            g_signal_connect(btn, "toggled", G_CALLBACK(mac_power_profile_fan_btn_toggled), NULL);
+        }
+        mac_power_profile_fan_btn_realize(btn, NULL);
+    }
+}
+
+void gtk_widget_init_template(GtkWidget *widget)
+{
+    static void (*orig_init_template)(GtkWidget *) = NULL;
+    if (!orig_init_template) orig_init_template = dlsym(RTLD_NEXT, "gtk_widget_init_template");
+    if (orig_init_template) orig_init_template(widget);
+
+    if (widget) {
+        GType profile_row_type = g_type_from_name("CcPowerProfileRow");
+        if (profile_row_type != 0 && g_type_is_a(G_OBJECT_TYPE(widget), profile_row_type)) {
+            setup_power_profile_row_fan_button(widget);
+        }
+    }
+}
+
+void gtk_widget_class_set_template_from_resource(GtkWidgetClass *widget_class, const char *resource_name)
+{
+    static void (*orig_set_template)(GtkWidgetClass *, const char *) = NULL;
+    if (!orig_set_template) orig_set_template = dlsym(RTLD_NEXT, "gtk_widget_class_set_template_from_resource");
+    if (orig_set_template) orig_set_template(widget_class, resource_name);
+
+    if (resource_name && g_strcmp0(resource_name, "/org/gnome/control-center/power/cc-power-profile-row.ui") == 0) {
+        gtk_widget_class_bind_template_callback_full(widget_class, "mac_power_profile_fan_btn_realize", G_CALLBACK(mac_power_profile_fan_btn_realize));
+        gtk_widget_class_bind_template_callback_full(widget_class, "mac_power_profile_fan_btn_toggled", G_CALLBACK(mac_power_profile_fan_btn_toggled));
+    }
+}
+
 /* Stubs for backward compatibility if ever referenced */
 void init_gpu_mode(void *widget, gpointer data) {
     (void)widget; (void)data;

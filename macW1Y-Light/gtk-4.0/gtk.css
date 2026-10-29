@@ -9613,3 +9613,69 @@ image.emblem {
     padding: 0;
 }
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
+
+/* ========================================================================= */
+/* Power Mode Fan Speed Control & Dynamic Dual-Thumb Range Sliders          */
+/* ========================================================================= */
+
+button#profile_fan_expand_btn {
+    min-width: 30px;
+    min-height: 30px;
+    padding: 4px;
+    margin-right: 4px;
+    border-radius: 9999px;
+    opacity: 0.75;
+    transition: opacity 180ms ease, background-color 180ms ease;
+}
+
+button#profile_fan_expand_btn:hover {
+    opacity: 1.0;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+button#profile_fan_expand_btn:checked {
+    opacity: 1.0;
+    background-color: rgba(0, 122, 255, 0.22);
+    color: #007aff;
+}
+
+row.fan-settings-subrow {
+    min-height: 0px;
+    padding: 0px;
+    margin: 0px;
+    border-style: none;
+    border-width: 0;
+    background-color: transparent;
+    background-image: none;
+}
+
+row.fan-settings-subrow:hover,
+row.fan-settings-subrow:focus,
+row.fan-settings-subrow:selected {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+.fan-subrow-container {
+    padding: 14px 18px 16px 18px;
+    margin: 4px 10px 12px 10px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+}
+
+.fan-card-title {
+    font-weight: 600;
+    font-size: 13.5px;
+}
+
+.fan-range-badge {
+    background-color: rgba(0, 122, 255, 0.16);
+    color: #007aff;
+    border: 1px solid rgba(0, 122, 255, 0.32);
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-weight: 700;
+    font-size: 12px;
+}

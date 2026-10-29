@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <template class="CcPowerProfileRow" parent="AdwActionRow">
+    <property name="selectable">false</property>
+    <property name="activatable-widget">button</property>
+    <property name="use-underline">true</property>
+    <child type="prefix">
+      <object class="GtkCheckButton" id="button">
+        <signal name="toggled" handler="cc_power_profile_row_button_toggled_cb" object="CcPowerProfileRow"/>
+        <property name="valign">3</property>
+      </object>
+    </child>
+    <child type="suffix">
+      <object class="GtkToggleButton" id="profile_fan_expand_btn">
+        <property name="valign">center</property>
+        <property name="icon-name">pan-down-symbolic</property>
+        <property name="tooltip-text" translatable="yes">Швидкість вентиляторів</property>
+        <signal name="realize" handler="mac_power_profile_fan_btn_realize"/>
+        <signal name="toggled" handler="mac_power_profile_fan_btn_toggled"/>
+        <style>
+          <class name="flat"/>
+          <class name="circular"/>
+        </style>
+      </object>
+    </child>
+  </template>
+</interface>

@@ -782,7 +782,7 @@ install_settings_overlay() {
     
     log_info "Збірка динамічної бібліотеки libmac_settings.so..."
     if command -v gcc >/dev/null 2>&1; then
-        gcc -shared -fPIC -O2 -o "$LOCAL_LIB/libmac_settings.so" "$OVERLAY_DIR/libmac_settings.c" $(pkg-config --cflags --libs glib-2.0 gio-2.0 json-glib-1.0 gtk4 libadwaita-1 2>/dev/null) -ldl 2>/dev/null || {
+        gcc -shared -fPIC -O2 -o "$LOCAL_LIB/libmac_settings.so" "$OVERLAY_DIR/libmac_settings.c" $(pkg-config --cflags --libs glib-2.0 gio-2.0 json-glib-1.0 gtk4 libadwaita-1 2>/dev/null) -ldl -lm 2>/dev/null || {
             [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ] && cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
         }
     else
