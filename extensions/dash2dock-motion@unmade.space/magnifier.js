@@ -138,6 +138,18 @@ export class DockMagnifier {
             () => this._setSuspended(false));
         connect(Main.overview, 'item-drag-cancelled',
             () => this._setSuspended(false));
+        connect(Main.overview, 'showing', () => {
+            this._setSuspended(true);
+            this.reset();
+        });
+        connect(Main.overview, 'hiding', () => {
+            this.reset();
+        });
+        connect(Main.overview, 'hidden', () => {
+            this._setSuspended(false);
+            this.reset();
+            this._syncTarget();
+        });
         if (Main.screenshotUI) {
             connect(Main.screenshotUI, 'notify::visible', () => {
                 if (Main.screenshotUI.visible) {
@@ -209,14 +221,31 @@ export class DockMagnifier {
             this._syncTarget();
     }
 
+    reset() {
+        this._stopTimeline();
+        this._target = 0;
+        this._envelope = 0;
+        this._velocity = 0;
+        this._cursor = null;
+        this._cursorMoved = false;
+        this._clearTransforms();
+    }
+
     _setSuspended(suspended) {
         this._suspended = suspended;
         if (suspended) {
             this._stopTimeline();
+            this._target = 0;
             this._envelope = 0;
             this._velocity = 0;
+            this._cursor = null;
             this._clearTransforms();
         } else {
+            this._target = 0;
+            this._envelope = 0;
+            this._velocity = 0;
+            this._cursor = null;
+            this._clearTransforms();
             this._syncTarget();
         }
     }
@@ -224,15 +253,18 @@ export class DockMagnifier {
     _isPointerOverDock() {
         if (!this._hoverBox || !this._hoverBox.has_allocation())
             return false;
-        if (this._hoverBox.hover)
-            return true;
+        if (Main.overview.visibleTarget || Main.overview.visible)
+            return false;
         try {
             const [x, y] = this._debugPointer ?? global.get_pointer();
             const [boxX, boxY] = this._hoverBox.get_transformed_position();
             const [w, h] = this._hoverBox.get_transformed_size?.() || [this._hoverBox.width, this._hoverBox.height];
             const margin = 12;
-            return x >= boxX - margin && x <= boxX + w + margin &&
-                   y >= boxY - margin && y <= boxY + h + margin;
+            const inBounds = x >= boxX - margin && x <= boxX + w + margin &&
+                             y >= boxY - margin && y <= boxY + h + margin;
+            if (!inBounds)
+                return false;
+            return true;
         } catch (_) {
             return false;
         }

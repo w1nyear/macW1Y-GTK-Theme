@@ -132,7 +132,7 @@
             "shell_compatibility": [
                 "50"
             ],
-            "sha256": "a60752862ae25573a6896a77cf6a8f59a283449540e0ae344362c8a57fb2b5de",
+            "sha256": "70648b4a9f01a6072c42d5a0c7872efcd05043dccd5f7dcbd83187edd11e8a9d",
             "status": "locked",
             "source": "local_custom",
             "macw1y_components": [
@@ -155,7 +155,7 @@
                 "49",
                 "50"
             ],
-            "sha256": "e728735f5995e2392ab27d117fca7b99970a1b64f6a603b97a820d32f5a2f59a",
+            "sha256": "eedfa82fa941f39866392779fcebf895090b9295e80d7130b6d2beb7011e5818",
             "status": "locked",
             "source": "local_custom",
             "macw1y_components": [

@@ -844,12 +844,13 @@ const DockedDash = GObject.registerClass({
         this._intellihide.disable();
         this._removeAnimations();
         this._animateIn(DockManager.settings.animationTime, 0);
+        this._magnifier?.reset?.();
     }
 
     _onOverviewHiding() {
         this._intellihide.enable();
         this._updateDashVisibility();
-        this._magnifier?._clearTransforms();
+        this._magnifier?.reset?.();
         this._magnifier?._notifyDockUpdate();
     }
 
@@ -858,7 +859,8 @@ const DockedDash = GObject.registerClass({
         this._ignoreHover = false;
         this._box.sync_hover();
         this._updateDashVisibility();
-        this._magnifier?._clearTransforms();
+        this._magnifier?.reset?.();
+        this._magnifier?._syncTarget?.();
         this._magnifier?._notifyDockUpdate();
     }
 

@@ -12411,3 +12411,26 @@ Task 499: Повне полірування екрана блокування (m
    - mac-extension-guard verify пройшов на 100% успішно (VERIFICATION SUCCESS: All 20 managed extensions match pinned lock hashes).
    - mac-diagnostics успішно підтвердив еталонний стан усіх компонентів системи.
    - Інструментально перевірено покадровий скріншот правого меню-бара: кнопка Spotlight відсутня, відсоток батареї приховано згідно з параметрами, плашка розкладки відображається у вигляді заокругленого білого бейджа з наскрізними літерами.
+
+604. Виправлення зависання збільшення (magnification) іконок дока після відкриття та закриття огляду (Overview / Mission Control):
+1. Діагностика проблеми:
+   - Якщо навести курсор на док (активується магніфай іконок), відкрити режим огляду (Mission Control / Overview за клавішею Super або жестом) і потім закрити його, повернувшись на робочий стіл, магніфай іконок залишався завислим у збільшеному стані навіть при виведенні курсора далеко за межі дока.
+   - Щоб скинути збільшення, користувачу доводилося знову перенаводити курсор або клікати в іншому місці дока.
+   - Детальний аналіз стану середовища та коду розширення виявив такі причини:
+     * У extensions/dash2dock-motion@unmade.space/magnifier.js метод _isPointerOverDock() покладався на перевірку if (this._hoverBox.hover) return true;. Під час модальних режимів оболонки (Overview) Clutter-стан hover на контейнері DashToDock не оновлюється і залишається true навіть після того, як курсор залишив межі дока.
+     * У extensions/dash2dock-motion@unmade.space/docking.js методи _onOverviewShowing(), _onOverviewHiding() та _onOverviewHidden() викликали лише _clearTransforms(), але не скидали параметри пружинної анімації (_envelope, _target, _velocity, _cursor). Оскільки _envelope залишався рівним 1.0, наступний же сигнал items-allocated викликав update(), який негайно повертав повне збільшення іконкам під старими координатами курсора без запуску таймлайну згасання (spring decay).
+2. Реалізоване рішення:
+   - У extensions/dash2dock-motion@unmade.space/magnifier.js:
+     * Реалізовано метод reset(): повністю зупиняє активний таймлайн (_stopTimeline()), обнуляє цільове та поточне збільшення (_target = 0, _envelope = 0, _velocity = 0, _cursor = null, _cursorMoved = false) та скидає всі трансформації іконок (_clearTransforms()).
+     * Оновлено метод _isPointerOverDock(): додано перевірку (Main.overview.visibleTarget || Main.overview.visible), яка безумовно повертає false під час активності огляду, вилучено некоректне покладання на hoverBox.hover та реалізовано строгу перевірку реальних фізичних координат миші (global.get_pointer()) відносно трансформованих меж дока з margin 12px.
+     * Підключено прямі сигнали Main.overview ('showing', 'hiding', 'hidden') для зупинки магніфаєра при відкритті та скидання стану при закритті.
+   - У extensions/dash2dock-motion@unmade.space/docking.js:
+     * У методи _onOverviewShowing(), _onOverviewHiding() та _onOverviewHidden() інтегровано виклики this._magnifier?.reset?.(), що гарантує негайне повне очищення магніфаю при будь-яких фазах роботи огляду.
+   - У extensions/eval-helper@mactheme/extension.js:
+     * Додано setupDockMagnifierGuard(): runtime-захисник у живому середовищі оболонки GNOME Shell, який патчить прототип _isPointerOverDock та підключає обробники сигналів огляду безпосередньо до активного екземпляра магніфаєра дока (dashtodockContainer._dock._magnifier), що забезпечує стабільну роботу без зависань.
+3. Синхронізація та верифікація:
+   - Файли синхронізовано з ~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/ та ~/.local/share/gnome-shell/extensions/eval-helper@mactheme/.
+   - Оновлено хеші SHA-256 у config/extensions.lock.json для dash2dock-motion@unmade.space (70648b4a...) та eval-helper@mactheme (eedfa82f...).
+   - mac-extension-guard verify підтвердив відповідність усіх 20 зафіксованих розширень (VERIFICATION SUCCESS).
+   - mac-diagnostics успішно пройдено на 100% (система стабільна, всі компоненти відповідають еталону).
+   - Живе тестування через DBus підтвердило, що після відкриття та закриття огляду envelope = 0, target = 0, таймлайн вимкнено, а іконки повертаються до нормального розміру без жодних залипань.

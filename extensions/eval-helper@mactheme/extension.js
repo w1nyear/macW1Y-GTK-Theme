@@ -358,6 +358,85 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
+        // Ensure dock icon magnification never stays stuck after opening/closing Overview
+        const setupDockMagnifierGuard = () => {
+            try {
+                const getMag = () => {
+                    const d2d = Main.uiGroup?.get_children?.()?.find(c => c.name === 'dashtodockContainer');
+                    return d2d?._dock?._magnifier || d2d?._magnifier || null;
+                };
+
+                const mag = getMag();
+                if (mag && mag.constructor?.prototype && !this._origIsPointerOverDock) {
+                    this._origIsPointerOverDock = mag.constructor.prototype._isPointerOverDock;
+                    mag.constructor.prototype._isPointerOverDock = function() {
+                        if (!this._hoverBox || !this._hoverBox.has_allocation())
+                            return false;
+                        if (Main.overview.visibleTarget || Main.overview.visible)
+                            return false;
+                        try {
+                            const [x, y] = this._debugPointer ?? global.get_pointer();
+                            const [boxX, boxY] = this._hoverBox.get_transformed_position();
+                            const [w, h] = this._hoverBox.get_transformed_size?.() || [this._hoverBox.width, this._hoverBox.height];
+                            const margin = 12;
+                            const inBounds = x >= boxX - margin && x <= boxX + w + margin &&
+                                             y >= boxY - margin && y <= boxY + h + margin;
+                            if (!inBounds)
+                                return false;
+                            return true;
+                        } catch (_) {
+                            return false;
+                        }
+                    };
+                }
+
+                const resetMag = () => {
+                    try {
+                        const m = getMag();
+                        if (m) {
+                            m._stopTimeline?.();
+                            m._target = 0;
+                            m._envelope = 0;
+                            m._velocity = 0;
+                            m._cursor = null;
+                            m._clearTransforms?.();
+                        }
+                    } catch (_) {}
+                };
+
+                const syncMag = () => {
+                    try {
+                        const m = getMag();
+                        if (m) {
+                            m._stopTimeline?.();
+                            m._target = 0;
+                            m._envelope = 0;
+                            m._velocity = 0;
+                            m._cursor = null;
+                            m._clearTransforms?.();
+                            if (typeof m._isPointerOverDock === 'function' && m._isPointerOverDock()) {
+                                m._syncTarget?.();
+                            }
+                        }
+                    } catch (_) {}
+                };
+
+                if (!this._dockMagSignalsConnected && Main.overview) {
+                    this._dockMagSignalsConnected = true;
+                    this._dockMagSignals = [
+                        Main.overview.connect('showing', resetMag),
+                        Main.overview.connect('hiding', resetMag),
+                        Main.overview.connect('hidden', syncMag),
+                    ];
+                }
+            } catch (_) {}
+        };
+        setupDockMagnifierGuard();
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2500, () => {
+            setupDockMagnifierGuard();
+            return GLib.SOURCE_REMOVE;
+        });
+
 
         // Ensure search-shortcut Ctrl+Space connects to redesigned macOS Liquid Glass Spotlight
         const patchSpotlightKeybinding = async () => {
@@ -1598,6 +1677,25 @@ export default class EvalHelper extends Extension {
             }
             this._dockSignals = null;
             this._macDockSignalsConnected = false;
+        }
+
+        if (this._dockMagSignals) {
+            for (const id of this._dockMagSignals) {
+                try { Main.overview.disconnect(id); } catch (_) {}
+            }
+            this._dockMagSignals = null;
+            this._dockMagSignalsConnected = false;
+        }
+
+        if (this._origIsPointerOverDock) {
+            try {
+                const d2d = Main.uiGroup?.get_children?.()?.find(c => c.name === 'dashtodockContainer');
+                const mag = d2d?._dock?._magnifier || d2d?._magnifier;
+                if (mag && mag.constructor?.prototype) {
+                    mag.constructor.prototype._isPointerOverDock = this._origIsPointerOverDock;
+                }
+            } catch (_) {}
+            this._origIsPointerOverDock = null;
         }
 
         if (globalThis._macDlgStageId) {
