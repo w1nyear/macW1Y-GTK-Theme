@@ -8,6 +8,7 @@ import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 import { applyGradientBlurFade } from './gradientBlurFade.js';
+import { t, tf } from './mac_i18n.js';
 
 const CACHE_DIR = GLib.build_filenamev([GLib.get_home_dir(), '.cache', 'mac-clipboard']);
 const IMAGES_DIR = GLib.build_filenamev([CACHE_DIR, 'images']);
@@ -65,7 +66,7 @@ try {
 } catch (_) {}
 
 function formatTimeAgo(timestamp) {
-    if (!timestamp) return 'Скопійовано щойно';
+    if (!timestamp) return t('copied_just_now', 'Copied just now');
     const now = Date.now();
     const diff = Math.max(0, now - timestamp);
     const date = new Date(timestamp);
@@ -73,19 +74,22 @@ function formatTimeAgo(timestamp) {
     const mm = String(date.getMinutes()).padStart(2, '0');
 
     if (diff < 60000) {
-        return 'Скопійовано щойно';
+        return t('copied_just_now', 'Copied just now');
     }
     const today = new Date();
     if (date.toDateString() === today.toDateString()) {
-        return `Скопійовано ${hh}:${mm}`;
+        return tf('copied_time', { time: `${hh}:${mm}` }, `Copied ${hh}:${mm}`);
     }
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     if (date.toDateString() === yesterday.toDateString()) {
-        return `Вчора ${hh}:${mm}`;
+        return tf('yesterday_time', { time: `${hh}:${mm}` }, `Yesterday, ${hh}:${mm}`);
     }
-    const months = ['січ.', 'лют.', 'бер.', 'квіт.', 'трав.', 'черв.', 'лип.', 'серп.', 'вер.', 'жовт.', 'лист.', 'груд.'];
-    return `${date.getDate()} ${months[date.getMonth()]} ${hh}:${mm}`;
+    try {
+        const dt = GLib.DateTime.new_from_unix_local(Math.floor(timestamp / 1000));
+        if (dt) return dt.format('%d %b %H:%M');
+    } catch (_) {}
+    return `${date.getDate()} ${hh}:${mm}`;
 }
 
 function getFileIconName(filename, isDir = false) {
@@ -206,8 +210,8 @@ class ClipboardStore {
                         const item = {
                             id,
                             type: 'image',
-                            title: 'Зображення з буфера обміну',
-                            subtitle: `Зображення PNG • ${(size / 1024).toFixed(1)} КБ`,
+                            title: t('clipboard_image', 'Зображення з буфера обміну'),
+                            subtitle: tf('image_png', { size: (size / 1024).toFixed(1) }, `Зображення PNG • ${(size / 1024).toFixed(1)} КБ`),
                             imagePath: imgPath,
                             mimeType: imgMime,
                             timestamp: Date.now(),
@@ -266,13 +270,13 @@ class ClipboardStore {
                 const lineCount = trimmed.split('\n').length;
                 let subtitle = '';
                 if (type === 'link') {
-                    subtitle = `Посилання • ${trimmed.replace(/^https?:\/\//i, '').slice(0, 45)}`;
+                    subtitle = tf('link', { url: trimmed.replace(/^https?:\/\//i, '').slice(0, 45) }, `Посилання • ${trimmed.replace(/^https?:\/\//i, '').slice(0, 45)}`);
                 } else if (type === 'color') {
-                    subtitle = `Колір HEX • ${trimmed}`;
+                    subtitle = tf('color_hex', { hex: trimmed }, `Колір HEX • ${trimmed}`);
                 } else {
                     subtitle = lineCount > 1 
-                        ? `Текст • ${lineCount} рядків, ${trimmed.length} симв.`
-                        : `Текст • ${trimmed.length} симв.`;
+                        ? tf('text_lines_chars', { lines: lineCount, chars: trimmed.length }, `Текст • ${lineCount} рядків, ${trimmed.length} симв.`)
+                        : tf('text_chars', { chars: trimmed.length }, `Текст • ${trimmed.length} симв.`);
                 }
 
                 const item = {
@@ -304,14 +308,14 @@ class ClipboardStore {
                 const unesc = decodeURIComponent(u.replace('file://', ''));
                 return GLib.path_get_basename(unesc);
             } catch (_) {
-                return 'Файл';
+                return t('file', 'File');
             }
         });
 
         const firstFile = names[0];
         const count = names.length;
-        const title = count === 1 ? firstFile : `${firstFile} та ще ${count - 1} файлів`;
-        const subtitle = count === 1 ? `Файл • ${firstFile}` : `Файли (${count} шт.)`;
+        const title = count === 1 ? firstFile : tf('file_and_more', { file: firstFile, count: count - 1 }, `${firstFile} та ще ${count - 1} файлів`);
+        const subtitle = count === 1 ? `${t('file', 'File')} • ${firstFile}` : tf('files', { count }, `Файли (${count} шт.)`);
 
         const item = {
             id: `item_${Date.now()}`,
@@ -583,7 +587,7 @@ export const MacClipboardDialog = GObject.registerClass({
                    'text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; ' +
                    'background-color: transparent !important; background: none !important; ' +
                    'border: none !important; box-shadow: none !important; outline: none !important;',
-            hint_text: 'Буфер обміну',
+            hint_text: t('clipboard', 'Буфер обміну'),
             can_focus: true,
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -1154,7 +1158,7 @@ export const MacClipboardDialog = GObject.registerClass({
 
         if (this._displayedItems.length === 0) {
             const emptyLabel = new St.Label({
-                text: q ? `Нічого не знайдено за запитом "${this._searchEntry.text}"` : 'Буфер обміну порожній',
+                text: q ? tf('nothing_found_for', { query: this._searchEntry.text }, `Нічого не знайдено за запитом "${this._searchEntry.text}"`) : t('clipboard_empty', 'Буфер обміну порожній'),
                 style: 'color: rgba(255, 255, 255, 0.40); font-size: 14px; text-align: center; margin: 40px 0;',
                 x_align: Clutter.ActorAlign.CENTER,
             });

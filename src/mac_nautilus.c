@@ -12,6 +12,7 @@
 #include <math.h>
 #include <gsk/gsk.h>
 #include <graphene.h>
+#include "mac_i18n.h"
 
 /* =========================================================================
  * macOS Tahoe GtkPopover Animation (Opening & Closing with Easing and Scale)
@@ -788,7 +789,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
 
     if (uri) {
         if (p == 10) {
-            const char *target = uk ? "Недавні" : "Recent";
+            const char *target = mac_tr("bookmark_recent", "Recent");
             if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
                 g_object_set(row, "label", target, NULL);
             }
@@ -799,13 +800,13 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 20) {
-            const char *target = uk ? "Домівка" : "Home";
+            const char *target = mac_tr("bookmark_home", "Home");
             if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
                 g_object_set(row, "label", target, NULL);
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 100) {
-            const char *target = uk ? "Програми" : "Applications";
+            const char *target = mac_tr("bookmark_applications", "Applications");
             if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
                 g_object_set(row, "label", target, NULL);
             }
@@ -816,7 +817,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 110) {
-            const char *target = uk ? "Робочий стіл" : "Desktop";
+            const char *target = mac_tr("bookmark_desktop", "Desktop");
             if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
                 g_object_set(row, "label", target, NULL);
             }
@@ -827,7 +828,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 120) {
-            const char *target = uk ? "Документи" : "Documents";
+            const char *target = mac_tr("bookmark_documents", "Documents");
             if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
                 g_object_set(row, "label", target, NULL);
             }
@@ -838,7 +839,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 130) {
-            const char *target = uk ? "Завантаження" : "Downloads";
+            const char *target = mac_tr("bookmark_downloads", "Downloads");
             if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
                 g_object_set(row, "label", target, NULL);
             }
@@ -849,7 +850,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 140) {
-            const char *target = uk ? "Фото" : "Pictures";
+            const char *target = mac_tr("bookmark_pictures", "Pictures");
             if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
                 g_object_set(row, "label", target, NULL);
             }
@@ -860,7 +861,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 150) {
-            const char *target = uk ? "Відеозаписи" : "Movies";
+            const char *target = mac_tr("bookmark_movies", "Movies");
             if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
                 g_object_set(row, "label", target, NULL);
             }
@@ -871,7 +872,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             }
             find_and_style_images(GTK_WIDGET(row), TRUE);
         } else if (p == 800) {
-            const char *target = uk ? "Кошик" : "Trash";
+            const char *target = mac_tr("bookmark_trash", "Trash");
             if (has_label && (!cur_label || !g_str_equal(cur_label, target))) {
                 g_object_set(row, "label", target, NULL);
             }
@@ -889,7 +890,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
         GtkWidget *header = gtk_list_box_row_get_header(row);
         if (!header || !g_object_get_data(G_OBJECT(header), "mac-favorites-header")) {
             GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-            GtkWidget *lbl = gtk_label_new(uk ? "Вибрані" : "Favorites");
+            GtkWidget *lbl = gtk_label_new(mac_tr("bookmarks_favorites", "Favorites"));
             gtk_widget_add_css_class(lbl, "mac-sidebar-header");
             gtk_widget_set_halign(lbl, GTK_ALIGN_START);
             gtk_box_append(GTK_BOX(box), lbl);
@@ -902,7 +903,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
         GtkWidget *header = gtk_list_box_row_get_header(row);
         if (!header || !g_object_get_data(G_OBJECT(header), "mac-mounts-header")) {
             GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-            GtkWidget *lbl = gtk_label_new(uk ? "Місця" : "Locations");
+            GtkWidget *lbl = gtk_label_new(mac_tr("bookmarks_locations", "Locations"));
             gtk_widget_add_css_class(lbl, "mac-sidebar-header");
             gtk_widget_set_halign(lbl, GTK_ALIGN_START);
             gtk_box_append(GTK_BOX(box), lbl);

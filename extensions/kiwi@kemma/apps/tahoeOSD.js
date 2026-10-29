@@ -13,6 +13,7 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {_makeGlassStack, isPanelOpen} from './tahoeControlCenter.js';
+import { t } from './mac_i18n.js';
 import {isNCOpen as isNCPanelOpen} from './tahoeNotifications.js';
 
 // Liquid-glass helpers live in another extension. Static
@@ -510,7 +511,7 @@ function _getAudioDeviceTitle() {
             }
         }
     } catch (_) {}
-    return 'Динаміки';
+    return t('speakers', 'Динаміки');
 }
 
 function _handleOsdCall(monitorIndex, icon, label, level, maxLevel) {
@@ -542,7 +543,7 @@ function _handleOsdCall(monitorIndex, icon, label, level, maxLevel) {
             val = _brightScale.value;
         }
         val = Math.max(0, Math.min(1, val));
-        _show('brightness', 'Дисплей',
+        _show('brightness', t('display', 'Дисплей'),
             'display-brightness-symbolic',
             'display-brightness-symbolic',
             val);
@@ -998,7 +999,7 @@ function _onBrightness(v) {
         return;
     }
     try {
-        _show('brightness', 'Дисплей',
+        _show('brightness', t('display', 'Дисплей'),
             'display-brightness-symbolic',
             'display-brightness-symbolic', v);
     } catch (_) {}

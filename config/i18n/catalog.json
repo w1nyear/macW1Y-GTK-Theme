@@ -1,0 +1,2403 @@
+{
+  "version": "0.4.0",
+  "total_languages": 194,
+  "tiers": {
+    "tier_1": {
+      "name": "Verified Complete (Tier 1)",
+      "description": "100% verified native coverage (Ukrainian & English)",
+      "count": 2,
+      "languages": [
+        "uk",
+        "en"
+      ]
+    },
+    "tier_2": {
+      "name": "Comprehensive Major Languages (Tier 2)",
+      "description": "Full translation of all core macOS UI controls, navigation, and settings",
+      "count": 29,
+      "languages": [
+        "be",
+        "bg",
+        "bn",
+        "cs",
+        "de",
+        "es",
+        "et",
+        "fr",
+        "hi",
+        "hr",
+        "hu",
+        "it",
+        "ja",
+        "ko",
+        "lt",
+        "lv",
+        "nl",
+        "pl",
+        "pt",
+        "ro",
+        "ru",
+        "sk",
+        "sl",
+        "sr",
+        "th",
+        "tr",
+        "vi",
+        "zh",
+        "zh_tw"
+      ]
+    },
+    "tier_3": {
+      "name": "RTL Languages with Bidirectional Support (Tier 3)",
+      "description": "Arabic, Hebrew, Persian with RTL orientation support",
+      "count": 3,
+      "languages": [
+        "ar",
+        "fa",
+        "he"
+      ]
+    },
+    "tier_4": {
+      "name": "Ubuntu Locales with English Fallback (Tier 4)",
+      "description": "Transparent fallback to English with guaranteed stability",
+      "count": 160,
+      "languages": [
+        "ab",
+        "ace",
+        "ach",
+        "af",
+        "ak",
+        "am",
+        "an",
+        "arn",
+        "ary",
+        "as",
+        "ast",
+        "ay",
+        "az",
+        "ba",
+        "bar",
+        "bem",
+        "bi",
+        "bo",
+        "br",
+        "bs",
+        "byn",
+        "ca",
+        "ce",
+        "ceb",
+        "ch",
+        "chr",
+        "ckb",
+        "co",
+        "crh",
+        "csb",
+        "cv",
+        "cy",
+        "da",
+        "dv",
+        "dz",
+        "ee",
+        "el",
+        "eo",
+        "eu",
+        "ff",
+        "fi",
+        "fil",
+        "fo",
+        "frp",
+        "fur",
+        "fy",
+        "ga",
+        "gd",
+        "gez",
+        "gl",
+        "gn",
+        "gu",
+        "gv",
+        "ha",
+        "haw",
+        "ht",
+        "hy",
+        "ia",
+        "id",
+        "ie",
+        "io",
+        "is",
+        "iu",
+        "jam",
+        "jbo",
+        "jv",
+        "ka",
+        "kab",
+        "ki",
+        "kk",
+        "kl",
+        "km",
+        "kmr",
+        "kn",
+        "kok",
+        "ku",
+        "kv",
+        "kw",
+        "ky",
+        "lb",
+        "lg",
+        "lld",
+        "ln",
+        "lo",
+        "mai",
+        "mg",
+        "mhr",
+        "mi",
+        "mjw",
+        "mk",
+        "ml",
+        "mn",
+        "mnw",
+        "mr",
+        "ms",
+        "mt",
+        "my",
+        "na",
+        "nah",
+        "nb",
+        "nds",
+        "ne",
+        "nn",
+        "nso",
+        "nv",
+        "oc",
+        "or",
+        "os",
+        "ota",
+        "pa",
+        "pam",
+        "pap",
+        "pi",
+        "pms",
+        "ps",
+        "qu",
+        "rw",
+        "sa",
+        "sat",
+        "sc",
+        "sco",
+        "sd",
+        "se",
+        "shn",
+        "si",
+        "so",
+        "son",
+        "sq",
+        "st",
+        "su",
+        "sv",
+        "sw",
+        "szl",
+        "ta",
+        "te",
+        "tg",
+        "ti",
+        "tig",
+        "tk",
+        "tl",
+        "trv",
+        "tt",
+        "tzm",
+        "ug",
+        "ur",
+        "uz",
+        "ve",
+        "vec",
+        "wa",
+        "wal",
+        "wo",
+        "xh",
+        "yo",
+        "zu",
+        "la",
+        "sm",
+        "sn",
+        "ny",
+        "hmn",
+        "tok"
+      ]
+    }
+  },
+  "catalog": [
+    {
+      "code": "uk",
+      "name": "Ukrainian",
+      "native": "Українська",
+      "tier": 1,
+      "rtl": false,
+      "status": "complete_verified",
+      "locales": [
+        "uk_UK.UTF-8",
+        "uk"
+      ]
+    },
+    {
+      "code": "en",
+      "name": "English",
+      "native": "English",
+      "tier": 1,
+      "rtl": false,
+      "status": "complete_verified",
+      "locales": [
+        "en_EN.UTF-8",
+        "en"
+      ]
+    },
+    {
+      "code": "be",
+      "name": "Belarusian",
+      "native": "Беларуская",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "be_BE.UTF-8",
+        "be"
+      ]
+    },
+    {
+      "code": "bg",
+      "name": "Bulgarian",
+      "native": "Български",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "bg_BG.UTF-8",
+        "bg"
+      ]
+    },
+    {
+      "code": "bn",
+      "name": "Bengali",
+      "native": "বাংলা",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "bn_BN.UTF-8",
+        "bn"
+      ]
+    },
+    {
+      "code": "cs",
+      "name": "Czech",
+      "native": "Čeština",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "cs_CS.UTF-8",
+        "cs"
+      ]
+    },
+    {
+      "code": "de",
+      "name": "German",
+      "native": "Deutsch",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "de_DE.UTF-8",
+        "de"
+      ]
+    },
+    {
+      "code": "es",
+      "name": "Spanish",
+      "native": "Español",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "es_ES.UTF-8",
+        "es"
+      ]
+    },
+    {
+      "code": "et",
+      "name": "Estonian",
+      "native": "Eesti",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "et_ET.UTF-8",
+        "et"
+      ]
+    },
+    {
+      "code": "fr",
+      "name": "French",
+      "native": "Français",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "fr_FR.UTF-8",
+        "fr"
+      ]
+    },
+    {
+      "code": "hi",
+      "name": "Hindi",
+      "native": "हिन्दी",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "hi_HI.UTF-8",
+        "hi"
+      ]
+    },
+    {
+      "code": "hr",
+      "name": "Croatian",
+      "native": "Hrvatski",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "hr_HR.UTF-8",
+        "hr"
+      ]
+    },
+    {
+      "code": "hu",
+      "name": "Hungarian",
+      "native": "Magyar",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "hu_HU.UTF-8",
+        "hu"
+      ]
+    },
+    {
+      "code": "it",
+      "name": "Italian",
+      "native": "Italiano",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "it_IT.UTF-8",
+        "it"
+      ]
+    },
+    {
+      "code": "ja",
+      "name": "Japanese",
+      "native": "日本語",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "ja_JA.UTF-8",
+        "ja"
+      ]
+    },
+    {
+      "code": "ko",
+      "name": "Korean",
+      "native": "한국어",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "ko_KO.UTF-8",
+        "ko"
+      ]
+    },
+    {
+      "code": "lt",
+      "name": "Lithuanian",
+      "native": "Lietuvių",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "lt_LT.UTF-8",
+        "lt"
+      ]
+    },
+    {
+      "code": "lv",
+      "name": "Latvian",
+      "native": "Latviešu",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "lv_LV.UTF-8",
+        "lv"
+      ]
+    },
+    {
+      "code": "nl",
+      "name": "Dutch",
+      "native": "Nederlands",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "nl_NL.UTF-8",
+        "nl"
+      ]
+    },
+    {
+      "code": "pl",
+      "name": "Polish",
+      "native": "Polski",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "pl_PL.UTF-8",
+        "pl"
+      ]
+    },
+    {
+      "code": "pt",
+      "name": "Portuguese",
+      "native": "Português",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "pt_PT.UTF-8",
+        "pt"
+      ]
+    },
+    {
+      "code": "ro",
+      "name": "Romanian",
+      "native": "Română",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "ro_RO.UTF-8",
+        "ro"
+      ]
+    },
+    {
+      "code": "ru",
+      "name": "Russian",
+      "native": "Русский",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "ru_RU.UTF-8",
+        "ru"
+      ]
+    },
+    {
+      "code": "sk",
+      "name": "Slovak",
+      "native": "Slovenčina",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "sk_SK.UTF-8",
+        "sk"
+      ]
+    },
+    {
+      "code": "sl",
+      "name": "Slovenian",
+      "native": "Slovenščina",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "sl_SL.UTF-8",
+        "sl"
+      ]
+    },
+    {
+      "code": "sr",
+      "name": "Serbian",
+      "native": "Српски",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "sr_SR.UTF-8",
+        "sr"
+      ]
+    },
+    {
+      "code": "th",
+      "name": "Thai",
+      "native": "ไทย",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "th_TH.UTF-8",
+        "th"
+      ]
+    },
+    {
+      "code": "tr",
+      "name": "Turkish",
+      "native": "Türkçe",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "tr_TR.UTF-8",
+        "tr"
+      ]
+    },
+    {
+      "code": "vi",
+      "name": "Vietnamese",
+      "native": "Tiếng Việt",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "vi_VI.UTF-8",
+        "vi"
+      ]
+    },
+    {
+      "code": "zh",
+      "name": "Chinese Simplified",
+      "native": "简体中文",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "zh_ZH.UTF-8",
+        "zh"
+      ]
+    },
+    {
+      "code": "zh_tw",
+      "name": "Chinese Traditional",
+      "native": "繁體中文",
+      "tier": 2,
+      "rtl": false,
+      "status": "comprehensive",
+      "locales": [
+        "zh_tw_ZH_TW.UTF-8",
+        "zh_tw"
+      ]
+    },
+    {
+      "code": "ar",
+      "name": "Arabic",
+      "native": "العربية",
+      "tier": 3,
+      "rtl": true,
+      "status": "rtl_supported",
+      "locales": [
+        "ar_AR.UTF-8",
+        "ar"
+      ]
+    },
+    {
+      "code": "fa",
+      "name": "Persian",
+      "native": "فارسی",
+      "tier": 3,
+      "rtl": true,
+      "status": "rtl_supported",
+      "locales": [
+        "fa_FA.UTF-8",
+        "fa"
+      ]
+    },
+    {
+      "code": "he",
+      "name": "Hebrew",
+      "native": "עברית",
+      "tier": 3,
+      "rtl": true,
+      "status": "rtl_supported",
+      "locales": [
+        "he_HE.UTF-8",
+        "he"
+      ]
+    },
+    {
+      "code": "ab",
+      "name": "AB",
+      "native": "ab",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ab"
+      ]
+    },
+    {
+      "code": "ace",
+      "name": "ACE",
+      "native": "ace",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ace"
+      ]
+    },
+    {
+      "code": "ach",
+      "name": "ACH",
+      "native": "ach",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ach"
+      ]
+    },
+    {
+      "code": "af",
+      "name": "AF",
+      "native": "af",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "af"
+      ]
+    },
+    {
+      "code": "ak",
+      "name": "AK",
+      "native": "ak",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ak"
+      ]
+    },
+    {
+      "code": "am",
+      "name": "AM",
+      "native": "am",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "am"
+      ]
+    },
+    {
+      "code": "an",
+      "name": "AN",
+      "native": "an",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "an"
+      ]
+    },
+    {
+      "code": "arn",
+      "name": "ARN",
+      "native": "arn",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "arn"
+      ]
+    },
+    {
+      "code": "ary",
+      "name": "ARY",
+      "native": "ary",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ary"
+      ]
+    },
+    {
+      "code": "as",
+      "name": "AS",
+      "native": "as",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "as"
+      ]
+    },
+    {
+      "code": "ast",
+      "name": "AST",
+      "native": "ast",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ast"
+      ]
+    },
+    {
+      "code": "ay",
+      "name": "AY",
+      "native": "ay",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ay"
+      ]
+    },
+    {
+      "code": "az",
+      "name": "AZ",
+      "native": "az",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "az"
+      ]
+    },
+    {
+      "code": "ba",
+      "name": "BA",
+      "native": "ba",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ba"
+      ]
+    },
+    {
+      "code": "bar",
+      "name": "BAR",
+      "native": "bar",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "bar"
+      ]
+    },
+    {
+      "code": "bem",
+      "name": "BEM",
+      "native": "bem",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "bem"
+      ]
+    },
+    {
+      "code": "bi",
+      "name": "BI",
+      "native": "bi",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "bi"
+      ]
+    },
+    {
+      "code": "bo",
+      "name": "BO",
+      "native": "bo",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "bo"
+      ]
+    },
+    {
+      "code": "br",
+      "name": "BR",
+      "native": "br",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "br"
+      ]
+    },
+    {
+      "code": "bs",
+      "name": "BS",
+      "native": "bs",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "bs"
+      ]
+    },
+    {
+      "code": "byn",
+      "name": "BYN",
+      "native": "byn",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "byn"
+      ]
+    },
+    {
+      "code": "ca",
+      "name": "CA",
+      "native": "ca",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ca"
+      ]
+    },
+    {
+      "code": "ce",
+      "name": "CE",
+      "native": "ce",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ce"
+      ]
+    },
+    {
+      "code": "ceb",
+      "name": "CEB",
+      "native": "ceb",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ceb"
+      ]
+    },
+    {
+      "code": "ch",
+      "name": "CH",
+      "native": "ch",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ch"
+      ]
+    },
+    {
+      "code": "chr",
+      "name": "CHR",
+      "native": "chr",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "chr"
+      ]
+    },
+    {
+      "code": "ckb",
+      "name": "CKB",
+      "native": "ckb",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ckb"
+      ]
+    },
+    {
+      "code": "co",
+      "name": "CO",
+      "native": "co",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "co"
+      ]
+    },
+    {
+      "code": "crh",
+      "name": "CRH",
+      "native": "crh",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "crh"
+      ]
+    },
+    {
+      "code": "csb",
+      "name": "CSB",
+      "native": "csb",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "csb"
+      ]
+    },
+    {
+      "code": "cv",
+      "name": "CV",
+      "native": "cv",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "cv"
+      ]
+    },
+    {
+      "code": "cy",
+      "name": "CY",
+      "native": "cy",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "cy"
+      ]
+    },
+    {
+      "code": "da",
+      "name": "DA",
+      "native": "da",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "da"
+      ]
+    },
+    {
+      "code": "dv",
+      "name": "DV",
+      "native": "dv",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "dv"
+      ]
+    },
+    {
+      "code": "dz",
+      "name": "DZ",
+      "native": "dz",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "dz"
+      ]
+    },
+    {
+      "code": "ee",
+      "name": "EE",
+      "native": "ee",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ee"
+      ]
+    },
+    {
+      "code": "el",
+      "name": "EL",
+      "native": "el",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "el"
+      ]
+    },
+    {
+      "code": "eo",
+      "name": "EO",
+      "native": "eo",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "eo"
+      ]
+    },
+    {
+      "code": "eu",
+      "name": "EU",
+      "native": "eu",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "eu"
+      ]
+    },
+    {
+      "code": "ff",
+      "name": "FF",
+      "native": "ff",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ff"
+      ]
+    },
+    {
+      "code": "fi",
+      "name": "FI",
+      "native": "fi",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "fi"
+      ]
+    },
+    {
+      "code": "fil",
+      "name": "FIL",
+      "native": "fil",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "fil"
+      ]
+    },
+    {
+      "code": "fo",
+      "name": "FO",
+      "native": "fo",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "fo"
+      ]
+    },
+    {
+      "code": "frp",
+      "name": "FRP",
+      "native": "frp",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "frp"
+      ]
+    },
+    {
+      "code": "fur",
+      "name": "FUR",
+      "native": "fur",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "fur"
+      ]
+    },
+    {
+      "code": "fy",
+      "name": "FY",
+      "native": "fy",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "fy"
+      ]
+    },
+    {
+      "code": "ga",
+      "name": "GA",
+      "native": "ga",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ga"
+      ]
+    },
+    {
+      "code": "gd",
+      "name": "GD",
+      "native": "gd",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "gd"
+      ]
+    },
+    {
+      "code": "gez",
+      "name": "GEZ",
+      "native": "gez",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "gez"
+      ]
+    },
+    {
+      "code": "gl",
+      "name": "GL",
+      "native": "gl",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "gl"
+      ]
+    },
+    {
+      "code": "gn",
+      "name": "GN",
+      "native": "gn",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "gn"
+      ]
+    },
+    {
+      "code": "gu",
+      "name": "GU",
+      "native": "gu",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "gu"
+      ]
+    },
+    {
+      "code": "gv",
+      "name": "GV",
+      "native": "gv",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "gv"
+      ]
+    },
+    {
+      "code": "ha",
+      "name": "HA",
+      "native": "ha",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ha"
+      ]
+    },
+    {
+      "code": "haw",
+      "name": "HAW",
+      "native": "haw",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "haw"
+      ]
+    },
+    {
+      "code": "ht",
+      "name": "HT",
+      "native": "ht",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ht"
+      ]
+    },
+    {
+      "code": "hy",
+      "name": "HY",
+      "native": "hy",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "hy"
+      ]
+    },
+    {
+      "code": "ia",
+      "name": "IA",
+      "native": "ia",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ia"
+      ]
+    },
+    {
+      "code": "id",
+      "name": "ID",
+      "native": "id",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "id"
+      ]
+    },
+    {
+      "code": "ie",
+      "name": "IE",
+      "native": "ie",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ie"
+      ]
+    },
+    {
+      "code": "io",
+      "name": "IO",
+      "native": "io",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "io"
+      ]
+    },
+    {
+      "code": "is",
+      "name": "IS",
+      "native": "is",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "is"
+      ]
+    },
+    {
+      "code": "iu",
+      "name": "IU",
+      "native": "iu",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "iu"
+      ]
+    },
+    {
+      "code": "jam",
+      "name": "JAM",
+      "native": "jam",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "jam"
+      ]
+    },
+    {
+      "code": "jbo",
+      "name": "JBO",
+      "native": "jbo",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "jbo"
+      ]
+    },
+    {
+      "code": "jv",
+      "name": "JV",
+      "native": "jv",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "jv"
+      ]
+    },
+    {
+      "code": "ka",
+      "name": "KA",
+      "native": "ka",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ka"
+      ]
+    },
+    {
+      "code": "kab",
+      "name": "KAB",
+      "native": "kab",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "kab"
+      ]
+    },
+    {
+      "code": "ki",
+      "name": "KI",
+      "native": "ki",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ki"
+      ]
+    },
+    {
+      "code": "kk",
+      "name": "KK",
+      "native": "kk",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "kk"
+      ]
+    },
+    {
+      "code": "kl",
+      "name": "KL",
+      "native": "kl",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "kl"
+      ]
+    },
+    {
+      "code": "km",
+      "name": "KM",
+      "native": "km",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "km"
+      ]
+    },
+    {
+      "code": "kmr",
+      "name": "KMR",
+      "native": "kmr",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "kmr"
+      ]
+    },
+    {
+      "code": "kn",
+      "name": "KN",
+      "native": "kn",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "kn"
+      ]
+    },
+    {
+      "code": "kok",
+      "name": "KOK",
+      "native": "kok",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "kok"
+      ]
+    },
+    {
+      "code": "ku",
+      "name": "KU",
+      "native": "ku",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ku"
+      ]
+    },
+    {
+      "code": "kv",
+      "name": "KV",
+      "native": "kv",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "kv"
+      ]
+    },
+    {
+      "code": "kw",
+      "name": "KW",
+      "native": "kw",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "kw"
+      ]
+    },
+    {
+      "code": "ky",
+      "name": "KY",
+      "native": "ky",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ky"
+      ]
+    },
+    {
+      "code": "lb",
+      "name": "LB",
+      "native": "lb",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "lb"
+      ]
+    },
+    {
+      "code": "lg",
+      "name": "LG",
+      "native": "lg",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "lg"
+      ]
+    },
+    {
+      "code": "lld",
+      "name": "LLD",
+      "native": "lld",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "lld"
+      ]
+    },
+    {
+      "code": "ln",
+      "name": "LN",
+      "native": "ln",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ln"
+      ]
+    },
+    {
+      "code": "lo",
+      "name": "LO",
+      "native": "lo",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "lo"
+      ]
+    },
+    {
+      "code": "mai",
+      "name": "MAI",
+      "native": "mai",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "mai"
+      ]
+    },
+    {
+      "code": "mg",
+      "name": "MG",
+      "native": "mg",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "mg"
+      ]
+    },
+    {
+      "code": "mhr",
+      "name": "MHR",
+      "native": "mhr",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "mhr"
+      ]
+    },
+    {
+      "code": "mi",
+      "name": "MI",
+      "native": "mi",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "mi"
+      ]
+    },
+    {
+      "code": "mjw",
+      "name": "MJW",
+      "native": "mjw",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "mjw"
+      ]
+    },
+    {
+      "code": "mk",
+      "name": "MK",
+      "native": "mk",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "mk"
+      ]
+    },
+    {
+      "code": "ml",
+      "name": "ML",
+      "native": "ml",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ml"
+      ]
+    },
+    {
+      "code": "mn",
+      "name": "MN",
+      "native": "mn",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "mn"
+      ]
+    },
+    {
+      "code": "mnw",
+      "name": "MNW",
+      "native": "mnw",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "mnw"
+      ]
+    },
+    {
+      "code": "mr",
+      "name": "MR",
+      "native": "mr",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "mr"
+      ]
+    },
+    {
+      "code": "ms",
+      "name": "MS",
+      "native": "ms",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ms"
+      ]
+    },
+    {
+      "code": "mt",
+      "name": "MT",
+      "native": "mt",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "mt"
+      ]
+    },
+    {
+      "code": "my",
+      "name": "MY",
+      "native": "my",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "my"
+      ]
+    },
+    {
+      "code": "na",
+      "name": "NA",
+      "native": "na",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "na"
+      ]
+    },
+    {
+      "code": "nah",
+      "name": "NAH",
+      "native": "nah",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "nah"
+      ]
+    },
+    {
+      "code": "nb",
+      "name": "NB",
+      "native": "nb",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "nb"
+      ]
+    },
+    {
+      "code": "nds",
+      "name": "NDS",
+      "native": "nds",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "nds"
+      ]
+    },
+    {
+      "code": "ne",
+      "name": "NE",
+      "native": "ne",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ne"
+      ]
+    },
+    {
+      "code": "nn",
+      "name": "NN",
+      "native": "nn",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "nn"
+      ]
+    },
+    {
+      "code": "nso",
+      "name": "NSO",
+      "native": "nso",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "nso"
+      ]
+    },
+    {
+      "code": "nv",
+      "name": "NV",
+      "native": "nv",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "nv"
+      ]
+    },
+    {
+      "code": "oc",
+      "name": "OC",
+      "native": "oc",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "oc"
+      ]
+    },
+    {
+      "code": "or",
+      "name": "OR",
+      "native": "or",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "or"
+      ]
+    },
+    {
+      "code": "os",
+      "name": "OS",
+      "native": "os",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "os"
+      ]
+    },
+    {
+      "code": "ota",
+      "name": "OTA",
+      "native": "ota",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ota"
+      ]
+    },
+    {
+      "code": "pa",
+      "name": "PA",
+      "native": "pa",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "pa"
+      ]
+    },
+    {
+      "code": "pam",
+      "name": "PAM",
+      "native": "pam",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "pam"
+      ]
+    },
+    {
+      "code": "pap",
+      "name": "PAP",
+      "native": "pap",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "pap"
+      ]
+    },
+    {
+      "code": "pi",
+      "name": "PI",
+      "native": "pi",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "pi"
+      ]
+    },
+    {
+      "code": "pms",
+      "name": "PMS",
+      "native": "pms",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "pms"
+      ]
+    },
+    {
+      "code": "ps",
+      "name": "PS",
+      "native": "ps",
+      "tier": 4,
+      "rtl": true,
+      "status": "english_fallback",
+      "locales": [
+        "ps"
+      ]
+    },
+    {
+      "code": "qu",
+      "name": "QU",
+      "native": "qu",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "qu"
+      ]
+    },
+    {
+      "code": "rw",
+      "name": "RW",
+      "native": "rw",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "rw"
+      ]
+    },
+    {
+      "code": "sa",
+      "name": "SA",
+      "native": "sa",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "sa"
+      ]
+    },
+    {
+      "code": "sat",
+      "name": "SAT",
+      "native": "sat",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "sat"
+      ]
+    },
+    {
+      "code": "sc",
+      "name": "SC",
+      "native": "sc",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "sc"
+      ]
+    },
+    {
+      "code": "sco",
+      "name": "SCO",
+      "native": "sco",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "sco"
+      ]
+    },
+    {
+      "code": "sd",
+      "name": "SD",
+      "native": "sd",
+      "tier": 4,
+      "rtl": true,
+      "status": "english_fallback",
+      "locales": [
+        "sd"
+      ]
+    },
+    {
+      "code": "se",
+      "name": "SE",
+      "native": "se",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "se"
+      ]
+    },
+    {
+      "code": "shn",
+      "name": "SHN",
+      "native": "shn",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "shn"
+      ]
+    },
+    {
+      "code": "si",
+      "name": "SI",
+      "native": "si",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "si"
+      ]
+    },
+    {
+      "code": "so",
+      "name": "SO",
+      "native": "so",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "so"
+      ]
+    },
+    {
+      "code": "son",
+      "name": "SON",
+      "native": "son",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "son"
+      ]
+    },
+    {
+      "code": "sq",
+      "name": "SQ",
+      "native": "sq",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "sq"
+      ]
+    },
+    {
+      "code": "st",
+      "name": "ST",
+      "native": "st",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "st"
+      ]
+    },
+    {
+      "code": "su",
+      "name": "SU",
+      "native": "su",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "su"
+      ]
+    },
+    {
+      "code": "sv",
+      "name": "SV",
+      "native": "sv",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "sv"
+      ]
+    },
+    {
+      "code": "sw",
+      "name": "SW",
+      "native": "sw",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "sw"
+      ]
+    },
+    {
+      "code": "szl",
+      "name": "SZL",
+      "native": "szl",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "szl"
+      ]
+    },
+    {
+      "code": "ta",
+      "name": "TA",
+      "native": "ta",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ta"
+      ]
+    },
+    {
+      "code": "te",
+      "name": "TE",
+      "native": "te",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "te"
+      ]
+    },
+    {
+      "code": "tg",
+      "name": "TG",
+      "native": "tg",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "tg"
+      ]
+    },
+    {
+      "code": "ti",
+      "name": "TI",
+      "native": "ti",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ti"
+      ]
+    },
+    {
+      "code": "tig",
+      "name": "TIG",
+      "native": "tig",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "tig"
+      ]
+    },
+    {
+      "code": "tk",
+      "name": "TK",
+      "native": "tk",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "tk"
+      ]
+    },
+    {
+      "code": "tl",
+      "name": "TL",
+      "native": "tl",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "tl"
+      ]
+    },
+    {
+      "code": "trv",
+      "name": "TRV",
+      "native": "trv",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "trv"
+      ]
+    },
+    {
+      "code": "tt",
+      "name": "TT",
+      "native": "tt",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "tt"
+      ]
+    },
+    {
+      "code": "tzm",
+      "name": "TZM",
+      "native": "tzm",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "tzm"
+      ]
+    },
+    {
+      "code": "ug",
+      "name": "UG",
+      "native": "ug",
+      "tier": 4,
+      "rtl": true,
+      "status": "english_fallback",
+      "locales": [
+        "ug"
+      ]
+    },
+    {
+      "code": "ur",
+      "name": "UR",
+      "native": "ur",
+      "tier": 4,
+      "rtl": true,
+      "status": "english_fallback",
+      "locales": [
+        "ur"
+      ]
+    },
+    {
+      "code": "uz",
+      "name": "UZ",
+      "native": "uz",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "uz"
+      ]
+    },
+    {
+      "code": "ve",
+      "name": "VE",
+      "native": "ve",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ve"
+      ]
+    },
+    {
+      "code": "vec",
+      "name": "VEC",
+      "native": "vec",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "vec"
+      ]
+    },
+    {
+      "code": "wa",
+      "name": "WA",
+      "native": "wa",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "wa"
+      ]
+    },
+    {
+      "code": "wal",
+      "name": "WAL",
+      "native": "wal",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "wal"
+      ]
+    },
+    {
+      "code": "wo",
+      "name": "WO",
+      "native": "wo",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "wo"
+      ]
+    },
+    {
+      "code": "xh",
+      "name": "XH",
+      "native": "xh",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "xh"
+      ]
+    },
+    {
+      "code": "yo",
+      "name": "YO",
+      "native": "yo",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "yo"
+      ]
+    },
+    {
+      "code": "zu",
+      "name": "ZU",
+      "native": "zu",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "zu"
+      ]
+    },
+    {
+      "code": "la",
+      "name": "LATIN",
+      "native": "Latina",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "la_VA.UTF-8",
+        "la"
+      ]
+    },
+    {
+      "code": "sm",
+      "name": "SAMOAN",
+      "native": "Gagana fa'a Sāmoa",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "sm_WS.UTF-8",
+        "sm"
+      ]
+    },
+    {
+      "code": "sn",
+      "name": "SHONA",
+      "native": "chiShona",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "sn_ZW.UTF-8",
+        "sn"
+      ]
+    },
+    {
+      "code": "ny",
+      "name": "CHICHEWA",
+      "native": "ChiCheŵa",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "ny_MW.UTF-8",
+        "ny"
+      ]
+    },
+    {
+      "code": "hmn",
+      "name": "HMONG",
+      "native": "Hmoob",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "hmn_US.UTF-8",
+        "hmn"
+      ]
+    },
+    {
+      "code": "tok",
+      "name": "TOK",
+      "native": "tok",
+      "tier": 4,
+      "rtl": false,
+      "status": "english_fallback",
+      "locales": [
+        "tok"
+      ]
+    }
+  ]
+}

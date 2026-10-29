@@ -88,13 +88,13 @@ require_root() {
         if sudo -n true 2>/dev/null; then
             return 0
         fi
-        log_info "Для виконання системних налаштувань потрібні права адміністратора (sudo)."
-        sudo -v || { log_error "Не вдалося отримати права sudo. Вихід."; exit 1; }
+        log_info "Administrator privileges (sudo) are required to apply system settings."
+        sudo -v || { log_error "Failed to acquire sudo privileges. Exiting."; exit 1; }
     fi
 }
 
 # ------------------------------------------------------------------------------
-# Керування версіями (Version Detection & Comparison)
+# Version Detection & Comparison
 # ------------------------------------------------------------------------------
 get_installed_version() {
     if [ -f "$TARGET_HOME/.local/share/macW1Y/version" ]; then
@@ -108,7 +108,7 @@ get_installed_version() {
         return
     fi
 
-    # Експериментальне виявлення попередньо встановленої версії
+    # Experimental detection of pre-installed version
     if [ -d "$TARGET_HOME/.themes/macW1Y-Dark" ] || \
        [ -d "$TARGET_HOME/.icons/macW1Y-dark" ] || \
        [ -f "$TARGET_HOME/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v29.js" ] || \
@@ -134,8 +134,8 @@ save_version() {
     fi
 }
 
-# Порівняння семантичних версій (x.y / x.y.z):
-# повертає: 0 якщо v1 == v2, 1 якщо v1 > v2, 2 якщо v1 < v2
+# Semantic version comparison (x.y / x.y.z):
+# returns: 0 if v1 == v2, 1 if v1 > v2, 2 if v1 < v2
 compare_semver() {
     local v1="$1"
     local v2="$2"
@@ -162,7 +162,7 @@ compare_semver() {
 }
 
 # ------------------------------------------------------------------------------
-# Допоміжні функції пофайлового синхронізатора
+# File synchronizer helper functions
 # ------------------------------------------------------------------------------
 sync_or_update_file() {
     local src="$1"
@@ -184,7 +184,7 @@ sync_or_update_file() {
     fi
     
     if [ ! -e "$dest" ] && [ ! -L "$dest" ]; then
-        echo -e "   ${C_GREEN}[+] Додано новий файл:${C_RESET} $dest"
+        echo -e "   ${C_GREEN}[+] Added new file:${C_RESET} $dest"
         if [ "$use_sudo" = "true" ]; then
             sudo cp -a "$src" "$dest"
         else
@@ -196,7 +196,7 @@ sync_or_update_file() {
         src_tgt="$(readlink "$src")"
         dest_tgt="$(readlink "$dest" 2>/dev/null || true)"
         if [ "$src_tgt" != "$dest_tgt" ]; then
-            echo -e "   ${C_CYAN}[~] Оновлено посилання:${C_RESET} $dest"
+            echo -e "   ${C_CYAN}[~] Updated symlink:${C_RESET} $dest"
             if [ "$use_sudo" = "true" ]; then
                 sudo rm -f "$dest"
                 sudo cp -a "$src" "$dest"
@@ -210,7 +210,7 @@ sync_or_update_file() {
         fi
     elif [ -f "$src" ] && [ -f "$dest" ]; then
         if ! cmp -s "$src" "$dest"; then
-            echo -e "   ${C_CYAN}[~] Оновлено змінений файл:${C_RESET} $dest"
+            echo -e "   ${C_CYAN}[~] Updated modified file:${C_RESET} $dest"
             if [ "$use_sudo" = "true" ]; then
                 sudo cp -a "$src" "$dest"
             else
@@ -254,10 +254,10 @@ sync_directory_tree() {
             [ "$item" = "." ] && continue
             
             if [[ "$change" =~ ^\>f\+{9} ]]; then
-                echo -e "   ${C_GREEN}[+] Додано новий файл:${C_RESET} $dest_dir/$item"
+                echo -e "   ${C_GREEN}[+] Added new file:${C_RESET} $dest_dir/$item"
                 MODIFIED_COUNT=$((MODIFIED_COUNT + 1))
             elif [[ "$change" =~ ^\>f ]] || [[ "$change" =~ ^cL ]]; then
-                echo -e "   ${C_CYAN}[~] Оновлено файл:${C_RESET} $dest_dir/$item"
+                echo -e "   ${C_CYAN}[~] Updated file:${C_RESET} $dest_dir/$item"
                 MODIFIED_COUNT=$((MODIFIED_COUNT + 1))
             fi
         done <<< "$OUT"
@@ -271,18 +271,18 @@ sync_directory_tree() {
 }
 
 # ------------------------------------------------------------------------------
-# 1. Залежності
+# 1. Dependencies
 # ------------------------------------------------------------------------------
 install_dependencies() {
-    log_step "Етап 1/13: Встановлення системних залежностей (APT)"
+    log_step "Stage 1/13: Installing system dependencies (APT)"
     require_root
     
     if [ -f "$SCRIPT_DIR/dependencies/apt-packages.txt" ]; then
-        log_info "Оновлення індексів пакунків..."
+        log_info "Updating package lists..."
         sudo dpkg --add-architecture i386 2>/dev/null || true
         sudo apt-get update -qq
         
-        log_info "Встановлення пакунків із dependencies/apt-packages.txt..."
+        log_info "Installing packages from dependencies/apt-packages.txt..."
         local RAW_PKGS
         RAW_PKGS=$(grep -v "^#" "$SCRIPT_DIR/dependencies/apt-packages.txt" | tr "\n" " ")
         local VALID_PKGS=()
@@ -291,7 +291,7 @@ install_dependencies() {
                 VALID_PKGS+=("$p")
             fi
         done
-        # Динамічний вибір версії libmutter-dev під поточну версію Ubuntu (24.04, 24.10, 26.04)
+        # Dynamic selection of libmutter-dev version for current Ubuntu release (24.04, 24.10, 26.04)
         for mdev in libmutter-18-dev libmutter-17-dev libmutter-16-dev libmutter-15-dev libmutter-14-dev; do
             if apt-cache show "$mdev" >/dev/null 2>&1; then
                 VALID_PKGS+=("$mdev")
@@ -299,18 +299,18 @@ install_dependencies() {
             fi
         done
         sudo apt-get install -y "${VALID_PKGS[@]}"
-        log_success "Системні залежності успішно встановлено!"
+        log_success "System dependencies installed successfully!"
     else
-        log_warning "Файл dependencies/apt-packages.txt не знайдено, пропускаємо."
+        log_warning "dependencies/apt-packages.txt not found, skipping."
     fi
 
     if ! command -v opendrop &>/dev/null; then
-        log_info "Встановлення утиліти Apple AirDrop (opendrop)..."
+        log_info "Installing Apple AirDrop utility (opendrop)..."
         pip3 install --break-system-packages opendrop 2>/dev/null || true
     fi
 
     if [ ! -f "/usr/lib/x86_64-linux-gnu/girepository-1.0/Blur-1.0.typelib" ] || [ ! -f "/usr/lib/x86_64-linux-gnu/libblur-effect-1.0.so" ]; then
-        log_info "Збирання та встановлення бібліотеки gnome-rounded-blur для підтримки апаратного скруглення блуру..."
+        log_info "Building and installing gnome-rounded-blur library for hardware-accelerated rounded blur..."
         local BUILD_TMP="/tmp/gnome-rounded-blur"
         rm -rf "$BUILD_TMP"
         if git clone --depth 1 https://github.com/kancko/gnome-rounded-blur "$BUILD_TMP" 2>/dev/null; then
@@ -329,16 +329,16 @@ install_dependencies() {
                 done
                 sudo ldconfig 2>/dev/null || true
             )
-            log_success "Бібліотеку gnome-rounded-blur успішно встановлено!"
+            log_success "gnome-rounded-blur library installed successfully!"
         fi
     fi
 }
 
 # ------------------------------------------------------------------------------
-# 2. Шрифти Apple San Francisco Pro
+# 2. Apple San Francisco Pro Fonts
 # ------------------------------------------------------------------------------
 install_fonts() {
-    log_step "Етап 2/13: Встановлення шрифтів Apple SF Pro Display/Text"
+    log_step "Stage 2/13: Installing Apple SF Pro Display/Text fonts"
     local USER_FONT_DIR="$TARGET_HOME/.local/share/fonts/SF_Pro"
     local SYS_FONT_DIR="/usr/local/share/fonts/SF_Pro"
     
@@ -363,14 +363,14 @@ install_fonts() {
 
     sudo fc-cache -f >/dev/null 2>&1 || true
     run_as_user fc-cache -f >/dev/null 2>&1 || true
-    log_success "Шрифти Apple SF Pro та Open Runde успішно розгорнуто та оновлено в кеші шрифтів!"
+    log_success "Apple SF Pro and Open Runde fonts deployed and font cache updated successfully!"
 }
 
 # ------------------------------------------------------------------------------
-# 3. Теми (GTK 3, GTK 4, GNOME Shell)
+# 3. Themes (GTK3, GTK4, GNOME Shell)
 # ------------------------------------------------------------------------------
 install_themes() {
-    log_step "Етап 3/13: Встановлення теми macW1Y (GTK3, GTK4, Shell)"
+    log_step "Stage 3/13: Installing macW1Y themes (GTK3, GTK4, Shell)"
     local THEMES_DIR="$TARGET_HOME/.themes"
     mkdir -p "$THEMES_DIR"
     
@@ -385,7 +385,7 @@ install_themes() {
         sudo ln -sfn macW1Y-Dark /usr/share/themes/MacTahoe-Dark
         sudo ln -sfn macW1Y-Dark /usr/share/themes/macW1Y
         sudo chmod -R a+rX /usr/share/themes/macW1Y* /usr/share/themes/MacTahoe* 2>/dev/null || true
-        log_success "Теми скопійовано до ~/.themes/ та /usr/share/themes/"
+        log_success "Themes copied to ~/.themes/ and /usr/share/themes/"
     fi
     
     mkdir -p "$TARGET_HOME/.config/gtk-3.0" "$TARGET_HOME/.config/gtk-4.0"
@@ -408,8 +408,8 @@ install_themes() {
         sudo sed -i "/libmacpopover.so/d" /etc/environment 2>/dev/null || true
     fi
     
-    # Налаштування macOS Nautilus Finder Sidebar та розділу Програми
-    log_info "Встановлення macOS Nautilus Finder Sidebar та розширень..."
+    # Configuring macOS Nautilus Finder Sidebar and Applications section
+    log_info "Installing macOS Nautilus Finder Sidebar and extensions..."
     if [ -f "$SCRIPT_DIR/src/mac_nautilus.c" ] && command -v gcc >/dev/null 2>&1; then
         gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_nautilus.so" "$SCRIPT_DIR/src/mac_nautilus.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 gio-2.0 2>/dev/null) -ldl 2>/dev/null || true
     fi
@@ -474,7 +474,7 @@ EOF_NAUT
     run_as_user gsettings set org.gnome.desktop.wm.preferences theme "macW1Y-Dark"
     run_as_user gsettings set org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:"
 
-    # Синхронізація стилів вікон та кнопок керування для Snap-додатків
+    # Synchronizing window styles and control buttons for Snap applications
     if [ -d "$TARGET_HOME/snap" ]; then
         for snap_dir in "$TARGET_HOME"/snap/*/*/; do
             if [ -d "$snap_dir" ]; then
@@ -485,14 +485,14 @@ EOF_NAUT
         done
         chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/snap" 2>/dev/null || true
     fi
-    log_success "Теми інтерфейсу успішно активовано!"
+    log_success "UI themes activated successfully!"
 }
 
 # ------------------------------------------------------------------------------
-# 4. Іконки та Активи
+# 4. Icons and Assets
 # ------------------------------------------------------------------------------
 install_icons() {
-    log_step "Етап 4/13: Встановлення іконок MacTahoe та Control Center"
+    log_step "Stage 4/13: Installing MacTahoe and Control Center icons"
     local ICONS_DIR="$TARGET_HOME/.local/share/icons"
     mkdir -p "$ICONS_DIR" "$ICONS_DIR/hicolor/scalable/apps"
     
@@ -502,10 +502,10 @@ install_icons() {
         fi
     done
     
-    # Створюємо сумісне посилання macW1Y-dark -> MacTahoe-dark
+    # Creating compatibility symlink macW1Y-dark -> MacTahoe-dark
     ln -sfn "MacTahoe-dark" "$ICONS_DIR/macW1Y-dark"
     
-    # Системні іконки Центру керування (незалежні від користувача та захищені від видалення)
+    # System Control Center icons (user-independent and protected from removal)
     sudo mkdir -p /usr/share/mactheme/icons /usr/share/icons/hicolor/scalable/status
     if [ -d "$SCRIPT_DIR/assets/icons" ]; then
         sudo cp -f "$SCRIPT_DIR/assets/icons"/* /usr/share/mactheme/icons/ 2>/dev/null || true
@@ -526,14 +526,14 @@ install_icons() {
     gtk-update-icon-cache -f -t "$ICONS_DIR/hicolor" 2>/dev/null || true
     
     run_as_user gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-dark"
-    log_success "Набір іконок macOS активовано!"
+    log_success "macOS icon theme activated!"
 }
 
 # ------------------------------------------------------------------------------
-# 5. Системні звуки (macOS Sound Theme)
+# 5. System Sounds (macOS Sound Theme)
 # ------------------------------------------------------------------------------
 install_sounds() {
-    log_step "Етап 5/14: Встановлення звукової теми macOS"
+    log_step "Stage 5/13: Installing macOS sound theme"
     local SOUNDS_DIR="$TARGET_HOME/.local/share/sounds"
     mkdir -p "$SOUNDS_DIR"
     
@@ -551,7 +551,7 @@ install_sounds() {
         run_as_user gsettings set org.gnome.desktop.sound event-sounds true
         run_as_user gsettings set org.gnome.desktop.sound input-feedback-sounds true
         run_as_user gsettings set org.gnome.shell.ubuntu startup-sound 'warty-startup'
-        log_success "Звукову тему macOS успішно встановлено та активовано!"
+        log_success "macOS sound theme installed and activated successfully!"
     fi
     
     if [ -f "$SCRIPT_DIR/bin/mac-login-sound" ]; then
@@ -563,10 +563,10 @@ install_sounds() {
         mkdir -p "$TARGET_HOME/.config/autostart"
         cp "$SCRIPT_DIR/autostart/macos-login-sound.desktop" "$TARGET_HOME/.config/autostart/"
         chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart"
-        log_success "Автозапуск стартового звуку macOS додано!"
+        log_success "macOS startup chime autostart entry added!"
     fi
 
-    # Вимкнення звуку готовності GDM для запобігання дублюванню стартового звуку
+    # Disabling GDM ready sound to prevent duplicate startup chime
     if [ -f "/usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop" ]; then
         sudo sed -i 's/^X-GNOME-Autostart-enabled=.*/X-GNOME-Autostart-enabled=false/' /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop 2>/dev/null || true
         grep -q "X-GNOME-Autostart-enabled=false" /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop || echo "X-GNOME-Autostart-enabled=false" | sudo tee -a /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop >/dev/null
@@ -575,10 +575,10 @@ install_sounds() {
 }
 
 # ------------------------------------------------------------------------------
-# 6. Шпалери (Wallpapers)
+# 6. Wallpapers
 # ------------------------------------------------------------------------------
 install_wallpaper() {
-    log_step "Етап 5/13: Встановлення оригінальних шпалер macOS"
+    log_step "Stage 6/13: Installing original macOS wallpaper"
     local WALLPAPER_SRC="$SCRIPT_DIR/wallpapers/GoldenGate_Day.jpg"
     local WALLPAPER_DEST="/usr/share/backgrounds/GoldenGate_Day.jpg"
     
@@ -590,17 +590,17 @@ install_wallpaper() {
         run_as_user gsettings set org.gnome.desktop.background picture-uri "file://$WALLPAPER_DEST"
         run_as_user gsettings set org.gnome.desktop.background picture-uri-dark "file://$WALLPAPER_DEST"
         run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file://$WALLPAPER_DEST"
-        log_success "Шпалери успішно встановлено та активовано!"
+        log_success "Wallpaper installed and activated successfully!"
     else
-        log_warning "Файл шпалер не знайдено, пропускаємо."
+        log_warning "Wallpaper file not found, skipping."
     fi
 }
 
 # ------------------------------------------------------------------------------
-# 6. Розширення GNOME Shell та Dconf
+# 7. GNOME Shell Extensions and Dconf
 # ------------------------------------------------------------------------------
 install_extensions() {
-    log_step "Етап 6/13: Встановлення та конфігурація розширень GNOME Shell"
+    log_step "Stage 7/13: Installing and configuring GNOME Shell extensions"
     local EXT_USER_DIR="$TARGET_HOME/.local/share/gnome-shell/extensions"
     mkdir -p "$EXT_USER_DIR"
     
@@ -610,7 +610,7 @@ install_extensions() {
                 local bname
                 bname="$(basename "$ext")"
                 if [ "$bname" != "ding-patches" ]; then
-                    log_info "Встановлення розширення: $bname"
+                    log_info "Installing extension: $bname"
                     rm -rf "$EXT_USER_DIR/$bname"
                     cp -r "$ext" "$EXT_USER_DIR/"
                     if [ -d "$EXT_USER_DIR/$bname/schemas" ]; then
@@ -622,27 +622,27 @@ install_extensions() {
         chown -R "${TARGET_USER}:${TARGET_USER}" "$EXT_USER_DIR"
     fi
     
-    # Системне розширення для GDM (wack-lockscreen-clock)
+    # System extension for GDM (wack-lockscreen-clock)
     if [ -d "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" ]; then
         require_root
-        log_info "Встановлення wack-lockscreen-clock для GDM екрана блокування..."
+        log_info "Installing wack-lockscreen-clock for GDM lock screen..."
         sudo mkdir -p /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com
         sudo cp -r "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/"* /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/
         sudo glib-compile-schemas /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/schemas 2>/dev/null || true
     fi
     
-    # Патч для DING
+    # Patch for DING
     if [ -d "$SCRIPT_DIR/extensions/ding-patches" ] && [ -d "/usr/share/gnome-shell/extensions/ding@rastersoft.com/app" ]; then
         require_root
-        log_info "Застосування патчу для вікна перейменування DING..."
+        log_info "Applying rename dialog patch for DING..."
         sudo cp "$SCRIPT_DIR/extensions/ding-patches/askRenamePopup.js" /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ 2>/dev/null || true
         sudo cp "$SCRIPT_DIR/extensions/ding-patches/desktopManager.js" /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ 2>/dev/null || true
         sudo cp "$SCRIPT_DIR/extensions/ding-patches/stylesheet.css" /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ 2>/dev/null || true
     fi
     
-    # Імпорт Dconf
+    # Importing Dconf
     if [ -f "$SCRIPT_DIR/dconf/gnome-all.dconf" ]; then
-        log_info "Імпорт конфігурацій Dconf..."
+        log_info "Importing Dconf configurations..."
         local PREV_FAVS=""
         local PREV_SOURCES=""
         local PREV_MRU_SOURCES=""
@@ -652,7 +652,7 @@ install_extensions() {
         PREV_MRU_SOURCES="$(run_as_user gsettings get org.gnome.desktop.input-sources mru-sources 2>/dev/null || true)"
         PREV_XKB_OPTS="$(run_as_user gsettings get org.gnome.desktop.input-sources xkb-options 2>/dev/null || true)"
 
-        # Імпортуємо конфігурацію Dconf із гарантованим виключенням секції розкладки клавіатури
+        # Importing Dconf configuration with guaranteed exclusion of keyboard layout section
         if command -v awk >/dev/null 2>&1; then
             awk '
                 BEGIN { skip=0 }
@@ -664,7 +664,7 @@ install_extensions() {
             run_as_user dconf load / < "$SCRIPT_DIR/dconf/gnome-all.dconf"
         fi
 
-        # Відновлюємо нативну розкладку клавіатури користувача (щоб ніколи не змінювати мову/клавіатуру користувача)
+        # Restoring native user keyboard layout (never altering user language or keyboard preferences)
         if [ -n "$PREV_SOURCES" ] && [ "$PREV_SOURCES" != "@a(ss) []" ]; then
             run_as_user gsettings set org.gnome.desktop.input-sources sources "$PREV_SOURCES" 2>/dev/null || true
         fi
@@ -682,8 +682,8 @@ install_extensions() {
         fi
     fi
     
-    # Активація розширень
-    log_info "Увімкнення розширень у системі..."
+    # Enabling extensions
+    log_info "Enabling extensions in GNOME Shell..."
     local EXT_LIST=(
         "user-theme@gnome-shell-extensions.gcampax.github.com"
         "ubuntu-appindicators@ubuntu.com"
@@ -710,7 +710,7 @@ install_extensions() {
         run_as_user gnome-extensions enable "$ext_id" 2>/dev/null || true
     done
 
-    # Вимкнення Stage Manager та накладок/баласту Ubuntu поверх чистого GNOME
+    # Disabling Stage Manager and Ubuntu overlay extensions
     local UBUNTU_BLOAT_EXTS=(
         "stage-manager@gnome-stage-manager"
         "dash-to-dock@micxgx.gmail.com"
@@ -724,7 +724,7 @@ install_extensions() {
         run_as_user gnome-extensions disable "$ext_id" 2>/dev/null || true
     done
 
-    # Оптимізація та розблокування служб індексації (усуває зависання Nautilus та програм при запуску)
+    # Optimizing search indexing services (preventing Nautilus and app startup delays)
     run_as_user systemctl --user unmask localsearch-3.service tracker-miner-fs-3.service 2>/dev/null || true
     run_as_user systemctl --user stop snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
     run_as_user systemctl --user mask snap.snapd-desktop-integration.snapd-desktop-integration.service 2>/dev/null || true
@@ -758,14 +758,14 @@ install_extensions() {
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-margin-bottom 8 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super>m']" 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.appmenu clipboard-shortcut "['<Super>v']" 2>/dev/null || true
-    log_success "Розширення GNOME Shell успішно налаштовано!"
+    log_success "GNOME Shell extensions configured successfully!"
 }
 
 # ------------------------------------------------------------------------------
-# 7. Інтеграція в Параметри (GNOME Control Center Overlay)
+# 8. Integration into Settings (GNOME Control Center Overlay)
 # ------------------------------------------------------------------------------
 install_settings_overlay() {
-    log_step "Етап 7/13: Інтеграція сторінки «Mac стилізація» та налаштувань у Параметри"
+    log_step "Stage 8/13: Integrating Mac Styling and preferences into Settings"
     local OVERLAY_DIR="$TARGET_HOME/.local/share/gnome-control-center-overlay"
     local LOCAL_BIN="$TARGET_HOME/.local/bin"
     local LOCAL_LIB="$TARGET_HOME/.local/lib"
@@ -780,7 +780,7 @@ install_settings_overlay() {
         cp "$SCRIPT_DIR/gnome-control-center-overlay/libmac_settings.c" "$OVERLAY_DIR/"
     fi
     
-    log_info "Збірка динамічної бібліотеки libmac_settings.so..."
+    log_info "Compiling libmac_settings.so dynamic library..."
     if command -v gcc >/dev/null 2>&1; then
         gcc -shared -fPIC -O2 -o "$LOCAL_LIB/libmac_settings.so" "$OVERLAY_DIR/libmac_settings.c" $(pkg-config --cflags --libs glib-2.0 gio-2.0 json-glib-1.0 gtk4 libadwaita-1 2>/dev/null) -ldl -lm 2>/dev/null || {
             [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ] && cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
@@ -789,7 +789,7 @@ install_settings_overlay() {
         [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ] && cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
     fi
     
-    # Системне встановлення бібліотеки та оверлеїв для всіх користувачів
+    # System-wide installation of library and overlays for all users
     sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay /usr/lib/x86_64-linux-gnu
     if [ -f "$LOCAL_LIB/libmac_settings.so" ]; then
         sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/lib/x86_64-linux-gnu/libmac_settings.so
@@ -800,7 +800,7 @@ install_settings_overlay() {
         sudo chmod 644 /usr/share/mactheme/gnome-control-center-overlay/* 2>/dev/null || true
     fi
     
-    # Системна обгортка gnome-control-center
+    # System wrapper for gnome-control-center
     if [ -f "/usr/bin/gnome-control-center" ] && [ ! -f "/usr/bin/gnome-control-center.orig" ]; then
         sudo cp -p /usr/bin/gnome-control-center /usr/bin/gnome-control-center.orig
     fi
@@ -811,7 +811,7 @@ install_settings_overlay() {
         sudo chmod 755 /usr/local/bin/gnome-control-center
     fi
 
-    log_info "Збірка динамічної бібліотеки libmac_extension_manager.so..."
+    log_info "Compiling libmac_extension_manager.so dynamic library..."
     if [ -f "$SCRIPT_DIR/extension-manager/libmac_extension_manager.c" ] && command -v gcc >/dev/null 2>&1; then
         gcc -shared -fPIC -O2 -o "$LOCAL_LIB/libmac_extension_manager.so" "$SCRIPT_DIR/extension-manager/libmac_extension_manager.c" $(pkg-config --cflags --libs glib-2.0 gio-2.0 2>/dev/null) -ldl 2>/dev/null || {
             [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ] && cp "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so"
@@ -833,7 +833,7 @@ install_settings_overlay() {
     
     rm -f "$APP_DIR/mac-styling-settings.desktop"
     
-    # 1. Системні компоненти теми Mac (встановлюються завжди)
+    # 1. Core macOS theme components (always installed)
     for core_df in launchpad.desktop mac-app-launcher.desktop org.gnome.Settings.desktop; do
         if [ -f "$SCRIPT_DIR/applications/$core_df" ]; then
             cp -f "$SCRIPT_DIR/applications/$core_df" "$APP_DIR/"
@@ -842,7 +842,7 @@ install_settings_overlay() {
         fi
     done
 
-    # 2. Оверлеї сторонніх програм — лише якщо відповідні програми дійсно встановлені в системі
+    # 2. Third-party application overlays — only if applications are installed on the system
     # Steam
     if [ -x "/snap/bin/steam" ] || [ -x "/usr/games/steam" ] || [ -x "/usr/bin/steam" ] || { which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; }; then
         if [ -f "$SCRIPT_DIR/applications/steam_steam.desktop" ]; then
@@ -938,17 +938,17 @@ install_settings_overlay() {
     
     chown -R "${TARGET_USER}:${TARGET_USER}" "$OVERLAY_DIR" "$LOCAL_BIN" "$LOCAL_LIB" "$APP_DIR" "$SVC_DIR" "$CFG_DIR"
     run_as_user update-desktop-database "$APP_DIR" 2>/dev/null || true
-    log_success "Параметри успішно розширено вкладками Mac стилізації, Bootloader та Режиму гри!"
+    log_success "Settings successfully enhanced with Mac Styling, Bootloader, and Game Mode panels!"
 }
 
 # ------------------------------------------------------------------------------
-# 8. Демон жестів тачпада (Touchpad Gestures System)
+# 9. Touchpad Gestures System
 # ------------------------------------------------------------------------------
 install_touchpad() {
-    log_step "Етап 8/13: Встановлення демона та жестів тачпада macOS"
+    log_step "Stage 9/13: Installing macOS touchpad daemon and gestures"
     require_root
     
-    log_info "Збірка mac-touchpad-daemon..."
+    log_info "Compiling mac-touchpad-daemon..."
     if [ -f "$SCRIPT_DIR/touchpad/mac-touchpad-daemon.c" ]; then
         sudo gcc -O2 "$SCRIPT_DIR/touchpad/mac-touchpad-daemon.c" -lm -o /usr/local/bin/mac-touchpad-daemon 2>/dev/null || {
             sudo cp "$SCRIPT_DIR/bin/mac-touchpad-daemon" /usr/local/bin/mac-touchpad-daemon
@@ -980,17 +980,17 @@ install_touchpad() {
                "$TARGET_HOME/.config/systemd/user/org.gnome.Shell@.service.d/3fg-drag.conf" \
                /usr/local/lib/libmac_3fg_drag.so 2>/dev/null || true
 
-    log_success "Демон жестів тачпада успішно запущено та ввімкнено в автозавантаження!"
+    log_success "Touchpad gesture daemon started and enabled in autostart!"
 }
 
 # ------------------------------------------------------------------------------
-# 9. Апаратні драйвери GPU, Режим гри та прискорення запуску програм
+# 10. Hardware GPU Drivers, Game Mode, and Application Acceleration
 # ------------------------------------------------------------------------------
 install_gamemode() {
-    log_step "Етап 9/13: Встановлення апаратних драйверів GPU, Game Mode та прискорення додатків"
+    log_step "Stage 10/13: Installing hardware GPU drivers, Game Mode, and application acceleration"
     require_root
     
-    # 1. Встановлення бінарних утиліт та скриптів
+    # 1. Installing binary utilities and scripts
     for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh; do
         if [ -f "$SCRIPT_DIR/bin/$bin_file" ] || [ -L "$SCRIPT_DIR/bin/$bin_file" ]; then
             sudo cp -a "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
@@ -998,7 +998,7 @@ install_gamemode() {
         fi
     done
 
-    # Steam wrapper: встановлюється лише за умови наявності Steam у системі
+    # Steam wrapper: installed only if Steam is present on the system
     if [ -x "/snap/bin/steam" ] || [ -x "/usr/games/steam" ] || [ -x "/usr/bin/steam" ] || { which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; }; then
         if [ -f "$SCRIPT_DIR/bin/steam" ]; then
             sudo cp -a "$SCRIPT_DIR/bin/steam" /usr/local/bin/steam
@@ -1018,7 +1018,7 @@ install_gamemode() {
         done
     fi
 
-    # 2. Служба фонового оптимізатора Game Mode
+    # 2. Game Mode background optimization service
     if [ -f "$SCRIPT_DIR/systemd/mac-gamemode.service" ]; then
         sudo cp "$SCRIPT_DIR/systemd/mac-gamemode.service" /etc/systemd/system/
         sudo systemctl daemon-reload
@@ -1026,10 +1026,10 @@ install_gamemode() {
     fi
     sudo touch /etc/mac-gamemode.state
 
-    # 3. Багатоархітектурна підтримка (Multiarch i386 для Steam, Wine, Proton)
+    # 3. Multiarch support (i386 for Steam, Wine, Proton)
     sudo dpkg --add-architecture i386 2>/dev/null || true
 
-    # 4. Автоматичне виявлення та встановлення відповідних драйверів GPU
+    # 4. Automatic detection and installation of GPU drivers
     local HAS_NVIDIA=false
     local HAS_AMD=false
     local HAS_INTEL=false
@@ -1045,16 +1045,16 @@ install_gamemode() {
     fi
 
     if [ "$HAS_NVIDIA" = true ]; then
-        log_info "Виявлено GPU NVIDIA. Перевірка наявності пропрієтарного драйвера..."
+        log_info "NVIDIA GPU detected. Checking for proprietary driver..."
         local NV_VER=""
         if ! command -v nvidia-smi &>/dev/null && ! lsmod | grep -q "^nvidia"; then
-            log_info "Пошук та автоматичне встановлення рекомендованого драйвера NVIDIA..."
+            log_info "Searching and automatically installing recommended NVIDIA driver..."
             local RECOMMENDED_DRIVER=""
             if command -v ubuntu-drivers >/dev/null 2>&1; then
                 RECOMMENDED_DRIVER=$(ubuntu-drivers devices 2>/dev/null | grep 'recommended' | awk '{print $3}' | head -n1)
             fi
             if [ -n "$RECOMMENDED_DRIVER" ]; then
-                log_info "Встановлення $RECOMMENDED_DRIVER та компонентів PRIME/Wayland..."
+                log_info "Installing $RECOMMENDED_DRIVER and PRIME/Wayland components..."
                 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$RECOMMENDED_DRIVER" nvidia-prime nvidia-settings libnvidia-egl-wayland1 2>/dev/null || true
                 NV_VER=$(echo "$RECOMMENDED_DRIVER" | grep -oP '\d+')
             else
@@ -1062,19 +1062,19 @@ install_gamemode() {
                 NV_VER=$(dpkg -l 2>/dev/null | grep -oP 'nvidia-driver-\K\d+' | head -n1)
             fi
         else
-            log_info "Драйвер NVIDIA вже встановлено в системі."
+            log_info "NVIDIA driver already installed on the system."
             NV_VER=$(dpkg -l 2>/dev/null | grep -oP 'nvidia-driver-\K\d+' | head -n1)
         fi
 
-        # Встановлення 32-бітних бібліотек NVIDIA OpenGL/Vulkan для Steam та ігор
+        # Installing 32-bit NVIDIA OpenGL/Vulkan libraries for Steam and games
         if [ -n "$NV_VER" ]; then
-            log_info "Встановлення 32-бітних бібліотек libnvidia-gl-$NV_VER:i386 та Vulkan для Steam/ігор..."
+            log_info "Installing 32-bit libnvidia-gl-$NV_VER:i386 and Vulkan libraries for Steam/gaming..."
             sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "libnvidia-gl-${NV_VER}:i386" libvulkan1:i386 mesa-vulkan-drivers:i386 2>/dev/null || true
         else
             sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libvulkan1:i386 mesa-vulkan-drivers:i386 2>/dev/null || true
         fi
 
-        # Блокування nouveau та оновлення initramfs для коректного завантаження модуля nvidia
+        # Blacklisting nouveau and updating initramfs for proper nvidia module loading
         sudo mkdir -p /etc/modprobe.d
         cat << 'EOF' | sudo tee /etc/modprobe.d/blacklist-nouveau.conf >/dev/null
 blacklist nouveau
@@ -1084,7 +1084,7 @@ alias nouveau off
 alias lbm-nouveau off
 EOF
 
-        # Налаштування Dynamic Power Management (RTD3) для миттєвого виходу зі сну без лагів
+        # Configuring Dynamic Power Management (RTD3) for instant wake without lag
         cat << 'EOF' | sudo tee /etc/modprobe.d/nvidia-runtimepm.conf >/dev/null
 options nvidia "NVreg_DynamicPowerManagement=0x02"
 options nvidia-drm modeset=1
@@ -1097,39 +1097,39 @@ EOF
     fi
 
     if [ "$HAS_AMD" = true ]; then
-        log_info "Виявлено графіку AMD Radeon. Встановлення драйверів Mesa Vulkan/VA-API..."
+        log_info "AMD Radeon graphics detected. Installing Mesa Vulkan/VA-API drivers..."
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mesa-vulkan-drivers mesa-vulkan-drivers:i386 mesa-va-drivers vulkan-tools 2>/dev/null || true
     fi
 
     if [ "$HAS_INTEL" = true ]; then
-        log_info "Виявлено графіку Intel. Встановлення драйверів апаратного прискорення..."
+        log_info "Intel graphics detected. Installing hardware acceleration drivers..."
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-media-va-driver-non-free mesa-vulkan-drivers mesa-vulkan-drivers:i386 vulkan-tools 2>/dev/null || \
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-media-va-driver mesa-vulkan-drivers mesa-vulkan-drivers:i386 vulkan-tools 2>/dev/null || true
     fi
 
-    # 5. Встановлення бібліотек GameMode, Vulkan та демона Preload
+    # 5. Installing GameMode, Vulkan libraries, and Preload daemon
     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y gamemode libgamemode0 libgamemodeauto0 libvulkan1 vulkan-tools preload 2>/dev/null || true
     sudo systemctl enable --now preload 2>/dev/null || true
 
-    # 6. Оптимізації ядра sysctl (vm.max_map_count для ігор/Proton, кешування та низька латентність)
+    # 6. sysctl kernel optimizations (vm.max_map_count for gaming/Proton, caching, and low latency)
     if [ -f "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" ]; then
         sudo mkdir -p /etc/sysctl.d
         sudo cp "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" /etc/sysctl.d/
         sudo sysctl -p /etc/sysctl.d/99-macw1y-performance.conf 2>/dev/null || true
     fi
 
-    # 6.1. Теплові та частотні обмеження CPU (Windows DTT / RAPL, No Turbo, 2.0-2.4 GHz)
+    # 6.1. CPU thermal and power limits (RAPL/DTT power profiles)
     if [ -f "$SCRIPT_DIR/etc/tmpfiles.d/cpu-power-limits.conf" ]; then
         sudo mkdir -p /etc/tmpfiles.d
         sudo cp "$SCRIPT_DIR/etc/tmpfiles.d/cpu-power-limits.conf" /etc/tmpfiles.d/
         sudo systemd-tmpfiles --create /etc/tmpfiles.d/cpu-power-limits.conf 2>/dev/null || true
     fi
 
-    # 7. Очищення застарілих фонових служб nautilus (використовується системний preload)
+    # 7. Cleaning legacy background nautilus services
     rm -f "$TARGET_HOME/.config/autostart/nautilus-daemon.desktop" 2>/dev/null || true
     sudo rm -f /etc/xdg/autostart/nautilus-daemon.desktop 2>/dev/null || true
 
-    # Кешування GPU шейдерів для усунення затримок компіляції при відкритті програм та ігор
+    # GPU shader caching to eliminate compilation stutter in apps and games
     mkdir -p "$TARGET_HOME/.cache/mesa_shader_cache" "$TARGET_HOME/.cache/nv_shader_cache"
     chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.cache/mesa_shader_cache" "$TARGET_HOME/.cache/nv_shader_cache" 2>/dev/null || true
     mkdir -p "$TARGET_HOME/.config/environment.d"
@@ -1141,25 +1141,25 @@ MESA_SHADER_CACHE_DIR=$TARGET_HOME/.cache/mesa_shader_cache
 EOF
     chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/environment.d" 2>/dev/null || true
 
-    log_success "Апаратні драйвери, ігрові бібліотеки та прискорення додатків успішно налаштовано!"
+    log_success "Hardware drivers, gaming libraries, and application acceleration configured successfully!"
 
-    # v0.4: Розширена секція — CPU мікрокод, GameMode конфіг, game-focus скрипти
+    # v0.4: Extended section — CPU microcode, GameMode config, game-focus scripts
     _install_hardware_extras
 }
 
-# v0.4: Додаткова апаратна оптимізація (CPU мікрокод, GameMode, game-focus scripts)
+# v0.4: Additional hardware optimizations (CPU microcode, GameMode, game-focus scripts)
 _install_hardware_extras() {
-    log_info "v0.4: Встановлення розширених апаратних оптимізацій..."
+    log_info "v0.4: Installing extended hardware optimizations..."
 
-    # ── CPU Мікрокод ──────────────────────────────────────────────────────────
+    # ── CPU Microcode ──────────────────────────────────────────────────────────
     local CPU_VENDOR
     CPU_VENDOR=$(grep -m1 "vendor_id" /proc/cpuinfo 2>/dev/null | awk '{print $3}' || echo "Unknown")
 
     if echo "$CPU_VENDOR" | grep -qi "Intel"; then
-        log_info "Виявлено CPU Intel. Встановлення intel-microcode..."
+        log_info "Intel CPU detected. Installing intel-microcode..."
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-microcode 2>/dev/null || true
     elif echo "$CPU_VENDOR" | grep -qi "AMD\|AuthenticAMD"; then
-        log_info "Виявлено CPU AMD. Встановлення amd64-microcode..."
+        log_info "AMD CPU detected. Installing amd64-microcode..."
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y amd64-microcode 2>/dev/null || true
     fi
 
@@ -1167,8 +1167,8 @@ _install_hardware_extras() {
     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
         linux-firmware fwupd fwupdate 2>/dev/null || true
 
-    # ── GameMode конфіг (чистий стиль Windows 11 Game Mode) ──────────────────
-    log_info "Встановлення GameMode конфігурації (стиль Windows 11)..."
+    # ── GameMode Config (Windows 11 Game Mode style) ──────────────────
+    log_info "Installing GameMode configuration (Windows 11 style)..."
     cat > "$TARGET_HOME/.config/gamemode.ini" << 'GAMEMODE_CFG'
 [general]
 reaper_freq=5
@@ -1200,42 +1200,42 @@ end=/usr/local/bin/mac-gamemode auto
 GAMEMODE_CFG
     chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/gamemode.ini" 2>/dev/null || true
 
-    # ── Активувати gamemoded ──────────────────────────────────────────────
+    # ── Enable gamemoded ──────────────────────────────────────────────
     sudo -u "$TARGET_USER" systemctl --user enable gamemoded 2>/dev/null || true
     sudo -u "$TARGET_USER" systemctl --user start gamemoded 2>/dev/null || true
 
-    # ── Додати користувача до групи gamemode ──────────────────────────────
+    # ── Add user to gamemode group ──────────────────────────────
     sudo usermod -aG gamemode "$TARGET_USER" 2>/dev/null || true
 
-    log_success "v0.4: Апаратні оптимізації встановлено (CPU мікрокод + GameMode Windows 11 стиль)"
+    log_success "v0.4: Hardware optimizations installed (CPU microcode + Windows 11 GameMode profile)"
 }
 
 # ------------------------------------------------------------------------------
-# 10. Плавний перехід GDM -> Робочий стіл
+# 11. Smooth GDM -> Desktop Transition
 # ------------------------------------------------------------------------------
 install_gdm_transition() {
-    log_step "Етап 10/13: Налаштування плавного переходу GDM та екрана блокування macW1Y"
+    log_step "Stage 11/13: Configuring smooth GDM transition and macW1Y lock screen"
     require_root
     
-    # Видаляємо небезпечні глобальні GResource оверлеї, які ламають завантаження GNOME
+    # Removing legacy global GResource overlays
     sudo rm -rf /etc/gnome-shell/ui/layout.js /etc/gnome-shell/ui 2>/dev/null || true
     sudo sed -i '/G_RESOURCE_OVERLAYS.*gnome-shell/d' /etc/environment 2>/dev/null || true
 
-    # 1. Dconf профіль GDM
+    # 1. GDM Dconf profile
     sudo mkdir -p /etc/dconf/profile
     if [ -f "$SCRIPT_DIR/macos-gdm/gdm" ]; then
         sudo cp "$SCRIPT_DIR/macos-gdm/gdm" /etc/dconf/profile/gdm
         sudo chmod 644 /etc/dconf/profile/gdm
     fi
 
-    # 2. Dconf налаштування для GDM та екрана блокування
+    # 2. Dconf settings for GDM and lock screen
     if [ -f "$SCRIPT_DIR/macos-gdm/99-wack-lockscreen" ]; then
         sudo mkdir -p /etc/dconf/db/gdm.d
         sudo cp "$SCRIPT_DIR/macos-gdm/99-wack-lockscreen" /etc/dconf/db/gdm.d/99-wack-lockscreen
         sudo chmod 644 /etc/dconf/db/gdm.d/99-wack-lockscreen
     fi
 
-    # 3. Системні теми та іконки для GDM
+    # 3. System themes and icons for GDM
     sudo mkdir -p /usr/share/themes /usr/share/icons
     [ -d "$TARGET_HOME/.themes/macW1Y-Dark" ] && sudo cp -rf "$TARGET_HOME/.themes/macW1Y-Dark" /usr/share/themes/
     [ -d "$TARGET_HOME/.themes/macW1Y-Dark-solid" ] && sudo cp -rf "$TARGET_HOME/.themes/macW1Y-Dark-solid" /usr/share/themes/
@@ -1246,7 +1246,7 @@ install_gdm_transition() {
     [ -d "$TARGET_HOME/.local/share/icons/MacTahoe-dark" ] && sudo ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe-dark" /usr/share/icons/MacTahoe-dark
     sudo chmod -R a+rX /usr/share/icons/MacTahoe* 2>/dev/null || true
 
-    # 4. Встановлення та компіляція схем GSettings (wack-lockscreen та 99_mactheme override)
+    # 4. Installing and compiling GSettings schemas (wack-lockscreen and 99_mactheme override)
     local WACK_SCHEMA="$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/schemas/org.gnome.shell.extensions.wack-lockscreen-clock.gschema.xml"
     [ ! -f "$WACK_SCHEMA" ] && WACK_SCHEMA="$SCRIPT_DIR/wack-system/schemas/org.gnome.shell.extensions.wack-lockscreen-clock.gschema.xml"
     if [ -f "$WACK_SCHEMA" ]; then
@@ -1258,7 +1258,7 @@ install_gdm_transition() {
         sudo chmod 644 /usr/share/glib-2.0/schemas/99_mactheme.gschema.override
     fi
 
-    # 5. Очищення та нейтралізація накладань теми Ubuntu Yaru
+    # 5. Neutralizing Ubuntu Yaru theme overrides
     if [ -f /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override ]; then
         sudo sed -i 's|gtk-theme = "Yaru"|gtk-theme = "macW1Y-Dark"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
         sudo sed -i 's|icon-theme = "Yaru"|icon-theme = "MacTahoe-dark"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
@@ -1267,7 +1267,7 @@ install_gdm_transition() {
     fi
     sudo glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
 
-    # 6. Дозвіл розширень у режимах unlock-dialog та gdm
+    # 6. Allowing extensions in unlock-dialog and gdm session modes
     for mpath in "/usr/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/metadata.json" \
                 "$TARGET_HOME/.local/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/metadata.json"; do
         if [ -f "$mpath" ] && ! grep -q "unlock-dialog" "$mpath"; then
@@ -1278,11 +1278,11 @@ install_gdm_transition() {
     sudo chmod 644 /usr/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/metadata.json 2>/dev/null || true
     sudo chmod -R a+rX /usr/share/gnome-shell/extensions/wack-lockscreen-clock@* /usr/share/gnome-shell/extensions/user-theme@* 2>/dev/null || true
 
-    # 7. Збірка та реєстрація системного gresource для GDM
+    # 7. Compiling and registering system gresource for GDM
     local GRES_TARGET="/usr/share/gnome-shell/theme/macW1Y-Dark/gnome-shell-theme.gresource"
     local SRC_SH="/usr/share/themes/macW1Y-Dark/gnome-shell"
     if [ ! -f "$GRES_TARGET" ] || [ "$SRC_SH/gnome-shell.css" -nt "$GRES_TARGET" ]; then
-        log_info "Компіляція системного ресурсу macW1Y для GDM..."
+        log_info "Compiling macW1Y system gresource for GDM..."
         local BUILD_TMP="/tmp/macW1Y-build-installer"
         rm -rf "$BUILD_TMP" && mkdir -p "$BUILD_TMP"
         if [ -d "$SRC_SH" ]; then
@@ -1323,7 +1323,7 @@ install_gdm_transition() {
         fi
     fi
 
-    # 8. update-alternatives для GDM theme та icons
+    # 8. update-alternatives for GDM theme and icons
     if [ -f "$GRES_TARGET" ]; then
         sudo update-alternatives --install /usr/share/gnome-shell/gdm-theme.gresource gdm-theme.gresource "$GRES_TARGET" 100 2>/dev/null || true
         sudo update-alternatives --set gdm-theme.gresource "$GRES_TARGET" 2>/dev/null || true
@@ -1332,7 +1332,7 @@ install_gdm_transition() {
         sudo update-alternatives --set gdm-icons.gresource /usr/share/gnome-shell/gnome-shell-icons.gresource 2>/dev/null || true
     fi
 
-    # 9. Налаштування аватара користувача в AccountsService
+    # 9. Configuring user avatar in AccountsService
     if [ ! -f "$TARGET_HOME/.face" ] && [ -f "$SCRIPT_DIR/icons/default-avatar.png" ]; then
         cp "$SCRIPT_DIR/icons/default-avatar.png" "$TARGET_HOME/.face"
         cp "$SCRIPT_DIR/icons/default-avatar.png" "$TARGET_HOME/.face.icon"
@@ -1347,7 +1347,7 @@ install_gdm_transition() {
         fi
     fi
 
-    # 10. Вимикання сканера відбитків для усунення затримок GDM
+    # 10. Disabling fingerprint authentication to eliminate GDM delays
     if [ -f /etc/gdm3/greeter.dconf-defaults ]; then
         if ! grep -q "enable-fingerprint-authentication=false" /etc/gdm3/greeter.dconf-defaults; then
             echo "enable-fingerprint-authentication=false" | sudo tee -a /etc/gdm3/greeter.dconf-defaults >/dev/null
@@ -1363,21 +1363,21 @@ install_gdm_transition() {
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-path "/usr/share/backgrounds/GoldenGate_Day.jpg" 2>/dev/null || true
     run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/GoldenGate_Day.jpg" 2>/dev/null || true
 
-    # 11. Вимкнення автоматичного входу для обов'язкового відображення екрана блокування GDM
+    # 11. Disabling automatic login to display GDM lock screen
     if [ -f /etc/gdm3/custom.conf ]; then
         sudo sed -i 's|^AutomaticLoginEnable=.*|AutomaticLoginEnable=false|' /etc/gdm3/custom.conf
         sudo sed -i 's|^AutomaticLogin=.*|# AutomaticLogin=vitaliy|' /etc/gdm3/custom.conf
     fi
 
     sudo dconf update 2>/dev/null || true
-    log_success "Екран блокування macW1Y GDM та усунення накладань Yaru налаштовано!"
+    log_success "macW1Y GDM lock screen configured successfully!"
 }
 
 # ------------------------------------------------------------------------------
-# 11. Plymouth Apple Boot Splash
+# 12. Plymouth Apple Boot Splash
 # ------------------------------------------------------------------------------
 install_plymouth() {
-    log_step "Етап 11/13: Встановлення теми завантаження Apple Plymouth"
+    log_step "Stage 12/13: Installing Apple Plymouth boot splash"
     require_root
     
     local PLYMOUTH_TARGET="/usr/share/plymouth/themes/apple-mac"
@@ -1418,7 +1418,7 @@ install_plymouth() {
         sudo cp -r "$SCRIPT_DIR/dracut.conf.d/"* /etc/dracut.conf.d/ 2>/dev/null || true
     fi
     
-    # Реєстрація теми у Plymouth Alternatives та встановлення за замовчуванням
+    # Registering theme in Plymouth alternatives and setting default
     if [ -f "$PLYMOUTH_TARGET/apple-mac.plymouth" ]; then
         if command -v update-alternatives >/dev/null 2>&1; then
             sudo update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth "$PLYMOUTH_TARGET/apple-mac.plymouth" 200 2>/dev/null || true
@@ -1436,16 +1436,16 @@ DeviceTimeout=8
 EOF
     fi
     
-    log_info "Оновлення initramfs..."
+    log_info "Updating initramfs..."
     sudo update-initramfs -u 2>/dev/null || true
-    log_success "Apple Boot Splash успішно активовано!"
+    log_success "Apple Boot Splash activated successfully!"
 }
 
 # ------------------------------------------------------------------------------
-# 12. GRUB Apple Silicon Boot Manager
+# 13. GRUB Apple Silicon Boot Manager
 # ------------------------------------------------------------------------------
 install_grub() {
-    log_step "Етап 12/13: Встановлення горизонтального меню GRUB у стилі Apple Silicon"
+    log_step "Stage 13/13: Installing Apple Silicon horizontal GRUB boot menu"
     require_root
     
     local GRUB_TARGET="/boot/grub/themes/apple-mac"
@@ -1495,12 +1495,12 @@ install_grub() {
     fi
 
     if [ -f "$SCRIPT_DIR/grub/patch_grub_keys.py" ]; then
-        log_info "Застосування бінарних патчів навігації клавіш GRUB..."
+        log_info "Applying binary key navigation patches for GRUB..."
         sudo python3 "$SCRIPT_DIR/grub/patch_grub_keys.py" 2>/dev/null || true
     fi
 
     if [ -f "$SCRIPT_DIR/grub/generate_icons.py" ]; then
-        log_info "Генерація прозорих іконок Apple Silicon та статусних віджетів GRUB..."
+        log_info "Generating transparent Apple Silicon icons and GRUB status widgets..."
         sudo python3 "$SCRIPT_DIR/grub/generate_icons.py" 2>/dev/null || true
     fi
 
@@ -1510,50 +1510,50 @@ install_grub() {
         sudo systemctl enable mac-grub-status.service 2>/dev/null || true
     fi
 
-    log_info "Оновлення GRUB конфігурації..."
+    log_info "Updating GRUB configuration..."
     sudo update-grub
-    log_success "Горизонтальне меню запуску Apple Silicon успішно встановлено!"
+    log_success "Apple Silicon boot manager menu installed successfully!"
 }
 
 # ------------------------------------------------------------------------------
-# 13. Фіналізація та перезавантаження компонентів
+# Finalization and Component Restart
 # ------------------------------------------------------------------------------
 finalize_installation() {
-    log_step "Етап 13/13: Фіналізація та застосування змін"
+    log_step "Finalizing and applying changes"
     
     save_version "$NEW_VERSION"
     
-    log_info "Перезапуск компонентів оболонки..."
+    log_info "Restarting shell components..."
     run_as_user gnome-extensions disable blur-my-shell@aunetx 2>/dev/null || true
     sleep 1
     run_as_user gnome-extensions enable blur-my-shell@aunetx 2>/dev/null || true
     
-    # Санітизація та оптимізація закріплених програм Dock
+    # Sanitizing and optimizing pinned Dock applications
     if [ -x "/usr/local/bin/mac-sanitize-favorites.sh" ]; then
         run_as_user /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
     fi
     
     echo -e "\n${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
-    echo -e " ${C_BOLD}${C_GREEN}✔ ВСТАНОВЛЕННЯ / ОНОВЛЕННЯ macW1Y v${NEW_VERSION} УСПІШНО ЗАВЕРШЕНО!${C_RESET}"
+    echo -e " ${C_BOLD}${C_GREEN}✔ macW1Y v${NEW_VERSION} INSTALLATION / UPDATE COMPLETED SUCCESSFULLY!${C_RESET}"
     echo -e "${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
-    echo -e " ${C_CYAN}Всі компоненти macOS Modpack розгорнуто:${C_RESET}"
-    echo -e "   • Тема інтерфейсу macW1Y-Dark та іконки"
-    echo -e "   • Шрифти San Francisco Pro"
-    echo -e "   • Меню-бар Liquid Glass із відступами 8px та Apple Menu"
-    echo -e "   • Control Center та системні параметри з розділом «Mac стилізація»"
-    echo -e "   • Багатопальцеві жести тачпада macOS (3-пальцеве перетягування, щипки copy/paste)"
-    echo -e "   • Режим гри (Game Mode) та перемикання графіки Nvidia RTX"
-    echo -e "   • Завантажувальне горизонтальне меню GRUB Apple Silicon та Plymouth"
-    echo -e "   • Плавний перехід GDM без ривків шпалер"
-    echo -e "\n ${C_YELLOW}Рекомендується вийти із сеансу та увійти знову (або перезавантажити ПК),${C_RESET}"
-    echo -e " ${C_YELLOW}щоб усі змінні оточення та оверлеї набрали повної сили.${C_RESET}\n"
+    echo -e " ${C_CYAN}All macOS Modpack components successfully deployed:${C_RESET}"
+    echo -e "   • macW1Y-Dark UI theme and icons"
+    echo -e "   • San Francisco Pro fonts"
+    echo -e "   • Liquid Glass menu bar with 8px margins and Apple Menu"
+    echo -e "   • Control Center and system Settings with Mac Styling panel"
+    echo -e "   • Multi-touch macOS touchpad gestures (3-finger drag, pinch copy/paste)"
+    echo -e "   • Game Mode and GPU graphics management"
+    echo -e "   • Apple Silicon GRUB boot menu and Plymouth boot splash"
+    echo -e "   • Smooth GDM transition with seamless wallpaper alignment"
+    echo -e "\n ${C_YELLOW}It is recommended to log out and log back in (or restart your PC),${C_RESET}"
+    echo -e " ${C_YELLOW}for all environment variables and overlays to take full effect.${C_RESET}\n"
 }
 
 # ------------------------------------------------------------------------------
-# Основні режими виконання (Run Modes)
+# Main Execution Modes (Run Modes)
 # ------------------------------------------------------------------------------
 
-# 1. Встановлення всього
+# 1. Full Installation
 run_full_install() {
     install_dependencies
     install_fonts
@@ -1571,25 +1571,25 @@ run_full_install() {
     finalize_installation
 }
 
-# 2. Оновлення [на пк версія] -> [нова версія]
-# Перевіряє кожен файл, замінює змінені та додає відсутні
+# 2. Incremental Update [installed version] -> [new version]
+# Verifies every file, replaces modified, and adds missing
 run_incremental_update() {
     local cur_ver="$1"
     local new_ver="$2"
     
-    log_step "Оновлення [v$cur_ver] -> [v$new_ver]: Перевірка та заміна змінених або відсутніх файлів"
+    log_step "Update [v$cur_ver] -> [v$new_ver]: Verifying and syncing modified or missing files"
     require_root
     
     MODIFIED_COUNT=0
     UNCHANGED_COUNT=0
     
-    log_info "1/9 Перевірка шрифтів..."
+    log_info "1/10 Checking fonts..."
     sync_directory_tree "$SCRIPT_DIR/fonts/SF_Pro" "$TARGET_HOME/.local/share/fonts/SF_Pro" false
     sync_directory_tree "$SCRIPT_DIR/fonts/SF_Pro" "/usr/local/share/fonts/SF_Pro" true
     sync_directory_tree "$SCRIPT_DIR/fonts/Open_Runde" "$TARGET_HOME/.local/share/fonts/Open_Runde" false
     sync_directory_tree "$SCRIPT_DIR/fonts/Open_Runde" "/usr/local/share/fonts/Open_Runde" true
     
-    log_info "2/9 Перевірка тем інтерфейсу..."
+    log_info "2/10 Checking UI themes..."
     sync_directory_tree "$SCRIPT_DIR/macW1Y-Dark" "$TARGET_HOME/.themes/macW1Y-Dark" false
     sync_directory_tree "$SCRIPT_DIR/macW1Y-Dark-solid" "$TARGET_HOME/.themes/macW1Y-Dark-solid" false
     ln -sfn "macW1Y-Dark" "$TARGET_HOME/.themes/MacTahoe-Dark"
@@ -1615,7 +1615,7 @@ run_incremental_update() {
         sync_or_update_file "$SCRIPT_DIR/lib/libmacpopover.so" "/usr/lib/libmacpopover.so" true
     fi
 
-    log_info "3/9 Перевірка набору іконок..."
+    log_info "3/10 Checking icon themes..."
     for theme_dir in MacTahoe MacTahoe-dark MacTahoe-light; do
         if [ -d "$SCRIPT_DIR/icons/$theme_dir" ]; then
             sync_directory_tree "$SCRIPT_DIR/icons/$theme_dir" "$TARGET_HOME/.local/share/icons/$theme_dir" false
@@ -1626,7 +1626,7 @@ run_incremental_update() {
     sync_or_update_file "$SCRIPT_DIR/icons/control-center-symbolic.svg" "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center-symbolic.svg" false
     run_as_user gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-dark"
 
-    log_info "4/10 Перевірка звукової теми macOS..."
+    log_info "4/10 Checking macOS sound theme..."
     if [ -d "$SCRIPT_DIR/sounds/macOS" ]; then
         sync_directory_tree "$SCRIPT_DIR/sounds/macOS" "$TARGET_HOME/.local/share/sounds/macOS" false
         if [ -w "/usr/share/sounds" ] || sudo -n true 2>/dev/null; then
@@ -1650,12 +1650,12 @@ run_incremental_update() {
         grep -q "Hidden=true" /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop || echo "Hidden=true" | sudo tee -a /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop >/dev/null
     fi
 
-    log_info "5/10 Перевірка шпалер..."
+    log_info "5/10 Checking wallpaper..."
     if [ -f "$SCRIPT_DIR/wallpapers/GoldenGate_Day.jpg" ]; then
         sync_or_update_file "$SCRIPT_DIR/wallpapers/GoldenGate_Day.jpg" "/usr/share/backgrounds/GoldenGate_Day.jpg" true
     fi
 
-    log_info "5/9 Перевірка розширень GNOME Shell..."
+    log_info "6/10 Checking GNOME Shell extensions..."
     local EXT_USER_DIR="$TARGET_HOME/.local/share/gnome-shell/extensions"
     if [ -d "$SCRIPT_DIR/extensions" ]; then
         for ext in "$SCRIPT_DIR/extensions"/*; do
@@ -1707,14 +1707,14 @@ run_incremental_update() {
             run_as_user gnome-extensions disable "$ext_id" 2>/dev/null || true
         done
 
-        # Системні налаштування gschema override
+        # System gschema overrides
         if [ -f "$SCRIPT_DIR/macos-gdm/99_mactheme.gschema.override" ]; then
             sudo cp "$SCRIPT_DIR/macos-gdm/99_mactheme.gschema.override" /usr/share/glib-2.0/schemas/
             sudo chmod 644 /usr/share/glib-2.0/schemas/99_mactheme.gschema.override
             sudo glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
         fi
 
-        # Сторожовий скрипт автозапуску розширень (захист від вивантаження)
+        # Extension watchdog autostart script (unload protection)
         if [ -f "$SCRIPT_DIR/bin/mac-ensure-extensions.sh" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/mac-ensure-extensions.sh" "/usr/local/bin/mac-ensure-extensions.sh" true
             sudo chmod +x /usr/local/bin/mac-ensure-extensions.sh
@@ -1728,7 +1728,7 @@ run_incremental_update() {
         run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files throttle 20 2>/dev/null || true
     fi
 
-    log_info "6/9 Перевірка компонентів Параметрів (GNOME Control Center Overlay)..."
+    log_info "7/10 Checking Settings components (GNOME Control Center Overlay)..."
     local OVERLAY_DIR="$TARGET_HOME/.local/share/gnome-control-center-overlay"
     local LOCAL_BIN="$TARGET_HOME/.local/bin"
     local LOCAL_LIB="$TARGET_HOME/.local/lib"
@@ -1770,7 +1770,7 @@ run_incremental_update() {
         fi
     done
 
-    # Встановлення та запуск фонового таймера перевірки цілісності macW1Y
+    # Installing and enabling macW1Y background integrity check timer
     if [ -f "$SCRIPT_DIR/systemd/mac-integrity-check.service" ] && [ -f "$SCRIPT_DIR/systemd/mac-integrity-check.timer" ]; then
         local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
         mkdir -p "$USER_SYSTEMD"
@@ -1847,7 +1847,7 @@ run_incremental_update() {
         sync_directory_tree "$SCRIPT_DIR/config/mac-styling" "$CFG_DIR" false
     fi
 
-    log_info "7/9 Перевірка жестів тачпада та Game Mode..."
+    log_info "8/10 Checking touchpad gestures and Game Mode..."
     if [ -f "$SCRIPT_DIR/bin/mac-touchpad-daemon" ]; then
         sync_or_update_file "$SCRIPT_DIR/bin/mac-touchpad-daemon" "/usr/local/bin/mac-touchpad-daemon" true
         sudo chmod +x /usr/local/bin/mac-touchpad-daemon
@@ -1863,7 +1863,7 @@ run_incremental_update() {
         fi
     done
 
-    # Steam wrapper: оновлюється лише за умови наявності Steam у системі
+    # Steam wrapper: updated only if Steam is present on the system
     if [ -x "/snap/bin/steam" ] || [ -x "/usr/games/steam" ] || [ -x "/usr/bin/steam" ] || { which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; }; then
         if [ -f "$SCRIPT_DIR/bin/steam" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/steam" "/usr/local/bin/steam" true
@@ -1874,7 +1874,7 @@ run_incremental_update() {
     fi
     [ -f "$SCRIPT_DIR/systemd/mac-gamemode.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-gamemode.service" "/etc/systemd/system/mac-gamemode.service" true
 
-    # Системні оптимізації швидкодії та ігор у режимі оновлення
+    # Performance and gaming optimizations in update mode
     if [ -f "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" ]; then
         sync_or_update_file "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" "/etc/sysctl.d/99-macw1y-performance.conf" true
         sudo sysctl -p /etc/sysctl.d/99-macw1y-performance.conf 2>/dev/null || true
@@ -1894,8 +1894,8 @@ run_incremental_update() {
         fi
     fi
 
-    # Nautilus Finder Sidebar та розширення
-    log_info "Оновлення macOS Nautilus Finder Sidebar..."
+    # Nautilus Finder Sidebar and extensions
+    log_info "Updating macOS Nautilus Finder Sidebar..."
     if [ -f "$SCRIPT_DIR/src/mac_nautilus.c" ] && command -v gcc >/dev/null 2>&1; then
         gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_nautilus.so" "$SCRIPT_DIR/src/mac_nautilus.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 gio-2.0 2>/dev/null) -ldl 2>/dev/null || true
     fi
@@ -1954,7 +1954,7 @@ EOF_NAUT
     fi
     run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
 
-    log_info "8/9 Перевірка Plymouth та GDM переходу..."
+    log_info "9/10 Checking Plymouth and GDM transition..."
     sudo rm -rf /etc/gnome-shell/ui/layout.js /etc/gnome-shell/ui 2>/dev/null || true
     sudo sed -i '/G_RESOURCE_OVERLAYS.*gnome-shell/d' /etc/environment 2>/dev/null || true
     if [ -d "$SCRIPT_DIR/plymouth/apple-mac" ]; then
@@ -1973,7 +1973,7 @@ EOF
         sudo update-initramfs -u 2>/dev/null || true
     fi
 
-    log_info "9/9 Перевірка завантажувача GRUB..."
+    log_info "10/10 Checking GRUB bootloader..."
     if [ -d "$SCRIPT_DIR/grub/apple-mac" ]; then
         sync_directory_tree "$SCRIPT_DIR/grub/apple-mac" "/boot/grub/themes/apple-mac" true
     fi
@@ -1991,7 +1991,7 @@ EOF
     sudo chmod 644 /etc/grub.d/30_uefi-firmware 2>/dev/null || true
     sudo update-grub 2>/dev/null || true
 
-    log_info "Оновлення системних кешів..."
+    log_info "Updating system caches..."
     chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.themes" "$TARGET_HOME/.local/share/fonts" "$TARGET_HOME/.local/share/icons" "$EXT_USER_DIR" "$OVERLAY_DIR" "$LOCAL_BIN" "$LOCAL_LIB" "$APP_DIR" "$SVC_DIR" "$CFG_DIR" 2>/dev/null || true
     
     sudo fc-cache -f >/dev/null 2>&1 || true
@@ -1999,7 +1999,7 @@ EOF
     gtk-update-icon-cache -f -t "$TARGET_HOME/.local/share/icons/macW1Y-dark" 2>/dev/null || true
     run_as_user update-desktop-database "$APP_DIR" 2>/dev/null || true
     
-    # Санітизація та оптимізація закріплених програм Dock
+    # Sanitizing and optimizing pinned Dock applications
     if [ -x "/usr/local/bin/mac-sanitize-favorites.sh" ]; then
         run_as_user /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
     fi
@@ -2007,43 +2007,43 @@ EOF
     sudo systemctl daemon-reload 2>/dev/null || true
     sudo systemctl restart mac-touchpad-daemon.service 2>/dev/null || true
     
-    # Збереження версії
+    # Saving version
     save_version "$new_ver"
     
-    # Перезавантаження розширення
+    # Reloading extension
     run_as_user gnome-extensions disable blur-my-shell@aunetx 2>/dev/null || true
     sleep 1
     run_as_user gnome-extensions enable blur-my-shell@aunetx 2>/dev/null || true
     
     echo -e "\n${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
-    echo -e " ${C_BOLD}${C_GREEN}✔ ОНОВЛЕННЯ [v$cur_ver] -> [v$new_ver] УСПІШНО ЗАВЕРШЕНО!${C_RESET}"
+    echo -e " ${C_BOLD}${C_GREEN}✔ UPDATE [v$cur_ver] -> [v$new_ver] COMPLETED SUCCESSFULLY!${C_RESET}"
     echo -e "${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
-    echo -e "   • Змінених / доданих файлів: ${C_BOLD}${C_CYAN}$MODIFIED_COUNT${C_RESET}"
-    echo -e "   • Незмінених файлів (актуальних): ${C_BOLD}$UNCHANGED_COUNT${C_RESET}"
-    echo -e "   • Поточна версія системи: ${C_BOLD}${C_GREEN}v$new_ver${C_RESET}\n"
+    echo -e "   • Modified / added files: ${C_BOLD}${C_CYAN}$MODIFIED_COUNT${C_RESET}"
+    echo -e "   • Unchanged files (up to date): ${C_BOLD}$UNCHANGED_COUNT${C_RESET}"
+    echo -e "   • Current system version: ${C_BOLD}${C_GREEN}v$new_ver${C_RESET}\n"
 }
 
-# 3. Чисте оновлення [на пк версія] -> [нова версія]
-# Видаляє ВСІ файли темпаку з ПК до нуля і встановлює все заново
+# 3. Clean Reinstall [installed version] -> [new version]
+# Completely removes all theme pack files and reinstalls from scratch
 run_clean_update() {
     local cur_ver="$1"
     local new_ver="$2"
     
     if [ -n "$cur_ver" ]; then
-        log_step "Чисте оновлення [v$cur_ver] -> [v$new_ver]: Повне видалення ВСІХ файлів темпаку до нуля"
+        log_step "Clean Reinstall [v$cur_ver] -> [v$new_ver]: Completely removing all previous theme pack files"
     else
-        log_step "Чисте оновлення [v$new_ver]: Видалення залишків темпаку до нуля та чисте встановлення"
+        log_step "Clean Reinstall [v$new_ver]: Completely removing all previous files and performing fresh installation"
     fi
     require_root
     
-    log_info "1/3 Створення контрольної точки резервної копії перед оновленням..."
+    log_info "1/3 Creating backup checkpoint before reinstall..."
     local BKP_DIR="$TARGET_HOME/.config/macw1y/backups/pre_clean_update_$(date +%Y%m%d_%H%M%S)"
     mkdir -p "$BKP_DIR"
     [ -d "$TARGET_HOME/.themes" ] && cp -a "$TARGET_HOME/.themes" "$BKP_DIR/themes" 2>/dev/null || true
     [ -d "$TARGET_HOME/.config/gtk-4.0" ] && cp -a "$TARGET_HOME/.config/gtk-4.0" "$BKP_DIR/gtk-4.0" 2>/dev/null || true
     run_as_user dconf dump / > "$BKP_DIR/dconf_dump.ini" 2>/dev/null || true
     
-    log_info "2/3 Видалення ВСІХ компонентів macW1Y з ПК до нуля..."
+    log_info "2/3 Removing ALL macW1Y components from the system..."
     rm -rf "$TARGET_HOME/.themes/macW1Y-Dark"* "$TARGET_HOME/.themes/MacTahoe"*
     rm -rf "$TARGET_HOME/.local/share/icons/macW1Y-dark"* "$TARGET_HOME/.local/share/icons/MacTahoe"* "$TARGET_HOME/.local/share/icons/apple-cursors"*
     rm -f "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center"*
@@ -2098,14 +2098,14 @@ run_clean_update() {
     rm -rf "$TARGET_HOME/.local/share/macW1Y"
     sudo rm -rf /etc/macW1Y
     
-    log_success "Усі старі файли темпаку видалено до нуля!"
+    log_success "All previous theme pack files removed completely!"
     
-    log_info "3/3 Встановлення чистої версії v$new_ver з нуля..."
+    log_info "3/3 Performing fresh installation of v$new_ver..."
     run_full_install
 }
 
 # ------------------------------------------------------------------------------
-# CLI Аргументи командного рядка
+# CLI Command-Line Arguments
 # ------------------------------------------------------------------------------
 if [ "$1" = "--install" ] || [ "$1" = "-i" ] || [ "$1" = "--all" ] || [ "$1" = "-y" ] || [ "$1" = "--yes" ]; then
     print_banner
@@ -2122,16 +2122,16 @@ elif [ "$1" = "--clean-update" ] || [ "$1" = "-c" ]; then
     run_clean_update "$INSTALLED_VER" "$NEW_VERSION"
     exit 0
 elif [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    echo "Використання: ./install.sh [ОПЦІЇ]"
-    echo "  --install, -i, --all    Повне встановлення версії v${NEW_VERSION}"
-    echo "  --update, -u            Пофайлове оновлення існуючої версії до v${NEW_VERSION}"
-    echo "  --clean-update, -c      Чисте оновлення (повне видалення до нуля + чисте встановлення)"
-    echo "  --help, -h              Показати цю довідку"
+    echo "Usage: ./install.sh [OPTIONS]"
+    echo "  --install, -i, --all    Full installation of release v${NEW_VERSION}"
+    echo "  --update, -u            Incremental update of existing installation to v${NEW_VERSION}"
+    echo "  --clean-update, -c      Clean reinstall (complete removal of old files + fresh install)"
+    echo "  --help, -h              Show this help message"
     exit 0
 fi
 
 # ------------------------------------------------------------------------------
-# Інтерактивне Меню
+# Interactive Menu
 # ------------------------------------------------------------------------------
 print_banner
 
@@ -2141,51 +2141,51 @@ if [ -n "$INSTALLED_VER" ]; then
     CMP_RES=$(compare_semver "$INSTALLED_VER" "$NEW_VERSION")
 fi
 
-echo -e " ${C_BOLD}Інформація про версію:${C_RESET}"
+echo -e " ${C_BOLD}Version Information:${C_RESET}"
 if [ -n "$INSTALLED_VER" ]; then
-    echo -e "   • Встановлена версія на ПК: ${C_BOLD}${C_YELLOW}v$INSTALLED_VER${C_RESET}"
+    echo -e "   • Installed version on PC: ${C_BOLD}${C_YELLOW}v$INSTALLED_VER${C_RESET}"
 else
-    echo -e "   • Встановлена версія на ПК: ${C_BOLD}${C_RED}Не встановлено${C_RESET}"
+    echo -e "   • Installed version on PC: ${C_BOLD}${C_RED}Not installed${C_RESET}"
 fi
-echo -e "   • Версія інсталятора (пакунку): ${C_BOLD}${C_GREEN}v$NEW_VERSION${C_RESET}\n"
+echo -e "   • Installer package version: ${C_BOLD}${C_GREEN}v$NEW_VERSION${C_RESET}\n"
 
-echo -e " ${C_BOLD}Оберіть дію:${C_RESET}\n"
+echo -e " ${C_BOLD}Select an action:${C_RESET}\n"
 
 HAS_OPT1=false
 HAS_OPT2=false
 HAS_OPT3=true
 
 if [ -z "$INSTALLED_VER" ]; then
-    # Нічого не встановлено: показуємо пункт 1 і 3
+    # Nothing installed: show options 1 and 3
     HAS_OPT1=true
     HAS_OPT2=false
-    echo -e "  ${C_GREEN}[1]${C_RESET} ${C_BOLD}Встановлення всього [v${NEW_VERSION}]${C_RESET} (Первинне повне встановлення macW1Y)"
-    echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Чисте оновлення / встановлення [v${NEW_VERSION}]${C_RESET} (Видаляє ВСІ залишки темпаку з ПК до нуля та встановлює все заново)"
-    echo -e "  ${C_RED}[4]${C_RESET} Вихід з програми\n"
+    echo -e "  ${C_GREEN}[1]${C_RESET} ${C_BOLD}Full Installation [v${NEW_VERSION}]${C_RESET} (Initial complete installation of macW1Y)"
+    echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Clean Reinstall [v${NEW_VERSION}]${C_RESET} (Completely removes all theme pack remnants and performs fresh installation)"
+    echo -e "  ${C_RED}[4]${C_RESET} Exit installer\n"
 elif [ "$CMP_RES" -eq 2 ]; then
-    # Є попередня менша версія (наприклад 0.1 < 0.2): пункт 1 ховаємо, показуємо 2 і 3
+    # Previous version found: show options 2 and 3
     HAS_OPT1=false
     HAS_OPT2=true
-    echo -e "  ${C_CYAN}[2]${C_RESET} ${C_BOLD}Оновлення [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Перевіряє кожен файл і замінює/додає відсутні чи змінені файли)"
-    echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Чисте оновлення [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Видаляє ВСІ файли темпаку з ПК до нуля та встановлює все заново)"
-    echo -e "  ${C_RED}[4]${C_RESET} Вихід з програми\n"
+    echo -e "  ${C_CYAN}[2]${C_RESET} ${C_BOLD}Update [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Verifies every file and updates modified or missing components)"
+    echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Clean Reinstall [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Completely removes all theme pack files and reinstalls from scratch)"
+    echo -e "  ${C_RED}[4]${C_RESET} Exit installer\n"
 else
-    # Версія збігається або новіша (0.2 == 0.2): показуємо 2 і 3
+    # Version matches or is newer: show options 2 and 3
     HAS_OPT1=false
     HAS_OPT2=true
-    echo -e "  ${C_CYAN}[2]${C_RESET} ${C_BOLD}Оновлення / Перевірка цілісності [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Перевіряє кожен файл і відновлює відсутні чи пошкоджені файли)"
-    echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Чисте оновлення [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Видаляє ВСІ файли темпаку з ПК до нуля та встановлює все заново)"
-    echo -e "  ${C_RED}[4]${C_RESET} Вихід з програми\n"
+    echo -e "  ${C_CYAN}[2]${C_RESET} ${C_BOLD}Update / Integrity Check [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Verifies files and restores missing or damaged components)"
+    echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Clean Reinstall [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Completely removes all theme pack files and reinstalls from scratch)"
+    echo -e "  ${C_RED}[4]${C_RESET} Exit installer\n"
 fi
 
-read -r -p " Введіть номер варіанту: " CHOICE
+read -r -p " Enter option number: " CHOICE
 
 case "$CHOICE" in
     1)
         if [ "$HAS_OPT1" = "true" ]; then
             run_full_install
         else
-            log_error "Пункт 1 недоступний: на ПК вже встановлено macW1Y v${INSTALLED_VER}. Оберіть [2] для оновлення або [3] для чистого оновлення."
+            log_error "Option 1 is not available: macW1Y v${INSTALLED_VER} is already installed. Choose [2] to update or [3] for clean reinstall."
             exit 1
         fi
         ;;
@@ -2193,7 +2193,7 @@ case "$CHOICE" in
         if [ "$HAS_OPT2" = "true" ]; then
             run_incremental_update "$INSTALLED_VER" "$NEW_VERSION"
         else
-            log_error "Пункт 2 недоступний: на ПК не виявлено попередньої версії. Оберіть [1] для встановлення або [3] для чистого встановлення."
+            log_error "Option 2 is not available: no previous version detected on this system. Choose [1] for full install or [3] for clean reinstall."
             exit 1
         fi
         ;;
@@ -2201,11 +2201,11 @@ case "$CHOICE" in
         run_clean_update "$INSTALLED_VER" "$NEW_VERSION"
         ;;
     4|0)
-        echo -e "\nРоботу завершено. Вихід з інсталятора."
+        echo -e "\nOperation complete. Exiting installer."
         exit 0
         ;;
     *)
-        echo -e "\nНевірний вибір. Встановлення скасовано."
+        echo -e "\nInvalid choice. Installation cancelled."
         exit 1
         ;;
 esac

@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+"""
+mac-i18n-verify - Comprehensive Internationalization & Localization Verification Suite
+Validates:
+1. Catalog integrity (194 Ubuntu/BCP-47 locales across 4 tiers)
+2. Dictionary completeness & UTF-8 integrity
+3. Placeholder consistency ({query}, {time}, {rpm}, {size}, etc.)
+4. Runtime modules generation & sync status
+5. Strict English-only enforcement on install.sh
+6. Fallback resolution to English for all Tier 4 locales
+"""
+
+import os
+import sys
+import json
+import re
+import subprocess
+
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+C_RESET = "\033[0m"
+C_BOLD = "\033[1m"
+C_GREEN = "\033[1;32m"
+C_RED = "\033[1;31m"
+C_YELLOW = "\033[1;33m"
+C_CYAN = "\033[1;36m"
+
+def check(title, condition, detail=""):
+    if condition:
+        print(f"  {C_GREEN}✔{C_RESET} {title}")
+        return True
+    else:
+        print(f"  {C_RED}✖{C_RESET} {title}")
+        if detail:
+            print(f"    {C_YELLOW}↳ {detail}{C_RESET}")
+        return False
+
+def main():
+    print(f"\n{C_CYAN}{C_BOLD}=== macW1Y 0.4 i18n / l10n VALIDATION SUITE ==={C_RESET}\n")
+    all_ok = True
+
+    # 1. Catalog Verification
+    print(f"{C_BOLD}1. Localization Catalog Audit (config/i18n/catalog.json):{C_RESET}")
+    cat_path = os.path.join(REPO_ROOT, "config/i18n/catalog.json")
+    if not os.path.exists(cat_path):
+        check("Catalog file exists", False, "Missing config/i18n/catalog.json")
+        all_ok = False
+        return 1
+
+    with open(cat_path, "r", encoding="utf-8") as f:
+        catalog_data = json.load(f)
+
+    catalog = catalog_data.get("catalog", [])
+    total_langs = len(catalog)
+    all_ok &= check(f"Catalog contains 194 supported Ubuntu/BCP-47 languages (found {total_langs})", total_langs == 194)
+
+    tiers = catalog_data.get("tiers", {})
+    t1_cnt = tiers.get("tier_1", {}).get("count", 0)
+    t2_cnt = tiers.get("tier_2", {}).get("count", 0)
+    t3_cnt = tiers.get("tier_3", {}).get("count", 0)
+    t4_cnt = tiers.get("tier_4", {}).get("count", 0)
+
+    all_ok &= check(f"Tier 1: 2 Complete Primary languages (uk, en) -> {t1_cnt}", t1_cnt == 2)
+    all_ok &= check(f"Tier 2: 29 Comprehensive Major languages -> {t2_cnt}", t2_cnt == 29)
+    all_ok &= check(f"Tier 3: 3 RTL Bidirectional languages (ar, he, fa) -> {t3_cnt}", t3_cnt == 3)
+    all_ok &= check(f"Tier 4: 160 Ubuntu Fallback locales -> {t4_cnt}", t4_cnt == 160)
+
+    # 2. Central Translations Dictionary Audit
+    print(f"\n{C_BOLD}2. Central Translations Dictionary (config/i18n/translations.json):{C_RESET}")
+    trans_path = os.path.join(REPO_ROOT, "config/i18n/translations.json")
+    if not os.path.exists(trans_path):
+        check("translations.json exists", False)
+        all_ok = False
+        return 1
+
+    with open(trans_path, "r", encoding="utf-8") as f:
+        translations = json.load(f)
+
+    en_keys = set(translations.get("en", {}).keys())
+    uk_keys = set(translations.get("uk", {}).keys())
+
+    all_ok &= check(f"Primary English baseline contains keys ({len(en_keys)} keys)", len(en_keys) >= 80)
+    all_ok &= check(f"Primary Ukrainian baseline contains keys ({len(uk_keys)} keys)", len(uk_keys) >= 80)
+
+    missing_in_uk = en_keys - uk_keys
+    all_ok &= check("Tier 1 Ukrainian key parity with English (0 missing)", len(missing_in_uk) == 0, f"Missing: {missing_in_uk}")
+
+    # Placeholder checks ({query}, {time}, {rpm}, {size}, etc.)
+    placeholder_re = re.compile(r"\{([a-zA-Z0-9_]+)\}")
+    placeholder_mismatches = []
+    for lang, dict_keys in translations.items():
+        for k, text in dict_keys.items():
+            en_text = translations["en"].get(k, "")
+            en_placeholders = set(placeholder_re.findall(en_text))
+            lang_placeholders = set(placeholder_re.findall(text))
+            if en_placeholders != lang_placeholders:
+                placeholder_mismatches.append((lang, k, en_placeholders, lang_placeholders))
+
+    all_ok &= check("Placeholder consistency across all translations", len(placeholder_mismatches) == 0,
+                    f"Mismatches: {placeholder_mismatches[:3]}")
+
+    # 3. Runtime Files & Module Artifacts
+    print(f"\n{C_BOLD}3. Runtime Module Generation & Extension Synchronization:{C_RESET}")
+    runtime_targets = [
+        "extensions/appmenu@ChathurangaBW.github.io/mac_i18n.js",
+        "extensions/blur-my-shell@aunetx/components/mac_i18n.js",
+        "extensions/kiwi@kemma/apps/mac_i18n.js",
+        "bin/mac_i18n.py",
+        "control-center/mac_i18n.h",
+        "src/mac_i18n.h",
+    ]
+    for rel in runtime_targets:
+        full_p = os.path.join(REPO_ROOT, rel)
+        exists = os.path.exists(full_p)
+        size = os.path.getsize(full_p) if exists else 0
+        all_ok &= check(f"{rel} exists and populated ({size} bytes)", exists and size > 500)
+
+    # 4. Strict English-Only Verification for install.sh
+    print(f"\n{C_BOLD}4. Strict English-Only Enforcement for install.sh:{C_RESET}")
+    install_sh = os.path.join(REPO_ROOT, "install.sh")
+    with open(install_sh, "r", encoding="utf-8") as f:
+        install_lines = f.readlines()
+
+    cyrillic_re = re.compile(r"[\u0400-\u04FF]")
+    cyrillic_matches = []
+    for idx, l in enumerate(install_lines, 1):
+        if cyrillic_re.search(l):
+            cyrillic_matches.append((idx, l.strip()))
+
+    all_ok &= check(f"install.sh contains 0 Cyrillic characters (found {len(cyrillic_matches)})",
+                    len(cyrillic_matches) == 0,
+                    f"First match: line {cyrillic_matches[0][0]}: {cyrillic_matches[0][1]}" if cyrillic_matches else "")
+
+    res_sh = subprocess.run(["bash", "-n", install_sh], capture_output=True, text=True)
+    all_ok &= check("install.sh passes bash syntax validation", res_sh.returncode == 0, res_sh.stderr)
+
+    # 5. Extension Guard & Pinned Lock Hashes
+    print(f"\n{C_BOLD}5. GNOME Extensions Integrity & Version Lock:{C_RESET}")
+    res_guard = subprocess.run([os.path.join(REPO_ROOT, "bin/mac-extension-guard"), "verify"], capture_output=True, text=True)
+    all_ok &= check("All 20 managed extensions match pinned lock hashes", res_guard.returncode == 0, res_guard.stdout.strip())
+
+    # 6. Fallback Behavior Test
+    print(f"\n{C_BOLD}6. Universal English Fallback Resolution Test:{C_RESET}")
+    sys.path.insert(0, os.path.join(REPO_ROOT, "bin"))
+    import mac_i18n
+    # Test Tier 4 locale (e.g. da - Danish)
+    fb_val = mac_i18n.t("power_performance", override_locale="da")
+    fb_expected = translations["en"]["power_performance"]
+    all_ok &= check(f"Tier 4 language 'da' cleanly falls back to English: '{fb_val}'", fb_val == fb_expected)
+
+    # Test unknown key fallback
+    unk_val = mac_i18n.t("non_existent_key_xyz", fallback="DefaultFallback")
+    all_ok &= check("Missing key falls back to parameter without error", unk_val == "DefaultFallback")
+
+    # Test RTL detection
+    ar_rtl = mac_i18n.RTL_LANGUAGES.issuperset({"ar", "he", "fa"})
+    all_ok &= check("Tier 3 RTL language set includes ar, he, fa", ar_rtl)
+
+    # SUMMARY
+    print("\n" + "="*80)
+    if all_ok:
+        print(f"{C_GREEN}{C_BOLD}RESULT: macW1Y 0.4 i18n/l10n VALIDATION 100% SUCCESSFUL.{C_RESET}\n")
+        return 0
+    else:
+        print(f"{C_RED}{C_BOLD}RESULT: Validation failed with issues.{C_RESET}\n")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())

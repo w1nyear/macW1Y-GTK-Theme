@@ -11,6 +11,7 @@ import Shell from 'gi://Shell';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Pango from 'gi://Pango';
+import { t, tf } from './mac_i18n.js';
 
 
 /**
@@ -136,7 +137,7 @@ export function formatNotificationTimestamp(datetime) {
     if (diffDays <= 0) {
         return timeStr;
     } else if (diffDays === 1) {
-        return `Вчора, ${timeStr}`;
+        return tf('yesterday_time', { time: timeStr }, `Вчора, ${timeStr}`);
     } else if (dt.get_year() === now.get_year()) {
         return `${dt.format('%d.%m')}, ${timeStr}`;
     } else {
@@ -156,15 +157,15 @@ export function formatRelativeNotifAge(datetime) {
     const diffSec = Math.max(0, now.to_unix() - dt.to_unix());
     const min = Math.floor(diffSec / 60);
     if (min < 1)
-        return 'тільки що';
+        return t('just_now', 'тільки що');
     if (min < 60)
-        return `${min} хв тому`;
+        return tf('min_ago', { min }, `${min} хв тому`);
     const h = Math.floor(min / 60);
     if (h < 24)
-        return `${h} год тому`;
+        return tf('hour_ago', { hour: h }, `${h} год тому`);
     const d = Math.floor(h / 24);
     if (d < 7)
-        return `${d} дн тому`;
+        return `${d} d`;
     return formatNotificationTimestamp(dt);
 }
 
@@ -181,18 +182,18 @@ export function formatToastAge(datetime) {
         }
         const sec = Math.max(0, now.to_unix() - dt.to_unix());
         if (sec < 60)
-            return 'Щойно';
+            return t('just_now', 'Щойно');
         const min = Math.floor(sec / 60);
         if (min < 60)
-            return `${min} хв тому`;
+            return tf('min_ago', { min }, `${min} хв тому`);
         const hr = Math.floor(min / 60);
         if (hr < 24)
-            return `${hr} год тому`;
+            return tf('hour_ago', { hour: hr }, `${hr} год тому`);
         if (hr < 48)
-            return `Вчора, ${dt.format('%H:%M')}`;
+            return tf('yesterday_time', { time: dt.format('%H:%M') }, `Вчора, ${dt.format('%H:%M')}`);
         return formatNotificationTimestamp(dt);
     } catch (_) {
-        return 'Щойно';
+        return t('just_now', 'Щойно');
     }
 }
 
@@ -330,7 +331,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     if (isScreenshot) {
         // Компактний вигляд скріншотів (новий вигляд macOS):
         // Рядок 1: «Знімок зроблено» (або назва), Рядок 2: інструкція/статус
-        const shotTitle = rawTitle || (appName && !appName.includes('Захоплення') ? appName : 'Знімок зроблено');
+        const shotTitle = rawTitle || (appName && !appName.includes('Захоплення') ? appName : t('screenshot_taken', 'Знімок зроблено'));
         titleLabel = new St.Label({
             x_expand: true,
             style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 13.5px !important; font-weight: 700 !important;',
@@ -339,7 +340,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
         contentBox.add_child(titleLabel);
 
-        const shotBody = bodyText || 'Знімок збережено в буфер обміну';
+        const shotBody = bodyText || t('screenshot_saved', 'Знімок збережено в буфер обміну');
         bodyLabel = new St.Label({
             x_expand: true,
             style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.82) !important; font-size: 12px !important; font-weight: 500 !important;',
@@ -357,7 +358,7 @@ export function buildNotificationCard(source, notification, options = {}) {
 
         if (appName && (!isDuplicateTitle || hasBody || isCritical)) {
             appLabel = new St.Label({
-                text: isCritical ? '⚠ ТЕРМІНОВО' : appName,
+                text: isCritical ? `⚠ ${t('urgent', 'ТЕРМІНОВО')}` : appName,
                 y_align: Clutter.ActorAlign.CENTER,
                 x_expand: true,
                 style: isCritical

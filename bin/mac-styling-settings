@@ -11,6 +11,9 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio, GLib
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from mac_i18n import t, tf, get_locale
+
 CSS_PATH = os.path.expanduser("~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css")
 CSS_SOLID_PATH = os.path.expanduser("~/.themes/MacTahoe-Dark-solid/gnome-shell/gnome-shell.css")
 LIQUID_SCHEMA = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com"
@@ -69,7 +72,7 @@ class MacStylingApp(Adw.Application):
 class MacStylingWindow(Adw.ApplicationWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.set_title("Mac стилізація")
+        self.set_title(t("styling_title", "Mac стилізація"))
         self.set_default_size(700, 780)
         self.save_timer = None
         self._initializing = True
@@ -108,82 +111,82 @@ class MacStylingWindow(Adw.ApplicationWindow):
         overlay = Gtk.Overlay()
 
         pref_page = Adw.PreferencesPage()
-        pref_page.set_title("Mac стилізація")
+        pref_page.set_title(t("styling_title", "Mac стилізація"))
 
         # 1. Dock Group
         dock_group = Adw.PreferencesGroup()
-        dock_group.set_title("Док-панель (Dock)")
-        dock_group.set_description("Скляний шейдер та тінт нижньої док-панелі")
+        dock_group.set_title(t("dock_title", "Док-панель (Dock)"))
+        dock_group.set_description(t("dock_desc", "Скляний шейдер та тінт нижньої док-панелі"))
         pref_page.add(dock_group)
 
         self.dock_glass_scale = self._create_slider_row(
-            dock_group, "Сила скла", "Інтенсивність заломлення та розмиття шейдера",
+            dock_group, t("glass_strength", "Сила скла"), t("glass_strength_desc", "Інтенсивність заломлення та розмиття шейдера"),
             0, 100, int(self.dock_glass_strength * 100)
         )
         self.dock_tint_combo, self.dock_tint_scale = self._create_tint_controls(
-            dock_group, "Тінт доку", self.dock_tint_mode, int(self.dock_tint_strength * 100)
+            dock_group, t("dock_tint", "Тінт доку"), self.dock_tint_mode, int(self.dock_tint_strength * 100)
         )
 
         # 2. Menubar Group
         menubar_group = Adw.PreferencesGroup()
-        menubar_group.set_title("Верхня панель (Menubar)")
-        menubar_group.set_description("Градієнтне затемнення та скляний ефект меню-бару")
+        menubar_group.set_title(t("menubar_title", "Верхня панель (Menubar)"))
+        menubar_group.set_description(t("menubar_desc", "Градієнтне затемнення та скляний ефект меню-бару"))
         pref_page.add(menubar_group)
 
         self.menubar_glass_scale = self._create_slider_row(
-            menubar_group, "Сила скла", "Інтенсивність розмиття верхньої панелі",
+            menubar_group, t("glass_strength", "Сила скла"), t("glass_strength_desc", "Інтенсивність розмиття верхньої панелі"),
             0, 100, int(self.menubar_glass_strength * 100)
         )
         self.menubar_tint_combo, self.menubar_tint_scale = self._create_tint_controls(
-            menubar_group, "Тінт меню-бару", self.menubar_tint_mode, int(self.menubar_tint_strength * 100)
+            menubar_group, t("menubar_tint", "Тінт меню-бару"), self.menubar_tint_mode, int(self.menubar_tint_strength * 100)
         )
 
         # 3. Context Menu Group
         menu_group = Adw.PreferencesGroup()
-        menu_group.set_title("Контекстні меню (Context Menus)")
-        menu_group.set_description("Скляний шейдер та тінт для контекстних меню системи й програм")
+        menu_group.set_title(t("context_menu_title", "Контекстні меню (Context Menus)"))
+        menu_group.set_description(t("context_menu_desc", "Скляний шейдер та тінт для контекстних меню системи й програм"))
         pref_page.add(menu_group)
 
         self.menu_glass_scale = self._create_slider_row(
-            menu_group, "Сила скла", "Інтенсивність рідкого скла у контекстних меню",
+            menu_group, t("glass_strength", "Сила скла"), t("glass_strength_desc", "Інтенсивність рідкого скла у контекстних меню"),
             0, 100, int(self.menu_glass_strength * 100)
         )
         self.menu_tint_combo, self.menu_tint_scale = self._create_tint_controls(
-            menu_group, "Тінт меню", self.menu_tint_mode, int(self.menu_tint_strength * 100)
+            menu_group, t("context_menu_tint", "Тінт меню"), self.menu_tint_mode, int(self.menu_tint_strength * 100)
         )
 
         # 4. OSD Group
         osd_group = Adw.PreferencesGroup()
-        osd_group.set_title("Екранні індикатори (OSD)")
-        osd_group.set_description("Скляні пілюлі гучності, яскравості та блокування")
+        osd_group.set_title(t("osd_title", "Екранні індикатори (OSD)"))
+        osd_group.set_description(t("osd_desc", "Скляні пілюлі гучності, яскравості та блокування"))
         pref_page.add(osd_group)
 
         self.osd_glass_scale = self._create_slider_row(
-            osd_group, "Сила скла", "Інтенсивність скла на плашках індикаторів",
+            osd_group, t("glass_strength", "Сила скла"), t("glass_strength_desc", "Інтенсивність скла на плашках індикаторів"),
             0, 100, int(self.osd_glass_strength * 100)
         )
         self.osd_tint_combo, self.osd_tint_scale = self._create_tint_controls(
-            osd_group, "Тінт OSD", self.osd_tint_mode, int(self.osd_tint_strength * 100)
+            osd_group, t("osd_tint", "Тінт OSD"), self.osd_tint_mode, int(self.osd_tint_strength * 100)
         )
 
         # 5. Notifications Group
         notif_group = Adw.PreferencesGroup()
-        notif_group.set_title("Центр сповіщень та банери")
-        notif_group.set_description("Стиль широких карток 395px, тіні та рідке скло")
+        notif_group.set_title(t("notif_title", "Центр сповіщень та банери"))
+        notif_group.set_description(t("notif_desc", "Стиль широких карток 395px, тіні та рідке скло"))
         pref_page.add(notif_group)
 
         self.notif_glass_scale = self._create_slider_row(
-            notif_group, "Сила скла", "Інтенсивність розмиття карток повідомлень",
+            notif_group, t("glass_strength", "Сила скла"), t("glass_strength_desc", "Інтенсивність розмиття карток повідомлень"),
             0, 100, int(self.notif_glass_strength * 100)
         )
         self.notif_tint_combo, self.notif_tint_scale = self._create_tint_controls(
-            notif_group, "Тінт сповіщень", self.notif_tint_mode, int(self.notif_tint_strength * 100)
+            notif_group, t("notif_tint", "Тінт сповіщень"), self.notif_tint_mode, int(self.notif_tint_strength * 100)
         )
 
         test_row = Adw.ActionRow()
-        test_row.set_title("Тестування сповіщення")
-        test_row.set_subtitle("Перевірити вигляд широкої скляної картки з тінню")
-        test_btn = Gtk.Button(label="Надіслати")
+        test_row.set_title(t("test_notif_title", "Тестування сповіщення"))
+        test_row.set_subtitle(t("test_notif_desc", "Перевірити вигляд широкої скляної картки з тінню"))
+        test_btn = Gtk.Button(label=t("send_button", "Надіслати"))
         test_btn.set_valign(Gtk.Align.CENTER)
         test_btn.connect("clicked", self.on_test_notif_clicked)
         test_row.add_suffix(test_btn)
@@ -191,61 +194,61 @@ class MacStylingWindow(Adw.ApplicationWindow):
 
         # 6. Control Center Group
         qs_group = Adw.PreferencesGroup()
-        qs_group.set_title("Центр керування (Control Center)")
-        qs_group.set_description("Скляні перемикачі, повзунки та анімація виїзду")
+        qs_group.set_title(t("control_center_title", "Центр керування (Control Center)"))
+        qs_group.set_description(t("control_center_desc", "Скляні перемикачі, повзунки та анімація виїзду"))
         pref_page.add(qs_group)
 
         self.qs_glass_scale = self._create_slider_row(
-            qs_group, "Сила скла", "Інтенсивність розмиття пілюль швидких налаштувань",
+            qs_group, t("glass_strength", "Сила скла"), t("glass_strength_desc", "Інтенсивність розмиття пілюль швидких налаштувань"),
             0, 100, int(self.qs_glass_strength * 100)
         )
         self.qs_tint_combo, self.qs_tint_scale = self._create_tint_controls(
-            qs_group, "Тінт перемикачів", self.qs_tint_mode, int(self.qs_tint_strength * 100)
+            qs_group, t("control_center_tint", "Тінт перемикачів"), self.qs_tint_mode, int(self.qs_tint_strength * 100)
         )
 
         # 7. Boot Group (Завантажувач)
         boot_group = Adw.PreferencesGroup()
-        boot_group.set_title("Завантажувач (Bootloader)")
-        boot_group.set_description("Параметри завантаження macOS Plymouth та логування ядра")
+        boot_group.set_title(t("bootloader_title", "Завантажувач (Bootloader)"))
+        boot_group.set_description(t("bootloader_desc", "Параметри завантаження macOS Plymouth та логування ядра"))
         pref_page.add(boot_group)
 
         self.verbose_switch = Adw.SwitchRow()
-        self.verbose_switch.set_title("Режим verbose")
-        self.verbose_switch.set_subtitle("Текстовий лог завантаження термінала позаду логотипу Apple")
+        self.verbose_switch.set_title(t("verbose_mode", "Режим verbose"))
+        self.verbose_switch.set_subtitle(t("verbose_mode_desc", "Текстовий лог завантаження термінала позаду логотипу Apple"))
         self.verbose_switch.set_active(self.verbose_mode)
         self.verbose_switch.connect("notify::active", self.on_verbose_toggled)
         boot_group.add(self.verbose_switch)
 
         self.grub_switch = Adw.SwitchRow()
-        self.grub_switch.set_title("Меню GRUB")
-        self.grub_switch.set_subtitle("Графічне меню вибору системи у стилі macOS під час старту")
+        self.grub_switch.set_title(t("grub_menu", "Меню GRUB"))
+        self.grub_switch.set_subtitle(t("grub_menu_desc", "Графічне меню вибору системи у стилі macOS під час старту"))
         self.grub_switch.set_active(self.grub_mode)
         self.grub_switch.connect("notify::active", self.on_grub_toggled)
         boot_group.add(self.grub_switch)
 
         # 8. Diagnostics & Integrity Group (Цілісність та діагностика)
         diag_group = Adw.PreferencesGroup()
-        diag_group.set_title("Цілісність та діагностика")
-        diag_group.set_description("Контроль еталону SSOT, розширень GNOME та автоматичне відновлення")
+        diag_group.set_title(t("diagnostics_title", "Цілісність та діагностика"))
+        diag_group.set_description(t("diagnostics_desc", "Контроль еталону SSOT, розширень GNOME та автоматичне відновлення"))
         pref_page.add(diag_group)
 
         self.diag_status_row = Adw.ActionRow()
-        self.diag_status_row.set_title("Стан оформлення macW1Y")
-        self.diag_status_row.set_subtitle("Всі компоненти відповідають еталону SSOT (OK)")
+        self.diag_status_row.set_title(t("diagnostics_title", "Стан оформлення macW1Y"))
+        self.diag_status_row.set_subtitle(t("diagnostics_status_ok", "Всі компоненти відповідають еталону SSOT (OK)"))
         self.diag_status_icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic")
         self.diag_status_row.add_prefix(self.diag_status_icon)
         diag_group.add(self.diag_status_row)
 
         action_row = Adw.ActionRow()
-        action_row.set_title("Дії обслуговування")
-        action_row.set_subtitle("Перевірити поточний стан або відновити оформлення")
+        action_row.set_title(t("maintenance_actions", "Дії обслуговування"))
+        action_row.set_subtitle(t("maintenance_desc", "Перевірити поточний стан або відновити оформлення"))
 
-        self.diag_btn = Gtk.Button(label="Запустити діагностику")
+        self.diag_btn = Gtk.Button(label=t("run_diagnostics", "Запустити діагностику"))
         self.diag_btn.set_valign(Gtk.Align.CENTER)
         self.diag_btn.connect("clicked", self.on_run_diagnostics_clicked)
         action_row.add_suffix(self.diag_btn)
 
-        self.restore_btn = Gtk.Button(label="Відновити оформлення")
+        self.restore_btn = Gtk.Button(label=t("restore_ssot", "Відновити оформлення"))
         self.restore_btn.add_css_class("suggested-action")
         self.restore_btn.set_valign(Gtk.Align.CENTER)
         self.restore_btn.connect("clicked", self.on_restore_theme_clicked)

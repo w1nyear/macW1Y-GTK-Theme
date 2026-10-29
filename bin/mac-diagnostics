@@ -16,6 +16,13 @@ import json
 import time
 import subprocess
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import mac_i18n
+    IS_UK = (mac_i18n.get_locale() == 'uk')
+except Exception:
+    IS_UK = True
+
 REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
 MANIFEST_PATH = os.path.join(REPO_DIR, "config/macw1y-manifest.json")
 LOCK_PATH = os.path.join(REPO_DIR, "config/extensions.lock.json")
@@ -48,13 +55,16 @@ def eval_js(js_code):
         return None
 
 def run_diagnostics(auto_fix=False):
-    print(f"\n{C_CYAN}{C_BOLD}=== macW1Y СИСТЕМНА ДІАГНОСТИКА ТА ПЕРЕВІРКА ЦІЛІСНОСТІ ==={C_RESET}")
-    print(f"Час: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+    title = "=== macW1Y СИСТЕМНА ДІАГНОСТИКА ТА ПЕРЕВІРКА ЦІЛІСНОСТІ ===" if IS_UK else "=== macW1Y SYSTEM DIAGNOSTICS & INTEGRITY AUDIT ==="
+    time_lbl = "Час" if IS_UK else "Timestamp"
+    print(f"\n{C_CYAN}{C_BOLD}{title}{C_RESET}")
+    print(f"{time_lbl}: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
 
     issues = []
     
     # 1. SSOT Manifest check
-    print(f"{C_BOLD}1. Перевірка теми та зовнішнього вигляду (SSOT):{C_RESET}")
+    sec1 = "1. Перевірка теми та зовнішнього вигляду (SSOT):" if IS_UK else "1. Themes & Appearance SSOT Audit:"
+    print(f"{C_BOLD}{sec1}{C_RESET}")
     if not os.path.exists(MANIFEST_PATH):
         issues.append("SSOT manifest config/macw1y-manifest.json не знайдено!")
         print(f"  {C_RED}✖ Маніфест macw1y-manifest.json відсутній!{C_RESET}")
@@ -81,7 +91,8 @@ def run_diagnostics(auto_fix=False):
                 issues.append(f"{label}: фактично '{cur}', очікувалося '{expected}'")
 
     # 2. GNOME Extensions Status & Version Lock
-    print(f"\n{C_BOLD}2. Перевірка GNOME Extensions та Version Lock:{C_RESET}")
+    sec2 = "2. Перевірка GNOME Extensions та Version Lock:" if IS_UK else "2. GNOME Extensions Status & Version Lock:"
+    print(f"\n{C_BOLD}{sec2}{C_RESET}")
     if os.path.exists(LOCK_PATH):
         with open(LOCK_PATH, "r") as f:
             lock = json.load(f).get("extensions", {})
@@ -94,93 +105,104 @@ def run_diagnostics(auto_fix=False):
         missing_count = 0
         for uuid, info in lock.items():
             if uuid not in enabled_exts:
-                print(f"  {C_RED}✖{C_RESET} Розширення {uuid} ВИМКНЕНО!")
-                issues.append(f"Розширення {uuid} не увімкнено")
+                dis_msg = f"Розширення {uuid} ВИМКНЕНО!" if IS_UK else f"Extension {uuid} is DISABLED!"
+                print(f"  {C_RED}✖{C_RESET} {dis_msg}")
+                issues.append(f"Розширення {uuid} не увімкнено" if IS_UK else f"Extension {uuid} is not enabled")
                 missing_count += 1
                 
         if missing_count == 0:
-            print(f"  {C_GREEN}✔{C_RESET} Всі {len(lock)} зафіксованих розширень macW1Y активні.")
+            ok_cnt = f"Всі {len(lock)} зафіксованих розширень macW1Y активні." if IS_UK else f"All {len(lock)} pinned macW1Y extensions are active."
+            print(f"  {C_GREEN}✔{C_RESET} {ok_cnt}")
             
         # Verify hashes
         res_v = subprocess.run(["/usr/local/bin/mac-extension-guard", "verify"], stdout=subprocess.PIPE, text=True)
         if res_v.returncode == 0:
-            print(f"  {C_GREEN}✔{C_RESET} Цілісність SHA256 усіх розширень відповідає lock-файлу.")
+            guard_ok = "Цілісність SHA256 усіх розширень відповідає lock-файлу." if IS_UK else "SHA256 integrity of all extensions matches lock file."
+            print(f"  {C_GREEN}✔{C_RESET} {guard_ok}")
         else:
-            print(f"  {C_YELLOW}⚠{C_RESET} Виявлено зміни в локальних файлах розширень:")
+            mod_warn = "Виявлено зміни в локальних файлах розширень:" if IS_UK else "Changes detected in local extension files:"
+            print(f"  {C_YELLOW}⚠{C_RESET} {mod_warn}")
             for l in res_v.stdout.splitlines():
                 if "mismatch" in l or "missing" in l:
                     print(f"    {l}")
                     issues.append(l)
     else:
-        issues.append("Lock-файл config/extensions.lock.json відсутній!")
-        print(f"  {C_RED}✖ Lock-файл extensions.lock.json відсутній!{C_RESET}")
+        no_lock = "Lock-файл config/extensions.lock.json відсутній!" if IS_UK else "Lock file config/extensions.lock.json missing!"
+        issues.append(no_lock)
+        print(f"  {C_RED}✖ {no_lock}{C_RESET}")
 
     # 3. Menubar & Dock Health
-    print(f"\n{C_BOLD}3. Перевірка компонентів Menubar та Dock:{C_RESET}")
+    sec3 = "3. Перевірка компонентів Menubar та Dock:" if IS_UK else "3. Menubar & Dock Health:"
+    print(f"\n{C_BOLD}{sec3}{C_RESET}")
     # Check AppMenu
     appmenu_active = "appmenu@ChathurangaBW.github.io" in enabled_exts
     if appmenu_active:
-        print(f"  {C_GREEN}✔{C_RESET} AppMenu (Global Menubar) активний.")
+        print(f"  {C_GREEN}✔{C_RESET} " + ("AppMenu (Global Menubar) активний." if IS_UK else "AppMenu (Global Menubar) active."))
     else:
-        print(f"  {C_RED}✖{C_RESET} AppMenu НЕ активний!")
-        issues.append("AppMenu вимкнено")
+        print(f"  {C_RED}✖{C_RESET} " + ("AppMenu НЕ активний!" if IS_UK else "AppMenu is NOT active!"))
+        issues.append("AppMenu вимкнено" if IS_UK else "AppMenu disabled")
         
     # Check Cupertino / Dash2dock
     dock_active = ("dash2dock-motion@unmade.space" in enabled_exts) and ("cupertino-dock-lite@rinzler69-wastaken.github.com" in enabled_exts)
     if dock_active:
-        print(f"  {C_GREEN}✔{C_RESET} macOS Cupertino Glass Dock активний.")
+        print(f"  {C_GREEN}✔{C_RESET} " + ("macOS Cupertino Glass Dock активний." if IS_UK else "macOS Cupertino Glass Dock active."))
     else:
-        print(f"  {C_RED}✖{C_RESET} Компоненти Dock (dash2dock-motion або cupertino-dock-lite) вимкнено!")
-        issues.append("Компоненти Dock вимкнено")
+        print(f"  {C_RED}✖{C_RESET} " + ("Компоненти Dock (dash2dock-motion або cupertino-dock-lite) вимкнено!" if IS_UK else "Dock components are disabled!"))
+        issues.append("Компоненти Dock вимкнено" if IS_UK else "Dock components disabled")
 
     # 4. Liquid Glass & Mutter Blur
-    print(f"\n{C_BOLD}4. Перевірка Liquid Glass та Clutter Blur:{C_RESET}")
+    sec4 = "4. Перевірка Liquid Glass та Clutter Blur:" if IS_UK else "4. Liquid Glass & Clutter Blur Audit:"
+    print(f"\n{C_BOLD}{sec4}{C_RESET}")
     lg_active = "liquid-glass@thinkingcoding1231.gmail.com" in enabled_exts
     bms_active = "blur-my-shell@aunetx" in enabled_exts
     
     if lg_active:
-        print(f"  {C_GREEN}✔{C_RESET} Liquid Glass shader active.")
+        print(f"  {C_GREEN}✔{C_RESET} " + ("Liquid Glass shader активний." if IS_UK else "Liquid Glass shader active."))
     else:
-        print(f"  {C_RED}✖{C_RESET} Liquid Glass extension вимкнено!")
-        issues.append("Liquid Glass вимкнено")
+        print(f"  {C_RED}✖{C_RESET} " + ("Liquid Glass extension вимкнено!" if IS_UK else "Liquid Glass extension disabled!"))
+        issues.append("Liquid Glass вимкнено" if IS_UK else "Liquid Glass disabled")
         
     if bms_active:
-        print(f"  {C_GREEN}✔{C_RESET} Blur my Shell (Mutter blur actor) активний.")
+        print(f"  {C_GREEN}✔{C_RESET} " + ("Blur my Shell (Mutter blur actor) активний." if IS_UK else "Blur my Shell (Mutter blur actor) active."))
     else:
-        print(f"  {C_RED}✖{C_RESET} Blur my Shell вимкнено!")
-        issues.append("Blur my Shell вимкнено")
+        print(f"  {C_RED}✖{C_RESET} " + ("Blur my Shell вимкнено!" if IS_UK else "Blur my Shell disabled!"))
+        issues.append("Blur my Shell вимкнено" if IS_UK else "Blur my Shell disabled")
 
     # 5. Background Daemons & Mutex Locks
-    print(f"\n{C_BOLD}5. Перевірка фонових процесів та блокувань:{C_RESET}")
+    sec5 = "5. Перевірка фонових процесів та блокувань:" if IS_UK else "5. Background Processes & Mutex Locks:"
+    print(f"\n{C_BOLD}{sec5}{C_RESET}")
     try:
         pids = subprocess.check_output(["pgrep", "-f", "mac-sync-applications daemon"], text=True).splitlines()
         if len(pids) == 1:
-            print(f"  {C_GREEN}✔{C_RESET} Демон mac-sync-applications працює в єдиному екземплярі (PID {pids[0]}).")
+            print(f"  {C_GREEN}✔{C_RESET} " + (f"Демон mac-sync-applications працює в єдиному екземплярі (PID {pids[0]})." if IS_UK else f"mac-sync-applications daemon running as single instance (PID {pids[0]})."))
         elif len(pids) > 1:
-            print(f"  {C_RED}✖{C_RESET} Виявлено подвійний запуск mac-sync-applications: PIDs {pids}")
-            issues.append(f"Подвійний запуск mac-sync-applications (PIDs: {pids})")
+            print(f"  {C_RED}✖{C_RESET} " + (f"Виявлено подвійний запуск mac-sync-applications: PIDs {pids}" if IS_UK else f"Duplicate mac-sync-applications running: PIDs {pids}"))
+            issues.append(f"Подвійний запуск mac-sync-applications (PIDs: {pids})" if IS_UK else f"Duplicate mac-sync-applications (PIDs: {pids})")
         else:
-            print(f"  {C_YELLOW}⚠{C_RESET} Демон mac-sync-applications не знайдено серед процесів.")
+            print(f"  {C_YELLOW}⚠{C_RESET} " + ("Демон mac-sync-applications не знайдено серед процесів." if IS_UK else "mac-sync-applications daemon not found."))
     except Exception:
-        print(f"  {C_YELLOW}⚠{C_RESET} Демон mac-sync-applications не запущений.")
+        print(f"  {C_YELLOW}⚠{C_RESET} " + ("Демон mac-sync-applications не запущений." if IS_UK else "mac-sync-applications daemon not running."))
 
     # SUMMARY
     print("\n" + "="*80)
     if not issues:
-        print(f"{C_GREEN}{C_BOLD}РЕЗУЛЬТАТ: Система стабільна. Всі компоненти macW1Y відповідають еталону.{C_RESET}")
+        ok_res = "РЕЗУЛЬТАТ: Система стабільна. Всі компоненти macW1Y відповідають еталону." if IS_UK else "RESULT: System healthy and stable. All macW1Y components match SSOT standard."
+        print(f"{C_GREEN}{C_BOLD}{ok_res}{C_RESET}")
         return 0
     else:
-        print(f"{C_RED}{C_BOLD}РЕЗУЛЬТАТ: Виявлено {len(issues)} невідповідностей:{C_RESET}")
+        err_res = f"РЕЗУЛЬТАТ: Виявлено {len(issues)} невідповідностей:" if IS_UK else f"RESULT: Found {len(issues)} discrepancies:"
+        print(f"{C_RED}{C_BOLD}{err_res}{C_RESET}")
         for iss in issues:
             print(f"  • {iss}")
             
         if auto_fix:
-            print(f"\n{C_CYAN}Запуск автоматичного відновлення (--fix)...{C_RESET}")
+            print(f"\n{C_CYAN}" + ("Запуск автоматичного відновлення (--fix)..." if IS_UK else "Running automatic repair (--fix)...") + f"{C_RESET}")
             subprocess.run(["/usr/local/bin/mac-apply-theme"], check=False)
             subprocess.run(["systemctl", "--user", "restart", "mac-app-manager.service"], check=False)
-            print(f"{C_GREEN}Автоматичне відновлення завершено. Перезапустіть перевірку.{C_RESET}")
+            print(f"{C_GREEN}" + ("Автоматичне відновлення завершено. Перезапустіть перевірку." if IS_UK else "Automatic repair complete. Re-run diagnostics.") + f"{C_RESET}")
         else:
-            print(f"\n{C_YELLOW}Для автоматичного виправлення запустіть: mac-diagnostics --fix{C_RESET}")
+            fix_tip = "Для автоматичного виправлення запустіть: mac-diagnostics --fix" if IS_UK else "To automatically repair, run: mac-diagnostics --fix"
+            print(f"\n{C_YELLOW}{fix_tip}{C_RESET}")
         return 1
 
 if __name__ == "__main__":

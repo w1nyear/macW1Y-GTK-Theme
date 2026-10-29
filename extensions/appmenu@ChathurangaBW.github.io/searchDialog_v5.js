@@ -30,22 +30,22 @@ const EDGE_STYLE = '1px solid rgba(255, 255, 255, 0.30)';
 const APPS_CATEGORIES = [
     {
         id: 'utility',
-        label: 'Утиліти',
+        get label() { return t('category_utilities', 'Утиліти'); },
         match: ['utility', 'system', 'settings', 'terminalemulator', 'terminal', 'filemanager', 'archiving', 'monitor', 'security', 'clock', 'calculator', 'preferences', 'help', 'desktopsettings']
     },
     {
         id: 'communication',
-        label: 'Спілкування',
+        get label() { return t('category_communication', 'Спілкування'); },
         match: ['network', 'chat', 'instantmessaging', 'email', 'feed', 'webbrowser', 'ircclient', 'telephony', 'contactmanagement', 'social', 'news']
     },
     {
         id: 'productivity',
-        label: 'Продуктивність',
+        get label() { return t('category_productivity', 'Продуктивність'); },
         match: ['office', 'development', 'texteditor', 'ide', 'editor', 'graphics', 'audiovideo', 'audio', 'video', 'photography', 'publishing', 'viewer', 'documentation', 'audiovideoediting', 'database']
     },
     {
         id: 'other',
-        label: 'Інше',
+        get label() { return t('category_other', 'Інше'); },
         match: []
     }
 ];
@@ -63,19 +63,22 @@ function formatTimeAgo(timestamp) {
     const mm = String(date.getMinutes()).padStart(2, '0');
 
     if (diff < 60000) {
-        return 'Скопійовано щойно';
+        return t('copied_just_now', 'Copied just now');
     }
     const today = new Date();
     if (date.toDateString() === today.toDateString()) {
-        return `Скопійовано ${hh}:${mm}`;
+        return tf('copied_time', { time: `${hh}:${mm}` }, `Copied ${hh}:${mm}`);
     }
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     if (date.toDateString() === yesterday.toDateString()) {
-        return `Вчора ${hh}:${mm}`;
+        return tf('yesterday_time', { time: `${hh}:${mm}` }, `Yesterday, ${hh}:${mm}`);
     }
-    const months = ['січ.', 'лют.', 'бер.', 'квіт.', 'трав.', 'черв.', 'лип.', 'серп.', 'вер.', 'жовт.', 'лист.', 'груд.'];
-    return `${date.getDate()} ${months[date.getMonth()]} ${hh}:${mm}`;
+    try {
+        const dt = GLib.DateTime.new_from_unix_local(Math.floor(timestamp / 1000));
+        if (dt) return dt.format('%d %b %H:%M');
+    } catch (_) {}
+    return `${date.getDate()} ${hh}:${mm}`;
 }
 
 const PILL_COLLAPSED_STYLE =

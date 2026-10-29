@@ -39,6 +39,7 @@ import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
 } from './tahoeNotificationCard.js?v=notif_v15';
+import { t, tf } from './mac_i18n.js';
 
 let LiquidEffect = null;
 let UnpickableActor = Clutter.Actor;
@@ -480,14 +481,14 @@ function _toastRelTime(spawn) {
         const now = GLib.DateTime.new_now_local();
         const sec = Math.max(0, now.difference(spawn) / 1000000);
         if (sec < 60)
-            return 'Щойно';
+            return t('just_now', 'Щойно');
         const min = Math.floor(sec / 60);
         if (min < 60)
-            return `${min} хв тому`;
+            return tf('min_ago', { min }, `${min} хв тому`);
         const hr = Math.floor(min / 60);
-        return `${hr} год тому`;
+        return tf('hour_ago', { hour: hr }, `${hr} год тому`);
     } catch (_) {
-        return 'Щойно';
+        return t('just_now', 'Щойно');
     }
 }
 
@@ -637,11 +638,11 @@ function _makeToastCard(item, noglass = false) {
 
     const rowA = new St.BoxLayout({vertical: false, x_expand: true});
     if (isCritical) {
-        rowA.add_child(_toastLabel('⚠ ТЕРМIНОВО', {color: TOAST_INK_RED, size: 13, weight: 700, max: 28, expand: true}));
+        rowA.add_child(_toastLabel(`⚠ ${t('urgent', 'ТЕРМІНОВО')}`, {color: TOAST_INK_RED, size: 13, weight: 700, max: 28, expand: true}));
     } else if (appName) {
         rowA.add_child(_toastLabel(appName, {color: TOAST_INK_SUB, size: 12, weight: 600, max: 40, expand: true, ellip: true}));
     }
-    const timeLabel = _toastLabel('Щойно', {color: 'rgba(255, 255, 255, 0.55)', size: 12, weight: 500, max: 16, ellip: true});
+    const timeLabel = _toastLabel(t('just_now', 'Щойно'), {color: 'rgba(255, 255, 255, 0.55)', size: 12, weight: 500, max: 16, ellip: true});
     timeLabel.x_align = Clutter.ActorAlign.END;
     timeLabel.y_align = Clutter.ActorAlign.START;
     textCol.add_child(rowA);
@@ -1812,7 +1813,7 @@ function _rebuild(merges = null) {
         if (!allItems.length) {
             const empty = new St.Label({
                 style_class: 'tahoe-nc-empty',
-                text: _('Немає нових повідомлень'),
+                text: t('no_new_notifications', 'Немає нових повідомлень'),
             });
             try {
                 empty.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
@@ -2424,7 +2425,7 @@ function _buildPanel(merges = null) {
     const head = new St.BoxLayout({style_class: 'tahoe-nc-head'});
     const title = new St.Label({
         style_class: 'tahoe-nc-title-big',
-        text: _('Центр повідомлень'),
+        text: t('notification_center', 'Центр повідомлень'),
         x_expand: true,
         style: 'font-size: 17px !important; font-weight: 600 !important;',
     });
@@ -2432,7 +2433,7 @@ function _buildPanel(merges = null) {
     const CLEAR_STYLE_HOVER = 'background-color: rgba(255, 255, 255, 0.20) !important; border: 1px solid rgba(255, 255, 255, 0.26) !important; border-radius: 9999px !important; padding: 4px 14px !important; color: #ffffff !important; font-size: 12px !important; font-weight: 500 !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22) !important;';
     const clear = new St.Button({
         style_class: 'tahoe-nc-clear',
-        label: _('Очистити все'),
+        label: t('clear_all', 'Очистити все'),
         reactive: true,
         can_focus: true,
         style: CLEAR_STYLE,

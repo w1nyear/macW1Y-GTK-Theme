@@ -3,6 +3,7 @@
 #include <gio/gio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include "mac_i18n.h"
 
 #define MAC_TYPE_APP_MENU_PROVIDER (mac_app_menu_provider_get_type ())
 
@@ -93,16 +94,16 @@ static GList *mac_app_get_file_items (NautilusMenuProvider *provider G_GNUC_UNUS
     GList *items = NULL;
     
     NautilusMenuItem *item_show = nautilus_menu_item_new ("MacApp::ShowReal",
-                                                          "Показати оригінал",
-                                                          "Відкрити каталог із оригінальним файлом програми",
+                                                          mac_tr("show_original", "Показати оригінал"),
+                                                          mac_tr("show_original_desc", "Відкрити каталог із оригінальним файлом програми"),
                                                           "folder-symbolic");
     g_signal_connect_data (item_show, "activate", G_CALLBACK (on_show_real_activate),
                            g_strdup (path), (GClosureNotify) g_free, 0);
     items = g_list_append (items, item_show);
     
     NautilusMenuItem *item_del = nautilus_menu_item_new ("MacApp::Uninstall",
-                                                         "Видалити програму з системи…",
-                                                         "Деінсталювати або видалити цей додаток",
+                                                         mac_tr("uninstall_app", "Видалити програму з системи…"),
+                                                         mac_tr("uninstall_app_desc", "Деінсталювати або видалити цей додаток"),
                                                          "user-trash-symbolic");
     g_signal_connect_data (item_del, "activate", G_CALLBACK (on_uninstall_activate),
                            g_strdup (path), (GClosureNotify) g_free, 0);

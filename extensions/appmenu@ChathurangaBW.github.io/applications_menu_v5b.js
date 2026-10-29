@@ -10,6 +10,7 @@ import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
 import { getAppFavorites } from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 import { applyGradientBlurFade } from './gradientBlurFade.js';
+import { t, tf } from './mac_i18n.js';
 
 const _gobjectToString = GObject.Object.prototype.toString;
 
@@ -135,22 +136,22 @@ function createSmoothAppIcon(app, targetSize = ICON_SIZE) {
 const CATEGORIES = [
     {
         id: 'utility',
-        label: 'Утиліти',
+        get label() { return t('category_utilities', 'Утиліти'); },
         match: ['utility', 'system', 'settings', 'terminalemulator', 'terminal', 'filemanager', 'archiving', 'monitor', 'security', 'clock', 'calculator', 'preferences', 'help', 'desktopsettings']
     },
     {
         id: 'communication',
-        label: 'Спілкування',
+        get label() { return t('category_communication', 'Спілкування'); },
         match: ['network', 'chat', 'instantmessaging', 'email', 'feed', 'webbrowser', 'ircclient', 'telephony', 'contactmanagement', 'social', 'news']
     },
     {
         id: 'productivity',
-        label: 'Продуктивність',
+        get label() { return t('category_productivity', 'Продуктивність'); },
         match: ['office', 'development', 'texteditor', 'ide', 'editor', 'graphics', 'audiovideo', 'audio', 'video', 'photography', 'publishing', 'viewer', 'documentation', 'audiovideoediting', 'database']
     },
     {
         id: 'other',
-        label: 'Інше',
+        get label() { return t('category_other', 'Інше'); },
         match: []
     }
 ];
@@ -426,7 +427,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         // Search Entry
         this._entry = new St.Entry({
             name: 'mac-applications-search',
-            hint_text: 'Програми',
+            hint_text: t('applications', 'Програми'),
             can_focus: true,
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,

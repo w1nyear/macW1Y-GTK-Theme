@@ -12,6 +12,7 @@
 
 
 #include <math.h>
+#include "mac_i18n.h"
 
 typedef struct {
     int menubar_tint;   /* 0 - 100 */
@@ -905,13 +906,13 @@ static void update_game_mode_ui_for_profile(const char *profile) {
     adw_switch_row_set_active(g_game_mode_switch_w, is_perf);
     if (is_perf) {
         adw_action_row_set_subtitle(ADW_ACTION_ROW(g_game_mode_switch_w),
-            "Швидкодія: Р-ядра (0-7) закріплено за іграми • Е-ядра (8-11) для фонових задач ОС");
+            mac_tr("power_performance_desc", "Швидкодія: Р-ядра (0-7) закріплено за іграми • Е-ядра (8-11) для фонових задач ОС"));
     } else if (g_strcmp0(profile, "power-saver") == 0) {
         adw_action_row_set_subtitle(ADW_ACTION_ROW(g_game_mode_switch_w),
-            "Заощадження: знижена частота ядер, тихий режим");
+            mac_tr("power_saver_desc", "Заощадження: знижена частота ядер, тихий режим"));
     } else {
         adw_action_row_set_subtitle(ADW_ACTION_ROW(g_game_mode_switch_w),
-            "Баланс: стандартна швидкодія та динамічний розподіл ядер");
+            mac_tr("power_balanced_desc", "Баланс: стандартна швидкодія та динамічний розподіл ядер"));
     }
     in_init = 0;
 }
@@ -992,12 +993,12 @@ void on_game_mode_changed(void *widget, void *pspec, gpointer data) {
         g_spawn_command_line_async("powerprofilesctl set performance", NULL);
         g_spawn_command_line_async("sudo /usr/local/bin/mac-gamemode on", NULL);
         adw_action_row_set_subtitle(ADW_ACTION_ROW(widget),
-            "Швидкодія: Р-ядра (0-7) закріплено за іграми • Е-ядра (8-11) для фонових задач ОС");
+            mac_tr("power_performance_desc", "Швидкодія: Р-ядра (0-7) закріплено за іграми • Е-ядра (8-11) для фонових задач ОС"));
     } else {
         g_spawn_command_line_async("powerprofilesctl set balanced", NULL);
         g_spawn_command_line_async("sudo /usr/local/bin/mac-gamemode off", NULL);
         adw_action_row_set_subtitle(ADW_ACTION_ROW(widget),
-            "Баланс: стандартна швидкодія та динамічний розподіл ядер");
+            mac_tr("power_balanced_desc", "Баланс: стандартна швидкодія та динамічний розподіл ядер"));
     }
 }
 
@@ -1020,7 +1021,7 @@ static GtkWidget *combo_gpu_games_w = NULL;
 static GtkWidget *gpu_reboot_row_w = NULL;
 
 static char *prettify_gpu_name(const char *raw) {
-    if (!raw) return g_strdup("Невідома відеокарта");
+    if (!raw) return g_strdup(strcmp(mac_get_locale(), "uk") == 0 ? "Невідома відеокарта" : "Unknown Graphics Card");
 
     char clean[256];
     g_strlcpy(clean, raw, sizeof(clean));
@@ -1148,7 +1149,7 @@ static void detect_system_gpus(void) {
 
     /* 3. Fallback: default entry */
     if (g_detected_gpu_count == 0) {
-        g_strlcpy(g_detected_gpus[0].pretty_name, "Інтегрована відеокарта", 128);
+        g_strlcpy(g_detected_gpus[0].pretty_name, (strcmp(mac_get_locale(), "uk") == 0 ? "Інтегрована відеокарта" : "Integrated Graphics"), 128);
         g_detected_gpus[0].is_discrete = FALSE;
         g_detected_gpu_count = 1;
     }
@@ -1834,7 +1835,7 @@ static gboolean update_fan_rpms_timer_cb(gpointer user_data) {
         int rpm = d->is_gpu ? g_gpu_fan_rpm : g_cpu_fan_rpm;
         if (rpm > 0) {
             char sub_text[128];
-            snprintf(sub_text, sizeof(sub_text), "Авторегулювання швидкості • %d RPM", rpm);
+            snprintf(sub_text, sizeof(sub_text), (strcmp(mac_get_locale(), "uk") == 0 ? "Авторегулювання швидкості • %d RPM" : "Auto speed adjustment • %d RPM"), rpm);
             gtk_label_set_text(GTK_LABEL(d->subtitle_label), sub_text);
         }
     }
@@ -1856,16 +1857,16 @@ static GtkWidget *create_fan_control_card(int profile_idx, gboolean is_gpu) {
     gtk_box_append(GTK_BOX(header_box), icon);
 
     GtkWidget *title_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-    GtkWidget *title_lbl = gtk_label_new(is_gpu ? "Вентилятор відеокарти (GPU)" : "Вентилятор процесора (ЦП)");
+    GtkWidget *title_lbl = gtk_label_new(is_gpu ? mac_tr("fan_gpu", "Вентилятор відеокарти (GPU)") : mac_tr("fan_cpu", "Вентилятор процесора (ЦП)"));
     gtk_label_set_xalign(GTK_LABEL(title_lbl), 0.0);
     gtk_widget_add_css_class(title_lbl, "fan-card-title");
 
     char sub_text[128];
     int rpm = is_gpu ? g_gpu_fan_rpm : g_cpu_fan_rpm;
     if (rpm > 0) {
-        snprintf(sub_text, sizeof(sub_text), "Авторегулювання швидкості • %d RPM", rpm);
+        snprintf(sub_text, sizeof(sub_text), (strcmp(mac_get_locale(), "uk") == 0 ? "Авторегулювання швидкості • %d RPM" : "Auto speed adjustment • %d RPM"), rpm);
     } else {
-        snprintf(sub_text, sizeof(sub_text), "Динамічний діапазон авторегулювання швидкості");
+        snprintf(sub_text, sizeof(sub_text), "%s", mac_tr("fan_dynamic_range", "Динамічний діапазон авторегулювання швидкості"));
     }
     GtkWidget *sub_lbl = gtk_label_new(sub_text);
     gtk_label_set_xalign(GTK_LABEL(sub_lbl), 0.0);
@@ -1924,14 +1925,14 @@ static GtkWidget *create_fan_control_card(int profile_idx, gboolean is_gpu) {
     gtk_widget_set_margin_end(labels_box, 12);
     gtk_widget_set_margin_top(labels_box, -4);
 
-    GtkWidget *min_lbl = gtk_label_new("Мін: тихий поріг");
+    GtkWidget *min_lbl = gtk_label_new(mac_tr("fan_min_threshold", "Мін: тихий поріг"));
     gtk_label_set_xalign(GTK_LABEL(min_lbl), 0.0);
     gtk_widget_add_css_class(min_lbl, "dim-label");
     gtk_widget_add_css_class(min_lbl, "caption");
     gtk_widget_set_hexpand(min_lbl, TRUE);
     gtk_box_append(GTK_BOX(labels_box), min_lbl);
 
-    GtkWidget *max_lbl = gtk_label_new("Макс: пікове навантаження");
+    GtkWidget *max_lbl = gtk_label_new(mac_tr("fan_max_threshold", "Макс: пікове навантаження"));
     gtk_label_set_xalign(GTK_LABEL(max_lbl), 1.0);
     gtk_widget_add_css_class(max_lbl, "dim-label");
     gtk_widget_add_css_class(max_lbl, "caption");
@@ -1994,7 +1995,7 @@ static GtkWidget *create_fan_subrow_for_profile(int profile_idx) {
     }
 
     if (!g_has_cpu_fan && !g_has_gpu_fan) {
-        GtkWidget *no_fans_lbl = gtk_label_new("У пристрої не виявлено керованих вентиляторів");
+        GtkWidget *no_fans_lbl = gtk_label_new(mac_tr("no_fans_detected", "У пристрої не виявлено керованих вентиляторів"));
         gtk_widget_add_css_class(no_fans_lbl, "dim-label");
         gtk_box_append(GTK_BOX(container), no_fans_lbl);
     }
@@ -2110,7 +2111,7 @@ static void setup_power_profile_row_fan_button(GtkWidget *row) {
         btn = gtk_toggle_button_new();
         gtk_button_set_icon_name(GTK_BUTTON(btn), "pan-down-symbolic");
         gtk_widget_set_valign(btn, GTK_ALIGN_CENTER);
-        gtk_widget_set_tooltip_text(btn, "Швидкість вентиляторів");
+        gtk_widget_set_tooltip_text(btn, mac_tr("fan_speed", "Швидкість вентиляторів"));
         gtk_widget_add_css_class(btn, "flat");
         gtk_widget_add_css_class(btn, "circular");
         adw_action_row_add_suffix(ADW_ACTION_ROW(row), btn);

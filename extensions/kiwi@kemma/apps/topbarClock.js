@@ -4,12 +4,9 @@
 // GNOME fills the label through a WallClock binding; ours connects later,
 // so within the same emission our text is the last word.
 
+import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {getTopbarInk, watchInk} from './tahoeInk.js';
-
-const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн',
-    'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 
 let enabled = false;
 let clockSource = null;
@@ -43,10 +40,20 @@ function apply() {
     const dateMenu = Main.panel.statusArea.dateMenu;
     if (!dateMenu?._clockDisplay)
         return;
+    try {
+        const dt = GLib.DateTime.new_now_local();
+        if (dt) {
+            const dayStr = dt.format('%a');
+            const dayNum = dt.format('%-e') || dt.format('%d');
+            const monthStr = dt.format('%b');
+            const timeStr = dt.format('%-H:%M') || dt.format('%H:%M');
+            dateMenu._clockDisplay.text = `${dayStr} ${dayNum} ${monthStr} ${timeStr}`;
+            return;
+        }
+    } catch (_) {}
     const now = new Date();
     const minutes = String(now.getMinutes()).padStart(2, '0');
-    dateMenu._clockDisplay.text =
-        `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getHours()}:${minutes}`;
+    dateMenu._clockDisplay.text = `${now.getDate()} ${now.getHours()}:${minutes}`;
 }
 
 export function enable() {
