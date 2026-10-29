@@ -1475,11 +1475,11 @@ typedef struct {
 
 static ProfileFanConfig g_fan_configs[3] = {
     /* 0: Performance (Швидкодія) */
-    { .cpu = {50, 100}, .gpu = {50, 100} },
+    { .cpu = {20, 40}, .gpu = {20, 40} },
     /* 1: Balanced (Баланс) */
-    { .cpu = {30, 50},  .gpu = {30, 50}  },
+    { .cpu = {20, 30},  .gpu = {20, 30}  },
     /* 2: Power Saver (Заощадження) */
-    { .cpu = {20, 40},  .gpu = {20, 40}  }
+    { .cpu = {20, 20},  .gpu = {20, 20}  }
 };
 
 static gboolean g_has_cpu_fan = FALSE;
@@ -1760,15 +1760,19 @@ static void on_dual_slider_drag_begin(GtkGestureDrag *gesture, double start_x, d
         int clicked_val = (int)round(((start_x - pad) / track_len) * 100.0);
         clicked_val = CLAMP(clicked_val, 0, 100);
         if (d->active_thumb == THUMB_MIN) {
-            range->min_val = CLAMP(clicked_val, 0, range->max_val - 2);
+            range->min_val = CLAMP(clicked_val, 0, range->max_val);
             d->initial_min = range->min_val;
         } else {
-            range->max_val = CLAMP(clicked_val, range->min_val + 2, 100);
+            range->max_val = CLAMP(clicked_val, range->min_val, 100);
             d->initial_max = range->max_val;
         }
         if (d->badge_label) {
             char buf[32];
-            snprintf(buf, sizeof(buf), "%d%% — %d%%", range->min_val, range->max_val);
+            if (range->min_val == range->max_val) {
+                snprintf(buf, sizeof(buf), "%d%%", range->min_val);
+            } else {
+                snprintf(buf, sizeof(buf), "%d%% — %d%%", range->min_val, range->max_val);
+            }
             gtk_label_set_text(GTK_LABEL(d->badge_label), buf);
         }
         gtk_widget_queue_draw(d->drawing_area);
@@ -1792,15 +1796,19 @@ static void on_dual_slider_drag_update(GtkGestureDrag *gesture, double offset_x,
 
     if (d->active_thumb == THUMB_MIN) {
         int new_min = (int)round(d->initial_min + delta_pct);
-        range->min_val = CLAMP(new_min, 0, range->max_val - 2);
+        range->min_val = CLAMP(new_min, 0, range->max_val);
     } else if (d->active_thumb == THUMB_MAX) {
         int new_max = (int)round(d->initial_max + delta_pct);
-        range->max_val = CLAMP(new_max, range->min_val + 2, 100);
+        range->max_val = CLAMP(new_max, range->min_val, 100);
     }
 
     if (d->badge_label) {
         char buf[32];
-        snprintf(buf, sizeof(buf), "%d%% — %d%%", range->min_val, range->max_val);
+        if (range->min_val == range->max_val) {
+            snprintf(buf, sizeof(buf), "%d%%", range->min_val);
+        } else {
+            snprintf(buf, sizeof(buf), "%d%% — %d%%", range->min_val, range->max_val);
+        }
         gtk_label_set_text(GTK_LABEL(d->badge_label), buf);
     }
 
@@ -1874,7 +1882,11 @@ static GtkWidget *create_fan_control_card(int profile_idx, gboolean is_gpu) {
     FanRange *range = is_gpu ? &cfg->gpu : &cfg->cpu;
 
     char badge_text[32];
-    snprintf(badge_text, sizeof(badge_text), "%d%% — %d%%", range->min_val, range->max_val);
+    if (range->min_val == range->max_val) {
+        snprintf(badge_text, sizeof(badge_text), "%d%%", range->min_val);
+    } else {
+        snprintf(badge_text, sizeof(badge_text), "%d%% — %d%%", range->min_val, range->max_val);
+    }
     GtkWidget *badge = gtk_label_new(badge_text);
     gtk_widget_add_css_class(badge, "fan-range-badge");
     gtk_box_append(GTK_BOX(header_box), badge);
