@@ -19,34 +19,6 @@ export default class GestureImpl {
     }
 
     enable() {
-        try {
-            const EvalIface = `
-            <node>
-              <interface name="org.gnome.Shell.Extensions.EvalHelper">
-                <method name="Eval">
-                  <arg type="s" direction="in" name="code"/>
-                  <arg type="s" direction="out" name="result"/>
-                </method>
-              </interface>
-            </node>`;
-            this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(EvalIface, {
-                Eval: async (code) => {
-                    try {
-                        let res = eval(code);
-                        if (res && typeof res.then === 'function')
-                            res = await res;
-                        return JSON.stringify(res !== undefined ? res : null) ?? 'null';
-                    } catch (e) {
-                        return `ERROR: ${e?.name}: ${e?.message}\n${e?.stack || e}`;
-                    }
-                }
-            });
-            this._dbusImpl.export(Gio.DBus.session, '/org/gnome/Shell/Extensions/EvalHelper');
-            log('[EvalHelper] DBus interface registered at /org/gnome/Shell/Extensions/EvalHelper');
-        } catch (e) {
-            log(`[EvalHelper] DBus registration error: ${e}`);
-        }
-
         // 1. Strict 4-finger restriction for Workspace Horizontal Animation
         this._setupStrictWorkspaceSwipe();
 
@@ -66,10 +38,6 @@ export default class GestureImpl {
     }
 
     disable() {
-        if (this._dbusImpl) {
-            try { this._dbusImpl.unexport(); } catch (_) {}
-            this._dbusImpl = null;
-        }
         if (this._stageEventId) {
             global.stage.disconnect(this._stageEventId);
             this._stageEventId = 0;

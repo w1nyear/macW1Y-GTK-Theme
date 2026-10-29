@@ -42,7 +42,14 @@ export default class AppMenuExtension extends Extension {
 
         const uuid = this.metadata.uuid || 'appmenu@ChathurangaBW.github.io';
         this._removeStalePanelButtons(uuid);
-        this._menuManager = new MenuManager(uuid, this._settings);
+        try {
+            const baseUri = this.dir.get_uri();
+            const mmMod = await import(`${baseUri}/menuManager.js?t=${Date.now()}`);
+            this._menuManager = new mmMod.MenuManager(uuid, this._settings);
+        } catch (e) {
+            console.error(`[AppMenu] dynamic import menuManager error: ${e}`);
+            this._menuManager = new MenuManager(uuid, this._settings);
+        }
 
         const initialWindow = global.display.get_focus_window();
         this._updateMenu(initialWindow);
@@ -142,6 +149,7 @@ export default class AppMenuExtension extends Extension {
             } catch (e) {
                 debug(`Could not remove stale panel button ${name}: ${e}`);
             }
+            delete statusArea[name];
         }
     }
 
@@ -241,6 +249,9 @@ export default class AppMenuExtension extends Extension {
 
     disable() {
         debug('Disabling extension.');
+
+        const uuid = this.metadata.uuid || 'appmenu@ChathurangaBW.github.io';
+        this._removeStalePanelButtons(uuid);
 
         global.display.disconnectObject(this);
         if (Main.sessionMode) {

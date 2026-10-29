@@ -264,7 +264,7 @@
     color: #ffffff !important;
     text-shadow: none !important;
     icon-shadow: none !important;
-    transition: background-color 100ms ease, color 100ms ease !important;
+    transition: color 80ms ease !important;
 }
 
 .appmenu-popup-menu-item StLabel,
@@ -283,7 +283,8 @@
 .appmenu-popup-menu-content .popup-menu-item:focus,
 .appmenu-popup-menu-content .popup-menu-item:hover,
 .appmenu-popup-menu-content .popup-menu-item:selected {
-    background-color: #007aff !important;
+    background-color: transparent !important;
+    background: transparent !important;
     color: #ffffff !important;
     border-radius: 9999px !important;
     box-shadow: none !important;
@@ -293,9 +294,16 @@
 .appmenu-popup-menu-item.selected:active,
 .appmenu-popup-menu .popup-menu-item:active,
 .appmenu-popup-menu-content .popup-menu-item:active {
-    background-color: #0062cc !important;
+    background-color: transparent !important;
+    background: transparent !important;
     color: #ffffff !important;
     border-radius: 9999px !important;
+}
+
+.mac-menu-hover-pill {
+    background-color: #007aff !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;
 }
 
 .appmenu-popup-menu-item:insensitive,

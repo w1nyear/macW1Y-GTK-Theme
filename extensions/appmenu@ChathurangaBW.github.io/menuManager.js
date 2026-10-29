@@ -57,6 +57,216 @@ function _getStaticMenus() {
     ];
 }
 
+class AppMenuHoverGlide {
+    constructor(menu) {
+        this.menu = menu;
+        this.pill = null;
+        this.activeItem = null;
+        this.signals = [];
+        this.hideTimeout = 0;
+        this.setup();
+    }
+
+    setup() {
+        this.menu.connectObject('open-state-changed', (_m, open) => {
+            if (open) {
+                this.ensurePill();
+                this.updateItems();
+            } else {
+                this.hidePill(true);
+            }
+        }, this);
+
+        if (this.menu.box) {
+            this.menu.box.add_style_class_name('mac-menu-hover-glide-active');
+            this.menu.box.connectObject(
+                'child-added', () => this.updateItems(),
+                'child-removed', () => this.updateItems(),
+                this
+            );
+        }
+
+        if (this.menu.isOpen) {
+            this.ensurePill();
+            this.updateItems();
+        }
+    }
+
+    ensurePill() {
+        if (this.pill && this.pill.get_parent()) return;
+        const box = this.menu.box;
+        const parent = box ? box.get_parent() : null;
+        if (!parent) return;
+
+        this.pill = new St.Widget({
+            name: 'mac-menu-hover-pill',
+            style_class: 'mac-menu-hover-pill',
+            style: 'background-color: #007aff !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;',
+            x_align: Clutter.ActorAlign.START,
+            y_align: Clutter.ActorAlign.START,
+            x_expand: false,
+            y_expand: false,
+            opacity: 0,
+            reactive: false,
+        });
+
+        try {
+            parent.insert_child_below(this.pill, box);
+        } catch (_e) {
+            try { parent.add_child(this.pill); } catch (_e2) {}
+        }
+    }
+
+    isEligible(child) {
+        if (!child || !child.visible || !child.reactive || child.sensitive === false) return false;
+        if (child.has_style_class_name && (
+            child.has_style_class_name('popup-separator-menu-item') ||
+            child.has_style_class_name('appmenu-separator-menu-item') ||
+            child.has_style_class_name('popup-inactive-menu-item') ||
+            child.has_style_class_name('popup-sub-menu') ||
+            child.has_style_class_name('mac-menu-section-label') ||
+            child.has_style_class_name('mac-menu-hover-pill')
+        )) return false;
+        return true;
+    }
+
+    updateItems() {
+        this.cleanupSignals();
+        const box = this.menu.box;
+        if (!box) return;
+
+        const children = box.get_children();
+        for (const child of children) {
+            if (!this.isEligible(child)) continue;
+
+            if (child.menu && !child.menu._appMenuHoverGlide && child.menu.box) {
+                child.menu._appMenuHoverGlide = new AppMenuHoverGlide(child.menu);
+            }
+
+            const hoverId = child.connect('notify::hover', () => this.onItem(child));
+            const activeId = child.connect('notify::active', () => this.onItem(child));
+            this.signals.push({ actor: child, id: hoverId });
+            this.signals.push({ actor: child, id: activeId });
+        }
+    }
+
+    onItem(child) {
+        if (child.hover || child.active) {
+            if (this.hideTimeout) {
+                GLib.source_remove(this.hideTimeout);
+                this.hideTimeout = 0;
+            }
+            this.glideTo(child);
+        } else {
+            if (!this.hideTimeout) {
+                this.hideTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60, () => {
+                    this.hideTimeout = 0;
+                    const any = this.menu.box?.get_children().some(c => this.isEligible(c) && (c.hover || c.active));
+                    if (!any) this.hidePill(false);
+                    return GLib.SOURCE_REMOVE;
+                });
+            }
+        }
+    }
+
+    glideTo(child) {
+        if (!this.isEligible(child) || !child.get_stage()) return;
+        this.ensurePill();
+        if (!this.pill) return;
+        const parent = this.menu.box?.get_parent();
+        if (!parent || !parent.get_stage()) return;
+
+        try {
+            const [px, py] = parent.get_transformed_position();
+            const [cx, cy] = child.get_transformed_position();
+            if (isNaN(cx) || isNaN(cy) || isNaN(px) || isNaN(py)) return;
+
+            const relX = cx - px;
+            const relY = cy - py;
+            const ab = child.get_allocation_box ? child.get_allocation_box() : null;
+            let w = (ab && ab.x2 > ab.x1) ? (ab.x2 - ab.x1) : child.width;
+            let h = (ab && ab.y2 > ab.y1) ? (ab.y2 - ab.y1) : child.height;
+            if (w <= 0 || h <= 0) return;
+
+            this.activeItem = child;
+            this.pill.remove_all_transitions();
+
+            if (this.pill.opacity === 0) {
+                this.pill.translation_x = relX;
+                this.pill.translation_y = relY;
+                this.pill.width = w;
+                this.pill.height = h;
+                this.pill.scale_x = 0.94;
+                this.pill.scale_y = 0.94;
+                this.pill.ease({
+                    opacity: 255,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    duration: 100,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+            } else {
+                this.pill.ease({
+                    translation_x: relX,
+                    translation_y: relY,
+                    width: w,
+                    height: h,
+                    opacity: 255,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    duration: 140, // 140ms authentic macOS glide
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+            }
+        } catch (_) {}
+    }
+
+    hidePill(immediate = false) {
+        this.activeItem = null;
+        if (this.hideTimeout) {
+            GLib.source_remove(this.hideTimeout);
+            this.hideTimeout = 0;
+        }
+        if (!this.pill) return;
+        this.pill.remove_all_transitions();
+        if (immediate) {
+            this.pill.opacity = 0;
+        } else {
+            this.pill.ease({
+                opacity: 0,
+                duration: 120,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        }
+    }
+
+    cleanupSignals() {
+        for (const s of this.signals) {
+            try { s.actor.disconnect(s.id); } catch (_) {}
+        }
+        this.signals = [];
+    }
+
+    destroy() {
+        this.cleanupSignals();
+        if (this.hideTimeout) {
+            try { GLib.source_remove(this.hideTimeout); } catch (_) {}
+            this.hideTimeout = 0;
+        }
+        if (this.pill) {
+            try { this.pill.destroy(); } catch (_) {}
+            this.pill = null;
+        }
+        try {
+            if (this.menu && this.menu.box) {
+                this.menu.box.remove_style_class_name('mac-menu-hover-glide-active');
+                this.menu.box.disconnectObject(this);
+            }
+        } catch (_) {}
+        try { this.menu?.disconnectObject(this); } catch (_) {}
+    }
+}
+
 const TopLevelMenuButton = GObject.registerClass(
   class TopLevelMenuButton extends PanelMenu.Button {
     _init(label, children, appInstance = null, menuManagerInstance = null, isAppName = false) {
@@ -96,6 +306,7 @@ const TopLevelMenuButton = GObject.registerClass(
       this.setIsAppName(this._isAppName);
       this._setMenuOpenHandler(null);
       this._buildSubMenu(children, this.menu);
+      this._macHoverGlide = new AppMenuHoverGlide(this.menu);
     }
 
     setIsAppName(isAppName) {
@@ -308,6 +519,7 @@ const TopLevelMenuButton = GObject.registerClass(
         this.menu.box.add_style_class_name('appmenu-popup-menu-content');
         this._setMenuOpenHandler(openHandler);
         this._buildSubMenu(children, this.menu);
+        this._macHoverGlide?.updateItems();
     }
 
     destroy() {
@@ -316,6 +528,10 @@ const TopLevelMenuButton = GObject.registerClass(
         this._destroyed = true;
         this._menuOpenHandler = null;
         this._disconnectMenuSignals();
+        if (this._macHoverGlide) {
+            try { this._macHoverGlide.destroy(); } catch (_) {}
+            this._macHoverGlide = null;
+        }
         try { this.menu?.close(true); } catch (_e) {}
         super.destroy();
     }
@@ -778,12 +994,17 @@ export class MenuManager {
             const idx = this._buttons.length;
             const data = newMenuData[idx];
             const isAppName = (idx === 1);
+            const role = `${this.uuid}-${idx}`;
+            if (Main.panel.statusArea[role]) {
+                try { Main.panel.statusArea[role].destroy(); } catch (_) {}
+                delete Main.panel.statusArea[role];
+            }
             // Start empty; the update loop below builds each menu exactly once.
             // Passing data.children here would build in the constructor and then
             // immediately remove/rebuild, which causes disposed PopupMenuItem
             // warnings during extension reloads.
             const btn = new TopLevelMenuButton(data.label, [], detectedApp, this, isAppName);
-            Main.panel.addToStatusArea(`${this.uuid}-${idx}`, btn, idx + 1, 'left');
+            Main.panel.addToStatusArea(role, btn, idx + 1, 'left');
             this._buttons.push(btn);
         }
 
@@ -797,6 +1018,9 @@ export class MenuManager {
             btn.setIsAppName(i === 1);
             btn.updateLabel(data.label);
             btn.rebuildMenu(data.children, data.onOpen ?? null);
+            if (btn.menu && !btn.menu._macHoverTracker) {
+                btn.menu._macHoverTracker = new AppMenuHoverGlide(btn.menu);
+            }
         }
 
         const isLocked = Boolean(
@@ -823,6 +1047,10 @@ export class MenuManager {
     }
 
     clear() {
+        for (let idx = 0; idx < this._buttons.length; idx++) {
+            const role = `${this.uuid}-${idx}`;
+            delete Main.panel.statusArea[role];
+        }
         this._buttons.forEach(btn => {
             try { btn.destroy(); } catch (_e) {}
         });

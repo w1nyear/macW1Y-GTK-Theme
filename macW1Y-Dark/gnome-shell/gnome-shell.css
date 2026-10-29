@@ -6271,7 +6271,8 @@ StWidget.focused .app-grid-running-dot {
 .popup-menu-item:focus,
 .popup-menu-item:hover,
 .popup-menu-item:selected {
-  background-color: #007aff !important;
+  background-color: transparent !important;
+  background: transparent !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
@@ -6279,7 +6280,8 @@ StWidget.focused .app-grid-running-dot {
 
 .popup-menu-item:active,
 .popup-menu-item.selected:active {
-  background-color: #0062cc !important;
+  background-color: transparent !important;
+  background: transparent !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
 }
@@ -6311,7 +6313,7 @@ StWidget.focused .app-grid-running-dot {
   border-radius: 9999px !important;
   spacing: 6px !important;
   color: #dedede !important;
-  transition: color 100ms ease !important;
+  transition: color 80ms ease !important;
 }
 
 .appmenu-popup-menu-item:focus,
@@ -6323,7 +6325,8 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-content .popup-menu-item:focus,
 .appmenu-popup-menu-content .popup-menu-item:hover,
 .appmenu-popup-menu-content .popup-menu-item:selected {
-  background-color: #007aff !important;
+  background-color: transparent !important;
+  background: transparent !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
@@ -6333,16 +6336,16 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-item.selected:active,
 .appmenu-popup-menu .popup-menu-item:active,
 .appmenu-popup-menu-content .popup-menu-item:active {
-  background-color: #0062cc !important;
+  background-color: transparent !important;
+  background: transparent !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
 }
 
 .mac-menu-hover-pill {
-  display: none !important;
-  opacity: 0 !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
+  background-color: #007aff !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;
 }
 
 .popup-menu-item.popup-separator-menu-item,

@@ -12456,3 +12456,20 @@ Task 499: Повне полірування екрана блокування (m
    - mac-extension-guard verify підтвердив 100% цілісність усіх 20 розширень (VERIFICATION SUCCESS).
    - mac-diagnostics успішно пройдено на 100% (система стабільна, всі компоненти відповідають еталону).
 
+607. Реалізація анімації польоту hover (macOS Tahoe gliding pill) у контекстних та спливаючих меню:
+1. Усунення залишкових незалежних синіх підсвічувань кнопок меню:
+   - Усунено причину появи одночасних залишкових підсвічувань (як на наданому скріншоті з 4 активними синіми кнопками): прибрано індивідуальні повільні переходи кольору фону у stylesheet.css (appmenu), gnome-shell.css та gtk.css. Всі пункти меню тепер мають прозорий фон (background-color: transparent !important), що унеможливлює "фантомне" підсвічування кількох пунктів водночас.
+2. Створення єдиної капсули підсвічування hover, що перелітає за курсором (macOS Tahoe gliding pill):
+   - Створено клас відстеження hover-перельоту (AppMenuHoverGlide / MenuHoverTracker), який додає єдиний динамічний віджет St.Widget (.mac-menu-hover-pill) у контейнер меню безпосередньо під вміст (parent.insert_child_below(pill, box)).
+   - Реалізовано динамічний розрахунок координат перельоту через get_transformed_position (translation_x, translation_y відносно батьківського контейнера) та отримання точних виділених розмірів пункту меню через get_allocation_box() (ширина 234px, висота 28px).
+   - Анімація руху між пунктами меню плавно перелітає за курсором з використанням кубічного сповільнення Clutter.AnimationMode.EASE_OUT_CUBIC (тривалість 140 мс), а поява та зникнення при виході курсора за межі меню виконуються з дебаунсом 60 мс та анімацією EASE_OUT_QUAD (100–120 мс).
+3. Системна інтеграція та усунення внутрішніх конфліктів:
+   - Інтегровано підтримку анімації польоту в extensions/appmenu@ChathurangaBW.github.io/menuManager.js, extensions/blur-my-shell@aunetx/components/menubar_v29.js та extensions/eval-helper@mactheme/extension.js з перехопленням відкриття всіх спливаючих та контекстних меню PopupMenu.
+   - Усунено конфлікт експорту D-Bus об'єкта /org/gnome/Shell/Extensions/EvalHelper у extensions/macos-touchpad-gestures@mactheme/gestureImpl.js.
+   - Виправлено потенційну рекурсію у методі #overwritePanelAddToPanelBox розширення extensions/top-bar-organizer@julian.gse.jsts.xyz/extension.js.
+4. Верифікація та цілісність:
+   - Оновлено контрольні суми SHA-256 для 5 змінених розширень у config/extensions.lock.json.
+   - mac-extension-guard verify підтвердив повну цілісність (VERIFICATION SUCCESS: All 20 managed extensions match pinned lock hashes).
+   - mac-diagnostics успішно пройдено на 100% (система повністю стабільна, SSOT еталон дотримано).
+
+

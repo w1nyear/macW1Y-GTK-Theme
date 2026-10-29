@@ -38,10 +38,13 @@ export default class TopBarOrganizerExtension extends Extension {
     disable() {
         // Revert the overwrite of `Panel._addToPanelBox`.
         // @ts-ignore
-        Panel.Panel.prototype._addToPanelBox = Panel.Panel.prototype._originalAddToPanelBox;
-        // Set `Panel._originalAddToPanelBox` to `undefined`.
+        if (Panel.Panel.prototype._originalAddToPanelBox) {
+            Panel.Panel.prototype._addToPanelBox = Panel.Panel.prototype._originalAddToPanelBox;
+            // @ts-ignore
+            delete Panel.Panel.prototype._originalAddToPanelBox;
+        }
         // @ts-ignore
-        Panel.Panel.prototype._originalAddToPanelBox = undefined;
+        delete Main.panel?._originalAddToPanelBox;
         // Disconnect signals.
         for (const handlerId of this._settingsHandlerIds) {
             this._settings.disconnect(handlerId);
@@ -62,16 +65,14 @@ export default class TopBarOrganizerExtension extends Extension {
     #overwritePanelAddToPanelBox() {
         if (Panel.Panel.prototype._originalAddToPanelBox)
             return;
-        Panel.Panel.prototype._originalAddToPanelBox = Panel.Panel.prototype._addToPanelBox;
+        const origMethod = Panel.Panel.prototype._addToPanelBox;
+        Panel.Panel.prototype._originalAddToPanelBox = origMethod;
         const handleNewItemsAndOrderTopBar = () => {
             this.#handleNewItemsAndOrderTopBar();
         };
         // Overwrite `Panel._addToPanelBox`.
         Panel.Panel.prototype._addToPanelBox = function (role, indicator, position, box) {
-            if (typeof this._originalAddToPanelBox === 'function')
-                this._originalAddToPanelBox(role, indicator, position, box);
-            else if (typeof Panel.Panel.prototype._originalAddToPanelBox === 'function')
-                Panel.Panel.prototype._originalAddToPanelBox.call(this, role, indicator, position, box);
+            origMethod.call(this, role, indicator, position, box);
             handleNewItemsAndOrderTopBar();
         };
     }

@@ -1766,12 +1766,14 @@ class MenuHoverTracker {
         const parent = box ? box.get_parent() : null;
         if (!parent) return;
 
-        const accent = typeof getSystemAccentColor === 'function' ? getSystemAccentColor() : '#007aff';
         this._pill = new St.Widget({
+            name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
-            style: `background-color: transparent !important; opacity: 0 !important; border-radius: 9999px !important;`,
+            style: `background-color: #007aff !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;`,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START,
+            x_expand: false,
+            y_expand: false,
             opacity: 0,
             reactive: false,
         });
@@ -1789,9 +1791,10 @@ class MenuHoverTracker {
 
         const children = box.get_children();
         for (const child of children) {
-            if (!child || !child.reactive) continue;
+            if (!child || !child.reactive || child.sensitive === false) continue;
             if (child.has_style_class_name && (
                 child.has_style_class_name('popup-separator-menu-item') ||
+                child.has_style_class_name('appmenu-separator-menu-item') ||
                 child.has_style_class_name('popup-inactive-menu-item') ||
                 child.has_style_class_name('popup-sub-menu') ||
                 child.has_style_class_name('mac-menu-section-label') ||
@@ -1819,10 +1822,10 @@ class MenuHoverTracker {
             this._glideTo(child);
         } else {
             if (!this._hideTimeoutId) {
-                this._hideTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
+                this._hideTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60, () => {
                     this._hideTimeoutId = 0;
                     const box = this._menu.box;
-                    const anyActive = box && box.get_children().some(c => c.hover || c.active);
+                    const anyActive = box && box.get_children().some(c => c && c.reactive && (c.hover || c.active));
                     if (!anyActive) {
                         this._hidePill(false);
                     }
@@ -1846,29 +1849,37 @@ class MenuHoverTracker {
 
             const relX = cx - px;
             const relY = cy - py;
-            const w = child.width;
-            const h = child.height;
+            const ab = child.get_allocation_box ? child.get_allocation_box() : null;
+            let w = (ab && ab.x2 > ab.x1) ? (ab.x2 - ab.x1) : child.width;
+            let h = (ab && ab.y2 > ab.y1) ? (ab.y2 - ab.y1) : child.height;
+            if (w <= 0 || h <= 0) return;
 
             this._activeItem = child;
             this._pill.remove_all_transitions();
 
             if (this._pill.opacity === 0) {
-                this._pill.x = relX;
-                this._pill.y = relY;
+                this._pill.translation_x = relX;
+                this._pill.translation_y = relY;
                 this._pill.width = w;
                 this._pill.height = h;
+                this._pill.scale_x = 0.94;
+                this._pill.scale_y = 0.94;
                 this._pill.ease({
                     opacity: 255,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
                     duration: 100,
                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 });
             } else {
                 this._pill.ease({
-                    x: relX,
-                    y: relY,
+                    translation_x: relX,
+                    translation_y: relY,
                     width: w,
                     height: h,
                     opacity: 255,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
                     duration: 140,
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 });
@@ -5668,6 +5679,62 @@ export const MenuBarController = class MenuBarController {
 
     _setupMenuHoverGlide() {
         this._cleanupMenuHoverGlide();
+        this._trackedMenus = new Set();
+
+        const attachToMenu = (menu) => {
+            if (!menu || !menu.box || menu._hasHoverTracker) return;
+            const isQuickSettings = menu.constructor.name === 'QuickSettingsMenu' || !!menu._grid;
+            if (isQuickSettings) return;
+            menu._hasHoverTracker = true;
+            try {
+                const tracker = new MenuHoverTracker(menu);
+                this._trackedMenus.add(tracker);
+            } catch (_) {}
+        };
+
+        for (const m of (Main.panel.menuManager?._menus || [])) {
+            attachToMenu(m);
+        }
+
+        for (const key of Object.keys(Main.panel.statusArea || {})) {
+            const btn = Main.panel.statusArea[key];
+            if (btn?.menu) {
+                attachToMenu(btn.menu);
+            }
+        }
+
+        if (!this._origPopupMenuInit) {
+            this._origPopupMenuInit = PopupMenu.PopupMenu.prototype._init;
+            const self = this;
+            PopupMenu.PopupMenu.prototype._init = function(...args) {
+                self._origPopupMenuInit.apply(this, args);
+                try {
+                    attachToMenu(this);
+                } catch (_) {}
+            };
+        }
+
+        if (!this._origPopupMenuOpen) {
+            this._origPopupMenuOpen = PopupMenu.PopupMenu.prototype.open;
+            const self = this;
+            PopupMenu.PopupMenu.prototype.open = function(animate) {
+                try {
+                    attachToMenu(this);
+                } catch (_) {}
+                return self._origPopupMenuOpen.call(this, animate);
+            };
+        }
+
+        if (Main.panel.menuManager && !this._origMenuManagerAdd) {
+            this._origMenuManagerAdd = Main.panel.menuManager.addMenu;
+            const self = this;
+            Main.panel.menuManager.addMenu = function(menu, position) {
+                try {
+                    attachToMenu(menu);
+                } catch (_) {}
+                return self._origMenuManagerAdd.call(this, menu, position);
+            };
+        }
     }
 
     _cleanupMenuHoverGlide() {
@@ -5676,6 +5743,18 @@ export const MenuBarController = class MenuBarController {
                 PopupMenu.PopupMenu.prototype._init = this._origPopupMenuInit;
             } catch (_) {}
             this._origPopupMenuInit = null;
+        }
+        if (this._origPopupMenuOpen) {
+            try {
+                PopupMenu.PopupMenu.prototype.open = this._origPopupMenuOpen;
+            } catch (_) {}
+            this._origPopupMenuOpen = null;
+        }
+        if (this._origMenuManagerAdd && Main.panel.menuManager) {
+            try {
+                Main.panel.menuManager.addMenu = this._origMenuManagerAdd;
+            } catch (_) {}
+            this._origMenuManagerAdd = null;
         }
         if (this._trackedMenus) {
             for (const t of this._trackedMenus) {

@@ -6,7 +6,9 @@ import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Background from 'resource:///org/gnome/shell/ui/background.js';
 import Clutter from 'gi://Clutter';
+import St from 'gi://St';
 import Mtk from 'gi://Mtk';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 const EvalIface = `
 <node>
@@ -88,6 +90,247 @@ class OverviewWallpaperManager {
             try { this._bgGroup.destroy(); } catch (_) {}
             this._bgGroup = null;
         }
+    }
+}
+
+class MacMenuHoverGlide {
+    constructor(menu) {
+        this._menu = menu;
+        this._pill = null;
+        this._itemSignals = [];
+        this._hideTimeoutId = 0;
+        this._activeItem = null;
+
+        if (!menu || !menu.box) return;
+        this._setup();
+    }
+
+    _setup() {
+        if (!this._menuOpenSignalId) {
+            this._menuOpenSignalId = this._menu.connectObject('open-state-changed', (_m, open) => {
+                if (open) {
+                    this._ensurePill();
+                    this._updateItems();
+                    const activeChild = this._findActiveChild();
+                    if (activeChild) {
+                        this._glideTo(activeChild);
+                    }
+                } else {
+                    this._hidePill(true);
+                }
+            }, this);
+        }
+
+        if (this._menu.box) {
+            this._menu.box.add_style_class_name('mac-menu-hover-glide-active');
+            this._menu.box.connectObject(
+                'child-added', () => this._updateItems(),
+                'child-removed', () => this._updateItems(),
+                this
+            );
+        }
+
+        if (this._menu.isOpen) {
+            this._ensurePill();
+            this._updateItems();
+            const activeChild = this._findActiveChild();
+            if (activeChild) {
+                this._glideTo(activeChild);
+            }
+        }
+    }
+
+    _findActiveChild() {
+        if (!this._menu?.box) return null;
+        for (const child of this._menu.box.get_children()) {
+            if (this._isItemEligible(child) && (child.hover || child.active)) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    _ensurePill() {
+        if (this._pill && this._pill.get_parent()) return;
+        const box = this._menu.box;
+        const parent = box ? box.get_parent() : null;
+        if (!parent) return;
+
+        this._pill = new St.Widget({
+            name: 'mac-menu-hover-pill',
+            style_class: 'mac-menu-hover-pill',
+            style: 'background-color: #007aff !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;',
+            x_align: Clutter.ActorAlign.START,
+            y_align: Clutter.ActorAlign.START,
+            x_expand: false,
+            y_expand: false,
+            opacity: 0,
+            reactive: false,
+        });
+
+        try {
+            parent.insert_child_below(this._pill, box);
+        } catch (_e) {
+            try { parent.add_child(this._pill); } catch (_e2) {}
+        }
+    }
+
+    _isItemEligible(child) {
+        if (!child || !child.visible) return false;
+        if (!child.reactive) return false;
+        if (child.sensitive === false) return false;
+        if (child.has_style_class_name) {
+            if (child.has_style_class_name('popup-separator-menu-item') ||
+                child.has_style_class_name('appmenu-separator-menu-item') ||
+                child.has_style_class_name('popup-inactive-menu-item') ||
+                child.has_style_class_name('popup-sub-menu') ||
+                child.has_style_class_name('mac-menu-section-label') ||
+                child.has_style_class_name('mac-menu-hover-pill')) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    _updateItems() {
+        this._cleanupItemSignals();
+        const box = this._menu.box;
+        if (!box) return;
+
+        const children = box.get_children();
+        for (const child of children) {
+            if (!this._isItemEligible(child)) continue;
+
+            if (child.menu && !child.menu._macHoverTracker && child.menu.box) {
+                child.menu._macHoverTracker = new MacMenuHoverGlide(child.menu);
+            }
+
+            const hoverId = child.connect('notify::hover', () => this._onItemState(child));
+            const activeId = child.connect('notify::active', () => this._onItemState(child));
+            this._itemSignals.push({ actor: child, id: hoverId });
+            this._itemSignals.push({ actor: child, id: activeId });
+        }
+    }
+
+    _onItemState(child) {
+        if (child.hover || child.active) {
+            if (this._hideTimeoutId) {
+                GLib.source_remove(this._hideTimeoutId);
+                this._hideTimeoutId = 0;
+            }
+            this._glideTo(child);
+        } else {
+            if (!this._hideTimeoutId) {
+                this._hideTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60, () => {
+                    this._hideTimeoutId = 0;
+                    const anyActive = this._findActiveChild();
+                    if (!anyActive) {
+                        this._hidePill(false);
+                    } else if (anyActive !== this._activeItem) {
+                        this._glideTo(anyActive);
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
+            }
+        }
+    }
+
+    _glideTo(child) {
+        if (!this._isItemEligible(child) || !child.get_stage()) return;
+        this._ensurePill();
+        if (!this._pill) return;
+        const parent = this._menu.box?.get_parent();
+        if (!parent || !parent.get_stage()) return;
+
+        try {
+            const [px, py] = parent.get_transformed_position();
+            const [cx, cy] = child.get_transformed_position();
+            if (isNaN(cx) || isNaN(cy) || isNaN(px) || isNaN(py)) return;
+
+            const relX = cx - px;
+            const relY = cy - py;
+
+            const ab = child.get_allocation_box ? child.get_allocation_box() : null;
+            let w = (ab && ab.x2 > ab.x1) ? (ab.x2 - ab.x1) : child.width;
+            let h = (ab && ab.y2 > ab.y1) ? (ab.y2 - ab.y1) : child.height;
+            if (w <= 0 || h <= 0) return;
+
+            this._activeItem = child;
+            this._pill.remove_all_transitions();
+
+            if (this._pill.opacity === 0) {
+                this._pill.translation_x = relX;
+                this._pill.translation_y = relY;
+                this._pill.width = w;
+                this._pill.height = h;
+                this._pill.scale_x = 0.94;
+                this._pill.scale_y = 0.94;
+                this._pill.ease({
+                    opacity: 255,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    duration: 100,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+            } else {
+                this._pill.ease({
+                    translation_x: relX,
+                    translation_y: relY,
+                    width: w,
+                    height: h,
+                    opacity: 255,
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    duration: 140, // 140ms authentic macOS glide
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+            }
+        } catch (_e) {}
+    }
+
+    _hidePill(immediate = false) {
+        this._activeItem = null;
+        if (this._hideTimeoutId) {
+            GLib.source_remove(this._hideTimeoutId);
+            this._hideTimeoutId = 0;
+        }
+        if (!this._pill) return;
+        this._pill.remove_all_transitions();
+        if (immediate) {
+            this._pill.opacity = 0;
+        } else {
+            this._pill.ease({
+                opacity: 0,
+                duration: 100,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        }
+    }
+
+    _cleanupItemSignals() {
+        for (const s of this._itemSignals) {
+            try { s.actor.disconnect(s.id); } catch (_) {}
+        }
+        this._itemSignals = [];
+    }
+
+    destroy() {
+        this._cleanupItemSignals();
+        if (this._hideTimeoutId) {
+            try { GLib.source_remove(this._hideTimeoutId); } catch (_) {}
+            this._hideTimeoutId = 0;
+        }
+        if (this._pill) {
+            try { this._pill.destroy(); } catch (_) {}
+            this._pill = null;
+        }
+        try {
+            if (this._menu?.box) {
+                this._menu.box.remove_style_class_name('mac-menu-hover-glide-active');
+                this._menu.box.disconnectObject(this);
+            }
+        } catch (_) {}
+        try { this._menu?.disconnectObject(this); } catch (_) {}
     }
 }
 
@@ -501,6 +744,60 @@ export default class EvalHelper extends Extension {
         setupAppDialogBlurGuard();
         GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2500, () => {
             setupAppDialogBlurGuard();
+            return GLib.SOURCE_REMOVE;
+        });
+
+        // macOS Tahoe context & popup menus: single gliding hover pill following cursor
+        const setupMenuHoverGlide = () => {
+            try {
+                const attachToMenu = (menu) => {
+                    if (!menu || !menu.box || menu._macHoverTracker || menu._hasHoverTracker || menu._appMenuHoverGlide) return;
+                    const isQuickSettings = menu.constructor.name === 'QuickSettingsMenu' || !!menu._grid;
+                    if (isQuickSettings) return;
+                    menu._macHoverTracker = new MacMenuHoverGlide(menu);
+                };
+
+                for (const m of (Main.panel.menuManager?._menus || [])) {
+                    attachToMenu(m);
+                }
+
+                for (const key of Object.keys(Main.panel.statusArea || {})) {
+                    const btn = Main.panel.statusArea[key];
+                    if (btn?.menu) {
+                        attachToMenu(btn.menu);
+                    }
+                }
+
+                if (!PopupMenu.PopupMenu.prototype._origMacGlideOpen) {
+                    PopupMenu.PopupMenu.prototype._origMacGlideOpen = PopupMenu.PopupMenu.prototype.open;
+                    const origOpen = PopupMenu.PopupMenu.prototype._origMacGlideOpen;
+                    PopupMenu.PopupMenu.prototype.open = function(animate) {
+                        try {
+                            attachToMenu(this);
+                        } catch (e) {
+                            console.error(`[EvalHelper] MacMenuHoverGlide open error: ${e}`);
+                        }
+                        return origOpen.call(this, animate);
+                    };
+                }
+
+                if (Main.panel.menuManager && !Main.panel.menuManager._origMacGlideAddMenu) {
+                    Main.panel.menuManager._origMacGlideAddMenu = Main.panel.menuManager.addMenu;
+                    const origAdd = Main.panel.menuManager._origMacGlideAddMenu;
+                    Main.panel.menuManager.addMenu = function(menu, position) {
+                        try {
+                            attachToMenu(menu);
+                        } catch (_) {}
+                        return origAdd.call(this, menu, position);
+                    };
+                }
+            } catch (e) {
+                console.error(`[EvalHelper] setupMenuHoverGlide error: ${e}`);
+            }
+        };
+        setupMenuHoverGlide();
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+            setupMenuHoverGlide();
             return GLib.SOURCE_REMOVE;
         });
 
@@ -1788,6 +2085,15 @@ export default class EvalHelper extends Extension {
             for (const st of globalThis._macDlgStates) {
                 try { st.glass?.hide(); } catch (_) {}
             }
+        }
+
+        if (PopupMenu.PopupMenu.prototype._origMacGlideOpen) {
+            PopupMenu.PopupMenu.prototype.open = PopupMenu.PopupMenu.prototype._origMacGlideOpen;
+            PopupMenu.PopupMenu.prototype._origMacGlideOpen = null;
+        }
+        if (Main.panel.menuManager?._origMacGlideAddMenu) {
+            Main.panel.menuManager.addMenu = Main.panel.menuManager._origMacGlideAddMenu;
+            Main.panel.menuManager._origMacGlideAddMenu = null;
         }
     }
 }

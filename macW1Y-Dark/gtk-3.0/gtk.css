@@ -53,7 +53,7 @@ window.desktopmenu menuitem {
   background-color: transparent;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 100ms ease, color 100ms ease;
+  transition: color 60ms ease;
 }
 
 menu menuitem label,
