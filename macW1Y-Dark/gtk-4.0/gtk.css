@@ -9671,7 +9671,21 @@ popover.menu contents,
 popover.context-menu > contents,
 popover > contents {
   border-radius: 20px;
-  padding: 6px 4px;
+  padding: 12px 6px 8px 6px;
+}
+
+popover.menu modelbutton:first-child,
+popover.menu button:first-child,
+popover modelbutton:first-child,
+.context-menu modelbutton:first-child {
+  margin-top: 4px;
+}
+
+popover.menu modelbutton:last-child,
+popover.menu button:last-child,
+popover modelbutton:last-child,
+.context-menu modelbutton:last-child {
+  margin-bottom: 4px;
 }
 
 popover.menu modelbutton,
@@ -9699,32 +9713,41 @@ popover.menu label {
 }
 
 popover.menu modelbutton:hover,
-popover.menu modelbutton:focus,
-popover.menu modelbutton:selected,
+popover.menu modelbutton:focus-visible,
 popover.menu button:hover,
-popover.menu button:focus,
-popover.menu button:selected,
+popover.menu button:focus-visible,
 popover modelbutton:hover,
-popover modelbutton:focus,
-popover modelbutton:selected,
+popover modelbutton:focus-visible,
 .context-menu modelbutton:hover,
-.context-menu modelbutton:focus,
-.context-menu modelbutton:selected {
+.context-menu modelbutton:focus-visible {
   background-color: #007aff;
   color: #ffffff;
   border-radius: 9999px;
   box-shadow: none;
 }
 
+popover.menu modelbutton:not(:hover):not(:focus-visible),
+popover.menu button:not(:hover):not(:focus-visible),
+popover modelbutton:not(:hover):not(:focus-visible),
+.context-menu modelbutton:not(:hover):not(:focus-visible),
+popover.menu modelbutton:focus:not(:focus-visible),
+popover.menu modelbutton:selected:not(:hover):not(:focus-visible) {
+  background-color: transparent;
+  background: transparent;
+}
+
 popover.menu modelbutton:hover label,
-popover.menu modelbutton:focus label,
-popover.menu modelbutton:selected label,
+popover.menu modelbutton:focus-visible label,
 popover.menu button:hover label,
-popover.menu button:focus label,
-popover.menu button:selected label,
+popover.menu button:focus-visible label,
 popover modelbutton:hover label,
-popover modelbutton:focus label,
-popover modelbutton:selected label {
+popover modelbutton:focus-visible label {
+  color: #ffffff;
+}
+
+popover.menu modelbutton:not(:hover):not(:focus-visible) label,
+popover.menu button:not(:hover):not(:focus-visible) label,
+popover modelbutton:not(:hover):not(:focus-visible) label {
   color: #ffffff;
 }
 

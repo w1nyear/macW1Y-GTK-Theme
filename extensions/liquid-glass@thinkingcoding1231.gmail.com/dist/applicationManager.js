@@ -1066,12 +1066,7 @@ export class ApplicationManager {
         const parentWin = metaWin && typeof metaWin.get_transient_for === 'function' ? metaWin.get_transient_for() : null;
         const isParentDesktop = parentWin && typeof parentWin.get_window_type === 'function' && parentWin.get_window_type() === Meta.WindowType.DESKTOP;
         const isSubsurfaceMenu = profile === 'desktop-menu' && metaWin && parentWin && !isParentDesktop;
-        if (isSubsurfaceMenu) {
-            setActorVisible(bgClone, false);
-            if (BASE_LAYER_ENABLED) {
-                setActorVisible(baseClone, false);
-            }
-        } else if (profile === 'desktop-menu') {
+        if (profile === 'desktop-menu') {
             setActorVisible(bgClone, true);
             if (BASE_LAYER_ENABLED) {
                 setActorVisible(baseClone, true);

@@ -12574,3 +12574,21 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено хеші блокувань у config/extensions.lock.json.
    - ./bin/mac-extension-guard verify підтвердив 20/20 відповідність (VERIFICATION SUCCESS).
    - /usr/local/bin/mac-diagnostics завершено на 100% OK.
+
+
+614. Виправлення відображення фону позаду Nautilus, збільшення висоти/відступів контекстного меню та усунення залипання hover:
+1. Виправлення відображення фону за межами програми (проблема зникнення шпалер):
+   - У розширенні Liquid Glass (extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/applicationManager.js та src/applicationManager.ts) усунуто блокування bgClone під час відкриття контекстних меню додатків (умова isSubsurfaceMenu примусово приховувала актор шпалер setActorVisible(bgClone, false)).
+   - Завдяки увімкненню bgClone для всіх меню профілю desktop-menu актор шпалер робочого столу завжди присутній у буфері захоплення: у зоні перекриття з вікном Nautilus відображається розмите вікно Nautilus, а за його межами плавно відображаються розмиті шпалери робочого столу за еталоном macOS Tahoe.
+2. Збільшення висоти та верхнього відступу контекстного меню (кнопка зверху):
+   - У ~/.config/gtk-4.0/gtk.css, fixes4.css та темах macW1Y-Dark / macW1Y-Dark-solid збільшено внутрішні відступи контейнера меню popover.menu > contents з 6px 4px до 12px 6px 8px 6px.
+   - Додано маргін margin-top: 4px для першого елемента popover.menu modelbutton:first-child та margin-bottom: 4px для останнього. Верхній пункт («Створити теку...») більше не стискається стрілкою (arrow) та не обрізається заокругленнями верхньої межі.
+3. Усунення залипання підсвічування hover після відведення курсору:
+   - Діагностовано причину залипання: у правилах CSS селектори :focus та :selected мали стиль background-color: #007aff !important. У GTK4 після наведення курсору кнопка отримує фокус, а при виході курсору стан :hover вимикається, проте стан :focus залишається активним на останньому віджеті.
+   - Селектори :focus та :selected замінено на :focus-visible (активний виключно під час навігації клавіатурою).
+   - Додано примусове скидання popover.menu modelbutton:not(:hover):not(:focus-visible) у transparent. Тепер після зміщення курсору синє підсвічування миттєво зникає.
+4. Верифікація та цілісність системи:
+   - Зміни синхронізовано з ~/.local/share/gnome-shell/extensions/.
+   - Оновлено хеші блокувань у config/extensions.lock.json.
+   - ./bin/mac-extension-guard verify підтвердив 20/20 відповідність (VERIFICATION SUCCESS).
+   - /usr/local/bin/mac-diagnostics завершено на 100% OK.

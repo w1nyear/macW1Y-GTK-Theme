@@ -69,32 +69,42 @@ listview.view > row.activatable > cell {
 }
 
 /* Popover and Menu accent color fix to use system accent color */
-/* Issue double selection with focus and hover*/
+/* Highlight only on hover or explicit keyboard navigation (:focus-visible) */
 popover.menu > contents > .menu-item:hover,
 popover.menu contents > .menu-item:hover,
 popover.menu modelbutton:hover,
+popover.menu button:hover,
+popover modelbutton:hover,
 .menu > .menu-item:hover,
 .context-menu > .menu-item:hover,
 menuitem:hover,
 .menuitem:hover,
-popover.menu > contents > .menu-item:selected,
-popover.menu contents > .menu-item:selected,
-popover.menu modelbutton:selected,
-.menu > .menu-item:selected,
-.context-menu > .menu-item:selected,
-menuitem:selected,
-.menuitem:selected,
-popover.menu > contents > .menu-item:focus,
-popover.menu contents > .menu-item:focus,
-popover.menu modelbutton:focus,
-.menu > .menu-item:focus,
-.context-menu > .menu-item:focus,
-menuitem:focus,
-.menuitem:focus {
+popover.menu > contents > .menu-item:focus-visible,
+popover.menu contents > .menu-item:focus-visible,
+popover.menu modelbutton:focus-visible,
+popover.menu button:focus-visible,
+popover modelbutton:focus-visible,
+.menu > .menu-item:focus-visible,
+.context-menu > .menu-item:focus-visible,
+menuitem:focus-visible,
+.menuitem:focus-visible {
   background-color: #007aff !important;
   color: #ffffff !important;
-  border-radius: 6px !important;
+  border-radius: 9999px !important;
   box-shadow: none !important;
+}
+
+/* Clear hover when cursor leaves the item */
+popover.menu modelbutton:not(:hover):not(:focus-visible),
+popover.menu button:not(:hover):not(:focus-visible),
+popover modelbutton:not(:hover):not(:focus-visible),
+.context-menu modelbutton:not(:hover):not(:focus-visible),
+popover.menu > contents > .menu-item:not(:hover):not(:focus-visible),
+popover.menu contents > .menu-item:not(:hover):not(:focus-visible),
+popover.menu modelbutton:focus:not(:focus-visible),
+popover.menu modelbutton:selected:not(:hover):not(:focus-visible) {
+  background-color: transparent !important;
+  background: transparent !important;
 }
 
 /* Dropdown selectors (GtkDropDown, GtkComboBox, AdwComboRow) put a listview in a
