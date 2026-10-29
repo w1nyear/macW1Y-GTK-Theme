@@ -290,6 +290,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._focusWindowId = 0;
         this._workspaceId = 0;
         this._glass = null;
+        this._superOnlyPressed = false;
 
         _ensureDashGetAppHook();
         _ensureDockDragMonitor();
@@ -535,13 +536,33 @@ export const MacApplicationsDialog = GObject.registerClass({
             const symbol = event.get_key_symbol();
             const state = event.get_state();
             const isCtrl = (state & Clutter.ModifierType.CONTROL_MASK) !== 0;
-            if (symbol === Clutter.KEY_Escape || (isCtrl && symbol === Clutter.KEY_space)) {
-                this.close();
+            const isSuper = (state & (Clutter.ModifierType.SUPER_MASK | Clutter.ModifierType.MOD4_MASK)) !== 0;
+
+            if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
+                this._superOnlyPressed = true;
+                return Clutter.EVENT_PROPAGATE;
+            }
+
+            this._superOnlyPressed = false;
+
+            if (isSuper && symbol === Clutter.KEY_space) {
+                const isShift = (state & Clutter.ModifierType.SHIFT_MASK) !== 0;
+                try {
+                    if (globalThis._macInputSwitcherInstance) {
+                        globalThis._macInputSwitcherInstance._handleSwitch(null, null, event, {
+                            is_reversed: () => isShift,
+                            get_name: () => 'switch-input-source',
+                            get_mask: () => state
+                        });
+                    } else {
+                        Main.panel.statusArea.keyboard?._inputSourceManager?._modifiersSwitcher();
+                    }
+                } catch (_) {}
                 return Clutter.EVENT_STOP;
             }
-            if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
-                this.close(true);
-                Main.overview.show();
+
+            if (symbol === Clutter.KEY_Escape || (isCtrl && symbol === Clutter.KEY_space)) {
+                this.close();
                 return Clutter.EVENT_STOP;
             }
             if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
@@ -558,6 +579,20 @@ export const MacApplicationsDialog = GObject.registerClass({
                     this._gridButtons[0].grab_key_focus();
                 }
                 return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+
+        ct.connect('key-release-event', (_actor, event) => {
+            const symbol = event.get_key_symbol();
+            if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
+                if (this._superOnlyPressed) {
+                    this._superOnlyPressed = false;
+                    this.close(true);
+                    Main.overview.show();
+                    return Clutter.EVENT_STOP;
+                }
+                this._superOnlyPressed = false;
             }
             return Clutter.EVENT_PROPAGATE;
         });
@@ -1093,11 +1128,6 @@ export const MacApplicationsDialog = GObject.registerClass({
             const symbol = event.get_key_symbol();
             if (symbol === Clutter.KEY_Escape) {
                 this.close();
-                return Clutter.EVENT_STOP;
-            }
-            if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
-                this.close(true);
-                Main.overview.show();
                 return Clutter.EVENT_STOP;
             }
             if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {

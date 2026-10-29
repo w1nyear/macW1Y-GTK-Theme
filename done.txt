@@ -12755,3 +12755,36 @@ Task 499: Повне полірування екрана блокування (m
    - ./bin/mac-extension-guard verify — 20/20 SUCCESS.
    - /usr/local/bin/mac-diagnostics — 100% OK.
    - Фізичну швидкість вентиляторів не змінювано.
+
+================================================================================
+Етап 621: Виправлення конфліктів комбінації Super+Space (Spotlight, втрата фокусу, огляд)
+================================================================================
+Час: 2026-10-29 22:40:00
+
+1. Виявлені першопричини (Root Cause Analysis):
+   - Проблема №1 (Spotlight закривався і відкривався огляд):
+     У коді searchDialog_v5.js (а також clipboardDialog_v2.js та applications_menu_v5b.js) обробник key-press-event помилково містив прямий перехоплювач клавіш:
+     `if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) { this.close(true); Main.overview.show(); return Clutter.EVENT_STOP; }`.
+     Оскільки Super є клавішею-модифікатором, при спробі натиснути Super+Space спочатку спрацьовував натиск Super_L, що миттєво аварійно закривало Spotlight і відкривало огляд GNOME Shell ще до натискання Space.
+   - Проблема №2 (Розфокусування поля вводу в будь-яких програмах):
+     У MacInputSourcePopup (mac_input_switcher_v11.js) під час перемикання розкладки викликався `Main.pushModal(this)`, а віджет мав `reactive: true` і биндився на весь stage.
+     Глобальне модальне захоплення (modal grab) інформувало Mutter та Wayland/X11 про зміну активного вікна, надсилаючи `FocusOut` активному додатку (браузер, термінал, IDE, текстові редактори), через що курсор розфокусовувався, автодоповнення закривалися, а при відпусканні Super відбувалися гонки стану з оглядом.
+
+2. Виправлення та комплексне рішення:
+   - Немодальний індикатор перемикання мови (Non-Modal HUD macOS Style):
+     * У mac_input_switcher_v11.js встановлено `reactive: false` та повністю вимкнено `Main.pushModal`.
+     * Перемикання мови відбувається миттєво та нативно без жодного блокування чи відбирання фокусу вікна/поля вводу.
+     * Повідомлення OSD / плашка біля каретки відображається плавно (HUD) і зникає через 1000 мс або одразу ж при продовженні набору тексту через відстеження каретки `im._cursorRect`.
+     * Жодна програма більше не отримує FocusOut при натисканні Super+Space — каретка залишається активною.
+   - Підтримка Super+Space у Spotlight та модальних діалогах:
+     * У searchDialog_v5.js, clipboardDialog_v2.js та applications_menu_v5b.js прибрано негайне закриття на key-press Super_L/R.
+     * Реалізовано пряме перехоплення Super+Space (`isSuper && symbol === Clutter.KEY_space`): перемикає розкладку, зупиняє подію (не друкує пробіл), зберігає Spotlight відкритим та сфокусованим.
+     * Закриття в огляд за Super збережено виключно для одиночного тапу Super (якщо Super натиснуто і відпущено без натискання будь-якої іншої клавіші) через прапорець `_superOnlyPressed` на key-release-event.
+   - Гаряче перезавантаження в сесії:
+     * Оновлені модулі mac_input_switcher_v11.js, searchDialog_v5.js, clipboardDialog_v2.js та applications_menu_v5b.js успішно перепідключено в активній сесії GNOME Shell через EvalHelper.
+     * Оновлено SHA256 хеші у config/extensions.lock.json.
+
+3. Верифікація:
+   - ./bin/mac-extension-guard verify — 20/20 SUCCESS.
+   - /usr/local/bin/mac-diagnostics — 100% OK.
+   - Тестування перемикання мови підтвердило стабільність: `haveModal: false, reactive: false`.

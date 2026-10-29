@@ -366,6 +366,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._debounceId = 0;
         this._lastQuery = '';
         this._modalGrab = null;
+        this._superOnlyPressed = false;
 
         // 1. Transparent Backdrop Click-Catcher (No screen dimming)
         this._backdrop = new Clutter.Actor({
@@ -794,6 +795,30 @@ export const MacSpotlightDialog = GObject.registerClass({
             const symbol = event.get_key_symbol();
             const state = event.get_state();
             const isCtrl = (state & Clutter.ModifierType.CONTROL_MASK) !== 0;
+            const isSuper = (state & (Clutter.ModifierType.SUPER_MASK | Clutter.ModifierType.MOD4_MASK)) !== 0;
+
+            if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
+                this._superOnlyPressed = true;
+                return Clutter.EVENT_PROPAGATE;
+            }
+
+            this._superOnlyPressed = false;
+
+            if (isSuper && symbol === Clutter.KEY_space) {
+                const isShift = (state & Clutter.ModifierType.SHIFT_MASK) !== 0;
+                try {
+                    if (globalThis._macInputSwitcherInstance) {
+                        globalThis._macInputSwitcherInstance._handleSwitch(null, null, event, {
+                            is_reversed: () => isShift,
+                            get_name: () => 'switch-input-source',
+                            get_mask: () => state
+                        });
+                    } else {
+                        Main.panel.statusArea.keyboard?._inputSourceManager?._modifiersSwitcher();
+                    }
+                } catch (_) {}
+                return Clutter.EVENT_STOP;
+            }
 
             if (symbol === Clutter.KEY_Escape) {
                 if (this._mode !== 'search') {
@@ -801,12 +826,6 @@ export const MacSpotlightDialog = GObject.registerClass({
                     return Clutter.EVENT_STOP;
                 }
                 this.close();
-                return Clutter.EVENT_STOP;
-            }
-
-            if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
-                this.close(true);
-                Main.overview.show();
                 return Clutter.EVENT_STOP;
             }
 
@@ -835,6 +854,20 @@ export const MacSpotlightDialog = GObject.registerClass({
                 }
             }
 
+            return Clutter.EVENT_PROPAGATE;
+        });
+
+        ct.connect('key-release-event', (_actor, event) => {
+            const symbol = event.get_key_symbol();
+            if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
+                if (this._superOnlyPressed) {
+                    this._superOnlyPressed = false;
+                    this.close(true);
+                    Main.overview.show();
+                    return Clutter.EVENT_STOP;
+                }
+                this._superOnlyPressed = false;
+            }
             return Clutter.EVENT_PROPAGATE;
         });
 

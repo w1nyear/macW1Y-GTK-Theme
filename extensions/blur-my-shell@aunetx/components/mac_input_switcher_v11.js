@@ -172,7 +172,7 @@ export const MacInputSourcePopup = GObject.registerClass({
 }, class MacInputSourcePopup extends St.Widget {
     _init(items, action, actionBackward, caretInfo, currentIndex, nextIndex, glass = null) {
         super._init({
-            reactive: true,
+            reactive: false,
             visible: false,
             opacity: 0,
         });
@@ -208,24 +208,6 @@ export const MacInputSourcePopup = GObject.registerClass({
         } else {
             this._buildOsdUI();
         }
-
-        // Dismiss on click outside
-        this.connect('button-press-event', (actor, event) => {
-            const [clickX, clickY] = event.get_coords();
-            let inside = false;
-            const target = this._capsuleBox || this._osdBox;
-            if (target) {
-                const x = target.x;
-                const y = target.y;
-                const w = target.width;
-                const h = target.height;
-                inside = (clickX >= x && clickX <= x + w && clickY >= y && clickY <= y + h);
-            }
-            if (!inside) {
-                this.fadeAndDestroy();
-            }
-            return Clutter.EVENT_STOP;
-        });
     }
 
     _buildCaretUI() {
@@ -458,14 +440,8 @@ export const MacInputSourcePopup = GObject.registerClass({
         this.opacity = 255;
         this.visible = true;
 
-        try {
-            const grab = Main.pushModal(this);
-            this._grab = grab;
-            this._haveModal = !!grab;
-        } catch (_) {
-            this._grab = null;
-            this._haveModal = false;
-        }
+        this._grab = null;
+        this._haveModal = false;
         this._modifierMask = primaryModifier(mask);
 
         if (this._glass && this._targetBox) {
@@ -553,18 +529,12 @@ export const MacInputSourcePopup = GObject.registerClass({
             });
         }
 
-        // Slide into next index
+        // Slide into next index and activate immediately
         this._select(this._nextIndex, true);
         try { this._items[this._selectedIndex]?.activate(true); } catch (_) {}
 
-        // If modifier was already released (quick tap)
-        if (this._modifierMask) {
-            const [x, y, mods] = global.get_pointer();
-            if (!(mods & this._modifierMask)) {
-                this._onQuickRelease();
-                return true;
-            }
-        }
+        // Non-modal HUD: linger gracefully then smoothly fade out
+        this._scheduleFade(1000);
 
         return true;
     }
@@ -596,10 +566,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._select(newIndex, true);
         try { this._items[this._selectedIndex]?.activate(true); } catch (_) {}
 
-        // If modal was already popped, restart linger timer
-        if (!this._haveModal) {
-            this._scheduleFade(1200);
-        }
+        this._scheduleFade(1000);
     }
 
     _keyPressHandler(keysym, action) {
@@ -876,7 +843,7 @@ export class MacInputSwitcher {
             set: (v) => {
                 currentRect = v;
                 im._cursorRectTime = v ? GLib.get_monotonic_time() : 0;
-                if (this._activePopup && !this._activePopup._haveModal) {
+                if (this._activePopup) {
                     this._activePopup.fadeAndDestroy();
                 }
             },
@@ -888,7 +855,7 @@ export class MacInputSwitcher {
         this._focusWindowId = global.display.connect('notify::focus-window', () => {
             currentRect = null;
             im._cursorRectTime = 0;
-            if (this._activePopup && this._activePopup._capsuleBox && !this._activePopup._haveModal) {
+            if (this._activePopup) {
                 this._activePopup.fadeAndDestroy();
             }
         });
