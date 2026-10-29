@@ -12612,3 +12612,28 @@ Task 499: Повне полірування екрана блокування (m
    - Оновлено контрольні суми sha256 у config/extensions.lock.json.
    - ./bin/mac-extension-guard verify підтвердив 20/20 відповідність (VERIFICATION SUCCESS).
    - /usr/local/bin/mac-diagnostics підтвердив 100% OK.
+
+
+616. Активація за замовчуванням та двостороння синхронізація звуку запуску (Startup Sound) із перемикачем у Параметрах (Stage 616):
+1. Активація звуку запуску за замовчуванням (Default State ON):
+   - У GNOME Control Center (Параметри -> Звуки) перемикач «Звук запуску» прив'язаний через GSettings до схеми org.gnome.shell.ubuntu і ключа startup-sound (непорожній рядок = увімкнено, порожній рядок = вимкнено).
+   - Встановлено системний gsettings-оверрайд у macos-gdm/99_mactheme.gschema.override та /usr/share/glib-2.0/schemas/99_mactheme.gschema.override:
+     [org.gnome.shell.ubuntu]
+     startup-sound = 'warty-startup'
+     [org.gnome.shell.ubuntu:ubuntu]
+     startup-sound = 'warty-startup'
+   - Виконано glib-compile-schemas та встановлено користувацьке налаштування gsettings set org.gnome.shell.ubuntu startup-sound 'warty-startup'. Тепер у «Параметрах» звук запуску активований за замовчуванням.
+2. Повна синхронізація перемикача з автозапуском звуку входу macOS:
+   - Створено синхронізуючий скрипт /usr/local/bin/mac-login-sound (та bin/mac-login-sound у репозиторії):
+     - Перед відтворенням зчитує значення org.gnome.shell.ubuntu startup-sound.
+     - Якщо значення порожнє ("" або вимкнено в «Параметрах»), скрипт миттєво завершує роботу без відтворення звуку.
+     - Якщо перемикач увімкнено (warty-startup або непорожнє значення), скрипт перевіряє блокування дебаунсу у /run/user/$UID/mac-startup-sound.lock (щоб уникнути подвійного звуку) та програє автентичний акорд запуску macOS desktop-login.ogg через canberra-gtk-play / paplay.
+   - Оновлено файл автозапуску autostart/macos-login-sound.desktop та ~/.config/autostart/macos-login-sound.desktop для виклику /usr/local/bin/mac-login-sound.
+3. Символічні посилання та підтримка тем звуків:
+   - У звуковій темі macOS створено лінки warty-startup.oga -> desktop-login.oga та warty-startup.ogg -> desktop-login.ogg у /usr/share/sounds/macOS/stereo/, ~/.local/share/sounds/macOS/stereo/ та sounds/macOS/stereo/. Завдяки цьому будь-які системні виклики Canonical/Ubuntu або GNOME Shell відтворюють автентичний звук запуску macOS.
+   - Оновлено install.sh, щоб автоматично встановлювати та синхронізувати /usr/local/bin/mac-login-sound та застосовувати налаштування за замовчуванням.
+   - Оновлено config/macw1y-manifest.json (додано "startup_sound": "warty-startup").
+4. Верифікація та діагностика:
+   - Перевірено перемикання увімкнено/вимкнено: при вимкненні перемикача у «Параметрах» скрипт мовчить; при увімкненні грає звук запуску macOS.
+   - ./bin/mac-extension-guard verify підтвердив 20/20 відповідність (VERIFICATION SUCCESS).
+   - /usr/local/bin/mac-diagnostics підтвердив 100% OK.

@@ -550,7 +550,13 @@ install_sounds() {
         run_as_user gsettings set org.gnome.desktop.sound theme-name 'macOS'
         run_as_user gsettings set org.gnome.desktop.sound event-sounds true
         run_as_user gsettings set org.gnome.desktop.sound input-feedback-sounds true
+        run_as_user gsettings set org.gnome.shell.ubuntu startup-sound 'warty-startup'
         log_success "Звукову тему macOS успішно встановлено та активовано!"
+    fi
+    
+    if [ -f "$SCRIPT_DIR/bin/mac-login-sound" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/mac-login-sound" /usr/local/bin/mac-login-sound
+        sudo chmod 755 /usr/local/bin/mac-login-sound
     fi
     
     if [ -f "$SCRIPT_DIR/autostart/macos-login-sound.desktop" ]; then
@@ -1624,6 +1630,10 @@ run_incremental_update() {
         run_as_user gsettings set org.gnome.desktop.sound event-sounds true
         run_as_user gsettings set org.gnome.desktop.sound input-feedback-sounds true
     fi
+    if [ -f "$SCRIPT_DIR/bin/mac-login-sound" ]; then
+        sync_or_update_file "$SCRIPT_DIR/bin/mac-login-sound" "/usr/local/bin/mac-login-sound" true
+        sudo chmod 755 /usr/local/bin/mac-login-sound
+    fi
     if [ -f "$SCRIPT_DIR/autostart/macos-login-sound.desktop" ]; then
         sync_or_update_file "$SCRIPT_DIR/autostart/macos-login-sound.desktop" "$TARGET_HOME/.config/autostart/macos-login-sound.desktop" false
     fi
@@ -2043,6 +2053,7 @@ run_clean_update() {
     rm -rf "$TARGET_HOME/.local/share/sounds/macOS"
     sudo rm -rf /usr/share/sounds/macOS 2>/dev/null || true
     rm -f "$TARGET_HOME/.config/autostart/macos-login-sound.desktop"
+    sudo rm -f /usr/local/bin/mac-login-sound
     run_as_user gsettings set org.gnome.desktop.sound theme-name 'macOS' 2>/dev/null || true
 
     rm -rf "$TARGET_HOME/.local/share/gnome-shell/extensions/macos-touchpad-gestures@mactheme"

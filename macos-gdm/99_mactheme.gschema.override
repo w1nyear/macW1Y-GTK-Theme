@@ -124,3 +124,9 @@ disable-user-list = false
 enable-fingerprint-authentication = false
 logo = ''
 disable-user-list = false
+
+[org.gnome.shell.ubuntu]
+startup-sound = 'warty-startup'
+
+[org.gnome.shell.ubuntu:ubuntu]
+startup-sound = 'warty-startup'

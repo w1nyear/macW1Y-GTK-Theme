@@ -2,7 +2,7 @@
 Type=Application
 Name=macOS Startup Chime
 Comment=Plays the authentic macOS boot chime upon user login
-Exec=canberra-gtk-play -i desktop-login
+Exec=/usr/local/bin/mac-login-sound
 Terminal=false
 Hidden=false
 NoDisplay=true

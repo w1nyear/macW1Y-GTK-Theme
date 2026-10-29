@@ -12,6 +12,7 @@
     "button_layout": "close,minimize,maximize:",
     "shell_theme": "macW1Y-Dark",
     "sound_theme": "macOS",
+    "startup_sound": "warty-startup",
     "color_scheme": "prefer-dark",
     "wallpaper_uri": "file:///usr/share/backgrounds/GoldenGate_Day.jpg"
   },

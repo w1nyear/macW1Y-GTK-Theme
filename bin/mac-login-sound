@@ -1,0 +1,34 @@
+#!/bin/sh
+# mac-login-sound - macOS Boot Chime synchronized with GNOME Settings (org.gnome.shell.ubuntu startup-sound)
+
+# 1. Check if startup-sound is enabled in Settings
+STARTUP_SOUND=$(gsettings get org.gnome.shell.ubuntu startup-sound 2>/dev/null | tr -d "'\"")
+
+# If empty or not set, sound is disabled in Settings -> do not play
+if [ -z "$STARTUP_SOUND" ]; then
+    exit 0
+fi
+
+# 2. Prevent double chime within 10 seconds (e.g. between GNOME Shell & autostart)
+LOCK_DIR="/run/user/$(id -u)"
+LOCK_FILE="${LOCK_DIR}/mac-startup-sound.lock"
+
+if [ -f "$LOCK_FILE" ]; then
+    NOW=$(date +%s)
+    MTIME=$(stat -c %Y "$LOCK_FILE" 2>/dev/null || echo 0)
+    DIFF=$((NOW - MTIME))
+    if [ "$DIFF" -ge 0 ] && [ "$DIFF" -lt 10 ]; then
+        exit 0
+    fi
+fi
+
+[ -d "$LOCK_DIR" ] && touch "$LOCK_FILE" 2>/dev/null || true
+
+# 3. Play macOS boot chime
+if command -v canberra-gtk-play >/dev/null 2>&1; then
+    canberra-gtk-play -i desktop-login 2>/dev/null || \
+    canberra-gtk-play -f /usr/share/sounds/macOS/stereo/desktop-login.ogg 2>/dev/null || \
+    paplay /usr/share/sounds/macOS/stereo/desktop-login.ogg 2>/dev/null
+elif command -v paplay >/dev/null 2>&1; then
+    paplay /usr/share/sounds/macOS/stereo/desktop-login.ogg 2>/dev/null
+fi
