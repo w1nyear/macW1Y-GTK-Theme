@@ -12857,3 +12857,44 @@ Task 499: Повне полірування екрана блокування (m
    - `bin/mac-i18n-verify` — 100% PASS (Каталог 194 мов, 4 рівні, 0 кириличних символів в install.sh, валідність плейсхолдерів, стабільність fallback).
    - `./bin/mac-extension-guard verify` — 20/20 SUCCESS (усі хеші зафіксовані в config/extensions.lock.json).
    - `/usr/local/bin/mac-diagnostics` — 100% OK (система стабільна, всі компоненти відповідають еталону SSOT).
+
+--------------------------------------------------------------------------------
+ЕТАП 624: macW1Y 0.4 — Повний аудит системи, синхронізація проєкту та відтворювана конфігурація
+
+1. Вирішення проблеми з висотою та геометрією Dock:
+   - Встановлено першопричини розбіжностей на віртуальних машинах:
+     * Конфлікт роздільної здатності: при низькій роздільній здатності віртуального дисплея (<= 1280px) велика кількість закріплених програм викликала авто-стискання значків нижче 54px у Dash to Dock.
+     * Жорстке блокування конектора: у dconf було прописано preferred-monitor-by-connector='eDP-1', що ламало відображення на моніторах VM (Virtual-1, VGA-1) та зовнішніх дисплеях.
+     * Дрифт репозиторію: dconf/gnome-all.dconf містив застарілі значення dock-fixed=true, autohide=false та dash-max-icon-size=48.
+   - Виправлення:
+     * Скинуто preferred-monitor-by-connector з живого dconf та репозиторію (використовується primary monitor -2).
+     * Оновлено dconf/gnome-all.dconf та dconf/gnome-shell.dconf: встановлено dash-max-icon-size=54, icon-size-fixed=true, dock-fixed=false, autohide=true, height-fraction=1.0, custom-theme-shrink=false.
+     * Оновлено install.sh: налаштування схеми org.gnome.shell.extensions.dash2dock-motion замість застарілої dash-to-dock.
+
+2. Усунення накладання заголовка в GNOME Settings (cc-power-panel.ui):
+   - Вилучено extend-content-to-top-edge=True з оверлею /usr/share/mactheme/gnome-control-center-overlay/cc-power-panel.ui та файлу проєкту control-center/cc-power-panel.ui.
+   - Верхній віджет перемикача [Загальне | Заощадження енергії] більше не перекриває перший рядок списку «Режим гри».
+
+3. Синхронізація системних бібліотек та скриптів:
+   - Синхронізовано останню версію libmac_settings.so (розмір 121 688 байт, MD5 e7a9f29ef316092f2eeafcdec53b82c9) у всі системні шляхи:
+     * /usr/lib/x86_64-linux-gnu/libmac_settings.so
+     * /usr/local/lib/libmac_settings.so
+     * ~/.local/lib/libmac_settings.so
+     * /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so
+     * gnome-control-center-overlay/libmac_settings.so
+     * lib/libmac_settings.so
+   - Синхронізовано вихідний код gnome-control-center-overlay/libmac_settings.c та mac_i18n.h із control-center/.
+   - Оновлено install.sh для гарантії копіювання libmac_settings.so у /usr/local/lib та /usr/lib/x86_64-linux-gnu.
+   - Оновлено /usr/local/bin/mac-apply-theme (згладжування grayscale) та /usr/local/bin/mac-touchpad-daemon.
+
+4. Інструмент автоматизованого аудиту та експорту:
+   - Створено утиліту bin/mac-audit-sync (і встановлено в /usr/local/bin/mac-audit-sync):
+     * Режим check: аудит параметрів Dock, бінарників, бібліотек, розширень та оверлеїв на предмет дрифту.
+     * Режим export: вивантаження конфігурацій dconf із автоматичним очищенням машинозалежних ключів (конекторів, моніторів).
+
+5. Результати верифікації:
+   - bin/mac-audit-sync check — 100% PASS (всі 5 підсистем повністю узгоджені).
+   - bin/mac-extension-guard verify — 20/20 SUCCESS.
+   - /usr/local/bin/mac-diagnostics — 100% OK.
+   - bin/mac-i18n-verify — 100% PASS.
+   - install.sh — 100% English (0 Cyrillic characters).

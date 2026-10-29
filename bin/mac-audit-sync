@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+macW1Y 0.4 — System Audit, Project Synchronization & Reproducible Configuration Tool
+Audits the live system against the macW1Y repository, detects configuration drift,
+and exports clean, hardware-independent configurations.
+"""
+
+import sys
+import os
+import subprocess
+import re
+import hashlib
+from pathlib import Path
+
+# Base paths
+REPO_DIR = Path(__file__).resolve().parent.parent
+BIN_DIR = REPO_DIR / "bin"
+DCONF_DIR = REPO_DIR / "dconf"
+LIB_DIR = REPO_DIR / "lib"
+
+# Machine-dependent keys that must NEVER be committed to repo dconf files
+MACHINE_DEPENDENT_KEYS = [
+    r"preferred-monitor-by-connector",
+    r"preferred-monitor=[0-9]+",
+    r"monitor-idx=[0-9]+",
+]
+
+def run_cmd(cmd, check=False):
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if check and res.returncode != 0:
+        raise RuntimeError(f"Command failed ({res.returncode}): {' '.join(cmd)}\n{res.stderr}")
+    return res.stdout.strip()
+
+def get_file_md5(path):
+    if not os.path.exists(path):
+        return None
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        while chunk := f.read(8192):
+            h.update(chunk)
+    return h.hexdigest()
+
+def audit_dock():
+    issues = []
+    print("\n🔍 [1/5] Auditing Dock Configuration...")
+    
+    # Check dash2dock-motion
+    motion_dump = run_cmd(["dconf", "dump", "/org/gnome/shell/extensions/dash2dock-motion/"])
+    if not motion_dump:
+        issues.append("dash2dock-motion dconf schema is missing or empty in live system")
+    else:
+        if "dash-max-icon-size=54" not in motion_dump:
+            issues.append("dash2dock-motion: dash-max-icon-size is not 54 in live system")
+        if "dock-fixed=false" not in motion_dump:
+            issues.append("dash2dock-motion: dock-fixed is true (dock pinned as fixed panel instead of floating)")
+        if "autohide=true" not in motion_dump:
+            issues.append("dash2dock-motion: autohide is not true")
+
+    # Check hardware connector lock
+    dock_dump = run_cmd(["dconf", "dump", "/org/gnome/shell/extensions/dash-to-dock/"])
+    if "preferred-monitor-by-connector" in dock_dump:
+        issues.append("dash-to-dock contains hardcoded preferred-monitor-by-connector (breaks VMs & external monitors)")
+
+    # Check repo dconf files
+    all_dconf = (DCONF_DIR / "gnome-all.dconf").read_text(encoding="utf-8", errors="ignore")
+    if "preferred-monitor-by-connector" in all_dconf:
+        issues.append("dconf/gnome-all.dconf contains hardware connector lock 'preferred-monitor-by-connector'")
+    if "[org/gnome/shell/extensions/dash2dock-motion]" in all_dconf:
+        sub = all_dconf.split("[org/gnome/shell/extensions/dash2dock-motion]")[1].split("[")[0]
+        if "dash-max-icon-size=54" not in sub:
+            issues.append("dconf/gnome-all.dconf: dash2dock-motion dash-max-icon-size is not 54")
+        if "dock-fixed=false" not in sub:
+            issues.append("dconf/gnome-all.dconf: dash2dock-motion dock-fixed is true")
+
+    if not issues:
+        print("  ✓ Dock configuration matches macW1Y standard (54px, float dock, autohide, no connector lock)")
+    else:
+        for iss in issues:
+            print(f"  ❌ {iss}")
+    return issues
+
+def audit_libraries():
+    issues = []
+    print("\n🔍 [2/5] Auditing Shared Libraries & Control Center Injections...")
+    
+    target_lib = REPO_DIR / "control-center" / "libmac_settings.so"
+    target_md5 = get_file_md5(target_lib)
+    
+    paths_to_check = [
+        "/usr/lib/x86_64-linux-gnu/libmac_settings.so",
+        "/usr/local/lib/libmac_settings.so",
+        os.path.expanduser("~/.local/lib/libmac_settings.so"),
+        "/usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so",
+        str(REPO_DIR / "gnome-control-center-overlay" / "libmac_settings.so"),
+        str(REPO_DIR / "lib" / "libmac_settings.so"),
+    ]
+    
+    for p in paths_to_check:
+        if not os.path.exists(p):
+            issues.append(f"Missing library at {p}")
+            continue
+        m = get_file_md5(p)
+        if m != target_md5:
+            issues.append(f"Outdated binary at {p} (md5: {m} != {target_md5})")
+            
+    if not issues:
+        print("  ✓ All libmac_settings.so instances are identical and synchronized")
+    else:
+        for iss in issues:
+            print(f"  ❌ {iss}")
+    return issues
+
+def audit_binaries():
+    issues = []
+    print("\n🔍 [3/5] Auditing Command-Line Tools & Scripts...")
+    
+    core_scripts = ["mac-apply-theme", "mac-touchpad-daemon", "mac-diagnostics", "mac-extension-guard"]
+    for s in core_scripts:
+        repo_file = BIN_DIR / s
+        sys_file = Path("/usr/local/bin") / s
+        if not sys_file.exists():
+            issues.append(f"Missing command in /usr/local/bin: {s}")
+            continue
+        repo_md5 = get_file_md5(repo_file)
+        sys_md5 = get_file_md5(sys_file)
+        if repo_md5 != sys_md5:
+            issues.append(f"Version drift in /usr/local/bin/{s}")
+            
+    if not issues:
+        print("  ✓ All core scripts in /usr/local/bin match repository versions")
+    else:
+        for iss in issues:
+            print(f"  ❌ {iss}")
+    return issues
+
+def audit_extensions_and_guard():
+    issues = []
+    print("\n🔍 [4/5] Auditing GNOME Extensions Guard & Integrity...")
+    guard_bin = BIN_DIR / "mac-extension-guard"
+    if guard_bin.exists():
+        res = subprocess.run([str(guard_bin), "verify"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if res.returncode != 0:
+            issues.append(f"Extension Guard verification failed:\n{res.stdout}\n{res.stderr}")
+        else:
+            print("  ✓ 20/20 GNOME Shell Extensions verified by mac-extension-guard")
+    else:
+        issues.append("mac-extension-guard tool missing in bin/")
+    return issues
+
+def audit_settings_overlay():
+    issues = []
+    print("\n🔍 [5/5] Auditing GNOME Control Center Overlay...")
+    overlay_ui = Path("/usr/share/mactheme/gnome-control-center-overlay/cc-power-panel.ui")
+    if overlay_ui.exists():
+        txt = overlay_ui.read_text(encoding="utf-8", errors="ignore")
+        if 'extend-content-to-top-edge">True' in txt:
+            issues.append("cc-power-panel.ui has extend-content-to-top-edge=True (causes header switcher overlap)")
+        else:
+            print("  ✓ cc-power-panel.ui has no header bar overlap")
+    else:
+        issues.append("Missing /usr/share/mactheme/gnome-control-center-overlay/cc-power-panel.ui")
+    return issues
+
+def export_clean_dconf():
+    print("\n📦 Exporting clean, hardware-independent dconf configurations...")
+    raw_dump = run_cmd(["dconf", "dump", "/"])
+    
+    # Filter machine-dependent keys
+    filtered_lines = []
+    for line in raw_dump.splitlines():
+        skip = False
+        for pat in MACHINE_DEPENDENT_KEYS:
+            if re.search(pat, line):
+                skip = True
+                break
+        if not skip:
+            filtered_lines.append(line)
+            
+    clean_dump = "\n".join(filtered_lines) + "\n"
+    out_file = DCONF_DIR / "gnome-all.dconf"
+    out_file.write_text(clean_dump, encoding="utf-8")
+    print(f"  ✓ Written clean dconf dump to {out_file} (stripped hardware connectors & monitor IDs)")
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ["check", "audit", "verify"]:
+        print("===================================================================")
+        print("          macW1Y 0.4 — System & Project Audit Tool                ")
+        print("===================================================================")
+        all_issues = []
+        all_issues += audit_dock()
+        all_issues += audit_libraries()
+        all_issues += audit_binaries()
+        all_issues += audit_extensions_and_guard()
+        all_issues += audit_settings_overlay()
+        
+        print("\n===================================================================")
+        if not all_issues:
+            print("  🎉 AUDIT RESULT: 100% PASS! System and repository are in sync.")
+            print("===================================================================\n")
+            sys.exit(0)
+        else:
+            print(f"  ⚠️ AUDIT RESULT: Found {len(all_issues)} discrepancy issue(s).")
+            print("===================================================================\n")
+            sys.exit(1)
+            
+    elif sys.argv[1] in ["export", "sync-export"]:
+        export_clean_dconf()
+    else:
+        print("Usage: mac-audit-sync [check | export]")
+        sys.exit(2)
+
+if __name__ == "__main__":
+    main()

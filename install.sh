@@ -748,9 +748,27 @@ install_extensions() {
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-tint-strength 0.12 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-tint-strength 0.02 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com notification-tint-strength 0.12 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 48 2>/dev/null || true
+    # Dash2Dock Motion (Primary macW1Y Dock)
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion dash-max-icon-size 54 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion icon-size-fixed true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion dock-fixed false 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion autohide true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion autohide-in-fullscreen true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion height-fraction 1.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion custom-theme-shrink false 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion edge-distance 0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion extend-height false 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion running-indicator-style 'DOTS' 2>/dev/null || true
+
+    # Fallback dash-to-dock schema (aligned, no hardware connector lock)
+    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 54 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock icon-size-fixed true 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock autohide true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock height-fraction 1.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock custom-theme-shrink false 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock preferred-monitor -2 2>/dev/null || true
+    run_as_user gsettings reset org.gnome.shell.extensions.dash-to-dock preferred-monitor-by-connector 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock intellihide true 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock intellihide-mode 'ALL_WINDOWS' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock require-pressure-to-show false 2>/dev/null || true
@@ -790,10 +808,11 @@ install_settings_overlay() {
     fi
     
     # System-wide installation of library and overlays for all users
-    sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay /usr/lib/x86_64-linux-gnu
+    sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay /usr/lib/x86_64-linux-gnu /usr/local/lib
     if [ -f "$LOCAL_LIB/libmac_settings.so" ]; then
         sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/lib/x86_64-linux-gnu/libmac_settings.so
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_settings.so
+        sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/local/lib/libmac_settings.so
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_settings.so /usr/local/lib/libmac_settings.so
     fi
     if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
         sudo cp -f "$SCRIPT_DIR/gnome-control-center-overlay"/cc-*.ui /usr/share/mactheme/gnome-control-center-overlay/ 2>/dev/null || true
