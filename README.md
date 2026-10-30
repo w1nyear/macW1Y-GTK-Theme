@@ -1,4 +1,4 @@
-# macW1Y - macOS like Gnome
+# macW1Y - macOS Experience on GNOME
 
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![GNOME](https://img.shields.io/badge/GNOME-4a86cf?style=for-the-badge&logo=gnome&logoColor=white)](https://www.gnome.org/)
@@ -12,93 +12,101 @@
 
 ---
 
-macW1Y — це повний набір тем, розширень та системних налаштувань для перетворення Ubuntu (GNOME Shell на Wayland) на macOS. Проєкт включає GTK3/GTK4 теми, GNOME Shell тему, іконки, шрифти SF Pro, анімований GRUB та Plymouth, демон жестів тачпада, оптимізації продуктивності для гібридної графіки та багато іншого.
+**macW1Y** is a complete, pixel-perfect transformation suite and performance modpack designed to bring the authentic macOS experience to Ubuntu (GNOME Shell on Wayland). The project integrates custom GTK3/GTK4 themes, GNOME Shell styling, Liquid Glass shaders, Apple SF Pro typography, animated Apple Silicon GRUB and Plymouth boot animations, a dedicated low-latency multitouch gesture daemon, interactive desktop widgets, hybrid graphics optimizations, and an overhauled Control Center and Settings experience.
 
-### Вигляд
+### Visual Experience & Styling
 
-Система отримує зовнішній вигляд macOS: верхня панель з центром керування стилю macOS, док з рідким склом (Liquid Glass), Mission Control замість стандартного огляду GNOME, центр повідомлень з боку, а також Finder-подібна бічна панель у Nautilus. Кольорова схема, радіуси заокруглень, тіні, анімації та типографіка максимально наближені до macOS Sequoia/Tahoe. Доступні темні та світлі варіанти тем.
+The system delivers the refined aesthetics and behavior of modern macOS (Sequoia / Tahoe):
+- **Top Menubar & Control Center**: Native slide-in Control Center with audio and brightness controls, quick toggles, battery health, and dynamic top-bar OSD icons.
+- **Cupertino Glass Dock**: Floating dock with Liquid Glass reflection, magnification, and smooth application minimization animations.
+- **Mission Control & Window Management**: Intuitive workspace navigation, drag-to-top window zooming with automatic menubar slide-in and window height accommodation.
+- **Spotlight Search & Clipboard**: Super+Space modal search with instant file preview, calculator, and an integrated clipboard history popup.
+- **Finder-Styled Nautilus**: Clean file manager sidebar with authentic iconography, custom pathbars, and folder badging.
+- **Settings (GNOME Control Center)**: Refreshed macOS 26-inspired interface with compact leftbar navigation, Apple ID user banner, collapsible system alerts, and radio-accordion power modes.
+- **Dark & Light Themes**: Precise rounded geometry, authentic drop shadows, typography, and accent colors.
 
 ---
 
-## Структура проєкту
+## Project Structure
 
 ```
 macW1Y/
-├── install.sh                    # Головний автоматизований інсталятор
-├── uninstall.sh                  # Деінсталятор для повернення стандарту Ubuntu Yaru
-├── README.md                     # Ця документація
-├── LICENSE                       # Ліцензія GPLv3
-├── done.txt                      # Журнал розробки та виконаних завдань
-├── screen.webp                   # Знімок екрану робочого столу
-├── 99-cpu-power.rules            # Udev правила управління живленням CPU
-├── 99-zram.conf                  # Налаштування zRAM
-├── cpu-power-manager             # Скрипт управління потужністю CPU
-├── cpu-power-manager.service     # Systemd сервіс CPU power manager
-├── apply_plymouth.sh             # Скрипт застосування Plymouth теми
-├── toggle-launchpad.sh           # Перемикач Launchpad
-├── macW1Y-Dark/                  # Темна тема GTK3, GTK4, Shell
-├── macW1Y-Dark-solid/            # Суцільна версія темної теми
-├── macW1Y-Light/                 # Світла тема GTK3, GTK4, Shell
-├── macW1Y-Light-solid/           # Суцільна версія світлої теми
-├── gnome-shell-theme/            # Кастомний CSS GNOME Shell
-├── icons/                        # Набори іконок macW1Y
-├── fonts/                        # 29 шрифтів Apple SF Pro
-├── wallpapers/                   # Фірмові шпалери macOS
-├── bin/                          # Системні скрипти та утиліти
-├── lib/                          # Скомпільовані бінарні бібліотеки
-├── src/                          # Вихідний код C для розширень
-├── applications/                 # Додаткові .desktop лаунчери
-├── autostart/                    # Автозапуск служб
-├── extensions/                   # Налаштовані компоненти GNOME Shell
-│   ├── blur-my-shell@aunetx      # Розмиття меню-бару та робочого простору
-│   ├── liquid-glass@thinkingcoding1231.gmail.com  # Динамічний шейдер рідкого скла
-│   ├── eval-helper@mactheme      # Фоновий GC, Focus Stealer, DBus-міст
-│   ├── kiwi@kemma                # Control Center, Notification Center, тощо
-│   ├── wack-system               # Lockscreen clock та анімації
-│   ├── cupertino-dock-lite@rinzler69-wastaken.github.com  # Док macOS стилю
-│   └── ...                       # Інші розширення
-├── control-center/               # Компоненти Центру керування
-├── grub/                         # GRUB тема Apple Silicon стилю
-├── plymouth/                     # Plymouth тема анімації Apple логотипу
-├── macos-plymouth/               # Альтернативна Plymouth тема
-├── macos-gdm/                    # GDM тема стилю macOS
-├── systemd/                      # Systemd юніти (cpu-power-manager, mac-gamemode)
-├── dconf/                        # Конфігураційні дампи середовища
-├── dependencies/                 # Списки залежностей та скрипти встановлення
-├── config/                       # GTK3/GTK4 конфігурації
-├── gtk-3.0/                      # GTK3 теми користувача
-├── gtk-4.0/                      # GTK4 теми користувача
-├── themes/                       # Додаткові варіації тем
-├── sounds/                       # Системні звуки macOS
-├── touchpad/                     # Демон жестів тачпада
-├── wack-system/                  # Lockscreen система
-└── assets/                       # Графічні асети
+├── install.sh                    # Primary automated installer and setup script
+├── uninstall.sh                  # Uninstaller restoring standard Ubuntu Yaru defaults
+├── README.md                     # Project documentation
+├── LICENSE                       # GNU General Public License v3.0
+├── done.txt                      # Detailed changelog and development stage history
+├── screen.webm                   # Desktop demonstration media
+├── 99-cpu-power.rules            # Udev rules for CPU power optimization
+├── 99-zram.conf                  # Compressed zRAM memory swap configuration
+├── cpu-power-manager             # CPU performance management script
+├── cpu-power-manager.service     # Systemd service for CPU power manager
+├── apply_plymouth.sh             # Script to install and apply Plymouth boot theme
+├── toggle-launchpad.sh           # Script to trigger Launchpad / Application Grid
+├── macW1Y-Dark/                  # Dark theme suite for GTK3, GTK4, and GNOME Shell
+├── macW1Y-Dark-solid/            # Opaque variant of the dark theme
+├── macW1Y-Light/                 # Light theme suite for GTK3, GTK4, and GNOME Shell
+├── macW1Y-Light-solid/           # Opaque variant of the light theme
+├── gnome-shell-theme/            # Custom GNOME Shell stylesheet and assets
+├── icons/                        # Complete macOS-styled icon themes
+├── fonts/                        # Apple SF Pro fonts collection (29 font weights)
+├── wallpapers/                   # Official macOS desktop wallpapers
+├── bin/                          # Core system scripts, guards, and diagnostics utilities
+├── lib/                          # Compiled helper libraries (e.g. libmac_settings.so)
+├── src/                          # C and GLib source code for system integrations
+├── applications/                 # Custom .desktop launchers and menu entries
+├── autostart/                    # Autostart desktop service configurations
+├── extensions/                   # Pre-configured and hardened GNOME Shell extensions
+│   ├── blur-my-shell@aunetx      # Mutter blur effects for menubar and panels
+│   ├── liquid-glass@...          # Dynamic Liquid Glass GLSL refraction shader
+│   ├── eval-helper@mactheme      # High-performance DBus bridge, GC, and modal helper
+│   ├── kiwi@kemma                # macOS Control Center & Notification Center suite
+│   ├── cupertino-dock-lite@...   # Cupertino-style floating glass dock
+│   └── macos-touchpad-gestures@mactheme # Low-latency multitouch gestures extension
+├── control-center/               # macOS styling injections for GNOME Control Center
+├── grub/                         # Apple Silicon bootloader theme for GRUB
+├── plymouth/                     # Plymouth boot splash animation with Apple logo
+├── macos-plymouth/               # Alternative boot splash theme
+├── macos-gdm/                    # macOS-style GDM login screen styling
+├── systemd/                      # Systemd services (power management, touchpad daemon)
+├── dconf/                        # Baseline dconf system setting dumps
+├── dependencies/                 # Package dependency manifests and installer scripts
+├── config/                       # Application configurations, GTK settings, and locks
+├── gtk-3.0/                      # User-specific GTK3 styling
+├── gtk-4.0/                      # User-specific GTK4 styling
+├── themes/                       # Additional theme variations and accents
+├── sounds/                       # Authentic macOS system audio and alerts
+├── touchpad/                     # Hardware uinput multitouch gesture daemon
+├── wack-system/                  # Lockscreen clock, widgets, and animation system
+└── assets/                       # Vector graphics and UI resources
 ```
 
 ---
 
-## Системні вимоги
+## System Requirements
 
-### Мінімальні
-- **ОЗУ:** 2 ГБ
-- **Відео:** Intel UHD Graphics / AMD Radeon Vega / NVIDIA GT 1030
-- **ОС:** Ubuntu 24.04 LTS (GNOME 46+ на Wayland)
-- **Диск:** 10 ГБ вільного місця
-- **Процесор:** 2 ядра x86_64
-- **Secure Boot:** Вимкнено (для підпису модулів ядра)
+### Minimum Requirements
+- **RAM:** 2 GB
+- **Graphics:** Intel UHD Graphics / AMD Radeon Vega / NVIDIA GT 1030
+- **Operating System:** Ubuntu 24.04 LTS (GNOME 46+ on Wayland)
+- **Storage:** 10 GB free disk space
+- **Processor:** x86_64 Dual-Core CPU
+- **Secure Boot:** Disabled (required for custom kernel modules and boot hooks)
 
-### Рекомендовані
-- **ОЗУ:** 4 ГБ або більше
-- **Відео:** Гібридна графіка Intel + NVIDIA (RTX 3050/4050/4060) або AMD Radeon RX 6000/7000 серії
-- **ОС:** Ubuntu 26.04 LTS (GNOME 48+ на Wayland)
-- **Диск:** 20 ГБ вільного місця (SSD NVMe)
-- **Процесор:** Intel Core i5 12/13/14 покоління (P-cores + E-cores) або AMD Ryzen 5000/7000/9000 серії
-- **Secure Boot:** Вимкнено
-- **BIOS/UEFI:** Сучасна версія з підтримкою Resizable BAR
+### Recommended Specifications
+- **RAM:** 4 GB or higher
+- **Graphics:** Hybrid Graphics (Intel/AMD iGPU + NVIDIA GeForce RTX 3050/4050/4060) or AMD Radeon RX 6000/7000 Series
+- **Operating System:** Ubuntu 24.04 LTS / Ubuntu 26.04 LTS (GNOME 46+ on Wayland)
+- **Storage:** 20 GB free space on high-speed NVMe SSD
+- **Processor:** Intel Core 12th/13th/14th Gen (Hybrid P/E-cores) or AMD Ryzen 5000/7000/9000 Series
+- **Secure Boot:** Disabled
+- **BIOS/UEFI:** Modern UEFI firmware with Resizable BAR enabled
 
 ---
 
-## Встановлення
+## Installation
+
+To clone and install macW1Y, open your terminal and run:
 
 ```bash
 git clone https://github.com/w1nyear/macW1Y-GTK-Theme.git macW1Y
@@ -107,25 +115,27 @@ chmod +x install.sh
 ./install.sh
 ```
 
-### Варіанти запуску
+### Installation Modes
 
-**Інтерактивне встановлення / Оновлення:**
+**Interactive Setup / Update:**
 ```bash
 chmod +x install.sh
 ./install.sh
 ```
 
-**Повне автоматичне встановлення всіх компонентів:**
+**Full Automated Installation:**
 ```bash
 chmod +x install.sh
 ./install.sh --all
 ```
 
-> **Примітка:** Після завершення встановлення виконайте перезавантаження комп'ютера (`sudo reboot`) або вийдіть із сесії, щоб усі апаратні модулі, правила udev, zRAM та розмиття вікон запрацювали на повну потужність.
+> **Note:** After installation completes, please restart your computer (`sudo reboot`) or log out of your session to ensure all kernel modules, udev power rules, zRAM configurations, and graphic compositor shaders initialize properly.
 
 ---
 
-## Деінсталяція
+## Uninstallation
+
+To restore standard Ubuntu defaults and remove the theme pack:
 
 ```bash
 cd macW1Y
@@ -133,32 +143,45 @@ chmod +x uninstall.sh
 ./uninstall.sh
 ```
 
-Деінсталятор повертає стандартну тему Yaru, видаляє всі встановлені розширення, системні сервіси, udev правила, GRUB та Plymouth теми, а також очищає конфігураційні файли користувача.
+The uninstaller automatically restores the standard Yaru theme, removes installed GNOME extensions, unregisters background services and udev rules, reverts GRUB and Plymouth themes, and resets user environment overrides safely.
 
 ---
 
-## Подяки
+## Multitouch Gestures
 
-- **Lilithium** — за розширення blur-my-shell та технічну підтримку
-- **Teemo** — за розширення liquid-glass та шейдери рідкого скла
-
----
-
-## Ліцензія та авторство
-
-**Автор та розробник модпака macW1Y:** Vitaliy (w1nyear)
-
-**Ліцензія:** GNU General Public License v3.0 (GPLv3). Повний текст ліцензії дивіться у файлі [LICENSE](LICENSE).
-
-**Правова інформація:**
-- Проєкт розроблено в освітніх та естетичних цілях для користувачів Linux
-- Торгові марки Apple, macOS, San Francisco, Sequoia, Tahoe є власністю Apple Inc.
-- Усі базові компоненти з відкритим кодом ліцензовано відповідно до ліцензій їхніх авторів (GPL, MIT, LGPL, Apache 2.0)
-- Шрифти SF Pro використовуються виключно для особистого некомерційного використання
-- Код розширень GNOME Shell базується на API GNOME та поширюється під ліцензією GPLv3+
+macW1Y includes a custom, low-latency touchpad daemon (`mac-touchpad-daemon`) running alongside GNOME Shell:
+- **3-Finger Circle Move:** Position three fingers in a cluster or circle and drag to move the active or topmost window smoothly across screens. Maximized windows automatically unmaximize upon movement.
+- **3-Finger Horizontal Row:** Swipe up or down with three fingers in a row to smoothly open or close Mission Control (Overview).
+- **3-Finger Vertical Column:** Swipe left or right with three fingers in a column to switch between running windows (Alt+Tab).
+- **3-Finger Pinch In / Out:** Pinch inward to Copy (`Ctrl+C`), spread outward to Paste (`Ctrl+V`).
+- **4-Finger Single Tap:** Instantly toggle Mission Control overview.
+- **4-Finger Double Tap:** Open Launchpad / Application Grid.
+- **4-Finger Horizontal Swipe:** Fluidly switch between virtual workspaces.
 
 ---
 
-**Офіційний репозиторій:** https://github.com/w1nyear/macW1Y-GTK-Theme
+## Acknowledgements
 
-**Версія:** 0.3
+- **Lilithium** — for visual improvements
+- **Teemo** — for providing macOS screenshots
+
+---
+
+## License & Legal Information
+
+**Author and Developer:** Vitaliy ([w1nyear](https://github.com/w1nyear))
+
+**License:** GNU General Public License v3.0 (GPLv3). Refer to the [LICENSE](LICENSE) file for full licensing terms.
+
+**Legal Notice & Disclaimers:**
+- This project is developed independently for educational, research, and personalization purposes for Linux users.
+- Apple, macOS, Cupertino, San Francisco, Sequoia, Tahoe, Golden Gates, and related marks are trademarks of Apple Inc.
+- All open-source components and third-party tools included or referenced are licensed under their respective original licenses (GPL, MIT, LGPL, Apache 2.0).
+- Apple SF Pro fonts and brand iconography are referenced solely for personal non-commercial customization.
+- GNOME Shell extension code interfaces with official GNOME JavaScript APIs under the GNU GPLv3+ license.
+
+---
+
+**Official Repository:** https://github.com/w1nyear/macW1Y-GTK-Theme
+
+**Version:** 0.5

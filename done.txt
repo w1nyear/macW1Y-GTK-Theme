@@ -13348,3 +13348,24 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
    - `bin/mac-extension-guard verify`: VERIFICATION SUCCESS (21/21 зафіксованих розширень відповідають еталону).
    - `bin/mac-audit-sync check`: 100% PASS (5/5 тестів пройдено).
    - `/usr/local/bin/mac-diagnostics`: РЕЗУЛЬТАТ: Система стабільна. Всі компоненти macW1Y відповідають еталону.
+
+--------------------------------------------------------------------------------
+ЕТАП 636: macW1Y 0.5 — Оновлення README.md англійською мовою, оновлення подяк та правової інформації (Golden Gates)
+
+1. Виконані завдання:
+   - [README.md](file:///home/vitaliy/MACTHEMEFILES/README.md) повністю перекладено та оформлено літературною англійською мовою (English):
+     * Повний опис архітектури, зовнішнього вигляду, компонентів менюбару, Liquid Glass дока, Mission Control, Spotlight, Finder та Параметрів.
+     * Актуалізована структура репозиторію та опис папок і файлів.
+     * Системні вимоги (мінімальні та рекомендовані).
+     * Інструкції встановлення (інтерактивний та автоматичний режим `./install.sh --all`), деінсталяції (`./uninstall.sh`).
+     * Розділ жестів тачпада (Multitouch Gestures).
+     * Версія проєкту оновлена до 0.5.
+   - Оновлено розділ подяк (Acknowledgements):
+     * «Lilithium — for visual improvements»
+     * «Teemo — for providing macOS screenshots»
+   - Оновлено розділ правової інформації (Legal Notice & Disclaimers):
+     * До переліку торговельних марок Apple Inc. додано “Golden Gates“: «Apple, macOS, Cupertino, San Francisco, Sequoia, Tahoe, Golden Gates, and related marks are trademarks of Apple Inc.».
+
+2. Верифікація:
+   - `bin/mac-audit-sync check` — 100% PASS.
+   - `bin/mac-extension-guard verify` — 100% SUCCESS.
