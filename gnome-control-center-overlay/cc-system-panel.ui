@@ -19,59 +19,6 @@
             </child>
             <property name="content">
               <object class="AdwPreferencesPage">
-                <!-- Top macOS Header Banner -->
-                <child>
-                  <object class="AdwPreferencesGroup">
-                    <child>
-                      <object class="GtkBox">
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">6</property>
-                        <property name="margin-top">14</property>
-                        <property name="margin-bottom">20</property>
-                        <property name="halign">center</property>
-                        <style>
-                          <class name="mac-panel-header-banner"/>
-                        </style>
-                        <child>
-                          <object class="GtkBox">
-                            <property name="halign">center</property>
-                            <style>
-                              <class name="mac-panel-header-badge"/>
-                            </style>
-                            <child>
-                              <object class="GtkImage">
-                                <property name="icon-name">emblem-system-symbolic</property>
-                                <property name="pixel-size">30</property>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="label">Основні</property>
-                            <property name="halign">center</property>
-                            <style>
-                              <class name="mac-panel-header-title"/>
-                            </style>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="label">Налаштуйте основні параметри Mac, такі як оновлення ПЗ, мова пристрою та AirDrop.</property>
-                            <property name="halign">center</property>
-                            <property name="justify">center</property>
-                            <property name="wrap">true</property>
-                            <property name="max-width-chars">52</property>
-                            <style>
-                              <class name="mac-panel-header-subtitle"/>
-                            </style>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-
                 <!-- Group 1: About & Updates -->
                 <child>
                   <object class="AdwPreferencesGroup">

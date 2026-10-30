@@ -2065,14 +2065,8 @@ static double get_sidebar_panel_rank(GtkListBoxRow *row) {
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
         return -30.0;
     }
-    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_alert_storage_row"))) {
-        return -20.0;
-    }
-    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_alert_updates_row"))) {
-        return -10.0;
-    }
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"))) {
-        return 10.5; /* Always directly beneath background (rank 10.0) */
+        return 9.5; /* Positioned directly beneath background */
     }
     void *d = g_object_get_data(G_OBJECT(row), "data");
     if (!d) return 999.0;
@@ -2082,8 +2076,8 @@ static double get_sidebar_panel_rank(GtkListBoxRow *row) {
 
     static const char * const panel_order[] = {
         "wifi", "network", "wwan", "mobile-broadband", "bluetooth",
-        "separator", "display", "sound", "power", "multitasking",
-        "background", "ubuntu", "applications", "notifications",
+        "display", "sound", "power", "multitasking",
+        "background", "widgets", "ubuntu", "applications", "notifications",
         "search", "online-accounts", "sharing", "wellbeing",
         "mouse", "keyboard", "color", "printers",
         "system", "universal-access", "privacy", "wacom",
@@ -3049,117 +3043,143 @@ static void init_mac_settings_css(void) {
         "  border-radius: 7px;"
         "  font-size: 13px;"
         "}"
-        "window.mac-settings-window list.mac-settings-sidebar-list row image,"
-        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row image {"
-        "  min-width: 16px;"
-        "  min-height: 16px;"
-        "  -gtk-icon-size: 16px;"
-        "  margin-right: 8px;"
-        "}"
-        "window.mac-settings-window list.mac-settings-sidebar-list row:selected,"
-        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected {"
-        "  background-color: #f37021;"
-        "  color: #ffffff;"
-        "}"
-        "window.mac-settings-window list.mac-settings-sidebar-list row:selected label,"
-        "window.mac-settings-window list.mac-settings-sidebar-list row:selected image,"
-        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected label,"
-        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected image {"
-        "  color: #ffffff;"
-        "}"
-        "window.mac-settings-window .mac-settings-account-row {"
-        "  min-height: 48px;"
-        "  padding: 5px 8px;"
-        "  margin: 4px 6px 2px 6px;"
-        "  border-radius: 9px;"
-        "  background-color: transparent;"
-        "}"
-        "window.mac-settings-window .mac-settings-account-row:hover {"
-        "  background-color: rgba(255, 255, 255, 0.05);"
-        "}"
-        "window.mac-settings-window .mac-settings-account-row:selected {"
-        "  background-color: rgba(255, 255, 255, 0.08);"
-        "}"
-        "window.mac-settings-window .mac-settings-account-row .account-title {"
-        "  font-weight: 600;"
-        "  font-size: 13.5px;"
-        "  color: #ffffff;"
-        "}"
-        "window.mac-settings-window .mac-settings-account-row .account-subtitle {"
-        "  font-size: 11px;"
-        "  color: rgba(255, 255, 255, 0.55);"
-        "}"
-        "window.mac-settings-window .mac-settings-alert-row {"
-        "  min-height: 28px;"
-        "  padding: 3px 8px;"
-        "  margin: 1px 6px;"
-        "  border-radius: 7px;"
-        "  font-size: 12.5px;"
-        "}"
-        "window.mac-settings-window .mac-settings-alert-row:hover {"
-        "  background-color: rgba(255, 255, 255, 0.05);"
-        "}"
-        "window.mac-settings-window .mac-settings-alert-row.alert-last {"
-        "  margin-bottom: 12px;"
-        "}"
-        ".mac-alert-badge {"
-        "  background-color: #ff3b30;"
-        "  color: #ffffff;"
-        "  font-weight: bold;"
-        "  font-size: 10px;"
-        "  border-radius: 9999px;"
-        "  min-width: 16px;"
-        "  min-height: 16px;"
-        "  padding: 0 4px;"
-        "}"
-        "window.mac-settings-window .mac-settings-sidebar searchbar {"
-        "  background: transparent;"
-        "  border: none;"
-        "  box-shadow: none;"
-        "  padding: 4px 10px 4px 10px;"
-        "}"
-        "window.mac-settings-window .mac-settings-sidebar searchbar > revealer > box {"
-        "  background: transparent;"
-        "  border: none;"
-        "  padding: 0;"
-        "}"
-        "window.mac-settings-window .mac-settings-sidebar searchbar entry {"
-        "  min-height: 28px;"
-        "  border-radius: 8px;"
-        "  background-color: rgba(255, 255, 255, 0.08);"
-        "  border: 1px solid rgba(255, 255, 255, 0.08);"
-        "  color: #ffffff;"
-        "  font-size: 13px;"
-        "  padding: 2px 8px;"
-        "}"
-        "window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within {"
-        "  background-color: rgba(255, 255, 255, 0.12);"
-        "  border-color: rgba(255, 255, 255, 0.20);"
-        "}"
-        ".mac-panel-header-banner {"
-        "  margin-top: 14px;"
-        "  margin-bottom: 20px;"
-        "}"
-        ".mac-panel-header-badge {"
-        "  background: rgba(255, 255, 255, 0.07);"
-        "  border: 1px solid rgba(255, 255, 255, 0.10);"
-        "  border-radius: 14px;"
-        "  padding: 9px;"
-        "  min-width: 48px;"
-        "  min-height: 48px;"
-        "  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);"
-        "}"
-        ".mac-panel-header-title {"
-        "  font-weight: 700;"
-        "  font-size: 20px;"
-        "  color: #ffffff;"
-        "  margin-top: 4px;"
-        "}"
-        ".mac-panel-header-subtitle {"
-        "  font-size: 12px;"
-        "  color: rgba(255, 255, 255, 0.60);"
-        "  line-height: 1.35;"
-        "}"
+        "window.mac-settings-window list.mac-settings-sidebar-list, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar { "
+        "  background-color: transparent; "
+        "  padding: 4px 6px; "
+        "} "
+        "window.mac-settings-window list.mac-settings-sidebar-list row, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row { "
+        "  min-height: 32px; "
+        "  padding: 3px 6px; "
+        "  margin: 1.5px 4px; "
+        "  border-radius: 8px; "
+        "  font-size: 13px; "
+        "  color: rgba(255, 255, 255, 0.90); "
+        "} "
+        "window.mac-settings-window list.mac-settings-sidebar-list row:hover, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:hover { "
+        "  background-color: rgba(255, 255, 255, 0.05); "
+        "} "
+        "window.mac-settings-window list.mac-settings-sidebar-list row:selected, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected { "
+        "  background-color: #fa6e0a; "
+        "  color: #ffffff; "
+        "} "
+        "window.mac-settings-window list.mac-settings-sidebar-list row image, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row image { "
+        "  min-width: 22px; "
+        "  min-height: 22px; "
+        "  -gtk-icon-size: 14px; "
+        "  background-color: rgba(255, 255, 255, 0.08); "
+        "  border: 1px solid rgba(255, 255, 255, 0.06); "
+        "  border-radius: 6px; "
+        "  margin-right: 9px; "
+        "  padding: 0; "
+        "} "
+        "window.mac-settings-window list.mac-settings-sidebar-list row:selected image, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected image { "
+        "  color: #ffffff; "
+        "  background-color: rgba(0, 0, 0, 0.20); "
+        "  border-color: rgba(0, 0, 0, 0.25); "
+        "} "
+        "window.mac-settings-window list.mac-settings-sidebar-list row label, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row label { "
+        "  font-size: 13px; "
+        "  margin-top: 3px; "
+        "  padding-top: 2px; "
+        "} "
+        "window.mac-settings-window list.mac-settings-sidebar-list row:selected label, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected label { "
+        "  color: #ffffff; "
+        "  font-weight: 500; "
+        "} "
+        "window.mac-settings-window .mac-settings-account-row { "
+        "  min-height: 48px; "
+        "  padding: 6px 10px; "
+        "  margin: 6px 6px 14px 6px; "
+        "  border-radius: 9px; "
+        "  background-color: transparent; "
+        "} "
+        "window.mac-settings-window .mac-settings-account-row:hover { "
+        "  background-color: rgba(255, 255, 255, 0.05); "
+        "} "
+        "window.mac-settings-window .mac-settings-account-row:selected { "
+        "  background-color: rgba(255, 255, 255, 0.08); "
+        "} "
+        "window.mac-settings-window .mac-settings-account-row image { "
+        "  min-width: 12px; "
+        "  min-height: 12px; "
+        "  background-color: transparent; "
+        "  border: none; "
+        "  border-radius: 0; "
+        "  margin-right: 0; "
+        "} "
+        "window.mac-settings-window .mac-settings-account-row .account-title { "
+        "  font-weight: 600; "
+        "  font-size: 13.5px; "
+        "  color: #ffffff; "
+        "} "
+        "window.mac-settings-window .mac-settings-account-row .account-subtitle { "
+        "  font-size: 11px; "
+        "  color: rgba(255, 255, 255, 0.55); "
+        "} "
+        "window.mac-settings-window .mac-settings-sidebar searchbar { "
+        "  background: transparent; "
+        "  border: none; "
+        "  box-shadow: none; "
+        "  padding: 4px 10px 4px 10px; "
+        "} "
+        "window.mac-settings-window .mac-settings-sidebar searchbar > revealer > box { "
+        "  background: transparent; "
+        "  border: none; "
+        "  padding: 0; "
+        "} "
+        "window.mac-settings-window .mac-settings-sidebar searchbar entry { "
+        "  min-height: 28px; "
+        "  border-radius: 8px; "
+        "  background-color: rgba(255, 255, 255, 0.08); "
+        "  border: 1px solid rgba(255, 255, 255, 0.08); "
+        "  color: #ffffff; "
+        "  font-size: 13px; "
+        "  padding: 2px 8px; "
+        "} "
+        "window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within { "
+        "  background-color: rgba(255, 255, 255, 0.12); "
+        "  border-color: rgba(255, 255, 255, 0.20); "
+        "} "
+        ".mac-panel-header-banner { "
+        "  margin-top: 18px; "
+        "  margin-bottom: 22px; "
+        "} "
+        ".mac-panel-header-badge { "
+        "  background: rgba(255, 255, 255, 0.08); "
+        "  border: 1px solid rgba(255, 255, 255, 0.12); "
+        "  border-radius: 9999px; "
+        "  min-width: 52px; "
+        "  min-height: 52px; "
+        "  padding: 0; "
+        "  margin: 0; "
+        "  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20); "
+        "} "
+        ".mac-panel-header-badge image { "
+        "  -gtk-icon-size: 26px; "
+        "  color: #ffffff; "
+        "  margin: 0; "
+        "  padding: 0; "
+        "} "
+        ".mac-panel-header-title { "
+        "  font-weight: 700; "
+        "  font-size: 19px; "
+        "  color: #ffffff; "
+        "  margin-top: 8px; "
+        "  margin-bottom: 2px; "
+        "} "
+        ".mac-panel-header-subtitle { "
+        "  font-size: 12px; "
+        "  color: rgba(255, 255, 255, 0.60); "
+        "  line-height: 1.35; "
+        "} "
         "window.mac-settings-window preferencespage list.boxed-list,"
         "window.mac-settings-window .content-pane list.boxed-list,"
         "window.mac-settings-window .mac-settings-content list.boxed-list {"
@@ -3381,13 +3401,13 @@ static const char *get_panel_title_fallback(const char *id) {
     if (g_strcmp0(id, "network") == 0) return "Мережа";
     if (g_strcmp0(id, "display") == 0) return "Дисплеї";
     if (g_strcmp0(id, "sound") == 0) return "Звук";
-    if (g_strcmp0(id, "power") == 0) return "Акумулятор";
+    if (g_strcmp0(id, "power") == 0) return "Живлення";
     if (g_strcmp0(id, "background") == 0) return "Шпалери";
-    if (g_strcmp0(id, "ubuntu") == 0) return "Оформлення";
+    if (g_strcmp0(id, "ubuntu") == 0) return "Вигляд";
     if (g_strcmp0(id, "widgets") == 0) return "Віджети";
-    if (g_strcmp0(id, "multitasking") == 0) return "Робочий стіл і Dock";
+    if (g_strcmp0(id, "multitasking") == 0) return "Багатозадачність";
     if (g_strcmp0(id, "notifications") == 0) return "Сповіщення";
-    if (g_strcmp0(id, "search") == 0) return "Spotlight";
+    if (g_strcmp0(id, "search") == 0) return "Пошук";
     if (g_strcmp0(id, "mouse") == 0) return "Миша";
     if (g_strcmp0(id, "keyboard") == 0) return "Клавіатура";
     if (g_strcmp0(id, "printers") == 0) return "Принтери";
@@ -3427,42 +3447,101 @@ static const char *get_panel_description(const char *id) {
     return "Керування системними параметрами та персоналізацією пристрою.";
 }
 
-static void ensure_panel_header_banner(AdwNavigationPage *content_page, const char *panel_id, const char *panel_title) {
-    if (!content_page) return;
+static const char *get_panel_id_from_widget(GtkWidget *widget) {
+    if (!widget) return NULL;
+    const char *type_name = G_OBJECT_TYPE_NAME(widget);
+    if (!type_name) return NULL;
+
+    if (g_str_has_prefix(type_name, "CcWifiPanel")) return "wifi";
+    if (g_str_has_prefix(type_name, "CcBluetoothPanel")) return "bluetooth";
+    if (g_str_has_prefix(type_name, "CcNetworkPanel")) return "network";
+    if (g_str_has_prefix(type_name, "CcWwanPanel")) return "wwan";
+    if (g_str_has_prefix(type_name, "CcPowerPanel")) return "power";
+    if (g_str_has_prefix(type_name, "CcSystemPanel")) return "system";
+    if (g_str_has_prefix(type_name, "CcDisplayPanel")) return "display";
+    if (g_str_has_prefix(type_name, "CcSoundPanel")) return "sound";
+    if (g_str_has_prefix(type_name, "CcBackgroundPanel")) return "background";
+    if (g_str_has_prefix(type_name, "CcUbuntuPanel")) return "ubuntu";
+    if (g_str_has_prefix(type_name, "CcMultitaskingPanel")) return "multitasking";
+    if (g_str_has_prefix(type_name, "CcApplicationsPanel")) return "applications";
+    if (g_str_has_prefix(type_name, "CcNotificationsPanel")) return "notifications";
+    if (g_str_has_prefix(type_name, "CcSearchPanel")) return "search";
+    if (g_str_has_prefix(type_name, "CcOnlineAccountsPanel")) return "online-accounts";
+    if (g_str_has_prefix(type_name, "CcSharingPanel")) return "sharing";
+    if (g_str_has_prefix(type_name, "CcWellbeingPanel")) return "wellbeing";
+    if (g_str_has_prefix(type_name, "CcMousePanel")) return "mouse";
+    if (g_str_has_prefix(type_name, "CcKeyboardPanel")) return "keyboard";
+    if (g_str_has_prefix(type_name, "CcPrintersPanel")) return "printers";
+    if (g_str_has_prefix(type_name, "CcPrivacyPanel")) return "privacy";
+    if (g_str_has_prefix(type_name, "CcUaPanel")) return "universal-access";
+    if (g_str_has_prefix(type_name, "CcColorPanel")) return "color";
+    if (g_str_has_prefix(type_name, "CcWacomPanel")) return "wacom";
+
+    if (ADW_IS_NAVIGATION_PAGE(widget)) {
+        const char *tag = adw_navigation_page_get_tag(ADW_NAVIGATION_PAGE(widget));
+        if (tag && (g_strcmp0(tag, "widgets") == 0 || g_strcmp0(tag, "widgets_page") == 0)) return "widgets";
+        const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
+        if (bid && (g_strcmp0(bid, "widgets") == 0 || g_strcmp0(bid, "widgets_page") == 0)) return "widgets";
+    }
+    return NULL;
+}
+
+static void ensure_panel_header_banner(GtkWidget *target_root, const char *panel_id, const char *panel_title) {
+    if (!target_root || !panel_id) return;
     GList *clamp_boxes = NULL;
-    find_clamp_boxes_recursive(GTK_WIDGET(content_page), &clamp_boxes);
+    find_clamp_boxes_recursive(target_root, &clamp_boxes);
     if (!clamp_boxes) return;
 
     GtkWidget *clamp_box = GTK_WIDGET(clamp_boxes->data);
     g_list_free(clamp_boxes);
 
-    if (g_object_get_data(G_OBJECT(clamp_box), "mac_banner_added")) return;
-
+    GtkWidget *existing_banner = NULL;
     for (GtkWidget *ch = gtk_widget_get_first_child(clamp_box); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
         if (gtk_widget_has_css_class(ch, "mac-panel-header-banner")) {
-            g_object_set_data(G_OBJECT(clamp_box), "mac_banner_added", GINT_TO_POINTER(1));
-            return;
+            existing_banner = ch;
+            break;
         }
         for (GtkWidget *sub = gtk_widget_get_first_child(ch); sub != NULL; sub = gtk_widget_get_next_sibling(sub)) {
             if (gtk_widget_has_css_class(sub, "mac-panel-header-banner")) {
-                g_object_set_data(G_OBJECT(clamp_box), "mac_banner_added", GINT_TO_POINTER(1));
-                return;
+                existing_banner = sub;
+                break;
             }
+        }
+        if (existing_banner) break;
+    }
+
+    if (existing_banner) {
+        const char *curr_pid = g_object_get_data(G_OBJECT(existing_banner), "mac_banner_panel_id");
+        if (g_strcmp0(curr_pid, panel_id) == 0) {
+            return;
+        }
+        GtkWidget *p = gtk_widget_get_parent(existing_banner);
+        if (p && GTK_IS_BOX(p)) {
+            gtk_box_remove(GTK_BOX(p), existing_banner);
         }
     }
 
     GtkWidget *banner = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_widget_add_css_class(banner, "mac-panel-header-banner");
     gtk_widget_set_halign(banner, GTK_ALIGN_CENTER);
-    gtk_widget_set_margin_top(banner, 14);
-    gtk_widget_set_margin_bottom(banner, 20);
+    gtk_widget_set_valign(banner, GTK_ALIGN_START);
+    gtk_widget_set_margin_top(banner, 18);
+    gtk_widget_set_margin_bottom(banner, 22);
+    g_object_set_data_full(G_OBJECT(banner), "mac_banner_panel_id", g_strdup(panel_id), (GDestroyNotify)g_free);
 
     GtkWidget *badge = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_add_css_class(badge, "mac-panel-header-badge");
     gtk_widget_set_halign(badge, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(badge, GTK_ALIGN_CENTER);
+    gtk_widget_set_size_request(badge, 54, 54);
 
     GtkWidget *icon = gtk_image_new_from_icon_name(get_panel_icon_name(panel_id));
-    gtk_image_set_pixel_size(GTK_IMAGE(icon), 30);
+    gtk_image_set_pixel_size(GTK_IMAGE(icon), 26);
+    gtk_widget_set_size_request(icon, 26, 26);
+    gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(icon, GTK_ALIGN_CENTER);
+    gtk_widget_set_hexpand(icon, TRUE);
+    gtk_widget_set_vexpand(icon, TRUE);
     gtk_box_append(GTK_BOX(badge), icon);
     gtk_box_append(GTK_BOX(banner), badge);
 
@@ -3487,6 +3566,47 @@ static void ensure_panel_header_banner(AdwNavigationPage *content_page, const ch
 
 static void update_panel_headerbar(AdwNavigationSplitView *split_view);
 
+static void sync_sidebar_selection(AdwNavigationSplitView *split_view, const char *panel_id) {
+    if (!split_view || !panel_id) return;
+    static gboolean in_sync = FALSE;
+    if (in_sync) return;
+
+    AdwNavigationPage *sidebar = adw_navigation_split_view_get_sidebar(split_view);
+    if (!sidebar) return;
+
+    GList *list_boxes = NULL;
+    find_list_boxes_recursive(GTK_WIDGET(sidebar), &list_boxes);
+    GtkListBox *main_listbox = NULL;
+    for (GList *l = list_boxes; l != NULL; l = l->next) {
+        GtkWidget *w = GTK_WIDGET(l->data);
+        const char *bid = GTK_IS_BUILDABLE(w) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(w)) : NULL;
+        if (g_strcmp0(bid, "main_listbox") == 0) {
+            main_listbox = GTK_LIST_BOX(w);
+            break;
+        }
+    }
+    g_list_free(list_boxes);
+    if (!main_listbox) return;
+
+    GtkListBoxRow *cur_selected = gtk_list_box_get_selected_row(main_listbox);
+    if (cur_selected) {
+        MacPanelRowData *d = g_object_get_data(G_OBJECT(cur_selected), "data");
+        if (d && g_strcmp0(d->id, panel_id) == 0) return;
+    }
+
+    in_sync = TRUE;
+    for (GtkWidget *ch = gtk_widget_get_first_child(GTK_WIDGET(main_listbox)); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
+        if (GTK_IS_LIST_BOX_ROW(ch)) {
+            MacPanelRowData *d = g_object_get_data(G_OBJECT(ch), "data");
+            if (d && g_strcmp0(d->id, panel_id) == 0) {
+                gtk_list_box_select_row(main_listbox, GTK_LIST_BOX_ROW(ch));
+                break;
+            }
+        }
+    }
+    in_sync = FALSE;
+}
+
 static void on_main_listbox_selected_row_changed(GtkListBox *box, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data)
 {
     AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
@@ -3494,9 +3614,7 @@ static void on_main_listbox_selected_row_changed(GtkListBox *box, GParamSpec *ps
     GtkListBoxRow *row = gtk_list_box_get_selected_row(box);
     if (!row) return;
 
-    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row")) ||
-        GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_alert_updates_row")) ||
-        GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_alert_storage_row"))) {
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
         return;
     }
 
@@ -3504,7 +3622,6 @@ static void on_main_listbox_selected_row_changed(GtkListBox *box, GParamSpec *ps
     if (d && d->id) {
         g_object_set_data(G_OBJECT(split_view), "mac_current_panel_id", (gpointer)d->id);
     }
-    update_panel_headerbar(split_view);
 }
 
 static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
@@ -3513,24 +3630,13 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
     if (!split_view || !row) return;
 
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
+        g_signal_stop_emission_by_name(box, "row-activated");
         open_system_subpage(split_view, box, "users_row");
         return;
     }
-    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_alert_updates_row"))) {
-        open_system_subpage(split_view, box, "about_row");
-        return;
-    }
-    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_alert_storage_row"))) {
-        open_system_subpage(split_view, box, "about_row");
-        return;
-    }
-
-    MacPanelRowData *d = g_object_get_data(G_OBJECT(row), "data");
-    if (d && d->id) {
-        g_object_set_data(G_OBJECT(split_view), "mac_current_panel_id", (gpointer)d->id);
-    }
 
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"))) {
+        g_signal_stop_emission_by_name(box, "row-activated");
         GtkWidget *page = get_widgets_page();
         if (page) {
             adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
@@ -3538,6 +3644,12 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
             update_panel_headerbar(split_view);
             gtk_list_box_select_row(box, row);
         }
+        return;
+    }
+
+    MacPanelRowData *d = g_object_get_data(G_OBJECT(row), "data");
+    if (d && d->id) {
+        g_object_set_data(G_OBJECT(split_view), "mac_current_panel_id", (gpointer)d->id);
     }
 }
 
@@ -3565,10 +3677,10 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     AdwNavigationPage *content_page = adw_navigation_split_view_get_content(split_view);
     if (!content_page) return;
 
-    /* Check if content_page has an AdwNavigationView with a visible page */
     GList *nav_views = NULL;
     find_navigation_views(GTK_WIDGET(content_page), &nav_views);
     GtkWidget *target_root = GTK_WIDGET(content_page);
+    gboolean is_subpage = FALSE;
 
     if (nav_views) {
         AdwNavigationView *nv = ADW_NAVIGATION_VIEW(nav_views->data);
@@ -3588,13 +3700,25 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         AdwNavigationPage *vis_p = adw_navigation_view_get_visible_page(nv);
         if (vis_p) {
             target_root = GTK_WIDGET(vis_p);
+            if (adw_navigation_view_get_previous_page(nv, vis_p) != NULL) {
+                is_subpage = TRUE;
+            }
         }
         g_list_free(nav_views);
     }
 
-    const char *cur_id = g_object_get_data(G_OBJECT(split_view), "mac_current_panel_id");
+    const char *detected_id = get_panel_id_from_widget(GTK_WIDGET(content_page));
+    if (detected_id) {
+        g_object_set_data(G_OBJECT(split_view), "mac_current_panel_id", (gpointer)detected_id);
+    }
+    const char *cur_id = detected_id ? detected_id : g_object_get_data(G_OBJECT(split_view), "mac_current_panel_id");
     if (!cur_id) cur_id = "system";
-    ensure_panel_header_banner(content_page, cur_id, NULL);
+
+    if (!is_subpage) {
+        ensure_panel_header_banner(target_root, cur_id, NULL);
+    }
+
+    sync_sidebar_selection(split_view, cur_id);
 
     GList *content_bars = NULL;
     find_headerbars_recursive(target_root, &content_bars);
@@ -3604,7 +3728,6 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     gtk_widget_add_css_class(GTK_WIDGET(target_hb), "mac-settings-content-headerbar");
     gtk_widget_set_margin_top(GTK_WIDGET(target_hb), 3);
 
-    /* Remove from previous parent if different */
     GtkWidget *p_menu = gtk_widget_get_parent(menu_btn);
     if (p_menu && p_menu != GTK_WIDGET(target_hb)) {
         if (ADW_IS_HEADER_BAR(p_menu)) {
@@ -3623,7 +3746,6 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         }
     }
 
-    /* Pack into target_hb: menu_btn at far right, search_btn to its left */
     if (gtk_widget_get_parent(menu_btn) != GTK_WIDGET(target_hb)) {
         adw_header_bar_pack_end(target_hb, menu_btn);
     }
@@ -3675,11 +3797,17 @@ static void find_search_entries_recursive(GtkWidget *widget, GList **list) {
 static void style_sidebar_row_recursive(GtkWidget *widget) {
     if (!widget) return;
     if (GTK_IS_IMAGE(widget)) {
-        gtk_image_set_pixel_size(GTK_IMAGE(widget), 16);
+        gtk_image_set_pixel_size(GTK_IMAGE(widget), 14);
+        gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
+        gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+    }
+    if (GTK_IS_LABEL(widget)) {
+        gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+        gtk_widget_set_margin_top(widget, 3);
     }
     if (GTK_IS_GRID(widget) || GTK_IS_BOX(widget)) {
-        gtk_widget_set_margin_top(widget, 2);
-        gtk_widget_set_margin_bottom(widget, 2);
+        gtk_widget_set_margin_top(widget, 1);
+        gtk_widget_set_margin_bottom(widget, 1);
     }
     for (GtkWidget *ch = gtk_widget_get_first_child(widget); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
         style_sidebar_row_recursive(ch);
@@ -3800,14 +3928,6 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         if (!g_object_get_data(G_OBJECT(main_listbox), "mac_account_row_added")) {
             GtkListBoxRow *account_row = create_account_row(split_view);
             gtk_list_box_append(main_listbox, GTK_WIDGET(account_row));
-
-            GtkListBoxRow *alert_storage = create_alert_row("drive-harddisk-symbolic", mac_tr("storage_alert", "Сховище iCloud заповнено"), 1, "is_alert_storage_row");
-            gtk_list_box_append(main_listbox, GTK_WIDGET(alert_storage));
-
-            GtkListBoxRow *alert_updates = create_alert_row("software-update-available-symbolic", mac_tr("software_update_alert", "Доступне оновлення ПЗ"), 1, "is_alert_updates_row");
-            gtk_widget_add_css_class(GTK_WIDGET(alert_updates), "alert-last");
-            gtk_list_box_append(main_listbox, GTK_WIDGET(alert_updates));
-
             g_object_set_data(G_OBJECT(main_listbox), "mac_account_row_added", GINT_TO_POINTER(1));
         }
 
@@ -3818,18 +3938,22 @@ static gboolean mac_fix_settings_window(gpointer user_data)
 
             GtkWidget *grid = gtk_grid_new();
             gtk_widget_set_hexpand(grid, TRUE);
-            gtk_widget_set_margin_top(grid, 2);
-            gtk_widget_set_margin_bottom(grid, 2);
+            gtk_widget_set_margin_top(grid, 1);
+            gtk_widget_set_margin_bottom(grid, 1);
             gtk_widget_set_margin_start(grid, 4);
             gtk_widget_set_margin_end(grid, 4);
             gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
 
             GtkWidget *image = gtk_image_new_from_icon_name("view-grid-symbolic");
-            gtk_image_set_pixel_size(GTK_IMAGE(image), 16);
+            gtk_image_set_pixel_size(GTK_IMAGE(image), 14);
+            gtk_widget_set_halign(image, GTK_ALIGN_CENTER);
+            gtk_widget_set_valign(image, GTK_ALIGN_CENTER);
             gtk_grid_attach(GTK_GRID(grid), image, 0, 0, 1, 1);
 
             GtkWidget *label = gtk_label_new(mac_tr("widgets", "Віджети"));
             gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+            gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
+            gtk_widget_set_margin_top(label, 2);
             gtk_widget_set_hexpand(label, TRUE);
             gtk_grid_attach(GTK_GRID(grid), label, 1, 0, 1, 1);
 
@@ -3858,9 +3982,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         /* Style all rows inside main_listbox to ensure compact macOS heights */
         for (GtkWidget *ch = gtk_widget_get_first_child(GTK_WIDGET(main_listbox)); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
             if (GTK_IS_LIST_BOX_ROW(ch)) {
-                if (!g_object_get_data(G_OBJECT(ch), "is_account_row") &&
-                    !g_object_get_data(G_OBJECT(ch), "is_alert_storage_row") &&
-                    !g_object_get_data(G_OBJECT(ch), "is_alert_updates_row")) {
+                if (!g_object_get_data(G_OBJECT(ch), "is_account_row")) {
                     style_sidebar_row_recursive(ch);
                 }
             }
@@ -3880,21 +4002,31 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         }
     }
 
-    if (g_getenv("MAC_SETTINGS_TEST_DUMP") && main_listbox) {
-        printf("--- MAC_SETTINGS_TEST_DUMP START ---\n");
-        int idx = 0;
-        for (GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(main_listbox)); child != NULL; child = gtk_widget_get_next_sibling(child)) {
-            if (GTK_IS_LIST_BOX_ROW(child)) {
-                GtkListBoxRow *r = GTK_LIST_BOX_ROW(child);
-                MacPanelRowData *d = g_object_get_data(G_OBJECT(r), "data");
-                const char *row_id = d ? d->id : "unknown";
-                printf("Sidebar Row [%d]: %s (is_widgets=%d, visible=%d)\n",
-                       idx++, row_id,
-                       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(r), "is_widgets_row")),
-                       gtk_widget_get_visible(child));
+    if (g_getenv("MAC_SETTINGS_TEST_CLICKS") && main_listbox) {
+        printf("--- MAC_SETTINGS_TEST_CLICKS START ---\n");
+        const char *test_ids[] = {
+            "wifi", "network", "bluetooth", "display", "sound", "power",
+            "multitasking", "background", "widgets", "ubuntu", "applications",
+            "notifications", "search", "online-accounts", "sharing",
+            "mouse", "keyboard", "printers", "system", "universal-access", "privacy",
+            NULL
+        };
+        for (int t = 0; test_ids[t] != NULL; t++) {
+            const char *target = test_ids[t];
+            for (GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(main_listbox)); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+                if (GTK_IS_LIST_BOX_ROW(child)) {
+                    MacPanelRowData *d = g_object_get_data(G_OBJECT(child), "data");
+                    if (d && g_strcmp0(d->id, target) == 0) {
+                        g_signal_emit_by_name(main_listbox, "row-activated", child);
+                        AdwNavigationPage *cp = adw_navigation_split_view_get_content(split_view);
+                        const char *cur_id = g_object_get_data(G_OBJECT(split_view), "mac_current_panel_id");
+                        printf("Activated %-16s -> cur_id=%-16s content=%s\n", target, cur_id ? cur_id : "null", cp ? G_OBJECT_TYPE_NAME(cp) : "null");
+                        break;
+                    }
+                }
             }
         }
-        printf("--- MAC_SETTINGS_TEST_DUMP END ---\n");
+        printf("--- MAC_SETTINGS_TEST_CLICKS END ---\n");
         exit(0);
     }
 

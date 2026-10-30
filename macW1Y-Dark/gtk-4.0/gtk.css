@@ -10658,8 +10658,8 @@ row.fan-settings-subrow:selected {
 /* macOS 26 Settings UI Transformation */
 window.mac-settings-window list.mac-settings-sidebar-list row,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row {
-    min-height: 28px;
-    padding: 3px 8px;
+    min-height: 30px;
+    padding: 2px 8px;
     margin: 1px 6px;
     border-radius: 7px;
     font-size: 13px;
@@ -10667,29 +10667,46 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row {
 
 window.mac-settings-window list.mac-settings-sidebar-list row image,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row image {
-    min-width: 16px;
-    min-height: 16px;
-    -gtk-icon-size: 16px;
-    margin-right: 8px;
+    min-width: 22px;
+    min-height: 22px;
+    -gtk-icon-size: 14px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    margin-right: 9px;
+    padding: 0;
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected {
-    background-color: #f37021;
+    background-color: #fa6e0a;
     color: #ffffff;
 }
 
-window.mac-settings-window list.mac-settings-sidebar-list row:selected label,
 window.mac-settings-window list.mac-settings-sidebar-list row:selected image,
-window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected label,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected image {
     color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.20);
+    border-color: rgba(0, 0, 0, 0.25);
+}
+
+window.mac-settings-window list.mac-settings-sidebar-list row label,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row label {
+    font-size: 13px;
+    margin-top: 3px;
+    padding-top: 2px;
+}
+
+window.mac-settings-window list.mac-settings-sidebar-list row:selected label,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected label {
+    color: #ffffff;
+    font-weight: 500;
 }
 
 window.mac-settings-window .mac-settings-account-row {
     min-height: 48px;
-    padding: 5px 8px;
-    margin: 4px 6px 2px 6px;
+    padding: 6px 10px;
+    margin: 6px 6px 14px 6px;
     border-radius: 9px;
     background-color: transparent;
 }
@@ -10702,6 +10719,15 @@ window.mac-settings-window .mac-settings-account-row:selected {
     background-color: rgba(255, 255, 255, 0.08);
 }
 
+window.mac-settings-window .mac-settings-account-row image {
+    min-width: 12px;
+    min-height: 12px;
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    margin-right: 0;
+}
+
 window.mac-settings-window .mac-settings-account-row .account-title {
     font-weight: 600;
     font-size: 13.5px;
@@ -10711,33 +10737,6 @@ window.mac-settings-window .mac-settings-account-row .account-title {
 window.mac-settings-window .mac-settings-account-row .account-subtitle {
     font-size: 11px;
     color: rgba(255, 255, 255, 0.55);
-}
-
-window.mac-settings-window .mac-settings-alert-row {
-    min-height: 28px;
-    padding: 3px 8px;
-    margin: 1px 6px;
-    border-radius: 7px;
-    font-size: 12.5px;
-}
-
-window.mac-settings-window .mac-settings-alert-row:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-window.mac-settings-window .mac-settings-alert-row.alert-last {
-    margin-bottom: 12px;
-}
-
-.mac-alert-badge {
-    background-color: #ff3b30;
-    color: #ffffff;
-    font-weight: bold;
-    font-size: 10px;
-    border-radius: 9999px;
-    min-width: 16px;
-    min-height: 16px;
-    padding: 0 4px;
 }
 
 window.mac-settings-window .mac-settings-sidebar searchbar {
@@ -10769,25 +10768,34 @@ window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within {
 }
 
 .mac-panel-header-banner {
-    margin-top: 14px;
-    margin-bottom: 20px;
+    margin-top: 18px;
+    margin-bottom: 22px;
 }
 
 .mac-panel-header-badge {
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 14px;
-    padding: 9px;
-    min-width: 48px;
-    min-height: 48px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    min-width: 52px;
+    min-height: 52px;
+    padding: 0;
+    margin: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
+}
+
+.mac-panel-header-badge image {
+    -gtk-icon-size: 26px;
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
 }
 
 .mac-panel-header-title {
     font-weight: 700;
-    font-size: 20px;
+    font-size: 19px;
     color: #ffffff;
-    margin-top: 4px;
+    margin-top: 8px;
+    margin-bottom: 2px;
 }
 
 .mac-panel-header-subtitle {
