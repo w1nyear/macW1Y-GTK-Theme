@@ -12997,3 +12997,38 @@ Task 499: Повне полірування екрана блокування (m
    - `bin/mac-extension-guard verify` — 21/21 SUCCESS.
    - `/usr/local/bin/mac-diagnostics` — 100% OK.
    - `bin/mac-i18n-verify` — 100% SUCCESSFUL.
+
+--------------------------------------------------------------------------------
+ЕТАП 628: macW1Y 0.5 — Виправлення відкриття огляду при відпусканні Super+Space у Spotlight
+
+1. Вимоги:
+   - Усунути проблему, коли у відкритому меню Spotlight під час перемикання мови комбінацією Super+Space при відпусканні клавіш відкривається огляд GNOME Shell (Activities Overview).
+   - Забезпечити, щоб Spotlight залишався відкритим та сфокусованим, мова вводу перемикалася плавно, а огляд за жодних умов не активувався.
+   - Поширити аналогічний захист на Clipboard Dialog та Меню Програм.
+   - 100% збереження цілісності версійного локу (21/21 розширень), проходження аудитів та діагностики.
+
+2. Виявлена першопричина (Root Cause Analysis):
+   - Коли Spotlight відкритий (діалог захоплює модальний режим через `Main.pushModal`), перемикання розкладки `Super+Space` обробляється глобальним кейбіндингом `Main.wm` (`switch-input-source`).
+   - Через те, що Mutter/GNOME Shell перехоплює натискання Space на рівні WM, внутрішній віджет пошукового поля `ClutterText` у `searchDialog_v5.js` не отримував подію `key-press-event` для `Space`.
+   - В результаті прапорець `_superOnlyPressed` (встановлений при натисканні Super_L) не скидався у `false`.
+   - При фізичному відпусканні клавіші Super_L викликався обробник `key-release-event`, де умова `if (this._superOnlyPressed)` виявлялася істинною, що призводило до виклику `this.close(true); Main.overview.show();`.
+
+3. Виконана робота:
+   - Централізоване сповіщення про перемикання мови:
+     * У `extensions/blur-my-shell@aunetx/components/mac_input_switcher_v11.js` реалізовано функцію `_notifyDialogsInputSwitched()`, яка оновлює глобальну мітку часу `globalThis._lastInputSwitchTime = GLib.get_monotonic_time()` та автоматично скидає `_superOnlyPressed = false`, `_inputSwitched = true` для всіх активних діалогів (`_macSpotlightGlobalInstance`, `_macClipboardGlobalInstance`, `_macApplicationsGlobalInstance`).
+     * Виклик додано в методи `_handleSwitch()`, `show()` та `cycle()`.
+   - Блокування відкриття огляду на key-release:
+     * У `searchDialog_v5.js`, `clipboardDialog_v2.js` та `applications_menu_v5b.js` в обробнику `key-release-event` додано перевірку недавнього перемикання мови (`switchedRecently`).
+     * При недавньому перемиканні мови подія негайно поглинається (`return Clutter.EVENT_STOP`), запобігаючи виклику `Main.overview.show()` та поширенню події до Mutter.
+     * Натискання та відпускання Super_L/Super_R всередині активного поля вводу діалогу споживається локально (`Clutter.EVENT_STOP`), унеможливлюючи хибне спрацьовування системного `overlay-key` у Mutter.
+   - Синхронізація та оновлення версійного локу:
+     * Оновлені файли синхронізовано з робочого каталогу `extensions/` до живої сесії `~/.local/share/gnome-shell/extensions/`.
+     * Перераховано SHA-256 хеші та оновлено `config/extensions.lock.json` для `appmenu@ChathurangaBW.github.io` (`06d513c8...`) та `blur-my-shell@aunetx` (`5bda1990...`).
+     * Гаряче перезавантажено оновлені модулі в GNOME Shell через `EvalHelper` без переривання сесії користувача.
+
+4. Результати верифікації:
+   - Проведено симуляцію та стрес-тест перемикання мови в активному Spotlight через EvalHelper — `_superOnlyPressed` надійно скидається у `false`, `_inputSwitched` активується, огляд не відкривається.
+   - `bin/mac-extension-guard verify` — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes (21/21).
+   - `/usr/local/bin/mac-diagnostics` — 100% OK.
+   - `bin/mac-audit-sync check` — 100% PASS.
+   - `bin/mac-i18n-verify` — 100% SUCCESSFUL.

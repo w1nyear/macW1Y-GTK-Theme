@@ -165,6 +165,21 @@ function getActiveCaret() {
     return null;
 }
 
+function _notifyDialogsInputSwitched() {
+    globalThis._lastInputSwitchTime = GLib.get_monotonic_time();
+    const dialogs = [
+        globalThis._macSpotlightGlobalInstance,
+        globalThis._macClipboardGlobalInstance,
+        globalThis._macApplicationsGlobalInstance,
+    ];
+    for (const d of dialogs) {
+        if (d) {
+            d._superOnlyPressed = false;
+            d._inputSwitched = true;
+        }
+    }
+}
+
 const _UID = Math.floor(Math.random() * 100000000);
 
 export const MacInputSourcePopup = GObject.registerClass({
@@ -532,6 +547,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         // Slide into next index and activate immediately
         this._select(this._nextIndex, true);
         try { this._items[this._selectedIndex]?.activate(true); } catch (_) {}
+        _notifyDialogsInputSwitched();
 
         // Non-modal HUD: linger gracefully then smoothly fade out
         this._scheduleFade(1000);
@@ -565,6 +581,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         const newIndex = backward ? this._previous() : this._next();
         this._select(newIndex, true);
         try { this._items[this._selectedIndex]?.activate(true); } catch (_) {}
+        _notifyDialogsInputSwitched();
 
         this._scheduleFade(1000);
     }
@@ -862,6 +879,7 @@ export class MacInputSwitcher {
     }
 
     _handleSwitch(display, window, event, binding) {
+        _notifyDialogsInputSwitched();
         if (!this._ism) return;
         if (this._ism._keyboardManager?.isLocked?.()) return;
 

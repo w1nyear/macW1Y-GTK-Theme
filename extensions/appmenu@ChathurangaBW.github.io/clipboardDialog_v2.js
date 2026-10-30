@@ -515,6 +515,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._box.connect('notify::translation-y', () => this._syncGlass());
         this._box.connect('notify::opacity', () => this._syncGlass());
         this._superOnlyPressed = false;
+        this._inputSwitched = false;
 
         this.connect('destroy', () => {
             this.destroy();
@@ -677,12 +678,15 @@ export const MacClipboardDialog = GObject.registerClass({
 
             if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
                 this._superOnlyPressed = true;
-                return Clutter.EVENT_PROPAGATE;
+                this._inputSwitched = false;
+                return Clutter.EVENT_STOP;
             }
 
             this._superOnlyPressed = false;
 
             if (isSuper && symbol === Clutter.KEY_space) {
+                this._inputSwitched = true;
+                globalThis._lastInputSwitchTime = GLib.get_monotonic_time();
                 const isShift = (state & Clutter.ModifierType.SHIFT_MASK) !== 0;
                 try {
                     if (globalThis._macInputSwitcherInstance) {
@@ -724,14 +728,32 @@ export const MacClipboardDialog = GObject.registerClass({
         ct.connect('key-release-event', (_actor, event) => {
             const symbol = event.get_key_symbol();
             if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R) {
-                if (this._superOnlyPressed) {
-                    this._superOnlyPressed = false;
+                const now = GLib.get_monotonic_time();
+                const switchedRecently = this._inputSwitched || ((now - (globalThis._lastInputSwitchTime || 0)) < 2000000);
+                const wasSuperOnly = this._superOnlyPressed && !switchedRecently;
+
+                this._superOnlyPressed = false;
+                this._inputSwitched = false;
+
+                if (switchedRecently) {
+                    return Clutter.EVENT_STOP;
+                }
+
+                if (wasSuperOnly) {
                     this.close(true);
                     Main.overview.show();
                     return Clutter.EVENT_STOP;
                 }
-                this._superOnlyPressed = false;
+                return Clutter.EVENT_STOP;
             }
+
+            if (symbol === Clutter.KEY_space) {
+                const now = GLib.get_monotonic_time();
+                if (this._inputSwitched || ((now - (globalThis._lastInputSwitchTime || 0)) < 2000000)) {
+                    return Clutter.EVENT_STOP;
+                }
+            }
+
             return Clutter.EVENT_PROPAGATE;
         });
     }
