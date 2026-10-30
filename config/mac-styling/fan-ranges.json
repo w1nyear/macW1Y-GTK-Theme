@@ -1,14 +1,32 @@
 {
   "performance": {
-    "cpu": {"min": 20, "max": 40},
-    "gpu": {"min": 20, "max": 40}
+    "cpu": {
+      "min": 20,
+      "max": 39
+    },
+    "gpu": {
+      "min": 20,
+      "max": 40
+    }
   },
   "balanced": {
-    "cpu": {"min": 20, "max": 30},
-    "gpu": {"min": 20, "max": 30}
+    "cpu": {
+      "min": 20,
+      "max": 30
+    },
+    "gpu": {
+      "min": 20,
+      "max": 30
+    }
   },
   "power-saver": {
-    "cpu": {"min": 20, "max": 20},
-    "gpu": {"min": 20, "max": 20}
+    "cpu": {
+      "min": 20,
+      "max": 20
+    },
+    "gpu": {
+      "min": 20,
+      "max": 20
+    }
   }
 }

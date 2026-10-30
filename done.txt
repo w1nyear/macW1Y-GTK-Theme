@@ -12898,3 +12898,35 @@ Task 499: Повне полірування екрана блокування (m
    - /usr/local/bin/mac-diagnostics — 100% OK.
    - bin/mac-i18n-verify — 100% PASS.
    - install.sh — 100% English (0 Cyrillic characters).
+
+--------------------------------------------------------------------------------
+ЕТАП 625: macW1Y 0.5 — Синхронізація параметрів «Mac стилізація» та діапазонів кулерів у проєкт
+
+1. Вимоги:
+   - Користувач оновив вигляд у меню «Mac стилізація» (Параметри -> Система -> Mac стилізація).
+   - Необхідно зафіксувати та синхронізувати оновлені параметри у вихідні файли репозиторію.
+
+2. Внесені зміни:
+   - Синхронізовано конфігурації стилізації:
+     * Оновлено `config/mac-styling/styling.json` та `config/styling.json` із `~/.config/mac-styling/styling.json`:
+       - menubar_tint: 30, menubar_blur: 25
+       - liquid_blur: 15, liquid_tint: 10
+       - blur_sigma: 30, blur_tint: 29
+       - menu_tint: 15, menu_blur: 20
+       - menu_shadow_blur: 51, menu_shadow_strength: 25
+       - dock_tint: 0.29, panel_sigma: 25, panel_tint: 0.30, notif_tint: 0.29, notif_radius: 18
+   - Синхронізовано діапазони вентиляторів:
+     * Оновлено `config/mac-styling/fan-ranges.json` та `config/fan-ranges.json` із `~/.config/mac-styling/fan-ranges.json`:
+       - performance cpu max: 39%
+   - Оновлено dconf сховища `dconf/gnome-all.dconf` та `dconf/gnome-shell.dconf`:
+     * Для `liquid-glass`: shadow-radius 51.0, shadow-intensity 0.25, menu/panel/desktop tint-strength 0.15, dock/notification/osd/quick-settings tint-strength 0.10, tint-color '#000000'.
+     * Для `blur-my-shell`: brightness 0.855, panel sigma 25, top_blur 25.
+   - Оновлено `install.sh`:
+     * Синхронізовано початкові значення gsettings для `liquid-glass` (рядки 738-750).
+
+3. Результати верифікації:
+   - `bin/mac-audit-sync check` — 100% PASS.
+   - `bin/mac-extension-guard verify` — 20/20 SUCCESS.
+   - `/usr/local/bin/mac-diagnostics` — 100% OK.
+   - `bin/mac-i18n-verify` — 100% PASS.
+   - `install.sh` — 100% English (0 Cyrillic characters).
