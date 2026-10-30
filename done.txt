@@ -13395,3 +13395,32 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
    - `bin/mac-audit-sync check`: 100% PASS (5/5 тестів пройдено).
    - `/usr/local/bin/mac-diagnostics`: 100% OK, система стабільна.
 
+--------------------------------------------------------------------------------
+ЕТАП 638: macW1Y 0.5 — Індикатор запису та трансляції екрана на менюбарі у стилі macOS (точка з квадратом) з розширеним меню керування
+
+1. Виконані завдання:
+   - Згідно з референсом [media_1793361022594_a1970ccf.jpg](file:///home/vitaliy/.gemini/antigravity/brain/d34732a7-0aa8-43ff-b0ad-129d9df0d190/.user_uploaded/media_1793361022594_a1970ccf.jpg) реалізовано повноцінний нативний індикатор запису та трансляції екрана у модулі [tahoeScreenCast.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeScreenCast.js):
+     * **Іконка (Cairo `MacScreenCastIcon`)**: суцільний білий круглий диск (радіус 8.5px, діаметр 17px) із заокругленим квадратним вирізом по центру (розмір 7.0px, радіус кутів 1.2px, `FILL_RULE_EVEN_ODD`). Адаптується під індикацію люмінантності менюбару (темне/світле скло).
+     * **Розташування на менюбарі**: динамічно розміщується у правому блоці менюбару (`Main.panel._rightBox`) зліва від системних іконок (`keyboard`, `kiwi-wifi-button`, `ydotool-trigger-button`, годинник), згідно з налаштуваннями `top-bar-organizer`.
+     * **Автоматична активація**:
+       - При початку запису екрана через GNOME Screenshot UI / гарячі клавіші (`Main.screenshotUI.notify::screencast-in-progress`).
+       - При початку трансляції екрана через PipeWire / WebRTC / Remote Access Controller (Chrome, Discord, OBS, Zoom тощо) (`global.backend.get_remote_access_controller().connect('new-handle')`).
+       - При завершенні запису або трансляції індикатор автоматично ховається.
+       - Стандартні індикатори GNOME Shell (`screenRecording`, `screenSharing`) подавляються, запобігаючи дублюванню.
+     * **Випадаюче Liquid Glass меню при кліку**:
+       - Шапка з червоною пульсуючою крапкою запису, заголовком («Запис екрана» / «Трансляція екрана») та живим лічильником тривалості (`MM:SS` / `HH:MM:SS`), що оновлюється щосекунди.
+       - Картка деталей: показує джерело («Весь екран»), роздільність дисплея (наприклад `1920 × 1080`), папку збереження («Папка «Відео»») або тип сесії («PipeWire ScreenCast»).
+       - Велика червона акцентна кнопка «Зупинити запис» / «Зупинити трансляцію», яка миттєво зупиняє запис/потік і закриває меню.
+       - Додаткові пункти: «Відкрити папку із записами» (відкриває `~/Відео`), «Зробити знімок екрана…» та «Параметри дисплея…».
+   - Оновлено [stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css): додано стилі `.mac-screencast-button`, `.mac-screencast-menu`, `.mac-screencast-card`, `.mac-screencast-stop-btn`.
+   - Інтегровано у [extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/extension.js).
+   - Синхронізовано з `~/.local/share/gnome-shell/extensions/kiwi@kemma/`.
+   - Оновлено хеш SHA256 у [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json).
+
+2. Верифікація:
+   - `bin/mac-extension-guard verify`: VERIFICATION SUCCESS (21/21 розширень валідні).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 тестів пройдено).
+   - `/usr/local/bin/mac-diagnostics`: 100% OK, система стабільна.
+   - Тестування в live GNOME Shell: симуляція запуску запису активує індикатор з таймером, відкриває меню зі всіма параметрами та коректно зупиняє запис.
+
+

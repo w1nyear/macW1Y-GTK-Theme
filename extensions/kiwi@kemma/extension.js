@@ -18,6 +18,7 @@ import { enable as gtkThemeSyncEnable, disable as gtkThemeSyncDisable } from './
 import { enable as labelBlurEnable, disable as labelBlurDisable } from './apps/labelBlur.js';
 import { enable as keyboardIndicatorEnable, disable as keyboardIndicatorDisable } from './apps/keyboardIndicator.js';
 import { enable as macWindowManagementEnable, disable as macWindowManagementDisable } from './apps/macWindowManagement.js';
+import { enable as tahoeScreenCastEnable, disable as tahoeScreenCastDisable } from './apps/tahoeScreenCast.js';
 
 export default class KiwiExtension extends Extension {
     _resolveDark() {
@@ -147,6 +148,22 @@ export default class KiwiExtension extends Extension {
             });
         } catch (e) {
             console.warn(`[kiwi] macWindowManagement: ${e}`);
+        }
+
+        try {
+            const scUri = this.dir.get_child('apps').get_child('tahoeScreenCast.js').get_uri() + '?v=sc_v1';
+            import(scUri).then(mod => {
+                if (this._tahoeScreenCastMod && this._tahoeScreenCastMod !== mod) {
+                    try { this._tahoeScreenCastMod.disable(); } catch (_) {}
+                }
+                this._tahoeScreenCastMod = mod;
+                mod.enable(this._settings, gettextFunc);
+            }).catch(e => {
+                console.warn(`[kiwi] tahoeScreenCast dynamic import failed: ${e}`);
+                tahoeScreenCastEnable(this._settings, gettextFunc);
+            });
+        } catch (e) {
+            console.warn(`[kiwi] tahoeScreenCast: ${e}`);
         }
     }
 
@@ -300,6 +317,13 @@ export default class KiwiExtension extends Extension {
                 this._macWindowManagementMod = null;
             }
             macWindowManagementDisable();
+        } catch (_) {}
+        try {
+            if (this._tahoeScreenCastMod) {
+                this._tahoeScreenCastMod.disable();
+                this._tahoeScreenCastMod = null;
+            }
+            tahoeScreenCastDisable();
         } catch (_) {}
 
         this._settings = null;

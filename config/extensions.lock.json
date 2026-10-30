@@ -176,16 +176,17 @@
                 "50",
                 "51"
             ],
-            "sha256": "8f4043dc9a9af36af31a902072b642a4dedfb94a3bebfc53dc114bffe7654436",
+            "sha256": "ab9d72523180ac45fee056b18f24f5989bd600a4ace5d76a053a4c49136a97a8",
             "status": "locked",
             "source": "extensions.gnome.org",
             "macw1y_components": [
                 "quick_settings_styling",
                 "traffic_lights_buttons",
-                "control_center_sliders"
+                "control_center_sliders",
+                "screencast_indicator"
             ],
             "has_custom_patches": true,
-            "patch_description": "macOS Tahoe/Sequoia OSD segmented slider UI (dots row, 5px track, dynamic sink title, handleless interactive bar) in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink",
+            "patch_description": "macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink",
             "last_verified": "2026-10-30"
         },
         "liquid-glass@thinkingcoding1231.gmail.com": {

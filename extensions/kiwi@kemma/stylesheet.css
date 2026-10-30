@@ -1858,3 +1858,86 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-editbadge:hover { background-color: #ffffff; }
 .tahoe-qs-editbadge:active { background-color: #e5e5ea; }
 .tahoe-qs-editbadge-resize { color: #0a84ff; font-size: 15px; }
+
+/* =========================================================================
+   macOS Screen Recording & Screen Sharing Menubar Indicator & Menu
+   ========================================================================= */
+.mac-screencast-button {
+  padding: 0 4px;
+}
+.mac-screencast-menu {
+  min-width: 290px;
+  padding: 6px 12px;
+}
+.mac-screencast-header {
+  spacing: 8px;
+  padding: 4px 2px 8px 2px;
+}
+.mac-screencast-title-row {
+  spacing: 8px;
+}
+.mac-screencast-red-dot {
+  color: #ff3b30;
+}
+.mac-screencast-head-title {
+  font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+  font-size: 1.05em;
+  font-weight: 700;
+  color: #ffffff;
+}
+.mac-screencast-head-timer {
+  font-family: "SF Pro Text", -apple-system, system-ui, sans-serif;
+  font-size: 0.9em;
+  color: #ff453a;
+  font-weight: 600;
+}
+.mac-screencast-card {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  spacing: 6px;
+  margin: 4px 0 8px 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.mac-screencast-info-row {
+  spacing: 12px;
+}
+.mac-screencast-info-label {
+  font-size: 0.82em;
+  color: rgba(255, 255, 255, 0.65);
+}
+.mac-screencast-info-val {
+  font-size: 0.82em;
+  color: #ffffff;
+  font-weight: 500;
+}
+.mac-screencast-stop-menu-item {
+  padding: 4px 0;
+}
+.mac-screencast-stop-btn {
+  background-color: #ff3b30;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 8px 16px;
+  spacing: 8px;
+  font-weight: 600;
+  font-size: 0.9em;
+  margin: 2px 0;
+  box-shadow: 0 2px 6px rgba(255, 59, 48, 0.35);
+}
+.mac-screencast-stop-btn:hover {
+  background-color: #ff453a;
+}
+.mac-screencast-stop-btn:active {
+  background-color: #d7281f;
+}
+.mac-screencast-stop-row {
+  spacing: 8px;
+}
+.mac-screencast-stop-row StIcon {
+  color: #ffffff;
+}
+.mac-screencast-stop-row StLabel {
+  color: #ffffff;
+  font-weight: 600;
+}
