@@ -427,7 +427,10 @@ class ClipboardStore {
                 const bytes = new GLib.Bytes(new TextEncoder().encode(uriData));
                 cb.set_content(St.ClipboardType.CLIPBOARD, 'text/uri-list', bytes);
             } else if (item.text) {
+                const trimmed = item.text.trim();
+                this._lastCaptureHash = `txt_${trimmed.length}_${trimmed.slice(0, 40)}`;
                 cb.set_text(St.ClipboardType.CLIPBOARD, item.text);
+                try { cb.set_text(St.ClipboardType.PRIMARY, item.text); } catch (_) {}
             }
         } catch (_) {}
     }
@@ -955,11 +958,19 @@ export const MacClipboardDialog = GObject.registerClass({
         }
         this._isOpen = true;
         this._isClosing = false;
+        this._isActivating = false;
         this._cancelSyncLoop();
         this._box.remove_all_transitions();
         this.remove_all_transitions();
         if (_isGlassAlive(this._glass)) {
             try { this._glass.remove_all_transitions(); } catch (_) {}
+        }
+
+        const focused = global.display.get_focus_window();
+        if (focused && !focused.is_destroyed?.()) {
+            this._targetWindow = focused;
+        } else {
+            this._targetWindow = options.targetWindow || null;
         }
 
         const mon = Main.layoutManager.primaryMonitor;
@@ -1083,6 +1094,7 @@ export const MacClipboardDialog = GObject.registerClass({
     close(immediate = false) {
         if (!this._isOpen && !this._isClosing) return;
         this._isOpen = false;
+        this._isActivating = false;
         // Запам'ятати геометрію для морф-переходу в інше меню (діє 900мс)
         _saveMorphFrom('clipboard', this);
 
@@ -1339,44 +1351,102 @@ export const MacClipboardDialog = GObject.registerClass({
     }
 
     _activateItem(item, iconWidget = null, doPaste = false) {
-        if (!item) return;
+        if (!item || this._isActivating) return;
+        this._isActivating = true;
+
         try { clipboardStore.restore(item); } catch (_) {}
+        try { clipboardStore.moveToTop(item); } catch (_) {}
 
         if (!doPaste) {
-            // Режим копіювання (кнопка праворуч): підняти елемент нагору і оновити список
-            if (iconWidget) {
-                iconWidget.icon_name = 'object-select-symbolic';
-                iconWidget.style = 'color: #34c759;';
-            }
-            try { clipboardStore.moveToTop(item); } catch (_) {}
-            this._refreshList();
+            // Режим копіювання (кнопка праворуч): закрити буфер обміну, елемент вже скопійовано
+            try { this.close(false); } catch (_) {}
             return;
         }
 
-        // Режим миттєвої вставки: закрити меню і відправити Ctrl+V у фокусоване вікно
+        // Режим миттєвої вставки: закрити буфер обміну і вставити скопійоване у фокусоване вікно
+        const target = this._targetWindow;
         try { this.close(false); } catch (_) {}
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 280, () => {
-            this._injectPasteKey();
+
+        if (target && !target.is_destroyed?.()) {
+            try {
+                const now = global.get_current_time();
+                target.activate(now);
+                target.focus(now);
+            } catch (_) {}
+        }
+
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 120, () => {
+            this._injectPasteKey(target);
             return GLib.SOURCE_REMOVE;
         });
     }
 
-    _injectPasteKey() {
+    _isTerminalWindow(win) {
+        if (!win) return false;
         try {
-            const seat = Clutter.get_default_backend().get_default_seat();
-            const vd = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+            const wmClass = (win.get_wm_class?.() || '').toLowerCase();
+            const title = (win.get_title?.() || '').toLowerCase();
+            const appId = (win.get_gtk_application_id?.() || '').toLowerCase();
+            return wmClass.includes('terminal') ||
+                   wmClass.includes('ptyxis') ||
+                   wmClass.includes('alacritty') ||
+                   wmClass.includes('kitty') ||
+                   wmClass.includes('konsole') ||
+                   wmClass.includes('tilix') ||
+                   wmClass.includes('wezterm') ||
+                   wmClass.includes('xterm') ||
+                   appId.includes('terminal') ||
+                   appId.includes('ptyxis');
+        } catch (_) {
+            return false;
+        }
+    }
+
+    _getVirtualDevice() {
+        if (!this._virtualDevice) {
+            try {
+                const seat = Clutter.get_default_backend().get_default_seat();
+                this._virtualDevice = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+            } catch (e) {
+                console.error(`[MacClipboard] Failed to create virtual keyboard device: ${e}`);
+            }
+        }
+        return this._virtualDevice;
+    }
+
+    _injectPasteKey(targetWindow = null) {
+        try {
+            const win = targetWindow || this._targetWindow || global.display.get_focus_window();
+            if (win && !win.is_destroyed?.()) {
+                try {
+                    const now = global.get_current_time();
+                    win.activate(now);
+                    win.focus(now);
+                } catch (_) {}
+            }
+
+            const isTerminal = this._isTerminalWindow(win);
+            const vd = this._getVirtualDevice();
             if (!vd) return;
-            let t = GLib.get_monotonic_time();
-            vd.notify_keyval(t, Clutter.KEY_Control_L, Clutter.KeyState.PRESSED);
-            t += 5;
-            vd.notify_keyval(t, Clutter.KEY_v, Clutter.KeyState.PRESSED);
-            t += 5;
-            vd.notify_keyval(t, Clutter.KEY_v, Clutter.KeyState.RELEASED);
-            t += 5;
-            vd.notify_keyval(t, Clutter.KEY_Control_L, Clutter.KeyState.RELEASED);
-            t += 5;
+
+            // Linux evdev scancodes (нативні коди вводу, 100% незалежні від розкладки клавіатури)
+            const KEY_CTRL = 29;
+            const KEY_SHIFT = 42;
+            const KEY_V = 47;
+
+            const t = GLib.get_monotonic_time();
+            vd.notify_key(t, KEY_CTRL, Clutter.KeyState.PRESSED);
+            if (isTerminal) {
+                vd.notify_key(t + 4000, KEY_SHIFT, Clutter.KeyState.PRESSED);
+            }
+            vd.notify_key(t + 8000, KEY_V, Clutter.KeyState.PRESSED);
+            vd.notify_key(t + 28000, KEY_V, Clutter.KeyState.RELEASED);
+            if (isTerminal) {
+                vd.notify_key(t + 32000, KEY_SHIFT, Clutter.KeyState.RELEASED);
+            }
+            vd.notify_key(t + 36000, KEY_CTRL, Clutter.KeyState.RELEASED);
         } catch (e) {
-            try { console.error(`[Clipboard] paste inject failed: ${e}`); } catch (_) {}
+            try { console.error(`[MacClipboard] paste inject failed: ${e}`); } catch (_) {}
         }
     }
 
@@ -1405,6 +1475,8 @@ export const MacClipboardDialog = GObject.registerClass({
             try { this._modalGrab.dismiss(); } catch (_) {}
             this._modalGrab = null;
         }
+        this._virtualDevice = null;
+        this._targetWindow = null;
         super.destroy();
     }
 });
@@ -1433,6 +1505,12 @@ export function toggleClipboardDialog(options = {}) {
     if (globalThis._macClipboardGlobalInstance._isOpen) {
         globalThis._macClipboardGlobalInstance.close();
     } else {
+        if (!options.targetWindow) {
+            const focused = global.display.get_focus_window();
+            if (focused && !focused.is_destroyed?.()) {
+                options.targetWindow = focused;
+            }
+        }
         if (typeof globalThis._macCloseAllCenters === 'function') {
             globalThis._macCloseAllCenters('clipboard');
         } else {
@@ -1450,6 +1528,12 @@ export function toggleClipboardDialog(options = {}) {
 export function openClipboardDialog(options = {}) {
     if (!globalThis._macClipboardGlobalInstance) {
         globalThis._macClipboardGlobalInstance = new MacClipboardDialog();
+    }
+    if (!options.targetWindow) {
+        const focused = global.display.get_focus_window();
+        if (focused && !focused.is_destroyed?.()) {
+            options.targetWindow = focused;
+        }
     }
     if (typeof globalThis._macCloseAllCenters === 'function') {
         globalThis._macCloseAllCenters('clipboard');

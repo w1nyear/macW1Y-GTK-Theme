@@ -1707,6 +1707,12 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
         this._isOpen = true;
         this._isClosing = false;
+        const focused = global.display.get_focus_window();
+        if (focused && !focused.is_destroyed?.()) {
+            this._targetWindow = focused;
+        } else {
+            this._targetWindow = null;
+        }
         this._cancelSyncLoop();
         this._box.remove_all_transitions();
         this.remove_all_transitions();
@@ -2987,8 +2993,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                     globalThis.macClipboardStore.restore(item);
                     try { globalThis.macClipboardStore.moveToTop?.(item); } catch (_) {}
                 }
-                copyIcon.icon_name = 'object-select-symbolic';
-                copyIcon.style = 'color: #34c759;';
+                this.close();
             });
             row.add_child(copyBtn);
 
@@ -3003,11 +3008,92 @@ export const MacSpotlightDialog = GObject.registerClass({
             rowBtn.connect('clicked', () => {
                 if (globalThis.macClipboardStore) {
                     globalThis.macClipboardStore.restore(item);
+                    try { globalThis.macClipboardStore.moveToTop?.(item); } catch (_) {}
                 }
+                const target = this._targetWindow;
                 this.close();
+                if (target && !target.is_destroyed?.()) {
+                    try {
+                        const now = global.get_current_time();
+                        target.activate(now);
+                        target.focus(now);
+                    } catch (_) {}
+                }
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 120, () => {
+                    this._injectPasteKey(target);
+                    return GLib.SOURCE_REMOVE;
+                });
             });
 
             this._clipboardContentBox.add_child(rowBtn);
+        }
+    }
+
+    _isTerminalWindow(win) {
+        if (!win) return false;
+        try {
+            const wmClass = (win.get_wm_class?.() || '').toLowerCase();
+            const title = (win.get_title?.() || '').toLowerCase();
+            const appId = (win.get_gtk_application_id?.() || '').toLowerCase();
+            return wmClass.includes('terminal') ||
+                   wmClass.includes('ptyxis') ||
+                   wmClass.includes('alacritty') ||
+                   wmClass.includes('kitty') ||
+                   wmClass.includes('konsole') ||
+                   wmClass.includes('tilix') ||
+                   wmClass.includes('wezterm') ||
+                   wmClass.includes('xterm') ||
+                   appId.includes('terminal') ||
+                   appId.includes('ptyxis');
+        } catch (_) {
+            return false;
+        }
+    }
+
+    _getVirtualDevice() {
+        if (!this._virtualDevice) {
+            try {
+                const seat = Clutter.get_default_backend().get_default_seat();
+                this._virtualDevice = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+            } catch (e) {
+                console.error(`[MacSpotlight] Failed to create virtual keyboard device: ${e}`);
+            }
+        }
+        return this._virtualDevice;
+    }
+
+    _injectPasteKey(targetWindow = null) {
+        try {
+            const win = targetWindow || this._targetWindow || global.display.get_focus_window();
+            if (win && !win.is_destroyed?.()) {
+                try {
+                    const now = global.get_current_time();
+                    win.activate(now);
+                    win.focus(now);
+                } catch (_) {}
+            }
+
+            const isTerminal = this._isTerminalWindow(win);
+            const vd = this._getVirtualDevice();
+            if (!vd) return;
+
+            const KEY_CTRL = 29;
+            const KEY_SHIFT = 42;
+            const KEY_V = 47;
+
+            const t = GLib.get_monotonic_time();
+            vd.notify_key(t, KEY_CTRL, Clutter.KeyState.PRESSED);
+            if (isTerminal) {
+                vd.notify_key(t + 4000, KEY_SHIFT, Clutter.KeyState.PRESSED);
+            }
+            vd.notify_key(t + 8000, KEY_V, Clutter.KeyState.PRESSED);
+            vd.notify_key(t + 28000, KEY_V, Clutter.KeyState.RELEASED);
+            if (isTerminal) {
+                vd.notify_key(t + 32000, KEY_SHIFT, Clutter.KeyState.RELEASED);
+            }
+            vd.notify_key(t + 36000, KEY_CTRL, Clutter.KeyState.RELEASED);
+        } catch (e) {
+            try { console.error(`[MacSpotlight] paste inject failed: ${e}`); } catch (_) {}
         }
     }
 
@@ -3036,6 +3122,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             try { this._glass.destroy(); } catch (_) {}
             this._glass = null;
         }
+        this._virtualDevice = null;
+        this._targetWindow = null;
     }
 
     destroy() {
