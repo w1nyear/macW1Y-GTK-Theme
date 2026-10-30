@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Віджети
+Name[en]=Desktop Widgets
+Name[uk]=Віджети
+Comment=Налаштування віджетів робочого столу macW1Y
+Comment[en]=Configure desktop widgets and layout
+Comment[uk]=Налаштування віджетів робочого столу macW1Y
+Exec=mac-widgets-settings
+Icon=view-grid-symbolic
+Terminal=false
+Type=Application
+Categories=GNOME;GTK;Settings;DesktopSettings;
+StartupNotify=true

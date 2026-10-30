@@ -14,6 +14,11 @@ elif [ -f "$HOME/.local/lib/libmac_settings.so" ]; then
     export LD_PRELOAD="$HOME/.local/lib/libmac_settings.so${LD_PRELOAD:+:$LD_PRELOAD}"
 fi
 
+if [ "$1" = "widgets" ] || [ "$1" = "desktop-widgets" ]; then
+    export MAC_SETTINGS_OPEN_WIDGETS=1
+    set -- "system"
+fi
+
 if [ -f "/usr/bin/gnome-control-center.orig" ]; then
     exec /usr/bin/gnome-control-center.orig "$@"
 else

@@ -137,7 +137,7 @@ def main():
     # 5. Extension Guard & Pinned Lock Hashes
     print(f"\n{C_BOLD}5. GNOME Extensions Integrity & Version Lock:{C_RESET}")
     res_guard = subprocess.run([os.path.join(REPO_ROOT, "bin/mac-extension-guard"), "verify"], capture_output=True, text=True)
-    all_ok &= check("All 20 managed extensions match pinned lock hashes", res_guard.returncode == 0, res_guard.stdout.strip())
+    all_ok &= check("All 21 managed extensions match pinned lock hashes", res_guard.returncode == 0, res_guard.stdout.strip())
 
     # 6. Fallback Behavior Test
     print(f"\n{C_BOLD}6. Universal English Fallback Resolution Test:{C_RESET}")

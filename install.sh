@@ -705,6 +705,7 @@ install_extensions() {
         "liquid-glass@thinkingcoding1231.gmail.com"
         "appmenu@ChathurangaBW.github.io"
         "kiwi@kemma"
+        "desktop-widgets@r3nhick"
     )
     for ext_id in "${EXT_LIST[@]}"; do
         run_as_user gnome-extensions enable "$ext_id" 2>/dev/null || true
@@ -844,6 +845,7 @@ install_settings_overlay() {
     fi
     
     [ -f "$SCRIPT_DIR/bin/gnome-control-center" ] && cp "$SCRIPT_DIR/bin/gnome-control-center" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/gnome-control-center"
+    [ -f "$SCRIPT_DIR/bin/mac-widgets-settings" ] && cp "$SCRIPT_DIR/bin/mac-widgets-settings" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/mac-widgets-settings"
     [ -f "$SCRIPT_DIR/bin/mac-styling-settings" ] && cp "$SCRIPT_DIR/bin/mac-styling-settings" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/mac-styling-settings"
     [ -f "$SCRIPT_DIR/bin/gnome-theme-switcher" ] && cp "$SCRIPT_DIR/bin/gnome-theme-switcher" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/gnome-theme-switcher"
     [ -f "$SCRIPT_DIR/bin/toggle-launchpad.sh" ] && cp "$SCRIPT_DIR/bin/toggle-launchpad.sh" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/toggle-launchpad.sh"
@@ -857,7 +859,7 @@ install_settings_overlay() {
     rm -f "$APP_DIR/mac-styling-settings.desktop"
     
     # 1. Core macOS theme components (always installed)
-    for core_df in launchpad.desktop mac-app-launcher.desktop org.gnome.Settings.desktop; do
+    for core_df in launchpad.desktop mac-app-launcher.desktop org.gnome.Settings.desktop mac-widgets-settings.desktop; do
         if [ -f "$SCRIPT_DIR/applications/$core_df" ]; then
             cp -f "$SCRIPT_DIR/applications/$core_df" "$APP_DIR/"
             sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/$core_df" 2>/dev/null || true
@@ -1288,6 +1290,10 @@ install_gdm_transition() {
         sudo sed -i 's|cursor-theme = "Yaru"|cursor-theme = "macOS"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
         sudo sed -i -E 's/(warty-final-ubuntu\.png|mendhak-Bluebells_Suspended_In_Time\.jpg)/GoldenGate_Day.jpg/g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
     fi
+    if [ -f "$SCRIPT_DIR/extensions/desktop-widgets@r3nhick/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml" ]; then
+        sudo cp "$SCRIPT_DIR/extensions/desktop-widgets@r3nhick/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml" /usr/share/glib-2.0/schemas/
+        sudo chmod 644 /usr/share/glib-2.0/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml
+    fi
     sudo glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
 
     # 6. Allowing extensions in unlock-dialog and gdm session modes
@@ -1713,6 +1719,7 @@ run_incremental_update() {
             "liquid-glass@thinkingcoding1231.gmail.com"
             "appmenu@ChathurangaBW.github.io"
             "kiwi@kemma"
+            "desktop-widgets@r3nhick"
         )
         for ext_id in "${EXT_LIST[@]}"; do
             run_as_user gnome-extensions enable "$ext_id" 2>/dev/null || true
@@ -1784,7 +1791,7 @@ run_incremental_update() {
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-styling-settings mac-apply-theme mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager; do
+    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true

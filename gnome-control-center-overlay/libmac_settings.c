@@ -2495,6 +2495,256 @@ static void configure_toolbar_views_recursive(GtkWidget *widget, gboolean is_sid
     }
 }
 
+/* ========================================================================= */
+/* Desktop Widgets Settings Callbacks                                       */
+/* ========================================================================= */
+
+#define DW_SCHEMA "org.gnome.shell.extensions.desktop-widgets-r3nhick"
+
+static GSettings *get_dw_settings(void) {
+    static GSettings *dw_settings = NULL;
+    if (!dw_settings) {
+        GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+        if (src && g_settings_schema_source_lookup(src, DW_SCHEMA, TRUE)) {
+            dw_settings = g_settings_new(DW_SCHEMA);
+        }
+    }
+    return dw_settings;
+}
+
+void init_dw_edit_mode(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), g_settings_get_boolean(s, "edit-mode"));
+    in_init = 0;
+}
+
+void on_dw_edit_mode_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    gboolean active = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    g_settings_set_boolean(s, "edit-mode", active);
+}
+
+void on_dw_add_widgets_clicked(void *button, gpointer data) {
+    (void)button; (void)data;
+    GSettings *s = get_dw_settings();
+    if (s) {
+        g_settings_set_boolean(s, "edit-mode", TRUE);
+        g_settings_set_boolean(s, "open-widget-picker", TRUE);
+    }
+}
+
+void on_dw_arrange_clicked(void *button, gpointer data) {
+    (void)button; (void)data;
+    GSettings *s = get_dw_settings();
+    if (s) {
+        g_settings_set_boolean(s, "arrange-widgets", TRUE);
+    }
+}
+
+void init_dw_gap(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    int gap = g_settings_get_int(s, "widget-gap");
+    gtk_range_set_value(GTK_RANGE(widget), gap);
+    in_init = 0;
+}
+
+void on_dw_gap_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    int gap = (int)round(gtk_range_get_value(GTK_RANGE(widget)));
+    g_settings_set_int(s, "widget-gap", gap);
+}
+
+void init_dw_pause_fullscreen(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), g_settings_get_boolean(s, "pause-animations-fullscreen"));
+    in_init = 0;
+}
+
+void on_dw_pause_fullscreen_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    gboolean active = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    g_settings_set_boolean(s, "pause-animations-fullscreen", active);
+}
+
+void init_dw_panel_icon(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), g_settings_get_boolean(s, "show-panel-icon"));
+    in_init = 0;
+}
+
+void on_dw_panel_icon_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    gboolean active = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    g_settings_set_boolean(s, "show-panel-icon", active);
+}
+
+void init_dw_theme(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    char *theme = g_settings_get_string(s, "widget-theme-unified");
+    guint idx = 0;
+    if (theme && g_ascii_strcasecmp(theme, "light") == 0) {
+        idx = 1;
+    }
+    g_free(theme);
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), idx);
+    in_init = 0;
+}
+
+void on_dw_theme_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    guint sel = adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    const char *theme = (sel == 1) ? "light" : "dark";
+    g_settings_set_boolean(s, "use-custom-widget-theme", TRUE);
+    g_settings_set_boolean(s, "use-same-theme-for-both", TRUE);
+    g_settings_set_string(s, "widget-theme-unified", theme);
+}
+
+void init_dw_border_radius(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    int radius = g_settings_get_int(s, "style-border-radius");
+    gtk_range_set_value(GTK_RANGE(widget), radius);
+    in_init = 0;
+}
+
+void on_dw_border_radius_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    int radius = (int)round(gtk_range_get_value(GTK_RANGE(widget)));
+    g_settings_set_int(s, "style-border-radius", radius);
+}
+
+void init_dw_opacity(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    double op = g_settings_get_double(s, "style-widget-opacity");
+    gtk_range_set_value(GTK_RANGE(widget), round(op * 100.0));
+    in_init = 0;
+}
+
+void on_dw_opacity_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    double val = gtk_range_get_value(GTK_RANGE(widget));
+    g_settings_set_double(s, "style-widget-opacity", val / 100.0);
+}
+
+void init_dw_use_custom_accent(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), g_settings_get_boolean(s, "style-use-custom-accent"));
+    in_init = 0;
+}
+
+void on_dw_use_custom_accent_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    gboolean active = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    g_settings_set_boolean(s, "style-use-custom-accent", active);
+}
+
+void init_dw_clock_seconds(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), g_settings_get_boolean(s, "digitalclock-show-seconds"));
+    in_init = 0;
+}
+
+void on_dw_clock_seconds_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    gboolean active = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    g_settings_set_boolean(s, "digitalclock-show-seconds", active);
+    g_settings_set_boolean(s, "clock-smooth-seconds", active);
+}
+
+void init_dw_battery_percent(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), g_settings_get_boolean(s, "battery-show-percent"));
+    in_init = 0;
+}
+
+void on_dw_battery_percent_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    gboolean active = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    g_settings_set_boolean(s, "battery-show-percent", active);
+}
+
+void init_dw_music_browsers(void *widget, gpointer data) {
+    (void)data;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), g_settings_get_boolean(s, "music-ignore-browsers"));
+    in_init = 0;
+}
+
+void on_dw_music_browsers_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
+    if (in_init) return;
+    GSettings *s = get_dw_settings();
+    if (!s || !widget) return;
+    gboolean active = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    g_settings_set_boolean(s, "music-ignore-browsers", active);
+}
+
+void on_dw_advanced_clicked(void *button, gpointer data) {
+    (void)button; (void)data;
+    g_spawn_command_line_async("gnome-extensions prefs desktop-widgets@r3nhick", NULL);
+}
+
 static void update_panel_headerbar(AdwNavigationSplitView *split_view);
 
 static void on_visible_page_changed_cb(GObject *gobject G_GNUC_UNUSED, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data)
@@ -2535,6 +2785,10 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         if (g_getenv("MAC_SETTINGS_OPEN_STYLING") && !g_object_get_data(G_OBJECT(nv), "mac_styling_pushed")) {
             g_object_set_data(G_OBJECT(nv), "mac_styling_pushed", GINT_TO_POINTER(1));
             adw_navigation_view_push_by_tag(nv, "mac-styling");
+        }
+        if (g_getenv("MAC_SETTINGS_OPEN_WIDGETS") && !g_object_get_data(G_OBJECT(nv), "mac_widgets_pushed")) {
+            g_object_set_data(G_OBJECT(nv), "mac_widgets_pushed", GINT_TO_POINTER(1));
+            adw_navigation_view_push_by_tag(nv, "widgets");
         }
         AdwNavigationPage *vis_p = adw_navigation_view_get_visible_page(nv);
         if (vis_p) {

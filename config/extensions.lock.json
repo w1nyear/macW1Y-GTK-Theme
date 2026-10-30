@@ -3,7 +3,7 @@
         "macw1y_version": "1.0",
         "target_shell": "46",
         "generated_at": "2026-10-27 16:12:53",
-        "total_managed": 20
+        "total_managed": 21
     },
     "extensions": {
         "appmenu@ChathurangaBW.github.io": {
@@ -415,6 +415,26 @@
             "has_custom_patches": true,
             "patch_description": "askRenamePopup and desktopManager patches",
             "last_verified": "2026-10-27"
+        },
+        "desktop-widgets@r3nhick": {
+            "uuid": "desktop-widgets@r3nhick",
+            "name": "Desktop Widgets",
+            "pinned_version": 15,
+            "shell_compatibility": [
+                "50",
+                "51"
+            ],
+            "sha256": "9df365b2393959bab78c7aec14c4bc0ad5dbc14b6a99c67b63267d7825cdd6ec",
+            "status": "locked",
+            "source": "github",
+            "macw1y_components": [
+                "desktop_widgets",
+                "settings_tab",
+                "clock_battery_weather_system"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Fixed ShaderEffect static snippet vfunc for GNOME 50 and unreachable code cleanup",
+            "last_verified": "2026-10-30"
         },
         "ubuntu-appindicators@ubuntu.com": {
             "uuid": "ubuntu-appindicators@ubuntu.com",

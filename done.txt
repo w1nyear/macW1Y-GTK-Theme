@@ -12930,3 +12930,40 @@ Task 499: Повне полірування екрана блокування (m
    - `/usr/local/bin/mac-diagnostics` — 100% OK.
    - `bin/mac-i18n-verify` — 100% PASS.
    - `install.sh` — 100% English (0 Cyrillic characters).
+
+--------------------------------------------------------------------------------
+ЕТАП 626: macW1Y 0.5 — Інтеграція розширення Desktop Widgets та вкладки «Віджети» у Параметрах
+
+1. Вимоги:
+   - Інтегрувати GNOME Shell розширення `desktop-widgets@r3nhick` (https://github.com/r3nhick/desktop-widgets) у проєкт macW1Y.
+   - Вставити параметри віджетів як повноцінну вкладку/сторінку у системних «Параметрах» («Віджети»).
+   - Забезпечити повну сумісність із GNOME 50, версійний лок розширень (21 розширення) та 100% верифікацію.
+
+2. Виконана робота:
+   - Інтеграція розширення:
+     * Імпортовано та оптимізовано сирці розширення в `extensions/desktop-widgets@r3nhick/`.
+     * Виправлено реєстрацію Clutter ShaderEffect у GNOME 50 (`lib/glass.js`), усунуто помилку відсутності віртуальної функції `get_static_snippet`.
+     * Очищено недосяжні гілки коду після вимкненого widget-in-widget (`extension.js`), що усунуло попередження GJS.
+     * Скомпільовано та інстальовано gschema: `schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml` у `/usr/share/glib-2.0/schemas/`.
+     * Розгорнуто до `~/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick/` та увімкнено в GNOME Shell.
+   - Інтеграція сторінки «Віджети» в GNOME Control Center:
+     * У `cc-system-panel.ui` (каталоги `gnome-control-center-overlay/` та `control-center/`) додано рядок `widgets_row` («Віджети», іконка `view-grid-symbolic`) та субсторінку `widgets_page` (`tag="widgets"`).
+     * Реалізовано 4 функціональні групи налаштувань:
+       1) Робочий стіл та розташування (Режим редагування, вибір віджетів, автоматичне вирівнювання сітки, відступ між віджетами 0-50px, призупинення анімацій у повноекранному режимі, значок на верхній панелі).
+       2) Стилізація та оформлення (Тема віджетів: Темна / Світла, радіус закруглення кутів 0-40px, прозорість підкладки 10-100%, власний акцентний колір).
+       3) Поведінка компонентів (Секунди в годиннику, відсоток заряду батареї, ігнорування браузерів у музичному плеєрі).
+       4) Розширені налаштування (Кнопка відкриття детального конфігуратора всіх 19 віджетів).
+     * У `libmac_settings.c` реалізовано двосторонні GSettings-біндінги та обробники сигналів для всіх перемикачів і повзунків.
+     * Додано підтримку глибинного переходу через `MAC_SETTINGS_OPEN_WIDGETS=1` та аргумент `gnome-control-center widgets`.
+     * Створено швидкий запуск `/usr/local/bin/mac-widgets-settings` та стільничний ярлик `applications/mac-widgets-settings.desktop` («Віджети»).
+   - Версійний лок та цілісність:
+     * Оновлено `config/extensions.lock.json`: загальну кількість зафіксованих розширень збільшено до 21, додано SHA256 хеш `desktop-widgets@r3nhick`.
+     * Оновлено `bin/mac-extension-guard`, `bin/mac-audit-sync`, `bin/mac-i18n-verify` на підтримку 21 розширення.
+     * Оновлено `install.sh`: додано `desktop-widgets@r3nhick` до списків встановлення `EXT_LIST`, системну gschema та інструмент `mac-widgets-settings` (збережено 0 кириличних символів).
+
+3. Результати верифікації:
+   - `bin/mac-extension-guard verify` — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes (21/21).
+   - `/usr/local/bin/mac-diagnostics` — 100% OK (Всі 21 зафіксованих розширень macW1Y активні, еталон SSOT).
+   - `bin/mac-audit-sync check` — 100% PASS (Dock, бібліотеки, утиліти, Guard, оверлей).
+   - `bin/mac-i18n-verify` — 100% SUCCESSFUL (i18n, l10n, 21 розширення, 0 кирилиці в install.sh).
+   - `install.sh` — 100% English (0 Cyrillic characters, `bash -n` OK).

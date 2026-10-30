@@ -264,7 +264,7 @@ def cmd_verify():
             print(" -", e)
         return False
     else:
-        print("VERIFICATION SUCCESS: All 20 managed extensions match pinned lock hashes.")
+        print(f"VERIFICATION SUCCESS: All {len(locked)} managed extensions match pinned lock hashes.")
         return True
 
 def cmd_set_decision(uuid, decision):

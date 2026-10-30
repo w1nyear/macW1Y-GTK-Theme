@@ -82,6 +82,16 @@
                       </object>
                     </child>
                     <child>
+                      <object class="CcListRow" id="widgets_row">
+                        <property name="title">Віджети</property>
+                        <property name="subtitle">Годинник, погода, фото, музика та стан системи на робочому столі</property>
+                        <property name="icon-name">view-grid-symbolic</property>
+                        <property name="show-arrow">true</property>
+                        <property name="action-name">navigation.push</property>
+                        <property name="action-target">'widgets'</property>
+                      </object>
+                    </child>
+                    <child>
                       <object class="CcListRow" id="about_row">
                         <property name="title" translatable="yes">_About</property>
                         <property name="subtitle" translatable="yes">Hardware details and software versions</property>
@@ -369,6 +379,63 @@
                         </child>
                       </object>
                     </child>
+                    <child>
+                      <object class="AdwExpanderRow" id="menu_shadow_expander">
+                        <property name="title">Тінь</property>
+                        <property name="subtitle">Розмиття та сила тіні під контекстними вікнами</property>
+                        <property name="expanded">true</property>
+                        <child>
+                          <object class="AdwActionRow" id="menu_shadow_blur_row">
+                            <property name="title">Розмиття тіні</property>
+                            <child type="suffix">
+                              <object class="GtkScale" id="menu_shadow_blur_scale">
+                                <property name="orientation">0</property>
+                                <property name="draw-value">true</property>
+                                <property name="digits">0</property>
+                                <property name="round-digits">0</property>
+                                <property name="width-request">200</property>
+                                <property name="adjustment">
+                                  <object class="GtkAdjustment">
+                                    <property name="lower">0</property>
+                                    <property name="upper">100</property>
+                                    <property name="step-increment">1</property>
+                                    <property name="page-increment">5</property>
+                                    <property name="value">30</property>
+                                  </object>
+                                </property>
+                                <signal name="realize" handler="init_menu_shadow_blur"/>
+                                <signal name="value-changed" handler="on_menu_shadow_blur_changed"/>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow" id="menu_shadow_strength_row">
+                            <property name="title">Сила тіні</property>
+                            <child type="suffix">
+                              <object class="GtkScale" id="menu_shadow_strength_scale">
+                                <property name="orientation">0</property>
+                                <property name="draw-value">true</property>
+                                <property name="digits">0</property>
+                                <property name="round-digits">0</property>
+                                <property name="width-request">200</property>
+                                <property name="adjustment">
+                                  <object class="GtkAdjustment">
+                                    <property name="lower">0</property>
+                                    <property name="upper">100</property>
+                                    <property name="step-increment">1</property>
+                                    <property name="page-increment">5</property>
+                                    <property name="value">55</property>
+                                  </object>
+                                </property>
+                                <signal name="realize" handler="init_menu_shadow_strength"/>
+                                <signal name="value-changed" handler="on_menu_shadow_strength_changed"/>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                 </child>
 
@@ -393,6 +460,326 @@
                         <signal name="notify::active" handler="on_boot_grub_changed"/>
                       </object>
                     </child>
+                  </object>
+                </child>
+
+                <!-- 6. Цілісність та діагностика -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Цілісність та діагностика</property>
+                    <property name="description">Контроль еталону SSOT, розширень GNOME та автоматичне відновлення</property>
+                    <child>
+                      <object class="AdwActionRow" id="diag_status_row">
+                        <property name="title">Стан оформлення macW1Y</property>
+                        <property name="subtitle">Всі компоненти відповідають еталону SSOT (OK)</property>
+                        <child type="prefix">
+                          <object class="GtkImage">
+                            <property name="icon-name">emblem-ok-symbolic</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">Дії обслуговування</property>
+                        <property name="subtitle">Перевірити поточний стан або відновити оформлення</property>
+                        <child type="suffix">
+                          <object class="GtkButton" id="btn_run_diagnostics">
+                            <property name="label">Запустити діагностику</property>
+                            <property name="valign">center</property>
+                            <signal name="clicked" handler="on_run_diagnostics_clicked"/>
+                          </object>
+                        </child>
+                        <child type="suffix">
+                          <object class="GtkButton" id="btn_restore_theme">
+                            <property name="label">Відновити оформлення</property>
+                            <property name="valign">center</property>
+                            <style>
+                              <class name="suggested-action"/>
+                            </style>
+                            <signal name="clicked" handler="on_restore_theme_clicked"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </child>
+
+    <child type="subpage">
+      <object class="AdwNavigationPage" id="widgets_page">
+        <property name="title">Віджети</property>
+        <property name="tag">widgets</property>
+        <property name="child">
+          <object class="AdwToolbarView">
+            <property name="extend-content-to-top-edge">True</property>
+            <property name="extend-content-to-bottom-edge">True</property>
+            <property name="top-bar-style">flat</property>
+            <child type="top">
+              <object class="AdwHeaderBar">
+                <style>
+                  <class name="flat"/>
+                </style>
+              </object>
+            </child>
+            <property name="content">
+              <object class="AdwPreferencesPage">
+
+                <!-- 1. Робочий стіл та керування віджетами -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Робочий стіл та розташування</property>
+                    <property name="description">Керування віджетами на стільниці та їхня поведінка</property>
+
+                    <child>
+                      <object class="AdwSwitchRow" id="dw_edit_mode_row">
+                        <property name="title">Режим редагування</property>
+                        <property name="subtitle">Дозволити перетягування, зміну розміру та видалення віджетів на стільниці</property>
+                        <property name="active">false</property>
+                        <signal name="realize" handler="init_dw_edit_mode"/>
+                        <signal name="notify::active" handler="on_dw_edit_mode_changed"/>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow" id="dw_add_widgets_row">
+                        <property name="title">Додати віджети на стільницю</property>
+                        <property name="subtitle">Відкрити меню вибору віджетів (Годинник, Погода, Батарея, Фото тощо)</property>
+                        <child type="suffix">
+                          <object class="GtkButton" id="dw_btn_add_widgets">
+                            <property name="label">Додати віджети…</property>
+                            <property name="valign">center</property>
+                            <property name="icon-name">list-add-symbolic</property>
+                            <style>
+                              <class name="suggested-action"/>
+                            </style>
+                            <signal name="clicked" handler="on_dw_add_widgets_clicked"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow" id="dw_arrange_row">
+                        <property name="title">Впорядкувати за сіткою</property>
+                        <property name="subtitle">Автоматично вирівняти всі розміщені віджети у спільну сітку</property>
+                        <child type="suffix">
+                          <object class="GtkButton" id="dw_btn_arrange">
+                            <property name="label">Вирівняти сітку</property>
+                            <property name="valign">center</property>
+                            <property name="icon-name">view-grid-symbolic</property>
+                            <signal name="clicked" handler="on_dw_arrange_clicked"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow" id="dw_gap_row">
+                        <property name="title">Відступ між віджетами</property>
+                        <property name="subtitle">Відстань у пікселях між віджетами та межами екрана</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dw_gap_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">15</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dw_gap"/>
+                            <signal name="value-changed" handler="on_dw_gap_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwSwitchRow" id="dw_pause_fullscreen_row">
+                        <property name="title">Призупиняти у повноекранному режимі</property>
+                        <property name="subtitle">Автоматично призупиняти анімації під час повноекранного режиму для економії ресурсів</property>
+                        <property name="active">true</property>
+                        <signal name="realize" handler="init_dw_pause_fullscreen"/>
+                        <signal name="notify::active" handler="on_dw_pause_fullscreen_changed"/>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwSwitchRow" id="dw_panel_icon_row">
+                        <property name="title">Значок на верхній панелі</property>
+                        <property name="subtitle">Відображати значок швидкого перемикання віджетів у верхній панелі</property>
+                        <property name="active">true</property>
+                        <signal name="realize" handler="init_dw_panel_icon"/>
+                        <signal name="notify::active" handler="on_dw_panel_icon_changed"/>
+                      </object>
+                    </child>
+
+                  </object>
+                </child>
+
+                <!-- 2. Стиль та оформлення -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Стилізація та оформлення</property>
+                    <property name="description">Зовнішній вигляд, закруглення кутів і прозорість карток віджетів</property>
+
+                    <child>
+                      <object class="AdwComboRow" id="dw_theme_combo_row">
+                        <property name="title">Тема віджетів</property>
+                        <property name="subtitle">Колірна схема для карток віджетів</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item translatable="yes">Темна (macOS Dark)</item>
+                              <item translatable="yes">Світла (macOS Light)</item>
+                            </items>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_dw_theme"/>
+                        <signal name="notify::selected" handler="on_dw_theme_changed"/>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow" id="dw_border_radius_row">
+                        <property name="title">Радіус закруглення кутів</property>
+                        <property name="subtitle">Радіус заокруглення карток віджетів (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dw_border_radius_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">40</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">24</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dw_border_radius"/>
+                            <signal name="value-changed" handler="on_dw_border_radius_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow" id="dw_opacity_row">
+                        <property name="title">Прозорість віджетів</property>
+                        <property name="subtitle">Рівень прозорості підкладки віджетів (%)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dw_opacity_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">10</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">85</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dw_opacity"/>
+                            <signal name="value-changed" handler="on_dw_opacity_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwSwitchRow" id="dw_use_custom_accent_row">
+                        <property name="title">Власний акцентний колір</property>
+                        <property name="subtitle">Використовувати обраний колір замість системного акценту macW1Y</property>
+                        <property name="active">false</property>
+                        <signal name="realize" handler="init_dw_use_custom_accent"/>
+                        <signal name="notify::active" handler="on_dw_use_custom_accent_changed"/>
+                      </object>
+                    </child>
+
+                  </object>
+                </child>
+
+                <!-- 3. Поведінка компонентів -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Поведінка компонентів</property>
+                    <property name="description">Параметри окремих інформаційних блоків</property>
+
+                    <child>
+                      <object class="AdwSwitchRow" id="dw_clock_seconds_row">
+                        <property name="title">Показувати секунди в годиннику</property>
+                        <property name="subtitle">Секундний індикатор для цифрових та аналогових годинників</property>
+                        <property name="active">false</property>
+                        <signal name="realize" handler="init_dw_clock_seconds"/>
+                        <signal name="notify::active" handler="on_dw_clock_seconds_changed"/>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwSwitchRow" id="dw_battery_percent_row">
+                        <property name="title">Показувати відсоток заряду батареї</property>
+                        <property name="subtitle">Числове значення заряду під кільцем батареї</property>
+                        <property name="active">true</property>
+                        <signal name="realize" handler="init_dw_battery_percent"/>
+                        <signal name="notify::active" handler="on_dw_battery_percent_changed"/>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwSwitchRow" id="dw_music_browsers_row">
+                        <property name="title">Музика: ігнорувати браузери</property>
+                        <property name="subtitle">Не показувати аудіо-вкладки з Chrome чи Firefox у віджеті плеєра</property>
+                        <property name="active">true</property>
+                        <signal name="realize" handler="init_dw_music_browsers"/>
+                        <signal name="notify::active" handler="on_dw_music_browsers_changed"/>
+                      </object>
+                    </child>
+
+                  </object>
+                </child>
+
+                <!-- 4. Розширене налаштування -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Розширене налаштування</property>
+                    <property name="description">Глибока конфігурація всіх 19 типів віджетів</property>
+
+                    <child>
+                      <object class="AdwActionRow" id="dw_advanced_row">
+                        <property name="title">Повний конфігуратор віджетів</property>
+                        <property name="subtitle">Відкрити розширене вікно налаштування погоди, GitHub, Pomodoro, нотаток та завдань</property>
+                        <child type="suffix">
+                          <object class="GtkButton" id="dw_btn_advanced">
+                            <property name="label">Відкрити параметри…</property>
+                            <property name="valign">center</property>
+                            <property name="icon-name">preferences-other-symbolic</property>
+                            <signal name="clicked" handler="on_dw_advanced_clicked"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
                   </object>
                 </child>
 

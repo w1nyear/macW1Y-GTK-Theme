@@ -143,7 +143,7 @@ def audit_extensions_and_guard():
         if res.returncode != 0:
             issues.append(f"Extension Guard verification failed:\n{res.stdout}\n{res.stderr}")
         else:
-            print("  ✓ 20/20 GNOME Shell Extensions verified by mac-extension-guard")
+            print("  ✓ 21/21 GNOME Shell Extensions verified by mac-extension-guard")
     else:
         issues.append("mac-extension-guard tool missing in bin/")
     return issues
