@@ -13075,3 +13075,49 @@ Task 499: Повне полірування екрана блокування (m
    - `bin/mac-extension-guard verify` — 21/21 SUCCESS.
    - `/usr/local/bin/mac-diagnostics` — 100% OK.
    - `bin/mac-i18n-verify` — 100% SUCCESSFUL.
+
+--------------------------------------------------------------------------------
+ЕТАП 630 |FIX|: macW1Y 0.5 — Динамічна іконка звуку та яскравості у верхній панелі замість Центру керування при появі OSD
+
+1. Вимоги:
+   - Забезпечити аутентичну поведінку macOS Sonoma / Sequoia / Tahoe для кнопки Центру керування у верхній панелі (menubar):
+     * При зміні гучності (поява OSD звуку) іконка кнопки Центру керування трансформується у відповідну іконку звуку (від `audio-volume-muted-symbolic` до `audio-volume-high-symbolic` або `audio-volume-overamplified-symbolic` залежно від рівня гучності), а сама кнопка набуває пігулкоподібного виділення (`checked`).
+     * При зміні яскравості (поява OSD дисплея) іконка кнопки Центру керування трансформується у монітор `video-display-symbolic` з пігулкоподібним виділенням (`checked`).
+     * Після зникнення OSD (таймаут або закриття) кнопка плавно повертається до початкового стану з відновленням стандартної іконки Центру керування та зняттям підсвічування.
+   - Забезпечити інтеграцію з Tahoe OSD (`extensions/kiwi@kemma/apps/tahoeOSD.js`), панеллю виклику Центру керування (`run-cmd@custom.extension`) та запасним механізмом `quickSettings` у `menubar_v29.js`.
+   - Забезпечити безпомилкову роботу при відкритті Центру керування / Центру сповіщень під час активного OSD (миттєве скидання OSD та відновлення нормального стану).
+   - 100% сумісність з екосистемою macW1Y: оновлення хешів у `config/extensions.lock.json`, проходження всіх аудитів (`mac-extension-guard 21/21`, `mac-audit-sync 100% PASS`, `mac-diagnostics OK`, `mac-i18n-verify 100% PASS`).
+   - Суворе дотримання вимоги: жодних перезавантажень оболонки, сесії або системи (гаряче застосування через `EvalHelper`).
+
+2. Виконана робота:
+   - Модифікація `extensions/run-cmd@custom.extension/extension.js`:
+     * Реалізовано методи `this._indicator._setOsdOverride(iconName)` та `this._indicator._clearOsdOverride()`.
+     * Метод `_setOsdOverride` встановлює стан `_osdActive = true`, додає псевдо-клас `checked` на кнопку та призначає потрібну символічну іконку (з автоматичним підлаштуванням під темну/світлу тему верхньої панелі).
+     * Метод `_clearOsdOverride` знімає `checked`, скидає символічну іконку та відновлює нормальну тематичну PNG-іконку Центру керування (`controlcenter.png` / `controlcenter-dark.png`) через `_syncIcon()`.
+     * Експортовано глобальні функції `globalThis._macSetControlCenterOsdIcon` та `globalThis._macRestoreControlCenterIcon`.
+     * При натисканні на кнопку додано автоматичне скидання тимчасового оверрайду OSD.
+   - Інтеграція в `extensions/kiwi@kemma/apps/tahoeOSD.js` (та `tahoeOnScreenDisplay.js`):
+     * Реалізовано функції `_setCcOsdIcon(iconName)` та `_restoreCcIcon()` з прямою взаємодією з `ydotool-trigger-button` та резервним перемиканням `quickSettings._ccIcon`.
+     * У функції відображення `_show(kind, title, iconL, iconR, value)`:
+       - Для `kind === 'volume'`: точне визначення символічної іконки відповідно до рівня гучності (`muted`, `low`, `medium`, `high`, `overamplified`).
+       - Для `kind === 'brightness'`: встановлення еталонної іконки монітора `video-display-symbolic`.
+       - Виклик `_setCcOsdIcon(osdIcon)`.
+     * У функціях завершення відображення `_hideNow()` та `disable()`: виклик `_restoreCcIcon()`.
+     * Експортовано `globalThis._hideTahoeOSD = _hideNow`.
+   - Інтеграція з Центром керування та Центром сповіщень:
+     * У `tahoeControlCenter.js` під час відкриття панелі Центру керування додано виклик `globalThis._hideTahoeOSD?.()`.
+     * У `tahoeNotifications.js` під час відкриття Центру сповіщень додано виклик `globalThis._hideTahoeOSD?.()`.
+   - Синхронізація та версійний лок:
+     * Оновлені файли скопійовано до живих розширень у `~/.local/share/gnome-shell/extensions/`.
+     * Перераховано SHA-256 хеші для `kiwi@kemma` (`d88105ed...`) та `run-cmd@custom.extension` (`821bad49...`) у `config/extensions.lock.json`.
+     * Модулі гаряче перезавантажено через `EvalHelper` у поточній сесії GNOME Shell.
+
+3. Результати верифікації:
+   - Проведено живі виклики volume OSD та brightness OSD через `Main.osdWindowManager._showOsdWindow` та `showTest`:
+     * Під час OSD гучності: `icon_name = "audio-volume-medium-symbolic"`, псевдо-клас `["checked"]`.
+     * Під час OSD яскравості: `icon_name = "video-display-symbolic"`, псевдо-клас `["checked"]`.
+     * Після таймауту OSD (1800 мс): `icon_name = null`, `gicon = "/usr/share/mactheme/icons/controlcenter.png"`, псевдо-клас `checked` видалено.
+   - `bin/mac-extension-guard verify` — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes (21/21).
+   - `bin/mac-audit-sync check` — 100% PASS (5/5).
+   - `/usr/local/bin/mac-diagnostics` — 100% OK.
+   - `bin/mac-i18n-verify` — 100% SUCCESSFUL.

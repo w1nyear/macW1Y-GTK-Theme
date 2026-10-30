@@ -61,6 +61,34 @@ export default class RunCommandExtension extends Extension {
         this._syncIcon();
         this._indicator.add_child(this._icon);
 
+        this._indicator._setOsdOverride = (iconName) => {
+            if (!this._icon) return;
+            this._osdActive = true;
+            this._indicator.add_style_pseudo_class('checked');
+            this._icon.gicon = null;
+            this._icon.icon_name = iconName;
+        };
+
+        this._indicator._clearOsdOverride = () => {
+            if (!this._icon) return;
+            this._osdActive = false;
+            this._indicator.remove_style_pseudo_class('checked');
+            this._icon.icon_name = null;
+            this._syncIcon();
+        };
+
+        globalThis._macSetControlCenterOsdIcon = (iconName) => {
+            if (this._indicator?._setOsdOverride) {
+                this._indicator._setOsdOverride(iconName);
+            }
+        };
+
+        globalThis._macRestoreControlCenterIcon = () => {
+            if (this._indicator?._clearOsdOverride) {
+                this._indicator._clearOsdOverride();
+            }
+        };
+
         this._interfaceSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         try {
             this._inkUnwatch = watchInk(() => this._syncIcon());
@@ -87,6 +115,8 @@ export default class RunCommandExtension extends Extension {
         });
 
         this._indicator.connect('button-press-event', () => {
+            if (this._indicator?._clearOsdOverride)
+                this._indicator._clearOsdOverride();
             if (typeof globalThis._tahoeQSToggle === 'function') {
                 globalThis._tahoeQSToggle();
                 return;
@@ -106,6 +136,8 @@ export default class RunCommandExtension extends Extension {
     _syncIcon() {
         if (!this._icon)
             return;
+        if (this._osdActive)
+            return;
         try {
             const file = Gio.File.new_for_path(themedIconPath());
             this._icon.gicon = new Gio.FileIcon({file});
@@ -115,6 +147,13 @@ export default class RunCommandExtension extends Extension {
     }
 
     disable() {
+        if (globalThis._macSetControlCenterOsdIcon)
+            delete globalThis._macSetControlCenterOsdIcon;
+        if (globalThis._macRestoreControlCenterIcon)
+            delete globalThis._macRestoreControlCenterIcon;
+        if (this._indicator?._clearOsdOverride) {
+            this._indicator._clearOsdOverride();
+        }
         if (this._inkUnwatch) {
             try {
                 this._inkUnwatch();

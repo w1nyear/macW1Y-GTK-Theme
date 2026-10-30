@@ -2796,6 +2796,7 @@ export function openNC() {
             closeNC();
         } catch (_) {}
     }
+    try { globalThis._hideTahoeOSD?.(); } catch (_) {}
     globalThis._tahoeNCOpen = true;
 }
 

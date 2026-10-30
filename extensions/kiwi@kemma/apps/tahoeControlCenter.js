@@ -3147,6 +3147,7 @@ function _openPanel() {
         try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
         try { Main.panel?.menuManager?.activeMenu?.close?.(1); } catch (_) {}
     }
+    try { globalThis._hideTahoeOSD?.(); } catch (_) {}
     globalThis._tahoeQSOpen = true;
     try {
         const bms = Main.extensionManager.lookup('blur-my-shell@aunetx')?.stateObj;

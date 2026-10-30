@@ -15,6 +15,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {_makeGlassStack, isPanelOpen} from './tahoeControlCenter.js';
 import { t } from './mac_i18n.js';
 import {isNCOpen as isNCPanelOpen} from './tahoeNotifications.js';
+import {getTopbarInk} from './tahoeInk.js';
 
 // Liquid-glass helpers live in another extension. Static
 // `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
@@ -731,9 +732,88 @@ function _destroyGlass() {
     } catch (_) {}
 }
 
+function _setCcOsdIcon(iconName) {
+    try {
+        if (typeof globalThis._macSetControlCenterOsdIcon === 'function') {
+            globalThis._macSetControlCenterOsdIcon(iconName);
+            return;
+        }
+        const ydoBtn = Main.panel?.statusArea?.['ydotool-trigger-button'];
+        if (ydoBtn) {
+            const icon = ydoBtn.get_first_child ? ydoBtn.get_first_child() : null;
+            if (icon && (icon instanceof St.Icon || icon.icon_name !== undefined)) {
+                ydoBtn.add_style_pseudo_class('checked');
+                icon.gicon = null;
+                icon.icon_name = iconName;
+                ydoBtn._isOsdIconActive = true;
+            }
+        }
+        const qs = Main.panel?.statusArea?.quickSettings;
+        if (qs && qs.visible) {
+            const ccIcon = qs.get_children?.().find(c => c.has_style_class_name && c.has_style_class_name('mac-control-center-icon'));
+            if (ccIcon) {
+                qs.add_style_pseudo_class('checked');
+                ccIcon.gicon = null;
+                ccIcon.icon_name = iconName;
+                qs._isOsdIconActive = true;
+            }
+        }
+    } catch (_) {}
+}
+
+function _restoreCcIcon() {
+    try {
+        if (typeof globalThis._macRestoreControlCenterIcon === 'function') {
+            globalThis._macRestoreControlCenterIcon();
+            return;
+        }
+        const ydoBtn = Main.panel?.statusArea?.['ydotool-trigger-button'];
+        if (ydoBtn && ydoBtn._isOsdIconActive) {
+            ydoBtn._isOsdIconActive = false;
+            ydoBtn.remove_style_pseudo_class('checked');
+            const icon = ydoBtn.get_first_child ? ydoBtn.get_first_child() : null;
+            if (icon) {
+                icon.icon_name = null;
+                const isDark = (typeof getTopbarInk === 'function' && getTopbarInk() === 'dark');
+                const darkPath = '/usr/share/mactheme/icons/controlcenter-dark.png';
+                const lightPath = '/usr/share/mactheme/icons/controlcenter.png';
+                const chosenPath = (isDark && GLib.file_test(darkPath, GLib.FileTest.EXISTS)) ? darkPath : lightPath;
+                if (GLib.file_test(chosenPath, GLib.FileTest.EXISTS)) {
+                    icon.gicon = new Gio.FileIcon({ file: Gio.File.new_for_path(chosenPath) });
+                }
+            }
+        }
+        const qs = Main.panel?.statusArea?.quickSettings;
+        if (qs && qs._isOsdIconActive) {
+            qs._isOsdIconActive = false;
+            qs.remove_style_pseudo_class('checked');
+            const ccIcon = qs.get_children?.().find(c => c.has_style_class_name && c.has_style_class_name('mac-control-center-icon'));
+            if (ccIcon) {
+                ccIcon.icon_name = null;
+                const home = GLib.get_home_dir();
+                const candidates = [
+                    `${home}/.themes/macW1Y-Dark/icons/control-center.png`,
+                    `${home}/.themes/MacTahoe-Dark/icons/control-center.png`,
+                    `/usr/share/mactheme/icons/controlcenter.png`
+                ];
+                let found = null;
+                for (const p of candidates) {
+                    if (GLib.file_test(p, GLib.FileTest.EXISTS)) { found = p; break; }
+                }
+                if (found) {
+                    ccIcon.gicon = new Gio.FileIcon({ file: Gio.File.new_for_path(found) });
+                } else {
+                    ccIcon.icon_name = 'preferences-system-symbolic';
+                }
+            }
+        }
+    } catch (_) {}
+}
+
 function _hideNow() {
     _hideId = 0;
     _cancelAnim();
+    _restoreCcIcon();
     if (_glass?.bgActor) {
         try {
             _glass.bgActor.ease({
@@ -803,6 +883,7 @@ function _show(kind, title, iconL, iconR, value) {
         const ccOpen = !!globalThis._tahoeQSOpen || (typeof isPanelOpen === 'function' && isPanelOpen());
         const ncOpen = !!globalThis._tahoeNCOpen || (typeof isNCPanelOpen === 'function' && isNCPanelOpen());
         if (ccOpen || ncOpen) {
+            _restoreCcIcon();
             if (_box.visible) {
                 try {
                     _box.hide();
@@ -831,6 +912,25 @@ function _show(kind, title, iconL, iconR, value) {
         _iconL.icon_name = iconL;
         _iconR.icon_name = iconR;
         _slider.setValue(value, isOveramp);
+    } catch (_) {}
+
+    try {
+        let osdIcon = 'video-display-symbolic';
+        if (kind === 'volume') {
+            const isMuted = (value <= 0 || (iconR && iconR.includes('muted')));
+            if (isMuted) {
+                osdIcon = 'audio-volume-muted-symbolic';
+            } else if (value > 1.0001) {
+                osdIcon = 'audio-volume-overamplified-symbolic';
+            } else if (value < 0.33) {
+                osdIcon = 'audio-volume-low-symbolic';
+            } else if (value < 0.67) {
+                osdIcon = 'audio-volume-medium-symbolic';
+            } else {
+                osdIcon = 'audio-volume-high-symbolic';
+            }
+        }
+        _setCcOsdIcon(osdIcon);
     } catch (_) {}
 
     try {
@@ -1099,6 +1199,7 @@ export function enable() {
     }
 
     _interceptStockOsd();
+    globalThis._hideTahoeOSD = _hideNow;
 
     // volume backend
     try {
@@ -1200,6 +1301,10 @@ export function enable() {
 }
 
 export function disable() {
+    _restoreCcIcon();
+    if (globalThis._hideTahoeOSD === _hideNow) {
+        delete globalThis._hideTahoeOSD;
+    }
     _cancelAnim();
     _disconnectTrackedSignals();
     _restoreStockOsd();
