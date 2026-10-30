@@ -6,6 +6,7 @@ import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Background from 'resource:///org/gnome/shell/ui/background.js';
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 import Mtk from 'gi://Mtk';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -358,6 +359,8 @@ export default class EvalHelper extends Extension {
         globalThis.Meta = Meta;
         globalThis.Main = Main;
         globalThis.Mtk = Mtk;
+        globalThis.Shell = Shell;
+        globalThis.Pango = Pango;
         try {
             const nodeInfo = Gio.DBusNodeInfo.new_for_xml(EvalIface);
             this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(nodeInfo.interfaces[0], {
@@ -872,12 +875,149 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
-        // Patch SwitcherPopup (Alt+Tab) with LQ-Visual glass
+        // Patch SwitcherPopup (Alt+Tab) with macOS Liquid Glass & Focused Label
         const patchSwitcherPopupLQVisual = async () => {
             try {
                 const SwitcherPopupMod = await import('resource:///org/gnome/shell/ui/switcherPopup.js');
+                const AltTabMod = await import('resource:///org/gnome/shell/ui/altTab.js');
+                const ShellMod = await import('gi://Shell');
+                const Shell = ShellMod.default || ShellMod;
+                const PangoMod = await import('gi://Pango');
+                const Pango = PangoMod.default || PangoMod;
+                const ClutterMod = await import('gi://Clutter');
+                const Clutter = ClutterMod.default || ClutterMod;
                 const SwitcherPopup = SwitcherPopupMod.SwitcherPopup;
-                if (!SwitcherPopup) return;
+                const SwitcherList = SwitcherPopupMod.SwitcherList;
+                if (!SwitcherPopup || !SwitcherList) return;
+
+                // 1. Patch SwitcherList.prototype.highlight so ONLY the focused item shows its program name underneath
+                if (!SwitcherList.prototype._macHighlightPatched) {
+                    SwitcherList.prototype._macHighlightPatched = true;
+                    const origHighlight = SwitcherList.prototype.highlight;
+                    SwitcherList.prototype.highlight = function(index, justOutline) {
+                        origHighlight.call(this, index, justOutline);
+                        if (!Array.isArray(this._items)) return;
+                        for (let i = 0; i < this._items.length; i++) {
+                            const item = this._items[i];
+                            if (!item) continue;
+                            const child = item.get_child ? item.get_child() : null;
+                            const label = child?.label || item.label_actor;
+                            if (label) {
+                                if (i === index) {
+                                    label.opacity = 255;
+                                    if (!label.visible) label.show();
+                                } else {
+                                    label.opacity = 0;
+                                }
+                            }
+                        }
+                    };
+                }
+
+                // 2. Patch SwitcherList.prototype.addItem to hide labels by default and hide scroll arrows
+                if (!SwitcherList.prototype._macAddItemPatched) {
+                    SwitcherList.prototype._macAddItemPatched = true;
+                    const origAddItem = SwitcherList.prototype.addItem;
+                    SwitcherList.prototype.addItem = function(item, label) {
+                        const bbox = origAddItem.call(this, item, label);
+                        if (label) label.opacity = 0;
+                        const child = bbox.get_child ? bbox.get_child() : null;
+                        if (child?.label) child.label.opacity = 0;
+                        if (this._leftArrow) this._leftArrow.opacity = 0;
+                        if (this._rightArrow) this._rightArrow.opacity = 0;
+                        return bbox;
+                    };
+                }
+
+                // 3. Patch AppIcon to format label and hide by default
+                if (AltTabMod.AppIcon && !AltTabMod.AppIcon.prototype._macPatched) {
+                    AltTabMod.AppIcon.prototype._macPatched = true;
+                    const origAppIconInit = AltTabMod.AppIcon.prototype._init;
+                    AltTabMod.AppIcon.prototype._init = function(app) {
+                        origAppIconInit.call(this, app);
+                        if (this.label) {
+                            this.label.opacity = 0;
+                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 600 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 4px !important;';
+                            if (this.label.clutter_text) {
+                                this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+                                this.label.clutter_text.line_wrap = false;
+                            }
+                        }
+                    };
+                }
+
+                // 4. Patch WindowIcon & WindowSwitcher for touchpad gestures & fallback switcher
+                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatched) {
+                    AltTabMod.WindowIcon.prototype._macPatched = true;
+                    const origWindowIconInit = AltTabMod.WindowIcon.prototype._init;
+                    AltTabMod.WindowIcon.prototype._init = function(window, mode) {
+                        origWindowIconInit.call(this, window, mode);
+                        if (this.label) {
+                            try {
+                                const tracker = Shell.WindowTracker.get_default();
+                                const app = tracker.get_window_app(window);
+                                const name = app?.get_name() || window.get_title();
+                                this.label.text = name;
+                            } catch (_) {}
+                            this.label.x_align = Clutter.ActorAlign.CENTER;
+                            this.label.opacity = 0;
+                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 600 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 4px !important;';
+                            if (this.label.clutter_text) {
+                                this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+                                this.label.clutter_text.line_wrap = false;
+                            }
+                            if (!this.label.get_parent()) {
+                                this.add_child(this.label);
+                            }
+                        }
+                    };
+                }
+
+                // 5. Hide multi-window arrows in AppSwitcher
+                try {
+                    const dummyPopup = new AltTabMod.AppSwitcherPopup();
+                    const AppSwitcherProto = dummyPopup._switcherList ? Object.getPrototypeOf(dummyPopup._switcherList) : null;
+                    if (AppSwitcherProto && !AppSwitcherProto._macPatched) {
+                        AppSwitcherProto._macPatched = true;
+                        const origAddIcon = AppSwitcherProto._addIcon;
+                        AppSwitcherProto._addIcon = function(appIcon) {
+                            origAddIcon.call(this, appIcon);
+                            if (Array.isArray(this._arrows)) {
+                                for (const arrow of this._arrows) {
+                                    if (arrow) arrow.hide();
+                                }
+                            }
+                        };
+                        const origHighlight = AppSwitcherProto.highlight;
+                        AppSwitcherProto.highlight = function(n, justOutline) {
+                            origHighlight.call(this, n, justOutline);
+                            if (Array.isArray(this._arrows)) {
+                                for (const arrow of this._arrows) {
+                                    if (arrow) arrow.hide();
+                                }
+                            }
+                        };
+                    }
+                    dummyPopup.destroy();
+                } catch (_) {}
+
+                // 6. Hide label in WindowSwitcher
+                try {
+                    const dummyWinPopup = new AltTabMod.WindowSwitcherPopup();
+                    const WinSwitcherProto = dummyWinPopup._switcherList ? Object.getPrototypeOf(dummyWinPopup._switcherList) : null;
+                    if (WinSwitcherProto && !WinSwitcherProto._macPatched) {
+                        WinSwitcherProto._macPatched = true;
+                        const origWinSwitcherInit = WinSwitcherProto._init;
+                        WinSwitcherProto._init = function(windows, mode) {
+                            origWinSwitcherInit.call(this, windows, mode);
+                            if (this._label) {
+                                this._label.hide();
+                                this._label.opacity = 0;
+                            }
+                        };
+                    }
+                    dummyWinPopup.destroy();
+                } catch (_) {}
 
                 const getSwitcherGlass = async () => {
                     let glass = globalThis._macSwitcherGlass;
@@ -895,11 +1035,26 @@ export default class EvalHelper extends Extension {
                         });
                         glass.setIsDock(false);
                         glass.setCornerSmoothingEnabled(0.0);
-                        glass.setCornerRadius(24.0);
+                        glass.setCornerRadius(28.0);
                         glass.setTintColor(0.0, 0.0, 0.0);
-                        glass.setTintStrength(0.02);
-                        glass.setBlurRadius(8.0);
+                        glass.setTintStrength(0.03);
+                        glass.setBlurRadius(15.0);
                         glass.setPadding(0);
+                        try {
+                            glass._effect?.setSurfaceLightEnabled?.(true);
+                            glass._effect?._setFloat?.('displacement_scale', 40.0);
+                            glass._effect?._setFloat?.('ior', 1.50);
+                            glass._effect?._setFloat?.('rim_intensity', 0.15);
+                            glass._effect?._setFloat?.('rim_width', 4.5);
+                            glass._effect?._setFloat?.('rim_power', 5.0);
+                            glass._effect?._setFloat?.('rim_directional_power', 2.7);
+                            glass._effect?._setFloat?.('rim_light_color_intensity', 1.5);
+                            glass._effect?._setFloat?.('specular_intensity', 0.12);
+                            glass._effect?._setFloat?.('sheen_intensity', 0.10);
+                            glass._effect?._setFloat?.('chroma_strength', 0.005);
+                            glass._effect?._setFloat?.('shadow_intensity', 0.0);
+                            glass._effect?._setFloat?.('ao_intensity', 0.0);
+                        } catch (_) {}
                         glass.hide();
                         Main.layoutManager.uiGroup.add_child(glass);
                         globalThis._macSwitcherGlass = glass;
@@ -910,8 +1065,8 @@ export default class EvalHelper extends Extension {
                 // Preload glass asynchronously
                 getSwitcherGlass().catch(() => {});
 
-                if (!SwitcherPopup.prototype._macLQVisualPatchedV3) {
-                    SwitcherPopup.prototype._macLQVisualPatchedV3 = true;
+                if (!SwitcherPopup.prototype._macLQVisualPatchedV4) {
+                    SwitcherPopup.prototype._macLQVisualPatchedV4 = true;
                     const origShow = SwitcherPopup.prototype.show;
                     SwitcherPopup.prototype.show = function(backward, binding, mask) {
                         const res = origShow.call(this, backward, binding, mask);
@@ -922,47 +1077,47 @@ export default class EvalHelper extends Extension {
                                 const switcherGlass = await getSwitcherGlass();
                                 if (!switcherGlass) return;
                                 Main.layoutManager.uiGroup.set_child_below_sibling(switcherGlass, this);
+                                try { switcherGlass.addExclusion(this); } catch (_) {}
+                                if (this._switcherList) {
+                                    try { switcherGlass.addExclusion(this._switcherList); } catch (_) {}
+                                }
 
                                 const syncGlass = () => {
-                                    if (!this._switcherList) return;
+                                    if (!this._switcherList || this._switcherList.is_finalized?.()) return;
                                     if (!this.visible || this.opacity <= 0) {
                                         if (switcherGlass.visible) switcherGlass.hide();
                                         return;
                                     }
 
-                                    const slBox = this._switcherList.get_allocation_box();
-                                    const w = slBox.get_width();
-                                    const h = slBox.get_height();
-                                    const x = slBox.x1;
-                                    const y = slBox.y1;
-                                    if (w <= 0 || h <= 0) return;
+                                    const [slX, slY] = this._switcherList.get_transformed_position();
+                                    const [slW, slH] = this._switcherList.get_transformed_size();
+                                    if (slX == null || slY == null || Number.isNaN(slX) || Number.isNaN(slY) || slW <= 1 || slH <= 1) return;
 
                                     const primary = Main.layoutManager.primaryMonitor;
-                                    const localX = Math.round(x - primary.x);
-                                    const localY = Math.round(y - primary.y);
-                                    const bgW = Math.round(w);
-                                    const bgH = Math.round(h);
+                                    if (!primary) return;
+
+                                    const localX = Math.round(slX - primary.x);
+                                    const localY = Math.round(slY - primary.y);
+                                    const bgW = Math.round(slW);
+                                    const bgH = Math.round(slH);
 
                                     switcherGlass.opacity = this.opacity;
                                     if (!switcherGlass.visible) {
                                         switcherGlass.show();
                                     }
 
-                                    const box = new Clutter.ActorBox();
-                                    box.x1 = primary.x;
-                                    box.y1 = primary.y;
-                                    box.x2 = primary.x + primary.width;
-                                    box.y2 = primary.y + primary.height;
-                                    switcherGlass.allocate(box);
-
                                     switcherGlass.set_position(primary.x, primary.y);
                                     switcherGlass.set_size(primary.width, primary.height);
                                     switcherGlass.setResolution(primary.width, primary.height);
-                                    switcherGlass.setCornerRadius(24.0);
+                                    switcherGlass.setCornerRadius(28.0);
                                     switcherGlass.setGlassGeometry(localX, localY, bgW, bgH);
 
                                     const CLIP_PAD = 160;
                                     switcherGlass.set_clip(localX - CLIP_PAD, localY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
+
+                                    if (typeof switcherGlass.syncSources === 'function') {
+                                        switcherGlass.syncSources();
+                                    }
                                 };
 
                                 try {
@@ -976,13 +1131,21 @@ export default class EvalHelper extends Extension {
                                 }
                                 this._stageSignalId = global.stage.connect('before-update', syncGlass);
 
+                                const allocId = this._switcherList ? this._switcherList.connect('notify::allocation', syncGlass) : 0;
+
                                 this.connect('destroy', () => {
                                     if (this._stageSignalId) {
                                         global.stage.disconnect(this._stageSignalId);
                                         this._stageSignalId = 0;
                                     }
+                                    if (allocId && this._switcherList) {
+                                        try { this._switcherList.disconnect(allocId); } catch (_) {}
+                                    }
                                     switcherGlass.hide();
+                                    switcherGlass.opacity = 0;
                                 });
+
+                                syncGlass();
                             } catch (err) {
                                 console.error('[EvalHelper] SwitcherPopup show error: ' + err);
                             }

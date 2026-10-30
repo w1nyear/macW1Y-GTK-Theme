@@ -13450,3 +13450,41 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
    - Перевірено створення, геометрію та знищення `BackdropGlass` у середовищі GNOME Shell через `EvalHelper`.
 
 
+---------------------------------------------------------------------------------
+ЕТАП 640: macW1Y 0.5 — Оновлення меню Alt+Tab (Command+Tab) під стиль macOS Sequoia/Tahoe: горизонтальні іконки, шейдер рідкого скла (Liquid Glass) та відображення назви програми лише під сфокусованою іконкою
+
+1. Виконані завдання:
+   - За референсом macOS (media_1793361255232_9f289f58.jpg) оновлено інтерфейс перемикача додатків Alt+Tab / Super+Tab:
+     * Горизонтальне розташування іконок додатків (`Clutter.Orientation.HORIZONTAL`).
+     * Заміна темного монолітного фону на апаратний шейдер рідкого скла `BackdropGlass` із заокругленням кутів 28px (`cornerRadius: 28.0`), розмиттям `blurRadius: 15.0`, хроматичною дисперсією `displacement_scale: 40.0`, заломленням світла `ior: 1.50`, крайовим відблиском `rim_intensity: 0.15` та глибокою плавною тінню (`box-shadow: 0 20px 48px rgba(0, 0, 0, 0.40)`).
+     * Сфокусована іконка виділяється напівпрозорою підкладкою-сквірклом (`rgba(255, 255, 255, 0.22)`, `border: 1px solid rgba(255, 255, 255, 0.28)`, `border-radius: 18px`).
+     * Лише під іконкою у фокусі показується імʼя програми (шрифт SF Pro Semibold 11px білого кольору з м'якою тінню), тоді як для всіх несфокусованих іконок назви приховані (`opacity: 0`). Під час навігації підпис миттєво перемикається без стрибків висоти чи зміщення сітки.
+     * Приховано зайві стрілки багатовіконності та скролу для досягнення чистого мінімалістичного вигляду macOS.
+   - Оновлено [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js):
+     * Пропатчено `SwitcherList.prototype.highlight` для динамічного показу підпису виключно під активним елементом (`opacity = 255` для сфокусованого, `0` для інших).
+     * Пропатчено `SwitcherList.prototype.addItem` для приховування підписів та стрілок за замовчуванням.
+     * Пропатчено `AltTabMod.AppIcon` та `AltTabMod.WindowIcon` для стилізації підписів та вирівнювання по центру.
+     * Пропатчено прототипи `AppSwitcher` та `WindowSwitcher` для приховування стрілок і дублюючих міток.
+     * Пропатчено `SwitcherPopup.prototype.show` для підключення та синхронізації геометрії рідкого скла `BackdropGlass` із трекінгом кадрового рендерингу Mutter (`before-update`).
+   - Оновлено теми оформлення Shell:
+     * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
+     * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gnome-shell/gnome-shell.css)
+     * [macW1Y-Dark-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark-solid/gnome-shell/gnome-shell.css)
+     * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gnome-shell/gnome-shell.css)
+     * [macW1Y-Light-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light-solid/gnome-shell/gnome-shell.css)
+     * Синхронізовано з `~/.themes/macW1Y-*/gnome-shell/gnome-shell.css`.
+   - Налаштовано глобальні гарячі клавіші у `org.gnome.desktop.wm.keybindings`:
+     * `switch-applications` -> `['<Super>Tab', '<Alt>Tab']`
+     * `switch-applications-backward` -> `['<Shift><Super>Tab', '<Shift><Alt>Tab']`
+     * `switch-windows` -> `['<Super>Above_Tab', '<Alt>Above_Tab']`
+     * `switch-windows-backward` -> `['<Shift><Super>Above_Tab', '<Shift><Alt>Above_Tab']`
+   - Оновлено хеш SHA256 у [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json).
+
+2. Верифікація:
+   - `bin/mac-extension-guard verify`: VERIFICATION SUCCESS (21/21 розширень валідні).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 тестів пройдено).
+   - `/usr/local/bin/mac-diagnostics`: 100% OK, система стабільна.
+   - Тестування в live GNOME Shell: створено тестові екземпляри `AppSwitcherPopup` та `WindowSwitcherPopup`, перевірено динамічне перемикання прозорості мітки (під сфокусованим елементом `opacity: 255`, під іншими `opacity: 0`), а також безпомилкове підключення шейдера скла `BackdropGlass`.
+
+
+

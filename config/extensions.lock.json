@@ -155,16 +155,17 @@
                 "49",
                 "50"
             ],
-            "sha256": "751894038a182b9a95588a6e0fb8e4b0d5e23332f45620df73f5abc57f47b7ac",
+            "sha256": "3dcd38209c647a09e948bc4bb908a0c3657159d3423ea4875624eb1d643d330e",
             "status": "locked",
             "source": "local_custom",
             "macw1y_components": [
                 "dbus_eval_helper",
-                "notification_grouping"
+                "notification_grouping",
+                "switcher_popup_mac_liquid_glass"
             ],
             "has_custom_patches": true,
-            "patch_description": "Local D-Bus EvalHelper service",
-            "last_verified": "2026-10-27"
+            "patch_description": "Local D-Bus EvalHelper service and macOS Alt+Tab switcher enhancements",
+            "last_verified": "2026-10-30"
         },
         "kiwi@kemma": {
             "uuid": "kiwi@kemma",
