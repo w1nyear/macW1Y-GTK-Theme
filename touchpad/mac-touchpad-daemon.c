@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <math.h>
 #include <time.h>
+#include <signal.h>
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -51,12 +52,18 @@ static void read_touchpad_config(struct TouchpadConfig *cfg) {
     cfg->drag_mode = 0;
     cfg->copy_paste_enabled = 1;
     cfg->gesture_delay_ms = 250;
-    char conf_path[512];
+    char conf_path[512] = {0};
     const char *home = getenv("HOME");
-    if (home) {
+    if (home && strcmp(home, "/root") != 0) {
         snprintf(conf_path, sizeof(conf_path), "%s/.config/mac-touchpad.conf", home);
     } else {
-        snprintf(conf_path, sizeof(conf_path), "/etc/mac-touchpad.conf");
+        if (access("/home/vitaliy/.config/mac-touchpad.conf", R_OK) == 0) {
+            strncpy(conf_path, "/home/vitaliy/.config/mac-touchpad.conf", sizeof(conf_path) - 1);
+        } else if (access("/home/vitaliy/MACTHEMEFILES/touchpad/mac-touchpad.conf", R_OK) == 0) {
+            strncpy(conf_path, "/home/vitaliy/MACTHEMEFILES/touchpad/mac-touchpad.conf", sizeof(conf_path) - 1);
+        } else {
+            snprintf(conf_path, sizeof(conf_path), "/etc/mac-touchpad.conf");
+        }
     }
     FILE *f = fopen(conf_path, "r");
     if (!f) return;
@@ -111,20 +118,50 @@ static void emit_key_combo(uint16_t mod, uint16_t key) {
 static void ensure_socket(void) {
     if (sock_fd >= 0) return;
 
-    sock_fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (sock_fd < 0) return;
+    static long long last_attempt = 0;
+    long long now = get_time_ms();
+    if (now - last_attempt < 500) return;
+    last_attempt = now;
 
-    char sock_path[512];
+    char sock_path[512] = {0};
     const char *runtime_dir = getenv("XDG_RUNTIME_DIR");
     if (runtime_dir && runtime_dir[0] != '\0') {
         snprintf(sock_path, sizeof(sock_path), "%s/mac_touchpad.sock", runtime_dir);
-    } else {
+    }
+
+    if (sock_path[0] == '\0' || access(sock_path, F_OK) != 0) {
+        if (access("/run/user/1000/mac_touchpad.sock", F_OK) == 0) {
+            snprintf(sock_path, sizeof(sock_path), "/run/user/1000/mac_touchpad.sock");
+        } else {
+            DIR *d = opendir("/run/user");
+            if (d) {
+                struct dirent *de;
+                while ((de = readdir(d)) != NULL) {
+                    if (de->d_name[0] >= '1' && de->d_name[0] <= '9') {
+                        char candidate[512];
+                        snprintf(candidate, sizeof(candidate), "/run/user/%s/mac_touchpad.sock", de->d_name);
+                        if (access(candidate, F_OK) == 0) {
+                            snprintf(sock_path, sizeof(sock_path), "%s", candidate);
+                            break;
+                        }
+                    }
+                }
+                closedir(d);
+            }
+        }
+    }
+
+    if (sock_path[0] == '\0') {
         snprintf(sock_path, sizeof(sock_path), "/run/user/%d/mac_touchpad.sock", getuid());
     }
+
+    sock_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sock_fd < 0) return;
+
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, sock_path, sizeof(addr.sun_path) - 1);
+    snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", sock_path);
 
     if (connect(sock_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         close(sock_fd);
@@ -132,13 +169,14 @@ static void ensure_socket(void) {
     } else {
         int flags = fcntl(sock_fd, F_GETFL, 0);
         fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK);
+        fprintf(stderr, "[mac-touchpad-daemon] Connected to GNOME Shell socket: %s\n", sock_path);
     }
 }
 
 static void send_to_shell(const char *msg) {
     ensure_socket();
     if (sock_fd >= 0) {
-        ssize_t written = write(sock_fd, msg, strlen(msg));
+        ssize_t written = send(sock_fd, msg, strlen(msg), MSG_NOSIGNAL);
         if (written < 0) {
             close(sock_fd);
             sock_fd = -1;
@@ -161,7 +199,7 @@ static void check_incoming_socket_commands(void) {
             fprintf(stderr, "[mac-touchpad-daemon] Executing hardware Ctrl+V (Paste)\n");
             emit_key_combo(KEY_LEFTCTRL, KEY_V);
         }
-    } else if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+    } else if (n == 0 || (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)) {
         close(sock_fd);
         sock_fd = -1;
     }
@@ -172,7 +210,7 @@ static int open_touchpad_device(void) {
     if (!dir) return -1;
 
     struct dirent *ent;
-    char path[256];
+    char path[512];
     char name[256];
 
     while ((ent = readdir(dir)) != NULL) {
@@ -225,6 +263,8 @@ static int create_uinput_device(void) {
 }
 
 int main(void) {
+    signal(SIGPIPE, SIG_IGN);
+
     int touch_fd = open_touchpad_device();
     if (touch_fd < 0) {
         fprintf(stderr, "[mac-touchpad-daemon] Error: Touchpad device not found in /dev/input!\n");
@@ -254,6 +294,7 @@ int main(void) {
     double tri_initial_spread = 0.0;
     int tri_start_slots_captured = 0;
     int drag_last_x = 0, drag_last_y = 0;
+    double drag_accum_x = 0.0, drag_accum_y = 0.0;
     int alttab_last_x = 0;
     int alttab_accum_x = 0;
     long long last_alttab_step_time = 0;
@@ -302,6 +343,8 @@ int main(void) {
                         send_to_shell("ALTTAB_END\n");
                     }
                     current_mode = MODE_IDLE;
+                    drag_accum_x = 0.0;
+                    drag_accum_y = 0.0;
 
                     int count = 0, sum_x = 0, sum_y = 0;
                     for (int i = 0; i < MAX_SLOTS; i++) {
@@ -368,6 +411,8 @@ int main(void) {
                     send_to_shell("TRI_UP\n");
                     current_mode = MODE_IDLE;
                     tri_start_slots_captured = 0;
+                    drag_accum_x = 0.0;
+                    drag_accum_y = 0.0;
                 }
             }
         } else if (ev.type == EV_SYN && ev.code == SYN_REPORT) {
@@ -447,14 +492,14 @@ int main(void) {
                     // Geometry classification
                     int is_horizontal_row = 0;
                     if (span_x >= 70) {
-                        if (span_y <= (int)(span_x * 0.55) || span_y <= 110) {
-                            if (area <= 0.25 * ((double)span_x * span_y + 1200.0) || span_y <= 80) {
+                        if (span_y <= (int)(span_x * 0.45) || span_y <= 90) {
+                            if (area <= 0.20 * ((double)span_x * span_y + 1000.0) || span_y <= 65) {
                                 is_horizontal_row = 1;
                             }
                         }
                     }
 
-                    int is_vertical_column = (span_y >= 350 && span_x <= (int)(span_y * 0.35));
+                    int is_vertical_column = (span_y >= 300 && span_x <= (int)(span_y * 0.35));
 
                     // PENDING MODE CLASSIFICATION
                     if (current_mode == MODE_PENDING_TRI) {
@@ -509,34 +554,32 @@ int main(void) {
                             }
                         }
 
-                        // 4. MOVE / DRAG (CIRCLE / TRIANGLE FORMATION: Thumb bottom, Index left, Middle top)
-                        // Trigger only after gesture delay so pinch in/out is not preempted!
-                        if (current_mode == MODE_PENDING_TRI && elapsed >= config.gesture_delay_ms) {
-                            int is_move_triangle = 0;
+                        // 4. MOVE / DRAG (CIRCLE FORMATION: "якщо розташувати кругом")
+                        if (current_mode == MODE_PENDING_TRI) {
+                            int is_circle_formation = 0;
                             if (!is_horizontal_row && !is_vertical_column) {
-                                // Thumb bottom (y_B), Middle top (y_T), Index mid-height (y_M)
-                                if ((y_B - y_M >= 20) && (y_M - y_T >= 20) && (y_B - y_T >= 80)) {
-                                    // Index finger is strictly to the left of both middle and thumb
-                                    if (x_M <= fmin(x_T, x_B) - 15) {
-                                        if (span_x >= 75 && span_y >= 75 && area >= 2200.0) {
-                                            // Spread must be stable (not pinching in or spreading out)
-                                            if (tri_initial_spread > 0 &&
-                                                current_spread >= tri_initial_spread * 0.78 &&
-                                                current_spread <= tri_initial_spread * 1.25) {
-                                                is_move_triangle = 1;
-                                            }
-                                        }
+                                // Three fingers form a 2D circle/cluster
+                                if (span_x >= 35 && span_y >= 35 && area >= 250.0) {
+                                    // Spread must be stable (not pinching in or spreading out)
+                                    if (tri_initial_spread > 0 &&
+                                        current_spread >= tri_initial_spread * 0.68 &&
+                                        current_spread <= tri_initial_spread * 1.32) {
+                                        is_circle_formation = 1;
                                     }
                                 }
                             }
 
-                            if (is_move_triangle) {
-                                if (hypot(delta_x_start, delta_y_start) >= 20) {
+                            if (is_circle_formation) {
+                                int dist = (int)hypot(delta_x_start, delta_y_start);
+                                if ((dist >= 20 && elapsed >= 50) ||
+                                    (dist >= 12 && elapsed >= config.gesture_delay_ms)) {
                                     current_mode = MODE_DRAG;
                                     drag_last_x = centroid_x;
                                     drag_last_y = centroid_y;
-                                    fprintf(stderr, "[mac-touchpad-daemon] MOVE TRIANGLE CONFIRMED (thumb bot, index left, mid top, area=%.0f, spread=%.1f)\n",
-                                            area, current_spread);
+                                    drag_accum_x = 0.0;
+                                    drag_accum_y = 0.0;
+                                    fprintf(stderr, "[mac-touchpad-daemon] 3-finger CIRCLE MOVE CONFIRMED (span_x=%d, span_y=%d, area=%.0f, spread=%.1f, dist=%d)\n",
+                                            span_x, span_y, area, current_spread, dist);
                                     char msg[64];
                                     snprintf(msg, sizeof(msg), "DRAG_START %d %d\n", centroid_x, centroid_y);
                                     send_to_shell(msg);
@@ -550,20 +593,19 @@ int main(void) {
                         int dx = centroid_x - drag_last_x;
                         int dy = centroid_y - drag_last_y;
                         if (dx != 0 || dy != 0) {
-                            int mx, my;
-                            if (config.drag_mode == 0) {
-                                // Fullscreen: complete screen coverage (Ввесь екран)
-                                mx = (int)round(dx * (1920.0 / 3815.0) * 1.4);
-                                my = (int)round(dy * (1080.0 / 2377.0) * 1.4);
-                            } else {
-                                // Normal: standard relative sensitivity (Звичайний)
-                                mx = (int)round(dx * 0.55);
-                                my = (int)round(dy * 0.55);
+                            double scale_x = (config.drag_mode == 0) ? (1920.0 / 3815.0 * 1.45) : 0.65;
+                            double scale_y = (config.drag_mode == 0) ? (1080.0 / 2377.0 * 1.45) : 0.65;
+                            drag_accum_x += (double)dx * scale_x;
+                            drag_accum_y += (double)dy * scale_y;
+                            int mx = (int)round(drag_accum_x);
+                            int my = (int)round(drag_accum_y);
+                            if (mx != 0 || my != 0) {
+                                char msg[128];
+                                snprintf(msg, sizeof(msg), "DRAG_MOVE %d %d\n", mx, my);
+                                send_to_shell(msg);
+                                drag_accum_x -= (double)mx;
+                                drag_accum_y -= (double)my;
                             }
-
-                            char msg[128];
-                            snprintf(msg, sizeof(msg), "DRAG_MOVE %d %d\n", mx, my);
-                            send_to_shell(msg);
 
                             drag_last_x = centroid_x;
                             drag_last_y = centroid_y;

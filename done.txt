@@ -13308,3 +13308,43 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
    - `bin/mac-audit-sync check` — 100% PASS (5/5).
    - `bin/mac-i18n-verify` — 100% SUCCESSFUL.
    - `/usr/local/bin/mac-diagnostics` — 100% OK.
+
+--------------------------------------------------------------------------------
+ЕТАП 635: macW1Y 0.5 — Відновлення та стабілізація жесту переміщення вікна трьома пальцями кругом (mac-touchpad-daemon та розширення macos-touchpad-gestures@mactheme)
+
+1. Діагностика та аналіз причин непрацездатності жесту:
+   - Причина №1 (Недоступність сокета GNOME Shell):
+     Служба `mac-touchpad-daemon.service` працює від імені root (UID 0) як системний сервіс. Раніше `ensure_socket()` звертався до `/run/user/0/mac_touchpad.sock` (якого не існує), оскільки `XDG_RUNTIME_DIR` не встановлено для root. Відповідно, жодна команда (`DRAG_START`, `DRAG_MOVE`, `DRAG_END`) не доходила до розширення GNOME Shell.
+   - Причина №2 (Надмірно жорсткі та штучні геометричні обмеження трикутника):
+     У коді `touchpad/mac-touchpad-daemon.c` для режиму переміщення раніше вимагалися умови:
+     `y_B - y_M >= 20 && y_M - y_T >= 20 && y_B - y_T >= 80 && x_M <= fmin(x_T, x_B) - 15 && area >= 2200.0`.
+     Це штучно вимагало специфічної орієнтації правої руки з витягнутим ліворуч вказівним пальцем та трьома чітко рознесеними по висоті рівнями пальців. Якщо користувач розташовував три пальці «кругом» (природне коло/кластер/трикутник), два пальці часто мали близьку висоту (y_diff < 20) або іншу орієнтацію (зокрема для лівої руки), через що умова негайно відхилялася.
+   - Причина №3 (Обробка розірвання з'єднання та сигналів SIGPIPE):
+     При перезавантаженні розширення або GNOME Shell виклик `read()` на сокеті повертав `0` (EOF), який раніше не скидав `sock_fd`, а наступний `write()` викликав падіння демона через необроблений сигнал `SIGPIPE`.
+   - Причина №4 (Переміщення максимізованих вікон):
+     У розширенні `macos-touchpad-gestures@mactheme/gestureImpl.js` при спробі перемістити вікно перевірка `win.allows_move()` повертала false для максимізованих вікон, або Mutter блокував їх рух. Необхідно було автоматично знімати максимізацію (`win.unmaximize(Meta.MaximizeFlags.BOTH)`), щоб вікно вільно переміщувалося.
+
+2. Впроваджені зміни та оптимізації:
+   - У [touchpad/mac-touchpad-daemon.c](file:///home/vitaliy/MACTHEMEFILES/touchpad/mac-touchpad-daemon.c):
+     * Реалізовано надійне підключення до сокета сесії користувача: перевірка `/run/user/1000/mac_touchpad.sock` та сканування `/run/user/<uid>/` з автоматичним перепідключенням при розриві (`n == 0 || errno != EAGAIN`) та обмеженням частоти спроб (500мс).
+     * Додано обробку `signal(SIGPIPE, SIG_IGN)` та прапорець `MSG_NOSIGNAL` для `send()`, що унеможливлює падіння демона.
+     * Реалізовано універсальний детектор розташування пальців кругом (`is_circle_formation`):
+       - пальці не в горизонтальному ряду (`!is_horizontal_row`)
+       - пальці не у вертикальному стовпчику (`!is_vertical_column`)
+       - наявна двовимірна форма (`span_x >= 35 && span_y >= 35 && area >= 250.0`)
+       - стабільна відстань між пальцями без стискання/розтискання (`current_spread` у межах 68%-132% від початкового).
+     * Миттєвий плавний старт переміщення: якщо пальці рухаються у формі кола, переміщення стартує за зміщення 20 одиниць (або 12 одиниць після таймауту жестів).
+     * Високоточний плаваючий акумулятор зміщення `drag_accum_x / drag_accum_y` для абсолютно плавного руху без тремтіння та втрати мікрокроків.
+     * Скомпільовано бінарник `touchpad/mac-touchpad-daemon`, синхронізовано до `bin/mac-touchpad-daemon` та `/usr/local/bin/mac-touchpad-daemon`, перезапущено службу `mac-touchpad-daemon.service`.
+   - У [extensions/macos-touchpad-gestures@mactheme/gestureImpl.js](file:///home/vitaliy/MACTHEMEFILES/extensions/macos-touchpad-gestures@mactheme/gestureImpl.js):
+     * Додано функцію `_prepareWindowForDrag()`: автоматично розмаксимізує вікно (`win.unmaximize(Meta.MaximizeFlags.BOTH)`) при початку жесту перетягування.
+     * Покращено пошук верхнього вікна під курсором (`get_meta_window()`, `meta_window`, `_delegate.metaWindow`, TabList MRU, proximity-fallback для сфокусованого вікна).
+     * Синхронізовано з `~/.local/share/gnome-shell/extensions/macos-touchpad-gestures@mactheme/gestureImpl.js`.
+     * Оновлено хеш SHA256 у `config/extensions.lock.json`.
+
+3. Результати тестування та верифікації:
+   - Статус `mac-touchpad-daemon.service`: Active (running), `Connected to GNOME Shell socket: /run/user/1000/mac_touchpad.sock`.
+   - Відкриті дескриптори демона (PID 1580628): fd 3 (/dev/uinput), fd 4 (/dev/input/event7 Touchpad), fd 5 (UNIX socket до GNOME Shell).
+   - `bin/mac-extension-guard verify`: VERIFICATION SUCCESS (21/21 зафіксованих розширень відповідають еталону).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 тестів пройдено).
+   - `/usr/local/bin/mac-diagnostics`: РЕЗУЛЬТАТ: Система стабільна. Всі компоненти macW1Y відповідають еталону.

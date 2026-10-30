@@ -328,6 +328,29 @@ export default class GestureImpl {
     /* -------------------------------------------------------------
      * 5. THREE-FINGER DRAGGING (TOPMOST WINDOW ONLY)
      * ------------------------------------------------------------- */
+    _prepareWindowForDrag(win) {
+        if (!win || win.is_hidden() || win.minimized)
+            return false;
+        const type = win.get_window_type();
+        if (type !== Meta.WindowType.NORMAL &&
+            type !== Meta.WindowType.DIALOG &&
+            type !== Meta.WindowType.MODAL_DIALOG)
+            return false;
+
+        const activeWs = global.workspace_manager.get_active_workspace();
+        if (win.get_workspace() !== activeWs && !win.is_on_all_workspaces())
+            return false;
+
+        // If maximized, unmaximize so it can be moved freely
+        try {
+            if (win.get_maximized && win.get_maximized() !== 0) {
+                win.unmaximize(Meta.MaximizeFlags.BOTH);
+            }
+        } catch (e) {}
+
+        return win.allows_move();
+    }
+
     _handleDragStart() {
         this._dragWindow = null;
         const [px, py] = global.get_pointer();
@@ -338,57 +361,69 @@ export default class GestureImpl {
         let win = null;
         let a = actor;
         while (a) {
+            if (typeof a.get_meta_window === 'function') {
+                const mw = a.get_meta_window();
+                if (mw) { win = mw; break; }
+            }
             if (a.meta_window) {
                 win = a.meta_window;
+                break;
+            }
+            if (a._delegate?.metaWindow) {
+                win = a._delegate.metaWindow;
                 break;
             }
             a = a.get_parent ? a.get_parent() : null;
         }
 
-        if (win) {
-            let type = win.get_window_type();
-            if ((type === Meta.WindowType.NORMAL ||
-                 type === Meta.WindowType.DIALOG ||
-                 type === Meta.WindowType.MODAL_DIALOG) &&
-                win.allows_move() &&
-                !win.is_hidden() &&
-                !win.minimized &&
-                (win.get_workspace() === activeWs || win.is_on_all_workspaces())) {
-                this._dragWindow = win;
-                Main.activateWindow(win);
-                this._hideCursor();
-                log(`[macOS Gestures v3] Selected TOPMOST window via stage hit-test: ${win.get_title()}`);
-                return;
-            }
+        if (win && this._prepareWindowForDrag(win)) {
+            this._dragWindow = win;
+            Main.activateWindow(win);
+            this._hideCursor();
+            log(`[macOS Gestures v3] Selected TOPMOST window via stage hit-test: ${win.get_title()}`);
+            return;
         }
 
         // 2. Fallback: Tab list in MRU order (index 0 is topmost/active window)
         const wins = global.display.get_tab_list(Meta.TabList.NORMAL, activeWs);
         for (let w of wins) {
             if (!w || w.is_hidden() || w.minimized) continue;
-            let type = w.get_window_type();
-            if (type !== Meta.WindowType.NORMAL && 
-                type !== Meta.WindowType.DIALOG && 
-                type !== Meta.WindowType.MODAL_DIALOG) continue;
-            if (!w.allows_move()) continue;
-
             let r = w.get_frame_rect();
             if (px >= r.x && px <= r.x + r.width && py >= r.y && py <= r.y + r.height) {
-                this._dragWindow = w;
-                Main.activateWindow(w);
+                if (this._prepareWindowForDrag(w)) {
+                    this._dragWindow = w;
+                    Main.activateWindow(w);
+                    this._hideCursor();
+                    log(`[macOS Gestures v3] Selected TOPMOST window from tab list: ${w.get_title()}`);
+                    return;
+                }
+            }
+        }
+
+        // 3. Proximity / Focused window fallback
+        const focused = global.display.focus_window;
+        if (focused && this._prepareWindowForDrag(focused)) {
+            let r = focused.get_frame_rect();
+            if (px >= r.x - 80 && px <= r.x + r.width + 80 &&
+                py >= r.y - 80 && py <= r.y + r.height + 80) {
+                this._dragWindow = focused;
+                Main.activateWindow(focused);
                 this._hideCursor();
-                log(`[macOS Gestures v3] Selected TOPMOST window from tab list: ${w.get_title()}`);
+                log(`[macOS Gestures v3] Selected focused window: ${focused.get_title()}`);
                 return;
             }
         }
 
-        // 3. No movable window under cursor (e.g. desktop background) - DO NOT SELECT!
+        // 4. No movable window under cursor (e.g. desktop background) - DO NOT SELECT!
         log('[macOS Gestures v3] No movable window under cursor - drag ignored (cursor hidden, no selection)');
     }
 
     _handleDragMove(dx, dy) {
         if (this._dragWindow) {
             try {
+                if (this._dragWindow.get_maximized && this._dragWindow.get_maximized() !== 0) {
+                    this._dragWindow.unmaximize(Meta.MaximizeFlags.BOTH);
+                }
                 let r = this._dragWindow.get_frame_rect();
                 this._dragWindow.move_frame(true, r.x + dx, r.y + dy);
             } catch (e) {
@@ -399,7 +434,10 @@ export default class GestureImpl {
     }
 
     _handleDragEnd() {
-        this._dragWindow = null;
+        if (this._dragWindow) {
+            log(`[macOS Gestures v3] Drag finished for: ${this._dragWindow.get_title()}`);
+            this._dragWindow = null;
+        }
         this._showCursor();
     }
 
