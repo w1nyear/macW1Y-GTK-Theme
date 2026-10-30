@@ -13614,3 +13614,12 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
    - Для `row.expander` скинуто padding та фоновий hover, прибрано розтягування на весь блок.
    - Справжній hover перенесено виключно на внутрішній рядок `row.header` з ідентичним padding `6px 14px`, як у звичайних кнопок.
    - Зафіксовано розділювальну лінію (дескриптор) між рядками навіть при наведенні миші.
+
+6. Відступ заголовків та описів груп (Group Headers Indent):
+   - Додано відступ `margin-left: 24px` та `margin-right: 24px` для заголовків груп (`preferencesgroup > box > box.header`, `.boxed-list-title`), що бездоганно вирівнює їх над блоками параметрів.
+
+7. Заокруглення кнопок сайдбару 5px (Sidebar Buttons Border Radius):
+   - Встановлено заокруглення `5px` для кнопок сайдбару у звичайному, hover та обраному станах (`row`, `row:hover`, `row:selected`).
+
+8. Відступ між рядком акаунта і списком кнопок (Account Row Spacing):
+   - Додано виразний нижній відступ `20px` для рядка облікового запису (`.mac-settings-account-row`, `gtk_widget_set_margin_bottom(row, 20)`), забезпечивши чітке відокремлення акаунта від кнопки «Wi-Fi».
