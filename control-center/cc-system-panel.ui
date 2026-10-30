@@ -19,18 +19,117 @@
             </child>
             <property name="content">
               <object class="AdwPreferencesPage">
+                <!-- Top macOS Header Banner -->
                 <child>
                   <object class="AdwPreferencesGroup">
                     <child>
-                      <object class="CcListRow" id="region_row">
-                        <property name="title" translatable="yes">_Region &amp;amp; Language</property>
-                        <property name="subtitle" translatable="yes">System language and localization</property>
-                        <property name="icon-name">org.gnome.Settings-region-symbolic</property>
-                        <property name="show-arrow">true</property>
-                        <property name="action-name">navigation.push</property>
-                        <property name="action-target">'region'</property>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">6</property>
+                        <property name="margin-top">14</property>
+                        <property name="margin-bottom">20</property>
+                        <property name="halign">center</property>
+                        <style>
+                          <class name="mac-panel-header-banner"/>
+                        </style>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="mac-panel-header-badge"/>
+                            </style>
+                            <child>
+                              <object class="GtkImage">
+                                <property name="icon-name">emblem-system-symbolic</property>
+                                <property name="pixel-size">30</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Основні</property>
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="mac-panel-header-title"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Налаштуйте основні параметри Mac, такі як оновлення ПЗ, мова пристрою та AirDrop.</property>
+                            <property name="halign">center</property>
+                            <property name="justify">center</property>
+                            <property name="wrap">true</property>
+                            <property name="max-width-chars">52</property>
+                            <style>
+                              <class name="mac-panel-header-subtitle"/>
+                            </style>
+                          </object>
+                        </child>
                       </object>
                     </child>
+                  </object>
+                </child>
+
+                <!-- Group 1: About & Updates -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <child>
+                      <object class="CcListRow" id="about_row">
+                        <property name="title" translatable="yes">_About</property>
+                        <property name="subtitle" translatable="yes">Hardware details and software versions</property>
+                        <property name="icon-name">org.gnome.Settings-about-symbolic</property>
+                        <property name="show-arrow">true</property>
+                        <property name="action-name">navigation.push</property>
+                        <property name="action-target">'about'</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwPreferencesGroup" id="software_updates_group">
+                    <property name="visible">true</property>
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="activatable">true</property>
+                        <property name="title" translatable="yes">S_oftware Updates</property>
+                        <property name="subtitle">Оновлення системи та програм</property>
+                        <property name="icon-name">system-update-symbolic</property>
+                        <property name="use-underline">true</property>
+                        <signal name="activated" handler="cc_system_page_open_software_update" object="CcSystemPanel"/>
+                        <property name="accessible-role">3</property>
+                        <child type="suffix">
+                          <object class="GtkImage">
+                            <property name="valign">3</property>
+                            <property name="icon-name">go-next-symbolic</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Group 2: Mac Styling -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <child>
+                      <object class="CcListRow" id="mac_styling_row">
+                        <property name="title">Mac стилізація</property>
+                        <property name="subtitle">Розмиття, кольори, тінт та радіуси</property>
+                        <property name="icon-name">preferences-desktop-theme-symbolic</property>
+                        <property name="show-arrow">true</property>
+                        <property name="action-name">navigation.push</property>
+                        <property name="action-target">'mac-styling'</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Group 3: Date/Time & Region -->
+                <child>
+                  <object class="AdwPreferencesGroup">
                     <child>
                       <object class="CcListRow" id="datetime_row">
                         <property name="title" translatable="yes">_Date &amp;amp; Time</property>
@@ -41,6 +140,22 @@
                         <property name="action-target">'datetime'</property>
                       </object>
                     </child>
+                    <child>
+                      <object class="CcListRow" id="region_row">
+                        <property name="title" translatable="yes">_Region &amp;amp; Language</property>
+                        <property name="subtitle" translatable="yes">System language and localization</property>
+                        <property name="icon-name">org.gnome.Settings-region-symbolic</property>
+                        <property name="show-arrow">true</property>
+                        <property name="action-name">navigation.push</property>
+                        <property name="action-target">'region'</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Group 4: Users, Remote Desktop & SSH -->
+                <child>
+                  <object class="AdwPreferencesGroup">
                     <child>
                       <object class="CcListRow" id="users_row">
                         <property name="title" translatable="yes">_Users</property>
@@ -69,48 +184,6 @@
                         <property name="icon-name">utilities-terminal-symbolic</property>
                         <property name="show-arrow">true</property>
                         <signal name="activated" handler="on_secure_shell_row_clicked" object="CcSystemPanel"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="CcListRow" id="mac_styling_row">
-                        <property name="title">Mac стилізація</property>
-                        <property name="subtitle">Розмиття, кольори, тінт та радіуси</property>
-                        <property name="icon-name">preferences-desktop-theme-symbolic</property>
-                        <property name="show-arrow">true</property>
-                        <property name="action-name">navigation.push</property>
-                        <property name="action-target">'mac-styling'</property>
-                      </object>
-                    </child>
-
-                    <child>
-                      <object class="CcListRow" id="about_row">
-                        <property name="title" translatable="yes">_About</property>
-                        <property name="subtitle" translatable="yes">Hardware details and software versions</property>
-                        <property name="icon-name">org.gnome.Settings-about-symbolic</property>
-                        <property name="show-arrow">true</property>
-                        <property name="action-name">navigation.push</property>
-                        <property name="action-target">'about'</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-                <child>
-                  <object class="AdwPreferencesGroup" id="software_updates_group">
-                    <property name="visible">false</property>
-                    <child>
-                      <object class="AdwActionRow">
-                        <property name="activatable">true</property>
-                        <property name="title" translatable="yes">S_oftware Updates</property>
-                        <property name="icon-name">system-update-symbolic</property>
-                        <property name="use-underline">true</property>
-                        <signal name="activated" handler="cc_system_page_open_software_update" object="CcSystemPanel"/>
-                        <property name="accessible-role">3</property>
-                        <child type="suffix">
-                          <object class="GtkImage">
-                            <property name="valign">3</property>
-                            <property name="icon-name">adw-external-link-symbolic</property>
-                          </object>
-                        </child>
                       </object>
                     </child>
                   </object>

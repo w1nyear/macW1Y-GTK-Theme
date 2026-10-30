@@ -191,7 +191,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "uk": {
     "wifi": "Wi-Fi",
@@ -385,7 +388,10 @@
     "run_diagnostics": "Запустити діагностику",
     "restore_ssot": "Відновити оформлення",
     "close": "Закрити",
-    "ok": "Гаразд"
+    "ok": "Гаразд",
+    "apple_account": "Обліковий запис Apple",
+    "storage_alert": "Сховище iCloud заповнено",
+    "software_update_alert": "Доступне оновлення ПЗ"
   },
   "pl": {
     "wifi": "Wi-Fi",
@@ -579,7 +585,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "de": {
     "wifi": "WLAN",
@@ -773,7 +782,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "fr": {
     "wifi": "Wi-Fi",
@@ -967,7 +979,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "es": {
     "wifi": "Wi-Fi",
@@ -1161,7 +1176,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "pt": {
     "wifi": "Wi-Fi",
@@ -1355,7 +1373,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "it": {
     "wifi": "Wi-Fi",
@@ -1549,7 +1570,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "zh": {
     "wifi": "Wi-Fi",
@@ -1743,7 +1767,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "ja": {
     "wifi": "Wi-Fi",
@@ -1937,7 +1964,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "ko": {
     "wifi": "Wi-Fi",
@@ -2131,7 +2161,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "ar": {
     "wifi": "Wi-Fi",
@@ -2325,7 +2358,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "he": {
     "wifi": "Wi-Fi",
@@ -2519,7 +2555,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "ru": {
     "wifi": "Wi-Fi",
@@ -2713,7 +2752,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "tr": {
     "wifi": "Wi-Fi",
@@ -2907,7 +2949,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "cs": {
     "wifi": "Wi-Fi",
@@ -3101,7 +3146,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "nl": {
     "wifi": "Wifi",
@@ -3295,7 +3343,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "sk": {
     "wifi": "Wi-Fi",
@@ -3489,7 +3540,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "ro": {
     "wifi": "Wi-Fi",
@@ -3683,7 +3737,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "hu": {
     "wifi": "Wi-Fi",
@@ -3877,7 +3934,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "bg": {
     "wifi": "Wi-Fi",
@@ -4071,7 +4131,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "sr": {
     "wifi": "Wi-Fi",
@@ -4265,7 +4328,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "hr": {
     "wifi": "Wi-Fi",
@@ -4459,7 +4525,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "sl": {
     "wifi": "Wi-Fi",
@@ -4653,7 +4722,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "lt": {
     "wifi": "Wi-Fi",
@@ -4847,7 +4919,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "lv": {
     "wifi": "Wi-Fi",
@@ -5041,7 +5116,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "et": {
     "wifi": "Wi-Fi",
@@ -5235,7 +5313,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "be": {
     "wifi": "Wi-Fi",
@@ -5429,7 +5510,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "hi": {
     "wifi": "Wi-Fi",
@@ -5623,7 +5707,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "bn": {
     "wifi": "Wi-Fi",
@@ -5817,7 +5904,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "zh_tw": {
     "wifi": "Wi-Fi",
@@ -6011,7 +6101,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "th": {
     "wifi": "Wi-Fi",
@@ -6205,7 +6298,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "vi": {
     "wifi": "Wi-Fi",
@@ -6399,7 +6495,10 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   },
   "fa": {
     "wifi": "وای‌فای",
@@ -6593,6 +6692,9 @@
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "apple_account": "Apple Account",
+    "storage_alert": "iCloud Storage Full",
+    "software_update_alert": "Software Update Available"
   }
 }

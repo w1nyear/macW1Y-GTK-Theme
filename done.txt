@@ -13249,3 +13249,62 @@ Task 499: Повне полірування екрана блокування (m
    - `bin/mac-audit-sync check` — 100% PASS (5/5).
    - `/usr/local/bin/mac-diagnostics` — 100% OK.
    - `bin/mac-i18n-verify` — 100% SUCCESSFUL.
+
+================================================================================
+Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reveal, Account & Alert Rows, and Divided Cards)
+================================================================================
+Час виконання: 2026-10-30 12:38
+
+1. Мета та контекст завдання:
+   - Реалізація інтерфейсу Параметрів за референсом macOS 26 (Знімок користувача):
+     * Компактні тонкі пункти лівої бічної панелі (leftbar/sidebar) висотою ~28px з іконками 16px та помаранчевим акцентом активного вибору (#f37021).
+     * Поява поля пошуку («Пошук») зверху списку панелей при натисканні на кнопку пошуку праворуч у хедербарі та його згортання при повторному натисканні.
+     * Картка акаунта користувача на ПК на самому верху списку (круглий аватар AdwAvatar з ініціалами або ~/.face, ім'я користувача та підпис «Обліковий запис Apple»), при натисканні на яку відкривається сторінка «Система -> Користувачі».
+     * Рядки системних сповіщень та оновлень під акаунтом («Сховище iCloud заповнено» та «Доступне оновлення ПЗ» з червоними бейджами 🔴 1), відділені відступом від основного списку параметрів.
+     * Оновлення правої частини вмісту: верхній банер macOS з центрованою емблемою-значком у скругленому прямокутнику, жирним заголовком («Основні») та описом панелі; розділені згруповані картки з тонкою межею та стрілками навігації >.
+     * Жодних зайвих чи нових пунктів не додано («Нові пункти НЕ ДОДАВАЙ, лише ui вигляд міняємо»).
+
+2. Виконані роботи:
+   - control-center/mac_i18n.h, gnome-control-center-overlay/mac_i18n.h, src/mac_i18n.h:
+     * Додано ключі локалізації: `apple_account`, `storage_alert`, `software_update_alert`, `search`.
+   - config/i18n/translations.json:
+     * Оновлено та верифіковано словники для всіх 34 мов: `apple_account`, `storage_alert`, `software_update_alert`, `panel_search`.
+   - control-center/cc-system-panel.ui та оверлеї:
+     * Панель «Основні» («Система») структуровано на 4 окремі картки `AdwPreferencesGroup`:
+       1) Про систему (about_row) та Оновлення ПЗ (software_updates_row)
+       2) Mac стилізація (mac_styling_row)
+       3) Дата й час (datetime_row) та Мова і регіон (region_row)
+       4) Користувачі (users_row), Віддалений робочий стіл (remote_desktop_row) та SSH
+     * Додано верхній центрований банер з емблемою-значком `emblem-system-symbolic`, заголовком «Основні» та описом.
+   - control-center/cc-window.ui та оверлеї:
+     * Оновлено підпис поля пошуку на «Пошук».
+   - control-center/libmac_settings.c та libmac_settings.so:
+     * Реалізовано функцію `init_mac_settings_css()` для інжекції GTK CSS стилів (компактні рядки 28px, іконки 16px, помаранчевий активний колір #f37021, картка акаунта, бейджі сповіщень, банер заголовка панелі, оформлення списків карток).
+     * Додано створення рядка акаунта `create_account_row()` та сповіщень `create_alert_row()` з рангами сортування -30, -20, -10 (перші місця у списку).
+     * Реалізовано `open_system_subpage()` та `activate_system_row_by_id()`: при кліку на акаунт вибирається рядок «Система» та автоматично активується підсторінка `users_row` («Користувачі»).
+     * Реалізовано динамічне додавання верхнього банера `ensure_panel_header_banner()` для всіх панелей налаштувань.
+     * Забезпечено адаптивне відкриття/закриття рядка пошуку вгорі списку при натисканні на кнопку пошуку праворуч.
+   - Оновлено файли теми GTK 4:
+     * config/gtk-4.0/gtk-Dark.css, config/gtk-4.0/gtk.css, macW1Y-Dark/gtk-4.0/gtk.css, ~/.config/gtk-4.0/gtk-Dark.css, ~/.config/gtk-4.0/gtk.css.
+   - Синхронізовано `libmac_settings.so` у всі системні директорії (/usr/lib/x86_64-linux-gnu/, /usr/local/lib/, ~/.local/lib/, /usr/share/mactheme/gnome-control-center-overlay/).
+
+3. Результати тестування та верифікації:
+   - `MAC_SETTINGS_TEST_DUMP=1 bin/gnome-control-center` — порядок рядків:
+     Row [0]: account
+     Row [1]: is_alert_storage_row
+     Row [2]: is_alert_updates_row
+     Row [3]: wifi
+     Row [4]: network
+     Row [6]: bluetooth
+     Row [7]: display
+     Row [8]: sound
+     Row [9]: power
+     Row [10]: multitasking
+     Row [11]: background
+     Row [12]: widgets
+     ...
+     Row [24]: system
+   - Тест переходу в `users_row` при кліку на акаунт — 100% SUCCESS.
+   - `bin/mac-audit-sync check` — 100% PASS (5/5).
+   - `bin/mac-i18n-verify` — 100% SUCCESSFUL.
+   - `/usr/local/bin/mac-diagnostics` — 100% OK.
