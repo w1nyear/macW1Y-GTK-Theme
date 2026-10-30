@@ -13424,3 +13424,29 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
    - Тестування в live GNOME Shell: симуляція запуску запису активує індикатор з таймером, відкриває меню зі всіма параметрами та коректно зупиняє запис.
 
 
+---------------------------------------------------------------------------------
+ЕТАП 639: macW1Y 0.5 — Заміна чорного фону у підменю Центру Керування (Wi-Fi, Bluetooth, Аудіо, Режим живлення) на апаратний шейдер рідкого скла (Liquid Glass)
+
+1. Виконані завдання:
+   - Замінено суцільний темний фон (`rgba(26, 26, 28, 0.88)`) в усіх підменю Центру Керування на динамічний шейдер рідкого скла `BackdropGlass` із бібліотеки `liquid-glass@thinkingcoding1231.gmail.com`:
+     * Wi-Fi підменю (`_openWifiSubmenu`)
+     * Bluetooth підменю (`_openBluetoothSubmenu`)
+     * Аудіо / Вихідні пристрої (`_openSoundSubmenu`)
+     * Режим живлення (`_openPowerModeSubmenu`)
+   - Створено універсальний помічник `_attachSubmenuGlass(menu, owner)` у [tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js) та [tahoeQuickSettings.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeQuickSettings.js):
+     * Динамічно ініціалізує `BackdropGlass` із параметрами скла: `cornerRadius: 18.0`, `blurRadius: 8.0`, `tintStrength: 0.05`, `displacement_scale: 35.0`, `ior: 1.50`, `rim_intensity: 0.12`, `shadow_intensity: 0.28`.
+     * Вбудовує скло безпосередньо під `menu.actor` у `Main.layoutManager.uiGroup`.
+     * Додає виключення (exclusions) для `menu.actor` та `menu.box`, щоб запобігти фантомному семплуванню власного вмісту.
+     * Відстежує геометрію та прозорість під час анімації розгортання та закриття меню (`notify::allocation`, `notify::opacity`, кадрова синхронізація 60fps).
+     * Чисто знищує екземпляр скла при закритті/знищенні меню (`menu.connect('destroy')`).
+   - Встановлено прозорий фон для `menu.box` (`background-color: transparent !important; background: none !important;`) із заокругленням кутів 18px (`border-radius: 18px !important;`) та делікатним бордером скла (`1px solid rgba(255, 255, 255, 0.18)`). Приховано стандартну стрілку BoxPointer.
+   - Оновлено динамічний імпорт у [extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/extension.js) (`?v=tahoe_v12`) для безшовного оновлення модуля.
+   - Синхронізовано файли з `~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/` та оновлено хеш SHA256 у [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json).
+
+2. Верифікація:
+   - `bin/mac-extension-guard verify`: VERIFICATION SUCCESS (21/21 розширень валідні).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено).
+   - `/usr/local/bin/mac-diagnostics`: 100% OK, система стабільна.
+   - Перевірено створення, геометрію та знищення `BackdropGlass` у середовищі GNOME Shell через `EvalHelper`.
+
+

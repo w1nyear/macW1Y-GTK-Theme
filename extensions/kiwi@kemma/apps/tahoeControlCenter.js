@@ -281,8 +281,157 @@ let _activeSubmenu = null;
 
 function _closeActiveSubmenu() {
     if (_activeSubmenu) {
+        try {
+            if (_activeSubmenu._glass) {
+                _activeSubmenu._glass.destroy();
+                _activeSubmenu._glass = null;
+            }
+        } catch (_) {}
         try { _activeSubmenu.close(); _activeSubmenu.destroy(); } catch (_) {}
         _activeSubmenu = null;
+    }
+}
+
+async function _attachSubmenuGlass(menu, owner = 'submenu') {
+    try {
+        const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
+        const path = ext?.path || `${GLib.get_user_data_dir()}/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`;
+        const glassMod = await import(`file://${path}/dist/rendering/backdropGlass.js`);
+        const BackdropGlass = glassMod.BackdropGlass;
+
+        const glass = new BackdropGlass({
+            extensionPath: path,
+            settings: ext?.stateObj?._settings || null,
+            logger: console,
+            owner: `tahoe-${owner}`,
+            excludeActors: [menu.actor, menu.box],
+        });
+        glass.setIsDock(false);
+        glass.setCornerSmoothingEnabled(0.0);
+        glass.setCornerRadius(18.0);
+        glass.setTintColor(0.0, 0.0, 0.0);
+        glass.setTintStrength(0.05);
+        glass.setBlurRadius(8.0);
+        glass.setPadding(0);
+
+        try {
+            glass._effect?.setSurfaceLightEnabled?.(true);
+            glass._effect?._setFloat?.('displacement_scale', 35.0);
+            glass._effect?._setFloat?.('ior', 1.50);
+            glass._effect?._setFloat?.('rim_intensity', 0.12);
+            glass._effect?._setFloat?.('rim_width', 4.5);
+            glass._effect?._setFloat?.('rim_power', 5.0);
+            glass._effect?._setFloat?.('rim_directional_power', 2.7);
+            glass._effect?._setFloat?.('rim_light_color_intensity', 1.4);
+            glass._effect?._setFloat?.('specular_intensity', 0.10);
+            glass._effect?._setFloat?.('sheen_intensity', 0.08);
+            glass._effect?._setFloat?.('chroma_strength', 0.005);
+            glass._effect?._setFloat?.('shadow_intensity', 0.28);
+            glass._effect?._setFloat?.('shadow_radius', 18.0);
+            glass._effect?._setFloat?.('shadow_max_radius', 50.0);
+            glass._effect?._setFloat?.('ao_intensity', 0.05);
+            glass._effect?._setFloat?.('ao_radius', 2.0);
+        } catch (_) {}
+
+        glass.hide();
+        glass.opacity = 0;
+
+        Main.layoutManager.uiGroup.insert_child_below(glass, menu.actor);
+        try { glass.addExclusion(menu.actor); } catch (_) {}
+        try { glass.addExclusion(menu.box); } catch (_) {}
+
+        menu._glass = glass;
+
+        let lastX = -1, lastY = -1, lastW = -1, lastH = -1;
+
+        const syncGlass = () => {
+            if (!menu._glass || menu._glass.is_finalized?.() || !menu.box || menu.box.is_finalized?.() || !menu.actor || menu.actor.is_finalized?.()) return;
+
+            const isOpeningOrOpen = menu.actor.visible && menu.actor.opacity > 0;
+            if (!isOpeningOrOpen) {
+                if (menu._glass.visible) menu._glass.hide();
+                return;
+            }
+
+            const mon = Main.layoutManager.primaryMonitor;
+            if (!mon) return;
+
+            const [bx, by] = menu.box.get_transformed_position();
+            const [bw, bh] = menu.box.get_transformed_size();
+
+            if (bx == null || by == null || Number.isNaN(bx) || Number.isNaN(by) || bw <= 1 || bh <= 1) return;
+
+            const localBgX = Math.round(bx - mon.x);
+            const localBgY = Math.round(by - mon.y);
+            const bgW = Math.round(bw);
+            const bgH = Math.round(bh);
+
+            const effOpacity = (typeof menu.actor.opacity === 'number') ? Math.max(0, Math.min(255, Math.round(menu.actor.opacity))) : 255;
+            if (menu._glass.opacity !== effOpacity) {
+                menu._glass.opacity = effOpacity;
+            }
+            if (effOpacity > 0 && !menu._glass.visible) {
+                menu._glass.show();
+            } else if (effOpacity === 0 && menu._glass.visible) {
+                menu._glass.hide();
+            }
+
+            menu._glass.set_position(mon.x, mon.y);
+            menu._glass.set_size(mon.width, mon.height);
+
+            if (lastX !== localBgX || lastY !== localBgY || lastW !== bgW || lastH !== bgH) {
+                lastX = localBgX;
+                lastY = localBgY;
+                lastW = bgW;
+                lastH = bgH;
+
+                menu._glass.setResolution(mon.width, mon.height);
+                menu._glass.setCornerRadius(18.0);
+                menu._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
+
+                const CLIP_PAD = 60;
+                menu._glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
+            }
+
+            if (typeof menu._glass.syncSources === 'function') {
+                menu._glass.syncSources();
+            }
+            menu._glass.wakeFrameSync();
+        };
+
+        const allocId = menu.box.connect('notify::allocation', syncGlass);
+        const opacityId = menu.actor.connect('notify::opacity', syncGlass);
+
+        const startTime = GLib.get_monotonic_time();
+        const durationUs = 350 * 1000;
+        const timerId = GLib.timeout_add(GLib.PRIORITY_HIGH, 16, () => {
+            if (!menu._glass || menu._glass.is_finalized?.()) return GLib.SOURCE_REMOVE;
+            syncGlass();
+            if (GLib.get_monotonic_time() - startTime >= durationUs) {
+                return GLib.SOURCE_REMOVE;
+            }
+            return GLib.SOURCE_CONTINUE;
+        });
+
+        const destroyHandler = () => {
+            try { GLib.source_remove(timerId); } catch (_) {}
+            try { menu.box.disconnect(allocId); } catch (_) {}
+            try { menu.actor.disconnect(opacityId); } catch (_) {}
+            if (menu._glass) {
+                try { menu._glass.destroy(); } catch (_) {}
+                menu._glass = null;
+            }
+        };
+
+        menu.connect('destroy', destroyHandler);
+        menu.actor.connect('destroy', destroyHandler);
+
+        syncGlass();
+        if (typeof glass.forceRefresh === 'function') {
+            glass.forceRefresh(1);
+        }
+    } catch (e) {
+        console.warn(`[tahoe-cc] _attachSubmenuGlass error: ${e}`);
     }
 }
 
@@ -309,7 +458,9 @@ async function _openWifiSubmenu(sourceActor, state) {
         const menu = new PopupMenu.PopupMenu(sourceActor, 0.5, St.Side.RIGHT);
         menu._sourceActor = sourceActor;
         Main.uiGroup.add_child(menu.actor);
-        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 14px !important; background-color: rgba(26, 26, 28, 0.88) !important; color: #ffffff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; padding: 6px !important;';
+        menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
+        if (menu.actor._border) { menu.actor._border.hide(); menu.actor._border.opacity = 0; }
+        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 18px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; padding: 8px !important;';
 
         let nmClient = state.nm;
         if (!nmClient) {
@@ -336,6 +487,7 @@ async function _openWifiSubmenu(sourceActor, state) {
         });
 
         _activeSubmenu = menu;
+        await _attachSubmenuGlass(menu, 'wifi');
         menu.actor.opacity = 0;
         menu.actor.scale_x = 1.12;
         menu.actor.scale_y = 1.12;
@@ -368,7 +520,9 @@ async function _openBluetoothSubmenu(sourceActor, state) {
         const menu = new PopupMenu.PopupMenu(sourceActor, 0.5, St.Side.RIGHT);
         menu._sourceActor = sourceActor;
         Main.uiGroup.add_child(menu.actor);
-        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 14px !important; background-color: rgba(26, 26, 28, 0.88) !important; color: #ffffff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; padding: 6px !important;';
+        menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
+        if (menu.actor._border) { menu.actor._border.hide(); menu.actor._border.opacity = 0; }
+        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 18px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; padding: 8px !important;';
 
         let btClient = state.bt;
         if (!btClient) {
@@ -392,6 +546,7 @@ async function _openBluetoothSubmenu(sourceActor, state) {
         });
 
         _activeSubmenu = menu;
+        await _attachSubmenuGlass(menu, 'bluetooth');
         menu.actor.opacity = 0;
         menu.actor.scale_x = 1.12;
         menu.actor.scale_y = 1.12;
@@ -424,7 +579,9 @@ async function _openSoundSubmenu(sourceActor, state) {
         const menu = new PopupMenu.PopupMenu(sourceActor, 0.5, St.Side.RIGHT);
         menu._sourceActor = sourceActor;
         Main.uiGroup.add_child(menu.actor);
-        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 14px !important; background-color: rgba(26, 26, 28, 0.88) !important; color: #ffffff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; padding: 6px !important;';
+        menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
+        if (menu.actor._border) { menu.actor._border.hide(); menu.actor._border.opacity = 0; }
+        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 18px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; padding: 8px !important;';
 
         const control = state.control;
         const currentSink = control?.get_default_sink();
@@ -507,6 +664,7 @@ async function _openSoundSubmenu(sourceActor, state) {
         menu.addMenuItem(settItem);
 
         _activeSubmenu = menu;
+        await _attachSubmenuGlass(menu, 'sound');
         menu.actor.opacity = 0;
         menu.actor.scale_x = 1.12;
         menu.actor.scale_y = 1.12;
@@ -2093,7 +2251,9 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
         const menu = new PopupMenu.PopupMenu(sourceActor, 0.5, St.Side.RIGHT);
         menu._sourceActor = sourceActor;
         Main.uiGroup.add_child(menu.actor);
-        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 14px !important; background-color: rgba(26, 26, 28, 0.88) !important; color: #ffffff !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; padding: 6px !important;';
+        menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
+        if (menu.actor._border) { menu.actor._border.hide(); menu.actor._border.opacity = 0; }
+        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 18px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; padding: 8px !important;';
 
         const curProfile = _getPowerProfile();
 
@@ -2193,6 +2353,7 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
         menu.addMenuItem(settItem);
 
         _activeSubmenu = menu;
+        await _attachSubmenuGlass(menu, 'power');
         menu.actor.opacity = 0;
         menu.actor.scale_x = 1.12;
         menu.actor.scale_y = 1.12;
