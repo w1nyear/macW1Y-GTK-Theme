@@ -10665,7 +10665,7 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar {
 window.mac-settings-window list.mac-settings-sidebar-list row,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row {
     min-height: 32px;
-    padding: 3px 10px;
+    padding: 4px 10px;
     margin: 1.5px 6px;
     border-radius: 9999px;
     font-size: 13px;
@@ -10687,31 +10687,30 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:sel
 
 window.mac-settings-window list.mac-settings-sidebar-list row image,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row image {
-    min-width: 18px;
-    min-height: 18px;
-    -gtk-icon-size: 15px;
-    background: transparent;
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    margin-right: 10px;
-    margin-left: 2px;
+    min-width: 20px;
+    min-height: 20px;
+    -gtk-icon-size: 13px;
+    background-color: #1e1e20;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 5px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    margin-right: 9px;
+    margin-left: 1px;
     padding: 0;
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected image,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected image {
     color: #ffffff;
-    background: transparent;
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
+    background-color: rgba(0, 0, 0, 0.32);
+    border: 1px solid rgba(0, 0, 0, 0.20);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row label,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row label {
     font-size: 13px;
-    margin-top: 0px;
+    margin-top: 1px;
     margin-bottom: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
@@ -10795,37 +10794,9 @@ window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within {
     border-color: rgba(255, 255, 255, 0.20);
 }
 
-.mac-panel-header-banner {
-    margin-top: 18px;
-    margin-bottom: 22px;
-}
-
-.mac-panel-header-badge {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 9999px;
-    min-width: 52px;
-    min-height: 52px;
-    padding: 0;
-    margin: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
-}
-
-.mac-panel-header-badge image {
-    -gtk-icon-size: 26px;
-    color: #ffffff;
-    margin: 0;
-    padding: 0;
-}
-
-.mac-panel-header-title {
-    font-weight: 700;
-    font-size: 19px;
-    color: #ffffff;
-    margin-top: 8px;
-    margin-bottom: 2px;
-}
-
+.mac-panel-header-banner,
+.mac-panel-header-badge,
+.mac-panel-header-title,
 .mac-panel-header-subtitle {
     opacity: 0;
     font-size: 0px;
@@ -10842,27 +10813,60 @@ window.mac-settings-window .mac-settings-content list.boxed-list {
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 16px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
-    margin-bottom: 14px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 16px;
 }
 
-window.mac-settings-window preferencespage list.boxed-list row,
-window.mac-settings-window .content-pane list.boxed-list row,
-window.mac-settings-window .mac-settings-content list.boxed-list row {
+window.mac-settings-window preferencespage list.boxed-list row.expander,
+window.mac-settings-window .content-pane list.boxed-list row.expander,
+window.mac-settings-window .mac-settings-content list.boxed-list row.expander {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    background-color: transparent;
+    border: none;
+}
+
+window.mac-settings-window preferencespage list.boxed-list row.expander:hover,
+window.mac-settings-window .content-pane list.boxed-list row.expander:hover,
+window.mac-settings-window .mac-settings-content list.boxed-list row.expander:hover {
+    background: transparent;
+    background-color: transparent;
+}
+
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander),
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander),
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander),
+window.mac-settings-window preferencespage list.boxed-list row.expander row.header,
+window.mac-settings-window .content-pane list.boxed-list row.expander row.header,
+window.mac-settings-window .mac-settings-content list.boxed-list row.expander row.header {
     min-height: 42px;
     padding: 6px 14px;
     border-bottom: none;
 }
 
-window.mac-settings-window preferencespage list.boxed-list row:last-child,
-window.mac-settings-window .content-pane list.boxed-list row:last-child,
-window.mac-settings-window .mac-settings-content list.boxed-list row:last-child {
-    border-bottom: none;
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):hover,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):hover,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):hover,
+window.mac-settings-window preferencespage list.boxed-list row.expander row.header:hover,
+window.mac-settings-window .content-pane list.boxed-list row.expander row.header:hover,
+window.mac-settings-window .mac-settings-content list.boxed-list row.expander row.header:hover {
+    background-color: rgba(255, 255, 255, 0.04);
 }
 
-window.mac-settings-window preferencespage list.boxed-list row:hover,
-window.mac-settings-window .content-pane list.boxed-list row:hover,
-window.mac-settings-window .mac-settings-content list.boxed-list row:hover {
-    background-color: rgba(255, 255, 255, 0.03);
+window.mac-settings-window preferencespage list.boxed-list > row + row,
+window.mac-settings-window .content-pane list.boxed-list > row + row,
+window.mac-settings-window .mac-settings-content list.boxed-list > row + row {
+    border-top: 1px solid transparent;
+    border-image: linear-gradient(to right, transparent 0%, transparent 2%, rgba(255, 255, 255, 0.07) 2%, rgba(255, 255, 255, 0.07) 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
+}
+
+window.mac-settings-window preferencespage list.boxed-list > row:hover + row,
+window.mac-settings-window .content-pane list.boxed-list > row:hover + row,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:hover + row {
+    border-top: 1px solid transparent;
+    border-image: linear-gradient(to right, transparent 0%, transparent 2%, rgba(255, 255, 255, 0.07) 2%, rgba(255, 255, 255, 0.07) 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
 }
 
 window.mac-settings-window preferencespage list.boxed-list row image.expander,
