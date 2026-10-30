@@ -3,4 +3,4 @@
 # macW1Y — Launch GNOME Settings directly to Desktop Widgets tab
 
 export MAC_SETTINGS_OPEN_WIDGETS=1
-exec /usr/local/bin/gnome-control-center system
+exec /usr/local/bin/gnome-control-center widgets

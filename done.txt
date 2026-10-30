@@ -13032,3 +13032,46 @@ Task 499: Повне полірування екрана блокування (m
    - `/usr/local/bin/mac-diagnostics` — 100% OK.
    - `bin/mac-audit-sync check` — 100% PASS.
    - `bin/mac-i18n-verify` — 100% SUCCESSFUL.
+
+--------------------------------------------------------------------------------
+ЕТАП 629 |FIX|: macW1Y 0.5 — Переміщення пункту «Віджети» в лефтбар GNOME Settings під «Вигляд»
+
+1. Вимоги:
+   - Видалити пункт «Віджети» та відповідну підсторінку з розділу «Система» (System panel) у параметрах GNOME.
+   - Розмістити пункт «Віджети» безпосередньо у лівій бічній панелі (leftbar / sidebar) GNOME Settings суворо під пунктом «Зовнішній вигляд» / «Вигляд» (Appearance / background).
+   - Забезпечити, щоб при кліку на «Віджети» у сайдбарі відкривалася повноцінна сторінка параметрів віджетів (Робочий стіл та розташування, Стилізація та Liquid Glass, Поведінка компонентів, Розширений конфігуратор).
+   - Забезпечити безшовну інтеграцію перемикання між усіма розділами налаштувань та коректне оновлення кнопок хедера.
+   - Забезпечити відкриття панелі за прямим викликом `gnome-control-center widgets` та `mac-widgets-settings`.
+   - Зберегти 100% сумісність з екосистемою macW1Y: повне проходження аудитів `mac-audit-sync`, `mac-extension-guard`, `mac-diagnostics` та `mac-i18n-verify`.
+   - Суворе дотримання обмеження: жодних перезапусків оболонки, сесії або системи.
+
+2. Виконана робота:
+   - Очищення панелі «Система»:
+     * У `control-center/cc-system-panel.ui` та `gnome-control-center-overlay/cc-system-panel.ui` повністю видалено рядок виклику `widgets_row` та вкладену сторінку `widgets_page`.
+   - Створення виділеної панелі «Віджети»:
+     * Створено `control-center/cc-widgets-panel.ui` та `gnome-control-center-overlay/cc-widgets-panel.ui` на базі `AdwNavigationPage` з тегом `widgets`, власним плоским `AdwHeaderBar` та 4 групами налаштувань віджетів стільниці.
+     * Забезпечено автоматичне завантаження UI через `GtkBuilder` у `libmac_settings.c` (`get_widgets_page()`) з підтримкою системних і локальних оверлейних шляхів.
+   - Впровадження рядка сайдбару та ранжування порядку:
+     * У `control-center/libmac_settings.c` реалізовано динамічне створення рядка `widgets_row` у бічній панелі (`main_listbox`) зі структурою, ідентичною `CcPanelListItem` (`GtkGrid` з іконкою `view-grid-symbolic` та заголовком `mac_tr("widgets", "Віджети")`).
+     * Для рядка створено коректну структуру `MacPanelRowData` з `id = "widgets"`, що унеможливлює збої перевірок `row_data != NULL` у внутрішніх процедурах GNOME Control Center.
+     * У функції перехоплення `gtk_list_box_set_sort_func` реалізовано `mac_main_listbox_sort_func` з обчисленням рангу `get_sidebar_panel_rank`: панелі `background` ("Вигляд") присвоєно базовий ранг 10.0, а панелі `widgets` — ранг 10.5. Це гарантує, що пункт «Віджети» завжди позиціонується безпосередньо під пунктом «Вигляд» і вище наступних розділів.
+   - Обробка активації та навігація:
+     * Підключено обробник `on_main_listbox_row_activated`: при виборі рядка «Віджети» права частина (`split_view`) перемикається на `widgets_page`, оновлюються кнопки пошуку та головного меню в хедері (`update_panel_headerbar`), рядок підсвічується як активний.
+     * При виборі будь-якого іншого пункту сайдбару стандартний диспетчер GNOME активує відповідну панель і знімає виділення з віджетів.
+     * У `bin/gnome-control-center` та `bin/mac-widgets-settings` оновлено запуск: при виклику з аргументом `widgets` виставляється змінна `MAC_SETTINGS_OPEN_WIDGETS=1`, яка автоматично активує пункт «Віджети» при відкритті вікна.
+   - Локалізація та синхронізація:
+     * Додано ключ `widgets` до `control-center/mac_i18n.h` та `src/mac_i18n.h`.
+     * Скомпільовано оновлений `libmac_settings.so` та синхронізовано в усі 6 системних каталогів.
+     * Синхронізовано UI-файли та скрипти у `/usr/local/bin/`.
+
+3. Результати верифікації:
+   - Автоматизований дамп сайдбару через `MAC_SETTINGS_TEST_DUMP=1` у живому бінарнику `gnome-control-center` підтвердив точний порядок:
+     * `Sidebar Row [8]: background (visible=1)` ("Вигляд")
+     * `Sidebar Row [9]: widgets (is_widgets=1, visible=1)` ("Віджети")
+     * `Sidebar Row [10]: ubuntu (visible=1)`
+     * `Sidebar Row [11]: applications (visible=1)`
+   - Виклик `gnome-control-center widgets` та `mac-widgets-settings` безпомилково ініціалізує та відкриває панель віджетів.
+   - `bin/mac-audit-sync check` — 100% PASS (5/5).
+   - `bin/mac-extension-guard verify` — 21/21 SUCCESS.
+   - `/usr/local/bin/mac-diagnostics` — 100% OK.
+   - `bin/mac-i18n-verify` — 100% SUCCESSFUL.

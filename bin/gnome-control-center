@@ -16,7 +16,7 @@ fi
 
 if [ "$1" = "widgets" ] || [ "$1" = "desktop-widgets" ]; then
     export MAC_SETTINGS_OPEN_WIDGETS=1
-    set -- "system"
+    shift
 fi
 
 if [ -f "/usr/bin/gnome-control-center.orig" ]; then

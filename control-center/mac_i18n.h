@@ -84,6 +84,7 @@ static const MacCKeyEntry MAC_C_ENTRIES[] = {
     { "bookmark_pictures", "Фото", "Pictures", "Bilder", "Images", "Imágenes", "Obrazy" },
     { "bookmark_movies", "Відеозаписи", "Movies", "Filme", "Vidéos", "Películas", "Wideo" },
     { "bookmark_trash", "Кошик", "Trash", "Papierkorb", "Corbeille", "Papelera", "Kosz" },
+    { "widgets", "Віджети", "Widgets", "Widgets", "Widgets", "Widgets", "Widżety" },
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 };
 

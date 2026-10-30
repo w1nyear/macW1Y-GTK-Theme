@@ -2052,6 +2052,51 @@ static int mac_safe_power_profile_sort_func(GtkListBoxRow *row1, GtkListBoxRow *
     return 0;
 }
 
+typedef struct {
+    GtkListBoxRow *row;
+    void *unused1;
+    int category;
+    int unused2;
+    char *id;
+} MacPanelRowData;
+
+static double get_sidebar_panel_rank(GtkListBoxRow *row) {
+    if (!row) return 999.0;
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"))) {
+        return 10.5; /* Always directly beneath background (rank 10.0) */
+    }
+    void *d = g_object_get_data(G_OBJECT(row), "data");
+    if (!d) return 999.0;
+
+    const char *id = *((const char **)((char *)d + 0x18));
+    if (!id) return 999.0;
+
+    static const char * const panel_order[] = {
+        "wifi", "network", "wwan", "mobile-broadband", "bluetooth",
+        "separator", "display", "sound", "power", "multitasking",
+        "background", "ubuntu", "applications", "notifications",
+        "search", "online-accounts", "sharing", "wellbeing",
+        "mouse", "keyboard", "color", "printers",
+        "system", "universal-access", "privacy", "wacom",
+        NULL
+    };
+    for (int i = 0; panel_order[i] != NULL; i++) {
+        if (g_strcmp0(panel_order[i], id) == 0) {
+            return (double)i;
+        }
+    }
+    return 500.0;
+}
+
+static int mac_main_listbox_sort_func(GtkListBoxRow *row1, GtkListBoxRow *row2, gpointer user_data) {
+    (void)user_data;
+    double r1 = get_sidebar_panel_rank(row1);
+    double r2 = get_sidebar_panel_rank(row2);
+    if (r1 < r2) return -1;
+    if (r1 > r2) return 1;
+    return 0;
+}
+
 void gtk_list_box_set_sort_func(GtkListBox *box,
                                 GtkListBoxSortFunc sort_func,
                                 gpointer user_data,
@@ -2083,6 +2128,30 @@ void gtk_list_box_set_sort_func(GtkListBox *box,
     if (is_power_profile_list && sort_func != NULL) {
         if (orig_set_sort_func) {
             orig_set_sort_func(box, mac_safe_power_profile_sort_func, NULL, NULL);
+        }
+        return;
+    }
+
+    /* Check sidebar main_listbox */
+    gboolean is_sidebar_main_list = FALSE;
+    if ((id && g_strcmp0(id, "main_listbox") == 0) ||
+        (name && g_strcmp0(name, "main_listbox") == 0)) {
+        is_sidebar_main_list = TRUE;
+    } else if (box && GTK_IS_WIDGET(box)) {
+        GType plist_type = g_type_from_name("CcPanelList");
+        if (plist_type != 0 && gtk_widget_get_ancestor(GTK_WIDGET(box), plist_type) != NULL) {
+            if (gtk_widget_has_css_class(GTK_WIDGET(box), "navigation-sidebar")) {
+                if ((!id || g_strcmp0(id, "search_listbox") != 0) &&
+                    (!name || g_strcmp0(name, "search_listbox") != 0)) {
+                    is_sidebar_main_list = TRUE;
+                }
+            }
+        }
+    }
+
+    if (is_sidebar_main_list) {
+        if (orig_set_sort_func) {
+            orig_set_sort_func(box, mac_main_listbox_sort_func, NULL, NULL);
         }
         return;
     }
@@ -2900,7 +2969,79 @@ void on_dw_advanced_clicked(void *button, gpointer data) {
     g_spawn_command_line_async("gnome-extensions prefs desktop-widgets@r3nhick", NULL);
 }
 
+static void find_list_boxes_recursive(GtkWidget *widget, GList **list)
+{
+    if (!widget) return;
+    if (GTK_IS_LIST_BOX(widget)) {
+        *list = g_list_append(*list, widget);
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_list_boxes_recursive(child, list);
+    }
+}
+
+static GtkWidget *get_widgets_page(void)
+{
+    static GtkWidget *widgets_page = NULL;
+    if (widgets_page) return widgets_page;
+
+    GtkBuilder *builder = gtk_builder_new();
+    const char *overlay_path = "/usr/share/mactheme/gnome-control-center-overlay/cc-widgets-panel.ui";
+    char *user_path = NULL;
+    const char *home = g_get_home_dir();
+    if (home) {
+        user_path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "cc-widgets-panel.ui", NULL);
+    }
+    const char *local_path = "/home/vitaliy/MACTHEMEFILES/control-center/cc-widgets-panel.ui";
+
+    const char *path_to_use = NULL;
+    if (g_file_test(overlay_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = overlay_path;
+    } else if (user_path && g_file_test(user_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = user_path;
+    } else if (g_file_test(local_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = local_path;
+    }
+
+    GError *error = NULL;
+    gboolean loaded = FALSE;
+    if (path_to_use) {
+        loaded = gtk_builder_add_from_file(builder, path_to_use, &error);
+    }
+    if (user_path) g_free(user_path);
+
+    if (loaded) {
+        widgets_page = GTK_WIDGET(gtk_builder_get_object(builder, "widgets_page"));
+        if (widgets_page) {
+            g_object_ref(widgets_page);
+        }
+    } else {
+        if (error) {
+            g_warning("macW1Y: Failed to load cc-widgets-panel.ui: %s", error->message);
+            g_error_free(error);
+        }
+    }
+    g_object_unref(builder);
+    return widgets_page;
+}
+
 static void update_panel_headerbar(AdwNavigationSplitView *split_view);
+
+static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
+{
+    AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
+    if (!split_view || !row) return;
+
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"))) {
+        GtkWidget *page = get_widgets_page();
+        if (page) {
+            adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
+            adw_navigation_split_view_set_show_content(split_view, TRUE);
+            update_panel_headerbar(split_view);
+            gtk_list_box_select_row(box, row);
+        }
+    }
+}
 
 static void on_visible_page_changed_cb(GObject *gobject G_GNUC_UNUSED, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data)
 {
@@ -2940,10 +3081,6 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         if (g_getenv("MAC_SETTINGS_OPEN_STYLING") && !g_object_get_data(G_OBJECT(nv), "mac_styling_pushed")) {
             g_object_set_data(G_OBJECT(nv), "mac_styling_pushed", GINT_TO_POINTER(1));
             adw_navigation_view_push_by_tag(nv, "mac-styling");
-        }
-        if (g_getenv("MAC_SETTINGS_OPEN_WIDGETS") && !g_object_get_data(G_OBJECT(nv), "mac_widgets_pushed")) {
-            g_object_set_data(G_OBJECT(nv), "mac_widgets_pushed", GINT_TO_POINTER(1));
-            adw_navigation_view_push_by_tag(nv, "widgets");
         }
         AdwNavigationPage *vis_p = adw_navigation_view_get_visible_page(nv);
         if (vis_p) {
@@ -3083,6 +3220,101 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         configure_toolbar_views_recursive(GTK_WIDGET(content_page), FALSE);
     }
     update_panel_headerbar(split_view);
+
+    /* Locate main_listbox in sidebar and inject Widgets row */
+    GList *list_boxes = NULL;
+    find_list_boxes_recursive(GTK_WIDGET(sidebar), &list_boxes);
+    GtkListBox *main_listbox = NULL;
+    for (GList *l = list_boxes; l != NULL; l = l->next) {
+        GtkWidget *w = GTK_WIDGET(l->data);
+        const char *bid = GTK_IS_BUILDABLE(w) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(w)) : NULL;
+        if (g_strcmp0(bid, "main_listbox") == 0) {
+            main_listbox = GTK_LIST_BOX(w);
+            break;
+        }
+    }
+    if (!main_listbox && list_boxes) {
+        for (GList *l = list_boxes; l != NULL; l = l->next) {
+            GtkWidget *w = GTK_WIDGET(l->data);
+            if (gtk_widget_has_css_class(w, "navigation-sidebar")) {
+                const char *bid = GTK_IS_BUILDABLE(w) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(w)) : NULL;
+                if (!bid || g_strcmp0(bid, "search_listbox") != 0) {
+                    main_listbox = GTK_LIST_BOX(w);
+                    break;
+                }
+            }
+        }
+    }
+    g_list_free(list_boxes);
+
+    GtkListBoxRow *widgets_row = g_object_get_data(G_OBJECT(split_view), "mac_widgets_row");
+    if (main_listbox && !g_object_get_data(G_OBJECT(main_listbox), "mac_widgets_row_added")) {
+        widgets_row = GTK_LIST_BOX_ROW(gtk_list_box_row_new());
+        g_object_set_data(G_OBJECT(widgets_row), "is_widgets_row", GINT_TO_POINTER(1));
+
+        GtkWidget *grid = gtk_grid_new();
+        gtk_widget_set_hexpand(grid, TRUE);
+        gtk_widget_set_margin_top(grid, 12);
+        gtk_widget_set_margin_bottom(grid, 12);
+        gtk_widget_set_margin_start(grid, 6);
+        gtk_widget_set_margin_end(grid, 6);
+        gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+
+        GtkWidget *image = gtk_image_new_from_icon_name("view-grid-symbolic");
+        gtk_grid_attach(GTK_GRID(grid), image, 0, 0, 1, 1);
+
+        GtkWidget *label = gtk_label_new(mac_tr("widgets", "Віджети"));
+        gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+        gtk_widget_set_hexpand(label, TRUE);
+        gtk_grid_attach(GTK_GRID(grid), label, 1, 0, 1, 1);
+
+        gtk_list_box_row_set_child(widgets_row, grid);
+
+        MacPanelRowData *row_data = g_new0(MacPanelRowData, 1);
+        row_data->row = widgets_row;
+        row_data->id = g_strdup("widgets");
+        g_object_set_data_full(G_OBJECT(widgets_row), "data", row_data, (GDestroyNotify)g_free);
+
+        gtk_list_box_set_sort_func(main_listbox, mac_main_listbox_sort_func, NULL, NULL);
+        gtk_list_box_append(main_listbox, GTK_WIDGET(widgets_row));
+        gtk_list_box_invalidate_sort(main_listbox);
+
+        g_signal_connect(main_listbox, "row-activated", G_CALLBACK(on_main_listbox_row_activated), split_view);
+
+        g_object_set_data(G_OBJECT(main_listbox), "mac_widgets_row_added", GINT_TO_POINTER(1));
+        g_object_set_data(G_OBJECT(split_view), "mac_widgets_row", widgets_row);
+    }
+
+    if (g_getenv("MAC_SETTINGS_OPEN_WIDGETS") && !g_object_get_data(G_OBJECT(split_view), "mac_widgets_opened")) {
+        g_object_set_data(G_OBJECT(split_view), "mac_widgets_opened", GINT_TO_POINTER(1));
+        if (main_listbox && widgets_row) {
+            gtk_list_box_select_row(main_listbox, widgets_row);
+        }
+        GtkWidget *page = get_widgets_page();
+        if (page) {
+            adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
+            adw_navigation_split_view_set_show_content(split_view, TRUE);
+            update_panel_headerbar(split_view);
+        }
+    }
+
+    if (g_getenv("MAC_SETTINGS_TEST_DUMP") && main_listbox) {
+        printf("--- MAC_SETTINGS_TEST_DUMP START ---\n");
+        int idx = 0;
+        for (GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(main_listbox)); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+            if (GTK_IS_LIST_BOX_ROW(child)) {
+                GtkListBoxRow *r = GTK_LIST_BOX_ROW(child);
+                MacPanelRowData *d = g_object_get_data(G_OBJECT(r), "data");
+                const char *row_id = d ? d->id : "unknown";
+                printf("Sidebar Row [%d]: %s (is_widgets=%d, visible=%d)\n",
+                       idx++, row_id,
+                       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(r), "is_widgets_row")),
+                       gtk_widget_get_visible(child));
+            }
+        }
+        printf("--- MAC_SETTINGS_TEST_DUMP END ---\n");
+        exit(0);
+    }
 
     GList *all_sws = NULL;
     find_scrolled_windows(GTK_WIDGET(window), &all_sws);
