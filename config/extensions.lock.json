@@ -43,7 +43,7 @@
                 "50",
                 "51"
             ],
-            "sha256": "5bda1990f20b72f267a6422e772d18e2742dc2f68ede00cf43f63c9e22ea6d1f",
+            "sha256": "52ed94492d6c2a8e69568c0d8b4b5f99c0b8e519091ced39bfe0e42d2951ed74",
             "status": "locked",
             "source": "extensions.gnome.org",
             "macw1y_components": [
@@ -53,8 +53,8 @@
                 "liquid_glass_mutter_actor"
             ],
             "has_custom_patches": true,
-            "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline",
-            "last_verified": "2026-10-27"
+            "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
+            "last_verified": "2026-10-30"
         },
         "compiz-alike-magic-lamp-effect@hermes83.github.com": {
             "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
@@ -176,7 +176,7 @@
                 "50",
                 "51"
             ],
-            "sha256": "d88105edcf5e6d9f34fe9ed2532a70b4179c4da02468d01712648c4f0219d402",
+            "sha256": "beae9107749120ea5acc23b13355c550b8f13e4f9ae145f16c95f39969da34ff",
             "status": "locked",
             "source": "extensions.gnome.org",
             "macw1y_components": [
@@ -185,8 +185,8 @@
                 "control_center_sliders"
             ],
             "has_custom_patches": true,
-            "patch_description": "TahoeSlider dragging repaint fix for volume/brightness",
-            "last_verified": "2026-10-27"
+            "patch_description": "TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator",
+            "last_verified": "2026-10-30"
         },
         "liquid-glass@thinkingcoding1231.gmail.com": {
             "uuid": "liquid-glass@thinkingcoding1231.gmail.com",

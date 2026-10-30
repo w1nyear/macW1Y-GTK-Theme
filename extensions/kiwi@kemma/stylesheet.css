@@ -1246,7 +1246,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
    Inherits panel foreground via tahoeInk, same as other topbar buttons. */
 .kiwi-battery-box { spacing: 6px; padding: 0 2px; }
 .kiwi-battery-label { font-weight: 600; font-size: 0.95em; }
-.kiwi-battery-icon { icon-size: 20px; }
+.kiwi-battery-icon { width: 27px; height: 16px; margin: 0; padding: 0; }
 
 /* stock screen-sharing indicator: compact pill, unified with the bar.
    Visible only while sharing, so this is the active state: purple.

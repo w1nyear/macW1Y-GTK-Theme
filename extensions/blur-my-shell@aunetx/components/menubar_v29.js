@@ -8,6 +8,7 @@ import NM from 'gi://NM';
 import UPowerGlib from 'gi://UPowerGlib';
 import GnomeBluetooth from 'gi://GnomeBluetooth?version=3.0';
 import Pango from 'gi://Pango';
+import Cairo from 'cairo';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -770,21 +771,22 @@ const BatteryWidget = GObject.registerClass({
         });
         this.add_child(this._box);
 
-        this._icon = new St.Icon({
-            style_class: 'system-status-icon',
-            icon_size: 16,
-            icon_name: 'battery-full-symbolic',
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        this._box.add_child(this._icon);
-
         this._label = new St.Label({
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'mac-battery-percentage',
             visible: false,
         });
         this._box.add_child(this._label);
+
+        this._drawingArea = new St.DrawingArea({
+            width: 27,
+            height: 16,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            style_class: 'system-status-icon kiwi-battery-icon',
+        });
+        this._drawingArea.connect('repaint', () => this._onRepaint());
+        this._box.add_child(this._drawingArea);
 
         try {
             this._upowerClient = UPowerGlib.Client.new_full(null);
@@ -828,11 +830,115 @@ const BatteryWidget = GObject.registerClass({
         try { this._populateMenu(); } catch (_) {}
     }
 
+    _onRepaint() {
+        if (!this._drawingArea)
+            return;
+        const cr = this._drawingArea.get_context();
+        const [sw, sh] = this._drawingArea.get_surface_size();
+        const aw = this._drawingArea.width || 27;
+        const ah = this._drawingArea.height || 16;
+
+        cr.save();
+        cr.scale(sw / aw, sh / ah);
+        cr.setOperator(Cairo.Operator.CLEAR);
+        cr.paint();
+        cr.setOperator(Cairo.Operator.OVER);
+
+        const percentage = this._upowerDevice ? this._upowerDevice.percentage : 100;
+        const state = this._upowerDevice ? this._upowerDevice.state : UPowerGlib.DeviceState.DISCHARGING;
+        const charging = (
+            state === UPowerGlib.DeviceState.CHARGING ||
+            state === UPowerGlib.DeviceState.PENDING_CHARGE
+        );
+        const pct = Math.max(0, Math.min(1.0, percentage / 100.0));
+
+        const bw = 22.0;
+        const bh = 11.5;
+        const br = 3.6;
+        const bx = 1.0;
+        const by = (ah - bh) / 2.0;
+
+        const gap = 1.2;
+        const nw = 1.6;
+        const nh = 4.8;
+        const nr = 0.8;
+        const nx = bx + bw + gap;
+        const ny = by + (bh - nh) / 2.0;
+
+        function roundedRect(x, y, w, h, r) {
+            cr.newSubPath();
+            cr.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
+            cr.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
+            cr.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+            cr.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5);
+            cr.closePath();
+        }
+
+        // 1. Base uncharged capsule
+        roundedRect(bx, by, bw, bh, br);
+        cr.setSourceRGBA(1.0, 1.0, 1.0, 0.40);
+        cr.fill();
+
+        // 2. Terminal nipple
+        cr.newSubPath();
+        cr.arc(nx + nw - nr, ny + nr, nr, -Math.PI / 2, 0);
+        cr.arc(nx + nw - nr, ny + nh - nr, nr, 0, Math.PI / 2);
+        cr.lineTo(nx, ny + nh);
+        cr.lineTo(nx, ny);
+        cr.closePath();
+        cr.setSourceRGBA(1.0, 1.0, 1.0, 0.40);
+        cr.fill();
+
+        // 3. Charged level fill
+        if (pct > 0.005) {
+            cr.save();
+            roundedRect(bx, by, bw, bh, br);
+            cr.clip();
+
+            const fillW = bw * pct;
+            cr.rectangle(bx, by, fillW, bh);
+
+            if (pct <= 0.10 && !charging) {
+                cr.setSourceRGBA(255 / 255, 59 / 255, 48 / 255, 1.0);
+            } else if (pct <= 0.20 && !charging) {
+                cr.setSourceRGBA(255 / 255, 204 / 255, 0 / 255, 1.0);
+            } else {
+                cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
+            }
+            cr.fill();
+
+            // 4. Lightning bolt if charging
+            if (charging) {
+                const cx = bx + bw / 2.0;
+                const cy = by + bh / 2.0;
+                cr.newPath();
+                cr.moveTo(cx + 0.5, cy - 4.2);
+                cr.lineTo(cx - 2.0, cy + 0.4);
+                cr.lineTo(cx - 0.2, cy + 0.4);
+                cr.lineTo(cx - 0.7, cy + 4.2);
+                cr.lineTo(cx + 2.0, cy - 0.4);
+                cr.lineTo(cx + 0.2, cy - 0.4);
+                cr.closePath();
+
+                if (pct >= 0.5) {
+                    cr.setOperator(Cairo.Operator.CLEAR);
+                    cr.fill();
+                } else {
+                    cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
+                    cr.fill();
+                }
+            }
+
+            cr.restore();
+        }
+
+        cr.restore();
+        cr.$dispose();
+    }
+
     _sync() {
-        if (!this._upowerDevice || !this._icon) return;
-        const iconName = this._upowerDevice.icon_name || 'battery-full-symbolic';
-        if (this._icon.icon_name !== iconName)
-            this._icon.icon_name = iconName;
+        if (!this._upowerDevice || !this._drawingArea) return;
+        this._drawingArea.queue_repaint();
 
         let showPercentage = false;
         try {

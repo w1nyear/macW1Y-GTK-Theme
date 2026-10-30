@@ -6,19 +6,147 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
+import Cairo from 'cairo';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import {getTopbarInk, watchInk} from './tahoeInk.js';
 
 let _batteryButton = null;
 let _batteryBox = null;
 let _batteryLabel = null;
-let _batteryIcon = null;
+let _batteryDrawingArea = null;
 let _batteryProxy = null;
 let _batteryChangedId = 0;
 let _clickId = 0;
 let _searchButton = null;
 let _interfaceSettings = null;
 let _interfaceChangedId = 0;
+let _currentBatteryPercentage = 100;
+let _currentBatteryState = 2; // discharging
+let _inkUnwatch = null;
+
+function _onBatteryRepaint(area) {
+    if (!area)
+        return;
+    const cr = area.get_context();
+    const [sw, sh] = area.get_surface_size();
+    const aw = area.width || 27;
+    const ah = area.height || 16;
+
+    cr.save();
+    cr.scale(sw / aw, sh / ah);
+    cr.setOperator(Cairo.Operator.CLEAR);
+    cr.paint();
+    cr.setOperator(Cairo.Operator.OVER);
+
+    const percentage = _currentBatteryPercentage;
+    const state = _currentBatteryState;
+    const charging = (state === 1 || state === 5);
+    const pct = Math.max(0, Math.min(1.0, percentage / 100.0));
+
+    let isDarkInk = false;
+    try {
+        if (typeof getTopbarInk === 'function')
+            isDarkInk = (getTopbarInk() === 'dark');
+    } catch (_) {}
+
+    const bw = 22.0;
+    const bh = 11.5;
+    const br = 3.6;
+    const bx = 1.0;
+    const by = (ah - bh) / 2.0;
+
+    const gap = 1.2;
+    const nw = 1.6;
+    const nh = 4.8;
+    const nr = 0.8;
+    const nx = bx + bw + gap;
+    const ny = by + (bh - nh) / 2.0;
+
+    function roundedRect(x, y, w, h, r) {
+        cr.newSubPath();
+        cr.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
+        cr.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
+        cr.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+        cr.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5);
+        cr.closePath();
+    }
+
+    // 1. Base uncharged capsule
+    roundedRect(bx, by, bw, bh, br);
+    if (isDarkInk) {
+        cr.setSourceRGBA(0.0, 0.0, 0.0, 0.28);
+    } else {
+        cr.setSourceRGBA(1.0, 1.0, 1.0, 0.40);
+    }
+    cr.fill();
+
+    // 2. Terminal nipple
+    cr.newSubPath();
+    cr.arc(nx + nw - nr, ny + nr, nr, -Math.PI / 2, 0);
+    cr.arc(nx + nw - nr, ny + nh - nr, nr, 0, Math.PI / 2);
+    cr.lineTo(nx, ny + nh);
+    cr.lineTo(nx, ny);
+    cr.closePath();
+    if (isDarkInk) {
+        cr.setSourceRGBA(0.0, 0.0, 0.0, 0.28);
+    } else {
+        cr.setSourceRGBA(1.0, 1.0, 1.0, 0.40);
+    }
+    cr.fill();
+
+    // 3. Charged level fill
+    if (pct > 0.005) {
+        cr.save();
+        roundedRect(bx, by, bw, bh, br);
+        cr.clip();
+
+        const fillW = bw * pct;
+        cr.rectangle(bx, by, fillW, bh);
+
+        if (pct <= 0.10 && !charging) {
+            cr.setSourceRGBA(255 / 255, 59 / 255, 48 / 255, 1.0);
+        } else if (pct <= 0.20 && !charging) {
+            cr.setSourceRGBA(255 / 255, 204 / 255, 0 / 255, 1.0);
+        } else if (isDarkInk) {
+            cr.setSourceRGBA(0.0, 0.0, 0.0, 1.0);
+        } else {
+            cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
+        }
+        cr.fill();
+
+        // 4. Lightning bolt if charging
+        if (charging) {
+            const cx = bx + bw / 2.0;
+            const cy = by + bh / 2.0;
+            cr.newPath();
+            cr.moveTo(cx + 0.5, cy - 4.2);
+            cr.lineTo(cx - 2.0, cy + 0.4);
+            cr.lineTo(cx - 0.2, cy + 0.4);
+            cr.lineTo(cx - 0.7, cy + 4.2);
+            cr.lineTo(cx + 2.0, cy - 0.4);
+            cr.lineTo(cx + 0.2, cy - 0.4);
+            cr.closePath();
+
+            if (pct >= 0.5) {
+                cr.setOperator(Cairo.Operator.CLEAR);
+                cr.fill();
+            } else {
+                if (isDarkInk) {
+                    cr.setSourceRGBA(0.0, 0.0, 0.0, 1.0);
+                } else {
+                    cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
+                }
+                cr.fill();
+            }
+        }
+
+        cr.restore();
+    }
+
+    cr.restore();
+    cr.$dispose();
+}
 
 function _syncBatteryPercentageVisibility() {
     if (!_batteryLabel && _batteryButton) {
@@ -77,7 +205,7 @@ function _iconForLevel(percentage, state) {
 
 function _updateBattery() {
     try {
-        if (!_batteryProxy || !_batteryLabel || !_batteryIcon)
+        if (!_batteryProxy || !_batteryLabel || !_batteryDrawingArea)
             return;
         _syncBatteryPercentageVisibility();
         const pctProp = _batteryProxy.get_cached_property('Percentage');
@@ -86,9 +214,11 @@ function _updateBattery() {
             return;
         const percentage = pctProp.unpack();
         const state = stateProp.unpack();
+        _currentBatteryPercentage = percentage;
+        _currentBatteryState = state;
         // macOS shows "87 %" style: rounded number + icon
         _batteryLabel.text = `${Math.round(percentage)}%`;
-        _batteryIcon.icon_name = _iconForLevel(percentage, state);
+        _batteryDrawingArea.queue_repaint();
     } catch (_) {
         // keep last value
     }
@@ -198,13 +328,16 @@ export function enable() {
             text: '--%',
             y_align: Clutter.ActorAlign.CENTER,
         });
-        _batteryIcon = new St.Icon({
-            icon_name: 'battery-level-80-symbolic',
-            style_class: 'system-status-icon kiwi-battery-icon',
-            icon_size: 20,
+        _batteryDrawingArea = new St.DrawingArea({
+            width: 27,
+            height: 16,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            style_class: 'kiwi-battery-icon',
         });
+        _batteryDrawingArea.connect('repaint', () => _onBatteryRepaint(_batteryDrawingArea));
         _batteryBox.add_child(_batteryLabel);
-        _batteryBox.add_child(_batteryIcon);
+        _batteryBox.add_child(_batteryDrawingArea);
         _batteryButton.add_child(_batteryBox);
         _clickId = _batteryButton.connect('button-press-event', () => {
             _openPowerSettings();
@@ -223,6 +356,15 @@ export function enable() {
                 _syncBatteryPercentageVisibility();
             });
         }
+        if (!_inkUnwatch) {
+            try {
+                _inkUnwatch = watchInk(() => {
+                    _batteryDrawingArea?.queue_repaint();
+                });
+            } catch (_) {
+                _inkUnwatch = null;
+            }
+        }
         _syncBatteryPercentageVisibility();
         _initBatteryProxy();
         _updateBattery();
@@ -232,7 +374,22 @@ export function enable() {
             _batteryBox = _batteryButton.get_child_at_index(0);
             const children = _batteryBox?.get_children?.() || [];
             _batteryLabel = children.find(c => c instanceof St.Label) || null;
-            _batteryIcon = children.find(c => c instanceof St.Icon) || null;
+            const oldIcon = children.find(c => c instanceof St.Icon);
+            if (oldIcon) {
+                try { _batteryBox.remove_child(oldIcon); oldIcon.destroy(); } catch (_) {}
+            }
+            _batteryDrawingArea = children.find(c => c instanceof St.DrawingArea) || null;
+            if (!_batteryDrawingArea) {
+                _batteryDrawingArea = new St.DrawingArea({
+                    width: 27,
+                    height: 16,
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
+                    style_class: 'kiwi-battery-icon',
+                });
+                _batteryDrawingArea.connect('repaint', () => _onBatteryRepaint(_batteryDrawingArea));
+                _batteryBox.add_child(_batteryDrawingArea);
+            }
         } catch (_) {}
         if (!_interfaceSettings) {
             try {
@@ -243,6 +400,15 @@ export function enable() {
             _interfaceChangedId = _interfaceSettings.connect('changed::show-battery-percentage', () => {
                 _syncBatteryPercentageVisibility();
             });
+        }
+        if (!_inkUnwatch) {
+            try {
+                _inkUnwatch = watchInk(() => {
+                    _batteryDrawingArea?.queue_repaint();
+                });
+            } catch (_) {
+                _inkUnwatch = null;
+            }
         }
         _syncBatteryPercentageVisibility();
         _initBatteryProxy();
@@ -259,6 +425,10 @@ export function enable() {
 }
 
 export function disable() {
+    if (_inkUnwatch) {
+        try { _inkUnwatch(); } catch (_) {}
+        _inkUnwatch = null;
+    }
     if (_interfaceChangedId && _interfaceSettings) {
         try {
             _interfaceSettings.disconnect(_interfaceChangedId);
@@ -293,7 +463,10 @@ export function disable() {
     }
     _batteryBox = null;
     _batteryLabel = null;
-    _batteryIcon = null;
+    if (_batteryDrawingArea) {
+        try { _batteryDrawingArea.destroy(); } catch (_) {}
+        _batteryDrawingArea = null;
+    }
     if (_searchButton) {
         try {
             _searchButton.destroy();
