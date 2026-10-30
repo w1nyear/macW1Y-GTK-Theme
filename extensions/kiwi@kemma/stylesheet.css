@@ -1963,7 +1963,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   background: transparent !important;
   border-radius: 20px !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.40) !important;
+  box-shadow: none !important;
 }
 
 .tahoe-qs-dark .tahoe-qs-endbtn-icon,

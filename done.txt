@@ -13514,3 +13514,26 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
    - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено).
    - Повне live-тестування виклику `togglePanel()` та відкриття підменю Wi-Fi, Bluetooth, Аудіо, Дисплей, Режим живлення та Фокус: робота стабільна, без перезапусків чи помилок.
 
+
+================================================================================
+Етап 642: Синхронізація параметрів тіней і скла підменю з контекстним меню
+================================================================================
+
+1. Параметри скла та тіней для підменю Центру Керування:
+   - Створено функцію `_getContextMenuGlassParams()` у [tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js), яка динамічно зчитує налаштування контекстного меню з `org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com`:
+     * Розмиття: `desktop-menu-blur-radius`
+     * Яскравість / контраст / насиченість: `desktop-menu-brightness`, `desktop-menu-contrast`, `desktop-menu-saturation`
+     * Колір та сила тонування: `desktop-menu-tint-color`, `desktop-menu-tint-strength`
+     * Радіус кутів: `desktop-menu-corner-radius`
+     * Інтенсивність та радіус тіні: `shadow-intensity`, `shadow-radius`
+   - Передано ці параметри безпосередньо в шейдер `mgr.effect` та `mgr.bgActor` підменю.
+
+2. Усунення темного прямокутного артефакту тіні:
+   - Повністю вимкнено CSS `box-shadow` у [.tahoe-submenu-glass-box](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css) та у всіх інлайн-стилях підменю `tahoeControlCenter.js` і `tahoeQuickSettings.js`.
+   - Тінь тепер відмальовується виключно апаратним шейдером Liquid Glass, формуючи м'яке заокруглене розмиття без прямокутних зрізів.
+
+3. Верифікація:
+   - `bin/mac-extension-guard verify`: VERIFICATION SUCCESS (21/21 розширень валідні).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 тестів пройдено).
+   - Live-тестування: підменю відчиняються з параметрами контекстного меню, без темного блоку та з м'якою тінзю.
+

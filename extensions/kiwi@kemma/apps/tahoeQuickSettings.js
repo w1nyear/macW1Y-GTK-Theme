@@ -1771,7 +1771,7 @@ async function _attachSubmenuGlass(menu, owner = 'submenu') {
         menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
 
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
-        menu.box.style = 'width: 300px !important; min-width: 300px !important; max-width: 300px !important; border-radius: 20px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 8px !important;';
+        menu.box.style = 'width: 300px !important; min-width: 300px !important; max-width: 300px !important; border-radius: 20px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 8px !important;';
 
         const tuneGlass = () => {
             const mgr = menu._liquidGlassUIManager;
@@ -1831,7 +1831,7 @@ async function _openPowerModeSubmenu(sourceActor, state) {
         Main.uiGroup.add_child(menu.actor);
         menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
         if (menu.actor._border) { menu.actor._border.hide(); menu.actor._border.opacity = 0; }
-        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 18px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; padding: 8px !important;';
+        menu.box.style = 'width: 296px !important; min-width: 296px !important; max-width: 296px !important; border-radius: 18px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; padding: 8px !important;';
 
         const curProfile = _getPowerProfile();
 
