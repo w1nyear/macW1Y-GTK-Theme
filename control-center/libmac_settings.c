@@ -1961,6 +1961,8 @@ static GtkWidget *create_fan_subrow_for_profile(int profile_idx) {
     gtk_list_box_row_set_activatable(GTK_LIST_BOX_ROW(sub_row), FALSE);
     gtk_list_box_row_set_selectable(GTK_LIST_BOX_ROW(sub_row), FALSE);
     gtk_widget_add_css_class(sub_row, "fan-settings-subrow");
+    g_object_set_data(G_OBJECT(sub_row), "is_fan_subrow", GINT_TO_POINTER(1));
+    g_object_set_data(G_OBJECT(sub_row), "profile_idx", GINT_TO_POINTER(profile_idx));
 
     GtkWidget *revealer = gtk_revealer_new();
     gtk_revealer_set_transition_type(GTK_REVEALER(revealer), GTK_REVEALER_TRANSITION_TYPE_SLIDE_DOWN);
@@ -2007,11 +2009,96 @@ static GtkWidget *create_fan_subrow_for_profile(int profile_idx) {
     return sub_row;
 }
 
+static int get_row_sort_key(GtkListBoxRow *row) {
+    if (!row) return 999;
+    if (g_object_get_data(G_OBJECT(row), "is_fan_subrow") != NULL) {
+        int p = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "profile_idx"));
+        return (p * 10) + 1;
+    }
+
+    GType prof_type = g_type_from_name("CcPowerProfileRow");
+    int profile_val = 1;
+
+    if (prof_type != 0 && g_type_is_a(G_OBJECT_TYPE(row), prof_type)) {
+        typedef int (*CcGetProfileFn)(void *);
+        static CcGetProfileFn get_prof = NULL;
+        if (!get_prof) get_prof = (CcGetProfileFn)dlsym(RTLD_DEFAULT, "cc_power_profile_row_get_profile");
+        if (get_prof) {
+            int p = get_prof(row);
+            if (p >= 0 && p <= 2) profile_val = p;
+        }
+    } else if (ADW_IS_PREFERENCES_ROW(row)) {
+        const char *title = adw_preferences_row_get_title(ADW_PREFERENCES_ROW(row));
+        if (title) {
+            if (strstr(title, "Швидкодія") || strstr(title, "Performance") || strstr(title, "швидкодія")) {
+                profile_val = 0;
+            } else if (strstr(title, "Заощадження") || strstr(title, "Power") || strstr(title, "заощадження")) {
+                profile_val = 2;
+            } else {
+                profile_val = 1;
+            }
+        }
+    }
+
+    return (profile_val * 10) + 0;
+}
+
+static int mac_safe_power_profile_sort_func(GtkListBoxRow *row1, GtkListBoxRow *row2, gpointer user_data) {
+    (void)user_data;
+    int k1 = get_row_sort_key(row1);
+    int k2 = get_row_sort_key(row2);
+    if (k1 < k2) return -1;
+    if (k1 > k2) return 1;
+    return 0;
+}
+
+void gtk_list_box_set_sort_func(GtkListBox *box,
+                                GtkListBoxSortFunc sort_func,
+                                gpointer user_data,
+                                GDestroyNotify destroy)
+{
+    static void (*orig_set_sort_func)(GtkListBox *, GtkListBoxSortFunc, gpointer, GDestroyNotify) = NULL;
+    if (!orig_set_sort_func) orig_set_sort_func = dlsym(RTLD_NEXT, "gtk_list_box_set_sort_func");
+
+    const char *id = (box && GTK_IS_BUILDABLE(box)) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(box)) : NULL;
+    const char *name = (box && GTK_IS_WIDGET(box)) ? gtk_widget_get_name(GTK_WIDGET(box)) : NULL;
+
+    gboolean is_power_profile_list = FALSE;
+    if ((id && g_strcmp0(id, "power_profile_listbox") == 0) ||
+        (name && g_strcmp0(name, "power_profile_listbox") == 0)) {
+        is_power_profile_list = TRUE;
+    } else if (box && GTK_IS_WIDGET(box)) {
+        GType panel_type = g_type_from_name("CcPowerPanel");
+        if (panel_type != 0 && gtk_widget_get_ancestor(GTK_WIDGET(box), panel_type) != NULL) {
+            GtkWidget *section = gtk_widget_get_ancestor(GTK_WIDGET(box), g_type_from_name("AdwPreferencesGroup"));
+            if (section) {
+                const char *sec_id = GTK_IS_BUILDABLE(section) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(section)) : NULL;
+                if (sec_id && g_strcmp0(sec_id, "power_profile_section") == 0) {
+                    is_power_profile_list = TRUE;
+                }
+            }
+        }
+    }
+
+    if (is_power_profile_list && sort_func != NULL) {
+        if (orig_set_sort_func) {
+            orig_set_sort_func(box, mac_safe_power_profile_sort_func, NULL, NULL);
+        }
+        return;
+    }
+
+    if (orig_set_sort_func) {
+        orig_set_sort_func(box, sort_func, user_data, destroy);
+    }
+}
+
 static gboolean attach_fan_subrow_idle(gpointer user_data) {
     GtkWidget *btn = GTK_WIDGET(user_data);
     if (!btn || !GTK_IS_WIDGET(btn)) return G_SOURCE_REMOVE;
 
-    GtkWidget *row = gtk_widget_get_ancestor(btn, g_type_from_name("AdwActionRow"));
+    GType prof_type = g_type_from_name("CcPowerProfileRow");
+    GtkWidget *row = prof_type ? gtk_widget_get_ancestor(btn, prof_type) : NULL;
+    if (!row) row = gtk_widget_get_ancestor(btn, g_type_from_name("AdwActionRow"));
     if (!row) row = gtk_widget_get_ancestor(btn, GTK_TYPE_LIST_BOX_ROW);
     if (!row) return G_SOURCE_REMOVE;
 
@@ -2026,12 +2113,14 @@ static gboolean attach_fan_subrow_idle(gpointer user_data) {
     g_object_set_data(G_OBJECT(row), "has_fan_subrow", GINT_TO_POINTER(1));
 
     int profile_idx = 1;
-    typedef int (*CcGetProfileFn)(void *);
-    CcGetProfileFn get_prof = (CcGetProfileFn)dlsym(RTLD_DEFAULT, "cc_power_profile_row_get_profile");
-    if (get_prof) {
-        int p = get_prof(row);
-        if (p >= 0 && p <= 2) profile_idx = p;
-    } else {
+    if (prof_type != 0 && g_type_is_a(G_OBJECT_TYPE(row), prof_type)) {
+        typedef int (*CcGetProfileFn)(void *);
+        CcGetProfileFn get_prof = (CcGetProfileFn)dlsym(RTLD_DEFAULT, "cc_power_profile_row_get_profile");
+        if (get_prof) {
+            int p = get_prof(row);
+            if (p >= 0 && p <= 2) profile_idx = p;
+        }
+    } else if (ADW_IS_PREFERENCES_ROW(row)) {
         const char *title = adw_preferences_row_get_title(ADW_PREFERENCES_ROW(row));
         if (title) {
             if (strstr(title, "Швидкодія") || strstr(title, "Performance") || strstr(title, "швидкодія")) {
@@ -2049,21 +2138,50 @@ static gboolean attach_fan_subrow_idle(gpointer user_data) {
     GtkWidget *sub_row = create_fan_subrow_for_profile(profile_idx);
     g_object_set_data(G_OBJECT(btn), "fan_subrow", sub_row);
     g_object_set_data(G_OBJECT(sub_row), "parent_row", row);
+    g_object_set_data(G_OBJECT(sub_row), "is_fan_subrow", GINT_TO_POINTER(1));
+    g_object_set_data(G_OBJECT(sub_row), "profile_idx", GINT_TO_POINTER(profile_idx));
+
+    /* Ensure listbox has safe sort func installed so it won't crash when sorting sub_row */
+    static void (*orig_set_sort_func)(GtkListBox *, GtkListBoxSortFunc, gpointer, GDestroyNotify) = NULL;
+    if (!orig_set_sort_func) orig_set_sort_func = dlsym(RTLD_NEXT, "gtk_list_box_set_sort_func");
+    if (orig_set_sort_func) {
+        orig_set_sort_func(GTK_LIST_BOX(listbox), mac_safe_power_profile_sort_func, NULL, NULL);
+    }
 
     gtk_list_box_insert(GTK_LIST_BOX(listbox), sub_row, idx + 1);
 
     return G_SOURCE_REMOVE;
 }
 
+static GList *g_fan_expand_buttons = NULL;
+
+static void find_toggle_button_child(GtkWidget *widget, gpointer data);
+
+static void on_fan_expand_btn_destroyed(gpointer data, GObject *where_the_object_was) {
+    (void)data;
+    g_fan_expand_buttons = g_list_remove(g_fan_expand_buttons, where_the_object_was);
+}
+
+static void register_fan_expand_button(GtkWidget *btn) {
+    if (!btn || !GTK_IS_TOGGLE_BUTTON(btn)) return;
+    if (g_list_find(g_fan_expand_buttons, btn)) return;
+    g_fan_expand_buttons = g_list_append(g_fan_expand_buttons, btn);
+    g_object_weak_ref(G_OBJECT(btn), on_fan_expand_btn_destroyed, NULL);
+}
+
 void mac_power_profile_fan_btn_realize(GtkWidget *btn, gpointer user_data) {
     (void)user_data;
     if (!btn) return;
+    gtk_widget_set_name(btn, "profile_fan_expand_btn");
+    register_fan_expand_button(btn);
     g_idle_add(attach_fan_subrow_idle, btn);
 }
 
 void mac_power_profile_fan_btn_toggled(GtkWidget *btn, gpointer user_data) {
     (void)user_data;
-    if (!btn) return;
+    if (!btn || !GTK_IS_TOGGLE_BUTTON(btn)) return;
+    gtk_widget_set_name(btn, "profile_fan_expand_btn");
+    register_fan_expand_button(btn);
 
     GtkWidget *sub_row = (GtkWidget *)g_object_get_data(G_OBJECT(btn), "fan_subrow");
     if (!sub_row) {
@@ -2077,6 +2195,40 @@ void mac_power_profile_fan_btn_toggled(GtkWidget *btn, gpointer user_data) {
 
     gboolean active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(btn));
     if (active) {
+        /* Mutually exclusive radio accordion: close any other open power profile sub-rows */
+        static gboolean in_accordion_sync = FALSE;
+        if (!in_accordion_sync) {
+            in_accordion_sync = TRUE;
+
+            /* 1. Deselect other buttons in registered list */
+            for (GList *l = g_fan_expand_buttons; l != NULL; l = l->next) {
+                GtkWidget *other = GTK_WIDGET(l->data);
+                if (other && other != btn && GTK_IS_TOGGLE_BUTTON(other)) {
+                    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(other))) {
+                        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(other), FALSE);
+                    }
+                }
+            }
+
+            /* 2. Fail-safe scan of parent listbox rows */
+            GtkWidget *row = gtk_widget_get_ancestor(btn, GTK_TYPE_LIST_BOX_ROW);
+            GtkWidget *listbox = row ? gtk_widget_get_ancestor(row, GTK_TYPE_LIST_BOX) : NULL;
+            if (listbox) {
+                for (GtkWidget *child = gtk_widget_get_first_child(listbox); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+                    if (child == row || child == sub_row) continue;
+                    GtkWidget *other_btn = NULL;
+                    find_toggle_button_child(child, &other_btn);
+                    if (other_btn && other_btn != btn && GTK_IS_TOGGLE_BUTTON(other_btn)) {
+                        if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(other_btn))) {
+                            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(other_btn), FALSE);
+                        }
+                    }
+                }
+            }
+
+            in_accordion_sync = FALSE;
+        }
+
         gtk_widget_set_visible(sub_row, TRUE);
         gtk_revealer_set_reveal_child(GTK_REVEALER(revealer), TRUE);
         gtk_button_set_icon_name(GTK_BUTTON(btn), "pan-up-symbolic");
@@ -2106,6 +2258,7 @@ static void setup_power_profile_row_fan_button(GtkWidget *row) {
 
     GtkWidget *btn = NULL;
     find_toggle_button_child(row, &btn);
+    gboolean created_dynamic = FALSE;
 
     if (!btn) {
         btn = gtk_toggle_button_new();
@@ -2115,11 +2268,13 @@ static void setup_power_profile_row_fan_button(GtkWidget *row) {
         gtk_widget_add_css_class(btn, "flat");
         gtk_widget_add_css_class(btn, "circular");
         adw_action_row_add_suffix(ADW_ACTION_ROW(row), btn);
+        created_dynamic = TRUE;
     }
 
     if (btn) {
         gtk_widget_set_name(btn, "profile_fan_expand_btn");
-        if (!g_object_get_data(G_OBJECT(btn), "signals_hooked")) {
+        register_fan_expand_button(btn);
+        if (created_dynamic && !g_object_get_data(G_OBJECT(btn), "signals_hooked")) {
             g_object_set_data(G_OBJECT(btn), "signals_hooked", GINT_TO_POINTER(1));
             g_signal_connect(btn, "toggled", G_CALLBACK(mac_power_profile_fan_btn_toggled), NULL);
         }

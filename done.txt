@@ -12967,3 +12967,33 @@ Task 499: Повне полірування екрана блокування (m
    - `bin/mac-audit-sync check` — 100% PASS (Dock, бібліотеки, утиліти, Guard, оверлей).
    - `bin/mac-i18n-verify` — 100% SUCCESSFUL (i18n, l10n, 21 розширення, 0 кирилиці в install.sh).
    - `install.sh` — 100% English (0 Cyrillic characters, `bash -n` OK).
+
+--------------------------------------------------------------------------------
+ЕТАП 627: macW1Y 0.5 — Радіо-акордеон для підпунктів режимів живлення (Параметри)
+
+1. Вимоги:
+   - У Параметрах GNOME у пункті «Режим живлення» зробити відкриття підпунктів (висувних панелей налаштування швидкості вентиляторів) взаємовиключним за принципом радіо/акордеона: одночасно відкритий лише один підпункт; при відкритті іншого попередній автоматично закривається.
+   - Повне збереження можливості закрити поточний відкритий підпункт повторним натисканням.
+   - Повне усунення критичного попередження assertion `CC_IS_POWER_PROFILE_ROW (self)` при сортуванні рядків у `power_profile_listbox`.
+   - 100% сумісність з екосистемою macW1Y, проходження всіх аудитів та перевірок.
+
+2. Виконана робота:
+   - Реалізація радіо-акордеона:
+     * У `libmac_settings.c` (каталоги `control-center/`, `gnome-control-center-overlay/`) додано механізм реєстрації кнопок розгортання `profile_fan_expand_btn` з відстеженням життєвого циклу через `g_object_weak_ref` (`g_fan_expand_buttons`).
+     * В обробнику `mac_power_profile_fan_btn_toggled` реалізовано взаємовиключне закриття інших активних кнопок (`gtk_toggle_button_set_active(other, FALSE)`) із захистом від циклічної рекурсії `in_accordion_sync`.
+     * Додано резервне сканування дочірніх віджетів батьківського `power_profile_listbox` для гарантованої синхронізації стану.
+   - Виправлення критичного попередження assertion:
+     * Виявлено причину попередження `cc_power_profile_row_get_profile: assertion 'CC_IS_POWER_PROFILE_ROW (self)' failed`: системний GNOME Control Center призначає власну функцію сортування для `power_profile_listbox`, яка викликає `cc_power_profile_row_get_profile` для кожного рядка списку, включно з нашими дочірніми `fan-settings-subrow`.
+     * Реалізовано перехоплення `gtk_list_box_set_sort_func` та безпечну функцію сортування `mac_safe_power_profile_sort_func`, яка розпізнає субрядки вентиляторів за міткою `is_fan_subrow`, призначає їм ключ `profile_idx * 10 + 1` і гарантує розміщення субрядка суворо під відповідним рядком профілю живлення (`profile_idx * 10 + 0`), без небезпечних викликів `cc_power_profile_row_get_profile`.
+     * У `attach_fan_subrow_idle` додано безпечну перевірку типу `GType prof_type = g_type_from_name("CcPowerProfileRow")` перед викликом `get_prof(row)`.
+   - Синхронізація бібліотек та системних компонентів:
+     * Скомпільовано оновлений `libmac_settings.so` та синхронізовано в усі 6 системних локацій (`control-center/`, `gnome-control-center-overlay/`, `lib/`, `~/.local/lib/`, `/usr/local/lib/`, `/usr/lib/x86_64-linux-gnu/`, `/usr/share/mactheme/gnome-control-center-overlay/`).
+     * Синхронізовано сирцевий файл `libmac_settings.c`.
+
+3. Результати верифікації:
+   - Розроблено та успішно виконано автоматизований тест `test_accordion.c` — перевірено всі стани (активація 0, перехід 0->1 із закриттям 0, перехід 1->2 із закриттям 1, повторний клік на 2 для повного згортання) — 100% SUCCESS.
+   - Тестовий запуск `gnome-control-center power` підтвердив повну відсутність критичних попереджень `cc_power_profile_row_get_profile`.
+   - `bin/mac-audit-sync check` — 100% PASS.
+   - `bin/mac-extension-guard verify` — 21/21 SUCCESS.
+   - `/usr/local/bin/mac-diagnostics` — 100% OK.
+   - `bin/mac-i18n-verify` — 100% SUCCESSFUL.
