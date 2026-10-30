@@ -2739,6 +2739,18 @@ static void find_scrolled_windows(GtkWidget *widget, GList **list)
     }
 }
 
+static void find_view_switchers_recursive(GtkWidget *widget, GList **list)
+{
+    if (!widget) return;
+    if (ADW_IS_VIEW_SWITCHER(widget)) {
+        *list = g_list_append(*list, widget);
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_view_switchers_recursive(child, list);
+    }
+}
+
 static void configure_toolbar_views_recursive(GtkWidget *widget, gboolean is_sidebar)
 {
     if (!widget) return;
@@ -3273,6 +3285,76 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-content list.boxed-list row image:dir(ltr):last-child { "
         "  color: rgba(255, 255, 255, 0.30); "
         "  -gtk-icon-size: 14px; "
+        "} "
+        "window.mac-settings-window .mac-settings-content-headerbar.has-view-switcher, "
+        "window.mac-settings-window .mac-settings-switcher-headerbar, "
+        "window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar { "
+        "  min-height: 48px; "
+        "  background: linear-gradient(to bottom, "
+        "    #1e1e1e 0%, "
+        "    rgba(30, 30, 32, 0.96) 50%, "
+        "    rgba(30, 30, 32, 0.85) 75%, "
+        "    rgba(30, 30, 32, 0.35) 90%, "
+        "    transparent 100%); "
+        "  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25); "
+        "} "
+        "window.mac-settings-window viewswitcher, "
+        "window.mac-settings-window .mac-view-switcher, "
+        "window.mac-settings-window headerbar viewswitcher { "
+        "  min-height: 28px; "
+        "  border-radius: 9999px; "
+        "  padding: 3px; "
+        "  background-color: rgba(45, 45, 50, 0.82); "
+        "  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05)); "
+        "  border: 1px solid rgba(255, 255, 255, 0.15); "
+        "  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.12); "
+        "} "
+        "window.mac-settings-window viewswitcher button.toggle, "
+        "window.mac-settings-window .mac-view-switcher button.toggle, "
+        "window.mac-settings-window headerbar viewswitcher button.toggle { "
+        "  min-height: 24px; "
+        "  padding: 3px 14px; "
+        "  margin: 0 1px; "
+        "  border-radius: 9999px; "
+        "  font-size: 13px; "
+        "  color: rgba(255, 255, 255, 0.75); "
+        "  background: transparent; "
+        "  background-color: transparent; "
+        "  border: none; "
+        "  box-shadow: none; "
+        "  transition: all 120ms ease-out; "
+        "} "
+        "window.mac-settings-window viewswitcher button.toggle:hover, "
+        "window.mac-settings-window .mac-view-switcher button.toggle:hover, "
+        "window.mac-settings-window headerbar viewswitcher button.toggle:hover { "
+        "  color: #ffffff; "
+        "  background-color: rgba(255, 255, 255, 0.08); "
+        "} "
+        "window.mac-settings-window viewswitcher button.toggle:checked, "
+        "window.mac-settings-window .mac-view-switcher button.toggle:checked, "
+        "window.mac-settings-window headerbar viewswitcher button.toggle:checked { "
+        "  color: #ffffff; "
+        "  font-weight: 600; "
+        "  background-color: rgba(255, 255, 255, 0.22); "
+        "  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.08)); "
+        "  border: 1px solid rgba(255, 255, 255, 0.18); "
+        "  border-radius: 9999px; "
+        "  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25); "
+        "} "
+        "window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > viewport, "
+        "window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > viewport > clamp { "
+        "  padding-top: 56px; "
+        "  padding-bottom: 24px; "
+        "} "
+        "window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > undershoot.top, "
+        "window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top { "
+        "  min-height: 96px; "
+        "  background: linear-gradient(to bottom, "
+        "    #1e1e1e 0%, "
+        "    rgba(30, 30, 30, 0.98) 35%, "
+        "    rgba(30, 30, 30, 0.88) 60%, "
+        "    rgba(30, 30, 30, 0.45) 80%, "
+        "    transparent 100%); "
         "}"
     );
     gtk_style_context_add_provider_for_display(
@@ -3745,6 +3827,25 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     AdwHeaderBar *target_hb = ADW_HEADER_BAR(content_bars->data);
     gtk_widget_add_css_class(GTK_WIDGET(target_hb), "mac-settings-content-headerbar");
     gtk_widget_set_margin_top(GTK_WIDGET(target_hb), 3);
+
+    GList *switchers = NULL;
+    find_view_switchers_recursive(GTK_WIDGET(target_hb), &switchers);
+    if (!switchers) {
+        find_view_switchers_recursive(target_root, &switchers);
+    }
+    if (switchers) {
+        gtk_widget_add_css_class(GTK_WIDGET(target_hb), "has-view-switcher");
+        gtk_widget_add_css_class(GTK_WIDGET(target_hb), "mac-settings-switcher-headerbar");
+        gtk_widget_add_css_class(target_root, "panel-has-switcher");
+        for (GList *sl = switchers; sl != NULL; sl = sl->next) {
+            gtk_widget_add_css_class(GTK_WIDGET(sl->data), "mac-view-switcher");
+        }
+        g_list_free(switchers);
+    } else {
+        gtk_widget_remove_css_class(GTK_WIDGET(target_hb), "has-view-switcher");
+        gtk_widget_remove_css_class(GTK_WIDGET(target_hb), "mac-settings-switcher-headerbar");
+        gtk_widget_remove_css_class(target_root, "panel-has-switcher");
+    }
 
     GtkWidget *p_menu = gtk_widget_get_parent(menu_btn);
     if (p_menu && p_menu != GTK_WIDGET(target_hb)) {
