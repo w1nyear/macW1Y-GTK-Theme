@@ -176,7 +176,7 @@
                 "50",
                 "51"
             ],
-            "sha256": "1263311f8ef23b37058e2702a95f67319c19a368e596a9e4b0ff6f7e59b40156",
+            "sha256": "8f4043dc9a9af36af31a902072b642a4dedfb94a3bebfc53dc114bffe7654436",
             "status": "locked",
             "source": "extensions.gnome.org",
             "macw1y_components": [
@@ -185,7 +185,7 @@
                 "control_center_sliders"
             ],
             "has_custom_patches": true,
-            "patch_description": "TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink",
+            "patch_description": "macOS Tahoe/Sequoia OSD segmented slider UI (dots row, 5px track, dynamic sink title, handleless interactive bar) in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink",
             "last_verified": "2026-10-30"
         },
         "liquid-glass@thinkingcoding1231.gmail.com": {

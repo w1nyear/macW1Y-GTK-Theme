@@ -754,16 +754,21 @@ function _makeGlyph(iconName) {
     return {btn, icon};
 }
 
-// Tahoe slider: the stock round dot is replaced by an elongated pill
-// handle (~27x16, like macOS Tahoe). Only the handle paint is overridden;
-// the bar, gestures and value mapping stay stock.
+// Tahoe slider: exact macOS Sequoia / Tahoe OSD segmented slider.
+// Features a 5px track, solid filled bar (turns red when overamplified > 100%),
+// and a row of 17 discrete dots beneath aligned with the 16 volume/brightness steps.
+// Handleless design matching macOS OSD, with smooth drag, click-to-position, and scroll.
 const TahoeSlider = GObject.registerClass({
     GTypeName: `TahoeSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
 }, class TahoeSlider extends Slider {
 
     _init(value) {
         super._init(value);
+        this._isOveramp = false;
+        this._handleRadius = 0;
         this._isDragging = false;
+        this.height = 20;
+
         this.connect('drag-begin', () => {
             this._isDragging = true;
             this.queue_repaint();
@@ -774,7 +779,31 @@ const TahoeSlider = GObject.registerClass({
         });
     }
 
+    setOveramp(isOveramp) {
+        const noa = !!isOveramp;
+        if (this._isOveramp !== noa) {
+            this._isOveramp = noa;
+            this.queue_repaint();
+        }
+    }
+
+    _rr(cr, x, y, w, h, r) {
+        cr.newSubPath();
+        cr.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
+        cr.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
+        cr.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+        cr.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5);
+        cr.closePath();
+    }
+
     vfunc_button_press_event(event) {
+        if (event.get_button() === 1) {
+            const [x, y] = event.get_coords();
+            const [success, localX] = this.transform_stage_point(x, y);
+            if (success) {
+                this._moveHandle(localX, 0);
+            }
+        }
         this._isDragging = true;
         this.queue_repaint();
         return super.vfunc_button_press_event(event);
@@ -786,101 +815,146 @@ const TahoeSlider = GObject.registerClass({
         return super.vfunc_button_release_event(event);
     }
 
+    _moveHandle(x, _y) {
+        const rtl = this.get_text_direction() === Clutter.TextDirection.RTL;
+        const width = this.width || this._barLevelWidth || 1;
+        let relX = x;
+        if (rtl)
+            relX = width - relX;
+        let newvalue = Math.max(0, Math.min(1, relX / width));
+        this._unsnappedValue = newvalue * this._maxValue;
+        this.value = this._snapToMark ? this._snapToMark(this._unsnappedValue) : this._unsnappedValue;
+    }
+
     vfunc_repaint() {
         if (!this.get_stage()) return;
-        // bar via the grandparent (skip Slider's own dot)
-        Object.getPrototypeOf(Slider.prototype).vfunc_repaint.call(this);
 
         const cr = this.get_context();
-        const themeNode = this.get_theme_node();
-        const [width, height] = this.get_surface_size();
-        const rtl = this.get_text_direction() === Clutter.TextDirection.RTL;
-
-        const isHeld = Boolean(this._isDragging || this._grab);
-        const baseH = (this._handleRadius > 0) ? (2 * this._handleRadius) : 16;
-        const h = isHeld ? Math.round(baseH * 1.35) : baseH;
-        const w = isHeld ? Math.round(h * 2.2) : Math.round(baseH * 1.7);
-        const hw = w / 2;
-        const handleY = height / 2;
-        // position by the pill half-width so the ends never clip
-        let handleX = hw + (width - 2 * hw) * this._value / this._maxValue;
-        if (rtl)
-            handleX = width - handleX;
-
-        const r = h / 2;
-
-        if (isHeld) {
-            let cairo = imports.gi.cairo;
-
-            // 1. Soft depth drop shadow
+        try {
+            const [sw, sh] = this.get_surface_size();
+            if (sw <= 0 || sh <= 0) return;
+            const w = this.width || sw, h = this.height || sh;
+            const k = sw / (w || 1);
             cr.save();
-            cr.setSourceRGBA(0, 0, 0, 0.40);
-            cr.arc(handleX - hw + r, handleY + 2, r, Math.PI / 2, Math.PI * 1.5);
-            cr.arc(handleX + hw - r, handleY + 2, r, -Math.PI / 2, Math.PI / 2);
+            cr.scale(k, k);
+
+            let v = Math.max(0, Math.min(1.53, this._value / (this._maxValue || 1)));
+            const isOveramp = this._isOveramp || v > 1.0001;
+
+            let isDark = true;
+            try {
+                isDark = _isDark();
+            } catch (_) {
+                const themeNode = this.get_theme_node();
+                const fg = themeNode?.get_foreground_color();
+                if (fg)
+                    isDark = (fg.red > 0.4 && fg.green > 0.4 && fg.blue > 0.4);
+            }
+
+            // solid background track (5px tall, matching OSD)
+            const barY = 5, barH = 5;
+            const r = barH / 2;
+            if (isDark) {
+                cr.setSourceRGBA(1, 1, 1, 0.18);
+            } else {
+                cr.setSourceRGBA(0, 0, 0, 0.15);
+            }
+            this._rr(cr, 0, barY, w, barH, r);
             cr.fill();
+
+            // Colors: RED if overamplified (100%+), solid opaque WHITE if <= 100% on dark
+            const RED = [1.00, 0.23, 0.19];
+            const WHITE = isDark ? [1.00, 1.00, 1.00] : [0.12, 0.12, 0.14];
+            const [colorR, colorG, colorB] = isOveramp ? RED : WHITE;
+
+            // Step snapping for 16 segments (matching volume/brightness stops)
+            const n = 16;
+            const stepIdx = Math.max(0, Math.min(n, Math.round(v * n)));
+            if (v <= 1.0001 && Math.abs(v - stepIdx / n) <= 0.038)
+                v = stepIdx / n;
+
+            // 17 dots (i = 0 to 16): dot 0 at the start of slider, dot 16 at the end
+            const dotXs = [];
+            for (let i = 0; i <= n; i++) {
+                dotXs.push(r + i * (w - 2 * r) / n);
+            }
+
+            // filled bar: stops exactly where the dot is
+            let fillW = 0;
+            if (isOveramp) {
+                fillW = w;
+                cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
+                this._rr(cr, 0, barY, fillW, barH, r);
+                cr.fill();
+            } else if (v > 0.001) {
+                if (!this._isDragging && Math.abs(v - stepIdx / n) < 0.001) {
+                    fillW = (stepIdx === n) ? w : dotXs[stepIdx];
+                } else {
+                    fillW = Math.max(barH, Math.min(w, Math.round(r + v * (w - 2 * r))));
+                }
+                cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
+                this._rr(cr, 0, barY, fillW, barH, r);
+                cr.fill();
+            }
+
+            // dots row beneath: 17 dots precisely aligned, dot 0 at start
+            const dy = barY + barH + 3.5;
+            for (let i = 0; i <= n; i++) {
+                const dotX = dotXs[i];
+                const isActive = isOveramp || (stepIdx > 0 && i <= stepIdx && fillW > 0);
+                if (isActive) {
+                    cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
+                } else {
+                    if (isDark) {
+                        cr.setSourceRGBA(1, 1, 1, 0.18);
+                    } else {
+                        cr.setSourceRGBA(0, 0, 0, 0.15);
+                    }
+                }
+                cr.arc(dotX, dy, 1.0, 0, Math.PI * 2);
+                cr.fill();
+            }
+
             cr.restore();
-
-            // 2. Liquid Glass Body (translucent depth gradient)
-            let pat = new cairo.LinearGradient(handleX, handleY - r, handleX, handleY + r);
-            pat.addColorStopRGBA(0.0, 1.0, 1.0, 1.0, 0.25);
-            pat.addColorStopRGBA(0.3, 1.0, 1.0, 1.0, 0.10);
-            pat.addColorStopRGBA(0.7, 0.05, 0.08, 0.15, 0.25);
-            pat.addColorStopRGBA(1.0, 0.02, 0.04, 0.08, 0.45);
-            cr.setSource(pat);
-            cr.arc(handleX - hw + r, handleY, r, Math.PI / 2, Math.PI * 1.5);
-            cr.arc(handleX + hw - r, handleY, r, -Math.PI / 2, Math.PI / 2);
-            cr.fill();
-            pat.$dispose();
-
-            // 3. Delicate glass rim highlight
-            let rimPat = new cairo.LinearGradient(handleX, handleY - r, handleX, handleY + r);
-            rimPat.addColorStopRGBA(0.0, 1.0, 1.0, 1.0, 0.85);
-            rimPat.addColorStopRGBA(0.5, 1.0, 1.0, 1.0, 0.35);
-            rimPat.addColorStopRGBA(1.0, 1.0, 1.0, 1.0, 0.65);
-            cr.setSource(rimPat);
-            cr.setLineWidth(1.3);
-            cr.arc(handleX - hw + r, handleY, r - 0.65, Math.PI / 2, Math.PI * 1.5);
-            cr.arc(handleX + hw - r, handleY, r - 0.65, -Math.PI / 2, Math.PI / 2);
-            cr.stroke();
-            rimPat.$dispose();
-        } else {
-            // Resting clean white capsule pill
-            cr.setSourceColor(themeNode.get_foreground_color());
-            cr.arc(handleX - hw + r, handleY, r, Math.PI / 2, Math.PI * 1.5);
-            cr.arc(handleX + hw - r, handleY, r, -Math.PI / 2, Math.PI / 2);
-            cr.fill();
+        } finally {
+            try {
+                cr.$dispose();
+            } catch (_) {}
         }
+    }
 
-        cr.$dispose();
+    _getPreferredHeight() {
+        return 20;
     }
 });
 
-// full-width card: label + horizontal slider between two end icons
+// full-width card matching macOS OSD inside:
+// [ Title (bold) ]
+// [ (icon 15px)   ====================....   (icon 20px) ]
+// [                 .  .  .  .  .  .  .                  ]
 function _makeSliderCard(title, leftIcon, rightIcon, withEndBtn) {
     const outer = new St.BoxLayout({style_class: 'tahoe-qs-card', vertical: true});
     outer.set_height(CARD_H);
+
+    const headRow = new St.BoxLayout({
+        style_class: 'tahoe-osd-head tahoe-qs-card-head',
+        x_expand: true,
+    });
     const label = new St.Label({
-        style_class: 'tahoe-qs-card-label',
+        style_class: 'tahoe-osd-title tahoe-qs-card-label',
         text: title,
         x_align: Clutter.ActorAlign.START,
+        x_expand: true,
     });
-    outer.add_child(label);
-    const row = new St.BoxLayout({style_class: 'tahoe-qs-card-row'});
-    const li = new St.Icon({
-        style_class: 'tahoe-qs-endicon-small',
-        icon_name: leftIcon,
-        y_align: Clutter.ActorAlign.CENTER,
-    });
-    row.add_child(li);
-    const slider = new TahoeSlider(0);
-    slider.add_style_class_name('tahoe-qs-slider');
-    row.add_child(slider);
-    const ri = new St.Icon({
-        style_class: 'tahoe-qs-endicon',
-        icon_name: rightIcon,
-        y_align: Clutter.ActorAlign.CENTER,
-    });
-    row.add_child(ri);
+    try {
+        if (label.clutter_text) {
+            label.clutter_text.single_line_mode = true;
+            label.clutter_text.line_wrap = false;
+            label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        }
+    } catch (_) {}
+    headRow.add_child(label);
+
     let endBtn = null;
     let endIcon = null;
     if (withEndBtn) {
@@ -888,20 +962,48 @@ function _makeSliderCard(title, leftIcon, rightIcon, withEndBtn) {
             style_class: 'tahoe-qs-endbtn',
             reactive: true,
             can_focus: true,
+            x_align: Clutter.ActorAlign.END,
+            y_align: Clutter.ActorAlign.CENTER,
         });
         endIcon = new St.Icon({
             style_class: 'tahoe-qs-endbtn-icon',
-            icon_name: 'audio-volume-muted-symbolic',
+            icon_name: 'go-next-symbolic',
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
+            icon_size: 13,
         });
         endBtn.set_child(endIcon);
-        if (_gicons().mute)
-            endIcon.gicon = _gicons().mute;
-        row.add_child(endBtn);
+        headRow.add_child(endBtn);
     }
+    outer.add_child(headRow);
+
+    const row = new St.BoxLayout({style_class: 'tahoe-osd-bar tahoe-qs-card-row', x_expand: true});
+    const li = new St.Icon({
+        style_class: 'tahoe-osd-endicon tahoe-qs-endicon-small',
+        icon_name: leftIcon,
+        icon_size: 15,
+        y_align: Clutter.ActorAlign.CENTER,
+    });
+    li.translation_y = -2;
+    row.add_child(li);
+
+    const slider = new TahoeSlider(0);
+    slider.add_style_class_name('tahoe-qs-slider');
+    slider.x_expand = true;
+    slider.y_align = Clutter.ActorAlign.CENTER;
+    row.add_child(slider);
+
+    const ri = new St.Icon({
+        style_class: 'tahoe-osd-endicon-big tahoe-qs-endicon',
+        icon_name: rightIcon,
+        icon_size: 20,
+        y_align: Clutter.ActorAlign.CENTER,
+    });
+    ri.translation_y = -1;
+    row.add_child(ri);
+
     outer.add_child(row);
-    return {box: outer, slider, icon: ri, label, endBtn, endIcon};
+    return {box: outer, slider, iconL: li, icon: ri, iconR: ri, label, endBtn, endIcon};
 }
 
 // row: [left][expanding spacer][right]
@@ -1335,6 +1437,16 @@ function _buildPanel() {
         }
         return Clutter.EVENT_PROPAGATE;
     });
+    if (snd.iconL) {
+        snd.iconL.reactive = true;
+        snd.iconL.connect('button-press-event', () => {
+            try {
+                if (state.sink)
+                    state.sink.is_muted = !state.sink.is_muted;
+            } catch (_) {}
+            return Clutter.EVENT_STOP;
+        });
+    }
     if (snd.endBtn) {
         snd.endBtn.connect('clicked', () => {
             _openSoundSubmenu(snd.box, state);
@@ -1362,17 +1474,50 @@ function _buildPanel() {
                 if (!sink)
                     return;
                 state.sink = sink;
+
+                const updateSinkTitle = () => {
+                    let desc = '';
+                    try {
+                        if (typeof sink.get_description === 'function')
+                            desc = (sink.get_description() ?? '').toString().trim();
+                        if (!desc && sink.description)
+                            desc = (sink.description ?? '').toString().trim();
+                        if (!desc) {
+                            const port = sink.get_port ? sink.get_port() : null;
+                            if (port)
+                                desc = (port.human_name || port.port || '').toString().trim();
+                        }
+                    } catch (_) {}
+                    snd.label.text = desc || _('Sound');
+                };
+
                 const syncVol = () => {
                     if (!_panel || state.sndGuard)
                         return;
                     try {
                         state.sndGuard = true;
-                        const max = control.get_vol_max_norm();
-                        snd.slider.value = Math.max(0, Math.min(1, sink.volume / max));
-                        snd.icon.icon_name = sink.is_muted
-                            ? 'audio-volume-muted-symbolic' : 'audio-volume-high-symbolic';
+                        const max = control.get_vol_max_norm() || 65536;
+                        const rawVal = sink.volume / max;
+                        const isOveramp = (rawVal > 1.0001);
+                        snd.slider.setOveramp?.(isOveramp);
+                        const isMuted = sink.is_muted || rawVal <= 0.0001;
+                        snd.slider.value = isMuted ? 0 : Math.max(0, Math.min(1, rawVal));
+
+                        const iconLName = isMuted
+                            ? 'audio-volume-muted-symbolic'
+                            : (isOveramp ? 'audio-volume-overamplified-symbolic' : 'audio-volume-low-symbolic');
+                        const iconRName = isMuted
+                            ? 'audio-volume-muted-symbolic'
+                            : (isOveramp ? 'audio-volume-overamplified-symbolic' : 'audio-volume-high-symbolic');
+
+                        if (snd.iconL)
+                            snd.iconL.icon_name = iconLName;
+                        if (snd.iconR)
+                            snd.iconR.icon_name = iconRName;
+                        snd.icon.icon_name = iconRName;
                         if (snd.endIcon)
                             snd.endIcon.opacity = sink.is_muted ? 120 : 255;
+                        updateSinkTitle();
                     } finally {
                         state.sndGuard = false;
                     }
@@ -1386,6 +1531,7 @@ function _buildPanel() {
                         } catch (_) {
                             // gone
                         }
+                        updateSinkTitle();
                         syncVol();
                     });
                 } catch (_) {
@@ -1395,7 +1541,7 @@ function _buildPanel() {
                     if (state.sndGuard || !state.sink)
                         return;
                     try {
-                        const max = control.get_vol_max_norm();
+                        const max = control.get_vol_max_norm() || 65536;
                         state.sink.volume = Math.round(snd.slider.value * max);
                         if (state.sink.is_muted && snd.slider.value > 0)
                             state.sink.is_muted = false;
@@ -1404,16 +1550,6 @@ function _buildPanel() {
                         // gone
                     }
                 });
-                if (snd.endBtn) {
-                    snd.endBtn.connect('clicked', () => {
-                        try {
-                            if (state.sink)
-                                state.sink.is_muted = !state.sink.is_muted;
-                        } catch (_) {
-                            // gone
-                        }
-                    });
-                }
                 syncVol();
             } catch (_) {
                 // no sink

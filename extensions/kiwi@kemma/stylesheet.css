@@ -1638,7 +1638,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-glyphbtn { width: 38px; height: 38px; }
 .tahoe-qs-glyphicon { icon-size: 24px; color: #1d1d1f; }
 
-/* slider cards — glass r26 */
+/* slider cards — glass r28 */
 .tahoe-qs-card {
     background-color: transparent;
     border-radius: 28px;
@@ -1651,42 +1651,70 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-card { box-shadow: none; }
-.tahoe-qs-card-label { font-size: 0.9em; font-weight: 700; color: #1d1d1f; }
-.tahoe-qs-card-row { spacing: 10px; }
-.tahoe-qs-endicon-small { icon-size: 12px; opacity: 0.8; color: #1d1d1f; }
-.tahoe-qs-endicon { icon-size: 18px; color: #1d1d1f; }
-.tahoe-qs-endbtn {
-    width: 28px; height: 28px;
-    border-radius: 999px;
-    background-color: rgba(255, 255, 255, 0.25);
+.tahoe-qs-card-head {
+    spacing: 0;
+    margin-left: 2px;
 }
-.tahoe-qs-endbtn-icon { icon-size: 14px; color: #1d1d1f; }
+.tahoe-qs-card-label {
+    font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+    font-size: 0.95em;
+    font-weight: 700;
+    color: #1d1d1f;
+}
+.tahoe-qs-dark .tahoe-qs-card-label,
+.tahoe-qs-inklight .tahoe-qs-card-label,
+.tahoe-qs-dark .tahoe-osd-title,
+.tahoe-qs-inklight .tahoe-osd-title {
+    color: #ffffff;
+}
+.tahoe-qs-card-row { spacing: 10px; }
+.tahoe-qs-endicon-small { icon-size: 15px; opacity: 0.9; color: #1d1d1f; }
+.tahoe-qs-endicon { icon-size: 20px; color: #1d1d1f; }
+.tahoe-qs-dark .tahoe-osd-endicon,
+.tahoe-qs-inklight .tahoe-osd-endicon {
+    color: rgba(255, 255, 255, 0.9);
+}
+.tahoe-qs-dark .tahoe-osd-endicon-big,
+.tahoe-qs-inklight .tahoe-osd-endicon-big {
+    color: #ffffff;
+}
+.tahoe-qs-endbtn {
+    width: 22px; height: 22px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.18);
+    padding: 0;
+    margin: 0;
+}
+.tahoe-qs-endbtn:hover {
+    background-color: rgba(255, 255, 255, 0.30);
+}
+.tahoe-qs-endbtn-icon { icon-size: 13px; color: #1d1d1f; }
 
-/* slider: white knob; dark track on light, translucent white on dark */
+/* slider: macOS Tahoe / Sequoia OSD segmented bar */
 .tahoe-qs-slider {
     color: #fff;
     -slider-height: 5px;
-    -slider-background-color: rgba(60, 60, 67, 0.35);
+    -slider-background-color: transparent;
     -slider-border-color: transparent;
-    -slider-active-background-color: #fff;
+    -slider-active-background-color: transparent;
     -slider-active-border-color: transparent;
     -slider-border-width: 0px;
-    -slider-handle-radius: 8px;
+    -slider-handle-radius: 0px;
     -slider-handle-border-width: 0px;
     -barlevel-height: 5px;
-    -barlevel-background-color: rgba(60, 60, 67, 0.35);
-    -barlevel-active-background-color: #fff;
-    -barlevel-overdrive-color: #ff453a;
+    -barlevel-background-color: transparent;
+    -barlevel-active-background-color: transparent;
+    -barlevel-overdrive-color: transparent;
     -barlevel-overdrive-border-color: transparent;
     -barlevel-border-width: 0px;
-    height: 24px;
+    height: 20px;
     min-width: 90px;
 }
 .tahoe-qs-dark .tahoe-qs-slider {
-    -slider-background-color: rgba(255, 255, 255, 0.22);
-    -barlevel-background-color: rgba(255, 255, 255, 0.22);
-    -slider-active-background-color: rgba(255, 255, 255, 0.9);
-    -barlevel-active-background-color: rgba(255, 255, 255, 0.9);
+    -slider-background-color: transparent;
+    -barlevel-background-color: transparent;
+    -slider-active-background-color: transparent;
+    -barlevel-active-background-color: transparent;
 }
 
 /* bottom centered pill ("Edit Controls") — same geometry as privacy pill */

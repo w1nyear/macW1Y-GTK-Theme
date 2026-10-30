@@ -13369,3 +13369,29 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
 2. Верифікація:
    - `bin/mac-audit-sync check` — 100% PASS.
    - `bin/mac-extension-guard verify` — 100% SUCCESS.
+
+--------------------------------------------------------------------------------
+ЕТАП 637: macW1Y 0.5 — Перенесення повного UI зі звукового та яскравості OSD всередину Центру Керування (Control Center)
+
+1. Виконані завдання:
+   - Відповідно до скріншотів macOS Tahoe/Sequoia OSD ([media_1793351131943_fc68c0d8.jpg](file:///home/vitaliy/.gemini/antigravity/brain/d34732a7-0aa8-43ff-b0ad-129d9df0d190/.user_uploaded/media_1793351131943_fc68c0d8.jpg) та [media_1793351131865_abf5274f.jpg](file:///home/vitaliy/.gemini/antigravity/brain/d34732a7-0aa8-43ff-b0ad-129d9df0d190/.user_uploaded/media_1793351131865_abf5274f.jpg)), внутрішній інтерфейс карток Звуку та Дисплея у Центрі Керування ([tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js) та [tahoeQuickSettings.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeQuickSettings.js)) повністю перероблено під еталон macOS OSD:
+     * **Заголовок картки**:
+       - Звук: динамічна назва активного аудіопристрою виводу (наприклад, `sink.get_description()` / «Динаміки MacBook Air» / «Динаміки», фолбек «Звук»), що оновлюється автоматично при перемиканні sink.
+       - Дисплей: заголовок «Дисплей» (`tahoe-osd-title` шрифтом SF Pro Display Bold 700).
+     * **Сегментований слайдер без повзунка (Handleless Segmented Bar)**:
+       - Реалізовано в класі `TahoeSlider`: суцільна 5px смуга з радіусом 2.5px (`barY=5, barH=5, r=2.5`), напівпрозорий бекграунд `rgba(255, 255, 255, 0.18)` (на темному склі) та суцільне біле заповнення поточної гучності/яскравості (червоне при овердрайві > 100%).
+       - Ряд із 17 дискретних крапок знизу (`dy = 13.5px`, радіус 1.0px), що відповідають 16 крокам гучності/яскравості macOS; активні крапки світяться суцільним білим кольором, неактивні — напівпрозорим `rgba(255, 255, 255, 0.18)`.
+       - Повна інтерактивність: збережено миттєвий клік на будь-яку точку смуги, плавне перетягування (drag), прокрутку коліщатком миші (scroll) та керування клавішами зі стрілками.
+     * **Іконки та кнопки**:
+       - Ліва іконка: `tahoe-osd-endicon` (15px, `translation_y: -2`), для звуку підтримує клік для швидкого вимкнення/увімкнення звуку (mute/unmute).
+       - Права іконка: `tahoe-osd-endicon-big` (20px, `translation_y: -1`), динамічно оновлюється на muted/overamplified/high.
+       - Для звуку збережено кнопку `endBtn` (шеврон праворуч у шапці) та відкриття розширеного сабменю вибору аудіопристроїв.
+   - Оновлено [stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css): стилі `.tahoe-qs-slider`, `.tahoe-osd-title`, `.tahoe-osd-endicon`, `.tahoe-osd-endicon-big`, прозорий бекграунд BarLevel.
+   - Синхронізовано з `~/.local/share/gnome-shell/extensions/kiwi@kemma/`.
+   - Оновлено хеш SHA256 у [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json).
+
+2. Верифікація:
+   - `bin/mac-extension-guard verify`: VERIFICATION SUCCESS (21/21 розширень валідні).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 тестів пройдено).
+   - `/usr/local/bin/mac-diagnostics`: 100% OK, система стабільна.
+
