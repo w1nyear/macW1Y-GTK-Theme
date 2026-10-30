@@ -2833,8 +2833,17 @@ export class UILayerSampler {
                 continue;
             visited.add(actor);
             try {
-                const name = actor.name;
-                if (name === 'liquid-glass-bg-actor' || name === 'liquid-box')
+                const name = actor.name || '';
+                if (name.startsWith('liquid-glass-bg-actor') || 
+                    name.startsWith('liquid-box') || 
+                    name.includes('liquid-glass') || 
+                    name.startsWith('tahoe-') ||
+                    name.includes('tahoe-glass') || 
+                    name.includes('mac-toast-glass') ||
+                    actor.has_style_class_name?.('tahoe-submenu-glass-popup') ||
+                    actor.has_style_class_name?.('liquid-glass-menu-root'))
+                    return true;
+                if (actor.get_effects?.()?.some(e => e instanceof Clutter.OffscreenEffect || e?.constructor?.name?.includes('Liquid')))
                     return true;
                 const children = actor.get_children?.() ?? [];
                 for (const c of children)
@@ -2937,6 +2946,12 @@ export class UILayerSampler {
                 // as its own bgClone, so letting the UI-layer sampler clone it too
                 // would paint the wallpaper into the UI layer a second time.
                 if (child === getSharedBackgroundSource())
+                    continue;
+                if (child.name?.startsWith('liquid-glass-bg-actor') ||
+                    child.name?.startsWith('liquid-box') ||
+                    child.name?.startsWith('tahoe-') ||
+                    child.name === 'tahoe-control-center-overlay' ||
+                    child.name === 'tahoe-submenu-popup')
                     continue;
                 if (child.name === 'screenshotUIGroup' || child.name?.toLowerCase().includes('screenshot') || child === Main.screenshotUI || child === Main.screenshotUI?.get_parent())
                     continue;

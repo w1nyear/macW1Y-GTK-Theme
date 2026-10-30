@@ -152,14 +152,7 @@ export function createMacStatusText(text) {
 }
 
 export function createMacSeparator() {
-    const sep = new PopupMenu.PopupSeparatorMenuItem();
-    if (sep._ornamentLabel) {
-        try { sep.remove_child(sep._ornamentLabel); } catch (_) {}
-        try { sep._ornamentLabel.destroy(); } catch (_) {}
-        sep._ornamentLabel = null;
-    }
-    sep.style = 'margin: 4px 6px !important; padding: 0 !important; min-height: 1px !important;';
-    return sep;
+    return new PopupMenu.PopupSeparatorMenuItem();
 }
 
 export function createMacFooterButton(label, onClick, isControlCenter = false) {

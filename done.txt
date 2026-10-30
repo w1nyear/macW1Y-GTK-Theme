@@ -13488,3 +13488,29 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
 
 
 
+
+================================================================================
+Етап 641: Виправлення стабільності Центру Керування (захист від рекурсії Liquid Glass), скляні підменю та зелена іконка батареї із блискавкою при заряджанні
+================================================================================
+
+1. Виправлення крашу GNOME Shell / завершення сесії користувача:
+   - Причина крашу:
+     * При відкритті Центру Керування та його підменю створювалися екземпляри Liquid Glass із `UILayerSampler`. Через неповну перевірку назв акторів у `_containsOtherLiquidGlassRoot` (`=== 'liquid-glass-bg-actor'`), скляні шари Центру Керування та підменю взаємно клонували один одного в `uiGroup`, що викликало нескінченну рекурсію відмалювання у `vfunc_paint` (`liquidEffect.js:1585`) та аварійне завершення Mutter/GNOME Shell.
+   - Застосовані виправлення:
+     * Впроваджено re-entrancy guard `this._isPainting` та глобальний лічильник глибини `_globalPaintRecursionDepth >= 3` у `vfunc_paint` файлів [liquidEffect.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js) та [liquidEffect_v2.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect_v2.js).
+     * Оновлено [utils.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js): розширено перевірку `_containsOtherLiquidGlassRoot` та додано миттєву фільтрацію в `refresh()` для акторів із префіксами `tahoe-`, `liquid-glass-bg-actor`, `liquid-box`, унеможливлюючи клонування скляних поверхонь одна в одну.
+     * Пропатчено [tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js): додано явні взаємні виключення `addExclusion` між `overlay` Центру Керування та всіма 6 підменю.
+
+2. Зелена іконка батареї при заряджанні (відповідно до референсу):
+   - Оновлено відмальовування Cairo у [topbarButtons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/topbarButtons.js) та [menubar_v29.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/menubar_v29.js):
+     * Колір заливки рівня при заряджанні: Apple Vivid Green `#28cd41` (`rgba(40, 205, 65, 1.0)`).
+     * По центру корпусу батареї додано чітку білу блискавку із заокругленими кінцями та контрастною темною обводкою (`1.2px`, `rgba(0, 0, 0, 0.75)`), що забезпечує чітку видимість на будь-якому фоні.
+
+3. Підменю Центру Керування (Wi-Fi, Bluetooth, Аудіо, Дисплей, Режим живлення, Фокус):
+   - Апаратний шейдер рідкого скла Liquid Glass, відсутність чорного фону, радіус 20px, плавна анімація відкриття.
+
+4. Верифікація:
+   - `bin/mac-extension-guard verify`: VERIFICATION SUCCESS (21/21 розширень валідні).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено).
+   - Повне live-тестування виклику `togglePanel()` та відкриття підменю Wi-Fi, Bluetooth, Аудіо, Дисплей, Режим живлення та Фокус: робота стабільна, без перезапусків чи помилок.
+

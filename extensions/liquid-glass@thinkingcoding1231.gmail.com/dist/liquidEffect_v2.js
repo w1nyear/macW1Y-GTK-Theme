@@ -132,6 +132,7 @@ import { setBmsMode, BMS_MODE, computeCaptureLayout, setFrameSyncFrozen, isFrame
 // without a rebuild: glass.frag samples ONLY layer 1, so `blurResult: NULL`
 // in the dump means the glass is showing the raw, unblurred capture.
 const _liveEffects = new Set();
+let _globalPaintRecursionDepth = 0;
 // ─── Frame serial ────────────────────────────────────────────────────────────
 //
 // [PERF] Counts painted frames, so an effect can tell "this is the first time
@@ -1573,9 +1574,18 @@ export const LiquidEffect_v2 = _registerLiquidEffect_v2(class LiquidEffect_v2 ex
      * left to the base class.
      */
     vfunc_paint(node, paintContext, flags) {
-        if (flags & Clutter.EffectPaintFlags.ACTOR_DIRTY)
-            this._recaptureSerial++;
-        super.vfunc_paint(node, paintContext, flags);
+        if (this._isPainting || _globalPaintRecursionDepth >= 3)
+            return;
+        this._isPainting = true;
+        _globalPaintRecursionDepth++;
+        try {
+            if (flags & Clutter.EffectPaintFlags.ACTOR_DIRTY)
+                this._recaptureSerial++;
+            super.vfunc_paint(node, paintContext, flags);
+        } finally {
+            _globalPaintRecursionDepth--;
+            this._isPainting = false;
+        }
     }
     vfunc_paint_target(_paintNode, paintContext) {
         // ── [DIAG] Black-background investigation ──────────────────────────────

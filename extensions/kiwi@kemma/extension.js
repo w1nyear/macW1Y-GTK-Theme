@@ -53,7 +53,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeNCEnable: ${e}`);
         }
         try {
-            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri() + '?v=tahoe_v12';
+            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri() + '?v=tahoe_v17';
             import(ccUri).then(mod => {
                 if (this._tahoeCC && this._tahoeCC !== mod) {
                     try { this._tahoeCC.disable(); } catch (_) {}
@@ -68,7 +68,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeQuickSettingsEnable: ${e}`);
         }
         try {
-            const tbUri = this.dir.get_child('apps').get_child('topbarButtons.js').get_uri() + '?v=tb_v10';
+            const tbUri = this.dir.get_child('apps').get_child('topbarButtons.js').get_uri() + '?v=tb_v11';
             import(tbUri).then(mod => {
                 if (this._topbarButtonsMod && this._topbarButtonsMod !== mod) {
                     try { this._topbarButtonsMod.disable(); } catch (_) {}

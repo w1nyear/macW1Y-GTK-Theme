@@ -1941,3 +1941,33 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   color: #ffffff;
   font-weight: 600;
 }
+
+/* Tahoe Control Center Glass Submenus (macOS Sequoia / Tahoe style) */
+.tahoe-submenu-glass-popup,
+.tahoe-submenu-glass-popup.popup-menu-boxpointer,
+.tahoe-submenu-glass-popup .popup-menu-content {
+  background-color: transparent !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  -arrow-border-radius: 20px !important;
+  -arrow-background-color: transparent !important;
+  -arrow-border-color: transparent !important;
+  -arrow-border-width: 0px !important;
+  -arrow-rise: 0px !important;
+}
+
+.tahoe-submenu-glass-box {
+  background-color: transparent !important;
+  background: transparent !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.40) !important;
+}
+
+.tahoe-qs-dark .tahoe-qs-endbtn-icon,
+.tahoe-qs-endbtn-icon {
+  color: #ffffff !important;
+}
+

@@ -104,9 +104,12 @@ function _onBatteryRepaint(area) {
         const fillW = bw * pct;
         cr.rectangle(bx, by, fillW, bh);
 
-        if (pct <= 0.10 && !charging) {
+        if (charging) {
+            // macOS vivid green while charging (#28cd41)
+            cr.setSourceRGBA(40 / 255, 205 / 255, 65 / 255, 1.0);
+        } else if (pct <= 0.10) {
             cr.setSourceRGBA(255 / 255, 59 / 255, 48 / 255, 1.0);
-        } else if (pct <= 0.20 && !charging) {
+        } else if (pct <= 0.20) {
             cr.setSourceRGBA(255 / 255, 204 / 255, 0 / 255, 1.0);
         } else if (isDarkInk) {
             cr.setSourceRGBA(0.0, 0.0, 0.0, 1.0);
@@ -114,32 +117,37 @@ function _onBatteryRepaint(area) {
             cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
         }
         cr.fill();
+        cr.restore();
+    }
 
-        // 4. Lightning bolt if charging
-        if (charging) {
-            const cx = bx + bw / 2.0;
-            const cy = by + bh / 2.0;
+    // 4. Lightning bolt if charging (solid white with contrast stroke, centered)
+    if (charging) {
+        cr.save();
+        const cx = bx + bw / 2.0;
+        const cy = by + bh / 2.0;
+
+        const boltPath = () => {
             cr.newPath();
-            cr.moveTo(cx + 0.5, cy - 4.2);
-            cr.lineTo(cx - 2.0, cy + 0.4);
-            cr.lineTo(cx - 0.2, cy + 0.4);
-            cr.lineTo(cx - 0.7, cy + 4.2);
-            cr.lineTo(cx + 2.0, cy - 0.4);
-            cr.lineTo(cx + 0.2, cy - 0.4);
+            cr.moveTo(cx + 0.2, cy - 4.6);
+            cr.lineTo(cx - 2.5, cy - 0.5);
+            cr.lineTo(cx + 0.1, cy + 0.7);
+            cr.lineTo(cx - 0.2, cy + 4.6);
+            cr.lineTo(cx + 2.5, cy + 0.5);
+            cr.lineTo(cx - 0.1, cy - 0.7);
             cr.closePath();
+        };
 
-            if (pct >= 0.5) {
-                cr.setOperator(Cairo.Operator.CLEAR);
-                cr.fill();
-            } else {
-                if (isDarkInk) {
-                    cr.setSourceRGBA(0.0, 0.0, 0.0, 1.0);
-                } else {
-                    cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
-                }
-                cr.fill();
-            }
-        }
+        // Dark outline for contrast against green fill & translucent background
+        boltPath();
+        cr.setLineWidth(1.2);
+        cr.setLineJoin(Cairo.LineJoin.ROUND);
+        cr.setSourceRGBA(0.0, 0.0, 0.0, 0.75);
+        cr.stroke();
+
+        // Crisp white lightning bolt fill
+        boltPath();
+        cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
+        cr.fill();
 
         cr.restore();
     }

@@ -43,7 +43,7 @@
                 "50",
                 "51"
             ],
-            "sha256": "52ed94492d6c2a8e69568c0d8b4b5f99c0b8e519091ced39bfe0e42d2951ed74",
+            "sha256": "a987e2a2b879e10978041c10aef7d886e859ac14b77ce70498b2cc6020330371",
             "status": "locked",
             "source": "extensions.gnome.org",
             "macw1y_components": [
@@ -177,18 +177,20 @@
                 "50",
                 "51"
             ],
-            "sha256": "221c03b1f8f1cffc94ec44939933afbccb8cd5877874d0414df40eefca37924e",
+            "sha256": "2358a60a5f7ecb0a9cbf67f8505de83ca3c1f9244bd275acd696a79e40b02f4e",
             "status": "locked",
             "source": "extensions.gnome.org",
             "macw1y_components": [
                 "quick_settings_styling",
                 "traffic_lights_buttons",
                 "control_center_sliders",
-                "screencast_indicator"
+                "screencast_indicator",
+                "control_center_liquid_glass_submenus"
             ],
             "has_custom_patches": true,
-            "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink",
-            "last_verified": "2026-10-30"
+            "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink",
+            "last_verified": "2026-10-30",
+            "integrity_hash": "2358a60a5f7ecb0a9cbf67f8505de83ca3c1f9244bd275acd696a79e40b02f4e"
         },
         "liquid-glass@thinkingcoding1231.gmail.com": {
             "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
@@ -198,7 +200,7 @@
                 "49",
                 "50"
             ],
-            "sha256": "15133138fca4f15ee083f46782b2eb09521333a353d440f851c4bc4ce7026e6d",
+            "sha256": "7d411eaceb5f0ab32a70c21cdd8e8b5262af118343e6509a859f760335605af5",
             "status": "locked",
             "source": "local_custom",
             "macw1y_components": [
@@ -209,7 +211,8 @@
             ],
             "has_custom_patches": true,
             "patch_description": "Local custom Liquid Glass GLSL refraction & border shader",
-            "last_verified": "2026-10-27"
+            "last_verified": "2026-10-27",
+            "integrity_hash": "7d411eaceb5f0ab32a70c21cdd8e8b5262af118343e6509a859f760335605af5"
         },
         "macos-touchpad-gestures@mactheme": {
             "uuid": "macos-touchpad-gestures@mactheme",
