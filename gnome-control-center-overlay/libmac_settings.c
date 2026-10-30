@@ -1825,13 +1825,45 @@ static void on_dual_slider_drag_end(GtkGestureDrag *gesture, double offset_x, do
     save_fan_ranges_config();
 }
 
+static void on_fan_card_destroy(gpointer user_data) {
+    DualRangeSliderData *d = (DualRangeSliderData *)user_data;
+    if (!d) return;
+    g_fan_subrows_data = g_list_remove(g_fan_subrows_data, d);
+    if (d->subtitle_label) {
+        g_object_remove_weak_pointer(G_OBJECT(d->subtitle_label), (gpointer *)&d->subtitle_label);
+        d->subtitle_label = NULL;
+    }
+    if (d->badge_label) {
+        g_object_remove_weak_pointer(G_OBJECT(d->badge_label), (gpointer *)&d->badge_label);
+        d->badge_label = NULL;
+    }
+    if (d->drawing_area) {
+        g_object_remove_weak_pointer(G_OBJECT(d->drawing_area), (gpointer *)&d->drawing_area);
+        d->drawing_area = NULL;
+    }
+    g_free(d);
+
+    if (g_fan_subrows_data == NULL && g_fan_rpm_timer_id != 0) {
+        g_source_remove(g_fan_rpm_timer_id);
+        g_fan_rpm_timer_id = 0;
+    }
+}
+
 static gboolean update_fan_rpms_timer_cb(gpointer user_data) {
     (void)user_data;
+    if (!g_fan_subrows_data) {
+        g_fan_rpm_timer_id = 0;
+        return G_SOURCE_REMOVE;
+    }
+
     detect_fans();
 
     for (GList *l = g_fan_subrows_data; l != NULL; l = l->next) {
         DualRangeSliderData *d = (DualRangeSliderData *)l->data;
         if (!d || !d->subtitle_label) continue;
+        if (!GTK_IS_WIDGET(d->subtitle_label) || !GTK_IS_LABEL(d->subtitle_label)) continue;
+        if (!gtk_widget_get_mapped(GTK_WIDGET(d->subtitle_label))) continue;
+
         int rpm = d->is_gpu ? g_gpu_fan_rpm : g_cpu_fan_rpm;
         if (rpm > 0) {
             char sub_text[128];
@@ -1907,7 +1939,12 @@ static GtkWidget *create_fan_control_card(int profile_idx, gboolean is_gpu) {
     slider_data->subtitle_label = sub_lbl;
     slider_data->active_thumb = THUMB_NONE;
 
+    g_object_add_weak_pointer(G_OBJECT(sub_lbl), (gpointer *)&slider_data->subtitle_label);
+    g_object_add_weak_pointer(G_OBJECT(badge), (gpointer *)&slider_data->badge_label);
+    g_object_add_weak_pointer(G_OBJECT(area), (gpointer *)&slider_data->drawing_area);
+
     g_fan_subrows_data = g_list_append(g_fan_subrows_data, slider_data);
+    g_object_set_data_full(G_OBJECT(card), "fan_slider_data", slider_data, on_fan_card_destroy);
 
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(area), draw_dual_range_slider_cb, slider_data, NULL);
 
@@ -3035,14 +3072,6 @@ static void init_mac_settings_css(void) {
 
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
-        "window.mac-settings-window list.mac-settings-sidebar-list row,"
-        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row {"
-        "  min-height: 28px;"
-        "  padding: 3px 8px;"
-        "  margin: 1px 6px;"
-        "  border-radius: 7px;"
-        "  font-size: 13px;"
-        "}"
         "window.mac-settings-window list.mac-settings-sidebar-list, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar { "
         "  background-color: transparent; "
@@ -3051,43 +3080,51 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window list.mac-settings-sidebar-list row, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row { "
         "  min-height: 32px; "
-        "  padding: 3px 6px; "
-        "  margin: 1.5px 4px; "
-        "  border-radius: 8px; "
+        "  padding: 3px 10px; "
+        "  margin: 1.5px 6px; "
+        "  border-radius: 9999px; "
         "  font-size: 13px; "
         "  color: rgba(255, 255, 255, 0.90); "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:hover, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:hover { "
-        "  background-color: rgba(255, 255, 255, 0.05); "
+        "  border-radius: 9999px; "
+        "  background-color: rgba(255, 255, 255, 0.08); "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected { "
+        "  border-radius: 9999px; "
         "  background-color: #fa6e0a; "
         "  color: #ffffff; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row image, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row image { "
-        "  min-width: 22px; "
-        "  min-height: 22px; "
-        "  -gtk-icon-size: 14px; "
-        "  background-color: rgba(255, 255, 255, 0.08); "
-        "  border: 1px solid rgba(255, 255, 255, 0.06); "
-        "  border-radius: 6px; "
-        "  margin-right: 9px; "
+        "  min-width: 18px; "
+        "  min-height: 18px; "
+        "  -gtk-icon-size: 15px; "
+        "  background: transparent; "
+        "  background-color: transparent; "
+        "  border: none; "
+        "  box-shadow: none; "
+        "  margin-right: 10px; "
+        "  margin-left: 2px; "
         "  padding: 0; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected image, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected image { "
         "  color: #ffffff; "
-        "  background-color: rgba(0, 0, 0, 0.20); "
-        "  border-color: rgba(0, 0, 0, 0.25); "
+        "  background: transparent; "
+        "  background-color: transparent; "
+        "  border: none; "
+        "  box-shadow: none; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row label, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row label { "
         "  font-size: 13px; "
-        "  margin-top: 3px; "
-        "  padding-top: 2px; "
+        "  margin-top: 0px; "
+        "  margin-bottom: 0px; "
+        "  padding-top: 0px; "
+        "  padding-bottom: 0px; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected label, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected label { "
@@ -3098,21 +3135,28 @@ static void init_mac_settings_css(void) {
         "  min-height: 48px; "
         "  padding: 6px 10px; "
         "  margin: 6px 6px 14px 6px; "
-        "  border-radius: 9px; "
+        "  border-radius: 9999px; "
         "  background-color: transparent; "
         "} "
         "window.mac-settings-window .mac-settings-account-row:hover { "
+        "  border-radius: 9999px; "
         "  background-color: rgba(255, 255, 255, 0.05); "
         "} "
         "window.mac-settings-window .mac-settings-account-row:selected { "
+        "  border-radius: 9999px; "
         "  background-color: rgba(255, 255, 255, 0.08); "
+        "} "
+        "window.mac-settings-window .mac-settings-account-row avatar, "
+        "window.mac-settings-window .mac-settings-account-row image, "
+        "window.mac-settings-window .mac-settings-account-row widget { "
+        "  background: transparent; "
+        "  background-color: transparent; "
+        "  border: none; "
+        "  box-shadow: none; "
         "} "
         "window.mac-settings-window .mac-settings-account-row image { "
         "  min-width: 12px; "
         "  min-height: 12px; "
-        "  background-color: transparent; "
-        "  border: none; "
-        "  border-radius: 0; "
         "  margin-right: 0; "
         "} "
         "window.mac-settings-window .mac-settings-account-row .account-title { "
@@ -3137,12 +3181,12 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window .mac-settings-sidebar searchbar entry { "
         "  min-height: 28px; "
-        "  border-radius: 8px; "
+        "  border-radius: 9999px; "
         "  background-color: rgba(255, 255, 255, 0.08); "
         "  border: 1px solid rgba(255, 255, 255, 0.08); "
         "  color: #ffffff; "
         "  font-size: 13px; "
-        "  padding: 2px 8px; "
+        "  padding: 2px 12px; "
         "} "
         "window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within { "
         "  background-color: rgba(255, 255, 255, 0.12); "
@@ -3176,16 +3220,19 @@ static void init_mac_settings_css(void) {
         "  margin-bottom: 2px; "
         "} "
         ".mac-panel-header-subtitle { "
-        "  font-size: 12px; "
-        "  color: rgba(255, 255, 255, 0.60); "
-        "  line-height: 1.35; "
+        "  opacity: 0; "
+        "  font-size: 0px; "
+        "  min-height: 0px; "
+        "  min-width: 0px; "
+        "  margin: 0px; "
+        "  padding: 0px; "
         "} "
         "window.mac-settings-window preferencespage list.boxed-list,"
         "window.mac-settings-window .content-pane list.boxed-list,"
         "window.mac-settings-window .mac-settings-content list.boxed-list {"
         "  background-color: #1e1e1e;"
         "  border: 1px solid rgba(255, 255, 255, 0.07);"
-        "  border-radius: 12px;"
+        "  border-radius: 16px;"
         "  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);"
         "  margin-bottom: 14px;"
         "}"
@@ -3194,7 +3241,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-content list.boxed-list row {"
         "  min-height: 42px;"
         "  padding: 6px 14px;"
-        "  border-bottom: 1px solid rgba(255, 255, 255, 0.05);"
+        "  border-bottom: none;"
         "}"
         "window.mac-settings-window preferencespage list.boxed-list row:last-child,"
         "window.mac-settings-window .content-pane list.boxed-list row:last-child,"
@@ -3551,15 +3598,6 @@ static void ensure_panel_header_banner(GtkWidget *target_root, const char *panel
     gtk_widget_set_halign(title_lbl, GTK_ALIGN_CENTER);
     gtk_box_append(GTK_BOX(banner), title_lbl);
 
-    const char *desc_text = get_panel_description(panel_id);
-    GtkWidget *desc_lbl = gtk_label_new(desc_text);
-    gtk_widget_add_css_class(desc_lbl, "mac-panel-header-subtitle");
-    gtk_widget_set_halign(desc_lbl, GTK_ALIGN_CENTER);
-    gtk_label_set_justify(GTK_LABEL(desc_lbl), GTK_JUSTIFY_CENTER);
-    gtk_label_set_wrap(GTK_LABEL(desc_lbl), TRUE);
-    gtk_label_set_max_width_chars(GTK_LABEL(desc_lbl), 55);
-    gtk_box_append(GTK_BOX(banner), desc_lbl);
-
     gtk_box_prepend(GTK_BOX(clamp_box), banner);
     g_object_set_data(G_OBJECT(clamp_box), "mac_banner_added", GINT_TO_POINTER(1));
 }
@@ -3797,13 +3835,14 @@ static void find_search_entries_recursive(GtkWidget *widget, GList **list) {
 static void style_sidebar_row_recursive(GtkWidget *widget) {
     if (!widget) return;
     if (GTK_IS_IMAGE(widget)) {
-        gtk_image_set_pixel_size(GTK_IMAGE(widget), 14);
+        gtk_image_set_pixel_size(GTK_IMAGE(widget), 15);
         gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
         gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
     }
     if (GTK_IS_LABEL(widget)) {
         gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
-        gtk_widget_set_margin_top(widget, 3);
+        gtk_widget_set_margin_top(widget, 0);
+        gtk_widget_set_margin_bottom(widget, 0);
     }
     if (GTK_IS_GRID(widget) || GTK_IS_BOX(widget)) {
         gtk_widget_set_margin_top(widget, 1);
@@ -3942,10 +3981,10 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             gtk_widget_set_margin_bottom(grid, 1);
             gtk_widget_set_margin_start(grid, 4);
             gtk_widget_set_margin_end(grid, 4);
-            gtk_grid_set_column_spacing(GTK_GRID(grid), 8);
+            gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
 
             GtkWidget *image = gtk_image_new_from_icon_name("view-grid-symbolic");
-            gtk_image_set_pixel_size(GTK_IMAGE(image), 14);
+            gtk_image_set_pixel_size(GTK_IMAGE(image), 15);
             gtk_widget_set_halign(image, GTK_ALIGN_CENTER);
             gtk_widget_set_valign(image, GTK_ALIGN_CENTER);
             gtk_grid_attach(GTK_GRID(grid), image, 0, 0, 1, 1);
@@ -3953,7 +3992,9 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             GtkWidget *label = gtk_label_new(mac_tr("widgets", "Віджети"));
             gtk_label_set_xalign(GTK_LABEL(label), 0.0);
             gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
-            gtk_widget_set_margin_top(label, 2);
+            gtk_widget_set_margin_start(label, 4);
+            gtk_widget_set_margin_top(label, 0);
+            gtk_widget_set_margin_bottom(label, 0);
             gtk_widget_set_hexpand(label, TRUE);
             gtk_grid_attach(GTK_GRID(grid), label, 1, 0, 1, 1);
 
