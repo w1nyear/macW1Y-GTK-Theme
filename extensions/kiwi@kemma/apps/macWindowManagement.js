@@ -23,8 +23,8 @@ const MOVING_GRAB_OPS = [
 
 const PANEL_ANIM_MS = 240;
 const DOCK_ANIM_MS = 0.25;
-const EDGE_TRIGGER_PX = 3;
-const LEAVE_DEBOUNCE_MS = 320;
+const EDGE_TRIGGER_PX = 4;
+const LEAVE_DEBOUNCE_MS = 260;
 
 let _enabled = false;
 let _signals = [];
@@ -34,17 +34,20 @@ let _draggingWindow = null;
 let _dragPollTimer = null;
 let _showingTilePreview = false;
 let _snapWindow = null;
+let _lastDragEndTime = 0;
 
 // Fullscreen monitoring state
 let _hasFullscreen = false;
 let _topTriggerActor = null;
 let _bottomTriggerActor = null;
 let _panelRevealed = false;
+let _panelHiding = false;
 let _dockRevealed = false;
 let _panelHideTimer = null;
 let _dockHideTimer = null;
 let _fullscreenWatcherTimer = null;
 let _recomputeIdleId = null;
+let _shrunkActors = new Set();
 
 function _getPanelBox() {
     return Main.layoutManager?.panelBox ?? null;
@@ -102,8 +105,73 @@ function _isAnyDockPopupOpen() {
     return false;
 }
 
+function _getFullscreenActors(monitorIndex) {
+    const ws = global.workspace_manager?.get_active_workspace();
+    if (!ws) return [];
+    const windows = ws.list_windows?.() || [];
+    return windows
+        .filter(w => !w.minimized && w.window_type === Meta.WindowType.NORMAL && (monitorIndex === undefined || w.get_monitor() === monitorIndex))
+        .filter(w => w.is_fullscreen() || (w.maximized_vertically && w.maximized_horizontally && _hasFullscreen))
+        .map(w => w.get_compositor_private())
+        .filter(Boolean);
+}
+
+function _restoreShrunkActors(animated = true) {
+    for (const actor of _shrunkActors) {
+        try {
+            if (actor && !actor.is_finalized?.()) {
+                actor.remove_all_transitions();
+                if (animated) {
+                    actor.ease({
+                        translation_y: 0,
+                        scale_y: 1.0,
+                        duration: PANEL_ANIM_MS,
+                        mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                    });
+                } else {
+                    actor.translation_y = 0;
+                    actor.scale_y = 1.0;
+                }
+            }
+        } catch (_) {}
+    }
+    _shrunkActors.clear();
+}
+
+function _setPanelSolidDarkStyle(enable) {
+    try {
+        const panelBox = _getPanelBox();
+        const panel = Main.panel;
+        const bmsBg = panelBox?.get_children?.()?.find(c => c.name === 'bms-panel-backgroundgroup');
+
+        if (enable) {
+            if (panelBox) {
+                panelBox.set_style('background-color: #000000 !important; background: #000000 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.60) !important;');
+            }
+            if (panel) {
+                panel.set_style('background-color: #000000 !important; background: #000000 !important;');
+                panel.remove_style_class_name('tahoe-ink-dark');
+                panel.add_style_class_name('tahoe-ink-light');
+            }
+            if (bmsBg) {
+                bmsBg.opacity = 0;
+            }
+        } else {
+            if (panelBox) {
+                panelBox.set_style('');
+            }
+            if (panel) {
+                panel.set_style('');
+            }
+            if (bmsBg) {
+                bmsBg.opacity = 255;
+            }
+        }
+    } catch (_) {}
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Drag Window Flush Against Menubar -> Maximize to Work Area
+// Drag Window Flush Against Menubar -> Maximize to Work Area / Fullscreen
 // ─────────────────────────────────────────────────────────────────────────────
 
 function _onGrabOpBegin(_display, window, op) {
@@ -112,6 +180,16 @@ function _onGrabOpBegin(_display, window, op) {
 
     if (!MOVING_GRAB_OPS.includes(op))
         return;
+
+    _restoreShrunkActors(false);
+    _setPanelSolidDarkStyle(false);
+
+    // Якщо перетягується повноекранне вікно, повертаємо його у віконний режим для вільного перетягування
+    if (window.is_fullscreen()) {
+        try {
+            window.unmake_fullscreen();
+        } catch (_) {}
+    }
 
     _draggingWindow = window;
     _snapWindow = null;
@@ -142,7 +220,9 @@ function _onGrabOpBegin(_display, window, op) {
                     _showingTilePreview = true;
                     _snapWindow = _draggingWindow;
                     try {
-                        Main.wm._showTilePreview(global.window_manager, _draggingWindow, wa, monitor);
+                        const mon = Main.layoutManager.monitors[monitor] || Main.layoutManager.primaryMonitor;
+                        const fullRect = { x: mon.x, y: mon.y, width: mon.width, height: mon.height };
+                        Main.wm._showTilePreview(global.window_manager, _draggingWindow, fullRect, monitor);
                     } catch (_) {}
                 }
             } else if (_showingTilePreview) {
@@ -159,6 +239,8 @@ function _onGrabOpBegin(_display, window, op) {
 }
 
 function _onGrabOpEnd(_display, window, _op) {
+    _lastDragEndTime = Date.now();
+
     if (_dragPollTimer) {
         GLib.Source.remove(_dragPollTimer);
         _dragPollTimer = null;
@@ -174,7 +256,7 @@ function _onGrabOpEnd(_display, window, _op) {
         if (targetWin && targetWin.window_type === Meta.WindowType.NORMAL) {
             targetWin._justMaximizedFromDrag = Date.now();
             try {
-                targetWin.maximize();
+                targetWin.make_fullscreen();
             } catch (_) {}
         }
     }
@@ -191,6 +273,15 @@ function _onSizeChange(_wm, actor, whichChange, oldFrameRect) {
     if (!_enabled || !actor) return;
     const win = actor.meta_window;
     if (!win || win.window_type !== Meta.WindowType.NORMAL) return;
+
+    if (!win.is_fullscreen()) {
+        try {
+            actor.remove_all_transitions();
+            actor.translation_y = 0;
+            actor.scale_y = 1.0;
+            _shrunkActors.delete(actor);
+        } catch (_) {}
+    }
 
     if (whichChange === Meta.SizeChange.MAXIMIZE || whichChange === Meta.SizeChange.UNMAXIMIZE) {
         // If maximized from drag to top, preserve work area maximize (menubar visible)
@@ -243,7 +334,7 @@ function _cancelDockHide() {
 function _startFullscreenWatcher() {
     if (_fullscreenWatcherTimer) return;
 
-    _fullscreenWatcherTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
+    _fullscreenWatcherTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 70, () => {
         if (!_enabled || !_hasFullscreen) {
             _fullscreenWatcherTimer = null;
             return GLib.SOURCE_REMOVE;
@@ -254,8 +345,8 @@ function _startFullscreenWatcher() {
             const primaryMonitor = Main.layoutManager.primaryMonitor;
             const panelHeight = _getPanelHeight();
 
-            // Edge trigger reveals
-            if (py <= 2 && !_panelRevealed) {
+            // Edge trigger reveals (guard against immediate trigger right after drag release)
+            if (py <= 2 && !_panelRevealed && (Date.now() - _lastDragEndTime > 300)) {
                 _showPanelAnimated();
             }
             if (py >= primaryMonitor.y + primaryMonitor.height - 3 && !_dockRevealed) {
@@ -304,18 +395,28 @@ function _startFullscreenWatcher() {
 }
 
 function _showPanelAnimated() {
-    if (!_enabled || _panelRevealed) return;
+    if (!_enabled) return;
+    if (_panelRevealed && !_panelHiding) return;
     const panelBox = _getPanelBox();
     if (!panelBox) return;
 
     _cancelPanelHide();
+    _panelHiding = false;
     _setPanelTrackFullscreen(false);
     panelBox.visible = true;
     _panelRevealed = true;
 
+    // Apply 100% solid dark/black styling
+    _setPanelSolidDarkStyle(true);
+
     const h = _getPanelHeight();
+    const primaryMonitor = Main.layoutManager.primaryMonitor;
+    const monH = primaryMonitor?.height || 1080;
+
     panelBox.remove_all_transitions();
-    panelBox.translation_y = -h;
+    if (panelBox.translation_y === 0 && !_panelHiding) {
+        panelBox.translation_y = -h;
+    }
     panelBox.ease({
         translation_y: 0,
         duration: PANEL_ANIM_MS,
@@ -324,14 +425,32 @@ function _showPanelAnimated() {
             panelBox.translation_y = 0;
         },
     });
+
+    // Shrink fullscreen window actor(s) so window yields space to menubar
+    const targetActors = _getFullscreenActors(primaryMonitor.index);
+    for (const actor of targetActors) {
+        try {
+            actor.remove_all_transitions();
+            actor.set_pivot_point(0, 0);
+            actor.ease({
+                translation_y: h,
+                scale_y: (monH - h) / monH,
+                duration: PANEL_ANIM_MS,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+            _shrunkActors.add(actor);
+        } catch (_) {}
+    }
 }
 
 function _hidePanelAnimated() {
-    if (!_enabled || !_panelRevealed) return;
+    if (!_enabled || !_panelRevealed || _panelHiding) return;
     const panelBox = _getPanelBox();
     if (!panelBox) return;
 
     _cancelPanelHide();
+    _panelHiding = true;
+
     const h = _getPanelHeight();
     panelBox.remove_all_transitions();
     panelBox.ease({
@@ -340,11 +459,16 @@ function _hidePanelAnimated() {
         mode: Clutter.AnimationMode.EASE_IN_QUAD,
         onComplete: () => {
             _panelRevealed = false;
+            _panelHiding = false;
             panelBox.translation_y = 0;
+            _setPanelSolidDarkStyle(false);
             _setPanelTrackFullscreen(true);
             Main.layoutManager?._updateVisibility?.();
         },
     });
+
+    // Restore fullscreen window(s) back to original height
+    _restoreShrunkActors(true);
 }
 
 function _showDockAnimated() {
@@ -394,7 +518,7 @@ function _createEdgeTriggers() {
         opacity: 0,
     });
     _topTriggerActor.connect('enter-event', () => {
-        if (_hasFullscreen)
+        if (_hasFullscreen && (Date.now() - _lastDragEndTime > 300))
             _showPanelAnimated();
     });
 
@@ -461,6 +585,21 @@ function _recomputeFullscreen() {
         if (!_topTriggerActor || !_bottomTriggerActor)
             _createEdgeTriggers();
         _startFullscreenWatcher();
+
+        // Clean up any tracked shrunk actors that are no longer fullscreen
+        for (const actor of _shrunkActors) {
+            try {
+                const win = actor.meta_window;
+                if (!win || !win.is_fullscreen() || win.minimized) {
+                    actor.remove_all_transitions();
+                    actor.translation_y = 0;
+                    actor.scale_y = 1.0;
+                    _shrunkActors.delete(actor);
+                }
+            } catch (_) {
+                _shrunkActors.delete(actor);
+            }
+        }
     } else {
         _destroyEdgeTriggers();
         _cancelPanelHide();
@@ -471,6 +610,9 @@ function _recomputeFullscreen() {
             _fullscreenWatcherTimer = null;
         }
 
+        // Restore any shrunk actors immediately
+        _restoreShrunkActors(false);
+
         // Restore menubar
         const panelBox = _getPanelBox();
         if (panelBox) {
@@ -478,9 +620,11 @@ function _recomputeFullscreen() {
             panelBox.translation_y = 0;
             panelBox.visible = true;
         }
+        _setPanelSolidDarkStyle(false);
         _setPanelTrackFullscreen(true);
         try { Main.layoutManager?._updateVisibility?.(); } catch (_) {}
         _panelRevealed = false;
+        _panelHiding = false;
 
         // Restore dock
         const dc = _getDockContainer();
@@ -510,6 +654,8 @@ export function enable() {
         _signals.push([Main.overview, Main.overview.connect('showing', () => {
             _cancelPanelHide();
             _cancelDockHide();
+            _restoreShrunkActors(false);
+            _setPanelSolidDarkStyle(false);
             const panelBox = _getPanelBox();
             if (panelBox) {
                 panelBox.remove_all_transitions();
@@ -553,6 +699,8 @@ export function disable() {
     }
 
     _destroyEdgeTriggers();
+    _restoreShrunkActors(false);
+    _setPanelSolidDarkStyle(false);
 
     // Disconnect signals
     for (const [obj, id] of _signals) {
@@ -580,5 +728,6 @@ export function disable() {
     _snapWindow = null;
     _hasFullscreen = false;
     _panelRevealed = false;
+    _panelHiding = false;
     _dockRevealed = false;
 }
