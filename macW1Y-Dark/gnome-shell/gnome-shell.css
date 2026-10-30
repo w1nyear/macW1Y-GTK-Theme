@@ -3018,43 +3018,75 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 
 /* App Switcher (macOS Alt+Tab HUD) */
 .switcher-popup {
-  padding: 8px;
-  spacing: 16px;
+  padding: 0px !important;
+  spacing: 0px !important;
 }
 
 .switcher-list {
-  background-color: transparent !important;
-  background: none !important;
-  border-radius: 28px !important;
+  background-color: rgba(25, 25, 25, 0.35) !important;
+  background: rgba(25, 25, 25, 0.35) !important;
+  border-radius: 26px !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.40) !important;
-  padding: 12px 16px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
+  padding: 6px 12px !important;
 }
 
-.switcher-list .item-box {
-  padding: 8px 10px !important;
-  border-radius: 18px !important;
-  border: 1px solid transparent !important;
+.switcher-list .item-box,
+.switcher-list .item-box:hover,
+.switcher-list .item-box:active,
+.switcher-list .item-box:focus,
+.switcher-list .item-box:selected,
+.switcher-list .item-box:highlighted,
+.switcher-list .item-box:outlined {
+  padding: 0px 4px !important;
+  border-radius: 0px !important;
+  border: none !important;
   background-color: transparent !important;
+  background: none !important;
+  box-shadow: none !important;
+  outline: none !important;
   color: #ffffff !important;
-  margin: 2px 4px !important;
+  margin: 0px !important;
+  transition-duration: 0ms !important;
+}
+
+/* Rounded squircle highlight wrapping STRICTLY around icon only */
+.alt-tab-icon-bin {
+  padding: 6px !important;
+  border-radius: 18px !important;
+  border: 1.5px solid transparent !important;
+  background-color: transparent !important;
+  background: none !important;
+  box-shadow: none !important;
   transition-duration: 120ms !important;
 }
 
-.switcher-list .item-box:outlined {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  border-radius: 18px !important;
-  color: #ffffff !important;
+.alt-tab-icon-bin:hover {
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.20) !important;
 }
 
-.switcher-list .item-box:selected,
-.switcher-list .item-box:highlighted {
-  background-color: rgba(255, 255, 255, 0.22) !important;
-  border-radius: 18px !important;
-  border: 1px solid rgba(255, 255, 255, 0.28) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+.alt-tab-icon-bin:selected,
+.alt-tab-icon-bin.selected {
+  background-color: rgba(255, 255, 255, 0.20) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.38) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+}
+
+/* App name label underneath selected icon */
+.alt-tab-app-label,
+.alt-tab-app StLabel,
+.alt-tab-app .label,
+.switcher-list .item-box StLabel,
+.switcher-list .item-box .label {
+  font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
   color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important;
+  text-align: center !important;
+  margin-top: 4px !important;
+  padding: 0 4px !important;
 }
 
 .switcher-list .thumbnail-box {
@@ -3072,7 +3104,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 .switcher-list .switcher-list-item-container {
-  spacing: 8px !important;
+  spacing: 6px !important;
 }
 
 .switcher-arrow {
@@ -3090,18 +3122,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 
 .alt-tab-app {
   padding: 0px !important;
-  spacing: 4px !important;
-}
-
-.alt-tab-app StLabel,
-.alt-tab-app .label {
-  font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, sans-serif !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  color: #ffffff !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important;
-  text-align: center !important;
-  margin-top: 3px !important;
+  spacing: 0px !important;
 }
 
 .input-source-switcher-symbol {
