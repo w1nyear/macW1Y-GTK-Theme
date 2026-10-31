@@ -667,8 +667,8 @@ scale.vertical slider:active {
 
 .mc-toggle-group > button,
 .mac-nav-pill > button {
-  min-height: 31px;
-  min-width: 31px;
+  min-height: 29px;
+  min-width: 29px;
   padding: 0;
   margin: 0;
   border-radius: 9999px;
@@ -681,7 +681,7 @@ scale.vertical slider:active {
 
 .mc-toggle-group > button image,
 .mac-nav-pill > button image {
-  -gtk-icon-size: 15px;
+  -gtk-icon-size: 14px;
   margin: 0;
   padding: 0;
 }
