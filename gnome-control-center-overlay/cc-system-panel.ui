@@ -161,65 +161,7 @@
             <property name="content">
               <object class="AdwPreferencesPage">
 
-                                <!-- 1. Меню-бар -->
-                <child>
-                  <object class="AdwPreferencesGroup">
-                    <property name="title">Меню-бар</property>
-                    <property name="description">Налаштування затемнення та розмиття верхньої панелі</property>
-                    <child>
-                      <object class="AdwActionRow" id="menubar_tint_row">
-                        <property name="title">Затемнення градієнтне</property>
-                        <child type="suffix">
-                          <object class="GtkScale" id="menubar_tint_scale">
-                            <property name="orientation">0</property>
-                            <property name="draw-value">true</property>
-                            <property name="digits">0</property>
-                            <property name="round-digits">0</property>
-                            <property name="width-request">200</property>
-                            <property name="adjustment">
-                              <object class="GtkAdjustment">
-                                <property name="lower">0</property>
-                                <property name="upper">100</property>
-                                <property name="step-increment">1</property>
-                                <property name="page-increment">5</property>
-                                <property name="value">35</property>
-                              </object>
-                            </property>
-                            <signal name="realize" handler="init_menubar_tint"/>
-                            <signal name="value-changed" handler="on_menubar_tint_changed"/>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwActionRow" id="menubar_blur_row">
-                        <property name="title">Розмиття</property>
-                        <child type="suffix">
-                          <object class="GtkScale" id="menubar_blur_scale">
-                            <property name="orientation">0</property>
-                            <property name="draw-value">true</property>
-                            <property name="digits">0</property>
-                            <property name="round-digits">0</property>
-                            <property name="width-request">200</property>
-                            <property name="adjustment">
-                              <object class="GtkAdjustment">
-                                <property name="lower">0</property>
-                                <property name="upper">100</property>
-                                <property name="step-increment">1</property>
-                                <property name="page-increment">5</property>
-                                <property name="value">10</property>
-                              </object>
-                            </property>
-                            <signal name="realize" handler="init_menubar_blur"/>
-                            <signal name="value-changed" handler="on_menubar_blur_changed"/>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-
-                <!-- 2. Liquid Glass -->
+                <!-- 1. Liquid Glass -->
                 <child>
                   <object class="AdwPreferencesGroup" id="liquid_glass_group">
                     <property name="title">Liquid Glass</property>
@@ -227,8 +169,10 @@
                     <child>
                       <object class="GtkBox" id="liquid_preview_container">
                         <property name="orientation">1</property>
+                        <property name="margin-start">20</property>
+                        <property name="margin-end">20</property>
                         <property name="margin-top">4</property>
-                        <property name="margin-bottom">10</property>
+                        <property name="margin-bottom">12</property>
                         <child>
                           <object class="GtkDrawingArea" id="liquid_glass_preview_area">
                             <property name="height-request">210</property>
@@ -409,6 +353,64 @@
                             </property>
                             <signal name="realize" handler="init_liquid_shadow"/>
                             <signal name="value-changed" handler="on_liquid_shadow_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- 2. Меню-бар -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Меню-бар</property>
+                    <property name="description">Налаштування затемнення та розмиття верхньої панелі</property>
+                    <child>
+                      <object class="AdwActionRow" id="menubar_tint_row">
+                        <property name="title">Затемнення градієнтне</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="menubar_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_menubar_tint"/>
+                            <signal name="value-changed" handler="on_menubar_tint_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="menubar_blur_row">
+                        <property name="title">Розмиття</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="menubar_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">10</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_menubar_blur"/>
+                            <signal name="value-changed" handler="on_menubar_blur_changed"/>
                           </object>
                         </child>
                       </object>

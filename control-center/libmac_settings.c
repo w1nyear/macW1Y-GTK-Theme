@@ -407,12 +407,39 @@ static void schedule_menubar_blur_apply(void) {
     }
 }
 
+static void safe_set_int(GSettings *s, GSettingsSchema *schema, const char *key, int val) {
+    if (schema && g_settings_schema_has_key(schema, key)) {
+        g_settings_set_int(s, key, val);
+    }
+}
+
+static void safe_set_double(GSettings *s, GSettingsSchema *schema, const char *key, double val) {
+    if (schema && g_settings_schema_has_key(schema, key)) {
+        g_settings_set_double(s, key, val);
+    }
+}
+
+static void safe_set_string(GSettings *s, GSettingsSchema *schema, const char *key, const char *val) {
+    if (schema && g_settings_schema_has_key(schema, key)) {
+        g_settings_set_string(s, key, val);
+    }
+}
+
 static void apply_liquid_glass(void) {
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
-    if (!src || !g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE))
-        return;
+    if (!src) return;
 
-    GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
+    const char *schema_id = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com";
+    if (!g_settings_schema_source_lookup(src, schema_id, TRUE)) {
+        return;
+    }
+
+    GSettings *lg = g_settings_new(schema_id);
+    if (!lg) return;
+
+    GSettingsSchema *schema = NULL;
+    g_object_get(lg, "settings-schema", &schema, NULL);
+
     int radius = state.liquid_blur;
     double tint = (double)state.liquid_tint / 100.0;
     double disp_scale = (double)state.liquid_refraction * 1.5;
@@ -436,7 +463,7 @@ static void apply_liquid_glass(void) {
     };
 
     for (int i = 0; blur_keys[i] != NULL; i++) {
-        g_settings_set_int(lg, blur_keys[i], radius);
+        safe_set_int(lg, schema, blur_keys[i], radius);
     }
 
     const char *tint_keys[] = {
@@ -453,20 +480,22 @@ static void apply_liquid_glass(void) {
     };
 
     for (int i = 0; tint_keys[i] != NULL; i++) {
-        g_settings_set_double(lg, tint_keys[i], tint);
+        safe_set_double(lg, schema, tint_keys[i], tint);
     }
 
-    g_settings_set_double(lg, "glass-displacement-scale", disp_scale);
-    g_settings_set_double(lg, "glass-refraction-index", ior);
-    g_settings_set_double(lg, "glass-chroma-strength", chroma);
-    g_settings_set_double(lg, "glass-rim-intensity", rim);
-    g_settings_set_double(lg, "glass-specular-intensity", specular);
-    g_settings_set_double(lg, "shadow-intensity", shadow_int);
-    g_settings_set_double(lg, "shadow-radius", shadow_rad);
+    safe_set_double(lg, schema, "glass-displacement-scale", disp_scale);
+    safe_set_double(lg, schema, "glass-ior", ior);
+    safe_set_double(lg, schema, "glass-chroma-strength", chroma);
+    safe_set_double(lg, schema, "glass-rim-intensity", rim);
+    safe_set_double(lg, schema, "glass-specular-intensity", specular);
+    safe_set_double(lg, schema, "shadow-intensity", shadow_int);
+    safe_set_double(lg, schema, "shadow-radius", shadow_rad);
 
-    g_settings_set_string(lg, "menu-tint-color", "#000000");
-    g_settings_set_string(lg, "desktop-menu-tint-color", "#000000");
-    g_settings_set_string(lg, "panel-menu-tint-color", "#000000");
+    safe_set_string(lg, schema, "menu-tint-color", "#000000");
+    safe_set_string(lg, schema, "desktop-menu-tint-color", "#000000");
+    safe_set_string(lg, schema, "panel-menu-tint-color", "#000000");
+
+    if (schema) g_settings_schema_unref(schema);
     g_object_unref(lg);
 }
 
@@ -478,9 +507,11 @@ static gboolean apply_liquid_glass_cb(gpointer user_data) {
 }
 
 static void schedule_liquid_glass_apply(void) {
-    if (liquid_glass_timer_id == 0) {
-        liquid_glass_timer_id = g_timeout_add(60, (GSourceFunc)apply_liquid_glass_cb, NULL);
+    if (liquid_glass_timer_id != 0) {
+        g_source_remove(liquid_glass_timer_id);
+        liquid_glass_timer_id = 0;
     }
+    liquid_glass_timer_id = g_timeout_add(100, (GSourceFunc)apply_liquid_glass_cb, NULL);
 }
 
 static gboolean apply_spotlight_cb(gpointer user_data) {
@@ -906,7 +937,7 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
     // 1. Clip preview container with rounded corners
     cairo_save(cr);
-    draw_rounded_rect_path(cr, 0, 0, width, height, 18.0);
+    draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
     cairo_clip(cr);
 
     // 2. Wallpaper background
@@ -972,20 +1003,82 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         for (int ly = 0; ly < igh; ly++) {
             uint32_t *dst_row = (uint32_t *)(dst_pixels + ly * dst_stride);
             for (int lx = 0; lx < igw; lx++) {
-                double qx = fabs(lx - gw / 2.0) - (gw / 2.0 - gr);
-                double qy = fabs(ly - gh / 2.0) - (gh / 2.0 - gr);
-                double dist_corner = sqrt(fmax(qx, 0.0) * fmax(qx, 0.0) + fmax(qy, 0.0) * fmax(qy, 0.0));
-                double d_edge = (qx > 0.0 && qy > 0.0) ? (gr - dist_corner) : fmin(-qx, -qy) + gr;
-                if (d_edge < 0.0) {
-                    dst_row[lx] = 0;
-                    continue;
-                }
+                double d_edge = 0.0;
+                double nx = 0.0;
+                double ny = 0.0;
 
-                double nx = (lx < gw / 2.0) ? 1.0 : -1.0;
-                double ny = (ly < gh / 2.0) ? 1.0 : -1.0;
-                if (qx > 0.0 && qy > 0.0 && dist_corner > 0.001) {
-                    nx = -qx / dist_corner * ((lx > gw / 2.0) ? 1.0 : -1.0);
-                    ny = -qy / dist_corner * ((ly > gh / 2.0) ? 1.0 : -1.0);
+                if (lx < gr && ly < gr) {
+                    double vx = lx - gr;
+                    double vy = ly - gr;
+                    double dist = sqrt(vx * vx + vy * vy);
+                    if (dist > gr) {
+                        dst_row[lx] = 0;
+                        continue;
+                    }
+                    d_edge = gr - dist;
+                    if (dist > 0.001) {
+                        nx = -vx / dist;
+                        ny = -vy / dist;
+                    }
+                } else if (lx > gw - gr && ly < gr) {
+                    double vx = lx - (gw - gr);
+                    double vy = ly - gr;
+                    double dist = sqrt(vx * vx + vy * vy);
+                    if (dist > gr) {
+                        dst_row[lx] = 0;
+                        continue;
+                    }
+                    d_edge = gr - dist;
+                    if (dist > 0.001) {
+                        nx = -vx / dist;
+                        ny = -vy / dist;
+                    }
+                } else if (lx < gr && ly > gh - gr) {
+                    double vx = lx - gr;
+                    double vy = ly - (gh - gr);
+                    double dist = sqrt(vx * vx + vy * vy);
+                    if (dist > gr) {
+                        dst_row[lx] = 0;
+                        continue;
+                    }
+                    d_edge = gr - dist;
+                    if (dist > 0.001) {
+                        nx = -vx / dist;
+                        ny = -vy / dist;
+                    }
+                } else if (lx > gw - gr && ly > gh - gr) {
+                    double vx = lx - (gw - gr);
+                    double vy = ly - (gh - gr);
+                    double dist = sqrt(vx * vx + vy * vy);
+                    if (dist > gr) {
+                        dst_row[lx] = 0;
+                        continue;
+                    }
+                    d_edge = gr - dist;
+                    if (dist > 0.001) {
+                        nx = -vx / dist;
+                        ny = -vy / dist;
+                    }
+                } else if (lx < gr) {
+                    d_edge = lx;
+                    nx = 1.0;
+                    ny = 0.0;
+                } else if (lx > gw - gr) {
+                    d_edge = gw - lx;
+                    nx = -1.0;
+                    ny = 0.0;
+                } else if (ly < gr) {
+                    d_edge = ly;
+                    nx = 0.0;
+                    ny = 1.0;
+                } else if (ly > gh - gr) {
+                    d_edge = gh - ly;
+                    nx = 0.0;
+                    ny = -1.0;
+                } else {
+                    d_edge = edge_zone;
+                    nx = 0.0;
+                    ny = 0.0;
                 }
 
                 double bend = (d_edge < edge_zone) ? (sin((d_edge / edge_zone) * M_PI) * refr_factor) : 0.0;
@@ -1058,10 +1151,17 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         // E) Specular highlight sheen
         double spec_val = (double)state.liquid_specular / 100.0;
         if (spec_val > 0.01) {
-            cairo_arc(cr, gx + 38, gy + 38, 28, -G_PI * 0.85, -G_PI * 0.25);
-            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, spec_val * 0.45);
-            cairo_set_line_width(cr, 2.5);
-            cairo_stroke(cr);
+            cairo_save(cr);
+            draw_rounded_rect_path(cr, gx + 2.0, gy + 2.0, gw - 4.0, gh - 4.0, gr - 2.0);
+            cairo_clip(cr);
+            cairo_pattern_t *spec_pat = cairo_pattern_create_linear(gx, gy, gx, gy + 28.0);
+            cairo_pattern_add_color_stop_rgba(spec_pat, 0.0, 1.0, 1.0, 1.0, spec_val * 0.60);
+            cairo_pattern_add_color_stop_rgba(spec_pat, 1.0, 1.0, 1.0, 1.0, 0.0);
+            cairo_rectangle(cr, gx, gy, gw, 28.0);
+            cairo_set_source(cr, spec_pat);
+            cairo_fill(cr);
+            cairo_pattern_destroy(spec_pat);
+            cairo_restore(cr);
         }
 
         // F) Drag cue dots in center
@@ -1076,7 +1176,7 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
     // Outer preview border
     cairo_restore(cr);
-    draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 18.0);
+    draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 14.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
