@@ -13762,3 +13762,15 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
    - Ширину кнопок скориговано по відношенню до скролбара: встановлено `margin: 1.5px 18px 1.5px 8px`, що залишає 8 px вільного простору до повзунка скролбара праворуч, абсолютно симетрично лівому відступу від вікна (8 px).
    - У `style_sidebar_row_recursive` внутрішні відступи всіх рядків уніфіковано до геометрії рядка «Віджети»: `margin_start: 0; margin_end: 0; spacing: 6; label xalign: 0.0`.
    - Фон іконки активної кнопки закріплено як непрозорий `#1e1e20` (темно-чорний сквіркул без прозорості), тому помаранчевий колір виділення рядка більше не забарвлює іконку в брудно-помаранчевий відтінок.
+
+macW1Y 0.4 — Зменшення висоти пунктів (карток списків) у параметрах удвічі (macOS Style Compact Rows):
+   - Зменшено вертикальний розмір усіх рядків у картках налаштувань (Wi-Fi, Мережа, Bluetooth, Дисплеї, Звук, Живлення, Програми, Користувачі тощо) удвічі — з ~56-60 px до компактних 28 px (min-height: 28px, padding: 2px 14px), що відповідає еталону macOS System Settings.
+   - Внутрішній контейнер рядка (box.header) зменшено до min-height: 22px зі зменшеним інтервалом (border-spacing: 8px) та нульовими відступами.
+   - Заголовки (label.title) налаштовано на компактний розмір шрифту 13px із міжрядковим інтервалом 1.15, підзаголовки (label.subtitle) — 10.5px.
+   - Перемикачі (switch) всередині рядків зменшено до акуратних 18x32 px (слайдер 14x14 px), завдяки чому перемикачі не розпирають компактний рядок.
+   - Стрілки розкриття та навігації (image.expander, chevron) зменшено до 11 px.
+   - Кнопки дій, випадаючі списки (combobox, dropdown) та поля введення всередині списків компактно вписані у висоту 22-24 px.
+   - Префіксні іконки зменшено до 18 px (для списку програм залишено 24 px).
+   - Правила охоплюють усі компоненти карток: list.boxed-list row, adwactionrow, adwswitchrow, adwcomborow, adwentryrow, adwexpanderrow, adwspinrow, cclistrow у будь-яких панелях вікна window.mac-settings-window.
+   - Синхронізовано сирцеві файли libmac_settings.c (в control-center/ та gnome-control-center-overlay/), бібліотеку скомпільовано та оновлено в усіх системних каталогах (/usr/lib/x86_64-linux-gnu/, /usr/local/lib/, ~/.local/lib/, /usr/share/mactheme/gnome-control-center-overlay/, repo/lib/).
+   - Синхронізовано глобальні та локальні таблиці стилів GTK 4 (config/gtk-4.0/gtk.css, gtk-Dark.css, macW1Y-Dark, ~/.config/gtk-4.0/).
