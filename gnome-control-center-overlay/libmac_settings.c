@@ -3530,13 +3530,8 @@ static void configure_toolbar_views_recursive(GtkWidget *widget, gboolean is_sid
     if (!widget) return;
     if (ADW_IS_TOOLBAR_VIEW(widget)) {
         AdwToolbarView *tv = ADW_TOOLBAR_VIEW(widget);
-        if (is_sidebar) {
-            adw_toolbar_view_set_extend_content_to_top_edge(tv, FALSE);
-            adw_toolbar_view_set_extend_content_to_bottom_edge(tv, FALSE);
-        } else {
-            adw_toolbar_view_set_extend_content_to_top_edge(tv, TRUE);
-            adw_toolbar_view_set_extend_content_to_bottom_edge(tv, TRUE);
-        }
+        adw_toolbar_view_set_extend_content_to_top_edge(tv, FALSE);
+        adw_toolbar_view_set_extend_content_to_bottom_edge(tv, FALSE);
         adw_toolbar_view_set_top_bar_style(tv, ADW_TOOLBAR_FLAT);
         adw_toolbar_view_set_bottom_bar_style(tv, ADW_TOOLBAR_FLAT);
     }
@@ -3867,24 +3862,24 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row { "
         "  min-height: 32px; "
         "  padding: 3px 6px; "
-        "  margin: 1.5px 7px; "
-        "  border-radius: 5px; "
+        "  margin: 1.5px 18px 1.5px 8px; "
+        "  border-radius: 8px; "
         "  font-size: 13px; "
         "  color: rgba(255, 255, 255, 0.90); "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:hover, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:hover { "
-        "  border-radius: 5px; "
+        "  border-radius: 8px; "
         "  background-color: rgba(255, 255, 255, 0.08); "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected { "
-        "  border-radius: 5px; "
+        "  border-radius: 8px; "
         "  background-color: #fa6e0a; "
         "  color: #ffffff; "
         "} "
-        "window.mac-settings-window list.mac-settings-sidebar-list row image, "
-        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row image { "
+        "window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) image, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) image { "
         "  min-width: 20px; "
         "  min-height: 20px; "
         "  -gtk-icon-size: 13px; "
@@ -3892,12 +3887,12 @@ static void init_mac_settings_css(void) {
         "  border: 1px solid rgba(255, 255, 255, 0.06); "
         "  border-radius: 5px; "
         "  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); "
-        "  margin-right: 6px; "
-        "  margin-left: 2px; "
+        "  margin-right: 0px; "
+        "  margin-left: 0px; "
         "  padding: 0; "
         "} "
-        "window.mac-settings-window list.mac-settings-sidebar-list row:selected image, "
-        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected image { "
+        "window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) image, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) image { "
         "  color: #ffffff; "
         "  background-color: #1e1e20; "
         "  border: 1px solid rgba(255, 255, 255, 0.08); "
@@ -3921,30 +3916,36 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-account-row { "
         "  min-height: 48px; "
         "  padding: 6px 10px; "
-        "  margin: 6px 7px 18px 7px; "
-        "  border-radius: 6px; "
+        "  margin: 6px 18px 18px 8px; "
+        "  border-radius: 8px; "
         "  background-color: transparent; "
+        "  border-width: 0; "
+        "  box-shadow: none; "
+        "  outline-width: 0; "
         "} "
         "window.mac-settings-window .mac-settings-account-row:hover { "
-        "  border-radius: 6px; "
+        "  border-radius: 8px; "
         "  background-color: rgba(255, 255, 255, 0.05); "
         "} "
         "window.mac-settings-window .mac-settings-account-row:selected { "
-        "  border-radius: 6px; "
+        "  border-radius: 8px; "
         "  background-color: rgba(255, 255, 255, 0.08); "
         "} "
-        "window.mac-settings-window .mac-settings-account-row avatar, "
-        "window.mac-settings-window .mac-settings-account-row image, "
-        "window.mac-settings-window .mac-settings-account-row widget { "
-        "  background: transparent; "
+        "window.mac-settings-window .mac-settings-account-row avatar { "
+        "  border-radius: 9999px; "
         "  background-color: transparent; "
-        "  border: none; "
+        "  border-width: 0; "
         "  box-shadow: none; "
         "} "
-        "window.mac-settings-window .mac-settings-account-row image { "
-        "  min-width: 12px; "
-        "  min-height: 12px; "
-        "  margin-right: 0; "
+        "window.mac-settings-window .mac-settings-account-row avatar image { "
+        "  background-color: transparent; "
+        "  border-width: 0; "
+        "  box-shadow: none; "
+        "  border-radius: 9999px; "
+        "  min-width: 36px; "
+        "  min-height: 36px; "
+        "  margin: 0; "
+        "  padding: 0; "
         "} "
         "window.mac-settings-window .mac-settings-account-row .account-title { "
         "  font-weight: 600; "
@@ -3990,6 +3991,18 @@ static void init_mac_settings_css(void) {
         "  margin: 0px; "
         "  padding: 0px; "
         "} "
+        "window.mac-settings-window preferencespage, "
+        "window.mac-settings-window .content-pane preferencespage { "
+        "  padding-top: 6px; "
+        "} "
+        "window.mac-settings-window infobar, "
+        "window.mac-settings-window .permission-infobar, "
+        "window.mac-settings-window banner { "
+        "  margin-top: 6px; "
+        "  margin-bottom: 8px; "
+        "  margin-left: 20px; "
+        "  margin-right: 20px; "
+        "} "
         "window.mac-settings-window preferencespage list.boxed-list, "
         "window.mac-settings-window .content-pane list.boxed-list, "
         "window.mac-settings-window .mac-settings-content list.boxed-list { "
@@ -4000,6 +4013,14 @@ static void init_mac_settings_css(void) {
         "  margin-left: 20px; "
         "  margin-right: 20px; "
         "  margin-bottom: 12px; "
+        "} "
+        "window.mac-settings-window preferencespage list:not(.boxed-list), "
+        "window.mac-settings-window preferencespage row.button, "
+        "window.mac-settings-window #add_user_button_row, "
+        "window.mac-settings-window #add_enterprise_user_button_row, "
+        "window.mac-settings-window preferencesgroup.separate-rows list { "
+        "  margin-left: 20px; "
+        "  margin-right: 20px; "
         "} "
         "window.mac-settings-window preferencespage preferencesgroup > box > box.header, "
         "window.mac-settings-window .content-pane preferencesgroup > box > box.header, "
@@ -4032,13 +4053,23 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window preferencespage list.boxed-list row.expander row.header, "
         "window.mac-settings-window .content-pane list.boxed-list row.expander row.header, "
         "window.mac-settings-window .mac-settings-content list.boxed-list row.expander row.header { "
-        "  min-height: 36px; "
-        "  padding: 3px 10px; "
+        "  min-height: 42px; "
+        "  padding: 8px 14px; "
         "  border-bottom: none; "
         "} "
         "window.mac-settings-window preferencespage list.boxed-list row > box.header { "
-        "  border-spacing: 8px; "
+        "  border-spacing: 10px; "
         "  margin: 0px; "
+        "} "
+        "window.mac-settings-window preferencespage list.boxed-list row > box.header > box.title { "
+        "  margin-top: 0px; "
+        "  margin-bottom: 0px; "
+        "} "
+        "window.mac-settings-window preferencespage list.boxed-list row > box.header > box.suffixes, "
+        "window.mac-settings-window preferencespage list.boxed-list row > box.header > button:last-child, "
+        "window.mac-settings-window preferencespage list.boxed-list row > box.header > switch:last-child, "
+        "window.mac-settings-window preferencespage list.boxed-list row > box.header > image:last-child { "
+        "  margin-right: 0px; "
         "} "
         "window.mac-settings-window preferencespage list.boxed-list row:not(.expander):hover, "
         "window.mac-settings-window .content-pane list.boxed-list row:not(.expander):hover, "
@@ -4065,6 +4096,43 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-content list.boxed-list row image:dir(ltr):last-child { "
         "  color: rgba(255, 255, 255, 0.30); "
         "  -gtk-icon-size: 14px; "
+        "} "
+        "window.mac-settings-window preferencespage list.boxed-list row > box.header > image:first-child, "
+        "window.mac-settings-window preferencespage list.boxed-list row > box > image:first-child, "
+        "window.mac-settings-window preferencespage list.boxed-list row image.icon, "
+        "window.mac-settings-window preferencespage list.boxed-list row > image:first-child, "
+        "window.mac-settings-window #app_listbox row image { "
+        "  min-width: 24px; "
+        "  min-height: 24px; "
+        "  -gtk-icon-size: 24px; "
+        "  margin-right: 12px; "
+        "  margin-left: 0px; "
+        "} "
+        "window.mac-settings-window .content-pane searchbar, "
+        "window.mac-settings-window .mac-settings-content searchbar { "
+        "  background: transparent; "
+        "  border: none; "
+        "  box-shadow: none; "
+        "  padding: 4px 0px; "
+        "} "
+        "window.mac-settings-window .content-pane searchbar > revealer > box, "
+        "window.mac-settings-window .content-pane searchbar clamp, "
+        "window.mac-settings-window .mac-settings-content searchbar > revealer > box, "
+        "window.mac-settings-window .mac-settings-content searchbar clamp { "
+        "  padding-left: 0px; "
+        "  padding-right: 0px; "
+        "  margin-left: 20px; "
+        "  margin-right: 20px; "
+        "} "
+        "window.mac-settings-window .content-pane searchbar entry, "
+        "window.mac-settings-window .mac-settings-content searchbar entry, "
+        "window.mac-settings-window #app_search_entry { "
+        "  margin-left: 20px; "
+        "  margin-right: 20px; "
+        "  min-height: 32px; "
+        "  border-radius: 8px; "
+        "  background-color: rgba(255, 255, 255, 0.08); "
+        "  border: 1px solid rgba(255, 255, 255, 0.08); "
         "} "
         "window.mac-settings-window .mac-settings-content-headerbar.has-view-switcher, "
         "window.mac-settings-window .mac-settings-switcher-headerbar, "
@@ -4149,7 +4217,7 @@ static GtkListBoxRow *create_account_row(AdwNavigationSplitView *split_view) {
     (void)split_view;
     GtkListBoxRow *row = GTK_LIST_BOX_ROW(gtk_list_box_row_new());
     gtk_widget_add_css_class(GTK_WIDGET(row), "mac-settings-account-row");
-    gtk_widget_set_margin_bottom(GTK_WIDGET(row), 20);
+    gtk_widget_set_margin_bottom(GTK_WIDGET(row), 18);
     g_object_set_data(G_OBJECT(row), "is_account_row", GINT_TO_POINTER(1));
 
     MacPanelRowData *row_data = g_new0(MacPanelRowData, 1);
@@ -4170,15 +4238,31 @@ static GtkListBoxRow *create_account_row(AdwNavigationSplitView *split_view) {
     GtkWidget *avatar = adw_avatar_new(36, disp_name, TRUE);
     adw_avatar_set_show_initials(ADW_AVATAR(avatar), TRUE);
 
+    GdkTexture *tex = NULL;
+    char *acc_icon = g_strdup_printf("/var/lib/AccountsService/icons/%s", user_name ? user_name : "vitaliy");
     char *face_path = g_build_filename(g_get_home_dir(), ".face", NULL);
-    if (g_file_test(face_path, G_FILE_TEST_EXISTS)) {
-        GdkTexture *tex = gdk_texture_new_from_filename(face_path, NULL);
-        if (tex) {
-            adw_avatar_set_custom_image(ADW_AVATAR(avatar), GDK_PAINTABLE(tex));
-            g_object_unref(tex);
-        }
+    char *face_icon_path = g_build_filename(g_get_home_dir(), ".face.icon", NULL);
+
+    if (g_file_test(acc_icon, G_FILE_TEST_EXISTS)) {
+        tex = gdk_texture_new_from_filename(acc_icon, NULL);
     }
+    if (!tex && g_file_test(face_path, G_FILE_TEST_EXISTS)) {
+        tex = gdk_texture_new_from_filename(face_path, NULL);
+    }
+    if (!tex && g_file_test(face_icon_path, G_FILE_TEST_EXISTS)) {
+        tex = gdk_texture_new_from_filename(face_icon_path, NULL);
+    }
+
+    if (tex) {
+        adw_avatar_set_custom_image(ADW_AVATAR(avatar), GDK_PAINTABLE(tex));
+        adw_avatar_set_show_initials(ADW_AVATAR(avatar), FALSE);
+        g_object_unref(tex);
+    }
+
+    g_free(acc_icon);
     g_free(face_path);
+    g_free(face_icon_path);
+
     gtk_box_append(GTK_BOX(box), avatar);
 
     GtkWidget *tbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
@@ -4197,11 +4281,7 @@ static GtkListBoxRow *create_account_row(AdwNavigationSplitView *split_view) {
 
     gtk_box_append(GTK_BOX(box), tbox);
 
-    GtkWidget *arrow = gtk_image_new_from_icon_name("go-next-symbolic");
-    gtk_widget_set_valign(arrow, GTK_ALIGN_CENTER);
-    gtk_widget_set_opacity(arrow, 0.35);
-    gtk_image_set_pixel_size(GTK_IMAGE(arrow), 12);
-    gtk_box_append(GTK_BOX(box), arrow);
+    /* Arrow removed per user request: only account */
 
     gtk_list_box_row_set_child(row, box);
     return row;
@@ -4700,16 +4780,32 @@ static void style_sidebar_row_recursive(GtkWidget *widget) {
         gtk_image_set_pixel_size(GTK_IMAGE(widget), 13);
         gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
         gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+        gtk_widget_set_margin_start(widget, 0);
+        gtk_widget_set_margin_end(widget, 0);
     }
     if (GTK_IS_LABEL(widget)) {
         gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+        gtk_label_set_xalign(GTK_LABEL(widget), 0.0);
         gtk_widget_set_margin_top(widget, 1);
         gtk_widget_set_margin_bottom(widget, 0);
+        gtk_widget_set_margin_start(widget, 0);
+        gtk_widget_set_margin_end(widget, 0);
     }
-    if (GTK_IS_GRID(widget) || GTK_IS_BOX(widget)) {
+    if (GTK_IS_GRID(widget)) {
         gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
         gtk_widget_set_margin_top(widget, 0);
         gtk_widget_set_margin_bottom(widget, 0);
+        gtk_widget_set_margin_start(widget, 0);
+        gtk_widget_set_margin_end(widget, 0);
+        gtk_grid_set_column_spacing(GTK_GRID(widget), 6);
+    }
+    if (GTK_IS_BOX(widget)) {
+        gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+        gtk_widget_set_margin_top(widget, 0);
+        gtk_widget_set_margin_bottom(widget, 0);
+        gtk_widget_set_margin_start(widget, 0);
+        gtk_widget_set_margin_end(widget, 0);
+        gtk_box_set_spacing(GTK_BOX(widget), 6);
     }
     for (GtkWidget *ch = gtk_widget_get_first_child(widget); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
         style_sidebar_row_recursive(ch);
