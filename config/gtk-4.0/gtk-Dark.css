@@ -11378,8 +11378,8 @@ scale.vertical > trough > slider:active {
 
 .mc-toggle-group > button,
 .mac-nav-pill > button {
-  min-height: 36px;
-  min-width: 36px;
+  min-height: 31px;
+  min-width: 31px;
   padding: 0;
   margin: 0;
   border-radius: 9999px;
@@ -11392,7 +11392,7 @@ scale.vertical > trough > slider:active {
 
 .mc-toggle-group > button image,
 .mac-nav-pill > button image {
-  -gtk-icon-size: 16px;
+  -gtk-icon-size: 15px;
   margin: 0;
   padding: 0;
 }
@@ -11401,7 +11401,7 @@ scale.vertical > trough > slider:active {
 .mac-nav-pill separator {
   min-width: 1px;
   background-color: rgba(255, 255, 255, 0.12);
-  margin: 5px 0px;
+  margin: 4px 0px;
 }
 
 .mc-toggle-group > button:hover,
