@@ -1,467 +1,467 @@
 {
-    "_meta": {
-        "macw1y_version": "1.0",
-        "target_shell": "46",
-        "generated_at": "2026-10-27 16:12:53",
-        "total_managed": 21
+  "_meta": {
+    "macw1y_version": "1.0",
+    "target_shell": "46",
+    "generated_at": "2026-10-27 16:12:53",
+    "total_managed": 21
+  },
+  "extensions": {
+    "appmenu@ChathurangaBW.github.io": {
+      "uuid": "appmenu@ChathurangaBW.github.io",
+      "name": "AppMenu",
+      "pinned_version": 15,
+      "shell_compatibility": [
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+      ],
+      "sha256": "55be2b42782a3cabfbeb30d00ce10479ba57130f725a187370fe0aec6f05da15",
+      "status": "locked",
+      "source": "local_custom",
+      "macw1y_components": [
+        "menubar",
+        "apple_logo_menu",
+        "spotlight_search",
+        "finder_fallback"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "macOS Monterey style spotlight, apple menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
+      "last_verified": "2026-10-31"
     },
-    "extensions": {
-        "appmenu@ChathurangaBW.github.io": {
-            "uuid": "appmenu@ChathurangaBW.github.io",
-            "name": "AppMenu",
-            "pinned_version": 15,
-            "shell_compatibility": [
-                "45",
-                "46",
-                "47",
-                "48",
-                "49",
-                "50"
-            ],
-            "sha256": "55be2b42782a3cabfbeb30d00ce10479ba57130f725a187370fe0aec6f05da15",
-            "status": "locked",
-            "source": "local_custom",
-            "macw1y_components": [
-                "menubar",
-                "apple_logo_menu",
-                "spotlight_search",
-                "finder_fallback"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "macOS Monterey style spotlight, apple menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
-            "last_verified": "2026-10-31"
-        },
-        "blur-my-shell@aunetx": {
-            "uuid": "blur-my-shell@aunetx",
-            "name": "Blur my Shell",
-            "pinned_version": 99999,
-            "shell_compatibility": [
-                "46",
-                "47",
-                "48",
-                "49",
-                "50",
-                "51"
-            ],
-            "sha256": "a987e2a2b879e10978041c10aef7d886e859ac14b77ce70498b2cc6020330371",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "menubar_blur",
-                "overview_blur",
-                "applications_blur",
-                "liquid_glass_mutter_actor"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
-            "last_verified": "2026-10-30"
-        },
-        "compiz-alike-magic-lamp-effect@hermes83.github.com": {
-            "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
-            "name": "Compiz alike magic lamp effect",
-            "pinned_version": 25,
-            "shell_compatibility": [
-                "45",
-                "46",
-                "47",
-                "48",
-                "49",
-                "50",
-                "51"
-            ],
-            "sha256": "f371a1771853cb74935a792153c29c4ee0f6494ca70609cd9cda1fad4f70b802",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "genie_minimize_effect"
-            ],
-            "has_custom_patches": false,
-            "patch_description": "Upstream verified",
-            "last_verified": "2026-10-27"
-        },
-        "cupertino-dock-lite@rinzler69-wastaken.github.com": {
-            "uuid": "cupertino-dock-lite@rinzler69-wastaken.github.com",
-            "name": "WACK - Cupertino Dock Lite",
-            "pinned_version": 6,
-            "shell_compatibility": [
-                "46",
-                "47",
-                "48",
-                "49",
-                "50"
-            ],
-            "sha256": "06882f1de1351f1d6bee6bb44edbd9d31baf5a60f1af1517156624238ea7d9e6",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "dock_cupertino_animations",
-                "bounce_effect",
-                "dock_indicators"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "Clutter actor destroyed memory leak fix in animator.js",
-            "last_verified": "2026-10-27"
-        },
-        "custom-command-toggle@storageb.github.com": {
-            "uuid": "custom-command-toggle@storageb.github.com",
-            "name": "Custom Command Toggle",
-            "pinned_version": 15,
-            "shell_compatibility": [
-                "45",
-                "46",
-                "47",
-                "48",
-                "49",
-                "50",
-                "51"
-            ],
-            "sha256": "af38b1a915c902397579289315168b0f46d3b0ecfeb977639ca034598b54302e",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "quick_settings_custom_toggles"
-            ],
-            "has_custom_patches": false,
-            "patch_description": "Upstream verified",
-            "last_verified": "2026-10-27"
-        },
-        "dash2dock-motion@unmade.space": {
-            "uuid": "dash2dock-motion@unmade.space",
-            "name": "Dash2Dock Motion",
-            "pinned_version": "custom",
-            "shell_compatibility": [
-                "50"
-            ],
-            "sha256": "70648b4a9f01a6072c42d5a0c7872efcd05043dccd5f7dcbd83187edd11e8a9d",
-            "status": "locked",
-            "source": "local_custom",
-            "macw1y_components": [
-                "dock_glass_slab",
-                "icon_magnification",
-                "dock_bounce"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "Custom glass dock with dynamic startingApps tracking",
-            "last_verified": "2026-10-27"
-        },
-        "eval-helper@mactheme": {
-            "uuid": "eval-helper@mactheme",
-            "name": "Eval Helper",
-            "pinned_version": "custom",
-            "shell_compatibility": [
-                "46",
-                "47",
-                "48",
-                "49",
-                "50"
-            ],
-            "sha256": "574f90ca28bb646019556f1824a7592079579e8e60a3f723aefd5428e676b2c7",
-            "status": "locked",
-            "source": "local_custom",
-            "macw1y_components": [
-                "dbus_eval_helper",
-                "notification_grouping",
-                "switcher_popup_mac_liquid_glass"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "Local D-Bus EvalHelper service and macOS Alt+Tab switcher enhancements",
-            "last_verified": "2026-10-31"
-        },
-        "kiwi@kemma": {
-            "uuid": "kiwi@kemma",
-            "name": "Kiwi (is not Apple)",
-            "pinned_version": 99999,
-            "shell_compatibility": [
-                "48",
-                "49",
-                "50",
-                "51"
-            ],
-            "sha256": "d44ffc4074a1fd6509a58b40e53e32fc94e7f246805e83e3e2b50b281524a721",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "quick_settings_styling",
-                "traffic_lights_buttons",
-                "control_center_sliders",
-                "screencast_indicator",
-                "control_center_liquid_glass_submenus"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink",
-            "last_verified": "2026-10-30",
-            "integrity_hash": "2358a60a5f7ecb0a9cbf67f8505de83ca3c1f9244bd275acd696a79e40b02f4e"
-        },
-        "liquid-glass@thinkingcoding1231.gmail.com": {
-            "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
-            "name": "Liquid Glass",
-            "pinned_version": "custom",
-            "shell_compatibility": [
-                "49",
-                "50"
-            ],
-            "sha256": "230f337843edc53d8fc721fddce74cfba029759366a27285d12ecb4ee39b40d3",
-            "status": "locked",
-            "source": "local_custom",
-            "macw1y_components": [
-                "liquid_glass_shader",
-                "specular_highlight",
-                "panel_menu_glass",
-                "dock_glass"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "Local custom Liquid Glass GLSL refraction & border shader",
-            "last_verified": "2026-10-31",
-            "integrity_hash": "230f337843edc53d8fc721fddce74cfba029759366a27285d12ecb4ee39b40d3"
-        },
-        "macos-touchpad-gestures@mactheme": {
-            "uuid": "macos-touchpad-gestures@mactheme",
-            "name": "macOS Touchpad Gestures",
-            "pinned_version": "custom",
-            "shell_compatibility": [
-                "45",
-                "46",
-                "47",
-                "48",
-                "49",
-                "50"
-            ],
-            "sha256": "2cb9979eafd57372dd45c5140bbc90194db54b2831b901c8812cc1f263efdf68",
-            "status": "locked",
-            "source": "local_custom",
-            "macw1y_components": [
-                "touchpad_gestures",
-                "three_finger_drag",
-                "mission_control_swipe"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "Local custom macOS touchpad gesture suite",
-            "last_verified": "2026-10-27"
-        },
-        "quick-settings-scroll@diskmth.fr": {
-            "uuid": "quick-settings-scroll@diskmth.fr",
-            "name": "Quick Settings Scroll",
-            "pinned_version": 3,
-            "shell_compatibility": [
-                "46",
-                "47",
-                "48",
-                "49",
-                "50",
-                "51"
-            ],
-            "sha256": "67ea6c3417df44d85ac40b3ef26744f88f553394b84fb7c3f9c4754461320bad",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "quick_settings_scroll"
-            ],
-            "has_custom_patches": false,
-            "patch_description": "Upstream verified",
-            "last_verified": "2026-10-27"
-        },
-        "Rounded_Corners@lennart-k": {
-            "uuid": "Rounded_Corners@lennart-k",
-            "name": "Rounded Corners",
-            "pinned_version": 18,
-            "shell_compatibility": [
-                "45",
-                "46",
-                "47",
-                "48",
-                "49",
-                "50"
-            ],
-            "sha256": "774fe82422b26aea752917174e76253cb0aecbda37860cdea3c62a3dbab18145",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "screen_rounded_corners"
-            ],
-            "has_custom_patches": false,
-            "patch_description": "Upstream verified",
-            "last_verified": "2026-10-27"
-        },
-        "run-cmd@custom.extension": {
-            "uuid": "run-cmd@custom.extension",
-            "name": "Ydotool Trigger",
-            "pinned_version": "custom",
-            "shell_compatibility": [
-                "49",
-                "50",
-                "51"
-            ],
-            "sha256": "821bad49f0276b0d942e2b248586a022f1e017314c7577bc8f76d09d8dc7bdc6",
-            "status": "locked",
-            "source": "local_custom",
-            "macw1y_components": [
-                "ydotool_shortcut_trigger"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "Local custom ydotool trigger",
-            "last_verified": "2026-10-27"
-        },
-        "top-bar-organizer@julian.gse.jsts.xyz": {
-            "uuid": "top-bar-organizer@julian.gse.jsts.xyz",
-            "name": "Top Bar Organizer",
-            "pinned_version": 16,
-            "shell_compatibility": [
-                "45",
-                "46",
-                "47",
-                "48",
-                "49",
-                "50"
-            ],
-            "sha256": "9afcc51c3b1293ada97a0f2faa5f3d3959d664e5e5ca08ef7d0c8d297cb34291",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "menubar_items_order"
-            ],
-            "has_custom_patches": false,
-            "patch_description": "Upstream verified",
-            "last_verified": "2026-10-27"
-        },
-        "user-theme@gnome-shell-extensions.gcampax.github.com": {
-            "uuid": "user-theme@gnome-shell-extensions.gcampax.github.com",
-            "name": "User Themes",
-            "pinned_version": 79,
-            "shell_compatibility": [
-                "50"
-            ],
-            "sha256": "f56c1eb63f1b830c70ce4d7a815003a3c29964c46dbd355555cf2f5486ed886c",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "shell_theme_loading"
-            ],
-            "has_custom_patches": false,
-            "patch_description": "Upstream verified",
-            "last_verified": "2026-10-27"
-        },
-        "volume-percentage-quick-settings@imdarktom": {
-            "uuid": "volume-percentage-quick-settings@imdarktom",
-            "name": "Volume Percentage in Quick Settings",
-            "pinned_version": 3,
-            "shell_compatibility": [
-                "46",
-                "47",
-                "48",
-                "49",
-                "50"
-            ],
-            "sha256": "fb258d9f2e4e933a91e00f7503ecd831b316ad08495866a0db13067aa704b71e",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "volume_percentage_display"
-            ],
-            "has_custom_patches": false,
-            "patch_description": "Upstream verified",
-            "last_verified": "2026-10-27"
-        },
-        "wack-lockscreen-clock@rinzler69-wastaken.github.com": {
-            "uuid": "wack-lockscreen-clock@rinzler69-wastaken.github.com",
-            "name": "WACK - Sonoma Lockscreen",
-            "pinned_version": 46,
-            "shell_compatibility": [
-                "46",
-                "47",
-                "48",
-                "49",
-                "50"
-            ],
-            "sha256": "77044defdc5af317836c0be1af17a0c174cb512a2b98ddefe33e6929b3298547",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "sonoma_lockscreen_clock"
-            ],
-            "has_custom_patches": false,
-            "patch_description": "Upstream verified",
-            "last_verified": "2026-10-27"
-        },
-        "wifi-hotspot-quick-settings@aryan10.github.io": {
-            "uuid": "wifi-hotspot-quick-settings@aryan10.github.io",
-            "name": "Wi-Fi Hotspot Quick Settings",
-            "pinned_version": 4,
-            "shell_compatibility": [
-                "50"
-            ],
-            "sha256": "ee3a2ff8e928cc79508fbd336fab1d694a9bd961c2d6ac1295c83c19d9ae8987",
-            "status": "locked",
-            "source": "extensions.gnome.org",
-            "macw1y_components": [
-                "wifi_hotspot_toggle"
-            ],
-            "has_custom_patches": false,
-            "patch_description": "Upstream verified",
-            "last_verified": "2026-10-27"
-        },
-        "ding@rastersoft.com": {
-            "uuid": "ding@rastersoft.com",
-            "name": "Desktop Icons NG (DING)",
-            "pinned_version": "custom",
-            "shell_compatibility": [
-                "46",
-                "47",
-                "48",
-                "49",
-                "50"
-            ],
-            "sha256": "a89df55a11963ef9422c366a14d7af9356c69cdfe04024c90bc218c909b8249e",
-            "status": "locked",
-            "source": "apt_system_patched",
-            "macw1y_components": [
-                "desktop_icons",
-                "finder_desktop"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "askRenamePopup and desktopManager patches",
-            "last_verified": "2026-10-27"
-        },
-        "desktop-widgets@r3nhick": {
-            "uuid": "desktop-widgets@r3nhick",
-            "name": "Desktop Widgets",
-            "pinned_version": 15,
-            "shell_compatibility": [
-                "50",
-                "51"
-            ],
-            "sha256": "9df365b2393959bab78c7aec14c4bc0ad5dbc14b6a99c67b63267d7825cdd6ec",
-            "status": "locked",
-            "source": "github",
-            "macw1y_components": [
-                "desktop_widgets",
-                "settings_tab",
-                "clock_battery_weather_system"
-            ],
-            "has_custom_patches": true,
-            "patch_description": "Fixed ShaderEffect static snippet vfunc for GNOME 50 and unreachable code cleanup",
-            "last_verified": "2026-10-30"
-        },
-        "ubuntu-appindicators@ubuntu.com": {
-            "uuid": "ubuntu-appindicators@ubuntu.com",
-            "name": "Ubuntu AppIndicators",
-            "pinned_version": "custom",
-            "shell_compatibility": [
-                "45",
-                "46",
-                "47",
-                "48",
-                "49",
-                "50"
-            ],
-            "sha256": "cb5a70bc9bdad6c8eee8be4eec63e03df9b80069cbac9ffea4d7b326d83faffd",
-            "status": "locked",
-            "source": "apt_system",
-            "macw1y_components": [
-                "menubar_appindicators"
-            ],
-            "has_custom_patches": false,
-            "patch_description": "System tray indicators",
-            "last_verified": "2026-10-27"
-        }
+    "blur-my-shell@aunetx": {
+      "uuid": "blur-my-shell@aunetx",
+      "name": "Blur my Shell",
+      "pinned_version": 99999,
+      "shell_compatibility": [
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51"
+      ],
+      "sha256": "525130ddd252f4dd7974ba5712dc3a493f21a1bd70f0a2ea5c81c2d90942edb8",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "menubar_blur",
+        "overview_blur",
+        "applications_blur",
+        "liquid_glass_mutter_actor"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
+      "last_verified": "2026-10-31"
+    },
+    "compiz-alike-magic-lamp-effect@hermes83.github.com": {
+      "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
+      "name": "Compiz alike magic lamp effect",
+      "pinned_version": 25,
+      "shell_compatibility": [
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51"
+      ],
+      "sha256": "f371a1771853cb74935a792153c29c4ee0f6494ca70609cd9cda1fad4f70b802",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "genie_minimize_effect"
+      ],
+      "has_custom_patches": false,
+      "patch_description": "Upstream verified",
+      "last_verified": "2026-10-27"
+    },
+    "cupertino-dock-lite@rinzler69-wastaken.github.com": {
+      "uuid": "cupertino-dock-lite@rinzler69-wastaken.github.com",
+      "name": "WACK - Cupertino Dock Lite",
+      "pinned_version": 6,
+      "shell_compatibility": [
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+      ],
+      "sha256": "06882f1de1351f1d6bee6bb44edbd9d31baf5a60f1af1517156624238ea7d9e6",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "dock_cupertino_animations",
+        "bounce_effect",
+        "dock_indicators"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "Clutter actor destroyed memory leak fix in animator.js",
+      "last_verified": "2026-10-27"
+    },
+    "custom-command-toggle@storageb.github.com": {
+      "uuid": "custom-command-toggle@storageb.github.com",
+      "name": "Custom Command Toggle",
+      "pinned_version": 15,
+      "shell_compatibility": [
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51"
+      ],
+      "sha256": "af38b1a915c902397579289315168b0f46d3b0ecfeb977639ca034598b54302e",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "quick_settings_custom_toggles"
+      ],
+      "has_custom_patches": false,
+      "patch_description": "Upstream verified",
+      "last_verified": "2026-10-27"
+    },
+    "dash2dock-motion@unmade.space": {
+      "uuid": "dash2dock-motion@unmade.space",
+      "name": "Dash2Dock Motion",
+      "pinned_version": "custom",
+      "shell_compatibility": [
+        "50"
+      ],
+      "sha256": "70648b4a9f01a6072c42d5a0c7872efcd05043dccd5f7dcbd83187edd11e8a9d",
+      "status": "locked",
+      "source": "local_custom",
+      "macw1y_components": [
+        "dock_glass_slab",
+        "icon_magnification",
+        "dock_bounce"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "Custom glass dock with dynamic startingApps tracking",
+      "last_verified": "2026-10-27"
+    },
+    "eval-helper@mactheme": {
+      "uuid": "eval-helper@mactheme",
+      "name": "Eval Helper",
+      "pinned_version": "custom",
+      "shell_compatibility": [
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+      ],
+      "sha256": "0b5f711a1b58a05799db0a54aa38cd1822a1cdbf0cc22b22f75c02b7b08899fa",
+      "status": "locked",
+      "source": "local_custom",
+      "macw1y_components": [
+        "dbus_eval_helper",
+        "notification_grouping",
+        "switcher_popup_mac_liquid_glass"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "Local D-Bus EvalHelper service and macOS Alt+Tab switcher enhancements",
+      "last_verified": "2026-10-31"
+    },
+    "kiwi@kemma": {
+      "uuid": "kiwi@kemma",
+      "name": "Kiwi (is not Apple)",
+      "pinned_version": 99999,
+      "shell_compatibility": [
+        "48",
+        "49",
+        "50",
+        "51"
+      ],
+      "sha256": "28dbfe9ccdc096619b26dc354ce32c002ded7b1cb5fa16bd001b6aa7457c91ad",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "quick_settings_styling",
+        "traffic_lights_buttons",
+        "control_center_sliders",
+        "screencast_indicator",
+        "control_center_liquid_glass_submenus"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink",
+      "last_verified": "2026-10-31",
+      "integrity_hash": "28dbfe9ccdc096619b26dc354ce32c002ded7b1cb5fa16bd001b6aa7457c91ad"
+    },
+    "liquid-glass@thinkingcoding1231.gmail.com": {
+      "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
+      "name": "Liquid Glass",
+      "pinned_version": "custom",
+      "shell_compatibility": [
+        "49",
+        "50"
+      ],
+      "sha256": "56afd2da3eef0fe2d14d85ef7aebcb63d92e400e18ce1d7d09c8f8269f483ef7",
+      "status": "locked",
+      "source": "local_custom",
+      "macw1y_components": [
+        "liquid_glass_shader",
+        "specular_highlight",
+        "panel_menu_glass",
+        "dock_glass"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "Local custom Liquid Glass GLSL refraction & border shader",
+      "last_verified": "2026-10-31",
+      "integrity_hash": "56afd2da3eef0fe2d14d85ef7aebcb63d92e400e18ce1d7d09c8f8269f483ef7"
+    },
+    "macos-touchpad-gestures@mactheme": {
+      "uuid": "macos-touchpad-gestures@mactheme",
+      "name": "macOS Touchpad Gestures",
+      "pinned_version": "custom",
+      "shell_compatibility": [
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+      ],
+      "sha256": "2cb9979eafd57372dd45c5140bbc90194db54b2831b901c8812cc1f263efdf68",
+      "status": "locked",
+      "source": "local_custom",
+      "macw1y_components": [
+        "touchpad_gestures",
+        "three_finger_drag",
+        "mission_control_swipe"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "Local custom macOS touchpad gesture suite",
+      "last_verified": "2026-10-27"
+    },
+    "quick-settings-scroll@diskmth.fr": {
+      "uuid": "quick-settings-scroll@diskmth.fr",
+      "name": "Quick Settings Scroll",
+      "pinned_version": 3,
+      "shell_compatibility": [
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51"
+      ],
+      "sha256": "67ea6c3417df44d85ac40b3ef26744f88f553394b84fb7c3f9c4754461320bad",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "quick_settings_scroll"
+      ],
+      "has_custom_patches": false,
+      "patch_description": "Upstream verified",
+      "last_verified": "2026-10-27"
+    },
+    "Rounded_Corners@lennart-k": {
+      "uuid": "Rounded_Corners@lennart-k",
+      "name": "Rounded Corners",
+      "pinned_version": 18,
+      "shell_compatibility": [
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+      ],
+      "sha256": "c90e98853603de74cc699c2c9b657f263e5b8c5e26ea2c7b7fa8f16e7285581d",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "screen_rounded_corners"
+      ],
+      "has_custom_patches": false,
+      "patch_description": "Upstream verified",
+      "last_verified": "2026-10-31"
+    },
+    "run-cmd@custom.extension": {
+      "uuid": "run-cmd@custom.extension",
+      "name": "Ydotool Trigger",
+      "pinned_version": "custom",
+      "shell_compatibility": [
+        "49",
+        "50",
+        "51"
+      ],
+      "sha256": "821bad49f0276b0d942e2b248586a022f1e017314c7577bc8f76d09d8dc7bdc6",
+      "status": "locked",
+      "source": "local_custom",
+      "macw1y_components": [
+        "ydotool_shortcut_trigger"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "Local custom ydotool trigger",
+      "last_verified": "2026-10-27"
+    },
+    "top-bar-organizer@julian.gse.jsts.xyz": {
+      "uuid": "top-bar-organizer@julian.gse.jsts.xyz",
+      "name": "Top Bar Organizer",
+      "pinned_version": 16,
+      "shell_compatibility": [
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+      ],
+      "sha256": "9afcc51c3b1293ada97a0f2faa5f3d3959d664e5e5ca08ef7d0c8d297cb34291",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "menubar_items_order"
+      ],
+      "has_custom_patches": false,
+      "patch_description": "Upstream verified",
+      "last_verified": "2026-10-27"
+    },
+    "user-theme@gnome-shell-extensions.gcampax.github.com": {
+      "uuid": "user-theme@gnome-shell-extensions.gcampax.github.com",
+      "name": "User Themes",
+      "pinned_version": 79,
+      "shell_compatibility": [
+        "50"
+      ],
+      "sha256": "f56c1eb63f1b830c70ce4d7a815003a3c29964c46dbd355555cf2f5486ed886c",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "shell_theme_loading"
+      ],
+      "has_custom_patches": false,
+      "patch_description": "Upstream verified",
+      "last_verified": "2026-10-27"
+    },
+    "volume-percentage-quick-settings@imdarktom": {
+      "uuid": "volume-percentage-quick-settings@imdarktom",
+      "name": "Volume Percentage in Quick Settings",
+      "pinned_version": 3,
+      "shell_compatibility": [
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+      ],
+      "sha256": "fb258d9f2e4e933a91e00f7503ecd831b316ad08495866a0db13067aa704b71e",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "volume_percentage_display"
+      ],
+      "has_custom_patches": false,
+      "patch_description": "Upstream verified",
+      "last_verified": "2026-10-27"
+    },
+    "wack-lockscreen-clock@rinzler69-wastaken.github.com": {
+      "uuid": "wack-lockscreen-clock@rinzler69-wastaken.github.com",
+      "name": "WACK - Sonoma Lockscreen",
+      "pinned_version": 46,
+      "shell_compatibility": [
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+      ],
+      "sha256": "77044defdc5af317836c0be1af17a0c174cb512a2b98ddefe33e6929b3298547",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "sonoma_lockscreen_clock"
+      ],
+      "has_custom_patches": false,
+      "patch_description": "Upstream verified",
+      "last_verified": "2026-10-27"
+    },
+    "wifi-hotspot-quick-settings@aryan10.github.io": {
+      "uuid": "wifi-hotspot-quick-settings@aryan10.github.io",
+      "name": "Wi-Fi Hotspot Quick Settings",
+      "pinned_version": 4,
+      "shell_compatibility": [
+        "50"
+      ],
+      "sha256": "ee3a2ff8e928cc79508fbd336fab1d694a9bd961c2d6ac1295c83c19d9ae8987",
+      "status": "locked",
+      "source": "extensions.gnome.org",
+      "macw1y_components": [
+        "wifi_hotspot_toggle"
+      ],
+      "has_custom_patches": false,
+      "patch_description": "Upstream verified",
+      "last_verified": "2026-10-27"
+    },
+    "ding@rastersoft.com": {
+      "uuid": "ding@rastersoft.com",
+      "name": "Desktop Icons NG (DING)",
+      "pinned_version": "custom",
+      "shell_compatibility": [
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+      ],
+      "sha256": "a89df55a11963ef9422c366a14d7af9356c69cdfe04024c90bc218c909b8249e",
+      "status": "locked",
+      "source": "apt_system_patched",
+      "macw1y_components": [
+        "desktop_icons",
+        "finder_desktop"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "askRenamePopup and desktopManager patches",
+      "last_verified": "2026-10-27"
+    },
+    "desktop-widgets@r3nhick": {
+      "uuid": "desktop-widgets@r3nhick",
+      "name": "Desktop Widgets",
+      "pinned_version": 15,
+      "shell_compatibility": [
+        "50",
+        "51"
+      ],
+      "sha256": "9df365b2393959bab78c7aec14c4bc0ad5dbc14b6a99c67b63267d7825cdd6ec",
+      "status": "locked",
+      "source": "github",
+      "macw1y_components": [
+        "desktop_widgets",
+        "settings_tab",
+        "clock_battery_weather_system"
+      ],
+      "has_custom_patches": true,
+      "patch_description": "Fixed ShaderEffect static snippet vfunc for GNOME 50 and unreachable code cleanup",
+      "last_verified": "2026-10-30"
+    },
+    "ubuntu-appindicators@ubuntu.com": {
+      "uuid": "ubuntu-appindicators@ubuntu.com",
+      "name": "Ubuntu AppIndicators",
+      "pinned_version": "custom",
+      "shell_compatibility": [
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50"
+      ],
+      "sha256": "cb5a70bc9bdad6c8eee8be4eec63e03df9b80069cbac9ffea4d7b326d83faffd",
+      "status": "locked",
+      "source": "apt_system",
+      "macw1y_components": [
+        "menubar_appindicators"
+      ],
+      "has_custom_patches": false,
+      "patch_description": "System tray indicators",
+      "last_verified": "2026-10-27"
     }
+  }
 }

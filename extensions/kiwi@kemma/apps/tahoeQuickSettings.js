@@ -568,20 +568,16 @@ const TahoeSlider = GObject.registerClass({
                     isDark = (fg.red > 0.4 && fg.green > 0.4 && fg.blue > 0.4);
             }
 
-            // solid background track (5px tall, matching OSD)
+            // solid background track (5px tall, matching OSD: pure translucent white)
             const barY = 5, barH = 5;
             const r = barH / 2;
-            if (isDark) {
-                cr.setSourceRGBA(1, 1, 1, 0.18);
-            } else {
-                cr.setSourceRGBA(0, 0, 0, 0.15);
-            }
+            cr.setSourceRGBA(1.0, 1.0, 1.0, 0.20);
             this._rr(cr, 0, barY, w, barH, r);
             cr.fill();
 
-            // Colors: RED if overamplified (100%+), solid opaque WHITE if <= 100% on dark
+            // Colors: RED if overamplified (100%+), solid pure opaque WHITE if <= 100% (matching OSD)
             const RED = [1.00, 0.23, 0.19];
-            const WHITE = isDark ? [1.00, 1.00, 1.00] : [0.12, 0.12, 0.14];
+            const WHITE = [1.00, 1.00, 1.00];
             const [colorR, colorG, colorB] = isOveramp ? RED : WHITE;
 
             // Step snapping for 16 segments (matching volume/brightness stops)
@@ -622,11 +618,7 @@ const TahoeSlider = GObject.registerClass({
                 if (isActive) {
                     cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
                 } else {
-                    if (isDark) {
-                        cr.setSourceRGBA(1, 1, 1, 0.18);
-                    } else {
-                        cr.setSourceRGBA(0, 0, 0, 0.15);
-                    }
+                    cr.setSourceRGBA(1.0, 1.0, 1.0, 0.20);
                 }
                 cr.arc(dotX, dy, 1.0, 0, Math.PI * 2);
                 cr.fill();

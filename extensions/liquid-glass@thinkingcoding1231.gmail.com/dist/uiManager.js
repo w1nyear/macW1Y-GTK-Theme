@@ -887,11 +887,11 @@ export class UIManager {
                 this.liquidBox?.set_size(screenW, screenH);
                 // 3. GPU-efficient soft clip — limits rendering to the menu region +
                 //    generous margin for drop-shadow decay without hard-clipping children.
-                const CLIP_PADDING = 200;
+                const CLIP_PADDING = 36;
                 // this.liquidBox?.remove_clip();
                 // [PERF] set_clip() queues a redraw unconditionally — see setClipIfChanged().
                 setClipIfChanged(this.bgActor, localBgX - CLIP_PADDING, localBgY - CLIP_PADDING, bgW + CLIP_PADDING * 2, bgH + CLIP_PADDING * 2);
-                const SHADOW_MAX_RADIUS = CLIP_PADDING - 20;
+                const SHADOW_MAX_RADIUS = 30;
                 this.effect?.setShadowMaxRadius(SHADOW_MAX_RADIUS);
                 // 4. Update shader with full-screen resolution
                 this.effect?.setResolution(screenW, screenH);

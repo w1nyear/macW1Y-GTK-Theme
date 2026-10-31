@@ -7499,3 +7499,35 @@ StWidget.focused .app-grid-running-dot {
 .mac-category-pill StLabel {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
 }
+
+/* Tahoe Control Center Glass Submenus */
+.tahoe-submenu-glass-popup,
+.tahoe-submenu-glass-popup.popup-menu-boxpointer,
+.tahoe-submenu-glass-popup .popup-menu-content {
+  background-color: transparent !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  -arrow-border-radius: 28px !important;
+  -arrow-background-color: transparent !important;
+  -arrow-border-color: transparent !important;
+  -arrow-border-width: 0px !important;
+  -arrow-rise: 0px !important;
+}
+
+.tahoe-submenu-glass-box {
+  background-color: transparent !important;
+  background: transparent !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: none !important;
+}
+
+.tahoe-submenu-glass-box .popup-menu-item:hover,
+.tahoe-submenu-glass-box .popup-menu-item:focus,
+.tahoe-submenu-glass-box .mac-menu-item-row:hover,
+.tahoe-submenu-glass-box .mac-menu-item-row:focus {
+  background-color: transparent !important;
+  background: transparent !important;
+}

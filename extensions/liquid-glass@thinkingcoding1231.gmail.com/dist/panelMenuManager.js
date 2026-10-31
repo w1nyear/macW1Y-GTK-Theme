@@ -46,8 +46,9 @@ export class PanelMenuManager {
                             this._liquidGlassUIManager.animActor.set_scale(1.0, 1.0);
                         }
                         if (this._liquidGlassUIManager.bgActor) {
-                            this._liquidGlassUIManager.bgActor.opacity = 255;
-                            this._liquidGlassUIManager.bgActor.visible = true;
+                            const op = (this.actor ? this.actor.opacity : 255);
+                            this._liquidGlassUIManager.bgActor.opacity = op;
+                            this._liquidGlassUIManager.bgActor.visible = (op > 0);
                         }
                     }
                     if (!this._lgForceBoxOpacity) {

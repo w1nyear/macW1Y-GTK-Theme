@@ -95,11 +95,7 @@ export function setupMacMenuItem(item) {
     }
 
     const updateVisuals = () => {
-        if (item.hover) {
-            item.style = 'padding: 6px 10px !important; margin: 1px 2px !important; border-radius: 8px !important; background-color: rgba(255, 255, 255, 0.12) !important; transition-duration: 100ms !important;';
-        } else {
-            item.style = 'padding: 6px 10px !important; margin: 1px 2px !important; border-radius: 8px !important; background-color: transparent !important; transition-duration: 100ms !important;';
-        }
+        item.style = 'padding: 6px 10px !important; margin: 1px 2px !important; border-radius: 10px !important; background-color: transparent !important; background: transparent !important; transition-duration: 100ms !important;';
     };
     item.connectObject('notify::hover', updateVisuals, item);
     updateVisuals();

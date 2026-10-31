@@ -167,7 +167,7 @@ class MacMenuHoverGlide {
         this._pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
-            style: 'background-color: #007aff !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;',
+            style: 'background-color: rgba(255, 255, 255, 0.12) !important; border-radius: 10px !important; box-shadow: none !important;',
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START,
             x_expand: false,
