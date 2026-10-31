@@ -501,3 +501,210 @@ notebook > header > tabs > tab button.image-button.flat {
 }
 
 
+
+
+/* =========================================================================
+   macOS Global Switches (Photo 4) - GTK3
+   ========================================================================= */
+switch {
+  min-width: 36px;
+  min-height: 20px;
+  padding: 0;
+  border-radius: 9999px;
+  background-color: #36363a;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+switch:hover {
+  background-color: #424247;
+}
+
+switch:checked {
+  background-color: #007aff;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+switch:checked:hover {
+  background-color: #1a88ff;
+}
+
+switch:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+switch slider {
+  min-width: 16px;
+  min-height: 16px;
+  margin: 2px;
+  padding: 0;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  background-image: none;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+switch:checked slider {
+  background-color: #ffffff;
+  background-image: none;
+}
+
+switch:active slider,
+switch slider:active,
+switch:checked:active slider,
+switch:checked slider:active {
+  min-width: 16px;
+  min-height: 16px;
+  background-color: #ffffff;
+  background-image: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40);
+}
+
+/* =========================================================================
+   macOS Global Sliders / Scales (Photo 5) - GTK3
+   ========================================================================= */
+scale {
+  min-height: 24px;
+  min-width: 24px;
+  padding: 4px;
+}
+
+scale trough {
+  min-height: 4px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.16);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+scale highlight {
+  min-height: 4px;
+  border-radius: 9999px;
+  background-color: #007aff;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+scale.horizontal slider,
+scale slider {
+  min-width: 22px;
+  min-height: 14px;
+  margin: -5px -11px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  background-image: none;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.20);
+}
+
+scale.horizontal slider:hover,
+scale slider:hover {
+  background-color: #ffffff;
+  background-image: none;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.45);
+}
+
+scale.horizontal slider:active,
+scale slider:active {
+  min-width: 22px;
+  min-height: 14px;
+  margin: -5px -11px;
+  background-color: #ffffff;
+  background-image: none;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.50);
+}
+
+scale.vertical trough {
+  min-width: 4px;
+}
+
+scale.vertical highlight {
+  min-width: 4px;
+  background-color: #007aff;
+}
+
+scale.vertical slider {
+  min-width: 14px;
+  min-height: 22px;
+  margin: -11px -5px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  background-image: none;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+scale.vertical slider:active {
+  min-width: 14px;
+  min-height: 22px;
+  margin: -11px -5px;
+  background-color: #ffffff;
+  background-image: none;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.50);
+}
+
+/* =========================================================================
+   macOS Global Nautilus Navigation Buttons (Photo 2 / Photo 3) - GTK3
+   ========================================================================= */
+headerbar .linked,
+headerbar box.linked {
+  padding: 2px 3px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+headerbar .linked > button,
+headerbar box.linked > button {
+  min-height: 24px;
+  min-width: 28px;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+headerbar .linked > button:hover,
+headerbar box.linked > button:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+headerbar .linked > button:active,
+headerbar box.linked > button:active {
+  background-color: rgba(255, 255, 255, 0.20);
+  color: #ffffff;
+}
+
+headerbar .linked > button:disabled,
+headerbar box.linked > button:disabled {
+  color: rgba(255, 255, 255, 0.25);
+  background: transparent;
+  background-color: transparent;
+}
+
+headerbar .linked > button + button,
+headerbar box.linked > button + button {
+  border-left: 1px solid rgba(255, 255, 255, 0.10);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+headerbar .linked > button:first-child,
+headerbar box.linked > button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
