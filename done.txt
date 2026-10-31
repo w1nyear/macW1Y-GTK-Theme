@@ -13679,3 +13679,21 @@ Stage 634: macOS 26 Settings UI Transformation (Compact Leftbar, Top Search Reve
      * Оновлено та скомпільовано всі інстанси `libmac_settings.so` у репозиторії та системних каталогах (`/usr/lib/x86_64-linux-gnu`, `/usr/local/lib`, `~/.local/lib`, `/usr/share/mactheme/gnome-control-center-overlay`).
      * `mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено успішно).
 
+13. Оновлення та редизайн меню швидкого перемикання Alt+Tab відповідно до еталонної розмітки (macOS Tahoe HUD):
+   - Радіус заокруглення меню (червоні лінії на референсі):
+     * Збільшено радіус заокруглення капсули HUD меню Alt+Tab до 38 px (`border-radius: 38px !important;`) у всіх 5 темах GNOME Shell (`gnome-shell-theme`, `macW1Y-Dark`, `macW1Y-Dark-solid`, `macW1Y-Light`, `macW1Y-Light-solid`) та у встановлених системних стилях `/usr/share/themes/`.
+     * Синхронізовано радіус скруглення шейдера Liquid Glass до 38.0 px (`switcherGlass.setCornerRadius(38.0)`).
+   - Розмір іконок програм (зелені лінії на референсі):
+     * Збільшено розмір іконок додатків у перемикачі з 72 px до 92 px (`set_size(92)`, `AppSwitcherProto._setIconSize`, `WindowIcon`), що забезпечило точне заповнення висоти меню між еталонними зеленими лініями.
+   - Елемент фокусу (сині лінії на референсі):
+     * Скруглений квадрат виділення активної програми `.alt-tab-icon-bin.selected` масштабовано пропорційно до нової іконки 92 px (98×98 px) із радіусом 22 px (`border-radius: 22px !important; padding: 3px !important;`) та напівпрозорим білим підсвічуванням (`rgba(255, 255, 255, 0.22)`), яке охоплює суто іконку без тексту назви програми.
+   - Розташування назви програми (жовта лінія на референсі):
+     * Назву активної програми опущено чітко на нижню жовту лінію під скруглений квадрат фокусу завдяки відступу `margin-top: 8px !important;` для `.alt-tab-app-label` та скоригованим внутрішнім відступам `.switcher-list` (`padding: 22px 18px 14px 18px !important;`).
+   - Відновлення шейдера скла Liquid Glass на фоні меню Alt+Tab:
+     * Відновлено відображення та синхронізацію фонового шейдера Liquid Glass через безпечний слухач `global.stage.connect('before-update', syncGlass)` із гарантованим відключенням (`disconnectStage()`) при закритті чи знищенні вікна, що усунуло проблему непоказу скла через затримку появи `POPUP_DELAY_TIMEOUT` (150 мс) і запобігло витокам пам'яті.
+     * Шейдер Liquid Glass фону Alt+Tab безпосередньо прив'язаний до налаштувань групи Liquid Glass у параметрах мак-стилізації (радіус розмиття, відтінок, прозорість).
+   - Аудит та контроль цілісності:
+     * Оновлено хеш SHA-256 у `config/extensions.lock.json` для `eval-helper@mactheme`.
+     * `mac-extension-guard verify`: SUCCESS (21/21 розширень валідовано).
+     * `mac-audit-sync check`: 100% PASS (всі 5 перевірок пройдено успішно).
+

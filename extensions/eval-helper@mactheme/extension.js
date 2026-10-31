@@ -954,8 +954,8 @@ export default class EvalHelper extends Extension {
                 }
 
                 // 3. Patch AppIcon to format label, add squircle class to iconBin, and hide label by default
-                if (AltTabMod.AppIcon && !AltTabMod.AppIcon.prototype._macPatchedV5) {
-                    AltTabMod.AppIcon.prototype._macPatchedV5 = true;
+                if (AltTabMod.AppIcon && !AltTabMod.AppIcon.prototype._macPatchedV7) {
+                    AltTabMod.AppIcon.prototype._macPatchedV7 = true;
                     const origAppIconInit = AltTabMod.AppIcon.prototype._init;
                     AltTabMod.AppIcon.prototype._init = function(app) {
                         origAppIconInit.call(this, app);
@@ -968,7 +968,7 @@ export default class EvalHelper extends Extension {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.opacity = 0;
                             this.label.x_align = Clutter.ActorAlign.CENTER;
-                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 4px !important;';
+                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 8px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
                                 this.label.clutter_text.line_wrap = false;
@@ -978,13 +978,13 @@ export default class EvalHelper extends Extension {
                 }
 
                 // 4. Patch WindowIcon & WindowSwitcher for touchpad gestures & fallback switcher
-                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV6) {
-                    AltTabMod.WindowIcon.prototype._macPatchedV6 = true;
+                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV7) {
+                    AltTabMod.WindowIcon.prototype._macPatchedV7 = true;
                     const origWindowIconInit = AltTabMod.WindowIcon.prototype._init;
                     AltTabMod.WindowIcon.prototype._init = function(window, mode) {
                         origWindowIconInit.call(this, window, mode);
                         if (typeof this.set_size === 'function') {
-                            try { this.set_size(72); } catch (_) {}
+                            try { this.set_size(92); } catch (_) {}
                         }
                         const iconActor = this._iconBin || this._icon || (this.get_children ? this.get_children()[0] : null);
                         if (iconActor) {
@@ -1002,7 +1002,7 @@ export default class EvalHelper extends Extension {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.x_align = Clutter.ActorAlign.CENTER;
                             this.label.opacity = 0;
-                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 3px !important;';
+                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 8px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
                                 this.label.clutter_text.line_wrap = false;
@@ -1014,12 +1014,12 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 5. Hide multi-window arrows in AppSwitcher and enforce crisp 72px icon size
+                // 5. Hide multi-window arrows in AppSwitcher and enforce crisp 92px icon size
                 try {
                     const dummyPopup = new AltTabMod.AppSwitcherPopup();
                     const AppSwitcherProto = dummyPopup._switcherList ? Object.getPrototypeOf(dummyPopup._switcherList) : null;
-                    if (AppSwitcherProto && !AppSwitcherProto._macPatchedV6) {
-                        AppSwitcherProto._macPatchedV6 = true;
+                    if (AppSwitcherProto && !AppSwitcherProto._macPatchedV7) {
+                        AppSwitcherProto._macPatchedV7 = true;
                         const origAddIcon = AppSwitcherProto._addIcon;
                         AppSwitcherProto._addIcon = function(appIcon) {
                             origAddIcon.call(this, appIcon);
@@ -1041,9 +1041,10 @@ export default class EvalHelper extends Extension {
                         AppSwitcherProto._setIconSize = function() {
                             const primary = Main.layoutManager.primaryMonitor;
                             const availWidth = primary ? primary.width - 200 : 1600;
-                            let iconSize = 72;
-                            if (this._items.length * 96 > availWidth) iconSize = 56;
-                            if (this._items.length * 76 > availWidth) iconSize = 40;
+                            let iconSize = 92;
+                            if (this._items.length * 118 > availWidth) iconSize = 76;
+                            if (this._items.length * 96 > availWidth) iconSize = 60;
+                            if (this._items.length * 76 > availWidth) iconSize = 44;
                             this._iconSize = iconSize;
                             for (let i = 0; i < this.icons.length; i++) {
                                 if (this.icons[i]) {
@@ -1100,7 +1101,7 @@ export default class EvalHelper extends Extension {
                         });
                         glass.setIsDock(false);
                         glass.setCornerSmoothingEnabled(0.0);
-                        glass.setCornerRadius(26.0);
+                        glass.setCornerRadius(38.0);
                         glass.setTintColor(0.0, 0.0, 0.0);
                         glass.setTintStrength(0.04);
                         glass.setBlurRadius(15.0);
@@ -1130,8 +1131,8 @@ export default class EvalHelper extends Extension {
                 // Preload glass asynchronously
                 getSwitcherGlass().catch(() => {});
 
-                if (!SwitcherPopup.prototype._macLQVisualPatchedV6) {
-                    SwitcherPopup.prototype._macLQVisualPatchedV6 = true;
+                if (!SwitcherPopup.prototype._macLQVisualPatchedV7) {
+                    SwitcherPopup.prototype._macLQVisualPatchedV7 = true;
                     const origShow = SwitcherPopup.prototype.show;
                     SwitcherPopup.prototype.show = function(backward, binding, mask) {
                         const res = origShow.call(this, backward, binding, mask);
@@ -1149,12 +1150,25 @@ export default class EvalHelper extends Extension {
                                     try { switcherGlass.addExclusion(this._switcherList); } catch (_) {}
                                 }
 
+                                let stageSignalId = 0;
+                                const disconnectStage = () => {
+                                    if (stageSignalId) {
+                                        try { global.stage.disconnect(stageSignalId); } catch (_) {}
+                                        stageSignalId = 0;
+                                    }
+                                };
+
                                 const syncGlass = () => {
-                                    if (!this.visible || this._destroyed || (typeof this.is_finalized === 'function' && this.is_finalized())) {
+                                    if (!this || !this.visible || this._destroyed || (typeof this.is_finalized === 'function' && this.is_finalized())) {
+                                        disconnectStage();
                                         if (switcherGlass?.visible) switcherGlass.hide();
                                         return;
                                     }
-                                    if (!this._switcherList || (typeof this._switcherList.is_finalized === 'function' && this._switcherList.is_finalized())) return;
+                                    if (!this._switcherList || (typeof this._switcherList.is_finalized === 'function' && this._switcherList.is_finalized())) {
+                                        disconnectStage();
+                                        if (switcherGlass?.visible) switcherGlass.hide();
+                                        return;
+                                    }
 
                                     const [slX, slY] = this._switcherList.get_transformed_position();
                                     const [slW, slH] = this._switcherList.get_transformed_size();
@@ -1169,8 +1183,8 @@ export default class EvalHelper extends Extension {
                                     const bgH = Math.round(slH);
 
                                     // Dynamic Liquid Glass parameters from settings (Liquid Glass group)
-                                    let blurRad = 15.0;
-                                    let tintStr = 0.04;
+                                    let blurRad = 18.0;
+                                    let tintStr = 0.05;
                                     let tR = 0.0, tG = 0.0, tB = 0.0;
                                     try {
                                         const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
@@ -1194,14 +1208,16 @@ export default class EvalHelper extends Extension {
                                     } catch (_) {}
 
                                     switcherGlass.opacity = this.opacity;
-                                    if (!switcherGlass.visible) {
-                                        switcherGlass.show();
+                                    if (this.opacity > 0) {
+                                        if (!switcherGlass.visible) switcherGlass.show();
+                                    } else {
+                                        if (switcherGlass.visible) switcherGlass.hide();
                                     }
 
                                     switcherGlass.set_position(primary.x, primary.y);
                                     switcherGlass.set_size(primary.width, primary.height);
                                     switcherGlass.setResolution(primary.width, primary.height);
-                                    switcherGlass.setCornerRadius(26.0);
+                                    switcherGlass.setCornerRadius(38.0);
                                     switcherGlass.setBlurRadius(blurRad);
                                     switcherGlass.setTintStrength(tintStr);
                                     switcherGlass.setTintColor(tR, tG, tB);
@@ -1221,31 +1237,22 @@ export default class EvalHelper extends Extension {
                                     }
                                 } catch (_) {}
 
-                                // Connect strictly to allocation & position signals, NEVER global.stage before-update
-                                if (this._switcherList) {
-                                    this._switcherList.connectObject(
-                                        'notify::allocation', () => syncGlass(),
-                                        'notify::position', () => syncGlass(),
-                                        this
-                                    );
-                                }
-                                this.connectObject(
-                                    'notify::opacity', () => syncGlass(),
-                                    'notify::visible', () => syncGlass(),
-                                    'destroy', () => {
-                                        if (switcherGlass) {
-                                            switcherGlass.hide();
-                                            switcherGlass.opacity = 0;
-                                        }
-                                    },
-                                    this
-                                );
+                                stageSignalId = global.stage.connect('before-update', syncGlass);
+
+                                this.connect('destroy', () => {
+                                    disconnectStage();
+                                    if (switcherGlass) {
+                                        switcherGlass.hide();
+                                        switcherGlass.opacity = 0;
+                                    }
+                                });
 
                                 syncGlass();
                             } catch (err) {
-                                console.error('[EvalHelper] SwitcherPopup show error: ' + err);
+                                console.error('[macW1Y] Switcher glass sync error:', err);
                             }
                         })();
+
                         return res;
                     };
                 }
