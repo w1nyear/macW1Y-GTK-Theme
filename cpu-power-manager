@@ -27,3 +27,14 @@ else
     done
     logger -t cpu-power-manager "Switched to AC mode: Min 10%, Max 100%, EPP performance, Dynamic Boost"
 fi
+
+# Trigger mac-graphics-profile auto adaptation for user sessions
+for uid in $(ps -eo uid | sort -u); do
+    if [ "$uid" -ge 1000 ] && [ "$uid" -lt 60000 ]; then
+        user_name=$(id -nu "$uid" 2>/dev/null || true)
+        if [ -n "$user_name" ]; then
+            su - "$user_name" -c "mac-graphics-profile auto 2>/dev/null || true" 2>/dev/null &
+        fi
+    fi
+done
+

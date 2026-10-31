@@ -18,7 +18,7 @@
                 "49",
                 "50"
             ],
-            "sha256": "21a58a06d31ca653a26be805c382096e07be49f41c8dcb37db14fc17cffcc2f1",
+            "sha256": "f983c8c8d5dfeb8b9737b802b47887b40ce34bdded64321d169c6942f819b4e3",
             "status": "locked",
             "source": "local_custom",
             "macw1y_components": [
@@ -29,7 +29,7 @@
             ],
             "has_custom_patches": true,
             "patch_description": "macOS Monterey style spotlight, apple menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
-            "last_verified": "2026-10-30"
+            "last_verified": "2026-10-31"
         },
         "blur-my-shell@aunetx": {
             "uuid": "blur-my-shell@aunetx",
@@ -155,7 +155,7 @@
                 "49",
                 "50"
             ],
-            "sha256": "7b5ad4f4bc5ad7c7e3d6a653fe6c97cac35646022b2730c0128e3d8c41f4fae9",
+            "sha256": "6d451a0257c8c339c0c92ac69ca97ad6968743554dfa4d4dbc20453c9e822669",
             "status": "locked",
             "source": "local_custom",
             "macw1y_components": [
@@ -165,7 +165,7 @@
             ],
             "has_custom_patches": true,
             "patch_description": "Local D-Bus EvalHelper service and macOS Alt+Tab switcher enhancements",
-            "last_verified": "2026-10-30"
+            "last_verified": "2026-10-31"
         },
         "kiwi@kemma": {
             "uuid": "kiwi@kemma",
@@ -200,7 +200,7 @@
                 "49",
                 "50"
             ],
-            "sha256": "7d411eaceb5f0ab32a70c21cdd8e8b5262af118343e6509a859f760335605af5",
+            "sha256": "230f337843edc53d8fc721fddce74cfba029759366a27285d12ecb4ee39b40d3",
             "status": "locked",
             "source": "local_custom",
             "macw1y_components": [
@@ -211,8 +211,8 @@
             ],
             "has_custom_patches": true,
             "patch_description": "Local custom Liquid Glass GLSL refraction & border shader",
-            "last_verified": "2026-10-27",
-            "integrity_hash": "7d411eaceb5f0ab32a70c21cdd8e8b5262af118343e6509a859f760335605af5"
+            "last_verified": "2026-10-31",
+            "integrity_hash": "230f337843edc53d8fc721fddce74cfba029759366a27285d12ecb4ee39b40d3"
         },
         "macos-touchpad-gestures@mactheme": {
             "uuid": "macos-touchpad-gestures@mactheme",

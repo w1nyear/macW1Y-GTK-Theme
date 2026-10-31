@@ -316,10 +316,14 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             // (семпли UI + клони вікон + capture-clip) — лише при реальній зміні
             // фону, з динамічною ProMotion частотою. В спокої тік не має GPU-роботи.
             let doHeavy = true;
-            try {
-                doHeavy = glassRefreshDue?.(this);
-            } catch (_) {
-                doHeavy = true;
+            if (this._backdropLocked) {
+                doHeavy = false;
+            } else {
+                try {
+                    doHeavy = glassRefreshDue?.(this);
+                } catch (_) {
+                    doHeavy = true;
+                }
             }
             try {
                 ensureGlassAllocated?.(this);

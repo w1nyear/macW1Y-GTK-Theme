@@ -113,6 +113,14 @@ class MacStylingWindow(Adw.ApplicationWindow):
         pref_page = Adw.PreferencesPage()
         pref_page.set_title(t("styling_title", "Mac стилізація"))
 
+        # 0. Graphics Profile & Performance Group
+        perf_group = Adw.PreferencesGroup()
+        perf_group.set_title(t("perf_profile_title", "Профіль графіки та швидкодії"))
+        perf_group.set_description(t("perf_profile_desc", "Адаптивне налаштування Liquid Glass, Blur та анімацій під 165 Гц / батарею"))
+        pref_page.add(perf_group)
+
+        self.profile_combo = self._create_profile_combo(perf_group)
+
         # 1. Dock Group
         dock_group = Adw.PreferencesGroup()
         dock_group.set_title(t("dock_title", "Док-панель (Dock)"))
@@ -285,6 +293,43 @@ class MacStylingWindow(Adw.ApplicationWindow):
         toolbar_view.set_content(overlay)
         self.set_content(toolbar_view)
         self._initializing = False
+
+    def _create_profile_combo(self, group):
+        row = Adw.ComboRow()
+        row.set_title(t("graphics_profile", "Графічний профіль швидкодії"))
+        row.set_subtitle(t("graphics_profile_sub", "Оптимізація шейдерів, розмиття та адаптація до живлення"))
+
+        self.profile_keys = ["balanced", "high", "performance", "auto"]
+        model = Gtk.StringList.new([
+            "⚖️ Баланс (Balanced — плавні 165 Гц, оптимізований Liquid Glass)",
+            "✨ Висока якість (High Quality — максимальна деталізація)",
+            "🚀 Швидкодія (Performance — для автономності/батареї)",
+            "🔋 Авто (Адаптація від мережі / живлення батареї)"
+        ])
+        row.set_model(model)
+
+        cfg_profile = "balanced"
+        try:
+            res = run_cmd("mac-graphics-profile get")
+            if res in self.profile_keys:
+                cfg_profile = res
+        except Exception:
+            pass
+
+        idx = self.profile_keys.index(cfg_profile) if cfg_profile in self.profile_keys else 0
+        row.set_selected(idx)
+
+        def on_profile_selected(combo, _pspec):
+            if getattr(self, "_initializing", False):
+                return
+            selected_idx = combo.get_selected()
+            if 0 <= selected_idx < len(self.profile_keys):
+                new_prof = self.profile_keys[selected_idx]
+                run_cmd(f"mac-graphics-profile set {new_prof}")
+
+        row.connect("notify::selected", on_profile_selected)
+        group.add(row)
+        return row
 
     def _create_slider_row(self, group, title, subtitle, min_val, max_val, cur_val):
         row = Adw.ActionRow()

@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""
+mac-graphics-profile — Advanced Graphics & Performance Profile Manager for macW1Y
+Optimizes Liquid Glass, Mutter Blur, shaders, and animations across 165Hz VRR displays,
+dual-GPU systems (Intel UHD + NVIDIA RTX 3050), and AC / Battery power states.
+"""
+
+import sys
+import os
+import json
+import subprocess
+import glob
+from datetime import datetime
+
+CONFIG_DIR = os.path.expanduser("~/.config/macW1Y")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "graphics-profile.json")
+REPO_CONFIG_FILE = "/home/vitaliy/macW1Y/config/graphics-profile.json"
+
+LIQUID_SCHEMA = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com"
+BMS_SCHEMA = "org.gnome.shell.extensions.blur-my-shell"
+
+PROFILES = {
+    "high": {
+        "name": "High Quality",
+        "description_uk": "Повний Liquid Glass, максимальний Blur, максимальна якість тіней, повна частота",
+        "description_en": "Full Liquid Glass, maximum blur radius, full shadow fidelity, full refresh rate",
+        "liquid_glass": {
+            "glass-blur-downscale": 2,      # Half-res buffer (high detail)
+            "blur-method": 1,               # Dual Kawase
+            "shadow-radius": 24.0,
+            "glass-ao-intensity": 0.08,
+            "glass-rim-intensity": 0.22,
+            "glass-specular-intensity": 0.16,
+            "glass-sheen-intensity": 0.10,
+        },
+        "blur_my_shell": {
+            "sigma": 30,
+            "debug": False,
+        },
+        "animation_duration_scale": 1.0,
+    },
+    "balanced": {
+        "name": "Balanced",
+        "description_uk": "Оптимізований Blur (Dual Kawase), розумне кешування фону під час руху, плавні 165 FPS",
+        "description_en": "Optimized Dual Kawase blur, frozen backdrop during motion, silky 165 FPS",
+        "liquid_glass": {
+            "glass-blur-downscale": 4,      # Quarter-res buffer (saves 70% VRAM bandwidth)
+            "blur-method": 1,               # Dual Kawase
+            "shadow-radius": 14.0,
+            "glass-ao-intensity": 0.04,
+            "glass-rim-intensity": 0.16,
+            "glass-specular-intensity": 0.12,
+            "glass-sheen-intensity": 0.08,
+        },
+        "blur_my_shell": {
+            "sigma": 24,
+            "debug": False,
+        },
+        "animation_duration_scale": 0.85,
+    },
+    "performance": {
+        "name": "Performance",
+        "description_uk": "Швидкодія: мінімальні проходи розмиття, відключені тіні/AO, максимальна енергоефективність",
+        "description_en": "Performance: lightweight shader passes, disabled shadows/AO, maximum battery life",
+        "liquid_glass": {
+            "glass-blur-downscale": 4,
+            "blur-method": 1,               # Dual Kawase
+            "shadow-radius": 0.0,
+            "glass-ao-intensity": 0.0,
+            "glass-rim-intensity": 0.10,
+            "glass-specular-intensity": 0.0,
+            "glass-sheen-intensity": 0.0,
+        },
+        "blur_my_shell": {
+            "sigma": 16,
+            "debug": False,
+        },
+        "animation_duration_scale": 0.70,
+    }
+}
+
+def run_cmd(cmd):
+    try:
+        return subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        return ""
+
+def load_config():
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "profile": "balanced",
+        "auto_power_adapt": True,
+        "last_updated": datetime.now().isoformat()
+    }
+
+def save_config(cfg):
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+        try:
+            os.makedirs(os.path.dirname(REPO_CONFIG_FILE), exist_ok=True)
+            with open(REPO_CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+    except Exception as e:
+        print(f"Error saving config: {e}", file=sys.stderr)
+
+def get_battery_info():
+    bats = glob.glob("/sys/class/power_supply/BAT*")
+    if not bats:
+        return {"present": False, "status": "AC", "capacity": 100}
+    b = bats[0]
+    status = "AC"
+    capacity = 100
+    try:
+        if os.path.exists(f"{b}/status"):
+            status = open(f"{b}/status").read().strip()
+        if os.path.exists(f"{b}/capacity"):
+            capacity = int(open(f"{b}/capacity").read().strip())
+    except Exception:
+        pass
+    return {"present": True, "status": status, "capacity": capacity}
+
+def apply_profile(profile_key):
+    if profile_key not in PROFILES:
+        profile_key = "balanced"
+    
+    p = PROFILES[profile_key]
+    
+    # 1. Apply Liquid Glass settings
+    lg = p.get("liquid_glass", {})
+    for k, v in lg.items():
+        if isinstance(v, bool):
+            val_str = "true" if v else "false"
+        elif isinstance(v, float):
+            val_str = f"{v:.2f}"
+        else:
+            val_str = str(v)
+        run_cmd(f"gsettings set {LIQUID_SCHEMA} {k} {val_str}")
+        
+    # 2. Apply Blur-my-shell settings
+    bms = p.get("blur_my_shell", {})
+    if "sigma" in bms:
+        run_cmd(f"gsettings set {BMS_SCHEMA} sigma {bms['sigma']}")
+    if "debug" in bms:
+        run_cmd(f"dconf write /org/gnome/shell/extensions/blur-my-shell/debug false")
+        
+    # 3. Inform GNOME Shell via EvalHelper
+    try:
+        eval_code = f"globalThis._macGraphicsProfile = '{profile_key}'; 'ok';"
+        run_cmd(f"gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Extensions/EvalHelper --method org.gnome.Shell.Extensions.EvalHelper.Eval \"{eval_code}\"")
+    except Exception:
+        pass
+
+def resolve_effective_profile():
+    cfg = load_config()
+    req = cfg.get("profile", "balanced")
+    auto_adapt = cfg.get("auto_power_adapt", True)
+    
+    if req == "auto" or auto_adapt:
+        bat = get_battery_info()
+        if bat["present"] and bat["status"] == "Discharging":
+            if bat["capacity"] <= 25:
+                return "performance", "Battery critically low (<=25%)"
+            return "balanced", "Battery discharging"
+        else:
+            if req == "auto":
+                return "balanced", "AC power connected"
+    
+    if req in PROFILES:
+        return req, "Manual profile selection"
+    return "balanced", "Fallback default"
+
+def print_status():
+    cfg = load_config()
+    eff, reason = resolve_effective_profile()
+    bat = get_battery_info()
+    
+    print("==================================================")
+    print("  macW1Y 0.4 Adaptive Graphics & Performance System")
+    print("==================================================")
+    print(f"Configured Profile : {cfg.get('profile', 'balanced')}")
+    print(f"Effective Profile  : {eff.upper()} ({reason})")
+    print(f"Auto Power Adapt   : {'Увімкнено (Enabled)' if cfg.get('auto_power_adapt', True) else 'Вимкнено (Disabled)'}")
+    print("--------------------------------------------------")
+    if bat["present"]:
+        print(f"Power Supply       : {bat['status']} ({bat['capacity']}%)")
+    else:
+        print("Power Supply       : Desktop / AC (No battery)")
+    
+    # Active GSettings check
+    lg_method = run_cmd(f"gsettings get {LIQUID_SCHEMA} blur-method")
+    lg_downscale = run_cmd(f"gsettings get {LIQUID_SCHEMA} glass-blur-downscale")
+    bms_sigma = run_cmd(f"gsettings get {BMS_SCHEMA} sigma")
+    
+    method_name = "Dual Kawase" if lg_method == "1" else ("Gaussian" if lg_method == "0" else lg_method)
+    downscale_desc = "1/4 resolution (FBO x0.25 - High Speed)" if lg_downscale == "4" else ("1/2 resolution (FBO x0.5 - High Quality)" if lg_downscale == "2" else lg_downscale)
+    
+    print(f"Liquid Glass Method: {method_name}")
+    print(f"Blur Downscaling   : {downscale_desc}")
+    print(f"Blur-My-Shell Sigma: {bms_sigma}")
+    print("==================================================")
+
+def main():
+    if len(sys.argv) < 2:
+        print_status()
+        return
+
+    cmd = sys.argv[1].lower()
+    
+    if cmd == "status":
+        print_status()
+    elif cmd == "get":
+        cfg = load_config()
+        print(cfg.get("profile", "balanced"))
+    elif cmd == "get-effective":
+        eff, _ = resolve_effective_profile()
+        print(eff)
+    elif cmd == "set":
+        if len(sys.argv) < 3:
+            print("Usage: mac-graphics-profile set <high|balanced|performance|auto>", file=sys.stderr)
+            sys.exit(1)
+        target = sys.argv[2].lower()
+        if target not in ["high", "balanced", "performance", "auto"]:
+            print(f"Invalid profile '{target}'. Choose high, balanced, performance, or auto.", file=sys.stderr)
+            sys.exit(1)
+            
+        cfg = load_config()
+        cfg["profile"] = target
+        cfg["auto_power_adapt"] = (target == "auto")
+        cfg["last_updated"] = datetime.now().isoformat()
+        save_config(cfg)
+        
+        eff, reason = resolve_effective_profile()
+        apply_profile(eff)
+        print(f"Profile set to '{target}' (Effective: {eff} — {reason})")
+    elif cmd in ["auto", "auto-check", "update"]:
+        eff, reason = resolve_effective_profile()
+        apply_profile(eff)
+        print(f"Adaptive check completed: {eff} ({reason})")
+    elif cmd == "--json":
+        cfg = load_config()
+        eff, reason = resolve_effective_profile()
+        bat = get_battery_info()
+        data = {
+            "configured_profile": cfg.get("profile", "balanced"),
+            "effective_profile": eff,
+            "reason": reason,
+            "auto_power_adapt": cfg.get("auto_power_adapt", True),
+            "battery": bat,
+            "profiles": list(PROFILES.keys())
+        }
+        print(json.dumps(data, indent=2))
+    else:
+        print(f"Unknown command '{cmd}'. Available: status, get, get-effective, set, auto, --json", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

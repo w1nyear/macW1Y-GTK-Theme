@@ -1808,10 +1808,11 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (_isGlassAlive(this._glass)) {
             try {
                 this._glass.remove_all_transitions();
-                this._glass.scale_x = 1.0;
-                this._glass.scale_y = 1.0;
+                this._glass.set_pivot_point(0.5, 0.5);
+                this._glass.scale_x = 1.08;
+                this._glass.scale_y = 1.08;
                 this._glass.translation_x = 0;
-                this._glass.translation_y = 0;
+                this._glass.translation_y = -8;
                 if (this._glass.get_parent() !== Main.layoutManager.uiGroup) {
                     Main.layoutManager.uiGroup.insert_child_below(this._glass, this);
                 }
@@ -1819,12 +1820,10 @@ export const MacSpotlightDialog = GObject.registerClass({
                 Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
                 this._glass.show();
                 this._glass.opacity = 0;
-                this._glass._backdropLocked = false;
-                if (typeof this._glass.forceRefresh === 'function') {
-                    this._glass.forceRefresh(1);
-                }
                 this._applyGlassUniforms();
                 this._syncGlass();
+                // Lock backdrop sampling during motion for ultra-smooth 165 FPS transform
+                this._glass._backdropLocked = true;
             } catch (err) {
                 this._glass = null;
                 this._initGlassPromise = this._initGlass();
@@ -1861,19 +1860,42 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._entry.grab_key_focus();
 
+        const ANIM_DURATION = 240;
+        const ANIM_MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
+
+        if (_isGlassAlive(this._glass)) {
+            this._glass.ease({
+                opacity: 255,
+                translation_x: 0,
+                translation_y: 0,
+                scale_x: 1.0,
+                scale_y: 1.0,
+                duration: ANIM_DURATION,
+                mode: ANIM_MODE,
+            });
+        }
+
         this._box.ease({
             opacity: 255,
             translation_x: 0,
             translation_y: 0,
             scale_x: 1.0,
             scale_y: 1.0,
-            duration: 300,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            duration: ANIM_DURATION,
+            mode: ANIM_MODE,
             onComplete: () => {
                 this._box.translation_x = 0;
                 this._box.translation_y = 0;
                 this._box.scale_x = 1.0;
                 this._box.scale_y = 1.0;
+                if (_isGlassAlive(this._glass)) {
+                    this._glass.translation_x = 0;
+                    this._glass.translation_y = 0;
+                    this._glass.scale_x = 1.0;
+                    this._glass.scale_y = 1.0;
+                    this._glass._backdropLocked = false;
+                    try { this._glass.forceRefresh?.(1); } catch (_) {}
+                }
                 this._syncGlass();
             },
         });
@@ -1991,13 +2013,20 @@ export const MacSpotlightDialog = GObject.registerClass({
             });
         }
 
+        const CLOSE_DURATION = 220;
+        const CLOSE_MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
+
         if (_isGlassAlive(this._glass)) {
             try {
+                this._glass._backdropLocked = true;
                 this._glass.remove_all_transitions();
                 this._glass.ease({
                     opacity: 0,
-                    duration: 300,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    scale_x: 1.08,
+                    scale_y: 1.08,
+                    translation_y: -6,
+                    duration: CLOSE_DURATION,
+                    mode: CLOSE_MODE,
                 });
             } catch (_) {}
         }
@@ -2007,8 +2036,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             scale_x: 1.08,
             scale_y: 1.08,
             translation_y: -6,
-            duration: 300,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            duration: CLOSE_DURATION,
+            mode: CLOSE_MODE,
             onComplete: () => {
                 if (this._isOpen) return;
                 this._cancelSyncLoop();

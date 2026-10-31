@@ -1130,8 +1130,8 @@ export default class EvalHelper extends Extension {
                 // Preload glass asynchronously
                 getSwitcherGlass().catch(() => {});
 
-                if (!SwitcherPopup.prototype._macLQVisualPatchedV5) {
-                    SwitcherPopup.prototype._macLQVisualPatchedV5 = true;
+                if (!SwitcherPopup.prototype._macLQVisualPatchedV6) {
+                    SwitcherPopup.prototype._macLQVisualPatchedV6 = true;
                     const origShow = SwitcherPopup.prototype.show;
                     SwitcherPopup.prototype.show = function(backward, binding, mask) {
                         const res = origShow.call(this, backward, binding, mask);
@@ -1139,8 +1139,10 @@ export default class EvalHelper extends Extension {
 
                         (async () => {
                             try {
+                                if (!this.visible || this._destroyed || (typeof this.is_finalized === 'function' && this.is_finalized())) return;
                                 const switcherGlass = await getSwitcherGlass();
-                                if (!switcherGlass) return;
+                                if (!switcherGlass || !this.visible || this._destroyed || (typeof this.is_finalized === 'function' && this.is_finalized())) return;
+
                                 Main.layoutManager.uiGroup.set_child_below_sibling(switcherGlass, this);
                                 try { switcherGlass.addExclusion(this); } catch (_) {}
                                 if (this._switcherList) {
@@ -1148,11 +1150,11 @@ export default class EvalHelper extends Extension {
                                 }
 
                                 const syncGlass = () => {
-                                    if (!this._switcherList || this._switcherList.is_finalized?.()) return;
-                                    if (!this.visible || this.opacity <= 0) {
-                                        if (switcherGlass.visible) switcherGlass.hide();
+                                    if (!this.visible || this._destroyed || (typeof this.is_finalized === 'function' && this.is_finalized())) {
+                                        if (switcherGlass?.visible) switcherGlass.hide();
                                         return;
                                     }
+                                    if (!this._switcherList || (typeof this._switcherList.is_finalized === 'function' && this._switcherList.is_finalized())) return;
 
                                     const [slX, slY] = this._switcherList.get_transformed_position();
                                     const [slW, slH] = this._switcherList.get_transformed_size();
@@ -1219,24 +1221,25 @@ export default class EvalHelper extends Extension {
                                     }
                                 } catch (_) {}
 
-                                if (this._stageSignalId) {
-                                    global.stage.disconnect(this._stageSignalId);
+                                // Connect strictly to allocation & position signals, NEVER global.stage before-update
+                                if (this._switcherList) {
+                                    this._switcherList.connectObject(
+                                        'notify::allocation', () => syncGlass(),
+                                        'notify::position', () => syncGlass(),
+                                        this
+                                    );
                                 }
-                                this._stageSignalId = global.stage.connect('before-update', syncGlass);
-
-                                const allocId = this._switcherList ? this._switcherList.connect('notify::allocation', syncGlass) : 0;
-
-                                this.connect('destroy', () => {
-                                    if (this._stageSignalId) {
-                                        global.stage.disconnect(this._stageSignalId);
-                                        this._stageSignalId = 0;
-                                    }
-                                    if (allocId && this._switcherList) {
-                                        try { this._switcherList.disconnect(allocId); } catch (_) {}
-                                    }
-                                    switcherGlass.hide();
-                                    switcherGlass.opacity = 0;
-                                });
+                                this.connectObject(
+                                    'notify::opacity', () => syncGlass(),
+                                    'notify::visible', () => syncGlass(),
+                                    'destroy', () => {
+                                        if (switcherGlass) {
+                                            switcherGlass.hide();
+                                            switcherGlass.opacity = 0;
+                                        }
+                                    },
+                                    this
+                                );
 
                                 syncGlass();
                             } catch (err) {
@@ -1323,8 +1326,18 @@ export default class EvalHelper extends Extension {
                         if (dialogActor._macDlgGlassState === state)
                             delete dialogActor._macDlgGlassState;
                     };
-                    dialogLayout.connect('destroy', cleanUpState);
-                    dialogActor.connect('destroy', cleanUpState);
+                    dialogBox.connectObject(
+                        'notify::allocation', () => syncDialogGlass(state),
+                        'notify::position', () => syncDialogGlass(state),
+                        dialogActor
+                    );
+                    dialogActor.connectObject(
+                        'notify::opacity', () => syncDialogGlass(state),
+                        'notify::visible', () => syncDialogGlass(state),
+                        'destroy', cleanUpState,
+                        dialogActor
+                    );
+                    syncDialogGlass(state);
                     return state;
                 };
 
@@ -1448,7 +1461,7 @@ export default class EvalHelper extends Extension {
                     globalThis._macDlgChildId = 0;
                 }
 
-                globalThis._macDlgStageId = global.stage.connect('before-update', syncAllDialogs);
+                // Modal dialog glass is event-driven via notify::allocation / notify::position (ZERO per-frame stage polling)
 
                 const mg = Main.layoutManager.modalDialogGroup;
                 if (mg) {
