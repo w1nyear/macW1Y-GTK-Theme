@@ -659,7 +659,7 @@ scale.vertical slider:active {
    ========================================================================= */
 headerbar .linked,
 headerbar box.linked {
-  padding: 2px 3px;
+  padding: 2px 2px;
   border-radius: 9999px;
   background-color: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -668,14 +668,22 @@ headerbar box.linked {
 headerbar .linked > button,
 headerbar box.linked > button {
   min-height: 24px;
-  min-width: 28px;
-  padding: 2px 6px;
+  min-width: 24px;
+  padding: 0;
+  margin: 0;
   border-radius: 9999px;
   background: transparent;
   background-color: transparent;
   border: none;
   box-shadow: none;
   color: rgba(255, 255, 255, 0.85);
+}
+
+headerbar .linked > button image,
+headerbar box.linked > button image {
+  -gtk-icon-size: 14px;
+  margin: 0;
+  padding: 0;
 }
 
 headerbar .linked > button:hover,
@@ -702,10 +710,14 @@ headerbar box.linked > button + button {
   border-left: 1px solid rgba(255, 255, 255, 0.10);
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
 }
 
 headerbar .linked > button:first-child,
 headerbar box.linked > button:first-child {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }

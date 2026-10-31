@@ -13800,3 +13800,31 @@ macW1Y 0.4 — Інтеграція фізичного шейдера рідко
    - Оновлено хеш SHA-256 та опис патча для `desktop-widgets@r3nhick` у `config/extensions.lock.json`.
    - Перевірка `mac-extension-guard verify`: SUCCESS (всі 21/21 розширень валідовано).
    - Перевірка `mac-audit-sync check`: 100% PASS (всі 5 системних аудит-тестів пройдено).
+
+--------------------------------------------------------------------------------
+macW1Y 0.4 — Кнопки навігації «Назад/Вперед» (1×1 квадратні капсули) та гарантована присутність у всіх панелях Параметрів:
+--------------------------------------------------------------------------------
+1. Геометрія кнопок 1×1 (ідеальні квадрати замість витягнутих пілюль):
+   - Усунено горизонтальну витягнутість кнопок навігації у стилі Nautilus та параметрах: для кнопок капсули встановлено точні симетричні пропорції 1:1 (`min-width: 24px; min-height: 24px; padding: 0; margin: 0; -gtk-icon-size: 14px;`).
+   - У сирцях `libmac_settings.c` додано виклики `gtk_widget_set_size_request(back_btn, 24, 24)` та `gtk_widget_set_size_request(fwd_btn, 24, 24)`, що гарантує фіксоване виділення 24×24 px (із загальним розміром пілюлі 52×30 px з урахуванням 2px відступу капсули та 1px роздільника).
+   - Оновлено глобальні стилі для `headerbar box.linked > button`, `.mc-toggle-group > button`, `.mac-nav-pill > button` у таблицях стилів GTK 4 (`config/gtk-4.0/gtk.css`, `gtk-Dark.css`, `macW1Y-Dark/gtk-4.0/gtk.css`, `~/.config/gtk-4.0/`) та GTK 3 (`config/gtk-3.0/gtk.css`, `macW1Y-Dark/gtk-3.0/gtk.css`, `~/.config/gtk-3.0/`).
+
+2. Гарантована присутність кнопок на всіх панелях і підсторінках («кнопки вперед назад мають бути завжди»):
+   - Виправлено причину відсутності кнопок навігації на окремих панелях (Дисплеї, Програми, Спільний доступ тощо): у складних панелях GNOME Control Center є кілька `AdwHeaderBar` (наприклад, приховані панелі застосування змін `apply_titlebar` та окремі заголовки для підсторінок). Попередній код брав лише перший знайдений хедербар, який часто був невидимим, через що активний хедербар залишався порожнім.
+   - У `update_panel_headerbar` впроваджено цикл по всіх знайдених `content_bars`: на кожен `AdwHeaderBar` гарантовано монтується блок `mac-nav-header-box` з 1×1 капсульними кнопками `< | >` та заголовком поточної сторінки/панелі.
+   - Додано багаторівневий пошук хедербарів (у `target_root`, `content_page` та кореневому вікні без урахування сайдбара).
+   - Додано асинхронний диспетчер оновлень `schedule_update_panel_headerbar` із повторними викликами через `g_idle_add`, `g_timeout_add(50, ...)` та `g_timeout_add(150, ...)`, що спрацьовує при зміні панелей, перемиканні рядків списку (`main_listbox`) та переході між підсторінками (`AdwNavigationView notify::visible-page`).
+   - Реалізовано автоматичне приховування зайвих іконок пошуку та трьох крапок (`hide_unwanted_headerbar_buttons`) на всіх панелях контенту.
+
+3. Збірка, аудит та системна синхронізація:
+   - Перекомпільовано сирці `libmac_settings.c` та синхронізовано `libmac_settings.so` у всіх 7 системних цільових шляхах:
+     * `control-center/libmac_settings.so`
+     * `gnome-control-center-overlay/libmac_settings.so`
+     * `lib/libmac_settings.so`
+     * `~/.local/lib/libmac_settings.so`
+     * `/usr/lib/x86_64-linux-gnu/libmac_settings.so`
+     * `/usr/local/lib/libmac_settings.so`
+     * `/usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so`
+   - Перевірка `mac-audit-sync check`: 100% PASS (всі 5 тестів цілісності).
+   - Перевірка `mac-extension-guard verify`: SUCCESS (21/21 розширень заблоковано та валідовано).
+

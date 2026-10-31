@@ -11318,20 +11318,23 @@ scale.vertical > trough > slider:active {
    macOS Global Nautilus Navigation Buttons (Photo 2 / Photo 3)
    ========================================================================= */
 headerbar box.linked,
+headerbar .linked,
 .mc-toggle-group,
 .mac-nav-pill {
-  padding: 2px 3px;
+  padding: 2px 2px;
   border-radius: 9999px;
   background-color: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 headerbar box.linked > button,
+headerbar .linked > button,
 .mc-toggle-group > button,
 .mac-nav-pill > button {
   min-height: 24px;
-  min-width: 28px;
-  padding: 2px 6px;
+  min-width: 24px;
+  padding: 0;
+  margin: 0;
   border-radius: 9999px;
   background: transparent;
   background-color: transparent;
@@ -11340,7 +11343,17 @@ headerbar box.linked > button,
   color: rgba(255, 255, 255, 0.85);
 }
 
+headerbar box.linked > button image,
+headerbar .linked > button image,
+.mc-toggle-group > button image,
+.mac-nav-pill > button image {
+  -gtk-icon-size: 14px;
+  margin: 0;
+  padding: 0;
+}
+
 headerbar box.linked > button:hover,
+headerbar .linked > button:hover,
 .mc-toggle-group > button:hover,
 .mac-nav-pill > button:hover {
   background-color: rgba(255, 255, 255, 0.12);
@@ -11348,6 +11361,7 @@ headerbar box.linked > button:hover,
 }
 
 headerbar box.linked > button:active,
+headerbar .linked > button:active,
 .mc-toggle-group > button:active,
 .mac-nav-pill > button:active {
   background-color: rgba(255, 255, 255, 0.20);
@@ -11355,6 +11369,7 @@ headerbar box.linked > button:active,
 }
 
 headerbar box.linked > button:disabled,
+headerbar .linked > button:disabled,
 .mc-toggle-group > button:disabled,
 .mac-nav-pill > button:disabled {
   color: rgba(255, 255, 255, 0.25);
@@ -11363,14 +11378,20 @@ headerbar box.linked > button:disabled,
 }
 
 headerbar box.linked > button + button,
+headerbar .linked > button + button,
 .mac-nav-pill > button + button {
   border-left: 1px solid rgba(255, 255, 255, 0.10);
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
 }
 
 headerbar box.linked > button:first-child,
+headerbar .linked > button:first-child,
 .mac-nav-pill > button:first-child {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
