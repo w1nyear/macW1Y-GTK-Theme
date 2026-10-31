@@ -8,6 +8,7 @@ import NM from 'gi://NM';
 import UPowerGlib from 'gi://UPowerGlib';
 import GnomeBluetooth from 'gi://GnomeBluetooth?version=3.0';
 import Pango from 'gi://Pango';
+import PangoCairo from 'gi://PangoCairo';
 import Cairo from 'cairo';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -171,6 +172,100 @@ function createCircleBadge(iconName, isActive = false, iconSize = 14) {
     }
     badge.add_child(icon);
     return badge;
+}
+
+function _roundedBadgeRect(cr, x, y, w, h, r) {
+    cr.newSubPath();
+    cr.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
+    cr.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
+    cr.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+    cr.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5);
+    cr.closePath();
+}
+
+function createMacMenuBadge(text, isDark = false) {
+    const bin = new St.Bin({
+        x_align: Clutter.ActorAlign.CENTER,
+        y_align: Clutter.ActorAlign.CENTER,
+        width: 28,
+        height: 20,
+        style: 'margin-right: 10px;',
+    });
+
+    const area = new St.DrawingArea({
+        x_align: Clutter.ActorAlign.CENTER,
+        y_align: Clutter.ActorAlign.CENTER,
+    });
+
+    const fontDesc = new Pango.FontDescription();
+    fontDesc.set_family('SF Pro Text, -apple-system, sans-serif');
+    fontDesc.set_weight(Pango.Weight.BOLD);
+    fontDesc.set_size(10 * Pango.SCALE);
+
+    const fontmap = PangoCairo.FontMap.get_default();
+    const measureLayout = Pango.Layout.new(fontmap.create_context());
+    measureLayout.set_font_description(fontDesc);
+    measureLayout.set_text(text, -1);
+    const [ink] = measureLayout.get_pixel_extents();
+
+    const padX = 5;
+    const padY = 3;
+    const radius = 5;
+    const wantW = Math.max(18, ink.width + padX * 2);
+    const wantH = Math.max(18, ink.height + padY * 2);
+    area.set_size(wantW, wantH);
+
+    area.connect('repaint', () => {
+        const cr = area.get_context();
+        const [sw, sh] = area.get_surface_size();
+        const aw = area.width || wantW;
+        const ah = area.height || wantH;
+
+        cr.save();
+        cr.scale(sw / aw, sh / ah);
+        cr.setOperator(Cairo.Operator.CLEAR);
+        cr.paint();
+
+        if (text && text.length > 0) {
+            const layout = PangoCairo.create_layout(cr);
+            layout.set_font_description(fontDesc);
+            layout.set_text(text, -1);
+            const [layoutInk] = layout.get_pixel_extents();
+
+            if (!isDark) {
+                // White rounded badge with cut-out transparent text (per macOS menubar style)
+                cr.setOperator(Cairo.Operator.SOURCE);
+                cr.setSourceRGBA(1.0, 1.0, 1.0, 0.95);
+                _roundedBadgeRect(cr, 0.5, 0.5, aw - 1, ah - 1, radius);
+                cr.fill();
+
+                // Punch out glyphs: background / menu shows through transparent letters
+                cr.setOperator(Cairo.Operator.DEST_OUT);
+                const textX = (aw - layoutInk.width) / 2 - layoutInk.x;
+                const textY = (ah - layoutInk.height) / 2 - layoutInk.y;
+                cr.moveTo(textX, textY);
+                PangoCairo.show_layout(cr, layout);
+            } else {
+                // Subtle dark translucent squircle for symbols (⌘, ⌨)
+                cr.setOperator(Cairo.Operator.SOURCE);
+                cr.setSourceRGBA(1.0, 1.0, 1.0, 0.15);
+                _roundedBadgeRect(cr, 0.5, 0.5, aw - 1, ah - 1, radius);
+                cr.fill();
+
+                cr.setOperator(Cairo.Operator.OVER);
+                cr.setSourceRGBA(1.0, 1.0, 1.0, 0.90);
+                const textX = (aw - layoutInk.width) / 2 - layoutInk.x;
+                const textY = (ah - layoutInk.height) / 2 - layoutInk.y;
+                cr.moveTo(textX, textY);
+                PangoCairo.show_layout(cr, layout);
+            }
+        }
+        cr.restore();
+        cr.$dispose();
+    });
+
+    bin.set_child(area);
+    return bin;
 }
 
 function setupMacMenuItem(item) {
@@ -3060,38 +3155,34 @@ export const MenuBarController = class MenuBarController {
                 badgeText = 'A';
                 displayTitle = 'ABC';
             } else if (id.includes('ua') || id.includes('uk') || short.includes('uk')) {
-                badgeText = 'УК';
+                badgeText = 'ук';
                 displayTitle = 'Українська';
             } else if (id.includes('ru') || short.includes('ru')) {
-                badgeText = 'РУ';
+                badgeText = 'ру';
                 displayTitle = 'Русская';
             } else if (id.includes('by') || short.includes('by')) {
-                badgeText = 'БЕ';
+                badgeText = 'бе';
                 displayTitle = 'Беларуская';
             } else if (id.includes('pl') || short.includes('pl')) {
-                badgeText = 'PL';
+                badgeText = 'pl';
                 displayTitle = 'Polski';
             } else if (id.includes('de') || short.includes('de')) {
-                badgeText = 'DE';
+                badgeText = 'de';
                 displayTitle = 'Deutsch';
             } else if (id.includes('fr') || short.includes('fr')) {
-                badgeText = 'FR';
+                badgeText = 'fr';
                 displayTitle = 'Français';
             } else if (id.includes('es') || short.includes('es')) {
-                badgeText = 'ES';
+                badgeText = 'es';
                 displayTitle = 'Español';
             } else if (id.includes('it') || short.includes('it')) {
-                badgeText = 'IT';
+                badgeText = 'it';
                 displayTitle = 'Italiano';
             } else {
-                badgeText = (s.shortName || id.slice(0, 2)).toUpperCase();
+                badgeText = (s.shortName || id.slice(0, 2)).toLowerCase();
             }
 
-            const badge = new St.Label({
-                text: badgeText,
-                style_class: 'mac-menu-squircle-badge',
-                y_align: Clutter.ActorAlign.CENTER,
-            });
+            const badge = createMacMenuBadge(badgeText, false);
             item.add_child(badge);
 
             const nameLbl = new St.Label({
@@ -3128,11 +3219,7 @@ export const MenuBarController = class MenuBarController {
         });
         emojiItem.add_child(emojiCheck);
 
-        const emojiBadge = new St.Label({
-            text: '⌘',
-            style_class: 'mac-menu-squircle-badge-dark',
-            y_align: Clutter.ActorAlign.CENTER,
-        });
+        const emojiBadge = createMacMenuBadge('⌘', true);
         emojiItem.add_child(emojiBadge);
 
         const emojiLbl = new St.Label({
@@ -3164,11 +3251,7 @@ export const MenuBarController = class MenuBarController {
         });
         layoutItem.add_child(layoutCheck);
 
-        const layoutBadge = new St.Label({
-            text: '⌨',
-            style_class: 'mac-menu-squircle-badge-dark',
-            y_align: Clutter.ActorAlign.CENTER,
-        });
+        const layoutBadge = createMacMenuBadge('⌨', true);
         layoutItem.add_child(layoutBadge);
 
         const layoutLbl = new St.Label({
