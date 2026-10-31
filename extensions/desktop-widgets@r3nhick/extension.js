@@ -1370,18 +1370,15 @@ class WidgetController {
       styleStr += ' overflow: hidden;';
       styleStr += ' box-shadow: none;';
     } else if (glassRoot) {
-      // In glass mode, the widget content sits on top of the LiquidGlass shader backdrop.
-      // We give the card authentic macOS Tahoe frosted squircle glass styling:
-      // subtle frosted translucent tint, specular border rim, and soft depth shadow.
+      // In glass mode, the widget content sits directly on top of the LiquidGlass shader backdrop.
+      // The physical LiquidGlass shader renders the frosted glass body, Snell refraction, specular rim and drop shadow.
+      // Content box stays transparent so the physical shader is 100% visible with zero CSS opacity flattening.
       styleStr = styleStr.replace(/background(-color)?:\s*[^;]+;/g, '');
       styleStr = styleStr.replace(/border(-color|-width)?:\s*[^;]+;/g, '');
       styleStr = styleStr.replace(/box-shadow:\s*[^;]+;/g, '');
-      const dark = theme.dark;
-      const glassBg = dark ? 'rgba(30, 32, 38, 0.38)' : 'rgba(255, 255, 255, 0.38)';
-      const glassBorder = dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.45)';
-      styleStr += ` background-color: ${glassBg};`;
-      styleStr += ` border: 1px solid ${glassBorder};`;
-      styleStr += ' box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.18);';
+      styleStr += ' background: transparent !important; background-color: transparent !important;';
+      styleStr += ' border: none !important;';
+      styleStr += ' box-shadow: none !important;';
       styleStr += ` border-radius: ${theme.radius}px;`;
     }
 
