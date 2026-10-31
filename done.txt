@@ -13866,3 +13866,31 @@ macW1Y 0.4 — Оптимізація компонування Параметр�
    - Перевірка `mac-audit-sync check`: 100% PASS (всі 5 системних перевірок пройдено успішно).
    - Перевірка `mac-extension-guard verify`: SUCCESS (21/21 розширень заблоковано та перевірено).
 
+================================================================================
+ЗМІНИ: ВІДНОВЛЕННЯ ОРИГІНАЛЬНОГО ВИГЛЯДУ NAUTILUS ТА ТОЧНЕ КОПІЮВАННЯ РОЗМІРІВ КНОПОК У ПАРАМЕТРИ
+================================================================================
+1. Відновлення вигляду провідника Nautilus:
+   - Повністю вилучено селектори `headerbar box.linked` та `headerbar .linked` з глобальних CSS-правил тем GTK 3 та GTK 4 (`config/gtk-4.0/gtk.css`, `config/gtk-4.0/gtk-Dark.css`, `macW1Y-Dark/gtk-4.0/gtk.css`, `macW1Y-Dark/gtk-4.0/gtk-dark.css`, `config/gtk-3.0/gtk.css`, `macW1Y-Dark/gtk-3.0/gtk.css`).
+   - Nautilus тепер не піддається сторонній модифікації та зберігає свій повноцінний нативний вигляд із рідними пропорціями кнопок навігації та панелі заголовка.
+
+2. Точне копіювання розмірів кнопок навігації Nautilus у GNOME Control Center (Параметри):
+   - Згідно з реальними вимірами віджетів `NautilusHistoryControls` у Libadwaita (`AdwHeaderBar`):
+     * Розмір кожної кнопки навігації назад/вперед: `36px × 36px` (`gtk_widget_set_size_request(btn, 36, 36)`, `min-height: 36px; min-width: 36px;`).
+     * Розмір піктограм символьних стрілок: `-gtk-icon-size: 16px;`.
+     * Загальна висота капсульної пілюлі `.mac-nav-pill`: рівно 36px (ширина близько 75px із розділювачем 1px та полями 5px зверху/знизу).
+     * Збережено капсульне повне заокруглення `border-radius: 9999px;` та вертикальне центроване вирівнювання із заголовком поточної панелі («Живлення», «Система» тощо).
+
+3. Збірка, синхронізація та верифікація:
+   - Перекомпільовано сирці `libmac_settings.c` та синхронізовано `libmac_settings.so` в усіх 7 системних цільових шляхах:
+     * `control-center/libmac_settings.so`
+     * `gnome-control-center-overlay/libmac_settings.so`
+     * `lib/libmac_settings.so`
+     * `~/.local/lib/libmac_settings.so`
+     * `/usr/lib/x86_64-linux-gnu/libmac_settings.so`
+     * `/usr/local/lib/libmac_settings.so`
+     * `/usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so`
+   - Синхронізовано всі файли тем GTK 3 та GTK 4 у `~/.config/gtk-4.0/`, `/usr/share/themes/macW1Y-Dark/gtk-4.0/` та `/usr/share/themes/macW1Y-Dark/gtk-3.0/`.
+   - Знято тестові знімки вікон Nautilus та Settings через GNOME Shell DBus API.
+   - `mac-audit-sync check`: 100% PASS.
+   - `mac-extension-guard verify`: SUCCESS (21/21 розширень заблоковано).
+

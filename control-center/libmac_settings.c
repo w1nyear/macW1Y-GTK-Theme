@@ -4530,8 +4530,8 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window .mac-nav-pill > button, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button { "
-        "  min-height: 24px; "
-        "  min-width: 24px; "
+        "  min-height: 36px; "
+        "  min-width: 36px; "
         "  padding: 0; "
         "  margin: 0; "
         "  border-radius: 9999px; "
@@ -4543,7 +4543,7 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window .mac-nav-pill > button image, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button image { "
-        "  -gtk-icon-size: 14px; "
+        "  -gtk-icon-size: 16px; "
         "  margin: 0; "
         "  padding: 0; "
         "} "
@@ -4581,7 +4581,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill separator { "
         "  min-width: 1px; "
         "  background-color: rgba(255, 255, 255, 0.12); "
-        "  margin: 3px 0px; "
+        "  margin: 5px 0px; "
         "} "
         "window.mac-settings-window .mac-panel-title-label { "
         "  font-size: 14px; "
@@ -5489,7 +5489,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             back_btn = gtk_button_new_from_icon_name("go-previous-symbolic");
             gtk_widget_add_css_class(back_btn, "mac-nav-btn");
             gtk_widget_add_css_class(back_btn, "mac-nav-back");
-            gtk_widget_set_size_request(back_btn, 24, 24);
+            gtk_widget_set_size_request(back_btn, 36, 36);
             gtk_widget_set_tooltip_text(back_btn, mac_tr("back", "Назад"));
             g_signal_connect(back_btn, "clicked", G_CALLBACK(on_mac_nav_back_clicked), split_view);
             gtk_box_append(GTK_BOX(pill), back_btn);
@@ -5501,7 +5501,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             fwd_btn = gtk_button_new_from_icon_name("go-next-symbolic");
             gtk_widget_add_css_class(fwd_btn, "mac-nav-btn");
             gtk_widget_add_css_class(fwd_btn, "mac-nav-fwd");
-            gtk_widget_set_size_request(fwd_btn, 24, 24);
+            gtk_widget_set_size_request(fwd_btn, 36, 36);
             gtk_widget_set_tooltip_text(fwd_btn, mac_tr("forward", "Вперед"));
             g_signal_connect(fwd_btn, "clicked", G_CALLBACK(on_mac_nav_fwd_clicked), split_view);
             gtk_box_append(GTK_BOX(pill), fwd_btn);
@@ -5524,11 +5524,11 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
 
         gtk_widget_set_visible(nav_box, TRUE);
         if (back_btn) {
-            gtk_widget_set_size_request(back_btn, 24, 24);
+            gtk_widget_set_size_request(back_btn, 36, 36);
             gtk_widget_set_visible(back_btn, TRUE);
         }
         if (fwd_btn) {
-            gtk_widget_set_size_request(fwd_btn, 24, 24);
+            gtk_widget_set_size_request(fwd_btn, 36, 36);
             gtk_widget_set_visible(fwd_btn, TRUE);
         }
         if (title_label) {
