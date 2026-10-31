@@ -2751,6 +2751,178 @@ static void find_view_switchers_recursive(GtkWidget *widget, GList **list)
     }
 }
 
+typedef struct {
+    GtkWidget *switcher;
+    gboolean has_bounds;
+    float pill_x, pill_y, pill_w, pill_h;
+    float start_x, start_w, target_x, target_w;
+    AdwAnimation *anim;
+} MacSwitcherAnimData;
+
+static void (*orig_switcher_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL;
+
+static void mac_switcher_anim_cb(double value, gpointer user_data) {
+    MacSwitcherAnimData *data = (MacSwitcherAnimData *)user_data;
+    if (!data || !data->switcher) return;
+    data->pill_x = data->start_x + (data->target_x - data->start_x) * (float)value;
+    data->pill_w = data->start_w + (data->target_w - data->start_w) * (float)value;
+    gtk_widget_queue_draw(data->switcher);
+}
+
+static void mac_update_switcher_pill(GtkWidget *vs, gboolean animate) {
+    if (!vs || !ADW_IS_VIEW_SWITCHER(vs)) return;
+    MacSwitcherAnimData *data = g_object_get_data(G_OBJECT(vs), "mac-switcher-anim");
+    if (!data) return;
+
+    GtkWidget *active_btn = NULL;
+    for (GtkWidget *c = gtk_widget_get_first_child(vs); c != NULL; c = gtk_widget_get_next_sibling(c)) {
+        if (GTK_IS_TOGGLE_BUTTON(c) && gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(c))) {
+            active_btn = c;
+            break;
+        }
+    }
+    if (!active_btn) return;
+
+    graphene_rect_t bounds;
+    if (!gtk_widget_compute_bounds(active_btn, vs, &bounds)) return;
+
+    float tx = bounds.origin.x;
+    float ty = bounds.origin.y;
+    float tw = bounds.size.width;
+    float th = bounds.size.height;
+
+    if (tw <= 0.0f || th <= 0.0f) return;
+
+    if (!data->has_bounds || !animate) {
+        if (data->anim) {
+            adw_animation_pause(data->anim);
+            g_object_unref(data->anim);
+            data->anim = NULL;
+        }
+        data->has_bounds = TRUE;
+        data->pill_x = tx;
+        data->pill_y = ty;
+        data->pill_w = tw;
+        data->pill_h = th;
+        data->target_x = tx;
+        data->target_w = tw;
+        gtk_widget_queue_draw(vs);
+        return;
+    }
+
+    if (fabsf(data->target_x - tx) < 0.5f && fabsf(data->target_w - tw) < 0.5f) return;
+
+    data->start_x = data->pill_x;
+    data->start_w = data->pill_w;
+    data->target_x = tx;
+    data->target_w = tw;
+    data->pill_y = ty;
+    data->pill_h = th;
+
+    if (data->anim) {
+        adw_animation_pause(data->anim);
+        g_object_unref(data->anim);
+        data->anim = NULL;
+    }
+
+    AdwAnimationTarget *target = adw_callback_animation_target_new(mac_switcher_anim_cb, data, NULL);
+    AdwTimedAnimation *t_anim = ADW_TIMED_ANIMATION(adw_timed_animation_new(vs, 0.0, 1.0, 220, target));
+    adw_timed_animation_set_easing(t_anim, ADW_EASE_OUT_CUBIC);
+    data->anim = ADW_ANIMATION(t_anim);
+    adw_animation_play(data->anim);
+}
+
+static void on_switcher_btn_toggled(GtkToggleButton *btn, gpointer user_data) {
+    if (gtk_toggle_button_get_active(btn)) {
+        mac_update_switcher_pill(GTK_WIDGET(user_data), TRUE);
+    }
+}
+
+static void on_switcher_stack_child_notify(GObject *stack, GParamSpec *pspec, gpointer user_data) {
+    (void)stack;
+    (void)pspec;
+    mac_update_switcher_pill(GTK_WIDGET(user_data), TRUE);
+}
+
+static void setup_mac_view_switcher(GtkWidget *vs);
+
+static void mac_view_switcher_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
+    MacSwitcherAnimData *data = g_object_get_data(G_OBJECT(widget), "mac-switcher-anim");
+    if (!data) {
+        setup_mac_view_switcher(widget);
+        data = g_object_get_data(G_OBJECT(widget), "mac-switcher-anim");
+    }
+
+    if (data) {
+        for (GtkWidget *c = gtk_widget_get_first_child(widget); c != NULL; c = gtk_widget_get_next_sibling(c)) {
+            if (GTK_IS_TOGGLE_BUTTON(c) && !g_object_get_data(G_OBJECT(c), "mac_btn_connected")) {
+                g_object_set_data(G_OBJECT(c), "mac_btn_connected", GINT_TO_POINTER(1));
+                g_signal_connect(c, "toggled", G_CALLBACK(on_switcher_btn_toggled), widget);
+            }
+        }
+
+        if (!data->has_bounds) {
+            mac_update_switcher_pill(widget, FALSE);
+        }
+
+        if (data->has_bounds && data->pill_w > 0.0f && data->pill_h > 0.0f) {
+            graphene_rect_t rect = GRAPHENE_RECT_INIT(
+                data->pill_x, data->pill_y, data->pill_w, data->pill_h
+            );
+            GskRoundedRect rounded;
+            float radius = data->pill_h / 2.0f;
+            gsk_rounded_rect_init_from_rect(&rounded, &rect, radius);
+
+            GdkRGBA shadow_color = { 0.0f, 0.0f, 0.0f, 0.40f };
+            gtk_snapshot_append_outset_shadow(snapshot, &rounded, &shadow_color, 0.0f, 1.5f, 0.0f, 3.0f);
+
+            gtk_snapshot_push_rounded_clip(snapshot, &rounded);
+            GdkRGBA bg_color = { 0.17f, 0.17f, 0.19f, 0.95f };
+            gtk_snapshot_append_color(snapshot, &bg_color, &rect);
+
+            GdkRGBA border_color = { 1.0f, 1.0f, 1.0f, 0.14f };
+            float border_widths[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+            GdkRGBA border_colors[4] = { border_color, border_color, border_color, border_color };
+            gtk_snapshot_append_border(snapshot, &rounded, border_widths, border_colors);
+
+            gtk_snapshot_pop(snapshot);
+        }
+    }
+
+    if (orig_switcher_snapshot) {
+        orig_switcher_snapshot(widget, snapshot);
+    }
+}
+
+static void setup_mac_view_switcher(GtkWidget *vs) {
+    if (!vs || !ADW_IS_VIEW_SWITCHER(vs)) return;
+    if (g_object_get_data(G_OBJECT(vs), "mac-switcher-anim")) return;
+
+    static gboolean hook_installed = FALSE;
+    if (!hook_installed) {
+        hook_installed = TRUE;
+        GtkWidgetClass *wclass = GTK_WIDGET_CLASS(g_type_class_ref(ADW_TYPE_VIEW_SWITCHER));
+        orig_switcher_snapshot = wclass->snapshot;
+        wclass->snapshot = mac_view_switcher_snapshot;
+    }
+
+    MacSwitcherAnimData *data = g_new0(MacSwitcherAnimData, 1);
+    data->switcher = vs;
+    g_object_set_data_full(G_OBJECT(vs), "mac-switcher-anim", data, g_free);
+
+    for (GtkWidget *c = gtk_widget_get_first_child(vs); c != NULL; c = gtk_widget_get_next_sibling(c)) {
+        if (GTK_IS_TOGGLE_BUTTON(c)) {
+            g_object_set_data(G_OBJECT(c), "mac_btn_connected", GINT_TO_POINTER(1));
+            g_signal_connect(c, "toggled", G_CALLBACK(on_switcher_btn_toggled), vs);
+        }
+    }
+
+    AdwViewStack *stack = adw_view_switcher_get_stack(ADW_VIEW_SWITCHER(vs));
+    if (stack) {
+        g_signal_connect(stack, "notify::visible-child", G_CALLBACK(on_switcher_stack_child_notify), vs);
+    }
+}
+
 static void configure_toolbar_views_recursive(GtkWidget *widget, gboolean is_sidebar)
 {
     if (!widget) return;
@@ -3087,13 +3259,13 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window list.mac-settings-sidebar-list, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar { "
         "  background-color: transparent; "
-        "  padding: 4px 6px; "
+        "  padding: 4px 0px; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row { "
         "  min-height: 32px; "
-        "  padding: 4px 10px; "
-        "  margin: 1.5px 6px; "
+        "  padding: 3px 6px; "
+        "  margin: 1.5px 7px; "
         "  border-radius: 5px; "
         "  font-size: 13px; "
         "  color: rgba(255, 255, 255, 0.90); "
@@ -3118,24 +3290,26 @@ static void init_mac_settings_css(void) {
         "  border: 1px solid rgba(255, 255, 255, 0.06); "
         "  border-radius: 5px; "
         "  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); "
-        "  margin-right: 9px; "
-        "  margin-left: 1px; "
+        "  margin-right: 6px; "
+        "  margin-left: 2px; "
         "  padding: 0; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected image, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected image { "
         "  color: #ffffff; "
-        "  background-color: rgba(0, 0, 0, 0.32); "
-        "  border: 1px solid rgba(0, 0, 0, 0.20); "
-        "  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); "
+        "  background-color: #1e1e20; "
+        "  border: 1px solid rgba(255, 255, 255, 0.08); "
+        "  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row label, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row label { "
         "  font-size: 13px; "
         "  margin-top: 1px; "
         "  margin-bottom: 0px; "
+        "  margin-left: 0px; "
         "  padding-top: 0px; "
         "  padding-bottom: 0px; "
+        "  padding-left: 0px; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected label, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected label { "
@@ -3145,7 +3319,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-account-row { "
         "  min-height: 48px; "
         "  padding: 6px 10px; "
-        "  margin: 6px 6px 20px 6px; "
+        "  margin: 6px 7px 18px 7px; "
         "  border-radius: 6px; "
         "  background-color: transparent; "
         "} "
@@ -3219,11 +3393,11 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-content list.boxed-list { "
         "  background-color: #1e1e1e; "
         "  border: 1px solid rgba(255, 255, 255, 0.07); "
-        "  border-radius: 16px; "
+        "  border-radius: 14px; "
         "  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20); "
         "  margin-left: 20px; "
         "  margin-right: 20px; "
-        "  margin-bottom: 16px; "
+        "  margin-bottom: 12px; "
         "} "
         "window.mac-settings-window preferencespage preferencesgroup > box > box.header, "
         "window.mac-settings-window .content-pane preferencesgroup > box > box.header, "
@@ -3233,7 +3407,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window preferencespage .boxed-list-title { "
         "  margin-left: 24px; "
         "  margin-right: 24px; "
-        "  margin-bottom: 6px; "
+        "  margin-bottom: 4px; "
         "} "
         "window.mac-settings-window preferencespage list.boxed-list row.expander, "
         "window.mac-settings-window .content-pane list.boxed-list row.expander, "
@@ -3256,9 +3430,13 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window preferencespage list.boxed-list row.expander row.header, "
         "window.mac-settings-window .content-pane list.boxed-list row.expander row.header, "
         "window.mac-settings-window .mac-settings-content list.boxed-list row.expander row.header { "
-        "  min-height: 42px; "
-        "  padding: 6px 14px; "
+        "  min-height: 36px; "
+        "  padding: 3px 10px; "
         "  border-bottom: none; "
+        "} "
+        "window.mac-settings-window preferencespage list.boxed-list row > box.header { "
+        "  border-spacing: 8px; "
+        "  margin: 0px; "
         "} "
         "window.mac-settings-window preferencespage list.boxed-list row:not(.expander):hover, "
         "window.mac-settings-window .content-pane list.boxed-list row:not(.expander):hover, "
@@ -3304,10 +3482,10 @@ static void init_mac_settings_css(void) {
         "  min-height: 28px; "
         "  border-radius: 9999px; "
         "  padding: 3px; "
-        "  background-color: rgba(45, 45, 50, 0.82); "
-        "  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05)); "
-        "  border: 1px solid rgba(255, 255, 255, 0.15); "
-        "  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.12); "
+        "  background-color: rgba(20, 20, 22, 0.75); "
+        "  background-image: none; "
+        "  border: 1px solid rgba(255, 255, 255, 0.08); "
+        "  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.40); "
         "} "
         "window.mac-settings-window viewswitcher button.toggle, "
         "window.mac-settings-window .mac-view-switcher button.toggle, "
@@ -3322,24 +3500,24 @@ static void init_mac_settings_css(void) {
         "  background-color: transparent; "
         "  border: none; "
         "  box-shadow: none; "
-        "  transition: all 120ms ease-out; "
+        "  transition: color 150ms ease-out; "
         "} "
         "window.mac-settings-window viewswitcher button.toggle:hover, "
         "window.mac-settings-window .mac-view-switcher button.toggle:hover, "
         "window.mac-settings-window headerbar viewswitcher button.toggle:hover { "
         "  color: #ffffff; "
-        "  background-color: rgba(255, 255, 255, 0.08); "
+        "  background-color: rgba(255, 255, 255, 0.06); "
         "} "
         "window.mac-settings-window viewswitcher button.toggle:checked, "
         "window.mac-settings-window .mac-view-switcher button.toggle:checked, "
         "window.mac-settings-window headerbar viewswitcher button.toggle:checked { "
         "  color: #ffffff; "
         "  font-weight: 600; "
-        "  background-color: rgba(255, 255, 255, 0.22); "
-        "  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.08)); "
-        "  border: 1px solid rgba(255, 255, 255, 0.18); "
-        "  border-radius: 9999px; "
-        "  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25); "
+        "  background: transparent; "
+        "  background-color: transparent; "
+        "  background-image: none; "
+        "  border: none; "
+        "  box-shadow: none; "
         "} "
         "window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > viewport, "
         "window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > viewport > clamp { "
@@ -3839,6 +4017,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         gtk_widget_add_css_class(target_root, "panel-has-switcher");
         for (GList *sl = switchers; sl != NULL; sl = sl->next) {
             gtk_widget_add_css_class(GTK_WIDGET(sl->data), "mac-view-switcher");
+            setup_mac_view_switcher(GTK_WIDGET(sl->data));
         }
         g_list_free(switchers);
     } else {
@@ -4062,9 +4241,9 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             gtk_widget_set_valign(grid, GTK_ALIGN_CENTER);
             gtk_widget_set_margin_top(grid, 0);
             gtk_widget_set_margin_bottom(grid, 0);
-            gtk_widget_set_margin_start(grid, 4);
-            gtk_widget_set_margin_end(grid, 4);
-            gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+            gtk_widget_set_margin_start(grid, 0);
+            gtk_widget_set_margin_end(grid, 0);
+            gtk_grid_set_column_spacing(GTK_GRID(grid), 6);
 
             GtkWidget *image = gtk_image_new_from_icon_name("view-grid-symbolic");
             gtk_image_set_pixel_size(GTK_IMAGE(image), 13);
@@ -4075,7 +4254,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             GtkWidget *label = gtk_label_new(mac_tr("widgets", "Віджети"));
             gtk_label_set_xalign(GTK_LABEL(label), 0.0);
             gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
-            gtk_widget_set_margin_start(label, 4);
+            gtk_widget_set_margin_start(label, 0);
             gtk_widget_set_margin_top(label, 1);
             gtk_widget_set_margin_bottom(label, 0);
             gtk_widget_set_hexpand(label, TRUE);
