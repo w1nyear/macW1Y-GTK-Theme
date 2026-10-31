@@ -9566,7 +9566,7 @@ menu menuitem,
   background-color: transparent;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 100ms ease, color 100ms ease;
+  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 menu menuitem label,
@@ -9593,7 +9593,8 @@ menu menuitem:selected,
   background-color: #007aff;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40);
+  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 menu menuitem:hover label,
@@ -9694,7 +9695,9 @@ popover.menu modelbutton,
 popover.menu button,
 popover modelbutton,
 .context-menu modelbutton,
-.popup-menu modelbutton {
+.popup-menu modelbutton,
+dropdown > popover.menu modelbutton,
+dropdown > popover.menu button {
   min-height: 22px;
   padding: 4px 12px;
   margin: 1px 6px;
@@ -9703,7 +9706,7 @@ popover modelbutton,
   background-color: transparent;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 100ms ease, color 100ms ease;
+  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 popover.menu modelbutton label,
@@ -9726,12 +9729,15 @@ popover modelbutton:focus-visible,
 .context-menu modelbutton:hover,
 .context-menu modelbutton:focus-visible,
 .popup-menu modelbutton:hover,
-.popup-menu modelbutton:focus-visible {
+.popup-menu modelbutton:focus-visible,
+dropdown > popover.menu modelbutton:hover,
+dropdown > popover.menu button:hover {
   background-color: #007aff;
   background: #007aff;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: none;
+  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40);
+  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 popover.menu modelbutton:selected:not(:hover):not(:focus-visible),
@@ -11430,9 +11436,14 @@ window.mac-settings-window preferencespage list:not(.boxed-list),
 window.mac-settings-window preferencespage row.button,
 window.mac-settings-window #add_user_button_row,
 window.mac-settings-window #add_enterprise_user_button_row,
+window.mac-settings-window #liquid_preview_container,
 window.mac-settings-window preferencesgroup.separate-rows list {
   margin-left: 20px;
   margin-right: 20px;
+}
+
+window.mac-settings-window #liquid_glass_preview_area {
+  border-radius: 14px;
 }
 
 window.mac-settings-window list.boxed-list row,

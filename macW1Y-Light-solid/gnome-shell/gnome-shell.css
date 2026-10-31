@@ -5991,7 +5991,13 @@ StWidget.focused .app-grid-running-dot {
 .mac-menu-item-row:selected,
 .mac-menu-item-row:selected:hover,
 .mac-menu-item-active:hover,
-.mac-menu-item-active:selected,
+.mac-menu-item-active:selected {
+  background-color: #007aff !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;
+}
+
 .mac-cc-submenu-row:hover,
 .mac-cc-submenu-item:hover {
   background-color: rgba(255, 255, 255, 0.12) !important;
@@ -6298,10 +6304,48 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-menu-hover-pill {
-  display: none !important;
-  opacity: 0 !important;
+  background-color: #007aff !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;
+}
+
+.mac-menu-hover-glide-active .popup-menu-item:hover,
+.mac-menu-hover-glide-active .popup-menu-item:focus,
+.mac-menu-hover-glide-active .popup-menu-item:selected,
+.mac-menu-hover-glide-active .popup-menu-item.mac-menu-item-row:hover,
+.mac-menu-hover-glide-active .popup-menu-item.mac-menu-item-row:focus,
+.mac-menu-hover-glide-active .popup-menu-item.mac-menu-item-row:selected,
+.mac-menu-hover-glide-active .mac-menu-item-row:hover,
+.mac-menu-hover-glide-active .mac-menu-item-row:focus,
+.mac-menu-hover-glide-active .mac-menu-item-row:selected {
   background-color: transparent !important;
+  background: transparent !important;
+  color: #ffffff !important;
   box-shadow: none !important;
+}
+
+.mac-menu-hover-glide-active .popup-menu-item:active,
+.mac-menu-hover-glide-active .popup-menu-item.selected:active,
+.mac-menu-hover-glide-active .popup-menu-item.mac-menu-item-row:active,
+.mac-menu-hover-glide-active .mac-menu-item-row:active {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
+.mac-menu-hover-glide-active .popup-menu-item:hover StLabel,
+.mac-menu-hover-glide-active .popup-menu-item:focus StLabel,
+.mac-menu-hover-glide-active .popup-menu-item:selected StLabel,
+.mac-menu-hover-glide-active .popup-menu-item:hover StIcon,
+.mac-menu-hover-glide-active .popup-menu-item:focus StIcon,
+.mac-menu-hover-glide-active .popup-menu-item:selected StIcon,
+.mac-menu-hover-glide-active .mac-menu-item-row:hover StLabel,
+.mac-menu-hover-glide-active .mac-menu-item-row:focus StLabel,
+.mac-menu-hover-glide-active .mac-menu-item-row:selected StLabel,
+.mac-menu-hover-glide-active .mac-menu-item-row:hover StIcon,
+.mac-menu-hover-glide-active .mac-menu-item-row:focus StIcon,
+.mac-menu-hover-glide-active .mac-menu-item-row:selected StIcon {
+  color: #ffffff !important;
 }
 
 .popup-menu-item.popup-separator-menu-item,

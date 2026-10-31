@@ -53,7 +53,7 @@ window.desktopmenu menuitem {
   background-color: transparent;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 100ms ease, color 100ms ease;
+  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 menu menuitem label,
@@ -90,7 +90,8 @@ window.desktopmenu menuitem:selected {
   background-color: #007aff;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40);
+  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 menu menuitem:hover label,

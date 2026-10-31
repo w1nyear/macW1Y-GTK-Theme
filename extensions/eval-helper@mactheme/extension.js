@@ -167,7 +167,7 @@ class MacMenuHoverGlide {
         this._pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
-            style: 'background-color: rgba(255, 255, 255, 0.12) !important; border-radius: 10px !important; box-shadow: none !important;',
+            style: 'background-color: #007aff !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;',
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START,
             x_expand: false,
@@ -797,6 +797,17 @@ export default class EvalHelper extends Extension {
                             console.error(`[EvalHelper] MacMenuHoverGlide open error: ${e}`);
                         }
                         return origOpen.call(this, animate);
+                    };
+                }
+
+                if (PopupMenu.PopupSubMenu && !PopupMenu.PopupSubMenu.prototype._origMacGlideOpen) {
+                    PopupMenu.PopupSubMenu.prototype._origMacGlideOpen = PopupMenu.PopupSubMenu.prototype.open;
+                    const origSubOpen = PopupMenu.PopupSubMenu.prototype._origMacGlideOpen;
+                    PopupMenu.PopupSubMenu.prototype.open = function(animate) {
+                        try {
+                            attachToMenu(this);
+                        } catch (_) {}
+                        return origSubOpen.call(this, animate);
                     };
                 }
 
