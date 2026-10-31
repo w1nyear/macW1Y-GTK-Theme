@@ -429,7 +429,7 @@
         "50",
         "51"
       ],
-      "sha256": "f8128c6d63e3c989102e98ee25aa44c07db386686fd812843fc92b42cf1271cb",
+      "sha256": "1e4783a3d730daea0802be0053bc6037d4957fd7c2eb2e5551b4729c33833edf",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
@@ -438,7 +438,7 @@
         "clock_battery_weather_system"
       ],
       "has_custom_patches": true,
-      "patch_description": "Fixed ShaderEffect static snippet vfunc for GNOME 50 and safe weather schema source fallback",
+      "patch_description": "Liquid Glass GLSL shader scalar uniform binding fix, transparent card styling, and safe snippet support for GNOME 50",
       "last_verified": "2026-10-31"
     },
     "ubuntu-appindicators@ubuntu.com": {

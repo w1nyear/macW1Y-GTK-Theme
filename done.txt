@@ -13774,3 +13774,29 @@ macW1Y 0.4 — Зменшення висоти пунктів (карток сп
    - Правила охоплюють усі компоненти карток: list.boxed-list row, adwactionrow, adwswitchrow, adwcomborow, adwentryrow, adwexpanderrow, adwspinrow, cclistrow у будь-яких панелях вікна window.mac-settings-window.
    - Синхронізовано сирцеві файли libmac_settings.c (в control-center/ та gnome-control-center-overlay/), бібліотеку скомпільовано та оновлено в усіх системних каталогах (/usr/lib/x86_64-linux-gnu/, /usr/local/lib/, ~/.local/lib/, /usr/share/mactheme/gnome-control-center-overlay/, repo/lib/).
    - Синхронізовано глобальні та локальні таблиці стилів GTK 4 (config/gtk-4.0/gtk.css, gtk-Dark.css, macW1Y-Dark, ~/.config/gtk-4.0/).
+
+
+--------------------------------------------------------------------------------
+macW1Y 0.4 — Інтеграція фізичного шейдера рідкого скла (Liquid Glass) у віджети стільниці:
+--------------------------------------------------------------------------------
+1. Усунення критичної помилки GJS та передачі уніформ шейдера:
+   - Діагностовано причину, чому віджети стільниці («Годинник», «Календар», «Батарея») не відображали скло: у GJS `Clutter.ShaderEffect` не має методу `set_uniform_float(name, count, arr)` та викликає `TypeError: this.set_uniform_float is not a function` при кожному оновленні кадрів і руху миші. Крім того, передача JS-масивів у `set_uniform_value` викликає збій `Could not guess unspecified GValue type`.
+   - У `extensions/desktop-widgets@r3nhick/lib/glass.js` та `lib/glass_v3.js` оновлено GLSL-декларації: векторні уніформи розкладено на скалярні змінні типу `float` (`lg_size_x`, `lg_size_y`, `lg_frame_x`, `lg_frame_y`, `lg_frame_w`, `lg_frame_h`, `lg_tint_r`, `lg_tint_g`, `lg_tint_b`, `lg_tint_a`, `lg_tintBottom_*`, `lg_mousePos_*`), з псевдонімами через препроцесорні `#define`:
+     * `#define lg_size vec2(lg_size_x, lg_size_y)`
+     * `#define lg_frame vec4(lg_frame_x, lg_frame_y, lg_frame_w, lg_frame_h)`
+     * `#define lg_tint vec4(lg_tint_r, lg_tint_g, lg_tint_b, lg_tint_a)`
+     * `#define lg_tintBottom vec4(lg_tintBottom_r, lg_tintBottom_g, lg_tintBottom_b, lg_tintBottom_a)`
+     * `#define lg_mousePos vec2(lg_mousePos_x, lg_mousePos_y)`
+   - Метод `LiquidGlassEffect.prototype.setUniform(name, values)` переписано на роботу виключно через скалярні виклики `this.set_uniform_value(name, Number(val))`.
+   - Завдяки цьому всі 13 параметрів шейдера (розмір, фрейм, радіус, скруглення, товщина заломлення, IOR, масштаб рефракції, хроматична аберація, спекуляр, тінт, позиція та затухання миші) тепер коректно і безпомилково завантажуються на GPU.
+
+2. Чиста підкладка та усунення плоского CSS-фону та рамок:
+   - У `extensions/desktop-widgets@r3nhick/extension.js` оновлено метод `_styleForWidget`: у скляному режимі (`glassRoot`) реалізовано очищення жорстко закодованих кольорів фону (`background-color`), CSS-рамок (`border`, `border-color`, `border-width`) та тіней (`box-shadow`), що приходили з окремих модулів віджетів (`calendar/widget.js` тощо).
+   - Для контейнера контенту віджета встановлено `background-color: transparent !important; background: transparent !important; border: none !important; border-color: transparent !important; border-width: 0px !important; box-shadow: none !important;`.
+   - Це дозволяє сквіркулу Liquid Glass з фізичним розмиттям шпалер Dual-Kawase, рефракцією краю зі збереженням нормалей та дзеркальним підсвічуванням країв (rim light) повністю замінити плаский сірий фон без будь-яких зайвих контурів чи артефактів.
+
+3. Синхронізація та контроль цілісності системи:
+   - Синхронізовано сирцеві файли в репозиторії `/home/vitaliy/MACTHEMEFILES/extensions/desktop-widgets@r3nhick/` та системному каталозі `~/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick/`.
+   - Оновлено хеш SHA-256 та опис патча для `desktop-widgets@r3nhick` у `config/extensions.lock.json`.
+   - Перевірка `mac-extension-guard verify`: SUCCESS (всі 21/21 розширень валідовано).
+   - Перевірка `mac-audit-sync check`: 100% PASS (всі 5 системних аудит-тестів пройдено).

@@ -13,7 +13,7 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 
-import {LiquidGlass} from './glass.js';
+import {LiquidGlass} from './glass_v3.js';
 import {macColors} from './colors.js';
 import {parseCssColor} from '../utils/ported.js';
 

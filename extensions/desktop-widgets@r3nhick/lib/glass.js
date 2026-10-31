@@ -61,19 +61,36 @@ export function effectFrame(x, y, width, height) {
 // prefixed lg_ to stay clear of Cogl's names, and the texture is passed in
 // as a parameter because only the snippet body can name cogl_sampler0.
 const DECLARATIONS = `
-uniform vec2  lg_size;
+uniform float lg_size_x;
+uniform float lg_size_y;
 uniform float lg_radius;
 uniform float lg_roundness;
 uniform float lg_refractThickness;
 uniform float lg_refractIOR;
 uniform float lg_refractScale;
 uniform float lg_chromaStrength;
-uniform vec4  lg_tint;
-uniform vec4  lg_tintBottom;  // a > 0: vertical gradient from lg_tint to this
-uniform vec2  lg_mousePos;
+uniform float lg_tint_r;
+uniform float lg_tint_g;
+uniform float lg_tint_b;
+uniform float lg_tint_a;
+uniform float lg_tintBottom_r;
+uniform float lg_tintBottom_g;
+uniform float lg_tintBottom_b;
+uniform float lg_tintBottom_a;
+uniform float lg_mousePos_x;
+uniform float lg_mousePos_y;
 uniform float lg_mouseFade;
 uniform float lg_specStrength;
-uniform vec4  lg_frame;  // the actor's rect in the effect texture (effectFrame)
+uniform float lg_frame_x;
+uniform float lg_frame_y;
+uniform float lg_frame_w;
+uniform float lg_frame_h;
+
+#define lg_size vec2(lg_size_x, lg_size_y)
+#define lg_frame vec4(lg_frame_x, lg_frame_y, lg_frame_w, lg_frame_h)
+#define lg_tint vec4(lg_tint_r, lg_tint_g, lg_tint_b, lg_tint_a)
+#define lg_tintBottom vec4(lg_tintBottom_r, lg_tintBottom_g, lg_tintBottom_b, lg_tintBottom_a)
+#define lg_mousePos vec2(lg_mousePos_x, lg_mousePos_y)
 
 // Squircle SDF with analytic outward normal: vec3(d, nx, ny).
 vec3 lg_sdfAndNormal(vec2 p) {
@@ -250,7 +267,7 @@ const USES_SHADER_SNIPPET_API =
     typeof Clutter?.ShaderEffect?.new_with_snippet === 'function';
 
 // Register the effect class only once, store in globalThis to survive reloads
-const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffect';
+const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffect_V3';
 if (!globalThis[EFFECT_CLASS_KEY]) {
     try {
         const LiquidGlassBase = class LiquidGlassEffect extends Clutter.ShaderEffect {
@@ -266,12 +283,40 @@ if (!globalThis[EFFECT_CLASS_KEY]) {
             }
 
             setUniform(name, values) {
-                const count = Array.isArray(values) ? values.length : 1;
-                const arr = Array.isArray(values) ? values : [values];
                 try {
-                    this.set_uniform_float(`lg_${name}`, count, arr);
+                    if (name === 'size') {
+                        const arr = Array.isArray(values) ? values : [values, values];
+                        this.set_uniform_value('lg_size_x', Number(arr[0]) || 0);
+                        this.set_uniform_value('lg_size_y', Number(arr[1]) || 0);
+                    } else if (name === 'frame') {
+                        const arr = Array.isArray(values) ? values : [0, 0, 1, 1];
+                        this.set_uniform_value('lg_frame_x', Number(arr[0]) || 0);
+                        this.set_uniform_value('lg_frame_y', Number(arr[1]) || 0);
+                        this.set_uniform_value('lg_frame_w', Number(arr[2]) || 1);
+                        this.set_uniform_value('lg_frame_h', Number(arr[3]) || 1);
+                    } else if (name === 'tint') {
+                        const arr = Array.isArray(values) ? values : [1, 1, 1, 1];
+                        this.set_uniform_value('lg_tint_r', Number(arr[0]) || 0);
+                        this.set_uniform_value('lg_tint_g', Number(arr[1]) || 0);
+                        this.set_uniform_value('lg_tint_b', Number(arr[2]) || 0);
+                        this.set_uniform_value('lg_tint_a', Number(arr[3]) || 0);
+                    } else if (name === 'tintBottom') {
+                        const arr = Array.isArray(values) ? values : [0, 0, 0, 0];
+                        this.set_uniform_value('lg_tintBottom_r', Number(arr[0]) || 0);
+                        this.set_uniform_value('lg_tintBottom_g', Number(arr[1]) || 0);
+                        this.set_uniform_value('lg_tintBottom_b', Number(arr[2]) || 0);
+                        this.set_uniform_value('lg_tintBottom_a', Number(arr[3]) || 0);
+                    } else if (name === 'mousePos') {
+                        const arr = Array.isArray(values) ? values : [-1, -1];
+                        this.set_uniform_value('lg_mousePos_x', Number.isFinite(Number(arr[0])) ? Number(arr[0]) : -1);
+                        this.set_uniform_value('lg_mousePos_y', Number.isFinite(Number(arr[1])) ? Number(arr[1]) : -1);
+                    } else {
+                        const val = Array.isArray(values) ? values[0] : values;
+                        const num = Number(val);
+                        this.set_uniform_value(`lg_${name}`, Number.isFinite(num) ? num : 0);
+                    }
                 } catch (e) {
-                    console.warn(`[desktop-widgets glass] set_uniform_float failed for lg_${name}:`, e);
+                    console.warn(`[desktop-widgets glass] set_uniform_value failed for lg_${name}:`, e);
                 }
             }
         };
@@ -286,7 +331,7 @@ if (!globalThis[EFFECT_CLASS_KEY]) {
             // Explicit GTypeName: the automatic one is derived from the module
             // path and would collide with other extensions that also ship a
             // lib/glass.js (e.g. liquidglass-widgets).
-            {GTypeName: 'DesktopWidgets_LiquidGlassEffect_Live'},
+            {GTypeName: 'DesktopWidgets_LiquidGlassEffect_LiveV3'},
             LiquidGlassBase
         );
     } catch (e) {
@@ -296,6 +341,11 @@ if (!globalThis[EFFECT_CLASS_KEY]) {
 }
 const LiquidGlassEffect = globalThis[EFFECT_CLASS_KEY];
 
+// Backwards compatibility patch for any existing instances
+if (globalThis['DesktopWidgets_LiquidGlassEffect']?.prototype) {
+    globalThis['DesktopWidgets_LiquidGlassEffect'].prototype.setUniform = LiquidGlassEffect.prototype.setUniform;
+}
+
 export function monitorIndexAt(x, y) {
     const {monitors, primaryIndex} = Main.layoutManager;
     const index = monitors.findIndex(m =>
@@ -304,11 +354,11 @@ export function monitorIndexAt(x, y) {
 }
 
 // Register the LiquidGlass class only once, store in globalThis to survive reloads
-const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV2';
+const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlass_V3';
 if (!globalThis[GLASS_CLASS_KEY]) {
     globalThis[GLASS_CLASS_KEY] = GObject.registerClass(
         // Same as the effect class: collision-proof GType name.
-        {GTypeName: 'DesktopWidgets_LiquidGlassV2'},
+        {GTypeName: 'DesktopWidgets_LiquidGlass_V3'},
         class LiquidGlass extends St.Widget {
             _init() {
                 super._init({clip_to_allocation: true, style: 'background-color: transparent;'});

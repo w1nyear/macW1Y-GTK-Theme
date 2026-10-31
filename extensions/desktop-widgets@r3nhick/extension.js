@@ -47,7 +47,7 @@ import * as FolderWidget from './widgets/folder/widget.js';
 import * as TimerWidget from './widgets/timer/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
 import { assetPath } from './paths.js';
-import { LiquidGlass } from './lib/glass.js';
+import { LiquidGlass } from './lib/glass_v3.js';
 // (The screen-time engine runs inside the screentime widget; extension.js no
 // longer pauses it on fullscreen — fullscreen is real screen time.)
 import { clamp } from './utils.js';
@@ -1370,10 +1370,13 @@ class WidgetController {
       styleStr += ' overflow: hidden;';
       styleStr += ' box-shadow: none;';
     } else if (glassRoot) {
-      // Glass draws its own squircle backdrop behind the widget. Make only the
-      // root actor transparent so the blur/refraction shows; nested elements
-      // still get their regular theme.background fills.
-      styleStr += ' background-color: transparent;';
+      // Glass draws its own squircle backdrop behind the widget. Strip out any
+      // hardcoded background/border from widgetModule.style, so the shader's
+      // physically-modelled refraction and specular rim shine through unimpeded.
+      styleStr = styleStr.replace(/background(-color)?:\s*[^;]+;/g, '');
+      styleStr = styleStr.replace(/border(-color|-width)?:\s*[^;]+;/g, '');
+      styleStr = styleStr.replace(/box-shadow:\s*[^;]+;/g, '');
+      styleStr += ' background-color: transparent !important; background: transparent !important; border: none !important; border-color: transparent !important; border-width: 0px !important; box-shadow: none !important;';
       styleStr += ` border-radius: ${theme.radius}px;`;
     }
 
@@ -1390,16 +1393,16 @@ class WidgetController {
       // For glass, always apply border-radius explicitly so CSS and shader match
       styleStr += ` border-radius: ${theme.radius}px;`;
     }
-    if (theme.borderWidth !== 1) {
+    if (theme.borderWidth !== 1 && !glassRoot) {
       styleStr += ` border-width: ${theme.borderWidth}px;`;
     }
-    if (theme.shadow) {
+    if (theme.shadow && !glassRoot) {
       styleStr += ` box-shadow: ${theme.shadow};`;
     } else if (glassRoot) {
       // Glass carries no shadow: the blur is the whole effect, and a shadow
       // only reads as a halo spilling past the widget's own edges. This also
       // cancels the drop shadow stylesheet.css puts on every widget.
-      styleStr += ' box-shadow: none;';
+      styleStr += ' box-shadow: none !important;';
     }
 
     return styleStr;
