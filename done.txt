@@ -13828,3 +13828,41 @@ macW1Y 0.4 — Кнопки навігації «Назад/Вперед» (1×1
    - Перевірка `mac-audit-sync check`: 100% PASS (всі 5 тестів цілісності).
    - Перевірка `mac-extension-guard verify`: SUCCESS (21/21 розширень заблоковано та валідовано).
 
+--------------------------------------------------------------------------------
+macW1Y 0.4 — Оптимізація компонування Параметрів: розширення груп (+10px), вирівнювання від верху, симетрія заголовків та пілюльне заокруглення попереджень:
+--------------------------------------------------------------------------------
+1. Збільшення ширини (довжини) груп та карток на 10 пікселів:
+   - У таблицях стилів GTK 4 (`config/gtk-4.0/gtk.css`, `gtk-Dark.css`, `macW1Y-Dark/gtk-4.0/`, `~/.config/gtk-4.0/`, `/usr/share/themes/macW1Y-Dark/gtk-4.0/`) та вбудованих стилях `libmac_settings.c`:
+     * Зменшено бічні відступи карток з 20px до 15px (`margin-left: 15px; margin-right: 15px;`) для `list.boxed-list`, `preferencesgroup list`, `preferencespage list:not(.boxed-list)`, окремих кнопок-рядків (`row.button`, `#add_user_button_row`), поля пошуку (`searchbar clamp`, `searchbar entry`) та інфобанерів.
+     * За рахунок симетричного зменшення по 5px зліва та справа горизонтальна корисна ширина всіх карток/груп параметрів зросла рівно на 10 пікселів (+10px), відповідаючи пропорціям на фото 1.
+
+2. Вирівнювання вмісту строго від верху вікна та усунення зайвого верхнього відступу:
+   - Усунено причину вертикального центрування вмісту у коротких панелях («Вигляд», «Дисплеї», «Звук»): у `expand_clamps_recursive` сирців `libmac_settings.c` для всіх `AdwClamp`, `GtkBox` та `AdwPreferencesGroup` примусово встановлено `gtk_widget_set_valign(widget, GTK_ALIGN_START)` та `gtk_widget_set_vexpand(widget, FALSE)`. Контент завжди притиснутий до верхнього краю вікна і не розтягується по висоті.
+   - Ліквідовано надмірні верхні відступи (`padding-top: 36px` та `56px` у `panel-has-switcher`, `margin-top: 24px` у боксі клемпа та `padding-top: 6px` у preferencespage), які залишилися від старих експериментів з плаваючими заголовками і викликали гігантську порожнечу (y=156 на фото 2 замість цільових y=83 на фото 3).
+   - Встановлено компактний верхній відступ (`padding-top: 0px`, `margin-top: 4px` для кореневого бокса і `margin-top: 2px` для першої групи `preferencesgroup:first-child`), завдяки чому блок («Стиль») розташований компактно одразу під заголовком панелі («Вигляд»).
+
+3. Вирівнювання лівих відступів усіх заголовків та міток підрозділів:
+   - Виправлено викривлення на фото 4, де заголовок «Видимі мережі» (`#list_label`, `label.heading`) мав `margin-left: 0` і виступав ліворуч відносно карток Wi-Fi.
+   - Уніфіковано селектори для всіх заголовків секцій (`preferencesgroup > box > box.header`, `preferencesgroup label.title`, `preferencespage label.heading`, `#list_label`, `.mac-panel-section-title`): встановлено точний відступ `margin-left: 15px; margin-right: 15px; padding-left: 0;`, що ідеально вирівнює початкову координату літер заголовків із лівим краєм карток списку.
+   - У `expand_clamps_recursive` додано динамічне налаштування `margin-start: 15px` для віджетів з ідентифікатором `list_label` та класом `heading`.
+
+4. Максимальне пілюльне заокруглення попереджень та кнопок:
+   - Для банерів блокування та попереджень (`AdwBanner`, `CcPermissionInfobar`, `GtkInfoBar`, `banner`, `infobar`) на фото 5 («Деякі з параметрів заблоковано») реалізовано плаваючий пілюльний стиль:
+     * Зовнішній контейнер зроблено прозорим без меж та тіней (`margin: 0; padding: 0; background: transparent;`).
+     * Внутрішньому елементу розкриття (`> revealer > widget`, `> revealer > box`) надано максимальне заокруглення `border-radius: 9999px;`, м'який напівпрозорий фон `rgba(255, 255, 255, 0.09)`, тонку межу `1px solid rgba(255, 255, 255, 0.10)` та бічні відступи `margin: 4px 15px 8px 15px;`.
+     * Кнопкам дій усередині попереджень («Розблокувати...») надано максимальне пілюльне заокруглення `border-radius: 9999px;` із компактною геометрією (`min-height: 24px; padding: 2px 14px;`).
+     * Завдяки перенесенню фону та відступів на внутрішній `widget` нерозкритий банер займає рівно 0 пікселів висоти і не створює порожніх смуг.
+
+5. Збірка, аудит та синхронізація:
+   - Перекомпільовано сирці `libmac_settings.c` та синхронізовано `libmac_settings.so` в усіх 7 системних цільових шляхах:
+     * `control-center/libmac_settings.so`
+     * `gnome-control-center-overlay/libmac_settings.so`
+     * `lib/libmac_settings.so`
+     * `~/.local/lib/libmac_settings.so`
+     * `/usr/lib/x86_64-linux-gnu/libmac_settings.so`
+     * `/usr/local/lib/libmac_settings.so`
+     * `/usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so`
+   - Синхронізовано всі файли тем GTK 4 (`config/gtk-4.0/`, `macW1Y-Dark/gtk-4.0/`, `~/.config/gtk-4.0/`, `/usr/share/themes/macW1Y-Dark/gtk-4.0/`).
+   - Перевірка `mac-audit-sync check`: 100% PASS (всі 5 системних перевірок пройдено успішно).
+   - Перевірка `mac-extension-guard verify`: SUCCESS (21/21 розширень заблоковано та перевірено).
+

@@ -4124,15 +4124,66 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window preferencespage, "
         "window.mac-settings-window .content-pane preferencespage { "
-        "  padding-top: 6px; "
+        "  padding-top: 0px; "
+        "} "
+        "window.mac-settings-window preferencespage > scrolledwindow > viewport, "
+        "window.mac-settings-window preferencespage > scrolledwindow > viewport > clamp { "
+        "  padding-top: 0px; "
+        "  padding-bottom: 24px; "
+        "} "
+        "window.mac-settings-window preferencespage > scrolledwindow > viewport > clamp > box, "
+        "window.mac-settings-window preferencespage clamp > box { "
+        "  margin-top: 4px; "
+        "  margin-bottom: 24px; "
+        "} "
+        "window.mac-settings-window preferencesgroup:first-child, "
+        "window.mac-settings-window preferencespage preferencesgroup:first-child { "
+        "  margin-top: 2px; "
         "} "
         "window.mac-settings-window infobar, "
         "window.mac-settings-window .permission-infobar, "
-        "window.mac-settings-window banner { "
-        "  margin-top: 6px; "
-        "  margin-bottom: 8px; "
-        "  margin-left: 20px; "
-        "  margin-right: 20px; "
+        "window.mac-settings-window banner, "
+        "window.mac-settings-window adwbanner, "
+        "window.mac-settings-window infobar > revealer, "
+        "window.mac-settings-window .permission-infobar > revealer, "
+        "window.mac-settings-window banner > revealer, "
+        "window.mac-settings-window adwbanner > revealer { "
+        "  background: transparent; "
+        "  background-color: transparent; "
+        "  border: none; "
+        "  box-shadow: none; "
+        "  margin: 0px; "
+        "  padding: 0px; "
+        "} "
+        "window.mac-settings-window banner > revealer > widget, "
+        "window.mac-settings-window banner > revealer > box, "
+        "window.mac-settings-window adwbanner > revealer > widget, "
+        "window.mac-settings-window adwbanner > revealer > box, "
+        "window.mac-settings-window infobar > revealer > widget, "
+        "window.mac-settings-window infobar > revealer > box, "
+        "window.mac-settings-window .permission-infobar > revealer > widget, "
+        "window.mac-settings-window .permission-infobar banner > revealer > widget { "
+        "  border-radius: 9999px; "
+        "  background-color: rgba(255, 255, 255, 0.09); "
+        "  border: 1px solid rgba(255, 255, 255, 0.10); "
+        "  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); "
+        "  padding: 4px 16px; "
+        "  margin: 4px 15px 8px 15px; "
+        "} "
+        "window.mac-settings-window banner button, "
+        "window.mac-settings-window adwbanner button, "
+        "window.mac-settings-window infobar button, "
+        "window.mac-settings-window .permission-infobar button, "
+        "window.mac-settings-window .mac-pill-btn { "
+        "  border-radius: 9999px; "
+        "  min-height: 24px; "
+        "  padding: 2px 14px; "
+        "} "
+        "window.mac-settings-window banner button label, "
+        "window.mac-settings-window adwbanner button label, "
+        "window.mac-settings-window infobar button label, "
+        "window.mac-settings-window .permission-infobar button label { "
+        "  border-radius: 9999px; "
         "} "
         "window.mac-settings-window list.boxed-list, "
         "window.mac-settings-window preferencesgroup list, "
@@ -4143,8 +4194,8 @@ static void init_mac_settings_css(void) {
         "  border: 1px solid rgba(255, 255, 255, 0.07); "
         "  border-radius: 14px; "
         "  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20); "
-        "  margin-left: 20px; "
-        "  margin-right: 20px; "
+        "  margin-left: 15px; "
+        "  margin-right: 15px; "
         "  margin-bottom: 12px; "
         "} "
         "window.mac-settings-window preferencespage list:not(.boxed-list), "
@@ -4152,18 +4203,26 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window #add_user_button_row, "
         "window.mac-settings-window #add_enterprise_user_button_row, "
         "window.mac-settings-window preferencesgroup.separate-rows list { "
-        "  margin-left: 20px; "
-        "  margin-right: 20px; "
+        "  margin-left: 15px; "
+        "  margin-right: 15px; "
         "} "
         "window.mac-settings-window preferencespage preferencesgroup > box > box.header, "
         "window.mac-settings-window .content-pane preferencesgroup > box > box.header, "
         "window.mac-settings-window .mac-settings-content preferencesgroup > box > box.header, "
         "window.mac-settings-window preferencesgroup > box > box.header, "
         "window.mac-settings-window preferencesgroup box.header, "
-        "window.mac-settings-window preferencespage .boxed-list-title { "
-        "  margin-left: 24px; "
-        "  margin-right: 24px; "
+        "window.mac-settings-window preferencesgroup > box > label.title, "
+        "window.mac-settings-window preferencesgroup > label.title, "
+        "window.mac-settings-window preferencespage .boxed-list-title, "
+        "window.mac-settings-window preferencespage label.heading, "
+        "window.mac-settings-window .mac-settings-content label.heading, "
+        "window.mac-settings-window label.heading, "
+        "window.mac-settings-window #list_label, "
+        "window.mac-settings-window .mac-panel-section-title { "
+        "  margin-left: 15px; "
+        "  margin-right: 15px; "
         "  margin-bottom: 4px; "
+        "  padding-left: 0px; "
         "} "
         "window.mac-settings-window preferencespage list.boxed-list row.expander, "
         "window.mac-settings-window .content-pane list.boxed-list row.expander, "
@@ -4375,14 +4434,14 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-content searchbar clamp { "
         "  padding-left: 0px; "
         "  padding-right: 0px; "
-        "  margin-left: 20px; "
-        "  margin-right: 20px; "
+        "  margin-left: 15px; "
+        "  margin-right: 15px; "
         "} "
         "window.mac-settings-window .content-pane searchbar entry, "
         "window.mac-settings-window .mac-settings-content searchbar entry, "
         "window.mac-settings-window #app_search_entry { "
-        "  margin-left: 20px; "
-        "  margin-right: 20px; "
+        "  margin-left: 15px; "
+        "  margin-right: 15px; "
         "  min-height: 32px; "
         "  border-radius: 8px; "
         "  background-color: rgba(255, 255, 255, 0.08); "
@@ -4445,7 +4504,7 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > viewport, "
         "window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > viewport > clamp { "
-        "  padding-top: 56px; "
+        "  padding-top: 0px; "
         "  padding-bottom: 24px; "
         "} "
         "window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > undershoot.top, "
@@ -4936,6 +4995,30 @@ static void expand_clamps_recursive(GtkWidget *widget) {
     if (g_strcmp0(G_OBJECT_TYPE_NAME(widget), "AdwClamp") == 0) {
         adw_clamp_set_maximum_size(ADW_CLAMP(widget), 1800);
         adw_clamp_set_tightening_threshold(ADW_CLAMP(widget), 1600);
+        gtk_widget_set_valign(widget, GTK_ALIGN_START);
+        gtk_widget_set_vexpand(widget, FALSE);
+        GtkWidget *child = gtk_widget_get_first_child(widget);
+        if (child && GTK_IS_BOX(child)) {
+            gtk_widget_set_valign(child, GTK_ALIGN_START);
+            gtk_widget_set_vexpand(child, FALSE);
+        }
+    }
+    if (ADW_IS_PREFERENCES_GROUP(widget)) {
+        gtk_widget_set_valign(widget, GTK_ALIGN_START);
+        gtk_widget_set_vexpand(widget, FALSE);
+    }
+    if (GTK_IS_LABEL(widget)) {
+        const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
+        if (g_strcmp0(bid, "list_label") == 0 || gtk_widget_has_css_class(widget, "heading")) {
+            GtkWidget *parent = gtk_widget_get_parent(widget);
+            if (parent && GTK_IS_BOX(parent)) {
+                gtk_widget_set_margin_start(parent, 15);
+                gtk_widget_set_margin_end(parent, 15);
+            } else {
+                gtk_widget_set_margin_start(widget, 15);
+                gtk_widget_set_margin_end(widget, 15);
+            }
+        }
     }
     for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
         expand_clamps_recursive(child);
@@ -5319,6 +5402,10 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             activate_system_row_by_id(GTK_WIDGET(content_page), "mac_styling_row");
         }
         const char *target_row = g_object_get_data(G_OBJECT(split_view), "mac_target_subpage_row");
+        if (!target_row && g_getenv("MAC_SETTINGS_TARGET_ROW") && !g_object_get_data(G_OBJECT(nv), "mac_env_target_row_done")) {
+            target_row = g_getenv("MAC_SETTINGS_TARGET_ROW");
+            g_object_set_data(G_OBJECT(nv), "mac_env_target_row_done", GINT_TO_POINTER(1));
+        }
         if (target_row) {
             g_object_set_data(G_OBJECT(split_view), "mac_target_subpage_row", NULL);
             activate_system_row_by_id(GTK_WIDGET(content_page), target_row);

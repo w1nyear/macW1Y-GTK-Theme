@@ -9991,8 +9991,17 @@ window.nautilus-window .sidebar-pane toolbarview > .top-bar {
 /* Content padding so content begins below floating headerbar when scroll = 0 */
 window.mac-settings-window preferencespage > scrolledwindow > viewport,
 window.mac-settings-window preferencespage > scrolledwindow > viewport > clamp {
-    padding-top: 36px;
+    padding-top: 0px;
     padding-bottom: 24px;
+}
+window.mac-settings-window preferencespage > scrolledwindow > viewport > clamp > box,
+window.mac-settings-window preferencespage clamp > box {
+    margin-top: 4px;
+    margin-bottom: 24px;
+}
+window.mac-settings-window preferencesgroup:first-child,
+window.mac-settings-window preferencespage preferencesgroup:first-child {
+    margin-top: 2px;
 }
 
 window.mac-settings-window headerbar > windowhandle > box,
@@ -10814,16 +10823,56 @@ window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within {
 
 window.mac-settings-window preferencespage,
 window.mac-settings-window .content-pane preferencespage {
-    padding-top: 6px;
+    padding-top: 0px;
 }
 
 window.mac-settings-window infobar,
 window.mac-settings-window .permission-infobar,
-window.mac-settings-window banner {
-    margin-top: 6px;
-    margin-bottom: 8px;
-    margin-left: 20px;
-    margin-right: 20px;
+window.mac-settings-window banner,
+window.mac-settings-window adwbanner,
+window.mac-settings-window infobar > revealer,
+window.mac-settings-window .permission-infobar > revealer,
+window.mac-settings-window banner > revealer,
+window.mac-settings-window adwbanner > revealer {
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    margin: 0px;
+    padding: 0px;
+}
+
+window.mac-settings-window banner > revealer > widget,
+window.mac-settings-window banner > revealer > box,
+window.mac-settings-window adwbanner > revealer > widget,
+window.mac-settings-window adwbanner > revealer > box,
+window.mac-settings-window infobar > revealer > widget,
+window.mac-settings-window infobar > revealer > box,
+window.mac-settings-window .permission-infobar > revealer > widget,
+window.mac-settings-window .permission-infobar banner > revealer > widget {
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    padding: 4px 16px;
+    margin: 4px 15px 8px 15px;
+}
+
+window.mac-settings-window banner button,
+window.mac-settings-window adwbanner button,
+window.mac-settings-window infobar button,
+window.mac-settings-window .permission-infobar button,
+window.mac-settings-window .mac-pill-btn {
+    border-radius: 9999px;
+    min-height: 24px;
+    padding: 2px 14px;
+}
+
+window.mac-settings-window banner button label,
+window.mac-settings-window adwbanner button label,
+window.mac-settings-window infobar button label,
+window.mac-settings-window .permission-infobar button label {
+    border-radius: 9999px;
 }
 
 window.mac-settings-window list.boxed-list,
@@ -10835,8 +10884,8 @@ window.mac-settings-window .mac-settings-content list.boxed-list {
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 14px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
-    margin-left: 20px;
-    margin-right: 20px;
+    margin-left: 15px;
+    margin-right: 15px;
     margin-bottom: 12px;
 }
 
@@ -10845,8 +10894,8 @@ window.mac-settings-window preferencespage row.button,
 window.mac-settings-window #add_user_button_row,
 window.mac-settings-window #add_enterprise_user_button_row,
 window.mac-settings-window preferencesgroup.separate-rows list {
-    margin-left: 20px;
-    margin-right: 20px;
+    margin-left: 15px;
+    margin-right: 15px;
 }
 
 window.mac-settings-window preferencespage preferencesgroup > box > box.header,
@@ -10854,10 +10903,18 @@ window.mac-settings-window .content-pane preferencesgroup > box > box.header,
 window.mac-settings-window .mac-settings-content preferencesgroup > box > box.header,
 window.mac-settings-window preferencesgroup > box > box.header,
 window.mac-settings-window preferencesgroup box.header,
-window.mac-settings-window preferencespage .boxed-list-title {
-    margin-left: 24px;
-    margin-right: 24px;
+window.mac-settings-window preferencesgroup > box > label.title,
+window.mac-settings-window preferencesgroup > label.title,
+window.mac-settings-window preferencespage .boxed-list-title,
+window.mac-settings-window preferencespage label.heading,
+window.mac-settings-window .mac-settings-content label.heading,
+window.mac-settings-window label.heading,
+window.mac-settings-window #list_label,
+window.mac-settings-window .mac-panel-section-title {
+    margin-left: 15px;
+    margin-right: 15px;
     margin-bottom: 4px;
+    padding-left: 0px;
 }
 
 window.mac-settings-window preferencespage list.boxed-list row.expander,
@@ -11060,15 +11117,15 @@ window.mac-settings-window .mac-settings-content searchbar > revealer > box,
 window.mac-settings-window .mac-settings-content searchbar clamp {
     padding-left: 0px;
     padding-right: 0px;
-    margin-left: 20px;
-    margin-right: 20px;
+    margin-left: 15px;
+    margin-right: 15px;
 }
 
 window.mac-settings-window .content-pane searchbar entry,
 window.mac-settings-window .mac-settings-content searchbar entry,
 window.mac-settings-window #app_search_entry {
-    margin-left: 20px;
-    margin-right: 20px;
+    margin-left: 15px;
+    margin-right: 15px;
     min-height: 32px;
     border-radius: 8px;
     background-color: rgba(255, 255, 255, 0.08);
@@ -11137,7 +11194,7 @@ window.mac-settings-window headerbar viewswitcher button.toggle:checked {
 
 window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > viewport,
 window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > viewport > clamp {
-    padding-top: 56px;
+    padding-top: 0px;
     padding-bottom: 24px;
 }
 
@@ -11442,8 +11499,8 @@ window.mac-settings-window .mac-settings-content list.boxed-list {
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
-  margin-left: 20px;
-  margin-right: 20px;
+  margin-left: 15px;
+  margin-right: 15px;
   margin-bottom: 12px;
 }
 
@@ -11452,8 +11509,8 @@ window.mac-settings-window preferencespage row.button,
 window.mac-settings-window #add_user_button_row,
 window.mac-settings-window #add_enterprise_user_button_row,
 window.mac-settings-window preferencesgroup.separate-rows list {
-  margin-left: 20px;
-  margin-right: 20px;
+  margin-left: 15px;
+  margin-right: 15px;
 }
 
 window.mac-settings-window list.boxed-list row,
