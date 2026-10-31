@@ -221,12 +221,51 @@
 
                 <!-- 2. Liquid Glass -->
                 <child>
-                  <object class="AdwPreferencesGroup">
+                  <object class="AdwPreferencesGroup" id="liquid_glass_group">
                     <property name="title">Liquid Glass</property>
-                    <property name="description">Параметри шейдера Liquid Glass для всіх елементів</property>
+                    <property name="description">Параметри шейдера Liquid Glass для всіх елементів системи</property>
+                    <child>
+                      <object class="GtkBox" id="liquid_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">10</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="liquid_glass_preview_area">
+                            <property name="height-request">210</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_liquid_preview"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_refraction_row">
+                        <property name="title">Рефракція (заломлення)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_refraction_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">60</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_refraction"/>
+                            <signal name="value-changed" handler="on_liquid_refraction_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                     <child>
                       <object class="AdwActionRow" id="liquid_blur_row">
-                        <property name="title">Розмиття</property>
+                        <property name="title">Розмиття скла</property>
                         <child type="suffix">
                           <object class="GtkScale" id="liquid_blur_scale">
                             <property name="orientation">0</property>
@@ -237,7 +276,7 @@
                             <property name="adjustment">
                               <object class="GtkAdjustment">
                                 <property name="lower">0</property>
-                                <property name="upper">100</property>
+                                <property name="upper">50</property>
                                 <property name="step-increment">1</property>
                                 <property name="page-increment">5</property>
                                 <property name="value">20</property>
@@ -251,7 +290,7 @@
                     </child>
                     <child>
                       <object class="AdwActionRow" id="liquid_tint_row">
-                        <property name="title">Затемнення</property>
+                        <property name="title">Затемнення (тінт)</property>
                         <child type="suffix">
                           <object class="GtkScale" id="liquid_tint_scale">
                             <property name="orientation">0</property>
@@ -270,6 +309,189 @@
                             </property>
                             <signal name="realize" handler="init_liquid_tint"/>
                             <signal name="value-changed" handler="on_liquid_tint_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_chroma_row">
+                        <property name="title">Хроматична аберація</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_chroma_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">20</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_chroma"/>
+                            <signal name="value-changed" handler="on_liquid_chroma_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_rim_row">
+                        <property name="title">Крайове світло (Rim light)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_rim_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">45</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_rim"/>
+                            <signal name="value-changed" handler="on_liquid_rim_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_specular_row">
+                        <property name="title">Відблиск (Specular)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_specular_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">25</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_specular"/>
+                            <signal name="value-changed" handler="on_liquid_specular_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_shadow_row">
+                        <property name="title">Тінь скла</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_shadow"/>
+                            <signal name="value-changed" handler="on_liquid_shadow_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- 3. Spotlight -->
+                <child>
+                  <object class="AdwPreferencesGroup" id="spotlight_group">
+                    <property name="title">Spotlight</property>
+                    <property name="description">Параметри розмиття, затемнення та тіні Spotlight і Spotlight меню</property>
+                    <child>
+                      <object class="AdwActionRow" id="spotlight_blur_row">
+                        <property name="title">Розмиття</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="spotlight_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">18</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_spotlight_blur"/>
+                            <signal name="value-changed" handler="on_spotlight_blur_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="spotlight_tint_row">
+                        <property name="title">Затемнення</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="spotlight_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">15</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_spotlight_tint"/>
+                            <signal name="value-changed" handler="on_spotlight_tint_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="spotlight_shadow_row">
+                        <property name="title">Тінь</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="spotlight_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_spotlight_shadow"/>
+                            <signal name="value-changed" handler="on_spotlight_shadow_changed"/>
                           </object>
                         </child>
                       </object>

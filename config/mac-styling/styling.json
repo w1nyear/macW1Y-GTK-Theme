@@ -1,12 +1,12 @@
 {
   "menubar_tint": 30,
   "menubar_blur": 25,
-  "liquid_blur": 15,
+  "liquid_blur": 10,
   "liquid_tint": 10,
   "blur_sigma": 30,
   "blur_tint": 29,
   "menu_tint": 15,
-  "menu_blur": 20,
+  "menu_blur": 10,
   "menu_shadow_blur": 51,
   "menu_shadow_strength": 25,
   "dock_blur": true,
@@ -20,5 +20,13 @@
   "notif_blur": true,
   "notif_sigma": 30,
   "notif_tint": 0.29,
-  "notif_radius": 18
+  "notif_radius": 18,
+  "liquid_refraction": 60,
+  "liquid_chroma": 20,
+  "liquid_rim": 45,
+  "liquid_specular": 25,
+  "liquid_shadow": 35,
+  "spotlight_blur": 18,
+  "spotlight_tint": 15,
+  "spotlight_shadow": 35
 }

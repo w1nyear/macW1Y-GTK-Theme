@@ -214,6 +214,25 @@ class MacStylingWindow(Adw.ApplicationWindow):
             qs_group, t("control_center_tint", "Тінт перемикачів"), self.qs_tint_mode, int(self.qs_tint_strength * 100)
         )
 
+        # 6.5. Spotlight Group
+        spot_group = Adw.PreferencesGroup()
+        spot_group.set_title(t("spotlight_title", "Spotlight"))
+        spot_group.set_description(t("spotlight_desc", "Параметри розмиття, затемнення та тіні Spotlight і Spotlight меню"))
+        pref_page.add(spot_group)
+
+        self.spot_blur_scale = self._create_slider_row(
+            spot_group, t("spot_blur", "Розмиття"), t("spot_blur_desc", "Розмиття фонового скла"),
+            0, 50, int(self.spotlight_blur)
+        )
+        self.spot_tint_scale = self._create_slider_row(
+            spot_group, t("spot_tint", "Затемнення"), t("spot_tint_desc", "Затемнення фону та панелі"),
+            0, 100, int(self.spotlight_tint)
+        )
+        self.spot_shadow_scale = self._create_slider_row(
+            spot_group, t("spot_shadow", "Тінь"), t("spot_shadow_desc", "Інтенсивність та радіус тіні вікна"),
+            0, 100, int(self.spotlight_shadow)
+        )
+
         # 7. Boot Group (Завантажувач)
         boot_group = Adw.PreferencesGroup()
         boot_group.set_title(t("bootloader_title", "Завантажувач (Bootloader)"))
@@ -423,6 +442,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.qs_tint_mode = "disabled" if self.qs_tint_strength <= 0.01 else ("light" if q_tint_col == "#ffffff" else "dark")
 
         # Read JSON state override if present
+        self.spotlight_blur = 18
+        self.spotlight_tint = 15
+        self.spotlight_shadow = 35
+
         styling_conf = os.path.expanduser("~/.config/mac-styling/styling.json")
         if os.path.exists(styling_conf):
             try:
@@ -451,6 +474,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 self.qs_glass_strength = sdata.get("qs_glass_strength", self.qs_glass_strength)
                 self.qs_tint_strength = sdata.get("qs_tint_strength", self.qs_tint_strength)
                 self.qs_tint_mode = sdata.get("qs_tint_mode", self.qs_tint_mode)
+
+                self.spotlight_blur = sdata.get("spotlight_blur", self.spotlight_blur)
+                self.spotlight_tint = sdata.get("spotlight_tint", self.spotlight_tint)
+                self.spotlight_shadow = sdata.get("spotlight_shadow", self.spotlight_shadow)
             except Exception as e:
                 print("Error reading styling.json:", e)
 
@@ -602,27 +629,39 @@ class MacStylingWindow(Adw.ApplicationWindow):
         try:
             conf_dir = os.path.expanduser("~/.config/mac-styling")
             os.makedirs(conf_dir, exist_ok=True)
-            with open(os.path.join(conf_dir, "styling.json"), "w") as f:
-                json.dump({
-                    "dock_glass_strength": d_glass,
-                    "dock_tint_strength": d_tint,
-                    "dock_tint_mode": d_mode,
-                    "menubar_glass_strength": p_glass,
-                    "menubar_tint_strength": p_tint,
-                    "menubar_tint_mode": p_mode,
-                    "menu_glass_strength": m_glass,
-                    "menu_tint_strength": m_tint,
-                    "menu_tint_mode": m_mode,
-                    "osd_glass_strength": o_glass,
-                    "osd_tint_strength": o_tint,
-                    "osd_tint_mode": o_mode,
-                    "notif_glass_strength": n_glass,
-                    "notif_tint_strength": n_tint,
-                    "notif_tint_mode": n_mode,
-                    "qs_glass_strength": q_glass,
-                    "qs_tint_strength": q_tint,
-                    "qs_tint_mode": q_mode
-                }, f, indent=2)
+            existing_data = {}
+            json_file = os.path.join(conf_dir, "styling.json")
+            if os.path.exists(json_file):
+                try:
+                    with open(json_file, "r") as jf:
+                        existing_data = json.load(jf)
+                except Exception:
+                    pass
+            existing_data.update({
+                "dock_glass_strength": d_glass,
+                "dock_tint_strength": d_tint,
+                "dock_tint_mode": d_mode,
+                "menubar_glass_strength": p_glass,
+                "menubar_tint_strength": p_tint,
+                "menubar_tint_mode": p_mode,
+                "menu_glass_strength": m_glass,
+                "menu_tint_strength": m_tint,
+                "menu_tint_mode": m_mode,
+                "osd_glass_strength": o_glass,
+                "osd_tint_strength": o_tint,
+                "osd_tint_mode": o_mode,
+                "notif_glass_strength": n_glass,
+                "notif_tint_strength": n_tint,
+                "notif_tint_mode": n_mode,
+                "qs_glass_strength": q_glass,
+                "qs_tint_strength": q_tint,
+                "qs_tint_mode": q_mode,
+                "spotlight_blur": int(self.spot_blur_scale.get_value()),
+                "spotlight_tint": int(self.spot_tint_scale.get_value()),
+                "spotlight_shadow": int(self.spot_shadow_scale.get_value())
+            })
+            with open(json_file, "w") as f:
+                json.dump(existing_data, f, indent=2)
         except Exception as e:
             print("Error writing styling.json:", e)
 

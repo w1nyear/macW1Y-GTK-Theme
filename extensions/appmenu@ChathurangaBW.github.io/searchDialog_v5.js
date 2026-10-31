@@ -434,6 +434,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._onDestroy();
         });
 
+        this._setupStylingMonitor();
+
         this._glass = null;
         this._initializingGlass = false;
         this._stageSignalId = 0;
@@ -1236,43 +1238,92 @@ export const MacSpotlightDialog = GObject.registerClass({
         return { isDark, tintR, tintG, tintB, tintVal, tintStrength };
     }
 
+    _readStyling() {
+        try {
+            const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+            const confFile = Gio.File.new_for_path(confPath);
+            if (!confFile.query_exists(null)) return null;
+            const [ok, bytes] = confFile.load_contents(null);
+            if (!ok) return null;
+            let text = new TextDecoder('utf-8').decode(bytes);
+            return JSON.parse(text);
+        } catch (_) {
+            return null;
+        }
+    }
+
+    _setupStylingMonitor() {
+        try {
+            const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+            const confFile = Gio.File.new_for_path(confPath);
+            this._stylingMonitor = confFile.monitor_file(Gio.FileMonitorFlags.NONE, null);
+            this._stylingMonitor.connect('changed', (_m, _f, _of, eventType) => {
+                if (eventType === Gio.FileMonitorEvent.CHANGES_DONE_HINT ||
+                    eventType === Gio.FileMonitorEvent.CHANGED ||
+                    eventType === Gio.FileMonitorEvent.CREATED) {
+                    if (this._glass) this._applyGlassUniforms();
+                }
+            });
+        } catch (e) {
+            console.error('[Spotlight] Error setting up styling monitor:', e);
+        }
+    }
+
     _applyGlassUniforms() {
         if (!_isGlassAlive(this._glass)) return;
         const effect = this._glass._effect;
         if (!effect) return;
 
         const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
+        const styling = this._readStyling() || {};
+
+        const spotBlur = (typeof styling.spotlight_blur === 'number') ? styling.spotlight_blur : 18.0;
+        const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
+        const spotShadow = (typeof styling.spotlight_shadow === 'number') ? (styling.spotlight_shadow / 100.0) : (isDark ? 0.35 : 0.22);
+        const spotShadowRadius = Math.max(10.0, spotShadow * 50.0);
+
+        // Global Liquid Glass parameters
+        const refraction = (typeof styling.liquid_refraction === 'number') ? (styling.liquid_refraction / 100.0) : 0.60;
+        const chroma = (typeof styling.liquid_chroma === 'number') ? (styling.liquid_chroma / 100.0 * 0.04) : 0.008;
+        const rim = (typeof styling.liquid_rim === 'number') ? (styling.liquid_rim / 100.0 * 0.40) : 0.18;
+        const specular = (typeof styling.liquid_specular === 'number') ? (styling.liquid_specular / 100.0 * 0.40) : 0.15;
+
         this._glass.setIsDock(false);
         this._glass.setCornerSmoothingEnabled(0.0);
         this._glass.setCornerRadius(CORNER_RADIUS);
         this._glass.setTintColor(tintR, tintG, tintB);
-        this._glass.setTintStrength(tintStrength);
+        this._glass.setTintStrength(spotTint);
         this._glass.setBrightness(1.0);
         this._glass.setContrast(1.0);
         this._glass.setSaturation(1.0);
-        this._glass.setBlurRadius(8.0);
+        this._glass.setBlurRadius(spotBlur);
         this._glass.setPadding(0);
+
+        if (this._backdrop) {
+            const dimAlpha = Math.min(0.5, spotTint * 0.5);
+            this._backdrop.style = `background-color: rgba(0, 0, 0, ${dimAlpha.toFixed(2)}) !important;`;
+        }
 
         try {
             effect.setSurfaceLightEnabled(true);
-            effect._setFloat('displacement_scale', 85.0);
-            effect._setFloat('ior', 1.50);
+            effect._setFloat('displacement_scale', refraction * 140.0);
+            effect._setFloat('ior', 1.0 + refraction * 0.85);
             effect._setFloat('max_z', 14.0);
             effect._setFloat('edge_smoothing', 1.33);
             effect._setFloat('profile_shape_n', 5.40);
 
-            effect._setFloat('rim_intensity', 0.18);
+            effect._setFloat('rim_intensity', rim);
             effect._setFloat('rim_width', 4.5);
             effect._setFloat('rim_power', 5.0);
             effect._setFloat('rim_directional_power', 2.7);
             effect._setFloat('rim_light_color_intensity', 1.6);
 
-            effect._setFloat('specular_intensity', 0.15);
+            effect._setFloat('specular_intensity', specular);
             effect._setFloat('sheen_intensity', 0.10);
-            effect._setFloat('chroma_strength', 0.008);
+            effect._setFloat('chroma_strength', chroma);
 
-            effect._setFloat('shadow_intensity', isDark ? 0.35 : 0.22);
-            effect._setFloat('shadow_radius', 18.0);
+            effect._setFloat('shadow_intensity', spotShadow);
+            effect._setFloat('shadow_radius', spotShadowRadius);
             effect._setFloat('shadow_max_radius', 60.0);
             effect._setFloat('ao_intensity', 0.08);
             effect._setFloat('ao_radius', 2.5);
@@ -3146,6 +3197,10 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (this._screenshotSignalId && Main.screenshotUI) {
             try { Main.screenshotUI.disconnect(this._screenshotSignalId); } catch (_) {}
             this._screenshotSignalId = 0;
+        }
+        if (this._stylingMonitor) {
+            try { this._stylingMonitor.cancel(); } catch (_) {}
+            this._stylingMonitor = null;
         }
         if (this._glass) {
             try { this._glass.destroy(); } catch (_) {}

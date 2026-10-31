@@ -18,8 +18,17 @@ typedef struct {
     int menubar_tint;   /* 0 - 100 */
     int menubar_blur;   /* 0 - 100 */
 
-    int liquid_blur;    /* 0 - 100 */
-    int liquid_tint;    /* 0 - 100 */
+    int liquid_refraction; /* 0 - 100 */
+    int liquid_blur;       /* 0 - 50 */
+    int liquid_tint;       /* 0 - 100 */
+    int liquid_chroma;     /* 0 - 100 */
+    int liquid_rim;        /* 0 - 100 */
+    int liquid_specular;   /* 0 - 100 */
+    int liquid_shadow;     /* 0 - 100 */
+
+    int spotlight_blur;    /* 0 - 50 */
+    int spotlight_tint;    /* 0 - 100 */
+    int spotlight_shadow;  /* 0 - 100 */
 
     int blur_sigma;     /* 0 - 100 */
     int blur_tint;      /* 0 - 100 */
@@ -49,8 +58,17 @@ static MacStylingData state = {
     .menubar_tint = 35,
     .menubar_blur = 10,
 
+    .liquid_refraction = 60,
     .liquid_blur = 20,
     .liquid_tint = 12,
+    .liquid_chroma = 20,
+    .liquid_rim = 45,
+    .liquid_specular = 25,
+    .liquid_shadow = 35,
+
+    .spotlight_blur = 18,
+    .spotlight_tint = 15,
+    .spotlight_shadow = 35,
 
     .blur_sigma = 30,
     .blur_tint = 36,
@@ -82,8 +100,8 @@ static int in_init = 0;
 static guint json_timer_id = 0;
 static guint css_timer_id = 0;
 static guint menubar_blur_timer_id = 0;
-static guint liquid_blur_timer_id = 0;
-static guint liquid_tint_timer_id = 0;
+static guint liquid_glass_timer_id = 0;
+static guint spotlight_timer_id = 0;
 static guint blur_sigma_timer_id = 0;
 static guint blur_tint_timer_id = 0;
 static guint menu_blur_timer_id = 0;
@@ -117,10 +135,15 @@ static void load_config(void) {
                 state.menubar_blur = (int)json_object_get_int_member(obj, "panel_sigma");
 
             /* Group 2: Liquid Glass */
+            if (json_object_has_member(obj, "liquid_refraction"))
+                state.liquid_refraction = (int)json_object_get_int_member(obj, "liquid_refraction");
+            else
+                state.liquid_refraction = 60;
+
             if (json_object_has_member(obj, "liquid_blur"))
                 state.liquid_blur = (int)json_object_get_int_member(obj, "liquid_blur");
             else if (json_object_has_member(obj, "dock_glass_strength"))
-                state.liquid_blur = (int)round(json_object_get_double_member(obj, "dock_glass_strength") * 100.0);
+                state.liquid_blur = (int)round(json_object_get_double_member(obj, "dock_glass_strength") * 50.0);
             else
                 state.liquid_blur = 20;
 
@@ -130,6 +153,42 @@ static void load_config(void) {
                 state.liquid_tint = (int)round(json_object_get_double_member(obj, "dock_tint_strength") * 100.0);
             else
                 state.liquid_tint = 12;
+
+            if (json_object_has_member(obj, "liquid_chroma"))
+                state.liquid_chroma = (int)json_object_get_int_member(obj, "liquid_chroma");
+            else
+                state.liquid_chroma = 20;
+
+            if (json_object_has_member(obj, "liquid_rim"))
+                state.liquid_rim = (int)json_object_get_int_member(obj, "liquid_rim");
+            else
+                state.liquid_rim = 45;
+
+            if (json_object_has_member(obj, "liquid_specular"))
+                state.liquid_specular = (int)json_object_get_int_member(obj, "liquid_specular");
+            else
+                state.liquid_specular = 25;
+
+            if (json_object_has_member(obj, "liquid_shadow"))
+                state.liquid_shadow = (int)json_object_get_int_member(obj, "liquid_shadow");
+            else
+                state.liquid_shadow = 35;
+
+            /* Group 3: Spotlight */
+            if (json_object_has_member(obj, "spotlight_blur"))
+                state.spotlight_blur = (int)json_object_get_int_member(obj, "spotlight_blur");
+            else
+                state.spotlight_blur = 18;
+
+            if (json_object_has_member(obj, "spotlight_tint"))
+                state.spotlight_tint = (int)json_object_get_int_member(obj, "spotlight_tint");
+            else
+                state.spotlight_tint = 15;
+
+            if (json_object_has_member(obj, "spotlight_shadow"))
+                state.spotlight_shadow = (int)json_object_get_int_member(obj, "spotlight_shadow");
+            else
+                state.spotlight_shadow = 35;
 
             /* Group 3: Blur */
             if (json_object_has_member(obj, "blur_sigma"))
@@ -219,8 +278,16 @@ static void save_styling_json(void) {
         "{\n"
         "  \"menubar_tint\": %d,\n"
         "  \"menubar_blur\": %d,\n"
+        "  \"liquid_refraction\": %d,\n"
         "  \"liquid_blur\": %d,\n"
         "  \"liquid_tint\": %d,\n"
+        "  \"liquid_chroma\": %d,\n"
+        "  \"liquid_rim\": %d,\n"
+        "  \"liquid_specular\": %d,\n"
+        "  \"liquid_shadow\": %d,\n"
+        "  \"spotlight_blur\": %d,\n"
+        "  \"spotlight_tint\": %d,\n"
+        "  \"spotlight_shadow\": %d,\n"
         "  \"blur_sigma\": %d,\n"
         "  \"blur_tint\": %d,\n"
         "  \"menu_tint\": %d,\n"
@@ -242,8 +309,16 @@ static void save_styling_json(void) {
         "}\n",
         state.menubar_tint,
         state.menubar_blur,
+        state.liquid_refraction,
         state.liquid_blur,
         state.liquid_tint,
+        state.liquid_chroma,
+        state.liquid_rim,
+        state.liquid_specular,
+        state.liquid_shadow,
+        state.spotlight_blur,
+        state.spotlight_tint,
+        state.spotlight_shadow,
         state.blur_sigma,
         state.blur_tint,
         state.menu_tint,
@@ -332,16 +407,23 @@ static void schedule_menubar_blur_apply(void) {
     }
 }
 
-static void apply_liquid_blur(void) {
+static void apply_liquid_glass(void) {
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
     if (!src || !g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE))
         return;
 
     GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
-    int radius = (state.liquid_blur > 0) ? (int)round((double)state.liquid_blur * 30.0 / 100.0) : 0;
-    if (state.liquid_blur > 0 && radius < 1) radius = 1;
+    int radius = state.liquid_blur;
+    double tint = (double)state.liquid_tint / 100.0;
+    double disp_scale = (double)state.liquid_refraction * 1.5;
+    double ior = 1.0 + ((double)state.liquid_refraction / 100.0) * 1.0;
+    double chroma = ((double)state.liquid_chroma / 100.0) * 0.04;
+    double rim = (double)state.liquid_rim / 100.0;
+    double specular = (double)state.liquid_specular / 100.0;
+    double shadow_int = ((double)state.liquid_shadow / 100.0) * 0.8;
+    double shadow_rad = fmax(10.0, ((double)state.liquid_shadow / 100.0) * 60.0);
 
-    const char *keys[] = {
+    const char *blur_keys[] = {
         "dock-blur-radius",
         "quick-settings-blur-radius",
         "panel-menu-blur-radius",
@@ -353,34 +435,11 @@ static void apply_liquid_blur(void) {
         NULL
     };
 
-    for (int i = 0; keys[i] != NULL; i++) {
-        g_settings_set_int(lg, keys[i], radius);
+    for (int i = 0; blur_keys[i] != NULL; i++) {
+        g_settings_set_int(lg, blur_keys[i], radius);
     }
-    g_object_unref(lg);
-}
 
-static gboolean apply_liquid_blur_cb(gpointer user_data) {
-    (void)user_data;
-    liquid_blur_timer_id = 0;
-    apply_liquid_blur();
-    return G_SOURCE_REMOVE;
-}
-
-static void schedule_liquid_blur_apply(void) {
-    if (liquid_blur_timer_id == 0) {
-        liquid_blur_timer_id = g_timeout_add(60, (GSourceFunc)apply_liquid_blur_cb, NULL);
-    }
-}
-
-static void apply_liquid_tint(void) {
-    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
-    if (!src || !g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE))
-        return;
-
-    GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
-    double tint = (double)state.liquid_tint / 100.0;
-
-    const char *keys[] = {
+    const char *tint_keys[] = {
         "dock-tint-strength",
         "quick-settings-tint-strength",
         "quick-settings-toggle-tint-strength",
@@ -393,25 +452,47 @@ static void apply_liquid_tint(void) {
         NULL
     };
 
-    for (int i = 0; keys[i] != NULL; i++) {
-        g_settings_set_double(lg, keys[i], tint);
+    for (int i = 0; tint_keys[i] != NULL; i++) {
+        g_settings_set_double(lg, tint_keys[i], tint);
     }
+
+    g_settings_set_double(lg, "glass-displacement-scale", disp_scale);
+    g_settings_set_double(lg, "glass-refraction-index", ior);
+    g_settings_set_double(lg, "glass-chroma-strength", chroma);
+    g_settings_set_double(lg, "glass-rim-intensity", rim);
+    g_settings_set_double(lg, "glass-specular-intensity", specular);
+    g_settings_set_double(lg, "shadow-intensity", shadow_int);
+    g_settings_set_double(lg, "shadow-radius", shadow_rad);
+
     g_settings_set_string(lg, "menu-tint-color", "#000000");
     g_settings_set_string(lg, "desktop-menu-tint-color", "#000000");
     g_settings_set_string(lg, "panel-menu-tint-color", "#000000");
     g_object_unref(lg);
 }
 
-static gboolean apply_liquid_tint_cb(gpointer user_data) {
+static gboolean apply_liquid_glass_cb(gpointer user_data) {
     (void)user_data;
-    liquid_tint_timer_id = 0;
-    apply_liquid_tint();
+    liquid_glass_timer_id = 0;
+    apply_liquid_glass();
     return G_SOURCE_REMOVE;
 }
 
-static void schedule_liquid_tint_apply(void) {
-    if (liquid_tint_timer_id == 0) {
-        liquid_tint_timer_id = g_timeout_add(60, (GSourceFunc)apply_liquid_tint_cb, NULL);
+static void schedule_liquid_glass_apply(void) {
+    if (liquid_glass_timer_id == 0) {
+        liquid_glass_timer_id = g_timeout_add(60, (GSourceFunc)apply_liquid_glass_cb, NULL);
+    }
+}
+
+static gboolean apply_spotlight_cb(gpointer user_data) {
+    (void)user_data;
+    spotlight_timer_id = 0;
+    save_styling_json();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_spotlight_apply(void) {
+    if (spotlight_timer_id == 0) {
+        spotlight_timer_id = g_timeout_add(60, (GSourceFunc)apply_spotlight_cb, NULL);
     }
 }
 
@@ -647,7 +728,395 @@ void on_menubar_blur_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Group 2: Liquid Glass */
+/* ========================================================================= */
+/* Interactive Liquid Glass Live Preview Widget (GTK4 + Cairo + Wallpapers)  */
+/* ========================================================================= */
+
+static void draw_rounded_rect_path(cairo_t *cr, double x, double y, double w, double h, double r) {
+    if (w < 2.0 * r) r = w / 2.0;
+    if (h < 2.0 * r) r = h / 2.0;
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, x + w - r, y + r, r, -G_PI / 2.0, 0);
+    cairo_arc(cr, x + w - r, y + h - r, r, 0, G_PI / 2.0);
+    cairo_arc(cr, x + r, y + h - r, r, G_PI / 2.0, G_PI);
+    cairo_arc(cr, x + r, y + r, r, G_PI, 3.0 * G_PI / 2.0);
+    cairo_close_path(cr);
+}
+
+static GtkWidget *g_liquid_preview_w = NULL;
+static double g_glass_x = -1.0;
+static double g_glass_y = -1.0;
+static double g_glass_drag_start_x = 0;
+static double g_glass_drag_start_y = 0;
+static gboolean g_glass_is_dragging = FALSE;
+static cairo_surface_t *g_cached_bg_surface = NULL;
+static int g_cached_bg_w = 0;
+static int g_cached_bg_h = 0;
+static char *g_cached_bg_path = NULL;
+
+static void redraw_liquid_preview(void) {
+    if (g_liquid_preview_w && GTK_IS_WIDGET(g_liquid_preview_w)) {
+        gtk_widget_queue_draw(g_liquid_preview_w);
+    }
+}
+
+static char *get_user_wallpaper_path(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src || !g_settings_schema_source_lookup(src, "org.gnome.desktop.background", TRUE))
+        return NULL;
+    GSettings *bg_settings = g_settings_new("org.gnome.desktop.background");
+    char *uri = g_settings_get_string(bg_settings, "picture-uri-dark");
+    if (!uri || strlen(uri) == 0) {
+        if (uri) g_free(uri);
+        uri = g_settings_get_string(bg_settings, "picture-uri");
+    }
+    g_object_unref(bg_settings);
+    if (!uri) return NULL;
+    char *filename = g_filename_from_uri(uri, NULL, NULL);
+    g_free(uri);
+    return filename;
+}
+
+static cairo_surface_t *get_cached_wallpaper_surface(int target_w, int target_h) {
+    char *path = get_user_wallpaper_path();
+    if (!path) return NULL;
+
+    if (g_cached_bg_surface && g_cached_bg_w == target_w && g_cached_bg_h == target_h &&
+        g_cached_bg_path && strcmp(g_cached_bg_path, path) == 0) {
+        g_free(path);
+        return g_cached_bg_surface;
+    }
+
+    if (g_cached_bg_surface) {
+        cairo_surface_destroy(g_cached_bg_surface);
+        g_cached_bg_surface = NULL;
+    }
+    if (g_cached_bg_path) {
+        g_free(g_cached_bg_path);
+        g_cached_bg_path = NULL;
+    }
+
+    GError *err = NULL;
+    GdkPixbuf *pb = gdk_pixbuf_new_from_file_at_scale(path, target_w, -1, TRUE, &err);
+    if (!pb) {
+        if (err) g_error_free(err);
+        g_free(path);
+        return NULL;
+    }
+
+    int pw = gdk_pixbuf_get_width(pb);
+    int ph = gdk_pixbuf_get_height(pb);
+
+    if (ph < target_h) {
+        GdkPixbuf *pb2 = gdk_pixbuf_scale_simple(pb, (int)ceil((double)pw * target_h / ph), target_h, GDK_INTERP_BILINEAR);
+        g_object_unref(pb);
+        pb = pb2;
+        pw = gdk_pixbuf_get_width(pb);
+        ph = gdk_pixbuf_get_height(pb);
+    }
+
+    int crop_x = CLAMP((pw - target_w) / 2, 0, pw - target_w);
+    int crop_y = CLAMP((ph - target_h) / 2, 0, ph - target_h);
+    GdkPixbuf *cropped = gdk_pixbuf_new_subpixbuf(pb, crop_x, crop_y, target_w, target_h);
+
+    cairo_surface_t *surf = cairo_image_surface_create(CAIRO_FORMAT_RGB24, target_w, target_h);
+    int c_w = gdk_pixbuf_get_width(cropped);
+    int c_h = gdk_pixbuf_get_height(cropped);
+    int c_stride = gdk_pixbuf_get_rowstride(cropped);
+    int c_n_channels = gdk_pixbuf_get_n_channels(cropped);
+    guchar *c_pixels = gdk_pixbuf_get_pixels(cropped);
+
+    cairo_surface_flush(surf);
+    unsigned char *s_data = cairo_image_surface_get_data(surf);
+    int s_stride = cairo_image_surface_get_stride(surf);
+
+    for (int y = 0; y < c_h; y++) {
+        guchar *p_src = c_pixels + y * c_stride;
+        uint32_t *p_dst = (uint32_t *)(s_data + y * s_stride);
+        for (int x = 0; x < c_w; x++) {
+            guchar r = p_src[x * c_n_channels + 0];
+            guchar g = p_src[x * c_n_channels + 1];
+            guchar b = p_src[x * c_n_channels + 2];
+            p_dst[x] = (0xFF << 24) | (r << 16) | (g << 8) | b;
+        }
+    }
+    cairo_surface_mark_dirty(surf);
+
+    g_object_unref(cropped);
+    g_object_unref(pb);
+
+    g_cached_bg_surface = surf;
+    g_cached_bg_w = target_w;
+    g_cached_bg_h = target_h;
+    g_cached_bg_path = path;
+    return g_cached_bg_surface;
+}
+
+static void on_liquid_drag_begin(GtkGestureDrag *gesture, double start_x, double start_y, gpointer user_data) {
+    (void)gesture;
+    GtkWidget *widget = GTK_WIDGET(user_data);
+    int w = gtk_widget_get_width(widget);
+    int h = gtk_widget_get_height(widget);
+    int gw = 120, gh = 120;
+    if (g_glass_x < 0) {
+        g_glass_x = (w - gw) / 2.0;
+        g_glass_y = (h - gh) / 2.0;
+    }
+
+    if (start_x >= g_glass_x && start_x <= g_glass_x + gw &&
+        start_y >= g_glass_y && start_y <= g_glass_y + gh) {
+        g_glass_is_dragging = TRUE;
+        g_glass_drag_start_x = g_glass_x;
+        g_glass_drag_start_y = g_glass_y;
+        gtk_widget_set_cursor_from_name(widget, "grabbing");
+    } else {
+        g_glass_is_dragging = TRUE;
+        g_glass_x = CLAMP(start_x - gw / 2.0, 6.0, w - gw - 6.0);
+        g_glass_y = CLAMP(start_y - gh / 2.0, 6.0, h - gh - 6.0);
+        g_glass_drag_start_x = g_glass_x;
+        g_glass_drag_start_y = g_glass_y;
+        gtk_widget_set_cursor_from_name(widget, "grabbing");
+        gtk_widget_queue_draw(widget);
+    }
+}
+
+static void on_liquid_drag_update(GtkGestureDrag *gesture, double offset_x, double offset_y, gpointer user_data) {
+    (void)gesture;
+    if (!g_glass_is_dragging) return;
+    GtkWidget *widget = GTK_WIDGET(user_data);
+    int w = gtk_widget_get_width(widget);
+    int h = gtk_widget_get_height(widget);
+    int gw = 120, gh = 120;
+
+    g_glass_x = CLAMP(g_glass_drag_start_x + offset_x, 6.0, w - gw - 6.0);
+    g_glass_y = CLAMP(g_glass_drag_start_y + offset_y, 6.0, h - gh - 6.0);
+    gtk_widget_queue_draw(widget);
+}
+
+static void on_liquid_drag_end(GtkGestureDrag *gesture, double offset_x, double offset_y, gpointer user_data) {
+    (void)gesture; (void)offset_x; (void)offset_y;
+    g_glass_is_dragging = FALSE;
+    GtkWidget *widget = GTK_WIDGET(user_data);
+    gtk_widget_set_cursor_from_name(widget, "grab");
+}
+
+static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
+    (void)area; (void)user_data;
+    if (width <= 0 || height <= 0) return;
+
+    // 1. Clip preview container with rounded corners
+    cairo_save(cr);
+    draw_rounded_rect_path(cr, 0, 0, width, height, 18.0);
+    cairo_clip(cr);
+
+    // 2. Wallpaper background
+    cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
+    if (bg) {
+        cairo_set_source_surface(cr, bg, 0, 0);
+        cairo_paint(cr);
+    } else {
+        cairo_pattern_t *fallback = cairo_pattern_create_linear(0, 0, width, height);
+        cairo_pattern_add_color_stop_rgb(fallback, 0.0, 0.12, 0.15, 0.22);
+        cairo_pattern_add_color_stop_rgb(fallback, 1.0, 0.25, 0.18, 0.15);
+        cairo_set_source(cr, fallback);
+        cairo_paint(cr);
+        cairo_pattern_destroy(fallback);
+    }
+
+    // 3. Interactive Liquid Glass Square
+    double gw = 120.0, gh = 120.0, gr = 26.0;
+    if (g_glass_x < 0) {
+        g_glass_x = (width - gw) / 2.0;
+        g_glass_y = (height - gh) / 2.0;
+    }
+    double gx = CLAMP(g_glass_x, 6.0, width - gw - 6.0);
+    double gy = CLAMP(g_glass_y, 6.0, height - gh - 6.0);
+
+    // A) Drop shadow
+    double shadow_val = (double)state.liquid_shadow / 100.0;
+    if (shadow_val > 0.02) {
+        for (int i = 4; i >= 1; i--) {
+            double expand = i * 2.5;
+            double alpha = (shadow_val * 0.14) / i;
+            draw_rounded_rect_path(cr, gx - expand, gy + 3.5 - expand / 2.0, gw + expand * 2.0, gh + expand * 2.0, gr + expand);
+            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, alpha);
+            cairo_fill(cr);
+        }
+    }
+
+    // B) Refraction & Optical Distortion
+    if (bg) {
+        cairo_save(cr);
+        draw_rounded_rect_path(cr, gx, gy, gw, gh, gr);
+        cairo_clip(cr);
+
+        int igx = (int)round(gx);
+        int igy = (int)round(gy);
+        int igw = (int)round(gw);
+        int igh = (int)round(gh);
+
+        cairo_surface_flush(bg);
+        unsigned char *src_pixels = cairo_image_surface_get_data(bg);
+        int src_stride = cairo_image_surface_get_stride(bg);
+
+        cairo_surface_t *glass_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, igw, igh);
+        cairo_surface_flush(glass_surf);
+        unsigned char *dst_pixels = cairo_image_surface_get_data(glass_surf);
+        int dst_stride = cairo_image_surface_get_stride(glass_surf);
+
+        double refr_factor = ((double)state.liquid_refraction / 100.0) * 14.0;
+        double chroma_px = ((double)state.liquid_chroma / 100.0) * 2.8;
+        int blur_amount = (int)round((double)state.liquid_blur * 4.0 / 50.0);
+        double edge_zone = 26.0;
+
+        for (int ly = 0; ly < igh; ly++) {
+            uint32_t *dst_row = (uint32_t *)(dst_pixels + ly * dst_stride);
+            for (int lx = 0; lx < igw; lx++) {
+                double qx = fabs(lx - gw / 2.0) - (gw / 2.0 - gr);
+                double qy = fabs(ly - gh / 2.0) - (gh / 2.0 - gr);
+                double dist_corner = sqrt(fmax(qx, 0.0) * fmax(qx, 0.0) + fmax(qy, 0.0) * fmax(qy, 0.0));
+                double d_edge = (qx > 0.0 && qy > 0.0) ? (gr - dist_corner) : fmin(-qx, -qy) + gr;
+                if (d_edge < 0.0) {
+                    dst_row[lx] = 0;
+                    continue;
+                }
+
+                double nx = (lx < gw / 2.0) ? 1.0 : -1.0;
+                double ny = (ly < gh / 2.0) ? 1.0 : -1.0;
+                if (qx > 0.0 && qy > 0.0 && dist_corner > 0.001) {
+                    nx = -qx / dist_corner * ((lx > gw / 2.0) ? 1.0 : -1.0);
+                    ny = -qy / dist_corner * ((ly > gh / 2.0) ? 1.0 : -1.0);
+                }
+
+                double bend = (d_edge < edge_zone) ? (sin((d_edge / edge_zone) * M_PI) * refr_factor) : 0.0;
+                double base_sx = igx + lx + nx * bend;
+                double base_sy = igy + ly + ny * bend;
+
+                int isx = CLAMP((int)round(base_sx), 0, width - 1);
+                int isy = CLAMP((int)round(base_sy), 0, height - 1);
+                int ir_x = CLAMP((int)round(base_sx + nx * chroma_px), 0, width - 1);
+                int ir_y = CLAMP((int)round(base_sy + ny * chroma_px), 0, height - 1);
+                int ib_x = CLAMP((int)round(base_sx - nx * chroma_px), 0, width - 1);
+                int ib_y = CLAMP((int)round(base_sy - ny * chroma_px), 0, height - 1);
+
+                uint32_t c_g = *(uint32_t *)(src_pixels + isy * src_stride + isx * 4);
+                uint32_t c_r = *(uint32_t *)(src_pixels + ir_y * src_stride + ir_x * 4);
+                uint32_t c_b = *(uint32_t *)(src_pixels + ib_y * src_stride + ib_x * 4);
+
+                int r = (c_r >> 16) & 0xFF;
+                int g = (c_g >> 8) & 0xFF;
+                int b = (c_b) & 0xFF;
+
+                if (blur_amount > 0) {
+                    int r_sum = r, g_sum = g, b_sum = b;
+                    int count = 1;
+                    for (int bo = -blur_amount; bo <= blur_amount; bo += blur_amount) {
+                        if (bo == 0) continue;
+                        int bx = CLAMP(isx + bo, 0, width - 1);
+                        int by = CLAMP(isy + bo, 0, height - 1);
+                        uint32_t s1 = *(uint32_t *)(src_pixels + isy * src_stride + bx * 4);
+                        uint32_t s2 = *(uint32_t *)(src_pixels + by * src_stride + isx * 4);
+                        r_sum += ((s1 >> 16) & 0xFF) + ((s2 >> 16) & 0xFF);
+                        g_sum += ((s1 >> 8) & 0xFF) + ((s2 >> 8) & 0xFF);
+                        b_sum += ((s1) & 0xFF) + ((s2) & 0xFF);
+                        count += 2;
+                    }
+                    r = r_sum / count;
+                    g = g_sum / count;
+                    b = b_sum / count;
+                }
+
+                dst_row[lx] = (0xFF << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+            }
+        }
+
+        cairo_surface_mark_dirty(glass_surf);
+        cairo_set_source_surface(cr, glass_surf, igx, igy);
+        cairo_paint(cr);
+        cairo_surface_destroy(glass_surf);
+
+        // C) Translucent tint
+        double tint_val = (double)state.liquid_tint / 100.0;
+        cairo_set_source_rgba(cr, 0.06, 0.06, 0.08, 0.05 + tint_val * 0.40);
+        cairo_paint(cr);
+
+        // D) Specular Rim Light
+        double rim_val = (double)state.liquid_rim / 100.0;
+        if (rim_val > 0.01) {
+            cairo_pattern_t *pat = cairo_pattern_create_linear(gx, gy, gx + gw, gy + gh);
+            cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, rim_val * 0.90);
+            cairo_pattern_add_color_stop_rgba(pat, 0.4, 1.0, 1.0, 1.0, rim_val * 0.35);
+            cairo_pattern_add_color_stop_rgba(pat, 0.8, 1.0, 1.0, 1.0, rim_val * 0.10);
+            cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, rim_val * 0.20);
+            draw_rounded_rect_path(cr, gx + 1.0, gy + 1.0, gw - 2.0, gh - 2.0, gr - 1.0);
+            cairo_set_source(cr, pat);
+            cairo_set_line_width(cr, 2.0);
+            cairo_stroke(cr);
+            cairo_pattern_destroy(pat);
+        }
+
+        // E) Specular highlight sheen
+        double spec_val = (double)state.liquid_specular / 100.0;
+        if (spec_val > 0.01) {
+            cairo_arc(cr, gx + 38, gy + 38, 28, -G_PI * 0.85, -G_PI * 0.25);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, spec_val * 0.45);
+            cairo_set_line_width(cr, 2.5);
+            cairo_stroke(cr);
+        }
+
+        // F) Drag cue dots in center
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.50);
+        for (int d = -1; d <= 1; d++) {
+            cairo_arc(cr, gx + gw / 2.0 + d * 9.0, gy + gh / 2.0, 2.2, 0, 2 * G_PI);
+            cairo_fill(cr);
+        }
+
+        cairo_restore(cr);
+    }
+
+    // Outer preview border
+    cairo_restore(cr);
+    draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 18.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+}
+
+void init_liquid_preview(void *widget, gpointer data) {
+    (void)data;
+    g_liquid_preview_w = GTK_WIDGET(widget);
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), liquid_preview_draw_func, NULL, NULL);
+
+    GtkGesture *drag = gtk_gesture_drag_new();
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(drag), GDK_BUTTON_PRIMARY);
+    g_signal_connect(drag, "drag-begin", G_CALLBACK(on_liquid_drag_begin), widget);
+    g_signal_connect(drag, "drag-update", G_CALLBACK(on_liquid_drag_update), widget);
+    g_signal_connect(drag, "drag-end", G_CALLBACK(on_liquid_drag_end), widget);
+    gtk_widget_add_controller(GTK_WIDGET(widget), GTK_EVENT_CONTROLLER(drag));
+
+    gtk_widget_set_cursor_from_name(GTK_WIDGET(widget), "grab");
+}
+
+/* Group 2: Liquid Glass Callbacks */
+void init_liquid_refraction(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.liquid_refraction);
+    in_init = 0;
+}
+
+void on_liquid_refraction_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.liquid_refraction = (int)lround(gtk_range_get_value(widget));
+    schedule_liquid_glass_apply();
+    redraw_liquid_preview();
+    schedule_json_save();
+}
+
 void init_liquid_blur(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -662,7 +1131,8 @@ void on_liquid_blur_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
     state.liquid_blur = (int)lround(gtk_range_get_value(widget));
-    schedule_liquid_blur_apply();
+    schedule_liquid_glass_apply();
+    redraw_liquid_preview();
     schedule_json_save();
 }
 
@@ -680,7 +1150,139 @@ void on_liquid_tint_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
     state.liquid_tint = (int)lround(gtk_range_get_value(widget));
-    schedule_liquid_tint_apply();
+    schedule_liquid_glass_apply();
+    redraw_liquid_preview();
+    schedule_json_save();
+}
+
+void init_liquid_chroma(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.liquid_chroma);
+    in_init = 0;
+}
+
+void on_liquid_chroma_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.liquid_chroma = (int)lround(gtk_range_get_value(widget));
+    schedule_liquid_glass_apply();
+    redraw_liquid_preview();
+    schedule_json_save();
+}
+
+void init_liquid_rim(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.liquid_rim);
+    in_init = 0;
+}
+
+void on_liquid_rim_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.liquid_rim = (int)lround(gtk_range_get_value(widget));
+    schedule_liquid_glass_apply();
+    redraw_liquid_preview();
+    schedule_json_save();
+}
+
+void init_liquid_specular(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.liquid_specular);
+    in_init = 0;
+}
+
+void on_liquid_specular_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.liquid_specular = (int)lround(gtk_range_get_value(widget));
+    schedule_liquid_glass_apply();
+    redraw_liquid_preview();
+    schedule_json_save();
+}
+
+void init_liquid_shadow(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.liquid_shadow);
+    in_init = 0;
+}
+
+void on_liquid_shadow_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.liquid_shadow = (int)lround(gtk_range_get_value(widget));
+    schedule_liquid_glass_apply();
+    redraw_liquid_preview();
+    schedule_json_save();
+}
+
+/* Group: Spotlight Callbacks */
+void init_spotlight_blur(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.spotlight_blur);
+    in_init = 0;
+}
+
+void on_spotlight_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.spotlight_blur = (int)lround(gtk_range_get_value(widget));
+    schedule_spotlight_apply();
+    schedule_json_save();
+}
+
+void init_spotlight_tint(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.spotlight_tint);
+    in_init = 0;
+}
+
+void on_spotlight_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.spotlight_tint = (int)lround(gtk_range_get_value(widget));
+    schedule_spotlight_apply();
+    schedule_json_save();
+}
+
+void init_spotlight_shadow(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.spotlight_shadow);
+    in_init = 0;
+}
+
+void on_spotlight_shadow_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.spotlight_shadow = (int)lround(gtk_range_get_value(widget));
+    schedule_spotlight_apply();
     schedule_json_save();
 }
 
