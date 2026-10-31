@@ -429,7 +429,7 @@
         "50",
         "51"
       ],
-      "sha256": "1e4783a3d730daea0802be0053bc6037d4957fd7c2eb2e5551b4729c33833edf",
+      "sha256": "702eb76bdbc106c03a34b8a9ff40c8719541ac4763203061956fa0e67eb4c3ad",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
@@ -438,7 +438,7 @@
         "clock_battery_weather_system"
       ],
       "has_custom_patches": true,
-      "patch_description": "Liquid Glass GLSL shader scalar uniform binding fix, transparent card styling, and safe snippet support for GNOME 50",
+      "patch_description": "Liquid Glass GLSL shader scalar uniform binding fix, frosted card styling, and safe snippet support for GNOME 50",
       "last_verified": "2026-10-31"
     },
     "ubuntu-appindicators@ubuntu.com": {

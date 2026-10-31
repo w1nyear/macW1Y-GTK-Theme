@@ -1370,13 +1370,18 @@ class WidgetController {
       styleStr += ' overflow: hidden;';
       styleStr += ' box-shadow: none;';
     } else if (glassRoot) {
-      // Glass draws its own squircle backdrop behind the widget. Strip out any
-      // hardcoded background/border from widgetModule.style, so the shader's
-      // physically-modelled refraction and specular rim shine through unimpeded.
+      // In glass mode, the widget content sits on top of the LiquidGlass shader backdrop.
+      // We give the card authentic macOS Tahoe frosted squircle glass styling:
+      // subtle frosted translucent tint, specular border rim, and soft depth shadow.
       styleStr = styleStr.replace(/background(-color)?:\s*[^;]+;/g, '');
       styleStr = styleStr.replace(/border(-color|-width)?:\s*[^;]+;/g, '');
       styleStr = styleStr.replace(/box-shadow:\s*[^;]+;/g, '');
-      styleStr += ' background-color: transparent !important; background: transparent !important; border: none !important; border-color: transparent !important; border-width: 0px !important; box-shadow: none !important;';
+      const dark = theme.dark;
+      const glassBg = dark ? 'rgba(30, 32, 38, 0.38)' : 'rgba(255, 255, 255, 0.38)';
+      const glassBorder = dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.45)';
+      styleStr += ` background-color: ${glassBg};`;
+      styleStr += ` border: 1px solid ${glassBorder};`;
+      styleStr += ' box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.18);';
       styleStr += ` border-radius: ${theme.radius}px;`;
     }
 
@@ -2580,23 +2585,24 @@ class WidgetController {
       if (typeof tint.a === 'number')
         tintAlpha *= tint.a;
     } else if (colors.glassIsLight) {
-      // Light glass must stay a light surface over dark wallpapers: the 10%
-      // default white tint alone left near-black text unreadable. The slider
-      // still wins when it is set above the floor.
+      // Light glass must stay a light surface over dark wallpapers
       tintAlpha = Math.max(tintAlpha, 0.45);
+    } else {
+      // Dark glass with rich contrast for the Liquid Glass physical shader
+      tintAlpha = Math.max(tintAlpha, 0.35);
     }
 
     return {
       radius: s.get_int('style-border-radius'),
       roundness: 2, // Match CSS border-radius used by the widget frame.
-      refractThickness: s.get_int('refract-thickness'),
+      refractThickness: Math.max(s.get_int('refract-thickness'), 40),
       refractIOR: s.get_int('refract-ior-x100') / 100,
-      refractScale: s.get_int('refract-scale'),
-      chromaStrength: s.get_int('chroma-strength-pct') / 100,
+      refractScale: Math.max(s.get_int('refract-scale'), 50),
+      chromaStrength: Math.max(s.get_int('chroma-strength-pct') / 100, 0.25),
       tint,
       tintAlpha,
-      specStrength: s.get_int('spec-strength-pct') / 100,
-      blurRadius: s.get_int('blur-radius-px'),
+      specStrength: Math.max(s.get_int('spec-strength-pct') / 100, 0.65),
+      blurRadius: Math.max(s.get_int('blur-radius-px'), 16),
       solid: false,
     };
   }

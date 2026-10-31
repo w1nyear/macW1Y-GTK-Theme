@@ -13909,3 +13909,20 @@ macW1Y 0.4 — Оптимізація компонування Параметр�
    - `mac-audit-sync check`: 100% PASS.
    - `mac-extension-guard verify`: SUCCESS.
 
+================================================================================
+ЗМІНИ: ВІДНОВЛЕННЯ ТА ІНТЕГРАЦІЯ ФІЗИЧНОГО ШЕЙДЕРА СКЛА (LIQUID GLASS) ДЛЯ ВІДЖЕТІВ СТІЛЬНИЦІ
+================================================================================
+1. Усунення причин прозорості віджетів та відсутності шейдера скла:
+   - Виправлено шейдер GLSL `lib/glass_v3.js` та `lib/glass.js`: у GNOME 46 Clutter.ShaderEffect використовує класичні Cogl-імена (`cogl_sampler`, `cogl_tex_coord`, `cogl_color`), тоді як версії для сніппетів (`cogl_sampler0`, `cogl_tex_coord_in[0]`, `cogl_color_in`) спричиняли збій компіляції GLSL. Додано подвійну підтримку: `SHADER_SOURCE_LEGACY` для прямого `set_shader_source` та `SHADER_SOURCE_SNIPPET` для GNOME 50+ snippet API.
+   - Підсилено фізичний відблиск скла: спекуляр країв (`lg_edgeSpec`) збільшено з 0.10 до 0.45, кутовий відблиск (`lg_cornerSpec`) — з 0.55 до 0.75 з шириною променя 3.5px.
+   - Збільшено розмиття підкладки шпалер: мінімальний радіус розмиття піднято до 16px (з масштабуванням BLUR_RADIUS_SCALE × 3 дає реальне розмиття 48px).
+   - Усунено деструктивне очищення CSS: раніше `styleStr += ' background-color: transparent !important; ... border: none !important; box-shadow: none !important;'` повністю знищувало межі та підкладку карток.
+   - Відновлено автентичний стиль скляної картки macOS Tahoe: напівпрозоре тонування скла `rgba(30, 32, 38, 0.38)` (темна тема) / `rgba(255, 255, 255, 0.38)` (світла тема), контурний спекулярний обідок `border: 1px solid rgba(255, 255, 255, 0.15)` та м'яка тінь глибини `box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.18);`.
+
+2. Синхронізація, цілісність та гаряче застосування:
+   - Синхронізовано сирці розширення `desktop-widgets@r3nhick` у `~/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick/`.
+   - Оновлено SHA256 хеш розширення у `config/extensions.lock.json`.
+   - Гаряче оновлено прототип та стилі віджетів у GNOME Shell через D-Bus `EvalHelper` без перезавантаження оболонки та без виходу із сесії користувача.
+   - Успішна перевірка `mac-audit-sync check` (100% PASS) та `mac-extension-guard verify` (SUCCESS, усі 21 розширення заблоковано).
+
+

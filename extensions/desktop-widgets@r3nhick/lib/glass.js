@@ -148,19 +148,19 @@ vec3 lg_cornerSpec(vec2 p, float depthPx) {
     float primaryAtt = exp(-distance(p, lightPx) / taper);
     float secondaryAtt = exp(-distance(p, antiLight) / taper) * 0.65;
 
-    float tPx = max(primaryAtt, secondaryAtt) * 3.0;
+    float tPx = max(primaryAtt, secondaryAtt) * 3.5;
     float stroke = 1.0 - smoothstep(tPx - 2.0, tPx, depthPx);
-    return vec3(1.0, 0.98, 0.94) * (stroke * lg_specStrength * 0.55);
+    return vec3(1.0, 0.98, 0.94) * (stroke * lg_specStrength * 0.75);
 }
 
 vec3 lg_edgeSpec(vec2 ndir, float depthPx) {
     if (lg_specStrength <= 0.0)
         return vec3(0.0);
 
-    float lip = 1.0 - smoothstep(0.0, 3.0, max(depthPx, 0.0));
+    float lip = 1.0 - smoothstep(0.0, 3.5, max(depthPx, 0.0));
     vec2 lightDir = normalize(vec2(-0.45, 0.90));
     float facing = 0.35 + 0.65 * clamp(dot(ndir, lightDir) * 0.5 + 0.5, 0.0, 1.0);
-    return vec3(1.0, 0.98, 0.94) * (lip * facing * lg_specStrength * 0.10);
+    return vec3(1.0, 0.98, 0.94) * (lip * facing * lg_specStrength * 0.45);
 }
 
 vec4 lg_glass(sampler2D tex, vec2 uv) {
@@ -206,7 +206,14 @@ vec4 lg_glass(sampler2D tex, vec2 uv) {
 `;
 
 // Full shader source, split into declarations and a fragment snippet below.
-const SHADER_SOURCE = DECLARATIONS + `
+const SHADER_SOURCE_LEGACY = DECLARATIONS + `
+void main() {
+    cogl_color_out = lg_glass(cogl_sampler, (cogl_tex_coord.xy - lg_frame.xy) / lg_frame.zw) *
+        cogl_color.a;
+}
+`;
+
+const SHADER_SOURCE_SNIPPET = DECLARATIONS + `
 void main() {
     cogl_color_out = lg_glass(cogl_sampler0, (cogl_tex_coord_in[0].xy - lg_frame.xy) / lg_frame.zw) *
         cogl_color_in.a;
@@ -275,7 +282,7 @@ if (!globalThis[EFFECT_CLASS_KEY]) {
                 super._init();
                 if (!USES_SHADER_SNIPPET_API) {
                     try {
-                        this.set_shader_source(SHADER_SOURCE);
+                        this.set_shader_source(SHADER_SOURCE_LEGACY);
                     } catch (e) {
                         console.warn(`[desktop-widgets glass] set_shader_source failed: ${e}`);
                     }
@@ -323,7 +330,7 @@ if (!globalThis[EFFECT_CLASS_KEY]) {
 
         if (USES_SHADER_SNIPPET_API) {
             LiquidGlassBase.prototype.vfunc_get_static_snippet = function() {
-                return createFragmentShaderSnippet(SHADER_SOURCE);
+                return createFragmentShaderSnippet(SHADER_SOURCE_SNIPPET);
             };
         }
 
@@ -369,7 +376,7 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                 this._blurEffect = new Shell.BlurEffect({
                     mode: Shell.BlurMode.ACTOR,
                     brightness: 1.0,
-                    radius: 6 * BLUR_RADIUS_SCALE,
+                    radius: 16 * BLUR_RADIUS_SCALE,
                 });
                 this._blurBox = new St.Widget({clip_to_allocation: true, style: 'background-color: transparent;'});
                 this._blurBox.add_effect(this._blurEffect);
@@ -447,7 +454,7 @@ if (!globalThis[GLASS_CLASS_KEY]) {
         this._blurBox.visible = !p.solid;
         this._blurEffect.enabled = p.blurRadius > 0;
         this._blurEffect.radius =
-            Math.min(MAX_BLUR_RADIUS, Math.round(p.blurRadius * BLUR_RADIUS_SCALE));
+            Math.min(MAX_BLUR_RADIUS, Math.round(Math.max(p.blurRadius, 14) * BLUR_RADIUS_SCALE));
 
         e.queue_repaint();
     }
