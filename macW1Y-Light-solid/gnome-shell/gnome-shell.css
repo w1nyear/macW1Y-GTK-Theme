@@ -3006,7 +3006,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
   border-radius: 26px !important;
   border: 1px solid rgba(255, 255, 255, 0.50) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25) !important;
-  padding: 6px 12px !important;
+  padding: 21px 14px 5px 14px !important;
 }
 
 .switcher-list .item-box,
@@ -3030,9 +3030,9 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 
 /* Rounded squircle highlight wrapping STRICTLY around icon only */
 .alt-tab-icon-bin {
-  padding: 6px !important;
+  padding: 2px !important;
   border-radius: 18px !important;
-  border: 1.5px solid transparent !important;
+  border: 1px solid transparent !important;
   background-color: transparent !important;
   background: none !important;
   box-shadow: none !important;
@@ -3040,14 +3040,17 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 .alt-tab-icon-bin:hover {
-  background-color: rgba(0, 0, 0, 0.06) !important;
-  border: 1.5px solid rgba(0, 0, 0, 0.12) !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid rgba(0, 0, 0, 0.14) !important;
+  box-shadow: none !important;
 }
 
 .alt-tab-icon-bin:selected,
 .alt-tab-icon-bin.selected {
-  background-color: rgba(0, 0, 0, 0.12) !important;
-  border: 1.5px solid rgba(0, 0, 0, 0.18) !important;
+  background-color: rgba(0, 0, 0, 0.16) !important;
+  border: 1px solid rgba(0, 0, 0, 0.22) !important;
+  box-shadow: none !important;
+}
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.50) !important;
 }
 

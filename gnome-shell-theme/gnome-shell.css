@@ -3028,7 +3028,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
   border-radius: 26px !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
-  padding: 6px 12px !important;
+  padding: 21px 14px 5px 14px !important;
 }
 
 .switcher-list .item-box,
@@ -3052,9 +3052,9 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 
 /* Rounded squircle highlight wrapping STRICTLY around icon only */
 .alt-tab-icon-bin {
-  padding: 6px !important;
+  padding: 2px !important;
   border-radius: 18px !important;
-  border: 1.5px solid transparent !important;
+  border: 1px solid transparent !important;
   background-color: transparent !important;
   background: none !important;
   box-shadow: none !important;
@@ -3062,15 +3062,16 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 .alt-tab-icon-bin:hover {
-  background-color: rgba(255, 255, 255, 0.10) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.20) !important;
+  background-color: rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: none !important;
 }
 
 .alt-tab-icon-bin:selected,
 .alt-tab-icon-bin.selected {
-  background-color: rgba(255, 255, 255, 0.20) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.38) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+  background-color: rgba(255, 255, 255, 0.28) !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: none !important;
 }
 
 /* App name label underneath selected icon */

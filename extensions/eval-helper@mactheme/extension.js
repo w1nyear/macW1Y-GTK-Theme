@@ -978,11 +978,14 @@ export default class EvalHelper extends Extension {
                 }
 
                 // 4. Patch WindowIcon & WindowSwitcher for touchpad gestures & fallback switcher
-                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV5) {
-                    AltTabMod.WindowIcon.prototype._macPatchedV5 = true;
+                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV6) {
+                    AltTabMod.WindowIcon.prototype._macPatchedV6 = true;
                     const origWindowIconInit = AltTabMod.WindowIcon.prototype._init;
                     AltTabMod.WindowIcon.prototype._init = function(window, mode) {
                         origWindowIconInit.call(this, window, mode);
+                        if (typeof this.set_size === 'function') {
+                            try { this.set_size(72); } catch (_) {}
+                        }
                         const iconActor = this._iconBin || this._icon || (this.get_children ? this.get_children()[0] : null);
                         if (iconActor) {
                             if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
@@ -999,7 +1002,7 @@ export default class EvalHelper extends Extension {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.x_align = Clutter.ActorAlign.CENTER;
                             this.label.opacity = 0;
-                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 4px !important;';
+                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 3px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
                                 this.label.clutter_text.line_wrap = false;
@@ -1011,12 +1014,12 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 5. Hide multi-window arrows in AppSwitcher and enforce crisp 64px icon size
+                // 5. Hide multi-window arrows in AppSwitcher and enforce crisp 72px icon size
                 try {
                     const dummyPopup = new AltTabMod.AppSwitcherPopup();
                     const AppSwitcherProto = dummyPopup._switcherList ? Object.getPrototypeOf(dummyPopup._switcherList) : null;
-                    if (AppSwitcherProto && !AppSwitcherProto._macPatchedV5) {
-                        AppSwitcherProto._macPatchedV5 = true;
+                    if (AppSwitcherProto && !AppSwitcherProto._macPatchedV6) {
+                        AppSwitcherProto._macPatchedV6 = true;
                         const origAddIcon = AppSwitcherProto._addIcon;
                         AppSwitcherProto._addIcon = function(appIcon) {
                             origAddIcon.call(this, appIcon);
@@ -1038,9 +1041,9 @@ export default class EvalHelper extends Extension {
                         AppSwitcherProto._setIconSize = function() {
                             const primary = Main.layoutManager.primaryMonitor;
                             const availWidth = primary ? primary.width - 200 : 1600;
-                            let iconSize = 64;
-                            if (this._items.length * 90 > availWidth) iconSize = 48;
-                            if (this._items.length * 70 > availWidth) iconSize = 32;
+                            let iconSize = 72;
+                            if (this._items.length * 96 > availWidth) iconSize = 56;
+                            if (this._items.length * 76 > availWidth) iconSize = 40;
                             this._iconSize = iconSize;
                             for (let i = 0; i < this.icons.length; i++) {
                                 if (this.icons[i]) {
