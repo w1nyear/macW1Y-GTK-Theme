@@ -429,7 +429,7 @@
         "50",
         "51"
       ],
-      "sha256": "9df365b2393959bab78c7aec14c4bc0ad5dbc14b6a99c67b63267d7825cdd6ec",
+      "sha256": "f8128c6d63e3c989102e98ee25aa44c07db386686fd812843fc92b42cf1271cb",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
@@ -438,8 +438,8 @@
         "clock_battery_weather_system"
       ],
       "has_custom_patches": true,
-      "patch_description": "Fixed ShaderEffect static snippet vfunc for GNOME 50 and unreachable code cleanup",
-      "last_verified": "2026-10-30"
+      "patch_description": "Fixed ShaderEffect static snippet vfunc for GNOME 50 and safe weather schema source fallback",
+      "last_verified": "2026-10-31"
     },
     "ubuntu-appindicators@ubuntu.com": {
       "uuid": "ubuntu-appindicators@ubuntu.com",

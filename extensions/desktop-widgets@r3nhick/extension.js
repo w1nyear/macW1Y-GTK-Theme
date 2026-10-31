@@ -501,7 +501,25 @@ class WidgetController {
     this._workspaceIntegration = new WorkspaceIntegration();
     this._layoutSettings = extension.getSettings();
     this._interfaceSettings = new Gio.Settings({schema_id: INTERFACE_SCHEMA});
-    this._weatherSettings = new Gio.Settings({schema_id: WeatherWidget.settingsSchema});
+    try {
+      const defaultSource = Gio.SettingsSchemaSource.get_default();
+      let weatherSchema = defaultSource ? defaultSource.lookup(WeatherWidget.settingsSchema, true) : null;
+      if (!weatherSchema) {
+        const sysDir = Gio.File.new_for_path('/usr/share/glib-2.0/schemas');
+        if (sysDir.query_exists(null)) {
+          const sysSource = Gio.SettingsSchemaSource.new_from_directory(sysDir.get_path(), defaultSource, false);
+          weatherSchema = sysSource ? sysSource.lookup(WeatherWidget.settingsSchema, true) : null;
+        }
+      }
+      if (weatherSchema) {
+        this._weatherSettings = new Gio.Settings({settings_schema: weatherSchema});
+      } else {
+        this._weatherSettings = null;
+      }
+    } catch (err) {
+      log(`[desktop-widgets] Weather settings schema not available: ${err}`);
+      this._weatherSettings = null;
+    }
     this._weather = null;
     this._weatherLocation = null;
     this._weatherInfo = null;
@@ -632,12 +650,14 @@ class WidgetController {
       this
     );
 
-    this._weatherSettings.connectObject('changed::locations', () => {
-      this._weather = null;
-      this._weatherUpdateTime = 0;
-      this._refreshWeather(true);
-      this._refreshWeatherViews();
-    }, this);
+    if (this._weatherSettings) {
+      this._weatherSettings.connectObject('changed::locations', () => {
+        this._weather = null;
+        this._weatherUpdateTime = 0;
+        this._refreshWeather(true);
+        this._refreshWeatherViews();
+      }, this);
+    }
 
     this._watchBatteryChanges();
 
@@ -729,7 +749,9 @@ class WidgetController {
     Main.wm.removeKeybinding(EDIT_MODE_BINDING_KEY);
     this._layoutSettings.disconnectObject(this);
     this._interfaceSettings.disconnectObject(this);
-    this._weatherSettings.disconnectObject(this);
+    if (this._weatherSettings) {
+      this._weatherSettings.disconnectObject(this);
+    }
 
     for (const id of this._dbusSignalIds) {
       Gio.DBus.system.signal_unsubscribe(id);

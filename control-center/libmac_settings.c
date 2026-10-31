@@ -3646,7 +3646,36 @@ static void configure_toolbar_views_recursive(GtkWidget *widget, gboolean is_sid
 
 #define DW_SCHEMA "org.gnome.shell.extensions.desktop-widgets-r3nhick"
 
+static void ensure_dw_extension_enabled(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src || !g_settings_schema_source_lookup(src, "org.gnome.shell", TRUE)) return;
+    GSettings *shell_settings = g_settings_new("org.gnome.shell");
+    if (!shell_settings) return;
+    char **enabled = g_settings_get_strv(shell_settings, "enabled-extensions");
+    gboolean found = FALSE;
+    if (enabled) {
+        for (int i = 0; enabled[i] != NULL; i++) {
+            if (g_strcmp0(enabled[i], "desktop-widgets@r3nhick") == 0) {
+                found = TRUE;
+                break;
+            }
+        }
+    }
+    if (!found) {
+        int len = enabled ? g_strv_length(enabled) : 0;
+        char **new_enabled = g_new0(char *, len + 2);
+        for (int i = 0; i < len; i++) new_enabled[i] = g_strdup(enabled[i]);
+        new_enabled[len] = g_strdup("desktop-widgets@r3nhick");
+        new_enabled[len + 1] = NULL;
+        g_settings_set_strv(shell_settings, "enabled-extensions", (const char * const *)new_enabled);
+        g_strfreev(new_enabled);
+    }
+    if (enabled) g_strfreev(enabled);
+    g_object_unref(shell_settings);
+}
+
 static GSettings *get_dw_settings(void) {
+    ensure_dw_extension_enabled();
     static GSettings *dw_settings = NULL;
     if (!dw_settings) {
         GSettingsSchemaSource *src = g_settings_schema_source_get_default();
@@ -3677,11 +3706,13 @@ void on_dw_edit_mode_changed(void *widget, void *pspec, gpointer data) {
 
 void on_dw_add_widgets_clicked(void *button, gpointer data) {
     (void)button; (void)data;
+    ensure_dw_extension_enabled();
     GSettings *s = get_dw_settings();
     if (s) {
         g_settings_set_boolean(s, "edit-mode", TRUE);
         g_settings_set_boolean(s, "open-widget-picker", TRUE);
     }
+    g_spawn_command_line_async("sh -c 'pkill -f org.gnome.Shell.Extensions 2>/dev/null; sleep 0.1; gnome-extensions prefs desktop-widgets@r3nhick'", NULL);
 }
 
 void on_dw_arrange_clicked(void *button, gpointer data) {
@@ -3887,7 +3918,7 @@ void on_dw_music_browsers_changed(void *widget, void *pspec, gpointer data) {
 
 void on_dw_advanced_clicked(void *button, gpointer data) {
     (void)button; (void)data;
-    g_spawn_command_line_async("gnome-extensions prefs desktop-widgets@r3nhick", NULL);
+    g_spawn_command_line_async("sh -c 'pkill -f org.gnome.Shell.Extensions 2>/dev/null; sleep 0.1; gnome-extensions prefs desktop-widgets@r3nhick'", NULL);
 }
 
 static void find_list_boxes_recursive(GtkWidget *widget, GList **list)
