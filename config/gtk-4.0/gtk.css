@@ -10012,55 +10012,78 @@ window.mac-settings-window .mac-panel-title-label {
 window.mac-settings-window .mac-nav-pill,
 window.mac-settings-window .mc-toggle-group.mac-nav-pill {
     padding: 0;
-    border-radius: 8px;
-    background: transparent;
-    background-color: transparent;
-    background-image: none;
-    border: none;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: none;
 }
 
 window.mac-settings-window .mac-nav-pill > button,
-window.mac-settings-window .mc-toggle-group.mac-nav-pill > button {
+window.mac-settings-window .mc-toggle-group.mac-nav-pill > button,
+window.mac-settings-window .mac-nav-btn {
     min-height: 28px;
     min-width: 28px;
     padding: 0;
-    margin: 0 1px;
-    border-radius: 7px;
+    margin: 0;
+    border-radius: 9999px;
+    border-top-left-radius: 9999px;
+    border-bottom-left-radius: 9999px;
+    border-top-right-radius: 9999px;
+    border-bottom-right-radius: 9999px;
     background: transparent;
     background-color: transparent;
     border: none;
     box-shadow: none;
     color: rgba(255, 255, 255, 0.85);
+    transition: background-color 150ms ease-out;
 }
 
 window.mac-settings-window .mac-nav-pill > button:first-child,
 window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:first-child,
 window.mac-settings-window .mac-nav-pill > button:last-child,
-window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:last-child {
-    border-radius: 7px;
+window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:last-child,
+window.mac-settings-window .mac-nav-pill > button + button,
+window.mac-settings-window .mc-toggle-group > button + button {
+    border-radius: 9999px;
+    border-top-left-radius: 9999px;
+    border-bottom-left-radius: 9999px;
+    border-top-right-radius: 9999px;
+    border-bottom-right-radius: 9999px;
+    border-left: none;
 }
 
 window.mac-settings-window .mac-nav-pill > button:hover,
-window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:hover {
-    background-color: rgba(255, 255, 255, 0.10);
+window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:hover,
+window.mac-settings-window .mac-nav-btn:hover {
+    background-color: rgba(255, 255, 255, 0.12);
     color: #ffffff;
+    border-radius: 9999px;
+    border-top-left-radius: 9999px;
+    border-bottom-left-radius: 9999px;
+    border-top-right-radius: 9999px;
+    border-bottom-right-radius: 9999px;
 }
 
 window.mac-settings-window .mac-nav-pill > button:active,
-window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:active {
-    background-color: rgba(255, 255, 255, 0.18);
+window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:active,
+window.mac-settings-window .mac-nav-btn:active {
+    background-color: rgba(255, 255, 255, 0.20);
     color: #ffffff;
+    border-radius: 9999px;
+    border-top-left-radius: 9999px;
+    border-bottom-left-radius: 9999px;
+    border-top-right-radius: 9999px;
+    border-bottom-right-radius: 9999px;
 }
 
 window.mac-settings-window .mac-nav-pill separator,
-window.mac-settings-window .mc-toggle-group.mac-nav-pill separator {
-    min-width: 0px;
-    background: transparent;
-    background-color: transparent;
+window.mac-settings-window .mc-toggle-group.mac-nav-pill separator,
+window.mac-settings-window separator.mac-nav-sep {
+    min-width: 1px;
+    background-color: rgba(255, 255, 255, 0.12);
     border: none;
-    opacity: 0;
-    margin: 0 1px;
+    opacity: 1;
+    margin: 4px 0px;
 }
 
 window toolbarview > .top-bar headerbar,
@@ -11357,15 +11380,27 @@ window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top {
 }
 
 .mc-toggle-group > button:hover,
-.mac-nav-pill > button:hover {
+.mac-nav-pill > button:hover,
+.mac-nav-btn:hover {
   background-color: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+  border-radius: 9999px;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
 }
 
 .mc-toggle-group > button:active,
-.mac-nav-pill > button:active {
+.mac-nav-pill > button:active,
+.mac-nav-btn:active {
   background-color: rgba(255, 255, 255, 0.20);
   color: #ffffff;
+  border-radius: 9999px;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
 }
 
 .mc-toggle-group > button:disabled,
@@ -11376,20 +11411,17 @@ window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top {
 }
 
 .mac-nav-pill > button + button,
-.mc-toggle-group > button + button {
-  border-left: 1px solid rgba(255, 255, 255, 0.10);
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  border-top-right-radius: 9999px;
-  border-bottom-right-radius: 9999px;
-}
-
+.mc-toggle-group > button + button,
 .mac-nav-pill > button:first-child,
-.mc-toggle-group > button:first-child {
+.mc-toggle-group > button:first-child,
+.mac-nav-pill > button:last-child,
+.mc-toggle-group > button:last-child {
+  border-radius: 9999px;
   border-top-left-radius: 9999px;
   border-bottom-left-radius: 9999px;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  border-left: none;
 }
 
 /* =========================================================================

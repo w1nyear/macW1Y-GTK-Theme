@@ -14676,3 +14676,26 @@ Task 576: Додавання групи «Док» у панель «Мак ст
      * Ширина поля пошуку стала точно рівною ширині кнопок лефтбару.
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
    - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
+
+===================================================================
+Task 583: Круглий hover для кнопок вперед/назад у Параметрах
+===================================================================
+1. Проблема:
+   - При наведенні курсора на кнопку навігації «Назад» (<) або «Вперед» (>) у «Параметрах» (`gnome-control-center`) форма підсвічування (hover) мала вигляд півовалу з прямим вертикальним зрізом посередині через асиметричні правила `border-top-right-radius: 0; border-bottom-right-radius: 0;` та `border-radius: 7px;`.
+
+2. Реалізація:
+   - Оновлено `control-center/libmac_settings.c` та `gnome-control-center-overlay/libmac_settings.c`:
+     * Для `.mac-nav-pill > button`, `.mc-toggle-group.mac-nav-pill > button`, `.mac-nav-btn` та їхніх станів `:hover`, `:active`, `:first-child`, `:last-child`, `+ button` встановлено повний радіус `border-radius: 9999px` на всіх 4 кутах (`border-top-left-radius`, `border-bottom-left-radius`, `border-top-right-radius`, `border-bottom-right-radius`).
+     * Прибрано нульові радіуси для внутрішніх країв кнопок.
+   - Оновлено всі таблиці стилів GTK:
+     * `config/gtk-4.0/gtk.css`, `config/gtk-4.0/gtk-Dark.css`, `config/gtk-4.0/fixes4.css`
+     * `macW1Y-Dark/gtk-4.0/gtk.css`, `macW1Y-Dark/gtk-4.0/gtk-dark.css`
+     * `gtk-4.0/gtk.css`, `gtk-4.0/gtk-Dark.css`
+     * `config/gtk-3.0/gtk.css`, `macW1Y-Dark/gtk-3.0/gtk.css`
+   - Перекомпільовано `libmac_settings.so` та синхронізовано в усі 7 системних та локальних каталогів (`control-center/`, `gnome-control-center-overlay/`, `lib/`, `~/.local/lib/`, `/usr/share/mactheme/gnome-control-center-overlay/`, `/usr/lib/x86_64-linux-gnu/`, `/usr/local/lib/`).
+   - Синхронізовано CSS-файли в `~/.config/gtk-4.0/`, `~/.config/gtk-3.0/`, `~/.themes/macW1Y-Dark/` та `/usr/share/themes/macW1Y-Dark/`.
+
+3. Верифікація:
+   - Зроблено знімок екрана живого вікна `gnome-control-center` з наведенням курсора на кнопку «Назад»: форма підсвічування hover є ідеальним симетричним колом (радіус плавно закруглений зліва та справа, плоский зріз повністю усунено).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+   - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
