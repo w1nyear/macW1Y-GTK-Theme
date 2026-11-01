@@ -4963,11 +4963,85 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window list.boxed-list row > box.header > image:last-child { "
         "  margin-right: 0px; "
         "} "
-        "window.mac-settings-window list.boxed-list row button, "
-        "window.mac-settings-window adwactionrow button { "
+        "window.mac-settings-window list.boxed-list row button:not(.accent-button), "
+        "window.mac-settings-window adwactionrow button:not(.accent-button) { "
         "  min-height: 22px; "
         "  padding: 2px 8px; "
         "  margin: 0px; "
+        "} "
+        "window.mac-settings-window #accent_box, "
+        "#accent_box { "
+        "  margin-top: 10px; "
+        "  margin-bottom: 10px; "
+        "} "
+        "window.mac-settings-window #accent_box button, "
+        "window.mac-settings-window #accent_box button.accent-button, "
+        "window.mac-settings-window button.accent-button, "
+        "preferencesgroup button.accent, "
+        "preferencesgroup button.accent-button, "
+        "#accent_box button, "
+        "#accent_box button.accent-button, "
+        "button.accent-button { "
+        "  min-width: 24px; "
+        "  min-height: 24px; "
+        "  max-width: 24px; "
+        "  max-height: 24px; "
+        "  width: 24px; "
+        "  height: 24px; "
+        "  padding: 0px; "
+        "  margin: 0px 4px; "
+        "  border-radius: 9999px; "
+        "  border: none; "
+        "  outline: none; "
+        "  -gtk-icon-source: none; "
+        "  background-clip: border-box; "
+        "  box-shadow: none; "
+        "} "
+        "window.mac-settings-window #accent_box button:hover, "
+        "#accent_box button:hover, "
+        "button.accent-button:hover, "
+        "preferencesgroup button.accent:hover, "
+        "preferencesgroup button.accent-button:hover { "
+        "  min-width: 24px; "
+        "  min-height: 24px; "
+        "  max-width: 24px; "
+        "  max-height: 24px; "
+        "  width: 24px; "
+        "  height: 24px; "
+        "  padding: 0px; "
+        "  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25); "
+        "} "
+        "window.mac-settings-window #accent_box button:checked, "
+        "#accent_box button:checked, "
+        "button.accent-button:checked, "
+        "preferencesgroup button.accent:checked, "
+        "preferencesgroup button.accent-button:checked { "
+        "  min-width: 24px; "
+        "  min-height: 24px; "
+        "  max-width: 24px; "
+        "  max-height: 24px; "
+        "  width: 24px; "
+        "  height: 24px; "
+        "  padding: 0px; "
+        "  -gtk-icon-source: none; "
+        "  color: transparent; "
+        "  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-bg-color) 60%, transparent); "
+        "} "
+        "window.mac-settings-window #accent_box button:checked:hover, "
+        "#accent_box button:checked:hover, "
+        "button.accent-button:checked:hover, "
+        "preferencesgroup button.accent:checked:hover, "
+        "preferencesgroup button.accent-button:checked:hover { "
+        "  min-width: 24px; "
+        "  min-height: 24px; "
+        "  max-width: 24px; "
+        "  max-height: 24px; "
+        "  width: 24px; "
+        "  height: 24px; "
+        "  padding: 0px; "
+        "  -gtk-icon-source: none; "
+        "  color: transparent; "
+        "  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-bg-color) 75%, transparent); "
         "} "
         "window.mac-settings-window list.boxed-list row combobox, "
         "window.mac-settings-window list.boxed-list row dropdown, "
@@ -5650,6 +5724,24 @@ static void ensure_panel_header_banner(GtkWidget *target_root, const char *panel
     remove_panel_header_banner_if_any(target_root);
 }
 
+static void fix_accent_color_buttons(GtkWidget *widget) {
+    if (!widget) return;
+    const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
+    const char *name = gtk_widget_get_name(widget);
+    if (g_strcmp0(bid, "accent_box") == 0 || g_strcmp0(name, "accent_box") == 0) {
+        gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
+        for (GtkWidget *b = gtk_widget_get_first_child(widget); b; b = gtk_widget_get_next_sibling(b)) {
+            gtk_widget_set_size_request(b, 24, 24);
+            gtk_widget_set_valign(b, GTK_ALIGN_CENTER);
+            gtk_widget_set_halign(b, GTK_ALIGN_CENTER);
+        }
+        return;
+    }
+    for (GtkWidget *c = gtk_widget_get_first_child(widget); c; c = gtk_widget_get_next_sibling(c)) {
+        fix_accent_color_buttons(c);
+    }
+}
+
 static void update_panel_headerbar(AdwNavigationSplitView *split_view);
 
 static gboolean update_panel_headerbar_idle_cb(gpointer user_data)
@@ -6040,6 +6132,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     expand_clamps_recursive(target_root);
     remove_panel_header_banner_if_any(target_root);
     hide_subtitles_recursive(target_root);
+    fix_accent_color_buttons(target_root);
 
     sync_sidebar_selection(split_view, cur_id);
 

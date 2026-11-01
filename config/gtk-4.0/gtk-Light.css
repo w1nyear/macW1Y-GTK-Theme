@@ -6819,19 +6819,29 @@ preferencesgroup button.accent, preferencesgroup button.accent:hover, preference
 preferencesgroup button.accent-button,
 preferencesgroup button.accent-button:hover,
 preferencesgroup button.accent-button:active,
-preferencesgroup button.accent-button:checked {
-  background-clip: content-box;
+preferencesgroup button.accent-button:checked,
+#accent_box button,
+#accent_box button:hover,
+#accent_box button:active,
+#accent_box button:checked {
+  background-clip: border-box;
   min-height: 24px;
   min-width: 24px;
-  padding: 2px;
+  max-height: 24px;
+  max-width: 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0px;
+  margin: 0px 4px;
   border-radius: 9999px;
   outline: none;
   border: none;
+  -gtk-icon-source: none;
 }
 
 preferencesgroup button.accent:checked,
 preferencesgroup button.accent-button:checked {
-  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
+  -gtk-icon-source: none;
   color: white;
 }
 
@@ -9361,7 +9371,7 @@ panelthemeselector checkbutton.theme-selector radio:checked {
 
 themeselector checkbutton.theme-selector radio:checked,
 panelthemeselector checkbutton.theme-selector radio:checked {
-  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
+  -gtk-icon-source: none;
   color: white;
   background-color: @accent_bg_color;
 }

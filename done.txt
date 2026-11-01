@@ -14125,3 +14125,31 @@ macW1Y 0.4 — Оптимізація компонування Параметр�
    - Візуальне підтвердження:
      * Захоплено знімок екрана `preview_side_by_side_verified.png` та збільшений фрагмент порівняння `preview_side_by_side_comparison.png`.
      * Наочно видно різницю: лівий елемент («Наш передогляд») через ступінчасті кускові нормалі заломлює опори мосту шматками зі зсувом по осях («ніби по частинах»), тоді як правий елемент («Шейдер з репо») створює плавне, суцільне органічне оптичне викривлення з м'якою хроматичною дисперсією та плавною субпіксельною білінійною фільтрацією.
+
+================================================================================
+ЗМІНИ: КРУГЛА ФОРМА КНОПОК КОЛЬОРУ АКЦЕНТУ (ACCENT COLOR BUTTONS) В ПАРАМЕТРАХ
+================================================================================
+1. Проблема:
+   - У розділі «Параметри -> Вигляд» (CcBackgroundPanel) кнопки вибору кольору акценту («Колір акценту») відображалися горизонтально витягнутими (широкими капсулами / пігулками зі сплюснутими боками), а активна (обрана) кнопка розтягувалася до 46px ширини замість акуратного круга.
+   - Причини:
+     1) У `gtk.css` для `preferencesgroup button.accent-button:checked` було прописано `-gtk-icon-source: -gtk-icontheme("object-select-symbolic");`. Спроба завантажити символьну іконку примушувала GTK4 виділяти додаткове горизонтальне місце для іконки (+16px) та внутрішніх відступів, розтягуючи активну кнопку до 46×32px.
+     2) Загальне правило для кнопок у рядках списків `window.mac-settings-window list.boxed-list row button, adwactionrow button` мало `padding: 2px 8px;`, що додавало несиметричні горизонтальні відступи (+16px по ширині проти 4px по висоті).
+     3) Використання `background-clip: content-box` з несиметричними відступами перетворювало кольорову підкладку на витягнутий овал.
+
+2. Реалізовані зміни:
+   - У `control-center/libmac_settings.c` та `gnome-control-center-overlay/libmac_settings.c`:
+     * У `init_custom_css`:
+       - Виключено `.accent-button` із загального правила відступів рядків списків: `list.boxed-list row button:not(.accent-button), adwactionrow button:not(.accent-button)`.
+       - Додано точні правила геометрії для `#accent_box` та `.accent-button`: суворо фіксовані розміри `min-width: 24px; min-height: 24px; max-width: 24px; max-height: 24px; width: 24px; height: 24px; padding: 0px; margin: 0px 4px; border-radius: 9999px; background-clip: border-box; -gtk-icon-source: none;`.
+       - Для активної кнопки (`:checked`): прибрано іконку (`-gtk-icon-source: none; color: transparent;`) та накладено ідеальне концентричне кругле кільце виділення macOS: `box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-bg-color) 60%, transparent);`.
+     * У коді C додано функцію `fix_accent_color_buttons`, яка при завантаженні панелі програмно виставляє `gtk_widget_set_size_request(b, 24, 24)` та центрування `valign = GTK_ALIGN_CENTER`, `halign = GTK_ALIGN_CENTER` для кожного кольорового елемента.
+   - У всіх темах GTK4 (`~/.config/gtk-4.0/*.css`, `config/gtk-4.0/*.css`, `macW1Y-*/gtk-4.0/*.css` — усього 14 файлів):
+     * Замінено `-gtk-icon-source: -gtk-icontheme("object-select-symbolic");` на `-gtk-icon-source: none;`.
+     * Встановлено `min-width: 24px; min-height: 24px; max-width: 24px; max-height: 24px; width: 24px; height: 24px; padding: 0px; margin: 0px 4px; border-radius: 9999px; background-clip: border-box;`.
+   - Бібліотеку `libmac_settings.so` перекомпільовано та синхронізовано в усі 7 системних цільових директорій.
+
+3. Верифікація та результати:
+   - `mac-audit-sync check`: 100% PASS.
+   - `mac-extension-guard verify`: SUCCESS (21/21 розширень валідовано).
+   - Захоплено знімок екрана [accent_buttons_circular.png](file:///home/vitaliy/.gemini/antigravity/brain/d34732a7-0aa8-43ff-b0ad-129d9df0d190/accent_buttons_circular.png).
+   - Піксельний аналіз PIL підтвердив: усі 10 кнопок мають співвідношення ширини до висоти рівно 1.00 (ідеальні кола 24×24px, а активна кнопка з кільцем — 30×30px, ratio=1.00). Жодної широкої/сплюснутої кнопки.
