@@ -14522,3 +14522,40 @@ Task 576: Додавання групи «Док» у панель «Мак ст
    - `mac-extension-guard verify`: SUCCESS.
    - Валідація CSS: 0 попереджень.
 
+===================================================================
+Етап 579: Зменшення радіуса заокруглення OSD та Центру керування до автентичного прямокутника зі скругленими кутами (22px) замість капсули
+===================================================================
+1. Вимоги користувача:
+   - Зменшити заокруглення OSD з того, що було в шейдері скла (повна півкругла капсула/pill `shape_type = 2`), на автентичний радіус, яким елемент був раніше.
+   - Застосувати аналогічне зменшення заокруглення кутів і в Центрі керування («ця зміна в osd стосується і в центрі керування») для карток повзунків гучності та яскравості (`.tahoe-qs-card`, `.mac-cc-slider-card`).
+
+2. Виявлені причини:
+   - У шейдері скла `LiquidEffect` (`src/liquidEffect.ts` та `dist/liquidEffect.js`) при виборі глобальної форми скла (Capsule / Squircle Apple) у налаштуваннях активувався `shape_type = 2.0`, який у `glass.frag` примусово перетворював геометрію на повну капсулу `min(b.x, b.y) = h/2`.
+   - Перевірка UI-контейнерів в `applyShape()` була строгою (`['dock', 'panel', 'osd', ...].includes(this._owner)`), тоді як у kiwi@kemma власники передавалися у форматі `tahoe-qs-osd`, `tahoe-qs-card`, `tahoe-qs-music`, через що OSD та повзунки CC насильно рендерилися напівкруглими капсулами.
+   - У стилях теми `gnome-shell.css` для `.osd-window` було встановлено застаріле `border-radius: 9999px !important;`, а для карток слайдерів `.mac-cc-slider-card` стояло `border-radius: 25px !important;`.
+
+3. Реалізовані зміни:
+   - `liquid-glass@thinkingcoding1231.gmail.com`:
+     * У `src/liquidEffect.ts` та `dist/liquidEffect.js` розширено фільтрацію власників UI-контейнерів у `applyShape()`: усі елементи з `osd`, `tahoe-qs`, `tahoe-nc`, `dock`, `panel`, `notification`, `quick-settings`, `menu`, `dialog` тощо завжди жорстко використовують `shape_type = 0.0` (Rounded Rectangle) із власним радіусом.
+     * Додано публічний метод `setShapeType(shape: number): void` для динамічного керування формою скла.
+   - `kiwi@kemma`:
+     * `apps/tahoeOSD.js` та `apps/tahoeOnScreenDisplay.js`: у `_makeGlassStack()` та `_syncGlass()` явно зафіксовано `shape_type = 0.0` та `corner_radius = 22`.
+     * `apps/tahoeControlCenter.js` та `apps/tahoeQuickSettings.js`: оновлено `GLASS_GROUPS` для `card` та `music` з 28px до 22px, у `_makeGlassStack()` зафіксовано `shape_type = 0.0` та `corner_radius = 22`.
+     * `apps/tahoeNotifications.js`: у `_makeGlassStack()` зафіксовано `shape_type = 0.0`.
+     * `stylesheet.css`: оновлено `.tahoe-qs-card` з `border-radius: 28px;` на `border-radius: 22px !important;`.
+   - Теми GNOME Shell:
+     * У всіх 5 темах (`gnome-shell-theme/gnome-shell.css`, `macW1Y-Dark/`, `macW1Y-Light/`, `macW1Y-Dark-solid/`, `macW1Y-Light-solid/`):
+       - `.osd-window`: `border-radius: 22px !important;` (замість `9999px`).
+       - `.osd-window .level`, `.level-bar`: `border-radius: 4px !important;`.
+       - `.mac-cc-slider-card`: `border-radius: 22px !important;` (замість `25px`).
+       - `.quick-slider`: `border-radius: 16px !important;` (замість `9999px`).
+   - Синхронізація:
+     * Скопійовано оновлені файли до `~/.local/share/gnome-shell/extensions/`, `~/.themes/` та `/usr/share/themes/`.
+     * Оновлено контрольні хеші в `config/extensions.lock.json`.
+
+4. Верифікація:
+   - `mac-extension-guard verify`: SUCCESS (21/21 розширень підтверджено).
+   - `mac-audit-sync check`: 100% PASS (5/5 аудитів пройдено успішно).
+   - Живі вимірювання OSD через EvalHelper та знімок екрана: зафіксовано пряму вертикальну грань 20px (y=37..57, x=28) з плавним заокругленням кутів 22px.
+   - Живі вимірювання Центру керування через EvalHelper: картки Sound та Display отримали `shape_type: 0` та `corner_radius: 22`.
+

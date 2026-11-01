@@ -4756,7 +4756,7 @@ StWidget.focused .app-grid-running-dot {
   background: transparent !important;
   background-color: transparent !important;
   border: none !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   box-shadow: none !important;
   min-height: 44px;
   padding: 4px 16px 4px 10px !important;
@@ -6440,9 +6440,9 @@ StWidget.focused .app-grid-running-dot {
   background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-/* OSD Maximum Rounding & Original Layout */
+/* OSD Original Layout & Authentic Tahoe/macOS Corner Radius */
 .osd-window {
-  border-radius: 9999px !important;
+  border-radius: 22px !important;
   spacing: 8px !important;
   padding: 8px 16px !important;
   background-color: transparent !important;
@@ -6450,7 +6450,7 @@ StWidget.focused .app-grid-running-dot {
 
 .osd-window .level,
 .osd-window .level-bar {
-  border-radius: 9999px !important;
+  border-radius: 4px !important;
 }
 
 .popup-menu-content.quick-settings,
@@ -7146,7 +7146,7 @@ StWidget.focused .app-grid-running-dot {
   background: none !important;
   border: none !important;
   box-shadow: none !important;
-  border-radius: 25px !important;
+  border-radius: 22px !important;
   padding: 10px 14px !important;
 }
 

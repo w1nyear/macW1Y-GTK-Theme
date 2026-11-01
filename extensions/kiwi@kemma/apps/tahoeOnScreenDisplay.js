@@ -606,6 +606,15 @@ function _ensureGlass() {
         if (!monitor)
             return false;
         const s = _makeGlassStack(monitor, OSD_RADIUS, 'osd', false);
+        if (typeof s.effect.setShapeType === 'function')
+            s.effect.setShapeType(0.0);
+        else if (typeof s.effect._setFloat === 'function')
+            s.effect._setFloat('shape_type', 0.0);
+        if (typeof s.effect.setShapeType === 'function')
+            s.effect.setShapeType(0.0);
+        else if (typeof s.effect._setFloat === 'function')
+            s.effect._setFloat('shape_type', 0.0);
+        s.effect.setCornerRadius(OSD_RADIUS);
         Main.layoutManager.uiGroup.add_child(s.bgActor);
         try {
             s.bgActor.hide();
@@ -676,6 +685,10 @@ function _syncGlass() {
         const ry = (by - monitor.y) - OSD_PAD;
         const surf = _osdSurf();
 
+        if (typeof s.effect.setShapeType === 'function')
+            s.effect.setShapeType(0.0);
+        else if (typeof s.effect._setFloat === 'function')
+            s.effect._setFloat('shape_type', 0.0);
         s.effect.setCornerRadius(OSD_RADIUS);
         s.effect.setGlassRegions([{
             x: rx, y: ry, w: bw + OSD_PAD * 2, h: bh + OSD_PAD * 2,

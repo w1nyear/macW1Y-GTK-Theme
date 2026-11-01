@@ -175,6 +175,10 @@ function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0, noWin 
         owner: `tahoe-nc-${name}`,
     });
     effect.setPadding(SHADER_PADDING);
+    if (typeof effect.setShapeType === 'function')
+        effect.setShapeType(0.0);
+    else if (typeof effect._setFloat === 'function')
+        effect._setFloat('shape_type', 0.0);
     effect.setCornerRadius(radius);
     effect.setIsDock(false);
     effect.setMultiRegionMode(true);

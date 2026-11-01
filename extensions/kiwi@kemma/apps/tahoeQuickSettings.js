@@ -95,8 +95,8 @@ const CIRCLE_ON = {c: [1, 1, 1], a: 0.45};
 const GLASS_GROUPS = [
     {name: 'pill', radius: 40},
     {name: 'disc', radius: 31},
-    {name: 'card', radius: 28},
-    {name: 'music', radius: 28},
+    {name: 'card', radius: 22},
+    {name: 'music', radius: 22},
     {name: 'priv', radius: 18},
     // edit button has its own stack: shallower corners than the pill
     {name: 'edit', radius: 15},
@@ -2542,6 +2542,10 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         owner: `tahoe-qs-${name}`,
     });
     effect.setPadding(SHADER_PADDING);
+    if (typeof effect.setShapeType === 'function')
+        effect.setShapeType(0.0);
+    else if (typeof effect._setFloat === 'function')
+        effect._setFloat('shape_type', 0.0);
     effect.setCornerRadius(radius);
     effect.setIsDock(false);
     effect.setMultiRegionMode(true);

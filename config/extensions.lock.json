@@ -177,7 +177,7 @@
         "50",
         "51"
       ],
-      "sha256": "139b0124733d7d00fc7a32744429674fb39603c5ffd26e7f947585c9edba26f3",
+      "sha256": "871c1bb60f4acb8a8c12be97dfd7d1e58a04862c886d056fe57d86b0a11d206a",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -188,9 +188,9 @@
         "control_center_liquid_glass_submenus"
       ],
       "has_custom_patches": true,
-      "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag",
+      "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
       "last_verified": "2026-11-01",
-      "integrity_hash": "139b0124733d7d00fc7a32744429674fb39603c5ffd26e7f947585c9edba26f3"
+      "integrity_hash": "871c1bb60f4acb8a8c12be97dfd7d1e58a04862c886d056fe57d86b0a11d206a"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
@@ -200,7 +200,7 @@
         "49",
         "50"
       ],
-      "sha256": "99d8eba0ba5bd8f8bab8251c26f067345fe39dee8daa8de6c4c6b61a00be82c7",
+      "sha256": "86bb1febda65991cf8178b7937151597e897260b045ab53d267fab9b18167d0f",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -210,9 +210,9 @@
         "dock_glass"
       ],
       "has_custom_patches": true,
-      "patch_description": "Local custom Liquid Glass GLSL refraction & border shader",
-      "last_verified": "2026-10-31",
-      "integrity_hash": "56afd2da3eef0fe2d14d85ef7aebcb63d92e400e18ce1d7d09c8f8269f483ef7"
+      "patch_description": "Local custom Liquid Glass GLSL refraction & border shader; UI container owner check for strict rounded rectangle radius enforcement and setShapeType API",
+      "last_verified": "2026-11-01",
+      "integrity_hash": "86bb1febda65991cf8178b7937151597e897260b045ab53d267fab9b18167d0f"
     },
     "macos-touchpad-gestures@mactheme": {
       "uuid": "macos-touchpad-gestures@mactheme",

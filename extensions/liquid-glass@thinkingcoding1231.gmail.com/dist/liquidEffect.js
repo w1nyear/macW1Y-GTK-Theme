@@ -2863,8 +2863,28 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
         });
         if (settings && settings.settings_schema && settings.settings_schema.has_key('glass-shape-type')) {
             const applyShape = () => {
-                // Dock, menus, panels, osd and notifications are rectangular UI containers and must always use rounded rectangle (0.0)
-                if (this._owner && (['dock', 'panel', 'osd', 'notification', 'quick-settings', 'quick-settings-toggles'].includes(this._owner) || this._owner.includes('menu'))) {
+                // UI containers (dock, menus, panels, osd, quick settings, notifications, spotlight, dialogs, etc.)
+                // must ALWAYS use their own specific rounded rectangle corner radius (0.0).
+                const o = (this._owner || '').toLowerCase();
+                if (o && (
+                    o.includes('dock') ||
+                    o.includes('panel') ||
+                    o.includes('osd') ||
+                    o.includes('notification') ||
+                    o.includes('quick-settings') ||
+                    o.includes('tahoe-qs') ||
+                    o.includes('tahoe-nc') ||
+                    o.includes('menu') ||
+                    o.includes('spotlight') ||
+                    o.includes('application') ||
+                    o.includes('modal') ||
+                    o.includes('dialog') ||
+                    o.includes('switcher') ||
+                    o.includes('clipboard') ||
+                    o.includes('toast') ||
+                    o.includes('topbar') ||
+                    o.includes('widget')
+                )) {
                     this._setFloat('shape_type', 0.0);
                     return;
                 }
@@ -3008,6 +3028,9 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
     }
     setIsDock(isDock) {
         this._setFloat('isDock', isDock ? 1.0 : 0.0);
+    }
+    setShapeType(shape) {
+        this._setFloat('shape_type', shape);
     }
     /**
      * Enables/disables the rim light + specular + sheen "glass surface
