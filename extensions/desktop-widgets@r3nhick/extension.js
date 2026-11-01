@@ -1513,7 +1513,10 @@ class WidgetController {
   _watchBatteryChanges() {
     // UPower and BlueZ emit bursts of signals (one per device per property),
     // so coalesce them into a single re-render.
-    const refresh = () => this._debounce('battery', () => this._refreshBatteryViews(), 300);
+    const refresh = () => this._debounce('battery', () => {
+      BatteryWidget.refreshBatteryDevices(true);
+      this._refreshBatteryViews();
+    }, 200);
     const refreshBlueZ = (_connection, _sender, _objectPath, _interfaceName, _signalName, parameters) => {
       const [changedInterface] = parameters.deep_unpack();
 

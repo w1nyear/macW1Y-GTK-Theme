@@ -14764,3 +14764,46 @@ Task 585: Виправлення роздільної здатності роз�
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
    - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
 
+--------------------------------------------------------------------------------
+ЗАВДАННЯ 586: Оптимізація віджета календаря (Wide Layout Fitting, видалення скролбара, ліміт подій) та підтримка Bluetooth-навушників у віджеті батареї
+--------------------------------------------------------------------------------
+1. Вихідні вимоги:
+   - У віджеті календаря зменшити календар справа, щоб поміщався з чистим відступом до низу скляної панелі (без заломлення в нижню грань).
+   - Зліва зменшити та розмістити події з комфортним відступом до низу.
+   - Максимум показу у списку подій — до двох свят/подій.
+   - Видалити скролбар у віджеті календаря.
+   - Забезпечити відображення підключених по Bluetooth навушників (AirPods Pro / Bluetooth headphones) у віджеті батареї.
+
+2. Реалізація:
+   - **Віджет календаря (Desktop Widgets - Calendar)**:
+     * У `extensions/desktop-widgets@r3nhick/widgets/calendar/widget.js`:
+       - У режимі `wide` (2x1) оптимізовано габарити календарної сітки праворуч: `cellWidth = Math.round(19 * (rightWidth / 175))`, `cellHeight = Math.round(cellWidth * (compact ? 0.76 : 0.85))` (для 6-тижневих місяців висота комірки складає ~14px), міжрядковий інтервал `gap = compact ? 2 : 3`, шрифт днів масштабовано як `11.5px * (cellWidth / 19)`.
+       - Додано нижній відступ контейнера `margin-bottom: 12px` та явний спейсер `new St.Widget({height: 12})`, завдяки чому 30-те число та вся сітка мають >20px вільного простору до нижнього краю скла.
+       - Зліва: зменшено розмір цифри поточного дня з 58px до 48px, зменшено висоту кольорової плашки події до `min-height: 24px` (ширина 3.5px), заголовок події — 13.5px, підзаголовок — 11px, додано нижній спейсер `new St.Widget({height: 14})`.
+       - У `fillEventsBox` встановлено суворий ліміт: `shown = allEvents.slice(0, 2)` (відображається максимум 2 події).
+       - Повністю вилучено `St.ScrollView` зі скролбаром; список подій додається безпосередньо у вертикальний `St.BoxLayout`.
+     * У `extensions/desktop-widgets@r3nhick/widgets/calendar/stylesheet.css`:
+       - Додано правила для примусового приховування скролбарів (`width: 0px !important; height: 0px !important; opacity: 0 !important;`).
+   - **Віджет батареї та Bluetooth (Desktop Widgets - Battery)**:
+     * У `/etc/bluetooth/main.conf` активовано `Experimental = true` (лінія 128) та внесено аналогічне правило в `install.sh` для експорту інтерфейсу `org.bluez.Battery1` та читання батареї пристроїв Apple/Bluetooth.
+     * У `extensions/desktop-widgets@r3nhick/widgets/battery/widget.js`:
+       - У `readBlueZDevices()` додано обробку пристроїв без попереднього `Battery1`: якщо пристрій підключено (`Connected: true`) і це аудіо-периферія (назва або іконка містить `airpod`, `headphone`, `buds`, `ear`, `jbl`, `sound`, `mouse`, `keyboard`), встановлюється фолбек заряду 100% та відповідна іконка `audio-headphones-symbolic`.
+       - Додано параметр `force` у `refreshBatteryDevices(force = false)` для негайного оновлення кешу в обхід тротлінгу при подіях підключення.
+       - У класі `BatteryRing` додано унікальний динамічний `GTypeName: BatteryRing_${Date.now()}` для унеможливлення конфліктів у реєстрі GType при гарячому перевантаженні.
+     * В `extensions/desktop-widgets@r3nhick/extension.js`:
+       - У `_watchBatteryChanges()` додано виклик `BatteryWidget.refreshBatteryDevices(true)` при зміні властивостей BlueZ `Device1` та `Battery1`.
+   - **Синхронізація та цілісність**:
+     * Синхронізовано файли до `~/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick/`.
+     * Оновлено хеш цілісності у `config/extensions.lock.json` (`0d72617ec2d3add5f79bf027566e3f74caa3fb803f371a720294184c6f9b1863`).
+     * Застосовано оновлені модулі наживо у працюючому GNOME Shell без перезапуску сесії користувача.
+
+3. Верифікація:
+   - Зафіксовано скріншот віджета календаря наживо (`calendar_widget_crop_verified.png`):
+     * Число 30 та вся календарна сітка розташовані з чистим відступом понад 20 px від нижнього краю.
+     * Зліва список подій має чистий відступ від низу, відображається рівно 2 події.
+     * Скролбар повністю відсутній.
+   - Зафіксовано віджет батареї (`battery_widget_crop_verified.png`).
+   - `bin/mac-extension-guard verify`: SUCCESS (21/21).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+
+

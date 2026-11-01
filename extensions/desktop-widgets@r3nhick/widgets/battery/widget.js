@@ -261,21 +261,41 @@ async function readBlueZDevices() {
 			const deviceProps = interfaces['org.bluez.Device1'];
 			const batteryProps = interfaces['org.bluez.Battery1'];
 
-			if (!deviceProps || !batteryProps || !variantValue(deviceProps, 'Connected', false)) {
+			if (!deviceProps || !variantValue(deviceProps, 'Connected', false)) {
 				continue;
 			};
 
-			const percentage = Number(variantValue(batteryProps, 'Percentage', Number.NaN));
+			let percentage = batteryProps ? Number(variantValue(batteryProps, 'Percentage', Number.NaN)) : Number.NaN;
+			let icon = variantValue(deviceProps, 'Icon', null);
+			const nameStr = String(variantValue(deviceProps, 'Alias', '') || variantValue(deviceProps, 'Name', '') || _('Bluetooth'));
+			const nameLower = nameStr.toLowerCase();
 
+			if (!icon) {
+				if (nameLower.includes('airpod') || nameLower.includes('headphone') || nameLower.includes('ear') || nameLower.includes('buds') || nameLower.includes('audio') || nameLower.includes('jbl') || nameLower.includes('sound')) {
+					icon = 'audio-headphones';
+				} else if (nameLower.includes('mouse')) {
+					icon = 'input-mouse';
+				} else if (nameLower.includes('keyboard')) {
+					icon = 'input-keyboard';
+				}
+			}
+
+			const iconName = bluezIconName(icon);
+			const isAudioOrPeripheral = iconName.includes('head') || iconName.includes('audio') || iconName.includes('mouse') || iconName.includes('keyboard');
+
+			// If battery interface is not yet present on BlueZ or doesn't report percentage,
+			// but device is a connected audio or peripheral device, default to 100% so it shows up.
 			if (!Number.isFinite(percentage)) {
-				continue;
-			};
-
-			const iconName = bluezIconName(variantValue(deviceProps, 'Icon', null));
+				if (isAudioOrPeripheral) {
+					percentage = 100;
+				} else {
+					continue;
+				}
+			}
 
 			devices.push({
 				source: 'bluez',
-				name: String(variantValue(deviceProps, 'Alias', '') || variantValue(deviceProps, 'Name', '') || _('Bluetooth')),
+				name: nameStr,
 				percentage: Math.round(Math.max(0, Math.min(100, percentage))),
 				powerSupply: false,
 				iconName,
@@ -341,10 +361,10 @@ export function onBatteryDevicesChanged(callback) {
 	return () => deviceListeners.delete(callback);
 };
 
-export function refreshBatteryDevices() {
+export function refreshBatteryDevices(force = false) {
 	const now = Date.now();
 
-	if (refreshPromise || now - lastRefreshAt < REFRESH_MIN_INTERVAL_MS) {
+	if (refreshPromise || (!force && now - lastRefreshAt < REFRESH_MIN_INTERVAL_MS)) {
 		return refreshPromise;
 	};
 
@@ -383,6 +403,7 @@ export function refreshBatteryDevices() {
 };
 
 const BatteryRing = GObject.registerClass(
+	{GTypeName: `BatteryRing_${Date.now()}`},
 	class BatteryRing extends St.DrawingArea {
 		_init(device, theme, useAccent) {
 			super._init({style_class: 'widget-battery-ring'});

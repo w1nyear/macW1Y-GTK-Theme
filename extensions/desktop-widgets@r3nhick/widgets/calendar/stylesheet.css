@@ -3,11 +3,11 @@
 }
 
 .widget-calendar-grid {
-    spacing: 4px;
+    spacing: 3px;
 }
 
 .widget-calendar-row {
-    spacing: 4px;
+    spacing: 3px;
 }
 
 .widget-calendar-cell {
@@ -28,4 +28,13 @@
 
 .widget-calendar-events {
     font-size: 13px;
+}
+
+.widget-calendar StScrollView StScrollBar,
+StScrollView.widget-calendar-events-scroll StScrollBar {
+    width: 0px !important;
+    height: 0px !important;
+    min-width: 0px !important;
+    min-height: 0px !important;
+    opacity: 0 !important;
 }

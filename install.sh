@@ -1014,6 +1014,12 @@ install_touchpad() {
                /usr/local/lib/libmac_3fg_drag.so 2>/dev/null || true
 
     log_success "Touchpad gesture daemon started and enabled in autostart!"
+
+    # Enable Bluetooth Experimental mode for battery reporting (AirPods, Bluetooth headphones, mice)
+    if [ -f /etc/bluetooth/main.conf ]; then
+        sudo sed -i 's/^#*Experimental *=.*$/Experimental = true/' /etc/bluetooth/main.conf
+        sudo systemctl restart bluetooth 2>/dev/null || true
+    fi
 }
 
 # ------------------------------------------------------------------------------

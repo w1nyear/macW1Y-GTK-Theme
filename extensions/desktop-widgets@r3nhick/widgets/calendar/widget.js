@@ -750,8 +750,9 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 	const horizonUnix = Math.floor(horizon.getTime() / 1000) + 86399;
 	const upcomingEvents = eventsClient.eventsInRange?.(upcomingSinceUnix, horizonUnix) ?? [];
 
-	// Show all today's events + tomorrow's + upcoming ones inside the window
-	const shown = [...todayEvents, ...tomorrowEvents, ...upcomingEvents];
+	// Show all today's events + tomorrow's + upcoming ones inside the window (max 2)
+	const allEvents = [...todayEvents, ...tomorrowEvents, ...upcomingEvents];
+	const shown = allEvents.slice(0, 2);
 
 	if (!shown.length) {
 		container.add_child(eventLabel(noEventsToday()));
@@ -770,10 +771,10 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 			style: `spacing: 0;`,
 		}));
 
-		// Colored vertical indicator line on the left (4px like in Lua)
+		// Colored vertical indicator line on the left (3.5px)
 		const colorBar = new St.Widget({
 			style_class: 'widget-calendar-event-color',
-			style: `background-color: ${eventColor}; width: 4px; border-radius: 2px; min-height: 28px;`,
+			style: `background-color: ${eventColor}; width: 3.5px; border-radius: 2px; min-height: 24px;`,
 		});
 		eventItem.add_child(colorBar);
 
@@ -781,14 +782,14 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 		const textBox = new St.BoxLayout(boxLayoutProps({
 			vertical: true,
 			x_expand: true,
-			style: `spacing: 2px; padding-left: 8px;`,
+			style: `spacing: 1px; padding-left: 7px;`,
 		}));
 
 		// Event title
 		const eventTextLabel = createLabel(
 			eventText,
 			'widget-calendar-events',
-			`font-size: 15px; font-weight: 600; color: ${text};`
+			`font-size: 13.5px; font-weight: 600; color: ${text};`
 		);
 		eventTextLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
 		eventTextLabel.clutter_text.line_wrap = false;
@@ -818,7 +819,7 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 		const eventSubtitle = createLabel(
 			subtitleText,
 			'widget-calendar-events',
-			`font-size: 12px; font-weight: 500; color: ${secondary};`
+			`font-size: 11px; font-weight: 500; color: ${secondary};`
 		);
 		eventSubtitle.clutter_text.line_wrap = false;
 		eventSubtitle.x_expand = true;
@@ -866,50 +867,43 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 
 	if (wide) {
 		const rightWidth = Math.round(clamp(widgetWidth * 0.45, 168, 230));
-		const cellWidth = Math.round(20 * (rightWidth / 175));
-		const cellHeight = Math.round(cellWidth * (compact ? 0.95 : 1));
-		const dayFont = Math.max(9, Math.round(DAY_BASE_FONT * (cellWidth / 20)));
+		const cellWidth = Math.round(19 * (rightWidth / 175));
+		const cellHeight = Math.round(cellWidth * (compact ? 0.76 : 0.85));
+		const dayFont = Math.max(9, Math.round(11.5 * (cellWidth / 19)));
 		const weekdayFont = fitWeekdayFontSize(weekdays, cellWidth, dayFont);
-		const gap = GAP_BASE;
+		const gap = compact ? 2 : 3;
 
 		const container = new St.BoxLayout(boxLayoutProps({
 			x_expand: true,
 			y_expand: true,
-			style: `spacing: 20px;`,
+			style: `spacing: 18px; margin-bottom: 12px;`,
 		}));
+		container.margin_bottom = 12;
 
 		const left = new St.BoxLayout(boxLayoutProps({
 			vertical: true,
 			x_expand: true,
-			style: 'spacing: 4px;',
+			style: 'spacing: 2px;',
 		}));
 
 		const weekdayNameColor = useAccentColor ? theme.accent : text;
 		left.add_child(createLabel(
 			uppercaseWeekday(now),
 			'widget-calendar-day-name',
-			`font-size: 15px; font-weight: 700; color: ${weekdayNameColor};`));
+			`font-size: 14px; font-weight: 700; color: ${weekdayNameColor};`));
 		left.add_child(createLabel(
 			String(today),
 			'widget-calendar-day-number',
-			`font-size: 58px; font-weight: 700; color: ${text};`));
+			`font-size: 48px; font-weight: 700; color: ${text};`));
 		left.add_child(new St.Widget({y_expand: true}));
 
-		// Scroll container for events list
-		const eventsScroll = new St.ScrollView({
-			x_expand: true,
-			y_expand: false,
-			style: 'margin-bottom: 6px;',
-			overlay_scrollbars: true,
-		});
-		eventsScroll.set_policy(St.PolicyType.NEVER, St.PolicyType.AUTOMATIC);
-
+		// Events container (max 2 items, no scrollbar)
 		const eventsBox = new St.BoxLayout(boxLayoutProps({
 			vertical: true,
-			style: 'spacing: 4px;',
+			style: 'spacing: 3px;',
 		}));
-		eventsScroll.set_child(eventsBox);
-		left.add_child(eventsScroll);
+		left.add_child(eventsBox);
+		left.add_child(new St.Widget({height: 14}));
 
 		if (events) {
 			const refresh = () => {
@@ -936,11 +930,11 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 
 		const right = new St.BoxLayout(boxLayoutProps({
 			vertical: true,
-			style: 'spacing: 4px;',
+			style: 'spacing: 2px;',
 		}));
 
 		right.set_width(rightWidth);
-		right.add_child(monthLabel(now, createLabel, dayFont, theme, useAccentColor, cellWidth / 20));
+		right.add_child(monthLabel(now, createLabel, dayFont, theme, useAccentColor, cellWidth / 19));
 
 		right.add_child(buildGrid({
 			now,
@@ -961,6 +955,7 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 			weekend,
 			weekendColor,
 		}));
+		right.add_child(new St.Widget({height: 12}));
 
 		container.add_child(left);
 		container.add_child(right);
