@@ -471,7 +471,11 @@ export class DockMagnifier {
             this._clearRisen();
 
         // End padding: base margin + extra space when edge icons scale so the
-        // dock pill rounded corners comfortably surround magnified edge icons
+        // dock pill rounded corners comfortably surround magnified edge icons.
+        // Hugs the actual visual bounding box of all icons during magnification so
+        // that as the cursor moves toward either end of the dock and fewer icons
+        // are magnified, the dock capsule smoothly contracts at the ends together
+        // with the icons rather than leaving excessive empty background space.
         const bgActor = this._dash._background;
         const dashPos = this._dash.get_transformed_position();
         const horizontal = this._horizontal;
@@ -480,22 +484,12 @@ export class DockMagnifier {
         const bgP2 = dashP + (horizontal ? bgActor.allocation.x2 : bgActor.allocation.y2);
         const basePadL = Math.max(2, bounds[0] - bgP1);
         const basePadR = Math.max(2, bgP2 - bounds[n]);
-        const baseSpan = bounds[n] - bounds[0];
 
-        // FIXED DOCK CONTAINER WIDTH ON HOVER:
-        // Width expansion depends SOLELY on this._envelope, completely independent
-        // of horizontal cursor position. When moving the cursor across icons,
-        // the dock container width and position remain 100% STATIC and LOCKED,
-        // preventing lateral drift / jitter and completely eliminating 60 FPS
-        // liquid-glass shader re-rendering.
-        const maxDeltaW = (this._maxScale - 1) * Math.min(baseSpan, effectWidth / 2);
-        const deltaW = maxDeltaW * this._envelope;
-        const fixedSpan = baseSpan + deltaW;
-        const targetL = (baseCenter - fixedSpan / 2) - basePadL;
-        const targetR = (baseCenter + fixedSpan / 2) + basePadR;
+        const padL = basePadL + Math.max(0, elements[0].scale - 1) * 12;
+        const padR = basePadR + Math.max(0, elements[n - 1].scale - 1) * 12;
 
         this._stretchBackground(bounds[0], bounds[n],
-            targetL + basePadL, targetR - basePadR, basePadL, basePadR);
+            newBounds[0] + shift, newBounds[n] + shift, padL, padR);
         this._queueStageRedraw();
     }
 
