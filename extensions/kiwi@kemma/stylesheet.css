@@ -1638,17 +1638,14 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-glyphbtn { width: 38px; height: 38px; }
 .tahoe-qs-glyphicon { icon-size: 24px; color: #1d1d1f; }
 
-/* slider cards — glass r22 */
+/* slider cards — glass r22 matching OSD 1:1 */
 .tahoe-qs-card {
     background-color: transparent;
     border-radius: 22px !important;
-    padding: 10px 14px;
-    spacing: 6px;
+    padding: 8px 14px 10px 14px;
+    spacing: 5px;
     box-shadow: none;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-left: none !important;
-    border-right: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
 }
 .tahoe-qs-dark .tahoe-qs-card { box-shadow: none; }
 .tahoe-qs-card-head {

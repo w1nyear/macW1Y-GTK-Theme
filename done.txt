@@ -14807,3 +14807,34 @@ Task 585: Виправлення роздільної здатності роз�
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
 
 
+--------------------------------------------------------------------------------
+ЗАВДАННЯ 587: Зменшення висоти слайдерних модулів Центру керування та заокруглення 1:1 з OSD
+--------------------------------------------------------------------------------
+1. Вихідні вимоги:
+   - У центрі керування зменшити висоту модулів слайдерів (Дисплей, Звук) та зробити їхнє заокруглення ідентичним 1:1 з OSD меню.
+
+2. Реалізація:
+   - **Центр керування (Kiwi - Tahoe Control Center)**:
+     * У `extensions/kiwi@kemma/apps/tahoeControlCenter.js` та `extensions/kiwi@kemma/apps/tahoeQuickSettings.js`:
+       - Зменшено висоту слайдерних карток: `CARD_H = 63` (було 72).
+       - У функції `_syncStack(s, monitor)` реалізовано примусове налаштування шейдера рідкого скла для групи `'card'`: `s.effect.setCornerRadius(22)` та `s.effect.setShapeType(0.0)` (прямокутник із закругленими кутами r22 замість капсули).
+     * У `extensions/kiwi@kemma/stylesheet.css`:
+       - Для `.tahoe-qs-card` оновлено стиль: `border-radius: 22px !important;`, `padding: 8px 14px 10px 14px;`, `spacing: 5px;`, `border: 1px solid rgba(255, 255, 255, 0.16) !important;` (усунено розривні 2px верхні/нижні рамки).
+     * У `extensions/kiwi@kemma/extension.js`:
+       - Оновлено query parameter імпорту модуля `tahoeControlCenter.js?v=tahoe_v19` для коректної інвалідації кешу імпорту.
+     * У темах GNOME Shell:
+       - Оновлено `.mac-cc-slider-card` (`height: 63px !important; min-height: 63px !important; max-height: 63px !important; border-radius: 22px !important; padding: 8px 14px 10px 14px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important;`) у `gnome-shell-theme/gnome-shell.css`, `macW1Y-Dark/gnome-shell/gnome-shell.css`, `macW1Y-Dark-solid/gnome-shell/gnome-shell.css`, `macW1Y-Light/gnome-shell/gnome-shell.css`, `macW1Y-Light-solid/gnome-shell/gnome-shell.css`.
+     * Синхронізація та перезавантаження:
+       - Синхронізовано теми до `~/.themes/`.
+       - Синхронізовано файли розширення до `~/.local/share/gnome-shell/extensions/kiwi@kemma/`.
+       - Оновлено хеш цілісності `kiwi@kemma` у `config/extensions.lock.json` (`408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f`).
+       - Здійснено гаряче оновлення екземпляра `tahoeControlCenter` наживо у середовищі GNOME Shell без переривання сесії.
+
+3. Верифікація:
+   - Зафіксовано скріншот оновлених карток Центру керування наживо (`cc_sliders_verified_63px.png`):
+     * Висота модулів регулювання (Дисплей та динамік) становить рівно 63px.
+     * Радіус закруглення кутів картки становить 22px з акуратним напівпрозорим бордером 1px по всьому контуру, 1:1 з OSD меню гучності/яскравості.
+     * Відступи та розміщення повзунка збалансовані.
+   - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+

@@ -75,7 +75,7 @@ const GAP = 12;
 const PILL_H = 60;                                // renders 80 with padding
 const CIRCLE = 62;
 const MUSIC_H = PILL_H * 2 + GAP;                 // 132 forced, 152 rendered
-const CARD_H = 72;                                // forced (96 rendered)
+const CARD_H = 63;                                // forced matching OSD 1:1 (63 rendered)
 const EDIT_H = 28;                                // same as privacy pill
 
 const LG_SCHEMA = 'org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com';
@@ -2809,6 +2809,13 @@ function _syncStack(s, monitor) {
     if (!s.bgActor.visible)
         s.bgActor.show();
     s.bgActor.opacity = p.box.opacity;
+    if (s.group === 'card') {
+        if (typeof s.effect.setShapeType === 'function')
+            s.effect.setShapeType(0.0);
+        else if (typeof s.effect._setFloat === 'function')
+            s.effect._setFloat('shape_type', 0.0);
+        s.effect.setCornerRadius(22);
+    }
     s.effect.setGlassRegions(regions);
 
     const clip = [minX - CLIP_PADDING, minY - CLIP_PADDING,

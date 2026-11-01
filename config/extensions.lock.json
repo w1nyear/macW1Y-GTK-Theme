@@ -177,7 +177,7 @@
         "50",
         "51"
       ],
-      "sha256": "871c1bb60f4acb8a8c12be97dfd7d1e58a04862c886d056fe57d86b0a11d206a",
+      "sha256": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -190,7 +190,7 @@
       "has_custom_patches": true,
       "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
       "last_verified": "2026-11-01",
-      "integrity_hash": "871c1bb60f4acb8a8c12be97dfd7d1e58a04862c886d056fe57d86b0a11d206a"
+      "integrity_hash": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",

@@ -7166,15 +7166,15 @@ StWidget.focused .app-grid-running-dot {
   width: 310px !important;
   min-width: 310px !important;
   max-width: 310px !important;
-  height: 50px !important;
-  min-height: 50px !important;
-  max-height: 50px !important;
+  height: 63px !important;
+  min-height: 63px !important;
+  max-height: 63px !important;
   background-color: transparent !important;
   background: none !important;
-  border: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   box-shadow: none !important;
   border-radius: 22px !important;
-  padding: 10px 14px !important;
+  padding: 8px 14px 10px 14px !important;
 }
 
 .mac-cc-slider-track {
