@@ -4321,7 +4321,7 @@ static void configure_toolbar_views_recursive(GtkWidget *widget, gboolean is_sid
             adw_toolbar_view_set_extend_content_to_top_edge(tv, FALSE);
             adw_toolbar_view_set_extend_content_to_bottom_edge(tv, FALSE);
         } else {
-            adw_toolbar_view_set_extend_content_to_top_edge(tv, TRUE);
+            adw_toolbar_view_set_extend_content_to_top_edge(tv, FALSE);
             adw_toolbar_view_set_extend_content_to_bottom_edge(tv, TRUE);
         }
         adw_toolbar_view_set_top_bar_style(tv, ADW_TOOLBAR_FLAT);
@@ -4841,12 +4841,12 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window preferencespage > scrolledwindow > viewport > clamp > box, "
         "window.mac-settings-window preferencespage clamp > box { "
-        "  margin-top: 4px; "
+        "  margin-top: 10px; "
         "  margin-bottom: 24px; "
         "} "
         "window.mac-settings-window preferencesgroup:first-child, "
         "window.mac-settings-window preferencespage preferencesgroup:first-child { "
-        "  margin-top: 2px; "
+        "  margin-top: 4px; "
         "} "
         "window.mac-settings-window infobar, "
         "window.mac-settings-window .permission-infobar, "

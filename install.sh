@@ -756,6 +756,7 @@ install_extensions() {
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com notification-tint-strength 0.15 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com shadow-radius 51.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com shadow-intensity 0.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-blur-downscale 1 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick style-border-radius 35 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick blur-radius-px 1 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick tint-alpha-pct 20 2>/dev/null || true

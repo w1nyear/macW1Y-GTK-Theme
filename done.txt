@@ -14729,3 +14729,38 @@ Task 584: Синхронізація параметрів заокругленн
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
    - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
    - Повний збіг JSON-конфігів (`styling.json` у системі та в репозиторії ідентичні на 100%).
+
+===================================================================
+Task 585: Виправлення роздільної здатності розмиття скла Liquid Glass та опускання верху списку в Параметрах
+===================================================================
+1. Проблема:
+   - У Liquid Glass розмиття та заломлення фону мали надто низьку роздільну здатність у режимах балансу та продуктивності (`glass-blur-downscale = 4`, 1/16 пікселів), через що за доком спостерігався 4x4 мозаїчний піксельний шум (блочність).
+   - У вікні «Параметри» («Mac стилізація») верх списку на початку ховався і перекривався заголовком вікна: заголовок групи «Liquid Glass» та опис шейдера накладалися безпосередньо на плаваючий заголовок «Mac стилізація» та кнопки навігації `< | >` через примусовий виклик `adw_toolbar_view_set_extend_content_to_top_edge(tv, TRUE)`.
+
+2. Реалізація:
+   - **Висока роздільна здатність скла (1:1 Pixel-Perfect)**:
+     * У `bin/mac-graphics-profile` оновлено всі профілі (`high`, `balanced`, `performance`) — встановлено `"glass-blur-downscale": 1`. Скопійовано у `/usr/local/bin/mac-graphics-profile`.
+     * В `extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js`, `dist/liquidEffect_v2.js` та `src/liquidEffect.ts`:
+       - Дефолт `this._blurDownscale` змінено з 4 на 1.
+       - У `_buildTexturePool` додано точний розрахунок зсуву: `shift = this._blurDownscale >= 4 ? 2 : (this._blurDownscale === 2 ? 1 : 0)`.
+       - У `applyDownscale` додано підтримку нативної роздільної здатності 1:1: `factor = raw >= 4 ? 4 : (raw <= 1 ? 1 : 2)`.
+       - У `_setGaussianBlurRadius` додано `RES_SCALE = this._blurDownscale >= 4 ? 4.0 : (this._blurDownscale === 2 ? 2.0 : 1.0)`.
+     * У `prefs.js` додано пункт `1: Full (Recommended - Pixel Perfect)` у список вибору `BLUR_DOWNSCALE_VALUES`.
+     * В схемі GSettings `org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com.gschema.xml` змінено дефолт `glass-blur-downscale` на 1, перекомпільовано бінарні схеми `glib-compile-schemas`.
+     * Синхронізовано розширення до `~/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/`.
+     * Оновлено хеш цілісності розширення у `config/extensions.lock.json` (`8c1eefa7e66fb71e9517701c6f8f04f3fecf18d4623ba660ab4a330a40e39365`).
+     * Синхронізовано `glass-blur-downscale = 1` у `dconf/gnome-all.dconf`, `dconf/gnome-extensions.dconf`, `dconf/gnome-shell.dconf`, `dconf/liquid-glass.dconf` та `install.sh`.
+     * Застосовано наживо через `gsettings` та `mac-graphics-profile set auto`.
+   - **Опускання верху списку в Параметрах (Fix Headerbar Overlap)**:
+     * У `control-center/libmac_settings.c` та `gnome-control-center-overlay/libmac_settings.c`:
+       - У функції `configure_toolbar_views_recursive` для контентної панелі вимкнено розширення під заголовок: `adw_toolbar_view_set_extend_content_to_top_edge(tv, FALSE)`.
+       - У стилях `init_mac_settings_css` встановлено комфортні відступи: `margin-top: 10px` для `preferencespage clamp > box` та `margin-top: 4px` для `preferencesgroup:first-child`.
+     * Синхронізовано правила CSS у `gtk-4.0/gtk.css`, `gtk-4.0/gtk-Dark.css`, `config/gtk-4.0/gtk.css`, `config/gtk-4.0/gtk-Dark.css`, `macW1Y-Dark/gtk-4.0/gtk.css`, `macW1Y-Dark/gtk-4.0/gtk-dark.css` та `~/.config/gtk-4.0/`.
+     * Перекомпільовано бібліотеку `libmac_settings.so` та поширено в усі 7 канонічних шляхів (`control-center/`, `gnome-control-center-overlay/`, `lib/`, `/usr/lib/x86_64-linux-gnu/`, `/usr/local/lib/`, `~/.local/lib/`, `~/.local/share/gnome-control-center-overlay/`), виконано `sudo ldconfig`.
+
+3. Верифікація:
+   - Зафіксовано візуальний скріншот виправленого початкового стану вікна Параметрів (`settings_top_offset_verified.png`): заголовок групи «Liquid Glass» та опис розташовані нижче хедербара з чітким відступом у 24 px, відсутнє будь-яке нашарування чи ховання тексту.
+   - Зафіксовано деталь заломлення дока (`dock_detail_downscale1.png`): 1:1 піксельна чіткість без блочності та артефактів.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+   - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
+

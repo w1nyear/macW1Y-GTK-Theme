@@ -598,15 +598,15 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     this._addRowToContainer(physGroup, blurMethodRow);
     settings.bind('blur-method', blurMethodRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
 
-    // Blur Resolution。値が 2 / 4 なので selected を直接バインドできず、
-    // インデックス <-> 値 を手動で対応させている。
-    const BLUR_DOWNSCALE_VALUES = [2, 4];
+    // Blur Resolution: 1 (Full 1:1), 2 (Half), 4 (Quarter)
+    const BLUR_DOWNSCALE_VALUES = [1, 2, 4];
     const blurDownscaleRow = new Adw.ComboRow({
       title: 'Blur Resolution',
-      subtitle: 'Quarter resolution makes every blur pass a quarter as expensive, but the blur gets visibly coarser and fine detail behind the glass is lost.',
+      subtitle: 'Full: native 1:1 pixel-perfect blur. Half: 2x downscale (high speed). Quarter: 4x downscale.',
       model: Gtk.StringList.new([
-        'Half (Recommended)',
-        'Quarter (Performance)'
+        'Full (Recommended - Pixel Perfect)',
+        'Half (High Speed)',
+        'Quarter (Coarse)'
       ])
     });
     this._addRowToContainer(physGroup, blurDownscaleRow);

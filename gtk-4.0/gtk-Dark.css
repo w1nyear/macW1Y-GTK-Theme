@@ -10008,12 +10008,12 @@ window.mac-settings-window preferencespage > scrolledwindow > viewport > clamp {
 }
 window.mac-settings-window preferencespage > scrolledwindow > viewport > clamp > box,
 window.mac-settings-window preferencespage clamp > box {
-    margin-top: 4px;
+    margin-top: 10px;
     margin-bottom: 24px;
 }
 window.mac-settings-window preferencesgroup:first-child,
 window.mac-settings-window preferencespage preferencesgroup:first-child {
-    margin-top: 2px;
+    margin-top: 4px;
 }
 
 window.mac-settings-window headerbar > windowhandle > box,

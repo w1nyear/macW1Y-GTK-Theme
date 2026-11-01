@@ -1232,7 +1232,7 @@ export const LiquidEffect = GObject.registerClass({
     this._blurRectEnabled = LiquidEffect.USE_BLUR_RECT;
     this._compositeRect = null;
     this._compositeRectEnabled = LiquidEffect.USE_COMPOSITE_RECT;
-    this._blurDownscale = 2;
+    this._blurDownscale = 1;
     this._blurRuns = 0;
     this._blurSkips = 0;
     this._recaptureSerial = 0;
@@ -1697,7 +1697,7 @@ export const LiquidEffect = GObject.registerClass({
     this._destroyTexturePool();
     this._destroyCropTarget();
 
-    const shift = this._blurDownscale >= 4 ? 2 : 1;
+    const shift = this._blurDownscale >= 4 ? 2 : (this._blurDownscale === 2 ? 1 : 0);
     let pw = Math.max(w >> shift, 1);
     let ph = Math.max(h >> shift, 1);
 
@@ -3305,7 +3305,8 @@ export const LiquidEffect = GObject.registerClass({
     // because the Gaussian kernel is expressed in texels of the level this
     // chooses.
     const applyDownscale = () => {
-      const factor = settings.get_int('glass-blur-downscale') >= 4 ? 4 : 2;
+      const raw = settings.get_int('glass-blur-downscale');
+      const factor = raw >= 4 ? 4 : (raw <= 1 ? 1 : 2);
       if (factor === this._blurDownscale) return;
       this._blurDownscale = factor;
       // Level 0 changes size, so the pool is stale; vfunc_paint_target
@@ -3866,7 +3867,7 @@ export const LiquidEffect = GObject.registerClass({
     // original pixels either way, so the conversion is the only thing that
     // changes — and because MAX_SIGMA_TEXEL is a texel cap, quarter
     // resolution also raises the largest reachable blur from 30px to 60px.
-    const RES_SCALE = this._blurDownscale >= 4 ? 4.0 : 2.0;
+    const RES_SCALE = this._blurDownscale >= 4 ? 4.0 : (this._blurDownscale === 2 ? 2.0 : 1.0);
     const MAX_SIGMA_TEXEL = 15.0; // texel cap: 30px at half res, 60px at quarter
 
     // ── Minimum sigma guarantee ────────────────────────────────────────────

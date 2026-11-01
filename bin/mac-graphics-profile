@@ -22,10 +22,10 @@ BMS_SCHEMA = "org.gnome.shell.extensions.blur-my-shell"
 PROFILES = {
     "high": {
         "name": "High Quality",
-        "description_uk": "Повний Liquid Glass, максимальний Blur, максимальна якість тіней, повна частота",
-        "description_en": "Full Liquid Glass, maximum blur radius, full shadow fidelity, full refresh rate",
+        "description_uk": "Повний Liquid Glass (Full Res 1:1), максимальний Blur, максимальна якість тіней, повна частота",
+        "description_en": "Full Liquid Glass (Full Res 1:1), maximum blur radius, full shadow fidelity, full refresh rate",
         "liquid_glass": {
-            "glass-blur-downscale": 2,      # Half-res buffer (high detail)
+            "glass-blur-downscale": 1,      # Full-res buffer (1:1 native pixel-perfect quality)
             "blur-method": 1,               # Dual Kawase
             "shadow-radius": 24.0,
             "glass-ao-intensity": 0.08,
@@ -41,10 +41,10 @@ PROFILES = {
     },
     "balanced": {
         "name": "Balanced",
-        "description_uk": "Оптимізований Blur (Dual Kawase), розумне кешування фону під час руху, плавні 165 FPS",
-        "description_en": "Optimized Dual Kawase blur, frozen backdrop during motion, silky 165 FPS",
+        "description_uk": "Оптимізований чіткий Blur (Full Res 1:1), розумне кешування фону під час руху, плавні 165 FPS",
+        "description_en": "Optimized sharp Dual Kawase blur (Full Res 1:1), frozen backdrop during motion, silky 165 FPS",
         "liquid_glass": {
-            "glass-blur-downscale": 4,      # Quarter-res buffer (saves 70% VRAM bandwidth)
+            "glass-blur-downscale": 1,      # Full-res buffer (1:1 native sharp & clear, no pixelation)
             "blur-method": 1,               # Dual Kawase
             "shadow-radius": 14.0,
             "glass-ao-intensity": 0.04,
@@ -60,10 +60,10 @@ PROFILES = {
     },
     "performance": {
         "name": "Performance",
-        "description_uk": "Швидкодія: мінімальні проходи розмиття, відключені тіні/AO, максимальна енергоефективність",
-        "description_en": "Performance: lightweight shader passes, disabled shadows/AO, maximum battery life",
+        "description_uk": "Швидкодія: чітке розмиття без мозаїки (Full Res 1:1), відключені важкі тіні/AO, максимальна енергоефективність",
+        "description_en": "Performance: sharp blur without pixelation (Full Res 1:1), disabled shadows/AO, maximum battery life",
         "liquid_glass": {
-            "glass-blur-downscale": 4,
+            "glass-blur-downscale": 1,      # Full-res buffer (1:1 native clear resolution)
             "blur-method": 1,               # Dual Kawase
             "shadow-radius": 0.0,
             "glass-ao-intensity": 0.0,
@@ -201,7 +201,7 @@ def print_status():
     bms_sigma = run_cmd(f"gsettings get {BMS_SCHEMA} sigma")
     
     method_name = "Dual Kawase" if lg_method == "1" else ("Gaussian" if lg_method == "0" else lg_method)
-    downscale_desc = "1/4 resolution (FBO x0.25 - High Speed)" if lg_downscale == "4" else ("1/2 resolution (FBO x0.5 - High Quality)" if lg_downscale == "2" else lg_downscale)
+    downscale_desc = "1:1 Full native resolution (Pixel-Perfect)" if lg_downscale == "1" else ("1/2 resolution (FBO x0.5 - High Quality)" if lg_downscale == "2" else ("1/4 resolution (FBO x0.25 - Coarse)" if lg_downscale == "4" else lg_downscale))
     
     print(f"Liquid Glass Method: {method_name}")
     print(f"Blur Downscaling   : {downscale_desc}")
