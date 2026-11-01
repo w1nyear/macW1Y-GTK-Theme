@@ -2580,7 +2580,7 @@ class WidgetController {
     const targetActor = view.actor ?? view.wrapper;
     if (targetActor) {
       targetActor.clip_to_allocation = false;
-      targetActor.set_style(`border-radius: ${radius}px; box-shadow: ${shadowCss};`);
+      targetActor.set_style(`border-radius: ${radius}px; box-shadow: ${shadowCss}; background-color: transparent;`);
     }
   }
 
@@ -2607,13 +2607,13 @@ class WidgetController {
     return {
       radius: s.get_int('style-border-radius'),
       roundness: 2, // Match CSS border-radius used by the widget frame.
-      refractThickness: Math.max(s.get_int('refract-thickness'), 40),
-      refractIOR: s.get_int('refract-ior-x100') / 100,
-      refractScale: Math.max(s.get_int('refract-scale'), 50),
-      chromaStrength: Math.max(s.get_int('chroma-strength-pct') / 100, 0.25),
+      refractThickness: 0,
+      refractIOR: 1.0,
+      refractScale: 0,
+      chromaStrength: 0,
       tint,
       tintAlpha,
-      specStrength: Math.max(s.get_int('spec-strength-pct') / 100, 0.65),
+      specStrength: 0,
       blurRadius: Math.max(s.get_int('blur-radius-px'), 0),
       solid: false,
     };

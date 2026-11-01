@@ -261,14 +261,14 @@ export class WidgetGlass {
 
         glass.setParams({
             radius: radius,
-            roundness: 6.1,  // Fixed squircle shape like liquidglass-widgets default
-            refractThickness: s.get_int('refract-thickness'),
-            refractIOR: s.get_int('refract-ior-x100') / 100,
-            refractScale: s.get_int('refract-scale'),
-            chromaStrength: s.get_int('chroma-strength-pct') / 100,
+            roundness: 2,
+            refractThickness: 0,
+            refractIOR: 1.0,
+            refractScale: 0,
+            chromaStrength: 0,
             tint,
             tintAlpha,
-            specStrength: s.get_int('spec-strength-pct') / 100,
+            specStrength: 0,
             blurRadius: s.get_int('blur-radius-px'),
             solid: false,
         });

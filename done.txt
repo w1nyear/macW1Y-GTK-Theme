@@ -14052,3 +14052,35 @@ macW1Y 0.4 — Оптимізація компонування Параметр�
    - `mac-audit-sync check`: 100% PASS.
    - `mac-extension-guard verify`: SUCCESS (21/21 розширень заблоковано).
    - Візуально підтверджено скріншотом `settings_sidebar_single_group2.png`.
+
+================================================================================
+ЗМІНИ: ВИДАЛЕННЯ СТОРОННІХ ВБУДОВАНИХ ЕФЕКТІВ ВІДЖЕТІВ СТІЛЬНИЦІ ТА ПОВНЕ ПІДПОРЯДКУВАННЯ НАШИМ НАЛАШТУВАННЯМ
+================================================================================
+1. Проблема:
+   - При встановленні повзунків «Розмиття» на 0 та «Затемнення фону» на 0 у налаштуваннях («Мас стилізація -> Віджети»), віджети продовжували відображатися як 3D-пластикові кнопки з товстим білим скошеним краєм (bevel rim 4.5px), лінзовим спотворенням (Snell refraction), хроматичною аберацією, відблисками (sheen/specular) та внутрішнім затемненням контуру (ambient occlusion).
+   - Причина: у `lib/glass_v3.js` та `lib/glass.js` були захардкоджені значення фізичного шейдера (`displacement_scale = 35`, `rim_intensity = 0.85`, `rim_width = 4.5`, `ao_intensity = 0.30`, `sheen_intensity = 0.30`), конвеєр прив'язувався до налаштувань розширення `liquid-glass`, а `extension.js` примусово обмежував мінімальні параметри заломлення та розмиття через `Math.max(..., 16)`.
+
+2. Реалізовані зміни:
+   - У `extensions/desktop-widgets@r3nhick/lib/glass_v3.js` та `lib/glass.js`:
+     * У `_initPipeline`: розв'язано залежність від налаштувань стороннього розширення `liquid-glass` (`settings: null`), вимкнено поверхневе освітлення (`surface_light_enabled = 0`), скинуто шейдерні тіні.
+     * У `setParams`: додано сувору перевірку `if (blur <= 0 && tintAlpha <= 0)`. Якщо користувач встановив розмиття та затемнення на 0 — підкладка віджета повністю вимикається (`visible = false; opacity = 0`), а всі шейдерні ефекти обнуляються. Елементи віджета плавно та чисто ширяють безпосередньо над шпалерами без артефактів.
+     * При `blur > 0 || tintAlpha > 0`: підкладка стає активною, але повністю очищеною від сторонніх 3D-лінзових спотворень: `displacement_scale = 0`, `ior = 1.0`, `chroma_strength = 0`, `rim_intensity = 0`, `rim_width = 0`, `specular_intensity = 0`, `sheen_intensity = 0`, `ao_intensity = 0`. Працюють виключно НАШІ параметри — м'яке матове розмиття Dual Kawase/Gaussian та плавне напівпрозоре затемнення.
+     * Заокруглення кутів підкладки суворо відповідає геометрії віджета (`corner_radius = 16px`).
+   - У `extensions/desktop-widgets@r3nhick/extension.js`:
+     * У `_glassParamsFor`: видалено штучні обмеження `Math.max` на товщину, заломлення та розмиття. Ключі `refractThickness`, `refractScale`, `chromaStrength`, `specStrength` скинуто в 0. Значення розмиття та затемнення передаються безпосередньо з GSettings (`blur-radius-px` та `tint-alpha-pct`).
+     * У `_updateGlassParamsForView`: обгортка актора отримує прозорий фон (`background-color: transparent`) із заокругленням кутів та м'якою CSS-тінню згідно з повзунком «Тінь».
+   - У `extensions/desktop-widgets@r3nhick/lib/widgetGlass.js`:
+     * Синхронізовано виклик `setParams` без сторонніх спотворень.
+
+3. Оновлення та синхронізація:
+   - Зміни скопійовано до системи (`~/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick/`) та репозиторію (`extensions/desktop-widgets@r3nhick/`).
+   - Перераховано SHA256-хеш директорії розширення (`cb19404b04438b6be8e21bcce209e4d360b439b844acd3dcfd405631cbe88915`) та зафіксовано у `config/extensions.lock.json`.
+   - За допомогою GNOME Shell EvalHelper оновлено методи на льоту без виходу з сесії та перезавантаження GNOME Shell.
+
+4. Верифікація та контроль якості:
+   - `mac-audit-sync check`: 100% PASS.
+   - `mac-extension-guard verify`: SUCCESS (21/21 розширень підтверджено).
+   - Зроблено знімки екрана:
+     * `desktop_widgets_zero.png`: повзунки на 0 — віджети кришталево чисті, жодних сторонніх рамок чи лінз.
+     * `desktop_widgets_blurred.png`: розмиття 20px, затемнення 40% — ідеальне м'яке матове скло macOS Tahoe без артефактів.
+     * `desktop_widgets_final.png`: повернено налаштування користувача (0 розмиття, 0 затемнення, нативна тінь).
