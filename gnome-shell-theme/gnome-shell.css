@@ -3543,6 +3543,20 @@ StWidget.focused .app-grid-running-dot {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28) !important;
 }
 
+.mac-empty-trash-dialog {
+  border-radius: 30px !important;
+  padding: 0 !important;
+}
+
+.mac-empty-trash-dialog .modal-dialog-content-box {
+  padding: 0 !important;
+  max-width: none !important;
+}
+
+.mac-empty-trash-dialog .modal-dialog-button-box {
+  padding: 0 22px 22px 22px !important;
+}
+
 .modal-dialog .modal-dialog-button:last-child,
 .modal-dialog .modal-dialog-linked-button:last-child {
   color: white !important;

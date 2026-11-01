@@ -18,6 +18,12 @@ const EvalIface = `
       <arg type="s" direction="in" name="code"/>
       <arg type="s" direction="out" name="result"/>
     </method>
+    <method name="ShowEmptyTrashDialog">
+      <arg type="b" direction="out" name="success"/>
+    </method>
+    <method name="SyncAlertStyling">
+      <arg type="b" direction="out" name="success"/>
+    </method>
   </interface>
 </node>`;
 
@@ -373,7 +379,31 @@ export default class EvalHelper extends Extension {
                     } catch (e) {
                         return `ERROR: ${e?.name}: ${e?.message}\n${e?.stack || e}`;
                     }
-                }
+                },
+                ShowEmptyTrashDialog: () => {
+                    try {
+                        if (typeof globalThis.showMacEmptyTrashDialog === 'function') {
+                            globalThis.showMacEmptyTrashDialog();
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error(`[EvalHelper] ShowEmptyTrashDialog error: ${e}`);
+                        return false;
+                    }
+                },
+                SyncAlertStyling: () => {
+                    try {
+                        if (typeof globalThis._macSyncDialogAlertStyling === 'function') {
+                            globalThis._macSyncDialogAlertStyling();
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error(`[EvalHelper] SyncAlertStyling error: ${e}`);
+                        return false;
+                    }
+                },
             });
             this._dbusImpl.export(Gio.DBus.session, '/org/gnome/Shell/Extensions/EvalHelper');
         } catch (e) {
@@ -1291,6 +1321,26 @@ export default class EvalHelper extends Extension {
                     return ext?.path || `${GLib.get_user_data_dir()}/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`;
                 };
 
+                const loadAlertStyling = () => {
+                    let alertTint = 20;
+                    let alertBlur = 15;
+                    let alertShadow = 35;
+                    try {
+                        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+                        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+                            const [ok, data] = GLib.file_get_contents(confPath);
+                            if (ok) {
+                                const text = (data instanceof Uint8Array) ? new TextDecoder().decode(data) : data.toString();
+                                const json = JSON.parse(text);
+                                if (json.alert_tint !== undefined) alertTint = Number(json.alert_tint);
+                                if (json.alert_blur !== undefined) alertBlur = Number(json.alert_blur);
+                                if (json.alert_shadow !== undefined) alertShadow = Number(json.alert_shadow);
+                            }
+                        }
+                    } catch (_) {}
+                    return { alertTint, alertBlur, alertShadow };
+                };
+
                 const createDialogGlass = async (dialogActor) => {
                     const path = getLiquidGlassPath();
                     const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
@@ -1395,27 +1445,37 @@ export default class EvalHelper extends Extension {
                     const bgW = Math.round(w);
                     const bgH = Math.round(h);
 
-                    if (state.lastX !== localBgX || state.lastY !== localBgY || state.lastW !== bgW || state.lastH !== bgH) {
+                    if (state.lastX !== localBgX || state.lastY !== localBgY || state.lastW !== bgW || state.lastH !== bgH || state.forceResync) {
                         state.lastX = localBgX;
                         state.lastY = localBgY;
                         state.lastW = bgW;
                         state.lastH = bgH;
+                        state.forceResync = false;
 
-                        // Tahoe-widget look: same engine/defaults as SwitcherPopup glass
+                        const styling = loadAlertStyling();
+                        const tintStrength = Math.max(0.0, Math.min(1.0, styling.alertTint / 100.0));
+                        const blurRadius = Math.max(0.0, Math.min(50.0, styling.alertBlur));
+                        const shadowIntensity = Math.max(0.0, Math.min(1.0, styling.alertShadow / 100.0));
+
+                        // Tahoe-widget / macOS Alert look: Liquid Glass shader
                         glass.setResolution(screenW, screenH);
-                        glass.setCornerRadius(35.0);
+                        glass.setCornerRadius(30.0);
                         glass.setTintColor(0.0, 0.0, 0.0);
-                        glass.setTintStrength(0.02);
-                        glass.setBlurRadius(15.0);
+                        glass.setTintStrength(tintStrength);
+                        glass.setBlurRadius(blurRadius);
                         glass.setPadding(0);
                         glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
 
                         try {
-                            glass._effect?._setFloat?.('shadow_intensity', 0.0);
-                            glass._effect?._setFloat?.('shadow_radius', 0.0);
-                            glass._effect?._setFloat?.('shadow_max_radius', 0.0);
-                            glass._effect?._setFloat?.('ao_intensity', 0.0);
-                            glass._effect?._setFloat?.('ao_radius', 0.0);
+                            glass._effect?._setFloat?.('shadow_intensity', shadowIntensity);
+                            glass._effect?._setFloat?.('shadow_radius', shadowIntensity * 25.0);
+                            glass._effect?._setFloat?.('shadow_max_radius', Math.max(25.0, shadowIntensity * 50.0));
+                            glass._effect?._setFloat?.('ao_intensity', shadowIntensity * 0.35);
+                            glass._effect?._setFloat?.('ao_radius', shadowIntensity * 15.0);
+                        } catch (_) {}
+
+                        try {
+                            dialogBox.set_style(`background-color: rgba(30, 30, 30, ${tintStrength.toFixed(2)}) !important; border-radius: 30px !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; box-shadow: 0 16px 36px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;`);
                         } catch (_) {}
 
                         // Generous clip padding so drop shadows and blur never get hard-clipped
@@ -1429,9 +1489,13 @@ export default class EvalHelper extends Extension {
                 const syncAllDialogs = () => {
                     if (!globalThis._macDlgStates || globalThis._macDlgStates.size === 0) return;
                     for (const state of [...globalThis._macDlgStates]) {
-                        try { syncDialogGlass(state); } catch (_) {}
+                        try {
+                            state.forceResync = true;
+                            syncDialogGlass(state);
+                        } catch (_) {}
                     }
                 };
+                globalThis._macSyncDialogAlertStyling = syncAllDialogs;
 
                 const attachDialogGlass = (dialogActor) => {
                     try {
@@ -1501,6 +1565,156 @@ export default class EvalHelper extends Extension {
             }
         };
         patchModalDialogLQVisual();
+
+        // System-wide Empty Trash Modal Dialog with Liquid Glass (Above All Windows)
+        const emptyTrashInternal = () => {
+            try {
+                const bus = Gio.DBus.session;
+                bus.call(
+                    'org.gnome.Nautilus',
+                    '/org/gnome/Nautilus/FileOperations',
+                    'org.gnome.Nautilus.FileOperations2',
+                    'EmptyTrashRemote',
+                    new GLib.Variant('(ba{sv})', [false, {}]),
+                    null,
+                    Gio.DBusCallFlags.NONE,
+                    -1,
+                    null,
+                    (conn, res) => {
+                        try {
+                            conn.call_finish(res);
+                        } catch (_) {
+                            try {
+                                bus.call(
+                                    'org.gnome.Nautilus',
+                                    '/org/gnome/Nautilus/FileOperations',
+                                    'org.gnome.Nautilus.FileOperations',
+                                    'EmptyTrashRemote',
+                                    new GLib.Variant('(ba{sv})', [false, {}]),
+                                    null,
+                                    Gio.DBusCallFlags.NONE,
+                                    -1,
+                                    null,
+                                    null
+                                );
+                            } catch (_) {}
+                        }
+                    }
+                );
+            } catch (_) {}
+
+            // Direct Gio fallback
+            try {
+                const trashFile = Gio.File.new_for_uri('trash:///');
+                trashFile.enumerate_children_async(
+                    'standard::name',
+                    Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+                    GLib.PRIORITY_LOW,
+                    null,
+                    (file, res) => {
+                        try {
+                            const enumerator = file.enumerate_children_finish(res);
+                            let info;
+                            while ((info = enumerator.next_file(null)) !== null) {
+                                const child = file.get_child(info.get_name());
+                                try { child.delete(null); } catch (_) {}
+                            }
+                        } catch (_) {}
+                    }
+                );
+            } catch (_) {}
+        };
+
+        const showMacEmptyTrashDialog = async () => {
+            try {
+                if (globalThis._macActiveEmptyTrashDialog) {
+                    try { globalThis._macActiveEmptyTrashDialog.close(); } catch (_) {}
+                    globalThis._macActiveEmptyTrashDialog = null;
+                }
+
+                const ModalDialogMod = await import('resource:///org/gnome/shell/ui/modalDialog.js');
+                const ModalDialog = ModalDialogMod.ModalDialog;
+                if (!ModalDialog) return;
+
+                const dlg = new ModalDialog({
+                    styleClass: 'modal-dialog mac-empty-trash-dialog',
+                    destroyOnClose: true,
+                });
+
+                if (dlg.dialogLayout?._dialog) {
+                    dlg.dialogLayout._dialog.set_style('width: 280px; min-width: 280px; max-width: 280px; padding: 24px 20px 20px 20px;');
+                }
+
+                const content = new St.BoxLayout({
+                    vertical: true,
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
+                    style: 'spacing: 0px;',
+                });
+
+                const title = new St.Label({
+                    text: 'Спорожнити смітник?',
+                    style: 'font-size: 19px; font-weight: bold; color: #ffffff; text-align: center; margin-bottom: 8px;',
+                });
+                title.clutter_text.set_line_wrap(true);
+                title.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+                content.add_child(title);
+
+                const body = new St.Label({
+                    text: 'Усі об\u2019єкти у смітнику буде\nвилучено остаточно',
+                    style: 'font-size: 13.5px; color: rgba(255, 255, 255, 0.85); text-align: center; margin-bottom: 20px; line-height: 1.3;',
+                });
+                body.clutter_text.set_line_wrap(true);
+                body.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+                content.add_child(body);
+
+                dlg.contentLayout.add_child(content);
+
+                const bl = dlg.dialogLayout.buttonLayout;
+                bl.layout_manager.orientation = Clutter.Orientation.VERTICAL;
+                bl.layout_manager.spacing = 8;
+                bl.set_style('padding: 0; width: 280px;');
+
+                const confirmBtn = dlg.addButton({
+                    label: 'Спорожнити смітник',
+                    action: () => {
+                        dlg.close();
+                        emptyTrashInternal();
+                    },
+                    default: true,
+                });
+                confirmBtn.set_style('background-color: #eb5545 !important; background-gradient-direction: none !important; color: white !important; font-weight: bold; font-size: 14.5px; border-radius: 12px !important; min-height: 40px; height: 40px; width: 100%; margin: 0;');
+
+                const cancelBtn = dlg.addButton({
+                    label: 'Скасувати',
+                    action: () => dlg.close(),
+                    key: Clutter.KEY_Escape,
+                });
+                cancelBtn.set_style('background-color: rgba(255, 255, 255, 0.14) !important; background-gradient-direction: none !important; color: white !important; font-weight: 500; font-size: 14.5px; border-radius: 12px !important; min-height: 40px; height: 40px; width: 100%; margin: 0;');
+
+                dlg.open();
+                globalThis._macActiveEmptyTrashDialog = dlg;
+            } catch (e) {
+                console.error('[EvalHelper] showMacEmptyTrashDialog error: ' + e);
+            }
+        };
+
+        globalThis.showMacEmptyTrashDialog = showMacEmptyTrashDialog;
+
+        // Monitor styling.json changes for real-time modal dialog styling updates
+        try {
+            const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+            const confFile = Gio.File.new_for_path(confPath);
+            if (this._stylingMonitor) {
+                try { this._stylingMonitor.cancel(); } catch (_) {}
+            }
+            this._stylingMonitor = confFile.monitor_file(Gio.FileMonitorFlags.NONE, null);
+            this._stylingMonitor.connect('changed', () => {
+                if (typeof globalThis._macSyncDialogAlertStyling === 'function') {
+                    globalThis._macSyncDialogAlertStyling();
+                }
+            });
+        } catch (_) {}
 
         // Notification Center and Notification Banners are natively handled by blur-my-shell (menubar_v29 & notifications_v4)
 

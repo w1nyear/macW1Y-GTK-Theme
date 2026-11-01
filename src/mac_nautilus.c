@@ -1286,3 +1286,40 @@ void gtk_window_present_with_time(GtkWindow *window, guint32 timestamp)
         g_idle_add(mac_fix_nautilus_window, window);
     }
 }
+
+static void (*orig_adw_dialog_present)(AdwDialog *self, GtkWidget *parent) = NULL;
+
+void adw_dialog_present(AdwDialog *self, GtkWidget *parent)
+{
+    if (!orig_adw_dialog_present) {
+        orig_adw_dialog_present = dlsym(RTLD_NEXT, "adw_dialog_present");
+    }
+
+    if (ADW_IS_ALERT_DIALOG(self)) {
+        const char *heading = adw_alert_dialog_get_heading(ADW_ALERT_DIALOG(self));
+        if (heading && (strstr(heading, "смітник") || strstr(heading, "Trash") || strstr(heading, "Смітник"))) {
+            /* Trigger GNOME Shell Empty Trash Modal Dialog via D-Bus */
+            GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+            if (bus) {
+                g_dbus_connection_call(bus,
+                    "org.gnome.Shell",
+                    "/org/gnome/Shell/Extensions/EvalHelper",
+                    "org.gnome.Shell.Extensions.EvalHelper",
+                    "ShowEmptyTrashDialog",
+                    NULL,
+                    NULL,
+                    G_DBUS_CALL_FLAGS_NONE,
+                    -1,
+                    NULL,
+                    NULL,
+                    NULL);
+                g_object_unref(bus);
+            }
+            return;
+        }
+    }
+
+    if (orig_adw_dialog_present) {
+        orig_adw_dialog_present(self, parent);
+    }
+}

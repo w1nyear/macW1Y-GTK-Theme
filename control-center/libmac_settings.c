@@ -49,6 +49,11 @@ typedef struct {
     int dock_blur;      /* 0 - 50 px */
     int dock_shadow;    /* 0 - 100 % */
 
+    /* Group: Alerts / Dialogs */
+    int alert_tint;     /* 0 - 100 % */
+    int alert_blur;     /* 0 - 50 px */
+    int alert_shadow;   /* 0 - 100 % */
+
     /* Legacy fields for backward compatibility */
     int dock_sigma;
     int dock_radius;
@@ -66,6 +71,8 @@ typedef struct {
 static void apply_widget_settings(void);
 static void apply_dock_settings(void);
 static void schedule_dock_apply(void);
+static void apply_alert_settings(void);
+static void schedule_alert_apply(void);
 
 static MacStylingData state = {
     .menubar_tint = 30,
@@ -83,6 +90,10 @@ static MacStylingData state = {
     .dock_tint = 0,
     .dock_blur = 1,
     .dock_shadow = 0,
+
+    .alert_tint = 20,
+    .alert_blur = 15,
+    .alert_shadow = 35,
 
     .spotlight_blur = 1,
     .spotlight_tint = 10,
@@ -306,6 +317,22 @@ static void load_config(void) {
                 state.dock_shadow = 0;
             }
 
+            /* Group: Alerts / Dialogs */
+            if (json_object_has_member(obj, "alert_tint"))
+                state.alert_tint = (int)json_object_get_int_member(obj, "alert_tint");
+            else
+                state.alert_tint = 20;
+
+            if (json_object_has_member(obj, "alert_blur"))
+                state.alert_blur = (int)json_object_get_int_member(obj, "alert_blur");
+            else
+                state.alert_blur = 15;
+
+            if (json_object_has_member(obj, "alert_shadow"))
+                state.alert_shadow = (int)json_object_get_int_member(obj, "alert_shadow");
+            else
+                state.alert_shadow = 35;
+
             /* Legacy */
             if (json_object_has_member(obj, "dock_sigma"))
                 state.dock_sigma = (int)json_object_get_int_member(obj, "dock_sigma");
@@ -371,6 +398,9 @@ static void save_styling_json(void) {
         "  \"dock_tint\": %d,\n"
         "  \"dock_blur\": %d,\n"
         "  \"dock_shadow\": %d,\n"
+        "  \"alert_tint\": %d,\n"
+        "  \"alert_blur\": %d,\n"
+        "  \"alert_shadow\": %d,\n"
         "  \"spotlight_blur\": %d,\n"
         "  \"spotlight_tint\": %d,\n"
         "  \"spotlight_shadow\": %d,\n"
@@ -408,6 +438,9 @@ static void save_styling_json(void) {
         state.dock_tint,
         state.dock_blur,
         state.dock_shadow,
+        state.alert_tint,
+        state.alert_blur,
+        state.alert_shadow,
         state.spotlight_blur,
         state.spotlight_tint,
         state.spotlight_shadow,
@@ -657,6 +690,42 @@ static void schedule_spotlight_apply(void) {
 }
 
 static guint dock_timer_id = 0;
+static guint alert_timer_id = 0;
+
+static void apply_alert_settings(void) {
+    /* Notify GNOME Shell via D-Bus to reload alert styling in real-time */
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    if (bus) {
+        g_dbus_connection_call(bus,
+            "org.gnome.Shell",
+            "/org/gnome/Shell/Extensions/EvalHelper",
+            "org.gnome.Shell.Extensions.EvalHelper",
+            "SyncAlertStyling",
+            NULL,
+            NULL,
+            G_DBUS_CALL_FLAGS_NONE,
+            -1,
+            NULL,
+            NULL,
+            NULL);
+        g_object_unref(bus);
+    }
+}
+
+static gboolean apply_alert_cb(gpointer user_data) {
+    (void)user_data;
+    alert_timer_id = 0;
+    apply_alert_settings();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_alert_apply(void) {
+    if (alert_timer_id != 0) {
+        g_source_remove(alert_timer_id);
+        alert_timer_id = 0;
+    }
+    alert_timer_id = g_timeout_add(50, (GSourceFunc)apply_alert_cb, NULL);
+}
 
 static void apply_dock_settings(void) {
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
@@ -2062,6 +2131,61 @@ void on_dock_shadow_changed(void *widget, gpointer data) {
     if (in_init) return;
     state.dock_shadow = (int)lround(gtk_range_get_value(widget));
     schedule_dock_apply();
+    schedule_json_save();
+}
+
+/* Group: Alerts Callbacks */
+void init_alert_tint(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.alert_tint);
+    in_init = 0;
+}
+
+void on_alert_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.alert_tint = (int)lround(gtk_range_get_value(widget));
+    schedule_alert_apply();
+    schedule_json_save();
+}
+
+void init_alert_blur(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.alert_blur);
+    in_init = 0;
+}
+
+void on_alert_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.alert_blur = (int)lround(gtk_range_get_value(widget));
+    schedule_alert_apply();
+    schedule_json_save();
+}
+
+void init_alert_shadow(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.alert_shadow);
+    in_init = 0;
+}
+
+void on_alert_shadow_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.alert_shadow = (int)lround(gtk_range_get_value(widget));
+    schedule_alert_apply();
     schedule_json_save();
 }
 

@@ -874,6 +874,36 @@ class TrashAppInfo extends LocationAppInfo {
         if (!this.list_actions().includes(action))
             throw new Error('Action %s is not supported by %s', action, this);
 
+        if (action === 'empty-trash') {
+            if (typeof globalThis.showMacEmptyTrashDialog === 'function') {
+                globalThis.showMacEmptyTrashDialog();
+                return;
+            }
+            try {
+                const bus = Gio.DBus.session;
+                bus.call(
+                    'org.gnome.Shell',
+                    '/org/gnome/Shell/Extensions/EvalHelper',
+                    'org.gnome.Shell.Extensions.EvalHelper',
+                    'ShowEmptyTrashDialog',
+                    null,
+                    null,
+                    Gio.DBusCallFlags.NONE,
+                    -1,
+                    null,
+                    (conn, res) => {
+                        try {
+                            const [ok] = conn.call_finish(res).deepUnpack();
+                            if (ok) return;
+                        } catch (_) {}
+                        const nautilus = makeNautilusFileOperationsProxy();
+                        nautilus.EmptyTrashRemote(true, nautilus.platformData({timestamp}), null, this.cancellable);
+                    }
+                );
+                return;
+            } catch (_) {}
+        }
+
         const nautilus = makeNautilusFileOperationsProxy();
         const askConfirmation = true;
         nautilus.EmptyTrashRemote(askConfirmation,

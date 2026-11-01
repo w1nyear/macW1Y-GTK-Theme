@@ -14874,3 +14874,49 @@ Task 585: Виправлення роздільної здатності роз�
 4. Верифікація:
    - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
+
+ЗАВДАННЯ 589: Діалогове вікно «Спорожнити смітник» поверх усіх вікон із шейдером Liquid Glass та група «Попередження» у Мак стилізації
+---------------------------------------------------------------------------------
+1. Вихідні вимоги:
+   - Діалогове повідомлення «Спорожнити смітник» має гарантовано відображатися поверх усіх запущених програм (у модальному шарі GNOME Shell Main.layoutManager.modalDialogGroup).
+   - Замість суцільного темного фону діалог повинен мати фірмовий шейдер рідкого скла (Liquid Glass / BackdropGlass), аналогічно до системного меню вимикання живлення.
+   - У панелі «Мак стилізація» (GNOME Settings / Параметри) додати групу «Попередження» для налаштування параметрів таких повідомлень: Затемнення (alert_tint), Розмиття (alert_blur) та Тінь (alert_shadow) з живою синхронізацією.
+   - Елементи діалогу: заголовок «Спорожнити смітник?», пояснення «Усі об’єкти у смітнику буде вилучено остаточно», вертикальне розташування кнопок (червона кнопка підтвердження «Спорожнити смітник» зверху, сіра кнопка «Скасувати» знизу).
+
+2. Реалізація:
+   - Додано групу AdwPreferencesGroup «Попередження» (alerts_group) у control-center/cc-system-panel.ui та gnome-control-center-overlay/cc-system-panel.ui з 3 слайдерами:
+     * Затемнення (alert_tint, 0..100%, за замовчуванням 20)
+     * Розмиття (alert_blur, 0..50 px, за замовчуванням 15)
+     * Тінь (alert_shadow, 0..100%, за замовчуванням 35)
+     Синхронізовано до /usr/share/mactheme/gnome-control-center-overlay/ та ~/.local/share/gnome-control-center-overlay/.
+   - Оновлено libmac_settings.c (контрол-центр та оверлей):
+     * Додано обробку та збереження alert_tint, alert_blur, alert_shadow у ~/.config/mac-styling/styling.json.
+     * Реалізовано експортовані колбеки init_alert_tint, on_alert_tint_changed, init_alert_blur, on_alert_blur_changed, init_alert_shadow, on_alert_shadow_changed.
+     * Додано функцію apply_alert_settings() з викликом D-Bus SyncAlertStyling для негайного оновлення шейдерів у GNOME Shell.
+     * Скомпільовано libmac_settings.so та синхронізовано до всіх 7 системних та локальних директорій бібліотек.
+   - Оновлено config/mac-styling/styling.json, config/styling.json та ~/.config/mac-styling/styling.json з новими полями.
+   - Оновлено src/mac_nautilus.c:
+     * Додано перехоплення діалогів смітника у хуку adw_dialog_present: виклики AdwAlertDialog із заголовком смітника перехоплюються та транслюються у D-Bus ShowEmptyTrashDialog до GNOME Shell, а вікно Nautilus блокується.
+     * Скомпільовано та встановлено /usr/lib/x86_64-linux-gnu/libmac_nautilus.so.
+   - Оновлено extensions/dash2dock-motion@unmade.space/locations.js:
+     * При виборі пункту «Спорожнити смітник» у контекстному меню дока викликається globalThis.showMacEmptyTrashDialog() або D-Bus ShowEmptyTrashDialog.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/.
+   - Оновлено extensions/eval-helper@mactheme/extension.js:
+     * Додано методи ShowEmptyTrashDialog та SyncAlertStyling до D-Bus інтерфейсу org.gnome.Shell.Extensions.EvalHelper.
+     * Реалізовано модальний діалог showMacEmptyTrashDialog() на базі ModalDialog (Main.layoutManager.modalDialogGroup):
+       - Ширина 280px, радіус 30px, відступи 24px/20px/20px.
+       - Вертикальний BoxLayout кнопок (Clutter.Orientation.VERTICAL, spacing 8).
+       - Червона кнопка #eb5545 зверху, сіра напівпрозора rgba(255, 255, 255, 0.14) знизу.
+       - Гарячі клавіші: Enter для підтвердження, Escape для закриття.
+       - Автоматичне спорожнення через Nautilus DBus EmptyTrashRemote(false, ...) та прямий Gio trash:/// fallback.
+     * У patchModalDialogLQVisual інтегровано динамічне застосування параметрів alert_tint, alert_blur та alert_shadow до BackdropGlass шейдера та CSS стилів.
+     * Налаштовано моніторинг змін у styling.json через Gio.File.monitor_file.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/eval-helper@mactheme/.
+   - Оновлено CSS теми (gnome-shell-theme/gnome-shell.css, macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid) зі стилізацією .mac-empty-trash-dialog та синхронізовано до ~/.themes/.
+   - Оновлено хеші у config/extensions.lock.json для dash2dock-motion@unmade.space та eval-helper@mactheme.
+
+3. Верифікація:
+   - bin/mac-extension-guard verify: SUCCESS (21/21 розширень підтверджено).
+   - bin/mac-audit-sync check: 100% PASS (5/5 перевірок пройдено).
+   - Перевірено запуск діалогу через D-Bus ShowEmptyTrashDialog та контекстне меню смітника.
+   - Зафіксовано верифікаційний скріншот: діалог відмальовується поверх усіх вікон із шейдером Liquid Glass, чіткими межами та вертикальним розташуванням кнопок 1:1 з оригінальним дизайном.
