@@ -39,6 +39,7 @@ typedef struct {
     int menu_shadow_blur;     /* 0 - 100 (radius px) */
     int menu_shadow_strength; /* 0 - 100 (intensity %) */
 
+    int widget_radius;  /* 0 - 40 px */
     int widget_blur;    /* 0 - 50 px */
     int widget_tint;    /* 0 - 100 % */
     int widget_shadow;  /* 0 - 100 % */
@@ -70,8 +71,8 @@ static MacStylingData state = {
     .menubar_tint = 30,
     .menubar_blur = 25,
 
-    .liquid_shape = 0,
-    .liquid_refraction = 100,
+    .liquid_shape = 2,
+    .liquid_refraction = 80,
     .liquid_blur = 9,
     .liquid_tint = 15,
     .liquid_chroma = 10,
@@ -79,27 +80,28 @@ static MacStylingData state = {
     .liquid_specular = 10,
     .liquid_shadow = 49,
 
-    .dock_tint = 15,
-    .dock_blur = 9,
-    .dock_shadow = 30,
+    .dock_tint = 0,
+    .dock_blur = 1,
+    .dock_shadow = 0,
 
-    .spotlight_blur = 18,
-    .spotlight_tint = 15,
-    .spotlight_shadow = 35,
+    .spotlight_blur = 1,
+    .spotlight_tint = 10,
+    .spotlight_shadow = 18,
 
-    .blur_sigma = 30,
+    .blur_sigma = 31,
     .blur_tint = 29,
 
-    .menu_tint = 19,
-    .menu_blur = 8,
+    .menu_tint = 20,
+    .menu_blur = 9,
     .menu_shadow_blur = 51,
-    .menu_shadow_strength = 25,
+    .menu_shadow_strength = 30,
 
-    .widget_blur = 20,
-    .widget_tint = 35,
-    .widget_shadow = 35,
+    .widget_radius = 35,
+    .widget_blur = 1,
+    .widget_tint = 20,
+    .widget_shadow = 30,
 
-    .dock_sigma = 9,
+    .dock_sigma = 1,
     .dock_radius = 28,
 
     .panel_blur = 1,
@@ -158,12 +160,12 @@ static void load_config(void) {
             if (json_object_has_member(obj, "liquid_shape"))
                 state.liquid_shape = (int)CLAMP((int)json_object_get_int_member(obj, "liquid_shape"), 0, 2);
             else
-                state.liquid_shape = 0;
+                state.liquid_shape = 2;
 
             if (json_object_has_member(obj, "liquid_refraction"))
                 state.liquid_refraction = (int)json_object_get_int_member(obj, "liquid_refraction");
             else
-                state.liquid_refraction = 100;
+                state.liquid_refraction = 80;
 
             if (json_object_has_member(obj, "liquid_blur"))
                 state.liquid_blur = (int)json_object_get_int_member(obj, "liquid_blur");
@@ -203,17 +205,17 @@ static void load_config(void) {
             if (json_object_has_member(obj, "spotlight_blur"))
                 state.spotlight_blur = (int)json_object_get_int_member(obj, "spotlight_blur");
             else
-                state.spotlight_blur = 18;
+                state.spotlight_blur = 1;
 
             if (json_object_has_member(obj, "spotlight_tint"))
                 state.spotlight_tint = (int)json_object_get_int_member(obj, "spotlight_tint");
             else
-                state.spotlight_tint = 15;
+                state.spotlight_tint = 10;
 
             if (json_object_has_member(obj, "spotlight_shadow"))
                 state.spotlight_shadow = (int)json_object_get_int_member(obj, "spotlight_shadow");
             else
-                state.spotlight_shadow = 35;
+                state.spotlight_shadow = 18;
 
             /* Group 3: Blur */
             if (json_object_has_member(obj, "blur_sigma"))
@@ -230,12 +232,12 @@ static void load_config(void) {
             if (json_object_has_member(obj, "menu_tint"))
                 state.menu_tint = (int)json_object_get_int_member(obj, "menu_tint");
             else
-                state.menu_tint = 19;
+                state.menu_tint = 20;
 
             if (json_object_has_member(obj, "menu_blur"))
                 state.menu_blur = (int)json_object_get_int_member(obj, "menu_blur");
             else
-                state.menu_blur = 8;
+                state.menu_blur = 9;
 
             if (json_object_has_member(obj, "menu_shadow_blur"))
                 state.menu_shadow_blur = (int)json_object_get_int_member(obj, "menu_shadow_blur");
@@ -245,23 +247,28 @@ static void load_config(void) {
             if (json_object_has_member(obj, "menu_shadow_strength"))
                 state.menu_shadow_strength = (int)json_object_get_int_member(obj, "menu_shadow_strength");
             else
-                state.menu_shadow_strength = 25;
+                state.menu_shadow_strength = 30;
 
             /* Group 5: Widgets */
+            if (json_object_has_member(obj, "widget_radius"))
+                state.widget_radius = (int)json_object_get_int_member(obj, "widget_radius");
+            else
+                state.widget_radius = 35;
+
             if (json_object_has_member(obj, "widget_blur"))
                 state.widget_blur = (int)json_object_get_int_member(obj, "widget_blur");
             else
-                state.widget_blur = 20;
+                state.widget_blur = 1;
 
             if (json_object_has_member(obj, "widget_tint"))
                 state.widget_tint = (int)json_object_get_int_member(obj, "widget_tint");
             else
-                state.widget_tint = 35;
+                state.widget_tint = 20;
 
             if (json_object_has_member(obj, "widget_shadow"))
                 state.widget_shadow = (int)json_object_get_int_member(obj, "widget_shadow");
             else
-                state.widget_shadow = 35;
+                state.widget_shadow = 30;
 
             /* Group: Dock */
             if (json_object_has_member(obj, "dock_tint")) {
@@ -273,7 +280,7 @@ static void load_config(void) {
                     state.dock_tint = (d <= 1.0) ? (int)round(d * 100.0) : (int)round(d);
                 }
             } else {
-                state.dock_tint = 15;
+                state.dock_tint = 0;
             }
 
             if (json_object_has_member(obj, "dock_blur")) {
@@ -290,13 +297,13 @@ static void load_config(void) {
             } else if (json_object_has_member(obj, "dock_sigma")) {
                 state.dock_blur = (int)json_object_get_int_member(obj, "dock_sigma");
             } else {
-                state.dock_blur = 9;
+                state.dock_blur = 1;
             }
 
             if (json_object_has_member(obj, "dock_shadow")) {
                 state.dock_shadow = (int)json_object_get_int_member(obj, "dock_shadow");
             } else {
-                state.dock_shadow = 30;
+                state.dock_shadow = 0;
             }
 
             /* Legacy */
@@ -376,6 +383,7 @@ static void save_styling_json(void) {
         "  \"widget_blur\": %d,\n"
         "  \"widget_tint\": %d,\n"
         "  \"widget_shadow\": %d,\n"
+        "  \"widget_radius\": %d,\n"
         "  \"dock_sigma\": %d,\n"
         "  \"dock_radius\": %d,\n"
         "  \"panel_blur\": %s,\n"
@@ -412,6 +420,7 @@ static void save_styling_json(void) {
         state.widget_blur,
         state.widget_tint,
         state.widget_shadow,
+        state.widget_radius,
         state.dock_blur,
         28,
         (state.menubar_blur > 0) ? "true" : "false",
@@ -735,6 +744,7 @@ static void apply_widget_settings(void) {
     GSettings *dw = g_settings_new(schema_id);
     if (!dw) return;
 
+    g_settings_set_int(dw, "style-border-radius", state.widget_radius);
     g_settings_set_int(dw, "blur-radius-px", state.widget_blur);
     g_settings_set_int(dw, "tint-alpha-pct", state.widget_tint);
     g_settings_set_int(dw, "style-shadow-size", state.widget_shadow);
@@ -1928,6 +1938,24 @@ void on_menu_shadow_strength_changed(void *widget, gpointer data) {
 }
 
 /* Group 5: Widgets Callbacks */
+void init_widget_radius(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.widget_radius);
+    in_init = 0;
+}
+
+void on_widget_radius_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.widget_radius = (int)lround(gtk_range_get_value(widget));
+    schedule_widget_apply();
+    schedule_json_save();
+}
+
 void init_widget_blur(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -4486,6 +4514,8 @@ void on_dw_border_radius_changed(void *widget, gpointer data) {
     if (!s || !widget) return;
     int radius = (int)round(gtk_range_get_value(GTK_RANGE(widget)));
     g_settings_set_int(s, "style-border-radius", radius);
+    state.widget_radius = radius;
+    schedule_json_save();
 }
 
 void init_dw_opacity(void *widget, gpointer data) {

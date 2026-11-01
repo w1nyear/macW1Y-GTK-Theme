@@ -14699,3 +14699,33 @@ Task 583: Круглий hover для кнопок вперед/назад у П
    - Зроблено знімок екрана живого вікна `gnome-control-center` з наведенням курсора на кнопку «Назад»: форма підсвічування hover є ідеальним симетричним колом (радіус плавно закруглений зліва та справа, плоский зріз повністю усунено).
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
    - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
+
+===================================================================
+Task 584: Синхронізація параметрів заокруглення віджетів та mac-стилізації з модпаком
+===================================================================
+1. Проблема:
+   - У групі «Віджети» панелі «Mac стилізація» («Система -> Mac стилізація») у `gnome-control-center` був відсутній параметр «Заокруглення» (Border Radius), хоча в системі та у виділеній вкладці «Віджети» (`cc-widgets-panel.ui`) цей параметр існував і був встановлений на 35 px.
+   - У файлах налаштувань репозиторію (`config/mac-styling/styling.json`, `config/styling.json`), dconf-конфігураціях та `install.sh` були застарілі значення параметрів Mac-стилізації та віджетів, відмінні від актуальних робочих налаштувань користувача.
+
+2. Реалізація:
+   - Додано повзунок «Заокруглення» (`widget_radius_row`, шкала 0–40, дефолт 35) до групи «Віджети» у `control-center/cc-system-panel.ui` та `gnome-control-center-overlay/cc-system-panel.ui`.
+   - Встановлено дефолтне значення `dw_border_radius_scale` у 35 px у `control-center/cc-widgets-panel.ui` та `gnome-control-center-overlay/cc-widgets-panel.ui`.
+   - Оновлено `control-center/libmac_settings.c` та `gnome-control-center-overlay/libmac_settings.c`:
+     * У структуру `MacStylingData` додано поле `int widget_radius`.
+     * Встановлено дефолтні значення стану `.widget_radius = 35`, `.liquid_shape = 2`, `.liquid_refraction = 80`, `.dock_tint = 0`, `.dock_blur = 1`, `.dock_shadow = 0`, `.spotlight_blur = 1`, `.spotlight_tint = 10`, `.spotlight_shadow = 18`, `.menu_tint = 20`, `.menu_blur = 9`, `.menu_shadow_strength = 30`, `.widget_blur = 1`, `.widget_tint = 20`, `.widget_shadow = 30`, `.dock_sigma = 1`.
+     * У `load_config()` додано зчитування `widget_radius` з `styling.json` (із дефолтом 35) та оновлено дефолтні значення для всіх груп.
+     * У `save_styling_json()` додано запис `"widget_radius": %d`.
+     * У `apply_widget_settings()` додано синхронізацію `style-border-radius` у GSettings `org.gnome.shell.extensions.desktop-widgets-r3nhick`.
+     * Додано колбеки `init_widget_radius` та `on_widget_radius_changed` для миттєвого збереження в JSON та застосування до віджетів.
+     * У `on_dw_border_radius_changed` додано зворотну синхронізацію `state.widget_radius = radius; schedule_json_save();`.
+   - Синхронізовано `styling.json` між `~/.config/mac-styling/styling.json`, `config/mac-styling/styling.json` та `config/styling.json`.
+   - Синхронізовано `dconf/liquid-glass.dconf` з активними налаштуваннями dconf.
+   - В `install.sh` синхронізовано стартові значення GSettings для `liquid-glass` та `desktop-widgets` (`quick-settings-corner-radius 26.0`, `osd-corner-radius 18.0`, `glass-shape-type 2`, `style-border-radius 35`, `blur-radius-px 1`, `tint-alpha-pct 20`, `style-shadow-size 30` тощо).
+   - Перекомпільовано `libmac_settings.so` та поширено в усі 7 канонічних локацій.
+   - Розгорнуто оновлені `.ui` файли в `~/.local/share/gnome-control-center-overlay/` та `/usr/share/mactheme/gnome-control-center-overlay/`.
+
+3. Верифікація:
+   - Запущено вікно налаштувань і перевірено відображення панелі «Mac стилізація»: всі параметри відповідають SSOT, рендеринг без помилок.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+   - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
+   - Повний збіг JSON-конфігів (`styling.json` у системі та в репозиторії ідентичні на 100%).

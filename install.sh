@@ -733,26 +733,33 @@ install_extensions() {
     run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files index-single-directories "[]" 2>/dev/null || true
     run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files throttle 20 2>/dev/null || true
 
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-corner-radius 24.0 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-toggle-corner-radius 9999.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-corner-radius 26.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-toggle-corner-radius 40.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com osd-corner-radius 18.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-shape-type 2 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com panel-menu-tint-color '#000000' 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com panel-menu-tint-strength 0.15 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com panel-menu-brightness 0.925 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com panel-menu-blur-radius 5 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com panel-menu-tint-strength 0.20 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com panel-menu-brightness 0.90 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com panel-menu-blur-radius 3 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com menu-tint-color '#000000' 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com menu-tint-strength 0.15 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com menu-brightness 0.925 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com menu-blur-radius 5 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com application-tint-strength 0.10 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com desktop-menu-tint-strength 0.15 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com menu-tint-strength 0.20 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com menu-brightness 0.90 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com menu-blur-radius 3 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com application-tint-strength 0.15 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com desktop-menu-tint-strength 0.20 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com desktop-menu-tint-color '#000000' 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com osd-tint-strength 0.10 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-toggle-tint-strength 0.10 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-tint-strength 0.10 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-tint-strength 0.10 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com notification-tint-strength 0.10 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com osd-tint-strength 0.15 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-toggle-tint-strength 0.15 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-tint-strength 0.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-blur-radius 1 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-tint-strength 0.15 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com notification-tint-strength 0.15 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com shadow-radius 51.0 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com shadow-intensity 0.25 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com shadow-intensity 0.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick style-border-radius 35 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick blur-radius-px 1 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick tint-alpha-pct 20 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick style-shadow-size 30 2>/dev/null || true
     # Dash2Dock Motion (Primary macW1Y Dock)
     run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion dash-max-icon-size 54 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion icon-size-fixed true 2>/dev/null || true

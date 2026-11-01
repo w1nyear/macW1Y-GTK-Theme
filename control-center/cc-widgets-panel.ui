@@ -158,7 +158,7 @@
                             <property name="upper">40</property>
                             <property name="step-increment">1</property>
                             <property name="page-increment">5</property>
-                            <property name="value">24</property>
+                            <property name="value">35</property>
                           </object>
                         </property>
                         <signal name="realize" handler="init_dw_border_radius"/>
