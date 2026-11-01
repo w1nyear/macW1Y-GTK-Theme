@@ -177,7 +177,7 @@
         "50",
         "51"
       ],
-      "sha256": "28dbfe9ccdc096619b26dc354ce32c002ded7b1cb5fa16bd001b6aa7457c91ad",
+      "sha256": "139b0124733d7d00fc7a32744429674fb39603c5ffd26e7f947585c9edba26f3",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -188,9 +188,9 @@
         "control_center_liquid_glass_submenus"
       ],
       "has_custom_patches": true,
-      "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink",
-      "last_verified": "2026-10-31",
-      "integrity_hash": "28dbfe9ccdc096619b26dc354ce32c002ded7b1cb5fa16bd001b6aa7457c91ad"
+      "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag",
+      "last_verified": "2026-11-01",
+      "integrity_hash": "139b0124733d7d00fc7a32744429674fb39603c5ffd26e7f947585c9edba26f3"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",

@@ -18,6 +18,7 @@ import { enable as gtkThemeSyncEnable, disable as gtkThemeSyncDisable } from './
 import { enable as labelBlurEnable, disable as labelBlurDisable } from './apps/labelBlur.js';
 import { enable as keyboardIndicatorEnable, disable as keyboardIndicatorDisable } from './apps/keyboardIndicator.js';
 import { enable as macWindowManagementEnable, disable as macWindowManagementDisable } from './apps/macWindowManagement.js';
+import { enable as windowControlsEnable, disable as windowControlsDisable } from './apps/windowControls.js';
 import { enable as tahoeScreenCastEnable, disable as tahoeScreenCastDisable } from './apps/tahoeScreenCast.js';
 
 export default class KiwiExtension extends Extension {
@@ -135,7 +136,7 @@ export default class KiwiExtension extends Extension {
         } catch (_) {}
 
         try {
-            const wmUri = this.dir.get_child('apps').get_child('macWindowManagement.js').get_uri() + '?v=wm_v1';
+            const wmUri = this.dir.get_child('apps').get_child('macWindowManagement.js').get_uri() + '?v=wm_v2';
             import(wmUri).then(mod => {
                 if (this._macWindowManagementMod && this._macWindowManagementMod !== mod) {
                     try { this._macWindowManagementMod.disable(); } catch (_) {}
@@ -148,6 +149,28 @@ export default class KiwiExtension extends Extension {
             });
         } catch (e) {
             console.warn(`[kiwi] macWindowManagement: ${e}`);
+        }
+
+        try {
+            const wcUri = this.dir.get_child('apps').get_child('windowControls.js').get_uri() + '?v=wc_v2';
+            import(wcUri).then(mod => {
+                if (this._windowControlsMod && this._windowControlsMod !== mod) {
+                    try { this._windowControlsMod.disable(); } catch (_) {}
+                }
+                this._windowControlsMod = mod;
+                if (this._settings?.get_boolean('show-window-controls'))
+                    mod.enable(this);
+                else
+                    mod.disable();
+            }).catch(e => {
+                console.warn(`[kiwi] windowControls dynamic import failed: ${e}`);
+                if (this._settings?.get_boolean('show-window-controls'))
+                    windowControlsEnable(this);
+                else
+                    windowControlsDisable();
+            });
+        } catch (e) {
+            console.warn(`[kiwi] windowControls: ${e}`);
         }
 
         try {
@@ -317,6 +340,13 @@ export default class KiwiExtension extends Extension {
                 this._macWindowManagementMod = null;
             }
             macWindowManagementDisable();
+        } catch (_) {}
+        try {
+            if (this._windowControlsMod) {
+                this._windowControlsMod.disable();
+                this._windowControlsMod = null;
+            }
+            windowControlsDisable();
         } catch (_) {}
         try {
             if (this._tahoeScreenCastMod) {

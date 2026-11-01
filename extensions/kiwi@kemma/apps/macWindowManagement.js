@@ -48,6 +48,7 @@ let _dockHideTimer = null;
 let _fullscreenWatcherTimer = null;
 let _recomputeIdleId = null;
 let _shrunkActors = new Set();
+let _fsDragState = null;
 
 function _getPanelBox() {
     return Main.layoutManager?.panelBox ?? null;
@@ -274,16 +275,29 @@ function _onSizeChange(_wm, actor, whichChange, oldFrameRect) {
     const win = actor.meta_window;
     if (!win || win.window_type !== Meta.WindowType.NORMAL) return;
 
-    if (!win.is_fullscreen()) {
-        try {
-            actor.remove_all_transitions();
-            actor.translation_y = 0;
-            actor.scale_y = 1.0;
-            _shrunkActors.delete(actor);
-        } catch (_) {}
+    // If window is currently in fullscreen, ANY size-change means the user or app requested to exit!
+    if (win.is_fullscreen()) {
+        try { win.unmake_fullscreen(); } catch (_) {}
+        try { win.unmaximize(); } catch (_) {}
+        _restoreShrunkActors(false);
+        _queueRecomputeFullscreen();
+        return;
     }
 
-    if (whichChange === Meta.SizeChange.MAXIMIZE || whichChange === Meta.SizeChange.UNMAXIMIZE) {
+    try {
+        actor.remove_all_transitions();
+        actor.translation_y = 0;
+        actor.scale_y = 1.0;
+        _shrunkActors.delete(actor);
+    } catch (_) {}
+
+    if (whichChange === Meta.SizeChange.UNMAXIMIZE) {
+        _restoreShrunkActors(false);
+        _queueRecomputeFullscreen();
+        return;
+    }
+
+    if (whichChange === Meta.SizeChange.MAXIMIZE) {
         // If maximized from drag to top, preserve work area maximize (menubar visible)
         if (win._justMaximizedFromDrag && (Date.now() - win._justMaximizedFromDrag < 800)) {
             _queueRecomputeFullscreen();
@@ -299,7 +313,7 @@ function _onSizeChange(_wm, actor, whichChange, oldFrameRect) {
             // In macOS button layout (close, minimize, maximize):
             // Green button sits at ~50..85px horizontally, 0..45px vertically
             if (relX >= 0 && relX <= 95 && relY >= 0 && relY <= 45) {
-                // User clicked green button! Toggle TRUE FULLSCREEN
+                // User clicked green button on windowed window -> Enter TRUE FULLSCREEN
                 GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
                     if (win && !win.is_fullscreen()) {
                         win.make_fullscreen();
@@ -334,27 +348,105 @@ function _cancelDockHide() {
 function _startFullscreenWatcher() {
     if (_fullscreenWatcherTimer) return;
 
-    _fullscreenWatcherTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 70, () => {
+    _fullscreenWatcherTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 30, () => {
         if (!_enabled || !_hasFullscreen) {
             _fullscreenWatcherTimer = null;
+            _fsDragState = null;
             return GLib.SOURCE_REMOVE;
         }
 
         try {
-            const [px, py] = global.get_pointer();
+            const [px, py, mask] = global.get_pointer();
+            const isLmbDown = (mask & Clutter.ModifierType.BUTTON1_MASK) !== 0;
             const primaryMonitor = Main.layoutManager.primaryMonitor;
             const panelHeight = _getPanelHeight();
 
-            // Edge trigger reveals (guard against immediate trigger right after drag release)
-            if (py <= 2 && !_panelRevealed && (Date.now() - _lastDragEndTime > 300)) {
-                _showPanelAnimated();
+            // ─── Headerbar / Tabbar LMB Drag to Unfullscreen & Move ───
+            if (isLmbDown) {
+                if (!_fsDragState) {
+                    // Check if initial press occurred in the header/tabbar/menubar zone
+                    const maxHeaderY = (_panelRevealed ? panelHeight : 0) + 75;
+                    if (py >= 0 && py <= maxHeaderY) {
+                        _fsDragState = {
+                            startX: px,
+                            startY: py,
+                            isDragging: false,
+                            win: null,
+                            offsetX: 0,
+                            offsetY: 0,
+                        };
+                    }
+                } else if (!_fsDragState.isDragging) {
+                    const dy = py - _fsDragState.startY;
+                    const dx = px - _fsDragState.startX;
+                    // Trigger drag if pulled down by > 12px or moved significantly
+                    if (dy > 12 || Math.hypot(dx, dy) > 16) {
+                        const ws = global.workspace_manager?.get_active_workspace();
+                        let win = global.display.focus_window;
+                        if (!win || !win.is_fullscreen() || win.window_type !== Meta.WindowType.NORMAL) {
+                            win = ws?.list_windows?.().find(w => !w.minimized && w.is_fullscreen() && w.window_type === Meta.WindowType.NORMAL);
+                        }
+                        if (win && win.is_fullscreen()) {
+                            _fsDragState.isDragging = true;
+                            _fsDragState.win = win;
+
+                            // Restore any visual shrinking and panel hiding
+                            _restoreShrunkActors(false);
+                            _cancelPanelHide();
+                            _cancelDockHide();
+
+                            try {
+                                win.unmake_fullscreen();
+                                win.unmaximize();
+                            } catch (_) {}
+
+                            const frame = win.get_frame_rect();
+                            _fsDragState.offsetX = Math.min(Math.max(px - frame.x, 60), Math.max(frame.width - 60, 60));
+                            _fsDragState.offsetY = 24;
+
+                            const targetX = px - _fsDragState.offsetX;
+                            const targetY = py - _fsDragState.offsetY;
+                            try { win.move_frame(true, targetX, targetY); } catch (_) {}
+                        } else {
+                            _fsDragState = null;
+                        }
+                    }
+                } else if (_fsDragState.isDragging && _fsDragState.win) {
+                    // Actively dragging window with LMB held
+                    const targetX = px - _fsDragState.offsetX;
+                    const targetY = py - _fsDragState.offsetY;
+                    try { _fsDragState.win.move_frame(true, targetX, targetY); } catch (_) {}
+                }
+            } else {
+                if (_fsDragState) {
+                    if (_fsDragState.isDragging && _fsDragState.win) {
+                        const win = _fsDragState.win;
+                        const wa = Main.layoutManager.getWorkAreaForMonitor(primaryMonitor.index);
+                        const menubarBottom = wa.y;
+
+                        // If dropped flush near top menubar, re-fullscreen/maximize
+                        if (py <= menubarBottom + 16 && py >= 0) {
+                            win._justMaximizedFromDrag = Date.now();
+                            try { win.make_fullscreen(); } catch (_) {}
+                        }
+                        _queueRecomputeFullscreen();
+                    }
+                    _fsDragState = null;
+                }
             }
-            if (py >= primaryMonitor.y + primaryMonitor.height - 3 && !_dockRevealed) {
-                _showDockAnimated();
+
+            // Edge trigger reveals (guard against immediate trigger right after drag release)
+            if (!_fsDragState?.isDragging) {
+                if (py <= 2 && !_panelRevealed && (Date.now() - _lastDragEndTime > 300)) {
+                    _showPanelAnimated();
+                }
+                if (py >= primaryMonitor.y + primaryMonitor.height - 3 && !_dockRevealed) {
+                    _showDockAnimated();
+                }
             }
 
             // 1. Panel hide watch
-            if (_panelRevealed) {
+            if (_panelRevealed && (!_fsDragState || !_fsDragState.isDragging)) {
                 if (py <= panelHeight + 8) {
                     _cancelPanelHide();
                 } else if (!_isAnyPanelMenuOpen() && !_panelHideTimer) {
@@ -371,7 +463,7 @@ function _startFullscreenWatcher() {
             }
 
             // 2. Dock hide watch
-            if (_dockRevealed) {
+            if (_dockRevealed && (!_fsDragState || !_fsDragState.isDragging)) {
                 const dockHeight = 95;
                 const dockTop = primaryMonitor.y + primaryMonitor.height - dockHeight - 20;
                 if (py >= dockTop) {
@@ -730,4 +822,5 @@ export function disable() {
     _panelRevealed = false;
     _panelHiding = false;
     _dockRevealed = false;
+    _fsDragState = null;
 }

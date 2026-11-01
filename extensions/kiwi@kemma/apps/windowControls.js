@@ -127,9 +127,10 @@ class WindowControlsIndicator extends PanelMenu.Button {
             const window = global.display.focus_window;
             if (window) {
                 if (window.is_fullscreen()) {
-                    window.unmake_fullscreen();
+                    try { window.unmake_fullscreen(); } catch (_) {}
+                    try { window.unmaximize(); } catch (_) {}
                 } else {
-                    window.make_fullscreen();
+                    try { window.make_fullscreen(); } catch (_) {}
                 }
             }
         })]);
@@ -602,9 +603,7 @@ function _replaceIndicatorOnPanel() {
         const rightBoxChildren = Main.panel._rightBox.get_children();
         Main.panel._rightBox.insert_child_at_index(container, rightBoxChildren.length);
     } else {
-        const leftBoxChildren = Main.panel._leftBox.get_children();
-        const position = Math.max(0, leftBoxChildren.length - 1);
-        Main.panel._leftBox.insert_child_at_index(container, position);
+        Main.panel._leftBox.insert_child_at_index(container, 0);
     }
 }
 
@@ -619,10 +618,8 @@ export function enable(ext) {
             const rightBoxChildren = Main.panel._rightBox.get_children();
             Main.panel.addToStatusArea('window-controls', controlsIndicator, rightBoxChildren.length, 'right');
         } else {
-            // Place on left, second-to-last (since window title is last)
-            const leftBoxChildren = Main.panel._leftBox.get_children();
-            const position = Math.max(0, leftBoxChildren.length - 1);
-            Main.panel.addToStatusArea('window-controls', controlsIndicator, position, 'left');
+            // Place at far left (position 0 before Apple menu, like macOS)
+            Main.panel.addToStatusArea('window-controls', controlsIndicator, 0, 'left');
         }
     }
 }
