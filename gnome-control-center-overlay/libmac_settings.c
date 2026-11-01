@@ -993,6 +993,316 @@ static void on_liquid_drag_end(GtkGestureDrag *gesture, double offset_x, double 
     gtk_widget_set_cursor_from_name(widget, "grab");
 }
 
+/* ========================================================================= */
+/* Exact GLSL glass.frag shader simulation from ryohsuke1231/liquid-glass    */
+/* ========================================================================= */
+
+static inline double glsl_sdRoundRect(double px, double py, double bx, double by, double r) {
+    double dx = fabs(px) - bx + r;
+    double dy = fabs(py) - by + r;
+    double max_d = fmax(dx, dy);
+    double len_d = sqrt(fmax(dx, 0.0) * fmax(dx, 0.0) + fmax(dy, 0.0) * fmax(dy, 0.0));
+    return fmin(max_d, 0.0) + len_d - r;
+}
+
+static inline double glsl_smoothstep(double edge0, double edge1, double x) {
+    if (edge0 >= edge1) return (x >= edge0) ? 1.0 : 0.0;
+    double t = CLAMP((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);
+}
+
+static inline void glsl_sdRoundRectDir(double px, double py, double bx, double by, double r, double *out_x, double *out_y) {
+    double qx = fabs(px) - bx + r;
+    double qy = fabs(py) - by + r;
+    double sign_x = (px >= 0.0) ? 1.0 : -1.0;
+    double sign_y = (py >= 0.0) ? 1.0 : -1.0;
+    if (fmax(qx, qy) < 0.0) {
+        if (qx > qy) {
+            *out_x = sign_x;
+            *out_y = 0.0;
+        } else {
+            *out_x = 0.0;
+            *out_y = sign_y;
+        }
+        return;
+    }
+    double mqx = fmax(qx, 0.0) + 1e-6;
+    double mqy = fmax(qy, 0.0) + 1e-6;
+    double len = sqrt(mqx * mqx + mqy * mqy);
+    *out_x = sign_x * (mqx / len);
+    *out_y = sign_y * (mqy / len);
+}
+
+static inline double glsl_normalizedDepth(double d, double r) {
+    double maxDepth = fmax(r, 1.0);
+    double interiorDepth = fmax(-d, 0.0);
+    return CLAMP(interiorDepth / maxDepth, 0.0, 1.0);
+}
+
+static inline double glsl_profileHeight(double t, double zScale, double profile_n) {
+    double n = fmax(profile_n, 1.01);
+    double invT = CLAMP(1.0 - t, 0.0, 1.0);
+    double inner = fmax(1.0 - pow(invT, n), 0.0);
+    double h = pow(inner, 1.0 / n);
+    return h * zScale;
+}
+
+static inline double glsl_getHeight(double px, double py, double bx, double by, double r, double zScale, double edge_smoothing, double profile_n) {
+    double d = glsl_sdRoundRect(px, py, bx, by, r);
+    double smoothZone = fmax(edge_smoothing, 1.0);
+    if (d > smoothZone)
+        return 0.0;
+
+    double t = glsl_normalizedDepth(d, r);
+    double h = glsl_profileHeight(t, zScale, profile_n);
+    double fade = 1.0 - glsl_smoothstep(-smoothZone, smoothZone, d);
+    return h * fade;
+}
+
+static inline void glsl_heightGradient(double px, double py, double bx, double by, double r, double zScale, double edge_smoothing, double profile_n, double e, double *out_gx, double *out_gy) {
+    double dir_x, dir_y;
+    glsl_sdRoundRectDir(px, py, bx, by, r, &dir_x, &dir_y);
+    double hOut = glsl_getHeight(px + dir_x * e, py + dir_y * e, bx, by, r, zScale, edge_smoothing, profile_n);
+    double hIn  = glsl_getHeight(px - dir_x * e, py - dir_y * e, bx, by, r, zScale, edge_smoothing, profile_n);
+    double factor = (hOut - hIn) / (2.0 * e);
+    *out_gx = dir_x * factor;
+    *out_gy = dir_y * factor;
+}
+
+static inline void glsl_getNormal(double gx, double gy, double *out_nx, double *out_ny, double *out_nz) {
+    double vx = -gx;
+    double vy = -gy;
+    double vz = 1.0;
+    double len = sqrt(vx * vx + vy * vy + vz * vz);
+    *out_nx = vx / len;
+    *out_ny = vy / len;
+    *out_nz = vz / len;
+}
+
+static inline void sample_bilinear(const unsigned char *src_pixels, int stride, int width, int height, double sx, double sy, double *out_r, double *out_g, double *out_b) {
+    int x0 = (int)floor(sx);
+    int y0 = (int)floor(sy);
+    int x1 = x0 + 1;
+    int y1 = y0 + 1;
+    double fx = sx - x0;
+    double fy = sy - y0;
+
+    x0 = CLAMP(x0, 0, width - 1);
+    x1 = CLAMP(x1, 0, width - 1);
+    y0 = CLAMP(y0, 0, height - 1);
+    y1 = CLAMP(y1, 0, height - 1);
+
+    uint32_t c00 = *(const uint32_t *)(src_pixels + y0 * stride + x0 * 4);
+    uint32_t c10 = *(const uint32_t *)(src_pixels + y0 * stride + x1 * 4);
+    uint32_t c01 = *(const uint32_t *)(src_pixels + y1 * stride + x0 * 4);
+    uint32_t c11 = *(const uint32_t *)(src_pixels + y1 * stride + x1 * 4);
+
+    double r00 = (c00 >> 16) & 0xFF, g00 = (c00 >> 8) & 0xFF, b00 = c00 & 0xFF;
+    double r10 = (c10 >> 16) & 0xFF, g10 = (c10 >> 8) & 0xFF, b10 = c10 & 0xFF;
+    double r01 = (c01 >> 16) & 0xFF, g01 = (c01 >> 8) & 0xFF, b01 = c01 & 0xFF;
+    double r11 = (c11 >> 16) & 0xFF, g11 = (c11 >> 8) & 0xFF, b11 = c11 & 0xFF;
+
+    double r0 = r00 * (1.0 - fx) + r10 * fx;
+    double g0 = g00 * (1.0 - fx) + g10 * fx;
+    double b0 = b00 * (1.0 - fx) + b10 * fx;
+
+    double r1 = r01 * (1.0 - fx) + r11 * fx;
+    double g1 = g01 * (1.0 - fx) + g11 * fx;
+    double b1 = b01 * (1.0 - fx) + b11 * fx;
+
+    *out_r = r0 * (1.0 - fy) + r1 * fy;
+    *out_g = g0 * (1.0 - fy) + g1 * fy;
+    *out_b = b0 * (1.0 - fy) + b1 * fy;
+}
+
+static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width, int height,
+                                    double gx, double gy, double gw, double gh, double gr) {
+    if (!bg) return;
+
+    // 1. Drop shadow
+    double shadow_val = (double)state.liquid_shadow / 100.0;
+    if (shadow_val > 0.02) {
+        for (int i = 4; i >= 1; i--) {
+            double expand = i * 2.5;
+            double alpha = (shadow_val * 0.14) / i;
+            draw_rounded_rect_path(cr, gx - expand, gy + 3.5 - expand / 2.0, gw + expand * 2.0, gh + expand * 2.0, gr + expand);
+            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, alpha);
+            cairo_fill(cr);
+        }
+    }
+
+    cairo_save(cr);
+    draw_rounded_rect_path(cr, gx, gy, gw, gh, gr);
+    cairo_clip(cr);
+
+    int igx = (int)round(gx);
+    int igy = (int)round(gy);
+    int igw = (int)round(gw);
+    int igh = (int)round(gh);
+
+    cairo_surface_flush(bg);
+    unsigned char *src_pixels = cairo_image_surface_get_data(bg);
+    int src_stride = cairo_image_surface_get_stride(bg);
+
+    cairo_surface_t *glass_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, igw, igh);
+    cairo_surface_flush(glass_surf);
+    unsigned char *dst_pixels = cairo_image_surface_get_data(glass_surf);
+    int dst_stride = cairo_image_surface_get_stride(glass_surf);
+
+    double bx = gw * 0.5;
+    double by = gh * 0.5;
+    double max_z = 25.0;
+    double profile_n = 7.0;
+    double edge_smoothing = 2.0;
+    double edgeFeather = fmax(edge_smoothing, 0.75);
+    double ior = 2.40;
+    double eta = 1.0 / fmax(ior, 1.001);
+
+    // Upstream repo shader parameters:
+    double disp_scale = ((double)state.liquid_refraction / 60.0) * 18.0;
+    double chroma_str = ((double)state.liquid_chroma / 30.0) * 2.0;
+    double tint_strength = ((double)state.liquid_tint / 100.0);
+    double rim_intensity = ((double)state.liquid_rim / 50.0) * 0.60;
+    double rim_width = 4.5;
+    double rim_power = 4.0;
+    double rim_directional_power = 2.7;
+    double rim_light_color_intensity = 1.4;
+    double sheen_intensity = 0.30;
+    double spec_intensity = ((double)state.liquid_specular / 50.0) * 0.50;
+    double shininess = 32.0;
+    double ao_intensity = 0.30;
+    double ao_radius = 8.0;
+
+    double light_angle_rad = 1.5707963267948966; // 90 deg
+    double lx_dir = cos(light_angle_rad);
+    double ly_dir = sin(light_angle_rad);
+    double lz_dir = 0.38;
+    double l_len = sqrt(lx_dir * lx_dir + ly_dir * ly_dir + lz_dir * lz_dir);
+    lx_dir /= l_len; ly_dir /= l_len; lz_dir /= l_len;
+
+    for (int ly = 0; ly < igh; ly++) {
+        uint32_t *dst_row = (uint32_t *)(dst_pixels + ly * dst_stride);
+        double py = ly - by + 0.5;
+        for (int lx = 0; lx < igw; lx++) {
+            double px = lx - bx + 0.5;
+            double d = glsl_sdRoundRect(px, py, bx, by, gr);
+            if (d > 0.8) {
+                dst_row[lx] = 0;
+                continue;
+            }
+
+            double outsideTransition = glsl_smoothstep(-edgeFeather, edgeFeather, d);
+            double insideMask = 1.0 - outsideTransition;
+
+            // 1. Height gradient & 3D normal vector
+            double grad_x, grad_y;
+            glsl_heightGradient(px, py, bx, by, gr, max_z, edge_smoothing, profile_n, 0.5, &grad_x, &grad_y);
+            double nx, ny, nz;
+            glsl_getNormal(grad_x, grad_y, &nx, &ny, &nz);
+
+            // 2. Snell refraction ray
+            double dot_NI = -nz;
+            double k = 1.0 - eta * eta * (1.0 - dot_NI * dot_NI);
+            double disp_x = 0.0, disp_y = 0.0;
+            if (k >= 0.0 && d <= 0.0) {
+                double factor = eta * dot_NI + sqrt(k);
+                double ray_x = -factor * nx;
+                double ray_y = -factor * ny;
+                double ray_z = -eta - factor * nz;
+                double safe_z = fmax(-ray_z, 0.15);
+                disp_x = (ray_x / safe_z) * disp_scale;
+                disp_y = (ray_y / safe_z) * disp_scale;
+                double disp_len = sqrt(disp_x * disp_x + disp_y * disp_y);
+                if (disp_len > 35.0) {
+                    disp_x = (disp_x / disp_len) * 35.0;
+                    disp_y = (disp_y / disp_len) * 35.0;
+                }
+                double edgeDampen = glsl_smoothstep(0.0, edgeFeather * 3.0, -d);
+                disp_x *= edgeDampen;
+                disp_y *= edgeDampen;
+            }
+
+            double disp_len = sqrt(disp_x * disp_x + disp_y * disp_y);
+            double chroma_dx = (disp_len > 1e-5) ? (disp_x / disp_len) * chroma_str : 0.0;
+            double chroma_dy = (disp_len > 1e-5) ? (disp_y / disp_len) * chroma_str : 0.0;
+
+            double sx = gx + lx + disp_x;
+            double sy = gy + ly + disp_y;
+
+            double cr_r, cr_g, cr_b;
+            sample_bilinear(src_pixels, src_stride, width, height, sx, sy, &cr_r, &cr_g, &cr_b);
+            if (chroma_str > 0.01) {
+                double r_val, dummy_g, dummy_b, b_val;
+                sample_bilinear(src_pixels, src_stride, width, height, sx + chroma_dx, sy + chroma_dy, &r_val, &dummy_g, &dummy_b);
+                sample_bilinear(src_pixels, src_stride, width, height, sx - chroma_dx, sy - chroma_dy, &dummy_g, &dummy_b, &b_val);
+                cr_r = r_val;
+                cr_b = b_val;
+            }
+
+            // 3. Tint
+            double tint_r = 41.0, tint_g = 41.0, tint_b = 46.0;
+            double base_r = cr_r * (1.0 - tint_strength) + tint_r * tint_strength;
+            double base_g = cr_g * (1.0 - tint_strength) + tint_g * tint_strength;
+            double base_b = cr_b * (1.0 - tint_strength) + tint_b * tint_strength;
+
+            // 4. Ambient Occlusion (inner edge darkening)
+            double aoMask = 1.0 - glsl_smoothstep(0.0, fmax(ao_radius, 0.001), -d);
+            double aoFactor = 1.0 - aoMask * ao_intensity;
+            base_r *= aoFactor;
+            base_g *= aoFactor;
+            base_b *= aoFactor;
+
+            // 5. Lighting: Rim, Specular, Sheen
+            double safeRimWidth = fmax(rim_width, 0.001);
+            double edgeBand = (1.0 - glsl_smoothstep(0.0, safeRimWidth, fabs(d))) * (rim_width >= 0.0005 ? 1.0 : 0.0);
+            double rimDot = 1.0 - fmax(nz, 0.0);
+            double rimFresnel = pow(fmax(rimDot, 0.0), rim_power);
+            double dotNL = nx * lx_dir + ny * ly_dir + nz * lz_dir;
+            double lightMask = pow(fabs(dotNL), rim_directional_power);
+            double rimShape = (pow(edgeBand, 0.85) * 0.45 + rimFresnel * 0.55) * edgeBand;
+            double finalRimLight = rimShape * lightMask * rim_intensity * rim_light_color_intensity * 255.0;
+
+            // Specular reflection
+            double r_dir_z = 2.0 * dotNL * nz - lz_dir;
+            double specDot = fmax(r_dir_z, 0.0);
+            double specLight = pow(specDot, shininess) * spec_intensity * 255.0;
+            double specMask = (0.25 * (1.0 - insideMask) + insideMask) * CLAMP(edgeBand + insideMask * 0.65, 0.0, 1.0);
+            specLight *= specMask;
+
+            // Sheen
+            double sheenFacing = fmax(dotNL, 0.0);
+            double surfaceSheen = pow(sheenFacing, 1.65) * (1.0 * (1.0 - edgeBand) + 0.55 * edgeBand);
+            double sheenLight = surfaceSheen * sheen_intensity * 255.0;
+
+            double added = specLight + finalRimLight + sheenLight;
+            double lit_r = base_r + added - (base_r * added / 255.0);
+            double lit_g = base_g + added - (base_g * added / 255.0);
+            double lit_b = base_b + added - (base_b * added / 255.0);
+
+            uint8_t out_a = (uint8_t)CLAMP(insideMask * 255.0, 0, 255);
+            uint8_t out_r = (uint8_t)CLAMP(lit_r, 0, 255);
+            uint8_t out_g = (uint8_t)CLAMP(lit_g, 0, 255);
+            uint8_t out_b = (uint8_t)CLAMP(lit_b, 0, 255);
+
+            dst_row[lx] = (out_a << 24) | (out_r << 16) | (out_g << 8) | out_b;
+        }
+    }
+
+    cairo_surface_mark_dirty(glass_surf);
+    cairo_set_source_surface(cr, glass_surf, igx, igy);
+    cairo_paint(cr);
+    cairo_surface_destroy(glass_surf);
+
+    // Center icon/dots for repo element
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
+    for (int d = -1; d <= 1; d++) {
+        cairo_arc(cr, gx + gw / 2.0 + d * 9.0, gy + gh / 2.0, 2.2, 0, 2 * G_PI);
+        cairo_fill(cr);
+    }
+
+    cairo_restore(cr);
+}
+
 static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
     (void)area; (void)user_data;
     if (width <= 0 || height <= 0) return;
@@ -1019,7 +1329,8 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     // 3. Interactive Liquid Glass Square
     double gw = 120.0, gh = 120.0, gr = 26.0;
     if (g_glass_x < 0) {
-        g_glass_x = (width - gw) / 2.0;
+        g_glass_x = width * 0.28 - gw / 2.0;
+        if (g_glass_x < 16.0) g_glass_x = 16.0;
         g_glass_y = (height - gh) / 2.0;
     }
     double gx = CLAMP(g_glass_x, 6.0, width - gw - 6.0);
@@ -1235,6 +1546,44 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
         cairo_restore(cr);
     }
+
+    // 4. Second Element (Right: Exact upstream glass shader from ryohsuke1231/liquid-glass)
+    double gx2 = width * 0.72 - gw / 2.0;
+    if (gx2 > width - gw - 16.0) gx2 = width - gw - 16.0;
+    if (gx2 < gx + gw + 12.0) gx2 = gx + gw + 12.0;
+    double gy2 = (height - gh) / 2.0;
+
+    draw_repo_glass_element(cr, bg, width, height, gx2, gy2, gw, gh, gr);
+
+    // Badges / Labels above each element
+    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 11.0);
+
+    // Left label: "Наш передогляд"
+    cairo_text_extents_t ext1;
+    cairo_text_extents(cr, "Наш передогляд", &ext1);
+    double l1_x = gx + (gw - ext1.width) / 2.0;
+    double l1_y = gy - 9.0;
+    if (l1_y < 16.0) l1_y = gy + gh + 18.0;
+    draw_rounded_rect_path(cr, l1_x - 8.0, l1_y - 12.0, ext1.width + 16.0, 18.0, 9.0);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.55);
+    cairo_fill(cr);
+    cairo_move_to(cr, l1_x, l1_y + 1.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    cairo_show_text(cr, "Наш передогляд");
+
+    // Right label: "Шейдер з репо"
+    cairo_text_extents_t ext2;
+    cairo_text_extents(cr, "Шейдер з репо", &ext2);
+    double l2_x = gx2 + (gw - ext2.width) / 2.0;
+    double l2_y = gy2 - 9.0;
+    if (l2_y < 16.0) l2_y = gy2 + gh + 18.0;
+    draw_rounded_rect_path(cr, l2_x - 8.0, l2_y - 12.0, ext2.width + 16.0, 18.0, 9.0);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.55);
+    cairo_fill(cr);
+    cairo_move_to(cr, l2_x, l2_y + 1.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    cairo_show_text(cr, "Шейдер з репо");
 
     // Outer preview border
     cairo_restore(cr);
@@ -5657,7 +6006,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         }
         if (g_getenv("MAC_SETTINGS_OPEN_STYLING") && !g_object_get_data(G_OBJECT(nv), "mac_styling_pushed")) {
             g_object_set_data(G_OBJECT(nv), "mac_styling_pushed", GINT_TO_POINTER(1));
-            activate_system_row_by_id(GTK_WIDGET(content_page), "mac_styling_row");
+            adw_navigation_view_push_by_tag(nv, "mac-styling");
         }
         const char *target_row = g_object_get_data(G_OBJECT(split_view), "mac_target_subpage_row");
         if (!target_row && g_getenv("MAC_SETTINGS_TARGET_ROW") && !g_object_get_data(G_OBJECT(nv), "mac_env_target_row_done")) {
@@ -5666,6 +6015,9 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         }
         if (target_row) {
             g_object_set_data(G_OBJECT(split_view), "mac_target_subpage_row", NULL);
+            if (g_strcmp0(target_row, "mac_styling_row") == 0) {
+                adw_navigation_view_push_by_tag(nv, "mac-styling");
+            }
             activate_system_row_by_id(GTK_WIDGET(content_page), target_row);
         }
         vis_p = adw_navigation_view_get_visible_page(nv);
