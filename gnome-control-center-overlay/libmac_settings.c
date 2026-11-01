@@ -2916,27 +2916,65 @@ typedef struct {
     char *id;
 } MacPanelRowData;
 
+static int get_sidebar_panel_group(const char *id) {
+    if (!id) return -1;
+    if (g_strcmp0(id, "account") == 0) return 0;
+    if (g_strcmp0(id, "wifi") == 0 ||
+        g_strcmp0(id, "bluetooth") == 0 ||
+        g_strcmp0(id, "network") == 0 ||
+        g_strcmp0(id, "wwan") == 0 ||
+        g_strcmp0(id, "mobile-broadband") == 0 ||
+        g_strcmp0(id, "power") == 0) return 1;
+
+    if (g_strcmp0(id, "system") == 0 ||
+        g_strcmp0(id, "universal-access") == 0 ||
+        g_strcmp0(id, "background") == 0 ||
+        g_strcmp0(id, "ubuntu") == 0 ||
+        g_strcmp0(id, "widgets") == 0 ||
+        g_strcmp0(id, "display") == 0 ||
+        g_strcmp0(id, "multitasking") == 0) return 2;
+
+    if (g_strcmp0(id, "notifications") == 0 ||
+        g_strcmp0(id, "sound") == 0) return 3;
+
+    return 4; /* Група 4: Різне */
+}
+
+static const char *get_sidebar_row_panel_id(GtkListBoxRow *row) {
+    if (!row) return NULL;
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
+        return "account";
+    }
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"))) {
+        return "widgets";
+    }
+    void *d = g_object_get_data(G_OBJECT(row), "data");
+    if (!d) return NULL;
+    return *((const char **)((char *)d + 0x18));
+}
+
 static double get_sidebar_panel_rank(GtkListBoxRow *row) {
     if (!row) return 999.0;
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
         return -30.0;
     }
-    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"))) {
-        return 9.5; /* Positioned directly beneath background */
-    }
-    void *d = g_object_get_data(G_OBJECT(row), "data");
-    if (!d) return 999.0;
-
-    const char *id = *((const char **)((char *)d + 0x18));
+    const char *id = get_sidebar_row_panel_id(row);
     if (!id) return 999.0;
 
     static const char * const panel_order[] = {
-        "wifi", "network", "wwan", "mobile-broadband", "bluetooth",
-        "display", "sound", "power", "multitasking",
-        "background", "widgets", "ubuntu", "applications", "notifications",
-        "search", "online-accounts", "sharing", "wellbeing",
+        /* Група 1: Мережа та живлення */
+        "wifi", "bluetooth", "network", "wwan", "mobile-broadband", "power",
+
+        /* Група 2: Системні параметри */
+        "system", "universal-access", "background", "ubuntu", "widgets", "display", "multitasking",
+
+        /* Група 3: Звук і сповіщення */
+        "notifications", "sound",
+
+        /* Група 4: Різне */
+        "applications", "search", "online-accounts", "sharing",
         "mouse", "keyboard", "color", "printers",
-        "system", "universal-access", "privacy", "wacom",
+        "privacy", "wacom", "wellbeing",
         NULL
     };
     for (int i = 0; panel_order[i] != NULL; i++) {
@@ -2945,6 +2983,35 @@ static double get_sidebar_panel_rank(GtkListBoxRow *row) {
         }
     }
     return 500.0;
+}
+
+static void update_sidebar_group_spacing(GtkListBox *listbox) {
+    if (!listbox) return;
+    int prev_group = 0;
+    for (int i = 0; ; i++) {
+        GtkListBoxRow *row = gtk_list_box_get_row_at_index(listbox, i);
+        if (!row) break;
+        if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
+            prev_group = 0;
+            continue;
+        }
+        const char *id = get_sidebar_row_panel_id(row);
+        int group = get_sidebar_panel_group(id);
+        if (group > prev_group && prev_group > 0) {
+            gtk_widget_add_css_class(GTK_WIDGET(row), "mac-sidebar-group-start");
+        } else {
+            gtk_widget_remove_css_class(GTK_WIDGET(row), "mac-sidebar-group-start");
+        }
+        if (group > 0) prev_group = group;
+    }
+}
+
+static gboolean update_sidebar_group_spacing_idle(gpointer user_data) {
+    GtkListBox *box = GTK_LIST_BOX(user_data);
+    if (box && GTK_IS_LIST_BOX(box)) {
+        update_sidebar_group_spacing(box);
+    }
+    return G_SOURCE_REMOVE;
 }
 
 static int mac_main_listbox_sort_func(GtkListBoxRow *row1, GtkListBoxRow *row2, gpointer user_data) {
@@ -4125,6 +4192,10 @@ static void init_mac_settings_css(void) {
         "  border-radius: 8px; "
         "  background-color: #fa6e0a; "
         "  color: #ffffff; "
+        "} "
+        "window.mac-settings-window list.mac-settings-sidebar-list row.mac-sidebar-group-start, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row.mac-sidebar-group-start { "
+        "  margin-top: 14px; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) image, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) image { "
@@ -5985,6 +6056,9 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             }
         }
 
+        update_sidebar_group_spacing(main_listbox);
+        g_idle_add(update_sidebar_group_spacing_idle, main_listbox);
+
         if (g_getenv("MAC_SETTINGS_OPEN_WIDGETS") && !g_object_get_data(G_OBJECT(split_view), "mac_widgets_opened")) {
             g_object_set_data(G_OBJECT(split_view), "mac_widgets_opened", GINT_TO_POINTER(1));
             if (widgets_row) {
@@ -6002,10 +6076,11 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     if (g_getenv("MAC_SETTINGS_TEST_CLICKS") && main_listbox) {
         printf("--- MAC_SETTINGS_TEST_CLICKS START ---\n");
         const char *test_ids[] = {
-            "wifi", "network", "bluetooth", "display", "sound", "power",
-            "multitasking", "background", "widgets", "ubuntu", "applications",
-            "notifications", "search", "online-accounts", "sharing",
-            "mouse", "keyboard", "printers", "system", "universal-access", "privacy",
+            "wifi", "bluetooth", "network", "power",
+            "system", "universal-access", "background", "ubuntu", "widgets", "display", "multitasking",
+            "notifications", "sound",
+            "applications", "search", "online-accounts", "sharing",
+            "mouse", "keyboard", "printers", "privacy",
             NULL
         };
         for (int t = 0; test_ids[t] != NULL; t++) {
