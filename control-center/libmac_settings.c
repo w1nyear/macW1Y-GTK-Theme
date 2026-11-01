@@ -4283,8 +4283,13 @@ static void configure_toolbar_views_recursive(GtkWidget *widget, gboolean is_sid
     if (!widget) return;
     if (ADW_IS_TOOLBAR_VIEW(widget)) {
         AdwToolbarView *tv = ADW_TOOLBAR_VIEW(widget);
-        adw_toolbar_view_set_extend_content_to_top_edge(tv, FALSE);
-        adw_toolbar_view_set_extend_content_to_bottom_edge(tv, FALSE);
+        if (is_sidebar) {
+            adw_toolbar_view_set_extend_content_to_top_edge(tv, FALSE);
+            adw_toolbar_view_set_extend_content_to_bottom_edge(tv, FALSE);
+        } else {
+            adw_toolbar_view_set_extend_content_to_top_edge(tv, TRUE);
+            adw_toolbar_view_set_extend_content_to_bottom_edge(tv, TRUE);
+        }
         adw_toolbar_view_set_top_bar_style(tv, ADW_TOOLBAR_FLAT);
         adw_toolbar_view_set_bottom_bar_style(tv, ADW_TOOLBAR_FLAT);
     }
@@ -5256,18 +5261,21 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window .mac-nav-pill, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill { "
-        "  padding: 2px 2px; "
-        "  border-radius: 9999px; "
-        "  background-color: rgba(255, 255, 255, 0.08); "
-        "  border: 1px solid rgba(255, 255, 255, 0.08); "
+        "  padding: 0; "
+        "  border-radius: 8px; "
+        "  background: transparent; "
+        "  background-color: transparent; "
+        "  background-image: none; "
+        "  border: none; "
+        "  box-shadow: none; "
         "} "
         "window.mac-settings-window .mac-nav-pill > button, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button { "
-        "  min-height: 29px; "
-        "  min-width: 29px; "
+        "  min-height: 28px; "
+        "  min-width: 28px; "
         "  padding: 0; "
-        "  margin: 0; "
-        "  border-radius: 9999px; "
+        "  margin: 0 1px; "
+        "  border-radius: 7px; "
         "  background: transparent; "
         "  background-color: transparent; "
         "  border: none; "
@@ -5282,26 +5290,20 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window .mac-nav-pill > button:first-child, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:first-child { "
-        "  border-top-left-radius: 9999px; "
-        "  border-bottom-left-radius: 9999px; "
-        "  border-top-right-radius: 0; "
-        "  border-bottom-right-radius: 0; "
+        "  border-radius: 7px; "
         "} "
         "window.mac-settings-window .mac-nav-pill > button:last-child, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:last-child { "
-        "  border-top-left-radius: 0; "
-        "  border-bottom-left-radius: 0; "
-        "  border-top-right-radius: 9999px; "
-        "  border-bottom-right-radius: 9999px; "
+        "  border-radius: 7px; "
         "} "
         "window.mac-settings-window .mac-nav-pill > button:hover, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:hover { "
-        "  background-color: rgba(255, 255, 255, 0.12); "
+        "  background-color: rgba(255, 255, 255, 0.10); "
         "  color: #ffffff; "
         "} "
         "window.mac-settings-window .mac-nav-pill > button:active, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:active { "
-        "  background-color: rgba(255, 255, 255, 0.20); "
+        "  background-color: rgba(255, 255, 255, 0.18); "
         "  color: #ffffff; "
         "} "
         "window.mac-settings-window .mac-nav-pill > button:disabled, "
@@ -5312,16 +5314,19 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window .mac-nav-pill separator, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill separator { "
-        "  min-width: 1px; "
-        "  background-color: rgba(255, 255, 255, 0.12); "
-        "  margin: 4px 0px; "
+        "  min-width: 0px; "
+        "  background: transparent; "
+        "  background-color: transparent; "
+        "  border: none; "
+        "  opacity: 0; "
+        "  margin: 0 1px; "
         "} "
         "window.mac-settings-window .mac-panel-title-label { "
         "  font-size: 14px; "
         "  font-weight: 700; "
         "  color: #ffffff; "
         "  margin-left: 4px; "
-        "  margin-top: 3px; "
+        "  margin-top: 1px; "
         "} "
         "window.mac-settings-window switch { "
         "  min-width: 42px; "
@@ -6353,7 +6358,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             title_label = gtk_label_new("");
             gtk_widget_add_css_class(title_label, "mac-panel-title-label");
             gtk_widget_set_valign(title_label, GTK_ALIGN_CENTER);
-            gtk_widget_set_margin_top(title_label, 3);
+            gtk_widget_set_margin_top(title_label, 1);
             gtk_label_set_xalign(GTK_LABEL(title_label), 0.0);
             gtk_box_append(GTK_BOX(nav_box), title_label);
 
@@ -6375,7 +6380,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             gtk_widget_set_visible(fwd_btn, TRUE);
         }
         if (title_label) {
-            gtk_widget_set_margin_top(title_label, 3);
+            gtk_widget_set_margin_top(title_label, 1);
         }
         if (title_label) {
             gtk_widget_set_visible(title_label, TRUE);
