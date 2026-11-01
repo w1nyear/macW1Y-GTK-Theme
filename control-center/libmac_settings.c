@@ -18,7 +18,7 @@ typedef struct {
     int menubar_tint;   /* 0 - 100 */
     int menubar_blur;   /* 0 - 100 */
 
-    int liquid_shape;      /* 0 - 3 (0=RoundRect, 1=Circle, 2=Capsule, 3=Squircle) */
+    int liquid_shape;      /* 0 - 2 (0=RoundRect, 1=Circle, 2=Capsule) */
     int liquid_refraction; /* 0 - 100 */
     int liquid_blur;       /* 0 - 50 */
     int liquid_tint;       /* 0 - 100 */
@@ -65,7 +65,7 @@ static MacStylingData state = {
     .menubar_tint = 30,
     .menubar_blur = 25,
 
-    .liquid_shape = 3,
+    .liquid_shape = 0,
     .liquid_refraction = 100,
     .liquid_blur = 9,
     .liquid_tint = 15,
@@ -149,9 +149,9 @@ static void load_config(void) {
 
             /* Group 2: Liquid Glass */
             if (json_object_has_member(obj, "liquid_shape"))
-                state.liquid_shape = (int)json_object_get_int_member(obj, "liquid_shape");
+                state.liquid_shape = (int)CLAMP((int)json_object_get_int_member(obj, "liquid_shape"), 0, 2);
             else
-                state.liquid_shape = 3;
+                state.liquid_shape = 0;
 
             if (json_object_has_member(obj, "liquid_refraction"))
                 state.liquid_refraction = (int)json_object_get_int_member(obj, "liquid_refraction");
@@ -986,7 +986,6 @@ static void on_liquid_drag_begin(GtkGestureDrag *gesture, double start_x, double
     int gw = 150, gh = 110;
     if (state.liquid_shape == 1) { gw = 116; gh = 116; }
     else if (state.liquid_shape == 2) { gw = 160; gh = 92; }
-    else if (state.liquid_shape == 3) { gw = 124; gh = 124; }
 
     if (g_glass_x < 0) {
         g_glass_x = (w - gw) / 2.0;
@@ -1019,7 +1018,6 @@ static void on_liquid_drag_update(GtkGestureDrag *gesture, double offset_x, doub
     int gw = 150, gh = 110;
     if (state.liquid_shape == 1) { gw = 116; gh = 116; }
     else if (state.liquid_shape == 2) { gw = 160; gh = 92; }
-    else if (state.liquid_shape == 3) { gw = 124; gh = 124; }
 
     g_glass_x = CLAMP(g_glass_drag_start_x + offset_x, 6.0, w - gw - 6.0);
     g_glass_y = CLAMP(g_glass_drag_start_y + offset_y, 6.0, h - gh - 6.0);
@@ -1036,7 +1034,7 @@ static void on_liquid_drag_end(GtkGestureDrag *gesture, double offset_x, double 
 /* ========================================================================= */
 /* Exact GLSL glass.frag shader simulation from ryohsuke1231/liquid-glass    */
 /* with multi-shape geometry support:                                        */
-/* 0 = Rounded Rect, 1 = Circle, 2 = Capsule, 3 = Apple Squircle             */
+/* 0 = Rounded Rect, 1 = Circle, 2 = Capsule                                 */
 /* ========================================================================= */
 
 static inline double glsl_sdRoundRect(double px, double py, double bx, double by, double r) {
@@ -1047,19 +1045,8 @@ static inline double glsl_sdRoundRect(double px, double py, double bx, double by
     return fmin(max_d, 0.0) + len_d - r;
 }
 
-static inline double glsl_sdSquircle(double px, double py, double bx, double by, double n) {
-    double ax = fmax(bx, 1.0);
-    double ay = fmax(by, 1.0);
-    double qx = fabs(px) / ax;
-    double qy = fabs(py) / ay;
-    double d_norm = pow(pow(qx, n) + pow(qy, n), 1.0 / n) - 1.0;
-    return d_norm * fmin(ax, ay);
-}
-
 static inline double glsl_sdShape(double px, double py, double bx, double by, double r, int shape) {
-    if (shape == 3) {
-        return glsl_sdSquircle(px, py, bx, by, 4.2);
-    } else if (shape == 2) {
+    if (shape == 2) {
         double cap_r = fmin(bx, by);
         return glsl_sdRoundRect(px, py, bx, by, cap_r);
     } else if (shape == 1) {
@@ -1098,14 +1085,7 @@ static inline void glsl_sdRoundRectDir(double px, double py, double bx, double b
 }
 
 static inline void glsl_sdShapeDir(double px, double py, double bx, double by, double r, int shape, double *out_x, double *out_y) {
-    if (shape == 3) {
-        double eps = 0.5;
-        double dx = glsl_sdSquircle(px + eps, py, bx, by, 4.2) - glsl_sdSquircle(px - eps, py, bx, by, 4.2);
-        double dy = glsl_sdSquircle(px, py + eps, bx, by, 4.2) - glsl_sdSquircle(px, py - eps, bx, by, 4.2);
-        double len = sqrt(dx * dx + dy * dy) + 1e-6;
-        *out_x = dx / len;
-        *out_y = dy / len;
-    } else if (shape == 2) {
+    if (shape == 2) {
         double cap_r = fmin(bx, by);
         glsl_sdRoundRectDir(px, py, bx, by, cap_r, out_x, out_y);
     } else if (shape == 1) {
@@ -1128,27 +1108,6 @@ static void draw_shape_path(cairo_t *cr, double gx, double gy, double gw, double
     } else if (shape == 2) { // Capsule
         double r = fmin(gw, gh) * 0.5;
         draw_rounded_rect_path(cr, gx, gy, gw, gh, r);
-    } else if (shape == 3) { // Squircle
-        double ax = gw * 0.5;
-        double ay = gh * 0.5;
-        double cx = gx + ax;
-        double cy = gy + ay;
-        double n = 4.2;
-        double p = 2.0 / n;
-        cairo_new_sub_path(cr);
-        const int steps = 96;
-        for (int i = 0; i <= steps; i++) {
-            double theta = (double)i * (2.0 * M_PI / (double)steps);
-            double c = cos(theta);
-            double s = sin(theta);
-            double x = cx + ax * (c >= 0.0 ? 1.0 : -1.0) * pow(fabs(c), p);
-            double y = cy + ay * (s >= 0.0 ? 1.0 : -1.0) * pow(fabs(s), p);
-            if (i == 0)
-                cairo_move_to(cr, x, y);
-            else
-                cairo_line_to(cr, x, y);
-        }
-        cairo_close_path(cr);
     } else { // 0: Rounded Rect
         draw_rounded_rect_path(cr, gx, gy, gw, gh, gr);
     }
@@ -1450,8 +1409,6 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         gw = 116.0; gh = 116.0; gr = 58.0;
     } else if (state.liquid_shape == 2) { // Capsule
         gw = 160.0; gh = 92.0; gr = 46.0;
-    } else if (state.liquid_shape == 3) { // Squircle
-        gw = 124.0; gh = 124.0; gr = 28.0;
     }
 
     if (g_glass_x < 0) {
@@ -1468,10 +1425,9 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     const char *shape_names[] = {
         "Заокруглений прямокутник",
         "Коло",
-        "Капсула",
-        "Сквіркл Apple"
+        "Капсула"
     };
-    int shape_idx = CLAMP(state.liquid_shape, 0, 3);
+    int shape_idx = CLAMP(state.liquid_shape, 0, 2);
     char badge_text[128];
     g_snprintf(badge_text, sizeof(badge_text), "Liquid Glass • %s", shape_names[shape_idx]);
 
@@ -1523,7 +1479,7 @@ void init_liquid_shape(void *widget, gpointer data) {
     (void)data;
     load_config();
     in_init = 1;
-    guint idx = (guint)CLAMP(state.liquid_shape, 0, 3);
+    guint idx = (guint)CLAMP(state.liquid_shape, 0, 2);
     adw_combo_row_set_selected(ADW_COMBO_ROW(widget), idx);
     in_init = 0;
 }
@@ -1532,7 +1488,7 @@ void on_liquid_shape_changed(void *widget, void *pspec, gpointer data) {
     (void)pspec; (void)data;
     if (in_init) return;
     guint sel = adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
-    state.liquid_shape = (int)CLAMP((int)sel, 0, 3);
+    state.liquid_shape = (int)CLAMP((int)sel, 0, 2);
     schedule_liquid_glass_apply();
     redraw_liquid_preview();
     schedule_json_save();

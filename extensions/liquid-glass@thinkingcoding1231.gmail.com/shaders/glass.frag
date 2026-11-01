@@ -58,7 +58,6 @@ uniform float isDock;
 // 0 = Rounded Rectangle (sdRoundRect)
 // 1 = Circle (sdCircle)
 // 2 = Capsule (sdCapsule)
-// 3 = Squircle Apple (sdSquircle, superellipse with n=4.2)
 uniform float shape_type;
 
 // [PERF] Blurred sub-rect (actor-local px, same space as `pixel_coord` and
@@ -192,23 +191,15 @@ float sdRoundRect(vec2 p, vec2 b, float r) {
     return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - r;
 }
 
-// Analytical Superellipse (Squircle) SDF for Apple-style icons and controls
-float sdSquircle(vec2 p, vec2 b, float n) {
-    vec2 ab = max(b, vec2(1.0));
-    vec2 q = abs(p) / ab;
-    float d_norm = pow(pow(q.x, n) + pow(q.y, n), 1.0 / n) - 1.0;
-    return d_norm * min(ab.x, ab.y);
-}
-
 // Unified multi-shape SDF:
 // 0: Rounded Rectangle
 // 1: Circle
 // 2: Capsule / Pill
-// 3: Squircle Apple (n = 4.2)
 float sdShape(vec2 p, vec2 b, float r, float shape) {
-    if (shape > 2.5) {
-        return sdSquircle(p, b, 4.2);
-    } else if (shape > 1.5) {
+    if (isDock > 0.5) {
+        return sdRoundRect(p, b, r);
+    }
+    if (shape > 1.5) {
         return sdRoundRect(p, b, min(b.x, b.y));
     } else if (shape > 0.5) {
         return length(p) - min(b.x, b.y);
@@ -236,9 +227,9 @@ float smin(float a, float b, float k) {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// Composite SDF: multi-shape with smooth popover arrow / beak
+// Composite SDF: popover box with smooth popover arrow / beak (always rounded rectangle)
 float sdPopover(vec2 p, vec2 b, float r, float side, float origin, float baseW, float rise, float tipR, float fillet) {
-    float d_box = sdShape(p, b, r, shape_type);
+    float d_box = sdRoundRect(p, b, r);
     if (side < 0.5 || rise <= 0.0) {
         return d_box;
     }
@@ -318,7 +309,7 @@ float findActiveRegion(vec2 pixel_coord, float pad, out vec2 outLocalPos, out ve
 // Normalizes the depth value based on the edge curvature.
 float normalizedDepth(float d, vec2 b, float r) {
     // Limits the height build-up strictly to the pixel width defined by 'corner_radius' (or shape radius).
-    float maxDepth = (shape_type > 0.5) ? max(min(b.x, b.y), 1.0) : max(r, 1.0); 
+    float maxDepth = (shape_type > 0.5 && isDock < 0.5) ? max(min(b.x, b.y), 1.0) : max(r, 1.0); 
     
     float interiorDepth = max(-d, 0.0);
     return clamp(interiorDepth / maxDepth, 0.0, 1.0);
@@ -380,25 +371,22 @@ vec2 sdRoundRectDir(vec2 p, vec2 b, float r) {
 // 0: Rounded Rect
 // 1: Circle
 // 2: Capsule
-// 3: Squircle
 vec2 sdShapeDir(vec2 p, vec2 b, float r, float shape) {
-    if (shape > 2.5) {
-        float eps = 0.5;
-        float dx = sdSquircle(p + vec2(eps, 0.0), b, 4.2) - sdSquircle(p - vec2(eps, 0.0), b, 4.2);
-        float dy = sdSquircle(p + vec2(0.0, eps), b, 4.2) - sdSquircle(p - vec2(0.0, eps), b, 4.2);
-        return normalize(vec2(dx, dy) + vec2(1e-6));
-    } else if (shape > 1.5) {
+    if (isDock > 0.5) {
+        return sdRoundRectDir(p, b, r);
+    }
+    if (shape > 1.5) {
         return sdRoundRectDir(p, b, min(b.x, b.y));
     } else if (shape > 0.5) {
-        return normalize(p + vec2(1e-6));
+        return (length(p) > 1e-4) ? normalize(p) : vec2(0.0, 1.0);
     }
     return sdRoundRectDir(p, b, r);
 }
 
-// Unit gradient of sdPopover() at p
+// Unit gradient of sdPopover() at p (always rounded rectangle)
 vec2 sdPopoverDir(vec2 p, vec2 b, float r, float side, float origin, float baseW, float rise, float tipR, float fillet) {
     if (side < 0.5 || rise <= 0.0) {
-        return sdShapeDir(p, b, r, shape_type);
+        return sdRoundRectDir(p, b, r);
     }
     float eps = 0.5;
     float dx = sdPopover(p + vec2(eps, 0.0), b, r, side, origin, baseW, rise, tipR, fillet)
@@ -668,7 +656,7 @@ void main() {
     // the finite-difference neighbourhood the gradient samples (the SDF is
     // 1-Lipschitz, so a step of `e` moves d by at most `e`).
     float smoothZoneEarly = max(edge_smoothing, 1.0);
-    float depthReach = (shape_type > 0.5) ? min(box_size.x, box_size.y) : corner_radius;
+    float depthReach = (shape_type > 0.5 && isDock < 0.5) ? min(box_size.x, box_size.y) : corner_radius;
     float interiorThreshold = max(
         max(depthReach + gradientStep(resolution) + smoothZoneEarly,
             edgeFeather * 4.0),

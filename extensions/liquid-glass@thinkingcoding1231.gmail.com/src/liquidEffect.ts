@@ -3265,8 +3265,13 @@ export const LiquidEffect = GObject.registerClass({
 
     if (settings && settings.settings_schema && settings.settings_schema.has_key('glass-shape-type')) {
       const applyShape = () => {
+        // Dock, menus, panels, osd and notifications are rectangular UI containers and must always use rounded rectangle (0.0)
+        if (this._owner && (['dock', 'panel', 'osd', 'notification', 'quick-settings', 'quick-settings-toggles'].includes(this._owner) || this._owner.includes('menu'))) {
+          this._setFloat('shape_type', 0.0);
+          return;
+        }
         const shape = settings.get_int('glass-shape-type');
-        this._setFloat('shape_type', shape);
+        this._setFloat('shape_type', (shape >= 1 && shape <= 2) ? shape : 0.0);
       };
       applyShape();
       const shapeId = settings.connect('changed::glass-shape-type', applyShape);
