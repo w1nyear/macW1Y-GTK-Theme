@@ -13944,3 +13944,30 @@ macW1Y 0.4 — Оптимізація компонування Параметр�
 
 
 
+
+================================================================================
+ЗМІНИ: РОЗДІЛ «ВІДЖЕТИ» У МАК СТИЛІЗАЦІЇ ТА ВИПРАВЛЕННЯ ЗАОКРУГЛЕННЯ ЕФЕКТІВ
+================================================================================
+1. Усунення дефекту незаокруглених кутів (Square corner artifacts fix):
+   - Корінна причина: шейдер `glass.frag` при `shadow_intensity > 0` малював темні пікселі тіні за межами радіуса скруглення (де d > 0) аж до прямокутних меж актора [0,0,w,h], що через прямокутний `clip_to_allocation` утворювало видимі гострі кути 90 градусів, які виступали за скруглені краї віджета.
+   - Виправлення у шейдері: у `extensions/desktop-widgets@r3nhick/lib/glass_v3.js` та `lib/glass.js` встановлено `shadow_intensity = 0.0` та `shadow_radius = 0.0`, завдяки чому вихідні пікселі шейдера суворо обмежені маскою `insideMask` і за межами радіуса скруглення залишаються на 100% прозорими.
+   - Справжня скруглена тінь: у `extensions/desktop-widgets@r3nhick/extension.js` на контейнері `wrapper` увімкнено `clip_to_allocation = false` та реалізовано динамічне накладання CSS `box-shadow` зі скругленням `border-radius: ${radius}px`. Це забезпечує плавне, повністю скруглене розсіювання тіні точно по формі сквиркла віджета без будь-яких артефактів кутів.
+
+2. Додавання розділу «Віджети» у «Мас стилізація» (Параметри / GNOME Control Center):
+   - У `gnome-control-center-overlay/cc-system-panel.ui` та `control-center/cc-system-panel.ui` додано групу `AdwPreferencesGroup` «Віджети» з 3 повзунками:
+     * «Розмиття» (0 - 50 px, значення за замовчуванням: 20)
+     * «Затемнення фону» (0 - 100 %, значення за замовчуванням: 42)
+     * «Тінь» (0 - 100 %, значення за замовчуванням: 35)
+   - У `gnome-control-center-overlay/libmac_settings.c` та `control-center/libmac_settings.c`:
+     * Розширено структуру `MacStylingData` полями `widget_blur`, `widget_tint`, `widget_shadow`.
+     * Додано колбеки ініціалізації та обробники зміни значень `init_widget_*` та `on_widget_*_changed`.
+     * Додано збереження/завантаження у `~/.config/mac-styling/styling.json`.
+     * Реалізовано функцію `apply_widget_settings()`, яка синхронізує параметри з GSettings-схемою `org.gnome.shell.extensions.desktop-widgets-r3nhick` (`blur-radius-px`, `tint-alpha-pct`, `style-shadow-size`).
+   - Перекомпільовано динамічну бібліотеку `libmac_settings.so` та синхронізовано в усі 7 системних та проектних локацій.
+
+3. Аудит, цілісність та верифікація:
+   - Синхронізовано розширення `desktop-widgets@r3nhick` у `~/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick/`.
+   - Оновлено SHA256 хеш розширення у `config/extensions.lock.json` (`8285d4bd65b5872728c2bccf62aeb06813ff0905611d02f63e54824d6abb8403`).
+   - Гаряче оновлено live-екземпляр GNOME Shell через D-Bus без перезапуску сесії користувача.
+   - `mac-extension-guard verify`: SUCCESS (усі 21 розширення заблоковано та верифіковано).
+   - `mac-audit-sync check`: 100% PASS.

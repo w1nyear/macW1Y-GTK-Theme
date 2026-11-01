@@ -38,6 +38,10 @@ typedef struct {
     int menu_shadow_blur;     /* 0 - 100 (radius px) */
     int menu_shadow_strength; /* 0 - 100 (intensity %) */
 
+    int widget_blur;    /* 0 - 50 px */
+    int widget_tint;    /* 0 - 100 % */
+    int widget_shadow;  /* 0 - 100 % */
+
     /* Legacy fields for backward compatibility */
     int dock_blur;
     int dock_sigma;
@@ -78,6 +82,10 @@ static MacStylingData state = {
     .menu_shadow_blur = 30,
     .menu_shadow_strength = 55,
 
+    .widget_blur = 20,
+    .widget_tint = 42,
+    .widget_shadow = 35,
+
     .dock_blur = 1,
     .dock_sigma = 30,
     .dock_tint = 0.36,
@@ -107,6 +115,7 @@ static guint blur_tint_timer_id = 0;
 static guint menu_blur_timer_id = 0;
 static guint menu_tint_timer_id = 0;
 static guint menu_shadow_timer_id = 0;
+static guint widget_timer_id = 0;
 
 static void load_config(void) {
     const char *home = g_get_home_dir();
@@ -222,6 +231,22 @@ static void load_config(void) {
             else
                 state.menu_shadow_strength = 55;
 
+            /* Group 5: Widgets */
+            if (json_object_has_member(obj, "widget_blur"))
+                state.widget_blur = (int)json_object_get_int_member(obj, "widget_blur");
+            else
+                state.widget_blur = 20;
+
+            if (json_object_has_member(obj, "widget_tint"))
+                state.widget_tint = (int)json_object_get_int_member(obj, "widget_tint");
+            else
+                state.widget_tint = 42;
+
+            if (json_object_has_member(obj, "widget_shadow"))
+                state.widget_shadow = (int)json_object_get_int_member(obj, "widget_shadow");
+            else
+                state.widget_shadow = 35;
+
             /* Legacy */
             if (json_object_has_member(obj, "dock_blur"))
                 state.dock_blur = json_object_get_boolean_member(obj, "dock_blur");
@@ -294,6 +319,9 @@ static void save_styling_json(void) {
         "  \"menu_blur\": %d,\n"
         "  \"menu_shadow_blur\": %d,\n"
         "  \"menu_shadow_strength\": %d,\n"
+        "  \"widget_blur\": %d,\n"
+        "  \"widget_tint\": %d,\n"
+        "  \"widget_shadow\": %d,\n"
         "  \"dock_blur\": %s,\n"
         "  \"dock_sigma\": %d,\n"
         "  \"dock_tint\": %s,\n"
@@ -325,6 +353,9 @@ static void save_styling_json(void) {
         state.menu_blur,
         state.menu_shadow_blur,
         state.menu_shadow_strength,
+        state.widget_blur,
+        state.widget_tint,
+        state.widget_shadow,
         (state.blur_sigma > 0) ? "true" : "false",
         state.blur_sigma,
         dock_tint_buf,
@@ -525,6 +556,37 @@ static void schedule_spotlight_apply(void) {
     if (spotlight_timer_id == 0) {
         spotlight_timer_id = g_timeout_add(60, (GSourceFunc)apply_spotlight_cb, NULL);
     }
+}
+
+static void apply_widget_settings(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src) return;
+
+    const char *schema_id = "org.gnome.shell.extensions.desktop-widgets-r3nhick";
+    if (!g_settings_schema_source_lookup(src, schema_id, TRUE)) return;
+
+    GSettings *dw = g_settings_new(schema_id);
+    if (!dw) return;
+
+    g_settings_set_int(dw, "blur-radius-px", state.widget_blur);
+    g_settings_set_int(dw, "tint-alpha-pct", state.widget_tint);
+    g_settings_set_int(dw, "style-shadow-size", state.widget_shadow);
+    g_object_unref(dw);
+}
+
+static gboolean apply_widget_cb(gpointer user_data) {
+    (void)user_data;
+    widget_timer_id = 0;
+    apply_widget_settings();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_widget_apply(void) {
+    if (widget_timer_id != 0) {
+        g_source_remove(widget_timer_id);
+        widget_timer_id = 0;
+    }
+    widget_timer_id = g_timeout_add(50, (GSourceFunc)apply_widget_cb, NULL);
 }
 
 static void apply_blur_sigma(void) {
@@ -1494,6 +1556,61 @@ void on_menu_shadow_strength_changed(void *widget, gpointer data) {
     if (in_init) return;
     state.menu_shadow_strength = (int)lround(gtk_range_get_value(widget));
     schedule_menu_shadow_apply();
+    schedule_json_save();
+}
+
+/* Group 5: Widgets Callbacks */
+void init_widget_blur(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.widget_blur);
+    in_init = 0;
+}
+
+void on_widget_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.widget_blur = (int)lround(gtk_range_get_value(widget));
+    schedule_widget_apply();
+    schedule_json_save();
+}
+
+void init_widget_tint(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.widget_tint);
+    in_init = 0;
+}
+
+void on_widget_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.widget_tint = (int)lround(gtk_range_get_value(widget));
+    schedule_widget_apply();
+    schedule_json_save();
+}
+
+void init_widget_shadow(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.widget_shadow);
+    in_init = 0;
+}
+
+void on_widget_shadow_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.widget_shadow = (int)lround(gtk_range_get_value(widget));
+    schedule_widget_apply();
     schedule_json_save();
 }
 

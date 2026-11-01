@@ -612,6 +612,7 @@ class WidgetController {
       'changed::tint-alpha-pct', () => this._updateAllGlassParams(),
       'changed::spec-strength-pct', () => this._updateAllGlassParams(),
       'changed::blur-radius-px', () => this._updateAllGlassParams(),
+      'changed::style-shadow-size', () => this._updateAllGlassParams(),
       'changed::use-custom-widget-theme', () => this._scheduleAppearance('rebuild'),
       'changed::use-same-theme-for-both', () => this._scheduleAppearance('rebuild'),
       'changed::widget-theme-unified', () => this._scheduleAppearance('rebuild'),
@@ -2417,7 +2418,7 @@ class WidgetController {
       reactive: true,
       can_focus: true,
       track_hover: true,
-      clip_to_allocation: true,
+      clip_to_allocation: false,
     });
 
     const actor = new St.BoxLayout(actorParams);
@@ -2431,10 +2432,11 @@ class WidgetController {
     // the rounded edges; in glass mode it stays transparent so the LiquidGlass
     // backdrop remains visible underneath.
     const theme = this._gnomeTheme();
-    const radius = theme.radius;
-    if (radius > 0) {
-      const wrapperBg = theme.isSolid ? theme.background : 'rgba(0,0,0,0)';
-      wrapper.set_style(`border-radius: ${radius}px; overflow: hidden; background-color: ${wrapperBg};`);
+    const radius = theme.radius > 0 ? theme.radius : 16;
+    if (theme.isSolid) {
+      wrapper.set_style(`border-radius: ${radius}px; overflow: hidden; background-color: ${theme.background};`);
+    } else {
+      wrapper.set_style(`border-radius: ${radius}px; background-color: transparent;`);
     }
 
     // Add glass as first child (backdrop) if widget uses glass effect
@@ -2561,6 +2563,25 @@ class WidgetController {
     if (!view.glass) return;
 
     view.glass.setParams(this._glassParamsFor());
+
+    const theme = this._gnomeTheme();
+    const radius = theme.radius > 0 ? theme.radius : 16;
+    const shadowSize = this._layoutSettings.get_int('style-shadow-size');
+    let shadowCss = 'none';
+    if (shadowSize > 0) {
+      const intensity = Math.min(Math.max(shadowSize, 0), 100) / 100.0;
+      const a1 = (0.50 * intensity).toFixed(2);
+      const a2 = (0.28 * intensity).toFixed(2);
+      const blur = Math.max(4, Math.round(32 * (shadowSize / 50.0)));
+      const y = Math.max(2, Math.round(12 * (shadowSize / 50.0)));
+      shadowCss = `0 ${y}px ${blur}px rgba(0, 0, 0, ${a1}), 0 3px 8px rgba(0, 0, 0, ${a2})`;
+    }
+
+    const targetActor = view.actor ?? view.wrapper;
+    if (targetActor) {
+      targetActor.clip_to_allocation = false;
+      targetActor.set_style(`border-radius: ${radius}px; box-shadow: ${shadowCss};`);
+    }
   }
 
   // One source of truth for glass parameters: the wrapper panes of primary
@@ -2575,18 +2596,12 @@ class WidgetController {
     // The custom background colour doubles as the glass tint when set
     const background = s.get_string('style-background').trim();
     let tint = colors.glassTint;
-    let tintAlpha = s.get_int('tint-alpha-pct') / 100;
+    let tintAlpha = Math.min(Math.max(s.get_int('tint-alpha-pct'), 0), 100) / 100;
 
     if (background && /^(#[0-9a-fA-F]{3,8}|rgba?\(.+\))$/.test(background)) {
       tint = parseCssColor(background);
       if (typeof tint.a === 'number')
         tintAlpha *= tint.a;
-    } else if (colors.glassIsLight) {
-      // Light glass must stay a light surface over dark wallpapers
-      tintAlpha = Math.max(tintAlpha, 0.45);
-    } else {
-      // Dark glass with rich contrast for the Liquid Glass physical shader
-      tintAlpha = Math.max(tintAlpha, 0.35);
     }
 
     return {
@@ -2599,7 +2614,7 @@ class WidgetController {
       tint,
       tintAlpha,
       specStrength: Math.max(s.get_int('spec-strength-pct') / 100, 0.65),
-      blurRadius: Math.max(s.get_int('blur-radius-px'), 16),
+      blurRadius: Math.max(s.get_int('blur-radius-px'), 0),
       solid: false,
     };
   }
@@ -2677,7 +2692,7 @@ class WidgetController {
       view._glassListenerIds.push(wrapper.connect(signal, callback));
     };
 
-    this._updateGlassParamsForView({glass: view.glass, widget, actor});
+    this._updateGlassParamsForView(view);
     this._updateGlassGeometryForView(view);
 
     // Stacked pages hang inside the wrapper: when the wrapper moves or is

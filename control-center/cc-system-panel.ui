@@ -674,7 +674,90 @@
                   </object>
                 </child>
 
-                <!-- 5. Завантажувач (Bootloader) -->
+                <!-- 5. Віджети -->
+                <child>
+                  <object class="AdwPreferencesGroup" id="widgets_group">
+                    <property name="title">Віджети</property>
+                    <property name="description">Параметри тіні, розмиття та затемнення фону віджетів стільниці</property>
+                    <child>
+                      <object class="AdwActionRow" id="widget_blur_row">
+                        <property name="title">Розмиття</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="widget_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">20</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_widget_blur"/>
+                            <signal name="value-changed" handler="on_widget_blur_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="widget_tint_row">
+                        <property name="title">Затемнення фону</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="widget_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">42</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_widget_tint"/>
+                            <signal name="value-changed" handler="on_widget_tint_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="widget_shadow_row">
+                        <property name="title">Тінь</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="widget_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_widget_shadow"/>
+                            <signal name="value-changed" handler="on_widget_shadow_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- 6. Завантажувач (Bootloader) -->
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Завантажувач (Bootloader)</property>

@@ -150,7 +150,7 @@ if (!globalThis[GLASS_CLASS_KEY]) {
 
                 if (this._effect) {
                     this._effect.setCornerRadius(radius);
-                    this._effect.setBlurRadius(Math.max(p.blurRadius || 20, 16));
+                    this._effect.setBlurRadius(typeof p.blurRadius === 'number' ? p.blurRadius : 20);
 
                     // Normalize tint colors (0..1)
                     let r = 18 / 255, g = 22 / 255, b = 28 / 255;
@@ -159,7 +159,7 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                         g = (typeof p.tint.g === 'number' && p.tint.g <= 1) ? p.tint.g : (p.tint.g / 255 || 0.09);
                         b = (typeof p.tint.b === 'number' && p.tint.b <= 1) ? p.tint.b : (p.tint.b / 255 || 0.11);
                     }
-                    const strength = p.tintAlpha ?? 0.42;
+                    const strength = typeof p.tintAlpha === 'number' ? p.tintAlpha : 0.42;
 
                     this._effect.setTintColor(r, g, b);
                     this._effect.setTintStrength(strength);
@@ -179,8 +179,10 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                     this._effect._setFloat('sheen_intensity', 0.30);
                     this._effect._setFloat('ao_intensity', 0.30);
                     this._effect._setFloat('ao_radius', 8.0);
-                    this._effect._setFloat('shadow_intensity', 0.35);
-                    this._effect._setFloat('shadow_radius', 16.0);
+                    // Outer drop shadow is rendered with CSS box-shadow and border-radius on the wrapper actor.
+                    // Keep shader shadow at 0.0 so glass.frag strictly respects corner rounding with zero square corner leakage.
+                    this._effect._setFloat('shadow_intensity', 0.0);
+                    this._effect._setFloat('shadow_radius', 0.0);
 
                     this._effect.markBackdropDirty();
                     this.queue_redraw();
