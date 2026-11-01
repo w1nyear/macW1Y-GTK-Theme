@@ -202,11 +202,12 @@ export function buildNotificationCard(source, notification, options = {}) {
     const onClose = options.onClose || null;
     const onClick = options.onClick || null;
 
-    // Канон нового вигляду = тости v5 (етапи 2.2-2.4): картка ПРОЗОРА,
-    // під нею власна плитка скла (стек 'nc-cards', ті самі параметри
-    // віджет-конфігу, що в тостів); білий текст; іконка того, хто
-    // надіслав; час -> ✕ крос-фейд при наведенні.
-    const CARD_BASE_STYLE = 'background-color: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
+    // Канон нового вигляду = тости v5 (етапи 2.2-2.4): картка з динамічним
+    // тінтом та тінню з "Мак стилізації", під нею власна плитка скла
+    // (стек 'nc-cards'); білий текст; іконка того, хто надіслав.
+    const CARD_BASE_STYLE = (typeof globalThis._macGetNotifCardStyle === 'function')
+        ? globalThis._macGetNotifCardStyle()
+        : 'background-color: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
     const CARD_HOVER_STYLE = CARD_BASE_STYLE;
     // Пілюля → картка (морф банерів): стілі сумісні зі старим API
     const CARD_PILL_STYLE = CARD_BASE_STYLE.replace('border-radius: 24px !important;', 'border-radius: 9999px !important;');

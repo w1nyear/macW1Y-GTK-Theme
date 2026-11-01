@@ -14953,3 +14953,43 @@ Task 585: Виправлення роздільної здатності роз�
    - Перевірено зворотне згортання (`nc_recollapsed.png`): повне відновлення вихідного стану стосу.
    - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
    - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено).
+
+
+--------------------------------------------------------------------------------
+ЗАВДАННЯ 591: Додавання групи «Повідомлення» (Розмиття, Затемнення, Тінь) у панель «Мак стилізація»
+--------------------------------------------------------------------------------
+1. Вихідні вимоги:
+   - Користувач запросив додати у вікно налаштувань «Мак стилізація» (GNOME Settings) групу «Повідомлення», де можна налаштовувати розмиття, затемнення та тінь сповіщень.
+
+2. Реалізація:
+   - **Інтерфейс GNOME Control Center Overlay**:
+     * У `control-center/cc-system-panel.ui` та `gnome-control-center-overlay/cc-system-panel.ui` додано групу `AdwPreferencesGroup` «Повідомлення» (`notifications_group`) з описом «Параметри розмиття, затемнення та тіні для сповіщень та Центру повідомлень»:
+       - Слайдер «Розмиття» (`notification_blur_row`, `notification_blur_scale`, діапазон 0..50 px, за замовчуванням 15).
+       - Слайдер «Затемнення» (`notification_tint_row`, `notification_tint_scale`, діапазон 0..100 %, за замовчуванням 20).
+       - Слайдер «Тінь» (`notification_shadow_row`, `notification_shadow_scale`, діапазон 0..100 %, за замовчуванням 35).
+   - **Ін'єкційна бібліотека `libmac_settings.so`**:
+     * У `control-center/libmac_settings.c` та `gnome-control-center-overlay/libmac_settings.c` додано поля `notification_blur`, `notification_tint`, `notification_shadow` у структуру `MacStylingData`.
+     * Реалізовано збереження та завантаження цих параметрів у `~/.config/mac-styling/styling.json`.
+     * Додано функцію `apply_notification_settings()` з оновленням `notification-blur-radius` та `notification-tint-strength` у схемі GSettings `org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com` та D-Bus викликом `SyncNotificationStyling` до GNOME Shell.
+     * Реалізовано обробники сигналів `init_notification_blur`, `on_notification_blur_changed`, `init_notification_tint`, `on_notification_tint_changed`, `init_notification_shadow`, `on_notification_shadow_changed`.
+     * Скомпільовано та синхронізовано `libmac_settings.so` та `cc-system-panel.ui` в усі канонічні системні та репозиторні шляхи з оновленням через `sudo ldconfig`.
+   - **Конфігураційні файли**:
+     * Оновлено `config/mac-styling/styling.json`, `config/styling.json` та `~/.config/mac-styling/styling.json` з новими параметрами `notification_blur: 15`, `notification_tint: 20`, `notification_shadow: 35`.
+   - **D-Bus сервіс та інтеграція оболонки (EvalHelper & Kiwi)**:
+     * В `extensions/eval-helper@mactheme/extension.js` додано метод `SyncNotificationStyling` до D-Bus інтерфейсу `org.gnome.Shell.Extensions.EvalHelper` та підключено моніторинг `styling.json` до виклику `globalThis._macSyncNotificationStyling()`.
+     * В `extensions/kiwi@kemma/apps/tahoeNotifications.js`:
+       - Реалізовано `_loadNotifStyling()`, динамічний розрахунок `_getCardBaseStyle()` (фонове затемнення та тінь), `_getToastContentStyle()` та `_getSlabStyle(i)`.
+       - У `_applyWidgetGlassParams(effect)` інтегровано параметри розмиття та тінту з `_notifStyling`.
+       - У `_syncCards()` та `_toastTick()` застосовано `baseStrength: _notifStyling.tint / 100.0`.
+       - Реалізовано `_syncNotificationStyling()` для миттєвого оновлення живих тостів, карток Центру повідомлень та шейдерів скла без перезавантаження.
+       - Додано `Gio.File.monitor_file` для файлу `styling.json`.
+     * В `extensions/kiwi@kemma/apps/tahoeNotificationCard.js` підключено динамічний стиль карток `_macGetNotifCardStyle()`.
+     * В `extensions/kiwi@kemma/extension.js` оновлено версію динамічного модуля (`?v=notif_v24`).
+   - **Цілісність та блокування**:
+     * Оновлено хеші для `eval-helper@mactheme` та `kiwi@kemma` у `config/extensions.lock.json`.
+
+3. Верифікація:
+   - Зафіксовано скріншот сторінки налаштувань (`gcc_notifications_centered.png`), що демонструє нову групу «Повідомлення» з 3 слайдерами з фірмовими помаранчевими треками між «Попередження» та «Spotlight».
+   - Перевірено миттєвий D-Bus виклик `SyncNotificationStyling` та живий моніторинг `styling.json`.
+   - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено).

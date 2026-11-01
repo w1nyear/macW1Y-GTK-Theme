@@ -54,6 +54,11 @@ typedef struct {
     int alert_blur;     /* 0 - 50 px */
     int alert_shadow;   /* 0 - 100 % */
 
+    /* Group: Notifications */
+    int notification_blur;   /* 0 - 50 px */
+    int notification_tint;   /* 0 - 100 % */
+    int notification_shadow; /* 0 - 100 % */
+
     /* Legacy fields for backward compatibility */
     int dock_sigma;
     int dock_radius;
@@ -73,6 +78,8 @@ static void apply_dock_settings(void);
 static void schedule_dock_apply(void);
 static void apply_alert_settings(void);
 static void schedule_alert_apply(void);
+static void apply_notification_settings(void);
+static void schedule_notification_apply(void);
 
 static MacStylingData state = {
     .menubar_tint = 30,
@@ -94,6 +101,10 @@ static MacStylingData state = {
     .alert_tint = 20,
     .alert_blur = 15,
     .alert_shadow = 35,
+
+    .notification_blur = 15,
+    .notification_tint = 20,
+    .notification_shadow = 35,
 
     .spotlight_blur = 1,
     .spotlight_tint = 10,
@@ -333,6 +344,22 @@ static void load_config(void) {
             else
                 state.alert_shadow = 35;
 
+            /* Group: Notifications */
+            if (json_object_has_member(obj, "notification_blur"))
+                state.notification_blur = (int)json_object_get_int_member(obj, "notification_blur");
+            else
+                state.notification_blur = 15;
+
+            if (json_object_has_member(obj, "notification_tint"))
+                state.notification_tint = (int)json_object_get_int_member(obj, "notification_tint");
+            else
+                state.notification_tint = 20;
+
+            if (json_object_has_member(obj, "notification_shadow"))
+                state.notification_shadow = (int)json_object_get_int_member(obj, "notification_shadow");
+            else
+                state.notification_shadow = 35;
+
             /* Legacy */
             if (json_object_has_member(obj, "dock_sigma"))
                 state.dock_sigma = (int)json_object_get_int_member(obj, "dock_sigma");
@@ -401,6 +428,9 @@ static void save_styling_json(void) {
         "  \"alert_tint\": %d,\n"
         "  \"alert_blur\": %d,\n"
         "  \"alert_shadow\": %d,\n"
+        "  \"notification_blur\": %d,\n"
+        "  \"notification_tint\": %d,\n"
+        "  \"notification_shadow\": %d,\n"
         "  \"spotlight_blur\": %d,\n"
         "  \"spotlight_tint\": %d,\n"
         "  \"spotlight_shadow\": %d,\n"
@@ -441,6 +471,9 @@ static void save_styling_json(void) {
         state.alert_tint,
         state.alert_blur,
         state.alert_shadow,
+        state.notification_blur,
+        state.notification_tint,
+        state.notification_shadow,
         state.spotlight_blur,
         state.spotlight_tint,
         state.spotlight_shadow,
@@ -725,6 +758,68 @@ static void schedule_alert_apply(void) {
         alert_timer_id = 0;
     }
     alert_timer_id = g_timeout_add(50, (GSourceFunc)apply_alert_cb, NULL);
+}
+
+static guint notif_timer_id = 0;
+
+static void apply_notification_settings(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (src) {
+        const char *lg_schema = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com";
+        if (g_settings_schema_source_lookup(src, lg_schema, TRUE)) {
+            GSettings *lg = g_settings_new(lg_schema);
+            if (lg) {
+                GSettingsSchema *schema = NULL;
+                g_object_get(lg, "settings-schema", &schema, NULL);
+
+                int blur_rad = state.notification_blur;
+                if (blur_rad < 0) blur_rad = 0;
+                if (blur_rad > 50) blur_rad = 50;
+                safe_set_int(lg, schema, "notification-blur-radius", blur_rad);
+
+                double tint_val = (double)state.notification_tint / 100.0;
+                if (tint_val < 0.0) tint_val = 0.0;
+                if (tint_val > 1.0) tint_val = 1.0;
+                safe_set_double(lg, schema, "notification-tint-strength", tint_val);
+
+                if (schema) g_settings_schema_unref(schema);
+                g_object_unref(lg);
+            }
+        }
+    }
+
+    /* Notify GNOME Shell via D-Bus to reload notification styling in real-time */
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    if (bus) {
+        g_dbus_connection_call(bus,
+            "org.gnome.Shell",
+            "/org/gnome/Shell/Extensions/EvalHelper",
+            "org.gnome.Shell.Extensions.EvalHelper",
+            "SyncNotificationStyling",
+            NULL,
+            NULL,
+            G_DBUS_CALL_FLAGS_NONE,
+            -1,
+            NULL,
+            NULL,
+            NULL);
+        g_object_unref(bus);
+    }
+}
+
+static gboolean apply_notif_cb(gpointer user_data) {
+    (void)user_data;
+    notif_timer_id = 0;
+    apply_notification_settings();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_notification_apply(void) {
+    if (notif_timer_id != 0) {
+        g_source_remove(notif_timer_id);
+        notif_timer_id = 0;
+    }
+    notif_timer_id = g_timeout_add(50, (GSourceFunc)apply_notif_cb, NULL);
 }
 
 static void apply_dock_settings(void) {
@@ -2186,6 +2281,61 @@ void on_alert_shadow_changed(void *widget, gpointer data) {
     if (in_init) return;
     state.alert_shadow = (int)lround(gtk_range_get_value(widget));
     schedule_alert_apply();
+    schedule_json_save();
+}
+
+/* Group: Notifications Callbacks */
+void init_notification_blur(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.notification_blur);
+    in_init = 0;
+}
+
+void on_notification_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.notification_blur = (int)lround(gtk_range_get_value(widget));
+    schedule_notification_apply();
+    schedule_json_save();
+}
+
+void init_notification_tint(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.notification_tint);
+    in_init = 0;
+}
+
+void on_notification_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.notification_tint = (int)lround(gtk_range_get_value(widget));
+    schedule_notification_apply();
+    schedule_json_save();
+}
+
+void init_notification_shadow(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.notification_shadow);
+    in_init = 0;
+}
+
+void on_notification_shadow_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.notification_shadow = (int)lround(gtk_range_get_value(widget));
+    schedule_notification_apply();
     schedule_json_save();
 }
 

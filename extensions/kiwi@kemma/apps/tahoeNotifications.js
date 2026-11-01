@@ -53,7 +53,96 @@ let glassRefreshDone = null;
 let glassForceRefresh = null;
 
 const _LG_BASE = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist';
-const CARD_BASE_STYLE = 'background-color: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
+
+let _notifStyling = {
+    blur: 15,
+    tint: 20,
+    shadow: 35,
+};
+let _stylingMonitor = null;
+
+function _loadNotifStyling() {
+    try {
+        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+        const [ok, bytes] = GLib.file_get_contents(confPath);
+        if (ok) {
+            const data = JSON.parse(new TextDecoder().decode(bytes));
+            if (data.notification_blur !== undefined)
+                _notifStyling.blur = Math.max(0, Math.min(60, Number(data.notification_blur)));
+            else if (data.alert_blur !== undefined)
+                _notifStyling.blur = Number(data.alert_blur);
+
+            if (data.notification_tint !== undefined)
+                _notifStyling.tint = Math.max(0, Math.min(100, Number(data.notification_tint)));
+            else if (data.alert_tint !== undefined)
+                _notifStyling.tint = Number(data.alert_tint);
+
+            if (data.notification_shadow !== undefined)
+                _notifStyling.shadow = Math.max(0, Math.min(100, Number(data.notification_shadow)));
+            else if (data.alert_shadow !== undefined)
+                _notifStyling.shadow = Number(data.alert_shadow);
+        }
+    } catch (_) {}
+}
+
+function _getCardBaseStyle() {
+    _loadNotifStyling();
+    const tintVal = _notifStyling.tint / 100.0;
+    const shadowVal = _notifStyling.shadow / 100.0;
+
+    let bg = 'rgba(25, 28, 35, ' + (tintVal * 0.40).toFixed(2) + ')';
+    if (tintVal <= 0.01) bg = 'transparent';
+
+    let shadow = 'none';
+    if (shadowVal > 0.02) {
+        const sAlpha = (shadowVal * 0.45).toFixed(2);
+        const sBlur = Math.round(6 + shadowVal * 20);
+        const sY = Math.round(2 + shadowVal * 8);
+        shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
+    }
+
+    return `background-color: ${bg} !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 24px !important; box-shadow: ${shadow} !important; padding: 0 !important;`;
+}
+
+function _getToastContentStyle(noglass = false) {
+    _loadNotifStyling();
+    const tintVal = _notifStyling.tint / 100.0;
+    const shadowVal = _notifStyling.shadow / 100.0;
+
+    let bg = noglass ? 'rgba(28, 30, 36, 0.92)' : ('rgba(25, 28, 35, ' + (tintVal * 0.40).toFixed(2) + ')');
+    if (!noglass && tintVal <= 0.01) bg = 'transparent';
+
+    let shadow = 'none';
+    if (shadowVal > 0.02) {
+        const sAlpha = (shadowVal * 0.45).toFixed(2);
+        const sBlur = Math.round(6 + shadowVal * 20);
+        const sY = Math.round(2 + shadowVal * 8);
+        shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
+    }
+
+    return `background-color: ${bg} !important; padding: 14px 14px 16px 14px !important; border-radius: 24px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: ${shadow} !important;`;
+}
+
+function _getSlabStyle(i) {
+    _loadNotifStyling();
+    const tintVal = _notifStyling.tint / 100.0;
+    const shadowVal = _notifStyling.shadow / 100.0;
+    const bgAlpha = Math.min(0.85, 0.28 + tintVal * 0.40).toFixed(2);
+    let shadow = 'none';
+    if (shadowVal > 0.02) {
+        const sAlpha = (shadowVal * 0.35).toFixed(2);
+        const sBlur = Math.round(4 + shadowVal * 16);
+        const sY = Math.round(2 + shadowVal * 6);
+        shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
+    }
+    return `background-color: rgba(35, 38, 46, ${bgAlpha}) !important; ` +
+           `border: 1px solid rgba(255, 255, 255, 0.16) !important; ` +
+           `border-radius: 24px !important; ` +
+           `box-shadow: ${shadow} !important;`;
+}
+
+globalThis._macGetNotifCardStyle = _getCardBaseStyle;
+const CARD_BASE_STYLE = _getCardBaseStyle();
 
 import(_LG_BASE + '/liquidEffect.js').then(m => {
     if (m.LiquidEffect)
@@ -549,18 +638,16 @@ function _makeToastCard(item, noglass = false) {
         y_expand: true,
         x_align: Clutter.ActorAlign.FILL,
         y_align: Clutter.ActorAlign.FILL,
-        style: 'background-color: transparent !important; padding: 14px 14px 16px 14px; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: none !important;',
+        style: _getToastContentStyle(noglass),
     });
     try { content.set_reactive(true); } catch (_) {}
     try { content.set_width(TOAST_W); } catch (_) {}
     if (noglass) {
-        try {
-            content.add_style_class_name('mac-toast-noglass');
-            content.style += ` background-color: rgba(28, 30, 36, 0.92); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 24px;`;
-        } catch (_) {}
+        try { content.add_style_class_name('mac-toast-noglass'); } catch (_) {}
     }
     pill.add_child(content);
     slot._content = content;
+    slot._noglass = noglass;
 
     // --- iконка 44×44 (fallback: акцентна плитка + дзвоник), по центру ---
     // іконка ХТО надіслав: gicon повідомлення -> source.icon ->
@@ -1114,19 +1201,20 @@ function _flushToastQueue() {
 function _applyWidgetGlassParams(effect) {
     if (!effect)
         return;
-    let blur = 4, sat = 1.0;
-    // для фону з вікнами беремо свій notification-blur (8) - саме
-    // його LiquidGlass-автори поставили для банерів
+    _loadNotifStyling();
+    let blur = _notifStyling.blur;
+    let tintStrength = _notifStyling.tint / 100.0;
     try {
-        const lgset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.liquid-glass' });
-        blur = Math.min(60, Math.max(0, _readIntSetting(lgset, 'notification-blur-radius', 8)));
+        const lgset = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com' });
+        const r = _readIntSetting(lgset, 'notification-blur-radius', -1);
+        if (r >= 0) blur = r;
     } catch (_) {}
     try { effect.setBlurRadius(blur); } catch (_) {}
     try { effect.setTintColor(0, 0, 0); } catch (_) {}
-    try { effect.setTintStrength(0); } catch (_) {}
+    try { effect.setTintStrength(tintStrength); } catch (_) {}
     try { effect.setBrightness(1.0); } catch (_) {}
     try { effect.setContrast(1.0); } catch (_) {}
-    try { effect.setSaturation(sat); } catch (_) {}
+    try { effect.setSaturation(1.0); } catch (_) {}
     try { effect.setSurfaceLightEnabled(true); } catch (_) {}
     try {
         effect._setFloat('sheen_intensity', 0);
@@ -1218,10 +1306,11 @@ function _syncToastGlass(monitor, s) {
                 if (!isFinite(gx) || !isFinite(gy) || !(pillW > 0))
                     continue;
                 const P = SHADER_PADDING;
+                const tintStrength = _notifStyling.tint / 100.0;
                 regions.push({
                     x: gx - monitor.x - P, y: gy - monitor.y - P,
                     w: pillW + 2 * P, h: pillH + 2 * P,
-                    tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
+                    tintR: 0, tintG: 0, tintB: 0, baseStrength: tintStrength,
                 });
                 const r = Math.min(24, pillH / 2);
                 if (r > maxR)
@@ -1959,15 +2048,12 @@ function _collapseNcGroups(p, merges = null) {
                 width: NC_W - 40,
                 height: headH,
             });
+            slab._macIsSlab = true;
+            slab._slabIdx = i;
             slab.set_pivot_point(0.5, 0);
             slab.set_scale(1 - i * 0.042, 1);
             slab.translation_y = i * over;
-            slab.set_style(
-                'background-color: rgba(35, 38, 46, 0.40) !important; ' +
-                'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
-                'border-radius: 24px !important; ' +
-                'box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;'
-            );
+            slab.set_style(_getSlabStyle(i));
             container.add_child(slab);
         }
 
@@ -1976,7 +2062,7 @@ function _collapseNcGroups(p, merges = null) {
         newest.translation_y = 0;
         newest.set_scale(1, 1);
         newest.set_width(NC_W - 40);
-        newest.set_style(CARD_BASE_STYLE);
+        newest.set_style(_getCardBaseStyle());
         try {
             const inner = (newest.get_children?.() ?? [])[0];
             if (inner)
@@ -2074,7 +2160,7 @@ function _expandGroup(g) {
             b.reactive = true;
             try { b.remove_clip(); } catch (_) {}
             delete b._macHiddenPeer;
-            b.set_style(CARD_BASE_STYLE);
+            b.set_style(_getCardBaseStyle());
             try {
                 const inner = (b.get_children?.() ?? [])[0];
                 if (inner)
@@ -2229,19 +2315,16 @@ function _collapseGroup(g) {
             slab.set_pivot_point(0.5, 0);
             slab.set_scale(1 - i * 0.042, 1);
             slab.translation_y = i * over;
-            slab.set_style(
-                'background-color: rgba(35, 38, 46, 0.40) !important; ' +
-                'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
-                'border-radius: 24px !important; ' +
-                'box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;'
-            );
+            slab._macIsSlab = true;
+            slab._slabIdx = i;
+            slab.set_style(_getSlabStyle(i));
             container.add_child(slab);
         }
 
         newest.translation_y = 0;
         newest.set_scale(1, 1);
         newest.set_width(NC_W - 40);
-        newest.set_style(CARD_BASE_STYLE);
+        newest.set_style(_getCardBaseStyle());
         try {
             const inner = (newest.get_children?.() ?? [])[0];
             if (inner)
@@ -2328,7 +2411,7 @@ function _syncCards(p, monitor, s) {
                                 y: (cy - monitor.y) - m,
                                 w: cw + m * 2,
                                 h: totalH + m * 2,
-                                tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
+                                tintR: 0, tintG: 0, tintB: 0, baseStrength: _notifStyling.tint / 100.0,
                             });
                         }
                     }
@@ -2363,7 +2446,7 @@ function _syncCards(p, monitor, s) {
                 regions.push({
                     x: (cx - monitor.x) - m, y: (cy - monitor.y) - m,
                     w: cw + m * 2, h: ch + m * 2,
-                    tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
+                    tintR: 0, tintG: 0, tintB: 0, baseStrength: _notifStyling.tint / 100.0,
                 });
             } catch (_) {}
         }
@@ -3083,6 +3166,52 @@ function _hookDate() {
     } catch (_) {}
 }
 
+function _syncNotificationStyling() {
+    _loadNotifStyling();
+    const style = _getCardBaseStyle();
+
+    // 1. Update toast glass & content styles
+    if (_toastStack?.effect) {
+        try { _applyWidgetGlassParams(_toastStack.effect); } catch (_) {}
+        try { _toastStack.effect._queueRepaintIfDirty?.(); } catch (_) {}
+    }
+    if (_toastBox) {
+        for (const slot of _toastBox.get_children()) {
+            if (slot._content) {
+                try { slot._content.set_style(_getToastContentStyle(slot._noglass)); } catch (_) {}
+            }
+        }
+    }
+
+    // 2. Update Notification Center stacks & cards
+    if (_nc) {
+        for (const s of _nc.stacks ?? []) {
+            if (s.effect) {
+                try { _applyWidgetGlassParams(s.effect); } catch (_) {}
+                try { s.effect._queueRepaintIfDirty?.(); } catch (_) {}
+            }
+        }
+        if (_nc.list) {
+            for (const item of _nc.list.get_children()) {
+                if (item._macPeekGroup) {
+                    const g = item._macPeekGroup;
+                    for (const slab of item.get_children()) {
+                        if (slab._macIsSlab) {
+                            try { slab.set_style(_getSlabStyle(slab._slabIdx || 1)); } catch (_) {}
+                        }
+                    }
+                    if (g.cards?.[0]) {
+                        try { g.cards[0].set_style(style); } catch (_) {}
+                    }
+                } else if (item.has_style_class_name?.('mac-notification-banner') || item.has_style_class_name?.('tahoe-nc-card')) {
+                    try { item.set_style(style); } catch (_) {}
+                }
+            }
+        }
+    }
+}
+globalThis._macSyncNotificationStyling = _syncNotificationStyling;
+
 export function enable(settings, gettextFunc) {
     if (typeof gettextFunc === 'function') {
         _ = (s) => {
@@ -3127,9 +3256,25 @@ export function enable(settings, gettextFunc) {
         isNCOpen, getNCPanelBox, getNCOverlay, openNC, closeNC, toggleNC,
     };
     globalThis._tahoeNCOpen = false;
+
+    try {
+        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+        const confFile = Gio.File.new_for_path(confPath);
+        if (_stylingMonitor) {
+            try { _stylingMonitor.cancel(); } catch (_) {}
+        }
+        _stylingMonitor = confFile.monitor_file(Gio.FileMonitorFlags.NONE, null);
+        _stylingMonitor.connect('changed', () => {
+            _syncNotificationStyling();
+        });
+    } catch (_) {}
 }
 
 export function disable() {
+    if (_stylingMonitor) {
+        try { _stylingMonitor.cancel(); } catch (_) {}
+        _stylingMonitor = null;
+    }
     try { if (_nc && _nc._held) { _nc._held.destroy(); _nc._held = null; } } catch (_) {}
     _ = (m) => m;
     try {

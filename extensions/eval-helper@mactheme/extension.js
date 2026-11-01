@@ -24,6 +24,9 @@ const EvalIface = `
     <method name="SyncAlertStyling">
       <arg type="b" direction="out" name="success"/>
     </method>
+    <method name="SyncNotificationStyling">
+      <arg type="b" direction="out" name="success"/>
+    </method>
   </interface>
 </node>`;
 
@@ -401,6 +404,18 @@ export default class EvalHelper extends Extension {
                         return false;
                     } catch (e) {
                         console.error(`[EvalHelper] SyncAlertStyling error: ${e}`);
+                        return false;
+                    }
+                },
+                SyncNotificationStyling: () => {
+                    try {
+                        if (typeof globalThis._macSyncNotificationStyling === 'function') {
+                            globalThis._macSyncNotificationStyling();
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error(`[EvalHelper] SyncNotificationStyling error: ${e}`);
                         return false;
                     }
                 },
@@ -1712,6 +1727,9 @@ export default class EvalHelper extends Extension {
             this._stylingMonitor.connect('changed', () => {
                 if (typeof globalThis._macSyncDialogAlertStyling === 'function') {
                     globalThis._macSyncDialogAlertStyling();
+                }
+                if (typeof globalThis._macSyncNotificationStyling === 'function') {
+                    globalThis._macSyncNotificationStyling();
                 }
             });
         } catch (_) {}

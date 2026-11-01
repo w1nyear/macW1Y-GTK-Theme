@@ -601,7 +601,90 @@
                   </object>
                 </child>
 
-                <!-- 5. Spotlight -->
+                <!-- 5. Повідомлення -->
+                <child>
+                  <object class="AdwPreferencesGroup" id="notifications_group">
+                    <property name="title">Повідомлення</property>
+                    <property name="description">Параметри розмиття, затемнення та тіні для сповіщень та Центру повідомлень</property>
+                    <child>
+                      <object class="AdwActionRow" id="notification_blur_row">
+                        <property name="title">Розмиття</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="notification_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">15</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_notification_blur"/>
+                            <signal name="value-changed" handler="on_notification_blur_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="notification_tint_row">
+                        <property name="title">Затемнення</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="notification_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">20</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_notification_tint"/>
+                            <signal name="value-changed" handler="on_notification_tint_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="notification_shadow_row">
+                        <property name="title">Тінь</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="notification_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_notification_shadow"/>
+                            <signal name="value-changed" handler="on_notification_shadow_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- 6. Spotlight -->
                 <child>
                   <object class="AdwPreferencesGroup" id="spotlight_group">
                     <property name="title">Spotlight</property>
