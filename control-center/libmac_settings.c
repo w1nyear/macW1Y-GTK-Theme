@@ -59,50 +59,52 @@ typedef struct {
     int notif_radius;
 } MacStylingData;
 
-static MacStylingData state = {
-    .menubar_tint = 35,
-    .menubar_blur = 10,
+static void apply_widget_settings(void);
 
-    .liquid_shape = 0,
-    .liquid_refraction = 60,
-    .liquid_blur = 20,
-    .liquid_tint = 12,
-    .liquid_chroma = 20,
-    .liquid_rim = 45,
-    .liquid_specular = 25,
-    .liquid_shadow = 35,
+static MacStylingData state = {
+    .menubar_tint = 30,
+    .menubar_blur = 25,
+
+    .liquid_shape = 3,
+    .liquid_refraction = 100,
+    .liquid_blur = 9,
+    .liquid_tint = 15,
+    .liquid_chroma = 10,
+    .liquid_rim = 40,
+    .liquid_specular = 10,
+    .liquid_shadow = 49,
 
     .spotlight_blur = 18,
     .spotlight_tint = 15,
     .spotlight_shadow = 35,
 
     .blur_sigma = 30,
-    .blur_tint = 36,
+    .blur_tint = 29,
 
-    .menu_tint = 35,
-    .menu_blur = 30,
-    .menu_shadow_blur = 30,
-    .menu_shadow_strength = 55,
+    .menu_tint = 19,
+    .menu_blur = 8,
+    .menu_shadow_blur = 51,
+    .menu_shadow_strength = 25,
 
     .widget_blur = 20,
-    .widget_tint = 42,
+    .widget_tint = 35,
     .widget_shadow = 35,
 
     .dock_blur = 1,
     .dock_sigma = 30,
-    .dock_tint = 0.36,
+    .dock_tint = 0.29,
     .dock_radius = 28,
 
     .panel_blur = 1,
-    .panel_sigma = 10,
-    .panel_tint = 0.35,
+    .panel_sigma = 25,
+    .panel_tint = 0.30,
 
     .qs_sigma = 30,
     .qs_anim = 0,
 
     .notif_blur = 1,
     .notif_sigma = 30,
-    .notif_tint = 0.68,
+    .notif_tint = 0.29,
     .notif_radius = 18,
 };
 
@@ -149,46 +151,46 @@ static void load_config(void) {
             if (json_object_has_member(obj, "liquid_shape"))
                 state.liquid_shape = (int)json_object_get_int_member(obj, "liquid_shape");
             else
-                state.liquid_shape = 0;
+                state.liquid_shape = 3;
 
             if (json_object_has_member(obj, "liquid_refraction"))
                 state.liquid_refraction = (int)json_object_get_int_member(obj, "liquid_refraction");
             else
-                state.liquid_refraction = 60;
+                state.liquid_refraction = 100;
 
             if (json_object_has_member(obj, "liquid_blur"))
                 state.liquid_blur = (int)json_object_get_int_member(obj, "liquid_blur");
             else if (json_object_has_member(obj, "dock_glass_strength"))
                 state.liquid_blur = (int)round(json_object_get_double_member(obj, "dock_glass_strength") * 50.0);
             else
-                state.liquid_blur = 20;
+                state.liquid_blur = 9;
 
             if (json_object_has_member(obj, "liquid_tint"))
                 state.liquid_tint = (int)json_object_get_int_member(obj, "liquid_tint");
             else if (json_object_has_member(obj, "dock_tint_strength"))
                 state.liquid_tint = (int)round(json_object_get_double_member(obj, "dock_tint_strength") * 100.0);
             else
-                state.liquid_tint = 12;
+                state.liquid_tint = 15;
 
             if (json_object_has_member(obj, "liquid_chroma"))
                 state.liquid_chroma = (int)json_object_get_int_member(obj, "liquid_chroma");
             else
-                state.liquid_chroma = 20;
+                state.liquid_chroma = 10;
 
             if (json_object_has_member(obj, "liquid_rim"))
                 state.liquid_rim = (int)json_object_get_int_member(obj, "liquid_rim");
             else
-                state.liquid_rim = 45;
+                state.liquid_rim = 40;
 
             if (json_object_has_member(obj, "liquid_specular"))
                 state.liquid_specular = (int)json_object_get_int_member(obj, "liquid_specular");
             else
-                state.liquid_specular = 25;
+                state.liquid_specular = 10;
 
             if (json_object_has_member(obj, "liquid_shadow"))
                 state.liquid_shadow = (int)json_object_get_int_member(obj, "liquid_shadow");
             else
-                state.liquid_shadow = 35;
+                state.liquid_shadow = 49;
 
             /* Group 3: Spotlight */
             if (json_object_has_member(obj, "spotlight_blur"))
@@ -221,22 +223,22 @@ static void load_config(void) {
             if (json_object_has_member(obj, "menu_tint"))
                 state.menu_tint = (int)json_object_get_int_member(obj, "menu_tint");
             else
-                state.menu_tint = 35;
+                state.menu_tint = 19;
 
             if (json_object_has_member(obj, "menu_blur"))
                 state.menu_blur = (int)json_object_get_int_member(obj, "menu_blur");
             else
-                state.menu_blur = 30;
+                state.menu_blur = 8;
 
             if (json_object_has_member(obj, "menu_shadow_blur"))
                 state.menu_shadow_blur = (int)json_object_get_int_member(obj, "menu_shadow_blur");
             else
-                state.menu_shadow_blur = 30;
+                state.menu_shadow_blur = 51;
 
             if (json_object_has_member(obj, "menu_shadow_strength"))
                 state.menu_shadow_strength = (int)json_object_get_int_member(obj, "menu_shadow_strength");
             else
-                state.menu_shadow_strength = 55;
+                state.menu_shadow_strength = 25;
 
             /* Group 5: Widgets */
             if (json_object_has_member(obj, "widget_blur"))
@@ -247,7 +249,7 @@ static void load_config(void) {
             if (json_object_has_member(obj, "widget_tint"))
                 state.widget_tint = (int)json_object_get_int_member(obj, "widget_tint");
             else
-                state.widget_tint = 42;
+                state.widget_tint = 35;
 
             if (json_object_has_member(obj, "widget_shadow"))
                 state.widget_shadow = (int)json_object_get_int_member(obj, "widget_shadow");
@@ -487,15 +489,11 @@ static void apply_liquid_glass(void) {
     double chroma = ((double)state.liquid_chroma / 100.0) * 0.04;
     double rim = (double)state.liquid_rim / 100.0;
     double specular = (double)state.liquid_specular / 100.0;
-    double shadow_int = ((double)state.liquid_shadow / 100.0) * 0.8;
-    double shadow_rad = fmax(10.0, ((double)state.liquid_shadow / 100.0) * 60.0);
 
+    /* Base Liquid Glass blur for dock, quick-settings, notifications, applications, osd */
     const char *blur_keys[] = {
         "dock-blur-radius",
         "quick-settings-blur-radius",
-        "panel-menu-blur-radius",
-        "menu-blur-radius",
-        "desktop-menu-blur-radius",
         "notification-blur-radius",
         "application-blur-radius",
         "osd-blur-radius",
@@ -506,13 +504,11 @@ static void apply_liquid_glass(void) {
         safe_set_int(lg, schema, blur_keys[i], radius);
     }
 
+    /* Base Liquid Glass tint for dock, quick-settings, notifications, applications, osd */
     const char *tint_keys[] = {
         "dock-tint-strength",
         "quick-settings-tint-strength",
         "quick-settings-toggle-tint-strength",
-        "panel-menu-tint-strength",
-        "menu-tint-strength",
-        "desktop-menu-tint-strength",
         "notification-tint-strength",
         "application-tint-strength",
         "osd-tint-strength",
@@ -523,21 +519,48 @@ static void apply_liquid_glass(void) {
         safe_set_double(lg, schema, tint_keys[i], tint);
     }
 
+    /* Global Liquid Glass physical shader optics */
     safe_set_int(lg, schema, "glass-shape-type", state.liquid_shape);
     safe_set_double(lg, schema, "glass-displacement-scale", disp_scale);
     safe_set_double(lg, schema, "glass-ior", ior);
     safe_set_double(lg, schema, "glass-chroma-strength", chroma);
     safe_set_double(lg, schema, "glass-rim-intensity", rim);
     safe_set_double(lg, schema, "glass-specular-intensity", specular);
-    safe_set_double(lg, schema, "shadow-intensity", shadow_int);
-    safe_set_double(lg, schema, "shadow-radius", shadow_rad);
+
+    /* Preserve Context Menu configuration (from Group 4) - do not stomp with liquid_* values */
+    int menu_radius = (state.menu_blur > 0) ? (int)round((double)state.menu_blur * 30.0 / 100.0) : 0;
+    if (state.menu_blur > 0 && menu_radius < 1) menu_radius = 1;
+    safe_set_int(lg, schema, "menu-blur-radius", menu_radius);
+    safe_set_int(lg, schema, "desktop-menu-blur-radius", menu_radius);
+    safe_set_int(lg, schema, "panel-menu-blur-radius", menu_radius);
+
+    double menu_tint_val = (double)state.menu_tint / 100.0;
+    double menu_brightness = 1.0 - (menu_tint_val * 0.5);
+    if (menu_brightness < 0.2) menu_brightness = 0.2;
+    if (menu_brightness > 1.0) menu_brightness = 1.0;
+    safe_set_double(lg, schema, "menu-tint-strength", menu_tint_val);
+    safe_set_double(lg, schema, "desktop-menu-tint-strength", menu_tint_val);
+    safe_set_double(lg, schema, "panel-menu-tint-strength", menu_tint_val);
+    safe_set_double(lg, schema, "menu-brightness", menu_brightness);
+    safe_set_double(lg, schema, "desktop-menu-brightness", menu_brightness);
+    safe_set_double(lg, schema, "panel-menu-brightness", menu_brightness);
 
     safe_set_string(lg, schema, "menu-tint-color", "#000000");
     safe_set_string(lg, schema, "desktop-menu-tint-color", "#000000");
     safe_set_string(lg, schema, "panel-menu-tint-color", "#000000");
 
+    double menu_shadow_rad = (double)state.menu_shadow_blur;
+    double menu_shadow_int = (double)state.menu_shadow_strength / 100.0;
+    if (menu_shadow_int < 0.0) menu_shadow_int = 0.0;
+    if (menu_shadow_int > 1.0) menu_shadow_int = 1.0;
+    safe_set_double(lg, schema, "shadow-radius", menu_shadow_rad);
+    safe_set_double(lg, schema, "shadow-intensity", menu_shadow_int);
+
     if (schema) g_settings_schema_unref(schema);
     g_object_unref(lg);
+
+    /* Preserve desktop widgets configuration (from Group 5) */
+    apply_widget_settings();
 }
 
 static gboolean apply_liquid_glass_cb(gpointer user_data) {

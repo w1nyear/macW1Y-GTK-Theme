@@ -2825,44 +2825,24 @@ export const LiquidEffect_v2 = _registerLiquidEffect_v2(class LiquidEffect_v2 ex
         const settings = this._settings;
         if (!settings)
             return;
-        const dockDefaults = {
-            'displacement_scale': 78.5,
-            'ior': 2.40,
-            'rim_intensity': 0.60,
-            'rim_width': 5.0,
-            'rim_power': 6.0,
-            'rim_directional_power': 2.7,
-            'rim_light_color_intensity': 1.4,
-            'sheen_intensity': 0.32,
-            'chroma_strength': 0.02,
-            'max_z': 25.0,
-            'profile_shape_n': 7.0,
-            'edge_smoothing': 2.0,
-            'shadow_intensity': 0.55,
-            'shadow_radius': 30.0,
-        };
         mappings.forEach(map => {
-            if (this._owner === 'dock' && map.uniform in dockDefaults) {
-                this._setFloat(map.uniform, dockDefaults[map.uniform]);
-                return;
-            }
             // Apply the initial value.
             let val = settings.get_double(map.key);
-            if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {
+            if (this._owner === 'desktop-widget-glass' && (map.uniform === 'shadow_intensity' || map.uniform === 'shadow_radius')) {
+                val = 0.0;
+            } else if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {
                 val *= this._shadowIntensityMultiplier;
             }
             this._setFloat(map.uniform, val);
             // Watch for changes.
             const id = settings.connect(`changed::${map.key}`, () => {
-                if (this._owner === 'dock' && map.uniform in dockDefaults) {
-                    this._setFloat(map.uniform, dockDefaults[map.uniform]);
-                } else {
-                    let v = settings.get_double(map.key);
-                    if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {
-                        v *= this._shadowIntensityMultiplier;
-                    }
-                    this._setFloat(map.uniform, v);
+                let v = settings.get_double(map.key);
+                if (this._owner === 'desktop-widget-glass' && (map.uniform === 'shadow_intensity' || map.uniform === 'shadow_radius')) {
+                    v = 0.0;
+                } else if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {
+                    v *= this._shadowIntensityMultiplier;
                 }
+                this._setFloat(map.uniform, v);
             });
             this._settingsIds.push(id);
         });
