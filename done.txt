@@ -14595,3 +14595,49 @@ Task 576: Додавання групи «Док» у панель «Мак ст
    - `mac-audit-sync check`: 100% PASS (усі 5 модулів підтверджено).
    - `mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
 
+
+Етап 581: Динамічний акцентний колір системи для активних кнопок, перемикачів і слайдерів у Параметрах
+===================================================================
+1. Вимоги користувача:
+   - У вікні «Параметри» (gnome-control-center) синій колір активної кнопки/перемикача/слайдера має динамічно змінюватись на вибраний у системі акцентний колір (org.gnome.desktop.interface accent-color: помаранчевий, фіолетовий, синій тощо).
+
+2. Виявлена причина жорстко закодованого синього кольору:
+   - У `control-center/libmac_settings.c` (та дзеркалі `gnome-control-center-overlay/libmac_settings.c`):
+     * Правило для перемикачів: `window.mac-settings-window switch:checked` та `switch:checked:disabled` жорстко використовувало `#007aff`, а `switch:checked:hover` — `#1a88ff`.
+     * Правило для заповнення слайдерів: `window.mac-settings-window scale > trough > highlight` жорстко використовувало `#007aff`, а у вимкненому стані — `rgba(0, 122, 255, 0.50)`.
+     * У функції `draw_dual_range_slider_cb()` (віджет керування вентиляторами) рендер через Cairo використовував статичний `cairo_set_source_rgb(cr, 0.0, 0.478, 1.0)`.
+     * Виділений рядок у бічній панелі `row:selected` був статично зашитий у помаранчевий `#fa6e0a`, не реагуючи на вибір інших кольорів.
+   - У темах GTK4 (`macW1Y-Dark/gtk-4.0/` та `config/gtk-4.0/`):
+     * Кнопки основної дії `button.suggested-action`, `menubutton.suggested-action` та `splitbutton.suggested-action` містили статичний `#2E7CF7` замість зв'язування з `@accent_bg_color`.
+     * Виділення елементів списку popover-меню (`fixes4.css`) містило статичний `#007aff`.
+
+3. Реалізовані зміни:
+   - `control-center/libmac_settings.c` та `gnome-control-center-overlay/libmac_settings.c`:
+     * Усі активні стани перемикачів переведено на динамічні системні змінні:
+       - `switch:checked`: `background-color: @accent_bg_color;`
+       - `switch:checked:hover`: `background-color: color-mix(in srgb, @accent_bg_color 85%, white);`
+       - `switch:checked:disabled`: `background-color: @accent_bg_color;`
+     * Слайдери (`scale`):
+       - `scale > trough > highlight`: `background-color: @accent_bg_color;`
+       - `scale:disabled > trough > highlight`: `background-color: alpha(@accent_bg_color, 0.50);`
+     * Виділений рядок сайдбару `row:selected`:
+       - `background-color: @accent_bg_color;`
+       - `color: @accent_fg_color;`
+     * Додано системні правила для активних та акцентних кнопок:
+       - `button.suggested-action`, `menubutton.suggested-action > button`, `splitbutton.suggested-action > button`: динамічний `@accent_bg_color` / `@accent_fg_color`.
+       - `button.suggested-action:hover`: `color-mix(in srgb, @accent_bg_color 85%, white);`
+       - `button.suggested-action:active`: `color-mix(in srgb, @accent_bg_color 80%, black);`
+       - `button:checked:not(.flat):not(.accent-button)`, `togglebutton:checked:not(.flat)`, `.mac-pill-btn.active`: `@accent_bg_color`.
+       - `check:checked`, `check:indeterminate`, `radio:checked`, `radio:indeterminate`: `@accent_bg_color`.
+     * У `draw_dual_range_slider_cb()` отримання кольору переведено на `adw_style_manager_get_accent_color_rgba(sm)`, завдяки чому кастомний слайдер вентиляторів динамічно використовує точний системний акцентний колір.
+     * Бібліотеку перекомпільовано та розгорнуто в усіх 7 системних локаціях із `ldconfig`.
+   - Теми GTK4 (`config/gtk-4.0/`, `macW1Y-Dark/gtk-4.0/`, `~/.config/gtk-4.0/`, `~/.themes/`, `/usr/share/themes/`):
+     * Оновлено `fixes4.css`, `gtk.css`, `gtk-Dark.css`, `gtk-dark.css` — статичні `#2E7CF7` та `#007aff` на `button.suggested-action`, `menubutton`, `splitbutton` та `popover.menu listview > row:hover` замінено на `@accent_bg_color` та `@accent_fg_color`.
+
+4. Верифікація:
+   - Перевірено роботу наживо в `gnome-control-center`:
+     * При виборі помаранчевого (`orange`) системного кольору: активні перемикачі, активні кнопки та виділення рядків сайдбару набувають кольору `rgb(237, 91, 0)` (11413 помаранчевих пікселів, 0 синіх пікселів).
+     * При виборі фіолетового (`purple`): ті самі елементи динамічно змінюються на `rgb(145, 65, 172)` без жодних синіх артефактів.
+     * При виборі будь-якого іншого кольору акценту (синій, зелений, бірюзовий тощо) елементи миттєво синхронізуються.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+   - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).

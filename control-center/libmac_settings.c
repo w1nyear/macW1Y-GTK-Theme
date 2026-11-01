@@ -2911,9 +2911,15 @@ static void draw_dual_range_slider_cb(GtkDrawingArea *area,
     double x_max = pad + (range->max_val / 100.0) * track_len;
 
     gboolean is_dark = TRUE;
+    GdkRGBA accent_rgba;
+    accent_rgba.red = 0.0; accent_rgba.green = 0.478; accent_rgba.blue = 1.0; accent_rgba.alpha = 1.0;
     AdwStyleManager *sm = adw_style_manager_get_default();
     if (sm) {
         is_dark = adw_style_manager_get_dark(sm);
+        const GdkRGBA *sm_rgba = adw_style_manager_get_accent_color_rgba(sm);
+        if (sm_rgba) {
+            accent_rgba = *sm_rgba;
+        }
     }
 
     /* 1. Base track */
@@ -2927,7 +2933,7 @@ static void draw_dual_range_slider_cb(GtkDrawingArea *area,
 
     /* 2. Highlighted range bar */
     if (x_max > x_min) {
-        cairo_set_source_rgb(cr, 0.0, 0.478, 1.0); /* #007aff */
+        cairo_set_source_rgba(cr, accent_rgba.red, accent_rgba.green, accent_rgba.blue, 1.0);
         draw_rounded_rect(cr, x_min, track_y - track_h / 2.0, x_max - x_min, track_h, 3.0);
         cairo_fill(cr);
     }
@@ -2945,7 +2951,7 @@ static void draw_dual_range_slider_cb(GtkDrawingArea *area,
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
 
-    cairo_set_source_rgb(cr, 0.0, 0.478, 1.0);
+    cairo_set_source_rgba(cr, accent_rgba.red, accent_rgba.green, accent_rgba.blue, 1.0);
     cairo_arc(cr, x_min, track_y, 2.5, 0, 2 * G_PI);
     cairo_fill(cr);
 
@@ -2961,7 +2967,7 @@ static void draw_dual_range_slider_cb(GtkDrawingArea *area,
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
 
-    cairo_set_source_rgb(cr, 0.0, 0.478, 1.0);
+    cairo_set_source_rgba(cr, accent_rgba.red, accent_rgba.green, accent_rgba.blue, 1.0);
     cairo_arc(cr, x_max, track_y, 2.5, 0, 2 * G_PI);
     cairo_fill(cr);
 }
@@ -4664,8 +4670,8 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected { "
         "  border-radius: 8px; "
-        "  background-color: #fa6e0a; "
-        "  color: #ffffff; "
+        "  background-color: @accent_bg_color; "
+        "  color: @accent_fg_color; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row.mac-sidebar-group-start, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row.mac-sidebar-group-start { "
@@ -5347,13 +5353,13 @@ static void init_mac_settings_css(void) {
         "  background-color: rgba(255, 255, 255, 0.22); "
         "} "
         "window.mac-settings-window switch:checked { "
-        "  background-color: #007aff; "
+        "  background-color: @accent_bg_color; "
         "  background-image: none; "
         "  border: none; "
         "  box-shadow: none; "
         "} "
         "window.mac-settings-window switch:checked:hover { "
-        "  background-color: #1a88ff; "
+        "  background-color: color-mix(in srgb, @accent_bg_color 85%, white); "
         "} "
         "window.mac-settings-window :disabled { "
         "  filter: none; "
@@ -5376,7 +5382,7 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window switch:checked:disabled { "
         "  opacity: 1.0; "
-        "  background-color: #007aff; "
+        "  background-color: @accent_bg_color; "
         "  box-shadow: none; "
         "} "
         "window.mac-settings-window switch > slider { "
@@ -5443,7 +5449,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window scale > trough > highlight { "
         "  min-height: 4px; "
         "  border-radius: 9999px; "
-        "  background-color: #007aff; "
+        "  background-color: @accent_bg_color; "
         "  background-image: none; "
         "  border: none; "
         "  box-shadow: none; "
@@ -5503,7 +5509,7 @@ static void init_mac_settings_css(void) {
         "  background-color: rgba(255, 255, 255, 0.10); "
         "} "
         "window.mac-settings-window scale:disabled > trough > highlight { "
-        "  background-color: rgba(0, 122, 255, 0.50); "
+        "  background-color: alpha(@accent_bg_color, 0.50); "
         "} "
         "window.mac-settings-window scale:disabled > trough > slider, "
         "window.mac-settings-window scale > trough > slider:disabled { "
@@ -5513,6 +5519,43 @@ static void init_mac_settings_css(void) {
         "  background-image: none; "
         "  border: 1px solid rgba(0, 0, 0, 0.10); "
         "  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22); "
+        "} "
+        "window.mac-settings-window button.suggested-action, "
+        "window.mac-settings-window menubutton.suggested-action > button, "
+        "window.mac-settings-window splitbutton.suggested-action > button, "
+        "window.mac-settings-window splitbutton.suggested-action > menubutton > button { "
+        "  background-color: @accent_bg_color; "
+        "  color: @accent_fg_color; "
+        "} "
+        "window.mac-settings-window button.suggested-action:hover, "
+        "window.mac-settings-window menubutton.suggested-action > button:hover, "
+        "window.mac-settings-window splitbutton.suggested-action > button:hover, "
+        "window.mac-settings-window splitbutton.suggested-action > menubutton > button:hover { "
+        "  background-color: color-mix(in srgb, @accent_bg_color 85%, white); "
+        "  color: @accent_fg_color; "
+        "} "
+        "window.mac-settings-window button.suggested-action:active, "
+        "window.mac-settings-window button.suggested-action:checked, "
+        "window.mac-settings-window menubutton.suggested-action > button:active, "
+        "window.mac-settings-window menubutton.suggested-action > button:checked, "
+        "window.mac-settings-window splitbutton.suggested-action > button:active, "
+        "window.mac-settings-window splitbutton.suggested-action > button:checked { "
+        "  background-color: color-mix(in srgb, @accent_bg_color 80%, black); "
+        "  color: @accent_fg_color; "
+        "} "
+        "window.mac-settings-window button:checked:not(.flat):not(.accent-button), "
+        "window.mac-settings-window togglebutton:checked:not(.flat), "
+        "window.mac-settings-window .mac-pill-btn.active, "
+        "window.mac-settings-window .mac-pill-btn:checked { "
+        "  background-color: @accent_bg_color; "
+        "  color: @accent_fg_color; "
+        "} "
+        "window.mac-settings-window check:checked, "
+        "window.mac-settings-window check:indeterminate, "
+        "window.mac-settings-window radio:checked, "
+        "window.mac-settings-window radio:indeterminate { "
+        "  background-color: @accent_bg_color; "
+        "  color: @accent_fg_color; "
         "}"
     );
     gtk_style_context_add_provider_for_display(
