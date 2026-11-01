@@ -197,11 +197,15 @@ const DashSlideContainer = GObject.registerClass({
             padX2 = 64;
             break;
         }
-        this.child.set_clip(
-            -childBox.x1 - padX1,
-            -childBox.y1 - padY1,
-            -childBox.x1 + availWidth + padX1 + padX2,
-            -childBox.y1 + availHeight + padY1 + padY2);
+        if (this.slideX >= 1.0) {
+            this.child.remove_clip();
+        } else {
+            this.child.set_clip(
+                -childBox.x1 - padX1,
+                -childBox.y1 - padY1,
+                -childBox.x1 + availWidth + padX1 + padX2,
+                -childBox.y1 + availHeight + padY1 + padY2);
+        }
     }
 
     /**
@@ -976,6 +980,7 @@ const DockedDash = GObject.registerClass({
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             onComplete: () => {
                 this._dockState = State.SHOWN;
+                this._slider?.child?.remove_clip?.();
                 // Remove barrier so that mouse pointer is released and can
                 // monitors on other side of dock.
                 // NOTE: Delay needed to keep mouse from moving past dock and

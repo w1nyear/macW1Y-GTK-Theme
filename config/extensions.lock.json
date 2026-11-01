@@ -132,7 +132,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "70648b4a9f01a6072c42d5a0c7872efcd05043dccd5f7dcbd83187edd11e8a9d",
+      "sha256": "8331e3becb843d8b5df3a88c6b9af666e854588d10da75513c15502291967a22",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -142,7 +142,7 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Custom glass dock with dynamic startingApps tracking",
-      "last_verified": "2026-10-27"
+      "last_verified": "2026-11-01"
     },
     "eval-helper@mactheme": {
       "uuid": "eval-helper@mactheme",

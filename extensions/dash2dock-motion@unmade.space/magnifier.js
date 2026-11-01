@@ -17,6 +17,7 @@
 
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
+import Mtk from 'gi://Mtk';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -179,6 +180,27 @@ export class DockMagnifier {
             connect(this._settings, 'changed::magnify-effect-width', onSettings);
             connect(this._settings, 'changed::magnify-rise', onSettings);
         }
+        if (this._dash?._box) {
+            connect(this._dash._box, 'child-added', (_, child) => {
+                this._unclipActor(child);
+            });
+        }
+    }
+
+    _unclipActor(actor) {
+        if (!actor)
+            return;
+        try {
+            if (actor.clip_to_view !== undefined)
+                actor.clip_to_view = false;
+        } catch (_) {}
+        try {
+            actor.clip_to_allocation = false;
+        } catch (_) {}
+        if (actor.get_children) {
+            for (const child of actor.get_children())
+                this._unclipActor(child);
+        }
     }
 
     /**
@@ -188,21 +210,25 @@ export class DockMagnifier {
      */
     _unclipContainmentChain() {
         this._dash._box.clip_to_view = false;
+        this._dash._box.clip_to_allocation = false;
         this._dash._boxContainer.clip_to_view = false;
+        this._dash._boxContainer.clip_to_allocation = false;
         this._dash._dashContainer.clip_to_view = false;
+        this._dash._dashContainer.clip_to_allocation = false;
+        if (this._dash._scrollView)
+            this._dash._scrollView.clip_to_allocation = false;
         this._hoverBox.clip_to_view = false;
+        this._hoverBox.clip_to_allocation = false;
+        this._dash.clip_to_allocation = false;
         this._savedOffscreenRedirect = this._dash.offscreen_redirect;
-        this._dash.offscreen_redirect =
-            Clutter.OffscreenRedirect.AUTOMATIC_FOR_OPACITY;
+        this._dash.offscreen_redirect = Clutter.OffscreenRedirect.NONE;
 
         if (this._dash?._box) {
-            for (const child of this._dash._box.get_children()) {
-                const appwell = child.child ?? child.first_child;
-                const bl = appwell?.first_child?.first_child?.first_child;
-                if (bl && bl.clip_to_view)
-                    bl.clip_to_view = false;
-            }
+            for (const child of this._dash._box.get_children())
+                this._unclipActor(child);
         }
+        if (this._dash?._showAppsIcon)
+            this._unclipActor(this._dash._showAppsIcon);
     }
 
     _reclipContainmentChain() {
@@ -470,6 +496,7 @@ export class DockMagnifier {
 
         this._stretchBackground(bounds[0], bounds[n],
             targetL + basePadL, targetR - basePadR, basePadL, basePadR);
+        this._queueStageRedraw();
     }
 
     /**
@@ -746,6 +773,64 @@ export class DockMagnifier {
             child.updateLabelPosition?.();
 
         this._notifyDockUpdate();
+        this._queueStageRedraw();
+    }
+
+    _queueStageRedraw() {
+        try {
+            if (!this._dash?.get_stage?.())
+                return;
+            const monitor = Main.layoutManager.findMonitorForActor(this._dash) ??
+                            Main.layoutManager.primaryMonitor;
+            if (!monitor)
+                return;
+
+            const PADDING = 320;
+            let rect;
+            switch (this._position) {
+            case St.Side.BOTTOM:
+                rect = new Mtk.Rectangle({
+                    x: monitor.x,
+                    y: Math.max(0, monitor.y + monitor.height - PADDING),
+                    width: monitor.width,
+                    height: PADDING,
+                });
+                break;
+            case St.Side.TOP:
+                rect = new Mtk.Rectangle({
+                    x: monitor.x,
+                    y: monitor.y,
+                    width: monitor.width,
+                    height: PADDING,
+                });
+                break;
+            case St.Side.LEFT:
+                rect = new Mtk.Rectangle({
+                    x: monitor.x,
+                    y: monitor.y,
+                    width: PADDING,
+                    height: monitor.height,
+                });
+                break;
+            case St.Side.RIGHT:
+                rect = new Mtk.Rectangle({
+                    x: Math.max(0, monitor.x + monitor.width - PADDING),
+                    y: monitor.y,
+                    width: PADDING,
+                    height: monitor.height,
+                });
+                break;
+            default:
+                rect = new Mtk.Rectangle({
+                    x: monitor.x,
+                    y: Math.max(0, monitor.y + monitor.height - PADDING),
+                    width: monitor.width,
+                    height: PADDING,
+                });
+                break;
+            }
+            global.stage.queue_redraw_with_clip(rect);
+        } catch (_) {}
     }
 
     _notifyDockUpdate() {
