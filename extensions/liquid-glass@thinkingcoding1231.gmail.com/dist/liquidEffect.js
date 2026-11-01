@@ -3073,6 +3073,10 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
         this._compUniformArrays.clear();
         this._appliedUniforms.clear();
         this._appliedUniformArrays.clear();
+        this._glassSource = null;
+        this._downsampleSource = null;
+        this._upsampleSource = null;
+        this._shadersLoaded = false;
         // _pendingUniforms/_pendingUniformArrays are intentionally left intact:
         // they hold every uniform value currently in effect, and
         // _initPipelines() re-applies all of them to the freshly-compiled
@@ -3081,7 +3085,15 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
         // _gaussianPipelineDirty / _pendingGaussianKernel get set correctly
         // instead of leaving the Gaussian pass permanently skipped.
         this.setBlurRadius(this._targetRadius);
-        this.queue_repaint();
+        if (typeof this._loadAllShadersAsync === 'function') {
+            this._loadAllShadersAsync().then(() => {
+                this.queue_repaint();
+            }).catch(e => {
+                this._logger?.error(`[Liquid Glass] reloadShaders failed to load shaders: ${e}`);
+            });
+        } else {
+            this.queue_repaint();
+        }
     }
     setTintColor(r, g, b) {
         this._setFloat('tint_r', r);

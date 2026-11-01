@@ -3491,6 +3491,10 @@ export const LiquidEffect = GObject.registerClass({
     this._compUniformArrays.clear();
     this._appliedUniforms.clear();
     this._appliedUniformArrays.clear();
+    this._glassSource = null;
+    this._downsampleSource = null;
+    this._upsampleSource = null;
+    this._shadersLoaded = false;
     // _pendingUniforms/_pendingUniformArrays are intentionally left intact:
     // they hold every uniform value currently in effect, and
     // _initPipelines() re-applies all of them to the freshly-compiled
@@ -3499,7 +3503,15 @@ export const LiquidEffect = GObject.registerClass({
     // _gaussianPipelineDirty / _pendingGaussianKernel get set correctly
     // instead of leaving the Gaussian pass permanently skipped.
     this.setBlurRadius(this._targetRadius);
-    this.queue_repaint();
+    if (typeof (this as any)._loadAllShadersAsync === 'function') {
+      (this as any)._loadAllShadersAsync().then(() => {
+        this.queue_repaint();
+      }).catch((e: any) => {
+        this._logger?.error(`[Liquid Glass] reloadShaders failed to load shaders: ${e}`);
+      });
+    } else {
+      this.queue_repaint();
+    }
   }
 
   setTintColor(r: number, g: number, b: number): void {

@@ -2559,10 +2559,8 @@ class WidgetController {
     });
   }
 
-  _updateGlassParamsForView(view) {
-    if (!view.glass) return;
-
-    view.glass.setParams(this._glassParamsFor());
+  _syncShadow(view) {
+    if (!view) return;
 
     const theme = this._gnomeTheme();
     const radius = theme.radius > 0 ? theme.radius : 16;
@@ -2582,6 +2580,13 @@ class WidgetController {
       targetActor.clip_to_allocation = false;
       targetActor.set_style(`border-radius: ${radius}px; box-shadow: ${shadowCss}; background-color: transparent;`);
     }
+  }
+
+  _updateGlassParamsForView(view) {
+    if (!view.glass) return;
+
+    view.glass.setParams(this._glassParamsFor());
+    this._syncShadow(view);
   }
 
   // One source of truth for glass parameters: the wrapper panes of primary
@@ -2647,8 +2652,9 @@ class WidgetController {
     for (const view of this._views.values()) {
       if (view.glass) {
         this._updateGlassParamsForView(view);
+      } else {
+        this._syncShadow(view);
       }
-      this._syncShadow(view);
 
       // Slider drags reach the stacked pages without a rebuild: restyle()
       // re-derives each page card's skin and re-arms its glass pane params.

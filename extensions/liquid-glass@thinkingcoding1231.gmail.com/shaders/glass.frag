@@ -668,7 +668,7 @@ void main() {
     // the finite-difference neighbourhood the gradient samples (the SDF is
     // 1-Lipschitz, so a step of `e` moves d by at most `e`).
     float smoothZoneEarly = max(edge_smoothing, 1.0);
-    float depthReach = (shape_type > 0.5) ? min(b.x, b.y) : corner_radius;
+    float depthReach = (shape_type > 0.5) ? min(box_size.x, box_size.y) : corner_radius;
     float interiorThreshold = max(
         max(depthReach + gradientStep(resolution) + smoothZoneEarly,
             edgeFeather * 4.0),
