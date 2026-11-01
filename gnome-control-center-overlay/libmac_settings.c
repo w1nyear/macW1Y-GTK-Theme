@@ -5193,6 +5193,9 @@ static void init_mac_settings_css(void) {
         "  border-bottom: none; "
         "  box-shadow: none; "
         "} "
+        "window.mac-settings-window .mac-settings-sidebar-headerbar { "
+        "  margin-top: -7px; "
+        "} "
         "window.mac-settings-window viewswitcher, "
         "window.mac-settings-window .mac-view-switcher, "
         "window.mac-settings-window headerbar viewswitcher { "
@@ -6551,7 +6554,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     if (sidebar_bars) {
         AdwHeaderBar *sidebar_hb = ADW_HEADER_BAR(sidebar_bars->data);
         gtk_widget_add_css_class(GTK_WIDGET(sidebar_hb), "mac-settings-sidebar-headerbar");
-        gtk_widget_set_margin_top(GTK_WIDGET(sidebar_hb), 3);
+        gtk_widget_set_margin_top(GTK_WIDGET(sidebar_hb), 0);
 
         /* 1. Hide title and any title labels in sidebar headerbar */
         adw_header_bar_set_show_title(sidebar_hb, FALSE);

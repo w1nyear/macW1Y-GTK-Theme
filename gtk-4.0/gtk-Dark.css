@@ -10034,6 +10034,10 @@ navigation-split-view adw-navigation-view headerbar > windowhandle > box {
     padding-right: 8px;
 }
 
+window.mac-settings-window .mac-settings-sidebar-headerbar {
+    margin-top: -10px;
+}
+
 window.mac-settings-window navigation-split-view headerbar windowcontrols.start:dir(ltr),
 window.mac-settings-window .mac-settings-sidebar-headerbar windowcontrols.start:dir(ltr) {
     margin-top: -3px;
