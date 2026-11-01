@@ -631,6 +631,12 @@
       <description>0 = Gaussian Blur (Recommended), 1 = Dual Kawase (Performance)</description>
     </key>
 
+    <key name="glass-shape-type" type="i">
+      <default>0</default>
+      <summary>Shape geometry for glass elements</summary>
+      <description>0 = Rounded Rectangle, 1 = Circle, 2 = Capsule, 3 = Squircle Apple</description>
+    </key>
+
     <key name="glass-max-z" type="d">
       <default>88.0</default>
       <summary>Maximum Z depth (Thickness)</summary>

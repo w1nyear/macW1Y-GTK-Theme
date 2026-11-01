@@ -1034,6 +1034,7 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
         this._setFloat('arrow_rise', 0.0);
         this._setFloat('arrow_radius', 2.0);
         this._setFloat('arrow_fillet', 5.0);
+        this._setFloat('shape_type', 0.0);
         this._settingsIds = [];
         if (this._settings) {
             this._bindSettings();
@@ -2880,6 +2881,15 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
             });
             this._settingsIds.push(id);
         });
+        if (settings && settings.settings_schema && settings.settings_schema.has_key('glass-shape-type')) {
+            const applyShape = () => {
+                const shape = settings.get_int('glass-shape-type');
+                this._setFloat('shape_type', shape);
+            };
+            applyShape();
+            const shapeId = settings.connect('changed::glass-shape-type', applyShape);
+            this._settingsIds.push(shapeId);
+        }
         // ── glass-blur-downscale (int): 2 = half res, 4 = quarter res ─────────
         // [PERF] A quality/cost trade the user opts into: the blur runs on a
         // quarter-size buffer, so every pass touches a quarter of the pixels, at
@@ -3129,6 +3139,10 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
     }
     setCornerRadius(radius) {
         this._setFloat('corner_radius', radius);
+        this._queueRepaintIfDirty();
+    }
+    setShapeType(shape) {
+        this._setFloat('shape_type', shape);
         this._queueRepaintIfDirty();
     }
     setArrow(side = 0, origin = 0, base = 18.0, rise = 8.0, radius = 2.0, fillet = 5.0) {

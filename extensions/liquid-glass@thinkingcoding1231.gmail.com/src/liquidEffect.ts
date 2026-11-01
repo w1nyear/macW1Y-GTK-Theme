@@ -1260,6 +1260,7 @@ export const LiquidEffect = GObject.registerClass({
     this._setFloat('pointer_y', -100.0);
     this._setFloat('intensity', 0.0);
     this._setFloat('corner_radius', 60.0);
+    this._setFloat('shape_type', 0.0);
     this._setFloat('brightness', 1.0);
     this._setFloat('contrast', 1.0);
     this._setFloat('saturation', 1.0);
@@ -3262,6 +3263,16 @@ export const LiquidEffect = GObject.registerClass({
       this._settingsIds.push(id);
     });
 
+    if (settings && settings.settings_schema && settings.settings_schema.has_key('glass-shape-type')) {
+      const applyShape = () => {
+        const shape = settings.get_int('glass-shape-type');
+        this._setFloat('shape_type', shape);
+      };
+      applyShape();
+      const shapeId = settings.connect('changed::glass-shape-type', applyShape);
+      this._settingsIds.push(shapeId);
+    }
+
     // ── glass-blur-downscale (int): 2 = half res, 4 = quarter res ─────────
     // [PERF] A quality/cost trade the user opts into: the blur runs on a
     // quarter-size buffer, so every pass touches a quarter of the pixels, at
@@ -3531,6 +3542,11 @@ export const LiquidEffect = GObject.registerClass({
 
   setCornerRadius(radius: number): void {
     this._setFloat('corner_radius', radius);
+    this._queueRepaintIfDirty();
+  }
+
+  setShapeType(shape: number): void {
+    this._setFloat('shape_type', shape);
     this._queueRepaintIfDirty();
   }
 

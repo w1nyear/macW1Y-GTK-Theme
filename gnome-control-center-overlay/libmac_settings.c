@@ -18,6 +18,7 @@ typedef struct {
     int menubar_tint;   /* 0 - 100 */
     int menubar_blur;   /* 0 - 100 */
 
+    int liquid_shape;      /* 0 - 3 (0=RoundRect, 1=Circle, 2=Capsule, 3=Squircle) */
     int liquid_refraction; /* 0 - 100 */
     int liquid_blur;       /* 0 - 50 */
     int liquid_tint;       /* 0 - 100 */
@@ -62,6 +63,7 @@ static MacStylingData state = {
     .menubar_tint = 35,
     .menubar_blur = 10,
 
+    .liquid_shape = 0,
     .liquid_refraction = 60,
     .liquid_blur = 20,
     .liquid_tint = 12,
@@ -144,6 +146,11 @@ static void load_config(void) {
                 state.menubar_blur = (int)json_object_get_int_member(obj, "panel_sigma");
 
             /* Group 2: Liquid Glass */
+            if (json_object_has_member(obj, "liquid_shape"))
+                state.liquid_shape = (int)json_object_get_int_member(obj, "liquid_shape");
+            else
+                state.liquid_shape = 0;
+
             if (json_object_has_member(obj, "liquid_refraction"))
                 state.liquid_refraction = (int)json_object_get_int_member(obj, "liquid_refraction");
             else
@@ -303,6 +310,7 @@ static void save_styling_json(void) {
         "{\n"
         "  \"menubar_tint\": %d,\n"
         "  \"menubar_blur\": %d,\n"
+        "  \"liquid_shape\": %d,\n"
         "  \"liquid_refraction\": %d,\n"
         "  \"liquid_blur\": %d,\n"
         "  \"liquid_tint\": %d,\n"
@@ -337,6 +345,7 @@ static void save_styling_json(void) {
         "}\n",
         state.menubar_tint,
         state.menubar_blur,
+        state.liquid_shape,
         state.liquid_refraction,
         state.liquid_blur,
         state.liquid_tint,
@@ -514,6 +523,7 @@ static void apply_liquid_glass(void) {
         safe_set_double(lg, schema, tint_keys[i], tint);
     }
 
+    safe_set_int(lg, schema, "glass-shape-type", state.liquid_shape);
     safe_set_double(lg, schema, "glass-displacement-scale", disp_scale);
     safe_set_double(lg, schema, "glass-ior", ior);
     safe_set_double(lg, schema, "glass-chroma-strength", chroma);
@@ -950,7 +960,11 @@ static void on_liquid_drag_begin(GtkGestureDrag *gesture, double start_x, double
     GtkWidget *widget = GTK_WIDGET(user_data);
     int w = gtk_widget_get_width(widget);
     int h = gtk_widget_get_height(widget);
-    int gw = 120, gh = 120;
+    int gw = 150, gh = 110;
+    if (state.liquid_shape == 1) { gw = 116; gh = 116; }
+    else if (state.liquid_shape == 2) { gw = 160; gh = 92; }
+    else if (state.liquid_shape == 3) { gw = 124; gh = 124; }
+
     if (g_glass_x < 0) {
         g_glass_x = (w - gw) / 2.0;
         g_glass_y = (h - gh) / 2.0;
@@ -979,7 +993,10 @@ static void on_liquid_drag_update(GtkGestureDrag *gesture, double offset_x, doub
     GtkWidget *widget = GTK_WIDGET(user_data);
     int w = gtk_widget_get_width(widget);
     int h = gtk_widget_get_height(widget);
-    int gw = 120, gh = 120;
+    int gw = 150, gh = 110;
+    if (state.liquid_shape == 1) { gw = 116; gh = 116; }
+    else if (state.liquid_shape == 2) { gw = 160; gh = 92; }
+    else if (state.liquid_shape == 3) { gw = 124; gh = 124; }
 
     g_glass_x = CLAMP(g_glass_drag_start_x + offset_x, 6.0, w - gw - 6.0);
     g_glass_y = CLAMP(g_glass_drag_start_y + offset_y, 6.0, h - gh - 6.0);
@@ -995,6 +1012,8 @@ static void on_liquid_drag_end(GtkGestureDrag *gesture, double offset_x, double 
 
 /* ========================================================================= */
 /* Exact GLSL glass.frag shader simulation from ryohsuke1231/liquid-glass    */
+/* with multi-shape geometry support:                                        */
+/* 0 = Rounded Rect, 1 = Circle, 2 = Capsule, 3 = Apple Squircle             */
 /* ========================================================================= */
 
 static inline double glsl_sdRoundRect(double px, double py, double bx, double by, double r) {
@@ -1003,6 +1022,28 @@ static inline double glsl_sdRoundRect(double px, double py, double bx, double by
     double max_d = fmax(dx, dy);
     double len_d = sqrt(fmax(dx, 0.0) * fmax(dx, 0.0) + fmax(dy, 0.0) * fmax(dy, 0.0));
     return fmin(max_d, 0.0) + len_d - r;
+}
+
+static inline double glsl_sdSquircle(double px, double py, double bx, double by, double n) {
+    double ax = fmax(bx, 1.0);
+    double ay = fmax(by, 1.0);
+    double qx = fabs(px) / ax;
+    double qy = fabs(py) / ay;
+    double d_norm = pow(pow(qx, n) + pow(qy, n), 1.0 / n) - 1.0;
+    return d_norm * fmin(ax, ay);
+}
+
+static inline double glsl_sdShape(double px, double py, double bx, double by, double r, int shape) {
+    if (shape == 3) {
+        return glsl_sdSquircle(px, py, bx, by, 4.2);
+    } else if (shape == 2) {
+        double cap_r = fmin(bx, by);
+        return glsl_sdRoundRect(px, py, bx, by, cap_r);
+    } else if (shape == 1) {
+        double cir_r = fmin(bx, by);
+        return sqrt(px * px + py * py) - cir_r;
+    }
+    return glsl_sdRoundRect(px, py, bx, by, r);
 }
 
 static inline double glsl_smoothstep(double edge0, double edge1, double x) {
@@ -1033,10 +1074,61 @@ static inline void glsl_sdRoundRectDir(double px, double py, double bx, double b
     *out_y = sign_y * (mqy / len);
 }
 
-static inline double glsl_normalizedDepth(double d, double r) {
-    double maxDepth = fmax(r, 1.0);
-    double interiorDepth = fmax(-d, 0.0);
-    return CLAMP(interiorDepth / maxDepth, 0.0, 1.0);
+static inline void glsl_sdShapeDir(double px, double py, double bx, double by, double r, int shape, double *out_x, double *out_y) {
+    if (shape == 3) {
+        double eps = 0.5;
+        double dx = glsl_sdSquircle(px + eps, py, bx, by, 4.2) - glsl_sdSquircle(px - eps, py, bx, by, 4.2);
+        double dy = glsl_sdSquircle(px, py + eps, bx, by, 4.2) - glsl_sdSquircle(px, py - eps, bx, by, 4.2);
+        double len = sqrt(dx * dx + dy * dy) + 1e-6;
+        *out_x = dx / len;
+        *out_y = dy / len;
+    } else if (shape == 2) {
+        double cap_r = fmin(bx, by);
+        glsl_sdRoundRectDir(px, py, bx, by, cap_r, out_x, out_y);
+    } else if (shape == 1) {
+        double len = sqrt(px * px + py * py) + 1e-6;
+        *out_x = px / len;
+        *out_y = py / len;
+    } else {
+        glsl_sdRoundRectDir(px, py, bx, by, r, out_x, out_y);
+    }
+}
+
+static void draw_shape_path(cairo_t *cr, double gx, double gy, double gw, double gh, double gr, int shape) {
+    if (shape == 1) { // Circle
+        double r = fmin(gw, gh) * 0.5;
+        double cx = gx + gw * 0.5;
+        double cy = gy + gh * 0.5;
+        cairo_new_sub_path(cr);
+        cairo_arc(cr, cx, cy, r, 0.0, 2.0 * M_PI);
+        cairo_close_path(cr);
+    } else if (shape == 2) { // Capsule
+        double r = fmin(gw, gh) * 0.5;
+        draw_rounded_rect_path(cr, gx, gy, gw, gh, r);
+    } else if (shape == 3) { // Squircle
+        double ax = gw * 0.5;
+        double ay = gh * 0.5;
+        double cx = gx + ax;
+        double cy = gy + ay;
+        double n = 4.2;
+        double p = 2.0 / n;
+        cairo_new_sub_path(cr);
+        const int steps = 96;
+        for (int i = 0; i <= steps; i++) {
+            double theta = (double)i * (2.0 * M_PI / (double)steps);
+            double c = cos(theta);
+            double s = sin(theta);
+            double x = cx + ax * (c >= 0.0 ? 1.0 : -1.0) * pow(fabs(c), p);
+            double y = cy + ay * (s >= 0.0 ? 1.0 : -1.0) * pow(fabs(s), p);
+            if (i == 0)
+                cairo_move_to(cr, x, y);
+            else
+                cairo_line_to(cr, x, y);
+        }
+        cairo_close_path(cr);
+    } else { // 0: Rounded Rect
+        draw_rounded_rect_path(cr, gx, gy, gw, gh, gr);
+    }
 }
 
 static inline double glsl_profileHeight(double t, double zScale, double profile_n) {
@@ -1047,23 +1139,26 @@ static inline double glsl_profileHeight(double t, double zScale, double profile_
     return h * zScale;
 }
 
-static inline double glsl_getHeight(double px, double py, double bx, double by, double r, double zScale, double edge_smoothing, double profile_n) {
-    double d = glsl_sdRoundRect(px, py, bx, by, r);
+static inline double glsl_getHeight(double px, double py, double bx, double by, double r, double zScale, double edge_smoothing, double profile_n, int shape) {
+    double d = glsl_sdShape(px, py, bx, by, r, shape);
     double smoothZone = fmax(edge_smoothing, 1.0);
     if (d > smoothZone)
         return 0.0;
 
-    double t = glsl_normalizedDepth(d, r);
+    double maxDepth = (shape > 0) ? fmax(fmin(bx, by), 1.0) : fmax(r, 1.0);
+    double interiorDepth = fmax(-d, 0.0);
+    double t = CLAMP(interiorDepth / maxDepth, 0.0, 1.0);
+
     double h = glsl_profileHeight(t, zScale, profile_n);
     double fade = 1.0 - glsl_smoothstep(-smoothZone, smoothZone, d);
     return h * fade;
 }
 
-static inline void glsl_heightGradient(double px, double py, double bx, double by, double r, double zScale, double edge_smoothing, double profile_n, double e, double *out_gx, double *out_gy) {
+static inline void glsl_heightGradient(double px, double py, double bx, double by, double r, double zScale, double edge_smoothing, double profile_n, double e, int shape, double *out_gx, double *out_gy) {
     double dir_x, dir_y;
-    glsl_sdRoundRectDir(px, py, bx, by, r, &dir_x, &dir_y);
-    double hOut = glsl_getHeight(px + dir_x * e, py + dir_y * e, bx, by, r, zScale, edge_smoothing, profile_n);
-    double hIn  = glsl_getHeight(px - dir_x * e, py - dir_y * e, bx, by, r, zScale, edge_smoothing, profile_n);
+    glsl_sdShapeDir(px, py, bx, by, r, shape, &dir_x, &dir_y);
+    double hOut = glsl_getHeight(px + dir_x * e, py + dir_y * e, bx, by, r, zScale, edge_smoothing, profile_n, shape);
+    double hIn  = glsl_getHeight(px - dir_x * e, py - dir_y * e, bx, by, r, zScale, edge_smoothing, profile_n, shape);
     double factor = (hOut - hIn) / (2.0 * e);
     *out_gx = dir_x * factor;
     *out_gy = dir_y * factor;
@@ -1116,23 +1211,23 @@ static inline void sample_bilinear(const unsigned char *src_pixels, int stride, 
 }
 
 static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width, int height,
-                                    double gx, double gy, double gw, double gh, double gr) {
+                                    double gx, double gy, double gw, double gh, double gr, int shape) {
     if (!bg) return;
 
-    // 1. Drop shadow
+    // 1. Drop shadow with true shape contour
     double shadow_val = (double)state.liquid_shadow / 100.0;
     if (shadow_val > 0.02) {
         for (int i = 4; i >= 1; i--) {
             double expand = i * 2.5;
             double alpha = (shadow_val * 0.14) / i;
-            draw_rounded_rect_path(cr, gx - expand, gy + 3.5 - expand / 2.0, gw + expand * 2.0, gh + expand * 2.0, gr + expand);
+            draw_shape_path(cr, gx - expand, gy + 3.5 - expand / 2.0, gw + expand * 2.0, gh + expand * 2.0, gr + expand, shape);
             cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, alpha);
             cairo_fill(cr);
         }
     }
 
     cairo_save(cr);
-    draw_rounded_rect_path(cr, gx, gy, gw, gh, gr);
+    draw_shape_path(cr, gx, gy, gw, gh, gr, shape);
     cairo_clip(cr);
 
     int igx = (int)round(gx);
@@ -1185,7 +1280,7 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
         double py = ly - by + 0.5;
         for (int lx = 0; lx < igw; lx++) {
             double px = lx - bx + 0.5;
-            double d = glsl_sdRoundRect(px, py, bx, by, gr);
+            double d = glsl_sdShape(px, py, bx, by, gr, shape);
             if (d > 0.8) {
                 dst_row[lx] = 0;
                 continue;
@@ -1196,7 +1291,7 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
 
             // 1. Height gradient & 3D normal vector
             double grad_x, grad_y;
-            glsl_heightGradient(px, py, bx, by, gr, max_z, edge_smoothing, profile_n, 0.5, &grad_x, &grad_y);
+            glsl_heightGradient(px, py, bx, by, gr, max_z, edge_smoothing, profile_n, 0.5, shape, &grad_x, &grad_y);
             double nx, ny, nz;
             glsl_getNormal(grad_x, grad_y, &nx, &ny, &nz);
 
@@ -1326,264 +1421,56 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         cairo_pattern_destroy(fallback);
     }
 
-    // 3. Interactive Liquid Glass Square
-    double gw = 120.0, gh = 120.0, gr = 26.0;
+    // 3. Interactive Liquid Glass Shape Element
+    double gw = 150.0, gh = 110.0, gr = 24.0;
+    if (state.liquid_shape == 1) { // Circle
+        gw = 116.0; gh = 116.0; gr = 58.0;
+    } else if (state.liquid_shape == 2) { // Capsule
+        gw = 160.0; gh = 92.0; gr = 46.0;
+    } else if (state.liquid_shape == 3) { // Squircle
+        gw = 124.0; gh = 124.0; gr = 28.0;
+    }
+
     if (g_glass_x < 0) {
-        g_glass_x = width * 0.28 - gw / 2.0;
-        if (g_glass_x < 16.0) g_glass_x = 16.0;
+        g_glass_x = (width - gw) / 2.0;
         g_glass_y = (height - gh) / 2.0;
     }
     double gx = CLAMP(g_glass_x, 6.0, width - gw - 6.0);
     double gy = CLAMP(g_glass_y, 6.0, height - gh - 6.0);
 
-    // A) Drop shadow
-    double shadow_val = (double)state.liquid_shadow / 100.0;
-    if (shadow_val > 0.02) {
-        for (int i = 4; i >= 1; i--) {
-            double expand = i * 2.5;
-            double alpha = (shadow_val * 0.14) / i;
-            draw_rounded_rect_path(cr, gx - expand, gy + 3.5 - expand / 2.0, gw + expand * 2.0, gh + expand * 2.0, gr + expand);
-            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, alpha);
-            cairo_fill(cr);
-        }
-    }
+    // Render using the physical repo shader with the active shape
+    draw_repo_glass_element(cr, bg, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
 
-    // B) Refraction & Optical Distortion
-    if (bg) {
-        cairo_save(cr);
-        draw_rounded_rect_path(cr, gx, gy, gw, gh, gr);
-        cairo_clip(cr);
+    // Floating shape badge above element
+    const char *shape_names[] = {
+        "Заокруглений прямокутник",
+        "Коло",
+        "Капсула",
+        "Сквіркл Apple"
+    };
+    int shape_idx = CLAMP(state.liquid_shape, 0, 3);
+    char badge_text[128];
+    g_snprintf(badge_text, sizeof(badge_text), "Liquid Glass • %s", shape_names[shape_idx]);
 
-        int igx = (int)round(gx);
-        int igy = (int)round(gy);
-        int igw = (int)round(gw);
-        int igh = (int)round(gh);
-
-        cairo_surface_flush(bg);
-        unsigned char *src_pixels = cairo_image_surface_get_data(bg);
-        int src_stride = cairo_image_surface_get_stride(bg);
-
-        cairo_surface_t *glass_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, igw, igh);
-        cairo_surface_flush(glass_surf);
-        unsigned char *dst_pixels = cairo_image_surface_get_data(glass_surf);
-        int dst_stride = cairo_image_surface_get_stride(glass_surf);
-
-        double refr_factor = ((double)state.liquid_refraction / 100.0) * 14.0;
-        double chroma_px = ((double)state.liquid_chroma / 100.0) * 2.8;
-        int blur_amount = (int)round((double)state.liquid_blur * 4.0 / 50.0);
-        double edge_zone = 26.0;
-
-        for (int ly = 0; ly < igh; ly++) {
-            uint32_t *dst_row = (uint32_t *)(dst_pixels + ly * dst_stride);
-            for (int lx = 0; lx < igw; lx++) {
-                double d_edge = 0.0;
-                double nx = 0.0;
-                double ny = 0.0;
-
-                if (lx < gr && ly < gr) {
-                    double vx = lx - gr;
-                    double vy = ly - gr;
-                    double dist = sqrt(vx * vx + vy * vy);
-                    if (dist > gr) {
-                        dst_row[lx] = 0;
-                        continue;
-                    }
-                    d_edge = gr - dist;
-                    if (dist > 0.001) {
-                        nx = -vx / dist;
-                        ny = -vy / dist;
-                    }
-                } else if (lx > gw - gr && ly < gr) {
-                    double vx = lx - (gw - gr);
-                    double vy = ly - gr;
-                    double dist = sqrt(vx * vx + vy * vy);
-                    if (dist > gr) {
-                        dst_row[lx] = 0;
-                        continue;
-                    }
-                    d_edge = gr - dist;
-                    if (dist > 0.001) {
-                        nx = -vx / dist;
-                        ny = -vy / dist;
-                    }
-                } else if (lx < gr && ly > gh - gr) {
-                    double vx = lx - gr;
-                    double vy = ly - (gh - gr);
-                    double dist = sqrt(vx * vx + vy * vy);
-                    if (dist > gr) {
-                        dst_row[lx] = 0;
-                        continue;
-                    }
-                    d_edge = gr - dist;
-                    if (dist > 0.001) {
-                        nx = -vx / dist;
-                        ny = -vy / dist;
-                    }
-                } else if (lx > gw - gr && ly > gh - gr) {
-                    double vx = lx - (gw - gr);
-                    double vy = ly - (gh - gr);
-                    double dist = sqrt(vx * vx + vy * vy);
-                    if (dist > gr) {
-                        dst_row[lx] = 0;
-                        continue;
-                    }
-                    d_edge = gr - dist;
-                    if (dist > 0.001) {
-                        nx = -vx / dist;
-                        ny = -vy / dist;
-                    }
-                } else if (lx < gr) {
-                    d_edge = lx;
-                    nx = 1.0;
-                    ny = 0.0;
-                } else if (lx > gw - gr) {
-                    d_edge = gw - lx;
-                    nx = -1.0;
-                    ny = 0.0;
-                } else if (ly < gr) {
-                    d_edge = ly;
-                    nx = 0.0;
-                    ny = 1.0;
-                } else if (ly > gh - gr) {
-                    d_edge = gh - ly;
-                    nx = 0.0;
-                    ny = -1.0;
-                } else {
-                    d_edge = edge_zone;
-                    nx = 0.0;
-                    ny = 0.0;
-                }
-
-                double bend = (d_edge < edge_zone) ? (sin((d_edge / edge_zone) * M_PI) * refr_factor) : 0.0;
-                double base_sx = igx + lx + nx * bend;
-                double base_sy = igy + ly + ny * bend;
-
-                int isx = CLAMP((int)round(base_sx), 0, width - 1);
-                int isy = CLAMP((int)round(base_sy), 0, height - 1);
-                int ir_x = CLAMP((int)round(base_sx + nx * chroma_px), 0, width - 1);
-                int ir_y = CLAMP((int)round(base_sy + ny * chroma_px), 0, height - 1);
-                int ib_x = CLAMP((int)round(base_sx - nx * chroma_px), 0, width - 1);
-                int ib_y = CLAMP((int)round(base_sy - ny * chroma_px), 0, height - 1);
-
-                uint32_t c_g = *(uint32_t *)(src_pixels + isy * src_stride + isx * 4);
-                uint32_t c_r = *(uint32_t *)(src_pixels + ir_y * src_stride + ir_x * 4);
-                uint32_t c_b = *(uint32_t *)(src_pixels + ib_y * src_stride + ib_x * 4);
-
-                int r = (c_r >> 16) & 0xFF;
-                int g = (c_g >> 8) & 0xFF;
-                int b = (c_b) & 0xFF;
-
-                if (blur_amount > 0) {
-                    int r_sum = r, g_sum = g, b_sum = b;
-                    int count = 1;
-                    for (int bo = -blur_amount; bo <= blur_amount; bo += blur_amount) {
-                        if (bo == 0) continue;
-                        int bx = CLAMP(isx + bo, 0, width - 1);
-                        int by = CLAMP(isy + bo, 0, height - 1);
-                        uint32_t s1 = *(uint32_t *)(src_pixels + isy * src_stride + bx * 4);
-                        uint32_t s2 = *(uint32_t *)(src_pixels + by * src_stride + isx * 4);
-                        r_sum += ((s1 >> 16) & 0xFF) + ((s2 >> 16) & 0xFF);
-                        g_sum += ((s1 >> 8) & 0xFF) + ((s2 >> 8) & 0xFF);
-                        b_sum += ((s1) & 0xFF) + ((s2) & 0xFF);
-                        count += 2;
-                    }
-                    r = r_sum / count;
-                    g = g_sum / count;
-                    b = b_sum / count;
-                }
-
-                dst_row[lx] = (0xFF << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
-            }
-        }
-
-        cairo_surface_mark_dirty(glass_surf);
-        cairo_set_source_surface(cr, glass_surf, igx, igy);
-        cairo_paint(cr);
-        cairo_surface_destroy(glass_surf);
-
-        // C) Translucent tint
-        double tint_val = (double)state.liquid_tint / 100.0;
-        cairo_set_source_rgba(cr, 0.06, 0.06, 0.08, 0.05 + tint_val * 0.40);
-        cairo_paint(cr);
-
-        // D) Specular Rim Light
-        double rim_val = (double)state.liquid_rim / 100.0;
-        if (rim_val > 0.01) {
-            cairo_pattern_t *pat = cairo_pattern_create_linear(gx, gy, gx + gw, gy + gh);
-            cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, rim_val * 0.90);
-            cairo_pattern_add_color_stop_rgba(pat, 0.4, 1.0, 1.0, 1.0, rim_val * 0.35);
-            cairo_pattern_add_color_stop_rgba(pat, 0.8, 1.0, 1.0, 1.0, rim_val * 0.10);
-            cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, rim_val * 0.20);
-            draw_rounded_rect_path(cr, gx + 1.0, gy + 1.0, gw - 2.0, gh - 2.0, gr - 1.0);
-            cairo_set_source(cr, pat);
-            cairo_set_line_width(cr, 2.0);
-            cairo_stroke(cr);
-            cairo_pattern_destroy(pat);
-        }
-
-        // E) Specular highlight sheen
-        double spec_val = (double)state.liquid_specular / 100.0;
-        if (spec_val > 0.01) {
-            cairo_save(cr);
-            draw_rounded_rect_path(cr, gx + 2.0, gy + 2.0, gw - 4.0, gh - 4.0, gr - 2.0);
-            cairo_clip(cr);
-            cairo_pattern_t *spec_pat = cairo_pattern_create_linear(gx, gy, gx, gy + 28.0);
-            cairo_pattern_add_color_stop_rgba(spec_pat, 0.0, 1.0, 1.0, 1.0, spec_val * 0.60);
-            cairo_pattern_add_color_stop_rgba(spec_pat, 1.0, 1.0, 1.0, 1.0, 0.0);
-            cairo_rectangle(cr, gx, gy, gw, 28.0);
-            cairo_set_source(cr, spec_pat);
-            cairo_fill(cr);
-            cairo_pattern_destroy(spec_pat);
-            cairo_restore(cr);
-        }
-
-        // F) Drag cue dots in center
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.50);
-        for (int d = -1; d <= 1; d++) {
-            cairo_arc(cr, gx + gw / 2.0 + d * 9.0, gy + gh / 2.0, 2.2, 0, 2 * G_PI);
-            cairo_fill(cr);
-        }
-
-        cairo_restore(cr);
-    }
-
-    // 4. Second Element (Right: Exact upstream glass shader from ryohsuke1231/liquid-glass)
-    double gx2 = width * 0.72 - gw / 2.0;
-    if (gx2 > width - gw - 16.0) gx2 = width - gw - 16.0;
-    if (gx2 < gx + gw + 12.0) gx2 = gx + gw + 12.0;
-    double gy2 = (height - gh) / 2.0;
-
-    draw_repo_glass_element(cr, bg, width, height, gx2, gy2, gw, gh, gr);
-
-    // Badges / Labels above each element
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
+    cairo_text_extents_t ext;
+    cairo_text_extents(cr, badge_text, &ext);
+    double bx = gx + (gw - ext.width) / 2.0;
+    double by = gy - 10.0;
+    if (by < 16.0) by = gy + gh + 18.0;
 
-    // Left label: "Наш передогляд"
-    cairo_text_extents_t ext1;
-    cairo_text_extents(cr, "Наш передогляд", &ext1);
-    double l1_x = gx + (gw - ext1.width) / 2.0;
-    double l1_y = gy - 9.0;
-    if (l1_y < 16.0) l1_y = gy + gh + 18.0;
-    draw_rounded_rect_path(cr, l1_x - 8.0, l1_y - 12.0, ext1.width + 16.0, 18.0, 9.0);
-    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.55);
+    draw_rounded_rect_path(cr, bx - 10.0, by - 12.0, ext.width + 20.0, 19.0, 9.5);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.58);
     cairo_fill(cr);
-    cairo_move_to(cr, l1_x, l1_y + 1.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-    cairo_show_text(cr, "Наш передогляд");
+    draw_rounded_rect_path(cr, bx - 10.0, by - 12.0, ext.width + 20.0, 19.0, 9.5);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.15);
+    cairo_set_line_width(cr, 0.8);
+    cairo_stroke(cr);
 
-    // Right label: "Шейдер з репо"
-    cairo_text_extents_t ext2;
-    cairo_text_extents(cr, "Шейдер з репо", &ext2);
-    double l2_x = gx2 + (gw - ext2.width) / 2.0;
-    double l2_y = gy2 - 9.0;
-    if (l2_y < 16.0) l2_y = gy2 + gh + 18.0;
-    draw_rounded_rect_path(cr, l2_x - 8.0, l2_y - 12.0, ext2.width + 16.0, 18.0, 9.0);
-    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.55);
-    cairo_fill(cr);
-    cairo_move_to(cr, l2_x, l2_y + 1.0);
+    cairo_move_to(cr, bx, by + 1.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-    cairo_show_text(cr, "Шейдер з репо");
+    cairo_show_text(cr, badge_text);
 
     // Outer preview border
     cairo_restore(cr);
@@ -1609,6 +1496,25 @@ void init_liquid_preview(void *widget, gpointer data) {
 }
 
 /* Group 2: Liquid Glass Callbacks */
+void init_liquid_shape(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    guint idx = (guint)CLAMP(state.liquid_shape, 0, 3);
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), idx);
+    in_init = 0;
+}
+
+void on_liquid_shape_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
+    if (in_init) return;
+    guint sel = adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    state.liquid_shape = (int)CLAMP((int)sel, 0, 3);
+    schedule_liquid_glass_apply();
+    redraw_liquid_preview();
+    schedule_json_save();
+}
+
 void init_liquid_refraction(void *widget, gpointer data) {
     (void)data;
     load_config();

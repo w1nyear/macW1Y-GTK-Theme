@@ -183,6 +183,24 @@
                       </object>
                     </child>
                     <child>
+                      <object class="AdwComboRow" id="liquid_shape_row">
+                        <property name="title">Форма скла</property>
+                        <property name="subtitle">Геометрія форми шейдера Liquid Glass</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>Заокруглений прямокутник</item>
+                              <item>Коло</item>
+                              <item>Капсула</item>
+                              <item>Сквіркл Apple</item>
+                            </items>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_liquid_shape"/>
+                        <signal name="notify::selected" handler="on_liquid_shape_changed"/>
+                      </object>
+                    </child>
+                    <child>
                       <object class="AdwActionRow" id="liquid_refraction_row">
                         <property name="title">Рефракція (заломлення)</property>
                         <child type="suffix">

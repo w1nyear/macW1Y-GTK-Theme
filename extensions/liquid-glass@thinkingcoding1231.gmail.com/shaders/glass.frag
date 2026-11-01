@@ -54,6 +54,12 @@ uniform float shadow_intensity;
 uniform float shadow_max_radius;
 uniform float padding;
 uniform float isDock;
+// Multi-shape geometry support:
+// 0 = Rounded Rectangle (sdRoundRect)
+// 1 = Circle (sdCircle)
+// 2 = Capsule (sdCapsule)
+// 3 = Squircle Apple (sdSquircle, superellipse with n=4.2)
+uniform float shape_type;
 
 // [PERF] Blurred sub-rect (actor-local px, same space as `pixel_coord` and
 // dock_x/y/w/h). Layer 1 no longer holds a blurred copy of the WHOLE actor;
@@ -186,6 +192,30 @@ float sdRoundRect(vec2 p, vec2 b, float r) {
     return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - r;
 }
 
+// Analytical Superellipse (Squircle) SDF for Apple-style icons and controls
+float sdSquircle(vec2 p, vec2 b, float n) {
+    vec2 ab = max(b, vec2(1.0));
+    vec2 q = abs(p) / ab;
+    float d_norm = pow(pow(q.x, n) + pow(q.y, n), 1.0 / n) - 1.0;
+    return d_norm * min(ab.x, ab.y);
+}
+
+// Unified multi-shape SDF:
+// 0: Rounded Rectangle
+// 1: Circle
+// 2: Capsule / Pill
+// 3: Squircle Apple (n = 4.2)
+float sdShape(vec2 p, vec2 b, float r, float shape) {
+    if (shape > 2.5) {
+        return sdSquircle(p, b, 4.2);
+    } else if (shape > 1.5) {
+        return sdRoundRect(p, b, min(b.x, b.y));
+    } else if (shape > 0.5) {
+        return length(p) - min(b.x, b.y);
+    }
+    return sdRoundRect(p, b, r);
+}
+
 // Exact analytical 2D triangle SDF
 float sdTriangle(vec2 p, vec2 p0, vec2 p1, vec2 p2) {
     vec2 e0 = p1 - p0, e1 = p2 - p1, e2 = p0 - p2;
@@ -206,9 +236,9 @@ float smin(float a, float b, float k) {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// Composite SDF: rounded rectangle with smooth popover arrow / beak
+// Composite SDF: multi-shape with smooth popover arrow / beak
 float sdPopover(vec2 p, vec2 b, float r, float side, float origin, float baseW, float rise, float tipR, float fillet) {
-    float d_box = sdRoundRect(p, b, r);
+    float d_box = sdShape(p, b, r, shape_type);
     if (side < 0.5 || rise <= 0.0) {
         return d_box;
     }
@@ -272,7 +302,7 @@ float findActiveRegion(vec2 pixel_coord, float pad, out vec2 outLocalPos, out ve
         vec2 actual_size = rSize - vec2(pad * 2.0);
         vec2 rBox = max(actual_size * 0.5, vec2(1.0));
 
-        float d = sdRoundRect(rLocal, rBox, corner_radius);
+        float d = sdShape(rLocal, rBox, corner_radius, shape_type);
         if (d < bestD) {
             bestD = d;
             outLocalPos = rLocal;
@@ -287,9 +317,8 @@ float findActiveRegion(vec2 pixel_coord, float pad, out vec2 outLocalPos, out ve
 
 // Normalizes the depth value based on the edge curvature.
 float normalizedDepth(float d, vec2 b, float r) {
-    // Limits the height build-up strictly to the pixel width defined by 'corner_radius'.
-    // This prevents the glass from curving endlessly towards the center.
-    float maxDepth = max(r, 1.0); 
+    // Limits the height build-up strictly to the pixel width defined by 'corner_radius' (or shape radius).
+    float maxDepth = (shape_type > 0.5) ? max(min(b.x, b.y), 1.0) : max(r, 1.0); 
     
     float interiorDepth = max(-d, 0.0);
     return clamp(interiorDepth / maxDepth, 0.0, 1.0);
@@ -307,7 +336,7 @@ float profileHeight(float t, float zScale) {
 
 // Computes the absolute height at a specific 2D coordinate.
 float getHeight(vec2 p, vec2 b, float r, float zScale) {
-    float d = (multi_region_mode > 0.5) ? sdRoundRect(p, b, r) : sdPopover(p, b, r, arrow_side, arrow_origin, arrow_base, arrow_rise, arrow_radius, arrow_fillet);
+    float d = (multi_region_mode > 0.5) ? sdShape(p, b, r, shape_type) : sdPopover(p, b, r, arrow_side, arrow_origin, arrow_base, arrow_rise, arrow_radius, arrow_fillet);
 
     // [FIX 1] Soft boundary fade instead of a hard step at d=0.
     // A hard "if (d > 0) return 0" causes a discontinuous jump in the height
@@ -324,9 +353,6 @@ float getHeight(vec2 p, vec2 b, float r, float zScale) {
 
     // Taper height continuously to zero as d approaches the boundary from inside,
     // and continue fading through the thin outer fringe (0 < d < smoothZone).
-    // [FIX] Same edge0>edge1 undefined-behavior pattern as insideMask/edgeBand
-    // above (harmless here in practice since the `d > smoothZone` guard above
-    // already bounds this call's domain, but corrected for consistency).
     float fade = 1.0 - smoothstep(-smoothZone, smoothZone, d);
     return h * fade;
 }
@@ -340,12 +366,6 @@ float gradientStep(vec2 resolution) {
 // Unit gradient of sdRoundRect() at p — i.e. the direction of steepest
 // increase of the signed distance, which for an SDF is simply "straight out
 // of the shape". Closed form, no sampling.
-//
-// This is the same construction the distance function itself is built from:
-// inside the cross (both q components negative) the nearest edge is whichever
-// axis is closest, so the gradient is that axis; in the corner quadrant the
-// distance is length(max(q, 0)) and its gradient is that vector normalized.
-// sign(p) mirrors the result back out of the abs() folded first quadrant.
 vec2 sdRoundRectDir(vec2 p, vec2 b, float r) {
     vec2 q = abs(p) - b + vec2(r);
     if (max(q.x, q.y) < 0.0) {
@@ -356,10 +376,29 @@ vec2 sdRoundRectDir(vec2 p, vec2 b, float r) {
     return sign(p) * normalize(max(q, 0.0) + vec2(1e-6));
 }
 
+// Unit gradient for multi-shapes:
+// 0: Rounded Rect
+// 1: Circle
+// 2: Capsule
+// 3: Squircle
+vec2 sdShapeDir(vec2 p, vec2 b, float r, float shape) {
+    if (shape > 2.5) {
+        float eps = 0.5;
+        float dx = sdSquircle(p + vec2(eps, 0.0), b, 4.2) - sdSquircle(p - vec2(eps, 0.0), b, 4.2);
+        float dy = sdSquircle(p + vec2(0.0, eps), b, 4.2) - sdSquircle(p - vec2(0.0, eps), b, 4.2);
+        return normalize(vec2(dx, dy) + vec2(1e-6));
+    } else if (shape > 1.5) {
+        return sdRoundRectDir(p, b, min(b.x, b.y));
+    } else if (shape > 0.5) {
+        return normalize(p + vec2(1e-6));
+    }
+    return sdRoundRectDir(p, b, r);
+}
+
 // Unit gradient of sdPopover() at p
 vec2 sdPopoverDir(vec2 p, vec2 b, float r, float side, float origin, float baseW, float rise, float tipR, float fillet) {
     if (side < 0.5 || rise <= 0.0) {
-        return sdRoundRectDir(p, b, r);
+        return sdShapeDir(p, b, r, shape_type);
     }
     float eps = 0.5;
     float dx = sdPopover(p + vec2(eps, 0.0), b, r, side, origin, baseW, rise, tipR, fillet)
@@ -370,38 +409,8 @@ vec2 sdPopoverDir(vec2 p, vec2 b, float r, float side, float origin, float baseW
 }
 
 // Height gradient of the glass surface at p.
-//
-// The height is a function of the signed distance alone — getHeight(p) is
-// profileHeight(t(d)) * fade(d) with d = sdRoundRect(p) — so by the chain
-// rule its gradient is
-//
-//     grad(H) = H'(d) * grad(d)
-//
-// and grad(d) is available in closed form from sdRoundRectDir() above. Only
-// the scalar H'(d) is left to estimate, which takes one central difference
-// ALONG that direction instead of two along each axis.
-//
-// [PERF] 4 getHeight() calls -> 2, i.e. 8 pow() -> 4 and 5 sdRoundRect() -> 3.
-// (Do not expect this to move the GPU needle: the earlyExit A/B measurement
-// showed this shader's arithmetic is a small fraction of the frame. The
-// reasons to do it are accuracy and deleting the fast_mode fork, which this
-// change removed outright.)
-//
-// [FIX] More accurate than the axis-aligned version it replaces, not just
-// cheaper. Differencing along x and y separately picks up the SDF's curvature
-// across the step, so the resulting vector was never exactly parallel to
-// grad(d) — most visible on rounded corners, where the two axes disagree
-// about the surface orientation. Differencing along the true gradient
-// direction cannot tilt the normal that way.
-//
-// H'(d) is NOT evaluated in closed form on purpose. It exists — but the
-// superellipse profile has an infinite slope at t = 0 (the surface is
-// vertical exactly at the glass edge; profileHeight's inner^(1/n) term has an
-// unbounded derivative there for n > 1). The finite difference is what keeps
-// that bounded, at a magnitude tied to gradientStep(), which is precisely the
-// smoothing the current look depends on.
 vec2 heightGradient(vec2 p, vec2 b, float r, float zScale, vec2 resolution) {
-    vec2 dir = (multi_region_mode > 0.5) ? sdRoundRectDir(p, b, r) : sdPopoverDir(p, b, r, arrow_side, arrow_origin, arrow_base, arrow_rise, arrow_radius, arrow_fillet);
+    vec2 dir = (multi_region_mode > 0.5) ? sdShapeDir(p, b, r, shape_type) : sdPopoverDir(p, b, r, arrow_side, arrow_origin, arrow_base, arrow_rise, arrow_radius, arrow_fillet);
     float e = gradientStep(resolution);
 
     float hOut = getHeight(p + dir * e, b, r, zScale);
@@ -499,7 +508,7 @@ vec4 panelFallback(vec2 pixel_coord, float coveredAlpha) {
     vec2 panelCenter = vec2(panel_rect_x, panel_rect_y) + vec2(panel_rect_w, panel_rect_h) * 0.5;
     vec2 panelLocal = pixel_coord - panelCenter;
     vec2 panelBox = max(vec2(panel_rect_w, panel_rect_h) * 0.5, vec2(1.0));
-    float panelDist = sdRoundRect(panelLocal, panelBox, corner_radius);
+    float panelDist = sdShape(panelLocal, panelBox, corner_radius, shape_type);
     float panelMask = 1.0 - smoothstep(-1.0, 1.0, panelDist);
 
     float contribution = panel_bg_a * (1.0 - coveredAlpha) * panelMask;
