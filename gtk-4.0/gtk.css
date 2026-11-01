@@ -3758,8 +3758,20 @@ switch {
 }
 
 switch:disabled {
-  filter: opacity(0.45);
+  opacity: 0.55;
   box-shadow: none;
+}
+
+switch:checked:disabled {
+  background-color: @accent_bg_color;
+  opacity: 0.55;
+}
+
+switch:disabled > slider,
+switch:checked:disabled > slider {
+  background-color: #ffffff;
+  opacity: 0.95;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20);
 }
 
 switch:hover {
@@ -4010,9 +4022,9 @@ scale > trough > slider:active {
 }
 
 scale > trough > slider:disabled {
-  background-color: mix(#ffffff,@view_bg_color,0.5);
-  border-color: alpha(alpha(currentColor,0.12),0.5);
-  box-shadow: none;
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.10);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 scale.horizontal > trough > slider,
@@ -11215,161 +11227,6 @@ window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top {
         transparent 100%);
 }
 
-
-/* =========================================================================
-   macOS Global Switches (Photo 4)
-   ========================================================================= */
-switch {
-  min-width: 36px;
-  min-height: 20px;
-  padding: 0;
-  border-radius: 9999px;
-  background-color: #36363a;
-  background-image: none;
-  border: none;
-  box-shadow: none;
-  outline: none;
-  transition: background-color 150ms ease-out;
-}
-
-switch:hover {
-  background-color: #424247;
-}
-
-switch:checked {
-  background-color: #007aff;
-  background-image: none;
-  border: none;
-  box-shadow: none;
-}
-
-switch:checked:hover {
-  background-color: #1a88ff;
-}
-
-switch:disabled {
-  opacity: 0.45;
-  box-shadow: none;
-}
-
-switch > slider {
-  min-width: 16px;
-  min-height: 16px;
-  margin: 2px;
-  padding: 0;
-  border-radius: 9999px;
-  background-color: #ffffff;
-  background-image: none;
-  border: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.20);
-  transition: margin 150ms cubic-bezier(0.16, 1, 0.3, 1),
-              background-color 150ms ease-out;
-}
-
-switch:checked > slider {
-  
-  background-color: #ffffff;
-  background-image: none;
-}
-
-switch:active > slider,
-switch > slider:active,
-switch:checked:active > slider,
-switch:checked > slider:active {
-  min-width: 16px;
-  min-height: 16px;
-  background-color: #ffffff;
-  background-image: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.40);
-}
-
-/* =========================================================================
-   macOS Global Sliders / Scales (Photo 5)
-   ========================================================================= */
-scale {
-  min-height: 24px;
-  min-width: 24px;
-  padding: 4px;
-}
-
-scale > trough {
-  min-height: 4px;
-  border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 0.16);
-  background-image: none;
-  border: none;
-  box-shadow: none;
-}
-
-scale > trough > highlight {
-  min-height: 4px;
-  border-radius: 9999px;
-  background-color: #007aff;
-  background-image: none;
-  border: none;
-  box-shadow: none;
-}
-
-scale.horizontal > trough > slider,
-scale > trough > slider {
-  min-width: 22px;
-  min-height: 14px;
-  margin: -5px -11px;
-  border-radius: 9999px;
-  background-color: #ffffff;
-  background-image: none;
-  border: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.20);
-  transition: box-shadow 150ms ease-out;
-}
-
-scale.horizontal > trough > slider:hover,
-scale > trough > slider:hover {
-  background-color: #ffffff;
-  background-image: none;
-  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.25);
-}
-
-scale.horizontal > trough > slider:active,
-scale > trough > slider:active {
-  min-width: 22px;
-  min-height: 14px;
-  margin: -5px -11px;
-  background-color: #ffffff;
-  background-image: none;
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.50), 0 1px 3px rgba(0, 0, 0, 0.30);
-}
-
-scale.vertical > trough {
-  min-width: 4px;
-}
-
-scale.vertical > trough > highlight {
-  min-width: 4px;
-  background-color: #007aff;
-}
-
-scale.vertical > trough > slider {
-  min-width: 14px;
-  min-height: 22px;
-  margin: -11px -5px;
-  border-radius: 9999px;
-  background-color: #ffffff;
-  background-image: none;
-  border: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.20);
-}
-
-scale.vertical > trough > slider:active {
-  min-width: 14px;
-  min-height: 22px;
-  margin: -11px -5px;
-  background-color: #ffffff;
-  background-image: none;
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.50);
-}
 
 /* =========================================================================
    macOS Settings Navigation Buttons (Photo 2 / Photo 3)
