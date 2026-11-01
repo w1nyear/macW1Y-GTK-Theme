@@ -8187,7 +8187,7 @@ preferencesgroup > box > box.header:not(.single-line) {
 }
 
 preferencesgroup > box > box.single-line {
-  min-height: 34px;
+  min-height: 35px;
 }
 
 preferencesgroup > box grid > box > switch {

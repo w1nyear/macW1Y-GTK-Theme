@@ -13971,3 +13971,22 @@ macW1Y 0.4 — Оптимізація компонування Параметр�
    - Гаряче оновлено live-екземпляр GNOME Shell через D-Bus без перезапуску сесії користувача.
    - `mac-extension-guard verify`: SUCCESS (усі 21 розширення заблоковано та верифіковано).
    - `mac-audit-sync check`: 100% PASS.
+
+================================================================================
+ЗМІНИ: ЗБІЛЬШЕННЯ ВИСОТИ ПУНКТІВ У ПАРАМЕТРАХ НА 1 ПІКСЕЛЬ ТА ЄДИНА ВИСОТА ВСЮДИ
+================================================================================
+1. Точне калібрування висоти рядків у Параметрах (GNOME Control Center):
+   - У `gnome-control-center-overlay/libmac_settings.c` та `control-center/libmac_settings.c`:
+     * Збільшено `min-height` з 34px до 35px для всіх типів рядків карток налаштувань (`adwactionrow`, `adwswitchrow`, `adwcomborow`, `adwentryrow`, `adwexpanderrow`, `adwspinrow`, `cclistrow`, `ccwificonnectionrow`, `preferencespage row.button`, тощо) та їхніх заголовків `box.header`.
+     * Додано явне правило для `ccwificonnectionrow` та `checkbutton`, щоб елементи мережевих списків та чекбокси мали однаковий розмір і не деформували геометрію рядків.
+   - У `config/gtk-4.0/gtk.css`, `config/gtk-4.0/gtk-Dark.css`, `config/gtk-4.0/gtk-Light.css` та у `~/.config/gtk-4.0/`:
+     * Оновлено `min-height: 35px;` для `preferencesgroup > box > box.single-line` та `window.mac-settings-window` списків.
+   - Перекомпільовано динамічну бібліотеку `libmac_settings.so` та синхронізовано в усі 7 локацій.
+
+2. Інструментальна перевірка та вимірювання (Subpixel & Border Analysis):
+   - Зафіксовано точні координати меж рядків у панелі Wi-Fi (Card 1: Wi-Fi/Saved/Hidden/Hotspot, Card 2: Airplane mode, Card 3: Visible networks).
+   - Кожен рядок збільшився рівно на 1 піксель (з 35px до 36px повної висоти з урахуванням 1px бордера), забезпечуючи абсолютно однакову висоту 36px для кожного пункту меню налаштувань.
+
+3. Аудит та цілісність:
+   - `mac-extension-guard verify`: SUCCESS (21/21 розширень заблоковано).
+   - `mac-audit-sync check`: 100% PASS.

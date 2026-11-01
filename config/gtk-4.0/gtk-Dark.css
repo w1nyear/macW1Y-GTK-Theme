@@ -8240,7 +8240,7 @@ preferencesgroup > box > box.header:not(.single-line) {
 }
 
 preferencesgroup > box > box.single-line {
-  min-height: 34px;
+  min-height: 35px;
 }
 
 preferencesgroup > box grid > box > switch {
@@ -11520,11 +11520,12 @@ window.mac-settings-window adwentryrow,
 window.mac-settings-window adwexpanderrow,
 window.mac-settings-window adwspinrow,
 window.mac-settings-window cclistrow,
+window.mac-settings-window ccwificonnectionrow,
 window.mac-settings-window preferencespage row.button,
 window.mac-settings-window #add_user_button_row,
 window.mac-settings-window #add_enterprise_user_button_row,
 window.mac-settings-window list.boxed-list row.expander row.header {
-  min-height: 34px;
+  min-height: 35px;
   padding: 0px 14px;
   margin: 0px;
   border-bottom: none;
@@ -11536,8 +11537,9 @@ window.mac-settings-window adwactionrow > box.header,
 window.mac-settings-window adwswitchrow > box.header,
 window.mac-settings-window adwcomborow > box.header,
 window.mac-settings-window adwentryrow > box.header,
-window.mac-settings-window cclistrow > box.header {
-  min-height: 34px;
+window.mac-settings-window cclistrow > box.header,
+window.mac-settings-window ccwificonnectionrow > box.header {
+  min-height: 35px;
   margin: 0px;
   padding: 0px;
   border-spacing: 10px;
