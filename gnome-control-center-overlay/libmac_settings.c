@@ -2985,24 +2985,34 @@ static double get_sidebar_panel_rank(GtkListBoxRow *row) {
     return 500.0;
 }
 
+static gboolean is_sidebar_group_start_id(const char *id) {
+    if (!id) return FALSE;
+    if (g_strcmp0(id, "system") == 0) return TRUE;        /* Початок Групи 2 (Системні параметри) */
+    if (g_strcmp0(id, "notifications") == 0) return TRUE; /* Початок Групи 3 (Звук і сповіщення) */
+    if (g_strcmp0(id, "applications") == 0) return TRUE;  /* Початок Групи 4 (Різне) */
+    return FALSE;
+}
+
 static void update_sidebar_group_spacing(GtkListBox *listbox) {
     if (!listbox) return;
-    int prev_group = 0;
     for (int i = 0; ; i++) {
         GtkListBoxRow *row = gtk_list_box_get_row_at_index(listbox, i);
         if (!row) break;
+
+        /* Примусово прибираємо будь-які GtkSeparator хедери, встановлені GNOME */
+        gtk_list_box_row_set_header(row, NULL);
+
         if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
-            prev_group = 0;
+            gtk_widget_remove_css_class(GTK_WIDGET(row), "mac-sidebar-group-start");
             continue;
         }
+
         const char *id = get_sidebar_row_panel_id(row);
-        int group = get_sidebar_panel_group(id);
-        if (group > prev_group && prev_group > 0) {
+        if (is_sidebar_group_start_id(id)) {
             gtk_widget_add_css_class(GTK_WIDGET(row), "mac-sidebar-group-start");
         } else {
             gtk_widget_remove_css_class(GTK_WIDGET(row), "mac-sidebar-group-start");
         }
-        if (group > 0) prev_group = group;
     }
 }
 
@@ -3084,6 +3094,46 @@ void gtk_list_box_set_sort_func(GtkListBox *box,
 
     if (orig_set_sort_func) {
         orig_set_sort_func(box, sort_func, user_data, destroy);
+    }
+}
+
+void gtk_list_box_set_header_func(GtkListBox *box,
+                                  GtkListBoxUpdateHeaderFunc update_header,
+                                  gpointer user_data,
+                                  GDestroyNotify destroy)
+{
+    static void (*orig_set_header_func)(GtkListBox *, GtkListBoxUpdateHeaderFunc, gpointer, GDestroyNotify) = NULL;
+    if (!orig_set_header_func) orig_set_header_func = dlsym(RTLD_NEXT, "gtk_list_box_set_header_func");
+
+    const char *id = (box && GTK_IS_BUILDABLE(box)) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(box)) : NULL;
+    const char *name = (box && GTK_IS_WIDGET(box)) ? gtk_widget_get_name(GTK_WIDGET(box)) : NULL;
+
+    gboolean is_sidebar_main_list = FALSE;
+    if ((id && g_strcmp0(id, "main_listbox") == 0) ||
+        (name && g_strcmp0(name, "main_listbox") == 0)) {
+        is_sidebar_main_list = TRUE;
+    } else if (box && GTK_IS_WIDGET(box)) {
+        GType plist_type = g_type_from_name("CcPanelList");
+        if (plist_type != 0 && gtk_widget_get_ancestor(GTK_WIDGET(box), plist_type) != NULL) {
+            if (gtk_widget_has_css_class(GTK_WIDGET(box), "navigation-sidebar")) {
+                if ((!id || g_strcmp0(id, "search_listbox") != 0) &&
+                    (!name || g_strcmp0(name, "search_listbox") != 0)) {
+                    is_sidebar_main_list = TRUE;
+                }
+            }
+        }
+    }
+
+    if (is_sidebar_main_list) {
+        /* Disallow GNOME's hardcoded category separators inside macOS sidebar */
+        if (orig_set_header_func) {
+            orig_set_header_func(box, NULL, NULL, NULL);
+        }
+        return;
+    }
+
+    if (orig_set_header_func) {
+        orig_set_header_func(box, update_header, user_data, destroy);
     }
 }
 
@@ -4196,6 +4246,16 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window list.mac-settings-sidebar-list row.mac-sidebar-group-start, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row.mac-sidebar-group-start { "
         "  margin-top: 14px; "
+        "} "
+        "window.mac-settings-window list.mac-settings-sidebar-list separator, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar separator, "
+        "window.mac-settings-window list.mac-settings-sidebar-list > separator, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar > separator { "
+        "  min-height: 0px; "
+        "  min-width: 0px; "
+        "  margin: 0px; "
+        "  padding: 0px; "
+        "  opacity: 0; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) image, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) image { "
@@ -6040,7 +6100,9 @@ static gboolean mac_fix_settings_window(gpointer user_data)
 
         if (!g_object_get_data(G_OBJECT(main_listbox), "mac_listbox_connected")) {
             gtk_list_box_set_sort_func(main_listbox, mac_main_listbox_sort_func, NULL, NULL);
+            gtk_list_box_set_header_func(main_listbox, NULL, NULL, NULL);
             gtk_list_box_invalidate_sort(main_listbox);
+            gtk_list_box_invalidate_headers(main_listbox);
 
             g_signal_connect(main_listbox, "row-activated", G_CALLBACK(on_main_listbox_row_activated), split_view);
             g_signal_connect(main_listbox, "notify::selected-row", G_CALLBACK(on_main_listbox_selected_row_changed), split_view);
