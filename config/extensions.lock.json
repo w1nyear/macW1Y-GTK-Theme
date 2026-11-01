@@ -372,14 +372,14 @@
         "49",
         "50"
       ],
-      "sha256": "77044defdc5af317836c0be1af17a0c174cb512a2b98ddefe33e6929b3298547",
+      "sha256": "8f1f1bfb86f5a24dddbb36773e205da1fede94970623fa366dcc58e0fd8f262c",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
         "sonoma_lockscreen_clock"
       ],
-      "has_custom_patches": false,
-      "patch_description": "Upstream verified",
+      "has_custom_patches": true,
+      "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575)",
       "last_verified": "2026-10-27"
     },
     "wifi-hotspot-quick-settings@aryan10.github.io": {

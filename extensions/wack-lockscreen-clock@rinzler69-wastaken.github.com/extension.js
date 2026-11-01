@@ -45,6 +45,7 @@ import { ClockLayoutManager } from './src/main/clockLayoutManager.js';
 import { ThemeManager } from './src/main/themeManager.js';
 import { CupertinoPromptManager } from './src/main/cupertinoPromptManager.js';
 import { UnlockDialogController } from './src/main/unlockDialogController.js';
+import { ScreenShieldCurtainManager } from './src/main/curtainManager.js';
 
 export default class WackLockscreenClockExtension extends Extension {
     get _promptActive() {
@@ -132,6 +133,9 @@ export default class WackLockscreenClockExtension extends Extension {
         }).catch(() => {});
 
         if (Main.screenShield) {
+            this._curtainManager = new ScreenShieldCurtainManager(this);
+            this._curtainManager.install(Main.screenShield);
+
             this._origEnsureUnlockDialog = Main.screenShield._ensureUnlockDialog;
             Main.screenShield._ensureUnlockDialog = (allowCancel) => {
                 const res = this._origEnsureUnlockDialog.call(Main.screenShield, allowCancel);
@@ -1135,6 +1139,11 @@ export default class WackLockscreenClockExtension extends Extension {
     }
 
     disable() {
+        if (this._curtainManager && Main.screenShield) {
+            this._curtainManager.uninstall(Main.screenShield);
+            this._curtainManager = null;
+        }
+
         if (this._origEnsureUnlockDialog && Main.screenShield) {
             Main.screenShield._ensureUnlockDialog = this._origEnsureUnlockDialog;
             this._origEnsureUnlockDialog = null;

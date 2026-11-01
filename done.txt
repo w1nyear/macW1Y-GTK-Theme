@@ -14397,3 +14397,36 @@ macW1Y 0.4 — Оптимізація компонування Параметр�
    - Знімки екрана `dock_nosquircle_crop.png` та `file_menu_crop_wide.png` підтверджують:
      * Док має ідеально рівні паралельні верхню та нижню лінії без прогинів та овала, з чистим радіусом заокруглення 28px.
      * Меню (AppMenu / панельні контекстні меню) мають ідеально вертикальні бічні краї без дугоподібних викривлень.
+
+
+================================================================================
+Task 575: Усунення виїжджаючої шторки (Curtain Slide) та затемнення екрана під час закриття/відкриття
+================================================================================
+1. Проблема та вимоги користувача:
+   - Під час закриття чи відкриття екрана ноутбука (або блокування/розблокування) знизу доверху екрана на весь дисплей виїжджав темний напівпрозорий елемент ("шторка"), який притемняв зображення.
+   - Усунути цей ефект, забезпечивши автентичну поведінку macOS: плоске миттєве або плавне згасання (fade-in / fade-out) без переміщення шторки вздовж осі Y та без затемнення робочого столу віньєткою.
+
+2. Аналіз та першопричина:
+   - У стандартному механізмі ScreenShield GNOME Shell (screenShield.js):
+     * При розблокуванні / деактивації (deactivate / _continueDeactivate) запускалася анімація підняття шторки this._lockDialogGroup.ease({ translation_y: -global.screen_height }). Оскільки контейнер _lockDialogGroup покриває весь екран і містить UnlockDialog із затемненим фоном, його рух від 0 до -height візуально виглядав як темна напівпрозора пластина, що ковзає знизу доверху по всьому екрану.
+     * Аналогічний рух викликався у _hideLockScreen(animate) через translation_y: -height зі швидкістю CURTAIN_SLIDE_TIME.
+     * При блокуванні / вході в сон (_resetLockScreen) шторка переміщалася з translation_y = -global.screen_height до 0.
+     * Компоненти _shortLightbox та _longLightbox накладали на Main.uiGroup темний шейдер-віньєтку через _activateFade.
+
+3. Реалізовані зміни:
+   - Створено модуль керування шторкою src/main/curtainManager.js (ScreenShieldCurtainManager):
+     * Перехоплено Main.screenShield._continueDeactivate: повністю скасовано анімацію translation_y: -global.screen_height, жорстко зафіксовано translation_y = 0, реалізовано чистий opacity: 0 fade на місці.
+     * Перехоплено Main.screenShield._hideLockScreen: усунено підняття translation_y: -height, зафіксовано translation_y = 0.
+     * Перехоплено Main.screenShield._resetLockScreen: усунено початковий зсув translation_y = -global.screen_height, зафіксовано translation_y = 0 та плавний fade-in opacity: 0 -> 255.
+     * Перехоплено Main.screenShield._activateFade: заблоковано накладання затемнюючого шейдера віньєтки (_shortLightbox / _longLightbox), якщо gdm-background-dimmer вимкнено (режим macOS).
+   - Інтеграція в розширення extension.js:
+     * Модуль ScreenShieldCurtainManager монтується на Main.screenShield під час enable() і чисто демонтується під час disable().
+   - Оновлення менеджера пробудження src/main/unblank.js:
+     * У _patchedActivateFade додано перевірку вимкненого диммера фону, щоб усунути затемнення при ручному та автоматичному таймері пробудження.
+     * У _onUserActive() додано примусове скидання непрозорості та приховування _shortLightbox і _longLightbox.
+   - Синхронізація розширення та цілісність:
+     * Скопійовано оновлені файли у ~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/.
+     * Оновлено хеш SHA256 у config/extensions.lock.json (8f1f1bfb86f5a24dddbb36773e205da1fede94970623fa366dcc58e0fd8f262c).
+     * mac-extension-guard verify: SUCCESS (усі 21 розширення пройшли цілісність).
+     * mac-audit-sync check: 100% PASS (5/5 модулів синхронізовані).
+     * Гаряче активовано ScreenShieldCurtainManager у живому сеансі GNOME Shell через EvalHelper без виходу із сесії.

@@ -80,6 +80,16 @@ export class UnblankManager {
     // Only intercept the short lightbox triggered after manual lock.
     // The long lightbox (idle session fade) runs normally — gsd owns that path.
     _patchedActivateFade(lightbox, time) {
+        const dimmerEnabled = this._settings?.get_boolean('gdm-background-dimmer') ?? false;
+        if (!dimmerEnabled) {
+            if (lightbox) {
+                lightbox.remove_all_transitions();
+                lightbox.opacity = 0;
+                lightbox.hide();
+            }
+            return;
+        }
+
         if (lightbox !== Main.screenShield._shortLightbox || !Main.screenShield._isLocked) {
             this._originalActivateFade(lightbox, time);
             return;
@@ -105,6 +115,10 @@ export class UnblankManager {
         if (Main.screenShield._isLocked) {
             Main.screenShield._longLightbox.lightOff();
             Main.screenShield._shortLightbox.lightOff();
+            Main.screenShield._longLightbox.opacity = 0;
+            Main.screenShield._shortLightbox.opacity = 0;
+            Main.screenShield._longLightbox.hide();
+            Main.screenShield._shortLightbox.hide();
             if (this._extension && this._extension._isActive && Main.screenShield.active) {
                 this._extension._updateClockAlphaAndPromptColor();
             }
@@ -134,8 +148,11 @@ export class UnblankManager {
 
         this._timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, delay, () => {
             this._timerId = 0;
-            // Hand off to upstream — let the original fade + gsd take over
-            this._originalActivateFade(Main.screenShield._shortLightbox, MANUAL_FADE_TIME);
+            const dimmerEnabled = this._settings?.get_boolean('gdm-background-dimmer') ?? false;
+            if (dimmerEnabled) {
+                // Hand off to upstream — let the original fade + gsd take over
+                this._originalActivateFade(Main.screenShield._shortLightbox, MANUAL_FADE_TIME);
+            }
             return GLib.SOURCE_REMOVE;
         });
     }
