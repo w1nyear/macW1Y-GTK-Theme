@@ -231,9 +231,6 @@ window toolbarview > revealer.top-bar,
 window toolbarview > .top-bar.raised,
 window toolbarview > .top-bar.raised.border,
 window .top-bar,
-window.mac-settings-window toolbarview > .top-bar,
-window.mac-settings-window toolbarview > .top-bar.flat,
-window.mac-settings-window toolbarview > revealer.top-bar,
 navigation-split-view toolbarview > .top-bar,
 overlay-split-view toolbarview > .top-bar,
 window.nautilus-window .content-pane toolbarview > .top-bar,
@@ -253,6 +250,35 @@ headerbar.default-decoration {
   border: none;
   border-bottom: none;
   box-shadow: none;
+}
+
+/* Settings top bar and headerbars are strictly transparent so list dissolution shader is visible */
+window.mac-settings-window toolbarview > .top-bar,
+window.mac-settings-window toolbarview > .top-bar.flat,
+window.mac-settings-window toolbarview > .top-bar.raised,
+window.mac-settings-window toolbarview > .top-bar.raised.border,
+window.mac-settings-window toolbarview > revealer.top-bar,
+window.mac-settings-window headerbar,
+window.mac-settings-window headerbar.flat,
+window.mac-settings-window headerbar.default-decoration,
+window.mac-settings-window .mac-settings-content-headerbar,
+window.mac-settings-window .mac-settings-content-headerbar.has-view-switcher,
+window.mac-settings-window .mac-settings-switcher-headerbar,
+window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+window.mac-settings-window .mac-panel-title-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-left: 4px;
+  margin-top: 3px;
 }
 
 window toolbarview > .top-bar headerbar,
