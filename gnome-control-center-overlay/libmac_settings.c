@@ -4769,7 +4769,7 @@ static void init_mac_settings_css(void) {
         "  background: transparent; "
         "  border: none; "
         "  box-shadow: none; "
-        "  padding: 4px 10px 4px 10px; "
+        "  padding: 4px 12px 4px 2px; "
         "} "
         "window.mac-settings-window .mac-settings-sidebar searchbar > revealer > box { "
         "  background: transparent; "
