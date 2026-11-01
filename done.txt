@@ -14430,3 +14430,42 @@ Task 575: Усунення виїжджаючої шторки (Curtain Slide) �
      * mac-extension-guard verify: SUCCESS (усі 21 розширення пройшли цілісність).
      * mac-audit-sync check: 100% PASS (5/5 модулів синхронізовані).
      * Гаряче активовано ScreenShieldCurtainManager у живому сеансі GNOME Shell через EvalHelper без виходу із сесії.
+
+================================================================================
+Task 576: Додавання групи «Док» у панель «Мак стилізація» (Затемнення, Розмиття, Тінь доку)
+================================================================================
+1. Вимоги користувача:
+   - В панель параметрів «Мак стилізація» додати групу «dock» (Док), де користувач може змінювати:
+     * Затемнення доку (dock tint: 0 - 100%)
+     * Розмиття доку (dock blur: 0 - 50 px)
+     * Тінь доку (dock shadow: 0 - 100%)
+   - Забезпечити повну взаємодію в реальному часі, збереження налаштувань у ~/.config/mac-styling/styling.json та захист параметрів дока від скидання під час налаштування Liquid Glass.
+
+2. Реалізовані зміни:
+   - Оновлення розмітки інтерфейсу GtkBuilder (cc-system-panel.ui):
+     * Додано групу AdwPreferencesGroup id="dock_group" із заголовком «Док» та описом «Параметри затемнення, розмиття та тіні нижньої панелі Док».
+     * Додано три інтерактивні повзунки GtkScale:
+       - dock_tint_scale (Затемнення, діапазон 0..100%, кроки 1, з обробниками init_dock_tint та on_dock_tint_changed).
+       - dock_blur_scale (Розмиття, діапазон 0..50 px, кроки 1, з обробниками init_dock_blur та on_dock_blur_changed).
+       - dock_shadow_scale (Тінь доку, діапазон 0..100%, кроки 1, з обробниками init_dock_shadow та on_dock_shadow_changed).
+     * Синхронізовано cc-system-panel.ui у gnome-control-center-overlay/, control-center/, /usr/share/mactheme/gnome-control-center-overlay/ та ~/.local/share/gnome-control-center-overlay/.
+   - Реалізація бекенду та сигналів (libmac_settings.c):
+     * Оновлено структуру MacStylingData: додано dock_tint, dock_blur, dock_shadow.
+     * У load_config() реалізовано зчитування dock_tint, dock_blur (з підтримкою як цілих значень, так і fallback на dock_sigma/булеві прапорці) та dock_shadow.
+     * У save_styling_json() реалізовано збереження dock_tint, dock_blur, dock_shadow та dock_sigma в ~/.config/mac-styling/styling.json.
+     * Створено apply_dock_settings() та schedule_dock_apply() із дебаунсингом:
+       - liquid-glass: dock-blur-radius, dock-tint-strength, dock-brightness, shadow-intensity.
+       - blur-my-shell.dash-to-dock: sigma, brightness.
+     * В apply_liquid_glass() вилучено параметри дока із загального циклу та зафіксовано збереження індивідуальних параметрів дока state.dock_blur, state.dock_tint та state.dock_shadow, щоб зміна загального шейдера скла не скидала налаштування дока.
+     * Реалізовано функції зворотного виклику init_dock_tint, on_dock_tint_changed, init_dock_blur, on_dock_blur_changed, init_dock_shadow, on_dock_shadow_changed.
+   - Компіляція та синхронізація бібліотеки:
+     * Перекомпільовано libmac_settings.so з оптимізацією -O2.
+     * Синхронізовано бібліотеку в усі 7 цільових локацій: control-center/, gnome-control-center-overlay/, lib/, /usr/lib/x86_64-linux-gnu/, /usr/local/lib/, ~/.local/lib/, /usr/share/mactheme/gnome-control-center-overlay/.
+     * Оновлено конфігураційні шаблони config/mac-styling/styling.json та config/styling.json.
+
+3. Верифікація та результати:
+   - mac-audit-sync check: 100% PASS (усі 5 модулів, бібліотеки та конфігурації повністю синхронізовані).
+   - mac-extension-guard verify: SUCCESS (21/21 керованих розширень валідні).
+   - Символи перевірено динамічним завантаженням через ctypes.
+   - Тестовий запуск gnome-control-center пройшов чисто без критичних помилок чи вад GtkBuilder.
+

@@ -43,10 +43,13 @@ typedef struct {
     int widget_tint;    /* 0 - 100 % */
     int widget_shadow;  /* 0 - 100 % */
 
+    /* Group: Dock */
+    int dock_tint;      /* 0 - 100 % */
+    int dock_blur;      /* 0 - 50 px */
+    int dock_shadow;    /* 0 - 100 % */
+
     /* Legacy fields for backward compatibility */
-    int dock_blur;
     int dock_sigma;
-    double dock_tint;
     int dock_radius;
     int panel_blur;
     int panel_sigma;
@@ -60,6 +63,8 @@ typedef struct {
 } MacStylingData;
 
 static void apply_widget_settings(void);
+static void apply_dock_settings(void);
+static void schedule_dock_apply(void);
 
 static MacStylingData state = {
     .menubar_tint = 30,
@@ -73,6 +78,10 @@ static MacStylingData state = {
     .liquid_rim = 40,
     .liquid_specular = 10,
     .liquid_shadow = 49,
+
+    .dock_tint = 15,
+    .dock_blur = 9,
+    .dock_shadow = 30,
 
     .spotlight_blur = 18,
     .spotlight_tint = 15,
@@ -90,9 +99,7 @@ static MacStylingData state = {
     .widget_tint = 35,
     .widget_shadow = 35,
 
-    .dock_blur = 1,
-    .dock_sigma = 30,
-    .dock_tint = 0.29,
+    .dock_sigma = 9,
     .dock_radius = 28,
 
     .panel_blur = 1,
@@ -256,13 +263,47 @@ static void load_config(void) {
             else
                 state.widget_shadow = 35;
 
+            /* Group: Dock */
+            if (json_object_has_member(obj, "dock_tint")) {
+                JsonNode *node = json_object_get_member(obj, "dock_tint");
+                if (json_node_get_value_type(node) == G_TYPE_INT64) {
+                    state.dock_tint = (int)json_node_get_int(node);
+                } else if (json_node_get_value_type(node) == G_TYPE_DOUBLE) {
+                    double d = json_node_get_double(node);
+                    state.dock_tint = (d <= 1.0) ? (int)round(d * 100.0) : (int)round(d);
+                }
+            } else {
+                state.dock_tint = 15;
+            }
+
+            if (json_object_has_member(obj, "dock_blur")) {
+                JsonNode *node = json_object_get_member(obj, "dock_blur");
+                if (json_node_get_value_type(node) == G_TYPE_INT64) {
+                    state.dock_blur = (int)json_node_get_int(node);
+                } else if (json_node_get_value_type(node) == G_TYPE_BOOLEAN) {
+                    if (json_object_has_member(obj, "dock_sigma")) {
+                        state.dock_blur = (int)json_object_get_int_member(obj, "dock_sigma");
+                    } else {
+                        state.dock_blur = json_node_get_boolean(node) ? 9 : 0;
+                    }
+                }
+            } else if (json_object_has_member(obj, "dock_sigma")) {
+                state.dock_blur = (int)json_object_get_int_member(obj, "dock_sigma");
+            } else {
+                state.dock_blur = 9;
+            }
+
+            if (json_object_has_member(obj, "dock_shadow")) {
+                state.dock_shadow = (int)json_object_get_int_member(obj, "dock_shadow");
+            } else {
+                state.dock_shadow = 30;
+            }
+
             /* Legacy */
-            if (json_object_has_member(obj, "dock_blur"))
-                state.dock_blur = json_object_get_boolean_member(obj, "dock_blur");
             if (json_object_has_member(obj, "dock_sigma"))
                 state.dock_sigma = (int)json_object_get_int_member(obj, "dock_sigma");
-            if (json_object_has_member(obj, "dock_tint"))
-                state.dock_tint = json_object_get_double_member(obj, "dock_tint");
+            else
+                state.dock_sigma = state.dock_blur;
             if (json_object_has_member(obj, "dock_radius"))
                 state.dock_radius = (int)json_object_get_int_member(obj, "dock_radius");
 
@@ -304,7 +345,7 @@ static void save_styling_json(void) {
     char dock_tint_buf[16];
     char panel_tint_buf[16];
     char notif_tint_buf[16];
-    g_ascii_formatd(dock_tint_buf, sizeof(dock_tint_buf), "%.2f", (double)state.blur_tint / 100.0);
+    g_ascii_formatd(dock_tint_buf, sizeof(dock_tint_buf), "%.2f", (double)state.dock_tint / 100.0);
     g_ascii_formatd(panel_tint_buf, sizeof(panel_tint_buf), "%.2f", (double)state.menubar_tint / 100.0);
     g_ascii_formatd(notif_tint_buf, sizeof(notif_tint_buf), "%.2f", (double)state.blur_tint / 100.0);
 
@@ -320,6 +361,9 @@ static void save_styling_json(void) {
         "  \"liquid_rim\": %d,\n"
         "  \"liquid_specular\": %d,\n"
         "  \"liquid_shadow\": %d,\n"
+        "  \"dock_tint\": %d,\n"
+        "  \"dock_blur\": %d,\n"
+        "  \"dock_shadow\": %d,\n"
         "  \"spotlight_blur\": %d,\n"
         "  \"spotlight_tint\": %d,\n"
         "  \"spotlight_shadow\": %d,\n"
@@ -332,9 +376,7 @@ static void save_styling_json(void) {
         "  \"widget_blur\": %d,\n"
         "  \"widget_tint\": %d,\n"
         "  \"widget_shadow\": %d,\n"
-        "  \"dock_blur\": %s,\n"
         "  \"dock_sigma\": %d,\n"
-        "  \"dock_tint\": %s,\n"
         "  \"dock_radius\": %d,\n"
         "  \"panel_blur\": %s,\n"
         "  \"panel_sigma\": %d,\n"
@@ -355,6 +397,9 @@ static void save_styling_json(void) {
         state.liquid_rim,
         state.liquid_specular,
         state.liquid_shadow,
+        state.dock_tint,
+        state.dock_blur,
+        state.dock_shadow,
         state.spotlight_blur,
         state.spotlight_tint,
         state.spotlight_shadow,
@@ -367,9 +412,7 @@ static void save_styling_json(void) {
         state.widget_blur,
         state.widget_tint,
         state.widget_shadow,
-        (state.blur_sigma > 0) ? "true" : "false",
-        state.blur_sigma,
-        dock_tint_buf,
+        state.dock_blur,
         28,
         (state.menubar_blur > 0) ? "true" : "false",
         state.menubar_blur,
@@ -490,9 +533,8 @@ static void apply_liquid_glass(void) {
     double rim = (double)state.liquid_rim / 100.0;
     double specular = (double)state.liquid_specular / 100.0;
 
-    /* Base Liquid Glass blur for dock, quick-settings, notifications, applications, osd */
+    /* Base Liquid Glass blur for quick-settings, notifications, applications, osd */
     const char *blur_keys[] = {
-        "dock-blur-radius",
         "quick-settings-blur-radius",
         "notification-blur-radius",
         "application-blur-radius",
@@ -504,9 +546,8 @@ static void apply_liquid_glass(void) {
         safe_set_int(lg, schema, blur_keys[i], radius);
     }
 
-    /* Base Liquid Glass tint for dock, quick-settings, notifications, applications, osd */
+    /* Base Liquid Glass tint for quick-settings, notifications, applications, osd */
     const char *tint_keys[] = {
-        "dock-tint-strength",
         "quick-settings-tint-strength",
         "quick-settings-toggle-tint-strength",
         "notification-tint-strength",
@@ -526,6 +567,17 @@ static void apply_liquid_glass(void) {
     safe_set_double(lg, schema, "glass-chroma-strength", chroma);
     safe_set_double(lg, schema, "glass-rim-intensity", rim);
     safe_set_double(lg, schema, "glass-specular-intensity", specular);
+
+    /* Preserve Dock configuration (from Dock group) - do not stomp with liquid_* values */
+    safe_set_int(lg, schema, "dock-blur-radius", state.dock_blur);
+    double dock_tint_val = (double)state.dock_tint / 100.0;
+    if (dock_tint_val < 0.0) dock_tint_val = 0.0;
+    if (dock_tint_val > 1.0) dock_tint_val = 1.0;
+    safe_set_double(lg, schema, "dock-tint-strength", dock_tint_val);
+    double dock_brightness = 1.0 - (dock_tint_val * 0.5);
+    if (dock_brightness < 0.2) dock_brightness = 0.2;
+    if (dock_brightness > 1.0) dock_brightness = 1.0;
+    safe_set_double(lg, schema, "dock-brightness", dock_brightness);
 
     /* Preserve Context Menu configuration (from Group 4) - do not stomp with liquid_* values */
     int menu_radius = (state.menu_blur > 0) ? (int)round((double)state.menu_blur * 30.0 / 100.0) : 0;
@@ -550,17 +602,21 @@ static void apply_liquid_glass(void) {
     safe_set_string(lg, schema, "panel-menu-tint-color", "#000000");
 
     double menu_shadow_rad = (double)state.menu_shadow_blur;
-    double menu_shadow_int = (double)state.menu_shadow_strength / 100.0;
-    if (menu_shadow_int < 0.0) menu_shadow_int = 0.0;
-    if (menu_shadow_int > 1.0) menu_shadow_int = 1.0;
     safe_set_double(lg, schema, "shadow-radius", menu_shadow_rad);
-    safe_set_double(lg, schema, "shadow-intensity", menu_shadow_int);
+
+    double dock_shadow_int = (double)state.dock_shadow / 100.0;
+    if (dock_shadow_int < 0.0) dock_shadow_int = 0.0;
+    if (dock_shadow_int > 1.0) dock_shadow_int = 1.0;
+    safe_set_double(lg, schema, "shadow-intensity", dock_shadow_int);
 
     if (schema) g_settings_schema_unref(schema);
     g_object_unref(lg);
 
     /* Preserve desktop widgets configuration (from Group 5) */
     apply_widget_settings();
+
+    /* Preserve dock configuration (from Dock group) */
+    apply_dock_settings();
 }
 
 static gboolean apply_liquid_glass_cb(gpointer user_data) {
@@ -589,6 +645,84 @@ static void schedule_spotlight_apply(void) {
     if (spotlight_timer_id == 0) {
         spotlight_timer_id = g_timeout_add(60, (GSourceFunc)apply_spotlight_cb, NULL);
     }
+}
+
+static guint dock_timer_id = 0;
+
+static void apply_dock_settings(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src) return;
+
+    /* 1. Apply to Liquid Glass */
+    const char *lg_schema = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com";
+    if (g_settings_schema_source_lookup(src, lg_schema, TRUE)) {
+        GSettings *lg = g_settings_new(lg_schema);
+        if (lg) {
+            GSettingsSchema *schema = NULL;
+            g_object_get(lg, "settings-schema", &schema, NULL);
+
+            int blur_rad = state.dock_blur;
+            if (blur_rad < 0) blur_rad = 0;
+            if (blur_rad > 50) blur_rad = 50;
+            safe_set_int(lg, schema, "dock-blur-radius", blur_rad);
+
+            double tint_val = (double)state.dock_tint / 100.0;
+            if (tint_val < 0.0) tint_val = 0.0;
+            if (tint_val > 1.0) tint_val = 1.0;
+            safe_set_double(lg, schema, "dock-tint-strength", tint_val);
+
+            double brightness = 1.0 - (tint_val * 0.5);
+            if (brightness < 0.2) brightness = 0.2;
+            if (brightness > 1.0) brightness = 1.0;
+            safe_set_double(lg, schema, "dock-brightness", brightness);
+
+            double shadow_val = (double)state.dock_shadow / 100.0;
+            if (shadow_val < 0.0) shadow_val = 0.0;
+            if (shadow_val > 1.0) shadow_val = 1.0;
+            safe_set_double(lg, schema, "shadow-intensity", shadow_val);
+
+            if (schema) g_settings_schema_unref(schema);
+            g_object_unref(lg);
+        }
+    }
+
+    /* 2. Apply to blur-my-shell dash-to-dock */
+    const char *bms_dock_schema = "org.gnome.shell.extensions.blur-my-shell.dash-to-dock";
+    if (g_settings_schema_source_lookup(src, bms_dock_schema, TRUE)) {
+        GSettings *bms = g_settings_new(bms_dock_schema);
+        if (bms) {
+            GSettingsSchema *schema = NULL;
+            g_object_get(bms, "settings-schema", &schema, NULL);
+
+            int sigma = state.dock_blur;
+            if (sigma < 0) sigma = 0;
+            safe_set_int(bms, schema, "sigma", sigma);
+
+            double tint_val = (double)state.dock_tint / 100.0;
+            double brightness = 1.0 - (tint_val * 0.5);
+            if (brightness < 0.2) brightness = 0.2;
+            if (brightness > 1.0) brightness = 1.0;
+            safe_set_double(bms, schema, "brightness", brightness);
+
+            if (schema) g_settings_schema_unref(schema);
+            g_object_unref(bms);
+        }
+    }
+}
+
+static gboolean apply_dock_cb(gpointer user_data) {
+    (void)user_data;
+    dock_timer_id = 0;
+    apply_dock_settings();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_dock_apply(void) {
+    if (dock_timer_id != 0) {
+        g_source_remove(dock_timer_id);
+        dock_timer_id = 0;
+    }
+    dock_timer_id = g_timeout_add(50, (GSourceFunc)apply_dock_cb, NULL);
 }
 
 static void apply_widget_settings(void) {
@@ -1848,13 +1982,64 @@ void on_widget_shadow_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
+/* Group: Dock Callbacks */
+void init_dock_tint(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.dock_tint);
+    in_init = 0;
+}
+
+void on_dock_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.dock_tint = (int)lround(gtk_range_get_value(widget));
+    schedule_dock_apply();
+    schedule_json_save();
+}
+
+void init_dock_blur(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.dock_blur);
+    in_init = 0;
+}
+
+void on_dock_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.dock_blur = (int)lround(gtk_range_get_value(widget));
+    schedule_dock_apply();
+    schedule_json_save();
+}
+
+void init_dock_shadow(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.dock_shadow);
+    in_init = 0;
+}
+
+void on_dock_shadow_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.dock_shadow = (int)lround(gtk_range_get_value(widget));
+    schedule_dock_apply();
+    schedule_json_save();
+}
+
 /* Legacy stubs so unresolved symbol errors never occur */
-void init_dock_blur(void *widget, gpointer data) { (void)widget; (void)data; }
-void on_dock_blur_changed(void *widget, void *pspec, gpointer data) { (void)widget; (void)pspec; (void)data; }
 void init_dock_sigma(void *widget, gpointer data) { (void)widget; (void)data; }
 void on_dock_sigma_changed(void *widget, gpointer data) { (void)widget; (void)data; }
-void init_dock_tint(void *widget, gpointer data) { (void)widget; (void)data; }
-void on_dock_tint_changed(void *widget, gpointer data) { (void)widget; (void)data; }
 void init_dock_radius(void *widget, gpointer data) { (void)widget; (void)data; }
 void on_dock_radius_changed(void *widget, gpointer data) { (void)widget; (void)data; }
 void init_panel_blur(void *widget, gpointer data) { (void)widget; (void)data; }
