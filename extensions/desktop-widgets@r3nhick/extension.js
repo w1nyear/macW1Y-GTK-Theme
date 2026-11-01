@@ -47,7 +47,7 @@ import * as FolderWidget from './widgets/folder/widget.js';
 import * as TimerWidget from './widgets/timer/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
 import { assetPath } from './paths.js';
-import { LiquidGlass } from './lib/glass_v3.js';
+import { LiquidGlass } from './lib/glass_v4.js';
 // (The screen-time engine runs inside the screentime widget; extension.js no
 // longer pauses it on fullscreen — fullscreen is real screen time.)
 import { clamp } from './utils.js';
@@ -2604,17 +2604,14 @@ class WidgetController {
         tintAlpha *= tint.a;
     }
 
+    let blurRadius = Math.max(0, s.get_int('blur-radius-px'));
+
     return {
       radius: s.get_int('style-border-radius'),
       roundness: 2, // Match CSS border-radius used by the widget frame.
-      refractThickness: 0,
-      refractIOR: 1.0,
-      refractScale: 0,
-      chromaStrength: 0,
       tint,
       tintAlpha,
-      specStrength: 0,
-      blurRadius: Math.max(s.get_int('blur-radius-px'), 0),
+      blurRadius,
       solid: false,
     };
   }
@@ -2651,6 +2648,7 @@ class WidgetController {
       if (view.glass) {
         this._updateGlassParamsForView(view);
       }
+      this._syncShadow(view);
 
       // Slider drags reach the stacked pages without a rebuild: restyle()
       // re-derives each page card's skin and re-arms its glass pane params.

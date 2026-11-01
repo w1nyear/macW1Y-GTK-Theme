@@ -22,7 +22,7 @@ import Clutter from 'gi://Clutter';
 
 import { boxLayoutProps } from '../utils/gnomeCompat.js';
 import { MAX_STACK_PAGES } from '../lib/widgetTypes.js';
-import { LiquidGlass } from '../lib/glass_v3.js';
+import { LiquidGlass } from '../lib/glass_v4.js';
 
 // The same constants the music widget's cross uses (2x1 system monitor's).
 const SWIPE_THRESHOLD = 12;  // Reduced from 36 for easier swipe triggering

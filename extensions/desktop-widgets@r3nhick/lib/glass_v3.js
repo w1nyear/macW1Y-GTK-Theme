@@ -1,5 +1,5 @@
 // Liquid-glass backdrop for GNOME Shell desktop widgets.
-// Uses the macOS Tahoe physical liquid-glass pipeline (LiquidEffect with glass.frag)
+// Uses the macOS physical liquid-glass pipeline (LiquidEffect with glass.frag)
 // powered by Dual Kawase blur, Snell refraction, chromatic dispersion, physical specular rim,
 // ambient occlusion and wallpaper mirror.
 
@@ -46,11 +46,11 @@ try {
     console.warn('[desktop-widgets] Error importing LiquidEffect from liquid-glass:', e);
 }
 
-const GLASS_CLASS_KEY = '__DW_LiquidGlass_v5__';
+const GLASS_CLASS_KEY = '__DW_LiquidGlass_v6__';
 if (!globalThis[GLASS_CLASS_KEY]) {
     globalThis[GLASS_CLASS_KEY] = GObject.registerClass(
         {
-            GTypeName: 'DW_LiquidGlass_Actor_V5',
+            GTypeName: 'DW_LiquidGlass_Actor_V6',
         },
         class LiquidGlass extends St.Widget {
             _init() {
@@ -89,9 +89,16 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                     this._wpClone = createBackgroundMirror('dw-glass-wp-mirror');
                     this.add_child(this._wpClone);
 
+                    let lgSettings = null;
+                    try {
+                        lgSettings = new Gio.Settings({
+                            schema_id: 'org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com',
+                        });
+                    } catch (_) {}
+
                     this._effect = new LiquidEffect({
                         extensionPath: LG_EXT_DIR,
-                        settings: null,
+                        settings: lgSettings,
                         owner: 'desktop-widget-glass',
                     });
 
@@ -100,7 +107,7 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                     this._effect.setBrightness(1.0);
                     this._effect.setContrast(1.0);
                     this._effect.setSaturation(1.0);
-                    this._effect.setSurfaceLightEnabled(false);
+                    this._effect.setSurfaceLightEnabled(true);
                     this._effect.setShadowIntensity(0.0);
                     this._effect.setShadowMaxRadius(0.0);
                     this.add_effect(this._effect);
@@ -144,40 +151,13 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                 const radius = p.radius || 16;
                 this._radius = radius;
 
-                const blur = typeof p.blurRadius === 'number' ? Math.max(0, p.blurRadius) : 0;
-                const tintAlpha = typeof p.tintAlpha === 'number' ? Math.max(0, Math.min(1.0, p.tintAlpha)) : 0;
-
-                // When both blur and darkening (tint) are 0, hide glass completely so only desktop wallpaper remains
-                if (blur <= 0 && tintAlpha <= 0) {
-                    this.opacity = 0;
-                    this.visible = false;
-                    if (this._effect) {
-                        this._effect.setBlurRadius(0);
-                        this._effect.setTintStrength(0);
-                        this._effect._setFloat('displacement_scale', 0.0);
-                        this._effect._setFloat('ior', 1.0);
-                        this._effect._setFloat('chroma_strength', 0.0);
-                        this._effect._setFloat('rim_intensity', 0.0);
-                        this._effect._setFloat('rim_width', 0.0);
-                        this._effect._setFloat('rim_power', 1.0);
-                        this._effect._setFloat('specular_intensity', 0.0);
-                        this._effect._setFloat('sheen_intensity', 0.0);
-                        this._effect._setFloat('ao_intensity', 0.0);
-                        this._effect._setFloat('ao_radius', 0.0);
-                        this._effect._setFloat('surface_light_enabled', 0.0);
-                        this._effect._setFloat('shadow_intensity', 0.0);
-                        this._effect._setFloat('shadow_radius', 0.0);
-                        this._effect.markBackdropDirty();
-                        this.queue_redraw();
-                    }
-                    return;
-                }
-
                 this.visible = true;
                 this.opacity = 255;
 
                 if (this._effect) {
                     this._effect.setCornerRadius(radius);
+
+                    const blur = typeof p.blurRadius === 'number' ? Math.max(0, p.blurRadius) : 0;
                     this._effect.setBlurRadius(blur);
 
                     // Normalize tint colors (0..1)
@@ -187,25 +167,16 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                         g = (typeof p.tint.g === 'number' && p.tint.g <= 1) ? p.tint.g : (p.tint.g / 255 || 0.0);
                         b = (typeof p.tint.b === 'number' && p.tint.b <= 1) ? p.tint.b : (p.tint.b / 255 || 0.0);
                     }
+                    const tintAlpha = typeof p.tintAlpha === 'number' ? Math.max(0, Math.min(1.0, p.tintAlpha)) : 0.0;
 
                     this._effect.setTintColor(r, g, b);
                     this._effect.setTintStrength(tintAlpha);
+                    this._effect.setSurfaceLightEnabled(true);
 
-                    // Zero out all 3D glass distortion / bevel / sheen / specular / AO artifacts:
-                    // Only our 3 controls (blur, tint, shadow) apply!
-                    this._effect._setFloat('displacement_scale', 0.0);
-                    this._effect._setFloat('ior', 1.0);
-                    this._effect._setFloat('chroma_strength', 0.0);
-                    this._effect._setFloat('rim_intensity', 0.0);
-                    this._effect._setFloat('rim_width', 0.0);
-                    this._effect._setFloat('rim_power', 1.0);
-                    this._effect._setFloat('specular_intensity', 0.0);
-                    this._effect._setFloat('sheen_intensity', 0.0);
-                    this._effect._setFloat('ao_intensity', 0.0);
-                    this._effect._setFloat('ao_radius', 0.0);
-                    this._effect._setFloat('surface_light_enabled', 0.0);
-                    this._effect._setFloat('shadow_intensity', 0.0);
-                    this._effect._setFloat('shadow_radius', 0.0);
+                    // Outer drop shadow is rendered with CSS box-shadow and border-radius on the wrapper actor.
+                    // Keep shader shadow at 0.0 so glass.frag strictly respects corner rounding with zero square corner leakage.
+                    this._effect.setShadowIntensity(0.0);
+                    this._effect.setShadowMaxRadius(0.0);
 
                     this._effect.markBackdropDirty();
                     this.queue_redraw();
@@ -213,7 +184,9 @@ if (!globalThis[GLASS_CLASS_KEY]) {
             }
 
             setPointer(u, v, fade) {
-                // No pointer tracking or specular highlights for clean flat frosted glass
+                if (this._effect && typeof this._effect.setPointer === 'function') {
+                    this._effect.setPointer(u, v, fade);
+                }
             }
 
             _cleanup() {

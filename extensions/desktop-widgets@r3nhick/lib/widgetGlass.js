@@ -13,7 +13,7 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 
-import {LiquidGlass} from './glass_v3.js';
+import {LiquidGlass} from './glass_v4.js';
 import {macColors} from './colors.js';
 import {parseCssColor} from '../utils/ported.js';
 
@@ -259,17 +259,14 @@ export class WidgetGlass {
             }
         }
 
+        let blurRadius = Math.max(0, s.get_int('blur-radius-px'));
+
         glass.setParams({
             radius: radius,
             roundness: 2,
-            refractThickness: 0,
-            refractIOR: 1.0,
-            refractScale: 0,
-            chromaStrength: 0,
             tint,
             tintAlpha,
-            specStrength: 0,
-            blurRadius: s.get_int('blur-radius-px'),
+            blurRadius,
             solid: false,
         });
 
