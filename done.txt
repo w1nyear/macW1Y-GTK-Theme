@@ -15664,3 +15664,49 @@ Task 613: Full-Width Row Hover in GNOME Control Center / System Settings Prefere
      * Only child row hover: all 4 corners match 14px radius across entire card.
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+--------------------------------------------------------------------------------
+Task 614: Complete 3-Phase macOS Transition Animation from Lock/Login Screen (GDM) to Desktop
+--------------------------------------------------------------------------------
+1. Problem Analysis:
+   - The user reported: "анімацї нової переходу з екрана блокування не при сесії до робочгго стола все ще немає а використовується старе від убунту замість нової логіки" with attached sequence diagram media_1793646524035_3e8c84e6.png.
+   - On cold GDM login (not session unlock during an active session), GNOME Shell starts from scratch.
+   - In GNOME Shell's default startup flow, Main.layoutManager.init() runs _prepareStartupAnimation() and _startupAnimationSession() synchronously from Main._start() BEFORE any extensions are enabled (extensionManager.init()).
+   - The default Ubuntu logic scales uiGroup down to 0.75, hides it, and eases it up with STARTUP_ANIMATION_TIME = 500ms and EASE_OUT_QUAD. After this zoom finishes, extensions load asynchronously, causing visible pop-in, jarring dock resize, unorganized top bar items jumping into place, and widgets appearing late.
+   - Any runtime monkey-patching in extensions (like eval-helper@mactheme) had zero effect on fresh GDM login because _startupAnimationSession had already completed before eval-helper was loaded.
+
+2. Architecture & Implementation:
+   - GResource Overlay Mechanism:
+     * Deployed GLib's native G_RESOURCE_OVERLAYS system overlay for GNOME Shell: /org/gnome/shell/ui/layout.js=/usr/share/mactheme/gnome-shell-overlay/ui/layout.js.
+     * Diverted /usr/bin/gnome-shell to /usr/bin/gnome-shell.real via Debian's standard dpkg-divert --add --rename --divert /usr/bin/gnome-shell.real /usr/bin/gnome-shell.
+     * Created /usr/bin/gnome-shell wrapper script ensuring G_RESOURCE_OVERLAYS is always set for any GNOME Shell invocation.
+     * Configured systemd user drop-in: /etc/systemd/user/org.gnome.Shell@.service.d/mac-transition.conf and ~/.config/systemd/user/org.gnome.Shell@.service.d/mac-transition.conf.
+     * Configured ~/.config/environment.d/10-gnome-shell-overlay.conf.
+     * Created gnome-shell-overlay/ui/layout.js in repository and synced to /usr/share/mactheme/gnome-shell-overlay/ui/layout.js.
+   - Implemented 3-Phase macOS Transition Logic in layout.js:
+     * ФАЗА 1: Тиха фонова підготовка (Silent Background Preparation):
+       1. Wallpaper monolithic: uiGroup.set_pivot_point(0, 0); uiGroup.scale_x = 1.0; uiGroup.scale_y = 1.0; uiGroup.opacity = 255; (100% scale, zero flicker/gap, eliminated Ubuntu 0.75 zoom).
+       2. Menu Bar hidden above the screen edge: panelBox.translation_y = -panelH; panelBox.opacity = 0;.
+       3. Dock hidden offscreen below the bottom edge: dock.translation_y = 0; dock.opacity = 0;. Connected child-added to uiGroup to catch and immediately hide any dock added dynamically during extension startup.
+       4. Widgets and windows hidden: global.window_group.opacity = 0;. Connected child-added to _backgroundGroup to catch and hide any widget-layer created during extension startup.
+     * ФАЗА 2: Бар'єр готовності системи (System Readiness Barrier):
+       1. Extensions Barrier: waitForAllExtensions() polls for all 21 enabled extensions in Main.extensionManager._enabledExtensions to reach state ACTIVE (1) or ERROR (3), with safety timeout (4000ms).
+       2. Layout & Styles Settle Delay (350 ms): top-bar-organizer arranges top bar icons, desktop-widgets creates widget nodes, and the dock computes icon geometry while completely invisible behind the clean wallpaper.
+       3. Dynamic listeners disconnected cleanly once layout is ready.
+     * ФАЗА 3: Синхронний виїзд (Synchronous Slide-In Entrance, 650 ms, EASE_OUT_CUBIC):
+       1. Menu Bar slides smoothly down from the top: panelBox.ease({ translation_y: 0, opacity: 255, duration: 650, mode: Clutter.AnimationMode.EASE_OUT_CUBIC }).
+       2. Dock slides smoothly up from the bottom: dock.ease({ translation_y: -dockH, opacity: 255, duration: 650, mode: Clutter.AnimationMode.EASE_OUT_CUBIC }).
+       3. Desktop widgets smoothly fade in: widgetLayer.ease({ opacity: 255, duration: 650, mode: Clutter.AnimationMode.EASE_OUT_CUBIC }).
+       4. Open windows and desktop icons smoothly fade in: global.window_group.ease({ opacity: 255, duration: 650, mode: Clutter.AnimationMode.EASE_OUT_CUBIC }).
+       5. Cover pane held for full 650ms to prevent misclicks during transition, then destroyed on completion.
+   - Coordinated Extension Updates:
+     * extensions/desktop-widgets@r3nhick/extension.js: ensured _layer.opacity = 0 if Main.layoutManager._startingUp is active.
+     * extensions/eval-helper@mactheme/extension.js: synchronized runtime fallback with identical Phase 1/2/3 logic and background widget layer listeners.
+     * bin/mac-apply-theme: added section 9 to auto-sync gnome-shell-overlay/ui/layout.js.
+     * config/extensions.lock.json: pinned new hashes for desktop-widgets@r3nhick and eval-helper@mactheme.
+
+3. Verification:
+   - bin/mac-audit-sync check: 100% PASS (5/5).
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - Validated GResource overlay mapping with GLib/GIO.
+   - Tested live execution of synchronized 650ms EASE_OUT_CUBIC slide-in and fade-in without session restart.

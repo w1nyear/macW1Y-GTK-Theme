@@ -1,0 +1,22 @@
+#!/bin/sh
+# macW1Y — GNOME Shell Launch Wrapper
+# Injects macOS Desktop Preparation & Synchronized Entrance Transition Overlay
+
+OVERLAY="/usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
+if [ ! -f "$OVERLAY" ]; then
+    OVERLAY="$HOME/MACTHEMEFILES/gnome-shell-overlay/ui/layout.js"
+fi
+
+if [ -f "$OVERLAY" ]; then
+    case ":$G_RESOURCE_OVERLAYS:" in
+        *":/org/gnome/shell/ui/layout.js="*) ;;
+        *) export G_RESOURCE_OVERLAYS="/org/gnome/shell/ui/layout.js=$OVERLAY${G_RESOURCE_OVERLAYS:+:$G_RESOURCE_OVERLAYS}" ;;
+    esac
+fi
+
+if [ -x "/usr/bin/gnome-shell.real" ]; then
+    exec /usr/bin/gnome-shell.real "$@"
+elif [ -x "/usr/bin/gnome-shell.orig" ]; then
+    exec /usr/bin/gnome-shell.orig "$@"
+fi
+exec /usr/bin/gnome-shell.real "$@"

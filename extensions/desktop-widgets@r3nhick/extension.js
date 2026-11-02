@@ -1148,6 +1148,10 @@ class WidgetController {
       y_expand: true,
     });
 
+    if (Main.layoutManager?._startingUp) {
+      this._layer.opacity = 0;
+    }
+
     backgroundGroup.add_child(this._layer);
     this._keepLayerAboveDesktopIcons(backgroundGroup);
     this._syncLayerGeometry();

@@ -31,6 +31,16 @@ def acquire_lock():
         print("[mac-apply-theme] Another instance is currently applying theme settings. Exiting cleanly.")
         sys.exit(0)
 
+def get_file_md5(path):
+    if not os.path.exists(path):
+        return None
+    import hashlib
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        while chunk := f.read(8192):
+            h.update(chunk)
+    return h.hexdigest()
+
 def gsettings_get(schema, key):
     try:
         res = subprocess.check_output(["gsettings", "get", schema, key], text=True, stderr=subprocess.DEVNULL).strip()
@@ -227,6 +237,18 @@ def main():
                 changes_count += 1
     except Exception:
         pass
+
+    # 9. macOS Desktop Transition Overlay sync
+    overlay_src = os.path.join(REPO_DIR, "gnome-shell-overlay/ui/layout.js")
+    overlay_dst = "/usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
+    if os.path.exists(overlay_src):
+        try:
+            if not os.path.exists(overlay_dst) or get_file_md5(overlay_src) != get_file_md5(overlay_dst):
+                subprocess.run(["sudo", "mkdir", "-p", "/usr/share/mactheme/gnome-shell-overlay/ui"], check=False)
+                subprocess.run(["sudo", "cp", "-f", overlay_src, overlay_dst], check=False)
+                changes_count += 1
+        except Exception:
+            pass
 
     print(f"[mac-apply-theme] Completed. Applied {changes_count} changes (0 changes means already perfectly in sync).")
 

@@ -2163,8 +2163,18 @@ export default class EvalHelper extends Extension {
                         }
 
                         // E. Hide desktop widgets if already loaded
+                        if (this._backgroundGroup && !this._macBgChildAddedId) {
+                            this._macBgChildAddedId = this._backgroundGroup.connect('child-added', (_group, child) => {
+                                if ((child.has_style_class_name && child.has_style_class_name('widget-layer')) || child.name === 'widget-layer') {
+                                    child.remove_all_transitions();
+                                    child.opacity = 0;
+                                }
+                            });
+                        }
+
                         const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
-                        const widgetLayer = widgetsExt?.stateObj?._controller?._layer;
+                        const widgetLayer = widgetsExt?.stateObj?._controller?._layer ||
+                            this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer'));
                         if (widgetLayer) {
                             widgetLayer.remove_all_transitions();
                             widgetLayer.opacity = 0;
@@ -2228,10 +2238,14 @@ export default class EvalHelper extends Extension {
                     return GLib.SOURCE_REMOVE;
                 }));
 
-                // Disconnect dock child-added listener
+                // Disconnect dock and widget child-added listeners
                 if (this._macDockChildAddedId) {
                     try { this.uiGroup.disconnect(this._macDockChildAddedId); } catch (_) {}
                     this._macDockChildAddedId = null;
+                }
+                if (this._macBgChildAddedId && this._backgroundGroup) {
+                    try { this._backgroundGroup.disconnect(this._macBgChildAddedId); } catch (_) {}
+                    this._macBgChildAddedId = null;
                 }
 
                 // Step 3: Coordinated macOS entrance animation
@@ -2269,7 +2283,8 @@ export default class EvalHelper extends Extension {
 
                 // C. Desktop widgets fade in with opacity animation
                 const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
-                const widgetLayer = widgetsExt?.stateObj?._controller?._layer;
+                const widgetLayer = widgetsExt?.stateObj?._controller?._layer ||
+                    this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer'));
                 if (widgetLayer) {
                     widgetLayer.remove_all_transitions();
                     widgetLayer.opacity = 0;
