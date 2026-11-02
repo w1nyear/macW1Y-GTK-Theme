@@ -90,6 +90,14 @@ static void redraw_blur_preview(void);
 static void redraw_context_menu_preview(void);
 static void redraw_widgets_preview(void);
 static GtkWidget *get_mac_styling_page(void);
+static void clear_blurred_wallpaper_cache(void);
+static cairo_surface_t *get_cached_blurred_wallpaper_surface(int target_w, int target_h, int radius);
+static void draw_frosted_glass_card(cairo_t *cr, cairo_surface_t *blurred_bg,
+                                    double x, double y, double w, double h, double r,
+                                    double tint_alpha, double shadow_alpha, double sheen);
+static void reorder_group_previews_to_top(GtkWidget *widget);
+static void on_mac_styling_page_map(GtkWidget *widget, gpointer user_data);
+
 
 static MacStylingData state = {
     .menubar_tint = 30,
@@ -1255,6 +1263,7 @@ static void clear_wallpaper_cache(void) {
         g_free(g_wallpaper_cached_path);
         g_wallpaper_cached_path = NULL;
     }
+    clear_blurred_wallpaper_cache();
 }
 
 static cairo_surface_t *get_cached_wallpaper_surface(int target_w, int target_h) {
@@ -1346,6 +1355,281 @@ static cairo_surface_t *get_cached_wallpaper_surface(int target_w, int target_h)
 
     return surf;
 }
+
+/* ========================================================================= */
+/* Fast Multi-Pass Separable Box Blur Engine & Blurred Wallpaper Cache       */
+/* ========================================================================= */
+
+static void box_blur_horizontal(uint32_t *src, uint32_t *dst, int w, int h, int r) {
+    if (r <= 0) { memcpy(dst, src, (size_t)w * h * sizeof(uint32_t)); return; }
+    if (r > w / 2) r = w / 2;
+    float iarr = 1.0f / (r + r + 1);
+    for (int y = 0; y < h; y++) {
+        int ti = y * w, li = ti, ri = ti + r;
+        uint32_t fv = src[ti], lv = src[ti + w - 1];
+        int val_a = ((fv >> 24) & 0xff) * (r + 1);
+        int val_r = ((fv >> 16) & 0xff) * (r + 1);
+        int val_g = ((fv >> 8) & 0xff) * (r + 1);
+        int val_b = (fv & 0xff) * (r + 1);
+        for (int j = 0; j < r; j++) {
+            uint32_t c = src[ti + j];
+            val_a += (c >> 24) & 0xff; val_r += (c >> 16) & 0xff;
+            val_g += (c >> 8) & 0xff; val_b += c & 0xff;
+        }
+        for (int j = 0; j <= r; j++) {
+            uint32_t c = src[ri++];
+            val_a += (c >> 24) & 0xff; val_r += (c >> 16) & 0xff;
+            val_g += (c >> 8) & 0xff; val_b += c & 0xff;
+            dst[ti++] = (((int)(val_a * iarr)) << 24) | (((int)(val_r * iarr)) << 16) | (((int)(val_g * iarr)) << 8) | ((int)(val_b * iarr));
+            val_a -= (fv >> 24) & 0xff; val_r -= (fv >> 16) & 0xff;
+            val_g -= (fv >> 8) & 0xff; val_b -= fv & 0xff;
+        }
+        for (int j = r + 1; j < w - r; j++) {
+            uint32_t c1 = src[ri++], c2 = src[li++];
+            val_a += ((c1 >> 24) & 0xff) - ((c2 >> 24) & 0xff);
+            val_r += ((c1 >> 16) & 0xff) - ((c2 >> 16) & 0xff);
+            val_g += ((c1 >> 8) & 0xff) - ((c2 >> 8) & 0xff);
+            val_b += (c1 & 0xff) - (c2 & 0xff);
+            dst[ti++] = (((int)(val_a * iarr)) << 24) | (((int)(val_r * iarr)) << 16) | (((int)(val_g * iarr)) << 8) | ((int)(val_b * iarr));
+        }
+        for (int j = w - r; j < w; j++) {
+            uint32_t c = src[li++];
+            val_a += ((lv >> 24) & 0xff) - ((c >> 24) & 0xff);
+            val_r += ((lv >> 16) & 0xff) - ((c >> 16) & 0xff);
+            val_g += ((lv >> 8) & 0xff) - ((c >> 8) & 0xff);
+            val_b += (lv & 0xff) - (c & 0xff);
+            dst[ti++] = (((int)(val_a * iarr)) << 24) | (((int)(val_r * iarr)) << 16) | (((int)(val_g * iarr)) << 8) | ((int)(val_b * iarr));
+        }
+    }
+}
+
+static void box_blur_vertical(uint32_t *src, uint32_t *dst, int w, int h, int r) {
+    if (r <= 0) { memcpy(dst, src, (size_t)w * h * sizeof(uint32_t)); return; }
+    if (r > h / 2) r = h / 2;
+    float iarr = 1.0f / (r + r + 1);
+    for (int x = 0; x < w; x++) {
+        int ti = x, li = ti, ri = ti + r * w;
+        uint32_t fv = src[ti], lv = src[ti + (h - 1) * w];
+        int val_a = ((fv >> 24) & 0xff) * (r + 1);
+        int val_r = ((fv >> 16) & 0xff) * (r + 1);
+        int val_g = ((fv >> 8) & 0xff) * (r + 1);
+        int val_b = (fv & 0xff) * (r + 1);
+        for (int j = 0; j < r; j++) {
+            uint32_t c = src[ti + j * w];
+            val_a += (c >> 24) & 0xff; val_r += (c >> 16) & 0xff;
+            val_g += (c >> 8) & 0xff; val_b += c & 0xff;
+        }
+        for (int j = 0; j <= r; j++) {
+            uint32_t c = src[ri]; ri += w;
+            val_a += (c >> 24) & 0xff; val_r += (c >> 16) & 0xff;
+            val_g += (c >> 8) & 0xff; val_b += c & 0xff;
+            dst[ti] = (((int)(val_a * iarr)) << 24) | (((int)(val_r * iarr)) << 16) | (((int)(val_g * iarr)) << 8) | ((int)(val_b * iarr));
+            ti += w;
+            val_a -= (fv >> 24) & 0xff; val_r -= (fv >> 16) & 0xff;
+            val_g -= (fv >> 8) & 0xff; val_b -= fv & 0xff;
+        }
+        for (int j = r + 1; j < h - r; j++) {
+            uint32_t c1 = src[ri], c2 = src[li]; ri += w; li += w;
+            val_a += ((c1 >> 24) & 0xff) - ((c2 >> 24) & 0xff);
+            val_r += ((c1 >> 16) & 0xff) - ((c2 >> 16) & 0xff);
+            val_g += ((c1 >> 8) & 0xff) - ((c2 >> 8) & 0xff);
+            val_b += (c1 & 0xff) - (c2 & 0xff);
+            dst[ti] = (((int)(val_a * iarr)) << 24) | (((int)(val_r * iarr)) << 16) | (((int)(val_g * iarr)) << 8) | ((int)(val_b * iarr));
+            ti += w;
+        }
+        for (int j = h - r; j < h; j++) {
+            uint32_t c = src[li]; li += w;
+            val_a += ((lv >> 24) & 0xff) - ((c >> 24) & 0xff);
+            val_r += ((lv >> 16) & 0xff) - ((c >> 16) & 0xff);
+            val_g += ((lv >> 8) & 0xff) - ((c >> 8) & 0xff);
+            val_b += (lv & 0xff) - (c & 0xff);
+            dst[ti] = (((int)(val_a * iarr)) << 24) | (((int)(val_r * iarr)) << 16) | (((int)(val_g * iarr)) << 8) | ((int)(val_b * iarr));
+            ti += w;
+        }
+    }
+}
+
+#define BLURRED_WALLPAPER_CACHE_SIZE 32
+typedef struct {
+    int w;
+    int h;
+    int radius;
+    cairo_surface_t *surf;
+} BlurredWallpaperCacheEntry;
+
+static BlurredWallpaperCacheEntry g_blurred_wallpaper_cache[BLURRED_WALLPAPER_CACHE_SIZE] = {{0}};
+static int g_blurred_wallpaper_cache_count = 0;
+
+static void clear_blurred_wallpaper_cache(void) {
+    for (int i = 0; i < g_blurred_wallpaper_cache_count; i++) {
+        if (g_blurred_wallpaper_cache[i].surf) {
+            cairo_surface_destroy(g_blurred_wallpaper_cache[i].surf);
+            g_blurred_wallpaper_cache[i].surf = NULL;
+        }
+    }
+    g_blurred_wallpaper_cache_count = 0;
+}
+
+static cairo_surface_t *get_cached_blurred_wallpaper_surface(int target_w, int target_h, int radius) {
+    if (target_w <= 0 || target_h <= 0) return NULL;
+    int r = CLAMP(radius, 1, 60);
+
+    for (int i = 0; i < g_blurred_wallpaper_cache_count; i++) {
+        if (g_blurred_wallpaper_cache[i].w == target_w &&
+            g_blurred_wallpaper_cache[i].h == target_h &&
+            g_blurred_wallpaper_cache[i].radius == r &&
+            g_blurred_wallpaper_cache[i].surf) {
+            return g_blurred_wallpaper_cache[i].surf;
+        }
+    }
+
+    cairo_surface_t *base = get_cached_wallpaper_surface(target_w, target_h);
+    if (!base) return NULL;
+
+    cairo_surface_flush(base);
+    int s_stride = cairo_image_surface_get_stride(base);
+    unsigned char *s_data = cairo_image_surface_get_data(base);
+    if (!s_data) return NULL;
+
+    uint32_t *buf1 = (uint32_t *)g_malloc((size_t)target_w * target_h * sizeof(uint32_t));
+    uint32_t *buf2 = (uint32_t *)g_malloc((size_t)target_w * target_h * sizeof(uint32_t));
+
+    for (int y = 0; y < target_h; y++) {
+        memcpy(buf1 + y * target_w, s_data + y * s_stride, (size_t)target_w * sizeof(uint32_t));
+    }
+
+    // Pass 1
+    box_blur_horizontal(buf1, buf2, target_w, target_h, r);
+    box_blur_vertical(buf2, buf1, target_w, target_h, r);
+
+    // Pass 2 for smooth Gaussian roll-off
+    int r2 = (int)(r * 0.7);
+    if (r2 > 0) {
+        box_blur_horizontal(buf1, buf2, target_w, target_h, r2);
+        box_blur_vertical(buf2, buf1, target_w, target_h, r2);
+    }
+
+    cairo_surface_t *blurred = cairo_image_surface_create(CAIRO_FORMAT_RGB24, target_w, target_h);
+    cairo_surface_flush(blurred);
+    unsigned char *b_data = cairo_image_surface_get_data(blurred);
+    int b_stride = cairo_image_surface_get_stride(blurred);
+
+    for (int y = 0; y < target_h; y++) {
+        memcpy(b_data + y * b_stride, buf1 + y * target_w, (size_t)target_w * sizeof(uint32_t));
+    }
+    cairo_surface_mark_dirty(blurred);
+
+    g_free(buf1);
+    g_free(buf2);
+
+    if (g_blurred_wallpaper_cache_count >= BLURRED_WALLPAPER_CACHE_SIZE) {
+        if (g_blurred_wallpaper_cache[0].surf) {
+            cairo_surface_destroy(g_blurred_wallpaper_cache[0].surf);
+        }
+        for (int i = 0; i < BLURRED_WALLPAPER_CACHE_SIZE - 1; i++) {
+            g_blurred_wallpaper_cache[i] = g_blurred_wallpaper_cache[i + 1];
+        }
+        g_blurred_wallpaper_cache_count = BLURRED_WALLPAPER_CACHE_SIZE - 1;
+    }
+
+    g_blurred_wallpaper_cache[g_blurred_wallpaper_cache_count].w = target_w;
+    g_blurred_wallpaper_cache[g_blurred_wallpaper_cache_count].h = target_h;
+    g_blurred_wallpaper_cache[g_blurred_wallpaper_cache_count].radius = r;
+    g_blurred_wallpaper_cache[g_blurred_wallpaper_cache_count].surf = blurred;
+    g_blurred_wallpaper_cache_count++;
+
+    return blurred;
+}
+
+static void draw_frosted_glass_card(cairo_t *cr, cairo_surface_t *blurred_bg,
+                                    double x, double y, double w, double h, double r,
+                                    double tint_alpha, double shadow_alpha, double sheen) {
+    if (w <= 0.0 || h <= 0.0) return;
+
+    // 1. Soft multi-pass drop shadow behind the card
+    if (shadow_alpha > 0.01) {
+        for (int i = 5; i >= 1; i--) {
+            double exp = i * 2.5;
+            double a = (shadow_alpha * 0.16) / i;
+            draw_rounded_rect_path(cr, x - exp * 0.5, y + 2.0 + exp * 0.5, w + exp, h + exp * 0.8, r + exp * 0.5);
+            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, a);
+            cairo_fill(cr);
+        }
+    }
+
+    // 2. Clip card shape to paint blurred wallpaper
+    cairo_save(cr);
+    draw_rounded_rect_path(cr, x, y, w, h, r);
+    cairo_clip(cr);
+
+    // Blurred wallpaper underneath
+    if (blurred_bg) {
+        cairo_set_source_surface(cr, blurred_bg, 0, 0);
+        cairo_paint(cr);
+    } else {
+        cairo_set_source_rgb(cr, 0.12, 0.14, 0.18);
+        cairo_paint(cr);
+    }
+
+    // Dark glass tint overlay
+    double ta = CLAMP(tint_alpha, 0.12, 0.92);
+    cairo_set_source_rgba(cr, 0.07, 0.08, 0.11, ta);
+    cairo_paint(cr);
+
+    // Top-down specular reflection / sheen
+    cairo_pattern_t *pat = cairo_pattern_create_linear(x, y, x, y + h);
+    double sh = CLAMP(sheen, 0.04, 0.35);
+    cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, sh + 0.08);
+    cairo_pattern_add_color_stop_rgba(pat, 0.35, 1.0, 1.0, 1.0, sh * 0.4);
+    cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, 0.01);
+    cairo_set_source(cr, pat);
+    cairo_paint(cr);
+    cairo_pattern_destroy(pat);
+
+    cairo_restore(cr);
+
+    // 3. Specular rim highlight border
+    draw_rounded_rect_path(cr, x + 0.5, y + 0.5, w - 1.0, h - 1.0, r);
+    cairo_pattern_t *rim_pat = cairo_pattern_create_linear(x, y, x + w, y + h);
+    cairo_pattern_add_color_stop_rgba(rim_pat, 0.0, 1.0, 1.0, 1.0, 0.38);
+    cairo_pattern_add_color_stop_rgba(rim_pat, 0.45, 1.0, 1.0, 1.0, 0.18);
+    cairo_pattern_add_color_stop_rgba(rim_pat, 1.0, 1.0, 1.0, 1.0, 0.08);
+    cairo_set_source(cr, rim_pat);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+    cairo_pattern_destroy(rim_pat);
+}
+
+static void reorder_group_previews_to_top(GtkWidget *widget) {
+    if (!widget) return;
+    if (ADW_IS_PREFERENCES_GROUP(widget)) {
+        GtkWidget *outer_box = gtk_widget_get_first_child(widget);
+        if (outer_box && GTK_IS_BOX(outer_box)) {
+            GtkWidget *header_box = gtk_widget_get_first_child(outer_box);
+            if (header_box) {
+                GtkWidget *content_box = gtk_widget_get_next_sibling(header_box);
+                if (content_box && GTK_IS_BOX(content_box)) {
+                    GtkWidget *first = gtk_widget_get_first_child(content_box);
+                    if (first && GTK_IS_LIST_BOX(first)) {
+                        GtkWidget *second = gtk_widget_get_next_sibling(first);
+                        if (second && GTK_IS_BOX(second)) {
+                            gtk_box_reorder_child_after(GTK_BOX(content_box), second, NULL);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        reorder_group_previews_to_top(child);
+    }
+}
+
+static void on_mac_styling_page_map(GtkWidget *widget, gpointer user_data) {
+    (void)user_data;
+    reorder_group_previews_to_top(widget);
+}
+
 
 static void on_liquid_drag_begin(GtkGestureDrag *gesture, double start_x, double start_y, gpointer user_data) {
     (void)gesture;
@@ -1787,8 +2071,14 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     double gx = CLAMP(g_glass_x, 6.0, width - gw - 6.0);
     double gy = CLAMP(g_glass_y, 6.0, height - gh - 6.0);
 
+    // Frosted liquid glass background if liquid_blur > 0
+    cairo_surface_t *bg_for_glass = bg;
+    if (state.liquid_blur > 0) {
+        cairo_surface_t *bl = get_cached_blurred_wallpaper_surface(width, height, CLAMP(state.liquid_blur * 2, 1, 40));
+        if (bl) bg_for_glass = bl;
+    }
     // Render using the physical repo shader with the active shape
-    draw_repo_glass_element(cr, bg, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
+    draw_repo_glass_element(cr, bg_for_glass, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
 
     // Floating shape badge above element
     const char *shape_names[] = {
@@ -1872,81 +2162,93 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     }
 
     double mb_h = 28.0;
-    double tint_frac = (double)state.menubar_tint / 100.0;
-    double blur_val = (double)state.menubar_blur;
+    int blur_r = CLAMP(state.menubar_blur, 6, 45);
+    cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
 
-    cairo_pattern_t *mb_pat = cairo_pattern_create_linear(0, 0, 0, mb_h);
-    double mb_alpha_top = CLAMP(0.25 + tint_frac * 0.65, 0.10, 0.95);
-    double mb_alpha_bot = CLAMP(0.18 + tint_frac * 0.55, 0.08, 0.90);
-    cairo_pattern_add_color_stop_rgba(mb_pat, 0.0, 0.05, 0.06, 0.08, mb_alpha_top);
-    cairo_pattern_add_color_stop_rgba(mb_pat, 1.0, 0.02, 0.03, 0.05, mb_alpha_bot);
-    cairo_set_source(cr, mb_pat);
+    // Clip top bar for frosted glass
+    cairo_save(cr);
     cairo_rectangle(cr, 0, 0, width, mb_h);
-    cairo_fill(cr);
-    cairo_pattern_destroy(mb_pat);
+    cairo_clip(cr);
 
-    if (blur_val > 0.0) {
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, CLAMP((blur_val / 100.0) * 0.10, 0.02, 0.15));
-        cairo_rectangle(cr, 0, 0, width, mb_h);
-        cairo_fill(cr);
+    if (blurred_bg) {
+        cairo_set_source_surface(cr, blurred_bg, 0, 0);
+        cairo_paint(cr);
+    } else {
+        cairo_set_source_rgb(cr, 0.10, 0.12, 0.15);
+        cairo_paint(cr);
     }
 
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
-    cairo_set_line_width(cr, 0.8);
-    cairo_move_to(cr, 0, mb_h - 0.4);
-    cairo_line_to(cr, width, mb_h - 0.4);
+    double tint_frac = (double)state.menubar_tint / 100.0;
+    double ta = CLAMP(0.25 + tint_frac * 0.60, 0.12, 0.92);
+    cairo_set_source_rgba(cr, 0.06, 0.07, 0.09, ta);
+    cairo_paint(cr);
+
+    // Specular top-down gradient
+    cairo_pattern_t *pat = cairo_pattern_create_linear(0, 0, 0, mb_h);
+    cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, 0.15);
+    cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, 0.02);
+    cairo_set_source(cr, pat);
+    cairo_paint(cr);
+    cairo_pattern_destroy(pat);
+
+    cairo_restore(cr);
+
+    // Specular bottom border line
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
+    cairo_set_line_width(cr, 1.0);
+    cairo_move_to(cr, 0, mb_h - 0.5);
+    cairo_line_to(cr, width, mb_h - 0.5);
     cairo_stroke(cr);
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    // Apple Logo 
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-    cairo_arc(cr, 18.0, 13.5, 4.2, 0, 2 * G_PI);
+    cairo_arc(cr, 16.5, 14.5, 3.8, 0, 2 * G_PI);
+    cairo_fill(cr);
+    cairo_arc(cr, 19.5, 14.5, 3.8, 0, 2 * G_PI);
+    cairo_fill(cr);
+    cairo_arc(cr, 18.0, 10.5, 1.5, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    cairo_set_font_size(cr, 11.0);
-    cairo_move_to(cr, 32.0, 17.5);
+    // Menus
+    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 10.5);
+    cairo_move_to(cr, 30.0, 17.5);
     cairo_show_text(cr, "Finder");
 
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.82);
-    cairo_move_to(cr, 80.0, 17.5);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
+    cairo_move_to(cr, 76.0, 17.5);
     cairo_show_text(cr, "Файл");
-    cairo_move_to(cr, 120.0, 17.5);
+    cairo_move_to(cr, 114.0, 17.5);
     cairo_show_text(cr, "Редагування");
-    cairo_move_to(cr, 206.0, 17.5);
+    cairo_move_to(cr, 198.0, 17.5);
     cairo_show_text(cr, "Вигляд");
-    cairo_move_to(cr, 258.0, 17.5);
+    cairo_move_to(cr, 248.0, 17.5);
     cairo_show_text(cr, "Вікно");
 
+    // Right status items
     cairo_move_to(cr, width - 110.0, 17.5);
-    cairo_show_text(cr, "Пн 2 лис  09:41");
+    cairo_show_text(cr, "Пн 2 лис 14:28");
 
+    // Wi-Fi
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
     cairo_set_line_width(cr, 1.2);
-    cairo_arc(cr, width - 130.0, 16.0, 6.0, -G_PI * 0.75, -G_PI * 0.25);
+    cairo_arc(cr, width - 130.0, 16.0, 5.5, -G_PI * 0.75, -G_PI * 0.25);
     cairo_stroke(cr);
-    cairo_arc(cr, width - 130.0, 16.0, 3.2, -G_PI * 0.75, -G_PI * 0.25);
+    cairo_arc(cr, width - 130.0, 16.0, 3.0, -G_PI * 0.75, -G_PI * 0.25);
     cairo_stroke(cr);
     cairo_arc(cr, width - 130.0, 16.0, 1.0, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    char badge[128];
-    g_snprintf(badge, sizeof(badge), "Меню-бар • Затемнення: %d%% • Розмиття: %d", state.menubar_tint, state.menubar_blur);
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 10.5);
-    cairo_text_extents_t ext;
-    cairo_text_extents(cr, badge, &ext);
-    double bx = (width - ext.width) / 2.0;
-    double by = 80.0;
-    draw_rounded_rect_path(cr, bx - 10.0, by - 12.0, ext.width + 20.0, 20.0, 10.0);
-    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.60);
-    cairo_fill(cr);
-    draw_rounded_rect_path(cr, bx - 10.0, by - 12.0, ext.width + 20.0, 20.0, 10.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
-    cairo_set_line_width(cr, 0.8);
+    // Battery
+    double bx_b = width - 156.0, by_b = 10.5;
+    draw_rounded_rect_path(cr, bx_b, by_b, 17.0, 9.0, 2.5);
+    cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
-    cairo_move_to(cr, bx, by + 2.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-    cairo_show_text(cr, badge);
+    draw_rounded_rect_path(cr, bx_b + 2.0, by_b + 2.0, 10.0, 5.0, 1.5);
+    cairo_fill(cr);
+    cairo_rectangle(cr, bx_b + 17.5, by_b + 2.5, 1.2, 4.0);
+    cairo_fill(cr);
 
     cairo_restore(cr);
 
@@ -1990,160 +2292,136 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
         cairo_paint(cr);
     }
 
-    double dw = 250.0, dh = 48.0, dr = 16.0;
+    double dw = 264.0, dh = 56.0, dr = 18.0;
     double dx = (width - dw) / 2.0;
-    double dy = height - dh - 14.0;
+    double dy = height - dh - 12.0;
 
-    double shadow_val = (double)state.dock_shadow / 100.0;
-    if (shadow_val > 0.01) {
-        for (int i = 4; i >= 1; i--) {
-            double exp = i * 2.8;
-            double a = (shadow_val * 0.16) / i;
-            draw_rounded_rect_path(cr, dx - exp, dy + 2.0 + exp * 0.4, dw + exp * 2.0, dh + exp * 1.5, dr + exp);
-            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, a);
-            cairo_fill(cr);
-        }
-    }
+    int blur_r = CLAMP(state.dock_blur, 6, 50);
+    cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
 
-    double tint_val = (double)state.dock_tint / 100.0;
-    double blur_val = (double)state.dock_blur;
-    draw_rounded_rect_path(cr, dx, dy, dw, dh, dr);
-    double base_alpha = CLAMP(0.28 + tint_val * 0.65, 0.15, 0.95);
-    cairo_set_source_rgba(cr, 0.10, 0.11, 0.14, base_alpha);
-    cairo_fill(cr);
+    double tint_a = 0.22 + ((double)state.dock_tint / 100.0) * 0.55;
+    double shadow_a = ((double)state.dock_shadow / 100.0) * 0.85;
 
-    cairo_pattern_t *pat = cairo_pattern_create_linear(dx, dy, dx, dy + dh);
-    double sheen = CLAMP((blur_val / 50.0) * 0.14, 0.02, 0.18);
-    cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, sheen + 0.05);
-    cairo_pattern_add_color_stop_rgba(pat, 0.4, 1.0, 1.0, 1.0, sheen);
-    cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, 0.02);
-    draw_rounded_rect_path(cr, dx, dy, dw, dh, dr);
-    cairo_set_source(cr, pat);
-    cairo_fill(cr);
-    cairo_pattern_destroy(pat);
+    draw_frosted_glass_card(cr, blurred_bg, dx, dy, dw, dh, dr, tint_a, shadow_a, 0.16);
 
-    draw_rounded_rect_path(cr, dx + 0.5, dy + 0.5, dw - 1.0, dh - 1.0, dr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
+    // Specular top rim line for dock shelf
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.35);
     cairo_set_line_width(cr, 1.0);
+    cairo_move_to(cr, dx + dr, dy + 0.5);
+    cairo_line_to(cr, dx + dw - dr, dy + 0.5);
     cairo_stroke(cr);
 
-    double icon_sz = 32.0;
-    double icon_y = dy + (dh - icon_sz) / 2.0 - 1.0;
+    double icon_sz = 34.0;
+    double icon_y = dy + (dh - icon_sz) / 2.0 - 2.0;
     double start_x = dx + 14.0;
-    double gap = 12.0;
+    double gap = 11.0;
 
-    /* Finder */
+    /* 1. Finder */
     double ix1 = start_x;
-    draw_rounded_rect_path(cr, ix1, icon_y, icon_sz, icon_sz, 7.0);
-    cairo_set_source_rgb(cr, 0.12, 0.53, 0.90);
+    draw_rounded_rect_path(cr, ix1, icon_y, icon_sz, icon_sz, 8.0);
+    cairo_set_source_rgb(cr, 0.14, 0.55, 0.94);
     cairo_fill(cr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
+    cairo_save(cr);
+    draw_rounded_rect_path(cr, ix1, icon_y, icon_sz, icon_sz, 8.0);
+    cairo_clip(cr);
+    cairo_move_to(cr, ix1 + icon_sz, icon_y);
+    cairo_line_to(cr, ix1 + 16.0, icon_y);
+    cairo_curve_to(cr, ix1 + 14.0, icon_y + 12.0, ix1 + 18.0, icon_y + 20.0, ix1 + 17.0, icon_y + icon_sz);
+    cairo_line_to(cr, ix1 + icon_sz, icon_y + icon_sz);
+    cairo_close_path(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
+    cairo_fill(cr);
+    cairo_restore(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    cairo_arc(cr, ix1 + 12.0, icon_y + 13.0, 1.5, 0, 2 * G_PI);
+    cairo_fill(cr);
+    cairo_arc(cr, ix1 + 22.0, icon_y + 13.0, 1.5, 0, 2 * G_PI);
+    cairo_fill(cr);
     cairo_set_line_width(cr, 1.6);
-    cairo_arc(cr, ix1 + 16.0, icon_y + 16.0, 7.0, 0.2 * G_PI, 0.8 * G_PI);
+    cairo_arc(cr, ix1 + 17.0, icon_y + 17.0, 7.5, 0.2 * G_PI, 0.8 * G_PI);
     cairo_stroke(cr);
-    cairo_arc(cr, ix1 + 11.5, icon_y + 12.5, 1.4, 0, 2 * G_PI);
-    cairo_fill(cr);
-    cairo_arc(cr, ix1 + 20.5, icon_y + 12.5, 1.4, 0, 2 * G_PI);
-    cairo_fill(cr);
-    cairo_arc(cr, ix1 + 16.0, dy + dh - 2.5, 1.5, 0, 2 * G_PI);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
+    cairo_arc(cr, ix1 + icon_sz / 2.0, dy + dh - 3.5, 1.6, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    /* Launchpad */
+    /* 2. Launchpad */
     double ix2 = ix1 + icon_sz + gap;
-    draw_rounded_rect_path(cr, ix2, icon_y, icon_sz, icon_sz, 7.0);
-    cairo_set_source_rgb(cr, 0.28, 0.29, 0.33);
+    draw_rounded_rect_path(cr, ix2, icon_y, icon_sz, icon_sz, 8.0);
+    cairo_set_source_rgb(cr, 0.25, 0.27, 0.32);
     cairo_fill(cr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
     for (int r = 0; r < 3; r++) {
         for (int c = 0; c < 3; c++) {
-            cairo_arc(cr, ix2 + 8.5 + c * 7.5, icon_y + 8.5 + r * 7.5, 1.6, 0, 2 * G_PI);
+            cairo_arc(cr, ix2 + 9.0 + c * 8.0, icon_y + 9.0 + r * 8.0, 1.7, 0, 2 * G_PI);
             cairo_fill(cr);
         }
     }
 
-    /* Safari */
+    /* 3. Safari */
     double ix3 = ix2 + icon_sz + gap;
-    draw_rounded_rect_path(cr, ix3, icon_y, icon_sz, icon_sz, 7.0);
-    cairo_set_source_rgb(cr, 0.15, 0.65, 0.95);
+    draw_rounded_rect_path(cr, ix3, icon_y, icon_sz, icon_sz, 8.0);
+    cairo_set_source_rgb(cr, 0.98, 0.98, 0.99);
     cairo_fill(cr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-    cairo_arc(cr, ix3 + 16.0, icon_y + 16.0, 9.5, 0, 2 * G_PI);
+    cairo_arc(cr, ix3 + icon_sz / 2.0, icon_y + icon_sz / 2.0, 13.0, 0, 2 * G_PI);
+    cairo_set_source_rgb(cr, 0.12, 0.58, 0.95);
     cairo_fill(cr);
-    cairo_set_source_rgb(cr, 0.90, 0.20, 0.20);
-    cairo_move_to(cr, ix3 + 16.0, icon_y + 16.0);
-    cairo_line_to(cr, ix3 + 21.0, icon_y + 11.0);
-    cairo_line_to(cr, ix3 + 18.0, icon_y + 16.0);
+    double cx_s = ix3 + icon_sz / 2.0;
+    double cy_s = icon_y + icon_sz / 2.0;
+    cairo_move_to(cr, cx_s, cy_s);
+    cairo_line_to(cr, cx_s + 7.5, cy_s - 7.5);
+    cairo_line_to(cr, cx_s + 2.0, cy_s - 1.5);
     cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 0.95, 0.22, 0.22);
     cairo_fill(cr);
-    cairo_set_source_rgb(cr, 0.20, 0.40, 0.85);
-    cairo_move_to(cr, ix3 + 16.0, icon_y + 16.0);
-    cairo_line_to(cr, ix3 + 11.0, icon_y + 21.0);
-    cairo_line_to(cr, ix3 + 14.0, icon_y + 16.0);
+    cairo_move_to(cr, cx_s, cy_s);
+    cairo_line_to(cr, cx_s - 7.5, cy_s + 7.5);
+    cairo_line_to(cr, cx_s - 2.0, cy_s + 1.5);
     cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 0.98, 0.98, 0.98);
     cairo_fill(cr);
-    cairo_arc(cr, ix3 + 16.0, dy + dh - 2.5, 1.5, 0, 2 * G_PI);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
+    cairo_arc(cr, cx_s, dy + dh - 3.5, 1.6, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    /* Settings */
+    /* 4. Settings */
     double ix4 = ix3 + icon_sz + gap;
-    draw_rounded_rect_path(cr, ix4, icon_y, icon_sz, icon_sz, 7.0);
-    cairo_set_source_rgb(cr, 0.32, 0.34, 0.38);
+    draw_rounded_rect_path(cr, ix4, icon_y, icon_sz, icon_sz, 8.0);
+    cairo_set_source_rgb(cr, 0.48, 0.50, 0.54);
     cairo_fill(cr);
-    cairo_set_source_rgba(cr, 0.85, 0.88, 0.92, 0.95);
-    cairo_set_line_width(cr, 2.5);
-    cairo_arc(cr, ix4 + 16.0, icon_y + 16.0, 6.5, 0, 2 * G_PI);
-    cairo_stroke(cr);
-    for (int a = 0; a < 6; a++) {
-        double ang = a * (G_PI / 3.0);
-        cairo_move_to(cr, ix4 + 16.0 + cos(ang) * 6.0, icon_y + 16.0 + sin(ang) * 6.0);
-        cairo_line_to(cr, ix4 + 16.0 + cos(ang) * 9.5, icon_y + 16.0 + sin(ang) * 9.5);
-        cairo_stroke(cr);
-    }
-
-    /* Separator */
-    double sep_x = ix4 + icon_sz + 7.0;
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
-    cairo_set_line_width(cr, 1.0);
-    cairo_move_to(cr, sep_x, dy + 10.0);
-    cairo_line_to(cr, sep_x, dy + dh - 10.0);
-    cairo_stroke(cr);
-
-    /* Trash */
-    double ix5 = sep_x + 8.0;
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.75);
-    cairo_set_line_width(cr, 1.4);
-    draw_rounded_rect_path(cr, ix5 + 7.0, icon_y + 8.0, 18.0, 18.0, 3.0);
-    cairo_stroke(cr);
-    cairo_move_to(cr, ix5 + 5.0, icon_y + 7.0);
-    cairo_line_to(cr, ix5 + 27.0, icon_y + 7.0);
-    cairo_stroke(cr);
-    cairo_move_to(cr, ix5 + 13.0, icon_y + 11.0);
-    cairo_line_to(cr, ix5 + 13.0, icon_y + 22.0);
-    cairo_stroke(cr);
-    cairo_move_to(cr, ix5 + 19.0, icon_y + 11.0);
-    cairo_line_to(cr, ix5 + 19.0, icon_y + 22.0);
-    cairo_stroke(cr);
-
-    char badge[128];
-    g_snprintf(badge, sizeof(badge), "Док • Тінь: %d%% • Розмиття: %d • Затемнення: %d%%", state.dock_shadow, state.dock_blur, state.dock_tint);
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 10.5);
-    cairo_text_extents_t ext;
-    cairo_text_extents(cr, badge, &ext);
-    double bx = (width - ext.width) / 2.0;
-    double by = 26.0;
-    draw_rounded_rect_path(cr, bx - 10.0, by - 12.0, ext.width + 20.0, 20.0, 10.0);
-    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.60);
+    double cx_g = ix4 + icon_sz / 2.0;
+    double cy_g = icon_y + icon_sz / 2.0;
+    cairo_arc(cr, cx_g, cy_g, 8.5, 0, 2 * G_PI);
+    cairo_set_source_rgb(cr, 0.88, 0.90, 0.92);
     cairo_fill(cr);
-    draw_rounded_rect_path(cr, bx - 10.0, by - 12.0, ext.width + 20.0, 20.0, 10.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
-    cairo_set_line_width(cr, 0.8);
-    cairo_stroke(cr);
-    cairo_move_to(cr, bx, by + 2.0);
+    cairo_arc(cr, cx_g, cy_g, 4.0, 0, 2 * G_PI);
+    cairo_set_source_rgb(cr, 0.48, 0.50, 0.54);
+    cairo_fill(cr);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-    cairo_show_text(cr, badge);
+    cairo_arc(cr, cx_g, dy + dh - 3.5, 1.6, 0, 2 * G_PI);
+    cairo_fill(cr);
+
+    /* Separator groove */
+    double sx_d = ix4 + icon_sz + 8.0;
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
+    cairo_set_line_width(cr, 1.0);
+    cairo_move_to(cr, sx_d, icon_y + 4.0);
+    cairo_line_to(cr, sx_d, icon_y + icon_sz - 4.0);
+    cairo_stroke(cr);
+
+    /* 5. Trash */
+    double ix5 = sx_d + 8.0;
+    draw_rounded_rect_path(cr, ix5, icon_y, icon_sz, icon_sz, 8.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
+    cairo_fill(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
+    cairo_set_line_width(cr, 1.4);
+    cairo_move_to(cr, ix5 + 10.0, icon_y + 11.0);
+    cairo_line_to(cr, ix5 + icon_sz - 10.0, icon_y + 11.0);
+    cairo_stroke(cr);
+    cairo_move_to(cr, ix5 + 11.5, icon_y + 13.0);
+    cairo_line_to(cr, ix5 + 13.0, icon_y + icon_sz - 9.0);
+    cairo_line_to(cr, ix5 + icon_sz - 13.0, icon_y + icon_sz - 9.0);
+    cairo_line_to(cr, ix5 + icon_sz - 11.5, icon_y + 13.0);
+    cairo_close_path(cr);
+    cairo_stroke(cr);
 
     cairo_restore(cr);
 
@@ -2187,80 +2465,70 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         cairo_paint(cr);
     }
 
+    // Modal background darkening over wallpaper
     double tint_val = (double)state.alert_tint / 100.0;
-    double backdrop_alpha = CLAMP(0.20 + tint_val * 0.55, 0.15, 0.85);
+    double backdrop_alpha = CLAMP(0.25 + tint_val * 0.50, 0.18, 0.85);
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, backdrop_alpha);
     cairo_paint(cr);
 
-    double cw = 230.0, ch = 126.0, cr_r = 16.0;
+    // Modal alert card
+    double cw = 246.0, ch = 140.0, cr_r = 18.0;
     double cx = (width - cw) / 2.0;
     double cy = (height - ch) / 2.0;
 
-    double shadow_val = (double)state.alert_shadow / 100.0;
-    if (shadow_val > 0.01) {
-        for (int i = 4; i >= 1; i--) {
-            double exp = i * 3.5;
-            double a = (shadow_val * 0.18) / i;
-            draw_rounded_rect_path(cr, cx - exp, cy + exp * 0.5, cw + exp * 2.0, ch + exp * 1.6, cr_r + exp);
-            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, a);
-            cairo_fill(cr);
-        }
-    }
+    int blur_r = CLAMP(state.alert_blur, 6, 50);
+    cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
 
-    double blur_val = (double)state.alert_blur;
-    draw_rounded_rect_path(cr, cx, cy, cw, ch, cr_r);
-    double card_alpha = CLAMP(0.40 + tint_val * 0.50, 0.30, 0.95);
-    cairo_set_source_rgba(cr, 0.14, 0.14, 0.18, card_alpha);
+    double shadow_a = ((double)state.alert_shadow / 100.0) * 0.90;
+    double card_tint_a = 0.32 + tint_val * 0.50;
+
+    draw_frosted_glass_card(cr, blurred_bg, cx, cy, cw, ch, cr_r, card_tint_a, shadow_a, 0.16);
+
+    // Amber warning triangle icon (macOS Warning Badge)
+    double tri_cx = cx + cw / 2.0;
+    double tri_cy = cy + 24.0;
+    double tri_sz = 14.0;
+    cairo_move_to(cr, tri_cx, tri_cy - tri_sz);
+    cairo_line_to(cr, tri_cx + tri_sz * 1.15, tri_cy + tri_sz * 0.85);
+    cairo_line_to(cr, tri_cx - tri_sz * 1.15, tri_cy + tri_sz * 0.85);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 0.98, 0.70, 0.12);
     cairo_fill(cr);
 
-    cairo_pattern_t *pat = cairo_pattern_create_linear(cx, cy, cx, cy + ch);
-    double sheen = CLAMP((blur_val / 50.0) * 0.16, 0.03, 0.20);
-    cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, sheen + 0.06);
-    cairo_pattern_add_color_stop_rgba(pat, 0.5, 1.0, 1.0, 1.0, sheen);
-    cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, 0.02);
-    draw_rounded_rect_path(cr, cx, cy, cw, ch, cr_r);
-    cairo_set_source(cr, pat);
-    cairo_fill(cr);
-    cairo_pattern_destroy(pat);
-
-    draw_rounded_rect_path(cr, cx + 0.5, cy + 0.5, cw - 1.0, ch - 1.0, cr_r);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.20);
-    cairo_set_line_width(cr, 1.0);
-    cairo_stroke(cr);
-
-    double icon_y = cy + 22.0;
-    cairo_arc(cr, cx + cw / 2.0, icon_y, 11.0, 0, 2 * G_PI);
-    cairo_set_source_rgb(cr, 0.98, 0.65, 0.14);
-    cairo_fill(cr);
+    // Exclamation mark inside warning triangle
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 13.0);
     cairo_set_source_rgb(cr, 0.10, 0.10, 0.10);
     cairo_text_extents_t ex_w;
     cairo_text_extents(cr, "!", &ex_w);
-    cairo_move_to(cr, cx + cw / 2.0 - ex_w.width / 2.0 - ex_w.x_bearing, icon_y + ex_w.height / 2.0);
+    cairo_move_to(cr, tri_cx - ex_w.width / 2.0 - ex_w.x_bearing, tri_cy + ex_w.height / 2.0 + 1.0);
     cairo_show_text(cr, "!");
 
-    cairo_set_font_size(cr, 11.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    // Title
+    cairo_set_font_size(cr, 11.5);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     const char *title_txt = "Спорожнити Смітник?";
     cairo_text_extents(cr, title_txt, &ex_w);
-    cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 50.0);
+    cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 54.0);
     cairo_show_text(cr, title_txt);
 
+    // Subtitle
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
-    const char *sub_txt = "Дію неможливо скасувати";
+    const char *sub_txt = "Цю дію неможливо скасувати.";
     cairo_text_extents(cr, sub_txt, &ex_w);
-    cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 66.0);
+    cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 70.0);
     cairo_show_text(cr, sub_txt);
 
+    // Button row
     double btn_y = cy + ch - 34.0;
-    double btn_w = 94.0;
+    double btn_w = 98.0;
     double btn_h = 24.0;
     double btn_r = 7.0;
 
-    double b1_x = cx + 14.0;
+    // Cancel button
+    double b1_x = cx + 16.0;
     draw_rounded_rect_path(cr, b1_x, btn_y, btn_w, btn_h, btn_r);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
     cairo_fill(cr);
@@ -2274,9 +2542,10 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_move_to(cr, b1_x + (btn_w - ex_w.width) / 2.0, btn_y + 15.5);
     cairo_show_text(cr, "Скасувати");
 
-    double b2_x = cx + cw - 14.0 - btn_w;
+    // Destructive Empty Trash button
+    double b2_x = cx + cw - 16.0 - btn_w;
     draw_rounded_rect_path(cr, b2_x, btn_y, btn_w, btn_h, btn_r);
-    cairo_set_source_rgb(cr, 0.88, 0.24, 0.20);
+    cairo_set_source_rgb(cr, 0.88, 0.22, 0.20);
     cairo_fill(cr);
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.0);
@@ -2327,81 +2596,59 @@ static void notifications_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, i
         cairo_paint(cr);
     }
 
-    double nw = 260.0, nh = 64.0, nr = 15.0;
+    double nw = 280.0, nh = 66.0, nr = 16.0;
     double nx = (width - nw) / 2.0;
     double ny = (height - nh) / 2.0;
 
-    double shadow_val = (double)state.notification_shadow / 100.0;
-    if (shadow_val > 0.01) {
-        for (int i = 4; i >= 1; i--) {
-            double exp = i * 2.8;
-            double a = (shadow_val * 0.18) / i;
-            draw_rounded_rect_path(cr, nx - exp, ny + 2.0 + exp * 0.4, nw + exp * 2.0, nh + exp * 1.5, nr + exp);
-            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, a);
-            cairo_fill(cr);
-        }
-    }
+    int blur_r = CLAMP(state.notification_blur, 6, 50);
+    cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
 
-    double tint_val = (double)state.notification_tint / 100.0;
-    double blur_val = (double)state.notification_blur;
-    draw_rounded_rect_path(cr, nx, ny, nw, nh, nr);
-    double base_alpha = CLAMP(0.35 + tint_val * 0.55, 0.20, 0.95);
-    cairo_set_source_rgba(cr, 0.12, 0.13, 0.16, base_alpha);
-    cairo_fill(cr);
+    double tint_a = 0.28 + ((double)state.notification_tint / 100.0) * 0.55;
+    double shadow_a = ((double)state.notification_shadow / 100.0) * 0.85;
 
-    cairo_pattern_t *pat = cairo_pattern_create_linear(nx, ny, nx, ny + nh);
-    double sheen = CLAMP((blur_val / 50.0) * 0.15, 0.02, 0.18);
-    cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, sheen + 0.05);
-    cairo_pattern_add_color_stop_rgba(pat, 0.4, 1.0, 1.0, 1.0, sheen);
-    cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, 0.02);
-    draw_rounded_rect_path(cr, nx, ny, nw, nh, nr);
-    cairo_set_source(cr, pat);
-    cairo_fill(cr);
-    cairo_pattern_destroy(pat);
+    draw_frosted_glass_card(cr, blurred_bg, nx, ny, nw, nh, nr, tint_a, shadow_a, 0.15);
 
-    draw_rounded_rect_path(cr, nx + 0.5, ny + 0.5, nw - 1.0, nh - 1.0, nr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.20);
-    cairo_set_line_width(cr, 1.0);
-    cairo_stroke(cr);
-
-    double icon_sz = 36.0;
+    // Messages green squircle icon
+    double icon_sz = 38.0;
     double ix = nx + 12.0;
     double iy = ny + (nh - icon_sz) / 2.0;
-    draw_rounded_rect_path(cr, ix, iy, icon_sz, icon_sz, 8.0);
+    draw_rounded_rect_path(cr, ix, iy, icon_sz, icon_sz, 9.0);
     cairo_set_source_rgb(cr, 0.19, 0.78, 0.35);
     cairo_fill(cr);
+    // Speech bubble
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-    cairo_arc(cr, ix + 18.0, iy + 17.0, 8.0, 0, 2 * G_PI);
+    cairo_arc(cr, ix + 19.0, iy + 17.5, 8.5, 0, 2 * G_PI);
     cairo_fill(cr);
-    cairo_move_to(cr, ix + 13.0, iy + 21.0);
-    cairo_line_to(cr, ix + 10.0, iy + 26.0);
-    cairo_line_to(cr, ix + 18.0, iy + 24.0);
+    cairo_move_to(cr, ix + 14.0, iy + 21.5);
+    cairo_line_to(cr, ix + 10.5, iy + 27.0);
+    cairo_line_to(cr, ix + 19.0, iy + 25.0);
     cairo_close_path(cr);
     cairo_fill(cr);
 
+    // Text content
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-    cairo_move_to(cr, nx + 56.0, ny + 22.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
+    cairo_move_to(cr, nx + 58.0, ny + 22.0);
     cairo_show_text(cr, "Повідомлення");
 
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.55);
-    cairo_move_to(cr, nx + 148.0, ny + 22.0);
+    cairo_move_to(cr, nx + 150.0, ny + 22.0);
     cairo_show_text(cr, "•  щойно");
 
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
-    cairo_move_to(cr, nx + 56.0, ny + 38.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.92);
+    cairo_move_to(cr, nx + 58.0, ny + 38.0);
     cairo_show_text(cr, "Олександр");
 
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.75);
-    cairo_move_to(cr, nx + 56.0, ny + 51.0);
-    cairo_show_text(cr, "Зустрінемось о 14:00? До зустрічі!");
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.80);
+    cairo_move_to(cr, nx + 58.0, ny + 51.0);
+    cairo_show_text(cr, "Зустрінемось о 14:00 біля кав'ярні?");
 
     cairo_restore(cr);
 
@@ -2448,43 +2695,19 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.22);
     cairo_paint(cr);
 
-    double sw = 270.0, sh = 46.0, sr = 23.0;
+    double sw = 290.0, sh = 46.0, sr = 23.0;
     double sx = (width - sw) / 2.0;
     double sy = (height - sh) / 2.0;
 
-    double shadow_val = (double)state.spotlight_shadow / 100.0;
-    if (shadow_val > 0.01) {
-        for (int i = 4; i >= 1; i--) {
-            double exp = i * 3.0;
-            double a = (shadow_val * 0.18) / i;
-            draw_rounded_rect_path(cr, sx - exp, sy + exp * 0.4, sw + exp * 2.0, sh + exp * 1.5, sr + exp);
-            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, a);
-            cairo_fill(cr);
-        }
-    }
+    int blur_r = CLAMP(state.spotlight_blur, 6, 50);
+    cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
 
-    double tint_val = (double)state.spotlight_tint / 100.0;
-    double blur_val = (double)state.spotlight_blur;
-    draw_rounded_rect_path(cr, sx, sy, sw, sh, sr);
-    double base_alpha = CLAMP(0.30 + tint_val * 0.60, 0.18, 0.95);
-    cairo_set_source_rgba(cr, 0.10, 0.11, 0.14, base_alpha);
-    cairo_fill(cr);
+    double tint_a = 0.26 + ((double)state.spotlight_tint / 100.0) * 0.55;
+    double shadow_a = ((double)state.spotlight_shadow / 100.0) * 0.85;
 
-    cairo_pattern_t *pat = cairo_pattern_create_linear(sx, sy, sx, sy + sh);
-    double sheen = CLAMP((blur_val / 50.0) * 0.16, 0.02, 0.20);
-    cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, sheen + 0.06);
-    cairo_pattern_add_color_stop_rgba(pat, 0.5, 1.0, 1.0, 1.0, sheen);
-    cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, 0.02);
-    draw_rounded_rect_path(cr, sx, sy, sw, sh, sr);
-    cairo_set_source(cr, pat);
-    cairo_fill(cr);
-    cairo_pattern_destroy(pat);
+    draw_frosted_glass_card(cr, blurred_bg, sx, sy, sw, sh, sr, tint_a, shadow_a, 0.16);
 
-    draw_rounded_rect_path(cr, sx + 0.5, sy + 0.5, sw - 1.0, sh - 1.0, sr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.24);
-    cairo_set_line_width(cr, 1.0);
-    cairo_stroke(cr);
-
+    // Accent magnifying glass
     double ar, ag, ab;
     get_system_accent_color(&ar, &ag, &ab);
     cairo_set_source_rgb(cr, ar, ag, ab);
@@ -2495,26 +2718,28 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
     cairo_line_to(cr, sx + 31.0, sy + 30.0);
     cairo_stroke(cr);
 
+    // Placeholder
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 12.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.70);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.72);
     cairo_move_to(cr, sx + 38.0, sy + 27.5);
     cairo_show_text(cr, "Пошук у Spotlight...");
 
-    double badge_w = 58.0, badge_h = 20.0;
+    // Shortcut badge
+    double badge_w = 60.0, badge_h = 22.0;
     double bx = sx + sw - badge_w - 12.0;
     double by = sy + (sh - badge_h) / 2.0;
-    draw_rounded_rect_path(cr, bx, by, badge_w, badge_h, 6.0);
+    draw_rounded_rect_path(cr, bx, by, badge_w, badge_h, 7.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
     cairo_fill(cr);
-    draw_rounded_rect_path(cr, bx + 0.5, by + 0.5, badge_w - 1.0, badge_h - 1.0, 6.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
+    draw_rounded_rect_path(cr, bx + 0.5, by + 0.5, badge_w - 1.0, badge_h - 1.0, 7.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
     cairo_set_line_width(cr, 0.8);
     cairo_stroke(cr);
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 9.5);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
-    cairo_move_to(cr, bx + 7.0, by + 13.5);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
+    cairo_move_to(cr, bx + 7.5, by + 14.5);
     cairo_show_text(cr, "⌘ Пробіл");
 
     cairo_restore(cr);
@@ -2559,49 +2784,27 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
         cairo_paint(cr);
     }
 
-    double bw = 250.0, bh = 84.0, br = 16.0;
+    double bw = 270.0, bh = 88.0, br = 18.0;
     double bx = (width - bw) / 2.0;
     double by = (height - bh) / 2.0;
 
-    for (int i = 4; i >= 1; i--) {
-        double exp = i * 2.8;
-        draw_rounded_rect_path(cr, bx - exp, by + exp * 0.4, bw + exp * 2.0, bh + exp * 1.5, br + exp);
-        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.05 / i);
-        cairo_fill(cr);
-    }
+    int blur_r = CLAMP(state.blur_sigma / 2, 4, 50);
+    cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
 
-    double tint_val = (double)state.blur_tint / 100.0;
-    double sigma_val = (double)state.blur_sigma;
-    draw_rounded_rect_path(cr, bx, by, bw, bh, br);
-    double base_alpha = CLAMP(0.32 + tint_val * 0.58, 0.20, 0.95);
-    cairo_set_source_rgba(cr, 0.10, 0.11, 0.15, base_alpha);
-    cairo_fill(cr);
+    double tint_a = 0.28 + ((double)state.blur_tint / 100.0) * 0.55;
 
-    cairo_pattern_t *pat = cairo_pattern_create_linear(bx, by, bx, by + bh);
-    double sheen = CLAMP((sigma_val / 100.0) * 0.18, 0.02, 0.22);
-    cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, sheen + 0.06);
-    cairo_pattern_add_color_stop_rgba(pat, 0.5, 1.0, 1.0, 1.0, sheen);
-    cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, 0.02);
-    draw_rounded_rect_path(cr, bx, by, bw, bh, br);
-    cairo_set_source(cr, pat);
-    cairo_fill(cr);
-    cairo_pattern_destroy(pat);
-
-    draw_rounded_rect_path(cr, bx + 0.5, by + 0.5, bw - 1.0, bh - 1.0, br);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
-    cairo_set_line_width(cr, 1.0);
-    cairo_stroke(cr);
+    draw_frosted_glass_card(cr, blurred_bg, bx, by, bw, bh, br, tint_a, 0.70, 0.16);
 
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.5);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_move_to(cr, bx + 18.0, by + 28.0);
     cairo_show_text(cr, "Глобальне розмиття (Blur)");
 
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.70);
-    cairo_move_to(cr, bx + 18.0, by + 45.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.72);
+    cairo_move_to(cr, bx + 18.0, by + 46.0);
     cairo_show_text(cr, "Фонове системне скло та матовість");
 
     double ar, ag, ab;
@@ -2613,7 +2816,7 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     cairo_text_extents_t ex_v;
     cairo_text_extents(cr, val_txt, &ex_v);
     double pw = ex_v.width + 16.0, ph = 18.0;
-    double px = bx + 18.0, py = by + 56.0;
+    double px = bx + 18.0, py = by + 58.0;
     draw_rounded_rect_path(cr, px, py, pw, ph, 9.0);
     cairo_set_source_rgba(cr, ar, ag, ab, 0.35);
     cairo_fill(cr);
@@ -2667,84 +2870,76 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
         cairo_paint(cr);
     }
 
-    double mw = 196.0, mh = 136.0, mr = 13.0;
+    double mw = 206.0, mh = 146.0, mr = 13.0;
     double mx = (width - mw) / 2.0;
     double my = (height - mh) / 2.0;
 
-    double shadow_str = (double)state.menu_shadow_strength / 100.0;
-    double shadow_b = (double)state.menu_shadow_blur;
-    if (shadow_str > 0.01) {
-        int passes = 5;
-        double max_expand = fmax(shadow_b * 0.40, 4.0);
-        for (int i = passes; i >= 1; i--) {
-            double exp = i * (max_expand / passes);
-            double a = (shadow_str * 0.22) / i;
-            draw_rounded_rect_path(cr, mx - exp, my + exp * 0.5, mw + exp * 2.0, mh + exp * 1.5, mr + exp);
-            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, a);
-            cairo_fill(cr);
-        }
-    }
+    int blur_r = CLAMP(state.menu_blur, 6, 50);
+    cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
 
-    double tint_val = (double)state.menu_tint / 100.0;
-    double blur_val = (double)state.menu_blur;
-    draw_rounded_rect_path(cr, mx, my, mw, mh, mr);
-    double base_alpha = CLAMP(0.38 + tint_val * 0.55, 0.25, 0.95);
-    cairo_set_source_rgba(cr, 0.11, 0.12, 0.15, base_alpha);
-    cairo_fill(cr);
+    double tint_a = 0.28 + ((double)state.menu_tint / 100.0) * 0.55;
+    double shadow_a = ((double)state.menu_shadow_strength / 100.0) * 0.85;
 
-    cairo_pattern_t *pat = cairo_pattern_create_linear(mx, my, mx, my + mh);
-    double sheen = CLAMP((blur_val / 100.0) * 0.16, 0.02, 0.20);
-    cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, sheen + 0.05);
-    cairo_pattern_add_color_stop_rgba(pat, 0.4, 1.0, 1.0, 1.0, sheen);
-    cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, 0.02);
-    draw_rounded_rect_path(cr, mx, my, mw, mh, mr);
-    cairo_set_source(cr, pat);
-    cairo_fill(cr);
-    cairo_pattern_destroy(pat);
-
-    draw_rounded_rect_path(cr, mx + 0.5, my + 0.5, mw - 1.0, mh - 1.0, mr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.20);
-    cairo_set_line_width(cr, 1.0);
-    cairo_stroke(cr);
+    draw_frosted_glass_card(cr, blurred_bg, mx, my, mw, mh, mr, tint_a, shadow_a, 0.15);
 
     double ar, ag, ab;
     get_system_accent_color(&ar, &ag, &ab);
 
-    double pill_y = my + 8.0, pill_h = 19.0;
-    draw_rounded_rect_path(cr, mx + 10.0, pill_y, 26.0, pill_h, 6.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.15);
+    // Top 3 quick action capsule buttons
+    double pill_y = my + 8.0, pill_h = 22.0;
+    // Capsule 1: Grid [ ⊞ ]
+    draw_rounded_rect_path(cr, mx + 10.0, pill_y, 28.0, pill_h, 7.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_fill(cr);
+    draw_rounded_rect_path(cr, mx + 10.5, pill_y + 0.5, 27.0, pill_h - 1.0, 7.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
+    cairo_set_line_width(cr, 0.8);
+    cairo_stroke(cr);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
     for (int r = 0; r < 2; r++) {
         for (int c = 0; c < 2; c++) {
-            cairo_rectangle(cr, mx + 15.0 + c * 8.0, pill_y + 4.5 + r * 6.0, 4.5, 4.0);
+            cairo_rectangle(cr, mx + 16.0 + c * 8.0, pill_y + 6.0 + r * 6.0, 5.0, 4.5);
             cairo_fill(cr);
         }
     }
 
-    draw_rounded_rect_path(cr, mx + 42.0, pill_y, 26.0, pill_h, 6.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.15);
+    // Capsule 2: More [ ··· ]
+    draw_rounded_rect_path(cr, mx + 44.0, pill_y, 28.0, pill_h, 7.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_fill(cr);
+    draw_rounded_rect_path(cr, mx + 44.5, pill_y + 0.5, 27.0, pill_h - 1.0, 7.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
+    cairo_set_line_width(cr, 0.8);
+    cairo_stroke(cr);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
     for (int d = -1; d <= 1; d++) {
-        cairo_arc(cr, mx + 55.0 + d * 5.0, pill_y + 9.5, 1.4, 0, 2 * G_PI);
+        cairo_arc(cr, mx + 58.0 + d * 5.0, pill_y + 11.0, 1.6, 0, 2 * G_PI);
         cairo_fill(cr);
     }
 
-    double p3_w = 28.0;
+    // Capsule 3: Search [ ⌕ ]
+    double p3_w = 30.0;
     double p3_x = mx + mw - 10.0 - p3_w;
-    draw_rounded_rect_path(cr, p3_x, pill_y, p3_w, pill_h, 6.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.15);
+    draw_rounded_rect_path(cr, p3_x, pill_y, p3_w, pill_h, 7.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_fill(cr);
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 9.5);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
-    cairo_move_to(cr, p3_x + 6.0, pill_y + 13.5);
-    cairo_show_text(cr, "ук");
+    draw_rounded_rect_path(cr, p3_x + 0.5, pill_y + 0.5, p3_w - 1.0, pill_h - 1.0, 7.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
+    cairo_set_line_width(cr, 0.8);
+    cairo_stroke(cr);
+    // Magnifier icon in capsule 3
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
+    cairo_set_line_width(cr, 1.2);
+    cairo_arc(cr, p3_x + 13.0, pill_y + 10.0, 3.8, 0, 2 * G_PI);
+    cairo_stroke(cr);
+    cairo_move_to(cr, p3_x + 16.0, pill_y + 13.0);
+    cairo_line_to(cr, p3_x + 19.5, pill_y + 16.5);
+    cairo_stroke(cr);
 
-    double r1_y = my + 34.0, r1_h = 28.0;
-    draw_rounded_rect_path(cr, mx + 5.0, r1_y, mw - 10.0, r1_h, 6.0);
-    cairo_set_source_rgba(cr, ar, ag, ab, 0.22);
+    // Row 1: "Режим редагування" with system accent orange toggle switch ON
+    double r1_y = my + 36.0, r1_h = 28.0;
+    draw_rounded_rect_path(cr, mx + 5.0, r1_y, mw - 10.0, r1_h, 7.0);
+    cairo_set_source_rgba(cr, ar, ag, ab, 0.20);
     cairo_fill(cr);
 
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
@@ -2753,33 +2948,51 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_move_to(cr, mx + 14.0, r1_y + 18.0);
     cairo_show_text(cr, "Режим редагування");
 
-    double sw_w = 30.0, sw_h = 17.0, sw_r = 8.5;
+    // Toggle switch pill: accent colored
+    double sw_w = 32.0, sw_h = 18.0, sw_r = 9.0;
     double sw_x = mx + mw - 12.0 - sw_w;
     double sw_y = r1_y + (r1_h - sw_h) / 2.0;
     draw_rounded_rect_path(cr, sw_x, sw_y, sw_w, sw_h, sw_r);
     cairo_set_source_rgb(cr, ar, ag, ab);
     cairo_fill(cr);
-    cairo_arc(cr, sw_x + sw_w - sw_r, sw_y + sw_r, 6.8, 0, 2 * G_PI);
-    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.25);
+    // Knob shadow
+    cairo_arc(cr, sw_x + sw_w - sw_r, sw_y + sw_r + 0.5, 7.2, 0, 2 * G_PI);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.30);
     cairo_fill(cr);
-    cairo_arc(cr, sw_x + sw_w - sw_r, sw_y + sw_r, 6.5, 0, 2 * G_PI);
+    // Knob body
+    cairo_arc(cr, sw_x + sw_w - sw_r, sw_y + sw_r, 7.0, 0, 2 * G_PI);
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_fill(cr);
 
+    // Thin separator line
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_set_line_width(cr, 0.8);
-    cairo_move_to(cr, mx + 10.0, my + 68.0);
-    cairo_line_to(cr, mx + mw - 10.0, my + 68.0);
+    cairo_move_to(cr, mx + 10.0, my + 71.0);
+    cairo_line_to(cr, mx + mw - 10.0, my + 71.0);
     cairo_stroke(cr);
 
+    // Row 2: "Додати віджети..."
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
-    cairo_move_to(cr, mx + 14.0, my + 88.0);
+    cairo_move_to(cr, mx + 14.0, my + 92.0);
     cairo_show_text(cr, "Додати віджети...");
 
-    cairo_move_to(cr, mx + 14.0, my + 114.0);
+    // Row 3: "Упорядкувати віджети" + chevron ›
+    cairo_move_to(cr, mx + 14.0, my + 116.0);
     cairo_show_text(cr, "Упорядкувати віджети");
+    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 11.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.45);
+    cairo_move_to(cr, mx + mw - 20.0, my + 116.0);
+    cairo_show_text(cr, "›");
+
+    // Row 4: "Змінити шпалери..."
+    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(cr, 10.5);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
+    cairo_move_to(cr, mx + 14.0, my + 138.0);
+    cairo_show_text(cr, "Змінити шпалери...");
 
     cairo_restore(cr);
 
@@ -2810,118 +3023,139 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     (void)area; (void)user_data;
     if (width <= 0 || height <= 0) return;
 
+    // 1. Clip preview container with rounded corners
     cairo_save(cr);
     draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
     cairo_clip(cr);
 
+    // 2. Wallpaper background
     cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
     if (bg) {
         cairo_set_source_surface(cr, bg, 0, 0);
         cairo_paint(cr);
     } else {
-        cairo_set_source_rgb(cr, 0.12, 0.15, 0.22);
+        cairo_pattern_t *fb = cairo_pattern_create_linear(0, 0, width, height);
+        cairo_pattern_add_color_stop_rgb(fb, 0.0, 0.12, 0.15, 0.22);
+        cairo_pattern_add_color_stop_rgb(fb, 1.0, 0.25, 0.18, 0.15);
+        cairo_set_source(cr, fb);
         cairo_paint(cr);
+        cairo_pattern_destroy(fb);
     }
 
-    double ww = 146.0, wh = 126.0;
-    double wr = (double)CLAMP(state.widget_radius, 4, 40);
+    // 3. Frosted Glass Widget Squircle Card
+    double ww = 150.0, wh = 142.0;
+    double wr = (double)CLAMP(state.widget_radius, 6, 44);
     double wx = (width - ww) / 2.0;
     double wy = (height - wh) / 2.0;
 
-    double shadow_val = (double)state.widget_shadow / 100.0;
-    if (shadow_val > 0.01) {
-        for (int i = 4; i >= 1; i--) {
-            double exp = i * 3.0;
-            double a = (shadow_val * 0.18) / i;
-            draw_rounded_rect_path(cr, wx - exp, wy + exp * 0.5, ww + exp * 2.0, wh + exp * 1.5, wr + exp);
-            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, a);
-            cairo_fill(cr);
-        }
-    }
+    int blur_r = CLAMP(state.widget_blur, 4, 50);
+    cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
 
-    double tint_val = (double)state.widget_tint / 100.0;
-    double blur_val = (double)state.widget_blur;
-    draw_rounded_rect_path(cr, wx, wy, ww, wh, wr);
-    double base_alpha = CLAMP(0.35 + tint_val * 0.55, 0.20, 0.95);
-    cairo_set_source_rgba(cr, 0.10, 0.11, 0.15, base_alpha);
-    cairo_fill(cr);
+    double tint_a = 0.25 + ((double)state.widget_tint / 100.0) * 0.55;
+    double shadow_a = ((double)state.widget_shadow / 100.0) * 0.85;
 
-    cairo_pattern_t *pat = cairo_pattern_create_linear(wx, wy, wx, wy + wh);
-    double sheen = CLAMP((blur_val / 50.0) * 0.15, 0.02, 0.20);
-    cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, sheen + 0.06);
-    cairo_pattern_add_color_stop_rgba(pat, 0.5, 1.0, 1.0, 1.0, sheen);
-    cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, 0.02);
-    draw_rounded_rect_path(cr, wx, wy, ww, wh, wr);
-    cairo_set_source(cr, pat);
-    cairo_fill(cr);
-    cairo_pattern_destroy(pat);
+    draw_frosted_glass_card(cr, blurred_bg, wx, wy, ww, wh, wr, tint_a, shadow_a, 0.14);
 
-    draw_rounded_rect_path(cr, wx + 0.5, wy + 0.5, ww - 1.0, wh - 1.0, wr);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
-    cairo_set_line_width(cr, 1.0);
-    cairo_stroke(cr);
-
+    // 4. Apple World Clock inside the Frosted Card
     double cx = wx + ww / 2.0;
-    double cy = wy + 48.0;
-    double cr_clock = 32.0;
+    double cy = wy + 52.0;
+    double cr_dial = 34.0;
 
-    cairo_arc(cr, cx, cy, cr_clock, 0, 2 * G_PI);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.08);
+    // Dial background: rich dark radial gradient (Apple dark mode)
+    cairo_pattern_t *dial_pat = cairo_pattern_create_radial(cx, cy - 6.0, 2.0, cx, cy, cr_dial);
+    cairo_pattern_add_color_stop_rgba(dial_pat, 0.0, 0.16, 0.17, 0.20, 0.95);
+    cairo_pattern_add_color_stop_rgba(dial_pat, 1.0, 0.08, 0.09, 0.11, 0.98);
+    cairo_arc(cr, cx, cy, cr_dial, 0, 2 * G_PI);
+    cairo_set_source(cr, dial_pat);
     cairo_fill(cr);
-    cairo_arc(cr, cx, cy, cr_clock, 0, 2 * G_PI);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
+    cairo_pattern_destroy(dial_pat);
+
+    // Subtle dial inner bezel ring
+    cairo_arc(cr, cx, cy, cr_dial, 0, 2 * G_PI);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_set_line_width(cr, 0.8);
     cairo_stroke(cr);
 
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
+    // 12 Authentic Apple Clock Tick Marks
     for (int t = 0; t < 12; t++) {
-        double ang = t * (G_PI / 6.0);
-        double len = (t % 3 == 0) ? 4.5 : 2.5;
-        cairo_set_line_width(cr, (t % 3 == 0) ? 1.5 : 0.8);
-        cairo_move_to(cr, cx + cos(ang) * (cr_clock - len), cy + sin(ang) * (cr_clock - len));
-        cairo_line_to(cr, cx + cos(ang) * cr_clock, cy + sin(ang) * cr_clock);
+        double ang = t * (G_PI / 6.0) - G_PI / 2.0;
+        int is_q = (t % 3 == 0);
+        double len = is_q ? 4.8 : 2.6;
+        double lw = is_q ? 1.6 : 0.85;
+        double alpha = is_q ? 0.95 : 0.45;
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, alpha);
+        cairo_set_line_width(cr, lw);
+        cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+        cairo_move_to(cr, cx + cos(ang) * (cr_dial - 2.5 - len), cy + sin(ang) * (cr_dial - 2.5 - len));
+        cairo_line_to(cr, cx + cos(ang) * (cr_dial - 2.5), cy + sin(ang) * (cr_dial - 2.5));
         cairo_stroke(cr);
     }
 
-    double h_ang = -G_PI * 0.65;
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-    cairo_set_line_width(cr, 2.4);
+    // Hands with drop shadows
+    double h_ang = -G_PI * 0.65; // ~10:09
+    double m_ang = -G_PI * 0.14;
+    double ar, ag, ab;
+    get_system_accent_color(&ar, &ag, &ab);
+    double s_ang = G_PI * 0.58;
+
+    // Hour hand shadow + hand
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.40);
+    cairo_set_line_width(cr, 2.6);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_move_to(cr, cx + 0.8, cy + 1.2);
+    cairo_line_to(cr, cx + cos(h_ang) * 16.0 + 0.8, cy + sin(h_ang) * 16.0 + 1.2);
+    cairo_stroke(cr);
+
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_move_to(cr, cx, cy);
     cairo_line_to(cr, cx + cos(h_ang) * 16.0, cy + sin(h_ang) * 16.0);
     cairo_stroke(cr);
 
-    double m_ang = -G_PI * 0.15;
-    cairo_set_line_width(cr, 1.8);
+    // Minute hand shadow + hand
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.40);
+    cairo_set_line_width(cr, 2.0);
+    cairo_move_to(cr, cx + 0.8, cy + 1.2);
+    cairo_line_to(cr, cx + cos(m_ang) * 24.0 + 0.8, cy + sin(m_ang) * 24.0 + 1.2);
+    cairo_stroke(cr);
+
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_move_to(cr, cx, cy);
     cairo_line_to(cr, cx + cos(m_ang) * 24.0, cy + sin(m_ang) * 24.0);
     cairo_stroke(cr);
 
-    double ar, ag, ab;
-    get_system_accent_color(&ar, &ag, &ab);
-    double s_ang = G_PI * 0.60;
+    // Accent Second hand with circular counterweight
     cairo_set_source_rgb(cr, ar, ag, ab);
     cairo_set_line_width(cr, 1.2);
-    cairo_move_to(cr, cx - cos(s_ang) * 5.0, cy - sin(s_ang) * 5.0);
+    cairo_move_to(cr, cx - cos(s_ang) * 6.5, cy - sin(s_ang) * 6.5);
     cairo_line_to(cr, cx + cos(s_ang) * 26.0, cy + sin(s_ang) * 26.0);
     cairo_stroke(cr);
 
-    cairo_arc(cr, cx, cy, 2.4, 0, 2 * G_PI);
+    // Counterweight circle
+    cairo_arc(cr, cx - cos(s_ang) * 4.5, cy - sin(s_ang) * 4.5, 2.0, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 9.5);
+    // Metallic center pin
+    cairo_arc(cr, cx, cy, 2.5, 0, 2 * G_PI);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    cairo_fill(cr);
+    cairo_arc(cr, cx, cy, 1.0, 0, 2 * G_PI);
+    cairo_set_source_rgb(cr, ar, ag, ab);
+    cairo_fill(cr);
+
+    // Typography (Apple Cupertino World Clock)
+    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 11.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_text_extents_t ex_t;
     cairo_text_extents(cr, "КИЇВ", &ex_t);
-    cairo_move_to(cr, cx - ex_t.width / 2.0, wy + 98.0);
+    cairo_move_to(cr, cx - ex_t.width / 2.0, wy + 106.0);
     cairo_show_text(cr, "КИЇВ");
 
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_font_size(cr, 8.5);
+    cairo_set_font_size(cr, 9.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.55);
     cairo_text_extents(cr, "+0 ГОД", &ex_t);
-    cairo_move_to(cr, cx - ex_t.width / 2.0, wy + 112.0);
+    cairo_move_to(cr, cx - ex_t.width / 2.0, wy + 120.0);
     cairo_show_text(cr, "+0 ГОД");
 
     cairo_restore(cr);
@@ -6191,6 +6425,8 @@ static GtkWidget *get_mac_styling_page(void)
         mac_styling_page = GTK_WIDGET(gtk_builder_get_object(builder, "mac_styling_page"));
         if (mac_styling_page) {
             g_object_ref(mac_styling_page);
+            reorder_group_previews_to_top(mac_styling_page);
+            g_signal_connect(mac_styling_page, "map", G_CALLBACK(on_mac_styling_page_map), NULL);
         }
     } else {
         if (error) {
@@ -7873,6 +8109,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     AdwNavigationPage *content_p = adw_navigation_split_view_get_content(split_view);
     if (content_p) {
         configure_toolbar_views_recursive(GTK_WIDGET(content_p), FALSE);
+        reorder_group_previews_to_top(GTK_WIDGET(content_p));
     }
 
     AdwNavigationPage *content_page = adw_navigation_split_view_get_content(split_view);
@@ -8166,6 +8403,24 @@ static void style_sidebar_row_recursive(GtkWidget *widget) {
     }
 }
 
+
+static gboolean open_styling_delayed_cb(gpointer user_data) {
+    AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
+    if (!split_view || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return G_SOURCE_REMOVE;
+    GtkListBoxRow *row = g_object_get_data(G_OBJECT(split_view), "mac_styling_row");
+    GtkListBox *box = g_object_get_data(G_OBJECT(split_view), "mac_main_listbox");
+    if (box && row) {
+        gtk_list_box_select_row(box, row);
+    }
+    GtkWidget *page = get_mac_styling_page();
+    if (page) {
+        adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
+        adw_navigation_split_view_set_show_content(split_view, TRUE);
+        schedule_update_panel_headerbar(split_view);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 static gboolean mac_fix_settings_window(gpointer user_data)
 {
     GtkWindow *window = GTK_WINDOW(user_data);
@@ -8419,8 +8674,8 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             }
         }
 
-        if (g_getenv("MAC_SETTINGS_OPEN_STYLING") && !g_object_get_data(G_OBJECT(split_view), "mac_styling_opened")) {
-            g_object_set_data(G_OBJECT(split_view), "mac_styling_opened", GINT_TO_POINTER(1));
+        if (g_getenv("MAC_SETTINGS_OPEN_STYLING")) {
+            g_object_set_data(G_OBJECT(split_view), "mac_main_listbox", main_listbox);
             if (mac_styling_row) {
                 gtk_list_box_select_row(main_listbox, mac_styling_row);
             }
@@ -8430,33 +8685,25 @@ static gboolean mac_fix_settings_window(gpointer user_data)
                 adw_navigation_split_view_set_show_content(split_view, TRUE);
                 schedule_update_panel_headerbar(split_view);
             }
+            g_timeout_add(100, open_styling_delayed_cb, split_view);
+            g_timeout_add(300, open_styling_delayed_cb, split_view);
+            g_timeout_add(600, open_styling_delayed_cb, split_view);
         }
     }
 
     if (g_getenv("MAC_SETTINGS_TEST_CLICKS") && main_listbox) {
         printf("--- MAC_SETTINGS_TEST_CLICKS START ---\n");
-        const char *test_ids[] = {
-            "wifi", "bluetooth", "network", "power",
-            "system", "universal-access", "background", "ubuntu", "widgets", "display", "multitasking",
-            "notifications", "sound",
-            "applications", "search", "online-accounts", "sharing",
-            "mouse", "keyboard", "printers", "privacy",
-            NULL
-        };
-        for (int t = 0; test_ids[t] != NULL; t++) {
-            const char *target = test_ids[t];
-            for (GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(main_listbox)); child != NULL; child = gtk_widget_get_next_sibling(child)) {
-                if (GTK_IS_LIST_BOX_ROW(child)) {
-                    MacPanelRowData *d = g_object_get_data(G_OBJECT(child), "data");
-                    if (d && g_strcmp0(d->id, target) == 0) {
-                        g_signal_emit_by_name(main_listbox, "row-activated", child);
-                        AdwNavigationPage *cp = adw_navigation_split_view_get_content(split_view);
-                        const char *cur_id = g_object_get_data(G_OBJECT(split_view), "mac_current_panel_id");
-                        printf("Activated %-16s -> cur_id=%-16s content=%s\n", target, cur_id ? cur_id : "null", cp ? G_OBJECT_TYPE_NAME(cp) : "null");
-                        break;
-                    }
-                }
-            }
+        int row_index = 0;
+        for (GtkListBoxRow *row = gtk_list_box_get_row_at_index(main_listbox, row_index);
+             row != NULL;
+             row = gtk_list_box_get_row_at_index(main_listbox, ++row_index)) {
+            const char *id = get_sidebar_row_panel_id(row);
+            g_signal_emit_by_name(main_listbox, "row-activated", row);
+            AdwNavigationPage *cp = adw_navigation_split_view_get_content(split_view);
+            const char *cur_id = g_object_get_data(G_OBJECT(split_view), "mac_current_panel_id");
+            printf("[%2d] Activated %-16s -> cur_id=%-16s content=%s\n",
+                   row_index, id ? id : "unknown", cur_id ? cur_id : (id ? id : "null"),
+                   cp ? G_OBJECT_TYPE_NAME(cp) : "null");
         }
         printf("--- MAC_SETTINGS_TEST_CLICKS END ---\n");
         exit(0);
@@ -8464,6 +8711,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
 
     expand_clamps_recursive(GTK_WIDGET(window));
     remove_panel_header_banner_if_any(GTK_WIDGET(window));
+    reorder_group_previews_to_top(GTK_WIDGET(window));
 
     GList *all_sws = NULL;
     find_scrolled_windows(GTK_WIDGET(window), &all_sws);
