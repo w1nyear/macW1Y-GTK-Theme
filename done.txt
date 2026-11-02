@@ -15820,3 +15820,36 @@ Task 617: Анімація непрозорості (плавний cross-fade) 
    - bin/mac-audit-sync check: 100% PASS (5/5).
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - Живе тестування: при виклику OSD гучності та дисплея іконка Центру керування плавно зникає (opacity 255 -> 0), а іконка звуку/дисплея плавно зʼявляється (opacity 0 -> 255); після закриття OSD відбувається дзеркальний плавний перехід.
+
+-------------------------------------------------------------------
+Task 618: Виправлення зміщення підсвічування активного робочого столу в Spaces Bar в Огляді
+-------------------------------------------------------------------
+1. Проблема:
+   - В Огляді (Mission Control / Spaces Bar) при вибраному робочому столі 1 («Робочий стіл 1») плаваючий індикатор-підсвічування (pill indicator) відображався зміщеним вправо під «Робочий стіл 2».
+   - Під час скролу між робочими столами позиціонування також мало постійний паразитичний горизонтальний зсув.
+
+2. Причина:
+   - Контейнер `_labelsLayer` був ініціалізований із `Clutter.BinLayout()`.
+   - Індикатор `_pillIndicator` та контейнер кнопок `_buttonsBox` були прямими дочірніми елементами `_labelsLayer`.
+   - За специфікацією Clutter `BinLayout` автоматично центрує дочірній елемент за шириною контейнера: `alloc.x1 = (container_w - pill_w) / 2` (при ширині 420px та ширині пігулки 122px базовий зсув становив рівно (420 - 122) / 2 = 149px).
+   - Коли метод `_syncPillPosition` задавав `translation_x = targetX` (для столу 1: 4px), підсумкова екранна позиція Clutter обчислювалася як `alloc.x1 + translation_x = 149px + 4px = 153px`, що накладало індикатор точно поверх «Робочого столу 2» (діапазон якого x1=134px .. x2=254px).
+
+3. Виправлення:
+   - extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js:
+     * Створено проміжний wrapper-актор `this._pillWrapper` із параметрами:
+       `x_expand: true, y_expand: true, x_align: Clutter.ActorAlign.FILL, y_align: Clutter.ActorAlign.FILL`.
+     * `this._pillIndicator` додано всередину `this._pillWrapper`, а сам `_pillWrapper` додано до `_labelsLayer`.
+     * Оскільки `_pillWrapper` завдяки `FILL` займає всю ширину `_labelsLayer` (від 0 до 420px), а сам не накладає центруючого layout manager, `this._pillIndicator` всередині нього має чисті базові координати `(x1: 0, y1: 0)`.
+     * Відтак `translation_x` і `translation_y` без жодних сторонніх офсетів 1:1 співпадають із позицією цільової кнопки робочого столу (`_buttonsBox.allocation.x1 + btn.allocation.x1`).
+   - Синхронізація та цілісність:
+     * Скопійовано оновлений файл до `~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js`.
+     * Оновлено хеш SHA-256 (`be2b8d382969c177e843003700d47263b7cec10dc210623dfa9a995d8c8a51ec`) та `last_verified` у `config/extensions.lock.json`.
+     * Оновлено контролер робочих столів у живому сеансі GNOME Shell через EvalHelper без перезапуску оболонки.
+
+4. Верифікація:
+   - Точність екранних координат:
+     * Робочий стіл 1: btn_pos [754, 6], pill_pos [754, 6], розмір [122, 21] — співпадіння 100% (matches: true).
+     * Робочий стіл 2: btn_pos [884, 6], pill_pos [884, 6], розмір [120, 21] — співпадіння 100% (matches: true).
+     * Робочий стіл 3: btn_pos [1012, 6], pill_pos [1012, 6], розмір [120, 21] — співпадіння 100% (matches: true).
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS.

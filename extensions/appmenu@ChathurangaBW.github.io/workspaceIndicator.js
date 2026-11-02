@@ -109,6 +109,14 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             y_align: Clutter.ActorAlign.CENTER,
         });
 
+        // Expanding wrapper for pill indicator to ensure 0-based coordinate alignment in BinLayout
+        this._pillWrapper = new Clutter.Actor({
+            x_expand: true,
+            y_expand: true,
+            x_align: Clutter.ActorAlign.FILL,
+            y_align: Clutter.ActorAlign.FILL,
+        });
+
         // Pill indicator sliding smoothly behind the active workspace label
         this._pillIndicator = new St.Widget({
             style: 'background-color: rgba(255, 255, 255, 0.22); border-radius: 6px;',
@@ -119,7 +127,8 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             y_expand: false,
             visible: false,
         });
-        this._labelsLayer.add_child(this._pillIndicator);
+        this._pillWrapper.add_child(this._pillIndicator);
+        this._labelsLayer.add_child(this._pillWrapper);
 
         // Buttons box (holding transparent text buttons)
         this._buttonsBox = new St.BoxLayout({
