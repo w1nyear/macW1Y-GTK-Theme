@@ -1,3 +1,4 @@
+@import url("macw1y-tokens.css");
 :root {
   --blue-1: #99c1f1;
   --blue-2: #62a0ea;
@@ -2782,13 +2783,13 @@ headerbar windowcontrols button > image {
 }
 
 headerbar windowcontrols button.close, headerbar windowcontrols button.maximize, headerbar windowcontrols button.minimize {
-  min-width: 13.5px;
-  min-height: 13.5px;
+  min-width: 16px;
+  min-height: 16px;
   padding: 0;
   margin: 0 1px;
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 13.5px 13.5px;
+  background-size: 16px 16px;
 }
 
 headerbar windowcontrols button.close, headerbar windowcontrols button.close:hover, headerbar windowcontrols button.close:focus, headerbar windowcontrols button.close:active, headerbar windowcontrols button.close:backdrop, headerbar windowcontrols button.maximize, headerbar windowcontrols button.maximize:hover, headerbar windowcontrols button.maximize:focus, headerbar windowcontrols button.maximize:active, headerbar windowcontrols button.maximize:backdrop, headerbar windowcontrols button.minimize, headerbar windowcontrols button.minimize:hover, headerbar windowcontrols button.minimize:focus, headerbar windowcontrols button.minimize:active, headerbar windowcontrols button.minimize:backdrop {
@@ -11494,3 +11495,6 @@ window.mac-settings-window ccwificonnectionrow > box.header {
   padding: 0px;
   border-spacing: 10px;
 }
+
+/* macW1Y Global Component Master Overrides (SSOT) */
+@import url("macw1y-components.css");

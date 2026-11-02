@@ -88,7 +88,7 @@ def generate_gtk4_tokens_css(tokens):
   --mac-switch-w: {d["switch_width"]}px;
   --mac-switch-h: {d["switch_height"]}px;
   --mac-slider-thumb: {d["slider_thumb_size"]}px;
-  --mac-traffic-light-size: {d.get("traffic_light_size", 13)}px;
+  --mac-traffic-light-size: {d.get("traffic_light_size", 16)}px;
   --mac-traffic-light-spacing: {d.get("traffic_light_spacing", 7)}px;
 }}
 """
@@ -1323,8 +1323,8 @@ headerbar windowcontrols button.minimize,
 headerbar windowcontrols button.maximize,
 headerbar button.titlebutton,
 .titlebar button.titlebutton {{
-  min-width: {d.get("traffic_light_size", 13.5)}px;
-  min-height: {d.get("traffic_light_size", 13.5)}px;
+  min-width: {d.get("traffic_light_size", 16)}px;
+  min-height: {d.get("traffic_light_size", 16)}px;
   padding: 0;
   margin: 0 1px;
   border-radius: 9999px;
@@ -1338,7 +1338,7 @@ headerbar button.titlebutton,
   outline-style: none;
   background-position: center center;
   background-repeat: no-repeat;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 
 .nautilus-window headerbar windowcontrols button:hover,
@@ -1362,7 +1362,7 @@ windowcontrols button:backdrop {{
   outline: none;
   background-position: center center;
   background-repeat: no-repeat;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 
 headerbar windowcontrols button > image,
@@ -1372,7 +1372,7 @@ windowcontrols button image,
 .nautilus-window windowcontrols button image {{
   min-width: 0;
   min-height: 0;
-  -gtk-icon-size: {int(d.get("traffic_light_size", 13.5) + 0.5)}px;
+  -gtk-icon-size: {int(d.get("traffic_light_size", 16) + 0.5)}px;
   opacity: 0;
   padding: 0;
   margin: 0;
@@ -1393,7 +1393,7 @@ headerbar windowcontrols button.close {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-close-dark.png"), url("windows-assets/titlebutton-close-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .nautilus-window windowcontrols button.close:hover,
 .nautilus-window headerbar windowcontrols button.close:hover,
@@ -1404,7 +1404,7 @@ headerbar windowcontrols button.close:hover {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-close-hover-dark.png"), url("windows-assets/titlebutton-close-hover-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .nautilus-window windowcontrols button.close:active,
 .nautilus-window headerbar windowcontrols button.close:active,
@@ -1415,7 +1415,7 @@ headerbar windowcontrols button.close:active {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-close-active-dark.png"), url("windows-assets/titlebutton-close-active-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .nautilus-window windowcontrols button.minimize,
 .nautilus-window headerbar windowcontrols button.minimize,
@@ -1426,7 +1426,7 @@ headerbar windowcontrols button.minimize {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-minimize-dark.png"), url("windows-assets/titlebutton-minimize-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .nautilus-window windowcontrols button.minimize:hover,
 .nautilus-window headerbar windowcontrols button.minimize:hover,
@@ -1437,7 +1437,7 @@ headerbar windowcontrols button.minimize:hover {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-minimize-hover-dark.png"), url("windows-assets/titlebutton-minimize-hover-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .nautilus-window windowcontrols button.minimize:active,
 .nautilus-window headerbar windowcontrols button.minimize:active,
@@ -1448,7 +1448,7 @@ headerbar windowcontrols button.minimize:active {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-minimize-active-dark.png"), url("windows-assets/titlebutton-minimize-active-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .nautilus-window windowcontrols button.maximize,
 .nautilus-window headerbar windowcontrols button.maximize,
@@ -1459,7 +1459,7 @@ headerbar windowcontrols button.maximize {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-maximize-dark.png"), url("windows-assets/titlebutton-maximize-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .nautilus-window windowcontrols button.maximize:hover,
 .nautilus-window headerbar windowcontrols button.maximize:hover,
@@ -1470,7 +1470,7 @@ headerbar windowcontrols button.maximize:hover {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-maximize-hover-dark.png"), url("windows-assets/titlebutton-maximize-hover-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .nautilus-window windowcontrols button.maximize:active,
 .nautilus-window headerbar windowcontrols button.maximize:active,
@@ -1481,7 +1481,7 @@ headerbar windowcontrols button.maximize:active {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-maximize-active-dark.png"), url("windows-assets/titlebutton-maximize-active-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .fullscreen windowcontrols button.maximize,
 .maximized windowcontrols button.maximize,
@@ -1492,7 +1492,7 @@ headerbar windowcontrols button.maximize:active {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-restore-dark.png"), url("windows-assets/titlebutton-restore-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .fullscreen windowcontrols button.maximize:hover,
 .maximized windowcontrols button.maximize:hover,
@@ -1503,7 +1503,7 @@ headerbar windowcontrols button.maximize:active {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-restore-hover-dark.png"), url("windows-assets/titlebutton-restore-hover-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 .fullscreen windowcontrols button.maximize:active,
 .maximized windowcontrols button.maximize:active,
@@ -1514,7 +1514,7 @@ headerbar windowcontrols button.maximize:active {{
   background-image: -gtk-scaled(url("windows-assets/titlebutton-restore-active-dark.png"), url("windows-assets/titlebutton-restore-active-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 
 /* =========================================================================
@@ -1678,8 +1678,8 @@ windowcontrols button,
 windowcontrols button.close,
 windowcontrols button.minimize,
 windowcontrols button.maximize {{
-  min-width: {d.get("traffic_light_size", 13.5)}px;
-  min-height: {d.get("traffic_light_size", 13.5)}px;
+  min-width: {d.get("traffic_light_size", 16)}px;
+  min-height: {d.get("traffic_light_size", 16)}px;
   padding: 0;
   margin: 0 2px;
   border-radius: 9999px;
@@ -1689,7 +1689,7 @@ windowcontrols button.maximize {{
   outline: none;
   background-position: center center;
   background-repeat: no-repeat;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 
 headerbar button.titlebutton:hover,
@@ -1704,7 +1704,7 @@ windowcontrols button:active {{
   outline: none;
   background-position: center center;
   background-repeat: no-repeat;
-  background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
+  background-size: {d.get("traffic_light_size", 16)}px {d.get("traffic_light_size", 16)}px;
 }}
 
 button.suggested-action {{
@@ -1813,6 +1813,17 @@ def build_all():
     place_master_imports(os.path.join(REPO_DIR, "gtk-4.0/gtk.css"))
     place_master_imports(os.path.join(REPO_DIR, "gtk-4.0/gtk-Dark.css"))
     place_master_imports(os.path.join(REPO_DIR, "gtk-3.0/gtk.css"))
+
+    # Config directory files
+    if os.path.exists(os.path.join(REPO_DIR, "config/gtk-4.0")):
+        update_file(os.path.join(REPO_DIR, "config/gtk-4.0/macw1y-tokens.css"), gtk4_tokens)
+        update_file(os.path.join(REPO_DIR, "config/gtk-4.0/macw1y-components.css"), gtk4_components)
+        place_master_imports(os.path.join(REPO_DIR, "config/gtk-4.0/gtk.css"))
+        place_master_imports(os.path.join(REPO_DIR, "config/gtk-4.0/gtk-Dark.css"))
+    if os.path.exists(os.path.join(REPO_DIR, "config/gtk-3.0")):
+        update_file(os.path.join(REPO_DIR, "config/gtk-3.0/macw1y-tokens.css"), gtk3_tokens)
+        update_file(os.path.join(REPO_DIR, "config/gtk-3.0/macw1y-components.css"), gtk3_components)
+        place_master_imports(os.path.join(REPO_DIR, "config/gtk-3.0/gtk.css"))
 
     # 3. User ~/.config/gtk-4.0/ and ~/.config/gtk-3.0/
     user_gtk4 = os.path.join(HOME, ".config/gtk-4.0")

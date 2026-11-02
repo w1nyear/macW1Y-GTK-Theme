@@ -5,10 +5,10 @@
 /* Window Controls base states*/
 
 windowcontrols button {
-  min-width: 13.5px;
-  min-height: 13.5px;
+  min-width: 16px;
+  min-height: 16px;
   background-repeat: no-repeat;
-  background-size: 13.5px 13.5px;
+  background-size: 16px 16px;
   background-position: center;
   margin: 0px;
   padding: 0px;
@@ -17,7 +17,7 @@ windowcontrols button {
 windowcontrols button:hover,
 windowcontrols:hover button {
   background-repeat: no-repeat;
-  background-size: 13.5px 13.5px;
+  background-size: 16px 16px;
   background-position: center;
 }
 

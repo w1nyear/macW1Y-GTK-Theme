@@ -15887,3 +15887,41 @@ Task 619: Виправлення центрування стрілки меню 
      * Меню Finder: `srcCenterX: 89.5`, `arrowScreenX: 89.5`, `diff: 0`.
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS.
+
+-------------------------------------------------------------------
+Task 620: Збільшення віконних кнопок керування (світлофорів) до пропорцій macOS 0.4
+-------------------------------------------------------------------
+1. Проблема:
+   - Користувач звернув увагу на те, що кнопки керування вікном (закриття, згортання, розгортання — червона, жовта, зелена крапки світлофора) у вікнах Libadwaita / GTK 4 та GTK 3 (зокрема в «Параметрах» GNOME Control Center) стали замалими (13.5px) після оптимізацій, і попросив збільшити їх до розміру, як це було у версії 0.4.
+
+2. Аналіз та дослідження:
+   - В оригінальних випусках macW1Y 0.4 розмір кнопок керування вікном становив `16px` (`min-width: 16px; min-height: 16px; background-size: 16px 16px;`).
+   - Нативні графічні ресурси `windows-assets/titlebutton-*.png` мають вихідну роздільність 16x16px (та 32x32px для @2x), всередині яких намальовано круг діаметром 14px з відступом 1px з кожного боку.
+   - При розмірі 13.5px круг стискався до ~11.8px із субрастровою нечіткістю та виглядав диспропорційно малим поруч із масивними панелями заголовків, полем пошуку та аватаром користувача.
+   - При поверненні розміру до 16px круг масштабується 1:1 без спотворень та розмиття, має автентичний вигляд версії 0.4 та macOS Sequoia/Tahoe з міжкнопковим інтервалом 7px.
+
+3. Реалізовані виправлення:
+   - config/macw1y-tokens.json:
+     * Оновлено системний токен геометрії світлофорів: `"traffic_light_size": 16` (раніше 13.5).
+   - bin/mac-build-theme:
+     * Оновлено резервні значення та генератор CSS для GTK 4 та GTK 3:
+       - `--mac-traffic-light-size: 16px;`
+       - `windowcontrols button`, `headerbar windowcontrols button`, `button.titlebutton`: `min-width: 16px; min-height: 16px; background-size: 16px 16px;`
+       - `-gtk-icon-size: 16px;`
+       - Всі стани (:hover, :active, :backdrop, maximized/restore) отримали розмір `16px 16px`.
+     * Додано автогенерацію та синхронізацію SSOT токенів і компонентів для `config/gtk-4.0` та `config/gtk-3.0`.
+   - config/gtk-4.0/titlebuttons4.css та config/gtk-3.0/titlebuttons3.css:
+     * Відновлено розміри `min-width: 16px; min-height: 16px; background-size: 16px 16px;`.
+   - config/gtk-4.0/gtk.css, gtk-Dark.css, gtk-Light.css:
+     * Відновлено розміри `min-width: 16px; min-height: 16px; background-size: 16px 16px;`.
+   - Компіляція та розгортання:
+     * Запущено `bin/mac-build-theme`, що скомпілював та оновив стилі у всіх активних середовищах:
+       - `gtk-4.0/`, `gtk-3.0/`, `config/gtk-4.0/`, `config/gtk-3.0/`
+       - `~/.config/gtk-4.0/`, `~/.config/gtk-3.0/`
+       - `~/.themes/macW1Y-Dark/`, `/usr/share/themes/macW1Y-Dark/`
+     * Синхронізовано `/usr/local/bin/mac-build-theme`.
+
+4. Верифікація:
+   - Перевірено розміри у згенерованих файлах CSS: `16px 16px` застосовано на всіх рівнях.
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS.
