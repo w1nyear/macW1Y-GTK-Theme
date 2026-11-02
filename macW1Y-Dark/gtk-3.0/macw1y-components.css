@@ -22,8 +22,8 @@ window.desktopwindow decoration {
 
 /* GTK 3 Switches */
 switch {
-  min-width: 42px;
-  min-height: 24px;
+  min-width: 40px;
+  min-height: 23px;
   padding: 0;
   border-radius: 9999px;
   background-color: rgba(255, 255, 255, 0.16);
@@ -36,8 +36,8 @@ switch:checked {
 }
 
 switch slider {
-  min-width: 20px;
-  min-height: 20px;
+  min-width: 19px;
+  min-height: 19px;
   margin: 2px;
   border-radius: 9999px;
   background-color: #ffffff;
@@ -94,16 +94,14 @@ windowcontrols button.minimize,
 windowcontrols button.maximize {
   min-width: 13px;
   min-height: 13px;
-  max-width: 13px;
-  max-height: 13px;
   padding: 0;
   margin: 0 2px;
   border-radius: 9999px;
-  background-color: transparent !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
+  background-color: transparent;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
   background-position: center;
   background-repeat: no-repeat;
   background-size: 13px 13px;
@@ -115,11 +113,11 @@ windowcontrols button:hover,
 headerbar button.titlebutton:active,
 .titlebar button.titlebutton:active,
 windowcontrols button:active {
-  background-color: transparent !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
+  background-color: transparent;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
 }
 
 button.suggested-action {

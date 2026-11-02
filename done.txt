@@ -15186,3 +15186,21 @@ Task 585: Виправлення роздільної здатності роз�
      * Здійснено знімки зрізів вікон Параметрів (`gcc_traffic_lights_fixed.png`) та налаштувань віджетів (`widgets_traffic_lights_fixed.png`): сірий фон навколо кнопок повністю усунуто, кнопки зменшено до компактного розміру 13px, кружечки червоного, жовтого та зеленого кольорів лежать безпосередньо на панелі вікна без будь-яких рамок чи зайвих підкладок.
      * `bin/mac-audit-sync check`: 100% PASS (5/5).
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+599. Зменшення габаритів перемикачів на 1 піксель у глобальній дизайн-системі:
+   - Задача:
+     * Користувач надав знімок перемикача з запитом «зменш перемикачі на піксель».
+   - Виконані зміни:
+     * У [`config/macw1y-tokens.json`](file:///home/vitaliy/macW1Y/config/macw1y-tokens.json) зменшено системні токени перемикачів:
+       - Висота доріжки (`switch_height`): з 24px до 23px (-1px).
+       - Ширина доріжки (`switch_width`): з 42px до 40px для збереження гармонійних пропорцій капсули.
+       - Розмір повзунка (`switch_thumb_size`): з 20px до 19px (-1px).
+       - Відступ повзунка (`switch_thumb_margin`): 2px (ідеальна симетрія: 19px + 2*2px = 23px висоти доріжки).
+       - Активні габарити при натисканні (`switch_active_height`/`width`): 21px та 30px (-1px/-2px).
+     * У [`bin/mac-build-theme`](file:///home/vitaliy/macW1Y/bin/mac-build-theme) розширено правила для перемикачів складеними селекторами `switch, adwswitchrow switch, list.boxed-list row switch, preferencespage switch, preferencesgroup switch`, а також `switch > slider, switch slider` для гарантованого перекриття у всіх контекстах.
+     * Очищено CSS від некоректних для GTK CSS директив `!important` та `max-width`/`max-height` у секції віконних кнопок, усунувши 100% попереджень парсера тем GTK.
+     * Перекомпільовано майстер-теми для GTK 4, GTK 3 та розгорнуто по системних каталогах (`~/.config/gtk-4.0/`, `~/.themes/macW1Y-Dark/`, `/usr/share/themes/macW1Y-Dark/`).
+   - Верифікація:
+     * Вимірювання розміру перемикача в GTK 4 (`GtkSwitch` в `AdwSwitchRow`): виділений розмір становить рівно 46x23px (висота рівно 23px замість 24px, розмір зменшено рівно на 1px).
+     * `bin/mac-audit-sync check`: 100% PASS (5/5).
+     * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
