@@ -15470,3 +15470,39 @@ TASK 607: Window Controls Traffic Light Hover Bug Fix & Size Adjustment (+0.5px)
    - На знімку чітко видно: кнопка закриття при hover відображається як єдине, чітке, ідеально центроване коло з хрестиком без будь-яких вертикальних повторень.
    - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено успішно).
    - `bin/mac-extension-guard verify`: 21/21 розширень валідовано (SUCCESS).
+
+
+================================================================================
+TASK 608: Removal of Darkening Gradients from Lists (Preserving Clean Blur & Opacity)
+================================================================================
+
+1. Problem Analysis:
+   - User reported an artificial dark gradient overlay masking the top of scrolled lists, specifically visible in GNOME Control Center (e.g. "Power" panel, where a dark band was cast across the top card "Fully Charged 100%").
+   - User request: "видали затемнюючий градієнт у списках. залиши тільки розмиття і непрозорість".
+   - Root cause investigation identified multiple overlapping gradient declarations:
+     * In injection library `control-center/libmac_settings.c`: `preferencespage > scrolledwindow > undershoot.top` and `.panel-has-switcher` had `min-height: 84px;` with `background: linear-gradient(to bottom, #1e1e1e 0%, rgba(30,30,30,0.98) 35%, ...);`.
+     * In stylesheets `config/gtk-4.0/gtk.css`, `config/gtk-4.0/gtk-Dark.css`, and `config/gtk-4.0/fixes4.css`: duplicate rules specified 84px and 96px `linear-gradient` overlays on `undershoot.top` and `headerbar`.
+     * In GTK 3 `config/gtk-3.0/gtk.css`: `undershoot.top` and `undershoot.bottom` had 28px `linear-gradient` overlays.
+
+2. Implemented Fixes:
+   - `control-center/libmac_settings.c` & `gnome-control-center-overlay/libmac_settings.c`:
+     * Replaced all undershoot gradient masks with clean transparent resets:
+       `min-height: 0px; background: none; background-color: transparent; background-image: none; box-shadow: none; border: none;`
+     * Recompiled `libmac_settings.so` and synchronized across all 7 target paths.
+     * Executed `sudo ldconfig`.
+   - `config/gtk-4.0/gtk.css`, `config/gtk-4.0/gtk-Dark.css`, `config/gtk-4.0/fixes4.css`:
+     * Removed all artificial `linear-gradient` overlays from `undershoot.top`, `undershoot.bottom`, `scrolledwindow undershoot`, `.sidebar-pane undershoot`, and `preferencespage undershoot`.
+     * Reset `undershoot` to `min-height: 0px; background: transparent; background-image: none; box-shadow: none; border: none;`.
+   - `config/gtk-3.0/gtk.css`:
+     * Removed all darkening gradient undershoots.
+     * Fixed GTK 3 CSS syntax error (replaced `-gtk-icon-size` with `min-width: 14px; min-height: 14px;`).
+   - `bin/mac-build-theme`:
+     * Added transparent undershoot generator logic for GTK 4 and GTK 3 components.
+     * Executed `python3 bin/mac-build-theme` and distributed updated CSS to all system and user theme locations.
+
+3. Testing & Verification:
+   - Rendered live Adwaita PreferencesPage window with ActionRows and captured texture (`power_panel_clean_gradient.png`).
+   - Pixel sampling confirmed uniform background color `#202022` with zero darkening gradient bands over rows.
+   - Clean CSS parsing with 0 warnings/errors across GTK 4 and GTK 3 providers.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.

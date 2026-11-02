@@ -391,7 +391,7 @@ window.nautilus-window .sidebar-pane headerbar {
   box-shadow: none;
 }
 
-/* Settings content list dissolution starting from top of scrolled window */
+/* Settings content list: Clean transparent without darkening gradient */
 preferencespage > scrolledwindow.undershoot-top > undershoot.top,
 preferencespage > scrolledwindow > undershoot.top,
 window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
@@ -399,31 +399,16 @@ window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
 window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
 window.mac-settings-window .content-pane scrolledwindow > undershoot.top,
 window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window scrolledwindow > undershoot.top {
-  min-height: 84px;
-  background: linear-gradient(to bottom,
-    @window_bg_color 0%,
-    alpha(@window_bg_color, 0.96) 20%,
-    alpha(@window_bg_color, 0.85) 45%,
-    alpha(@window_bg_color, 0.55) 70%,
-    alpha(@window_bg_color, 0.20) 88%,
-    transparent 100%);
-  backdrop-filter: blur(10px);
-  border: none;
-  box-shadow: none;
-}
-
+window.mac-settings-window scrolledwindow > undershoot.top,
 toolbarview.undershoot-top scrolledwindow > undershoot.top,
 navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane scrolledwindow > undershoot.top,
 scrolledwindow.undershoot-top > undershoot.top {
-  min-height: 38px;
-  background: linear-gradient(to bottom,
-    alpha(@window_bg_color, 0.40) 0%,
-    alpha(@window_bg_color, 0.20) 50%,
-    transparent 100%);
-  backdrop-filter: blur(10px);
+  min-height: 0px;
+  background: none;
+  background-color: transparent;
+  background-image: none;
   border: none;
   box-shadow: none;
 }

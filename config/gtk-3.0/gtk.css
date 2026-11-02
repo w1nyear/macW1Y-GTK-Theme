@@ -357,12 +357,10 @@ scrolledwindow > undershoot.right {
 undershoot.top,
 scrolledwindow undershoot.top,
 scrolledwindow > undershoot.top {
-    min-height: 28px;
-    background: linear-gradient(to bottom,
-        @theme_bg_color 0%,
-        alpha(@theme_bg_color, 0.85) 30%,
-        alpha(@theme_bg_color, 0.4) 65%,
-        transparent 100%);
+    min-height: 0px;
+    background: none;
+    background-color: transparent;
+    background-image: none;
     border: none;
     box-shadow: none;
 }
@@ -370,12 +368,10 @@ scrolledwindow > undershoot.top {
 undershoot.bottom,
 scrolledwindow undershoot.bottom,
 scrolledwindow > undershoot.bottom {
-    min-height: 28px;
-    background: linear-gradient(to top,
-        @theme_bg_color 0%,
-        alpha(@theme_bg_color, 0.85) 30%,
-        alpha(@theme_bg_color, 0.4) 65%,
-        transparent 100%);
+    min-height: 0px;
+    background: none;
+    background-color: transparent;
+    background-image: none;
     border: none;
     box-shadow: none;
 }
@@ -706,7 +702,8 @@ scale slider:disabled {
 
 .mc-toggle-group > button image,
 .mac-nav-pill > button image {
-  -gtk-icon-size: 14px;
+  min-width: 14px;
+  min-height: 14px;
   margin: 0;
   padding: 0;
 }

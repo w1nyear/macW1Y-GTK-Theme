@@ -1396,6 +1396,45 @@ headerbar windowcontrols button.maximize:active {{
   background-position: center center;
   background-size: {d.get("traffic_light_size", 13.5)}px {d.get("traffic_light_size", 13.5)}px;
 }}
+
+/* =========================================================================
+ * 13. Scrolled Lists & Undershoot Clean Transparency (No Darkening Gradients)
+ * ========================================================================= */
+undershoot,
+undershoot.top,
+undershoot.bottom,
+scrolledwindow undershoot,
+scrolledwindow > undershoot,
+scrolledwindow > undershoot.top,
+scrolledwindow > undershoot.bottom,
+scrolledwindow.undershoot-top > undershoot.top,
+scrolledwindow.undershoot-bottom > undershoot.bottom,
+preferencespage > scrolledwindow undershoot,
+preferencespage > scrolledwindow > undershoot.top,
+preferencespage > scrolledwindow > undershoot.bottom,
+preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
+window.mac-settings-window preferencespage > scrolledwindow > undershoot.bottom,
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > undershoot.top,
+window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top,
+.sidebar-pane undershoot,
+.sidebar-pane undershoot.top,
+.sidebar-pane undershoot.bottom,
+.sidebar-pane scrolledwindow undershoot,
+.content-pane undershoot,
+.content-pane undershoot.top,
+.content-pane undershoot.bottom,
+.content-pane scrolledwindow undershoot {{
+  min-height: 0px;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}}
 """
     return css
 
@@ -1580,6 +1619,22 @@ scrollbar slider {{
 
 scrollbar slider:hover {{
   background-color: rgba(255, 255, 255, 0.40);
+}}
+
+/* GTK 3 Scrolled Lists & Undershoot Clean Transparency */
+undershoot,
+undershoot.top,
+undershoot.bottom,
+scrolledwindow undershoot,
+scrolledwindow > undershoot,
+scrolledwindow > undershoot.top,
+scrolledwindow > undershoot.bottom {{
+  min-height: 0px;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
 }}
 """
     return css

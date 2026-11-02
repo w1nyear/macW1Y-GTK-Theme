@@ -154,3 +154,19 @@ scrollbar slider {
 scrollbar slider:hover {
   background-color: rgba(255, 255, 255, 0.40);
 }
+
+/* GTK 3 Scrolled Lists & Undershoot Clean Transparency */
+undershoot,
+undershoot.top,
+undershoot.bottom,
+scrolledwindow undershoot,
+scrolledwindow > undershoot,
+scrolledwindow > undershoot.top,
+scrolledwindow > undershoot.bottom {
+  min-height: 0px;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
