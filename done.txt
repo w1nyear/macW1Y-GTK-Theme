@@ -15204,3 +15204,23 @@ Task 585: Виправлення роздільної здатності роз�
      * Вимірювання розміру перемикача в GTK 4 (`GtkSwitch` в `AdwSwitchRow`): виділений розмір становить рівно 46x23px (висота рівно 23px замість 24px, розмір зменшено рівно на 1px).
      * `bin/mac-audit-sync check`: 100% PASS (5/5).
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+600. Повне видалення штучних фонових плашок, рамок та тіней з-під іконок та плоских кнопок по всій системі:
+   - Причина появи небажаних квадратних фонів під іконками:
+     * Під час первинної уніфікації віджетів правила для іконок бічної панелі (`navigation-split-view list row image`, `.navigation-sidebar row image` тощо) примусово задавали темну плитку `#1e1e20` з рамкою та тінню.
+     * Оскільки `gnome-control-center` побудований на базі `AdwNavigationSplitView`, селектор `navigation-split-view list row image` зачіпав усі списки у вікні Параметрів: іконки рівня сигналу Wi-Fi, значки замка, іконки в рядках списків, а в Nautilus — іконку накопичувача `nvme1` та закладки.
+     * Крім того, загальне правило для кнопок у рядках (`adwactionrow button`, `list.boxed-list row button`) не виключало класи `.image-button` та `.flat`, через що суфіксні кнопки-іконки (кнопка QR-коду, шестірня налаштувань мережі) отримували важкий прямокутний сірий фон звичайних текстових кнопок дій.
+   - Виконані виправлення:
+     * У [`bin/mac-build-theme`](file:///home/vitaliy/macW1Y/bin/mac-build-theme) (`generate_gtk4_components_css`):
+       - Повністю ліквідовано фонові плитки `#1e1e20`. Для всіх категорій піктограм (`image`, `icon`, `row image`, `.navigation-sidebar image`, `list.navigation-sidebar row image`, `navigation-split-view list row image`, `box.prefixes image`, `box.suffixes image` тощо) встановлено абсолютну прозорість без рамок і тіней: `background: transparent; background-color: transparent; background-image: none; border: none; border-style: none; box-shadow: none; padding: 0;`.
+       - У Секції 6 селектори кнопок дій доповнено виключенням `:not(.image-button):not(.flat)`, запобігаючи накладанню масивного кнопкового фону на суфіксні та плоскі іконки.
+       - Додано окремі правила для `button.flat`, `button.image-button`, `headerbar button.image-button`, `adwactionrow button.image-button`, `adwactionrow box.suffixes button`: повністю прозорий фон у спокійному стані (`background: transparent; border: none; box-shadow: none;`) та делікатний напівпрозорий відгук при наведенні курсора (`rgba(255, 255, 255, 0.08)`).
+     * Оновлено стилі в ін'єкційній бібліотеці [`control-center/libmac_settings.c`](file:///home/vitaliy/macW1Y/control-center/libmac_settings.c) та [`gnome-control-center-overlay/libmac_settings.c`](file:///home/vitaliy/macW1Y/gnome-control-center-overlay/libmac_settings.c).
+     * Перекомпільовано динамічну бібліотеку `libmac_settings.so` та поширено в усі 7 системних цільових каталогів із запуском `sudo ldconfig`.
+     * Синхронізовано `config/gtk-4.0/gtk.css`, `config/gtk-4.0/gtk-Dark.css`, `gtk-4.0/gtk.css`, `gtk-4.0/gtk-Dark.css`, `macW1Y-Dark/gtk-4.0/gtk.css`, `macW1Y-Dark/gtk-4.0/gtk-dark.css`.
+     * Перекомпільовано майстер-теми через `bin/mac-build-theme` та синхронізовано в `~/.config/gtk-4.0/`, `~/.themes/macW1Y-Dark/`, `/usr/share/themes/macW1Y-Dark/` та `/usr/local/bin/mac-build-theme`.
+   - Верифікація:
+     * Зафіксовано знімок екрана списку Wi-Fi (`gcc_wifi_clean_icons.png`): іконка рівня сигналу Wi-Fi, значок замка, кнопка QR-коду та шестірня налаштувань відображаються абсолютно чисто та прозоро без будь-яких сірих рамок чи темних квадратів.
+     * Зафіксовано знімок екрана Nautilus (`nautilus_clean_icons.png`): іконка накопичувача `nvme1` та всі інші елементи бічної панелі мають чистий прозорий фон без квадратних підкладок.
+     * `bin/mac-audit-sync check`: 100% PASS (5/5).
+     * `bin/mac-extension-guard verify`: 21/21 SUCCESS.

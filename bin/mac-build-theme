@@ -224,25 +224,43 @@ list.navigation-sidebar row:selected label {{
   font-weight: 500;
 }}
 
+/* Clean, transparent icons everywhere - NO background tiles, NO borders, NO shadows */
+image,
+icon,
+row image,
+.navigation-sidebar image,
+.navigation-sidebar row image,
+list.navigation-sidebar image,
+list.navigation-sidebar row image,
+navigation-split-view list row image,
+overlay-split-view list row image,
+navigationview.sidebar list row image,
+.sidebar-pane list row image,
+adwactionrow image,
+list.boxed-list row image,
+box.prefixes image,
+.prefixes image,
+box.suffixes image,
+.suffixes image {{
+  min-width: 16px;
+  min-height: 16px;
+  -gtk-icon-size: 16px;
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  padding: 0;
+}}
+
 navigation-split-view list row image,
 overlay-split-view list row image,
 .navigation-sidebar row image,
 list.navigation-sidebar row image,
-list.navigation-sidebar image,
-.navigation-sidebar image,
-navigation-split-view list row box image,
-.navigation-sidebar row box image {{
-  min-width: 22px;
-  min-height: 22px;
-  -gtk-icon-size: 14px;
-  background-color: #1e1e20;
-  background-image: none;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: {g["sidebar_icon_radius"]}px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+navigationview.sidebar list row image,
+.sidebar-pane list row image {{
   margin-right: 8px;
-  padding: 3px;
-  color: rgba(255, 255, 255, 0.85);
 }}
 
 navigation-split-view list row:selected image,
@@ -250,12 +268,17 @@ overlay-split-view list row:selected image,
 .navigation-sidebar row:selected image,
 list.navigation-sidebar row:selected image,
 navigation-split-view list row:selected box image,
-.navigation-sidebar row:selected box image {{
+.navigation-sidebar row:selected box image,
+navigationview.sidebar list row:selected image,
+.sidebar-pane list row:selected image {{
   color: #ffffff;
-  background-color: #1e1e20;
+  background: transparent;
+  background-color: transparent;
   background-image: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  padding: 0;
 }}
 
 /* =========================================================================
@@ -603,11 +626,11 @@ levelbar trough block.filled {{
 /* =========================================================================
  * 6. Buttons, Segmented Controls & Keycaps
  * ========================================================================= */
-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-adwactionrow button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-list.boxed-list row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-preferencespage row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-preferencesgroup row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton) {{
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button),
+adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button),
+list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button),
+preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button),
+preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button) {{
   min-height: {d["button_min_height"]}px;
   padding: 3px 12px;
   border-radius: {g["button_action_radius"]}px;
@@ -620,23 +643,89 @@ preferencesgroup row button:not(.close):not(.minimize):not(.maximize):not(.title
   transition: background-color {e["transition_hover"]}, border-color {e["transition_hover"]}, color {e["transition_hover"]};
 }}
 
-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-adwactionrow button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-list.boxed-list row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-preferencespage row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-preferencesgroup row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover {{
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover,
+adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover,
+list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover,
+preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover,
+preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover {{
   background-color: rgba(255, 255, 255, 0.14);
   border-color: rgba(255, 255, 255, 0.15);
   color: #ffffff;
 }}
 
-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-adwactionrow button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-list.boxed-list row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-preferencespage row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-preferencesgroup row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active {{
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active,
+adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active,
+list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active,
+preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active,
+preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active {{
   background-color: rgba(255, 255, 255, 0.22);
   border-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}}
+
+/* Flat and icon-only buttons (clean, transparent idle, subtle hover) */
+button.flat,
+button.image-button,
+headerbar button.image-button,
+headerbar button.flat,
+adwactionrow button.image-button,
+adwactionrow button.flat,
+list.boxed-list row button.image-button,
+list.boxed-list row button.flat,
+adwactionrow > box.header > box.suffixes > button,
+adwactionrow box.suffixes button,
+list.boxed-list row box.suffixes button,
+preferencespage row box.suffixes button,
+preferencesgroup row box.suffixes button {{
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  padding: 4px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.85);
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}}
+
+button.flat:hover,
+button.image-button:hover,
+headerbar button.image-button:hover,
+headerbar button.flat:hover,
+adwactionrow button.image-button:hover,
+adwactionrow button.flat:hover,
+list.boxed-list row button.image-button:hover,
+list.boxed-list row button.flat:hover,
+adwactionrow > box.header > box.suffixes > button:hover,
+adwactionrow box.suffixes button:hover,
+list.boxed-list row box.suffixes button:hover,
+preferencespage row box.suffixes button:hover,
+preferencesgroup row box.suffixes button:hover {{
+  background-color: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: #ffffff;
+}}
+
+button.flat:active,
+button.image-button:active,
+headerbar button.image-button:active,
+headerbar button.flat:active,
+adwactionrow button.image-button:active,
+adwactionrow button.flat:active,
+list.boxed-list row button.image-button:active,
+list.boxed-list row button.flat:active,
+adwactionrow > box.header > box.suffixes > button:active,
+adwactionrow box.suffixes button:active,
+list.boxed-list row box.suffixes button:active,
+preferencespage row box.suffixes button:active,
+preferencesgroup row box.suffixes button:active {{
+  background-color: rgba(255, 255, 255, 0.14);
+  border: none;
+  border-style: none;
+  box-shadow: none;
   color: #ffffff;
 }}
 
