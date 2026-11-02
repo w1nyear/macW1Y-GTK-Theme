@@ -210,8 +210,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         : 'background-color: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
     const CARD_HOVER_STYLE = CARD_BASE_STYLE;
     // Пілюля → картка (морф банерів): стілі сумісні зі старим API
-    const CARD_PILL_STYLE = CARD_BASE_STYLE.replace('border-radius: 24px !important;', 'border-radius: 9999px !important;');
-    const CARD_MID_STYLE = CARD_BASE_STYLE.replace('border-radius: 24px !important;', 'border-radius: 22px !important;');
+    const CARD_PILL_STYLE = CARD_BASE_STYLE.replace(/border-radius:\s*[^;]+;/, 'border-radius: 9999px !important;');
+    const CARD_MID_STYLE = CARD_BASE_STYLE.replace(/border-radius:\s*[^;]+;/, 'border-radius: 22px !important;');
     const CLOSE_BASE = 'width: 22px !important; height: 22px !important; border-radius: 11px !important; background-color: rgba(255, 255, 255, 0.18) !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important; padding: 0 !important;';
     const CLOSE_HOVER = CLOSE_BASE.replace('0.18', '0.28');
 

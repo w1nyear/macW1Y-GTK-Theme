@@ -15593,3 +15593,41 @@ Task 611: Reduced Notification Height on Hover
    - Ensured smooth 180ms easing when expanding on hover and collapsing on unhover.
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+Task 612: Notification Center Liquid Glass & 3-Card Stack Overlap
+1. Problem:
+   - In the Notification Center, grouped notification stacks had broken visual layering: cards underneath were creating nested concentric wireframe borders and dark boxes cutting through the front notification card.
+   - `stylesheet.css` had rigid 2px solid grey stripes on top and bottom and 0px side borders for `.tahoe-nc-panel .mac-notification-banner`, preventing authentic macOS card styling.
+   - Notification Center cards lacked proper integration with "Мак стилізація" parameters (`styling.json`: `notification_blur`, `notification_tint`, `notification_shadow`, `notif_radius`).
+   - Grouped notifications did not cleanly represent up to 3 cards in a stack where only the bottom borders peek out from under the front card.
+
+2. Implementation & Fixes:
+   - `extensions/kiwi@kemma/apps/tahoeNotifications.js`:
+     * Loaded `notif_radius` from `styling.json` (falling back to 18px), along with `notification_blur`, `notification_tint`, and `notification_shadow`.
+     * Updated `_getCardBaseStyle()` to use dynamic frosted glass opacity (`rgba(28, 30, 36, 0.35-0.70)`) and the configured corner radius, solidly obscuring elements behind the top card.
+     * Rewrote stack architecture with unified `_buildGroupStack(g, p)`:
+       - Displays up to 3 notifications in a collapsed stack (`peersN = Math.min(2, g.cards.length - 1)`: 1 top card + up to 2 peeking tabs).
+       - Containers use clean absolute layout without auto-centering artifacts (`x = 0, y = 0` for front card).
+       - Underlying slabs are created strictly as bottom peeking tabs starting at `y = headH - 6` (tucked 6px underneath) with `border-top: none !important` and rounded bottom corners (`border-bottom-left/right-radius`).
+       - Slabs are inset horizontally (`W - 16` and `W - 32`), so only their bottom borders and curved corners peek out below the front card.
+       - Connected `notify::height` to smoothly adjust slab vertical positions if front card height expands.
+     * Updated `_widgetGlassFill()` and `_syncCards()`:
+       - Enabled `baseStrength` based on `_notifStyling.tint` so Liquid Glass shader applies the real tint.
+       - Corrected `s.bgActor.set_position(monitor.x - ovX, monitor.y - ovY)` for multi-monitor / stage offsets.
+       - Synchronized corner radius to `_notifStyling.radius || 18` for `nc-cards`.
+     * `_expandGroup(g)`: smoothly expands all notifications into the list and inserts the "Згорнути" button; clicking it calls `_buildGroupStack` to collapse back cleanly.
+   - `extensions/kiwi@kemma/apps/tahoeNotificationCard.js`:
+     * Updated `CARD_PILL_STYLE` and `CARD_MID_STYLE` regex replacement to support dynamic corner radii.
+   - `extensions/kiwi@kemma/stylesheet.css`:
+     * Removed the artificial `border-top/bottom: 2px solid rgba(200, 200, 200, 0.50)` and `border-left/right: 0px` from `.tahoe-nc-panel .mac-notification-banner`, restoring clean 1px translucent glass border `border: 1px solid rgba(255, 255, 255, 0.16) !important;`.
+   - Extensions Guard & Lock:
+     * Synchronized updated files to `~/.local/share/gnome-shell/extensions/kiwi@kemma/`.
+     * Computed new directory SHA-256 hash `e8a236682556864d9c240247322d65854a963c0ed2fd65836c8dcea6788e640d` and updated `config/extensions.lock.json`.
+     * Hot-reloaded live module on the active session without restarting GNOME Shell.
+
+3. Testing & Verification:
+   - Verified live Notification Center stack: front card completely covers underlying cards, with exactly the bottom borders of the 2 underlying cards peeking out.
+   - Verified group expansion: expands all notifications in the group.
+   - Verified group collapse: re-collapses smoothly into the 3-card stack.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.

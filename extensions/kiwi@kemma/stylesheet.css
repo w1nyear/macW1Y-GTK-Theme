@@ -1372,21 +1372,13 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 .tahoe-nc-list .mac-notification-banner,
 .tahoe-nc-panel .mac-notification-banner {
-  background-color: transparent !important;
-  border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-  border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-  border-left: 0px !important;
-  border-right: 0px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   box-shadow: none !important;
 }
 
 .tahoe-nc-list .mac-notification-banner:hover,
 .tahoe-nc-panel .mac-notification-banner:hover {
-  background-color: transparent !important;
-  border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-  border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
-  border-left: 0px !important;
-  border-right: 0px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow: none !important;
 }
 

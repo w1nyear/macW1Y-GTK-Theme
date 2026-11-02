@@ -58,6 +58,7 @@ let _notifStyling = {
     blur: 15,
     tint: 20,
     shadow: 35,
+    radius: 18,
 };
 let _stylingMonitor = null;
 
@@ -81,6 +82,11 @@ function _loadNotifStyling() {
                 _notifStyling.shadow = Math.max(0, Math.min(100, Number(data.notification_shadow)));
             else if (data.alert_shadow !== undefined)
                 _notifStyling.shadow = Number(data.alert_shadow);
+
+            if (data.notif_radius !== undefined)
+                _notifStyling.radius = Math.max(0, Math.min(48, Number(data.notif_radius)));
+            else if (data.notification_radius !== undefined)
+                _notifStyling.radius = Math.max(0, Math.min(48, Number(data.notification_radius)));
         }
     } catch (_) {}
 }
@@ -89,9 +95,12 @@ function _getCardBaseStyle() {
     _loadNotifStyling();
     const tintVal = _notifStyling.tint / 100.0;
     const shadowVal = _notifStyling.shadow / 100.0;
+    const radius = _notifStyling.radius || 18;
 
-    let bg = 'rgba(25, 28, 35, ' + (tintVal * 0.40).toFixed(2) + ')';
-    if (tintVal <= 0.01) bg = 'transparent';
+    // Скляний фон картки: щільність гармонійно поєднує шейдер Liquid Glass
+    // та надійно перекриває елементи й бордери нижніх шарів стосу
+    const bgAlpha = Math.min(0.85, Math.max(0.35, 0.28 + tintVal * 0.40)).toFixed(2);
+    let bg = `rgba(28, 30, 36, ${bgAlpha})`;
 
     let shadow = 'none';
     if (shadowVal > 0.02) {
@@ -101,13 +110,14 @@ function _getCardBaseStyle() {
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
 
-    return `background-color: ${bg} !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 24px !important; box-shadow: ${shadow} !important; padding: 0 !important;`;
+    return `background-color: ${bg} !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: ${radius}px !important; box-shadow: ${shadow} !important; padding: 0 !important;`;
 }
 
 function _getToastContentStyle(noglass = false) {
     _loadNotifStyling();
     const tintVal = _notifStyling.tint / 100.0;
     const shadowVal = _notifStyling.shadow / 100.0;
+    const radius = _notifStyling.radius || 18;
 
     let bg = noglass ? 'rgba(28, 30, 36, 0.92)' : ('rgba(25, 28, 35, ' + (tintVal * 0.40).toFixed(2) + ')');
     if (!noglass && tintVal <= 0.01) bg = 'transparent';
@@ -120,14 +130,15 @@ function _getToastContentStyle(noglass = false) {
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
 
-    return `background-color: ${bg} !important; padding: 14px 14px 16px 14px !important; border-radius: 24px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: ${shadow} !important;`;
+    return `background-color: ${bg} !important; padding: 14px 14px 16px 14px !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: ${shadow} !important;`;
 }
 
-function _getSlabStyle(i) {
+function _getSlabStyle(i, radius = 18) {
     _loadNotifStyling();
     const tintVal = _notifStyling.tint / 100.0;
     const shadowVal = _notifStyling.shadow / 100.0;
-    const bgAlpha = Math.min(0.85, 0.28 + tintVal * 0.40).toFixed(2);
+    const rad = radius || _notifStyling.radius || 18;
+    const bgAlpha = Math.min(0.88, Math.max(0.40, 0.32 + tintVal * 0.45)).toFixed(2);
     let shadow = 'none';
     if (shadowVal > 0.02) {
         const sAlpha = (shadowVal * 0.35).toFixed(2);
@@ -135,9 +146,15 @@ function _getSlabStyle(i) {
         const sY = Math.round(2 + shadowVal * 6);
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
-    return `background-color: rgba(35, 38, 46, ${bgAlpha}) !important; ` +
-           `border: 1px solid rgba(255, 255, 255, 0.16) !important; ` +
-           `border-radius: 24px !important; ` +
+    return `background-color: rgba(30, 32, 40, ${bgAlpha}) !important; ` +
+           `border-top: none !important; ` +
+           `border-bottom: 1px solid rgba(255, 255, 255, 0.16) !important; ` +
+           `border-left: 1px solid rgba(255, 255, 255, 0.14) !important; ` +
+           `border-right: 1px solid rgba(255, 255, 255, 0.14) !important; ` +
+           `border-top-left-radius: 0px !important; ` +
+           `border-top-right-radius: 0px !important; ` +
+           `border-bottom-left-radius: ${rad}px !important; ` +
+           `border-bottom-right-radius: ${rad}px !important; ` +
            `box-shadow: ${shadow} !important;`;
 }
 
@@ -1219,6 +1236,7 @@ function _applyWidgetGlassParams(effect) {
         if (r >= 0) blur = r;
     } catch (_) {}
     try { effect.setBlurRadius(blur); } catch (_) {}
+    try { effect.setCornerRadius(_notifStyling.radius || 18); } catch (_) {}
     try { effect.setTintColor(0, 0, 0); } catch (_) {}
     try { effect.setTintStrength(tintStrength); } catch (_) {}
     try { effect.setBrightness(1.0); } catch (_) {}
@@ -1736,7 +1754,7 @@ function _ensureNcCards(p) {
         const monitor = Main.layoutManager.primaryMonitor;
         if (!monitor)
             return false;
-        const cards = _makeGlassStack(monitor, 24, 'nc-cards', true);
+        const cards = _makeGlassStack(monitor, _notifStyling.radius || 18, 'nc-cards', true);
         cards.kind = 'cards';
         try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
         try {
@@ -1973,6 +1991,138 @@ function _ncHeldBox(p) {
     }
 }
 
+function _buildGroupStack(g, p) {
+    const newest = g.cards[0];
+    let headH = newest.height;
+    if (!(headH > 0) || headH > 1500) {
+        try {
+            const [, ph] = newest.get_preferred_height(NC_W - 40);
+            if (ph > 0 && ph < 1500) headH = ph;
+        } catch (_) {}
+    }
+    headH = Math.max(54, Math.ceil(headH) || 68);
+    const over = 9;
+    const tuck = 6;
+    const peersN = Math.min(2, g.cards.length - 1);
+    const radius = _notifStyling.radius || 18;
+    const W = NC_W - 40;
+    const groupH = headH + peersN * over;
+
+    const container = new St.Widget({
+        reactive: true,
+        can_focus: true,
+        track_hover: true,
+        x_expand: false,
+        y_expand: false,
+        width: W,
+        height: groupH,
+        min_height: groupH,
+        x_align: Clutter.ActorAlign.CENTER,
+    });
+    container._macPeekGroup = g;
+    g.container = container;
+
+    // Всі старіші картки надійно зберігаються у прихованому контейнері
+    // (вони ніколи не малюються поверх і крізь скло верхньої картки)
+    const held = new St.Widget({ visible: false, x_expand: false, y_expand: false });
+    g.held = held;
+    for (let i = 1; i < g.cards.length; i++) {
+        const b = g.cards[i];
+        if (b.get_parent() === p.list)
+            p.list.remove_child(b);
+        b.reactive = false;
+        held.add_child(b);
+    }
+    container.add_child(held);
+
+    // Чисті нижні плашки глибини стоса (відображаються суворо нижче головної картки,
+    // без верхнього бордеру та без бічних ліній у зоні верхньої картки)
+    for (let i = peersN; i >= 1; i--) {
+        const slabW = Math.round(W - i * 16);
+        const slabH = (i * over) + tuck;
+        const slab = new St.Widget({
+            reactive: false,
+            can_focus: false,
+            x_expand: false,
+            y_expand: false,
+            x: Math.round((W - slabW) / 2),
+            y: headH - tuck,
+            width: slabW,
+            height: slabH,
+        });
+        slab._macIsSlab = true;
+        slab._slabIdx = i;
+        slab.set_style(_getSlabStyle(i, radius));
+        container.add_child(slab);
+    }
+
+    if (newest.get_parent() === p.list)
+        p.list.remove_child(newest);
+    newest.x = 0;
+    newest.y = 0;
+    newest.translation_x = 0;
+    newest.translation_y = 0;
+    newest.set_scale(1, 1);
+    newest.set_size(W, headH);
+    newest.set_style(_getCardBaseStyle());
+    try {
+        const inner = (newest.get_children?.() ?? [])[0];
+        if (inner)
+            inner.visible = true;
+    } catch (_) {}
+    container.add_child(newest);
+
+    const peersCount = g.cards.length - 1;
+    if (peersCount > 0) {
+        try {
+            const mainBox = (newest.get_children?.() ?? [])[0];
+            const rightRail = mainBox?.get_children?.()?.find(c => c.has_style_class_name?.('tahoe-nc-right-rail') || c.layout_manager instanceof Clutter.BinLayout);
+            if (rightRail && !newest._macBadgeAdded) {
+                const badge = new St.Label({
+                    text: `+${peersCount}`,
+                    style: 'font-size: 11px; font-weight: 700; color: rgba(255, 255, 255, 0.85); background-color: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.20); border-radius: 9999px; padding: 1px 7px; margin-bottom: 3px;',
+                    x_align: Clutter.ActorAlign.END,
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
+                newest._macStackBadge = badge;
+                newest._macBadgeAdded = true;
+                rightRail.insert_child_at_index(badge, 0);
+            } else if (newest._macStackBadge) {
+                newest._macStackBadge.text = `+${peersCount}`;
+                newest._macStackBadge.visible = true;
+            }
+        } catch (_) {}
+    }
+
+    try {
+        newest.connect('notify::height', () => {
+            try {
+                if (container && !container.is_finalized?.() && container._macPeekGroup && !g.expanded) {
+                    const curHeadH = newest.height;
+                    const newTotalH = curHeadH + peersN * over;
+                    container.set_height(newTotalH);
+                    container.min_height = newTotalH;
+                    for (const slab of container.get_children()) {
+                        if (slab._macIsSlab) {
+                            slab.y = curHeadH - tuck;
+                        }
+                    }
+                }
+            } catch (_) {}
+        });
+    } catch (_) {}
+
+    try {
+        container.connect('button-press-event', () => {
+            try { _expandGroup(g); } catch (_) {}
+            return Clutter.EVENT_STOP;
+        });
+    } catch (_) {}
+    newest._macGroupIntercept = () => _expandGroup(g);
+
+    return container;
+}
+
 /* 2.11: стеки-групи за ім'ям застосунку (референс macOS):
    колапс - найновіша картка повного розміру зверху, під нею
    старіші ПОВНОГО РОЗМІРУ, злегка менші за скейлом (по x) і
@@ -2007,119 +2157,7 @@ function _collapseNcGroups(p, merges = null) {
             flat.push(g.cards[0]);
             continue;
         }
-        const newest = g.cards[0];
-        let headH = newest.height;
-        if (!(headH > 0) || headH > 1500) {
-            try {
-                const [, ph] = newest.get_preferred_height(NC_W - 40);
-                if (ph > 0 && ph < 1500) headH = ph;
-            } catch (_) {}
-        }
-        headH = Math.max(54, Math.ceil(headH) || 68);
-        const over = 9;
-        const peersN = Math.min(2, g.cards.length - 1);
-        const container = new St.Widget({
-            reactive: true,
-            layout_manager: new Clutter.BinLayout(),
-            x_expand: false,
-            y_expand: false,
-            can_focus: true,
-            track_hover: true,
-        });
-        container._macPeekGroup = g;
-        g.container = container;
-        container.set_width(NC_W - 40);
-        const groupH = headH + peersN * over;
-        container.set_height(groupH);
-        container.min_height = groupH;
-        container.x_align = Clutter.ActorAlign.CENTER;
-
-        // Всі старіші картки надійно зберігаються у прихованому контейнері
-        // (вони ніколи не малюються поверх і крізь скло верхньої картки)
-        const held = new St.Widget({ visible: false, x_expand: false, y_expand: false });
-        g.held = held;
-        for (let i = 1; i < g.cards.length; i++) {
-            const b = g.cards[i];
-            if (b.get_parent() === p.list)
-                p.list.remove_child(b);
-            b.reactive = false;
-            held.add_child(b);
-        }
-        container.add_child(held);
-
-        // Чисті скляні плашки глибини стоса (без тексту, іконок та зайвих дочірніх елементів)
-        for (let i = peersN; i >= 1; i--) {
-            const slab = new St.Widget({
-                reactive: false,
-                can_focus: false,
-                x_expand: false,
-                y_expand: false,
-                width: NC_W - 40,
-                height: headH,
-            });
-            slab._macIsSlab = true;
-            slab._slabIdx = i;
-            slab.set_pivot_point(0.5, 0);
-            slab.set_scale(1 - i * 0.042, 1);
-            slab.translation_y = i * over;
-            slab.set_style(_getSlabStyle(i));
-            container.add_child(slab);
-        }
-
-        if (newest.get_parent() === p.list)
-            p.list.remove_child(newest);
-        newest.translation_y = 0;
-        newest.set_scale(1, 1);
-        newest.set_width(NC_W - 40);
-        newest.set_style(_getCardBaseStyle());
-        try {
-            const inner = (newest.get_children?.() ?? [])[0];
-            if (inner)
-                inner.visible = true;
-        } catch (_) {}
-        container.add_child(newest);
-
-        const peersCount = g.cards.length - 1;
-        if (peersCount > 0) {
-            try {
-                const mainBox = (newest.get_children?.() ?? [])[0];
-                const rightRail = mainBox?.get_children?.()?.find(c => c.has_style_class_name?.('tahoe-nc-right-rail') || c.layout_manager instanceof Clutter.BinLayout);
-                if (rightRail && !newest._macBadgeAdded) {
-                    const badge = new St.Label({
-                        text: `+${peersCount}`,
-                        style: 'font-size: 11px; font-weight: 700; color: rgba(255, 255, 255, 0.85); background-color: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.20); border-radius: 9999px; padding: 1px 7px; margin-bottom: 3px;',
-                        x_align: Clutter.ActorAlign.END,
-                        y_align: Clutter.ActorAlign.CENTER,
-                    });
-                    newest._macStackBadge = badge;
-                    newest._macBadgeAdded = true;
-                    rightRail.insert_child_at_index(badge, 0);
-                } else if (newest._macStackBadge) {
-                    newest._macStackBadge.text = `+${peersCount}`;
-                    newest._macStackBadge.visible = true;
-                }
-            } catch (_) {}
-        }
-
-        try {
-            newest.connect('notify::height', () => {
-                try {
-                    if (container && !container.is_finalized?.() && container._macPeekGroup && !g.expanded) {
-                        const newH = newest.height + peersN * over;
-                        container.set_height(newH);
-                        container.min_height = newH;
-                    }
-                } catch (_) {}
-            });
-        } catch (_) {}
-
-        try {
-            container.connect('button-press-event', () => {
-                try { _expandGroup(g); } catch (_) {}
-                return Clutter.EVENT_STOP;
-            });
-        } catch (_) {}
-        newest._macGroupIntercept = () => _expandGroup(g);
+        const container = _buildGroupStack(g, p);
         flat.push(container);
     }
     for (const b of kids.slice()) {
@@ -2275,88 +2313,7 @@ function _collapseGroup(g) {
             try { g.cards[0]._macStackBadge.visible = true; } catch (_) {}
         }
 
-        const newest = g.cards[0];
-        let headH = newest.height;
-        if (!(headH > 0) || headH > 1500) {
-            try {
-                const [, ph] = newest.get_preferred_height(NC_W - 40);
-                if (ph > 0 && ph < 1500) headH = ph;
-            } catch (_) {}
-        }
-        headH = Math.max(54, Math.ceil(headH) || 68);
-        const over = 9;
-        const peersN = Math.min(2, g.cards.length - 1);
-        const groupH = headH + peersN * over;
-
-        const container = new St.Widget({
-            reactive: true,
-            layout_manager: new Clutter.BinLayout(),
-            x_expand: false,
-            y_expand: false,
-            can_focus: true,
-            track_hover: true,
-        });
-        container._macPeekGroup = g;
-        g.container = container;
-        container.set_width(NC_W - 40);
-        container.set_height(groupH);
-        container.min_height = groupH;
-        container.x_align = Clutter.ActorAlign.CENTER;
-
-        const held = new St.Widget({ visible: false, x_expand: false, y_expand: false });
-        g.held = held;
-        for (let i = 1; i < g.cards.length; i++) {
-            const b = g.cards[i];
-            b.reactive = false;
-            held.add_child(b);
-        }
-        container.add_child(held);
-
-        for (let i = peersN; i >= 1; i--) {
-            const slab = new St.Widget({
-                reactive: false,
-                can_focus: false,
-                x_expand: false,
-                y_expand: false,
-                width: NC_W - 40,
-                height: headH,
-            });
-            slab.set_pivot_point(0.5, 0);
-            slab.set_scale(1 - i * 0.042, 1);
-            slab.translation_y = i * over;
-            slab._macIsSlab = true;
-            slab._slabIdx = i;
-            slab.set_style(_getSlabStyle(i));
-            container.add_child(slab);
-        }
-
-        newest.translation_y = 0;
-        newest.set_scale(1, 1);
-        newest.set_width(NC_W - 40);
-        newest.set_style(_getCardBaseStyle());
-        try {
-            const inner = (newest.get_children?.() ?? [])[0];
-            if (inner)
-                inner.visible = true;
-        } catch (_) {}
-        container.add_child(newest);
-
-        newest.connect('notify::height', () => {
-            try {
-                if (container && !container.is_finalized?.() && container._macPeekGroup && !g.expanded) {
-                    const newH = newest.height + peersN * over;
-                    container.set_height(newH);
-                    container.min_height = newH;
-                }
-            } catch (_) {}
-        });
-
-        container.connect('button-press-event', () => {
-            try { _expandGroup(g); } catch (_) {}
-            return Clutter.EVENT_STOP;
-        });
-        newest._macGroupIntercept = () => _expandGroup(g);
-
+        const container = _buildGroupStack(g, p);
         p.list.insert_child_at_index(container, pos);
     } catch (e) {
         console.error('[tahoe-nc] collapse: ' + e);
@@ -2389,8 +2346,9 @@ function _watchTray(p) {
 }
 
 function _widgetGlassFill() {
-    // чисте прозоре скло без тінту
-    return {c: [0, 0, 0], a: 0};
+    _loadNotifStyling();
+    const tintVal = _notifStyling.tint / 100.0;
+    return {c: [0.10, 0.11, 0.14], a: tintVal};
 }
 
 function _cardFill() {
@@ -2461,7 +2419,13 @@ function _syncCards(p, monitor, s) {
         }
         const [bx, by] = p.panelBg.get_transformed_position();
         const bw = p.panelBg.width, bh = p.panelBg.height;
-        s.bgActor.set_position(monitor.x, monitor.y);
+        let ovX = monitor.x, ovY = monitor.y;
+        try {
+            const [gx, gy] = p.overlay.get_transformed_position();
+            if (isFinite(gx)) ovX = gx;
+            if (isFinite(gy)) ovY = gy;
+        } catch (_) {}
+        s.bgActor.set_position(monitor.x - ovX, monitor.y - ovY);
         if (!regions.length) {
             if (s.bgActor.visible)
                 s.bgActor.hide();
@@ -2475,7 +2439,7 @@ function _syncCards(p, monitor, s) {
         s.bgActor.opacity = Math.round(Math.min(255, Math.max(0, alpha)));
         // тінт регіонів карток = той самий, що в тостів (віджет-конфіг)
         if (regions.length)
-            maxR = 24; // корнер картки, як у тостів (radius 24)
+            maxR = _notifStyling.radius || 18;
         const fill = _widgetGlassFill();
         for (const r of regions) {
             r.tintR = fill.c[0];
@@ -2814,7 +2778,7 @@ function _buildPanel(merges = null) {
         bd.bgActor.opacity = 0;
         bd.bgActor.visible = false;
 
-        const cards = _makeGlassStack(monitor, 24, 'nc-cards', true);
+        const cards = _makeGlassStack(monitor, _notifStyling.radius || 18, 'nc-cards', true);
         cards.kind = 'cards';
         try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
         try {
@@ -3206,7 +3170,7 @@ function _syncNotificationStyling() {
                     const g = item._macPeekGroup;
                     for (const slab of item.get_children()) {
                         if (slab._macIsSlab) {
-                            try { slab.set_style(_getSlabStyle(slab._slabIdx || 1)); } catch (_) {}
+                            try { slab.set_style(_getSlabStyle(slab._slabIdx || 1, _notifStyling.radius || 18)); } catch (_) {}
                         }
                     }
                     if (g.cards?.[0]) {
