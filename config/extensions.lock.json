@@ -200,7 +200,7 @@
         "49",
         "50"
       ],
-      "sha256": "eb2b0027c4330cdbabca366d5966534a4a1cd007fdda442c16ef4b456ae691df",
+      "sha256": "9608696f7f5fca58529778d9526fed9b66e832f9781ca29a72e6bffe28ca5258",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -211,7 +211,7 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Local custom Liquid Glass GLSL refraction & border shader; UI container owner check for strict rounded rectangle radius enforcement and setShapeType API",
-      "last_verified": "2026-11-01",
+      "last_verified": "2026-11-03",
       "integrity_hash": "86bb1febda65991cf8178b7937151597e897260b045ab53d267fab9b18167d0f"
     },
     "macos-touchpad-gestures@mactheme": {

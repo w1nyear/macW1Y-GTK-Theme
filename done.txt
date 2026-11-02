@@ -15853,3 +15853,37 @@ Task 618: Виправлення зміщення підсвічування а�
      * Робочий стіл 3: btn_pos [1012, 6], pill_pos [1012, 6], розмір [120, 21] — співпадіння 100% (matches: true).
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS.
+
+-------------------------------------------------------------------
+Task 619: Виправлення центрування стрілки меню менюбару на тригерну іконку
+-------------------------------------------------------------------
+1. Проблема:
+   - Стрілочка (покажчик / arrow beak) спливаючого меню менюбару (зокрема для індикатора мови «en», додаткових пунктів та системних статус-іконок) не показувала точно по центру на іконку-джерело, а була зміщена.
+
+2. Причина:
+   - У розширенні Liquid Glass (`extensions/liquid-glass@thinkingcoding1231.gmail.com/src/uiManager.ts` та `dist/uiManager.js`) офсет стрілки `origin` для шейдера `sdPopover` обчислювався як:
+     `origin = (bp._arrowOrigin || (w * 0.5)) - (w * 0.5)`.
+   - Значення `bp._arrowOrigin` у GNOME Shell BoxPointer вимірюється від лівого краю зовнішнього контейнера `BoxPointer`, який на 12px ширший (по 6px падінгу з кожного боку) за внутрішній анімаційний контейнер `animActor` (`bp.bin`), з якого береться `w`.
+   - Через цю невідповідність систем координат між `BoxPointer` та `animActor` вістря стрілки в шейдері завжди зміщувалося на 5.5–6px вбік від справжнього геометричного центру іконки в панелі меню, а для крайніх меню (як-от Apple Menu) відхилення досягало десятків пікселів через обрізання `_arrowOrigin`.
+
+3. Реалізовані виправлення:
+   - extensions/liquid-glass@thinkingcoding1231.gmail.com/src/uiManager.ts та dist/uiManager.js:
+     * Запроваджено прямий розрахунок офсету стрілки на основі абсолютних координат сцени (stage transform extents):
+       - Визначається тригерний актор: `src = bp._arrowActor || bp._sourceActor`.
+       - Обчислюється точний екранний центр іконки: `srcCenterX = (srcTl.x + srcBr.x) * 0.5` (для вертикальних стрілок `srcCenterY`).
+       - Обчислюється точний екранний центр шейдерного скляного тіла меню: `glassCenterX = animAbsX + w * 0.5`.
+       - Офсет стрілки для шейдера задається прямою різницею: `origin = srcCenterX - glassCenterX`.
+       - Застосовано захисне обмеження `maxOrigin = Math.max(0, (w * 0.5) - r - arrowHalfBase)`, щоб стрілка ніколи не накладалася на кутові заокруглення меню при крайніх позиціях.
+   - Синхронізація та перевірка:
+     * Синхронізовано `src/uiManager.ts` та `dist/uiManager.js` із встановленим каталогом `~/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/`.
+     * Оновлено контрольний хеш SHA-256 (`9608696f7f5fca58529778d9526fed9b66e832f9781ca29a72e6bffe28ca5258`) та `last_verified` у `config/extensions.lock.json`.
+     * Пропатчено та оновлено активні менеджери меню у живому сеансі GNOME Shell через `EvalHelper` без перезавантаження сесії.
+
+4. Верифікація:
+   - Живе тестування координат вістря стрілки на всіх меню менюбару:
+     * Меню мови («en»): `srcCenterX: 1590`, `arrowScreenX: 1590`, `diff: 0` (піксель-у-піксель по центру пігулки).
+     * Меню статусу («...»): `srcCenterX: 1547`, `arrowScreenX: 1547`, `diff: 0`.
+     * Меню віджетів / Launchpad: `srcCenterX: 1503`, `arrowScreenX: 1503`, `diff: 0`.
+     * Меню Finder: `srcCenterX: 89.5`, `arrowScreenX: 89.5`, `diff: 0`.
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS.

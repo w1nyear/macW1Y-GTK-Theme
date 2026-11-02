@@ -935,7 +935,29 @@ export class UIManager {
                         else if (bp._arrowSide === St.Side.LEFT) sideNum = 4;
 
                         let origin = 0;
-                        if (sideNum === 1 || sideNum === 3) {
+                        const src = bp._arrowActor || bp._sourceActor;
+                        if (src && src.mapped && typeof src.get_transformed_extents === 'function') {
+                            const srcExtents = src.get_transformed_extents();
+                            const srcTl = srcExtents.get_top_left();
+                            const srcBr = srcExtents.get_bottom_right();
+                            if (sideNum === 1 || sideNum === 3) {
+                                const srcCenterX = (srcTl.x + srcBr.x) * 0.5;
+                                const glassCenterX = animAbsX + w * 0.5;
+                                origin = srcCenterX - glassCenterX;
+                                const r = (this._cornerRadius || 20.0) * currentScale;
+                                const arrowHalfBase = (base * currentScale) * 0.5;
+                                const maxOrigin = Math.max(0, (w * 0.5) - r - arrowHalfBase);
+                                origin = Math.max(-maxOrigin, Math.min(maxOrigin, origin));
+                            } else {
+                                const srcCenterY = (srcTl.y + srcBr.y) * 0.5;
+                                const glassCenterY = animAbsY + h * 0.5;
+                                origin = srcCenterY - glassCenterY;
+                                const r = (this._cornerRadius || 20.0) * currentScale;
+                                const arrowHalfBase = (base * currentScale) * 0.5;
+                                const maxOrigin = Math.max(0, (h * 0.5) - r - arrowHalfBase);
+                                origin = Math.max(-maxOrigin, Math.min(maxOrigin, origin));
+                            }
+                        } else if (sideNum === 1 || sideNum === 3) {
                             origin = (bp._arrowOrigin || (w * 0.5)) - (w * 0.5);
                         } else {
                             origin = (bp._arrowOrigin || (h * 0.5)) - (h * 0.5);
