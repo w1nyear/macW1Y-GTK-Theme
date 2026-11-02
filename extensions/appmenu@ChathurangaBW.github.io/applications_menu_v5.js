@@ -1547,19 +1547,19 @@ export function toggleApplicationsDialog(options = {}) {
     }
     import('./searchDialog_v5.js')
         .then(mod => mod.toggleSearchDialog('apps'))
-        .catch(() => {
-            ensureApplicationsDialog();
-            if (globalThis._macApplicationsGlobalInstance?._isOpen) {
-                globalThis._macApplicationsGlobalInstance.close();
-            } else {
-                globalThis._macApplicationsGlobalInstance?.open?.(options);
-            }
-        });
+        .catch(e => console.error('[ApplicationsMenu] Failed to toggle spotlight apps:', e));
+}
+
+export function openApplicationsDialog(options = {}) {
+    toggleApplicationsDialog(options);
 }
 
 export function closeApplicationsDialog(immediate = true) {
+    if (typeof globalThis.closeMacSpotlight === 'function') {
+        globalThis.closeMacSpotlight(immediate);
+    }
     if (globalThis._macApplicationsGlobalInstance) {
-        globalThis._macApplicationsGlobalInstance.close(immediate);
+        try { globalThis._macApplicationsGlobalInstance.close(immediate); } catch (_) {}
     }
 }
 

@@ -520,12 +520,14 @@ export const DockAbstractAppIcon = GObject.registerClass({
         if (this.app?.get_id() === 'launchpad.desktop') {
             if (typeof globalThis.toggleMacApplications === 'function') {
                 globalThis.toggleMacApplications();
+            } else if (typeof globalThis._macSpotlightToggle === 'function') {
+                globalThis._macSpotlightToggle('apps');
             } else {
-                const appMenuPath = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js`;
+                const appMenuPath = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js`;
                 import(`file://${appMenuPath}`)
                     .then(mod => {
-                        globalThis.toggleMacApplications = mod.toggleApplicationsDialog;
-                        mod.toggleApplicationsDialog();
+                        globalThis.toggleMacApplications = () => mod.toggleSearchDialog('apps');
+                        mod.toggleSearchDialog('apps');
                     }).catch(() => {});
             }
             return;

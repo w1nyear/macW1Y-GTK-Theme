@@ -92,7 +92,7 @@ popover.menu modelbutton:hover,
 .context-menu > .menu-item:hover,
 menuitem:hover,
 .menuitem:hover {
-  background-color: #007aff !important;
+  background-color: @accent_bg_color;
   color: #ffffff !important;
   border-radius: 6px !important;
   box-shadow: none !important;

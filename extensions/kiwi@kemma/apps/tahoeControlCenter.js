@@ -26,6 +26,29 @@ import {getPanelInk, watchInk, notePanelRect} from './tahoeInk.js';
 import { t, tf } from './mac_i18n.js';
 import {closeAllCenters} from './centerManager.js';
 
+const ACCENT_COLOR_MAP = {
+    'blue':   '#007aff',
+    'teal':   '#30b0c7',
+    'green':  '#34c759',
+    'yellow': '#ffcc00',
+    'orange': '#ff6a00',
+    'red':    '#ff3b30',
+    'pink':   '#ff2d55',
+    'purple': '#af52de',
+    'slate':  '#8e8e93',
+    'brown':  '#a27447',
+};
+
+function getSystemAccentColor() {
+    try {
+        const settings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        const name = settings.get_string('accent-color');
+        return ACCENT_COLOR_MAP[name] || '#ff6a00';
+    } catch (_e) {
+        return '#ff6a00';
+    }
+}
+
 // Liquid-glass helpers live in another extension. Static
 // `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
 // be string literals), so load them dynamically at runtime. Until loaded,
@@ -797,10 +820,11 @@ export async function _openDisplaySubmenu(sourceActor, state) {
             style_class: isDark ? 'mac-menu-item-row mac-menu-item-active' : 'mac-menu-item-row',
         });
         sharedMod.setupMacMenuItem(darkItem);
+        const accent = getSystemAccentColor();
         const darkIcon = new St.Icon({
             icon_name: 'weather-clear-night-symbolic',
             icon_size: 16,
-            style: `margin-right: 8px; color: ${isDark ? '#007aff !important' : '#ffffff !important'};`,
+            style: `margin-right: 8px; color: ${isDark ? `${accent} !important` : '#ffffff !important'};`,
         });
         darkItem.add_child(darkIcon);
         const darkLbl = new St.Label({
@@ -811,7 +835,7 @@ export async function _openDisplaySubmenu(sourceActor, state) {
         });
         darkItem.add_child(darkLbl);
         if (isDark) {
-            const check = new St.Icon({ icon_name: 'emblem-ok-symbolic', icon_size: 14, style: 'color: #007aff !important;' });
+            const check = new St.Icon({ icon_name: 'emblem-ok-symbolic', icon_size: 14, style: `color: ${accent} !important;` });
             darkItem.add_child(check);
         }
         darkItem.connect('activate', () => {
@@ -2761,10 +2785,11 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
             });
             sharedMod.setupMacMenuItem(item);
 
+            const accent = getSystemAccentColor();
             const icon = new St.Icon({
                 icon_name: m.icon,
                 icon_size: 16,
-                style: `margin-right: 8px; color: ${isSelected ? '#007aff !important' : '#ffffff !important'};`,
+                style: `margin-right: 8px; color: ${isSelected ? `${accent} !important` : '#ffffff !important'};`,
             });
             item.add_child(icon);
 
@@ -2785,7 +2810,7 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
                 const check = new St.Icon({
                     icon_name: 'emblem-ok-symbolic',
                     icon_size: 14,
-                    style: 'color: #007aff !important;',
+                    style: `color: ${accent} !important;`,
                 });
                 item.add_child(check);
             }

@@ -15283,3 +15283,58 @@ Task 585: Виправлення роздільної здатності роз�
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
      * `bin/mac-audit-sync check`: 100% PASS (5/5).
      * Тестова симуляція синхронного виїзду через D-Bus EvalHelper підтвердила коректне повернення всіх елементів (Menu Bar, Dock, Widgets) до їхніх точних кінцевих координат.
+
+
+================================================================================
+603. Уніфікація інтерфейсу Nautilus (акцентний фокус рядків, круглі кнопки хайтаб бару, чисті іконки), динамічний акцент контекстних меню та єдиний Spotlight для Launchpad і Super+V
+================================================================================
+1. Огляд завдання:
+   - В Nautilus у лівій панелі (sidebar) вибраний пункт («Домівка» тощо) мав сірий фон (`rgba(255, 255, 255, 0.16)`) замість системного акцентного кольору (помаранчевий `#ff6a00`).
+   - У панелі заголовка (headerbar / хайтаб бар) кнопки керування (пошук, опції `...`, перемикачі вигляду) мали прямокутну форму замість круглих пігулок macOS (`border-radius: 9999px`), а іконки всередині мали власні фонові плашки.
+   - Повне усунення фонових плашок, рамок та тіней з-під іконок всюди в Nautilus та інших програмах (зокрема у списку видимих мереж Wi-Fi Параметрів). Фонова плашка збережена виключно у лівій панелі Параметрів (`gnome-control-center`), де вона автентична до macOS Sequoia.
+   - Віконні кнопки керування (світлофори: червона, жовта, зелена) повинні бути чистими круглими елементами без сірих квадратних кнопок-підкладок.
+   - Синій колір виділення (`#007aff`) та перемикачів у контекстних меню (зокрема у випадаючому меню `desktop-widgets` та системних контекстних меню GTK/GNOME Shell) має динамічно відповідати системному акцентному кольору.
+   - Усунення подвійного вигляду: Центр програм через Док та Super+V для Буфера обміну відкривали окремі застарілі вікна. Повна заміна на єдине глобальне Spotlight-вікно (`searchDialog_v5.js`) у режимах `'apps'` та `'clipboard'`.
+
+2. Реалізація:
+   - Nautilus та бічна панель GTK 4:
+     * Усунено конфліктні правила з `background-color: rgba(255, 255, 255, 0.16)` та `alpha(@window_fg_color, 0.15)` у [`config/gtk-4.0/gtk.css`](file:///home/vitaliy/macW1Y/config/gtk-4.0/gtk.css), [`config/gtk-4.0/gtk-Dark.css`](file:///home/vitaliy/macW1Y/config/gtk-4.0/gtk-Dark.css), [`gtk-4.0/gtk.css`](file:///home/vitaliy/macW1Y/gtk-4.0/gtk.css), [`gtk-4.0/gtk-Dark.css`](file:///home/vitaliy/macW1Y/gtk-4.0/gtk-Dark.css), [`macW1Y-Dark/gtk-4.0/gtk.css`](file:///home/vitaliy/macW1Y/macW1Y-Dark/gtk-4.0/gtk.css), [`macW1Y-Dark/gtk-4.0/gtk-dark.css`](file:///home/vitaliy/macW1Y/macW1Y-Dark/gtk-4.0/gtk-dark.css) та призначених для користувача каталогах `~/.config/gtk-4.0/` і `~/.themes/macW1Y-Dark/`.
+     * Селектори `.navigation-sidebar row:selected`, `.nautilus-window .sidebar-pane placessidebar row:selected`, а також їхні стани `:backdrop`, `:focus`, `:focus-within` та `window.nautilus-window` переведено на чистий системний `@accent_bg_color` (`#ff6a00`) з білим текстом `#ffffff`.
+     * Стан наведення на виділений рядок (`:selected:hover`) отримав плавний мікс `color-mix(in srgb, @accent_bg_color 88%, white)`.
+   - Круглі кнопки керування хайтаб бару:
+     * У [`bin/mac-build-theme`](file:///home/vitaliy/macW1Y/bin/mac-build-theme) додано цільові правила для `headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize)`, `headerbar menubutton > button`, `headerbar splitbutton > button`, `.nautilus-window headerbar button`:
+       - Розмір: `min-width: 28px; min-height: 28px;`
+       - Форма: `border-radius: 9999px;`
+       - Прозорий спокійний стан без рамок та тіней;
+       - Круглий ховер `rgba(255, 255, 255, 0.12)` при наведенні та `rgba(255, 255, 255, 0.20)` при натисканні;
+       - Іконки всередині кнопок (`headerbar button image`, `headerbar button icon`) позбавлені будь-якого власного фону (`background: transparent; padding: 0;`).
+   - Універсальна прозорість іконок:
+     * Забезпечено прозорість для `window:not(.mac-settings-window) image`, `.nautilus-window image`, `placessidebar image`, `.sidebar-orange-icon`, `.sidebar-neutral-icon`, а також контентних рядків Параметрів (`window.mac-settings-window list.boxed-list row image`, `ccwificonnectionrow image`), усунувши сірі квадратики навколо значків Wi-Fi та замка.
+     * Темні закруглені плашки `#1e1e20` збережено суворо в `window.mac-settings-window list.mac-settings-sidebar-list row image` (ліва колонка Параметрів).
+   - Світлофори віконного керування:
+     * Закріплено `background-color: transparent; border: none; box-shadow: none; outline: none;` для всіх станів `windowcontrols button`, `headerbar windowcontrols button`, `sidebar-pane headerbar windowcontrols button` та `.titlebar button.titlebutton`, унеможливлюючи появу темних квадратних кнопок під кольоровими кружечками.
+   - Динамічний акцент у контекстних меню:
+     * У [`config/gtk-4.0/fixes4.css`](file:///home/vitaliy/macW1Y/config/gtk-4.0/fixes4.css), [`gtk-4.0/fixes4.css`](file:///home/vitaliy/macW1Y/gtk-4.0/fixes4.css), [`extensions/kiwi@kemma/css/fixes4.css`](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/css/fixes4.css) та `fixes3.css` замінено жорсткий `#007aff` на системний `@accent_bg_color`.
+     * У [`extensions/appmenu@ChathurangaBW.github.io/menuManager.js`](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/menuManager.js) та [`extensions/blur-my-shell@aunetx/components/menubar_v29.js`](file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/menubar_v29.js) підкладку плаваючого фокусу меню `.mac-menu-hover-pill` переведено з фіксованого синього `#007aff` на динамічну функцію `getSystemAccentColor()` (`#ff6a00`).
+     * У [`extensions/kiwi@kemma/apps/tahoeControlCenter.js`](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeControlCenter.js) та `tahoeQuickSettings.js` чекбокси темного режиму та профілів живлення переведено на динамічний системний акцент.
+   - Повна уніфікація Spotlight (Launchpad та Super+V):
+     * У [`extensions/dash-to-dock@micxgx.gmail.com/appIcons.js`](file:///home/vitaliy/macW1Y/extensions/dash-to-dock@micxgx.gmail.com/appIcons.js) клік по іконці Дока `launchpad.desktop` переведено на виклик `toggleSearchDialog('apps')`.
+     * У [`extensions/appmenu@ChathurangaBW.github.io/extension.js`](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/extension.js) гарячу клавішу Super+V (`clipboard-shortcut`) прив'язано до `toggleSearchDialog('clipboard')`.
+     * Старі файли діалогів [`applications_menu_v5.js`](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5.js), `applications_menu_v5b.js` та [`clipboardDialog_v2.js`](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/clipboardDialog_v2.js) перетворено на прямі проксі до `searchDialog_v5.js`, повністю усунувши створення окремих невідповідних вікон.
+   - Компіляція та цілісність:
+     * Усунено всі випадки непідтримуваного синтаксису `!important` з `bin/mac-build-theme`, через який парсер libgtk-4 відкидав стильові декларації.
+     * Виконано успішну компіляцію через `bin/mac-build-theme` та синхронізовано системні каталоги `/usr/share/themes/` і `~/.local/share/gnome-shell/extensions/`.
+     * Оновлено контрольні суми SHA-256 у [`config/extensions.lock.json`](file:///home/vitaliy/macW1Y/config/extensions.lock.json).
+
+3. Верифікація:
+   - Знімок вікна Nautilus [`nautilus_verified_clean.png`](file:///home/vitaliy/.gemini/antigravity/brain/d34732a7-0aa8-43ff-b0ad-129d9df0d190/nautilus_verified_clean.png):
+     * Зафіксовано 6,309 пікселів системного помаранчевого акцентного кольору `#ff6a00` на вибраному пункті «Домівка» в бічній панелі (сірий фон повністю зник).
+     * Значок та текст «Домівка» чітко білі `#ffffff`.
+     * Іконки папок та панелі не мають квадратних фонів чи рамок.
+     * Кнопки керування в хайтаб барі мають круглу форму (`border-radius: 9999px`) без фонових плашок усередині іконок.
+   - Знімок Spotlight у режимі програм [`spotlight_apps_crop.png`](file:///home/vitaliy/.gemini/antigravity/brain/d34732a7-0aa8-43ff-b0ad-129d9df0d190/spotlight_apps_crop.png):
+     * Підтверджено єдиний вигляд Центру програм при відкритті через Док та гарячі клавіші.
+   - Знімок Spotlight у режимі буфера обміну [`spotlight_clipboard_crop.png`](file:///home/vitaliy/.gemini/antigravity/brain/d34732a7-0aa8-43ff-b0ad-129d9df0d190/spotlight_clipboard_crop.png):
+     * Підтверджено відкриття єдиного інтерфейсу Spotlight для буфера обміну за комбінацією Super+V.
+   - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень відповідають контрольним сумам).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 аудитів пройдено).

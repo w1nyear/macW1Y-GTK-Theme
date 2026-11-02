@@ -52,7 +52,7 @@ const ACCENT_COLOR_MAP = {
     'teal': '#30b0c7',
     'green': '#34c759',
     'yellow': '#ffcc00',
-    'orange': '#ff9500',
+    'orange': '#ff6a00',
     'red': '#ff3b30',
     'pink': '#ff2d55',
     'purple': '#af52de',
@@ -65,9 +65,9 @@ function getSystemAccentColor() {
         const Gio = imports.gi.Gio;
         const settings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
         const name = settings.get_string('accent-color');
-        return ACCENT_COLOR_MAP[name] || '#007aff';
+        return ACCENT_COLOR_MAP[name] || '#ff6a00';
     } catch (_e) {
-        return '#007aff';
+        return '#ff6a00';
     }
 }
 
@@ -1985,10 +1985,11 @@ class MenuHoverTracker {
             }
         }
 
+        const accent = getSystemAccentColor();
         this._pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
-            style: `background-color: #007aff !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;`,
+            style: `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START,
             x_expand: false,
@@ -2366,10 +2367,12 @@ export const MenuBarController = class MenuBarController {
                 globalThis._lastLaunchpadToggle = now;
                 if (typeof globalThis.toggleMacApplications === 'function') {
                     globalThis.toggleMacApplications();
+                } else if (typeof globalThis._macSpotlightToggle === 'function') {
+                    globalThis._macSpotlightToggle('apps');
                 } else {
                     const extHome = GLib.get_home_dir();
-                    import(`file://${extHome}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js`)
-                        .then(mod => mod.toggleApplicationsDialog())
+                    import(`file://${extHome}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js`)
+                        .then(mod => mod.toggleSearchDialog('apps'))
                         .catch(() => {
                             if (Main.overview.visible) Main.overview.hide();
                             else Main.overview.showApps();

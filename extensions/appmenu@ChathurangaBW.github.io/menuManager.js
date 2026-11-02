@@ -21,6 +21,29 @@ import { RecentItemsSubmenu } from './recentItemsSubmenu.js';
 import { RealMenuManager } from './realMenuManager.js';
 import * as Logger from './logger.js';
 
+const ACCENT_COLOR_MAP = {
+    'blue':   '#007aff',
+    'teal':   '#30b0c7',
+    'green':  '#34c759',
+    'yellow': '#ffcc00',
+    'orange': '#ff6a00',
+    'red':    '#ff3b30',
+    'pink':   '#ff2d55',
+    'purple': '#af52de',
+    'slate':  '#8e8e93',
+    'brown':  '#a27447',
+};
+
+function getSystemAccentColor() {
+    try {
+        const settings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        const name = settings.get_string('accent-color');
+        return ACCENT_COLOR_MAP[name] || '#ff6a00';
+    } catch (_e) {
+        return '#ff6a00';
+    }
+}
+
 // Default panel icon — `start-here-symbolic` adapts to every distro's icon theme
 const DEFAULT_ICON = 'start-here-symbolic';
 
@@ -106,10 +129,11 @@ class AppMenuHoverGlide {
             }
         }
 
+        const accent = getSystemAccentColor();
         this.pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
-            style: 'background-color: #007aff !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;',
+            style: `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START,
             x_expand: false,

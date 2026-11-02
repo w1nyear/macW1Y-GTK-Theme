@@ -1511,42 +1511,19 @@ export function toggleClipboardDialog(options = {}) {
     }
     import('./searchDialog_v5.js')
         .then(mod => mod.toggleSearchDialog('clipboard'))
-        .catch(() => {
-            ensureClipboardDialog();
-            if (globalThis._macClipboardGlobalInstance?._isOpen) {
-                globalThis._macClipboardGlobalInstance.close();
-            } else {
-                globalThis._macClipboardGlobalInstance?.open?.(options);
-            }
-        });
+        .catch(e => console.error('[Clipboard] Failed to toggle spotlight clipboard:', e));
 }
 
 export function openClipboardDialog(options = {}) {
-    if (!globalThis._macClipboardGlobalInstance) {
-        globalThis._macClipboardGlobalInstance = new MacClipboardDialog();
-    }
-    if (!options.targetWindow) {
-        const focused = global.display.get_focus_window();
-        if (focused && !focused.is_destroyed?.()) {
-            options.targetWindow = focused;
-        }
-    }
-    if (typeof globalThis._macCloseAllCenters === 'function') {
-        globalThis._macCloseAllCenters('clipboard');
-    } else {
-        try { globalThis._tahoeQSClose?.(); } catch (_) {}
-        try { globalThis._tahoeNCClose?.(true); } catch (_) {}
-        try { globalThis._macSpotlightGlobalInstance?.close?.(true); } catch (_) {}
-    }
-    if (Main.overview?.visible) {
-        Main.overview.hide();
-    }
-    globalThis._macClipboardGlobalInstance.open(options);
+    toggleClipboardDialog(options);
 }
 
 export function closeClipboardDialog(immediate = true) {
+    if (typeof globalThis.closeMacSpotlight === 'function') {
+        globalThis.closeMacSpotlight(immediate);
+    }
     if (globalThis._macClipboardGlobalInstance) {
-        globalThis._macClipboardGlobalInstance.close(immediate);
+        try { globalThis._macClipboardGlobalInstance.close(immediate); } catch (_) {}
     }
 }
 

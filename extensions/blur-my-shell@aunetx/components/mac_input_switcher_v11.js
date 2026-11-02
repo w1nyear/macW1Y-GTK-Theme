@@ -26,7 +26,7 @@ const ACCENT_COLOR_MAP = {
     'teal': '#30b0c7',
     'green': '#34c759',
     'yellow': '#ffcc00',
-    'orange': '#ff9500',
+    'orange': '#ff6a00',
     'red': '#ff3b30',
     'pink': '#ff2d55',
     'purple': '#af52de',
@@ -39,9 +39,9 @@ function getSystemAccentColor() {
         const Gio = imports.gi.Gio;
         const settings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
         const name = settings.get_string('accent-color');
-        return ACCENT_COLOR_MAP[name] || '#007aff';
+        return ACCENT_COLOR_MAP[name] || '#ff6a00';
     } catch (_e) {
-        return '#007aff';
+        return '#ff6a00';
     }
 }
 
