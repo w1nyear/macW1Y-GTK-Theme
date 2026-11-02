@@ -298,6 +298,34 @@ export class UnlockDialogController {
                                 mode,
                             });
                         });
+                    } else if (global.window_group) {
+                        // Smoothly fade in desktop windows upon unlock
+                        global.window_group.remove_all_transitions();
+                        global.window_group.opacity = 0;
+                        global.window_group.ease({
+                            opacity: 255,
+                            duration,
+                            mode,
+                        });
+                    }
+
+                    // Animate desktop icons (DING) and widgets smoothly fading in
+                    for (const child of Main.layoutManager.uiGroup.get_children()) {
+                        if (child !== Main.layoutManager._backgroundGroup &&
+                            child !== Main.layoutManager._systemBackground &&
+                            child !== Main.layoutManager._coverPane &&
+                            child !== Main.layoutManager.panelBox &&
+                            child.name !== 'dashtodockContainer') {
+                            if (child.visible && child.opacity < 255) {
+                                child.remove_all_transitions();
+                                child.opacity = 0;
+                                child.ease({
+                                    opacity: 255,
+                                    duration,
+                                    mode,
+                                });
+                            }
+                        }
                     }
 
                     const clockWrapper = this._extension._clockLayoutManager?.clockWrapper;

@@ -84,6 +84,66 @@ export class GdmManager {
 
         this._active = true;
 
+        // Boot apple transition overlay: full black cover with Apple logo matching Plymouth
+        if (!this._hasBootFadeInRan) {
+            this._hasBootFadeInRan = true;
+            this._bootTransitionOverlays = [];
+            try {
+                const monitors = Main.layoutManager.monitors && Main.layoutManager.monitors.length > 0
+                    ? Main.layoutManager.monitors
+                    : [{ x: 0, y: 0, width: global.screen_width || 1920, height: global.screen_height || 1080 }];
+                const primaryMonitor = Main.layoutManager.primaryMonitor || monitors[0];
+
+                const bootLogoFile = Gio.File.new_for_path('/usr/share/plymouth/themes/apple-mac/logo.png');
+                const hasLogo = bootLogoFile.query_exists(null);
+
+                for (const monitor of monitors) {
+                    const isPrimary = (monitor === primaryMonitor) || (monitor.x === primaryMonitor.x && monitor.y === primaryMonitor.y);
+                    const screenW = monitor.width;
+                    const screenH = monitor.height;
+
+                    const bootCover = new St.Widget({
+                        name: 'macBootCover',
+                        x: monitor.x,
+                        y: monitor.y,
+                        width: screenW,
+                        height: screenH,
+                        style: 'background-color: #000000;',
+                        reactive: false,
+                        opacity: 255,
+                    });
+
+                    if (isPrimary && hasLogo) {
+                        let logoH = Math.round(screenH * 0.092);
+                        if (logoH < 50) logoH = 50;
+                        const logoW = Math.round(logoH * (416 / 512));
+
+                        const logoIcon = new St.Icon({
+                            gicon: new Gio.FileIcon({ file: bootLogoFile }),
+                            icon_size: logoH,
+                            width: logoW,
+                            height: logoH,
+                        });
+
+                        const centerBin = new St.Bin({
+                            width: screenW,
+                            height: screenH,
+                            x_align: Clutter.ActorAlign.CENTER,
+                            y_align: Clutter.ActorAlign.CENTER,
+                            child: logoIcon,
+                        });
+                        bootCover.add_child(centerBin);
+                    }
+
+                    Main.uiGroup.add_child(bootCover);
+                    Main.uiGroup.set_child_above_sibling(bootCover, null);
+                    this._bootTransitionOverlays.push(bootCover);
+                }
+            } catch (err) {
+                _logError(`[WACK/GDM] boot cover initialization error: ${err.message}`);
+            }
+        }
+
         const themeContext = St.ThemeContext.get_for_stage(global.stage);
         themeContext.connectObject('notify::theme', () => this._ensureStylesheetLoaded(), this);
         this._ensureStylesheetLoaded();
@@ -95,7 +155,12 @@ export class GdmManager {
 
                 if (Main.screenShield._dialog && this._dialog !== Main.screenShield._dialog) {
                     if (this._dialog) {
-                        this._teardown();
+                        if (this._bootTransitionOverlays) {
+            this._bootTransitionOverlays.forEach(o => o.destroy());
+            this._bootTransitionOverlays = null;
+        }
+
+        this._teardown();
                     }
                     this._dialog = Main.screenShield._dialog;
                     this._setup();
@@ -151,6 +216,11 @@ export class GdmManager {
         if (this._findDialogTimeoutId) {
             GLib.source_remove(this._findDialogTimeoutId);
             this._findDialogTimeoutId = null;
+        }
+
+        if (this._bootTransitionOverlays) {
+            this._bootTransitionOverlays.forEach(o => o.destroy());
+            this._bootTransitionOverlays = null;
         }
 
         this._teardown();
@@ -778,48 +848,24 @@ export class GdmManager {
         const dialog = this._dialog;
         if (!dialog) return;
 
-        const FADE_DURATION = 600;
+        const FADE_DURATION = 800;
         const FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
 
-        // Boot apple transition overlay if first time in GDM session
-        if (!this._hasBootFadeInRan) {
-            this._hasBootFadeInRan = true;
-            try {
-                const monitor = Main.layoutManager.primaryMonitor || (Main.layoutManager.monitors && Main.layoutManager.monitors[0]);
-                const screenH = monitor ? monitor.height : (global.screen_height || 1080);
-                const screenW = monitor ? monitor.width : (global.screen_width || 1920);
-                let logoH = Math.round(screenH * 0.092);
-                if (logoH < 50) logoH = 50;
-                const logoW = Math.round(logoH * (416 / 512));
-                const logoX = Math.round((screenW - logoW) / 2);
-                const logoY = Math.round((screenH - logoH) / 2);
-
-                const bootLogoFile = Gio.File.new_for_path('/usr/share/plymouth/themes/apple-mac/logo.png');
-                if (bootLogoFile.query_exists(null)) {
-                    const texture = St.TextureCache.get_default().load_file_async(bootLogoFile, logoW, logoH, 1, 1);
-                    const appleLogoActor = new St.Bin({
-                        child: texture,
-                        width: logoW,
-                        height: logoH,
-                        x: logoX,
-                        y: logoY,
-                        opacity: 255,
-                    });
-                    Main.uiGroup.add_child(appleLogoActor);
-                    Main.uiGroup.set_child_above_sibling(appleLogoActor, null);
-
-                    appleLogoActor.ease({
-                        opacity: 0,
-                        duration: 500,
-                        mode: FADE_MODE,
-                        onComplete: () => {
-                            appleLogoActor.destroy();
-                        },
-                    });
-                }
-            } catch (err) {
-                _logError(`[WACK/GDM] boot logo transition error: ${err.message}`);
-            }
+        // Smoothly fade out the black boot cover + Apple logo overlay (Plymouth -> GDM dissolve)
+        if (this._bootTransitionOverlays && this._bootTransitionOverlays.length > 0) {
+            const overlays = this._bootTransitionOverlays;
+            this._bootTransitionOverlays = null;
+            overlays.forEach(overlay => {
+                overlay.remove_all_transitions();
+                overlay.ease({
+                    opacity: 0,
+                    duration: FADE_DURATION,
+                    mode: FADE_MODE,
+                    onComplete: () => {
+                        overlay.destroy();
+                    },
+                });
+            });
         }
 
         // 1. Wallpaper view: smoothly ease in from 0 to 255

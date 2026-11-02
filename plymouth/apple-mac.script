@@ -311,12 +311,12 @@ fun quit_callback()
 {
     if (is_boot && !is_shutdown)
     {
-        # Complete progress bar to 100% full immediately before fade out
+        # Complete progress bar to 100% full immediately
         global.target_progress = 1.0;
         global.current_progress = 1.0;
         update_bar(1.0);
-        # Begin smooth 0.4s fade out of Apple logo and boot elements exactly when GDM takes over
-        global.fade_out_started = 1;
+        # Retain Apple logo and progress bar at 100% opacity on black background
+        # so GDM's bootCover seamlessly takes over without any black gap or flicker!
     }
     else
     {

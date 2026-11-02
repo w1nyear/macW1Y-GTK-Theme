@@ -2081,48 +2081,94 @@ export default class EvalHelper extends Extension {
             });
         });
 
-        // macOS Startup Transition: Smooth opacity fade-in, rock-solid wallpaper (no zoom/scale)
-        if (Main.layoutManager?.panelBox) {
-            Main.layoutManager.panelBox.opacity = 255;
-            Main.layoutManager.panelBox.visible = true;
-        }
-
-        Main.overview.connectObject('hiding', () => {
-            if (Main.layoutManager?.panelBox && Main.layoutManager.panelBox.opacity !== 255) {
-                Main.layoutManager.panelBox.opacity = 255;
-            }
-        }, this);
-
+        // macOS Startup Transition: Smooth opacity fade-in, rock-solid wallpaper (strict no-zoom / no-flicker)
         if (Main.layoutManager) {
+            // 1. Immediately eliminate any GNOME Ubuntu zoom-in scale (0.75 -> 1.0) and fix pivot point
+            Main.layoutManager.uiGroup.scale_x = 1.0;
+            Main.layoutManager.uiGroup.scale_y = 1.0;
+            Main.layoutManager.uiGroup.set_pivot_point(0, 0);
+            Main.layoutManager.uiGroup.opacity = 255;
+
+            // 2. Intercept _prepareStartupAnimation so uiGroup is NEVER scaled down to 0.75
+            if (Main.layoutManager._prepareStartupAnimation) {
+                this._origPrepareStartupAnimation = Main.layoutManager._prepareStartupAnimation;
+                Main.layoutManager._prepareStartupAnimation = async function() {
+                    if (!Main.sessionMode.isGreeter) {
+                        this._showSecondaryBackgrounds();
+
+                        // Force rock-solid 1.0 scale — eliminate Ubuntu zoom-in
+                        this.uiGroup.set_pivot_point(0, 0);
+                        this.uiGroup.scale_x = 1.0;
+                        this.uiGroup.scale_y = 1.0;
+                        this.uiGroup.opacity = 255;
+
+                        // Hide panel and windows for smooth macOS entrance
+                        if (this.panelBox) {
+                            this.panelBox.remove_all_transitions();
+                            const panelH = this.panelBox.height > 0 ? this.panelBox.height : 32;
+                            this.panelBox.translation_y = -panelH;
+                            this.panelBox.opacity = 0;
+                        }
+                        if (global.window_group) {
+                            global.window_group.remove_all_transitions();
+                            global.window_group.opacity = 0;
+                        }
+
+                        await this._updateBackgrounds();
+                    }
+                    this.emit('startup-prepared');
+                };
+            }
+
+            // 3. Intercept _startupAnimationSession: smooth macOS element entrance
             this._origStartupAnimationSession = Main.layoutManager._startupAnimationSession;
             Main.layoutManager._startupAnimationSession = async function() {
-                this.panelBox.ease({
-                    opacity: 255,
-                    duration: 400,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                });
+                // Keep uiGroup strictly at 1.0
+                this.uiGroup.scale_x = 1.0;
+                this.uiGroup.scale_y = 1.0;
+                this.uiGroup.set_pivot_point(0, 0);
+                this.uiGroup.opacity = 255;
 
-                if (this._startInOverview) {
-                    await Main.overview.runStartupAnimation();
-                } else {
+                const DURATION = 550;
+                const MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
 
-                    for (const child of this.uiGroup.get_children()) {
-                        if (child !== this._backgroundGroup && child !== this._systemBackground && child !== this._coverPane) {
-                            if (child.opacity !== 255) {
-                                child.ease({
-                                    opacity: 255,
-                                    duration: 400,
-                                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                                });
-                            }
+                // A. Menu bar slides down from the top
+                if (this.panelBox) {
+                    this.panelBox.remove_all_transitions();
+                    this.panelBox.ease({
+                        translation_y: 0,
+                        opacity: 255,
+                        duration: DURATION,
+                        mode: MODE,
+                    });
+                }
+
+                // B. Open windows smoothly fade in
+                if (global.window_group) {
+                    global.window_group.remove_all_transitions();
+                    global.window_group.ease({
+                        opacity: 255,
+                        duration: DURATION,
+                        mode: MODE,
+                    });
+                }
+
+                // C. Desktop widgets (DING, desktop-widgets) smoothly fade in
+                for (const child of this.uiGroup.get_children()) {
+                    if (child !== this._backgroundGroup &&
+                        child !== this._systemBackground &&
+                        child !== this._coverPane &&
+                        child !== this.panelBox &&
+                        child.name !== 'dashtodockContainer') {
+                        if (child.opacity < 255) {
+                            child.remove_all_transitions();
+                            child.ease({
+                                opacity: 255,
+                                duration: DURATION,
+                                mode: MODE,
+                            });
                         }
                     }
-
-                    await global.window_group.easeAsync({
-                        opacity: 255,
-                        duration: 400,
-                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                    }).catch(() => {});
                 }
             };
         }
@@ -2651,6 +2697,11 @@ export default class EvalHelper extends Extension {
         if (Main.layoutManager && this._origStartupAnimationSession) {
             Main.layoutManager._startupAnimationSession = this._origStartupAnimationSession;
             this._origStartupAnimationSession = null;
+        }
+
+        if (Main.layoutManager && this._origPrepareStartupAnimation) {
+            Main.layoutManager._prepareStartupAnimation = this._origPrepareStartupAnimation;
+            this._origPrepareStartupAnimation = null;
         }
 
         if (this._gcIntervalId) {
