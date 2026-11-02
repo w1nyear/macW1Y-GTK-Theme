@@ -1,6 +1,7 @@
 import St from 'gi://St';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -54,27 +55,90 @@ export default class RunCommandExtension extends Extension {
     enable() {
         this._indicator = new PanelMenu.Button(0.0, 'Ydotool Trigger', true);
 
-        this._icon = new St.Icon({
-            style_class: 'system-status-icon',
-            icon_size: 16
+        const FADE_DURATION = 200; // ms (smooth macOS cross-fade)
+
+        this._iconBox = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: false,
+            y_expand: false,
         });
+
+        this._ccIcon = new St.Icon({
+            style_class: 'system-status-icon',
+            icon_size: 16,
+            opacity: 255,
+        });
+        this._icon = this._ccIcon;
         this._syncIcon();
-        this._indicator.add_child(this._icon);
+
+        this._osdIcon = new St.Icon({
+            style_class: 'system-status-icon',
+            icon_size: 16,
+            opacity: 0,
+        });
+
+        this._iconBox.add_child(this._ccIcon);
+        this._iconBox.add_child(this._osdIcon);
+        this._indicator.add_child(this._iconBox);
+
+        this._indicator._ccIcon = this._ccIcon;
+        this._indicator._osdIcon = this._osdIcon;
+        this._indicator._iconBox = this._iconBox;
 
         this._indicator._setOsdOverride = (iconName) => {
-            if (!this._icon) return;
+            if (!this._ccIcon || !this._osdIcon) return;
             this._osdActive = true;
             this._indicator.add_style_pseudo_class('checked');
-            this._icon.gicon = null;
-            this._icon.icon_name = iconName;
+            this._osdIcon.icon_name = iconName;
+
+            // If already fully transitioned to OSD icon, keep it at 255
+            if (this._osdIcon.opacity === 255 && this._ccIcon.opacity === 0) {
+                return;
+            }
+
+            this._ccIcon.remove_all_transitions();
+            this._osdIcon.remove_all_transitions();
+
+            this._ccIcon.ease({
+                opacity: 0,
+                duration: FADE_DURATION,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+            this._osdIcon.ease({
+                opacity: 255,
+                duration: FADE_DURATION,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
         };
 
         this._indicator._clearOsdOverride = () => {
-            if (!this._icon) return;
+            if (!this._ccIcon || !this._osdIcon) return;
             this._osdActive = false;
             this._indicator.remove_style_pseudo_class('checked');
-            this._icon.icon_name = null;
-            this._syncIcon();
+
+            if (this._osdIcon.opacity === 0 && this._ccIcon.opacity === 255) {
+                this._osdIcon.icon_name = null;
+                return;
+            }
+
+            this._ccIcon.remove_all_transitions();
+            this._osdIcon.remove_all_transitions();
+
+            this._osdIcon.ease({
+                opacity: 0,
+                duration: FADE_DURATION,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => {
+                    if (!this._osdActive && this._osdIcon) {
+                        this._osdIcon.icon_name = null;
+                    }
+                },
+            });
+            this._ccIcon.ease({
+                opacity: 255,
+                duration: FADE_DURATION,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
         };
 
         globalThis._macSetControlCenterOsdIcon = (iconName) => {
@@ -134,13 +198,12 @@ export default class RunCommandExtension extends Extension {
     }
 
     _syncIcon() {
-        if (!this._icon)
-            return;
-        if (this._osdActive)
+        const icon = this._ccIcon || this._icon;
+        if (!icon)
             return;
         try {
             const file = Gio.File.new_for_path(themedIconPath());
-            this._icon.gicon = new Gio.FileIcon({file});
+            icon.gicon = new Gio.FileIcon({file});
         } catch (e) {
             // keep the previous icon
         }
@@ -172,6 +235,9 @@ export default class RunCommandExtension extends Extension {
         }
         this._interfaceSettings = null;
         this._icon = null;
+        this._ccIcon = null;
+        this._osdIcon = null;
+        this._iconBox = null;
         if (this._indicator) {
             this._indicator.destroy();
             this._indicator = null;

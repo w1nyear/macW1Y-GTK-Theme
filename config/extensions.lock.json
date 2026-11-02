@@ -177,7 +177,7 @@
         "50",
         "51"
       ],
-      "sha256": "5caf4ae0b8b3ac13dd9d26541b1a39c2370e7d5e5f5a0c33441ba9b7f8d2cbfb",
+      "sha256": "11e081403137c49d175a838baabdff6f7af9f855c9dff22b3f82304490f0864b",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -291,7 +291,7 @@
         "50",
         "51"
       ],
-      "sha256": "821bad49f0276b0d942e2b248586a022f1e017314c7577bc8f76d09d8dc7bdc6",
+      "sha256": "ebd1bac7764a63e6b71568bdd8b737a67393b05355255aa373c090e7582f554a",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -299,7 +299,7 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Local custom ydotool trigger",
-      "last_verified": "2026-10-27"
+      "last_verified": "2026-11-02"
     },
     "top-bar-organizer@julian.gse.jsts.xyz": {
       "uuid": "top-bar-organizer@julian.gse.jsts.xyz",

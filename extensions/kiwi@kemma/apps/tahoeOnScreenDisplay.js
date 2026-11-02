@@ -752,13 +752,30 @@ function _setCcOsdIcon(iconName) {
             return;
         }
         const ydoBtn = Main.panel?.statusArea?.['ydotool-trigger-button'];
+        if (ydoBtn?._setOsdOverride) {
+            ydoBtn._setOsdOverride(iconName);
+            return;
+        }
         if (ydoBtn) {
             const icon = ydoBtn.get_first_child ? ydoBtn.get_first_child() : null;
             if (icon && (icon instanceof St.Icon || icon.icon_name !== undefined)) {
                 ydoBtn.add_style_pseudo_class('checked');
-                icon.gicon = null;
-                icon.icon_name = iconName;
                 ydoBtn._isOsdIconActive = true;
+                icon.remove_all_transitions?.();
+                icon.ease?.({
+                    opacity: 0,
+                    duration: 100,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        icon.gicon = null;
+                        icon.icon_name = iconName;
+                        icon.ease?.({
+                            opacity: 255,
+                            duration: 100,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                    }
+                });
             }
         }
         const qs = Main.panel?.statusArea?.quickSettings;
@@ -766,9 +783,22 @@ function _setCcOsdIcon(iconName) {
             const ccIcon = qs.get_children?.().find(c => c.has_style_class_name && c.has_style_class_name('mac-control-center-icon'));
             if (ccIcon) {
                 qs.add_style_pseudo_class('checked');
-                ccIcon.gicon = null;
-                ccIcon.icon_name = iconName;
                 qs._isOsdIconActive = true;
+                ccIcon.remove_all_transitions?.();
+                ccIcon.ease?.({
+                    opacity: 0,
+                    duration: 100,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        ccIcon.gicon = null;
+                        ccIcon.icon_name = iconName;
+                        ccIcon.ease?.({
+                            opacity: 255,
+                            duration: 100,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                    }
+                });
             }
         }
     } catch (_) {}
@@ -781,19 +811,36 @@ function _restoreCcIcon() {
             return;
         }
         const ydoBtn = Main.panel?.statusArea?.['ydotool-trigger-button'];
+        if (ydoBtn?._clearOsdOverride) {
+            ydoBtn._clearOsdOverride();
+            return;
+        }
         if (ydoBtn && ydoBtn._isOsdIconActive) {
             ydoBtn._isOsdIconActive = false;
             ydoBtn.remove_style_pseudo_class('checked');
             const icon = ydoBtn.get_first_child ? ydoBtn.get_first_child() : null;
             if (icon) {
-                icon.icon_name = null;
-                const isDark = (typeof getTopbarInk === 'function' && getTopbarInk() === 'dark');
-                const darkPath = '/usr/share/mactheme/icons/controlcenter-dark.png';
-                const lightPath = '/usr/share/mactheme/icons/controlcenter.png';
-                const chosenPath = (isDark && GLib.file_test(darkPath, GLib.FileTest.EXISTS)) ? darkPath : lightPath;
-                if (GLib.file_test(chosenPath, GLib.FileTest.EXISTS)) {
-                    icon.gicon = new Gio.FileIcon({ file: Gio.File.new_for_path(chosenPath) });
-                }
+                icon.remove_all_transitions?.();
+                icon.ease?.({
+                    opacity: 0,
+                    duration: 100,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        icon.icon_name = null;
+                        const isDark = (typeof getTopbarInk === 'function' && getTopbarInk() === 'dark');
+                        const darkPath = '/usr/share/mactheme/icons/controlcenter-dark.png';
+                        const lightPath = '/usr/share/mactheme/icons/controlcenter.png';
+                        const chosenPath = (isDark && GLib.file_test(darkPath, GLib.FileTest.EXISTS)) ? darkPath : lightPath;
+                        if (GLib.file_test(chosenPath, GLib.FileTest.EXISTS)) {
+                            icon.gicon = new Gio.FileIcon({ file: Gio.File.new_for_path(chosenPath) });
+                        }
+                        icon.ease?.({
+                            opacity: 255,
+                            duration: 100,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                    }
+                });
             }
         }
         const qs = Main.panel?.statusArea?.quickSettings;
@@ -802,22 +849,35 @@ function _restoreCcIcon() {
             qs.remove_style_pseudo_class('checked');
             const ccIcon = qs.get_children?.().find(c => c.has_style_class_name && c.has_style_class_name('mac-control-center-icon'));
             if (ccIcon) {
-                ccIcon.icon_name = null;
-                const home = GLib.get_home_dir();
-                const candidates = [
-                    `${home}/.themes/macW1Y-Dark/icons/control-center.png`,
-                    `${home}/.themes/MacTahoe-Dark/icons/control-center.png`,
-                    `/usr/share/mactheme/icons/controlcenter.png`
-                ];
-                let found = null;
-                for (const p of candidates) {
-                    if (GLib.file_test(p, GLib.FileTest.EXISTS)) { found = p; break; }
-                }
-                if (found) {
-                    ccIcon.gicon = new Gio.FileIcon({ file: Gio.File.new_for_path(found) });
-                } else {
-                    ccIcon.icon_name = 'preferences-system-symbolic';
-                }
+                ccIcon.remove_all_transitions?.();
+                ccIcon.ease?.({
+                    opacity: 0,
+                    duration: 100,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        ccIcon.icon_name = null;
+                        const home = GLib.get_home_dir();
+                        const candidates = [
+                            `${home}/.themes/macW1Y-Dark/icons/control-center.png`,
+                            `${home}/.themes/MacTahoe-Dark/icons/control-center.png`,
+                            `/usr/share/mactheme/icons/controlcenter.png`
+                        ];
+                        let found = null;
+                        for (const p of candidates) {
+                            if (GLib.file_test(p, GLib.FileTest.EXISTS)) { found = p; break; }
+                        }
+                        if (found) {
+                            ccIcon.gicon = new Gio.FileIcon({ file: Gio.File.new_for_path(found) });
+                        } else {
+                            ccIcon.icon_name = 'preferences-system-symbolic';
+                        }
+                        ccIcon.ease?.({
+                            opacity: 255,
+                            duration: 100,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                    }
+                });
             }
         }
     } catch (_) {}
