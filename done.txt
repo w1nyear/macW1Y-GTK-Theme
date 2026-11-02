@@ -15569,3 +15569,27 @@ Task 610: Sliding Pill Workspace Indicator & Transparent Overview Workspace Card
    - Verified transparent backgrounds on all workspace thumbnail cards.
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+Task 611: Reduced Notification Height on Hover
+1. Problem:
+   - When hovering over toast notifications (such as screenshot captures with action buttons like "Показувати у «Файлах»"), the notification ballooned excessively in height (~181-192px), leaving an unsightly ~57-64px empty void below the action button.
+   - The remeasure logic in `tahoeNotifications.js` had an artificial `total += 44;` added on hover, even though `actionsBox` and its margins were already fully accounted for in the row measurements and container padding.
+
+2. Implementation & Fixes:
+   - `extensions/kiwi@kemma/apps/tahoeNotifications.js`:
+     * Removed the duplicate `total += 44;` addition on hover in `remeasure()`.
+     * Kept natural and exact height computation based on visible rows, margins, and container padding (`total = 30 + sum + 4 * (count - 1)`).
+     * Updated minimum hover target height with action buttons from `104` to `88`, allowing snug fit.
+     * Synchronously eased `slot`, `pill`, and `content` to `target` with `EASE_OUT_CUBIC` (180ms).
+   - `extensions/kiwi@kemma/apps/tahoeNotificationCard.js`:
+     * Adjusted `computeCardTargetHeight()` hover delta for `actionsBox` from `42/46` to `30/34`, eliminating excessive bottom gaps in Notification Center cards as well.
+   - Extension Guard & Lock:
+     * Synchronized updated files to `~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/`.
+     * Computed new directory SHA-256 hash `2ce650778e4f2015ce84d6c9efdcebb71252efb42703d3eb35c58d39ade6796b` and updated `config/extensions.lock.json`.
+     * Hot-reloaded live module on the active session without restarting GNOME Shell.
+
+3. Testing & Verification:
+   - Verified unhovered height (105px) and hovered height (143px) on screenshot notifications with action buttons.
+   - Ensured smooth 180ms easing when expanding on hover and collapsing on unhover.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.

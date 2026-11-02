@@ -671,10 +671,10 @@ export function buildNotificationCard(source, notification, options = {}) {
 
         if (actionsBox && isHover) {
             // Збільшена висота на hover для комфортного розміщення круглої кнопки з достатнім відступом знизу
-            total += isScreenshot ? 42 : 46;
+            total += isScreenshot ? 30 : 34;
         }
         total += (isScreenshot ? 2 : 4) * Math.max(0, count - 1);
-        const minH = isScreenshot ? (isHover && actionsBox ? 104 : 54) : (isHover && actionsBox ? 116 : 72);
+        const minH = isScreenshot ? (isHover && actionsBox ? 88 : 54) : (isHover && actionsBox ? 96 : 72);
         return Math.max(minH, Math.ceil(total));
     };
 

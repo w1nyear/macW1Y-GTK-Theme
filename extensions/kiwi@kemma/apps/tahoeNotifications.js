@@ -901,18 +901,26 @@ function _makeToastCard(item, noglass = false) {
             }
             const count = rows.filter((v) => v > 0).length;
             const sum = rows.reduce((acc, v) => acc + v, 0);
-            let total = 30 + sum + 4 * Math.max(0, count - 1);
-            if (actionsBox && isHover) {
-                total += 44; // ample breathing room for pill button
-            }
-            const target = Math.max(isHover && actionsBox ? 104 : 72, Math.ceil(total));
+            const total = 30 + sum + 4 * Math.max(0, count - 1);
+            const target = Math.max(isHover && actionsBox ? 88 : 72, Math.ceil(total));
             if (Math.abs(target - slot._bodyH) > 1) {
                 slot._bodyH = target;
-                try { content.set_height(target); } catch (_) {}
                 try {
                     if (slot._entered) {
                         try { slot.remove_transition('height'); } catch (_) {}
+                        try { pill.remove_transition('height'); } catch (_) {}
+                        try { content.remove_transition('height'); } catch (_) {}
                         slot.ease({
+                            height: target,
+                            duration: 180,
+                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        });
+                        pill.ease({
+                            height: target,
+                            duration: 180,
+                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        });
+                        content.ease({
                             height: target,
                             duration: 180,
                             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
@@ -920,6 +928,7 @@ function _makeToastCard(item, noglass = false) {
                     } else {
                         slot.set_height(target);
                         try { pill.set_height(target); } catch (_) {}
+                        try { content.set_height(target); } catch (_) {}
                     }
                 } catch (_) {
                     try { slot.set_height(target); } catch (_) {}
