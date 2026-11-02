@@ -273,7 +273,6 @@ preferencespage list,
   margin-left: 15px;
   margin-right: 15px;
   margin-bottom: 12px;
-  padding: 0px;
 }
 
 list.boxed-list row,
@@ -299,64 +298,6 @@ list.boxed-list row.expander row.header {
   margin: 0px;
   border-bottom: none;
   background-color: transparent;
-  border-radius: 0px;
-}
-
-list.boxed-list > row:first-child,
-preferencesgroup list > row:first-child,
-preferencesgroup > box > box > list > row:first-child,
-preferencespage list.boxed-list > row:first-child,
-preferencespage list.boxed-list row:first-child,
-.content-pane list.boxed-list > row:first-child,
-.content-pane list.boxed-list row:first-child,
-.mac-settings-content list.boxed-list > row:first-child,
-.mac-settings-content list.boxed-list row:first-child,
-list.boxed-list > row:first-child.expander row.header {
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
-  border-bottom-left-radius: 0px;
-  border-bottom-right-radius: 0px;
-}
-
-list.boxed-list > row:last-child,
-preferencesgroup list > row:last-child,
-preferencesgroup > box > box > list > row:last-child,
-preferencespage list.boxed-list > row:last-child,
-preferencespage list.boxed-list row:last-child,
-.content-pane list.boxed-list > row:last-child,
-.content-pane list.boxed-list row:last-child,
-.mac-settings-content list.boxed-list > row:last-child,
-.mac-settings-content list.boxed-list row:last-child,
-list.boxed-list > row:last-child.expander:not(:checked),
-list.boxed-list > row:last-child.expander:not(:checked) row.header {
-  border-bottom-left-radius: 14px;
-  border-bottom-right-radius: 14px;
-  border-top-left-radius: 0px;
-  border-top-right-radius: 0px;
-}
-
-list.boxed-list > row:not(:first-child):not(:last-child),
-preferencesgroup list > row:not(:first-child):not(:last-child),
-preferencesgroup > box > box > list > row:not(:first-child):not(:last-child),
-preferencespage list.boxed-list > row:not(:first-child):not(:last-child),
-preferencespage list.boxed-list row:not(:first-child):not(:last-child),
-.content-pane list.boxed-list > row:not(:first-child):not(:last-child),
-.content-pane list.boxed-list row:not(:first-child):not(:last-child),
-.mac-settings-content list.boxed-list > row:not(:first-child):not(:last-child),
-.mac-settings-content list.boxed-list row:not(:first-child):not(:last-child) {
-  border-radius: 0px;
-}
-
-list.boxed-list > row:only-child,
-preferencesgroup list > row:only-child,
-preferencesgroup > box > box > list > row:only-child,
-preferencespage list.boxed-list > row:only-child,
-preferencespage list.boxed-list row:only-child,
-.content-pane list.boxed-list > row:only-child,
-.content-pane list.boxed-list row:only-child,
-.mac-settings-content list.boxed-list > row:only-child,
-.mac-settings-content list.boxed-list row:only-child {
-  border-radius: 14px;
 }
 
 list.boxed-list row > box.header,
@@ -399,127 +340,13 @@ label.subtitle,
 list.boxed-list > row:hover,
 list.boxed-list row:not(.expander):hover,
 list.boxed-list row.expander row.header:hover,
-preferencesgroup list > row:hover,
-preferencesgroup > box > box > list > row:hover,
 preferencespage list.boxed-list row:not(.expander):hover,
-preferencespage list:not(.boxed-list) > row:hover,
 .content-pane list.boxed-list row:not(.expander):hover,
-.mac-settings-content list.boxed-list row:not(.expander):hover,
-adwactionrow:hover,
-adwswitchrow:hover,
-adwcomborow:hover,
-adwentryrow:hover,
-adwexpanderrow:hover,
-adwspinrow:hover,
-cclistrow:hover,
-ccwificonnectionrow:hover,
-preferencespage row.button:hover {
-  background-color: rgba(255, 255, 255, 0.06);
-  margin: 0px;
-  border-radius: 0px;
-}
-
-list.boxed-list > row:first-child:hover,
-preferencesgroup list > row:first-child:hover,
-preferencesgroup > box > box > list > row:first-child:hover,
-preferencespage list.boxed-list > row:first-child:hover,
-preferencespage list.boxed-list row:first-child:hover,
-.content-pane list.boxed-list > row:first-child:hover,
-.content-pane list.boxed-list row:first-child:hover,
-.mac-settings-content list.boxed-list > row:first-child:hover,
-.mac-settings-content list.boxed-list row:first-child:hover,
-list.boxed-list > row:first-child.expander row.header:hover {
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
-  border-bottom-left-radius: 0px;
-  border-bottom-right-radius: 0px;
-}
-
-list.boxed-list > row:last-child:hover,
-preferencesgroup list > row:last-child:hover,
-preferencesgroup > box > box > list > row:last-child:hover,
-preferencespage list.boxed-list > row:last-child:hover,
-preferencespage list.boxed-list row:last-child:hover,
-.content-pane list.boxed-list > row:last-child:hover,
-.content-pane list.boxed-list row:last-child:hover,
-.mac-settings-content list.boxed-list > row:last-child:hover,
-.mac-settings-content list.boxed-list row:last-child:hover,
-list.boxed-list > row:last-child.expander:not(:checked) row.header:hover {
-  border-bottom-left-radius: 14px;
-  border-bottom-right-radius: 14px;
-  border-top-left-radius: 0px;
-  border-top-right-radius: 0px;
-}
-
-list.boxed-list > row:not(:first-child):not(:last-child):hover,
-preferencesgroup list > row:not(:first-child):not(:last-child):hover,
-preferencesgroup > box > box > list > row:not(:first-child):not(:last-child):hover,
-preferencespage list.boxed-list > row:not(:first-child):not(:last-child):hover,
-preferencespage list.boxed-list row:not(:first-child):not(:last-child):hover,
-.content-pane list.boxed-list > row:not(:first-child):not(:last-child):hover,
-.content-pane list.boxed-list row:not(:first-child):not(:last-child):hover,
-.mac-settings-content list.boxed-list > row:not(:first-child):not(:last-child):hover,
-.mac-settings-content list.boxed-list row:not(:first-child):not(:last-child):hover {
-  border-radius: 0px;
-}
-
-list.boxed-list > row:only-child:hover,
-preferencesgroup list > row:only-child:hover,
-preferencesgroup > box > box > list > row:only-child:hover,
-preferencespage list.boxed-list > row:only-child:hover,
-preferencespage list.boxed-list row:only-child:hover,
-.content-pane list.boxed-list > row:only-child:hover,
-.content-pane list.boxed-list row:only-child:hover,
-.mac-settings-content list.boxed-list > row:only-child:hover,
-.mac-settings-content list.boxed-list row:only-child:hover {
-  border-radius: 14px;
-}
-
-list.boxed-list > row:active,
-list.boxed-list row:not(.expander):active,
-list.boxed-list row.expander row.header:active,
-preferencesgroup list > row:active,
-preferencespage list.boxed-list row:not(.expander):active,
-preferencespage list:not(.boxed-list) > row:active,
-.content-pane list.boxed-list row:not(.expander):active,
-.mac-settings-content list.boxed-list row:not(.expander):active,
-adwactionrow:active,
-adwswitchrow:active,
-adwcomborow:active,
-adwentryrow:active,
-adwexpanderrow:active,
-adwspinrow:active,
-cclistrow:active,
-ccwificonnectionrow:active,
-preferencespage row.button:active {
-  background-color: rgba(255, 255, 255, 0.09);
-  margin: 0px;
-  border-radius: 0px;
-}
-
-list.boxed-list > row:first-child:active,
-preferencesgroup list > row:first-child:active {
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
-  border-bottom-left-radius: 0px;
-  border-bottom-right-radius: 0px;
-}
-
-list.boxed-list > row:last-child:active,
-preferencesgroup list > row:last-child:active {
-  border-bottom-left-radius: 14px;
-  border-bottom-right-radius: 14px;
-  border-top-left-radius: 0px;
-  border-top-right-radius: 0px;
-}
-
-list.boxed-list > row:only-child:active,
-preferencesgroup list > row:only-child:active {
-  border-radius: 14px;
+.mac-settings-content list.boxed-list row:not(.expander):hover {
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 list.boxed-list > row + row,
-preferencesgroup list > row + row,
 preferencespage list.boxed-list > row + row,
 .content-pane list.boxed-list > row + row,
 .mac-settings-content list.boxed-list > row + row {
@@ -528,7 +355,6 @@ preferencespage list.boxed-list > row + row,
 }
 
 list.boxed-list > row:hover + row,
-preferencesgroup list > row:hover + row,
 preferencespage list.boxed-list > row:hover + row,
 .content-pane list.boxed-list > row:hover + row,
 .mac-settings-content list.boxed-list > row:hover + row {
@@ -809,18 +635,14 @@ preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.c
   color: #ffffff;
 }
 
-/* Headerbar control buttons - strictly circular macOS style */
+/* Headerbar control buttons - macOS style (excluding windowcontrols) */
 headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
 .titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-headerbar button.image-button,
-headerbar button.flat,
-headerbar menubutton > button,
-headerbar splitbutton > button,
-headerbar splitbutton > menubutton > button,
-.nautilus-window headerbar button:not(.titlebutton),
-.nautilus-window headerbar menubutton > button,
-.nautilus-window headerbar splitbutton > button,
-.nautilus-window .content-pane headerbar button:not(.titlebutton) {
+headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton) {
   min-width: 28px;
   min-height: 28px;
   border-radius: 9999px;
@@ -838,13 +660,11 @@ headerbar splitbutton > menubutton > button,
 
 headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 .titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-headerbar button.image-button:hover,
-headerbar button.flat:hover,
-headerbar menubutton > button:hover,
-headerbar splitbutton > button:hover,
-headerbar splitbutton > menubutton > button:hover,
-.nautilus-window headerbar button:not(.titlebutton):hover,
-.nautilus-window headerbar menubutton > button:hover {
+headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover {
   background-color: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
   border: none;
@@ -855,13 +675,11 @@ headerbar splitbutton > menubutton > button:hover,
 
 headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 .titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-headerbar button.image-button:active,
-headerbar button.flat:active,
-headerbar menubutton > button:active,
-headerbar splitbutton > button:active,
-headerbar splitbutton > menubutton > button:active,
-.nautilus-window headerbar button:not(.titlebutton):active,
-.nautilus-window headerbar menubutton > button:active {
+headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active {
   background-color: rgba(255, 255, 255, 0.20);
   border-radius: 9999px;
   border: none;
@@ -870,7 +688,58 @@ headerbar splitbutton > menubutton > button:active,
   color: #ffffff;
 }
 
-/* Icons inside headerbar buttons MUST NEVER have a separate background */
+/* Nautilus headerbar control buttons (Search, Menu, View Controls, History) */
+.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+.nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+.nautilus-window headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+.nautilus-window headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton) {
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 9999px;
+  padding: 4px;
+  margin: 0 2px;
+  background-color: rgba(255, 255, 255, 0.08);
+  background-image: none;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.88);
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+.nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+.nautilus-window headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+.nautilus-window headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover {
+  background-color: rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: #ffffff;
+}
+
+.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
+.nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+.nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
+.nautilus-window headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+.nautilus-window headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
+.nautilus-window headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+.nautilus-window headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
+.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked {
+  background-color: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: #ffffff;
+}
+
+/* Icons and inner containers inside headerbar buttons MUST NEVER have a separate background */
 headerbar button image,
 headerbar button icon,
 headerbar button:hover image,
@@ -878,13 +747,29 @@ headerbar button:hover icon,
 headerbar button:active image,
 headerbar button:active icon,
 headerbar menubutton image,
+headerbar menubutton icon,
 headerbar splitbutton image,
+headerbar splitbutton icon,
 .nautilus-window headerbar image,
-.nautilus-window headerbar button image {
+.nautilus-window headerbar icon,
+.nautilus-window headerbar button image,
+.nautilus-window headerbar button icon,
+.nautilus-window headerbar button box,
+.nautilus-window headerbar button stack,
+.nautilus-window headerbar menubutton image,
+.nautilus-window headerbar menubutton icon,
+.nautilus-window headerbar menubutton box,
+.nautilus-window headerbar splitbutton image,
+.nautilus-window headerbar splitbutton icon,
+.nautilus-window headerbar splitbutton box,
+.nautilus-window headerbar .image-button image,
+.nautilus-window headerbar .image-button icon,
+.nautilus-window headerbar .image-button box {
   background: transparent;
   background-color: transparent;
   background-image: none;
   border: none;
+  border-style: none;
   box-shadow: none;
   padding: 0;
 }
@@ -1310,6 +1195,18 @@ windowcontrols {
   padding: 0;
 }
 
+.nautilus-window headerbar windowcontrols,
+.nautilus-window windowcontrols,
+.sidebar-pane headerbar windowcontrols {
+  border-spacing: 7px;
+  padding: 0;
+  margin-left: 12px;
+}
+
+.nautilus-window headerbar windowcontrols button,
+.nautilus-window windowcontrols button,
+.sidebar-pane headerbar windowcontrols button,
+.nautilus-sidebar-headerbar windowcontrols button,
 headerbar windowcontrols button,
 windowcontrols button,
 windowcontrols button.close,
@@ -1326,6 +1223,7 @@ headerbar button.titlebutton,
   margin: 0 1px;
   border-radius: 9999px;
   background-color: transparent;
+  background: transparent;
   border: none;
   border-style: none;
   border-color: transparent;
@@ -1337,6 +1235,10 @@ headerbar button.titlebutton,
   background-size: 13.5px 13.5px;
 }
 
+.nautilus-window headerbar windowcontrols button:hover,
+.nautilus-window windowcontrols button:hover,
+.sidebar-pane headerbar windowcontrols button:hover,
+.nautilus-sidebar-headerbar windowcontrols button:hover,
 headerbar windowcontrols button:hover,
 windowcontrols button:hover,
 headerbar windowcontrols button:active,
@@ -1346,6 +1248,7 @@ windowcontrols button:focus,
 headerbar windowcontrols button:backdrop,
 windowcontrols button:backdrop {
   background-color: transparent;
+  background: transparent;
   border: none;
   border-style: none;
   border-color: transparent;
@@ -1359,7 +1262,8 @@ windowcontrols button:backdrop {
 headerbar windowcontrols button > image,
 windowcontrols button > image,
 headerbar windowcontrols button image,
-windowcontrols button image {
+windowcontrols button image,
+.nautilus-window windowcontrols button image {
   min-width: 0;
   min-height: 0;
   -gtk-icon-size: 14px;
@@ -1374,6 +1278,10 @@ windowcontrols button image {
 }
 
 /* Ensure macOS Traffic Light button images bind properly across all container variations */
+.nautilus-window windowcontrols button.close,
+.nautilus-window headerbar windowcontrols button.close,
+.sidebar-pane headerbar windowcontrols button.close,
+.nautilus-sidebar-headerbar windowcontrols button.close,
 windowcontrols button.close,
 headerbar windowcontrols button.close {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-close-dark.png"), url("windows-assets/titlebutton-close-dark@2.png"));
@@ -1381,6 +1289,10 @@ headerbar windowcontrols button.close {
   background-position: center center;
   background-size: 13.5px 13.5px;
 }
+.nautilus-window windowcontrols button.close:hover,
+.nautilus-window headerbar windowcontrols button.close:hover,
+.sidebar-pane headerbar windowcontrols button.close:hover,
+.nautilus-sidebar-headerbar windowcontrols button.close:hover,
 windowcontrols button.close:hover,
 headerbar windowcontrols button.close:hover {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-close-hover-dark.png"), url("windows-assets/titlebutton-close-hover-dark@2.png"));
@@ -1388,6 +1300,10 @@ headerbar windowcontrols button.close:hover {
   background-position: center center;
   background-size: 13.5px 13.5px;
 }
+.nautilus-window windowcontrols button.close:active,
+.nautilus-window headerbar windowcontrols button.close:active,
+.sidebar-pane headerbar windowcontrols button.close:active,
+.nautilus-sidebar-headerbar windowcontrols button.close:active,
 windowcontrols button.close:active,
 headerbar windowcontrols button.close:active {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-close-active-dark.png"), url("windows-assets/titlebutton-close-active-dark@2.png"));
@@ -1395,6 +1311,10 @@ headerbar windowcontrols button.close:active {
   background-position: center center;
   background-size: 13.5px 13.5px;
 }
+.nautilus-window windowcontrols button.minimize,
+.nautilus-window headerbar windowcontrols button.minimize,
+.sidebar-pane headerbar windowcontrols button.minimize,
+.nautilus-sidebar-headerbar windowcontrols button.minimize,
 windowcontrols button.minimize,
 headerbar windowcontrols button.minimize {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-minimize-dark.png"), url("windows-assets/titlebutton-minimize-dark@2.png"));
@@ -1402,6 +1322,10 @@ headerbar windowcontrols button.minimize {
   background-position: center center;
   background-size: 13.5px 13.5px;
 }
+.nautilus-window windowcontrols button.minimize:hover,
+.nautilus-window headerbar windowcontrols button.minimize:hover,
+.sidebar-pane headerbar windowcontrols button.minimize:hover,
+.nautilus-sidebar-headerbar windowcontrols button.minimize:hover,
 windowcontrols button.minimize:hover,
 headerbar windowcontrols button.minimize:hover {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-minimize-hover-dark.png"), url("windows-assets/titlebutton-minimize-hover-dark@2.png"));
@@ -1409,6 +1333,10 @@ headerbar windowcontrols button.minimize:hover {
   background-position: center center;
   background-size: 13.5px 13.5px;
 }
+.nautilus-window windowcontrols button.minimize:active,
+.nautilus-window headerbar windowcontrols button.minimize:active,
+.sidebar-pane headerbar windowcontrols button.minimize:active,
+.nautilus-sidebar-headerbar windowcontrols button.minimize:active,
 windowcontrols button.minimize:active,
 headerbar windowcontrols button.minimize:active {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-minimize-active-dark.png"), url("windows-assets/titlebutton-minimize-active-dark@2.png"));
@@ -1416,6 +1344,10 @@ headerbar windowcontrols button.minimize:active {
   background-position: center center;
   background-size: 13.5px 13.5px;
 }
+.nautilus-window windowcontrols button.maximize,
+.nautilus-window headerbar windowcontrols button.maximize,
+.sidebar-pane headerbar windowcontrols button.maximize,
+.nautilus-sidebar-headerbar windowcontrols button.maximize,
 windowcontrols button.maximize,
 headerbar windowcontrols button.maximize {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-maximize-dark.png"), url("windows-assets/titlebutton-maximize-dark@2.png"));
@@ -1423,6 +1355,10 @@ headerbar windowcontrols button.maximize {
   background-position: center center;
   background-size: 13.5px 13.5px;
 }
+.nautilus-window windowcontrols button.maximize:hover,
+.nautilus-window headerbar windowcontrols button.maximize:hover,
+.sidebar-pane headerbar windowcontrols button.maximize:hover,
+.nautilus-sidebar-headerbar windowcontrols button.maximize:hover,
 windowcontrols button.maximize:hover,
 headerbar windowcontrols button.maximize:hover {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-maximize-hover-dark.png"), url("windows-assets/titlebutton-maximize-hover-dark@2.png"));
@@ -1430,6 +1366,10 @@ headerbar windowcontrols button.maximize:hover {
   background-position: center center;
   background-size: 13.5px 13.5px;
 }
+.nautilus-window windowcontrols button.maximize:active,
+.nautilus-window headerbar windowcontrols button.maximize:active,
+.sidebar-pane headerbar windowcontrols button.maximize:active,
+.nautilus-sidebar-headerbar windowcontrols button.maximize:active,
 windowcontrols button.maximize:active,
 headerbar windowcontrols button.maximize:active {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-maximize-active-dark.png"), url("windows-assets/titlebutton-maximize-active-dark@2.png"));
@@ -1440,7 +1380,9 @@ headerbar windowcontrols button.maximize:active {
 .fullscreen windowcontrols button.maximize,
 .maximized windowcontrols button.maximize,
 .fullscreen headerbar windowcontrols button.maximize,
-.maximized headerbar windowcontrols button.maximize {
+.maximized headerbar windowcontrols button.maximize,
+.fullscreen .nautilus-window windowcontrols button.maximize,
+.maximized .nautilus-window windowcontrols button.maximize {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-restore-dark.png"), url("windows-assets/titlebutton-restore-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
@@ -1449,7 +1391,9 @@ headerbar windowcontrols button.maximize:active {
 .fullscreen windowcontrols button.maximize:hover,
 .maximized windowcontrols button.maximize:hover,
 .fullscreen headerbar windowcontrols button.maximize:hover,
-.maximized headerbar windowcontrols button.maximize:hover {
+.maximized headerbar windowcontrols button.maximize:hover,
+.fullscreen .nautilus-window windowcontrols button.maximize:hover,
+.maximized .nautilus-window windowcontrols button.maximize:hover {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-restore-hover-dark.png"), url("windows-assets/titlebutton-restore-hover-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;
@@ -1458,7 +1402,9 @@ headerbar windowcontrols button.maximize:active {
 .fullscreen windowcontrols button.maximize:active,
 .maximized windowcontrols button.maximize:active,
 .fullscreen headerbar windowcontrols button.maximize:active,
-.maximized headerbar windowcontrols button.maximize:active {
+.maximized headerbar windowcontrols button.maximize:active,
+.fullscreen .nautilus-window windowcontrols button.maximize:active,
+.maximized .nautilus-window windowcontrols button.maximize:active {
   background-image: -gtk-scaled(url("windows-assets/titlebutton-restore-active-dark.png"), url("windows-assets/titlebutton-restore-active-dark@2.png"));
   background-repeat: no-repeat;
   background-position: center center;

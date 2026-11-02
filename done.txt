@@ -15710,3 +15710,43 @@ Task 614: Complete 3-Phase macOS Transition Animation from Lock/Login Screen (GD
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - Validated GResource overlay mapping with GLib/GIO.
    - Tested live execution of synchronized 650ms EASE_OUT_CUBIC slide-in and fade-in without session restart.
+
+
+Task 615: Відновлення кнопок керування вікна, пілюльного фону пошуку і меню та усунення світло-сірого фону під іконками у Nautilus:
+1. Запит користувача:
+   - "у наутілусі поверни минулий вигляд. а саме:
+     1. виправи відображення та розмір кнопків керування вікна.
+     2. елементи ворі [вгорі] типу пошук і три точки мають мати поверни їх фон.
+     3. але ті елементи й пошук і т д окрім одного елемента мають світліший сірий елемент його видалити він є під іконками вверху наутілуса.
+     виправи вигляд"
+   - Долучено зображення: media_1793648199464_f1cb437c.png (відсутні світлофори, оголені кнопки пошуку та меню) та media_1793648270947_ae4c793b.png (деформований 28px темно-сірий круглий фон на жовтій кнопці при hover).
+
+2. Діагностика причин:
+   - У попередніх комітах через використання невалідного для GTK CSS селектора `:not(windowcontrols button)` та непідтримуваного у GTK CSS специфікатора `!important` для властивостей `background-image`, `background-position`, `background-size`, `background-repeat`, парсер GTK відкидав правила оформлення кнопок керування вікном (світлофорів) як синтаксичні помилки («Junk at end of value», «Invalid contents of :not() selector»).
+   - У результаті кнопки керування втратили background-image (стали повністю невидимими), а загальні правила `button:hover` накладали на них деформуючий 28px сірий круглий фон при наведенні курсору.
+   - Кнопки пошуку (slot.search-global) та меню (open-menu-symbolic) також втратили свій нативний круглий пілюльний фон `rgba(255, 255, 255, 0.08)`.
+   - Внутрішні контейнери та іконки в окремих елементах мали надлишковий світло-сірий фон `#373737` (55, 55, 57).
+
+3. Реалізовані виправлення:
+   - bin/mac-build-theme:
+     * Очищено селектори від невалідного `:not(windowcontrols button)` — застосовано валідні селектори `:not(.close):not(.minimize):not(.maximize):not(.titlebutton)`.
+     * Повністю усунено специфікатори `!important` та непідтримувані властивості `max-width/max-height` з правил оформлення світлофорів у Розділі 12.
+     * Відновлено автентичні розміри світлофорів (13.5px, border-radius: 9999px, відступи 0, margin: 0 1px).
+     * Забезпечено нульовий фон при hover/active/focus (`background-color: transparent; box-shadow: none; border: none; outline: none;`), де при hover плавно змінюється виключно SVG-гліф іконки.
+     * Відновлено пілюльний напівпрозорий фон для кнопок Nautilus у хедербарі: `background-color: rgba(255, 255, 255, 0.08); min-width: 32px; min-height: 32px; border-radius: 9999px;` (hover: 0.14, active: 0.22).
+     * Усунено будь-який сторонній світло-сірий фон з усіх внутрішніх контейнерів та іконок у хедербарі (`headerbar button image, icon, box, stack { background: transparent; border: none; box-shadow: none; padding: 0; }`).
+   - src/mac_nautilus.c (libmac_nautilus.so):
+     * Додано CSS-класи `.nautilus-window`, `.nautilus-sidebar-headerbar` та `.nautilus-content-headerbar`.
+     * Гарантовано увімкнення відображення світлофорів у sidebar headerbar (`adw_header_bar_set_show_start_title_buttons(sidebar_hb, TRUE)`).
+     * Перекомпільовано lib/libmac_nautilus.so та синхронізовано з /usr/lib/x86_64-linux-gnu/libmac_nautilus.so.
+   - Збірка та синхронізація теми:
+     * Запущено bin/mac-build-theme — згенеровано оновлені `gtk-4.0/macw1y-components.css` у ~/.config/gtk-4.0/ та ~/.themes/macW1Y-Dark/.
+     * Перевірено парсинг GTK CSS — 0 помилок, чисте завантаження.
+
+4. Верифікація:
+   - Живий запуск Nautilus: кнопки керування вікном (червона x=[21, 32], y=[21, 31]; жовта x=[46, 57], y=[21, 31]; зелена x=[71, 82], y=[21, 31]) відображаються чітко, симетрично та ідеально по центру.
+   - Тест hover: при наведенні на жовту кнопку з'являється виключно гліф мінуса, жодного 28px круглого сірого фону не з'являється (повна прозорість фону кнопки).
+   - Кнопки пошуку та меню мають повернутий пілюльний фон `rgba(255, 255, 255, 0.08)` з кольором (49, 49, 51) поверх фону вікна.
+   - Усі іконки та контейнери повністю прозорі, надлишковий світло-сірий фон усунено.
+   - bin/mac-audit-sync check: 100% PASS (5/5).
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.

@@ -1195,6 +1195,8 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
     GtkWindow *window = GTK_WINDOW(user_data);
     if (!window || !GTK_IS_WINDOW(window)) return G_SOURCE_REMOVE;
 
+    gtk_widget_add_css_class(GTK_WIDGET(window), "nautilus-window");
+
     if (g_object_get_data(G_OBJECT(window), "mac_headerbars_reorganized")) {
         return G_SOURCE_REMOVE;
     }
@@ -1218,6 +1220,9 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
         AdwHeaderBar *sidebar_hb = ADW_HEADER_BAR(sidebar_bars->data);
         AdwHeaderBar *content_hb = ADW_HEADER_BAR(content_bars->data);
 
+        gtk_widget_add_css_class(GTK_WIDGET(sidebar_hb), "nautilus-sidebar-headerbar");
+        gtk_widget_add_css_class(GTK_WIDGET(content_hb), "nautilus-content-headerbar");
+
         GtkWidget *search_btn = NULL;
         GtkWidget *menu_btn = NULL;
         find_buttons_in_sidebar(GTK_WIDGET(sidebar_hb), &search_btn, &menu_btn);
@@ -1225,6 +1230,12 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
         /* 1. Hide title and title-widget in sidebar headerbar (no title near controls) */
         adw_header_bar_set_show_title(sidebar_hb, FALSE);
         adw_header_bar_set_title_widget(sidebar_hb, NULL);
+
+        /* Ensure window controls (Traffic lights) show in sidebar headerbar and not in content */
+        adw_header_bar_set_show_start_title_buttons(sidebar_hb, TRUE);
+        adw_header_bar_set_show_end_title_buttons(sidebar_hb, FALSE);
+        adw_header_bar_set_show_start_title_buttons(content_hb, FALSE);
+        adw_header_bar_set_show_end_title_buttons(content_hb, FALSE);
 
         /* 2. Reparent search and menu buttons to content headerbar (right side, separate buttons) */
         if (menu_btn) {
