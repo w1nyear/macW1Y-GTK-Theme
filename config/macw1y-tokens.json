@@ -2,7 +2,7 @@
   "_schema_version": "1.0",
   "_description": "macW1Y Single Source of Truth (SSOT) Master Design Tokens",
   "colors": {
-    "window_bg": "#1e1e1e",
+    "window_bg": "#202022",
     "window_fg": "#ffffff",
     "sidebar_bg": "#18181a",
     "sidebar_bg_translucent": "rgba(24, 24, 26, 0.85)",

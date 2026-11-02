@@ -9,15 +9,17 @@ window.background,
 window.csd,
 window > dialog-host,
 preferenceswindow,
-preferenceswindow.background {
-  background-color: var(--mac-window-bg, #1e1e1e);
+preferenceswindow.background,
+preferencespage,
+.preferences-page {
+  background-color: var(--mac-window-bg, #202022);
   color: var(--mac-window-fg, #ffffff);
   background-image: none;
 }
 
 navigation-split-view,
 overlay-split-view {
-  background-color: var(--mac-window-bg, #1e1e1e);
+  background-color: var(--mac-window-bg, #202022);
   background-image: none;
 }
 
@@ -32,6 +34,13 @@ overlay-split-view .sidebar-pane,
   background-color: var(--mac-sidebar-bg, #18181a);
   background-image: none;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+navigation-split-view .sidebar-pane,
+overlay-split-view .sidebar-pane {
+  margin: 6px 0px 6px 6px;
+  border: none;
+  border-radius: 20px;
 }
 
 headerbar,
@@ -100,25 +109,33 @@ list.navigation-sidebar row:selected label {
 navigation-split-view list row image,
 overlay-split-view list row image,
 .navigation-sidebar row image,
-list.navigation-sidebar row image {
-  min-width: 20px;
-  min-height: 20px;
-  -gtk-icon-size: 13px;
+list.navigation-sidebar row image,
+list.navigation-sidebar image,
+.navigation-sidebar image,
+navigation-split-view list row box image,
+.navigation-sidebar row box image {
+  min-width: 22px;
+  min-height: 22px;
+  -gtk-icon-size: 14px;
   background-color: #1e1e20;
+  background-image: none;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 5px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   margin-right: 8px;
-  padding: 0;
+  padding: 3px;
   color: rgba(255, 255, 255, 0.85);
 }
 
 navigation-split-view list row:selected image,
 overlay-split-view list row:selected image,
 .navigation-sidebar row:selected image,
-list.navigation-sidebar row:selected image {
+list.navigation-sidebar row:selected image,
+navigation-split-view list row:selected box image,
+.navigation-sidebar row:selected box image {
   color: #ffffff;
   background-color: #1e1e20;
+  background-image: none;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
@@ -128,11 +145,15 @@ list.navigation-sidebar row:selected image {
  * ========================================================================= */
 list.boxed-list,
 preferencesgroup list,
+preferencesgroup > box > box > list,
 preferencesgroup > box > list,
 preferencespage list.boxed-list,
+preferencespage list,
 .content-pane list.boxed-list,
-.mac-settings-content list.boxed-list {
+.mac-settings-content list.boxed-list,
+.card {
   background-color: var(--mac-card-bg, #1e1e1e);
+  background-image: none;
   border: 1px solid var(--mac-card-border, rgba(255, 255, 255, 0.07));
   border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
@@ -144,6 +165,7 @@ preferencespage list.boxed-list,
 list.boxed-list row,
 list.boxed-list > row,
 preferencesgroup list > row,
+preferencesgroup > box > box > list > row,
 preferencespage list.boxed-list row,
 preferencespage list:not(.boxed-list) > row,
 .content-pane list.boxed-list row,
@@ -162,6 +184,7 @@ list.boxed-list row.expander row.header {
   padding: 0px 14px;
   margin: 0px;
   border-bottom: none;
+  background-color: transparent;
 }
 
 list.boxed-list row > box.header,
@@ -503,28 +526,33 @@ button.pill,
   padding: 2px 16px;
 }
 
-/* Linked / Segmented Buttons (e.g. Крапка / Тире) */
+/* Linked / Segmented Buttons (e.g. Крапка / Тире, Custom / Dark / Light) */
 box.linked:not(.vertical),
 .linked:not(.vertical),
 .linked:not(vertical) {
   border-radius: 9999px;
   background-color: rgba(255, 255, 255, 0.08);
+  background-image: none;
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 2px;
 }
 
 box.linked:not(.vertical) > button,
+box.linked:not(.vertical) > button.toggle,
 box.linked:not(.vertical) > togglebutton,
 .linked:not(.vertical) > button,
+.linked:not(.vertical) > button.toggle,
 .linked:not(.vertical) > togglebutton,
-.linked:not(vertical) > button,
-.linked:not(vertical) > togglebutton {
+.linked > button.toggle,
+.linked > button,
+.linked > togglebutton {
   min-height: 22px;
   padding: 2px 14px;
   margin: 0;
   border-style: none;
   background: transparent;
   background-color: transparent;
+  background-image: none;
   border-radius: 9999px;
   box-shadow: none;
   color: rgba(255, 255, 255, 0.90);
@@ -534,25 +562,54 @@ box.linked:not(.vertical) > togglebutton,
 }
 
 box.linked:not(.vertical) > button:hover,
+box.linked:not(.vertical) > button.toggle:hover,
 box.linked:not(.vertical) > togglebutton:hover,
 .linked:not(.vertical) > button:hover,
-.linked:not(.vertical) > togglebutton:hover {
+.linked:not(.vertical) > button.toggle:hover,
+.linked:not(.vertical) > togglebutton:hover,
+.linked > button.toggle:hover,
+.linked > button:hover,
+.linked > togglebutton:hover {
   background-color: rgba(255, 255, 255, 0.10);
+  background-image: none;
   color: #ffffff;
 }
 
 box.linked:not(.vertical) > button:checked,
+box.linked:not(.vertical) > button.toggle:checked,
 box.linked:not(.vertical) > togglebutton:checked,
 .linked:not(.vertical) > button:checked,
+.linked:not(.vertical) > button.toggle:checked,
 .linked:not(.vertical) > togglebutton:checked,
-.linked:not(vertical) > button:checked,
-.linked:not(vertical) > togglebutton:checked,
+.linked > button.toggle:checked,
+.linked > button:checked,
+.linked > togglebutton:checked,
 togglebutton:checked:not(.flat),
+togglebutton:checked,
+button.toggle:checked,
 button:checked:not(.flat):not(.accent-button) {
   background-color: @accent_bg_color;
+  background-image: none;
+  border-color: @accent_bg_color;
   color: #ffffff;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+box.linked:not(.vertical) > button:checked:hover,
+box.linked:not(.vertical) > button.toggle:checked:hover,
+box.linked:not(.vertical) > togglebutton:checked:hover,
+.linked:not(.vertical) > button:checked:hover,
+.linked:not(.vertical) > button.toggle:checked:hover,
+.linked:not(.vertical) > togglebutton:checked:hover,
+.linked > button.toggle:checked:hover,
+.linked > button:checked:hover,
+.linked > togglebutton:checked:hover,
+togglebutton:checked:hover,
+button.toggle:checked:hover {
+  background-color: color-mix(in srgb, @accent_bg_color 85%, white);
+  background-image: none;
+  color: #ffffff;
 }
 
 /* ShortcutLabel Keycaps */
@@ -561,22 +618,37 @@ shortcutlabel {
   border-style: none;
 }
 
+shortcutlabel,
+shortcutlabel label,
 shortcutlabel label.keycap,
-shortcutlabel > label.keycap {
+shortcutlabel > label.keycap,
+shortcut,
+shortcut label,
+.keycap {
   min-height: 24px;
   padding: 2px 10px;
   border-radius: 6px;
   background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background-image: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.90);
   font-size: 12px;
+  font-weight: 500;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.20);
 }
 
+shortcutlabel label.disabled,
+shortcutlabel:disabled label,
+shortcut:disabled label {
+  color: rgba(255, 255, 255, 0.45);
+}
+
 /* Spinbutton (- 15 +) */
-spinbutton.horizontal {
+spinbutton.horizontal,
+spinbutton.horizontal:focus-within {
   border-radius: 9999px;
   background-color: rgba(255, 255, 255, 0.08);
+  background-image: none;
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 1px 4px;
   min-height: 26px;
@@ -584,6 +656,7 @@ spinbutton.horizontal {
 
 spinbutton.horizontal text {
   background: transparent;
+  background-image: none;
   border-style: none;
   box-shadow: none;
   min-height: 22px;
@@ -593,20 +666,24 @@ spinbutton.horizontal text {
   color: #ffffff;
 }
 
-spinbutton.horizontal button {
+spinbutton.horizontal button,
+spinbutton.horizontal button.image-button {
   min-height: 22px;
   min-width: 22px;
   padding: 0;
   margin: 0 1px;
   border-style: none;
   background: transparent;
+  background-image: none;
   border-radius: 9999px;
   box-shadow: none;
   color: rgba(255, 255, 255, 0.85);
 }
 
-spinbutton.horizontal button:hover {
+spinbutton.horizontal button:hover,
+spinbutton.horizontal button.image-button:hover {
   background-color: rgba(255, 255, 255, 0.14);
+  background-image: none;
   color: #ffffff;
 }
 

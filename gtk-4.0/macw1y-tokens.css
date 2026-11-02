@@ -4,9 +4,9 @@
 @define-color accent_bg_color #ff6a00;
 @define-color accent_fg_color #ffffff;
 @define-color accent_color #ff6a00;
-@define-color window_bg_color #1e1e1e;
+@define-color window_bg_color #202022;
 @define-color window_fg_color #ffffff;
-@define-color view_bg_color #1e1e1e;
+@define-color view_bg_color #202022;
 @define-color view_fg_color #ffffff;
 @define-color headerbar_bg_color transparent;
 @define-color headerbar_fg_color #ffffff;
@@ -22,7 +22,7 @@
 @define-color warning_bg_color #f5c211;
 
 :root {
-  --mac-window-bg: #1e1e1e;
+  --mac-window-bg: #202022;
   --mac-window-fg: #ffffff;
   --mac-sidebar-bg: #18181a;
   --mac-sidebar-bg-translucent: rgba(24, 24, 26, 0.85);
