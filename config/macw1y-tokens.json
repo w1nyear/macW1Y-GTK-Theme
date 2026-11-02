@@ -41,9 +41,12 @@
     "popover_radius": 20,
     "scrollbar_radius": 9999,
     "sidebar_row_radius": 8,
-    "sidebar_icon_radius": 5
+    "sidebar_icon_radius": 5,
+    "traffic_light_radius": 9999
   },
   "dimensions": {
+    "traffic_light_size": 13,
+    "traffic_light_spacing": 7,
     "row_min_height": 35,
     "row_padding_x": 14,
     "card_margin_x": 15,

@@ -88,6 +88,8 @@ def generate_gtk4_tokens_css(tokens):
   --mac-switch-w: {d["switch_width"]}px;
   --mac-switch-h: {d["switch_height"]}px;
   --mac-slider-thumb: {d["slider_thumb_size"]}px;
+  --mac-traffic-light-size: {d.get("traffic_light_size", 13)}px;
+  --mac-traffic-light-spacing: {d.get("traffic_light_spacing", 7)}px;
 }}
 """
     return css
@@ -573,11 +575,11 @@ levelbar trough block.filled {{
 /* =========================================================================
  * 6. Buttons, Segmented Controls & Keycaps
  * ========================================================================= */
-button:not(.flat):not(.accent-button):not(.circular),
-adwactionrow button,
-list.boxed-list row button,
-preferencespage row button,
-preferencesgroup row button {{
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+adwactionrow button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+list.boxed-list row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+preferencespage row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+preferencesgroup row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton) {{
   min-height: {d["button_min_height"]}px;
   padding: 3px 12px;
   border-radius: {g["button_action_radius"]}px;
@@ -590,21 +592,21 @@ preferencesgroup row button {{
   transition: background-color {e["transition_hover"]}, border-color {e["transition_hover"]}, color {e["transition_hover"]};
 }}
 
-button:not(.flat):not(.accent-button):not(.circular):hover,
-adwactionrow button:hover,
-list.boxed-list row button:hover,
-preferencespage row button:hover,
-preferencesgroup row button:hover {{
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+adwactionrow button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+list.boxed-list row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+preferencespage row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+preferencesgroup row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover {{
   background-color: rgba(255, 255, 255, 0.14);
   border-color: rgba(255, 255, 255, 0.15);
   color: #ffffff;
 }}
 
-button:not(.flat):not(.accent-button):not(.circular):active,
-adwactionrow button:active,
-list.boxed-list row button:active,
-preferencespage row button:active,
-preferencesgroup row button:active {{
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+adwactionrow button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+list.boxed-list row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+preferencespage row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+preferencesgroup row button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active {{
   background-color: rgba(255, 255, 255, 0.22);
   border-color: rgba(255, 255, 255, 0.18);
   color: #ffffff;
@@ -961,6 +963,134 @@ menu menuitem:hover {{
   background-color: @accent_bg_color;
   color: @accent_fg_color;
 }}
+
+/* =========================================================================
+ * 12. Window Controls (macOS Traffic Lights)
+ * ========================================================================= */
+headerbar windowcontrols,
+windowcontrols {{
+  border-spacing: {d.get("traffic_light_spacing", 7)}px;
+  padding: 0;
+}}
+
+headerbar windowcontrols button,
+windowcontrols button,
+windowcontrols button.close,
+windowcontrols button.minimize,
+windowcontrols button.maximize,
+headerbar windowcontrols button.close,
+headerbar windowcontrols button.minimize,
+headerbar windowcontrols button.maximize,
+headerbar button.titlebutton,
+.titlebar button.titlebutton {{
+  min-width: {d.get("traffic_light_size", 13)}px;
+  min-height: {d.get("traffic_light_size", 13)}px;
+  max-width: {d.get("traffic_light_size", 13)}px;
+  max-height: {d.get("traffic_light_size", 13)}px;
+  padding: 0;
+  margin: 0 1px;
+  border-radius: 9999px;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  outline-style: none !important;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: {d.get("traffic_light_size", 13)}px {d.get("traffic_light_size", 13)}px;
+}}
+
+headerbar windowcontrols button:hover,
+windowcontrols button:hover,
+headerbar windowcontrols button:active,
+windowcontrols button:active,
+headerbar windowcontrols button:focus,
+windowcontrols button:focus,
+headerbar windowcontrols button:backdrop,
+windowcontrols button:backdrop {{
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}}
+
+headerbar windowcontrols button > image,
+windowcontrols button > image,
+headerbar windowcontrols button image,
+windowcontrols button image {{
+  min-width: {d.get("traffic_light_size", 13)}px;
+  min-height: {d.get("traffic_light_size", 13)}px;
+  -gtk-icon-size: {d.get("traffic_light_size", 13)}px;
+  padding: 0;
+  margin: 0;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}}
+
+/* Ensure macOS Traffic Light button images bind properly across all container variations */
+windowcontrols button.close,
+headerbar windowcontrols button.close {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-close-dark.png"), url("windows-assets/titlebutton-close-dark@2.png"));
+}}
+windowcontrols button.close:hover,
+headerbar windowcontrols button.close:hover {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-close-hover-dark.png"), url("windows-assets/titlebutton-close-hover-dark@2.png"));
+}}
+windowcontrols button.close:active,
+headerbar windowcontrols button.close:active {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-close-active-dark.png"), url("windows-assets/titlebutton-close-active-dark@2.png"));
+}}
+windowcontrols button.minimize,
+headerbar windowcontrols button.minimize {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-minimize-dark.png"), url("windows-assets/titlebutton-minimize-dark@2.png"));
+}}
+windowcontrols button.minimize:hover,
+headerbar windowcontrols button.minimize:hover {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-minimize-hover-dark.png"), url("windows-assets/titlebutton-minimize-hover-dark@2.png"));
+}}
+windowcontrols button.minimize:active,
+headerbar windowcontrols button.minimize:active {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-minimize-active-dark.png"), url("windows-assets/titlebutton-minimize-active-dark@2.png"));
+}}
+windowcontrols button.maximize,
+headerbar windowcontrols button.maximize {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-maximize-dark.png"), url("windows-assets/titlebutton-maximize-dark@2.png"));
+}}
+windowcontrols button.maximize:hover,
+headerbar windowcontrols button.maximize:hover {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-maximize-hover-dark.png"), url("windows-assets/titlebutton-maximize-hover-dark@2.png"));
+}}
+windowcontrols button.maximize:active,
+headerbar windowcontrols button.maximize:active {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-maximize-active-dark.png"), url("windows-assets/titlebutton-maximize-active-dark@2.png"));
+}}
+.fullscreen windowcontrols button.maximize,
+.maximized windowcontrols button.maximize,
+.fullscreen headerbar windowcontrols button.maximize,
+.maximized headerbar windowcontrols button.maximize {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-restore-dark.png"), url("windows-assets/titlebutton-restore-dark@2.png"));
+}}
+.fullscreen windowcontrols button.maximize:hover,
+.maximized windowcontrols button.maximize:hover,
+.fullscreen headerbar windowcontrols button.maximize:hover,
+.maximized headerbar windowcontrols button.maximize:hover {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-restore-hover-dark.png"), url("windows-assets/titlebutton-restore-hover-dark@2.png"));
+}}
+.fullscreen windowcontrols button.maximize:active,
+.maximized windowcontrols button.maximize:active,
+.fullscreen headerbar windowcontrols button.maximize:active,
+.maximized headerbar windowcontrols button.maximize:active {{
+  background-image: -gtk-scaled(url("windows-assets/titlebutton-restore-active-dark.png"), url("windows-assets/titlebutton-restore-active-dark@2.png"));
+}}
 """
     return css
 
@@ -1063,7 +1193,7 @@ scale slider {{
 }}
 
 /* GTK 3 Buttons */
-button {{
+button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat) {{
   min-height: {d["button_min_height"]}px;
   padding: 3px 12px;
   border-radius: {g["button_action_radius"]}px;
@@ -1072,9 +1202,46 @@ button {{
   color: {c["text_primary"]};
 }}
 
-button:hover {{
+button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat):hover {{
   background-color: rgba(255, 255, 255, 0.14);
   color: #ffffff;
+}}
+
+/* GTK 3 Window Controls (macOS Traffic Lights) */
+headerbar button.titlebutton,
+.titlebar button.titlebutton,
+windowcontrols button,
+windowcontrols button.close,
+windowcontrols button.minimize,
+windowcontrols button.maximize {{
+  min-width: {d.get("traffic_light_size", 13)}px;
+  min-height: {d.get("traffic_light_size", 13)}px;
+  max-width: {d.get("traffic_light_size", 13)}px;
+  max-height: {d.get("traffic_light_size", 13)}px;
+  padding: 0;
+  margin: 0 2px;
+  border-radius: 9999px;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: {d.get("traffic_light_size", 13)}px {d.get("traffic_light_size", 13)}px;
+}}
+
+headerbar button.titlebutton:hover,
+.titlebar button.titlebutton:hover,
+windowcontrols button:hover,
+headerbar button.titlebutton:active,
+.titlebar button.titlebutton:active,
+windowcontrols button:active {{
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
 }}
 
 button.suggested-action {{

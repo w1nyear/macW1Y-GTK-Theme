@@ -15172,3 +15172,17 @@ Task 585: Виправлення роздільної здатності роз�
      * Зафіксовано знімок екрана [`desktop_wallpaper_fixed.png`](file:///home/vitaliy/.gemini/antigravity/brain/d34732a7-0aa8-43ff-b0ad-129d9df0d190/desktop_wallpaper_fixed.png): шпалери Golden Gate повернулися у повному обсязі, віджети та піктограми стільниці відображаються коректно.
      * `bin/mac-audit-sync check`: 100% PASS.
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+598. Відновлення компактного вигляду віконних кнопок керування (світлофорів) без сірої квадратної підкладки:
+   - Причина появи сірої квадратної рамки навколо кнопок закриття/згортання/розгортання:
+     * У `bin/mac-build-theme` для GTK 4 загальне правило для кнопок дій `button:not(.flat):not(.accent-button):not(.circular)` застосовувало внутрішні відступи `padding: 3px 12px`, `min-height: 24px`, радіус `8px`, рамку та напівпрозорий сірий фон `rgba(255, 255, 255, 0.08)`.
+     * Оскільки кнопки керування вікном у Libadwaita / GTK 4 (`windowcontrols button.close`, `.minimize`, `.maximize`) не мають класів `.flat` чи `.circular`, правило помилково перекривало дефолтну прозорість заголовка та створювало масивні сірі квадратні прямокутники навколо кольорових точок.
+   - Виправлення:
+     * У [`config/macw1y-tokens.json`](file:///home/vitaliy/macW1Y/config/macw1y-tokens.json) додано системні токени геометрії світлофорів: `"traffic_light_size": 13`, `"traffic_light_spacing": 7`, `"traffic_light_radius": 9999`.
+     * У [`bin/mac-build-theme`](file:///home/vitaliy/macW1Y/bin/mac-build-theme) у секціях GTK 4 та GTK 3 селектори звичайних кнопок доповнено виключенням кнопок керування: `:not(.close):not(.minimize):not(.maximize):not(.titlebutton)`.
+     * Створено окрему спеціалізовану секцію 12 (Window Controls): для `windowcontrols button`, `headerbar windowcontrols button` та `button.titlebutton` жорстко встановлено повністю прозорий фон (`background: transparent !important; background-color: transparent !important;`), прибрано рамки, тіні та відступи (`border: none !important; box-shadow: none !important; padding: 0;`), встановлено компактні пропорції 13x13px та міжкнопковий інтервал 7px відповідно до стандартів macOS Sequoia / Tahoe.
+     * Перекомпільовано майстер-теми через `bin/mac-build-theme` та синхронізовано з `~/.config/gtk-4.0/`, `~/.themes/macW1Y-Dark/` та `/usr/share/themes/macW1Y-Dark/`.
+   - Верифікація:
+     * Здійснено знімки зрізів вікон Параметрів (`gcc_traffic_lights_fixed.png`) та налаштувань віджетів (`widgets_traffic_lights_fixed.png`): сірий фон навколо кнопок повністю усунуто, кнопки зменшено до компактного розміру 13px, кружечки червоного, жовтого та зеленого кольорів лежать безпосередньо на панелі вікна без будь-яких рамок чи зайвих підкладок.
+     * `bin/mac-audit-sync check`: 100% PASS (5/5).
+     * `bin/mac-extension-guard verify`: 21/21 SUCCESS.

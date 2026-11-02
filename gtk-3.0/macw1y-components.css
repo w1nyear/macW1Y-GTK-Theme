@@ -71,7 +71,7 @@ scale slider {
 }
 
 /* GTK 3 Buttons */
-button {
+button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat) {
   min-height: 24px;
   padding: 3px 12px;
   border-radius: 8px;
@@ -80,9 +80,46 @@ button {
   color: rgba(255, 255, 255, 0.90);
 }
 
-button:hover {
+button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat):hover {
   background-color: rgba(255, 255, 255, 0.14);
   color: #ffffff;
+}
+
+/* GTK 3 Window Controls (macOS Traffic Lights) */
+headerbar button.titlebutton,
+.titlebar button.titlebutton,
+windowcontrols button,
+windowcontrols button.close,
+windowcontrols button.minimize,
+windowcontrols button.maximize {
+  min-width: 13px;
+  min-height: 13px;
+  max-width: 13px;
+  max-height: 13px;
+  padding: 0;
+  margin: 0 2px;
+  border-radius: 9999px;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 13px 13px;
+}
+
+headerbar button.titlebutton:hover,
+.titlebar button.titlebutton:hover,
+windowcontrols button:hover,
+headerbar button.titlebutton:active,
+.titlebar button.titlebutton:active,
+windowcontrols button:active {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 button.suggested-action {
