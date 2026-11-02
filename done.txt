@@ -15631,3 +15631,36 @@ Task 612: Notification Center Liquid Glass & 3-Card Stack Overlap
    - Verified group collapse: re-collapses smoothly into the 3-card stack.
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+--------------------------------------------------------------------------------
+Task 613: Full-Width Row Hover in GNOME Control Center / System Settings Preferences Groups
+--------------------------------------------------------------------------------
+1. Problem Analysis:
+   - In GNOME Control Center (System Settings), row hover highlights in preferences groups (such as "Завантажувач (Bootloader)", "Mac стилізація", etc.) were rendering as inset floating pills with rounded corners on all four corners and gaps (~6px gap at top, gaps on sides and bottom).
+   - The user requested: "hover елементів у параметрів груп зроби на всю кнопку бо зараз hover не на всю кнопку керування у правому параметрах" (Make hover span the entire control button/row across the whole card width and height, flush with outer card edges and separators).
+
+2. Implementation & Fixes:
+   - `gnome-control-center-overlay/libmac_settings.c` & `control-center/libmac_settings.c`:
+     * Added `padding: 0px;` to `window.mac-settings-window list.boxed-list`, `preferencesgroup list`, etc., eliminating any container gaps around rows.
+     * Enforced `margin: 0px; border-radius: 0px;` on all list box rows (`list.boxed-list > row`, `preferencesgroup list > row`, `adwactionrow`, `adwswitchrow`, `cclistrow`, etc.).
+     * Configured exact corner radii matching card geometry (14px):
+       - First child (`row:first-child`): `border-top-left-radius: 14px; border-top-right-radius: 14px; border-bottom-left-radius: 0px; border-bottom-right-radius: 0px;`
+       - Last child (`row:last-child`): `border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; border-top-left-radius: 0px; border-top-right-radius: 0px;`
+       - Middle children (`row:not(:first-child):not(:last-child)`): `border-radius: 0px;`
+       - Only child (`row:only-child`): `border-radius: 14px;`
+     * Applied matching hover rules for `:hover` and `:active` across all row types so the highlight seamlessly fills the full button width and height without inner margins or awkward rounding.
+     * Preserved divider lines between rows during hover (`row:hover + row`).
+     * Recompiled `libmac_settings.so` and synchronized across `/home/vitaliy/MACTHEMEFILES/lib/`, `control-center/`, `~/.local/lib/`, `~/.local/share/gnome-control-center-overlay/`, `/usr/lib/x86_64-linux-gnu/`, `/usr/local/lib/`, and `/usr/share/mactheme/gnome-control-center-overlay/`.
+   - `gtk-4.0/macw1y-components.css`, `macW1Y-Dark/gtk-4.0/macw1y-components.css`, `~/.config/gtk-4.0/macw1y-components.css`:
+     * Synchronized matching full-width row hover, corner radii, and zero padding/margin rules.
+   - `gtk-4.0/gtk.css`, `macW1Y-Dark/gtk-4.0/gtk.css`, `~/.config/gtk-4.0/gtk.css`, `~/.config/gtk-4.0/gtk-Dark.css`:
+     * Updated `list.boxed-list > row:first-child` and `:last-child` from 12px to 14px with explicit 0px opposite corner radii.
+
+3. Testing & Verification:
+   - Rendered live GTK4/Libadwaita test snapshots with `libmac_settings.so` loaded:
+     * First row hover: fills full card width (770px), touches top border at y=49, top corners match 14px radius, bottom corners strictly square (0px) flush against separator.
+     * Second row hover: starts directly below separator, strictly square at top, bottom corners match 14px radius, width 768px.
+     * Middle row hover: completely rectangular on all 4 corners (0px radius) across entire width.
+     * Only child row hover: all 4 corners match 14px radius across entire card.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.

@@ -5389,14 +5389,26 @@ list.boxed-list > row.expander {
 }
 
 list.boxed-list > row:first-child, list.boxed-list > row:first-child.expander row.header {
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
 }
 
 list.boxed-list > row:last-child, list.boxed-list > row:last-child.expander:not(:checked), list.boxed-list > row:last-child.expander:not(:checked) row.header, list.boxed-list > row:last-child.expander:checked list.nested, list.boxed-list > row:last-child.expander:checked list.nested > row:last-child {
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
   border-bottom-width: 0;
+}
+
+list.boxed-list > row:only-child {
+  border-radius: 14px;
+}
+
+list.boxed-list > row:not(:first-child):not(:last-child) {
+  border-radius: 0px;
 }
 
 list.boxed-list-separate {

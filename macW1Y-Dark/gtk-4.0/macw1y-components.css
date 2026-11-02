@@ -273,6 +273,7 @@ preferencespage list,
   margin-left: 15px;
   margin-right: 15px;
   margin-bottom: 12px;
+  padding: 0px;
 }
 
 list.boxed-list row,
@@ -298,6 +299,64 @@ list.boxed-list row.expander row.header {
   margin: 0px;
   border-bottom: none;
   background-color: transparent;
+  border-radius: 0px;
+}
+
+list.boxed-list > row:first-child,
+preferencesgroup list > row:first-child,
+preferencesgroup > box > box > list > row:first-child,
+preferencespage list.boxed-list > row:first-child,
+preferencespage list.boxed-list row:first-child,
+.content-pane list.boxed-list > row:first-child,
+.content-pane list.boxed-list row:first-child,
+.mac-settings-content list.boxed-list > row:first-child,
+.mac-settings-content list.boxed-list row:first-child,
+list.boxed-list > row:first-child.expander row.header {
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+
+list.boxed-list > row:last-child,
+preferencesgroup list > row:last-child,
+preferencesgroup > box > box > list > row:last-child,
+preferencespage list.boxed-list > row:last-child,
+preferencespage list.boxed-list row:last-child,
+.content-pane list.boxed-list > row:last-child,
+.content-pane list.boxed-list row:last-child,
+.mac-settings-content list.boxed-list > row:last-child,
+.mac-settings-content list.boxed-list row:last-child,
+list.boxed-list > row:last-child.expander:not(:checked),
+list.boxed-list > row:last-child.expander:not(:checked) row.header {
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+}
+
+list.boxed-list > row:not(:first-child):not(:last-child),
+preferencesgroup list > row:not(:first-child):not(:last-child),
+preferencesgroup > box > box > list > row:not(:first-child):not(:last-child),
+preferencespage list.boxed-list > row:not(:first-child):not(:last-child),
+preferencespage list.boxed-list row:not(:first-child):not(:last-child),
+.content-pane list.boxed-list > row:not(:first-child):not(:last-child),
+.content-pane list.boxed-list row:not(:first-child):not(:last-child),
+.mac-settings-content list.boxed-list > row:not(:first-child):not(:last-child),
+.mac-settings-content list.boxed-list row:not(:first-child):not(:last-child) {
+  border-radius: 0px;
+}
+
+list.boxed-list > row:only-child,
+preferencesgroup list > row:only-child,
+preferencesgroup > box > box > list > row:only-child,
+preferencespage list.boxed-list > row:only-child,
+preferencespage list.boxed-list row:only-child,
+.content-pane list.boxed-list > row:only-child,
+.content-pane list.boxed-list row:only-child,
+.mac-settings-content list.boxed-list > row:only-child,
+.mac-settings-content list.boxed-list row:only-child {
+  border-radius: 14px;
 }
 
 list.boxed-list row > box.header,
@@ -340,13 +399,127 @@ label.subtitle,
 list.boxed-list > row:hover,
 list.boxed-list row:not(.expander):hover,
 list.boxed-list row.expander row.header:hover,
+preferencesgroup list > row:hover,
+preferencesgroup > box > box > list > row:hover,
 preferencespage list.boxed-list row:not(.expander):hover,
+preferencespage list:not(.boxed-list) > row:hover,
 .content-pane list.boxed-list row:not(.expander):hover,
-.mac-settings-content list.boxed-list row:not(.expander):hover {
-  background-color: rgba(255, 255, 255, 0.04);
+.mac-settings-content list.boxed-list row:not(.expander):hover,
+adwactionrow:hover,
+adwswitchrow:hover,
+adwcomborow:hover,
+adwentryrow:hover,
+adwexpanderrow:hover,
+adwspinrow:hover,
+cclistrow:hover,
+ccwificonnectionrow:hover,
+preferencespage row.button:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  margin: 0px;
+  border-radius: 0px;
+}
+
+list.boxed-list > row:first-child:hover,
+preferencesgroup list > row:first-child:hover,
+preferencesgroup > box > box > list > row:first-child:hover,
+preferencespage list.boxed-list > row:first-child:hover,
+preferencespage list.boxed-list row:first-child:hover,
+.content-pane list.boxed-list > row:first-child:hover,
+.content-pane list.boxed-list row:first-child:hover,
+.mac-settings-content list.boxed-list > row:first-child:hover,
+.mac-settings-content list.boxed-list row:first-child:hover,
+list.boxed-list > row:first-child.expander row.header:hover {
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+
+list.boxed-list > row:last-child:hover,
+preferencesgroup list > row:last-child:hover,
+preferencesgroup > box > box > list > row:last-child:hover,
+preferencespage list.boxed-list > row:last-child:hover,
+preferencespage list.boxed-list row:last-child:hover,
+.content-pane list.boxed-list > row:last-child:hover,
+.content-pane list.boxed-list row:last-child:hover,
+.mac-settings-content list.boxed-list > row:last-child:hover,
+.mac-settings-content list.boxed-list row:last-child:hover,
+list.boxed-list > row:last-child.expander:not(:checked) row.header:hover {
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+}
+
+list.boxed-list > row:not(:first-child):not(:last-child):hover,
+preferencesgroup list > row:not(:first-child):not(:last-child):hover,
+preferencesgroup > box > box > list > row:not(:first-child):not(:last-child):hover,
+preferencespage list.boxed-list > row:not(:first-child):not(:last-child):hover,
+preferencespage list.boxed-list row:not(:first-child):not(:last-child):hover,
+.content-pane list.boxed-list > row:not(:first-child):not(:last-child):hover,
+.content-pane list.boxed-list row:not(:first-child):not(:last-child):hover,
+.mac-settings-content list.boxed-list > row:not(:first-child):not(:last-child):hover,
+.mac-settings-content list.boxed-list row:not(:first-child):not(:last-child):hover {
+  border-radius: 0px;
+}
+
+list.boxed-list > row:only-child:hover,
+preferencesgroup list > row:only-child:hover,
+preferencesgroup > box > box > list > row:only-child:hover,
+preferencespage list.boxed-list > row:only-child:hover,
+preferencespage list.boxed-list row:only-child:hover,
+.content-pane list.boxed-list > row:only-child:hover,
+.content-pane list.boxed-list row:only-child:hover,
+.mac-settings-content list.boxed-list > row:only-child:hover,
+.mac-settings-content list.boxed-list row:only-child:hover {
+  border-radius: 14px;
+}
+
+list.boxed-list > row:active,
+list.boxed-list row:not(.expander):active,
+list.boxed-list row.expander row.header:active,
+preferencesgroup list > row:active,
+preferencespage list.boxed-list row:not(.expander):active,
+preferencespage list:not(.boxed-list) > row:active,
+.content-pane list.boxed-list row:not(.expander):active,
+.mac-settings-content list.boxed-list row:not(.expander):active,
+adwactionrow:active,
+adwswitchrow:active,
+adwcomborow:active,
+adwentryrow:active,
+adwexpanderrow:active,
+adwspinrow:active,
+cclistrow:active,
+ccwificonnectionrow:active,
+preferencespage row.button:active {
+  background-color: rgba(255, 255, 255, 0.09);
+  margin: 0px;
+  border-radius: 0px;
+}
+
+list.boxed-list > row:first-child:active,
+preferencesgroup list > row:first-child:active {
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+
+list.boxed-list > row:last-child:active,
+preferencesgroup list > row:last-child:active {
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+}
+
+list.boxed-list > row:only-child:active,
+preferencesgroup list > row:only-child:active {
+  border-radius: 14px;
 }
 
 list.boxed-list > row + row,
+preferencesgroup list > row + row,
 preferencespage list.boxed-list > row + row,
 .content-pane list.boxed-list > row + row,
 .mac-settings-content list.boxed-list > row + row {
@@ -355,6 +528,7 @@ preferencespage list.boxed-list > row + row,
 }
 
 list.boxed-list > row:hover + row,
+preferencesgroup list > row:hover + row,
 preferencespage list.boxed-list > row:hover + row,
 .content-pane list.boxed-list > row:hover + row,
 .mac-settings-content list.boxed-list > row:hover + row {

@@ -1,3 +1,4 @@
+@import url("macw1y-tokens.css");
 :root {
   --blue-1: #99c1f1;
   --blue-2: #62a0ea;
@@ -1294,8 +1295,8 @@ toast button.flat:active, popover.touch-selection button.flat:active, popover.ma
 }
 
 button.suggested-action {
-  color: @accent_fg_color;
-  background-color: @accent_bg_color;
+  color: #ffffff;
+  background-color: #2E7CF7;
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
@@ -1306,20 +1307,20 @@ button.suggested-action.flat {
   background-color: transparent;
   background-image: none;
   box-shadow: none;
-  color: @accent_color;
+  color: #2E7CF7;
 }
 
 button.suggested-action:hover {
-  color: @accent_fg_color;
-  background-color: color-mix(in srgb, @accent_bg_color 85%, white);
+  color: #ffffff;
+  background-color: #478bf8;
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
 }
 
 button.suggested-action:active, button.suggested-action:checked {
-  color: @accent_fg_color;
-  background-color: color-mix(in srgb, @accent_bg_color 80%, black);
+  color: #ffffff;
+  background-color: #156df6;
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
@@ -1435,8 +1436,8 @@ menubutton.popup > button.arrow-button.image-button, menubutton.popup > button.t
 }
 
 menubutton.suggested-action {
-  background-color: @accent_bg_color;
-  color: @accent_fg_color;
+  background-color: #2E7CF7;
+  color: white;
 }
 
 menubutton.destructive-action {
@@ -1574,8 +1575,8 @@ splitbutton.flat > menubutton > button {
 }
 
 splitbutton.suggested-action {
-  background-color: @accent_bg_color;
-  color: @accent_fg_color;
+  background-color: #2E7CF7;
+  color: white;
 }
 
 splitbutton.destructive-action {
@@ -5388,14 +5389,26 @@ list.boxed-list > row.expander {
 }
 
 list.boxed-list > row:first-child, list.boxed-list > row:first-child.expander row.header {
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
 }
 
 list.boxed-list > row:last-child, list.boxed-list > row:last-child.expander:not(:checked), list.boxed-list > row:last-child.expander:not(:checked) row.header, list.boxed-list > row:last-child.expander:checked list.nested, list.boxed-list > row:last-child.expander:checked list.nested > row:last-child {
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
   border-bottom-width: 0;
+}
+
+list.boxed-list > row:only-child {
+  border-radius: 14px;
+}
+
+list.boxed-list > row:not(:first-child):not(:last-child) {
+  border-radius: 0px;
 }
 
 list.boxed-list-separate {
@@ -6888,25 +6901,19 @@ preferencesgroup button.accent, preferencesgroup button.accent:hover, preference
 preferencesgroup button.accent-button,
 preferencesgroup button.accent-button:hover,
 preferencesgroup button.accent-button:active,
-preferencesgroup button.accent-button:checked,
-#accent_box button,
-#accent_box button:hover,
-#accent_box button:active,
-#accent_box button:checked {
-  background-clip: border-box;
+preferencesgroup button.accent-button:checked {
+  background-clip: content-box;
   min-height: 24px;
   min-width: 24px;
-  padding: 0px;
-  margin: 0px 4px;
+  padding: 2px;
   border-radius: 9999px;
   outline: none;
   border: none;
-  -gtk-icon-source: none;
 }
 
 preferencesgroup button.accent:checked,
 preferencesgroup button.accent-button:checked {
-  -gtk-icon-source: none;
+  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
   color: white;
 }
 
@@ -8261,7 +8268,7 @@ preferencesgroup > box > box.header:not(.single-line) {
 }
 
 preferencesgroup > box > box.single-line {
-  min-height: 34px;
+  min-height: 35px;
 }
 
 preferencesgroup > box grid > box > switch {
@@ -9440,7 +9447,7 @@ panelthemeselector checkbutton.theme-selector radio:checked {
 
 themeselector checkbutton.theme-selector radio:checked,
 panelthemeselector checkbutton.theme-selector radio:checked {
-  -gtk-icon-source: none;
+  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
   color: white;
   background-color: @accent_bg_color;
 }
@@ -11422,11 +11429,12 @@ window.mac-settings-window adwentryrow,
 window.mac-settings-window adwexpanderrow,
 window.mac-settings-window adwspinrow,
 window.mac-settings-window cclistrow,
+window.mac-settings-window ccwificonnectionrow,
 window.mac-settings-window preferencespage row.button,
 window.mac-settings-window #add_user_button_row,
 window.mac-settings-window #add_enterprise_user_button_row,
 window.mac-settings-window list.boxed-list row.expander row.header {
-  min-height: 34px;
+  min-height: 35px;
   padding: 0px 14px;
   margin: 0px;
   border-bottom: none;
@@ -11438,9 +11446,31 @@ window.mac-settings-window adwactionrow > box.header,
 window.mac-settings-window adwswitchrow > box.header,
 window.mac-settings-window adwcomborow > box.header,
 window.mac-settings-window adwentryrow > box.header,
-window.mac-settings-window cclistrow > box.header {
-  min-height: 34px;
+window.mac-settings-window cclistrow > box.header,
+window.mac-settings-window ccwificonnectionrow > box.header {
+  min-height: 35px;
   margin: 0px;
   padding: 0px;
   border-spacing: 10px;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* macW1Y Global Component Master Overrides (SSOT) */
+@import url("macw1y-components.css");
