@@ -135,6 +135,25 @@ class MacStylingWindow(Adw.ApplicationWindow):
             dock_group, t("dock_tint", "Тінт доку"), self.dock_tint_mode, int(self.dock_tint_strength * 100)
         )
 
+        # 1.5. Labels Group
+        labels_group = Adw.PreferencesGroup()
+        labels_group.set_title(t("labels_title", "Бірки (Labels)"))
+        labels_group.set_description(t("labels_desc", "Параметри розмиття, затемнення та тіні бірок програм док-панелі"))
+        pref_page.add(labels_group)
+
+        self.label_blur_scale = self._create_slider_row(
+            labels_group, t("label_blur", "Розмиття"), t("label_blur_desc", "Розмиття фонового скла бірки"),
+            0, 50, int(self.label_blur)
+        )
+        self.label_tint_scale = self._create_slider_row(
+            labels_group, t("label_tint", "Затемнення"), t("label_tint_desc", "Затемнення фону бірки"),
+            0, 100, int(self.label_tint)
+        )
+        self.label_shadow_scale = self._create_slider_row(
+            labels_group, t("label_shadow", "Тінь"), t("label_shadow_desc", "Інтенсивність та розмиття тіні бірки"),
+            0, 100, int(self.label_shadow)
+        )
+
         # 2. Menubar Group
         menubar_group = Adw.PreferencesGroup()
         menubar_group.set_title(t("menubar_title", "Верхня панель (Menubar)"))
@@ -446,6 +465,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.spotlight_tint = 15
         self.spotlight_shadow = 35
 
+        self.label_blur = 30
+        self.label_tint = 28
+        self.label_shadow = 25
+
         styling_conf = os.path.expanduser("~/.config/mac-styling/styling.json")
         if os.path.exists(styling_conf):
             try:
@@ -478,6 +501,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 self.spotlight_blur = sdata.get("spotlight_blur", self.spotlight_blur)
                 self.spotlight_tint = sdata.get("spotlight_tint", self.spotlight_tint)
                 self.spotlight_shadow = sdata.get("spotlight_shadow", self.spotlight_shadow)
+
+                self.label_blur = sdata.get("label_blur", self.label_blur)
+                self.label_tint = sdata.get("label_tint", self.label_tint)
+                self.label_shadow = sdata.get("label_shadow", self.label_shadow)
             except Exception as e:
                 print("Error reading styling.json:", e)
 
@@ -658,7 +685,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 "qs_tint_mode": q_mode,
                 "spotlight_blur": int(self.spot_blur_scale.get_value()),
                 "spotlight_tint": int(self.spot_tint_scale.get_value()),
-                "spotlight_shadow": int(self.spot_shadow_scale.get_value())
+                "spotlight_shadow": int(self.spot_shadow_scale.get_value()),
+                "label_blur": int(self.label_blur_scale.get_value()),
+                "label_tint": int(self.label_tint_scale.get_value()),
+                "label_shadow": int(self.label_shadow_scale.get_value())
             })
             with open(json_file, "w") as f:
                 json.dump(existing_data, f, indent=2)

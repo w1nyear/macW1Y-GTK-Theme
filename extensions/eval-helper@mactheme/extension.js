@@ -27,6 +27,9 @@ const EvalIface = `
     <method name="SyncNotificationStyling">
       <arg type="b" direction="out" name="success"/>
     </method>
+    <method name="SyncLabelStyling">
+      <arg type="b" direction="out" name="success"/>
+    </method>
   </interface>
 </node>`;
 
@@ -443,6 +446,18 @@ export default class EvalHelper extends Extension {
                         return false;
                     } catch (e) {
                         console.error(`[EvalHelper] SyncNotificationStyling error: ${e}`);
+                        return false;
+                    }
+                },
+                SyncLabelStyling: () => {
+                    try {
+                        if (typeof globalThis._macSyncLabelStyling === 'function') {
+                            globalThis._macSyncLabelStyling();
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error(`[EvalHelper] SyncLabelStyling error: ${e}`);
                         return false;
                     }
                 },
@@ -1784,8 +1799,62 @@ export default class EvalHelper extends Extension {
                 if (typeof globalThis._macSyncNotificationStyling === 'function') {
                     globalThis._macSyncNotificationStyling();
                 }
+                if (typeof globalThis._macSyncLabelStyling === 'function') {
+                    globalThis._macSyncLabelStyling();
+                }
             });
         } catch (_) {}
+
+        // Dock app labels real-time styling & hardware blur synchronization
+        const syncAllLabels = () => {
+            try {
+                const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+                let conf = {};
+                if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+                    const [ok, bytes] = GLib.file_get_contents(confPath);
+                    if (ok) conf = JSON.parse(new TextDecoder().decode(bytes));
+                }
+                const blur = (typeof conf.label_blur === 'number') ? conf.label_blur : 30;
+                const tint = (typeof conf.label_tint === 'number') ? conf.label_tint : 28;
+                const shadow = (typeof conf.label_shadow === 'number') ? conf.label_shadow : 25;
+
+                globalThis._macLabelStylingConfig = { blur, tint, shadow };
+
+                const tintAlpha = (tint / 100.0).toFixed(2);
+                const shadowAlpha = (shadow / 100.0).toFixed(2);
+                const shadowBlur = Math.round((shadow / 100.0) * 20);
+                const shadowOffset = Math.max(1, Math.round((shadow / 100.0) * 5));
+
+                const styleStr = `background-color: rgba(30, 30, 35, ${tintAlpha}) !important; ` +
+                                 `box-shadow: 0 ${shadowOffset}px ${shadowBlur}px rgba(0, 0, 0, ${shadowAlpha}) !important; ` +
+                                 `border: 1px solid rgba(255, 255, 255, 0.22) !important; ` +
+                                 `border-radius: 9999px !important; ` +
+                                 `color: #ffffff !important;`;
+
+                const labels = Main.uiGroup.get_children().filter(a => a.has_style_class_name && a.has_style_class_name('dash-label'));
+                for (const l of labels) {
+                    l.set_style(styleStr);
+                    let eff = l.get_effects ? l.get_effects().find(e => e.name === 'tahoe-label-blur') : null;
+                    if (eff) {
+                        eff.enabled = (blur > 0);
+                        eff.radius = blur;
+                        eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
+                        const effH = (l.height > 0) ? l.height : 26;
+                        if ('corner_radius' in eff) {
+                            eff.corner_radius = Math.round(effH / 2);
+                        }
+                        eff.queue_repaint?.();
+                    }
+                    if (l._arrowTailActor) {
+                        l._arrowTailActor.queue_repaint();
+                    }
+                }
+            } catch (e) {
+                console.error('[EvalHelper] syncAllLabels error: ' + e);
+            }
+        };
+        globalThis._macSyncLabelStyling = syncAllLabels;
+        syncAllLabels();
 
         // Notification Center and Notification Banners are natively handled by blur-my-shell (menubar_v29 & notifications_v4)
 

@@ -132,7 +132,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "5a114c89053bc271e3a763c4628d0af3d4c8dd62a9cb59653e43d505b8b4f1ef",
+      "sha256": "86088dee447b8c06698098e365aca27ad220ba293d6feb69713515c1e8750bca",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -155,7 +155,7 @@
         "49",
         "50"
       ],
-      "sha256": "bfe7a2de96a581dbd2c1d9203c35f4159893b504b5fea31129962403430f7b28",
+      "sha256": "6498fea49ba3a2f4394022f1c40180693ddd5b5f35b1460a2e8ba2555e7a34b3",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -177,7 +177,7 @@
         "50",
         "51"
       ],
-      "sha256": "e8a236682556864d9c240247322d65854a963c0ed2fd65836c8dcea6788e640d",
+      "sha256": "5caf4ae0b8b3ac13dd9d26541b1a39c2370e7d5e5f5a0c33441ba9b7f8d2cbfb",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -189,7 +189,7 @@
       ],
       "has_custom_patches": true,
       "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
-      "last_verified": "2026-11-01",
+      "last_verified": "2026-11-02",
       "integrity_hash": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {

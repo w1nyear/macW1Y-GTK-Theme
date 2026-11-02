@@ -59,6 +59,11 @@ typedef struct {
     int notification_tint;   /* 0 - 100 % */
     int notification_shadow; /* 0 - 100 % */
 
+    /* Group: Labels (Бірки) */
+    int label_blur;          /* 0 - 50 px */
+    int label_tint;          /* 0 - 100 % */
+    int label_shadow;        /* 0 - 100 % */
+
     /* Legacy fields for backward compatibility */
     int dock_sigma;
     int dock_radius;
@@ -76,6 +81,8 @@ typedef struct {
 static void apply_widget_settings(void);
 static void apply_dock_settings(void);
 static void schedule_dock_apply(void);
+static void apply_label_settings(void);
+static void schedule_label_apply(void);
 static void apply_alert_settings(void);
 static void schedule_alert_apply(void);
 static void apply_notification_settings(void);
@@ -83,6 +90,7 @@ static void schedule_notification_apply(void);
 
 static void redraw_menubar_preview(void);
 static void redraw_dock_preview(void);
+static void redraw_labels_preview(void);
 static void redraw_alerts_preview(void);
 static void redraw_notifications_preview(void);
 static void redraw_spotlight_preview(void);
@@ -115,6 +123,10 @@ static MacStylingData state = {
     .dock_tint = 0,
     .dock_blur = 1,
     .dock_shadow = 0,
+
+    .label_blur = 30,
+    .label_tint = 28,
+    .label_shadow = 25,
 
     .alert_tint = 20,
     .alert_blur = 15,
@@ -346,6 +358,22 @@ static void load_config(void) {
                 state.dock_shadow = 0;
             }
 
+            /* Group: Labels (Бірки) */
+            if (json_object_has_member(obj, "label_blur"))
+                state.label_blur = (int)json_object_get_int_member(obj, "label_blur");
+            else
+                state.label_blur = 30;
+
+            if (json_object_has_member(obj, "label_tint"))
+                state.label_tint = (int)json_object_get_int_member(obj, "label_tint");
+            else
+                state.label_tint = 28;
+
+            if (json_object_has_member(obj, "label_shadow"))
+                state.label_shadow = (int)json_object_get_int_member(obj, "label_shadow");
+            else
+                state.label_shadow = 25;
+
             /* Group: Alerts / Dialogs */
             if (json_object_has_member(obj, "alert_tint"))
                 state.alert_tint = (int)json_object_get_int_member(obj, "alert_tint");
@@ -443,6 +471,9 @@ static void save_styling_json(void) {
         "  \"dock_tint\": %d,\n"
         "  \"dock_blur\": %d,\n"
         "  \"dock_shadow\": %d,\n"
+        "  \"label_blur\": %d,\n"
+        "  \"label_tint\": %d,\n"
+        "  \"label_shadow\": %d,\n"
         "  \"alert_tint\": %d,\n"
         "  \"alert_blur\": %d,\n"
         "  \"alert_shadow\": %d,\n"
@@ -486,6 +517,9 @@ static void save_styling_json(void) {
         state.dock_tint,
         state.dock_blur,
         state.dock_shadow,
+        state.label_blur,
+        state.label_tint,
+        state.label_shadow,
         state.alert_tint,
         state.alert_blur,
         state.alert_shadow,
@@ -914,6 +948,37 @@ static void schedule_dock_apply(void) {
         dock_timer_id = 0;
     }
     dock_timer_id = g_timeout_add(50, (GSourceFunc)apply_dock_cb, NULL);
+}
+
+static guint label_timer_id = 0;
+
+static void apply_label_settings(void) {
+    save_styling_json();
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    if (bus) {
+        g_dbus_connection_call(bus,
+            "org.gnome.Shell",
+            "/org/gnome/Shell/Extensions/EvalHelper",
+            "org.gnome.Shell.Extensions.EvalHelper",
+            "SyncLabelStyling",
+            NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+        g_object_unref(bus);
+    }
+}
+
+static gboolean apply_label_cb(gpointer user_data) {
+    (void)user_data;
+    label_timer_id = 0;
+    apply_label_settings();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_label_apply(void) {
+    if (label_timer_id != 0) {
+        g_source_remove(label_timer_id);
+        label_timer_id = 0;
+    }
+    label_timer_id = g_timeout_add(50, (GSourceFunc)apply_label_cb, NULL);
 }
 
 static void apply_widget_settings(void) {
@@ -2438,6 +2503,204 @@ void init_dock_preview(void *widget, gpointer data) {
 }
 
 /* ========================================================================= */
+/* Live Preview: Labels (Бірки) Preview                                      */
+/* ========================================================================= */
+
+static GtkWidget *g_labels_preview_w = NULL;
+static void redraw_labels_preview(void) {
+    if (g_labels_preview_w && GTK_IS_WIDGET(g_labels_preview_w)) {
+        gtk_widget_queue_draw(g_labels_preview_w);
+    }
+}
+
+static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
+    (void)area; (void)user_data;
+    if (width <= 0 || height <= 0) return;
+
+    cairo_save(cr);
+    draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
+    cairo_clip(cr);
+
+    // 1. Wallpaper background
+    cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
+    if (bg) {
+        cairo_set_source_surface(cr, bg, 0, 0);
+        cairo_paint(cr);
+    } else {
+        cairo_set_source_rgb(cr, 0.12, 0.15, 0.22);
+        cairo_paint(cr);
+    }
+
+    // 2. Dock shelf at bottom
+    double dw = 210.0, dh = 48.0, dr = 16.0;
+    double dx = (width - dw) / 2.0;
+    double dy = height - dh - 8.0;
+
+    cairo_surface_t *dock_blur_bg = get_cached_blurred_wallpaper_surface(width, height, 25);
+    draw_frosted_glass_card(cr, dock_blur_bg, dx, dy, dw, dh, dr, 0.28, 0.40, 0.16);
+
+    double icon_sz = 34.0;
+    double icon_y = dy + (dh - icon_sz) / 2.0;
+
+    // Terminal icon (dark square with prompt)
+    double icon1_x = dx + 32.0;
+    draw_rounded_rect_path(cr, icon1_x, icon_y, icon_sz, icon_sz, 8.0);
+    cairo_set_source_rgb(cr, 0.10, 0.10, 0.12);
+    cairo_fill(cr);
+    draw_rounded_rect_path(cr, icon1_x + 0.5, icon_y + 0.5, icon_sz - 1.0, icon_sz - 1.0, 8.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+    // Terminal prompt > _
+    cairo_set_source_rgb(cr, 0.20, 0.80, 0.95);
+    cairo_set_line_width(cr, 2.0);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_move_to(cr, icon1_x + 10.0, icon_y + 12.0);
+    cairo_line_to(cr, icon1_x + 16.0, icon_y + 17.0);
+    cairo_line_to(cr, icon1_x + 10.0, icon_y + 22.0);
+    cairo_stroke(cr);
+    cairo_move_to(cr, icon1_x + 18.0, icon_y + 22.0);
+    cairo_line_to(cr, icon1_x + 24.0, icon_y + 22.0);
+    cairo_stroke(cr);
+
+    // Telegram / Messages icon (green rounded square with white speech bubble)
+    double icon2_x = dx + dw - 32.0 - icon_sz;
+    draw_rounded_rect_path(cr, icon2_x, icon_y, icon_sz, icon_sz, 8.0);
+    cairo_pattern_t *tg_pat = cairo_pattern_create_linear(icon2_x, icon_y, icon2_x, icon_y + icon_sz);
+    cairo_pattern_add_color_stop_rgb(tg_pat, 0.0, 0.40, 0.88, 0.35);
+    cairo_pattern_add_color_stop_rgb(tg_pat, 1.0, 0.25, 0.78, 0.25);
+    cairo_set_source(cr, tg_pat);
+    cairo_fill(cr);
+    cairo_pattern_destroy(tg_pat);
+    draw_rounded_rect_path(cr, icon2_x + 0.5, icon_y + 0.5, icon_sz - 1.0, icon_sz - 1.0, 8.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.25);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+    // Speech bubble
+    double bx = icon2_x + 9.0, by = icon_y + 9.0, bw = 17.0, bh = 14.0;
+    draw_rounded_rect_path(cr, bx, by, bw, bh, 5.0);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_fill(cr);
+    cairo_move_to(cr, bx + 3.0, by + bh);
+    cairo_line_to(cr, bx - 1.0, by + bh + 4.0);
+    cairo_line_to(cr, bx + 6.0, by + bh);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+
+    // Active running dot under Telegram icon
+    cairo_arc(cr, icon2_x + icon_sz / 2.0, dy + dh - 3.5, 1.8, 0, 2 * G_PI);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    cairo_fill(cr);
+
+    // 3. Dock Label Pill above Telegram icon
+    double lw = 80.0, lh = 26.0, lr = 13.0;
+    double lx = icon2_x + (icon_sz - lw) / 2.0;
+    double ly = icon_y - lh - 11.0;
+
+    int blur_r = CLAMP(state.label_blur, 0, 50);
+    cairo_surface_t *lbl_blur_bg = (blur_r > 0) ? get_cached_blurred_wallpaper_surface(width, height, blur_r) : bg;
+
+    double tint_a = CLAMP((double)state.label_tint / 100.0, 0.05, 0.95);
+    double shadow_a = CLAMP((double)state.label_shadow / 100.0, 0.0, 1.0);
+
+    // Draw frosted glass pill
+    draw_frosted_glass_card(cr, lbl_blur_bg, lx, ly, lw, lh, lr, tint_a, shadow_a, 0.12);
+
+    // 4. Arrow tail pointing down toward icon
+    double tcx = lx + lw / 2.0;
+    double ty = ly + lh;
+    double halfBase = 6.0, rise = 6.0;
+
+    // Tail shadow
+    if (shadow_a > 0.05) {
+        cairo_save(cr);
+        cairo_move_to(cr, tcx - halfBase, ty - 0.5);
+        cairo_line_to(cr, tcx + halfBase, ty - 0.5);
+        cairo_line_to(cr, tcx, ty + rise);
+        cairo_close_path(cr);
+        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, shadow_a * 0.35);
+        cairo_fill(cr);
+        cairo_restore(cr);
+    }
+
+    // Tail body (matching tint)
+    cairo_move_to(cr, tcx - halfBase, ty - 0.5);
+    cairo_line_to(cr, tcx + halfBase, ty - 0.5);
+    cairo_line_to(cr, tcx, ty + rise);
+    cairo_close_path(cr);
+    cairo_set_source_rgba(cr, 0.12, 0.12, 0.14, tint_a);
+    cairo_fill(cr);
+
+    // Tail border contour
+    cairo_move_to(cr, tcx - halfBase, ty - 0.5);
+    cairo_line_to(cr, tcx, ty + rise);
+    cairo_line_to(cr, tcx + halfBase, ty - 0.5);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+
+    // 5. Label text: "Telegram"
+    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 12.0);
+    cairo_text_extents_t te;
+    cairo_text_extents(cr, "Telegram", &te);
+    // Subtle text shadow
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.55);
+    cairo_move_to(cr, tcx - te.width / 2.0 - te.x_bearing, ly + (lh - te.height) / 2.0 - te.y_bearing + 1.0);
+    cairo_show_text(cr, "Telegram");
+    // Text fill
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
+    cairo_move_to(cr, tcx - te.width / 2.0 - te.x_bearing, ly + (lh - te.height) / 2.0 - te.y_bearing);
+    cairo_show_text(cr, "Telegram");
+
+    // 6. Realistic mouse cursor arrow pointing at Telegram icon
+    double mx = icon2_x + icon_sz / 2.0 + 4.0;
+    double my = icon_y + icon_sz - 2.0;
+    cairo_save(cr);
+    cairo_translate(cr, mx, my);
+    // Cursor shadow
+    cairo_move_to(cr, 1.0, 1.0);
+    cairo_line_to(cr, 1.0, 13.0);
+    cairo_line_to(cr, 4.0, 10.0);
+    cairo_line_to(cr, 7.0, 15.0);
+    cairo_line_to(cr, 9.0, 14.0);
+    cairo_line_to(cr, 6.0, 9.0);
+    cairo_line_to(cr, 10.0, 9.0);
+    cairo_close_path(cr);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.40);
+    cairo_fill(cr);
+    // Cursor white body + dark outline
+    cairo_move_to(cr, 0.0, 0.0);
+    cairo_line_to(cr, 0.0, 12.0);
+    cairo_line_to(cr, 3.0, 9.0);
+    cairo_line_to(cr, 6.0, 14.0);
+    cairo_line_to(cr, 8.0, 13.0);
+    cairo_line_to(cr, 5.0, 8.0);
+    cairo_line_to(cr, 9.0, 8.0);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgb(cr, 0.15, 0.15, 0.15);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+    cairo_restore(cr);
+
+    cairo_restore(cr);
+
+    // Specular border on outer preview rectangle
+    draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 14.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+}
+
+void init_labels_preview(void *widget, gpointer data) {
+    (void)data;
+    g_labels_preview_w = GTK_WIDGET(widget);
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), labels_preview_draw_func, NULL, NULL);
+}
+
+/* ========================================================================= */
 /* Live Preview: Alerts Preview                                              */
 /* ========================================================================= */
 
@@ -3632,6 +3895,64 @@ void on_dock_shadow_changed(void *widget, gpointer data) {
     state.dock_shadow = (int)lround(gtk_range_get_value(widget));
     redraw_dock_preview();
     schedule_dock_apply();
+    schedule_json_save();
+}
+
+/* Group: Labels Callbacks */
+void init_label_blur(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.label_blur);
+    in_init = 0;
+}
+
+void on_label_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.label_blur = (int)lround(gtk_range_get_value(widget));
+    redraw_labels_preview();
+    schedule_label_apply();
+    schedule_json_save();
+}
+
+void init_label_tint(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.label_tint);
+    in_init = 0;
+}
+
+void on_label_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.label_tint = (int)lround(gtk_range_get_value(widget));
+    redraw_labels_preview();
+    schedule_label_apply();
+    schedule_json_save();
+}
+
+void init_label_shadow(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.label_shadow);
+    in_init = 0;
+}
+
+void on_label_shadow_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.label_shadow = (int)lround(gtk_range_get_value(widget));
+    redraw_labels_preview();
+    schedule_label_apply();
     schedule_json_save();
 }
 

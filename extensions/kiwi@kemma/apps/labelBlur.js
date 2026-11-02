@@ -3,6 +3,7 @@
 // Dynamically connected to Mac Stylization "Blur" settings (blur-my-shell sigma/brightness).
 
 import Gio from "gi://Gio";
+import GLib from "gi://GLib";
 import Shell from "gi://Shell";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 
@@ -25,6 +26,7 @@ const DEFAULT_BRIGHTNESS = 0.85;
 let bmsDockSettings = null;
 let bmsRootSettings = null;
 let settingsSignalIds = [];
+let stylingMonitor = null;
 let childAddedId = 0;
 let overviewShowingId = 0;
 let overviewShownId = 0;
@@ -47,6 +49,17 @@ function _initSettings() {
 }
 
 function _getCurrentRadius() {
+    try {
+        const confPath = `${GLib.get_user_config_dir()}/mac-styling/styling.json`;
+        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+            const [ok, bytes] = GLib.file_get_contents(confPath);
+            if (ok) {
+                const conf = JSON.parse(new TextDecoder().decode(bytes));
+                if (typeof conf.label_blur === "number")
+                    return conf.label_blur;
+            }
+        }
+    } catch (_) {}
     _initSettings();
     try {
         if (bmsDockSettings?.settings_schema?.has_key("sigma")) {
@@ -62,6 +75,17 @@ function _getCurrentRadius() {
 }
 
 function _getCurrentBrightness() {
+    try {
+        const confPath = `${GLib.get_user_config_dir()}/mac-styling/styling.json`;
+        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+            const [ok, bytes] = GLib.file_get_contents(confPath);
+            if (ok) {
+                const conf = JSON.parse(new TextDecoder().decode(bytes));
+                if (typeof conf.label_tint === "number")
+                    return Math.max(0.3, 1.0 - (conf.label_tint / 100.0) * 0.4);
+            }
+        }
+    } catch (_) {}
     _initSettings();
     try {
         if (bmsDockSettings?.settings_schema?.has_key("brightness"))
@@ -266,6 +290,13 @@ function _updateAllLabels() {
 export function enable() {
     _initSettings();
 
+    try {
+        const confPath = `${GLib.get_user_config_dir()}/mac-styling/styling.json`;
+        const confFile = Gio.File.new_for_path(confPath);
+        stylingMonitor = confFile.monitor_file(Gio.FileMonitorFlags.NONE, null);
+        stylingMonitor.connect("changed", _updateAllLabels);
+    } catch (_) {}
+
     // Listen to changes in Mac Stylization "Blur" settings
     if (bmsDockSettings) {
         settingsSignalIds.push([bmsDockSettings, bmsDockSettings.connect("changed::sigma", _updateAllLabels)]);
@@ -318,6 +349,11 @@ export function enable() {
 }
 
 export function disable() {
+    if (stylingMonitor) {
+        try { stylingMonitor.cancel(); } catch (_) {}
+        stylingMonitor = null;
+    }
+
     for (const [settings, id] of settingsSignalIds) {
         try { settings.disconnect(id); } catch (_) {}
     }

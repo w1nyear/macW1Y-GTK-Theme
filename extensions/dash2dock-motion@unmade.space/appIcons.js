@@ -2145,6 +2145,27 @@ export function itemShowLabel() {
     this.label.opacity = 0;
     this.label.show();
 
+    if (globalThis._macLabelStylingConfig) {
+        const { blur, tint, shadow } = globalThis._macLabelStylingConfig;
+        const tintAlpha = (tint / 100.0).toFixed(2);
+        const shadowAlpha = (shadow / 100.0).toFixed(2);
+        const shadowBlur = Math.round((shadow / 100.0) * 20);
+        const shadowOffset = Math.max(1, Math.round((shadow / 100.0) * 5));
+        this.label.set_style(
+            `background-color: rgba(30, 30, 35, ${tintAlpha}) !important; ` +
+            `box-shadow: 0 ${shadowOffset}px ${shadowBlur}px rgba(0, 0, 0, ${shadowAlpha}) !important; ` +
+            `border: 1px solid rgba(255, 255, 255, 0.22) !important; ` +
+            `border-radius: 9999px !important; ` +
+            `color: #ffffff !important;`
+        );
+        const eff = this.label.get_effect?.('tahoe-label-blur');
+        if (eff) {
+            eff.enabled = (blur > 0);
+            eff.radius = blur;
+            eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
+        }
+    }
+
     if (this.label.set_offscreen_redirect)
         this.label.set_offscreen_redirect(0);
 
