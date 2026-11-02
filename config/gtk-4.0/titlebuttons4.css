@@ -5,13 +5,20 @@
 /* Window Controls base states*/
 
 windowcontrols button {
-  min-width: 16px;
-  min-height: 16px;
+  min-width: 13.5px;
+  min-height: 13.5px;
   background-repeat: no-repeat;
-  background-size: 16px 16px;
+  background-size: 13.5px 13.5px;
   background-position: center;
   margin: 0px;
-  padding: 1px;
+  padding: 0px;
+}
+
+windowcontrols button:hover,
+windowcontrols:hover button {
+  background-repeat: no-repeat;
+  background-size: 13.5px 13.5px;
+  background-position: center;
 }
 
 /* This changes spacing between buttons */

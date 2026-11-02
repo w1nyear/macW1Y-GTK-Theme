@@ -10,12 +10,19 @@
 
 headerbar button.titlebutton,
 .titlebar button.titlebutton {
-  min-width: 16px;
-  min-height: 16px;
+  min-width: 13.5px;
+  min-height: 13.5px;
   margin: 0px;
-  padding: 1px;
+  padding: 0px;
   background-repeat: no-repeat;
-  background-size: 16px 16px;
+  background-size: 13.5px 13.5px;
+  background-position: center;
+}
+
+headerbar button.titlebutton:hover,
+.titlebar button.titlebutton:hover {
+  background-repeat: no-repeat;
+  background-size: 13.5px 13.5px;
   background-position: center;
 }
 

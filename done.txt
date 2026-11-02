@@ -15436,3 +15436,37 @@ TASK 606: Realistic Liquid Glass Previews & Top UI Placement in Settings
    - bin/mac-audit-sync check: 100% PASS (5/5 перевірок пройдено успішно).
    - bin/mac-extension-guard verify: 21/21 розширень валідовано (SUCCESS).
    - Візуальний вигляд підтверджено реальними знімками з GNOME Shell (widgets_preview_crop.png, gcc_mac_styling_widgets_content.png, gcc_mac_styling_scroll_content.png, gcc_mac_styling_scroll800_content.png, gcc_mac_styling_scroll1500_content.png, gcc_mac_styling_scroll2100_content.png).
+
+===================================================================
+TASK 607: Window Controls Traffic Light Hover Bug Fix & Size Adjustment (+0.5px)
+===================================================================
+1. Збільшення розміру кнопок віконного керування на пів пікселя:
+   - У [`config/macw1y-tokens.json`](file:///home/vitaliy/macW1Y/config/macw1y-tokens.json) змінено базовий токен розміру світлофорів:
+     * `"traffic_light_size": 13` -> `13.5` (+0.5px).
+   - Оновлено формулу розміру у генераторі CSS [`bin/mac-build-theme`](file:///home/vitaliy/macW1Y/bin/mac-build-theme):
+     * `min-width: 13.5px; min-height: 13.5px;`
+     * `background-size: 13.5px 13.5px;`
+     * `-gtk-icon-size: 14px;` (із заокругленням для внутрішнього пошуку символічних іконок GTK без критичних повідомлень).
+   - Оновлено всі таблиці стилів системи: `config/gtk-4.0/`, `config/gtk-3.0/`, `~/.config/gtk-4.0/`, `~/.config/gtk-3.0/`, `~/.themes/macW1Y-Dark/`, `/usr/share/themes/macW1Y-Dark/`.
+
+2. Повне усунення бага дублювання/потрійного повторення іконки при hover:
+   - Причина виникнення бага:
+     * У правилах `:hover` для кнопок віконного керування раніше було вказано CSS-скорочення `background: transparent;`.
+     * За специфікацією CSS, властивість-скорочення `background` скидає всі супутні властивості до їхніх значень за замовчуванням, зокрема `background-repeat: repeat;` та `background-size: auto auto;`.
+     * Правило для `:hover` червоної кнопки закриття встановлювало лише `background-image` без повторного визначення `background-repeat: no-repeat;`.
+     * Оскільки віджет кнопки у заголовку Libadwaita має вертикальний розмір приблизно 32-36px, фонове зображення розміром 13.5–16px із значенням `background-repeat: repeat` багаторазово дублювалося по вертикалі, утворюючи верхній фрагмент кола, повне центральне коло та нижній фрагмент кола (потрійний відбиток).
+   - Виконане виправлення:
+     * Замість скорочення `background: transparent;` застосовано явну властивість `background-color: transparent;`, яка не торкається параметрів повторення й позиціювання фону.
+     * Для всіх станів (`button`, `button:hover`, `button:active`, `button:focus`, `button:backdrop`) та індивідуальних кнопок (`close:hover`, `minimize:hover`, `maximize:hover`, `restore:hover`) примусово зафіксовано:
+       - `background-repeat: no-repeat;`
+       - `background-position: center center;`
+       - `background-size: 13.5px 13.5px;`
+       - `padding: 0; margin: 0 1px;`
+     * Усунено всі помилкові для GTK CSS директиви `!important` та непідтримувані властивості `max-width`, `valign`, `overflow`, що забезпечило 100% чистий парсинг CSS у GTK 4 та GTK 3 без жодних помилок чи попереджень парсера.
+
+3. Аудит, тестування та візуальна верифікація:
+   - Проведено автоматичне тестування парсингу тем GTK 4 та GTK 3: обидва провайдери завантажуються з нулем попереджень.
+   - Знято знімки реального відтворення кнопок вікна Libadwaita у звичайному стані та при наведенні курсора (`PRELIGHT`): сформовано порівняльне зображення `traffic_lights_comparison.png`.
+   - На знімку чітко видно: кнопка закриття при hover відображається як єдине, чітке, ідеально центроване коло з хрестиком без будь-яких вертикальних повторень.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено успішно).
+   - `bin/mac-extension-guard verify`: 21/21 розширень валідовано (SUCCESS).

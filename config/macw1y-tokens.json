@@ -45,7 +45,7 @@
     "traffic_light_radius": 9999
   },
   "dimensions": {
-    "traffic_light_size": 13,
+    "traffic_light_size": 13.5,
     "traffic_light_spacing": 7,
     "row_min_height": 35,
     "row_padding_x": 14,

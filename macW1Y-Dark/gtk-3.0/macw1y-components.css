@@ -92,19 +92,18 @@ windowcontrols button,
 windowcontrols button.close,
 windowcontrols button.minimize,
 windowcontrols button.maximize {
-  min-width: 13px;
-  min-height: 13px;
+  min-width: 13.5px;
+  min-height: 13.5px;
   padding: 0;
   margin: 0 2px;
   border-radius: 9999px;
   background-color: transparent;
-  background: transparent;
   border: none;
   box-shadow: none;
   outline: none;
-  background-position: center;
+  background-position: center center;
   background-repeat: no-repeat;
-  background-size: 13px 13px;
+  background-size: 13.5px 13.5px;
 }
 
 headerbar button.titlebutton:hover,
@@ -114,10 +113,12 @@ headerbar button.titlebutton:active,
 .titlebar button.titlebutton:active,
 windowcontrols button:active {
   background-color: transparent;
-  background: transparent;
   border: none;
   box-shadow: none;
   outline: none;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 13.5px 13.5px;
 }
 
 button.suggested-action {
