@@ -15545,3 +15545,27 @@ Task 609: Fix Dock Icon Magnification Top Clipping When Applications Run on Desk
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
    - Zero crashes, zero restart of GNOME Shell or user session.
+
+Task 610: Sliding Pill Workspace Indicator & Transparent Overview Workspace Cards
+1. Problem:
+   - In GNOME Overview top spaces bar compact mode, switching between workspaces abruptly snapped the active workspace capsule background, lacking the fluid horizontal sliding motion of macOS Mission Control.
+   - During continuous trackpad gesture swiping between workspaces, the active text background did not interpolate or slide dynamically.
+   - In expanded workspace thumbnails mode at the top of Overview, workspace cards had solid dark grey/navy fill backgrounds (`rgba(22, 38, 62, 0.88)` and `rgba(30, 30, 35, 0.60)`).
+
+2. Implementation & Fixes:
+   - `extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js`:
+     * Refactored `MacMissionControlSpacesBar` to use a layered container with a dedicated sliding pill indicator (`_pillIndicator`) and transparent text buttons.
+     * Implemented smooth easing of `translation_x`, `translation_y`, `width`, and `height` on workspace change (`duration: 250ms`, `EASE_OUT_CUBIC`).
+     * Added continuous gesture progress tracking via `_workspacesDisplay._scrollAdjustment` (`onScrollProgress`), dynamically interpolating position and size between adjacent workspace buttons during trackpad swipe gestures.
+     * Updated thumbnail cards in `_buildThumbnails()` to use `background-color: transparent;` for both active and inactive workspaces, eliminating solid dark fills.
+   - Extension Synchronization & Integrity:
+     * Synchronized file to `~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js`.
+     * Computed new directory SHA-256 hash `5159d5aa1eea006be088357be3f5161525126c67b5e628beb5979d3b99b551e3` and updated `config/extensions.lock.json`.
+     * Hot-reloaded live controller instance via EvalHelper without restarting GNOME Shell.
+
+3. Testing & Verification:
+   - Verified sliding pill indicator position, size, and easing transitions across workspaces via EvalHelper.
+   - Verified continuous scroll progress interpolation (`onScrollProgress`).
+   - Verified transparent backgrounds on all workspace thumbnail cards.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.

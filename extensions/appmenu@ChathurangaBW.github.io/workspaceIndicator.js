@@ -94,9 +94,35 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         this._isRenaming = false;
         this._activeRenameFinish = null;
         this._collapseTimeoutId = 0;
+        this._labelButtons = [];
+        this._labelWidgets = [];
+        this._activeIdx = -1;
+        this._pillAllocId = 0;
 
-        // 1. Compact Labels Box (height 34px)
-        this._labelsBox = new St.BoxLayout({
+        // 1. Compact Labels Layer (height 34px) with sliding pill indicator
+        this._labelsLayer = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            style: 'height: 34px;',
+            reactive: true,
+            track_hover: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+
+        // Pill indicator sliding smoothly behind the active workspace label
+        this._pillIndicator = new St.Widget({
+            style: 'background-color: rgba(255, 255, 255, 0.22); border-radius: 6px;',
+            reactive: false,
+            x_align: Clutter.ActorAlign.START,
+            y_align: Clutter.ActorAlign.START,
+            x_expand: false,
+            y_expand: false,
+            visible: false,
+        });
+        this._labelsLayer.add_child(this._pillIndicator);
+
+        // Buttons box (holding transparent text buttons)
+        this._buttonsBox = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.CENTER,
@@ -104,6 +130,9 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             reactive: true,
             track_hover: true,
         });
+        this._labelsLayer.add_child(this._buttonsBox);
+
+        this._labelsBox = this._labelsLayer;
         this.add_child(this._labelsBox);
 
         // 2. Expanded Thumbnails Box (anchored 10px below top of panel)
@@ -150,19 +179,46 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         return false;
     }
 
-    update() {
-        this._buildLabels();
+    update(animate = true) {
+        const wsManager = global.workspace_manager;
+        const count = wsManager.get_n_workspaces();
+        const activeIdx = wsManager.get_active_workspace_index();
+
+        let needsRebuild = this._labelButtons.length !== count;
+        if (!needsRebuild) {
+            for (let i = 0; i < count; i++) {
+                if (this._labelWidgets[i]?.text !== getWorkspaceName(i)) {
+                    needsRebuild = true;
+                    break;
+                }
+            }
+        }
+
+        if (needsRebuild) {
+            this._buildLabels();
+        } else {
+            this.setActiveWorkspace(activeIdx, animate);
+        }
+
         if (this._isExpanded) {
             this._buildThumbnails();
         }
     }
 
     _buildLabels() {
-        this._labelsBox.destroy_all_children();
+        if (this._pillAllocId) {
+            this._buttonsBox.disconnect(this._pillAllocId);
+            this._pillAllocId = 0;
+        }
+
+        this._buttonsBox.destroy_all_children();
+        this._labelButtons = [];
+        this._labelWidgets = [];
 
         const wsManager = global.workspace_manager;
         const count = wsManager.get_n_workspaces();
         const activeIdx = wsManager.get_active_workspace_index();
+        this._activeIdx = activeIdx;
 
         for (let i = 0; i < count; i++) {
             const ws = wsManager.get_workspace_by_index(i);
@@ -170,9 +226,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             const isActive = (i === activeIdx);
 
             const btn = new St.Button({
-                style: isActive
-                    ? 'background-color: rgba(255, 255, 255, 0.22); border-radius: 6px; padding: 2px 12px; margin: 0 4px;'
-                    : 'background-color: transparent; border-radius: 6px; padding: 2px 10px; margin: 0 4px;',
+                style: 'background-color: transparent; border-radius: 6px; padding: 2px 12px; margin: 0 4px;',
                 reactive: true,
                 can_focus: true,
                 track_hover: true,
@@ -191,12 +245,12 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             btn.connect('notify::hover', () => {
                 if (btn.hover) {
                     this._expand();
-                    if (!isActive) {
-                        btn.set_style('background-color: rgba(255, 255, 255, 0.12); border-radius: 6px; padding: 2px 10px; margin: 0 4px;');
+                    if (i !== this._activeIdx) {
+                        btn.set_style('background-color: rgba(255, 255, 255, 0.12); border-radius: 6px; padding: 2px 12px; margin: 0 4px;');
                         lbl.set_style('font-size: 13px; font-weight: 500; color: #ffffff;');
                     }
-                } else if (!btn.hover && !isActive) {
-                    btn.set_style('background-color: transparent; border-radius: 6px; padding: 2px 10px; margin: 0 4px;');
+                } else if (!btn.hover && i !== this._activeIdx) {
+                    btn.set_style('background-color: transparent; border-radius: 6px; padding: 2px 12px; margin: 0 4px;');
                     lbl.set_style('font-size: 13px; font-weight: 400; color: rgba(255, 255, 255, 0.75);');
                 }
             });
@@ -206,12 +260,134 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
                 Main.overview.hide();
             });
 
-            this._labelsBox.add_child(btn);
+            this._buttonsBox.add_child(btn);
+            this._labelButtons.push(btn);
+            this._labelWidgets.push(lbl);
         }
 
         // Plus button at right end of labels
         const plusBtn = this._createPlusButton(false);
-        this._labelsBox.add_child(plusBtn);
+        this._buttonsBox.add_child(plusBtn);
+
+        this._syncPillPosition(false);
+    }
+
+    _syncPillPosition(animate = false) {
+        if (this._activeIdx < 0 || this._activeIdx >= this._labelButtons.length) {
+            this._pillIndicator.visible = false;
+            return;
+        }
+        const btn = this._labelButtons[this._activeIdx];
+        if (!btn) {
+            this._pillIndicator.visible = false;
+            return;
+        }
+
+        if (btn.allocation.get_width() <= 0 || this._buttonsBox.allocation.get_width() <= 0) {
+            if (!this._pillAllocId) {
+                this._pillAllocId = this._buttonsBox.connect('notify::allocation', () => {
+                    if (this._pillAllocId) {
+                        this._buttonsBox.disconnect(this._pillAllocId);
+                        this._pillAllocId = 0;
+                    }
+                    this._syncPillPosition(false);
+                });
+            }
+            return;
+        }
+
+        this._pillIndicator.visible = true;
+        const targetX = this._buttonsBox.allocation.x1 + btn.allocation.x1;
+        const targetY = this._buttonsBox.allocation.y1 + btn.allocation.y1;
+        const targetW = btn.allocation.get_width();
+        const targetH = btn.allocation.get_height();
+
+        this._pillIndicator.remove_all_transitions();
+        if (animate) {
+            this._pillIndicator.ease({
+                translation_x: targetX,
+                translation_y: targetY,
+                width: targetW,
+                height: targetH,
+                duration: 250,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        } else {
+            this._pillIndicator.translation_x = targetX;
+            this._pillIndicator.translation_y = targetY;
+            this._pillIndicator.width = targetW;
+            this._pillIndicator.height = targetH;
+        }
+    }
+
+    setActiveWorkspace(index, animate = true) {
+        if (index < 0 || index >= this._labelButtons.length)
+            return;
+        this._activeIdx = index;
+
+        for (let i = 0; i < this._labelWidgets.length; i++) {
+            const lbl = this._labelWidgets[i];
+            const btn = this._labelButtons[i];
+            if (i === index) {
+                lbl.set_style('font-size: 13px; font-weight: 600; color: #ffffff;');
+                btn.set_style('background-color: transparent; border-radius: 6px; padding: 2px 12px; margin: 0 4px;');
+            } else {
+                lbl.set_style('font-size: 13px; font-weight: 400; color: rgba(255, 255, 255, 0.75);');
+                if (!btn.hover)
+                    btn.set_style('background-color: transparent; border-radius: 6px; padding: 2px 12px; margin: 0 4px;');
+            }
+        }
+
+        this._syncPillPosition(animate);
+
+        if (this._isExpanded) {
+            this._buildThumbnails();
+        }
+    }
+
+    onScrollProgress(val) {
+        if (this._labelButtons.length <= 1)
+            return;
+        const n = this._labelButtons.length;
+        const clamped = Math.max(0, Math.min(n - 1, val));
+        const i0 = Math.floor(clamped);
+        const i1 = Math.min(n - 1, i0 + 1);
+        const frac = clamped - i0;
+
+        const btn0 = this._labelButtons[i0];
+        const btn1 = this._labelButtons[i1];
+        if (!btn0 || !btn1 || btn0.allocation.get_width() <= 0 || btn1.allocation.get_width() <= 0 || this._buttonsBox.allocation.get_width() <= 0)
+            return;
+
+        const x0 = this._buttonsBox.allocation.x1 + btn0.allocation.x1;
+        const x1 = this._buttonsBox.allocation.x1 + btn1.allocation.x1;
+        const w0 = btn0.allocation.get_width();
+        const w1 = btn1.allocation.get_width();
+        const y = this._buttonsBox.allocation.y1 + btn0.allocation.y1;
+        const h = btn0.allocation.get_height();
+
+        const curX = x0 + (x1 - x0) * frac;
+        const curW = w0 + (w1 - w0) * frac;
+
+        this._pillIndicator.visible = true;
+        this._pillIndicator.remove_all_transitions();
+        this._pillIndicator.translation_x = Math.round(curX);
+        this._pillIndicator.translation_y = Math.round(y);
+        this._pillIndicator.width = Math.round(curW);
+        this._pillIndicator.height = Math.round(h);
+
+        const nearest = Math.round(clamped);
+        if (nearest !== this._activeIdx) {
+            this._activeIdx = nearest;
+            for (let i = 0; i < this._labelWidgets.length; i++) {
+                const lbl = this._labelWidgets[i];
+                if (i === nearest) {
+                    lbl.set_style('font-size: 13px; font-weight: 600; color: #ffffff;');
+                } else {
+                    lbl.set_style('font-size: 13px; font-weight: 400; color: rgba(255, 255, 255, 0.75);');
+                }
+            }
+        }
     }
 
     _buildThumbnails(editingIdx = -1, animateIdx = -1) {
@@ -260,8 +436,8 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             const accent = getSystemAccentColor();
             const cardBtn = new St.Button({
                 style: isActive
-                    ? `width: ${thumbWidth}px; height: ${thumbHeight}px; border: 2px solid ${accent}; border-radius: 6px; box-shadow: 0 0 10px ${accent}a6; background-color: rgba(22, 38, 62, 0.88); padding: 0;`
-                    : `width: ${thumbWidth}px; height: ${thumbHeight}px; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 6px; background-color: rgba(30, 30, 35, 0.60); padding: 0;`,
+                    ? `width: ${thumbWidth}px; height: ${thumbHeight}px; border: 2px solid ${accent}; border-radius: 6px; box-shadow: 0 0 10px ${accent}a6; background-color: transparent; padding: 0;`
+                    : `width: ${thumbWidth}px; height: ${thumbHeight}px; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 6px; background-color: transparent; padding: 0;`,
                 reactive: true,
                 can_focus: true,
                 track_hover: true,
@@ -629,6 +805,10 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         if (this._activeRenameFinish) {
             this._activeRenameFinish(true);
         }
+        if (this._pillAllocId) {
+            this._buttonsBox.disconnect(this._pillAllocId);
+            this._pillAllocId = 0;
+        }
         this._collapse(true);
         super.destroy();
     }
@@ -667,6 +847,8 @@ export class WorkspaceIndicatorController {
         this._overviewSignals = [];
         this._stateAdjustment = null;
         this._stateAdjustmentSignalId = 0;
+        this._wsScrollAdj = null;
+        this._wsScrollSignalId = 0;
         this._prevCenterBoxYAlign = undefined;
         this._spacesBar = new MacMissionControlSpacesBar();
 
@@ -696,6 +878,16 @@ export class WorkspaceIndicatorController {
             if (this._stateAdjustment) {
                 this._stateAdjustmentSignalId = this._stateAdjustment.connect('notify::value', () => {
                     this._onOverviewProgressChanged();
+                });
+            }
+
+            const wsDisplay = controls?._workspacesDisplay;
+            this._wsScrollAdj = wsDisplay?._scrollAdjustment ?? null;
+            if (this._wsScrollAdj) {
+                this._wsScrollSignalId = this._wsScrollAdj.connect('notify::value', () => {
+                    if (this._spacesBar && this._spacesBar.visible && !this._spacesBar._isExpanded) {
+                        this._spacesBar.onScrollProgress(this._wsScrollAdj.value);
+                    }
                 });
             }
 
@@ -779,6 +971,12 @@ export class WorkspaceIndicatorController {
     _disconnectOverview() {
         this._restoreGnomeWorkspaceThumbnails();
 
+        if (this._wsScrollAdj && this._wsScrollSignalId) {
+            this._wsScrollAdj.disconnect(this._wsScrollSignalId);
+            this._wsScrollSignalId = 0;
+            this._wsScrollAdj = null;
+        }
+
         if (this._stateAdjustment && this._stateAdjustmentSignalId) {
             this._stateAdjustment.disconnect(this._stateAdjustmentSignalId);
             this._stateAdjustmentSignalId = 0;
@@ -854,8 +1052,21 @@ export class WorkspaceIndicatorController {
             }
         }
 
+        if (!this._wsScrollAdj) {
+            const controls = Main.overview?._overview?.controls ?? Main.overview?._overview?._controls ?? Main.overview?._controls;
+            const wsDisplay = controls?._workspacesDisplay;
+            this._wsScrollAdj = wsDisplay?._scrollAdjustment ?? null;
+            if (this._wsScrollAdj) {
+                this._wsScrollSignalId = this._wsScrollAdj.connect('notify::value', () => {
+                    if (this._spacesBar && this._spacesBar.visible && !this._spacesBar._isExpanded) {
+                        this._spacesBar.onScrollProgress(this._wsScrollAdj.value);
+                    }
+                });
+            }
+        }
+
         this._spacesBar.visible = true;
-        this._spacesBar.update();
+        this._spacesBar.update(false);
 
         if (this._stateAdjustment) {
             this._onOverviewProgressChanged();
@@ -1035,7 +1246,7 @@ export class WorkspaceIndicatorController {
 
     _update() {
         if (this._spacesBar && this._spacesBar.visible) {
-            this._spacesBar.update();
+            this._spacesBar.update(true);
         }
 
         if (!this._indicator || !this._workspaceManager)
