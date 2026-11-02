@@ -89,6 +89,7 @@ static void redraw_spotlight_preview(void);
 static void redraw_blur_preview(void);
 static void redraw_context_menu_preview(void);
 static void redraw_widgets_preview(void);
+static GtkWidget *get_mac_styling_page(void);
 
 static MacStylingData state = {
     .menubar_tint = 30,
@@ -4827,21 +4828,38 @@ static int get_sidebar_panel_group(const char *id) {
         g_strcmp0(id, "bluetooth") == 0 ||
         g_strcmp0(id, "network") == 0 ||
         g_strcmp0(id, "wwan") == 0 ||
-        g_strcmp0(id, "mobile-broadband") == 0 ||
-        g_strcmp0(id, "power") == 0) return 1;
+        g_strcmp0(id, "mobile-broadband") == 0) return 1;
 
-    if (g_strcmp0(id, "system") == 0 ||
-        g_strcmp0(id, "universal-access") == 0 ||
+    if (g_strcmp0(id, "power") == 0 ||
+        g_strcmp0(id, "system") == 0 ||
+        g_strcmp0(id, "universal-access") == 0) return 2;
+
+    if (g_strcmp0(id, "display") == 0 ||
         g_strcmp0(id, "background") == 0 ||
         g_strcmp0(id, "ubuntu") == 0 ||
+        g_strcmp0(id, "multitasking") == 0 ||
         g_strcmp0(id, "widgets") == 0 ||
-        g_strcmp0(id, "display") == 0 ||
-        g_strcmp0(id, "multitasking") == 0) return 2;
+        g_strcmp0(id, "search") == 0) return 3;
 
     if (g_strcmp0(id, "notifications") == 0 ||
-        g_strcmp0(id, "sound") == 0) return 3;
+        g_strcmp0(id, "sound") == 0 ||
+        g_strcmp0(id, "wellbeing") == 0) return 4;
 
-    return 4; /* Група 4: Різне */
+    if (g_strcmp0(id, "privacy") == 0) return 5;
+
+    if (g_strcmp0(id, "online-accounts") == 0) return 6;
+
+    if (g_strcmp0(id, "keyboard") == 0 ||
+        g_strcmp0(id, "mouse") == 0 ||
+        g_strcmp0(id, "printers") == 0 ||
+        g_strcmp0(id, "color") == 0 ||
+        g_strcmp0(id, "sharing") == 0 ||
+        g_strcmp0(id, "applications") == 0 ||
+        g_strcmp0(id, "wacom") == 0) return 7;
+
+    if (g_strcmp0(id, "mac-styling") == 0) return 8;
+
+    return 7;
 }
 
 static const char *get_sidebar_row_panel_id(GtkListBoxRow *row) {
@@ -4851,6 +4869,9 @@ static const char *get_sidebar_row_panel_id(GtkListBoxRow *row) {
     }
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"))) {
         return "widgets";
+    }
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_mac_styling_row"))) {
+        return "mac-styling";
     }
     void *d = g_object_get_data(G_OBJECT(row), "data");
     if (!d) return NULL;
@@ -4866,19 +4887,29 @@ static double get_sidebar_panel_rank(GtkListBoxRow *row) {
     if (!id) return 999.0;
 
     static const char * const panel_order[] = {
-        /* Група 1: Мережа та живлення */
-        "wifi", "bluetooth", "network", "wwan", "mobile-broadband", "power",
+        /* Група 1: Мережа та зв'язок */
+        "wifi", "bluetooth", "network", "wwan", "mobile-broadband",
 
-        /* Група 2: Системні параметри */
-        "system", "universal-access", "background", "ubuntu", "widgets", "display", "multitasking",
+        /* Група 2: Акумулятор, Система, Доступність */
+        "power", "system", "about", "datetime", "region", "universal-access",
 
-        /* Група 3: Звук і сповіщення */
-        "notifications", "sound",
+        /* Група 3: Дисплеї, Шпалери, Оформлення, Робочий стіл і Dock, Віджети, Spotlight */
+        "display", "background", "ubuntu", "multitasking", "widgets", "search",
 
-        /* Група 4: Різне */
-        "applications", "search", "online-accounts", "sharing",
-        "mouse", "keyboard", "color", "printers",
-        "privacy", "wacom", "wellbeing",
+        /* Група 4: Сповіщення, Звук, Фокусування / Екранний час */
+        "notifications", "sound", "wellbeing",
+
+        /* Група 5: Конфіденційність і безпека */
+        "privacy", "users",
+
+        /* Група 6: Облікові записи */
+        "online-accounts",
+
+        /* Група 7: Пристрої та периферія */
+        "keyboard", "mouse", "printers", "color", "sharing", "applications", "wacom",
+
+        /* Група 8: Mac стилізація (замість macFUSE в самому низу) */
+        "mac-styling",
         NULL
     };
     for (int i = 0; panel_order[i] != NULL; i++) {
@@ -4891,9 +4922,13 @@ static double get_sidebar_panel_rank(GtkListBoxRow *row) {
 
 static gboolean is_sidebar_group_start_id(const char *id) {
     if (!id) return FALSE;
-    if (g_strcmp0(id, "system") == 0) return TRUE;        /* Початок Групи 2 (Системні параметри) */
-    if (g_strcmp0(id, "notifications") == 0) return TRUE; /* Початок Групи 3 (Звук і сповіщення) */
-    if (g_strcmp0(id, "applications") == 0) return TRUE;  /* Початок Групи 4 (Різне) */
+    if (g_strcmp0(id, "power") == 0) return TRUE;           /* Група 2 */
+    if (g_strcmp0(id, "display") == 0) return TRUE;         /* Група 3 */
+    if (g_strcmp0(id, "notifications") == 0) return TRUE;   /* Група 4 */
+    if (g_strcmp0(id, "privacy") == 0) return TRUE;         /* Група 5 */
+    if (g_strcmp0(id, "online-accounts") == 0) return TRUE; /* Група 6 */
+    if (g_strcmp0(id, "keyboard") == 0) return TRUE;        /* Група 7 */
+    if (g_strcmp0(id, "mac-styling") == 0) return TRUE;     /* Група 8 (в самому низу замість macFUSE) */
     return FALSE;
 }
 
@@ -6122,6 +6157,52 @@ static GtkWidget *get_widgets_page(void)
     return widgets_page;
 }
 
+static GtkWidget *get_mac_styling_page(void)
+{
+    static GtkWidget *mac_styling_page = NULL;
+    if (mac_styling_page) return mac_styling_page;
+
+    GtkBuilder *builder = gtk_builder_new();
+    const char *overlay_path = "/usr/share/mactheme/gnome-control-center-overlay/cc-mac-styling-panel.ui";
+    char *user_path = NULL;
+    const char *home = g_get_home_dir();
+    if (home) {
+        user_path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "cc-mac-styling-panel.ui", NULL);
+    }
+    const char *local_path = "/home/vitaliy/MACTHEMEFILES/control-center/cc-mac-styling-panel.ui";
+
+    const char *path_to_use = NULL;
+    if (g_file_test(overlay_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = overlay_path;
+    } else if (user_path && g_file_test(user_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = user_path;
+    } else if (g_file_test(local_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = local_path;
+    }
+
+    GError *error = NULL;
+    gboolean loaded = FALSE;
+    if (path_to_use) {
+        loaded = gtk_builder_add_from_file(builder, path_to_use, &error);
+    }
+    if (user_path) g_free(user_path);
+
+    if (loaded) {
+        mac_styling_page = GTK_WIDGET(gtk_builder_get_object(builder, "mac_styling_page"));
+        if (mac_styling_page) {
+            g_object_ref(mac_styling_page);
+        }
+    } else {
+        if (error) {
+            g_warning("macW1Y: Failed to load cc-mac-styling-panel.ui: %s", error->message);
+            g_error_free(error);
+        }
+    }
+    g_object_unref(builder);
+    return mac_styling_page;
+}
+
+
 static void init_mac_settings_css(void) {
     static gboolean css_inited = FALSE;
     if (css_inited) return;
@@ -7254,6 +7335,7 @@ static const char *get_panel_icon_name(const char *id) {
     if (g_strcmp0(id, "online-accounts") == 0) return "goa-panel-symbolic";
     if (g_strcmp0(id, "sharing") == 0) return "preferences-system-sharing-symbolic";
     if (g_strcmp0(id, "applications") == 0) return "preferences-desktop-apps-symbolic";
+    if (g_strcmp0(id, "mac-styling") == 0) return "preferences-desktop-theme-symbolic";
     return "emblem-system-symbolic";
 }
 
@@ -7281,6 +7363,7 @@ static const char *get_panel_title_fallback(const char *id) {
     if (g_strcmp0(id, "online-accounts") == 0) return "Облікові записи";
     if (g_strcmp0(id, "sharing") == 0) return "Спільний доступ";
     if (g_strcmp0(id, "applications") == 0) return "Програми";
+    if (g_strcmp0(id, "mac-styling") == 0) return "Mac стилізація";
     return "Параметри";
 }
 
@@ -7308,6 +7391,7 @@ static const char *get_panel_description(const char *id) {
     if (g_strcmp0(id, "online-accounts") == 0) return "Підключення хмарних сервісів, пошти, контактів та календарів.";
     if (g_strcmp0(id, "sharing") == 0) return "Спільний доступ до файлів, віддалене керування та медіасервер.";
     if (g_strcmp0(id, "applications") == 0) return "Типові програми, дозволи та керування встановленими додатками.";
+    if (g_strcmp0(id, "mac-styling") == 0) return "Налаштування розмиття скла Liquid Glass, прозорості та тіней системи.";
     return "Керування системними параметрами та персоналізацією пристрою.";
 }
 
@@ -7344,8 +7428,10 @@ static const char *get_panel_id_from_widget(GtkWidget *widget) {
     if (ADW_IS_NAVIGATION_PAGE(widget)) {
         const char *tag = adw_navigation_page_get_tag(ADW_NAVIGATION_PAGE(widget));
         if (tag && (g_strcmp0(tag, "widgets") == 0 || g_strcmp0(tag, "widgets_page") == 0)) return "widgets";
+        if (tag && (g_strcmp0(tag, "mac-styling") == 0 || g_strcmp0(tag, "mac_styling_page") == 0)) return "mac-styling";
         const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
         if (bid && (g_strcmp0(bid, "widgets") == 0 || g_strcmp0(bid, "widgets_page") == 0)) return "widgets";
+        if (bid && (g_strcmp0(bid, "mac-styling") == 0 || g_strcmp0(bid, "mac_styling_page") == 0)) return "mac-styling";
     }
     return NULL;
 }
@@ -7532,6 +7618,18 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"))) {
         g_signal_stop_emission_by_name(box, "row-activated");
         GtkWidget *page = get_widgets_page();
+        if (page) {
+            adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
+            adw_navigation_split_view_set_show_content(split_view, TRUE);
+            schedule_update_panel_headerbar(split_view);
+            gtk_list_box_select_row(box, row);
+        }
+        return;
+    }
+
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_mac_styling_row"))) {
+        g_signal_stop_emission_by_name(box, "row-activated");
+        GtkWidget *page = get_mac_styling_page();
         if (page) {
             adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
             adw_navigation_split_view_set_show_content(split_view, TRUE);
@@ -8243,6 +8341,48 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             g_object_set_data(G_OBJECT(split_view), "mac_widgets_row", widgets_row);
         }
 
+        GtkListBoxRow *mac_styling_row = g_object_get_data(G_OBJECT(split_view), "mac_styling_row");
+        if (!g_object_get_data(G_OBJECT(main_listbox), "mac_styling_row_added")) {
+            mac_styling_row = GTK_LIST_BOX_ROW(gtk_list_box_row_new());
+            g_object_set_data(G_OBJECT(mac_styling_row), "is_mac_styling_row", GINT_TO_POINTER(1));
+
+            GtkWidget *grid = gtk_grid_new();
+            gtk_widget_set_hexpand(grid, TRUE);
+            gtk_widget_set_valign(grid, GTK_ALIGN_CENTER);
+            gtk_widget_set_margin_top(grid, 0);
+            gtk_widget_set_margin_bottom(grid, 0);
+            gtk_widget_set_margin_start(grid, 0);
+            gtk_widget_set_margin_end(grid, 0);
+            gtk_grid_set_column_spacing(GTK_GRID(grid), 6);
+
+            GtkWidget *image = gtk_image_new_from_icon_name("preferences-desktop-theme-symbolic");
+            gtk_image_set_pixel_size(GTK_IMAGE(image), 13);
+            gtk_widget_set_halign(image, GTK_ALIGN_CENTER);
+            gtk_widget_set_valign(image, GTK_ALIGN_CENTER);
+            gtk_grid_attach(GTK_GRID(grid), image, 0, 0, 1, 1);
+
+            GtkWidget *label = gtk_label_new(mac_tr("mac_styling", "Mac стилізація"));
+            gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+            gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
+            gtk_widget_set_margin_start(label, 0);
+            gtk_widget_set_margin_top(label, 1);
+            gtk_widget_set_margin_bottom(label, 0);
+            gtk_widget_set_hexpand(label, TRUE);
+            gtk_grid_attach(GTK_GRID(grid), label, 1, 0, 1, 1);
+
+            gtk_list_box_row_set_child(mac_styling_row, grid);
+
+            MacPanelRowData *row_data = g_new0(MacPanelRowData, 1);
+            row_data->row = mac_styling_row;
+            row_data->id = g_strdup("mac-styling");
+            g_object_set_data_full(G_OBJECT(mac_styling_row), "data", row_data, (GDestroyNotify)g_free);
+
+            gtk_list_box_append(main_listbox, GTK_WIDGET(mac_styling_row));
+
+            g_object_set_data(G_OBJECT(main_listbox), "mac_styling_row_added", GINT_TO_POINTER(1));
+            g_object_set_data(G_OBJECT(split_view), "mac_styling_row", mac_styling_row);
+        }
+
         if (!g_object_get_data(G_OBJECT(main_listbox), "mac_listbox_connected")) {
             gtk_list_box_set_sort_func(main_listbox, mac_main_listbox_sort_func, NULL, NULL);
             gtk_list_box_set_header_func(main_listbox, NULL, NULL, NULL);
@@ -8278,32 +8418,34 @@ static gboolean mac_fix_settings_window(gpointer user_data)
                 schedule_update_panel_headerbar(split_view);
             }
         }
+
+        if (g_getenv("MAC_SETTINGS_OPEN_STYLING") && !g_object_get_data(G_OBJECT(split_view), "mac_styling_opened")) {
+            g_object_set_data(G_OBJECT(split_view), "mac_styling_opened", GINT_TO_POINTER(1));
+            if (mac_styling_row) {
+                gtk_list_box_select_row(main_listbox, mac_styling_row);
+            }
+            GtkWidget *page = get_mac_styling_page();
+            if (page) {
+                adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
+                adw_navigation_split_view_set_show_content(split_view, TRUE);
+                schedule_update_panel_headerbar(split_view);
+            }
+        }
     }
 
     if (g_getenv("MAC_SETTINGS_TEST_CLICKS") && main_listbox) {
         printf("--- MAC_SETTINGS_TEST_CLICKS START ---\n");
-        const char *test_ids[] = {
-            "wifi", "bluetooth", "network", "power",
-            "system", "universal-access", "background", "ubuntu", "widgets", "display", "multitasking",
-            "notifications", "sound",
-            "applications", "search", "online-accounts", "sharing",
-            "mouse", "keyboard", "printers", "privacy",
-            NULL
-        };
-        for (int t = 0; test_ids[t] != NULL; t++) {
-            const char *target = test_ids[t];
-            for (GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(main_listbox)); child != NULL; child = gtk_widget_get_next_sibling(child)) {
-                if (GTK_IS_LIST_BOX_ROW(child)) {
-                    MacPanelRowData *d = g_object_get_data(G_OBJECT(child), "data");
-                    if (d && g_strcmp0(d->id, target) == 0) {
-                        g_signal_emit_by_name(main_listbox, "row-activated", child);
-                        AdwNavigationPage *cp = adw_navigation_split_view_get_content(split_view);
-                        const char *cur_id = g_object_get_data(G_OBJECT(split_view), "mac_current_panel_id");
-                        printf("Activated %-16s -> cur_id=%-16s content=%s\n", target, cur_id ? cur_id : "null", cp ? G_OBJECT_TYPE_NAME(cp) : "null");
-                        break;
-                    }
-                }
-            }
+        int row_index = 0;
+        for (GtkListBoxRow *row = gtk_list_box_get_row_at_index(main_listbox, row_index);
+             row != NULL;
+             row = gtk_list_box_get_row_at_index(main_listbox, ++row_index)) {
+            const char *id = get_sidebar_row_panel_id(row);
+            g_signal_emit_by_name(main_listbox, "row-activated", row);
+            AdwNavigationPage *cp = adw_navigation_split_view_get_content(split_view);
+            const char *cur_id = g_object_get_data(G_OBJECT(split_view), "mac_current_panel_id");
+            printf("[%2d] Activated %-16s -> cur_id=%-16s content=%s\n",
+                   row_index, id ? id : "unknown", cur_id ? cur_id : (id ? id : "null"),
+                   cp ? G_OBJECT_TYPE_NAME(cp) : "null");
         }
         printf("--- MAC_SETTINGS_TEST_CLICKS END ---\n");
         exit(0);

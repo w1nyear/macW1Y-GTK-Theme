@@ -2526,12 +2526,12 @@ StEntry StLabel.hint-text {
 
 /* Popovers/Menus */
 .popup-menu-boxpointer {
-  -arrow-border-radius: 24px !important;
+  -arrow-border-radius: 20px !important;
   -arrow-background-color: transparent;
   -arrow-border-width: 0;
   -arrow-border-color: transparent;
-  -arrow-base: 0px;
-  -arrow-rise: 0px;
+  -arrow-base: 18px;
+  -arrow-rise: 8px;
   -arrow-box-shadow: none;
   -boxpointer-gap: 0px;
 }
@@ -2619,7 +2619,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:focus, .popup-menu-item:hover, .popup-menu-item:selected {
   color: #ffffff !important;
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
   transition: background-color 100ms ease, color 100ms ease;
@@ -2628,7 +2628,7 @@ StEntry StLabel.hint-text {
 
 .popup-menu-item:active, .popup-menu-item.selected:active {
   color: #ffffff !important;
-  background-color: #0062cc !important;
+  background-color: -st-accent-color !important;
   border-radius: 9999px !important;
 }
 
@@ -3025,10 +3025,10 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list {
   background-color: rgba(25, 25, 25, 0.35) !important;
   background: rgba(25, 25, 25, 0.35) !important;
-  border-radius: 38px !important;
+  border-radius: 20px !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
-  padding: 22px 18px 14px 18px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.40) !important;
+  padding: 8px 8px 5px 8px !important;
 }
 
 .switcher-list .item-box,
@@ -3038,7 +3038,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list .item-box:selected,
 .switcher-list .item-box:highlighted,
 .switcher-list .item-box:outlined {
-  padding: 0px 4px !important;
+  padding: 0px !important;
   border-radius: 0px !important;
   border: none !important;
   background-color: transparent !important;
@@ -3052,8 +3052,8 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 
 /* Rounded squircle highlight wrapping STRICTLY around icon only */
 .alt-tab-icon-bin {
-  padding: 3px !important;
-  border-radius: 22px !important;
+  padding: 1px !important;
+  border-radius: 15px !important;
   border: 1px solid transparent !important;
   background-color: transparent !important;
   background: none !important;
@@ -3081,13 +3081,13 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list .item-box StLabel,
 .switcher-list .item-box .label {
   font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif !important;
-  font-size: 11px !important;
+  font-size: 10px !important;
   font-weight: 500 !important;
   color: #ffffff !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important;
   text-align: center !important;
-  margin-top: 8px !important;
-  padding: 0 4px !important;
+  margin-top: 3px !important;
+  padding: 0 1px !important;
 }
 
 .switcher-list .thumbnail-box {
@@ -3105,7 +3105,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 .switcher-list .switcher-list-item-container {
-  spacing: 6px !important;
+  spacing: 2px !important;
 }
 
 .switcher-arrow {
@@ -6098,10 +6098,10 @@ StWidget.focused .app-grid-running-dot {
 .mac-menu-item-row:selected:hover,
 .mac-menu-item-active:hover,
 .mac-menu-item-active:selected {
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
-  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important;
 }
 
 .mac-cc-submenu-row:hover,
@@ -6342,7 +6342,8 @@ StWidget.focused .app-grid-running-dot {
 .popup-menu-item:focus,
 .popup-menu-item:hover,
 .popup-menu-item:selected {
-  background-color: #007aff !important;
+  background-color: transparent !important;
+  background: transparent !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
@@ -6350,7 +6351,8 @@ StWidget.focused .app-grid-running-dot {
 
 .popup-menu-item:active,
 .popup-menu-item.selected:active {
-  background-color: #0062cc !important;
+  background-color: transparent !important;
+  background: transparent !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
 }
@@ -6382,7 +6384,7 @@ StWidget.focused .app-grid-running-dot {
   border-radius: 9999px !important;
   spacing: 6px !important;
   color: #dedede !important;
-  transition: color 100ms ease !important;
+  transition: color 80ms ease !important;
 }
 
 .appmenu-popup-menu-item:focus,
@@ -6394,7 +6396,8 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-content .popup-menu-item:focus,
 .appmenu-popup-menu-content .popup-menu-item:hover,
 .appmenu-popup-menu-content .popup-menu-item:selected {
-  background-color: #007aff !important;
+  background-color: transparent !important;
+  background: transparent !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
   box-shadow: none !important;
@@ -6404,15 +6407,16 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-item.selected:active,
 .appmenu-popup-menu .popup-menu-item:active,
 .appmenu-popup-menu-content .popup-menu-item:active {
-  background-color: #0062cc !important;
+  background-color: transparent !important;
+  background: transparent !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
 }
 
 .mac-menu-hover-pill {
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   border-radius: 9999px !important;
-  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important;
 }
 
 .mac-menu-hover-glide-active .popup-menu-item:hover,

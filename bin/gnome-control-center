@@ -19,6 +19,11 @@ if [ "$1" = "widgets" ] || [ "$1" = "desktop-widgets" ]; then
     shift
 fi
 
+if [ "$1" = "mac-styling" ] || [ "$1" = "styling" ]; then
+    export MAC_SETTINGS_OPEN_STYLING=1
+    shift
+fi
+
 if [ -f "/usr/bin/gnome-control-center.orig" ]; then
     exec /usr/bin/gnome-control-center.orig "$@"
 else

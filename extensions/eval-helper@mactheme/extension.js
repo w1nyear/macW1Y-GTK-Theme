@@ -975,8 +975,8 @@ export default class EvalHelper extends Extension {
 
                 // 1. Patch SwitcherList.prototype.highlight so ONLY the focused item shows its program name underneath
                 // and the focus squircle wraps strictly around the icon actor (_iconBin / _icon)
-                if (!SwitcherList.prototype._macHighlightPatchedV5) {
-                    SwitcherList.prototype._macHighlightPatchedV5 = true;
+                if (!SwitcherList.prototype._macHighlightPatchedV9) {
+                    SwitcherList.prototype._macHighlightPatchedV9 = true;
                     const origHighlight = SwitcherList.prototype.highlight;
                     SwitcherList.prototype.highlight = function(index, justOutline) {
                         origHighlight.call(this, index, justOutline);
@@ -1015,12 +1015,15 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 2. Patch SwitcherList.prototype.addItem to hide labels by default and hide scroll arrows
-                if (!SwitcherList.prototype._macAddItemPatchedV5) {
-                    SwitcherList.prototype._macAddItemPatchedV5 = true;
+                // 2. Patch SwitcherList.prototype.addItem to hide labels by default, enforce non-square button, and hide scroll arrows
+                if (!SwitcherList.prototype._macAddItemPatchedV9) {
+                    SwitcherList.prototype._macAddItemPatchedV9 = true;
                     const origAddItem = SwitcherList.prototype.addItem;
                     SwitcherList.prototype.addItem = function(item, label) {
                         const bbox = origAddItem.call(this, item, label);
+                        bbox._square = false;
+                        if (typeof bbox.set_width === 'function') bbox.set_width(60);
+                        bbox.style = 'padding: 0px !important; margin: 0px !important;';
                         if (label) label.opacity = 0;
                         const child = bbox.get_child ? bbox.get_child() : null;
                         if (child?.label) child.label.opacity = 0;
@@ -1037,8 +1040,8 @@ export default class EvalHelper extends Extension {
                 }
 
                 // 3. Patch AppIcon to format label, add squircle class to iconBin, and hide label by default
-                if (AltTabMod.AppIcon && !AltTabMod.AppIcon.prototype._macPatchedV7) {
-                    AltTabMod.AppIcon.prototype._macPatchedV7 = true;
+                if (AltTabMod.AppIcon && !AltTabMod.AppIcon.prototype._macPatchedV9) {
+                    AltTabMod.AppIcon.prototype._macPatchedV9 = true;
                     const origAppIconInit = AltTabMod.AppIcon.prototype._init;
                     AltTabMod.AppIcon.prototype._init = function(app) {
                         origAppIconInit.call(this, app);
@@ -1051,7 +1054,7 @@ export default class EvalHelper extends Extension {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.opacity = 0;
                             this.label.x_align = Clutter.ActorAlign.CENTER;
-                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 8px !important;';
+                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 10px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 3px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
                                 this.label.clutter_text.line_wrap = false;
@@ -1061,13 +1064,13 @@ export default class EvalHelper extends Extension {
                 }
 
                 // 4. Patch WindowIcon & WindowSwitcher for touchpad gestures & fallback switcher
-                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV7) {
-                    AltTabMod.WindowIcon.prototype._macPatchedV7 = true;
+                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV9) {
+                    AltTabMod.WindowIcon.prototype._macPatchedV9 = true;
                     const origWindowIconInit = AltTabMod.WindowIcon.prototype._init;
                     AltTabMod.WindowIcon.prototype._init = function(window, mode) {
                         origWindowIconInit.call(this, window, mode);
                         if (typeof this.set_size === 'function') {
-                            try { this.set_size(92); } catch (_) {}
+                            try { this.set_size(56); } catch (_) {}
                         }
                         const iconActor = this._iconBin || this._icon || (this.get_children ? this.get_children()[0] : null);
                         if (iconActor) {
@@ -1085,7 +1088,7 @@ export default class EvalHelper extends Extension {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.x_align = Clutter.ActorAlign.CENTER;
                             this.label.opacity = 0;
-                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 8px !important;';
+                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 10px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 3px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
                                 this.label.clutter_text.line_wrap = false;
@@ -1097,15 +1100,24 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 5. Hide multi-window arrows in AppSwitcher and enforce crisp 92px icon size
+                // 5. Hide multi-window arrows in AppSwitcher and enforce crisp 56px icon size & minimal spacing
                 try {
                     const dummyPopup = new AltTabMod.AppSwitcherPopup();
                     const AppSwitcherProto = dummyPopup._switcherList ? Object.getPrototypeOf(dummyPopup._switcherList) : null;
-                    if (AppSwitcherProto && !AppSwitcherProto._macPatchedV7) {
-                        AppSwitcherProto._macPatchedV7 = true;
+                    if (AppSwitcherProto && !AppSwitcherProto._macPatchedV9) {
+                        AppSwitcherProto._macPatchedV9 = true;
                         const origAddIcon = AppSwitcherProto._addIcon;
                         AppSwitcherProto._addIcon = function(appIcon) {
                             origAddIcon.call(this, appIcon);
+                            this._squareItems = false;
+                            if (Array.isArray(this._items) && this._items.length > 0) {
+                                const lastItem = this._items[this._items.length - 1];
+                                if (lastItem) {
+                                    lastItem._square = false;
+                                    if (typeof lastItem.set_width === 'function') lastItem.set_width(60);
+                                    lastItem.style = 'padding: 0px !important; margin: 0px !important;';
+                                }
+                            }
                             if (Array.isArray(this._arrows)) {
                                 for (const arrow of this._arrows) {
                                     if (arrow) arrow.hide();
@@ -1123,13 +1135,20 @@ export default class EvalHelper extends Extension {
                         };
                         AppSwitcherProto._setIconSize = function() {
                             const primary = Main.layoutManager.primaryMonitor;
-                            const availWidth = primary ? primary.width - 200 : 1600;
-                            let iconSize = 92;
-                            if (this._items.length * 118 > availWidth) iconSize = 76;
-                            if (this._items.length * 96 > availWidth) iconSize = 60;
-                            if (this._items.length * 76 > availWidth) iconSize = 44;
+                            const availWidth = primary ? primary.width - 160 : 1600;
+                            let iconSize = 56;
+                            if (this._items.length * 68 > availWidth) iconSize = 48;
+                            if (this._items.length * 56 > availWidth) iconSize = 40;
+                            if (this._items.length * 46 > availWidth) iconSize = 32;
                             this._iconSize = iconSize;
+                            this._squareItems = false;
+                            const itemW = iconSize + 4;
                             for (let i = 0; i < this.icons.length; i++) {
+                                if (this._items[i]) {
+                                    this._items[i]._square = false;
+                                    if (typeof this._items[i].set_width === 'function') this._items[i].set_width(itemW);
+                                    this._items[i].style = 'padding: 0px !important; margin: 0px !important;';
+                                }
                                 if (this.icons[i]) {
                                     this.icons[i].set_size(iconSize);
                                     const iconActor = this.icons[i]._iconBin || this.icons[i]._icon || (this.icons[i].get_children ? this.icons[i].get_children()[0] : null);
@@ -1184,7 +1203,7 @@ export default class EvalHelper extends Extension {
                         });
                         glass.setIsDock(false);
                         glass.setCornerSmoothingEnabled(0.0);
-                        glass.setCornerRadius(38.0);
+                        glass.setCornerRadius(20.0);
                         glass.setTintColor(0.0, 0.0, 0.0);
                         glass.setTintStrength(0.04);
                         glass.setBlurRadius(15.0);
@@ -1214,10 +1233,17 @@ export default class EvalHelper extends Extension {
                 // Preload glass asynchronously
                 getSwitcherGlass().catch(() => {});
 
-                if (!SwitcherPopup.prototype._macLQVisualPatchedV7) {
-                    SwitcherPopup.prototype._macLQVisualPatchedV7 = true;
+                if (!SwitcherPopup.prototype._macLQVisualPatchedV9) {
+                    SwitcherPopup.prototype._macLQVisualPatchedV9 = true;
                     const origShow = SwitcherPopup.prototype.show;
                     SwitcherPopup.prototype.show = function(backward, binding, mask) {
+                        if (this._switcherList) {
+                            this._switcherList._squareItems = false;
+                            this._switcherList.style = 'padding: 8px 8px 5px 8px !important; border-radius: 20px !important;';
+                            if (this._switcherList._list) {
+                                this._switcherList._list.style = 'spacing: 2px !important;';
+                            }
+                        }
                         const res = origShow.call(this, backward, binding, mask);
                         if (!res) return res;
 
@@ -1300,7 +1326,7 @@ export default class EvalHelper extends Extension {
                                     switcherGlass.set_position(primary.x, primary.y);
                                     switcherGlass.set_size(primary.width, primary.height);
                                     switcherGlass.setResolution(primary.width, primary.height);
-                                    switcherGlass.setCornerRadius(38.0);
+                                    switcherGlass.setCornerRadius(20.0);
                                     switcherGlass.setBlurRadius(blurRad);
                                     switcherGlass.setTintStrength(tintStr);
                                     switcherGlass.setTintColor(tR, tG, tB);

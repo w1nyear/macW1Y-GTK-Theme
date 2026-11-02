@@ -85,6 +85,7 @@ static const MacCKeyEntry MAC_C_ENTRIES[] = {
     { "bookmark_movies", "Відеозаписи", "Movies", "Filme", "Vidéos", "Películas", "Wideo" },
     { "bookmark_trash", "Кошик", "Trash", "Papierkorb", "Corbeille", "Papelera", "Kosz" },
     { "widgets", "Віджети", "Widgets", "Widgets", "Widgets", "Widgets", "Widżety" },
+    { "mac_styling", "Mac стилізація", "Mac Styling", "Mac-Stil", "Style Mac", "Estilo Mac", "Stylizacja Mac" },
     { "apple_account", "Обліковий запис Apple", "Apple Account", "Apple-Account", "Compte Apple", "Cuenta de Apple", "Konto Apple" },
     { "storage_alert", "Сховище iCloud заповнено", "iCloud Storage Full", "iCloud-Speicher voll", "Stockage iCloud saturé", "Almacenamiento de iCloud lleno", "Pamięć iCloud jest pełna" },
     { "software_update_alert", "Доступне оновлення ПЗ", "Software Update Available", "Softwareupdate verfügbar", "Mise à jour logicielle disponible", "Actualización de software disponible", "Dostępna aktualizacja oprogramowania" },
