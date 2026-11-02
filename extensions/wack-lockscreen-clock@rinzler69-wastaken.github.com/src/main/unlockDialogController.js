@@ -233,23 +233,16 @@ export class UnlockDialogController {
                     // Animate dock sliding in from bottom
                     const d2d = Main.layoutManager.uiGroup?.get_children()?.find(c => c.name === 'dashtodockContainer');
                     if (d2d) {
-                        // Ensure dashtodockContainer has its correct resting translation_y (-height)
-                        if (d2d.height > 0 && d2d.translation_y === 0) {
-                            d2d.translation_y = -d2d.height;
-                        }
-                        const dash = d2d.dash || d2d._slider?.child;
-                        if (dash) {
-                            dash.remove_all_transitions();
-                            const dist = (dash.height > 0 ? dash.height : 80) + 30;
-                            dash.translation_y = dist;
-                            dash.opacity = 0;
-                            dash.ease({
-                                translation_y: 0,
-                                opacity: 255,
-                                duration,
-                                mode,
-                            });
-                        }
+                        d2d.remove_all_transitions();
+                        const dockH = d2d.height > 0 ? d2d.height : 92;
+                        d2d.translation_y = 0;
+                        d2d.opacity = 0;
+                        d2d.ease({
+                            translation_y: -dockH,
+                            opacity: 255,
+                            duration,
+                            mode,
+                        });
                     }
 
                     if (capturedSnapshots.length > 0) {
@@ -309,7 +302,7 @@ export class UnlockDialogController {
                         });
                     }
 
-                    // Animate desktop icons (DING) and widgets smoothly fading in
+                    // Animate desktop icons (DING) and uiGroup widgets smoothly fading in
                     for (const child of Main.layoutManager.uiGroup.get_children()) {
                         if (child !== Main.layoutManager._backgroundGroup &&
                             child !== Main.layoutManager._systemBackground &&
@@ -326,6 +319,20 @@ export class UnlockDialogController {
                                 });
                             }
                         }
+                    }
+
+                    // Animate desktop widgets layer (desktop-widgets@r3nhick) smoothly fading in
+                    const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
+                    const widgetLayer = widgetsExt?.stateObj?._controller?._layer;
+                    if (widgetLayer) {
+                        widgetLayer.remove_all_transitions();
+                        widgetLayer.opacity = 0;
+                        widgetLayer.show();
+                        widgetLayer.ease({
+                            opacity: 255,
+                            duration,
+                            mode,
+                        });
                     }
 
                     const clockWrapper = this._extension._clockLayoutManager?.clockWrapper;

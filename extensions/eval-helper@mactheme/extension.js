@@ -2090,6 +2090,7 @@ export default class EvalHelper extends Extension {
             Main.layoutManager.uiGroup.opacity = 255;
 
             // 2. Intercept _prepareStartupAnimation so uiGroup is NEVER scaled down to 0.75
+            // and all desktop elements (top bar, dock, widgets, windows) start hidden
             if (Main.layoutManager._prepareStartupAnimation) {
                 this._origPrepareStartupAnimation = Main.layoutManager._prepareStartupAnimation;
                 Main.layoutManager._prepareStartupAnimation = async function() {
@@ -2102,16 +2103,45 @@ export default class EvalHelper extends Extension {
                         this.uiGroup.scale_y = 1.0;
                         this.uiGroup.opacity = 255;
 
-                        // Hide panel and windows for smooth macOS entrance
+                        // A. Hide top panel above the screen
                         if (this.panelBox) {
                             this.panelBox.remove_all_transitions();
-                            const panelH = this.panelBox.height > 0 ? this.panelBox.height : 32;
+                            const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
                             this.panelBox.translation_y = -panelH;
                             this.panelBox.opacity = 0;
                         }
+
+                        // B. Hide open windows & desktop icons
                         if (global.window_group) {
                             global.window_group.remove_all_transitions();
                             global.window_group.opacity = 0;
+                        }
+
+                        // C. Hide dock below the screen if already present
+                        const dock = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
+                        if (dock) {
+                            dock.remove_all_transitions();
+                            dock.translation_y = 0;
+                            dock.opacity = 0;
+                        }
+
+                        // D. Ensure any dock added during extension initialization starts hidden off-screen
+                        if (!this._macDockChildAddedId) {
+                            this._macDockChildAddedId = this.uiGroup.connect('child-added', (_group, child) => {
+                                if (child.name === 'dashtodockContainer') {
+                                    child.remove_all_transitions();
+                                    child.translation_y = 0;
+                                    child.opacity = 0;
+                                }
+                            });
+                        }
+
+                        // E. Hide desktop widgets if already loaded
+                        const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
+                        const widgetLayer = widgetsExt?.stateObj?._controller?._layer;
+                        if (widgetLayer) {
+                            widgetLayer.remove_all_transitions();
+                            widgetLayer.opacity = 0;
                         }
 
                         await this._updateBackgrounds();
@@ -2120,7 +2150,10 @@ export default class EvalHelper extends Extension {
                 };
             }
 
-            // 3. Intercept _startupAnimationSession: smooth macOS element entrance
+            // 3. Intercept _startupAnimationSession:
+            // Wait until the entire system, all extensions, and the final look have fully loaded and settled.
+            // ONLY THEN trigger the synchronized macOS entrance animation:
+            // Top menu bar slides down from top, dock slides up from bottom, desktop widgets fade in.
             this._origStartupAnimationSession = Main.layoutManager._startupAnimationSession;
             Main.layoutManager._startupAnimationSession = async function() {
                 // Keep uiGroup strictly at 1.0
@@ -2129,12 +2162,62 @@ export default class EvalHelper extends Extension {
                 this.uiGroup.set_pivot_point(0, 0);
                 this.uiGroup.opacity = 255;
 
-                const DURATION = 550;
-                const MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
+                // Step 1: Wait until all enabled extensions have finished initializing
+                const waitForAllExtensions = async () => {
+                    const em = Main.extensionManager;
+                    if (!em || !em._enabledExtensions || em._enabledExtensions.length === 0)
+                        return;
+
+                    const isReady = () => em._enabledExtensions.every(uuid => {
+                        const ext = em.lookup(uuid);
+                        return ext && (ext.state === 1 || ext.state === 2 || ext.state === 3);
+                    });
+
+                    if (isReady()) return;
+
+                    await new Promise(resolve => {
+                        let timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 4000, () => {
+                            timeoutId = 0;
+                            try { em.disconnect(sigId); } catch (_) {}
+                            resolve();
+                            return GLib.SOURCE_REMOVE;
+                        });
+
+                        const sigId = em.connect('extension-state-changed', () => {
+                            if (isReady()) {
+                                if (timeoutId) GLib.source_remove(timeoutId);
+                                try { em.disconnect(sigId); } catch (_) {}
+                                resolve();
+                            }
+                        });
+                    });
+                };
+
+                await waitForAllExtensions();
+
+                // Step 2: Settle delay — let stylesheets apply, top-bar-organizer rearrange icons,
+                // and desktop-widgets & dock finalize their layout while hidden.
+                await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
+                    resolve();
+                    return GLib.SOURCE_REMOVE;
+                }));
+
+                // Disconnect dock child-added listener
+                if (this._macDockChildAddedId) {
+                    try { this.uiGroup.disconnect(this._macDockChildAddedId); } catch (_) {}
+                    this._macDockChildAddedId = null;
+                }
+
+                // Step 3: Coordinated macOS entrance animation
+                const DURATION = 650;
+                const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
                 // A. Menu bar slides down from the top
                 if (this.panelBox) {
                     this.panelBox.remove_all_transitions();
+                    const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
+                    this.panelBox.translation_y = -panelH;
+                    this.panelBox.opacity = 0;
                     this.panelBox.ease({
                         translation_y: 0,
                         opacity: 255,
@@ -2143,32 +2226,44 @@ export default class EvalHelper extends Extension {
                     });
                 }
 
-                // B. Open windows smoothly fade in
-                if (global.window_group) {
-                    global.window_group.remove_all_transitions();
-                    global.window_group.ease({
+                // B. Dock slides up from the bottom
+                const dock = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
+                if (dock) {
+                    dock.remove_all_transitions();
+                    const dockH = dock.height > 0 ? dock.height : 92;
+                    dock.translation_y = 0;
+                    dock.opacity = 0;
+                    dock.ease({
+                        translation_y: -dockH,
                         opacity: 255,
                         duration: DURATION,
                         mode: MODE,
                     });
                 }
 
-                // C. Desktop widgets (DING, desktop-widgets) smoothly fade in
-                for (const child of this.uiGroup.get_children()) {
-                    if (child !== this._backgroundGroup &&
-                        child !== this._systemBackground &&
-                        child !== this._coverPane &&
-                        child !== this.panelBox &&
-                        child.name !== 'dashtodockContainer') {
-                        if (child.opacity < 255) {
-                            child.remove_all_transitions();
-                            child.ease({
-                                opacity: 255,
-                                duration: DURATION,
-                                mode: MODE,
-                            });
-                        }
-                    }
+                // C. Desktop widgets fade in with opacity animation
+                const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
+                const widgetLayer = widgetsExt?.stateObj?._controller?._layer;
+                if (widgetLayer) {
+                    widgetLayer.remove_all_transitions();
+                    widgetLayer.opacity = 0;
+                    widgetLayer.show();
+                    widgetLayer.ease({
+                        opacity: 255,
+                        duration: DURATION,
+                        mode: MODE,
+                    });
+                }
+
+                // D. Desktop icons (DING) and open windows fade in with opacity animation
+                if (global.window_group) {
+                    global.window_group.remove_all_transitions();
+                    global.window_group.opacity = 0;
+                    global.window_group.ease({
+                        opacity: 255,
+                        duration: DURATION,
+                        mode: MODE,
+                    });
                 }
             };
         }
@@ -2702,6 +2797,11 @@ export default class EvalHelper extends Extension {
         if (Main.layoutManager && this._origPrepareStartupAnimation) {
             Main.layoutManager._prepareStartupAnimation = this._origPrepareStartupAnimation;
             this._origPrepareStartupAnimation = null;
+        }
+
+        if (Main.layoutManager && Main.layoutManager._macDockChildAddedId) {
+            try { Main.layoutManager.uiGroup.disconnect(Main.layoutManager._macDockChildAddedId); } catch (_) {}
+            Main.layoutManager._macDockChildAddedId = null;
         }
 
         if (this._gcIntervalId) {

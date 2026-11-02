@@ -15253,3 +15253,33 @@ Task 585: Виправлення роздільної здатності роз�
    - Верифікація:
      * `bin/mac-audit-sync check`: 100% PASS (5/5).
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+
+602. Синхронізація старту стільниці після входу: бар'єр повного завантаження розширень та фінального вигляду перед запуском анімації появи панелі, доку та віджетів:
+   - Вихідні вимоги:
+     * Користувач зазначив: «Щодо загрузки робочого столу. Після входу має прогрузитись вся система розширення та кінцевий вигляд і аж тоді з верху виїжджати меню бар, з низу виїжджати док і на екрані зʼявлятись просто віджети з анімацією непрозорісті».
+     * Раніше `Main.layoutManager._startupAnimationSession` запускав виїзд панелі меню одразу при старті оболонки, коли розширення (`desktop-widgets`, `top-bar-organizer`, `appmenu`, `cupertino-dock-lite`, `ding`) ще завантажувалися асинхронно. Через це елементи меню перестрибували під час анімації, док міг з'являтися раптово, а віджети завантажувалися після завершення переходу.
+   - Реалізація архітектури відкладеного старту (Deferred Entrance Flow):
+     * У [`extensions/eval-helper@mactheme/extension.js`](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js):
+       - У `Main.layoutManager._prepareStartupAnimation`:
+         * Верхнє меню (`panelBox`) ховається за межі екрана: `translation_y = -panelH`, `opacity = 0`.
+         * Док (`dashtodockContainer`) ховається за нижній край екрана: `translation_y = 0`, `opacity = 0`.
+         * Підключено слухач `child-added` до `uiGroup`: якщо контейнер доку додається в процес завантаження розширенням `cupertino-dock-lite`, він миттєво ініціалізується у прихованому стані за нижнім краєм екрана, запобігаючи передчасному мерехтінню.
+         * Вікна (`global.window_group`) та шар віджетів (`desktop-widgets`) фіксуються в стані повної прозорості (`opacity = 0`).
+         * Масштаб закріплено на 1.0, шпалери залишаються нерухомими та чіткими.
+       - У `Main.layoutManager._startupAnimationSession`:
+         * **Етап 1 (Extensions Barrier)**: функція `waitForAllExtensions()` асинхронно очікує завершення активації кожного розширення зі списку `Main.extensionManager._enabledExtensions` через сигнал `extension-state-changed` (стан `ACTIVE` або `ERROR`).
+         * **Етап 2 (Layout Settle Delay)**: додано бар'єр стабілізації (350 мс), протягом якого застосовуються таблиці стилів, `top-bar-organizer` розставляє піктограми панелі по фірмових позиціях Mac, віджети будують свої графічні вузли, а док обчислює геометрію іконок. У цей час користувач бачить лише спокійні чисті шпалери.
+         * **Етап 3 (Coordinated Entrance)**: лише після повного провантаження системи та фінального вигляду одночасно запускаються плавні кінематографічні анімації:
+           - Верхній Menu Bar плавно з'їжджає згори (`translation_y: -panelH -> 0`, `opacity: 0 -> 255`, 650 мс, `EASE_OUT_CUBIC`).
+           - Нижній Dock плавно виїжджає знизу (`translation_y: 0 -> -dockH`, `opacity: 0 -> 255`, 650 мс, `EASE_OUT_CUBIC`).
+           - Шар віджетів (`desktop-widgets@r3nhick` `_layer`) плавно проявляється на екрані з прозорості (`opacity: 0 -> 255`, 650 мс, `EASE_OUT_CUBIC`).
+           - Відкриті вікна та значки стільниці DING плавно проявляються (`opacity: 0 -> 255`).
+     * У [`extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/unlockDialogController.js`](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/unlockDialogController.js):
+       - Синхронізовано виїзд доку знизу (`translation_y: 0 -> -dockH`) та плавне проявлення шару віджетів `widgetLayer.ease({ opacity: 255 })` при кожному розблокуванні сесії.
+     * Синхронізовано файли до системних каталогів розширень `~/.local/share/` та `/usr/share/`.
+     * Оновлено контрольні суми SHA-256 у [`config/extensions.lock.json`](file:///home/vitaliy/macW1Y/config/extensions.lock.json).
+   - Верифікація:
+     * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+     * `bin/mac-audit-sync check`: 100% PASS (5/5).
+     * Тестова симуляція синхронного виїзду через D-Bus EvalHelper підтвердила коректне повернення всіх елементів (Menu Bar, Dock, Widgets) до їхніх точних кінцевих координат.
