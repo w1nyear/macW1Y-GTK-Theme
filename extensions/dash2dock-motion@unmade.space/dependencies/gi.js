@@ -6,6 +6,7 @@ export {default as GObject} from 'gi://GObject';
 export {default as GdkPixbuf} from 'gi://GdkPixbuf';
 export {default as Gio} from 'gi://Gio';
 export {default as GioUnix} from 'gi://GioUnix';
+export {default as Graphene} from 'gi://Graphene';
 export {default as Meta} from 'gi://Meta';
 export {default as Mtk} from 'gi://Mtk';
 export {default as Pango} from 'gi://Pango';

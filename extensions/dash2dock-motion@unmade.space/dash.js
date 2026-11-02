@@ -59,6 +59,10 @@ class DockDashItemContainer extends Dash.DashItemContainer {
             this.label?.add_style_class_name('shrink');
     }
 
+    vfunc_get_paint_volume(volume) {
+        return Utils.expandPaintVolume(this, volume, super.vfunc_get_paint_volume(volume));
+    }
+
     showLabel() {
         return AppIcons.itemShowLabel.call(this);
     }
@@ -109,6 +113,20 @@ const DockDashIconsVerticalLayout = GObject.registerClass(
             return [natHeight, 0];
         }
     });
+
+export const DockOverflowBoxLayout = GObject.registerClass(
+class DockOverflowBoxLayout extends St.BoxLayout {
+    vfunc_get_paint_volume(volume) {
+        return Utils.expandPaintVolume(this, volume, super.vfunc_get_paint_volume(volume));
+    }
+});
+
+export const DockOverflowScrollView = GObject.registerClass(
+class DockOverflowScrollView extends St.ScrollView {
+    vfunc_get_paint_volume(volume) {
+        return Utils.expandPaintVolume(this, volume, super.vfunc_get_paint_volume(volume));
+    }
+});
 
 
 const baseIconSizes = [16, 22, 24, 32, 48, 64, 96, 128];
@@ -180,7 +198,7 @@ export const DockDash = GObject.registerClass({
         this._resetHoverTimeoutId = 0;
         this._labelShowing = false;
 
-        this._dashContainer = new St.BoxLayout({
+        this._dashContainer = new DockOverflowBoxLayout({
             name: 'dashtodockDashContainer',
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
@@ -189,7 +207,7 @@ export const DockDash = GObject.registerClass({
             x_expand: !this._isHorizontal,
         });
 
-        this._scrollView = new St.ScrollView({
+        this._scrollView = new DockOverflowScrollView({
             name: 'dashtodockDashScrollview',
             hscrollbar_policy: this._isHorizontal ? St.PolicyType.EXTERNAL : St.PolicyType.NEVER,
             vscrollbar_policy: this._isHorizontal ?  St.PolicyType.NEVER : St.PolicyType.EXTERNAL,
@@ -200,7 +218,7 @@ export const DockDash = GObject.registerClass({
 
         this._scrollView.connect('scroll-event', this._onScrollEvent.bind(this));
 
-        this._boxContainer = new St.BoxLayout({
+        this._boxContainer = new DockOverflowBoxLayout({
             name: 'dashtodockBoxContainer',
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.FILL,
@@ -209,7 +227,7 @@ export const DockDash = GObject.registerClass({
         this._boxContainer.add_style_class_name(Theming.PositionStyleClass[this._position]);
 
         const rtl = Clutter.get_default_text_direction() === Clutter.TextDirection.RTL;
-        this._box = new St.BoxLayout({
+        this._box = new DockOverflowBoxLayout({
             vertical: !this._isHorizontal,
             clip_to_allocation: false,
             ...!this._isHorizontal ? {layout_manager: new DockDashIconsVerticalLayout()} : {},
@@ -342,6 +360,10 @@ export const DockDash = GObject.registerClass({
     vfunc_allocate(box) {
         super.vfunc_allocate(box);
         this.emit('items-allocated');
+    }
+
+    vfunc_get_paint_volume(volume) {
+        return Utils.expandPaintVolume(this, volume, super.vfunc_get_paint_volume(volume));
     }
 
     vfunc_get_preferred_height(forWidth) {

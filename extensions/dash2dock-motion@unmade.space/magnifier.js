@@ -779,7 +779,11 @@ export class DockMagnifier {
             if (!monitor)
                 return;
 
-            const PADDING = 320;
+            const container = this._dash.get_parent()?.get_parent()?.get_parent();
+            container?.queue_redraw?.();
+            this._dash.queue_redraw();
+
+            const PADDING = 360;
             let rect;
             switch (this._position) {
             case St.Side.BOTTOM:

@@ -243,6 +243,10 @@ const DashSlideContainer = GObject.registerClass({
         }
         return [minHeight, natHeight];
     }
+
+    vfunc_get_paint_volume(volume) {
+        return Utils.expandPaintVolume(this, volume, super.vfunc_get_paint_volume(volume));
+    }
 });
 
 const DockedDash = GObject.registerClass({
@@ -271,6 +275,8 @@ const DockedDash = GObject.registerClass({
             reactive: false,
             style_class: Theming.PositionStyleClass[this._position],
         });
+
+        this.inhibit_culling();
 
         this._rtl = Clutter.get_default_text_direction() === Clutter.TextDirection.RTL;
 
@@ -336,7 +342,7 @@ const DockedDash = GObject.registerClass({
         });
 
         // This is the actor whose hover status us tracked for autohide
-        this._box = new St.BoxLayout({
+        this._box = new DockDash.DockOverflowBoxLayout({
             name: 'dashtodockBox',
             reactive: true,
             track_hover: true,
@@ -533,6 +539,10 @@ const DockedDash = GObject.registerClass({
             this._onOverviewShowing();
 
         this._updateAutoHideBarriers();
+    }
+
+    vfunc_get_paint_volume(volume) {
+        return Utils.expandPaintVolume(this, volume, super.vfunc_get_paint_volume(volume));
     }
 
     _onDestroy() {

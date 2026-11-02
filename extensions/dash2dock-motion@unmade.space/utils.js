@@ -7,6 +7,7 @@ import {
     GLib,
     Gio,
     GObject,
+    Graphene,
     Meta,
     Shell,
     St,
@@ -470,6 +471,76 @@ export function getIconOversample() {
     const maxScale =
         Docking.DockManager.settings?.magnifyMaxScale ?? 2;
     return Math.max(2, Math.ceil(maxScale));
+}
+
+/**
+ * Expand the paint volume of dock containers so that magnified icons, rise,
+ * reflections and labels extending outside the normal dock allocation bounds
+ * are fully included in the stage damage and never clipped or scissored by Mutter.
+ *
+ * @param {Clutter.Actor} actor
+ * @param {Clutter.PaintVolume} volume
+ * @param {boolean} superRes
+ * @returns {boolean}
+ */
+export function expandPaintVolume(actor, volume, superRes) {
+    if (!volume)
+        return superRes;
+    const orig = volume.get_origin();
+    const w = volume.get_width();
+    const h = volume.get_height();
+    const OVERFLOW = 320;
+    const LATERAL = 400;
+
+    const side = actor._position ?? actor.side ?? getPosition();
+    switch (side) {
+    case St.Side.BOTTOM:
+        volume.set_origin(new Graphene.Point3D({
+            x: orig.x - LATERAL,
+            y: orig.y - OVERFLOW,
+            z: orig.z,
+        }));
+        volume.set_width(w + 2 * LATERAL);
+        volume.set_height(h + OVERFLOW + 64);
+        break;
+    case St.Side.TOP:
+        volume.set_origin(new Graphene.Point3D({
+            x: orig.x - LATERAL,
+            y: orig.y - 64,
+            z: orig.z,
+        }));
+        volume.set_width(w + 2 * LATERAL);
+        volume.set_height(h + OVERFLOW + 64);
+        break;
+    case St.Side.LEFT:
+        volume.set_origin(new Graphene.Point3D({
+            x: orig.x - 64,
+            y: orig.y - LATERAL,
+            z: orig.z,
+        }));
+        volume.set_width(w + OVERFLOW + 64);
+        volume.set_height(h + 2 * LATERAL);
+        break;
+    case St.Side.RIGHT:
+        volume.set_origin(new Graphene.Point3D({
+            x: orig.x - OVERFLOW,
+            y: orig.y - LATERAL,
+            z: orig.z,
+        }));
+        volume.set_width(w + OVERFLOW + 64);
+        volume.set_height(h + 2 * LATERAL);
+        break;
+    default:
+        volume.set_origin(new Graphene.Point3D({
+            x: orig.x - LATERAL,
+            y: orig.y - OVERFLOW,
+            z: orig.z,
+        }));
+        volume.set_width(w + 2 * LATERAL);
+        volume.set_height(h + OVERFLOW + 64);
+        break;
+    }
+    return true;
 }
 
 /**

@@ -15506,3 +15506,42 @@ TASK 608: Removal of Darkening Gradients from Lists (Preserving Clean Blur & Opa
    - Clean CSS parsing with 0 warnings/errors across GTK 4 and GTK 3 providers.
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+
+Task 609: Fix Dock Icon Magnification Top Clipping When Applications Run on Desktop
+1. Root Cause Analysis:
+   - User reported razor-sharp horizontal clipping of magnified dock icons (Files, Terminal, Messages, etc.) at the top edge when application windows are running on the desktop.
+   - Mutter KMS/GBM damage tracking & Cogl scissoring: Mutter calculates screen damage regions to only composite modified pixels. When an application window is static on the desktop, Mutter relies strictly on the dock actor hierarchy's reported paint volume (`clutter_actor_get_paint_volume`) to calculate dirty rects and set Cogl scissor clips.
+   - In GNOME Shell / St (`/usr/lib/gnome-shell/libst-18.so`), `StWidget` explicitly overrides `vfunc_get_paint_volume()`:
+     `clutter_paint_volume_set_from_allocation(volume, actor)`
+     which completely truncates reported paint volume to the untransformed actor allocation (`y = 988..1080`).
+   - Every container in the dock hierarchy (`dashtodockContainer`, `DashSlideContainer`, `dashtodockBox`, `DockDash`, `dashtodockDashContainer`, `dashtodockDashScrollview`, `dashtodockBoxContainer`, `DockDashItemContainer`) inherited from `StWidget`, reporting bounds only starting at `y = 988`.
+   - Any pixel of magnified icons extending above `y = 988` (up to `y = 903` at 2.0x scale and rise) was scissored out by Cogl/Mutter KMS damage culling when an application window was open behind the dock.
+
+2. Implemented Architecture Fixes:
+   - `extensions/dash2dock-motion@unmade.space/dependencies/gi.js`:
+     * Exported `Graphene` from `gi://Graphene` for Point3D paint volume geometry manipulations.
+   - `extensions/dash2dock-motion@unmade.space/utils.js`:
+     * Implemented `expandPaintVolume(actor, volume, superRes)` expanding actor paint volume in perpendicular overflow direction (-320px for `St.Side.BOTTOM`, +320px height) and lateral dock expansion (-400px, +800px width) across all 4 dock orientations.
+   - `extensions/dash2dock-motion@unmade.space/dash.js`:
+     * Registered `DockOverflowBoxLayout` (`St.BoxLayout`) and `DockOverflowScrollView` (`St.ScrollView`) with `vfunc_get_paint_volume` calling `expandPaintVolume`.
+     * Added `vfunc_get_paint_volume` to `DockDashItemContainer` and `DockDash`.
+     * Converted `_dashContainer`, `_scrollView`, `_boxContainer`, and `_box` to overflow containers.
+   - `extensions/dash2dock-motion@unmade.space/docking.js`:
+     * Added `vfunc_get_paint_volume` to `DashSlideContainer` and `DashToDock` (`DockedDash`).
+     * Added `this.inhibit_culling()` on `DashToDock` container.
+     * Converted `_box` (`dashtodockBox`) to `DockOverflowBoxLayout`.
+   - `extensions/dash2dock-motion@unmade.space/magnifier.js`:
+     * Expanded `_queueStageRedraw()` to queue redraw on parent dock containers with 360px stage clip padding.
+   - Live Session Hot-Patching:
+     * Hot-patched live GNOME Shell instance via EvalHelper: recursively inhibited culling on 167 dock actors and hooked `_queueStageRedraw` so the fix took immediate effect without session interruption.
+   - Extension Guard & Lock:
+     * Synchronized modified files to `~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/`.
+     * Computed new directory SHA-256 hash `5a114c89053bc271e3a763c4628d0af3d4c8dd62a9cb59653e43d505b8b4f1ef` and locked in `config/extensions.lock.json`.
+
+3. Testing & Verification:
+   - Measured live transformed paint volumes via EvalHelper.
+   - Tested scale up to 2.0x and perpendicular rise.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+   - Zero crashes, zero restart of GNOME Shell or user session.

@@ -132,7 +132,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "2ea9fa26f0702da687333a3b290688cb90ac37df676e760c638821392118e2f5",
+      "sha256": "5a114c89053bc271e3a763c4628d0af3d4c8dd62a9cb59653e43d505b8b4f1ef",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -141,7 +141,7 @@
         "dock_bounce"
       ],
       "has_custom_patches": true,
-      "patch_description": "Custom glass dock with dynamic startingApps tracking",
+      "patch_description": "Custom glass dock with dynamic startingApps tracking and expanded paint volume to prevent top clipping",
       "last_verified": "2026-11-02"
     },
     "eval-helper@mactheme": {
