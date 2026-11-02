@@ -15023,3 +15023,46 @@ Task 585: Виправлення роздільної здатності роз�
      * `dock_live_mid_crop.png`: при наведенні в центр док симетрично розширюється, плавно звужуючись при русі курсору до країв.
    - `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
    - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено).
+
+
+--------------------------------------------------------------------------------
+ЗАВДАННЯ 593: Плавна macOS Tahoe анімація зникання (Exit Animation) для всіх контекстних меню
+--------------------------------------------------------------------------------
+1. Вихідні вимоги:
+   - Користувач звернувся з проблемою: «виправи те що всі контекстні меню мають аніамцію появи але не мають аніамцію зникання.» та надав скріншот контекстного меню стільниці (DING).
+   - Усі контекстні меню середовища (меню іконок доку Dash to Dock, панельні спадні меню, меню AppMenu та контекстні меню стільниці / вікон GTK) мали плавну анімацію появи (збільшення масштабу 0.95 -> 1.0 та наростання прозорості 0 -> 255), проте при закритті (клік поза меню, вибір пункту або клавіша Escape) зникали миттєво в один кадр без будь-якої вихідної анімації.
+
+2. Причини дефекту:
+   - У базовому Shell BoxPointer.prototype.close: перевірка if (animate === 0 || animate === false || animate === BoxPointer.PopupAnimation.FADE || !(animate & BoxPointer.PopupAnimation.FULL)) вважала закриття неанімованим, оскільки при кліку поза меню GNOME Shell викликає menu.close() без аргументів (animate === undefined). У бітових операціях JavaScript undefined & 1 === 0, тому умова !(undefined & 1) завжди давала true та спричиняла синхронне миттєве закриття.
+   - У розширенні Liquid Glass (uiManager.js / uiManager.ts): при зміні menu.isOpen на false функції _syncGeometry(), frameTick, resetOnClose() та _startAnimation() негайно приховували фоновий актор рідкого скла this.bgActor.hide() та обнуляли його прозорість, через що навіть при спробі анімації скло зникало на нульовому кадрі.
+   - У композиторі Mutter (Main.wm._destroyWindow): вихідна анімація вікон знищення застосовувалася лише для типів NORMAL, DIALOG та MODAL_DIALOG. Меню вікон GTK та стільниці (DING — DROPDOWN_MENU, POPUP_MENU, MENU) відразу знищувалися через shellwm.completed_destroy(actor) без візуального переходу.
+
+3. Реалізація:
+   - GNOME Shell BoxPointer (extensions/eval-helper@mactheme/extension.js):
+     * Виправлено логіку в BoxPointer.prototype.close: синхронне закриття без анімації тепер виконується лише при явному запиті (animate === 0 || animate === false || animate === BoxPointer.PopupAnimation.FADE).
+     * Реалізовано синхронний плавний вихідний перехід тривалістю 120 мс з функцією Clutter.AnimationMode.EASE_IN_QUAD:
+       - Зменшення масштабу від 1.0 до 0.95 з точкою прив'язки (pivot point) відповідно до напрямку стрілки меню.
+       - Плавне згасання прозорості від 255 до 0.
+       - Синхронна анімація фонового підкладкового актора Liquid Glass bgActor у повному такті з меню.
+       - Додано запобіжний таймер на 180 мс для гарантованого завершення finalizeClose().
+   - Синхронізація Liquid Glass Backdrop (extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js та src/uiManager.ts):
+     * Додано перевірку стану закриття isTargetClosing = this.targetActor && this.targetActor.visible && this.targetActor.opacity > 0.
+     * У _syncGeometry() та frameTick заблоковано передчасне приховування bgActor та зупинку синхронізації геометрії, доки цільове меню завершує згасання.
+     * У _startAnimation() усунуто синхронні виклики this.menu.actor.hide() та this.bgActor.hide().
+     * У _applyEffect() параметр resetOnClose(force = false) тепер очікує завершення анімації та викликається остаточно лише за сигналом menu-closed.
+   - Контекстні меню вікон та стільниці Mutter (Main.wm._destroyWindow):
+     * У extensions/eval-helper@mactheme/extension.js перехоплено Main.wm._destroyWindow для типів вікон DROPDOWN_MENU, POPUP_MENU та MENU (включаючи контекстне меню DING на робочому столі).
+     * Замість миттєвого знищення актор реєструється у this._destroying, встановлюється центр прив'язки (0.5, 0.5) і запускається плавний перехід: scale: 0.95, opacity: 0, 120 мс, EASE_IN_QUAD, після чого викликається this._destroyWindowDone(shellwm, actor).
+     * Додано коректне відновлення оригінального методу у disable().
+   - Цілісність та блокування:
+     * Синхронізовано модифіковані файли розширень eval-helper@mactheme та liquid-glass@thinkingcoding1231.gmail.com до ~/.local/share/gnome-shell/extensions/.
+     * Оновлено SHA-256 хеші у config/extensions.lock.json.
+     * bin/mac-extension-guard verify: SUCCESS (21/21 розширень валідні).
+     * bin/mac-audit-sync check: 100% PASS (5/5 перевірок пройдено).
+
+4. Верифікація:
+   - Проведено динамічне тестування траєкторії закриття через D-Bus EvalHelper:
+     * До закриття: isOpen: true, bpVisible: true, bpOpacity: 255, bpScale: 1.0, bgVisible: true, bgOpacity: 255.
+     * На 50 мс переходу: isOpen: false, bpVisible: true, bpOpacity: 212, bpScale: 0.992, bgVisible: true, bgOpacity: 212.
+     * На 170 мс (завершено): isOpen: false, bpVisible: false, bpOpacity: 0, bpScale: 1.0, bgVisible: false, bgOpacity: 0.
+   - Контекстні меню іконок доку, панелі та робочого столу закриваються з бездоганною плавною анімацією в стилі macOS Tahoe без різких ривків чи зникнення скла на першому кадрі.

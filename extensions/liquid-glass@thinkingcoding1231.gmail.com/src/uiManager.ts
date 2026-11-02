@@ -672,7 +672,8 @@ export class UIManager {
       // Removing the later is still done in cleanup(); this is the backstop
       // that does not depend on cleanup() getting that far.
       if (this._torndown) return GLib.SOURCE_REMOVE;
-      if (!this.bgActor || (this.menu && !this.menu.isOpen)) {
+      const isTargetClosing = this.targetActor && this.targetActor.visible && this.targetActor.opacity > 0;
+      if (!this.bgActor || (this.menu && !this.menu.isOpen && !isTargetClosing)) {
         if (this.bgActor && this.bgActor.visible) {
           this.bgActor.hide();
           this.bgActor.opacity = 0;
@@ -720,7 +721,11 @@ export class UIManager {
       }
     };
 
-    const resetOnClose = () => {
+    const resetOnClose = (force: boolean = false) => {
+      const isTargetClosing = !force && this.targetActor && this.targetActor.visible && this.targetActor.opacity > 0;
+      if (isTargetClosing) {
+        return;
+      }
       this._stopAdaptiveColorSampling();
       stopFrameSync();
       this._stableBaseW = undefined;
@@ -753,7 +758,10 @@ export class UIManager {
           startFrameSync();
           this._startAdaptiveColorSampling(true);
         } else {
-          resetOnClose();
+          const isTargetClosing = this.targetActor && this.targetActor.visible && this.targetActor.opacity > 0;
+          if (!isTargetClosing) {
+            resetOnClose(true);
+          }
         }
       })
     });
@@ -767,7 +775,7 @@ export class UIManager {
             startFrameSync();
           }
         } else {
-          resetOnClose();
+          resetOnClose(true);
         }
       })
     });
@@ -775,7 +783,7 @@ export class UIManager {
     this._signals.push({
       target: this.menu,
       id: this.menu.connect('menu-closed', () => {
-        resetOnClose();
+        resetOnClose(true);
       })
     });
 
@@ -796,7 +804,8 @@ export class UIManager {
 
   // Calculates and synchronizes the position/size of the glass background every frame
   _syncGeometry() {
-    if (!this.bgActor || !this.targetActor || !this.targetActor.mapped || (this.menu && !this.menu.isOpen)) {
+    const isTargetClosing = this.targetActor && this.targetActor.visible && this.targetActor.opacity > 0;
+    if (!this.bgActor || !this.targetActor || !this.targetActor.mapped || (this.menu && !this.menu.isOpen && !isTargetClosing)) {
       if (this.bgActor && this.bgActor.visible) {
         this.bgActor.hide();
         this.bgActor.opacity = 0;
@@ -1245,22 +1254,26 @@ export class UIManager {
     if (!this._enableAnimation) {
       if (this.bgActor) {
         this.bgActor.remove_all_transitions();
-        const initialOpacity = isClosing ? 0 : (this.targetActor ? this.targetActor.opacity : 255);
-        this.bgActor.opacity = initialOpacity;
-        this.bgActor.visible = !isClosing && initialOpacity > 0;
         if (isClosing) {
-          this.bgActor.hide();
+          const isTargetClosing = this.targetActor && this.targetActor.visible && this.targetActor.opacity > 0;
+          if (!isTargetClosing) {
+            this.bgActor.opacity = 0;
+            this.bgActor.visible = false;
+            this.bgActor.hide();
+          }
+        } else {
+          this.bgActor.opacity = 255;
+          this.bgActor.visible = true;
+          this.bgActor.show();
+          this.bgActor.set_scale(1.0, 1.0);
         }
-        this.bgActor.set_scale(1.0, 1.0);
 
         if (this.animActor) {
           this.animActor.remove_all_transitions();
           this.animActor.set_scale(1.0, 1.0);
-          this.animActor.opacity = initialOpacity;
-        }
-
-        if (isClosing && this.menu?.actor) {
-          this.menu.actor.hide();
+          if (!isClosing) {
+            this.animActor.opacity = 255;
+          }
         }
       }
       return;

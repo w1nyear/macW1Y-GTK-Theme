@@ -370,6 +370,7 @@ export default class EvalHelper extends Extension {
         globalThis.Mtk = Mtk;
         globalThis.Shell = Shell;
         globalThis.Pango = Pango;
+        globalThis.St = St;
         try {
             const nodeInfo = Gio.DBusNodeInfo.new_for_xml(EvalIface);
             this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(nodeInfo.interfaces[0], {
@@ -2418,16 +2419,15 @@ export default class EvalHelper extends Extension {
                         } catch (_) {}
                     };
 
-                    // Synchronous instant close when:
+                    // Synchronous instant close only when explicitly requested without animation:
                     // 1) animate is 0 or false
-                    // 2) animate is PopupAnimation.FADE (used during menu switching in PopupMenuManager._changeMenu)
-                    // 3) FULL bit is not set
-                    if (animate === 0 || animate === false || animate === BoxPointer.PopupAnimation.FADE || !(animate & BoxPointer.PopupAnimation.FULL)) {
+                    // 2) animate is PopupAnimation.FADE (used during rapid menu switching in PopupMenuManager._changeMenu)
+                    if (animate === 0 || animate === false || animate === BoxPointer.PopupAnimation.FADE) {
                         finalizeClose();
                         return;
                     }
 
-                    // For animated close (PopupAnimation.FULL):
+                    // For animated close (macOS Tahoe exit animation: scale 1.0 -> 0.95, fade-out 255 -> 0):
                     // Safety timer to guarantee hide() even if transition is interrupted or dropped
                     this._closeTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 180, () => {
                         this._closeTimeoutId = 0;
@@ -2439,11 +2439,35 @@ export default class EvalHelper extends Extension {
                     const pivotX = (this.arrowSide === St.Side.RIGHT) ? 1.0 : (this.arrowSide === St.Side.LEFT ? 0.0 : 0.5);
                     this.set_pivot_point(pivotX, pivotY);
 
+                    // Simultaneously ease liquid glass backdrop actor in exact lockstep
+                    try {
+                        const uim = (this._delegate?._liquidGlassUIManager) || (this.bin?._delegate?._liquidGlassUIManager);
+                        const bg = uim?.bgActor;
+                        if (bg && bg.visible) {
+                            if (!bg._origMacHide) {
+                                bg._origMacHide = bg.hide;
+                                bg.hide = () => {
+                                    if (this.visible && this.opacity > 0) return;
+                                    return bg._origMacHide.call(bg);
+                                };
+                            }
+                            bg.remove_all_transitions();
+                            bg.set_pivot_point(pivotX, pivotY);
+                            bg.ease({
+                                opacity: 0,
+                                scale_x: 0.95,
+                                scale_y: 0.95,
+                                duration: 120,
+                                mode: Clutter.AnimationMode.EASE_IN_QUAD
+                            });
+                        }
+                    } catch (_) {}
+
                     this.ease({
                         opacity: 0,
-                        scale_x: 0.96,
-                        scale_y: 0.96,
-                        duration: 140,
+                        scale_x: 0.95,
+                        scale_y: 0.95,
+                        duration: 120,
                         mode: Clutter.AnimationMode.EASE_IN_QUAD,
                         onComplete: finalizeClose
                     });
@@ -2451,6 +2475,47 @@ export default class EvalHelper extends Extension {
             }).catch(e => console.error(`[EvalHelper] BoxPointer patch error: ${e}`));
         } catch (e) {
             console.error(`[EvalHelper] BoxPointer setup error: ${e}`);
+        }
+
+        // Window Context Menus (Desktop Context Menu / GTK Popup Windows) Smooth Exit Animation
+        try {
+            if (!this._origWmDestroyWindow && Main.wm?._destroyWindow) {
+                this._origWmDestroyWindow = Main.wm._destroyWindow;
+                const self = this;
+                Main.wm._destroyWindow = function(shellwm, actor) {
+                    try {
+                        const window = actor?.meta_window;
+                        const windowType = window ? window.get_window_type() : (actor?._windowType ?? -1);
+                        const isMenuWindow = (
+                            windowType === Meta.WindowType.DROPDOWN_MENU ||
+                            windowType === Meta.WindowType.POPUP_MENU ||
+                            windowType === Meta.WindowType.MENU
+                        );
+
+                        if (isMenuWindow && actor.is_mapped() && actor.visible && actor.opacity > 0) {
+                            window?.disconnectObject(actor);
+                            this._destroying.add(actor);
+                            actor.set_pivot_point(0.5, 0.5);
+                            actor.ease({
+                                opacity: 0,
+                                scale_x: 0.95,
+                                scale_y: 0.95,
+                                duration: 120,
+                                mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                                onStopped: () => {
+                                    this._destroyWindowDone(shellwm, actor);
+                                }
+                            });
+                            return;
+                        }
+                    } catch (e) {
+                        console.error(`[EvalHelper] Menu window exit animation error: ${e}`);
+                    }
+                    return self._origWmDestroyWindow.call(this, shellwm, actor);
+                };
+            }
+        } catch (e) {
+            console.error(`[EvalHelper] wm._destroyWindow setup error: ${e}`);
         }
 
         // Anti-dimming watchdog: continuously ensure no stuck full-screen glass dimmer dims the screen
@@ -2493,6 +2558,11 @@ export default class EvalHelper extends Extension {
             } catch (_) {}
             this._origBoxPointerOpen = null;
             this._origBoxPointerClose = null;
+        }
+
+        if (this._origWmDestroyWindow && Main.wm) {
+            Main.wm._destroyWindow = this._origWmDestroyWindow;
+            this._origWmDestroyWindow = null;
         }
 
         if (this._dbusImpl) {
