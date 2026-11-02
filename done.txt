@@ -15066,3 +15066,76 @@ Task 585: Виправлення роздільної здатності роз�
      * На 50 мс переходу: isOpen: false, bpVisible: true, bpOpacity: 212, bpScale: 0.992, bgVisible: true, bgOpacity: 212.
      * На 170 мс (завершено): isOpen: false, bpVisible: false, bpOpacity: 0, bpScale: 1.0, bgVisible: false, bgOpacity: 0.
    - Контекстні меню іконок доку, панелі та робочого столу закриваються з бездоганною плавною анімацією в стилі macOS Tahoe без різких ривків чи зникнення скла на першому кадрі.
+
+
+================================================================================
+594. macW1Y 0.4 — Global UI Design System & System-Wide Widget Unification
+================================================================================
+1. Огляд завдання:
+   - Перетворення оновленого та еталонного дизайну Параметрів macW1Y (`gnome-control-center`) на глобальну дизайн-систему (Global UI Design System), що однаково і централізовано застосовується до всієї системи та сторонніх GTK 4, GTK 3 і Libadwaita додатків (без прив'язки до штучного селектора `window.mac-settings-window`).
+   - Створення єдиного джерела правди (Single Source of Truth, SSOT) для дизайн-токенів у `config/macw1y-tokens.json` та автоматичного компілятора тем `bin/mac-build-theme`.
+
+2. Реалізація:
+   - Єдине джерело правди (SSOT):
+     * Створено `config/macw1y-tokens.json`, що фіксує всі точні константи дизайну Параметрів: кольори поверхонь (`#1e1e1e`), бічної панелі (`#18181a`), карток, рамок, розмиття, радіуси заокруглень (вікна 24px, картки 14px, кнопки-пігулки 9999px, дії 8px), розміри рядків (35px) та елементів (перемикачі 42x24px, повзунки 4px, бігунки 20px).
+   - Централізований компілятор тем (`bin/mac-build-theme`):
+     * Генерує чисті `macw1y-tokens.css` та `macw1y-components.css` для GTK 4 / Libadwaita та GTK 3.
+     * Забезпечено 100% відповідність синтаксису парсера GTK CSS (повне усунення непідтримуваного в GTK `!important`, точна селекторна специфічність замість синтаксичних помилок).
+     * Вбудовує `@import url("macw1y-tokens.css");` на початку та `@import url("macw1y-components.css");` в кінці кожного `gtk.css` і `gtk-Dark.css` у репозиторії, системних директоріях (`/usr/share/themes/macW1Y-Dark/`) та конфігураціях користувача (`~/.config/gtk-4.0/`, `~/.config/gtk-3.0/`, `~/.themes/`).
+   - Стандартизовані універсальні віджети:
+     * Картки (`list.boxed-list`, `preferencesgroup`): темне тло `#1e1e1e`, рамка 1px, тінь, радіус 14px.
+     * Рядки списків (`adwactionrow`, `adwswitchrow`, `adwcomborow`, `cclistrow`): висота 35px, градієнтні тонкі роздільники 1px.
+     * Перемикачі (`switch`): капсула 42x24px, білий круглий бігунок 20px, активний акцентний трек.
+     * Повзунки (`scale`): тонка лінія треку 4px, білий круглий маніпулятор 20px.
+     * Сегментовані кнопки (`box.linked:not(.vertical) > togglebutton`): капсульна підкладка, активний стан в акцентному кольорі.
+     * Бірки комбінацій клавіш (`shortcutlabel label.keycap`): автентичні кейкапи з рамкою та легким тлом.
+     * Числові кнопки (`spinbutton.horizontal`): капсульна форма, жирний білий текст, круглі кнопки всередині.
+   - Інтеграція:
+     * Підключено `mac-build-theme` до `bin/mac-apply-theme` та `install.sh`.
+     * Усунено застарілі властивості GTK 4 (`-gtk-icon-size`) з файлів GTK 3, досягнуто чистого завантаження парсером (0 warnings, 0 errors).
+
+================================================================================
+595. Уніфікація запуску Центру програм (Launchpad) та Буфера обміну через Spotlight & Динамічний акцентний колір у контекстних меню
+================================================================================
+1. Огляд завдання:
+   - Забезпечити, щоб синій колір виділення (`#007aff`) у контекстних меню (зокрема у випадаючих меню панелі задач, як-от `desktop-widgets`) динамічно змінювався на обраний системний акцентний колір (`-st-accent-color` / помаранчевий `#ff6a00`).
+   - Усунути візуальну та архітектурну розбіжність між Центром програм та Буфером обміну при відкритті через різні тригери (док vs Ctrl+Space, Super+V vs Spotlight). Замінити старі окремі вікна на єдиний екземпляр сучасного Spotlight-діалогу (`searchDialog_v5.js`).
+
+2. Реалізація:
+   - Динамічний акцентний колір меню:
+     * У `~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css`, `/home/vitaliy/macW1Y/macW1Y-Dark/gnome-shell/gnome-shell.css` та `/usr/share/themes/macW1Y-Dark/gnome-shell/gnome-shell.css`:
+       - Замінено жорстко прописані кольори `#007aff` та `#0062cc` на системний токен `-st-accent-color` у `.popup-menu-item:focus, .popup-menu-item:hover, .popup-menu-item:selected`, `.popup-menu-item:active`, `.mac-menu-item-row:hover`, `.mac-menu-hover-pill`.
+     * У `eval-helper@mactheme/extension.js`:
+       - Додано функцію `getSystemAccentColor()`, що динамічно зчитує системне налаштування `org.gnome.desktop.interface accent-color`.
+       - У класі `MacMenuHoverGlide` (плавна ковзна підкладка виділення меню) підкладку `_pill` переведено на динамічний акцентний колір системи замість жорсткого `#007aff`.
+       - Підключено сигнал зміни `changed::accent-color`, що миттєво оновлює колір підкладки у всіх відкритих меню без перезапуску оболонки.
+     * У `appmenu@ChathurangaBW.github.io/stylesheet.css`:
+       - Клас `.mac-menu-hover-pill` переведено на `-st-accent-color`.
+   - Повна уніфікація Центру програм та Буфера обміну в Spotlight:
+     * У `searchDialog_v5.js`:
+       - Розширено метод `open(initialMode = 'search')`: при виклику з режимом `'apps'` або `'clipboard'` діалог відразу розгортається на повну висоту 530px з рідким склом, налаштовує відповідну іконку (App Store для програм, Clipboard для буфера), заголовок (помаранчевий курсор `| Програми` або `| Пошук у буфері`), кнопки фільтрів та відображає сітку програм чи історію буфера.
+       - Удосконалено `toggleSearchDialog(initialMode = 'search')`: якщо діалог уже відкритий у тому ж режимі — він закривається; якщо відкритий в іншому — плавно перемикає режим; якщо закритий — відкривається безпосередньо у запитаному режимі.
+       - Експортовано та прив'язано глобали:
+         `globalThis.toggleMacApplications = () => toggleSearchDialog('apps')`
+         `globalThis.toggleApplicationsMenu = () => toggleSearchDialog('apps')`
+         `globalThis.toggleMacClipboard = () => toggleSearchDialog('clipboard')`
+         `globalThis.toggleMacSpotlight = () => toggleSearchDialog('search')`
+     * У `appmenu@ChathurangaBW.github.io/extension.js`:
+       - Гарячу клавішу Super+V (`clipboard-shortcut`) підключено безпосередньо до `toggleSearchDialog('clipboard')`.
+       - Глобальні методи Центру програм перенаправлено до `toggleSearchDialog('apps')`.
+     * У `eval-helper@mactheme/extension.js`:
+       - Перехоплення кліку по іконці Дока `launchpad.desktop` (`toggleLaunchpad`) переведено на прямий виклик `toggleSearchDialog('apps')`.
+     * У старих файлах-заглушках `applications_menu_v5.js`, `applications_menu_v5b.js`, `clipboardDialog_v2.js`:
+       - Функції `toggleApplicationsDialog` та `toggleClipboardDialog` перенаправлено на `toggleSearchDialog('apps')` та `toggleSearchDialog('clipboard')` для захисту від сторонніх викликів.
+   - Цілісність:
+     * Оновлено `config/extensions.lock.json` з новими контрольними сумами SHA-256 для `appmenu@ChathurangaBW.github.io` та `eval-helper@mactheme`.
+     * `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
+     * `bin/mac-audit-sync check`: 100% PASS (5/5 аудитів пройдено).
+
+3. Верифікація:
+   - Зафіксовано знімок екрана меню індикатора `desktop-widgets`:
+     `desktop_widgets_menu_hover_orange.png` підтверджує зміну кольору виділення "Edit Mode" з синього `#007aff` на системний помаранчевий акцент `#ff6a00`.
+   - Зафіксовано знімок екрана Центру програм:
+     `spotlight_apps_mode_verified.png` підтверджує ідентичний вигляд Spotlight (помаранчевий курсор `| Програми`, категории, матове рідке скло).
+   - Зафіксовано знімок екрана Буфера обміну:
+     `spotlight_clipboard_mode_verified.png` підтверджує ідентичний вигляд Spotlight (помаранчевий курсор `| Пошук у буфері`, список копіювання, рідке скло).

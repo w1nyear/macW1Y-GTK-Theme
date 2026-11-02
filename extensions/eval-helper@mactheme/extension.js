@@ -30,6 +30,29 @@ const EvalIface = `
   </interface>
 </node>`;
 
+const ACCENT_COLOR_MAP = {
+    'blue':   '#007aff',
+    'teal':   '#30b0c7',
+    'green':  '#34c759',
+    'yellow': '#ffcc00',
+    'orange': '#ff6a00',
+    'red':    '#ff3b30',
+    'pink':   '#ff2d55',
+    'purple': '#af52de',
+    'slate':  '#8e8e93',
+    'brown':  '#a27447',
+};
+
+function getSystemAccentColor() {
+    try {
+        const settings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        const name = settings.get_string('accent-color');
+        return ACCENT_COLOR_MAP[name] || '#ff6a00';
+    } catch (_) {
+        return '#ff6a00';
+    }
+}
+
 class OverviewWallpaperManager {
     constructor() {
         this._bgManagers = [];
@@ -173,10 +196,11 @@ class MacMenuHoverGlide {
             }
         }
 
+        const accent = getSystemAccentColor();
         this._pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
-            style: 'background-color: #007aff !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;',
+            style: `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START,
             x_expand: false,
@@ -279,6 +303,8 @@ class MacMenuHoverGlide {
 
             this._activeItem = child;
             this._pill.remove_all_transitions();
+            const accent = getSystemAccentColor();
+            this._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
 
             if (this._pill.opacity === 0) {
                 this._pill.translation_x = tx;
@@ -2211,6 +2237,20 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
+        // Accent-color dynamic sync across all popup menu glide pills
+        try {
+            this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            this._interfaceSettings.connectObject('changed::accent-color', () => {
+                const accent = getSystemAccentColor();
+                for (let name of Object.keys(Main.panel.statusArea)) {
+                    let ind = Main.panel.statusArea[name];
+                    if (ind?.menu?._macHoverTracker?._pill) {
+                        ind.menu._macHoverTracker._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+                    }
+                }
+            }, this);
+        } catch (_) {}
+
         // Periodic GNOME Shell memory compaction / Garbage Collection every 3 minutes
         this._gcIntervalId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 180, () => {
             try {
@@ -2284,10 +2324,12 @@ export default class EvalHelper extends Extension {
                 };
             }
 
-            import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5.js?t=' + Date.now())
+            import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js?t=' + Date.now())
                 .then(mod => {
-                    globalThis.toggleMacApplications = mod.toggleApplicationsDialog;
-                }).catch(e => console.error('[EvalHelper] Error loading applications_menu:', e));
+                    globalThis.toggleMacApplications = () => mod.toggleSearchDialog('apps');
+                    globalThis.toggleApplicationsMenu = () => mod.toggleSearchDialog('apps');
+                    globalThis.toggleMacClipboard = () => mod.toggleSearchDialog('clipboard');
+                }).catch(e => console.error('[EvalHelper] Error loading searchDialog:', e));
 
             const toggleLaunchpad = () => {
                 const now = Date.now();
@@ -2297,12 +2339,14 @@ export default class EvalHelper extends Extension {
                 globalThis._lastLaunchpadToggle = now;
                 if (typeof globalThis.toggleMacApplications === 'function') {
                     globalThis.toggleMacApplications();
+                } else if (typeof globalThis.toggleMacSpotlight === 'function') {
+                    globalThis.toggleMacSpotlight('apps');
                 } else {
-                    import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5.js?t=' + Date.now())
+                    import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js?t=' + Date.now())
                         .then(mod => {
-                            globalThis.toggleMacApplications = mod.toggleApplicationsDialog;
-                            mod.toggleApplicationsDialog();
-                        }).catch(e => console.error('[EvalHelper] Error toggling applications menu:', e));
+                            globalThis.toggleMacApplications = () => mod.toggleSearchDialog('apps');
+                            mod.toggleSearchDialog('apps');
+                        }).catch(e => console.error('[EvalHelper] Error toggling launchpad via spotlight:', e));
                 }
             };
 

@@ -78,28 +78,19 @@ export default class AppMenuExtension extends Extension {
         const baseUri = this.dir.get_uri();
         try {
             const m = await import(`${baseUri}/searchDialog_v5.js?t=${Date.now()}`);
-            globalThis._macSpotlightToggle = m.toggleSearchDialog;
-            globalThis.toggleMacSpotlight = m.toggleSearchDialog;
+            globalThis._macSpotlightToggle = (mode = 'search') => m.toggleSearchDialog(typeof mode === 'string' ? mode : 'search');
+            globalThis.toggleMacSpotlight = (mode = 'search') => m.toggleSearchDialog(typeof mode === 'string' ? mode : 'search');
+            globalThis.toggleMacApplications = () => m.toggleSearchDialog('apps');
+            globalThis.toggleApplicationsMenu = () => m.toggleSearchDialog('apps');
+            globalThis.toggleMacClipboard = () => m.toggleSearchDialog('clipboard');
             try { m.ensureSearchDialog?.(); } catch (_) {}
         } catch (_) {
-            globalThis._macSpotlightToggle = toggleSearchDialog;
-            globalThis.toggleMacSpotlight = toggleSearchDialog;
-            try { toggleSearchDialog; } catch (_) {}
-        }
-        try {
-            const m = await import(`${baseUri}/applications_menu_v5b.js?t=${Date.now()}`);
-            globalThis.toggleMacApplications = m.toggleApplicationsDialog;
-            globalThis.toggleApplicationsMenu = m.toggleApplicationsDialog;
-            try { m.ensureApplicationsDialog?.(); } catch (_) {}
-        } catch (_) {
-            globalThis.toggleMacApplications = toggleApplicationsDialog;
-        }
-        try {
-            const m = await import(`${baseUri}/clipboardDialog_v2.js?t=${Date.now()}`);
-            globalThis.toggleMacClipboard = m.toggleClipboardDialog;
-            try { m.ensureClipboardDialog?.(); } catch (_) {}
-        } catch (_) {
-            globalThis.toggleMacClipboard = toggleClipboardDialog;
+            globalThis._macSpotlightToggle = (mode = 'search') => toggleSearchDialog(typeof mode === 'string' ? mode : 'search');
+            globalThis.toggleMacSpotlight = (mode = 'search') => toggleSearchDialog(typeof mode === 'string' ? mode : 'search');
+            globalThis.toggleMacApplications = () => toggleSearchDialog('apps');
+            globalThis.toggleApplicationsMenu = () => toggleSearchDialog('apps');
+            globalThis.toggleMacClipboard = () => toggleSearchDialog('clipboard');
+            try { toggleSearchDialog('search'); } catch (_) {}
         }
 
         if (Main.overview) {
@@ -200,7 +191,7 @@ export default class AppMenuExtension extends Extension {
             this._settings,
             Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL,
-            () => (globalThis.toggleMacClipboard ? globalThis.toggleMacClipboard() : toggleClipboardDialog())
+            () => (globalThis.toggleMacClipboard ? globalThis.toggleMacClipboard() : toggleSearchDialog('clipboard'))
         );
         this._clipboardShortcutInstalled = true;
     }

@@ -1590,23 +1590,24 @@ export function ensureApplicationsDialog() {
 }
 
 export function toggleApplicationsDialog(options = {}) {
-    ensureApplicationsDialog();
-    if (globalThis._macApplicationsGlobalInstance._isOpen) {
-        globalThis._macApplicationsGlobalInstance.close();
-    } else {
-        if (typeof globalThis._macCloseAllCenters === 'function') {
-            globalThis._macCloseAllCenters('applications');
-        } else {
-            try { globalThis._tahoeQSClose?.(); } catch (_) {}
-            try { globalThis._tahoeNCClose?.(true); } catch (_) {}
-            try { globalThis.closeMacSpotlight?.(true); } catch (_) {}
-            try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
-        }
-        if (Main.overview?.visible) {
-            Main.overview.hide();
-        }
-        globalThis._macApplicationsGlobalInstance.open(options);
+    if (typeof globalThis._macSpotlightToggle === 'function') {
+        globalThis._macSpotlightToggle('apps');
+        return;
     }
+    if (typeof globalThis.toggleMacSpotlight === 'function') {
+        globalThis.toggleMacSpotlight('apps');
+        return;
+    }
+    import('./searchDialog_v5.js')
+        .then(mod => mod.toggleSearchDialog('apps'))
+        .catch(() => {
+            ensureApplicationsDialog();
+            if (globalThis._macApplicationsGlobalInstance?._isOpen) {
+                globalThis._macApplicationsGlobalInstance.close();
+            } else {
+                globalThis._macApplicationsGlobalInstance?.open?.(options);
+            }
+        });
 }
 
 export function closeApplicationsDialog(immediate = true) {

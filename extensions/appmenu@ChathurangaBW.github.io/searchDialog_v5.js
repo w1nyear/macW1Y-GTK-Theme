@@ -1746,8 +1746,13 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._requestGlassSync();
     }
 
-    open() {
-        if (this._isOpen) return;
+    open(initialMode = 'search') {
+        if (this._isOpen) {
+            if (this._mode !== initialMode) {
+                this._setMode(initialMode);
+            }
+            return;
+        }
         if (Main.overview?.visible) return;
         if (typeof globalThis._macCloseAllCenters === 'function') {
             globalThis._macCloseAllCenters('spotlight');
@@ -1755,6 +1760,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             try { globalThis._tahoeQSClose?.(); } catch (_) {}
             try { globalThis._tahoeNCClose?.(true); } catch (_) {}
             try { globalThis._macClipboardGlobalInstance?.close?.(true); } catch (_) {}
+            try { globalThis._macApplicationsGlobalInstance?.close?.(true); } catch (_) {}
         }
         this._isOpen = true;
         this._isClosing = false;
@@ -1770,10 +1776,10 @@ export const MacSpotlightDialog = GObject.registerClass({
         if (_isGlassAlive(this._glass)) {
             try { this._glass.remove_all_transitions(); } catch (_) {}
         }
-        this._mode = 'search';
-        this._buttonsCollapsed = false;
-        this._isCollapsing = false;
         this._activeFilter = null;
+
+        const isExpandedMode = (initialMode === 'apps' || initialMode === 'clipboard' || initialMode === 'files');
+        const targetHeight = isExpandedMode ? 530 : PILL_HEIGHT;
 
         const mon = Main.layoutManager.primaryMonitor;
         this.set_position(0, 0);
@@ -1787,7 +1793,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         const y = mon.y + Math.round(mon.height * 0.19);
 
         this._box.set_position(x, y);
-        this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
+        this._box.set_size(DIALOG_WIDTH, targetHeight);
         this._box.set_pivot_point(0.5, 0.5);
         this._box.translation_x = 0;
         this._box.translation_y = -8;
@@ -1795,61 +1801,137 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._box.scale_y = 1.08;
         this._box.opacity = 0;
 
-        // Reset search pill and buttons
-        this._buttonsCollapsed = false;
-        this._isCollapsing = false;
+        if (isExpandedMode) {
+            this._mode = initialMode;
+            this._buttonsCollapsed = true;
+            this._isCollapsing = false;
 
-        try { this._searchPill.remove_all_transitions(); } catch (_) {}
-        this._searchPill.set_size(COLLAPSED_PILL_WIDTH, PILL_HEIGHT);
-        this._searchPill.width = COLLAPSED_PILL_WIDTH;
-        this._searchPill.scale_x = 1.0;
-        this._searchPill.scale_y = 1.0;
-        this._searchPill.translation_x = 0;
-        this._searchPill.translation_y = 0;
-        this._searchPill.opacity = 255;
-        this._searchPill.set_style(PILL_COLLAPSED_STYLE);
-        this._topRow.set_style('height: 54px; min-height: 54px;');
+            try { this._searchPill.remove_all_transitions(); } catch (_) {}
+            this._searchPill.set_size(DIALOG_WIDTH, PILL_HEIGHT);
+            this._searchPill.width = DIALOG_WIDTH;
+            this._searchPill.scale_x = 1.0;
+            this._searchPill.scale_y = 1.0;
+            this._searchPill.translation_x = 0;
+            this._searchPill.translation_y = 0;
+            this._searchPill.opacity = 255;
+            this._searchPill.set_style(PILL_EXPANDED_STYLE);
+            this._topRow.set_style('height: 54px; min-height: 54px;');
 
-        try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
-        this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
-        this._buttonsBox.visible = true;
-        this._buttonsBox.opacity = 255;
-        this._buttonsBox.scale_x = 1.0;
-        this._buttonsBox.scale_y = 1.0;
-        this._buttonsBox.translation_x = 0;
-        this._buttonsBox.translation_y = 0;
+            try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
+            this._buttonsBox.visible = false;
+            this._buttonsBox.opacity = 0;
 
-        for (const btn of [this._btnApps, this._btnFiles, this._btnClipboard]) {
-            if (btn) {
-                try { btn.remove_all_transitions(); } catch (_) {}
-                btn.scale_x = 1.0;
-                btn.scale_y = 1.0;
-                btn.translation_x = 0;
-                btn.translation_y = 0;
-                btn.opacity = 255;
+            this._searchIcon.translation_y = 0;
+            this._entry.translation_y = 0;
+            this._optionsBtn.translation_y = 0;
+            this._optionsBtn.visible = true;
+
+            this._searchView.visible = false;
+            this._filesView.visible = (initialMode === 'files');
+            this._appsView.visible = (initialMode === 'apps');
+            this._clipboardView.visible = (initialMode === 'clipboard');
+
+            if (initialMode === 'apps') {
+                const home = GLib.get_home_dir();
+                const appstoreCandidates = [
+                    `${home}/.local/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
+                    `${home}/.local/share/icons/MacTahoe/apps/scalable/Appstore.svg`,
+                    `${home}/.local/share/icons/macW1Y-dark/apps/scalable/Appstore.svg`,
+                    `/usr/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
+                ];
+                let appStoreGIcon = null;
+                for (const p of appstoreCandidates) {
+                    if (p && GLib.file_test(p, GLib.FileTest.EXISTS)) {
+                        appStoreGIcon = Gio.FileIcon.new(Gio.File.new_for_path(p));
+                        break;
+                    }
+                }
+                if (appStoreGIcon) {
+                    this._searchIcon.set_gicon(appStoreGIcon);
+                    this._searchIcon.icon_size = 26;
+                } else {
+                    const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-apps.svg`);
+                    this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                    this._searchIcon.icon_size = 20;
+                }
+                this._entry.hint_text = t('applications', 'Програми');
+                this._selectedAppsCategory = null;
+                this._buildAppsCategoryButtons();
+                this._loadAppsView();
+            } else if (initialMode === 'clipboard') {
+                const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-clipboard.svg`);
+                this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                this._searchIcon.icon_size = 20;
+                this._entry.hint_text = t('search_clipboard', 'Пошук у буфері');
+                this._loadClipboardView();
+            } else if (initialMode === 'files') {
+                const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-files.svg`);
+                this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                this._searchIcon.icon_size = 20;
+                this._entry.hint_text = t('files', 'Файли');
+                this._loadFilesView();
             }
+
+            this._resultsWrapper.visible = true;
+            this._resultsWrapper.opacity = 255;
+            this._resultsWrapper.translation_y = 0;
+        } else {
+            this._mode = 'search';
+            this._buttonsCollapsed = false;
+            this._isCollapsing = false;
+
+            try { this._searchPill.remove_all_transitions(); } catch (_) {}
+            this._searchPill.set_size(COLLAPSED_PILL_WIDTH, PILL_HEIGHT);
+            this._searchPill.width = COLLAPSED_PILL_WIDTH;
+            this._searchPill.scale_x = 1.0;
+            this._searchPill.scale_y = 1.0;
+            this._searchPill.translation_x = 0;
+            this._searchPill.translation_y = 0;
+            this._searchPill.opacity = 255;
+            this._searchPill.set_style(PILL_COLLAPSED_STYLE);
+            this._topRow.set_style('height: 54px; min-height: 54px;');
+
+            try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
+            this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
+            this._buttonsBox.visible = true;
+            this._buttonsBox.opacity = 255;
+            this._buttonsBox.scale_x = 1.0;
+            this._buttonsBox.scale_y = 1.0;
+            this._buttonsBox.translation_x = 0;
+            this._buttonsBox.translation_y = 0;
+
+            for (const btn of [this._btnApps, this._btnFiles, this._btnClipboard]) {
+                if (btn) {
+                    try { btn.remove_all_transitions(); } catch (_) {}
+                    btn.scale_x = 1.0;
+                    btn.scale_y = 1.0;
+                    btn.translation_x = 0;
+                    btn.translation_y = 0;
+                    btn.opacity = 255;
+                }
+            }
+
+            this._searchIcon.set_gicon(null);
+            this._searchIcon.icon_name = 'system-search-symbolic';
+            this._searchIcon.translation_y = 0;
+            this._entry.translation_y = 0;
+            this._optionsBtn.translation_y = 0;
+            this._optionsBtn.visible = false;
+
+            this._resultsWrapper.visible = false;
+            this._resultsWrapper.opacity = 0;
+            this._searchView.visible = true;
+            this._filesView.visible = false;
+            this._appsView.visible = false;
+            this._clipboardView.visible = false;
+
+            this._entry.text = '';
+            this._entry.hint_text = t('spotlight_search', 'Пошук Spotlight');
+            this._lastQuery = '';
+            this._resultsBox.destroy_all_children();
+            this._resultButtons = [];
+            this._selectedIndex = -1;
         }
-
-        this._searchIcon.set_gicon(null);
-        this._searchIcon.icon_name = 'system-search-symbolic';
-        this._searchIcon.translation_y = 0;
-        this._entry.translation_y = 0;
-        this._optionsBtn.translation_y = 0;
-        this._optionsBtn.visible = false;
-
-        this._resultsWrapper.visible = false;
-        this._resultsWrapper.opacity = 0;
-        this._searchView.visible = true;
-        this._filesView.visible = false;
-        this._appsView.visible = false;
-        this._clipboardView.visible = false;
-
-        this._entry.text = '';
-        this._entry.hint_text = t('spotlight_search', 'Пошук Spotlight');
-        this._lastQuery = '';
-        this._resultsBox.destroy_all_children();
-        this._resultButtons = [];
-        this._selectedIndex = -1;
 
         if (!this.get_parent()) {
             Main.layoutManager.uiGroup.add_child(this);
@@ -3247,12 +3329,18 @@ export function ensureSearchDialog() {
     return _spotlightDialog;
 }
 
-export function toggleSearchDialog() {
+export function toggleSearchDialog(initialMode = 'search') {
     ensureSearchDialog();
+    const mode = (typeof initialMode === 'string' && initialMode) ? initialMode : 'search';
 
     if (_spotlightDialog._isOpen) {
-        _spotlightDialog.close();
-        return;
+        if (_spotlightDialog._mode === mode) {
+            _spotlightDialog.close();
+            return;
+        } else {
+            _spotlightDialog._setMode(mode);
+            return;
+        }
     }
 
     const isClipboardOpen = !!(globalThis._macClipboardGlobalInstance?._isOpen);
@@ -3286,7 +3374,15 @@ export function toggleSearchDialog() {
     if (Main.overview?.visible) {
         Main.overview.hide();
     }
-    _spotlightDialog.open();
+    _spotlightDialog.open(mode);
+}
+
+export function toggleApplicationsDialog() {
+    toggleSearchDialog('apps');
+}
+
+export function toggleClipboardDialog() {
+    toggleSearchDialog('clipboard');
 }
 
 export function closeSearchDialog(immediate = true) {
@@ -3304,5 +3400,8 @@ export function destroySearchDialog() {
 
 globalThis._macSpotlightToggle = toggleSearchDialog;
 globalThis.toggleMacSpotlight = toggleSearchDialog;
+globalThis.toggleMacApplications = (mode = 'apps') => toggleSearchDialog(typeof mode === 'string' ? mode : 'apps');
+globalThis.toggleApplicationsMenu = () => toggleSearchDialog('apps');
+globalThis.toggleMacClipboard = (mode = 'clipboard') => toggleSearchDialog(typeof mode === 'string' ? mode : 'clipboard');
 globalThis.closeMacSpotlight = closeSearchDialog;
 globalThis._macSpotlightClose = closeSearchDialog;

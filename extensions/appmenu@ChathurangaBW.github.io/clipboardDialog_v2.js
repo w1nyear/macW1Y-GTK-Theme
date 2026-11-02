@@ -1501,28 +1501,24 @@ export function ensureClipboardDialog() {
 }
 
 export function toggleClipboardDialog(options = {}) {
-    ensureClipboardDialog();
-    if (globalThis._macClipboardGlobalInstance._isOpen) {
-        globalThis._macClipboardGlobalInstance.close();
-    } else {
-        if (!options.targetWindow) {
-            const focused = global.display.get_focus_window();
-            if (focused && !focused.is_destroyed?.()) {
-                options.targetWindow = focused;
-            }
-        }
-        if (typeof globalThis._macCloseAllCenters === 'function') {
-            globalThis._macCloseAllCenters('clipboard');
-        } else {
-            try { globalThis._tahoeQSClose?.(); } catch (_) {}
-            try { globalThis._tahoeNCClose?.(true); } catch (_) {}
-            try { globalThis._macSpotlightGlobalInstance?.close?.(true); } catch (_) {}
-        }
-        if (Main.overview?.visible) {
-            Main.overview.hide();
-        }
-        globalThis._macClipboardGlobalInstance.open(options);
+    if (typeof globalThis._macSpotlightToggle === 'function') {
+        globalThis._macSpotlightToggle('clipboard');
+        return;
     }
+    if (typeof globalThis.toggleMacSpotlight === 'function') {
+        globalThis.toggleMacSpotlight('clipboard');
+        return;
+    }
+    import('./searchDialog_v5.js')
+        .then(mod => mod.toggleSearchDialog('clipboard'))
+        .catch(() => {
+            ensureClipboardDialog();
+            if (globalThis._macClipboardGlobalInstance?._isOpen) {
+                globalThis._macClipboardGlobalInstance.close();
+            } else {
+                globalThis._macClipboardGlobalInstance?.open?.(options);
+            }
+        });
 }
 
 export function openClipboardDialog(options = {}) {

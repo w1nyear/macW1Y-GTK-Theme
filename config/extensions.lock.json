@@ -18,7 +18,7 @@
         "49",
         "50"
       ],
-      "sha256": "55be2b42782a3cabfbeb30d00ce10479ba57130f725a187370fe0aec6f05da15",
+      "sha256": "0011c189e50999f21273c7ac54da12060897855f883203c62901b08e90272fd2",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -29,7 +29,7 @@
       ],
       "has_custom_patches": true,
       "patch_description": "macOS Monterey style spotlight, apple menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
-      "last_verified": "2026-10-31"
+      "last_verified": "2026-11-02"
     },
     "blur-my-shell@aunetx": {
       "uuid": "blur-my-shell@aunetx",
@@ -155,7 +155,7 @@
         "49",
         "50"
       ],
-      "sha256": "93490bb9a48cf0521800e5fd67450caae333415e385d411f5cc5e32b184e72e1",
+      "sha256": "f62126d5103aedb628e1401ce84eae0540288bae081e9af24a0945771d72d8b5",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [

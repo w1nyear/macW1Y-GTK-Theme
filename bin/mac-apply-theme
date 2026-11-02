@@ -119,6 +119,14 @@ def main():
     lock_fd = acquire_lock()
     print("[mac-apply-theme] Applying Single Source of Truth (SSOT)...")
 
+    # 0. Ensure master design tokens and components are compiled
+    build_script = os.path.join(REPO_DIR, "bin/mac-build-theme")
+    if os.path.exists(build_script):
+        try:
+            subprocess.run([sys.executable, build_script], check=False, stdout=subprocess.DEVNULL)
+        except Exception:
+            pass
+
     if not os.path.exists(MANIFEST_PATH):
         print(f"Error: Manifest {MANIFEST_PATH} not found!")
         sys.exit(1)

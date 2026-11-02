@@ -1,3 +1,4 @@
+@import url("macw1y-tokens.css");
 :root {
   --blue-1: #99c1f1;
   --blue-2: #62a0ea;
@@ -11425,3 +11426,9 @@ window.mac-settings-window ccwificonnectionrow > box.header {
   padding: 0px;
   border-spacing: 10px;
 }
+
+
+
+
+/* macW1Y Global Component Master Overrides (SSOT) */
+@import url("macw1y-components.css");

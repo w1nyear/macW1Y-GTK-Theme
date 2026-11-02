@@ -706,7 +706,8 @@ scale slider:disabled {
 
 .mc-toggle-group > button image,
 .mac-nav-pill > button image {
-  -gtk-icon-size: 14px;
+  min-width: 14px;
+  min-height: 14px;
   margin: 0;
   padding: 0;
 }

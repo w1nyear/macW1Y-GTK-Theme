@@ -389,6 +389,9 @@ install_themes() {
     fi
     
     mkdir -p "$TARGET_HOME/.config/gtk-3.0" "$TARGET_HOME/.config/gtk-4.0"
+    if [ -f "$SCRIPT_DIR/bin/mac-build-theme" ]; then
+        python3 "$SCRIPT_DIR/bin/mac-build-theme" || true
+    fi
     [ -d "$SCRIPT_DIR/gtk-3.0" ] && cp -r "$SCRIPT_DIR/gtk-3.0/"* "$TARGET_HOME/.config/gtk-3.0/"
     [ -d "$SCRIPT_DIR/gtk-4.0" ] && cp -r "$SCRIPT_DIR/gtk-4.0/"* "$TARGET_HOME/.config/gtk-4.0/"
     (cd "$TARGET_HOME/.config/gtk-4.0" && ln -sfn gtk-Dark.css gtk-dark.css 2>/dev/null || true)
