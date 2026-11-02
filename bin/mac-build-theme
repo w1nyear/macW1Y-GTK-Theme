@@ -108,9 +108,9 @@ def generate_gtk4_components_css(tokens):
 /* =========================================================================
  * 1. Global Window Surfaces & Sidebars
  * ========================================================================= */
-window,
-window.background,
-window.csd,
+window:not(.desktopwindow),
+window.background:not(.desktopwindow),
+window.csd:not(.desktopwindow),
 window > dialog-host,
 preferenceswindow,
 preferenceswindow.background,
@@ -119,6 +119,18 @@ preferencespage,
   background-color: var(--mac-window-bg, {c["window_bg"]});
   color: var(--mac-window-fg, {c["window_fg"]});
   background-image: none;
+}}
+
+window.desktopwindow,
+window.desktopwindow.background,
+.desktopwindow,
+.desktopwindow.background,
+window.desktopwindow decoration {{
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: none;
 }}
 
 navigation-split-view,
@@ -982,10 +994,22 @@ def generate_gtk3_components_css(tokens):
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 /* Window Background */
-window,
-.background {{
+window:not(.desktopwindow),
+.background:not(.desktopwindow) {{
   background-color: {c["window_bg"]};
   color: {c["window_fg"]};
+}}
+
+window.desktopwindow,
+window.desktopwindow.background,
+.desktopwindow,
+.desktopwindow.background,
+window.desktopwindow decoration {{
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: none;
 }}
 
 /* GTK 3 Switches */

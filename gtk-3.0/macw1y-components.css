@@ -2,10 +2,22 @@
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 /* Window Background */
-window,
-.background {
+window:not(.desktopwindow),
+.background:not(.desktopwindow) {
   background-color: #202022;
   color: #ffffff;
+}
+
+window.desktopwindow,
+window.desktopwindow.background,
+.desktopwindow,
+.desktopwindow.background,
+window.desktopwindow decoration {
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: none;
 }
 
 /* GTK 3 Switches */

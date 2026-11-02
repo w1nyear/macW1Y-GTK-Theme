@@ -15158,3 +15158,17 @@ Task 585: Виправлення роздільної здатності роз�
      * Підтверджено роботу Калькулятора (`calculator_unified.png`) зі світлофорними кнопками та стилізованими клавішами.
      * `bin/mac-audit-sync check`: 100% PASS (5/5 аудитів пройдено).
      * `bin/mac-extension-guard verify`: SUCCESS (21/21 розширень валідні).
+
+597. Відновлення відображення шпалер стільниці (прозорість DING desktopwindow):
+   - Причина зникнення шпалер:
+     * Менеджер піктограм стільниці DING (`ding.js`) є повноцінним GTK 3 застосунком, що відкриває повноекранне безрамкове вікно з класом `desktopwindow`.
+     * У `macw1y-components.css` глобальне правило `window, .background` встановлювало непрозорий колір вікна `#202022`, перекриваючи системні шпалери GNOME Shell суцільною заливкою.
+   - Виправлення:
+     * У [`bin/mac-build-theme`](file:///home/vitaliy/macW1Y/bin/mac-build-theme) для генераторів GTK 3 та GTK 4 виключено вікно стільниці через псевдоклас: `window:not(.desktopwindow), .background:not(.desktopwindow)`.
+     * Додано чітке правило абсолютної прозорості для стільниці:
+       `window.desktopwindow, window.desktopwindow.background, .desktopwindow, .desktopwindow.background, window.desktopwindow decoration { background-color: transparent; background: transparent; background-image: none; box-shadow: none; border: none; }`.
+     * Перекомпільовано майстер-теми та перезапущено процес DING.
+   - Верифікація:
+     * Зафіксовано знімок екрана [`desktop_wallpaper_fixed.png`](file:///home/vitaliy/.gemini/antigravity/brain/d34732a7-0aa8-43ff-b0ad-129d9df0d190/desktop_wallpaper_fixed.png): шпалери Golden Gate повернулися у повному обсязі, віджети та піктограми стільниці відображаються коректно.
+     * `bin/mac-audit-sync check`: 100% PASS.
+     * `bin/mac-extension-guard verify`: 21/21 SUCCESS.

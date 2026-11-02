@@ -4,9 +4,9 @@
 /* =========================================================================
  * 1. Global Window Surfaces & Sidebars
  * ========================================================================= */
-window,
-window.background,
-window.csd,
+window:not(.desktopwindow),
+window.background:not(.desktopwindow),
+window.csd:not(.desktopwindow),
 window > dialog-host,
 preferenceswindow,
 preferenceswindow.background,
@@ -15,6 +15,18 @@ preferencespage,
   background-color: var(--mac-window-bg, #202022);
   color: var(--mac-window-fg, #ffffff);
   background-image: none;
+}
+
+window.desktopwindow,
+window.desktopwindow.background,
+.desktopwindow,
+.desktopwindow.background,
+window.desktopwindow decoration {
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: none;
 }
 
 navigation-split-view,
