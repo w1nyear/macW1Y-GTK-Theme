@@ -143,9 +143,12 @@ def install_icon_file(src_icon_path, icon_name):
     dest_paths = [
         os.path.join(HOME, ".local/share/icons/hicolor/256x256/apps", f"{icon_name}{ext}"),
         os.path.join(HOME, ".local/share/icons/hicolor/scalable/apps", f"{icon_name}{ext}"),
-        os.path.join(HOME, ".local/share/icons/MacTahoe-dark/apps/scalable", f"{icon_name}{ext}"),
         os.path.join(HOME, ".local/share/icons/MacTahoe/apps/scalable", f"{icon_name}{ext}"),
     ]
+    # Only copy to MacTahoe-dark if it exists as an independent directory (not a symlink to MacTahoe)
+    mactahoe_dark_scalable = os.path.join(HOME, ".local/share/icons/MacTahoe-dark/apps/scalable")
+    if os.path.exists(mactahoe_dark_scalable) and not os.path.islink(mactahoe_dark_scalable):
+        dest_paths.append(os.path.join(mactahoe_dark_scalable, f"{icon_name}{ext}"))
     primary_path = dest_paths[0]
     for dp in dest_paths:
         try:

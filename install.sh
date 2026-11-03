@@ -470,7 +470,6 @@ EOF_NAUT
         cp -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop"
         chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop"
     fi
-    run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
 
     run_as_user gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark"
     run_as_user gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
@@ -501,7 +500,13 @@ install_icons() {
     
     for theme_dir in MacTahoe MacTahoe-dark MacTahoe-light; do
         if [ -d "$SCRIPT_DIR/icons/$theme_dir" ]; then
-            cp -r "$SCRIPT_DIR/icons/$theme_dir" "$ICONS_DIR/"
+            rm -rf "$ICONS_DIR/$theme_dir"
+            if command -v rsync >/dev/null 2>&1; then
+                mkdir -p "$ICONS_DIR/$theme_dir"
+                rsync -a --force "$SCRIPT_DIR/icons/$theme_dir/" "$ICONS_DIR/$theme_dir/"
+            else
+                cp -r "$SCRIPT_DIR/icons/$theme_dir" "$ICONS_DIR/"
+            fi
         fi
     done
     
@@ -529,6 +534,7 @@ install_icons() {
     gtk-update-icon-cache -f -t "$ICONS_DIR/hicolor" 2>/dev/null || true
     
     run_as_user gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-dark"
+    run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
     log_success "macOS icon theme activated!"
 }
 
@@ -828,7 +834,8 @@ install_settings_overlay() {
     if [ -f "$LOCAL_LIB/libmac_settings.so" ]; then
         sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/lib/x86_64-linux-gnu/libmac_settings.so
         sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/local/lib/libmac_settings.so
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_settings.so /usr/local/lib/libmac_settings.so
+        sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_settings.so /usr/local/lib/libmac_settings.so /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so
     fi
     if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
         sudo cp -f "$SCRIPT_DIR/gnome-control-center-overlay"/cc-*.ui /usr/share/mactheme/gnome-control-center-overlay/ 2>/dev/null || true
@@ -1842,7 +1849,8 @@ run_incremental_update() {
     if [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so" false
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_settings.so" "/usr/lib/x86_64-linux-gnu/libmac_settings.so" true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_settings.so 2>/dev/null || true
+        sync_or_update_file "$SCRIPT_DIR/lib/libmac_settings.so" "/usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so" true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_settings.so /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so 2>/dev/null || true
     fi
     sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay 2>/dev/null || true
     if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
@@ -2185,6 +2193,11 @@ run_clean_update() {
     
     sudo rm -rf /etc/gnome-shell/ui/layout.js /etc/gnome-shell/ui 2>/dev/null || true
     sudo sed -i '/G_RESOURCE_OVERLAYS.*gnome-shell/d' /etc/environment 2>/dev/null || true
+    sudo rm -rf /usr/share/mactheme/gnome-shell-overlay /usr/share/mactheme/gnome-control-center-overlay 2>/dev/null || true
+    sudo rm -f /var/tmp/mactheme-overlay-* /tmp/mactheme-overlay-* /tmp/disable-mactheme-overlay /etc/mactheme/disable-overlay 2>/dev/null || true
+    sudo rm -f /etc/systemd/user/org.gnome.Shell@.service.d/mac-transition.conf* 2>/dev/null || true
+    rm -f "$TARGET_HOME/.config/systemd/user/org.gnome.Shell@.service.d/mac-transition.conf*" 2>/dev/null || true
+    rm -f "$TARGET_HOME/.config/environment.d/10-gnome-shell-overlay.conf" 2>/dev/null || true
     
     sudo systemctl stop plymouth-verbose-logger.service 2>/dev/null || true
     sudo systemctl disable plymouth-verbose-logger.service 2>/dev/null || true
@@ -2279,7 +2292,11 @@ else
     echo -e "  ${C_RED}[4]${C_RESET} Exit installer\n"
 fi
 
-read -r -p " Enter option number: " CHOICE
+if [ -n "$1" ]; then
+    CHOICE="$1"
+else
+    read -r -p " Enter option number: " CHOICE
+fi
 
 case "$CHOICE" in
     1)
