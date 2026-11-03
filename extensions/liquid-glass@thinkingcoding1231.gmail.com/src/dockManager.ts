@@ -654,7 +654,7 @@ export class DashManager {
         if (isHorizontal) {
           pillH = 74; // 74px fixed height (+2px dock height calibrated)
           let isTop = monitor && (minY - monitor.y < (monitor.y + monitor.height) - maxY);
-          pillY = isTop ? (monitor.y + 4) : (minY - 4);
+          pillY = isTop ? (monitor.y + 4) : (minY - Math.round((pillH - (maxY - minY)) * 0.5));
           let sidePadL = sidePad;
           let sidePadR = sidePad;
           pillX = minX - sidePadL;
