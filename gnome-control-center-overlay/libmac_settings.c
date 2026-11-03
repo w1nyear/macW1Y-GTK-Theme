@@ -6033,11 +6033,14 @@ static void find_headerbars_recursive(GtkWidget *widget, GList **list)
     }
 }
 
+static AdwNavigationSplitView *g_last_split_view = NULL;
+
 static void find_navigation_split_view(GtkWidget *widget, AdwNavigationSplitView **split_view)
 {
     if (!widget || *split_view) return;
     if (ADW_IS_NAVIGATION_SPLIT_VIEW(widget)) {
         *split_view = ADW_NAVIGATION_SPLIT_VIEW(widget);
+        g_last_split_view = *split_view;
         return;
     }
     for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
@@ -6782,6 +6785,503 @@ static GtkWidget *get_mac_styling_page(void)
     }
     g_object_unref(builder);
     return mac_styling_page;
+}
+
+/* ========================================================================= */
+/* Screenshot & Screencast Settings Panel                                    */
+/* ========================================================================= */
+
+typedef struct {
+    int image_format;        /* 0=PNG, 1=JPEG, 2=WebP */
+    int image_quality;       /* 70 - 100 */
+    gboolean show_cursor;    /* TRUE/FALSE */
+    gboolean shutter_sound;  /* TRUE/FALSE */
+    int timer_delay;         /* 0=0s, 1=3s, 2=5s, 3=10s */
+
+    int video_container;     /* 0=MP4, 1=WebM, 2=MKV */
+    int video_codec;         /* 0=H.264, 1=VP9, 2=AV1 */
+    int video_fps;           /* 0=60, 1=30 */
+    gboolean screencast_cursor; /* TRUE/FALSE */
+    gboolean record_audio;   /* TRUE/FALSE */
+
+    gboolean processing_enabled; /* TRUE/FALSE */
+    int processing_target;       /* 0=native, 1=1080p, 2=2k, 3=4k */
+    int processing_algorithm;    /* 0=lanczos, 1=bicubic, 2=unsharp */
+    int processing_scope;        /* 0=both, 1=screenshots, 2=screencasts */
+    gboolean keep_original;      /* TRUE/FALSE */
+} MacScreenshotData;
+
+static MacScreenshotData scr_state = {
+    .image_format = 0,
+    .image_quality = 95,
+    .show_cursor = TRUE,
+    .shutter_sound = TRUE,
+    .timer_delay = 0,
+    .video_container = 0,
+    .video_codec = 0,
+    .video_fps = 0,
+    .screencast_cursor = TRUE,
+    .record_audio = FALSE,
+    .processing_enabled = TRUE,
+    .processing_target = 2,
+    .processing_algorithm = 0,
+    .processing_scope = 0,
+    .keep_original = FALSE
+};
+
+static int scr_in_init = 0;
+
+static char *get_screenshot_json_path(void) {
+    const char *home = g_get_home_dir();
+    if (!home) return NULL;
+    return g_build_filename(home, ".config", "mac-styling", "screenshot.json", NULL);
+}
+
+static void load_screenshot_config(void) {
+    char *path = get_screenshot_json_path();
+    if (!path || !g_file_test(path, G_FILE_TEST_EXISTS)) {
+        g_free(path);
+        return;
+    }
+    JsonParser *parser = json_parser_new();
+    GError *error = NULL;
+    if (json_parser_load_from_file(parser, path, &error)) {
+        JsonNode *root = json_parser_get_root(parser);
+        if (root && JSON_NODE_HOLDS_OBJECT(root)) {
+            JsonObject *obj = json_node_get_object(root);
+            if (json_object_has_member(obj, "image_format"))
+                scr_state.image_format = (int)json_object_get_int_member(obj, "image_format");
+            if (json_object_has_member(obj, "image_quality"))
+                scr_state.image_quality = (int)json_object_get_int_member(obj, "image_quality");
+            if (json_object_has_member(obj, "show_cursor"))
+                scr_state.show_cursor = json_object_get_boolean_member(obj, "show_cursor");
+            if (json_object_has_member(obj, "shutter_sound"))
+                scr_state.shutter_sound = json_object_get_boolean_member(obj, "shutter_sound");
+            if (json_object_has_member(obj, "timer_delay"))
+                scr_state.timer_delay = (int)json_object_get_int_member(obj, "timer_delay");
+
+            if (json_object_has_member(obj, "video_container"))
+                scr_state.video_container = (int)json_object_get_int_member(obj, "video_container");
+            if (json_object_has_member(obj, "video_codec"))
+                scr_state.video_codec = (int)json_object_get_int_member(obj, "video_codec");
+            if (json_object_has_member(obj, "video_fps"))
+                scr_state.video_fps = (int)json_object_get_int_member(obj, "video_fps");
+            if (json_object_has_member(obj, "screencast_cursor"))
+                scr_state.screencast_cursor = json_object_get_boolean_member(obj, "screencast_cursor");
+            if (json_object_has_member(obj, "record_audio"))
+                scr_state.record_audio = json_object_get_boolean_member(obj, "record_audio");
+
+            if (json_object_has_member(obj, "processing_enabled"))
+                scr_state.processing_enabled = json_object_get_boolean_member(obj, "processing_enabled");
+            if (json_object_has_member(obj, "processing_target"))
+                scr_state.processing_target = (int)json_object_get_int_member(obj, "processing_target");
+            if (json_object_has_member(obj, "processing_algorithm"))
+                scr_state.processing_algorithm = (int)json_object_get_int_member(obj, "processing_algorithm");
+            if (json_object_has_member(obj, "processing_scope"))
+                scr_state.processing_scope = (int)json_object_get_int_member(obj, "processing_scope");
+            if (json_object_has_member(obj, "keep_original"))
+                scr_state.keep_original = json_object_get_boolean_member(obj, "keep_original");
+        }
+    }
+    if (error) g_error_free(error);
+    g_object_unref(parser);
+    g_free(path);
+}
+
+static void save_screenshot_config(void) {
+    char *path = get_screenshot_json_path();
+    if (!path) return;
+    char *dir = g_path_get_dirname(path);
+    g_mkdir_with_parents(dir, 0755);
+    g_free(dir);
+
+    char *json = g_strdup_printf(
+        "{\n"
+        "  \"image_format\": %d,\n"
+        "  \"image_quality\": %d,\n"
+        "  \"show_cursor\": %s,\n"
+        "  \"shutter_sound\": %s,\n"
+        "  \"timer_delay\": %d,\n"
+        "  \"video_container\": %d,\n"
+        "  \"video_codec\": %d,\n"
+        "  \"video_fps\": %d,\n"
+        "  \"screencast_cursor\": %s,\n"
+        "  \"record_audio\": %s,\n"
+        "  \"processing_enabled\": %s,\n"
+        "  \"processing_target\": %d,\n"
+        "  \"processing_algorithm\": %d,\n"
+        "  \"processing_scope\": %d,\n"
+        "  \"keep_original\": %s\n"
+        "}\n",
+        scr_state.image_format,
+        scr_state.image_quality,
+        scr_state.show_cursor ? "true" : "false",
+        scr_state.shutter_sound ? "true" : "false",
+        scr_state.timer_delay,
+        scr_state.video_container,
+        scr_state.video_codec,
+        scr_state.video_fps,
+        scr_state.screencast_cursor ? "true" : "false",
+        scr_state.record_audio ? "true" : "false",
+        scr_state.processing_enabled ? "true" : "false",
+        scr_state.processing_target,
+        scr_state.processing_algorithm,
+        scr_state.processing_scope,
+        scr_state.keep_original ? "true" : "false"
+    );
+
+    g_file_set_contents(path, json, -1, NULL);
+    g_free(json);
+    g_free(path);
+}
+
+G_MODULE_EXPORT void init_screenshot_format(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.image_format);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screenshot_format_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.image_format = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screenshot_quality(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    gtk_range_set_value(GTK_RANGE(widget), (double)scr_state.image_quality);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screenshot_quality_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.image_quality = (int)lround(gtk_range_get_value(GTK_RANGE(widget)));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screenshot_cursor(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.show_cursor);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screenshot_cursor_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.show_cursor = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screenshot_sound(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.shutter_sound);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screenshot_sound_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.shutter_sound = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screenshot_delay(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.timer_delay);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screenshot_delay_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.timer_delay = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screencast_container(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.video_container);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screencast_container_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.video_container = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screencast_codec(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.video_codec);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screencast_codec_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.video_codec = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screencast_fps(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.video_fps);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screencast_fps_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.video_fps = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screencast_cursor(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.screencast_cursor);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screencast_cursor_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.screencast_cursor = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screencast_audio(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.record_audio);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screencast_audio_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.record_audio = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_processing_enabled(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.processing_enabled);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_processing_enabled_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.processing_enabled = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_processing_resolution(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.processing_target);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_processing_resolution_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.processing_target = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_processing_scope(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.processing_scope);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_processing_scope_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.processing_scope = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_processing_algorithm(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.processing_algorithm);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_processing_algorithm_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.processing_algorithm = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_processing_keep_original(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.keep_original);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_processing_keep_original_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.keep_original = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void on_open_screenshots_folder_clicked(void *widget, gpointer data) {
+    (void)widget; (void)data;
+    const char *home = g_get_home_dir();
+    if (!home) return;
+    char *dir = g_build_filename(home, "Зображення", "Знімки екрана", NULL);
+    g_mkdir_with_parents(dir, 0755);
+    char *cmd = g_strdup_printf("xdg-open '%s' 2>/dev/null &", dir);
+    g_spawn_command_line_async(cmd, NULL);
+    g_free(cmd);
+    g_free(dir);
+}
+
+G_MODULE_EXPORT void on_open_screencasts_folder_clicked(void *widget, gpointer data) {
+    (void)widget; (void)data;
+    const char *home = g_get_home_dir();
+    if (!home) return;
+    char *dir = g_build_filename(home, "Відео", "Трансляції з екрана", NULL);
+    g_mkdir_with_parents(dir, 0755);
+    char *cmd = g_strdup_printf("xdg-open '%s' 2>/dev/null &", dir);
+    g_spawn_command_line_async(cmd, NULL);
+    g_free(cmd);
+    g_free(dir);
+}
+
+G_MODULE_EXPORT void on_reset_screenshot_defaults_clicked(void *widget, gpointer data) {
+    (void)widget; (void)data;
+    scr_state.image_format = 0;
+    scr_state.image_quality = 95;
+    scr_state.show_cursor = TRUE;
+    scr_state.shutter_sound = TRUE;
+    scr_state.timer_delay = 0;
+    scr_state.video_container = 0;
+    scr_state.video_codec = 0;
+    scr_state.video_fps = 0;
+    scr_state.screencast_cursor = TRUE;
+    scr_state.record_audio = FALSE;
+    scr_state.processing_enabled = TRUE;
+    scr_state.processing_target = 2;
+    scr_state.processing_algorithm = 0;
+    scr_state.processing_scope = 0;
+    scr_state.keep_original = FALSE;
+    save_screenshot_config();
+}
+
+static GtkWidget *get_screenshot_page(void)
+{
+    static GtkWidget *screenshot_page = NULL;
+    if (screenshot_page) return screenshot_page;
+
+    GtkBuilder *builder = gtk_builder_new();
+    const char *overlay_path = "/usr/share/mactheme/gnome-control-center-overlay/cc-screenshot-panel.ui";
+    char *user_path = NULL;
+    const char *home = g_get_home_dir();
+    if (home) {
+        user_path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "cc-screenshot-panel.ui", NULL);
+    }
+    const char *local_path = "/home/vitaliy/MACTHEMEFILES/control-center/cc-screenshot-panel.ui";
+
+    const char *path_to_use = NULL;
+    if (g_file_test(overlay_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = overlay_path;
+    } else if (user_path && g_file_test(user_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = user_path;
+    } else if (g_file_test(local_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = local_path;
+    }
+
+    GError *error = NULL;
+    gboolean loaded = FALSE;
+    if (path_to_use) {
+        loaded = gtk_builder_add_from_file(builder, path_to_use, &error);
+    }
+    if (user_path) g_free(user_path);
+
+    if (loaded) {
+        screenshot_page = GTK_WIDGET(gtk_builder_get_object(builder, "screenshot_page"));
+        if (screenshot_page) {
+            g_object_ref(screenshot_page);
+        }
+    } else {
+        if (error) {
+            g_warning("macW1Y: Failed to load cc-screenshot-panel.ui: %s", error->message);
+            g_error_free(error);
+        }
+    }
+    g_object_unref(builder);
+    return screenshot_page;
+}
+
+static void schedule_update_panel_headerbar(AdwNavigationSplitView *split_view);
+
+G_MODULE_EXPORT void on_screenshot_row_clicked(GtkWidget *widget, gpointer user_data)
+{
+    (void)user_data;
+    AdwNavigationView *nv = NULL;
+    if (widget) {
+        GtkWidget *ancestor = gtk_widget_get_ancestor(widget, ADW_TYPE_NAVIGATION_VIEW);
+        if (ancestor) nv = ADW_NAVIGATION_VIEW(ancestor);
+    }
+    if (!nv && g_last_split_view) {
+        AdwNavigationPage *cp = adw_navigation_split_view_get_content(g_last_split_view);
+        if (cp) {
+            GList *nav_views = NULL;
+            find_navigation_views(GTK_WIDGET(cp), &nav_views);
+            if (nav_views) {
+                nv = ADW_NAVIGATION_VIEW(nav_views->data);
+                g_list_free(nav_views);
+            }
+        }
+    }
+    if (nv) {
+        if (!adw_navigation_view_find_page(nv, "screenshot")) {
+            GtkWidget *sp = get_screenshot_page();
+            if (sp) {
+                adw_navigation_view_add(nv, ADW_NAVIGATION_PAGE(sp));
+            }
+        }
+        adw_navigation_view_push_by_tag(nv, "screenshot");
+        if (g_last_split_view) {
+            schedule_update_panel_headerbar(g_last_split_view);
+        }
+    }
 }
 
 
@@ -8621,9 +9121,19 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             g_signal_connect(nv, "notify::visible-page", G_CALLBACK(on_visible_page_changed_cb), split_view);
             g_object_set_data(G_OBJECT(nv), "mac_connected", GINT_TO_POINTER(1));
         }
+        if (!adw_navigation_view_find_page(nv, "screenshot")) {
+            GtkWidget *sp = get_screenshot_page();
+            if (sp) {
+                adw_navigation_view_add(nv, ADW_NAVIGATION_PAGE(sp));
+            }
+        }
         if (g_getenv("MAC_SETTINGS_OPEN_STYLING") && !g_object_get_data(G_OBJECT(nv), "mac_styling_pushed")) {
             g_object_set_data(G_OBJECT(nv), "mac_styling_pushed", GINT_TO_POINTER(1));
             adw_navigation_view_push_by_tag(nv, "mac-styling");
+        }
+        if (g_getenv("MAC_SETTINGS_OPEN_SCREENSHOT") && !g_object_get_data(G_OBJECT(nv), "mac_screenshot_pushed")) {
+            g_object_set_data(G_OBJECT(nv), "mac_screenshot_pushed", GINT_TO_POINTER(1));
+            adw_navigation_view_push_by_tag(nv, "screenshot");
         }
         const char *target_row = g_object_get_data(G_OBJECT(split_view), "mac_target_subpage_row");
         if (!target_row && g_getenv("MAC_SETTINGS_TARGET_ROW") && !g_object_get_data(G_OBJECT(nv), "mac_env_target_row_done")) {
@@ -8634,6 +9144,8 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             g_object_set_data(G_OBJECT(split_view), "mac_target_subpage_row", NULL);
             if (g_strcmp0(target_row, "mac_styling_row") == 0) {
                 adw_navigation_view_push_by_tag(nv, "mac-styling");
+            } else if (g_strcmp0(target_row, "screenshot_row") == 0) {
+                adw_navigation_view_push_by_tag(nv, "screenshot");
             }
             activate_system_row_by_id(GTK_WIDGET(content_page), target_row);
         }

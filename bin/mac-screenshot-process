@@ -1,0 +1,346 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+mac-screenshot-process — macOS Sequoia/Tahoe Screenshot & Screencast Processing Engine
+Handles:
+- Immediate macOS camera shutter sound on capture
+- Post-processing & upscaling (Native / 1080p / 2K / 4K) using Lanczos3 / Unsharp Mask
+- Format conversion (PNG, JPEG, WebP)
+- Video transcoding (MP4 / WebM / MKV, H.264 / VP9 / AV1, 60fps / 30fps)
+- Background filesystem watcher daemon for screenshot/screencast directories
+"""
+
+import os
+import sys
+import time
+import json
+import shutil
+import argparse
+import subprocess
+from pathlib import Path
+
+CONFIG_FILE = Path(os.path.expanduser("~/.config/mac-styling/screenshot.json"))
+SHUTTER_SOUND = "/usr/share/sounds/macOS/stereo/camera-shutter.ogg"
+
+DEFAULT_CONFIG = {
+    "image_format": 0,           # 0=PNG, 1=JPEG, 2=WebP
+    "image_quality": 95,         # 70 - 100
+    "show_cursor": True,
+    "shutter_sound": True,
+    "timer_delay": 0,
+    "video_container": 0,        # 0=MP4, 1=WebM, 2=MKV
+    "video_codec": 0,            # 0=H.264, 1=VP9, 2=AV1
+    "video_fps": 0,              # 0=60, 1=30
+    "record_audio": False,
+    "processing_enabled": True,
+    "processing_target": 2,      # 0=native, 1=1080p, 2=2k, 3=4k
+    "processing_algorithm": 0,   # 0=lanczos, 1=bicubic, 2=unsharp
+    "processing_scope": 0,       # 0=both, 1=screenshots, 2=screencasts
+    "keep_original": False,
+    "screenshots_dir": "~/Зображення/Знімки екрана",
+    "screencasts_dir": "~/Відео/Трансляції з екрана"
+}
+
+def load_config():
+    if CONFIG_FILE.exists():
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                res = DEFAULT_CONFIG.copy()
+                res.update(cfg)
+                return res
+        except Exception:
+            pass
+    return DEFAULT_CONFIG.copy()
+
+def play_shutter():
+    cfg = load_config()
+    if not cfg.get("shutter_sound", True):
+        return
+    if os.path.exists(SHUTTER_SOUND):
+        try:
+            if shutil.which("pw-play"):
+                subprocess.Popen(["pw-play", SHUTTER_SOUND], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif shutil.which("canberra-gtk-play"):
+                subprocess.Popen(["canberra-gtk-play", "-f", SHUTTER_SOUND], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif shutil.which("aplay"):
+                subprocess.Popen(["aplay", "-q", SHUTTER_SOUND], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
+def notify(title, message, icon="applets-screenshooter-symbolic"):
+    if shutil.which("notify-send"):
+        try:
+            subprocess.Popen([
+                "notify-send",
+                "-a", "Скріншот",
+                "-i", icon,
+                title, message
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
+def get_target_resolution(code):
+    # 0=native, 1=1080p, 2=2k, 3=4k
+    if code == 1:
+        return 1920, 1080, "1080p Full HD"
+    elif code == 2:
+        return 2560, 1440, "2K Quad HD"
+    elif code == 3:
+        return 3840, 2160, "4K Ultra HD"
+    return None, None, "Оригінальна"
+
+def process_image(file_path):
+    p = Path(file_path).resolve()
+    if not p.exists() or p.stat().st_size == 0:
+        return
+
+    # Avoid processing already processed files or files in Originals
+    if "Originals" in p.parts or p.stem.endswith("_processed"):
+        return
+
+    cfg = load_config()
+    format_idx = cfg.get("image_format", 0)       # 0=PNG, 1=JPEG, 2=WebP
+    quality = int(cfg.get("image_quality", 95))
+    processing_enabled = cfg.get("processing_enabled", True)
+    target_idx = cfg.get("processing_target", 2)
+    algo_idx = cfg.get("processing_algorithm", 0) # 0=lanczos, 1=bicubic, 2=unsharp
+    scope_idx = cfg.get("processing_scope", 0)    # 0=both, 1=screenshots, 2=screencasts
+    keep_orig = cfg.get("keep_original", False)
+
+    apply_proc = processing_enabled and (scope_idx in [0, 1])
+
+    ext_map = {0: ".png", 1: ".jpg", 2: ".webp"}
+    target_ext = ext_map.get(format_idx, ".png")
+
+    target_w, target_h, target_name = get_target_resolution(target_idx) if apply_proc else (None, None, None)
+
+    # If neither format conversion nor upscaling is requested, nothing to do
+    if not apply_proc and p.suffix.lower() == target_ext and format_idx == 0:
+        return
+
+    try:
+        from PIL import Image, ImageFilter
+    except ImportError:
+        return
+
+    try:
+        # Give file time to flush if written by Shell
+        time.sleep(0.15)
+        with Image.open(p) as img:
+            orig_w, orig_h = img.size
+            mode = img.mode
+
+            if keep_orig:
+                orig_dir = p.parent / "Originals"
+                orig_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(p, orig_dir / p.name)
+
+            out_img = img
+
+            # Handle upscaling if target resolution is greater than current
+            if target_w and (target_w > orig_w or (target_h and target_h > orig_h)):
+                aspect = orig_w / float(orig_h)
+                new_w = target_w
+                new_h = int(round(new_w / aspect))
+
+                resample_method = Image.Resampling.LANCZOS if algo_idx in [0, 2] else Image.Resampling.BICUBIC
+                out_img = out_img.resize((new_w, new_h), resample=resample_method)
+
+                if algo_idx == 2: # Unsharp mask
+                    out_img = out_img.filter(ImageFilter.UnsharpMask(radius=1.4, percent=125, threshold=3))
+
+            # Convert color mode for JPEG if RGBA
+            if target_ext in [".jpg", ".jpeg"] and out_img.mode in ("RGBA", "P"):
+                rgb_img = Image.new("RGB", out_img.size, (255, 255, 255))
+                if out_img.mode == "RGBA":
+                    rgb_img.paste(out_img, mask=out_img.split()[3])
+                else:
+                    rgb_img.paste(out_img)
+                out_img = rgb_img
+
+            dest_path = p.with_suffix(target_ext)
+
+            save_kwargs = {}
+            if target_ext in [".jpg", ".jpeg"]:
+                save_kwargs = {"quality": quality, "subsampling": 0, "optimize": True}
+            elif target_ext == ".webp":
+                save_kwargs = {"quality": quality, "method": 6}
+            elif target_ext == ".png":
+                save_kwargs = {"compress_level": 6, "optimize": True}
+
+            out_img.save(dest_path, **save_kwargs)
+
+        # If extension changed, remove original file
+        if dest_path != p and p.exists():
+            p.unlink()
+
+        msg = f"Збережено у {target_ext.upper()[1:]}"
+        if target_w and (target_w > orig_w):
+            msg += f" • Оброблено до {target_name}"
+        notify("Скріншот створено", msg)
+    except Exception as e:
+        print(f"Error processing image {file_path}: {e}", file=sys.stderr)
+
+def process_video(file_path):
+    p = Path(file_path).resolve()
+    if not p.exists() or p.stat().st_size == 0:
+        return
+
+    if "Originals" in p.parts or p.stem.endswith("_processed") or p.stem.endswith("_temp"):
+        return
+
+    # Wait for screencast recorder to finish writing (file size stabilization)
+    prev_size = -1
+    for _ in range(30):
+        try:
+            cur_size = p.stat().st_size
+            if cur_size == prev_size and cur_size > 1024:
+                break
+            prev_size = cur_size
+        except Exception:
+            pass
+        time.sleep(0.4)
+
+    cfg = load_config()
+    container_idx = cfg.get("video_container", 0) # 0=MP4, 1=WebM, 2=MKV
+    codec_idx = cfg.get("video_codec", 0)         # 0=H.264, 1=VP9, 2=AV1
+    fps_idx = cfg.get("video_fps", 0)             # 0=60, 1=30
+    processing_enabled = cfg.get("processing_enabled", True)
+    target_idx = cfg.get("processing_target", 2)
+    scope_idx = cfg.get("processing_scope", 0)    # 0=both, 1=screenshots, 2=screencasts
+    keep_orig = cfg.get("keep_original", False)
+
+    apply_proc = processing_enabled and (scope_idx in [0, 2])
+
+    cont_map = {0: ".mp4", 1: ".webm", 2: ".mkv"}
+    target_ext = cont_map.get(container_idx, ".mp4")
+
+    target_w, target_h, target_name = get_target_resolution(target_idx) if apply_proc else (None, None, None)
+
+    if not shutil.which("ffmpeg"):
+        return
+
+    dest_path = p.with_suffix(target_ext)
+    temp_path = p.with_name(f"{p.stem}_temp{target_ext}")
+
+    if keep_orig:
+        orig_dir = p.parent / "Originals"
+        orig_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(p, orig_dir / p.name)
+
+    cmd = ["ffmpeg", "-y", "-i", str(p)]
+
+    # Video filter for resolution scaling
+    if target_w:
+        cmd.extend(["-vf", f"scale={target_w}:-2:flags=lanczos"])
+
+    # Video Codec
+    if codec_idx == 0: # H.264
+        cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p"])
+    elif codec_idx == 1: # VP9
+        cmd.extend(["-c:v", "libvpx-vp9", "-crf", "24", "-b:v", "0"])
+    elif codec_idx == 2: # AV1
+        if "libsvtav1" in subprocess.getoutput("ffmpeg -encoders 2>/dev/null"):
+            cmd.extend(["-c:v", "libsvtav1", "-crf", "28", "-preset", "6"])
+        else:
+            cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p"])
+
+    # Framerate
+    target_fps = 60 if fps_idx == 0 else 30
+    cmd.extend(["-r", str(target_fps)])
+
+    # Audio copy if exists
+    cmd.extend(["-c:a", "aac", "-b:a", "192k"])
+
+    cmd.append(str(temp_path))
+
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if res.returncode == 0 and temp_path.exists() and temp_path.stat().st_size > 0:
+            if dest_path.exists() and dest_path != p:
+                dest_path.unlink()
+            temp_path.rename(dest_path)
+            if dest_path != p and p.exists():
+                p.unlink()
+
+            msg = f"Збережено у {target_ext.upper()[1:]} ({target_fps} FPS)"
+            if target_w:
+                msg += f" • Оброблено до {target_name}"
+            notify("Запис екрана оброблено", msg, icon="video-x-generic-symbolic")
+    except Exception as e:
+        print(f"Error processing video {file_path}: {e}", file=sys.stderr)
+        if temp_path.exists():
+            temp_path.unlink()
+
+def run_daemon():
+    print("[mac-screenshot-process] Daemon started, watching screenshot and screencast directories...")
+    home = Path(os.path.expanduser("~"))
+    watch_dirs = [
+        home / "Зображення" / "Знімки екрана",
+        home / "Pictures" / "Screenshots",
+        home / "Відео" / "Трансляції з екрана",
+        home / "Videos" / "Screencasts"
+    ]
+
+    for d in watch_dirs:
+        d.mkdir(parents=True, exist_ok=True)
+
+    seen_files = {}
+    for d in watch_dirs:
+        if d.exists():
+            for f in d.iterdir():
+                if f.is_file():
+                    seen_files[str(f)] = f.stat().st_mtime
+
+    while True:
+        try:
+            for d in watch_dirs:
+                if not d.exists():
+                    continue
+                for f in d.iterdir():
+                    if not f.is_file():
+                        continue
+                    sp = str(f)
+                    mtime = f.stat().st_mtime
+                    if sp not in seen_files or mtime > seen_files[sp]:
+                        seen_files[sp] = mtime
+                        # Process new file
+                        if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".webp"]:
+                            # Ignore temporary files or processed files
+                            if not f.stem.endswith("_temp") and "Originals" not in f.parts:
+                                process_image(f)
+                        elif f.suffix.lower() in [".webm", ".mp4", ".mkv"]:
+                            if not f.stem.endswith("_temp") and "Originals" not in f.parts:
+                                process_video(f)
+            time.sleep(0.8)
+        except Exception as e:
+            time.sleep(1.0)
+
+def main():
+    parser = argparse.ArgumentParser(description="macOS Sequoia/Tahoe Screenshot Processing Engine")
+    parser.add_argument("--file", "-f", help="Path to screenshot or screencast file to process")
+    parser.add_argument("--play-shutter", action="store_true", help="Play the macOS camera shutter sound")
+    parser.add_argument("--daemon", action="store_true", help="Run background watcher daemon")
+    args = parser.parse_args()
+
+    if args.play_shutter:
+        play_shutter()
+        return
+
+    if args.daemon:
+        run_daemon()
+        return
+
+    if args.file:
+        p = Path(args.file)
+        if p.suffix.lower() in [".png", ".jpg", ".jpeg", ".webp"]:
+            process_image(p)
+        elif p.suffix.lower() in [".webm", ".mp4", ".mkv"]:
+            process_video(p)
+        return
+
+    parser.print_help()
+
+if __name__ == "__main__":
+    main()

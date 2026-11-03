@@ -526,6 +526,29 @@ export default class EvalHelper extends Extension {
             });
         } catch (_) {}
 
+        // macOS Screenshot & Screencast integration
+        try {
+            if (Main.screenshotUI) {
+                this._screenshotTakenSignalId = Main.screenshotUI.connect('screenshot-taken', (_ui, file) => {
+                    try {
+                        const path = file?.get_path ? file.get_path() : null;
+                        GLib.spawn_command_line_async('/usr/local/bin/mac-screenshot-process --play-shutter');
+                        if (path) {
+                            GLib.spawn_command_line_async(`/usr/local/bin/mac-screenshot-process --file "${path}"`);
+                        }
+                    } catch (_) {}
+                });
+                this._screencastNotifySignalId = Main.screenshotUI.connect('notify::screencast-in-progress', () => {
+                    try {
+                        if (!Main.screenshotUI._screencastInProgress && Main.screenshotUI._screencastPath) {
+                            const p = Main.screenshotUI._screencastPath;
+                            GLib.spawn_command_line_async(`/usr/local/bin/mac-screenshot-process --file "${p}"`);
+                        }
+                    } catch (_) {}
+                });
+            }
+        } catch (_) {}
+
         // Group notifications by application name so multiple notifications from the same app stack together
         const fdo = Main.notificationDaemon?._fdoNotificationDaemon;
         if (fdo && !this._origGetSourceForPidAndName) {
@@ -2966,6 +2989,17 @@ export default class EvalHelper extends Extension {
     }
 
     disable() {
+        if (Main.screenshotUI) {
+            if (this._screenshotTakenSignalId) {
+                try { Main.screenshotUI.disconnect(this._screenshotTakenSignalId); } catch (_) {}
+                this._screenshotTakenSignalId = 0;
+            }
+            if (this._screencastNotifySignalId) {
+                try { Main.screenshotUI.disconnect(this._screencastNotifySignalId); } catch (_) {}
+                this._screencastNotifySignalId = 0;
+            }
+        }
+
         if (this._dimmerWatchdogId) {
             GLib.source_remove(this._dimmerWatchdogId);
             this._dimmerWatchdogId = 0;

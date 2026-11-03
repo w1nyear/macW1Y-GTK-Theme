@@ -119,6 +119,23 @@
                     </child>
                   </object>
                 </child>
+
+                <!-- Group 5: Screenshot & Screen Recording -->
+                <child>
+                  <object class="AdwPreferencesGroup" id="screenshot_group">
+                    <child>
+                      <object class="CcListRow" id="screenshot_row">
+                        <property name="title">Скріншот</property>
+                        <property name="subtitle">Формат файлу, відеокодеки, якість та постобробка 1080p/2K/4K</property>
+                        <property name="icon-name">applets-screenshooter-symbolic</property>
+                        <property name="show-arrow">true</property>
+                        <property name="action-name">navigation.push</property>
+                        <property name="action-target">'screenshot'</property>
+                        <signal name="activated" handler="on_screenshot_row_clicked" object="CcSystemPanel"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
             </property>
           </object>

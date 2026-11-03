@@ -332,13 +332,14 @@ export const MacApplicationsDialog = GObject.registerClass({
             track_hover: true,
             clip_to_allocation: true,
         });
+        const { isDark: initDark } = this._getThemeParams();
+        const initBg = initDark ? 'rgba(28, 28, 32, 0.82)' : 'rgba(244, 244, 248, 0.88)';
         this._box.set_style(
-            'background-color: transparent !important; ' +
-            'background: none !important; ' +
+            `background-color: ${initBg} !important; ` +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: 1px solid rgba(255, 255, 255, 0.30) !important; ' +
+            'border: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
             'padding: 16px 2px 0px 2px; ' +
-            'box-shadow: none !important;'
+            'box-shadow: 0 16px 40px rgba(0, 0, 0, 0.50) !important;'
         );
         this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
         this.add_child(this._box);
@@ -635,7 +636,7 @@ export const MacApplicationsDialog = GObject.registerClass({
                 y_align: Clutter.ActorAlign.CENTER,
             });
 
-            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)';
+            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.10)';
             const pillBorder = 'border: none !important;';
             const pillShadow = isSelected ? 'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);' : 'box-shadow: none;';
             btn.set_style(
@@ -645,14 +646,15 @@ export const MacApplicationsDialog = GObject.registerClass({
                 `${pillShadow} ` +
                 'border-radius: 10px; ' +
                 'height: 32px; ' +
-                'margin: 0 4px; ' +
-                'font-size: 13px; ' +
+                'margin: 0 3px; ' +
+                'padding: 0 4px; ' +
+                'font-size: 12px; ' +
                 'font-weight: 600;'
             );
 
             const label = new St.Label({
                 text: cat.label,
-                style: 'color: #ffffff !important; font-weight: 600 !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important;',
+                style: 'color: #ffffff !important; font-weight: 600 !important; font-size: 12px !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important;',
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -676,16 +678,16 @@ export const MacApplicationsDialog = GObject.registerClass({
                         'background-color: rgba(255, 255, 255, 0.32); ' +
                         'border: none !important; ' +
                         'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); ' +
-                        'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
+                        'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 3px; padding: 0 4px; font-size: 12px; font-weight: 600;'
                     );
                 } else {
-                    const bg = hover ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.12)';
+                    const bg = hover ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.10)';
                     const border = 'border: none !important;';
                     btn.set_style(
                         `background-color: ${bg}; ` +
                         `${border} ` +
                         'box-shadow: none; ' +
-                        'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
+                        'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 3px; padding: 0 4px; font-size: 12px; font-weight: 600;'
                     );
                 }
             });
@@ -713,7 +715,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         const tintG = isDark ? 0.16 : 1.0;
         const tintB = isDark ? 0.18 : 1.0;
         const tintVal = isDark ? 0.16 : 1.0;
-        const tintStrength = isDark ? 0.12 : 0.08;
+        const tintStrength = isDark ? 0.35 : 0.25;
         return { isDark, tintR, tintG, tintB, tintVal, tintStrength };
     }
 

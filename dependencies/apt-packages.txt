@@ -43,3 +43,4 @@ wine64
 wine32:i386
 winetricks
 icoutils
+ffmpeg
