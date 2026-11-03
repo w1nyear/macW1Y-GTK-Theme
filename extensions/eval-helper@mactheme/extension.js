@@ -2636,6 +2636,30 @@ export default class EvalHelper extends Extension {
                     this.translation_x = 0;
                     this.translation_y = 0;
 
+                    const getMenuUIM = (boxPointer) => {
+                        return boxPointer?._delegate?._liquidGlassUIManager ||
+                               boxPointer?.bin?._delegate?._liquidGlassUIManager ||
+                               boxPointer?._sourceActor?._delegate?._liquidGlassUIManager ||
+                               boxPointer?._sourceActor?._menu?._liquidGlassUIManager ||
+                               boxPointer?._sourceActor?._liquidGlassUIManager ||
+                               boxPointer?._liquidGlassUIManager ||
+                               null;
+                    };
+
+                    try {
+                        const uim = getMenuUIM(this);
+                        const bg = uim?.bgActor;
+                        if (bg) {
+                            bg._isClosingAnimation = false;
+                            bg.remove_all_transitions();
+                            bg.scale_x = 1.0;
+                            bg.scale_y = 1.0;
+                            bg.translation_x = 0;
+                            bg.translation_y = 0;
+                            bg.set_pivot_point(0.0, 0.0);
+                        }
+                    } catch (_) {}
+
                     // When animate is explicitly disabled (0 or false), show instantly
                     if (animate === 0 || animate === false) {
                         this.opacity = 255;
@@ -2677,6 +2701,16 @@ export default class EvalHelper extends Extension {
                     this._muteInput = true;
                     this._muteKeys = true;
 
+                    const getMenuUIM = (boxPointer) => {
+                        return boxPointer?._delegate?._liquidGlassUIManager ||
+                               boxPointer?.bin?._delegate?._liquidGlassUIManager ||
+                               boxPointer?._sourceActor?._delegate?._liquidGlassUIManager ||
+                               boxPointer?._sourceActor?._menu?._liquidGlassUIManager ||
+                               boxPointer?._sourceActor?._liquidGlassUIManager ||
+                               boxPointer?._liquidGlassUIManager ||
+                               null;
+                    };
+
                     const finalizeClose = () => {
                         if (this._closeTimeoutId) {
                             GLib.source_remove(this._closeTimeoutId);
@@ -2688,6 +2722,23 @@ export default class EvalHelper extends Extension {
                         this.scale_y = 1.0;
                         this.translation_x = 0;
                         this.translation_y = 0;
+
+                        try {
+                            const uim = getMenuUIM(this);
+                            const bg = uim?.bgActor;
+                            if (bg) {
+                                bg._isClosingAnimation = false;
+                                bg.remove_all_transitions();
+                                bg.hide();
+                                bg.opacity = 0;
+                                bg.scale_x = 1.0;
+                                bg.scale_y = 1.0;
+                                bg.translation_x = 0;
+                                bg.translation_y = 0;
+                                bg.set_pivot_point(0.0, 0.0);
+                            }
+                        } catch (_) {}
+
                         if (onComplete) onComplete();
 
                         // Guard against lingering dimming glass overlays
@@ -2736,24 +2787,38 @@ export default class EvalHelper extends Extension {
 
                     // Simultaneously ease liquid glass backdrop actor in exact lockstep
                     try {
-                        const uim = (this._delegate?._liquidGlassUIManager) || (this.bin?._delegate?._liquidGlassUIManager);
+                        const uim = getMenuUIM(this);
                         const bg = uim?.bgActor;
                         if (bg && bg.visible) {
-                            if (!bg._origMacHide) {
-                                bg._origMacHide = bg.hide;
-                                bg.hide = () => {
-                                    if (this.visible && this.opacity > 0) return;
-                                    return bg._origMacHide.call(bg);
-                                };
-                            }
+                            let [bx, by] = this.get_transformed_position();
+                            let [bw, bh] = this.get_size();
+                            let Px = bx + bw * pivotX;
+                            let Py = by + bh * pivotY;
+
+                            let [bgX, bgY] = bg.get_position();
+                            let [bgW, bgH] = bg.get_size();
+                            let bgPivotX = (Px - bgX) / (bgW || 1);
+                            let bgPivotY = (Py - bgY) / (bgH || 1);
+
+                            bg._isClosingAnimation = true;
                             bg.remove_all_transitions();
-                            bg.set_pivot_point(pivotX, pivotY);
+                            bg.set_pivot_point(bgPivotX, bgPivotY);
                             bg.ease({
                                 opacity: 0,
                                 scale_x: 0.95,
                                 scale_y: 0.95,
                                 duration: 120,
-                                mode: Clutter.AnimationMode.EASE_IN_QUAD
+                                mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                                onComplete: () => {
+                                    bg._isClosingAnimation = false;
+                                    bg.hide();
+                                    bg.opacity = 0;
+                                    bg.scale_x = 1.0;
+                                    bg.scale_y = 1.0;
+                                    bg.translation_x = 0;
+                                    bg.translation_y = 0;
+                                    bg.set_pivot_point(0.0, 0.0);
+                                }
                             });
                         }
                     } catch (_) {}

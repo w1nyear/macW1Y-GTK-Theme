@@ -804,6 +804,9 @@ export class UIManager {
 
   // Calculates and synchronizes the position/size of the glass background every frame
   _syncGeometry() {
+    if ((this.bgActor as any)?._isClosingAnimation) {
+      return;
+    }
     const isTargetClosing = this.targetActor && this.targetActor.visible && this.targetActor.opacity > 0;
     if (!this.bgActor || !this.targetActor || !this.targetActor.mapped || (this.menu && !this.menu.isOpen && !isTargetClosing)) {
       if (this.bgActor && this.bgActor.visible) {
@@ -1275,19 +1278,23 @@ export class UIManager {
     // If animation is disabled, just reset to default state
     if (!this._enableAnimation) {
       if (this.bgActor) {
-        this.bgActor.remove_all_transitions();
+        if (!(this.bgActor as any)._isClosingAnimation) {
+          this.bgActor.remove_all_transitions();
+        }
         if (isClosing) {
           const isTargetClosing = this.targetActor && this.targetActor.visible && this.targetActor.opacity > 0;
-          if (!isTargetClosing) {
+          if (!isTargetClosing && !(this.bgActor as any)._isClosingAnimation) {
             this.bgActor.opacity = 0;
             this.bgActor.visible = false;
             this.bgActor.hide();
           }
         } else {
+          (this.bgActor as any)._isClosingAnimation = false;
           this.bgActor.opacity = 255;
           this.bgActor.visible = true;
           this.bgActor.show();
           this.bgActor.set_scale(1.0, 1.0);
+          this.bgActor.set_pivot_point(0.0, 0.0);
         }
 
         if (this.animActor) {
