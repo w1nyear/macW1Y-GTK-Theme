@@ -2159,25 +2159,38 @@ export default class EvalHelper extends Extension {
             }
         });
 
-        this._mapId = global.window_manager.connect('map', (wm, windowActor) => {
-            let window = windowActor.get_meta_window ? windowActor.get_meta_window() : null;
-            if (!window)
-                return;
-            let type = window.get_window_type();
-            if (type !== Meta.WindowType.NORMAL && type !== Meta.WindowType.DIALOG && type !== Meta.WindowType.MODAL_DIALOG)
-                return;
-            if (window.is_skip_taskbar())
-                return;
-            if (window.customJS_ding && window.customJS_ding.keepAtBottom)
-                return;
+        // Dynamic macOS Accent Color Synchronization
+        const ACCENT_COLOR_MAP = {
+            'blue': '#007aff',
+            'teal': '#00a294',
+            'green': '#2ec27e',
+            'yellow': '#e5a50a',
+            'orange': '#ff6a00',
+            'red': '#e01b24',
+            'pink': '#d56199',
+            'purple': '#9141ac',
+            'slate': '#6e7a85',
+        };
 
-            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                if (window && !window.has_focus() && !window.is_skip_taskbar()) {
-                    Main.activateWindow(window);
+        const syncAccentColor = () => {
+            try {
+                if (!this._ifaceSettings)
+                    this._ifaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+                const accentKey = this._ifaceSettings.get_string('accent-color') || 'orange';
+                const hexColor = ACCENT_COLOR_MAP[accentKey] || '#ff6a00';
+                if (Main.layoutManager?.uiGroup) {
+                    Main.layoutManager.uiGroup.set_style(`-st-accent-color: ${hexColor}; -st-accent-fg-color: #ffffff;`);
                 }
-                return GLib.SOURCE_REMOVE;
-            });
-        });
+            } catch (e) {
+                console.error(`[EvalHelper] syncAccentColor error: ${e}`);
+            }
+        };
+
+        try {
+            this._ifaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            this._accentColorId = this._ifaceSettings.connect('changed::accent-color', syncAccentColor);
+            syncAccentColor();
+        } catch (_) {}
 
         // macOS Startup Transition: Smooth opacity fade-in, rock-solid wallpaper (strict no-zoom / no-flicker)
         if (Main.layoutManager) {
@@ -2970,6 +2983,12 @@ export default class EvalHelper extends Extension {
         if (this._markedUrgentId) {
             global.display.disconnect(this._markedUrgentId);
             this._markedUrgentId = null;
+        }
+
+        if (this._accentColorId && this._ifaceSettings) {
+            try { this._ifaceSettings.disconnect(this._accentColorId); } catch (_) {}
+            this._accentColorId = 0;
+            this._ifaceSettings = null;
         }
 
         if (this._mapId) {

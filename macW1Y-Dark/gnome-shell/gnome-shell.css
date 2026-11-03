@@ -20,6 +20,8 @@
 stage {
   font-size: 1em;
   color: #dedede;
+  -st-accent-color: #ff6a00;
+  -st-accent-fg-color: #ffffff;
 }
 
 /* General Typography */

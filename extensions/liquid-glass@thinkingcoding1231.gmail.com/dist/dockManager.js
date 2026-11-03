@@ -110,6 +110,7 @@ export class DashManager {
         // 初回起動時にスイッチがONならエフェクトを適用
         if (this._settings.get_boolean('enable-dock-glass')) {
             this._applyEffect();
+            this._restackGlass();
         }
     }
     // 設定が変更された時にリアルタイムで反映するためのバインディング
@@ -287,6 +288,29 @@ export class DashManager {
         }
     }
 
+    _restackGlass() {
+        const uiGroup = Main.layoutManager.uiGroup;
+        let dockRoot = this.targetActor;
+        while (dockRoot && dockRoot.get_parent() !== uiGroup) {
+            let p = dockRoot.get_parent();
+            if (!p)
+                break;
+            dockRoot = p;
+        }
+        if (!this.bgActor || !dockRoot || dockRoot.get_parent() !== uiGroup)
+            return;
+        if (this.bgActor.get_parent() !== uiGroup)
+            return;
+        const children = uiGroup.get_children();
+        const rootIndex = children.indexOf(dockRoot);
+        const bgIndex = children.indexOf(this.bgActor);
+        if (rootIndex < 0 || bgIndex < 0)
+            return;
+        if (bgIndex !== rootIndex - 1) {
+            uiGroup.set_child_below_sibling(this.bgActor, dockRoot);
+        }
+    }
+
     _applyEffect() {
         if (this._isEffectActive)
             return;
@@ -337,6 +361,7 @@ export class DashManager {
         else {
             Main.layoutManager.uiGroup.add_child(this.bgActor);
         }
+        this._restackGlass();
         // 設定から初期値を読み込み
         let blurRadius = this._settings.get_int('dock-blur-radius');
         let tintColorStr = this._settings.get_string('dock-tint-color');
@@ -537,6 +562,7 @@ export class DashManager {
         }
     }
     _syncGeometry() {
+        this._restackGlass();
         if (!this.bgActor || !this.targetActor || !this.targetActor.mapped) {
             if (this.bgActor) {
                 this.bgActor.hide();
@@ -830,7 +856,7 @@ export class DashManager {
         //
         // CLIP_PADDING must be at least as large as the maximum shadow_radius
         // setting so the penumbra gradient has room to fade to zero naturally.
-        const CLIP_PADDING = 200;
+        const CLIP_PADDING = 36;
         // Clip only bgActor; liquidBox has no separate clip
         // this.liquidBox?.remove_clip();
         // [PERF] clutter_actor_set_clip() does not compare before storing: it
@@ -839,7 +865,7 @@ export class DashManager {
         // (and therefore re-ran its capture/blur/composite) on every frame with
         // nothing on screen having moved. See setClipIfChanged() in utils.ts.
         setClipIfChanged(this.bgActor, localBgX - CLIP_PADDING, localBgY - CLIP_PADDING, bgW + CLIP_PADDING * 2, bgH + CLIP_PADDING * 2);
-        const SHADOW_MAX_RADIUS = CLIP_PADDING - 20;
+        const SHADOW_MAX_RADIUS = 32;
         this.effect?.setShadowMaxRadius(SHADOW_MAX_RADIUS);
         /*
         if (this._outputLogs) {
