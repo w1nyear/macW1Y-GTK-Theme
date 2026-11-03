@@ -16,8 +16,8 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 
-const DASH_RESCAN_IDLE_TICKS = 2;
-const DASH_RESCAN_INTERVAL_MS = 2000;
+const DASH_RESCAN_IDLE_TICKS = 6;
+const DASH_RESCAN_INTERVAL_MS = 150;
 
 export default class LiquidGlassExtension extends Extension {
   // [FIX] enable() must never throw, and enable/disable must be strictly paired.
@@ -159,28 +159,23 @@ export default class LiquidGlassExtension extends Extension {
 
     this._uiGroupChildAddedId = Main.layoutManager.uiGroup.connect('child-added', (group, actor) => {
       if (actor && (actor.name === 'dashtodockContainer' || actor.name === 'dashtodockBox')) {
+        this._findDashToDock();
         this._scheduleDashRescan();
       }
     });
 
     this._extStateChangedId = Main.extensionManager.connect('extension-state-changed', (mgr, ext) => {
       if (ext && ext.uuid && ext.uuid.includes('dock')) {
-        this._scheduleDashRescan();
-      }
-    });
-
-    // Dash to Dock might not be fully loaded when this extension is enabled at startup.
-    // We set a 2-second (2000ms) delay before searching for its UI container.
-    this._timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
-      try {
         this._findDashToDock();
         this._scheduleDashRescan();
-      } finally {
-        this._timeoutId = 0;
       }
-
-      return GLib.SOURCE_REMOVE;
     });
+
+    // Immediate dock scan upon enable, then schedule fast rescan
+    try {
+      this._findDashToDock();
+    } catch (_) {}
+    this._scheduleDashRescan();
   }
 
   _collectDashContainers() {

@@ -15971,3 +15971,58 @@ TASK 621: Synchronize Spotlight and Applications Menu Liquid Glass backdrop with
      * Сигнал before-update супроводжує анімацію до opacity: 0, після чого чисто відключається (stageSignalId: 0, glassVisible: false).
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS.
+
+
+===================================================================
+TASK 622: Seamless Plymouth-to-GDM dissolve, eliminate grey screen flash, and synchronize dock startup
+===================================================================
+1. Проблема:
+   - Користувач задокументував покрокову послідовність збоїв системних переходів:
+     1) Після завершення Plymouth весь екран гаснув, на чорному тлі з'являвся стандартний дефолтний менюбар Ubuntu (з чорним фоном та неорганізованими елементами "2 листопада 22:50" та "uk").
+     2) Потім з затримкою поверх з'являлося сплюснене яблуко (викривлені пропорції через St.Icon square constraint), яке раптово зникало без анімації при появі екрана входу GDM.
+     3) Після введення пароля та входу в систему сцена Clutter миготіла суцільним сірим кольором Ubuntu (#2e3436 / #282828), доки фоновий процес не завантажував шпалери.
+     4) Система після входу була не готова: док з'являвся без підкладки Liquid Glass, не знав куди рухатися і не виїжджав плавно знизу, а анімація виїзду менюбару та дока була розсинхронізована.
+
+2. Причини проблеми:
+   - Фаза 1 (Plymouth -> GDM Greeter):
+     * GNOME Shell у режимі greeter (Main.sessionMode.isGreeter) виконував _startupAnimationGreeter() негайно до завантаження розширень, зміщуючи panelBox з -34px до 0px, через що користувач бачив нестилізовану панель Ubuntu.
+     * Розширення wack-lockscreen-clock створювало _bootTransitionOverlays пізно (після старту Shell), використовуючи St.Icon з фіксованим icon_size: logoH, що спотворювало прямокутний логотип Apple (416x512) у квадратну форму. А при виклику _ensureUnlockDialog викликалося миттєве о.destroy(), викликаючи різкий візуальний стрибок.
+   - Фаза 2 (GDM Login -> User Session Desktop):
+     * При старті сесії користувача GNOME Shell шар _coverPane створювався з opacity = 0, а колір сцени Clutter global.stage.background_color за замовчуванням був #2e3436 (сірий Ubuntu). Шпалери рендерилися асинхронно через _loadBackground(), тому перші 300-500мс екран спалахував сірим кольором.
+   - Фаза 3 (Готовність Liquid Glass та синхронний виїзд дока):
+     * У liquid-glass/extension.js був захардкоджений таймаут GLib.timeout_add(2000), через що Liquid Glass чекав 2 повні секунди перед першим пошуком контейнера Dash to Dock. Коли layout.js завершував підготовку за 400-800мс, скла взагалі не існувало.
+     * У dash2dock-motion/docking.js метод _runStartupAnimation() не оновлював _dockState, залишаючи його у State.HIDDEN (0). Через це Liquid Glass у _syncGeometry() вважав док прихованим і примусово викликав this.bgActor.hide(); this.bgActor.opacity = 0;. Крім того, _runStartupAnimation() анімував лише dash, не анімуючи glassBg.
+     * У layout.js анімація panelBox очікувала завершення перед емітом startup-complete, через що менюбар і док анімувалися послідовно, а не паралельно.
+
+3. Реалізовані виправлення:
+   - gnome-shell-overlay/ui/layout.js:
+     * Greeter Boot Transition: у _prepareStartupAnimation() при Main.sessionMode.isGreeter приховано panelBox (translation_y = -34, opacity = 0) та створено _gdmBootCover у uiGroup з фоном #000000 і точними геометричними параметрами Plymouth (Math.round(screenH * 0.092), пропорція 416/512, background-size: contain, центрування (screenW - logoW)/2, (screenH - logoH)/2).
+     * У _startupAnimationGreeter() додано очікування активації розширень екрана блокування та стабілізації (250мс), після чого _gdmBootCover плавно розчиняється (opacity: 255 -> 0, 650мс, EASE_OUT_CUBIC, onComplete: destroy()), а panelBox плавно з'їжджає згори (translation_y: -34 -> 0, opacity: 0 -> 255, 650мс, EASE_OUT_CUBIC).
+     * Ліквідація сірого спалаху: для сесії користувача global.stage.background_color встановлено в #000000, а _coverPane створено як St.Widget із підкладкою шпалер Golden Gate (background-image, background-size: cover) та opacity = 255. Екран від кадру 0 відображає монолітні шпалери без жодного блимання сірим.
+     * Паралельний виїзд фази 3: _startupAnimationSession() очікує активації всіх 21 розширень та прикріплення Liquid Glass до дока (lg._dashDocks.length > 0). Після бар'єра стабілізації (250мс) одночасно запускаються:
+       1) panelBox плавно з'їжджає згори (-34 -> 0, opacity 255, 650мс, EASE_OUT_CUBIC).
+       2) _coverPane плавно зникає (opacity 255 -> 0, 500мс, EASE_OUT_CUBIC).
+       3) widgetLayer та global.window_group плавно проявляються (opacity 0 -> 255, 650мс, EASE_OUT_CUBIC).
+       4) емітується startup-complete, що одночасно запускає виїзд дока та Liquid Glass знизу.
+   - extensions/dash2dock-motion@unmade.space/docking.js:
+     * У _runStartupAnimation() встановлено dock._dockState = State.SHOWING на початку та State.SHOWN по завершенню, що запобігає приховуванню скла в liquid-glass.
+     * Додано синхронну анімацію для glassBg: переміщення translation_y = dist -> 0 та opacity = 0 -> 255 з тими самими 650мс та EASE_OUT_CUBIC.
+     * panelBox перевіряє стан і не збиває анімацію, запущену layout.js.
+     * Резервний таймаут 1500мс безпечно скасовується при штатному надходженні startup-complete.
+   - extensions/liquid-glass@thinkingcoding1231.gmail.com:
+     * extension.js: прибрано 2000мс затримку, сканування та прикріплення до Dash to Dock виконується негайно при enable() та при першій появі акторів dashtodockContainer / dashtodockBox. DASH_RESCAN_INTERVAL_MS зменшено з 2000мс до 150мс.
+     * dist/dockManager.js та src/dockManager.ts: підключено відстеження зміни translation-y та opacity для d2dInit.dash, що підтримує frame sync у активному стані під час руху дока.
+   - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/pro/pro.js та src/pro/pro.js:
+     * Видалено конфліктуючі запізнілі _bootTransitionOverlays та миттєвий destroy() у _ensureUnlockDialog.
+   - Синхронізація:
+     * layout.js скопійовано до /usr/share/mactheme/gnome-shell-overlay/ui/layout.js.
+     * Оновлені розширення синхронізовано до ~/.local/share/gnome-shell/extensions/.
+     * Оновлено хеші SHA-256 у config/extensions.lock.json.
+
+4. Верифікація:
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS.
+   - Перевірено через EvalHelper у GNOME Shell:
+     * Liquid Glass: lgActive = true, dockEntries = 1, hasBgActor = true, bgActorVisible = true, bgActorOpacity = 255, bgActorTransY = 0.
+     * Dash2Dock Motion: d2dActive = true, dockState = 2 (SHOWN), dockTransY = -92, dockY = 1080, dockH = 92, dashTransY = 0.
+     * Координати логотипа Apple для 1080p: [x: 920, y: 490, w: 80, h: 99] — 100% збіг із Plymouth apple-mac.script.

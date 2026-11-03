@@ -752,8 +752,21 @@ export const LayoutManager = GObject.registerClass({
 
         // During the initial transition, add a simple actor to block all events,
         // so they don't get delivered to X11 windows that have been transformed.
-        this._coverPane = new Clutter.Actor({
-            opacity: 0,
+        let bgUri = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg';
+        if (!Main.sessionMode.isGreeter) {
+            try {
+                const bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
+                const uri = bgSettings.get_string('picture-uri-dark') || bgSettings.get_string('picture-uri');
+                if (uri && uri !== '') bgUri = uri;
+            } catch (_) {}
+        }
+
+        this._coverPane = new St.Widget({
+            name: 'macStartupCoverPane',
+            style: Main.sessionMode.isGreeter
+                ? 'background-color: transparent;'
+                : `background-color: #000000; background-image: url("${bgUri}"); background-size: cover; background-position: center;`,
+            opacity: Main.sessionMode.isGreeter ? 0 : 255,
             width: global.screen_width,
             height: global.screen_height,
             reactive: true,
@@ -767,9 +780,52 @@ export const LayoutManager = GObject.registerClass({
         this._updateRegions();
 
         if (Main.sessionMode.isGreeter) {
-            this.panelBox.translation_y = -this.panelBox.height;
+            // Hide panelBox immediately so default Ubuntu greeter items never flash
+            if (this.panelBox) {
+                this.panelBox.remove_all_transitions();
+                const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
+                this.panelBox.translation_y = -panelH;
+                this.panelBox.opacity = 0;
+            }
+
+            // Create Plymouth bootCover matching Plymouth 1:1 down to the single pixel
+            if (!this._gdmBootCover) {
+                const primary = this.primaryMonitor || this.monitors[0];
+                const screenW = primary ? primary.width : (global.screen_width || 1920);
+                const screenH = primary ? primary.height : (global.screen_height || 1080);
+                const logoH = Math.max(50, Math.round(screenH * 0.092));
+                const logoW = Math.round(logoH * 0.8125); // 416 / 512
+                const logoX = Math.round((screenW - logoW) / 2);
+                const logoY = Math.round((screenH - logoH) / 2);
+
+                this._gdmBootCover = new St.Widget({
+                    name: 'gdmBootCover',
+                    style: 'background-color: #000000;',
+                    x: primary ? primary.x : 0,
+                    y: primary ? primary.y : 0,
+                    width: screenW,
+                    height: screenH,
+                    reactive: true,
+                });
+
+                const logoActor = new St.Widget({
+                    name: 'gdmBootLogo',
+                    style: 'background-image: url("file:///usr/share/plymouth/themes/apple-mac/logo.png"); background-size: contain; background-repeat: no-repeat; background-position: center;',
+                    x: logoX,
+                    y: logoY,
+                    width: logoW,
+                    height: logoH,
+                });
+
+                this._gdmBootCover.add_child(logoActor);
+                this.uiGroup.add_child(this._gdmBootCover);
+                this.uiGroup.set_child_above_sibling(this._gdmBootCover, null);
+            }
         } else {
             this.keyboardBox.hide();
+
+            // Set black stage background color to eliminate Ubuntu grey (#2e3436) flash
+            global.stage.background_color = new Clutter.Color({ red: 0, green: 0, blue: 0, alpha: 255 });
 
             // ФАЗА 1: Тиха фонова підготовка
             // 2. Шпалери монолітні (100% масштаб, без блимання)
@@ -787,25 +843,7 @@ export const LayoutManager = GObject.registerClass({
                 this.panelBox.opacity = 0;
             }
 
-            // 4. Dock приховано за нижнім краєм (translation_y = 0, opacity = 0)
-            const docks = this.uiGroup.get_children().filter(c => c.name === 'dashtodockContainer');
-            docks.forEach(dock => {
-                dock.remove_all_transitions();
-                dock.translation_y = 0;
-                dock.opacity = 0;
-            });
-
-            if (!this._macDockChildAddedId) {
-                this._macDockChildAddedId = this.uiGroup.connect('child-added', (_group, child) => {
-                    if (child.name === 'dashtodockContainer') {
-                        child.remove_all_transitions();
-                        child.translation_y = 0;
-                        child.opacity = 0;
-                    }
-                });
-            }
-
-            // 5. Віджети та вікна приховано (opacity = 0)
+            // 4. Віджети та вікна приховано (opacity = 0)
             if (global.window_group) {
                 global.window_group.remove_all_transitions();
                 global.window_group.opacity = 0;
@@ -846,11 +884,80 @@ export const LayoutManager = GObject.registerClass({
     }
 
     async _startupAnimationGreeter() {
-        await this.panelBox.easeAsync({
-            translation_y: 0,
-            duration: STARTUP_ANIMATION_TIME,
-            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-        }).catch(logErrorUnlessCancelled);
+        const waitForGreeterExtensions = async () => {
+            let em = Main.extensionManager;
+            let attempts = 0;
+            while ((!em || !em._enabledExtensions || em._enabledExtensions.length === 0) && attempts < 40) {
+                await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                    r();
+                    return GLib.SOURCE_REMOVE;
+                }));
+                em = Main.extensionManager;
+                attempts++;
+            }
+
+            if (!em || !em._enabledExtensions || em._enabledExtensions.length === 0)
+                return;
+
+            const isReady = () => em._enabledExtensions.every(uuid => {
+                const ext = em.lookup(uuid);
+                return ext && (ext.state === 1 || ext.state === 2 || ext.state === 3);
+            });
+
+            if (isReady()) return;
+
+            await new Promise(resolve => {
+                let timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 3000, () => {
+                    timeoutId = 0;
+                    try { em.disconnect(sigId); } catch (_) {}
+                    resolve();
+                    return GLib.SOURCE_REMOVE;
+                });
+
+                const sigId = em.connect('extension-state-changed', () => {
+                    if (isReady()) {
+                        if (timeoutId) GLib.source_remove(timeoutId);
+                        try { em.disconnect(sigId); } catch (_) {}
+                        resolve();
+                    }
+                });
+            });
+        };
+
+        await waitForGreeterExtensions();
+
+        // Stabilization barrier for GDM layout & clock
+        await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
+            resolve();
+            return GLib.SOURCE_REMOVE;
+        }));
+
+        const DURATION = 650;
+        const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
+
+        // Smoothly dissolve Plymouth cover into GDM wallpaper & lockscreen clock
+        if (this._gdmBootCover) {
+            const cover = this._gdmBootCover;
+            this._gdmBootCover = null;
+            cover.remove_all_transitions();
+            cover.ease({
+                opacity: 0,
+                duration: DURATION,
+                mode: MODE,
+                onComplete: () => cover.destroy(),
+            });
+        }
+
+        // Slide down top bar
+        if (this.panelBox) {
+            this.panelBox.remove_all_transitions();
+            this.panelBox.ease({
+                translation_y: 0,
+                opacity: 255,
+                duration: DURATION,
+                mode: MODE,
+            });
+        }
     }
 
     async _startupAnimationSession() {
@@ -904,20 +1011,32 @@ export const LayoutManager = GObject.registerClass({
 
         await waitForAllExtensions();
 
+        // Wait for Liquid Glass to attach to Dash to Dock so glass is ready before dock slides in
+        const waitForLiquidGlass = async () => {
+            let attempts = 0;
+            while (attempts < 25) {
+                const lg = Main.extensionManager?.lookup('liquid-glass@thinkingcoding1231.gmail.com');
+                if (lg?.stateObj?._dashDocks?.length > 0)
+                    return;
+                await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
+                    r();
+                    return GLib.SOURCE_REMOVE;
+                }));
+                attempts++;
+            }
+        };
+        await waitForLiquidGlass();
+
         // 7. top-bar-organizer впорядковує рядок меню
         // 8. desktop-widgets створює віджети
         // 9. Док обраховує геометрію
-        // 10. Бар'єр стабілізації (350 мс — фінальний рендеринг завершено)
-        await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
+        // 10. Бар'єр стабілізації (250 мс — фінальний рендеринг завершено)
+        await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
             resolve();
             return GLib.SOURCE_REMOVE;
         }));
 
-        // Disconnect dynamic dock and widget layer listeners
-        if (this._macDockChildAddedId) {
-            try { this.uiGroup.disconnect(this._macDockChildAddedId); } catch (_) {}
-            this._macDockChildAddedId = null;
-        }
+        // Disconnect widget layer listener
         if (this._macBgChildAddedId && this._backgroundGroup) {
             try { this._backgroundGroup.disconnect(this._macBgChildAddedId); } catch (_) {}
             this._macBgChildAddedId = null;
@@ -946,20 +1065,15 @@ export const LayoutManager = GObject.registerClass({
             Main.panel.opacity = 255;
         }
 
-        // 12. Док плавно виїжджає знизу
-        const docks = this.uiGroup.get_children().filter(c => c.name === 'dashtodockContainer');
-        docks.forEach(dock => {
-            dock.remove_all_transitions();
-            const dockH = dock.height > 0 ? dock.height : 92;
-            dock.translation_y = 0;
-            dock.opacity = 0;
-            dock.ease({
-                translation_y: -dockH,
-                opacity: 255,
-                duration: DURATION,
+        // Smoothly fade out cover pane (seamless wallpaper cover)
+        if (this._coverPane) {
+            this._coverPane.remove_all_transitions();
+            this._coverPane.ease({
+                opacity: 0,
+                duration: 500,
                 mode: MODE,
             });
-        });
+        }
 
         // 13. Віджети плавно проявляються на екрані (opacity: 0 -> 100%)
         const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
@@ -987,6 +1101,13 @@ export const LayoutManager = GObject.registerClass({
             });
         }
 
+        // 12. Trigger synchronized dock + Liquid Glass entrance in parallel
+        this._startingUp = false;
+        if (!this._hasEmittedStartupComplete) {
+            this._hasEmittedStartupComplete = true;
+            this.emit('startup-complete');
+        }
+
         // Wait for entrance animation to complete before destroying cover pane
         await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, DURATION, () => {
             resolve();
@@ -995,8 +1116,15 @@ export const LayoutManager = GObject.registerClass({
     }
 
     _startupAnimationComplete() {
-        this._coverPane.destroy();
-        this._coverPane = null;
+        if (this._coverPane) {
+            this._coverPane.destroy();
+            this._coverPane = null;
+        }
+
+        if (this._gdmBootCover) {
+            this._gdmBootCover.destroy();
+            this._gdmBootCover = null;
+        }
 
         this._systemBackground.destroy();
         this._systemBackground = null;
@@ -1012,7 +1140,10 @@ export const LayoutManager = GObject.registerClass({
 
         this._queueUpdateRegions();
 
-        this.emit('startup-complete');
+        if (!this._hasEmittedStartupComplete) {
+            this._hasEmittedStartupComplete = true;
+            this.emit('startup-complete');
+        }
     }
 
     // setDummyCursorGeometry:

@@ -2358,10 +2358,16 @@ export class DockManager {
             return;
         this._startupAnimationRan = true;
 
+        const DURATION = 650;
+        const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
+
         DockManager.allDocks.forEach(dock => {
             const {dash} = dock;
             if (!dash)
                 return;
+
+            dock._dockState = State.SHOWING;
+            const dist = (dock.height > 0 ? dock.height : 80) + 30;
 
             switch (dock.position) {
             case St.Side.LEFT:
@@ -2371,10 +2377,10 @@ export class DockManager {
                 dash.translation_x = dash.width;
                 break;
             case St.Side.BOTTOM:
-                dash.translation_y = (dash.height > 0 ? dash.height : 80) + 30;
+                dash.translation_y = dist;
                 break;
             case St.Side.TOP:
-                dash.translation_y = -((dash.height > 0 ? dash.height : 80) + 30);
+                dash.translation_y = -dist;
                 break;
             }
 
@@ -2383,21 +2389,42 @@ export class DockManager {
                 opacity: 255,
                 translation_x: 0,
                 translation_y: 0,
-                duration: STARTUP_ANIMATION_TIME,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                duration: DURATION,
+                mode: MODE,
+                onComplete: () => {
+                    dock._dockState = State.SHOWN;
+                },
             });
+
+            // Synchronize Liquid Glass background
+            const glassBg = dock._getGlassBg ? dock._getGlassBg() : null;
+            if (glassBg) {
+                glassBg.remove_all_transitions();
+                const offset = dock._getSlideOffset(dist);
+                glassBg.translation_x = offset.translation_x;
+                glassBg.translation_y = offset.translation_y;
+                glassBg.opacity = 0;
+                glassBg.show();
+                glassBg.ease({
+                    translation_x: 0,
+                    translation_y: 0,
+                    opacity: 255,
+                    duration: DURATION,
+                    mode: MODE,
+                });
+            }
         });
 
         const panelBox = Main.layoutManager.panelBox || Main.panel;
-        if (panelBox) {
+        if (panelBox && panelBox.opacity !== 255) {
             panelBox.remove_all_transitions();
             panelBox.translation_y = -(panelBox.height > 0 ? panelBox.height : 34);
             panelBox.opacity = 0;
             panelBox.ease({
                 opacity: 255,
                 translation_y: 0,
-                duration: STARTUP_ANIMATION_TIME,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                duration: DURATION,
+                mode: MODE,
             });
         }
     }
@@ -2686,11 +2713,16 @@ export class DockManager {
             this._signalsHandler.addWithLabel(Labels.STARTUP_ANIMATION,
                 Main.layoutManager, 'startup-complete', () => {
                     this._signalsHandler.removeWithLabel(Labels.STARTUP_ANIMATION);
+                    if (this._startupTimeoutId) {
+                        GLib.source_remove(this._startupTimeoutId);
+                        this._startupTimeoutId = 0;
+                    }
                     Main.sessionMode.hasOverview = hadOverview;
                     this._runStartupAnimation();
                 });
 
-            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
+            this._startupTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
+                this._startupTimeoutId = 0;
                 this._runStartupAnimation();
                 return GLib.SOURCE_REMOVE;
             });

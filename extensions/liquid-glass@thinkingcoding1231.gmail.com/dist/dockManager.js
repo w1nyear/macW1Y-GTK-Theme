@@ -522,6 +522,10 @@ export class DashManager {
                 this._signals.push(d2dInit.connect('hiding', () => this.wakeFrameSync()));
                 this._signals.push(d2dInit.connect('notify::translation-y', () => this.wakeFrameSync()));
                 this._signals.push(d2dInit.connect('notify::visible', () => this.wakeFrameSync()));
+                if (d2dInit.dash) {
+                    this._signals.push(d2dInit.dash.connect('notify::translation-y', () => this.wakeFrameSync()));
+                    this._signals.push(d2dInit.dash.connect('notify::opacity', () => this.wakeFrameSync()));
+                }
                 if (d2dInit._slider) {
                     this._signals.push(d2dInit._slider.connect('notify::slide-x', () => this.wakeFrameSync()));
                     this._signals.push(d2dInit._slider.connect('notify::y', () => this.wakeFrameSync()));
