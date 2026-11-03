@@ -63,6 +63,9 @@ function _getDockContainer() {
         const cdl = Main.extensionManager?.lookup('cupertino-dock-lite@rinzler69-wastaken.github.com')?.stateObj;
         if (cdl?.dashContainer)
             return cdl.dashContainer;
+        const dockActor = Main.uiGroup?.get_children()?.find(c => c.name === 'dashtodockContainer');
+        if (dockActor)
+            return dockActor;
         const d2d = Main.extensionManager?.lookup('dash2dock-motion@unmade.space')?.stateObj;
         if (d2d?._dockManager?.docks?.length)
             return d2d._dockManager.docks[0];
@@ -577,7 +580,7 @@ function _showDockAnimated() {
 }
 
 function _hideDockAnimated() {
-    if (!_enabled || !_dockRevealed) return;
+    if (!_enabled) return;
     const dc = _getDockContainer();
     if (!dc) return;
 
@@ -677,6 +680,9 @@ function _recomputeFullscreen() {
         if (!_topTriggerActor || !_bottomTriggerActor)
             _createEdgeTriggers();
         _startFullscreenWatcher();
+
+        // Ensure dock is hidden when entering fullscreen
+        _hideDockAnimated();
 
         // Clean up any tracked shrunk actors that are no longer fullscreen
         for (const actor of _shrunkActors) {

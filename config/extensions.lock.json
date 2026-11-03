@@ -137,7 +137,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "1737af0ee1ca3959b6813b11f8ae0c498770b4f684da50d49272cad42361fc95",
+      "sha256": "39af88045e7ebfb422656f43f2bd3231010a96b6fa05b696d28e96aeae7935ae",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -163,7 +163,7 @@
         "NOTICE": "66c7fc93e297defd7770d8b29b4c505f56dbe15542e9bb21e5c77c97a2aed95c",
         "desktopIconsIntegration.js": "d53dad8c6f0475e3b6a23939ddfd3c6fdb709238f3392e4897e892da4761fdbf",
         "theming.js": "2e4df7ef6b086d1592d8405889e243003e6fedcba712a8ad23051a0fedad326a",
-        "docking.js": "2a64b6d408ce0dd66f1813494790df0a599fde259999e0f1b9e420c3b1043538",
+        "docking.js": "5a1da662a0987fb62d213606050ed2bc069500de33312fdd0e22cc3112252e2e",
         "fileManager1API.js": "141341f2fc7a5cea14a543e17fc8d89b1d5ff7d694b67cf50ae561df749c2eda",
         "prefs.js": "f58463bdf01d1016e4d2e0f26781d52d9f986e4821c0fcaf430bfca1b7d9c096",
         "appIcons.js": "29e14ddb8d7e81480914c376d6fa616f6222f08beb500c3354adeb95c4f56f15",
@@ -224,7 +224,7 @@
         "locale/nl/LC_MESSAGES/dash2dock-motion.mo": "ba7e144e0ee6edcb4f84f5ffbd0727eb3104c1b1bd2c1e520cc3af49affd5d39",
         "locale/ro/LC_MESSAGES/dash2dock-motion.mo": "3c44204f5671296cb522d7ee5769b18e0506870f8a413f79a23983ebc04bd3fe"
       },
-      "pinned_sha256": "1737af0ee1ca3959b6813b11f8ae0c498770b4f684da50d49272cad42361fc95"
+      "pinned_sha256": "39af88045e7ebfb422656f43f2bd3231010a96b6fa05b696d28e96aeae7935ae"
     },
     "eval-helper@mactheme": {
       "uuid": "eval-helper@mactheme",
@@ -260,7 +260,7 @@
         "50",
         "51"
       ],
-      "sha256": "f1c8dead84e50dca2ec79288fa26afdd6174b7c7f08eec6993eb63e07515a68c",
+      "sha256": "1787874651e459a96829c4ad925b0eafbde1c4e4079c251ad9bc3486c92e9003",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -274,7 +274,7 @@
       "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
       "last_verified": "2026-11-02",
       "integrity_hash": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f",
-      "pinned_sha256": "f1c8dead84e50dca2ec79288fa26afdd6174b7c7f08eec6993eb63e07515a68c"
+      "pinned_sha256": "1787874651e459a96829c4ad925b0eafbde1c4e4079c251ad9bc3486c92e9003"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",

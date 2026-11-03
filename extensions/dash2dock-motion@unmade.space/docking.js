@@ -361,7 +361,11 @@ const DockedDash = GObject.registerClass({
         ], [
             global.display,
             'in-fullscreen-changed',
-            this._updateBarrier.bind(this),
+            () => {
+                this._updateVisibilityMode();
+                this._updateAutoHideBarriers();
+                this._updateDashVisibility();
+            },
         ], [
             // Monitor windows overlapping
             this._intellihide,
@@ -498,7 +502,7 @@ const DockedDash = GObject.registerClass({
             if (this.get_parent())
                 Main.layoutManager.removeChrome(this);
             Main.layoutManager.addChrome(this, {
-                trackFullscreen: true,
+                trackFullscreen: false,
                 affectsStruts: true,
             });
         } else {
@@ -781,8 +785,13 @@ const DockedDash = GObject.registerClass({
      */
     _updateVisibilityMode() {
         const {settings} = DockManager;
-        if (DockManager.settings.dockFixed || DockManager.settings.manualhide) {
+        const inFullscreen = this._monitor && (this._monitor.inFullscreen || global.display.get_monitor_in_fullscreen(this.monitorIndex));
+
+        if ((DockManager.settings.dockFixed || DockManager.settings.manualhide) && !inFullscreen) {
             this._autohideIsEnabled = false;
+            this._intellihideIsEnabled = false;
+        } else if (inFullscreen) {
+            this._autohideIsEnabled = settings.autohideInFullscreen;
             this._intellihideIsEnabled = false;
         } else {
             this._autohideIsEnabled = settings.autohide;
@@ -802,6 +811,10 @@ const DockedDash = GObject.registerClass({
         }
 
         this._updateDashVisibility();
+    }
+
+    updateDashVisibility() {
+        return this._updateDashVisibility();
     }
 
     /**
@@ -824,6 +837,22 @@ const DockedDash = GObject.registerClass({
             return;
 
         const {settings} = DockManager;
+        const inFullscreen = this._monitor && (this._monitor.inFullscreen || global.display.get_monitor_in_fullscreen(this.monitorIndex));
+
+        if (inFullscreen) {
+            if (settings.autohideInFullscreen) {
+                this._ignoreHover = false;
+                if (this._box.hover || this.dash.requiresVisibility)
+                    this._animateIn(settings.animationTime, 0);
+                else
+                    this._animateOut(settings.animationTime, 0);
+            } else {
+                this._ignoreHover = true;
+                this._removeAnimations();
+                this._animateOut(settings.animationTime, 0);
+            }
+            return;
+        }
 
         if (DockManager.settings.dockFixed) {
             this._removeAnimations();
@@ -892,7 +921,8 @@ const DockedDash = GObject.registerClass({
         if (!this._ignoreHover) {
             // Skip if dock is not in autohide mode for instance because it is shown
             // by intellihide.
-            if (this._autohideIsEnabled) {
+            const inFullscreen = this._monitor && (this._monitor.inFullscreen || global.display.get_monitor_in_fullscreen(this.monitorIndex));
+            if (this._autohideIsEnabled || (inFullscreen && DockManager.settings.autohideInFullscreen)) {
                 if (this._box.hover || Main.overview.visible)
                     this._show();
                 else
@@ -2368,7 +2398,10 @@ export class DockManager {
                 dash.translation_y = 0;
                 dash.opacity = 255;
                 dock._dockState = State.SHOWN;
-                dock.updateDashVisibility();
+                if (typeof dock._updateDashVisibility === 'function')
+                    dock._updateDashVisibility();
+                else if (typeof dock.updateDashVisibility === 'function')
+                    dock.updateDashVisibility();
             });
             return;
         }
