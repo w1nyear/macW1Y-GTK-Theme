@@ -1,7 +1,7 @@
 [/]
 autohide=false
 background-opacity=0.80000000000000004
-click-action='cycle-windows'
+click-action='minimize'
 custom-theme-shrink=false
 dash-max-icon-size=54
 dock-fixed=true

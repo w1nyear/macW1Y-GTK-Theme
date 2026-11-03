@@ -133,7 +133,7 @@ showindicator2-setting=true
 [extensions/dash-to-dock]
 autohide=true
 background-opacity=0.0
-click-action='cycle-windows'
+click-action='minimize'
 custom-theme-shrink=false
 dash-max-icon-size=54
 dock-fixed=true
