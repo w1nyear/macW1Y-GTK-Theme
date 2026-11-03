@@ -7290,6 +7290,29 @@ static void init_mac_settings_css(void) {
     if (css_inited) return;
     css_inited = TRUE;
 
+    /* Sync slider glass SVGs to active accent color */
+    GSettingsSchemaSource *source = g_settings_schema_source_get_default();
+    if (source) {
+        GSettingsSchema *schema = g_settings_schema_source_lookup(source, "org.gnome.desktop.interface", TRUE);
+        if (schema) {
+            GSettings *iface_settings = g_settings_new("org.gnome.desktop.interface");
+            if (iface_settings) {
+                gchar *accent = g_settings_get_string(iface_settings, "accent-color");
+                if (accent) {
+                    char *argv[] = {
+                        "/home/vitaliy/MACTHEMEFILES/bin/mac-generate-slider-glass.py",
+                        accent,
+                        NULL
+                    };
+                    g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+                    g_free(accent);
+                }
+                g_object_unref(iface_settings);
+            }
+            g_settings_schema_unref(schema);
+        }
+    }
+
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
         "window.mac-settings-window list.mac-settings-sidebar-list, "
@@ -8231,23 +8254,40 @@ static void init_mac_settings_css(void) {
         "  background-image: none; "
         "  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); "
         "} "
-        "window.mac-settings-window switch:active > slider, "
-        "window.mac-settings-window switch > slider:active, "
-        "window.mac-settings-window switch:checked:active > slider, "
-        "window.mac-settings-window switch:checked > slider:active { "
-        "  min-width: 32px; "
-        "  min-height: 22px; "
-        "  margin: 1px; "
-        "  background-color: transparent; "
-        "  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg'); "
-        "  background-repeat: no-repeat; "
-        "  background-size: 100% 100%; "
-        "  border: none; "
-        "  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.20); "
+        "window.mac-settings-window switch:not(:checked):active > slider, "
+        "window.mac-settings-window switch:not(:checked) > slider:active, "
+        "window.mac-settings-window switch:not(:checked):focus > slider { "
+        "  min-width: 26px !important; "
+        "  max-width: 26px !important; "
+        "  min-height: 20px !important; "
+        "  max-height: 20px !important; "
+        "  margin: 2px 1px !important; "
+        "  border-radius: 9999px !important; "
+        "  background-color: #d1d1d6 !important; "
+        "  background-image: none !important; "
+        "  border: 1px solid rgba(0, 0, 0, 0.15) !important; "
+        "  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28) !important; "
         "  transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1), "
-        "              min-height 100ms cubic-bezier(0, 0, 0.2, 1), "
         "              margin 100ms cubic-bezier(0, 0, 0.2, 1), "
-        "              background-image 100ms ease-in, "
+        "              background-color 100ms ease-in, "
+        "              box-shadow 100ms cubic-bezier(0, 0, 0.2, 1); "
+        "} "
+        "window.mac-settings-window switch:checked:active > slider, "
+        "window.mac-settings-window switch:checked > slider:active, "
+        "window.mac-settings-window switch:checked:focus > slider { "
+        "  min-width: 26px !important; "
+        "  max-width: 26px !important; "
+        "  min-height: 20px !important; "
+        "  max-height: 20px !important; "
+        "  margin: 2px 1px !important; "
+        "  border-radius: 9999px !important; "
+        "  background-color: @accent_bg_color !important; "
+        "  background-image: none !important; "
+        "  border: 2px solid #ffffff !important; "
+        "  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important; "
+        "  transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1), "
+        "              margin 100ms cubic-bezier(0, 0, 0.2, 1), "
+        "              background-color 100ms ease-in, "
         "              box-shadow 100ms cubic-bezier(0, 0, 0.2, 1); "
         "} "
         "window.mac-settings-window scale, "
@@ -8323,22 +8363,23 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window scale.horizontal slider:active, "
         "window.mac-settings-window scale > trough > slider:active, "
         "window.mac-settings-window scale slider:active { "
-        "  min-width: 20px !important; "
+        "  min-width: 38px !important; "
         "  min-height: 20px !important; "
-        "  max-width: 20px !important; "
+        "  max-width: 38px !important; "
         "  max-height: 20px !important; "
-        "  margin: -8px -10px !important; "
-        "  background-color: #ffffff !important; "
-        "  background-image: none !important; "
-        "  border: 1px solid rgba(0, 0, 0, 0.18) !important; "
-        "  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.22) !important; "
+        "  margin: -8px -17px !important; "
+        "  border-radius: 9999px !important; "
+        "  background-color: transparent !important; "
+        "  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg') !important; "
+        "  background-repeat: no-repeat !important; "
+        "  background-size: 100% 100% !important; "
+        "  border: none !important; "
+        "  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20) !important; "
         "  outline: none !important; "
         "  transform: none !important; "
         "} "
         "window.mac-settings-window scale.vertical > trough > slider, "
-        "window.mac-settings-window scale.vertical > trough > slider:active, "
-        "window.mac-settings-window scale.vertical slider, "
-        "window.mac-settings-window scale.vertical slider:active { "
+        "window.mac-settings-window scale.vertical slider { "
         "  min-width: 20px !important; "
         "  min-height: 20px !important; "
         "  max-width: 20px !important; "
@@ -8348,6 +8389,23 @@ static void init_mac_settings_css(void) {
         "  background-image: none !important; "
         "  border: 1px solid rgba(0, 0, 0, 0.18) !important; "
         "  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.22) !important; "
+        "} "
+        "window.mac-settings-window scale.vertical > trough > slider:active, "
+        "window.mac-settings-window scale.vertical slider:active { "
+        "  min-width: 20px !important; "
+        "  min-height: 38px !important; "
+        "  max-width: 20px !important; "
+        "  max-height: 38px !important; "
+        "  margin: -17px -8px !important; "
+        "  border-radius: 9999px !important; "
+        "  background-color: transparent !important; "
+        "  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg') !important; "
+        "  background-repeat: no-repeat !important; "
+        "  background-size: 100% 100% !important; "
+        "  border: none !important; "
+        "  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20) !important; "
+        "  outline: none !important; "
+        "  transform: none !important; "
         "} "
         "window.mac-settings-window scale:disabled { "
         "  filter: none; "

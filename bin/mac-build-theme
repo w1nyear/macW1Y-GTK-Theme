@@ -588,25 +588,39 @@ adwswitchrow switch:checked:disabled > slider {{
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }}
 
-switch:active > slider,
-switch > slider:active,
-switch:checked:active > slider,
-switch:checked > slider:active,
-adwswitchrow switch:active > slider,
-adwswitchrow switch:checked:active > slider {{
+switch:not(:checked):active > slider,
+switch:not(:checked) > slider:active,
+adwswitchrow switch:not(:checked):active > slider,
+switch:not(:checked):focus > slider {{
   min-width: {d["switch_active_width"]}px;
   min-height: {d["switch_active_height"]}px;
-  margin: 1px;
-  background-color: transparent;
-  background-image: url('{slider_glass_url}');
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
+  margin: {d["switch_thumb_margin"]}px 1px;
+  background-color: #d1d1d6;
+  background-image: none;
   border-style: none;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.20);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
   transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1),
               min-height 100ms cubic-bezier(0, 0, 0.2, 1),
               margin 100ms cubic-bezier(0, 0, 0.2, 1),
-              background-image 100ms ease-in,
+              background-color 100ms ease-in,
+              box-shadow 100ms cubic-bezier(0, 0, 0.2, 1);
+}}
+
+switch:checked:active > slider,
+switch:checked > slider:active,
+adwswitchrow switch:checked:active > slider,
+switch:checked:focus > slider {{
+  min-width: {d["switch_active_width"]}px;
+  min-height: {d["switch_active_height"]}px;
+  margin: {d["switch_thumb_margin"]}px 1px;
+  background-color: @accent_bg_color;
+  background-image: none;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1),
+              min-height 100ms cubic-bezier(0, 0, 0.2, 1),
+              margin 100ms cubic-bezier(0, 0, 0.2, 1),
+              background-color 100ms ease-in,
               box-shadow 100ms cubic-bezier(0, 0, 0.2, 1);
 }}
 
@@ -666,7 +680,7 @@ scale.horizontal > trough > slider:active,
 scale > trough > slider:active {{
   min-width: {d["slider_active_width"]}px;
   min-height: {d["slider_active_height"]}px;
-  margin: -12px -15px;
+  margin: {d["slider_thumb_margin_y"]}px -17px;
   background-color: transparent;
   background-image: url('{slider_glass_url}');
   background-repeat: no-repeat;
@@ -678,7 +692,7 @@ scale > trough > slider:active {{
 scale.vertical > trough > slider:active {{
   min-width: {d["slider_active_height"]}px;
   min-height: {d["slider_active_width"]}px;
-  margin: -15px -12px;
+  margin: -17px {d["slider_thumb_margin_y"]}px;
   background-color: transparent;
   background-image: url('{slider_glass_v_url}');
   background-repeat: no-repeat;

@@ -3825,37 +3825,35 @@ switch:checked:disabled > slider {
   animation: none;
 }
 
-switch:active > slider,
-switch > slider:active {
-  min-width: 32px;
-  min-height: 22px;
-  margin: -1px -8px -1px 0px;
-  background-color: transparent;
-  background-image: url("assets/scalable/slider-glass.svg");
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  border: none;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.20);
+switch:not(:checked):active > slider,
+switch:not(:checked) > slider:active,
+switch:not(:checked):focus > slider {
+  min-width: 26px;
+  min-height: 20px;
+  margin: 2px 1px;
+  background-color: #d1d1d6;
+  background-image: none;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
   transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1),
               min-height 100ms cubic-bezier(0, 0, 0.2, 1),
-              background-image 100ms ease-in,
+              background-color 100ms ease-in,
               box-shadow 100ms cubic-bezier(0, 0, 0.2, 1);
 }
 
 switch:checked:active > slider,
-switch:checked > slider:active {
-  min-width: 32px;
-  min-height: 22px;
-  margin: -1px 0px -1px -8px;
-  background-color: transparent;
-  background-image: url("assets/scalable/slider-glass.svg");
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  border: none;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.20);
+switch:checked > slider:active,
+switch:checked:focus > slider {
+  min-width: 26px;
+  min-height: 20px;
+  margin: 2px 1px;
+  background-color: @accent_bg_color;
+  background-image: none;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1),
               min-height 100ms cubic-bezier(0, 0, 0.2, 1),
-              background-image 100ms ease-in,
+              background-color 100ms ease-in,
               box-shadow 100ms cubic-bezier(0, 0, 0.2, 1);
 }
 
@@ -4037,13 +4035,16 @@ scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider {
 
 scale.horizontal > trough > slider:active,
 scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider:active {
-  margin: -8px -10px;
-  min-width: 20px;
+  margin: -8px -17px;
+  min-width: 38px;
   min-height: 20px;
-  background-color: #ffffff;
-  background-image: none;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.22);
+  max-height: 20px;
+  background-color: transparent;
+  background-image: url("assets/scalable/slider-glass.svg");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20);
 }
 
 scale.vertical > trough > slider,
@@ -4055,13 +4056,16 @@ scale.vertical:not(.marks-before):not(.marks-after) > trough > slider {
 
 scale.vertical > trough > slider:active,
 scale.vertical:not(.marks-before):not(.marks-after) > trough > slider:active {
-  margin: -10px -8px;
+  margin: -17px -8px;
   min-width: 20px;
-  min-height: 20px;
-  background-color: #ffffff;
-  background-image: none;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.22);
+  min-height: 38px;
+  max-width: 20px;
+  background-color: transparent;
+  background-image: url("assets/scalable/slider-glass-vertical.svg");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20);
 }
 
 scale > trough {
