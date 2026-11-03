@@ -21,7 +21,7 @@ style-dialogs=1
 
 [blur-my-shell/applications]
 blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegram-desktop', 'telegram-desktop', 'TelegramDesktop', 'Telegram', 'org.telegram.desktop', 'antigravity', 'Antigravity', 'google-chrome', 'Google-chrome', 'steam', 'Steam', 'cs2', 'csgo_linux64', 'gamescope', 'wine', 'wine64']
-blur=true
+blur=false
 blur-on-overview=true
 brightness=1.0
 corner-radius=24
@@ -129,7 +129,7 @@ showindicator2-setting=true
 [dash-to-dock]
 autohide=false
 background-opacity=0.80000000000000004
-click-action='focus-minimize-or-appspread'
+click-action='cycle-windows'
 custom-theme-shrink=false
 dash-max-icon-size=48
 dock-fixed=true

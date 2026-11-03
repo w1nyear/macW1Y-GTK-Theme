@@ -32,9 +32,9 @@ sigma=30
 style-dialogs=1
 [extensions/blur-my-shell/applications]
 blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegram-desktop', 'telegram-desktop', 'TelegramDesktop', 'Telegram', 'org.telegram.desktop', 'antigravity', 'Antigravity', 'google-chrome', 'Google-chrome', 'chromium', 'Chromium', 'firefox', 'Firefox', 'Brave-browser', 'brave-browser', 'steam', 'Steam', 'steamwebhelper', 'cs2', 'csgo_linux64', 'gamescope', 'wine', 'wine64', 'lutris', 'heroic', 'mpv', 'vlc', 'Vlc', 'CapCut', 'capcut', 'discord', 'Discord', 'code', 'Code', 'blender', 'obs', 'obs64', 'gimp', 'inkscape']
-blur=true
+blur=false
 blur-on-overview=true
-brightness=0.85499999999999998
+brightness=1.0
 corner-radius=24
 corner-when-maximized=false
 dynamic-opacity=false
@@ -133,7 +133,7 @@ showindicator2-setting=true
 [extensions/dash-to-dock]
 autohide=true
 background-opacity=0.0
-click-action='focus-minimize-or-appspread'
+click-action='cycle-windows'
 custom-theme-shrink=false
 dash-max-icon-size=54
 dock-fixed=true

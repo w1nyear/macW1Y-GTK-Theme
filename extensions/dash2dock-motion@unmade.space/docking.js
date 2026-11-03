@@ -2358,6 +2358,21 @@ export class DockManager {
             return;
         this._startupAnimationRan = true;
 
+        if (Main.layoutManager?._isMacLayoutOverlay) {
+            DockManager.allDocks.forEach(dock => {
+                const {dash} = dock;
+                if (!dash)
+                    return;
+                dash.remove_all_transitions();
+                dash.translation_x = 0;
+                dash.translation_y = 0;
+                dash.opacity = 255;
+                dock._dockState = State.SHOWN;
+                dock.updateDashVisibility();
+            });
+            return;
+        }
+
         const DURATION = 650;
         const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
@@ -2721,7 +2736,7 @@ export class DockManager {
                     this._runStartupAnimation();
                 });
 
-            this._startupTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
+            this._startupTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 4000, () => {
                 this._startupTimeoutId = 0;
                 this._runStartupAnimation();
                 return GLib.SOURCE_REMOVE;

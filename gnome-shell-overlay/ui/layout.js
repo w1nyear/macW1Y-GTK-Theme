@@ -1075,7 +1075,7 @@ export const LayoutManager = GObject.registerClass({
             }
         }
 
-        // 3. Wait for Liquid Glass to attach to Dash to Dock and compute valid glass geometry
+        // 3. Wait for Liquid Glass to attach to Dash to Dock and create its background actor
         const waitForLiquidGlass = async () => {
             let attempts = 0;
             while (attempts < 40) {
@@ -1083,7 +1083,7 @@ export const LayoutManager = GObject.registerClass({
                 const docks = lg?.stateObj?._dashDocks;
                 if (docks && docks.length > 0) {
                     const manager = docks[0].manager;
-                    if (manager && manager.bgActor && manager._lastBgW > 0) {
+                    if (manager && manager.bgActor) {
                         return;
                     }
                 }
@@ -1215,6 +1215,21 @@ export const LayoutManager = GObject.registerClass({
                     duration: DURATION,
                     mode: MODE,
                 });
+            }
+            // Explicitly ensure the inner dash and icons are fully visible and at resting coordinates
+            const dock = dc._dock;
+            if (dock) {
+                if (dock.dash) {
+                    dock.dash.remove_all_transitions();
+                    dock.dash.opacity = 255;
+                    dock.dash.translation_x = 0;
+                    dock.dash.translation_y = 0;
+                }
+                dock._dockState = 2; // State.SHOWN
+                dock._startupAnimationRan = true;
+                if (dock._slider) {
+                    dock._slider.slide_x = 1;
+                }
             }
         }
 

@@ -42,10 +42,10 @@
       "static_blur": true
     },
     "applications": {
-      "blur": true,
+      "blur": false,
       "sigma": 10,
       "corner_radius": 24,
-      "brightness": 0.855,
+      "brightness": 1.0,
       "opacity": 255
     }
   },

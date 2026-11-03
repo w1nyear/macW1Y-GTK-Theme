@@ -2217,20 +2217,18 @@ export default class EvalHelper extends Extension {
                             global.window_group.opacity = 0;
                         }
 
-                        // C. Hide dock below the screen if already present
+                        // C. Hide dock if already present
                         const dock = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
                         if (dock) {
                             dock.remove_all_transitions();
-                            dock.translation_y = 0;
                             dock.opacity = 0;
                         }
 
-                        // D. Ensure any dock added during extension initialization starts hidden off-screen
+                        // D. Ensure any dock added during extension initialization starts hidden
                         if (!this._macDockChildAddedId) {
                             this._macDockChildAddedId = this.uiGroup.connect('child-added', (_group, child) => {
                                 if (child.name === 'dashtodockContainer') {
                                     child.remove_all_transitions();
-                                    child.translation_y = 0;
                                     child.opacity = 0;
                                 }
                             });
@@ -2340,19 +2338,22 @@ export default class EvalHelper extends Extension {
                     });
                 }
 
-                // B. Dock slides up from the bottom
+                // B. Dock fades in cleanly with liquid glass
                 const dock = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
                 if (dock) {
                     dock.remove_all_transitions();
-                    const dockH = dock.height > 0 ? dock.height : 92;
-                    dock.translation_y = 0;
                     dock.opacity = 0;
                     dock.ease({
-                        translation_y: -dockH,
                         opacity: 255,
                         duration: DURATION,
                         mode: MODE,
                     });
+                    if (dock._dock?.dash) {
+                        dock._dock.dash.remove_all_transitions();
+                        dock._dock.dash.opacity = 255;
+                        dock._dock.dash.translation_x = 0;
+                        dock._dock.dash.translation_y = 0;
+                    }
                 }
 
                 // C. Desktop widgets fade in with opacity animation

@@ -722,10 +722,13 @@ export class DashManager {
             baseH = this._lastRestingBaseH;
             hasSlabBounds = true;
         } else if (hasSlabBounds || hasIconBounds) {
-            this._lastRestingAbsX = absX;
-            this._lastRestingAbsY = absY;
-            this._lastRestingBaseW = baseW;
-            this._lastRestingBaseH = baseH;
+            const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
+            if (absY < screenBottom && (!monitor || absY >= monitor.y)) {
+                this._lastRestingAbsX = absX;
+                this._lastRestingAbsY = absY;
+                this._lastRestingBaseW = baseW;
+                this._lastRestingBaseH = baseH;
+            }
         }
 
         // If neither slab nor icons exist or are visible, DO NOT fabricate a ghost pill!

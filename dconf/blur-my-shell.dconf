@@ -13,7 +13,7 @@ style-dialogs=1
 
 [applications]
 blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegram-desktop', 'telegram-desktop', 'TelegramDesktop', 'Telegram', 'org.telegram.desktop', 'antigravity', 'Antigravity', 'google-chrome', 'Google-chrome', 'steam', 'Steam']
-blur=true
+blur=false
 blur-on-overview=true
 brightness=1.0
 corner-radius=24
