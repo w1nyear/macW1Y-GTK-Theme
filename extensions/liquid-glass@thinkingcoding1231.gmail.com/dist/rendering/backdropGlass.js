@@ -132,6 +132,15 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
 
         this._liquidBox.add_effect(this._effect);
 
+        const mon = Main.layoutManager.primaryMonitor;
+        const monX = mon?.x ?? 0;
+        const monY = mon?.y ?? 0;
+        const monW = Math.max(1, mon?.width ?? 1920);
+        const monH = Math.max(1, mon?.height ?? 1080);
+        this.set_position(monX, monY);
+        this.set_size(monW, monH);
+        this.setResolution(monW, monH);
+
         this._windowClones = new WindowCloneManager(
             this._liquidBox,
             this._cloneContainer,
@@ -194,6 +203,14 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
         } catch (_) {}
 
         this._startTick();
+    }
+
+    get effect() {
+        return this._effect;
+    }
+
+    getResolution() {
+        return this._effect?.getResolution?.() ?? [this.width, this.height];
     }
 
     setIsDock(b) {
@@ -378,6 +395,10 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
     }
 
     show() {
+        const mon = Main.layoutManager.primaryMonitor;
+        const monW = Math.max(1, mon?.width ?? 1920);
+        const monH = Math.max(1, mon?.height ?? 1080);
+        this.setResolution(monW, monH);
         super.show();
         try {
             this._windowClones?.rebuildClones?.();

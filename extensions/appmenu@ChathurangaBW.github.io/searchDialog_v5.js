@@ -1282,7 +1282,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
     _applyGlassUniforms() {
         if (!_isGlassAlive(this._glass)) return;
-        const effect = this._glass._effect;
+        const effect = this._glass.effect || this._glass._effect;
         if (!effect) return;
 
         const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
@@ -1298,6 +1298,11 @@ export const MacSpotlightDialog = GObject.registerClass({
         const chroma = (typeof styling.liquid_chroma === 'number') ? (styling.liquid_chroma / 100.0 * 0.04) : 0.008;
         const rim = (typeof styling.liquid_rim === 'number') ? (styling.liquid_rim / 100.0 * 0.40) : 0.18;
         const specular = (typeof styling.liquid_specular === 'number') ? (styling.liquid_specular / 100.0 * 0.40) : 0.15;
+
+        const mon = Main.layoutManager.primaryMonitor;
+        if (mon && typeof this._glass.setResolution === 'function') {
+            this._glass.setResolution(mon.width, mon.height);
+        }
 
         this._glass.setIsDock(false);
         this._glass.setCornerSmoothingEnabled(0.0);
@@ -1359,6 +1364,12 @@ export const MacSpotlightDialog = GObject.registerClass({
                 owner: 'spotlight',
                 excludeActors: [this, this._box, this._backdrop],
             });
+            const mon = Main.layoutManager.primaryMonitor;
+            if (mon) {
+                this._glass.set_position(mon.x, mon.y);
+                this._glass.set_size(mon.width, mon.height);
+                this._glass.setResolution(mon.width, mon.height);
+            }
             this._glass.addExclusion(this);
             this._glass.addExclusion(this._box);
             this._glass.addExclusion(this._backdrop);
@@ -1594,8 +1605,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             }
             if (this._glass.width !== mon.width || this._glass.height !== mon.height) {
                 this._glass.set_size(mon.width, mon.height);
-                this._glass.setResolution(mon.width, mon.height);
             }
+            this._glass.setResolution(mon.width, mon.height);
 
             const hasText = (this._entry && this._entry.get_text) ? this._entry.get_text().trim().length > 0 : false;
             const hasResults = this._resultsWrapper && this._resultsWrapper.visible && (box.height > PILL_HEIGHT + 10);
@@ -1628,11 +1639,13 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const b3H = Math.round((this._btnClipboard.height || BUTTON_SIZE) * scaleY);
 
                 const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
+                const styling = this._readStyling() || {};
+                const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
                 const regions = [
-                    { x: pillX, y: pillY, w: pillW, h: pillH, tintR, tintG, tintB, baseStrength: tintStrength },
-                    { x: b1X, y: b1Y, w: b1W, h: b1H, tintR, tintG, tintB, baseStrength: this._btnApps.hover ? tintStrength * 2.5 : tintStrength },
-                    { x: b2X, y: b2Y, w: b2W, h: b2H, tintR, tintG, tintB, baseStrength: this._btnFiles.hover ? tintStrength * 2.5 : tintStrength },
-                    { x: b3X, y: b3Y, w: b3W, h: b3H, tintR, tintG, tintB, baseStrength: this._btnClipboard.hover ? tintStrength * 2.5 : tintStrength },
+                    { x: pillX, y: pillY, w: pillW, h: pillH, tintR, tintG, tintB, baseStrength: spotTint },
+                    { x: b1X, y: b1Y, w: b1W, h: b1H, tintR, tintG, tintB, baseStrength: this._btnApps.hover ? spotTint * 2.5 : spotTint },
+                    { x: b2X, y: b2Y, w: b2W, h: b2H, tintR, tintG, tintB, baseStrength: this._btnFiles.hover ? spotTint * 2.5 : spotTint },
+                    { x: b3X, y: b3Y, w: b3W, h: b3H, tintR, tintG, tintB, baseStrength: this._btnClipboard.hover ? spotTint * 2.5 : spotTint },
                 ];
 
                 const minX = Math.min(pillX, b1X, b2X, b3X);
@@ -1640,7 +1653,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const maxX = Math.max(pillX + pillW, b1X + b1W, b2X + b2W, b3X + b3W);
                 const maxY = Math.max(pillY + pillH, b1Y + b1H, b2Y + b2H, b3Y + b3H);
 
-                const key = `m:${pillX},${pillY},${pillW},${pillH}:${b1X},${b1Y},${b1W},${b1H}:${b2X},${b2Y},${b2W},${b2H}:${b3X},${b3Y},${b3W},${b3H}:${targetOpacity}:${this._btnApps.hover}:${this._btnFiles.hover}:${this._btnClipboard.hover}:${tintStrength}`;
+                const key = `m:${pillX},${pillY},${pillW},${pillH}:${b1X},${b1Y},${b1W},${b1H}:${b2X},${b2Y},${b2W},${b2H}:${b3X},${b3Y},${b3W},${b3H}:${targetOpacity}:${this._btnApps.hover}:${this._btnFiles.hover}:${this._btnClipboard.hover}:${spotTint}`;
                 if (this._lastGeometryKey === key) return;
                 this._lastGeometryKey = key;
 
@@ -1665,8 +1678,10 @@ export const MacSpotlightDialog = GObject.registerClass({
 
                 this._glass.setMultiRegionMode(false);
                 const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
+                const styling = this._readStyling() || {};
+                const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
                 this._glass.setTintColor(tintR, tintG, tintB);
-                this._glass.setTintStrength(tintStrength);
+                this._glass.setTintStrength(spotTint);
                 this._glass.setCornerRadius(CORNER_RADIUS);
                 this._glass.setGlassGeometry(localBgX, localBgY, bgW, bgH);
                 const CLIP_PAD = 60;
@@ -1991,6 +2006,9 @@ export const MacSpotlightDialog = GObject.registerClass({
                 Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
                 this._glass.show();
                 this._glass.opacity = 0;
+                this._glass.set_position(mon.x, mon.y);
+                this._glass.set_size(mon.width, mon.height);
+                this._glass.setResolution(mon.width, mon.height);
                 this._applyGlassUniforms();
                 this._lastGeometryKey = null;
                 this._syncGlass();
@@ -2013,6 +2031,9 @@ export const MacSpotlightDialog = GObject.registerClass({
                     Main.layoutManager.uiGroup.set_child_above_sibling(this._glass, null);
                     Main.layoutManager.uiGroup.set_child_above_sibling(this, this._glass);
                     this._glass.show();
+                    this._glass.set_position(mon.x, mon.y);
+                    this._glass.set_size(mon.width, mon.height);
+                    this._glass.setResolution(mon.width, mon.height);
                     this._applyGlassUniforms();
                     this._lastGeometryKey = null;
                     this._syncGlass();

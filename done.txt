@@ -16026,3 +16026,39 @@ TASK 622: Seamless Plymouth-to-GDM dissolve, eliminate grey screen flash, and sy
      * Liquid Glass: lgActive = true, dockEntries = 1, hasBgActor = true, bgActorVisible = true, bgActorOpacity = 255, bgActorTransY = 0.
      * Dash2Dock Motion: d2dActive = true, dockState = 2 (SHOWN), dockTransY = -92, dockY = 1080, dockH = 92, dashTransY = 0.
      * Координати логотипа Apple для 1080p: [x: 920, y: 490, w: 80, h: 99] — 100% збіг із Plymouth apple-mac.script.
+
+===================================================================
+Task 623: Відновлення скла (Liquid Glass) у Spotlight пошуковику та меню програм
+===================================================================
+1. Проблема:
+   - У вікні пошуку Spotlight та в режимі меню програм («Програми» / «Файли» / «Буфер обміну») повністю було відсутнє скло Liquid Glass: іконки та елементи інтерфейсу плавали безпосередньо над шпалерами робочого столу без фонової скляної капсули.
+   - Причина 1 (критична): у `LiquidEffect` уніформи `resolution_x` та `resolution_y` ініціалізуються як `0.0`. У `searchDialog_v5.js` виклик `this._glass.setResolution(mon.width, mon.height)` було поміщено всередину умови `if (this._glass.width !== mon.width || this._glass.height !== mon.height)`. Оскільки при додаванні `_glass` до `uiGroup` Clutter автоматично призначив актору розмір екрана (1920x1080), умова `1920 !== 1920` завжди була хибною (`false`). Відповідно, `setResolution` ніколи не викликався, і `resolution_x` / `resolution_y` залишалися `0.0`.
+   - Причина 2: у шейдері `glass.frag` координати пікселів обчислюються як `pixel_coord = uv * resolution`. За умови `resolution = (0.0, 0.0)` значення `pixel_coord` для кожного пікселя дорівнювало `(0, 0)`. Відстань `d` від `(0, 0)` до центру вікна Spotlight `(960, 470)` становила понад 636 пікселів, що значно перевищувало `shadow_max_radius` (60px). Через це `Early Exit 1` спрацьовував на 100% площі екрана, повертаючи нульовий (повністю прозорий) колір.
+   - Причина 3: `_applyGlassUniforms()` звертався до `this._glass.effect`, тоді як у `BackdropGlass` властивість була приватною (`this._effect`) без публічного гетера.
+   - Причина 4: у `_syncGlass()` для режимів multi-region та single-region передавався загальний `tintStrength` (0.05) замість `spotTint` з `styling.json` (`spotlight_tint`).
+   - Причина 5: клас `BackdropGlass` у `backdropGlass.js` не ініціалізував розмір та `setResolution` у конструкторі `_init()`.
+
+2. Реалізація:
+   - extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js:
+     * У `_init()` додано явне встановлення позиції, розмірів та `setResolution(monW, monH)` для первинного монітора відразу при створенні екземпляра.
+     * Додано публічний гетер `get effect() { return this._effect; }`.
+     * Додано метод `getResolution() { return this._effect?.getResolution?.() ?? [this.width, this.height]; }`.
+     * У `show()` додано безумовне оновлення `this.setResolution(monW, monH)`.
+   - extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js:
+     * У `_applyGlassUniforms()` реалізовано безпечний доступ до ефекту через `this._glass.effect || this._glass._effect` та виклик `this._glass.setResolution(mon.width, mon.height)`.
+     * У `_initGlass()` додано миттєве встановлення `set_position(mon.x, mon.y)`, `set_size(mon.width, mon.height)` та `setResolution(mon.width, mon.height)` відразу після конструювання `BackdropGlass`.
+     * У `_syncGlass()` винесено `this._glass.setResolution(mon.width, mon.height)` за межі умови `if (width !== mon.width)` — тепер геометрія FBO синхронізується безумовно на кожному кадрі.
+     * У `_syncGlass()` синхронізовано використання `spotTint` з `styling.json` (як для multi-region пілюлі + 3 круглих кнопок, так і для розгорнутого режиму вікна `apps`/`files`/`clipboard`).
+     * У `open()` додано синхронне встановлення розмірів та `setResolution(mon.width, mon.height)` до виклику `_syncGlass()`, усуваючи будь-який розсинхрон на першому кадрі анімації появи.
+   - Синхронізація та цілісність:
+     * Оновлені файли синхронізовано до `~/.local/share/gnome-shell/extensions/`.
+     * Оновлено SHA-256 хеші у `config/extensions.lock.json`.
+     * Проведено гаряче оновлення прототипів у поточній сесії GNOME Shell без перезапуску оболонки.
+
+3. Верифікація:
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS.
+   - Перевірено через EvalHelper у GNOME Shell:
+     * Режим пошуку Spotlight (`search`): `isOpen = true`, `multiRegion = true`, `resX = 1920`, `resY = 1080`, `compositeRect = [599, 201, 680, 62]`, `blurRect = [439, 106, 1024, 256]`, `glassOpacity = 255`.
+     * Розгорнутий режим програм (`apps`): `isOpen = true`, `multiRegion = false`, `resX = 1920`, `resY = 1080`, `dockX = 603, dockY = 205, dockW = 714, dockH = 530`, `compositeRect = [589, 191, 742, 558]`, `blurRect = [439, 106, 1088, 768]`, `glassOpacity = 255`.
+     * Закриття та повторне відкриття в обох режимах: скло з'являється плавно, геометрія синхронно відстежує розмір і положення контейнера.
