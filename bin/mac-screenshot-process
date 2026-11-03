@@ -74,6 +74,7 @@ def notify(title, message, icon="applets-screenshooter-symbolic"):
             subprocess.Popen([
                 "notify-send",
                 "-a", "Скріншот",
+                "-h", "string:x-canonical-private-synchronous:mac-screenshot-notify",
                 "-i", icon,
                 title, message
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -93,11 +94,11 @@ def get_target_resolution(code):
 def process_image(file_path):
     p = Path(file_path).resolve()
     if not p.exists() or p.stat().st_size == 0:
-        return
+        return None
 
     # Avoid processing already processed files or files in Originals
-    if "Originals" in p.parts or p.stem.endswith("_processed"):
-        return
+    if "Originals" in p.parts or p.stem.endswith("_processed") or p.stem.endswith("_temp"):
+        return None
 
     cfg = load_config()
     format_idx = cfg.get("image_format", 0)       # 0=PNG, 1=JPEG, 2=WebP
@@ -115,21 +116,31 @@ def process_image(file_path):
 
     target_w, target_h, target_name = get_target_resolution(target_idx) if apply_proc else (None, None, None)
 
-    # If neither format conversion nor upscaling is requested, nothing to do
-    if not apply_proc and p.suffix.lower() == target_ext and format_idx == 0:
-        return
+    need_format_convert = (p.suffix.lower() != target_ext)
+    need_upscale = bool(apply_proc and target_w)
+
+    # Fast check: if neither format conversion nor upscaling is requested, nothing to do
+    if not need_format_convert and not need_upscale:
+        return None
 
     try:
         from PIL import Image, ImageFilter
     except ImportError:
-        return
+        return None
 
     try:
-        # Give file time to flush if written by Shell
         time.sleep(0.15)
         with Image.open(p) as img:
             orig_w, orig_h = img.size
-            mode = img.mode
+
+            # Check if upscaling is actually needed (image is smaller than target)
+            do_resize = False
+            if need_upscale and target_w and (target_w > orig_w or (target_h and target_h > orig_h)):
+                do_resize = True
+
+            # If format matches and no resizing needed, skip entirely
+            if not need_format_convert and not do_resize:
+                return None
 
             if keep_orig:
                 orig_dir = p.parent / "Originals"
@@ -138,8 +149,7 @@ def process_image(file_path):
 
             out_img = img
 
-            # Handle upscaling if target resolution is greater than current
-            if target_w and (target_w > orig_w or (target_h and target_h > orig_h)):
+            if do_resize:
                 aspect = orig_w / float(orig_h)
                 new_w = target_w
                 new_h = int(round(new_w / aspect))
@@ -175,20 +185,26 @@ def process_image(file_path):
         if dest_path != p and p.exists():
             p.unlink()
 
-        msg = f"Збережено у {target_ext.upper()[1:]}"
-        if target_w and (target_w > orig_w):
-            msg += f" • Оброблено до {target_name}"
-        notify("Скріншот створено", msg)
+        actions = []
+        if do_resize:
+            actions.append(f"Оброблено до {target_name}")
+        if need_format_convert:
+            actions.append(f"Збережено у {target_ext.upper()[1:]}")
+
+        msg = " • ".join(actions) if actions else "Знімок збережено"
+        notify("Скріншот", msg)
+        return dest_path
     except Exception as e:
         print(f"Error processing image {file_path}: {e}", file=sys.stderr)
+        return None
 
 def process_video(file_path):
     p = Path(file_path).resolve()
     if not p.exists() or p.stat().st_size == 0:
-        return
+        return None
 
     if "Originals" in p.parts or p.stem.endswith("_processed") or p.stem.endswith("_temp"):
-        return
+        return None
 
     # Wait for screencast recorder to finish writing (file size stabilization)
     prev_size = -1
@@ -219,7 +235,7 @@ def process_video(file_path):
     target_w, target_h, target_name = get_target_resolution(target_idx) if apply_proc else (None, None, None)
 
     if not shutil.which("ffmpeg"):
-        return
+        return None
 
     dest_path = p.with_suffix(target_ext)
     temp_path = p.with_name(f"{p.stem}_temp{target_ext}")
@@ -268,10 +284,12 @@ def process_video(file_path):
             if target_w:
                 msg += f" • Оброблено до {target_name}"
             notify("Запис екрана оброблено", msg, icon="video-x-generic-symbolic")
+            return dest_path
     except Exception as e:
         print(f"Error processing video {file_path}: {e}", file=sys.stderr)
         if temp_path.exists():
             temp_path.unlink()
+    return None
 
 def run_daemon():
     print("[mac-screenshot-process] Daemon started, watching screenshot and screencast directories...")
@@ -286,12 +304,20 @@ def run_daemon():
     for d in watch_dirs:
         d.mkdir(parents=True, exist_ok=True)
 
-    seen_files = {}
+    # Track by inode and canonical path so we NEVER reprocess any file
+    processed_inodes = set()
+    processed_paths = set()
+
+    # Pre-populate with all existing files on disk so they are never re-processed
     for d in watch_dirs:
         if d.exists():
             for f in d.iterdir():
                 if f.is_file():
-                    seen_files[str(f)] = f.stat().st_mtime
+                    try:
+                        processed_inodes.add(f.stat().st_ino)
+                        processed_paths.add(str(f.resolve()))
+                    except Exception:
+                        pass
 
     while True:
         try:
@@ -299,21 +325,55 @@ def run_daemon():
                 if not d.exists():
                     continue
                 for f in d.iterdir():
-                    if not f.is_file():
+                    if not f.is_file() or f.name.startswith("."):
                         continue
-                    sp = str(f)
-                    mtime = f.stat().st_mtime
-                    if sp not in seen_files or mtime > seen_files[sp]:
-                        seen_files[sp] = mtime
-                        # Process new file
-                        if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".webp"]:
-                            # Ignore temporary files or processed files
-                            if not f.stem.endswith("_temp") and "Originals" not in f.parts:
-                                process_image(f)
-                        elif f.suffix.lower() in [".webm", ".mp4", ".mkv"]:
-                            if not f.stem.endswith("_temp") and "Originals" not in f.parts:
-                                process_video(f)
-            time.sleep(0.8)
+                    canonical_path = str(f.resolve())
+                    try:
+                        st = f.stat()
+                    except Exception:
+                        continue
+
+                    # If this file was already processed or seen, skip it
+                    if st.st_ino in processed_inodes or canonical_path in processed_paths:
+                        continue
+
+                    # Mark it immediately so subsequent loop cycles skip it
+                    processed_inodes.add(st.st_ino)
+                    processed_paths.add(canonical_path)
+
+                    # Wait for screenshot/screencast writer to finish writing
+                    prev_size = -1
+                    for _ in range(15):
+                        try:
+                            cur_size = f.stat().st_size
+                            if cur_size > 0 and cur_size == prev_size:
+                                break
+                            prev_size = cur_size
+                        except Exception:
+                            pass
+                        time.sleep(0.1)
+
+                    # Process new file
+                    if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".webp"]:
+                        if not f.stem.endswith("_temp") and "Originals" not in f.parts:
+                            dest = process_image(f)
+                            if dest and dest.exists():
+                                try:
+                                    processed_inodes.add(dest.stat().st_ino)
+                                    processed_paths.add(str(dest.resolve()))
+                                except Exception:
+                                    pass
+                    elif f.suffix.lower() in [".webm", ".mp4", ".mkv"]:
+                        if not f.stem.endswith("_temp") and "Originals" not in f.parts:
+                            dest = process_video(f)
+                            if dest and dest.exists():
+                                try:
+                                    processed_inodes.add(dest.stat().st_ino)
+                                    processed_paths.add(str(dest.resolve()))
+                                except Exception:
+                                    pass
+
+            time.sleep(0.5)
         except Exception as e:
             time.sleep(1.0)
 
