@@ -2544,40 +2544,48 @@ headerbar button.star {
 
 headerbar splitbutton {
   border-radius: 9999px;
-  padding: 3px;
+  padding: 0;
   color: @headerbar_fg_color;
   background-color: transparent;
-  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
-  box-shadow: 0 6px 20px alpha(#000000,0.15), inset 1px 2px 1px -1px alpha(#ffffff,0.08), inset -1px -1px 1px 0 alpha(#ffffff,0.08);
+  background-image: none;
+  box-shadow: none;
   border: none;
 }
 
 headerbar splitbutton:backdrop {
-  background-color: alpha(@headerbar_fg_color,0.05);
+  background-color: transparent;
   background-image: none;
   border: none;
   box-shadow: none;
 }
 
 headerbar splitbutton > separator {
-  background-color: alpha(currentColor,0.12);
-  min-width: 1px;
-  margin: 6px 2px;
+  background-color: transparent;
+  min-width: 0;
+  margin: 0;
 }
 
 headerbar splitbutton > button,
 headerbar splitbutton > button.image-button,
 headerbar splitbutton > menubutton > button,
 headerbar splitbutton > menubutton.popup > button, headerbar splitbutton.image-button > menubutton.popup > button.toggle:not(.image-button), headerbar splitbutton.image-button > button, headerbar splitbutton.text-button.image-button > button, headerbar splitbutton.image-text-button > button {
-  min-height: 24px;
-  min-width: 24px;
+  min-height: 28px;
+  min-width: 28px;
   padding: 3px;
+  border-radius: 9999px;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 headerbar splitbutton > button button {
   min-height: 24px;
   min-width: 24px;
   padding: 0;
+  border-radius: 9999px;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 headerbar splitbutton > button:not(:only-child):not(:first-child):not(:last-child),
@@ -2587,15 +2595,13 @@ headerbar splitbutton > menubutton:not(:only-child):not(:first-child):not(:last-
 
 headerbar splitbutton > button:dir(ltr),
 headerbar splitbutton > menubutton > button:dir(rtl) {
-  border-top-right-radius: 9999px;
-  border-bottom-right-radius: 9999px;
+  border-radius: 9999px;
   margin-right: 0;
 }
 
 headerbar splitbutton > button:dir(rtl),
 headerbar splitbutton > menubutton > button:dir(ltr) {
-  border-top-left-radius: 9999px;
-  border-bottom-left-radius: 9999px;
+  border-radius: 9999px;
   margin-left: 0;
 }
 
@@ -11453,6 +11459,12 @@ window.mac-settings-window ccwificonnectionrow > box.header {
   padding: 0px;
   border-spacing: 10px;
 }
+
+
+
+
+
+
 
 
 
