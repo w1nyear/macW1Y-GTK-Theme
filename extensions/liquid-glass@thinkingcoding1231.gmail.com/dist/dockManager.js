@@ -584,8 +584,13 @@ export class DashManager {
             }
         }
 
-        // If DashToDock is hidden, unmapped, or in HIDDEN state, hide glass immediately (skip if transitioning)
-        if (d2d && !isD2DTransitioning && (!d2d.visible || !d2d.mapped || d2d._dockState === 0 /* HIDDEN */ || (d2d._slider && d2d._slider.slide_x <= 0.001))) {
+        // If DashToDock is hiding, allow its ease transition to finish without fighting it
+        if (d2d && d2d._dockState === 1 /* HIDING */) {
+            return false;
+        }
+
+        // If DashToDock is hidden, unmapped, or in HIDDEN state, hide glass immediately
+        if (d2d && (!d2d.visible || !d2d.mapped || d2d._dockState === 0 /* HIDDEN */ || (d2d._slider && d2d._slider.slide_x <= 0.001))) {
             this.bgActor.hide();
             this.bgActor.opacity = 0;
             this.bgActor.translation_y = 0;
@@ -798,9 +803,9 @@ export class DashManager {
         let localBgX = bgX - monitor.x;
         let localBgY = bgY - monitor.y;
         // Detect any change in dock geometry OR monitor size to trigger a rebuild.
-        if (this._lastBgW !== bgW || this._lastBgH !== bgH ||
+        if (!isD2DTransitioning && (this._lastBgW !== bgW || this._lastBgH !== bgH ||
             this._lastBgX !== bgX || this._lastBgY !== bgY ||
-            this._lastScreenW !== screenW || this._lastScreenH !== screenH) {
+            this._lastScreenW !== screenW || this._lastScreenH !== screenH)) {
             this.bgActor.remove_transition('size');
             this.bgActor.remove_transition('position');
             this.bgActor.set_position(monitor.x, monitor.y);

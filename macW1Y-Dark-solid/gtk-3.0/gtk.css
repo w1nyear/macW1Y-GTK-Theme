@@ -94,10 +94,10 @@ menu menuitem:selected,
 window.desktopmenu menuitem:hover,
 window.desktopmenu menuitem:focus,
 window.desktopmenu menuitem:selected {
-  background-color: #007aff;
+  background-color: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+  box-shadow: 0 2px 8px alpha(@accent_bg_color, 0.40);
 }
 
 menu menuitem:hover label,
@@ -183,10 +183,10 @@ popover.menu modelbutton label {
 popover.menu modelbutton:hover,
 popover.menu modelbutton:focus,
 popover.menu modelbutton:selected {
-  background-color: #007aff;
+  background-color: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
+  box-shadow: 0 2px 8px alpha(@accent_bg_color, 0.35);
 }
 
 popover.menu modelbutton:hover label,

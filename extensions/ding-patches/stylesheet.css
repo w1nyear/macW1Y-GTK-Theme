@@ -102,10 +102,10 @@ menu.desktopmenu menuitem:selected,
 menu menuitem:hover,
 menu menuitem:focus,
 menu menuitem:selected {
-    background-color: #007aff;
+    background-color: @accent_bg_color;
     color: #ffffff;
     border-radius: 9999px;
-    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+    box-shadow: 0 2px 8px alpha(@accent_bg_color, 0.40);
 }
 
 .desktopmenu menuitem:hover label,

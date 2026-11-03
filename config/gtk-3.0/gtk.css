@@ -88,10 +88,10 @@ menu menuitem:selected,
 window.desktopmenu menuitem:hover,
 window.desktopmenu menuitem:focus,
 window.desktopmenu menuitem:selected {
-  background-color: #007aff;
+  background-color: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40);
+  box-shadow: 0 1px 4px alpha(@accent_bg_color, 0.40);
   transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
@@ -179,10 +179,10 @@ popover.menu modelbutton label {
 popover.menu modelbutton:hover,
 popover.menu modelbutton:focus,
 popover.menu modelbutton:selected {
-  background-color: #007aff;
+  background-color: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
+  box-shadow: 0 2px 8px alpha(@accent_bg_color, 0.35);
 }
 
 popover.menu modelbutton:hover label,
@@ -358,10 +358,12 @@ scrolledwindow > undershoot.right {
 undershoot.top,
 scrolledwindow undershoot.top,
 scrolledwindow > undershoot.top {
-    min-height: 0px;
-    background: none;
-    background-color: transparent;
-    background-image: none;
+    min-height: 28px;
+    background: linear-gradient(to bottom,
+        @theme_bg_color 0%,
+        alpha(@theme_bg_color, 0.85) 30%,
+        alpha(@theme_bg_color, 0.4) 65%,
+        transparent 100%);
     border: none;
     box-shadow: none;
 }
@@ -369,10 +371,12 @@ scrolledwindow > undershoot.top {
 undershoot.bottom,
 scrolledwindow undershoot.bottom,
 scrolledwindow > undershoot.bottom {
-    min-height: 0px;
-    background: none;
-    background-color: transparent;
-    background-image: none;
+    min-height: 28px;
+    background: linear-gradient(to top,
+        @theme_bg_color 0%,
+        alpha(@theme_bg_color, 0.85) 30%,
+        alpha(@theme_bg_color, 0.4) 65%,
+        transparent 100%);
     border: none;
     box-shadow: none;
 }
@@ -522,14 +526,14 @@ switch:hover {
 }
 
 switch:checked {
-  background-color: #007aff;
+  background-color: @accent_bg_color;
   background-image: none;
   border: none;
   box-shadow: none;
 }
 
 switch:checked:hover {
-  background-color: #1a88ff;
+  background-color: color-mix(in srgb, @accent_bg_color 85%, white);
 }
 
 switch:disabled {
@@ -538,7 +542,7 @@ switch:disabled {
 }
 
 switch:checked:disabled {
-  background-color: #007aff;
+  background-color: @accent_bg_color;
   opacity: 0.55;
 }
 
@@ -613,7 +617,7 @@ scale trough {
 scale highlight {
   min-height: 4px;
   border-radius: 9999px;
-  background-color: #007aff;
+  background-color: @accent_bg_color;
   background-image: none;
   border: none;
   box-shadow: none;
@@ -760,9 +764,6 @@ scale slider:disabled {
   border-bottom-right-radius: 9999px;
   border-left: none;
 }
-
-
-
 
 
 /* macW1Y Global Component Master Overrides (SSOT) */

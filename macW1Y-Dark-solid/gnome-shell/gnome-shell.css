@@ -6071,10 +6071,10 @@ StWidget.focused .app-grid-running-dot {
 .mac-menu-item-row:selected:hover,
 .mac-menu-item-active:hover,
 .mac-menu-item-active:selected {
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
-  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;
+  box-shadow: 0 1px 4px -st-accent-color !important;
 }
 
 .mac-cc-submenu-row:hover,
@@ -6383,9 +6383,9 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-menu-hover-pill {
-  background-color: #007aff !important;
+  background-color: -st-accent-color !important;
   border-radius: 9999px !important;
-  box-shadow: 0 1px 4px rgba(0, 122, 255, 0.40) !important;
+  box-shadow: 0 1px 4px -st-accent-color !important;
 }
 
 .mac-menu-hover-glide-active .popup-menu-item:hover,

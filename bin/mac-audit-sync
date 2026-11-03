@@ -54,10 +54,10 @@ def audit_dock():
     else:
         if "dash-max-icon-size=54" not in motion_dump:
             issues.append("dash2dock-motion: dash-max-icon-size is not 54 in live system")
-        if "dock-fixed=false" not in motion_dump:
-            issues.append("dash2dock-motion: dock-fixed is true (dock pinned as fixed panel instead of floating)")
-        if "autohide=true" not in motion_dump:
-            issues.append("dash2dock-motion: autohide is not true")
+        if "dock-fixed=true" not in motion_dump:
+            issues.append("dash2dock-motion: dock-fixed is false (dock should be fixed at bottom)")
+        if "autohide=false" not in motion_dump:
+            issues.append("dash2dock-motion: autohide is true (dock hiding unexpectedly)")
 
     # Check hardware connector lock
     dock_dump = run_cmd(["dconf", "dump", "/org/gnome/shell/extensions/dash-to-dock/"])
@@ -72,11 +72,11 @@ def audit_dock():
         sub = all_dconf.split("[org/gnome/shell/extensions/dash2dock-motion]")[1].split("[")[0]
         if "dash-max-icon-size=54" not in sub:
             issues.append("dconf/gnome-all.dconf: dash2dock-motion dash-max-icon-size is not 54")
-        if "dock-fixed=false" not in sub:
-            issues.append("dconf/gnome-all.dconf: dash2dock-motion dock-fixed is true")
+        if "dock-fixed=true" not in sub:
+            issues.append("dconf/gnome-all.dconf: dash2dock-motion dock-fixed is false")
 
     if not issues:
-        print("  ✓ Dock configuration matches macW1Y standard (54px, float dock, autohide, no connector lock)")
+        print("  ✓ Dock configuration matches macW1Y standard (54px, float dock, fixed, no connector lock)")
     else:
         for iss in issues:
             print(f"  ❌ {iss}")

@@ -1974,7 +1974,11 @@ class MenuHoverTracker {
     }
 
     _ensurePill() {
-        if (this._pill && this._pill.get_parent()) return;
+        const accent = getSystemAccentColor();
+        if (this._pill && this._pill.get_parent()) {
+            this._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+            return;
+        }
         const box = this._menu.box;
         const parent = box ? box.get_parent() : null;
         if (!parent) return;
@@ -1985,7 +1989,6 @@ class MenuHoverTracker {
             }
         }
 
-        const accent = getSystemAccentColor();
         this._pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',

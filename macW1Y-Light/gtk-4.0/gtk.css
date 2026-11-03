@@ -9645,8 +9645,8 @@ button#profile_fan_expand_btn:hover {
 
 button#profile_fan_expand_btn:checked {
     opacity: 1.0;
-    background-color: rgba(0, 122, 255, 0.22);
-    color: #007aff;
+    background-color: alpha(@accent_bg_color, 0.22);
+    color: @accent_bg_color;
 }
 
 row.fan-settings-subrow {
@@ -9681,9 +9681,9 @@ row.fan-settings-subrow:selected {
 }
 
 .fan-range-badge {
-    background-color: rgba(0, 122, 255, 0.16);
-    color: #007aff;
-    border: 1px solid rgba(0, 122, 255, 0.32);
+    background-color: alpha(@accent_bg_color, 0.16);
+    color: @accent_bg_color;
+    border: 1px solid alpha(@accent_bg_color, 0.32);
     border-radius: 8px;
     padding: 2px 10px;
     font-weight: 700;

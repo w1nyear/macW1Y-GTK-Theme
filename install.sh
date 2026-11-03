@@ -773,8 +773,9 @@ install_extensions() {
     # Dash2Dock Motion (Primary macW1Y Dock)
     run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion dash-max-icon-size 54 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion icon-size-fixed true 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion dock-fixed false 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion autohide true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion dock-fixed true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion autohide false 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion intellihide false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion autohide-in-fullscreen true 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion height-fraction 1.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion custom-theme-shrink false 2>/dev/null || true
@@ -785,14 +786,16 @@ install_extensions() {
     # Fallback dash-to-dock schema (aligned, no hardware connector lock)
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 54 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock icon-size-fixed true 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed false 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock autohide true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock dock-fixed true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock autohide false 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock intellihide false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock height-fraction 1.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock custom-theme-shrink false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock preferred-monitor -2 2>/dev/null || true
     run_as_user gsettings reset org.gnome.shell.extensions.dash-to-dock preferred-monitor-by-connector 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock intellihide true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock intellihide false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock intellihide-mode 'ALL_WINDOWS' 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.interface accent-color 'orange' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash-to-dock require-pressure-to-show false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-corner-radius 26.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-margin-bottom 8 2>/dev/null || true

@@ -114,10 +114,26 @@ class AppMenuHoverGlide {
             this.ensurePill();
             this.updateItems();
         }
+
+        if (!this._interfaceSettings) {
+            try {
+                this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+                this._accentSignalId = this._interfaceSettings.connect('changed::accent-color', () => {
+                    const acc = getSystemAccentColor();
+                    if (this.pill) {
+                        this.pill.style = `background-color: ${acc} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+                    }
+                });
+            } catch (_) {}
+        }
     }
 
     ensurePill() {
-        if (this.pill && this.pill.get_parent()) return;
+        const accent = getSystemAccentColor();
+        if (this.pill && this.pill.get_parent()) {
+            this.pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+            return;
+        }
         const box = this.menu.box;
         const parent = box ? box.get_parent() : null;
         if (!parent) return;
@@ -129,7 +145,6 @@ class AppMenuHoverGlide {
             }
         }
 
-        const accent = getSystemAccentColor();
         this.pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
@@ -286,6 +301,11 @@ class AppMenuHoverGlide {
     }
 
     destroy() {
+        if (this._interfaceSettings && this._accentSignalId) {
+            try { this._interfaceSettings.disconnect(this._accentSignalId); } catch (_) {}
+            this._accentSignalId = 0;
+            this._interfaceSettings = null;
+        }
         this.cleanupSignals();
         if (this.hideTimeout) {
             try { GLib.source_remove(this.hideTimeout); } catch (_) {}
