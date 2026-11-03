@@ -10,6 +10,9 @@
 @define-color view_fg_color #ffffff;
 @define-color headerbar_bg_color transparent;
 @define-color headerbar_fg_color #ffffff;
+@define-color headerbar_shade_color transparent;
+@define-color headerbar_darker_shade_color transparent;
+@define-color headerbar_border_color transparent;
 @define-color card_bg_color #1e1e1e;
 @define-color card_fg_color #ffffff;
 @define-color popover_bg_color rgba(32, 32, 34, 0.92);

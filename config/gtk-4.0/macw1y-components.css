@@ -635,14 +635,12 @@ preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.c
   color: #ffffff;
 }
 
-/* Headerbar control buttons - macOS style (excluding windowcontrols) */
-headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+/* Headerbar control buttons - macOS style (excluding windowcontrols and splitbuttons) */
+headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button),
 .titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
 headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton) {
+headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton) {
   min-width: 28px;
   min-height: 28px;
   border-radius: 9999px;
@@ -658,13 +656,11 @@ headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maxi
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
-headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):hover,
 .titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover {
+headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover {
   background-color: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
   border: none;
@@ -673,13 +669,11 @@ headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maxi
   color: #ffffff;
 }
 
-headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):active,
 .titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active {
+headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active {
   background-color: rgba(255, 255, 255, 0.20);
   border-radius: 9999px;
   border: none;
@@ -688,14 +682,230 @@ headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maxi
   color: #ffffff;
 }
 
-/* Nautilus headerbar control buttons (Search, Menu, View Controls, History) */
-.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+/* Nautilus Pathbar: completely clean, no white undershoot slivers or borders */
+.nautilus-window .nautilus-pathbar,
+.nautilus-pathbar,
+window.nautilus-window .nautilus-pathbar {
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  outline: none;
+}
+
+.nautilus-window .nautilus-pathbar undershoot,
+.nautilus-window .nautilus-pathbar undershoot.left,
+.nautilus-window .nautilus-pathbar undershoot.right,
+.nautilus-window .nautilus-pathbar > scrolledwindow undershoot,
+.nautilus-window .nautilus-pathbar > scrolledwindow undershoot.left,
+.nautilus-window .nautilus-pathbar > scrolledwindow undershoot.right,
+.nautilus-window .nautilus-pathbar scrolledwindow undershoot,
+.nautilus-window .nautilus-pathbar scrolledwindow undershoot.left,
+.nautilus-window .nautilus-pathbar scrolledwindow undershoot.right,
+.nautilus-pathbar undershoot,
+.nautilus-pathbar undershoot.left,
+.nautilus-pathbar undershoot.right,
+.nautilus-pathbar > scrolledwindow undershoot,
+.nautilus-pathbar > scrolledwindow undershoot.left,
+.nautilus-pathbar > scrolledwindow undershoot.right,
+window.nautilus-window .nautilus-pathbar > scrolledwindow undershoot.left,
+window.nautilus-window .nautilus-pathbar > scrolledwindow undershoot.right {
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-left: none;
+  border-right: none;
+  border-left-style: none;
+  border-right-style: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Eliminate white strip or separator under headerbar, splitview, and pathbar */
+.nautilus-window headerbar,
+.nautilus-window headerbar.flat,
+.nautilus-window headerbar.default-decoration,
+.nautilus-window toolbarview > .top-bar,
+.nautilus-window toolbarview > .top-bar.flat,
+.nautilus-window toolbarview > .top-bar.raised {
+  box-shadow: none;
+  border-bottom: none;
+  border-bottom-style: none;
+  border-bottom-color: transparent;
+}
+
+.nautilus-window separator,
+.nautilus-window separator.horizontal,
+.nautilus-window headerbar separator,
+.nautilus-window .top-bar separator {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+}
+
+/* Nautilus History Controls (< | >) — unified pill capsule */
+.nautilus-window headerbar NautilusHistoryControls,
+.nautilus-window headerbar .history-controls,
+.nautilus-window headerbar #history_controls,
+headerbar NautilusHistoryControls {
+  background: transparent;
+  border: none;
+}
+
+.nautilus-window headerbar NautilusHistoryControls > box,
+.nautilus-window headerbar .history-controls > box,
+.nautilus-window headerbar #history_controls > box {
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.08);
+  background-image: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  padding: 0;
+  margin: 0 4px;
+  border-spacing: 0;
+}
+
+.nautilus-window headerbar NautilusHistoryControls button,
+.nautilus-window headerbar #history_controls button {
+  min-width: 28px;
+  min-height: 26px;
+  padding: 3px 8px;
+  margin: 0;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.88);
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+.nautilus-window headerbar NautilusHistoryControls button:first-child,
+.nautilus-window headerbar #history_controls button#back_button {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.nautilus-window headerbar NautilusHistoryControls button:last-child,
+.nautilus-window headerbar #history_controls button#forward_button {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nautilus-window headerbar NautilusHistoryControls button:hover,
+.nautilus-window headerbar #history_controls button:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.nautilus-window headerbar NautilusHistoryControls button:active,
+.nautilus-window headerbar #history_controls button:active {
+  background-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* Nautilus View Controls (splitbutton: grid/list + options dropdown) —
+   Styled identically to NautilusHistoryControls (< | >) */
+.nautilus-window headerbar splitbutton,
+.nautilus-window headerbar NautilusViewControls splitbutton,
+.nautilus-window headerbar #view_split_button,
+headerbar splitbutton {
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.08);
+  background-image: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  padding: 0;
+  margin: 0 4px;
+  border-spacing: 0;
+}
+
+.nautilus-window headerbar splitbutton > menubutton,
+headerbar splitbutton > menubutton {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.nautilus-window headerbar splitbutton > separator,
+headerbar splitbutton > separator {
+  margin: 4px 0;
+  background: rgba(255, 255, 255, 0.12);
+  min-width: 1px;
+  border: none;
+}
+
+.nautilus-window headerbar splitbutton > button,
+.nautilus-window headerbar splitbutton > menubutton > button,
+headerbar splitbutton > button,
+headerbar splitbutton > menubutton > button {
+  min-width: 28px;
+  min-height: 26px;
+  padding: 3px 8px;
+  margin: 0;
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.88);
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+.nautilus-window headerbar splitbutton > button,
+headerbar splitbutton > button {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.nautilus-window headerbar splitbutton > menubutton > button,
+headerbar splitbutton > menubutton > button {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
+}
+
+.nautilus-window headerbar splitbutton > button:hover,
+.nautilus-window headerbar splitbutton > menubutton > button:hover,
+headerbar splitbutton > button:hover,
+headerbar splitbutton > menubutton > button:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.nautilus-window headerbar splitbutton > button:active,
+.nautilus-window headerbar splitbutton > button:checked,
+.nautilus-window headerbar splitbutton > menubutton > button:active,
+.nautilus-window headerbar splitbutton > menubutton > button:checked,
+headerbar splitbutton > button:active,
+headerbar splitbutton > button:checked,
+headerbar splitbutton > menubutton > button:active,
+headerbar splitbutton > menubutton > button:checked {
+  background-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* Nautilus headerbar individual circular control buttons (Search, Menu) */
+.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button),
 .nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-.nautilus-window headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-.nautilus-window headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton) {
-  min-width: 32px;
-  min-height: 32px;
+.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button) {
+  min-width: 30px;
+  min-height: 30px;
   border-radius: 9999px;
   padding: 4px;
   margin: 0 2px;
@@ -708,11 +918,9 @@ headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maxi
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
-.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):hover,
 .nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-.nautilus-window headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-.nautilus-window headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover {
+.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):hover {
   background-color: rgba(255, 255, 255, 0.14);
   border-radius: 9999px;
   border: none;
@@ -721,16 +929,12 @@ headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maxi
   color: #ffffff;
 }
 
-.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
+.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):active,
+.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):checked,
 .nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 .nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
-.nautilus-window headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-.nautilus-window headerbar splitbutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
-.nautilus-window headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-.nautilus-window headerbar splitbutton > menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
-.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked {
+.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):active,
+.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):checked {
   background-color: rgba(255, 255, 255, 0.22);
   border-radius: 9999px;
   border: none;
