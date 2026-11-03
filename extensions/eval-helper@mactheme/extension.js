@@ -2184,11 +2184,13 @@ export default class EvalHelper extends Extension {
             Main.layoutManager.uiGroup.set_pivot_point(0, 0);
             Main.layoutManager.uiGroup.opacity = 255;
 
-            // 2. Intercept _prepareStartupAnimation so uiGroup is NEVER scaled down to 0.75
-            // and all desktop elements (top bar, dock, widgets, windows) start hidden
-            if (Main.layoutManager._prepareStartupAnimation) {
-                this._origPrepareStartupAnimation = Main.layoutManager._prepareStartupAnimation;
-                Main.layoutManager._prepareStartupAnimation = async function() {
+            // Only hook layoutManager if the native mac layout overlay is not active
+            if (!Main.layoutManager._isMacLayoutOverlay) {
+                // 2. Intercept _prepareStartupAnimation so uiGroup is NEVER scaled down to 0.75
+                // and all desktop elements (top bar, dock, widgets, windows) start hidden
+                if (Main.layoutManager._prepareStartupAnimation) {
+                    this._origPrepareStartupAnimation = Main.layoutManager._prepareStartupAnimation;
+                    Main.layoutManager._prepareStartupAnimation = async function() {
                     if (!Main.sessionMode.isGreeter) {
                         this._showSecondaryBackgrounds();
 
@@ -2376,6 +2378,7 @@ export default class EvalHelper extends Extension {
                     });
                 }
             };
+            }
         }
 
         // macOS MenuBar Interaction Model:

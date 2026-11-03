@@ -217,6 +217,7 @@ export const LayoutManager = GObject.registerClass({
         this._topActors = [];
         this._isPopupWindowVisible = false;
         this._startingUp = true;
+        this._isMacLayoutOverlay = true;
         this._startInOverview =
             Main.sessionMode.hasOverview &&
             global.settings.get_boolean('start-in-overview');
@@ -225,6 +226,8 @@ export const LayoutManager = GObject.registerClass({
         this.uiGroup = new UiActor({name: 'uiGroup'});
         this.uiGroup.set_no_layout(true);
 
+        // Immediate black stage background to prevent any Ubuntu grey (#2e3436) flash
+        global.stage.background_color = new Clutter.Color({ red: 0, green: 0, blue: 0, alpha: 255 });
         global.stage.add_child(this.uiGroup);
 
         global.stage.remove_child(global.window_group);
@@ -694,16 +697,18 @@ export const LayoutManager = GObject.registerClass({
     }
 
     async _doStartupAnimation() {
+        this._isMacLayoutOverlay = true;
         await this._loadBackground();
-
-        this._systemBackground.show();
-        global.stage.show();
 
         try {
             await this._prepareStartupAnimation();
+            this._systemBackground.show();
+            global.stage.show();
             await this._startupAnimation();
         } catch (e) {
             logError(e);
+            this._systemBackground.show();
+            global.stage.show();
         } finally {
             this._startupAnimationComplete();
         }
@@ -750,8 +755,9 @@ export const LayoutManager = GObject.registerClass({
     async _prepareStartupAnimation() {
         await this._ensurePrimaryMonitor();
 
-        // During the initial transition, add a simple actor to block all events,
-        // so they don't get delivered to X11 windows that have been transformed.
+        const screenW = global.stage.width || global.screen_width || 1920;
+        const screenH = global.stage.height || global.screen_height || 1080;
+
         let bgUri = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg';
         if (!Main.sessionMode.isGreeter) {
             try {
@@ -761,26 +767,26 @@ export const LayoutManager = GObject.registerClass({
             } catch (_) {}
         }
 
+        // Wallpaper cover pane (holds solid desktop appearance during silent background loading)
         this._coverPane = new St.Widget({
             name: 'macStartupCoverPane',
             style: Main.sessionMode.isGreeter
                 ? 'background-color: transparent;'
                 : `background-color: #000000; background-image: url("${bgUri}"); background-size: cover; background-position: center;`,
             opacity: Main.sessionMode.isGreeter ? 0 : 255,
-            width: global.screen_width,
-            height: global.screen_height,
+            x: 0,
+            y: 0,
+            width: screenW,
+            height: screenH,
             reactive: true,
         });
-        this.addChrome(this._coverPane);
+        this.uiGroup.add_child(this._coverPane);
+        this.uiGroup.set_child_above_sibling(this._coverPane, null);
 
-        // Force an update of the regions before we scale the UI group to
-        // get the correct allocation for the struts.
-        // Do this even when we don't animate on restart, so that maximized
-        // windows restore to the right size.
         this._updateRegions();
 
         if (Main.sessionMode.isGreeter) {
-            // Hide panelBox immediately so default Ubuntu greeter items never flash
+            // Hide panelBox immediately so default unstyled greeter items never flash
             if (this.panelBox) {
                 this.panelBox.remove_all_transitions();
                 const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
@@ -788,36 +794,18 @@ export const LayoutManager = GObject.registerClass({
                 this.panelBox.opacity = 0;
             }
 
-            // Create Plymouth bootCover matching Plymouth 1:1 down to the single pixel
+            // Solid black boot cover matching Plymouth background 1:1 (no squished logo)
             if (!this._gdmBootCover) {
-                const primary = this.primaryMonitor || this.monitors[0];
-                const screenW = primary ? primary.width : (global.screen_width || 1920);
-                const screenH = primary ? primary.height : (global.screen_height || 1080);
-                const logoH = Math.max(50, Math.round(screenH * 0.092));
-                const logoW = Math.round(logoH * 0.8125); // 416 / 512
-                const logoX = Math.round((screenW - logoW) / 2);
-                const logoY = Math.round((screenH - logoH) / 2);
-
                 this._gdmBootCover = new St.Widget({
                     name: 'gdmBootCover',
                     style: 'background-color: #000000;',
-                    x: primary ? primary.x : 0,
-                    y: primary ? primary.y : 0,
+                    x: 0,
+                    y: 0,
                     width: screenW,
                     height: screenH,
                     reactive: true,
                 });
 
-                const logoActor = new St.Widget({
-                    name: 'gdmBootLogo',
-                    style: 'background-image: url("file:///usr/share/plymouth/themes/apple-mac/logo.png"); background-size: contain; background-repeat: no-repeat; background-position: center;',
-                    x: logoX,
-                    y: logoY,
-                    width: logoW,
-                    height: logoH,
-                });
-
-                this._gdmBootCover.add_child(logoActor);
                 this.uiGroup.add_child(this._gdmBootCover);
                 this.uiGroup.set_child_above_sibling(this._gdmBootCover, null);
             }
@@ -827,15 +815,14 @@ export const LayoutManager = GObject.registerClass({
             // Set black stage background color to eliminate Ubuntu grey (#2e3436) flash
             global.stage.background_color = new Clutter.Color({ red: 0, green: 0, blue: 0, alpha: 255 });
 
-            // ФАЗА 1: Тиха фонова підготовка
-            // 2. Шпалери монолітні (100% масштаб, без блимання)
+            // Wallpaper monolithic (100% scale, zero flicker/gap)
             this._showSecondaryBackgrounds();
             this.uiGroup.set_pivot_point(0, 0);
             this.uiGroup.scale_x = 1.0;
             this.uiGroup.scale_y = 1.0;
             this.uiGroup.opacity = 255;
 
-            // 3. Menu Bar приховано за верхнім краєм (translation_y = -34px, opacity = 0)
+            // Hide panelBox above top edge
             if (this.panelBox) {
                 this.panelBox.remove_all_transitions();
                 const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
@@ -843,14 +830,50 @@ export const LayoutManager = GObject.registerClass({
                 this.panelBox.opacity = 0;
             }
 
-            // 4. Віджети та вікна приховано (opacity = 0)
+            // Hide open windows
             if (global.window_group) {
                 global.window_group.remove_all_transitions();
                 global.window_group.opacity = 0;
             }
 
+            // Immediately hide any dock containers or liquid glass actors present
+            for (const child of this.uiGroup.get_children()) {
+                if (child.name === 'dashtodockContainer' || child.name === 'liquid-glass-bg-actor') {
+                    child.remove_all_transitions();
+                    child.opacity = 0;
+                    if (child.name === 'dashtodockContainer') {
+                        for (const sub of child.get_children()) {
+                            sub.opacity = 0;
+                        }
+                    }
+                }
+            }
+
+            // Trap any newly added dock or glass actors to keep them completely hidden behind cover
+            if (!this._macUiGroupChildAddedId) {
+                this._macUiGroupChildAddedId = this.uiGroup.connect('child-added', (_group, child) => {
+                    if (!this._startingUp) return;
+                    if (this._coverPane && child !== this._coverPane) {
+                        this.uiGroup.set_child_above_sibling(this._coverPane, null);
+                    }
+                    if (child.name === 'dashtodockContainer') {
+                        child.remove_all_transitions();
+                        child.opacity = 0;
+                        for (const sub of child.get_children()) {
+                            sub.opacity = 0;
+                        }
+                    }
+                    if (child.name === 'liquid-glass-bg-actor') {
+                        child.remove_all_transitions();
+                        child.opacity = 0;
+                    }
+                });
+            }
+
+            // Trap desktop-widgets layer to keep it completely hidden
             if (this._backgroundGroup && !this._macBgChildAddedId) {
                 this._macBgChildAddedId = this._backgroundGroup.connect('child-added', (_group, child) => {
+                    if (!this._startingUp) return;
                     if ((child.has_style_class_name && child.has_style_class_name('widget-layer')) || child.name === 'widget-layer') {
                         child.remove_all_transitions();
                         child.opacity = 0;
@@ -869,11 +892,11 @@ export const LayoutManager = GObject.registerClass({
             await this._updateBackgrounds();
         }
 
-        // Hack: Work around grab issue when testing greeter UI in nested
-        if (GLib.getenv('GDM_GREETER_TEST') === '1')
-            setTimeout(() => this.emit('startup-prepared'), 200);
-        else
+        // Only emit startup-prepared in user session mode here.
+        // In Greeter mode, startup-prepared is emitted in _startupAnimationGreeter AFTER extensions are ready.
+        if (!Main.sessionMode.isGreeter) {
             this.emit('startup-prepared');
+        }
     }
 
     async _startupAnimation() {
@@ -926,7 +949,22 @@ export const LayoutManager = GObject.registerClass({
 
         await waitForGreeterExtensions();
 
-        // Stabilization barrier for GDM layout & clock
+        // Ensure wack-lockscreen-clock is enabled and ready
+        let wackAttempts = 0;
+        while (wackAttempts < 20) {
+            const wack = Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com');
+            if (wack && wack.state === 1) break;
+            await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                r();
+                return GLib.SOURCE_REMOVE;
+            }));
+            wackAttempts++;
+        }
+
+        // Emit startup-prepared so Main.screenShield.showDialog() creates/presents the ALREADY-STYLED dialog
+        this.emit('startup-prepared');
+
+        // Stabilization barrier for GDM layout & clock styles to settle offscreen
         await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
             resolve();
             return GLib.SOURCE_REMOVE;
@@ -935,7 +973,7 @@ export const LayoutManager = GObject.registerClass({
         const DURATION = 650;
         const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
-        // Smoothly dissolve Plymouth cover into GDM wallpaper & lockscreen clock
+        // Smoothly dissolve black boot cover into GDM wallpaper & lockscreen clock
         if (this._gdmBootCover) {
             const cover = this._gdmBootCover;
             this._gdmBootCover = null;
@@ -961,14 +999,12 @@ export const LayoutManager = GObject.registerClass({
     }
 
     async _startupAnimationSession() {
-        // Keep uiGroup strictly at 1.0 scale — wallpaper monolithic (100% scale, zero flicker/gap)
         this.uiGroup.scale_x = 1.0;
         this.uiGroup.scale_y = 1.0;
         this.uiGroup.set_pivot_point(0, 0);
         this.uiGroup.opacity = 255;
 
-        // ФАЗА 2: Бар'єр готовності системи
-        // 6. Завантажуються всі 21 розширення (активація)
+        // 1. Wait for all 21 extensions to enable
         const waitForAllExtensions = async () => {
             let em = Main.extensionManager;
             let attempts = 0;
@@ -1008,17 +1044,40 @@ export const LayoutManager = GObject.registerClass({
                 });
             });
         };
-
         await waitForAllExtensions();
 
-        // Wait for Liquid Glass to attach to Dash to Dock so glass is ready before dock slides in
+        // 2. Wait for Dash to Dock container to exist (keep hidden)
+        let dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
+        let dockAttempts = 0;
+        while (!dockContainer && dockAttempts < 30) {
+            await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                r();
+                return GLib.SOURCE_REMOVE;
+            }));
+            dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
+            dockAttempts++;
+        }
+        if (dockContainer) {
+            dockContainer.remove_all_transitions();
+            dockContainer.opacity = 0;
+            for (const sub of dockContainer.get_children()) {
+                sub.opacity = 0;
+            }
+        }
+
+        // 3. Wait for Liquid Glass to attach to Dash to Dock and compute valid glass geometry
         const waitForLiquidGlass = async () => {
             let attempts = 0;
-            while (attempts < 25) {
+            while (attempts < 40) {
                 const lg = Main.extensionManager?.lookup('liquid-glass@thinkingcoding1231.gmail.com');
-                if (lg?.stateObj?._dashDocks?.length > 0)
-                    return;
-                await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
+                const docks = lg?.stateObj?._dashDocks;
+                if (docks && docks.length > 0) {
+                    const manager = docks[0].manager;
+                    if (manager && manager.bgActor && manager._lastBgW > 0) {
+                        return;
+                    }
+                }
+                await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
                     r();
                     return GLib.SOURCE_REMOVE;
                 }));
@@ -1027,26 +1086,46 @@ export const LayoutManager = GObject.registerClass({
         };
         await waitForLiquidGlass();
 
-        // 7. top-bar-organizer впорядковує рядок меню
-        // 8. desktop-widgets створює віджети
-        // 9. Док обраховує геометрію
-        // 10. Бар'єр стабілізації (250 мс — фінальний рендеринг завершено)
+        // 4. Wait for Desktop Widgets to create and populate its widget layer
+        const waitForDesktopWidgets = async () => {
+            let attempts = 0;
+            while (attempts < 30) {
+                const dw = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
+                const layer = dw?.stateObj?._controller?._layer ||
+                    this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer') || c.name === 'widget-layer');
+                if (layer && layer.get_children().length > 0) {
+                    return;
+                }
+                await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                    r();
+                    return GLib.SOURCE_REMOVE;
+                }));
+                attempts++;
+            }
+        };
+        await waitForDesktopWidgets();
+
+        // 5. Final stabilization barrier (250 ms — ensures Clutter has painted first frame offscreen)
         await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
             resolve();
             return GLib.SOURCE_REMOVE;
         }));
 
-        // Disconnect widget layer listener
+        // Clean up listeners
         if (this._macBgChildAddedId && this._backgroundGroup) {
             try { this._backgroundGroup.disconnect(this._macBgChildAddedId); } catch (_) {}
             this._macBgChildAddedId = null;
         }
+        if (this._macUiGroupChildAddedId) {
+            try { this.uiGroup.disconnect(this._macUiGroupChildAddedId); } catch (_) {}
+            this._macUiGroupChildAddedId = null;
+        }
 
-        // ФАЗА 3: Синхронний виїзд (650 мс, EASE_OUT_CUBIC)
+        // 6. NOW TRIGGER SYNCHRONIZED REVEAL!
         const DURATION = 650;
         const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
-        // 11. Меню бар плавно з'їжджає згори
+        // Menubar slides down from top
         if (this.panelBox) {
             this.panelBox.remove_all_transitions();
             const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
@@ -1065,17 +1144,20 @@ export const LayoutManager = GObject.registerClass({
             Main.panel.opacity = 255;
         }
 
-        // Smoothly fade out cover pane (seamless wallpaper cover)
+        // Cover pane fades out smoothly
         if (this._coverPane) {
-            this._coverPane.remove_all_transitions();
-            this._coverPane.ease({
+            const cover = this._coverPane;
+            this._coverPane = null;
+            cover.remove_all_transitions();
+            cover.ease({
                 opacity: 0,
                 duration: 500,
                 mode: MODE,
+                onComplete: () => cover.destroy(),
             });
         }
 
-        // 13. Віджети плавно проявляються на екрані (opacity: 0 -> 100%)
+        // Widgets smoothly fade in
         const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
         const widgetLayer = widgetsExt?.stateObj?._controller?._layer ||
             this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer'));
@@ -1090,7 +1172,7 @@ export const LayoutManager = GObject.registerClass({
             });
         }
 
-        // 14. Відкриті вікна та іконки стільниці плавно проявляються
+        // Window group smoothly fades in
         if (global.window_group) {
             global.window_group.remove_all_transitions();
             global.window_group.opacity = 0;
@@ -1101,14 +1183,50 @@ export const LayoutManager = GObject.registerClass({
             });
         }
 
-        // 12. Trigger synchronized dock + Liquid Glass entrance in parallel
+        // Dock & Liquid Glass reveal:
+        const dockContainers = this.uiGroup.get_children().filter(c => c.name === 'dashtodockContainer');
+        const glassActors = this.uiGroup.get_children().filter(c => c.name === 'liquid-glass-bg-actor');
+
+        for (const dc of dockContainers) {
+            dc.remove_all_transitions();
+            dc.opacity = 0;
+            dc.show();
+            dc.ease({
+                opacity: 255,
+                duration: DURATION,
+                mode: MODE,
+            });
+            for (const child of dc.get_children()) {
+                child.remove_all_transitions();
+                child.opacity = 0;
+                child.show();
+                child.ease({
+                    opacity: 255,
+                    duration: DURATION,
+                    mode: MODE,
+                });
+            }
+        }
+
+        for (const ga of glassActors) {
+            ga.remove_all_transitions();
+            ga.opacity = 0;
+            ga.show();
+            ga.ease({
+                opacity: 255,
+                duration: DURATION,
+                mode: MODE,
+            });
+        }
+
+        // Emit startup-complete so Dash to Dock and other listeners run their entrance animation
         this._startingUp = false;
         if (!this._hasEmittedStartupComplete) {
             this._hasEmittedStartupComplete = true;
             this.emit('startup-complete');
         }
 
-        // Wait for entrance animation to complete before destroying cover pane
+        // Wait for entrance animation to complete
         await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, DURATION, () => {
             resolve();
             return GLib.SOURCE_REMOVE;
