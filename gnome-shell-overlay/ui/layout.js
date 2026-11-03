@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import Cogl from 'gi://Cogl';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
@@ -26,6 +27,15 @@ const HOT_CORNER_PRESSURE_TIMEOUT = 1000; // ms
 
 const SCREEN_TRANSITION_DELAY = 250; // ms
 const SCREEN_TRANSITION_DURATION = 500; // ms
+
+function _safeSetStageBlack() {
+    try {
+        if (typeof Cogl !== 'undefined' && Cogl && Cogl.Color) {
+            const c = new Cogl.Color({ red: 0, green: 0, blue: 0, alpha: 255 });
+            global.stage.background_color = c;
+        }
+    } catch (_) {}
+}
 
 function isPopupMetaWindow(actor) {
     switch (actor.meta_window.get_window_type()) {
@@ -226,8 +236,8 @@ export const LayoutManager = GObject.registerClass({
         this.uiGroup = new UiActor({name: 'uiGroup'});
         this.uiGroup.set_no_layout(true);
 
-        // Immediate black stage background to prevent any Ubuntu grey (#2e3436) flash
-        global.stage.background_color = new Clutter.Color({ red: 0, green: 0, blue: 0, alpha: 255 });
+        // Immediate black stage background to prevent any Ubuntu grey (#2e3436) flash (safe Cogl API for GNOME 50.1+)
+        _safeSetStageBlack();
         global.stage.add_child(this.uiGroup);
 
         global.stage.remove_child(global.window_group);
@@ -812,8 +822,8 @@ export const LayoutManager = GObject.registerClass({
         } else {
             this.keyboardBox.hide();
 
-            // Set black stage background color to eliminate Ubuntu grey (#2e3436) flash
-            global.stage.background_color = new Clutter.Color({ red: 0, green: 0, blue: 0, alpha: 255 });
+            // Set black stage background color to eliminate Ubuntu grey (#2e3436) flash (safe Cogl API for GNOME 50.1+)
+            _safeSetStageBlack();
 
             // Wallpaper monolithic (100% scale, zero flicker/gap)
             this._showSecondaryBackgrounds();
@@ -1221,6 +1231,14 @@ export const LayoutManager = GObject.registerClass({
 
         // Emit startup-complete so Dash to Dock and other listeners run their entrance animation
         this._startingUp = false;
+
+        // Clear watchdog launch marker to signal healthy startup completion
+        try {
+            const flag = Gio.File.new_for_path('/var/tmp/mactheme-overlay-launching');
+            if (flag.query_exists(null)) flag.delete(null);
+            const failFlag = Gio.File.new_for_path('/var/tmp/mactheme-overlay-failed');
+            if (failFlag.query_exists(null)) failFlag.delete(null);
+        } catch (_) {}
         if (!this._hasEmittedStartupComplete) {
             this._hasEmittedStartupComplete = true;
             this.emit('startup-complete');
@@ -1248,6 +1266,14 @@ export const LayoutManager = GObject.registerClass({
         this._systemBackground = null;
 
         this._startingUp = false;
+
+        // Clear watchdog launch marker to signal healthy startup completion
+        try {
+            const flag = Gio.File.new_for_path('/var/tmp/mactheme-overlay-launching');
+            if (flag.query_exists(null)) flag.delete(null);
+            const failFlag = Gio.File.new_for_path('/var/tmp/mactheme-overlay-failed');
+            if (failFlag.query_exists(null)) failFlag.delete(null);
+        } catch (_) {}
 
         this.keyboardBox.show();
 

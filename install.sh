@@ -1253,6 +1253,58 @@ GAMEMODE_CFG
 }
 
 # ------------------------------------------------------------------------------
+# GNOME Shell Desktop Transition Overlay with Watchdog Safety Guard
+# ------------------------------------------------------------------------------
+install_gnome_shell_overlay() {
+    log_info "Installing GNOME Shell Desktop Transition Overlay with Safety Watchdog..."
+    
+    local shell_bin="/usr/bin/gnome-shell.real"
+    [ ! -x "$shell_bin" ] && shell_bin="/usr/bin/gnome-shell"
+    
+    # 1. Compatibility check (Supported: GNOME 45..52)
+    if [ -x "$shell_bin" ]; then
+        local ver=$("$shell_bin" --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)?' | head -n1)
+        local major=$(echo "$ver" | cut -d. -f1)
+        if [ -n "$major" ] && { [ "$major" -lt 45 ] || [ "$major" -gt 52 ]; }; then
+            log_warn "GNOME Shell version $ver is outside tested range (45-52). Overlay installation skipped for safety."
+            return 0
+        fi
+        log_info "GNOME Shell version $ver verified compatible."
+    fi
+
+    # 2. Back up original upstream layout.js
+    sudo mkdir -p /usr/share/mactheme/gnome-shell-overlay/ui
+    local orig_target="/usr/share/mactheme/gnome-shell-overlay/ui/layout.js.orig"
+    if [ ! -f "$orig_target" ]; then
+        log_info "Creating backup of upstream GNOME Shell layout.js..."
+        local libshell=$(ls /usr/lib/gnome-shell/libshell-*.so 2>/dev/null | head -n1)
+        if [ -n "$libshell" ] && command -v gresource >/dev/null 2>&1; then
+            gresource extract "$libshell" /org/gnome/shell/ui/layout.js 2>/dev/null | sudo tee "$orig_target" >/dev/null || true
+            sudo chmod 644 "$orig_target" 2>/dev/null || true
+        fi
+    fi
+
+    # 3. Deploy customized layout.js
+    if [ -f "$SCRIPT_DIR/gnome-shell-overlay/ui/layout.js" ]; then
+        sudo cp -f "$SCRIPT_DIR/gnome-shell-overlay/ui/layout.js" /usr/share/mactheme/gnome-shell-overlay/ui/layout.js
+        sudo chmod 644 /usr/share/mactheme/gnome-shell-overlay/ui/layout.js
+        log_success "Deployed layout.js overlay to /usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
+    fi
+
+    # 4. Set up safe launcher diversion
+    if [ ! -f "/usr/bin/gnome-shell.real" ]; then
+        log_info "Configuring dpkg-divert for /usr/bin/gnome-shell..."
+        sudo dpkg-divert --add --rename --divert /usr/bin/gnome-shell.real /usr/bin/gnome-shell 2>/dev/null || true
+    fi
+
+    if [ -f "$SCRIPT_DIR/bin/gnome-shell" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/gnome-shell" /usr/bin/gnome-shell
+        sudo chmod 755 /usr/bin/gnome-shell
+        log_success "Installed GNOME Shell watchdog wrapper to /usr/bin/gnome-shell"
+    fi
+}
+
+# ------------------------------------------------------------------------------
 # 11. Smooth GDM -> Desktop Transition
 # ------------------------------------------------------------------------------
 install_gdm_transition() {
@@ -1416,6 +1468,7 @@ install_gdm_transition() {
     fi
 
     sudo dconf update 2>/dev/null || true
+    install_gnome_shell_overlay
     log_success "macW1Y GDM lock screen configured successfully!"
 }
 
@@ -2004,6 +2057,7 @@ EOF_NAUT
     log_info "9/10 Checking Plymouth and GDM transition..."
     sudo rm -rf /etc/gnome-shell/ui/layout.js /etc/gnome-shell/ui 2>/dev/null || true
     sudo sed -i '/G_RESOURCE_OVERLAYS.*gnome-shell/d' /etc/environment 2>/dev/null || true
+    install_gnome_shell_overlay
     if [ -d "$SCRIPT_DIR/plymouth/apple-mac" ]; then
         sync_directory_tree "$SCRIPT_DIR/plymouth/apple-mac" "/usr/share/plymouth/themes/apple-mac" true
         if command -v update-alternatives >/dev/null 2>&1; then

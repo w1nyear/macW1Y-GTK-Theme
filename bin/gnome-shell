@@ -1,22 +1,95 @@
 #!/bin/sh
-# macW1Y — GNOME Shell Launch Wrapper
-# Injects macOS Desktop Preparation & Synchronized Entrance Transition Overlay
+# macW1Y — GNOME Shell Launch Wrapper with Safety Watchdog & Version Guard
+# Injects macOS Desktop Preparation & Synchronized Entrance Transition Overlay safely.
 
+[ -z "$REAL_SHELL" ] && REAL_SHELL="/usr/bin/gnome-shell.real"
+if [ ! -x "$REAL_SHELL" ]; then
+    REAL_SHELL="/usr/bin/gnome-shell.orig"
+fi
+if [ ! -x "$REAL_SHELL" ]; then
+    echo "macW1Y [CRITICAL]: Real GNOME Shell binary not found at /usr/bin/gnome-shell.real or .orig" >&2
+    exit 127
+fi
+
+# Safe mode launcher: completely purges overlay from environment and runs pure upstream shell
+bypass_overlay() {
+    unset G_RESOURCE_OVERLAYS
+    exec "$REAL_SHELL" "$@"
+}
+
+# Quick pass-through for informational CLI queries
+case " $* " in
+    *" --version "*|*" -v "*|*" --help "*|*" -h "*)
+        exec "$REAL_SHELL" "$@"
+        ;;
+esac
+
+# 1. Manual Safe Mode bypass flags
+if [ -f "/etc/mactheme/disable-overlay" ] || [ -f "/tmp/disable-mactheme-overlay" ]; then
+    logger -t mactheme "Overlay disabled by administrator safe mode flag." 2>/dev/null || true
+    bypass_overlay
+fi
+
+# 2. Kernel command line safe mode check (nomactheme or safemode)
+if grep -qE "(nomactheme|safemode)" /proc/cmdline 2>/dev/null; then
+    logger -t mactheme "Overlay bypassed due to kernel boot parameter." 2>/dev/null || true
+    bypass_overlay
+fi
+
+# 3. GNOME Shell Version Compatibility Guard (Supported: GNOME 45..52)
+GNOME_VER=$("$REAL_SHELL" --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)?' | head -n1)
+GNOME_MAJOR=$(echo "$GNOME_VER" | cut -d. -f1)
+
+if [ -n "$GNOME_MAJOR" ]; then
+    if [ "$GNOME_MAJOR" -lt 45 ] || [ "$GNOME_MAJOR" -gt 52 ]; then
+        logger -t mactheme "GNOME Shell version $GNOME_VER is outside tested range (45-52). Bypassing overlay for stability." 2>/dev/null || true
+        bypass_overlay
+    fi
+fi
+
+# 4. Crash Watchdog: Check if the previous launch crashed during startup
+WATCHDOG_LAUNCH="/var/tmp/mactheme-overlay-launching"
+WATCHDOG_FAILED="/var/tmp/mactheme-overlay-failed"
+NOW=$(date +%s)
+
+if [ -f "$WATCHDOG_LAUNCH" ]; then
+    PREV_LAUNCH=$(cat "$WATCHDOG_LAUNCH" 2>/dev/null || echo 0)
+    DIFF=$((NOW - PREV_LAUNCH))
+    # If previous launch was within last 60 seconds and never signaled healthy completion
+    if [ "$DIFF" -ge 0 ] && [ "$DIFF" -lt 60 ]; then
+        echo "$NOW" > "$WATCHDOG_FAILED" 2>/dev/null || true
+        rm -f "$WATCHDOG_LAUNCH" 2>/dev/null || true
+        logger -t mactheme "[WATCHDOG WARNING] GNOME Shell failed on previous launch (${DIFF}s ago). Bypassing overlay to guarantee clean desktop boot." 2>/dev/null || true
+        bypass_overlay
+    fi
+fi
+
+# If WATCHDOG_FAILED is recent (< 120 seconds old), remain in safe mode
+if [ -f "$WATCHDOG_FAILED" ]; then
+    FAIL_TIME=$(cat "$WATCHDOG_FAILED" 2>/dev/null || echo 0)
+    DIFF_FAIL=$((NOW - FAIL_TIME))
+    if [ "$DIFF_FAIL" -ge 0 ] && [ "$DIFF_FAIL" -lt 120 ]; then
+        logger -t mactheme "[WATCHDOG SAFE MODE] Recent failure detected (${DIFF_FAIL}s ago). Bypassing overlay." 2>/dev/null || true
+        bypass_overlay
+    else
+        rm -f "$WATCHDOG_FAILED" 2>/dev/null || true
+    fi
+fi
+
+# 5. Overlay file check & activation
 OVERLAY="/usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
 if [ ! -f "$OVERLAY" ]; then
     OVERLAY="$HOME/MACTHEMEFILES/gnome-shell-overlay/ui/layout.js"
 fi
 
 if [ -f "$OVERLAY" ]; then
+    # Record launch timestamp for crash detection
+    echo "$NOW" > "$WATCHDOG_LAUNCH" 2>/dev/null || true
+
     case ":$G_RESOURCE_OVERLAYS:" in
         *":/org/gnome/shell/ui/layout.js="*) ;;
         *) export G_RESOURCE_OVERLAYS="/org/gnome/shell/ui/layout.js=$OVERLAY${G_RESOURCE_OVERLAYS:+:$G_RESOURCE_OVERLAYS}" ;;
     esac
 fi
 
-if [ -x "/usr/bin/gnome-shell.real" ]; then
-    exec /usr/bin/gnome-shell.real "$@"
-elif [ -x "/usr/bin/gnome-shell.orig" ]; then
-    exec /usr/bin/gnome-shell.orig "$@"
-fi
-exec /usr/bin/gnome-shell.real "$@"
+exec "$REAL_SHELL" "$@"

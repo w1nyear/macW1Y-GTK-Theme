@@ -180,11 +180,24 @@ restore_system() {
     sudo rm -f /usr/share/applications/mac-app-launcher.desktop
 
     
-    # GDM перехід
-    log_info "Видалення кастомного layout.js..."
+    # GDM перехід та GNOME Shell Overlays
+    log_info "Видалення всіх системних оверлеїв GNOME Shell та відновлення оригінального бінарника..."
+    sudo rm -rf /usr/share/mactheme/gnome-shell-overlay
+    sudo rm -rf /usr/share/mactheme/gnome-control-center-overlay
     sudo rm -f /etc/gnome-shell/ui/layout.js
+    sudo rm -f /var/tmp/mactheme-overlay-* /tmp/mactheme-overlay-* /tmp/disable-mactheme-overlay /etc/mactheme/disable-overlay
+    sudo rm -f /etc/systemd/user/org.gnome.Shell@.service.d/mac-transition.conf*
+    rm -f "$TARGET_HOME/.config/systemd/user/org.gnome.Shell@.service.d/mac-transition.conf*"
+    rm -f "$TARGET_HOME/.config/environment.d/10-gnome-shell-overlay.conf"
     if [ -f /etc/environment ]; then
         sudo sed -i '/G_RESOURCE_OVERLAYS/d' /etc/environment
+    fi
+
+    # Відновлення оригінального бінарника gnome-shell
+    if [ -f "/usr/bin/gnome-shell.real" ]; then
+        log_info "Відновлення оригінального /usr/bin/gnome-shell (зняття dpkg-divert)..."
+        sudo rm -f /usr/bin/gnome-shell
+        sudo dpkg-divert --remove --rename /usr/bin/gnome-shell 2>/dev/null || true
     fi
     
     # Plymouth

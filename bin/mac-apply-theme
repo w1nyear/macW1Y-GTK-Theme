@@ -238,15 +238,60 @@ def main():
     except Exception:
         pass
 
-    # 9. macOS Desktop Transition Overlay sync
+    # 9. macOS Desktop Transition Overlay sync with backup & watchdog wrapper
     overlay_src = os.path.join(REPO_DIR, "gnome-shell-overlay/ui/layout.js")
     overlay_dst = "/usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
+    orig_dst = "/usr/share/mactheme/gnome-shell-overlay/ui/layout.js.orig"
+    wrapper_src = os.path.join(REPO_DIR, "bin/gnome-shell")
+    wrapper_dst = "/usr/bin/gnome-shell"
+
     if os.path.exists(overlay_src):
         try:
+            subprocess.run(["sudo", "mkdir", "-p", "/usr/share/mactheme/gnome-shell-overlay/ui"], check=False)
+            if not os.path.exists(orig_dst):
+                # Extract upstream layout.js for safe rollback backup
+                import glob
+                libs = glob.glob("/usr/lib/gnome-shell/libshell-*.so")
+                if libs:
+                    with open("/tmp/mac_orig_layout.js", "w") as f:
+                        subprocess.run(["gresource", "extract", libs[0], "/org/gnome/shell/ui/layout.js"], stdout=f, check=False)
+                    subprocess.run(["sudo", "cp", "-f", "/tmp/mac_orig_layout.js", orig_dst], check=False)
+                    subprocess.run(["sudo", "chmod", "644", orig_dst], check=False)
+                    if os.path.exists("/tmp/mac_orig_layout.js"):
+                        os.unlink("/tmp/mac_orig_layout.js")
+
             if not os.path.exists(overlay_dst) or get_file_md5(overlay_src) != get_file_md5(overlay_dst):
-                subprocess.run(["sudo", "mkdir", "-p", "/usr/share/mactheme/gnome-shell-overlay/ui"], check=False)
                 subprocess.run(["sudo", "cp", "-f", overlay_src, overlay_dst], check=False)
+                subprocess.run(["sudo", "chmod", "644", overlay_dst], check=False)
                 changes_count += 1
+
+            if os.path.exists(wrapper_src):
+                if not os.path.exists("/usr/bin/gnome-shell.real"):
+                    subprocess.run(["sudo", "dpkg-divert", "--add", "--rename", "--divert", "/usr/bin/gnome-shell.real", "/usr/bin/gnome-shell"], check=False)
+                if not os.path.exists(wrapper_dst) or get_file_md5(wrapper_src) != get_file_md5(wrapper_dst):
+                    subprocess.run(["sudo", "cp", "-f", wrapper_src, wrapper_dst], check=False)
+                    subprocess.run(["sudo", "chmod", "755", wrapper_dst], check=False)
+                    changes_count += 1
+        except Exception:
+            pass
+
+    # 10. GNOME Control Center overlay sync
+    cc_src_dir = os.path.join(REPO_DIR, "gnome-control-center-overlay")
+    cc_dst_dir = "/usr/share/mactheme/gnome-control-center-overlay"
+    if os.path.isdir(cc_src_dir):
+        try:
+            subprocess.run(["sudo", "mkdir", "-p", cc_dst_dir], check=False)
+            for fname in os.listdir(cc_src_dir):
+                sf = os.path.join(cc_src_dir, fname)
+                df = os.path.join(cc_dst_dir, fname)
+                if os.path.isfile(sf):
+                    if not os.path.exists(df) or get_file_md5(sf) != get_file_md5(df):
+                        subprocess.run(["sudo", "cp", "-f", sf, df], check=False)
+                        if fname.endswith(".so"):
+                            subprocess.run(["sudo", "chmod", "755", df], check=False)
+                        else:
+                            subprocess.run(["sudo", "chmod", "644", df], check=False)
+                        changes_count += 1
         except Exception:
             pass
 
