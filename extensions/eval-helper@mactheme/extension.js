@@ -30,6 +30,9 @@ const EvalIface = `
     <method name="SyncLabelStyling">
       <arg type="b" direction="out" name="success"/>
     </method>
+    <method name="SyncSpotlightStyling">
+      <arg type="b" direction="out" name="success"/>
+    </method>
   </interface>
 </node>`;
 
@@ -461,6 +464,32 @@ export default class EvalHelper extends Extension {
                         return false;
                     } catch (e) {
                         console.error(`[EvalHelper] SyncLabelStyling error: ${e}`);
+                        return false;
+                    }
+                },
+                SyncSpotlightStyling: () => {
+                    try {
+                        if (typeof globalThis._macSyncSpotlightStyling === 'function') {
+                            globalThis._macSyncSpotlightStyling();
+                            return true;
+                        }
+                        const dlg = globalThis._macSpotlightGlobalInstance;
+                        if (dlg) {
+                            dlg._lastGeometryKey = null;
+                            if (typeof dlg._applyGlassUniforms === 'function') {
+                                dlg._applyGlassUniforms();
+                            }
+                            if (typeof dlg._syncGlass === 'function') {
+                                dlg._syncGlass();
+                            }
+                            if (dlg._glass && typeof dlg._glass.forceRefresh === 'function') {
+                                dlg._glass.forceRefresh(1);
+                            }
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error(`[EvalHelper] SyncSpotlightStyling error: ${e}`);
                         return false;
                     }
                 },

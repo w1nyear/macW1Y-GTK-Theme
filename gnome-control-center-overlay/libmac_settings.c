@@ -136,9 +136,9 @@ static MacStylingData state = {
     .notification_tint = 20,
     .notification_shadow = 35,
 
-    .spotlight_blur = 1,
-    .spotlight_tint = 10,
-    .spotlight_shadow = 18,
+    .spotlight_blur = 25,
+    .spotlight_tint = 15,
+    .spotlight_shadow = 35,
 
     .blur_sigma = 31,
     .blur_tint = 29,
@@ -254,20 +254,22 @@ static void load_config(void) {
                 state.liquid_shadow = 49;
 
             /* Group 3: Spotlight */
-            if (json_object_has_member(obj, "spotlight_blur"))
-                state.spotlight_blur = (int)json_object_get_int_member(obj, "spotlight_blur");
-            else
-                state.spotlight_blur = 1;
+            if (json_object_has_member(obj, "spotlight_blur")) {
+                int val = (int)json_object_get_int_member(obj, "spotlight_blur");
+                state.spotlight_blur = (val <= 1) ? 25 : val;
+            } else {
+                state.spotlight_blur = 25;
+            }
 
             if (json_object_has_member(obj, "spotlight_tint"))
                 state.spotlight_tint = (int)json_object_get_int_member(obj, "spotlight_tint");
             else
-                state.spotlight_tint = 10;
+                state.spotlight_tint = 15;
 
             if (json_object_has_member(obj, "spotlight_shadow"))
                 state.spotlight_shadow = (int)json_object_get_int_member(obj, "spotlight_shadow");
             else
-                state.spotlight_shadow = 18;
+                state.spotlight_shadow = 35;
 
             /* Group 3: Blur */
             if (json_object_has_member(obj, "blur_sigma"))
@@ -761,17 +763,40 @@ static void schedule_liquid_glass_apply(void) {
     liquid_glass_timer_id = g_timeout_add(100, (GSourceFunc)apply_liquid_glass_cb, NULL);
 }
 
+static void apply_spotlight_settings(void) {
+    save_styling_json();
+    /* Notify GNOME Shell via D-Bus to reload spotlight styling in real-time */
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    if (bus) {
+        g_dbus_connection_call(bus,
+            "org.gnome.Shell",
+            "/org/gnome/Shell/Extensions/EvalHelper",
+            "org.gnome.Shell.Extensions.EvalHelper",
+            "SyncSpotlightStyling",
+            NULL,
+            NULL,
+            G_DBUS_CALL_FLAGS_NONE,
+            -1,
+            NULL,
+            NULL,
+            NULL);
+        g_object_unref(bus);
+    }
+}
+
 static gboolean apply_spotlight_cb(gpointer user_data) {
     (void)user_data;
     spotlight_timer_id = 0;
-    save_styling_json();
+    apply_spotlight_settings();
     return G_SOURCE_REMOVE;
 }
 
 static void schedule_spotlight_apply(void) {
-    if (spotlight_timer_id == 0) {
-        spotlight_timer_id = g_timeout_add(60, (GSourceFunc)apply_spotlight_cb, NULL);
+    if (spotlight_timer_id != 0) {
+        g_source_remove(spotlight_timer_id);
+        spotlight_timer_id = 0;
     }
+    spotlight_timer_id = g_timeout_add(50, (GSourceFunc)apply_spotlight_cb, NULL);
 }
 
 static guint dock_timer_id = 0;

@@ -1272,7 +1272,12 @@ export const MacSpotlightDialog = GObject.registerClass({
                 if (eventType === Gio.FileMonitorEvent.CHANGES_DONE_HINT ||
                     eventType === Gio.FileMonitorEvent.CHANGED ||
                     eventType === Gio.FileMonitorEvent.CREATED) {
-                    if (this._glass) this._applyGlassUniforms();
+                    this._lastGeometryKey = null;
+                    if (this._glass) {
+                        this._applyGlassUniforms();
+                        this._syncGlass();
+                        try { this._glass.forceRefresh?.(1); } catch (_) {}
+                    }
                 }
             });
         } catch (e) {
@@ -1285,10 +1290,14 @@ export const MacSpotlightDialog = GObject.registerClass({
         const effect = this._glass.effect || this._glass._effect;
         if (!effect) return;
 
+        this._lastGeometryKey = null;
         const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
         const styling = this._readStyling() || {};
 
-        const spotBlur = (typeof styling.spotlight_blur === 'number') ? styling.spotlight_blur : 18.0;
+        let spotBlur = 25.0;
+        if (typeof styling.spotlight_blur === 'number') {
+            spotBlur = (styling.spotlight_blur === 1) ? 25.0 : styling.spotlight_blur;
+        }
         const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
         const spotShadow = (typeof styling.spotlight_shadow === 'number') ? (styling.spotlight_shadow / 100.0) : (isDark ? 0.35 : 0.22);
         const spotShadowRadius = Math.max(10.0, spotShadow * 50.0);
@@ -1672,14 +1681,15 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const bgW = Math.round(activeW * scaleX);
                 const bgH = Math.round(rawH * scaleY);
 
-                const key = `s:${localBgX},${localBgY},${bgW},${bgH}:${targetOpacity}`;
+                const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
+                const styling = this._readStyling() || {};
+                const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
+
+                const key = `s:${localBgX},${localBgY},${bgW},${bgH}:${targetOpacity}:${spotTint}`;
                 if (this._lastGeometryKey === key) return;
                 this._lastGeometryKey = key;
 
                 this._glass.setMultiRegionMode(false);
-                const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
-                const styling = this._readStyling() || {};
-                const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
                 this._glass.setTintColor(tintR, tintG, tintB);
                 this._glass.setTintStrength(spotTint);
                 this._glass.setCornerRadius(CORNER_RADIUS);
@@ -3453,3 +3463,17 @@ globalThis.toggleApplicationsMenu = () => toggleSearchDialog('apps');
 globalThis.toggleMacClipboard = (mode = 'clipboard') => toggleSearchDialog(typeof mode === 'string' ? mode : 'clipboard');
 globalThis.closeMacSpotlight = closeSearchDialog;
 globalThis._macSpotlightClose = closeSearchDialog;
+globalThis._macSyncSpotlightStyling = () => {
+    if (_spotlightDialog) {
+        _spotlightDialog._lastGeometryKey = null;
+        if (typeof _spotlightDialog._applyGlassUniforms === 'function') {
+            _spotlightDialog._applyGlassUniforms();
+        }
+        if (typeof _spotlightDialog._syncGlass === 'function') {
+            _spotlightDialog._syncGlass();
+        }
+        if (_spotlightDialog._glass && typeof _spotlightDialog._glass.forceRefresh === 'function') {
+            _spotlightDialog._glass.forceRefresh(1);
+        }
+    }
+};

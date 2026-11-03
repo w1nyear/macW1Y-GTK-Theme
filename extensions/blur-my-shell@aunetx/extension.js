@@ -43,32 +43,6 @@ export default class BlurMyShell extends Extension {
         globalThis.GLib = GLib;
         globalThis.Gio = Gio;
 
-        try {
-            const EvalIface = `
-            <node>
-              <interface name="org.gnome.Shell.Extensions.EvalHelper">
-                <method name="Eval">
-                  <arg type="s" direction="in" name="code"/>
-                  <arg type="s" direction="out" name="result"/>
-                </method>
-              </interface>
-            </node>`;
-            const nodeInfo = Gio.DBusNodeInfo.new_for_xml(EvalIface);
-            this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(nodeInfo.interfaces[0], {
-                Eval: async (code) => {
-                    try {
-                        let res = eval(code);
-                        if (res && typeof res.then === 'function')
-                            res = await res;
-                        return JSON.stringify(res !== undefined ? res : null) ?? 'null';
-                    } catch (e) {
-                        return `ERROR: ${e?.name}: ${e?.message}\n${e?.stack || e}`;
-                    }
-                }
-            });
-            this._dbusImpl.export(Gio.DBus.session, '/org/gnome/Shell/Extensions/EvalHelper');
-        } catch (_) {}
-
         // update from old settings, very important for hacks level specifically
         update_from_old_settings(this.getSettings());
 
