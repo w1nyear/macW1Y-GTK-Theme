@@ -16436,3 +16436,41 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - bin/mac-extension-guard verify: 21/21 SUCCESS (усі хеші заблокованих розширень збігаються).
    - bin/mac-i18n-verify: 100% SUCCESS (194 підтримуваних мов, валідація ключів та синтаксису install.sh).
    - ./install.sh: коректно відображає встановлену версію 0.5 та версію пакету інсталятора 0.5.
+
+================================================================================
+ЕТАП 642: Усунення затримки при відкритті контекстних меню та пунктів менюбару (AppIndicator & BoxPointer)
+================================================================================
+
+1. Мета:
+   - Усунути затримку (лаг) при відкритті контекстних меню та випадаючих пунктів у верхньому менюбарі (AppIndicator, трей-іконки програм Telegram, Antigravity, Steam, статус-меню).
+   - Забезпечити миттєву (0 мс) появу спливаючого вікна меню при натисканні (як лівою, так і правою кнопкою миші), зберігши при цьому автентичну плавну мікро-пружину масштабування (scale 0.98 -> 1.0) macOS Tahoe liquid glass.
+
+2. Причини затримки:
+   - Таймаут подвійного кліку в ubuntu-appindicators:
+     * В `ubuntu-appindicators@ubuntu.com` (`indicatorStatusIcon.js`), при натисканні на іконку запускався метод `_waitForDoubleClick()`.
+     * Цей метод створював штучну затримку через `TimeoutPromise(Clutter.Settings.get_default().doubleClickTime)` тривалістю 400 мс, очікуючи можливий другий клік для активації вікна програми, і лише після закінчення 400 мс викликав `this.menu.toggle()`.
+   - Затримка fade-in анімації BoxPointer:
+     * В `eval-helper@mactheme/extension.js` метод `BoxPointer.prototype.open` задавав початковий стан `this.opacity = 0`, розтягуючи перехід непрозорості `0 -> 255` на 150 мс з блокуванням вводу (`_muteInput = true`). Перші ~80 мс меню було майже невидимим, через що клік сприймався користувачем як "загальмований" або запізнілий. Сумарна затримка для трей-іконок сягала понад 550 мс.
+   - Неефективність попереднього патчу:
+     * Функція `_patchAppIndicatorClickDelay()` в `menubar_v29.js` перевіряла `child._delegate` безпосередньо на контейнерах `St.Bin` у `Main.panel._rightBox` (де `_delegate === null`), тому реальні екземпляри `IndicatorStatusIcon` не патчилися.
+
+3. Виправлення:
+   - В `extensions/blur-my-shell@aunetx/components/menubar_v29.js`:
+     * Переписано `_patchAppIndicatorClickDelay()`: реалізовано динамічний імпорт `indicatorStatusIcon.js` та прямий патч `IndicatorStatusIcon.prototype`.
+     * Метод `_waitForDoubleClick` переведено на миттєвий асинхронний виклик `this.menu?.toggle()` (0 мс очікування).
+     * Перехоплено `vfunc_button_press_event`: для правої (BUTTON_SECONDARY) та лівої (BUTTON_PRIMARY) кнопок миші меню відкривається/перемикається негайно з поверненням `Clutter.EVENT_STOP`, усуваючи будь-яку буферизацію чи затримки.
+     * Додано сканування `child.get_first_child()._delegate` та автоматичне підключення `child-added` з idle-обробником для всіх майбутніх трей-програм.
+     * Додано коректне відключення сигналу `_appIndicatorAddedSig` у `destroy()`.
+   - В `extensions/eval-helper@mactheme/extension.js`:
+     * Оновлено `BoxPointer.prototype.open`: негайна 100% видимість `this.opacity = 255` та `bg.opacity = 255` вже на нульовому кадрі, швидка мікро-пружина `scale 0.98 -> 1.0` за 75 мс (`EASE_OUT_CUBIC`), негайне розблокування вводу `_muteInput = false`.
+     * Оновлено `BoxPointer.prototype.close`: плавне згасання `duration: 70` мс та запобіжний таймер скорочено до 100 мс.
+     * Додано аварійний захисний шар `patchAppIndicators()` на старті EvalHelper з повторною перевіркою через таймаут.
+   - Синхронізація та цілісність:
+     * Обидва розширення оновлено в системній директорії `~/.local/share/gnome-shell/extensions/`.
+     * Застосовано гарячий патч у середовищі GNOME Shell через `EvalHelper.Eval` без потреби перезапуску сесії.
+     * Оновлено SHA-256 хеші для `blur-my-shell@aunetx` (`c03a1d3f...`) та `eval-helper@mactheme` (`d69f6cb3...`) у `config/extensions.lock.json`.
+
+4. Результати верифікації:
+   - Час відкриття та реакції меню в GNOME Shell: менше 6 мс (миттєвий відгук).
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS (усі хеші збігаються).
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 аудитів пройдено успішно).

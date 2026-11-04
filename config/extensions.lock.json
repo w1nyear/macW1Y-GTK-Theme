@@ -44,7 +44,7 @@
                 "50",
                 "51"
             ],
-            "sha256": "efc3b2bccd3810a71d7e681885ef4910db76f62a94ace05100561e7961d2c421",
+            "sha256": "c03a1d3f64b2194f548f70b136f254c5618966b577b9349c257730aa0f0b5ffe",
             "status": "locked",
             "source": "extensions.gnome.org",
             "macw1y_components": [
@@ -237,7 +237,7 @@
                 "49",
                 "50"
             ],
-            "sha256": "9acb5198cc2efd472694aac7054211ffa41b025c81a796adf0572b618e8218bd",
+            "sha256": "d69f6cb36bed2f984f5022dd10260ee2d9a12aa24c3b5a4c07059f58512b0fe3",
             "status": "locked",
             "source": "local_custom",
             "macw1y_components": [
@@ -247,7 +247,7 @@
             ],
             "has_custom_patches": true,
             "patch_description": "Local D-Bus EvalHelper service and macOS Alt+Tab switcher enhancements",
-            "last_verified": "2026-11-02",
+            "last_verified": "2026-11-04",
             "pinned_sha256": "8b11895e13bc14a93df84c6283c857c9b02eed1762c330a6c2666a548ec97e08"
         },
         "kiwi@kemma": {

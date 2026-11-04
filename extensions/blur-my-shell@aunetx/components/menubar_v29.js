@@ -2628,56 +2628,63 @@ export const MenuBarController = class MenuBarController {
 
     _patchAppIndicatorClickDelay() {
         try {
-            const patchTarget = (obj) => {
-                if (!obj) return;
-                let cur = obj;
-                while (cur) {
-                    if (typeof cur._waitForDoubleClick === 'function') {
-                        cur._waitForDoubleClick = async function() {
-                            this.menu?.toggle();
-                        };
+            const patchProto = (proto) => {
+                if (!proto || proto._macInstantClickPatched) return;
+                proto._macInstantClickPatched = true;
+                proto._waitForDoubleClick = async function() {
+                    this.menu?.toggle();
+                };
+                const origBtn = proto.vfunc_button_press_event;
+                proto.vfunc_button_press_event = function(event) {
+                    if (this._waitDoubleClickPromise) {
+                        try { this._waitDoubleClickPromise.cancel(); } catch (_) {}
                     }
-                    try {
-                        if (cur.vfunc_button_press_event && !cur._instantClickPatched) {
-                            cur._instantClickPatched = true;
-                            const origBtn = cur.vfunc_button_press_event;
-                            cur.vfunc_button_press_event = function(event) {
-                                if (this._waitDoubleClickPromise)
-                                    this._waitDoubleClickPromise.cancel();
+                    if (event.get_button() === 2) {
+                        if (Main.panel?.menuManager?.activeMenu)
+                            Main.panel.menuManager._closeMenu(true, Main.panel.menuManager.activeMenu);
+                        this._indicator?.secondaryActivate(event.get_time(), ...event.get_coords());
+                        return 1;
+                    }
+                    if (event.get_button() === 3 || (event.get_button() === 1 && this.menu?.numMenuItems > 0)) {
+                        this.menu?.toggle();
+                        return 1;
+                    }
+                    return origBtn ? origBtn.call(this, event) : 0;
+                };
+            };
 
-                                if (event.get_button() === 2) {
-                                    if (Main.panel.menuManager.activeMenu)
-                                        Main.panel.menuManager._closeMenu(true, Main.panel.menuManager.activeMenu);
-                                    this._indicator?.secondaryActivate(event.get_time(), ...event.get_coords());
-                                    return 1;
-                                }
-                                if (event.get_button() === 3) {
-                                    this.menu?.toggle();
-                                    return 0;
-                                }
-                                if (event.get_button() === 1 && this.menu?.numMenuItems) {
-                                    this.menu?.toggle();
-                                    return 0;
-                                }
-                                return origBtn.call(this, event);
-                            };
-                        }
-                    } catch (_) {}
-                    cur = Object.getPrototypeOf(cur);
+            const patchChild = (child) => {
+                if (!child) return;
+                const fc = child.get_first_child ? child.get_first_child() : null;
+                const d = (fc && fc._delegate) || child._delegate;
+                if (d && d.constructor && d.constructor.name === 'IndicatorStatusIcon') {
+                    patchProto(Object.getPrototypeOf(d));
                 }
             };
 
-            if (Main.panel?.statusArea) {
-                for (const item of Object.values(Main.panel.statusArea)) {
-                    patchTarget(item);
-                }
-            }
             if (Main.panel?._rightBox) {
                 for (const child of Main.panel._rightBox.get_children()) {
-                    patchTarget(child);
-                    if (child._delegate) patchTarget(child._delegate);
+                    patchChild(child);
+                }
+                if (!this._appIndicatorAddedSig) {
+                    this._appIndicatorAddedSig = Main.panel._rightBox.connect('child-added', (_box, child) => {
+                        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                            patchChild(child);
+                            return GLib.SOURCE_REMOVE;
+                        });
+                    });
                 }
             }
+
+            try {
+                const ext = Main.extensionManager?.lookup('ubuntu-appindicators@ubuntu.com');
+                const uri = ext?.dir ? (ext.dir.get_uri() + '/indicatorStatusIcon.js') : 'file:///usr/share/gnome-shell/extensions/ubuntu-appindicators@ubuntu.com/indicatorStatusIcon.js';
+                import(uri).then(mod => {
+                    if (mod?.IndicatorStatusIcon?.prototype) {
+                        patchProto(mod.IndicatorStatusIcon.prototype);
+                    }
+                }).catch(() => {});
+            } catch (_) {}
         } catch (e) {
             console.error('[MenuBarController] Error patching AppIndicator delay:', e);
         }
@@ -6035,6 +6042,11 @@ export const MenuBarController = class MenuBarController {
         if (this._stylingMonitor) {
             try { this._stylingMonitor.cancel(); } catch (_e) {}
             this._stylingMonitor = null;
+        }
+
+        if (this._appIndicatorAddedSig && Main.panel?._rightBox) {
+            try { Main.panel._rightBox.disconnect(this._appIndicatorAddedSig); } catch (_) {}
+            this._appIndicatorAddedSig = null;
         }
 
         if (this._macInputSwitcher) {

@@ -2729,6 +2729,8 @@ export default class EvalHelper extends Extension {
                         if (bg) {
                             bg._isClosingAnimation = false;
                             bg.remove_all_transitions();
+                            bg.opacity = 255;
+                            bg.visible = true;
                             bg.scale_x = 1.0;
                             bg.scale_y = 1.0;
                             bg.translation_x = 0;
@@ -2747,16 +2749,15 @@ export default class EvalHelper extends Extension {
                         return;
                     }
 
-                    // Authentic macOS Tahoe appearance animation: scale 0.95 -> 1.0, fade-in 0 -> 255
-                    this.opacity = 0;
-                    this.scale_x = 0.95;
-                    this.scale_y = 0.95;
+                    // Ultra-responsive authentic macOS Tahoe appearance: immediate visibility (no delay/lag) with snappy 75ms micro-spring
+                    this.opacity = 255;
+                    this.scale_x = 0.98;
+                    this.scale_y = 0.98;
 
                     this.ease({
-                        opacity: 255,
                         scale_x: 1.0,
                         scale_y: 1.0,
-                        duration: 150,
+                        duration: 75,
                         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                         onComplete: () => {
                             this._muteInput = false;
@@ -2850,9 +2851,8 @@ export default class EvalHelper extends Extension {
                         return;
                     }
 
-                    // For animated close (macOS Tahoe exit animation: scale 1.0 -> 0.95, fade-out 255 -> 0):
-                    // Safety timer to guarantee hide() even if transition is interrupted or dropped
-                    this._closeTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 180, () => {
+                    // For animated close: snappy 70ms fade-out and scale 1.0 -> 0.98
+                    this._closeTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
                         this._closeTimeoutId = 0;
                         finalizeClose();
                         return GLib.SOURCE_REMOVE;
@@ -2867,24 +2867,11 @@ export default class EvalHelper extends Extension {
                         const uim = getMenuUIM(this);
                         const bg = uim?.bgActor;
                         if (bg && bg.visible) {
-                            let [bx, by] = this.get_transformed_position();
-                            let [bw, bh] = this.get_size();
-                            let Px = bx + bw * pivotX;
-                            let Py = by + bh * pivotY;
-
-                            let [bgX, bgY] = bg.get_position();
-                            let [bgW, bgH] = bg.get_size();
-                            let bgPivotX = (Px - bgX) / (bgW || 1);
-                            let bgPivotY = (Py - bgY) / (bgH || 1);
-
                             bg._isClosingAnimation = true;
                             bg.remove_all_transitions();
-                            bg.set_pivot_point(bgPivotX, bgPivotY);
                             bg.ease({
                                 opacity: 0,
-                                scale_x: 0.95,
-                                scale_y: 0.95,
-                                duration: 120,
+                                duration: 70,
                                 mode: Clutter.AnimationMode.EASE_IN_QUAD,
                                 onComplete: () => {
                                     bg._isClosingAnimation = false;
@@ -2902,13 +2889,54 @@ export default class EvalHelper extends Extension {
 
                     this.ease({
                         opacity: 0,
-                        scale_x: 0.95,
-                        scale_y: 0.95,
-                        duration: 120,
+                        scale_x: 0.98,
+                        scale_y: 0.98,
+                        duration: 70,
                         mode: Clutter.AnimationMode.EASE_IN_QUAD,
                         onComplete: finalizeClose
                     });
                 };
+
+                // Instant AppIndicator context menu activation (eliminate 400ms double-click timeout)
+                const patchAppIndicators = () => {
+                    try {
+                        const ext = Main.extensionManager?.lookup('ubuntu-appindicators@ubuntu.com');
+                        const uri = ext?.dir ? (ext.dir.get_uri() + '/indicatorStatusIcon.js') : 'file:///usr/share/gnome-shell/extensions/ubuntu-appindicators@ubuntu.com/indicatorStatusIcon.js';
+                        import(uri).then(mod => {
+                            const proto = mod?.IndicatorStatusIcon?.prototype;
+                            if (proto && !proto._macInstantClickPatched) {
+                                proto._macInstantClickPatched = true;
+                                proto._waitForDoubleClick = async function() {
+                                    this.menu?.toggle();
+                                };
+                                const origBtn = proto.vfunc_button_press_event;
+                                proto.vfunc_button_press_event = function(event) {
+                                    if (this._waitDoubleClickPromise) {
+                                        try { this._waitDoubleClickPromise.cancel(); } catch (_) {}
+                                    }
+                                    if (event.get_button() === 2) {
+                                        if (Main.panel?.menuManager?.activeMenu)
+                                            Main.panel.menuManager._closeMenu(true, Main.panel.menuManager.activeMenu);
+                                        this._indicator?.secondaryActivate(event.get_time(), ...event.get_coords());
+                                        return 1;
+                                    }
+                                    if (event.get_button() === 3 || event.get_button() === 1) {
+                                        if (this.menu) {
+                                            this.menu.toggle();
+                                            return 0;
+                                        }
+                                    }
+                                    return origBtn ? origBtn.call(this, event) : 0;
+                                };
+                            }
+                        }).catch(() => {});
+                    } catch (_) {}
+                };
+                patchAppIndicators();
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+                    patchAppIndicators();
+                    return GLib.SOURCE_REMOVE;
+                });
             }).catch(e => console.error(`[EvalHelper] BoxPointer patch error: ${e}`));
         } catch (e) {
             console.error(`[EvalHelper] BoxPointer setup error: ${e}`);
