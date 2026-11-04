@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <glib.h>
 #include <gio/gio.h>
 #include <dlfcn.h>
@@ -1330,7 +1331,7 @@ static char *get_user_wallpaper_path(void) {
     return filename;
 }
 
-#define WALLPAPER_CACHE_SIZE 16
+#define WALLPAPER_CACHE_SIZE 64
 typedef struct {
     int w;
     int h;
@@ -1339,9 +1340,12 @@ typedef struct {
 
 static WallpaperCacheEntry g_wallpaper_cache[WALLPAPER_CACHE_SIZE] = {{0}};
 static int g_wallpaper_cache_count = 0;
+static GdkPixbuf *g_master_wallpaper_pb = NULL;
 static char *g_wallpaper_cached_path = NULL;
+static gint64 g_wallpaper_cached_mtime = 0;
+static GMutex g_wallpaper_mutex;
 
-static void clear_wallpaper_cache(void) {
+static void clear_wallpaper_cache_unlocked(void) {
     for (int i = 0; i < g_wallpaper_cache_count; i++) {
         if (g_wallpaper_cache[i].surf) {
             cairo_surface_destroy(g_wallpaper_cache[i].surf);
@@ -1349,57 +1353,189 @@ static void clear_wallpaper_cache(void) {
         }
     }
     g_wallpaper_cache_count = 0;
+    if (g_master_wallpaper_pb) {
+        g_object_unref(g_master_wallpaper_pb);
+        g_master_wallpaper_pb = NULL;
+    }
     if (g_wallpaper_cached_path) {
         g_free(g_wallpaper_cached_path);
         g_wallpaper_cached_path = NULL;
     }
+    g_wallpaper_cached_mtime = 0;
     clear_blurred_wallpaper_cache();
+}
+
+static void clear_wallpaper_cache(void) {
+    g_mutex_lock(&g_wallpaper_mutex);
+    clear_wallpaper_cache_unlocked();
+    g_mutex_unlock(&g_wallpaper_mutex);
+}
+
+static void free_pixbuf_data(guchar *pixels, gpointer data) {
+    (void)data;
+    g_free(pixels);
+}
+
+static void ensure_master_wallpaper_pixbuf_unlocked(void) {
+    char *path = get_user_wallpaper_path();
+    if (!path) return;
+
+    struct stat st;
+    gint64 mtime = 0;
+    if (stat(path, &st) == 0) {
+        mtime = (gint64)st.st_mtime;
+    }
+
+    if (g_master_wallpaper_pb && g_wallpaper_cached_path &&
+        strcmp(g_wallpaper_cached_path, path) == 0 &&
+        g_wallpaper_cached_mtime == mtime) {
+        g_free(path);
+        return;
+    }
+
+    clear_wallpaper_cache_unlocked();
+
+    g_wallpaper_cached_path = g_strdup(path);
+    g_wallpaper_cached_mtime = mtime;
+
+    const char *cache_dir = g_get_user_cache_dir();
+    char *mactheme_dir = g_build_filename(cache_dir, "mactheme", NULL);
+    g_mkdir_with_parents(mactheme_dir, 0755);
+
+    typedef struct {
+        uint32_t magic;       /* 0x4D414357 = 'MACW' */
+        uint32_t version;     /* 1 */
+        int32_t  width;
+        int32_t  height;
+        int32_t  rowstride;
+        int32_t  n_channels;
+    } MacWpThumbHeader;
+
+    guint path_hash = g_str_hash(path);
+    char *thumb_path = g_strdup_printf("%s/wp_%08x_%lx.raw", mactheme_dir, path_hash, (gulong)mtime);
+
+    FILE *f_in = fopen(thumb_path, "rb");
+    if (f_in) {
+        MacWpThumbHeader hdr;
+        if (fread(&hdr, sizeof(hdr), 1, f_in) == 1 &&
+            hdr.magic == 0x4D414357 && hdr.version == 1 &&
+            hdr.width > 0 && hdr.height > 0 &&
+            hdr.n_channels >= 3 && hdr.rowstride >= hdr.width * hdr.n_channels) {
+            size_t pixel_bytes = (size_t)hdr.height * hdr.rowstride;
+            guchar *pixels = (guchar *)g_try_malloc(pixel_bytes);
+            if (pixels && fread(pixels, pixel_bytes, 1, f_in) == 1) {
+                g_master_wallpaper_pb = gdk_pixbuf_new_from_data(
+                    pixels, GDK_COLORSPACE_RGB, (hdr.n_channels == 4),
+                    8, hdr.width, hdr.height, hdr.rowstride,
+                    free_pixbuf_data, NULL
+                );
+            } else if (pixels) {
+                g_free(pixels);
+            }
+        }
+        fclose(f_in);
+    }
+
+    if (!g_master_wallpaper_pb) {
+        GError *err = NULL;
+        g_master_wallpaper_pb = gdk_pixbuf_new_from_file_at_scale(path, 1024, -1, TRUE, &err);
+        if (g_master_wallpaper_pb) {
+            FILE *f_out = fopen(thumb_path, "wb");
+            if (f_out) {
+                MacWpThumbHeader hdr = {
+                    .magic = 0x4D414357,
+                    .version = 1,
+                    .width = gdk_pixbuf_get_width(g_master_wallpaper_pb),
+                    .height = gdk_pixbuf_get_height(g_master_wallpaper_pb),
+                    .rowstride = gdk_pixbuf_get_rowstride(g_master_wallpaper_pb),
+                    .n_channels = gdk_pixbuf_get_n_channels(g_master_wallpaper_pb)
+                };
+                fwrite(&hdr, sizeof(hdr), 1, f_out);
+                fwrite(gdk_pixbuf_get_pixels(g_master_wallpaper_pb),
+                       (size_t)hdr.height * hdr.rowstride, 1, f_out);
+                fclose(f_out);
+            }
+        } else {
+            if (err) g_error_free(err);
+        }
+    }
+
+    g_free(thumb_path);
+    g_free(mactheme_dir);
+    g_free(path);
+}
+
+static gpointer preload_wallpaper_worker(gpointer data) {
+    (void)data;
+    g_mutex_lock(&g_wallpaper_mutex);
+    ensure_master_wallpaper_pixbuf_unlocked();
+    g_mutex_unlock(&g_wallpaper_mutex);
+    return NULL;
+}
+
+static void on_bg_picture_changed(GSettings *settings, const gchar *key, gpointer user_data) {
+    (void)settings; (void)key; (void)user_data;
+    clear_wallpaper_cache();
+    g_thread_new("mac-wp-reload", preload_wallpaper_worker, NULL);
+}
+
+static gboolean g_wallpaper_preload_started = FALSE;
+static void start_wallpaper_preload(void) {
+    if (g_wallpaper_preload_started) return;
+    g_wallpaper_preload_started = TRUE;
+
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (src && g_settings_schema_source_lookup(src, "org.gnome.desktop.background", TRUE)) {
+        GSettings *bg = g_settings_new("org.gnome.desktop.background");
+        g_signal_connect(bg, "changed::picture-uri-dark", G_CALLBACK(on_bg_picture_changed), NULL);
+        g_signal_connect(bg, "changed::picture-uri", G_CALLBACK(on_bg_picture_changed), NULL);
+    }
+
+    g_thread_new("mac-wp-preload", preload_wallpaper_worker, NULL);
 }
 
 static cairo_surface_t *get_cached_wallpaper_surface(int target_w, int target_h) {
     if (target_w <= 0 || target_h <= 0) return NULL;
-    char *path = get_user_wallpaper_path();
-    if (!path) return NULL;
 
-    if (g_wallpaper_cached_path && strcmp(g_wallpaper_cached_path, path) != 0) {
-        clear_wallpaper_cache();
-    }
-
-    if (!g_wallpaper_cached_path) {
-        g_wallpaper_cached_path = g_strdup(path);
-    }
+    g_mutex_lock(&g_wallpaper_mutex);
 
     /* Check if already in cache */
     for (int i = 0; i < g_wallpaper_cache_count; i++) {
         if (g_wallpaper_cache[i].w == target_w && g_wallpaper_cache[i].h == target_h && g_wallpaper_cache[i].surf) {
-            g_free(path);
-            return g_wallpaper_cache[i].surf;
+            cairo_surface_t *surf = g_wallpaper_cache[i].surf;
+            g_mutex_unlock(&g_wallpaper_mutex);
+            return surf;
         }
     }
 
-    /* Load and scale */
-    GError *err = NULL;
-    GdkPixbuf *pb = gdk_pixbuf_new_from_file_at_scale(path, target_w, -1, TRUE, &err);
-    g_free(path);
-    if (!pb) {
-        if (err) g_error_free(err);
+    ensure_master_wallpaper_pixbuf_unlocked();
+    if (!g_master_wallpaper_pb) {
+        g_mutex_unlock(&g_wallpaper_mutex);
         return NULL;
     }
 
-    int pw = gdk_pixbuf_get_width(pb);
-    int ph = gdk_pixbuf_get_height(pb);
-
-    if (ph < target_h) {
-        GdkPixbuf *pb2 = gdk_pixbuf_scale_simple(pb, (int)ceil((double)pw * target_h / ph), target_h, GDK_INTERP_BILINEAR);
-        g_object_unref(pb);
-        pb = pb2;
-        pw = gdk_pixbuf_get_width(pb);
-        ph = gdk_pixbuf_get_height(pb);
+    int pw = gdk_pixbuf_get_width(g_master_wallpaper_pb);
+    int ph = gdk_pixbuf_get_height(g_master_wallpaper_pb);
+    if (pw <= 0 || ph <= 0) {
+        g_mutex_unlock(&g_wallpaper_mutex);
+        return NULL;
     }
 
-    int crop_x = CLAMP((pw - target_w) / 2, 0, pw - target_w);
-    int crop_y = CLAMP((ph - target_h) / 2, 0, ph - target_h);
-    GdkPixbuf *cropped = gdk_pixbuf_new_subpixbuf(pb, crop_x, crop_y, target_w, target_h);
+    double scale_w = (double)target_w / (double)pw;
+    double scale_h = (double)target_h / (double)ph;
+    double scale = (scale_w > scale_h) ? scale_w : scale_h;
+    int scaled_w = (int)ceil((double)pw * scale);
+    int scaled_h = (int)ceil((double)ph * scale);
+
+    GdkPixbuf *scaled = gdk_pixbuf_scale_simple(g_master_wallpaper_pb, scaled_w, scaled_h, GDK_INTERP_BILINEAR);
+    if (!scaled) {
+        g_mutex_unlock(&g_wallpaper_mutex);
+        return NULL;
+    }
+
+    int crop_x = CLAMP((scaled_w - target_w) / 2, 0, scaled_w - target_w);
+    int crop_y = CLAMP((scaled_h - target_h) / 2, 0, scaled_h - target_h);
+    GdkPixbuf *cropped = gdk_pixbuf_new_subpixbuf(scaled, crop_x, crop_y, target_w, target_h);
 
     cairo_surface_t *surf = cairo_image_surface_create(CAIRO_FORMAT_RGB24, target_w, target_h);
     int c_w = gdk_pixbuf_get_width(cropped);
@@ -1425,7 +1561,7 @@ static cairo_surface_t *get_cached_wallpaper_surface(int target_w, int target_h)
     cairo_surface_mark_dirty(surf);
 
     g_object_unref(cropped);
-    g_object_unref(pb);
+    g_object_unref(scaled);
 
     /* Store in cache */
     if (g_wallpaper_cache_count >= WALLPAPER_CACHE_SIZE) {
@@ -1443,6 +1579,7 @@ static cairo_surface_t *get_cached_wallpaper_surface(int target_w, int target_h)
     g_wallpaper_cache[g_wallpaper_cache_count].surf = surf;
     g_wallpaper_cache_count++;
 
+    g_mutex_unlock(&g_wallpaper_mutex);
     return surf;
 }
 
@@ -1539,7 +1676,7 @@ static void box_blur_vertical(uint32_t *src, uint32_t *dst, int w, int h, int r)
     }
 }
 
-#define BLURRED_WALLPAPER_CACHE_SIZE 32
+#define BLURRED_WALLPAPER_CACHE_SIZE 64
 typedef struct {
     int w;
     int h;
@@ -6745,6 +6882,8 @@ static GtkWidget *get_mac_styling_page(void)
     static GtkWidget *mac_styling_page = NULL;
     if (mac_styling_page) return mac_styling_page;
 
+    start_wallpaper_preload();
+
     GtkBuilder *builder = gtk_builder_new();
     const char *overlay_path = "/usr/share/mactheme/gnome-control-center-overlay/cc-mac-styling-panel.ui";
     char *user_path = NULL;
@@ -9529,10 +9668,24 @@ static gboolean open_styling_delayed_cb(gpointer user_data) {
     return G_SOURCE_REMOVE;
 }
 
+static gboolean warmup_mac_styling_idle(gpointer user_data) {
+    (void)user_data;
+    get_mac_styling_page();
+    return G_SOURCE_REMOVE;
+}
+
 static gboolean mac_fix_settings_window(gpointer user_data)
 {
     GtkWindow *window = GTK_WINDOW(user_data);
     if (!window || !GTK_IS_WINDOW(window)) return G_SOURCE_REMOVE;
+
+    static gboolean s_warmup_scheduled = FALSE;
+    if (!s_warmup_scheduled) {
+        s_warmup_scheduled = TRUE;
+        start_wallpaper_preload();
+        g_idle_add(warmup_mac_styling_idle, NULL);
+    }
+
     init_mac_settings_css();
     gtk_widget_add_css_class(GTK_WIDGET(window), "mac-settings-window");
 
@@ -9837,6 +9990,7 @@ void gtk_window_present(GtkWindow *window)
         orig_settings_gtk_window_present(window);
     }
     if (is_settings() && window) {
+        start_wallpaper_preload();
         mac_fix_settings_window(window);
         g_idle_add(mac_fix_settings_window, window);
     }
@@ -9851,6 +10005,7 @@ void gtk_window_present_with_time(GtkWindow *window, guint32 timestamp)
         orig_settings_gtk_window_present_with_time(window, timestamp);
     }
     if (is_settings() && window) {
+        start_wallpaper_preload();
         mac_fix_settings_window(window);
         g_idle_add(mac_fix_settings_window, window);
     }
