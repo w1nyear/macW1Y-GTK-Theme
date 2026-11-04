@@ -94,6 +94,121 @@ def get_target_resolution(code):
         return 3840, 2160, "4K Ultra HD"
     return None, None, "Оригінальна"
 
+def contrast_adaptive_sharpen(img, strength=0.85):
+    """
+    AMD FidelityFX Contrast-Adaptive Sharpening (CAS).
+    Sharpen without halos or ringing by adaptively clamping weights to local min/max.
+    """
+    try:
+        import numpy as np
+        from PIL import Image
+        arr = np.array(img, dtype=np.float32) / 255.0
+        has_alpha = (arr.ndim == 3 and arr.shape[2] == 4)
+        rgb = arr[:, :, :3] if arr.ndim == 3 else np.dstack([arr, arr, arr])
+
+        top    = np.roll(rgb, -1, axis=0)
+        bottom = np.roll(rgb,  1, axis=0)
+        left   = np.roll(rgb, -1, axis=1)
+        right  = np.roll(rgb,  1, axis=1)
+
+        c_min = np.minimum(np.minimum(top, bottom), np.minimum(left, right))
+        c_min = np.minimum(c_min, rgb)
+        c_max = np.maximum(np.maximum(top, bottom), np.maximum(left, right))
+        c_max = np.maximum(c_max, rgb)
+
+        amp = np.minimum(c_min, 1.0 - c_max) / (c_max + 1e-5)
+        w = -np.sqrt(np.clip(amp, 0.0, 1.0)) * (strength * 0.25)
+
+        sharp = (rgb + w * (top + bottom + left + right)) / (1.0 + 4.0 * w)
+        sharp = np.clip(sharp, 0.0, 1.0)
+
+        if has_alpha:
+            out = np.dstack([sharp, arr[:, :, 3]])
+        elif arr.ndim == 2:
+            out = sharp[:, :, 0]
+        else:
+            out = sharp
+        return Image.fromarray((out * 255.0).astype(np.uint8))
+    except Exception:
+        return img
+
+def super_resolve_image(img, target_w, target_h, algo_idx=0):
+    """
+    Multi-stage Super-Resolution pipeline with progressive scaling,
+    FidelityFX CAS and scale-adaptive unsharp edge steepening.
+    """
+    from PIL import Image, ImageFilter
+    orig_w, orig_h = img.size
+
+    aspect = orig_w / float(orig_h)
+    target_aspect = (target_w / float(target_h)) if target_h else (16.0 / 9.0)
+
+    if aspect >= target_aspect:
+        new_w = target_w
+        new_h = int(round(new_w / aspect))
+    else:
+        new_h = target_h if target_h else int(round(target_w / aspect))
+        new_w = int(round(new_h * aspect))
+
+    scale = new_w / float(orig_w)
+
+    has_alpha = (img.mode == "RGBA")
+    if has_alpha:
+        alpha = img.split()[3]
+        base_img = img.convert("RGB")
+    else:
+        alpha = None
+        base_img = img.convert("RGB") if img.mode != "RGB" else img
+
+    resample_method = Image.Resampling.LANCZOS if algo_idx in [0, 2] else Image.Resampling.BICUBIC
+
+    if scale > 1.05:
+        curr = base_img
+
+        # Progressive multi-stage resampling for high magnification (prevents diffuse sinc blur ramps)
+        if scale > 1.8:
+            while curr.size[0] * 1.8 < new_w:
+                step_w = int(round(curr.size[0] * 1.5))
+                step_h = int(round(curr.size[1] * 1.5))
+                curr = curr.resize((step_w, step_h), resample=resample_method)
+                curr = contrast_adaptive_sharpen(curr, strength=0.6)
+
+        # Final resize to target resolution
+        curr = curr.resize((new_w, new_h), resample=resample_method)
+
+        # CAS pre-sharpening
+        cas_strength = 0.9 if algo_idx in [0, 2] else 0.55
+        curr = contrast_adaptive_sharpen(curr, strength=cas_strength)
+
+        # Adaptive dual-radius unsharp masking tailored to magnification factor
+        macro_radius = max(1.2, min(3.2, 0.6 + 0.28 * scale))
+        macro_pct = int(130 + min(75, 12 * scale))
+        curr = curr.filter(ImageFilter.UnsharpMask(radius=macro_radius, percent=macro_pct, threshold=1))
+
+        micro_radius = 0.8
+        micro_pct = 120 if algo_idx != 1 else 80
+        curr = curr.filter(ImageFilter.UnsharpMask(radius=micro_radius, percent=micro_pct, threshold=1))
+
+        if algo_idx == 2:
+            curr = curr.filter(ImageFilter.UnsharpMask(radius=1.5, percent=135, threshold=2))
+
+        # Final lock-in CAS pass to eliminate any micro-ringing
+        curr = contrast_adaptive_sharpen(curr, strength=0.75)
+        out_img = curr
+    else:
+        out_img = base_img.resize((new_w, new_h), resample=resample_method)
+        if algo_idx in [0, 2]:
+            out_img = contrast_adaptive_sharpen(out_img, strength=0.6)
+            out_img = out_img.filter(ImageFilter.UnsharpMask(radius=1.0, percent=110, threshold=1))
+
+    if has_alpha and alpha is not None:
+        alpha_scaled = alpha.resize((new_w, new_h), resample=Image.Resampling.LANCZOS)
+        if scale > 1.2:
+            alpha_scaled = alpha_scaled.filter(ImageFilter.UnsharpMask(radius=1.0, percent=125, threshold=1))
+        out_img.putalpha(alpha_scaled)
+
+    return out_img, (new_w, new_h)
+
 def process_image(file_path):
     p = Path(file_path).resolve()
     if not p.exists() or p.stat().st_size == 0:
@@ -153,15 +268,11 @@ def process_image(file_path):
             out_img = img
 
             if do_resize:
-                aspect = orig_w / float(orig_h)
-                new_w = target_w
-                new_h = int(round(new_w / aspect))
-
-                resample_method = Image.Resampling.LANCZOS if algo_idx in [0, 2] else Image.Resampling.BICUBIC
-                out_img = out_img.resize((new_w, new_h), resample=resample_method)
-
-                if algo_idx == 2: # Unsharp mask
-                    out_img = out_img.filter(ImageFilter.UnsharpMask(radius=1.4, percent=125, threshold=3))
+                out_img, _ = super_resolve_image(img, target_w, target_h, algo_idx)
+            elif apply_proc and algo_idx in [0, 2]:
+                out_img = contrast_adaptive_sharpen(img, strength=0.6)
+                if algo_idx == 2:
+                    out_img = out_img.filter(ImageFilter.UnsharpMask(radius=1.0, percent=115, threshold=1))
 
             # Convert color mode for JPEG if RGBA
             if target_ext in [".jpg", ".jpeg"] and out_img.mode in ("RGBA", "P"):
@@ -175,12 +286,13 @@ def process_image(file_path):
             dest_path = p.with_suffix(target_ext)
 
             save_kwargs = {}
+            target_dpi = (144, 144) if target_idx == 2 else ((288, 288) if target_idx == 3 else (96, 96))
             if target_ext in [".jpg", ".jpeg"]:
-                save_kwargs = {"quality": quality, "subsampling": 0, "optimize": True}
+                save_kwargs = {"quality": quality, "subsampling": 0, "optimize": True, "dpi": target_dpi}
             elif target_ext == ".webp":
                 save_kwargs = {"quality": quality, "method": 6}
             elif target_ext == ".png":
-                save_kwargs = {"compress_level": 6, "optimize": True}
+                save_kwargs = {"compress_level": 6, "optimize": True, "dpi": target_dpi}
 
             out_img.save(dest_path, **save_kwargs)
 
@@ -248,9 +360,39 @@ def process_video(file_path):
 
     cmd = ["ffmpeg", "-y", "-i", str(p)]
 
-    # Video filter for resolution scaling
+    # Video filter for resolution scaling & contrast-adaptive super-resolution
+    vf_filters = []
     if target_w:
-        cmd.extend(["-vf", f"scale={target_w}:-2:flags=lanczos"])
+        orig_vw, orig_vh = None, None
+        if shutil.which("ffprobe"):
+            try:
+                probe = subprocess.check_output([
+                    "ffprobe", "-v", "error", "-select_streams", "v:0",
+                    "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", str(p)
+                ], text=True, stderr=subprocess.DEVNULL).strip()
+                if "x" in probe:
+                    orig_vw, orig_vh = map(int, probe.split("x")[:2])
+            except Exception:
+                pass
+
+        if orig_vw and orig_vw < target_w:
+            # Small video / crop: Lanczos + FidelityFX CAS + Unsharp super-resolution
+            vf_filters.append(f"scale={target_w}:-2:flags=lanczos+accurate_rnd")
+            vf_filters.append("cas=0.85")
+            vf_filters.append("unsharp=5:5:0.8:5:5:0.0")
+        elif orig_vw and orig_vw >= target_w:
+            vf_filters.append(f"scale={target_w}:-2:flags=lanczos+accurate_rnd")
+            vf_filters.append("cas=0.6")
+        else:
+            vf_filters.append(f"scale={target_w}:-2:flags=lanczos+accurate_rnd")
+            vf_filters.append("cas=0.85")
+            vf_filters.append("unsharp=5:5:0.8:5:5:0.0")
+    else:
+        # Native clarity enhancement
+        vf_filters.append("cas=0.55")
+
+    if vf_filters:
+        cmd.extend(["-vf", ",".join(vf_filters)])
 
     # Video Codec
     if codec_idx == 0: # H.264
