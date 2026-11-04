@@ -5834,9 +5834,6 @@ export const MenuBarController = class MenuBarController {
                 this._menubarAnimSignalIds.push({ actor: child, id: sigId });
             }
         };
-                this._menubarAnimSignalIds.push({ actor: child, id: sigId });
-            }
-        };
 
         if (Main.panel?._rightBox) {
             Main.panel._rightBox.get_children().forEach(c => hookChild(c, true));

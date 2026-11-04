@@ -66,11 +66,25 @@ function getShortLabel(source) {
     return (source.shortName || source.id || '?').substring(0, 2);
 }
 
+function getOsdCode(source) {
+    if (!source) return '?';
+    const short = (source.shortName || '').toLowerCase();
+    if (short) return short;
+    const id = (source.id || '').toLowerCase();
+    if (id === 'us') return 'en';
+    if (id === 'ua') return 'uk';
+    return id.substring(0, 2);
+}
+
 function getOsdLabel(source) {
+    if (!source) return '';
     const id = (source.id || '').toLowerCase();
     const short = (source.shortName || '').toLowerCase();
-    if (id === 'us' || id === 'en' || short === 'en') return 'ABC';
     if (id === 'ua' || id === 'uk' || short === 'uk' || short === 'ua') return 'Українська';
+    if (source.displayName) {
+        return source.displayName;
+    }
+    if (id === 'us' || id === 'en' || short === 'en') return 'Англійська (США)';
     if (id === 'ru' || short === 'ru') return 'Русская';
     if (id === 'by' || short === 'by') return 'Беларуская';
     if (id === 'pl' || short === 'pl') return 'Polski';
@@ -84,9 +98,6 @@ function getOsdLabel(source) {
     if (id === 'zh' || short === 'zh') return '简体中文';
     if (id === 'ja' || short === 'ja') return '日本語';
     if (id === 'ko' || short === 'ko') return '한국어';
-    if (source.displayName) {
-        return source.displayName.replace(/\s*\(.*?\)/, '');
-    }
     return source.id || 'Unknown';
 }
 
@@ -361,24 +372,39 @@ export const MacInputSourcePopup = GObject.registerClass({
     }
 
     _buildOsdUI() {
-        this._osdW = 220;
-        this._itemH = 40;
-        this._padding = 8;
-        const osdH = this._items.length * this._itemH + 2 * this._padding;
+        const N = this._items.length;
+        const paddingX = 8;
+        const paddingTop = 8;
+        const slotW = 60;
+        const slotH = 90;
+        const gap = 4;
+        const bottomH = 30;
+
+        const cardW = 2 * paddingX + N * slotW + (N - 1) * gap;
+        const cardH = paddingTop + slotH + bottomH;
+
+        this._osdW = cardW;
+        this._osdH = cardH;
+        this._paddingX = paddingX;
+        this._paddingTop = paddingTop;
+        this._slotW = slotW;
+        this._slotH = slotH;
+        this._gap = gap;
+        this._bottomH = bottomH;
 
         const monitor = Main.layoutManager.currentMonitor || Main.layoutManager.primaryMonitor;
-        this._osdX = monitor.x + Math.round((monitor.width - this._osdW) / 2);
-        this._osdY = monitor.y + Math.round((monitor.height - osdH) / 2);
+        this._osdX = monitor.x + Math.round((monitor.width - cardW) / 2);
+        this._osdY = monitor.y + Math.round((monitor.height - cardH) / 2);
 
-        // 1. Unified box with LQ-Visual glass
+        // 1. Unified box with LQ-Visual glass & dark translucent background
         this._osdBox = new St.Widget({
-            style: 'background-color: transparent !important; ' +
+            style: 'background-color: rgba(30, 30, 30, 0.70) !important; ' +
                    'border-radius: 22px !important; ' +
-                   'border: 1px solid rgba(255, 255, 255, 0.16) !important; ' +
-                   'box-shadow: none !important; ' +
+                   'border: 1px solid rgba(255, 255, 255, 0.18) !important; ' +
+                   'box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45) !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
-            width: this._osdW,
-            height: osdH,
+            width: cardW,
+            height: cardH,
             x: this._osdX,
             y: this._osdY,
             opacity: 0,
@@ -390,61 +416,77 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._targetBox = this._osdBox;
         this._targetCornerRadius = 22.0;
 
-        // 2. Selection pill
-        const pillW = this._osdW - 2 * this._padding;
-        const pillH = this._itemH - 2;
+        // 2. Selection pill (horizontal movement)
         this._selectionPill = new St.Widget({
-            style: 'background-color: rgba(255, 255, 255, 0.15); ' +
-                   'border-radius: 14px; ' +
-                   'border: none !important; ' +
+            style: 'background-color: rgba(255, 255, 255, 0.18) !important; ' +
+                   'border-radius: 16px !important; ' +
+                   'border: 1px solid rgba(255, 255, 255, 0.35) !important; ' +
                    'box-shadow: none !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
-            width: pillW,
-            height: pillH,
-            x: this._padding,
-            y: this._padding + this._currentIndex * this._itemH + 1
+            width: slotW,
+            height: slotH,
+            x: paddingX + this._currentIndex * (slotW + gap),
+            y: paddingTop
         });
         this._osdBox.add_child(this._selectionPill);
 
-        // 3. Language labels
+        // 3. Language short labels in horizontal slots
         this._labels = [];
         this._items.forEach((item, i) => {
             const isSelected = (i === this._currentIndex);
             const lbl = new St.Label({
-                text: getOsdLabel(item),
+                text: getOsdCode(item),
                 style: isSelected
-                    ? 'color: #ffffff; font-weight: 600; font-size: 15px; text-align: center; padding: 0 !important; margin: 0 !important;'
-                    : 'color: rgba(255, 255, 255, 0.65); font-weight: 500; font-size: 15px; text-align: center; padding: 0 !important; margin: 0 !important;',
-                x: this._padding,
-                y: this._padding + i * this._itemH,
-                width: pillW,
-                height: this._itemH
+                    ? 'color: #ffffff; font-weight: 600; font-size: 18px; text-align: center; padding: 0 !important; margin: 0 !important;'
+                    : 'color: rgba(255, 255, 255, 0.60); font-weight: 500; font-size: 18px; text-align: center; padding: 0 !important; margin: 0 !important;',
+                x: paddingX + i * (slotW + gap),
+                y: paddingTop,
+                width: slotW,
+                height: slotH
             });
             lbl.clutter_text.x_align = Clutter.ActorAlign.CENTER;
             lbl.clutter_text.y_align = Clutter.ActorAlign.CENTER;
             this._osdBox.add_child(lbl);
             this._labels.push(lbl);
         });
+
+        // 4. Localized full name of the currently selected language centered at bottom
+        const currentItem = this._items[this._currentIndex];
+        this._bottomLabel = new St.Label({
+            text: getOsdLabel(currentItem),
+            style: 'color: #ffffff; font-weight: 500; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,0.40); text-align: center; padding: 0 !important; margin: 0 !important;',
+            x: 0,
+            y: paddingTop + slotH + 2,
+            width: cardW,
+            height: bottomH - 2
+        });
+        this._bottomLabel.clutter_text.x_align = Clutter.ActorAlign.CENTER;
+        this._bottomLabel.clutter_text.y_align = Clutter.ActorAlign.CENTER;
+        this._osdBox.add_child(this._bottomLabel);
     }
 
     _setOsdPosition(index, animate = true) {
         if (!this._selectionPill) return;
 
-        const targetY = this._padding + index * this._itemH + 1;
+        const targetX = this._paddingX + index * (this._slotW + this._gap);
         if (animate) {
             this._selectionPill.ease({
-                y: targetY,
+                x: targetX,
                 duration: 180,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC
             });
         } else {
-            this._selectionPill.y = targetY;
+            this._selectionPill.x = targetX;
+        }
+
+        if (this._bottomLabel && this._items[index]) {
+            this._bottomLabel.text = getOsdLabel(this._items[index]);
         }
 
         this._labels.forEach((lbl, i) => {
             lbl.style = (i === index)
-                ? 'color: #ffffff; font-weight: 600; font-size: 15px; text-align: center; padding: 0 !important; margin: 0 !important;'
-                : 'color: rgba(255, 255, 255, 0.65); font-weight: 500; font-size: 15px; text-align: center; padding: 0 !important; margin: 0 !important;';
+                ? 'color: #ffffff; font-weight: 600; font-size: 18px; text-align: center; padding: 0 !important; margin: 0 !important;'
+                : 'color: rgba(255, 255, 255, 0.60); font-weight: 500; font-size: 18px; text-align: center; padding: 0 !important; margin: 0 !important;';
         });
     }
 
