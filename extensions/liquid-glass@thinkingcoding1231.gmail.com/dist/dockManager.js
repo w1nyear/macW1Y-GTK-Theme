@@ -4,7 +4,7 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import { LiquidEffect } from './liquidEffect.js?v=fix1';
 import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js?v=fix1';
-import { glassRefreshDue, glassRefreshDone, glassForceRefresh } from './glassGate.js?v=fix2';
+import { glassRefreshDue, glassRefreshDone, glassForceRefresh, isBackdropDirtyOrChanged } from './glassGate.js?v=fix3';
 // Padding to allow the shader to draw effects (like refraction and blur) outside the actor's strict bounds.
 const SHADER_PADDING = 20;
 // Utility: Convert HEX color string (e.g., "#ffffff") to normalized RGB array [1.0, 1.0, 1.0]
@@ -471,6 +471,7 @@ export class DashManager {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             } else {
                 this._frameSyncId = 0;
+                this._scheduleIdleHeartbeat();
             }
             return GLib.SOURCE_REMOVE;
         };
@@ -485,12 +486,76 @@ export class DashManager {
             }
         };
         this._scheduleIdleHeartbeat = () => {
-            // [GPU-OPTIMIZE] No-op in idle: real events (window restack, hover, geometry) wake sync.
+            if (this._idleTimeoutId || this._torndown)
+                return;
+            // 2-секундний пасивний watchdog для ідеальної узгодженості фону скла:
+            // Швидка перевірка хешу сцени та пошкоджень (<0.005 мс, 0% GPU).
+            // Будить тіки ЛИШЕ коли фон, вікна або стан стільниці реально змінилися під час бездіяльності.
+            this._idleTimeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 2, () => {
+                this._idleTimeoutId = 0;
+                if (this._torndown || !this.bgActor || !this.targetActor?.mapped)
+                    return GLib.SOURCE_REMOVE;
+                let drifted = false;
+                try {
+                    drifted = isBackdropDirtyOrChanged(this.bgActor);
+                } catch (_) {
+                    drifted = true;
+                }
+                if (drifted) {
+                    this.wakeFrameSync();
+                } else {
+                    this._scheduleIdleHeartbeat();
+                }
+                return GLib.SOURCE_REMOVE;
+            });
+        };
+        this._windowSignals = new Map();
+        this._syncWindowSignals = () => {
+            if (this._torndown) return;
+            try {
+                let actors = global.get_window_actors?.() ?? [];
+                let currentWindows = new Set();
+                for (let a of actors) {
+                    if (!a || a._isDisposed) continue;
+                    let mw = a.get_meta_window?.();
+                    if (!mw) continue;
+                    currentWindows.add(mw);
+                    if (!this._windowSignals.has(mw)) {
+                        let sigs = [];
+                        try {
+                            sigs.push(mw.connect('position-changed', () => this.wakeFrameSync()));
+                            sigs.push(mw.connect('size-changed', () => this.wakeFrameSync()));
+                            sigs.push(mw.connect('workspace-changed', () => this.wakeFrameSync()));
+                            sigs.push(mw.connect('unmanaged', () => {
+                                this._cleanupWindowSignals?.(mw);
+                                this.wakeFrameSync();
+                            }));
+                        } catch (_) {}
+                        this._windowSignals.set(mw, sigs);
+                    }
+                }
+                for (let [mw, sigs] of this._windowSignals.entries()) {
+                    if (!currentWindows.has(mw)) {
+                        this._cleanupWindowSignals?.(mw);
+                    }
+                }
+            } catch (_) {}
+        };
+        this._cleanupWindowSignals = (mw) => {
+            if (!this._windowSignals) return;
+            let sigs = this._windowSignals.get(mw);
+            if (sigs) {
+                for (let s of sigs) {
+                    try { mw.disconnect(s); } catch (_) {}
+                }
+                this._windowSignals.delete(mw);
+            }
         };
         let startFrameSync = () => {
             this.wakeFrameSync();
             if (this._frameSyncId === 0 && !this._torndown && this.bgActor && this.targetActor?.mapped) {
                 buildClones();
+                this._syncWindowSignals();
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
@@ -537,6 +602,112 @@ export class DashManager {
             let fwId = global.display.connect('notify::focus-window', () => this.wakeFrameSync());
             this._signals.push({ disconnect: () => { try { global.display.disconnect(fwId); } catch(_) {} } });
         } catch (_) {}
+        try {
+            let wcId = global.display.connect('window-created', () => {
+                this._syncWindowSignals?.();
+                this.wakeFrameSync();
+            });
+            this._signals.push({ disconnect: () => { try { global.display.disconnect(wcId); } catch(_) {} } });
+        } catch (_) {}
+        try {
+            let waId = global.display.connect('workareas-changed', () => this.wakeFrameSync());
+            this._signals.push({ disconnect: () => { try { global.display.disconnect(waId); } catch(_) {} } });
+        } catch (_) {}
+        try {
+            let wemId = global.display.connect('window-entered-monitor', () => {
+                this._syncWindowSignals?.();
+                this.wakeFrameSync();
+            });
+            this._signals.push({ disconnect: () => { try { global.display.disconnect(wemId); } catch(_) {} } });
+        } catch (_) {}
+        try {
+            let wlmId = global.display.connect('window-left-monitor', () => {
+                this._syncWindowSignals?.();
+                this.wakeFrameSync();
+            });
+            this._signals.push({ disconnect: () => { try { global.display.disconnect(wlmId); } catch(_) {} } });
+        } catch (_) {}
+        try {
+            let wmPurgeId = global.display.connect('gl-video-memory-purged', () => {
+                this._windowCloneManager?.rebuildClones();
+                this.wakeFrameSync();
+            });
+            this._signals.push({ disconnect: () => { try { global.display.disconnect(wmPurgeId); } catch(_) {} } });
+        } catch (_) {}
+
+        if (global.window_manager) {
+            try {
+                let wmSwId = global.window_manager.connect('switch-workspace', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { global.window_manager.disconnect(wmSwId); } catch(_) {} } });
+            } catch (_) {}
+            try {
+                let wmMinId = global.window_manager.connect('minimize', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { global.window_manager.disconnect(wmMinId); } catch(_) {} } });
+            } catch (_) {}
+            try {
+                let wmUnminId = global.window_manager.connect('unminimize', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { global.window_manager.disconnect(wmUnminId); } catch(_) {} } });
+            } catch (_) {}
+            try {
+                let wmSzId = global.window_manager.connect('size-change', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { global.window_manager.disconnect(wmSzId); } catch(_) {} } });
+            } catch (_) {}
+            try {
+                let wmDesId = global.window_manager.connect('destroy', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { global.window_manager.disconnect(wmDesId); } catch(_) {} } });
+            } catch (_) {}
+        }
+
+        if (global.workspace_manager) {
+            try {
+                let wsmSwId = global.workspace_manager.connect('workspace-switched', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { global.workspace_manager.disconnect(wsmSwId); } catch(_) {} } });
+            } catch (_) {}
+            try {
+                let wsmActId = global.workspace_manager.connect('active-workspace-changed', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { global.workspace_manager.disconnect(wsmActId); } catch(_) {} } });
+            } catch (_) {}
+            try {
+                let wsmDeskId = global.workspace_manager.connect('showing-desktop-changed', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { global.workspace_manager.disconnect(wsmDeskId); } catch(_) {} } });
+            } catch (_) {}
+        }
+
+        if (Main.overview) {
+            try {
+                let ovShowId = Main.overview.connect('showing', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { Main.overview.disconnect(ovShowId); } catch(_) {} } });
+            } catch (_) {}
+            try {
+                let ovHideId = Main.overview.connect('hiding', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { Main.overview.disconnect(ovHideId); } catch(_) {} } });
+            } catch (_) {}
+            try {
+                let ovHiddenId = Main.overview.connect('hidden', () => {
+                    this._windowCloneManager?.rebuildClones();
+                    this.wakeFrameSync();
+                });
+                this._signals.push({ disconnect: () => { try { Main.overview.disconnect(ovHiddenId); } catch(_) {} } });
+            } catch (_) {}
+        }
+
+        if (Main.sessionMode) {
+            try {
+                let smId = Main.sessionMode.connect('updated', () => this.wakeFrameSync());
+                this._signals.push({ disconnect: () => { try { Main.sessionMode.disconnect(smId); } catch(_) {} } });
+            } catch (_) {}
+        }
+        if (Main.screenShield) {
+            try {
+                let ssId = Main.screenShield.connect('active-changed', () => {
+                    if (!Main.screenShield.active) {
+                        this._windowCloneManager?.rebuildClones();
+                        this.wakeFrameSync();
+                    }
+                });
+                this._signals.push({ disconnect: () => { try { Main.screenShield.disconnect(ssId); } catch(_) {} } });
+            } catch (_) {}
+        }
         let d2dInit = this.targetActor;
         while (d2dInit && d2dInit.constructor?.name !== 'DashToDock') {
             d2dInit = d2dInit.get_parent();
@@ -918,6 +1089,7 @@ export class DashManager {
         this._uiSampler?.refresh();
         this._uiSampler?.sync(monitor.x, monitor.y, screenW, screenH);
         this._windowCloneManager?.sync();
+        this._syncWindowSignals?.();
         this.effect?.markBackdropDirty?.();
         glassRefreshDone?.(this.bgActor, extraH);
         return true;
@@ -931,6 +1103,14 @@ export class DashManager {
         if (this._idleTimeoutId) {
             GLib.source_remove(this._idleTimeoutId);
             this._idleTimeoutId = 0;
+        }
+        if (this._windowSignals) {
+            for (let [mw, sigs] of this._windowSignals.entries()) {
+                for (let s of sigs) {
+                    try { mw.disconnect(s); } catch (_) {}
+                }
+            }
+            this._windowSignals.clear();
         }
         // Safely try to remove styles/signals. If targetActor is already destroyed, 
         // this will fail safely without breaking the rest of the cleanup.

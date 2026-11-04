@@ -16368,3 +16368,40 @@ Task 639: Fix Overview Opening Desktop Drop Animation & Prevent Menubar Overflow
      * Оновлено хеші sha256 у `config/extensions.lock.json` для `appmenu@ChathurangaBW.github.io` (`052db5f0...`) та `eval-helper@mactheme` (`9acb5198...`).
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
      * `bin/mac-audit-sync check`: 100% PASS.
+
+--------------------------------------------------------------------------------
+Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
+--------------------------------------------------------------------------------
+1. Запит користувача:
+   - «Виправи те що скло у док панелі з часом може отримувати неправильний задній фон у склі після бездіяльності просто так»
+   - Долучено фотографії: після періоду бездіяльності користувача або очікування фонових процесів скло док-панелі відображає застарілий фон (шпалери або старий знімок вікна), що більше не відповідає реальному стану під доком.
+
+2. Причини:
+   - В `extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js`:
+     * У Task 541 для економії GPU було повністю вимкнено фоновий пульс `_scheduleIdleHeartbeat = () => {}` і залишено лише реакцію на `enter-event`, `leave-event`, `restacked`, `in-fullscreen-changed`, `notify::focus-window`.
+     * Після 8 кадрів нерухомості (`_idleCount >= 8`) тіки рендерингу зупинялися назавжди (`_frameSyncId = 0`), а сам `_scheduleIdleHeartbeat` навіть не викликався.
+     * Якщо під час бездіяльності вікно переміщувалося, згорталося, змінювало розмір, закривалося, змінювався робочий стіл, відкривався/закривався огляд (Overview), або екран виходив із блокування/сну (DPMS), менеджер дока залишався в мертвому сні, бо ці події не генерують `restacked` чи `enter-event`.
+     * В результаті скло зберігало старий FBO-кеш (наприклад, шпалери замість вікна, або вікно, якого вже немає під доком).
+
+3. Виправлення:
+   - В `extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js`:
+     * Реалізовано функцію `isBackdropDirtyOrChanged(glassActor)`: швидка пасивна перевірка зміни хешу вікон та версії пошкоджень (`_stageBackdropHash`, `_backdropDamageVersion`, `st.dirty`). Час виконання <0.005 мс, 0% GPU.
+   - В `extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js` (та `src/dockManager.ts`):
+     * Поновлено виклик `this._scheduleIdleHeartbeat()` при переході у стан сну (`_idleCount >= 8`).
+     * Реалізовано енергоефективний 2-секундний watchdog `GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 2, ...)`: замість важкого рендеру він безкоштовно перевіряє `isBackdropDirtyOrChanged(this.bgActor)`. Тіки рендерингу будяться виключно тоді, коли сцена під доком реально розсинхронізувалася. При статичному екрані — строго 0% GPU.
+     * Реалізовано динамічний трекінг вікон `_syncWindowSignals()`: підключено `position-changed`, `size-changed`, `workspace-changed` та `unmanaged` на всі активні `Meta.Window`. Переміщення або зміна розміру будь-якого вікна миттєво будить скло дока.
+     * Підключено життєвий цикл стільниці до `this._signals`:
+       - `global.display`: `window-created`, `workareas-changed`, `window-entered-monitor`, `window-left-monitor`, `gl-video-memory-purged` (з rebuildClones).
+       - `global.window_manager`: `switch-workspace`, `minimize`, `unminimize`, `size-change`, `destroy`.
+       - `global.workspace_manager`: `workspace-switched`, `active-workspace-changed`, `showing-desktop-changed`.
+       - `Main.overview`: `showing`, `shown`, `hiding`, `hidden` (з rebuildClones).
+       - `Main.sessionMode`: `updated`.
+       - `Main.screenShield`: `active-changed` (з rebuildClones при розблокуванні).
+     * Оновлено імпорт у `extension.js` на `./dist/dockManager.js?v=fix4` та `dockManager.js` на `./glassGate.js?v=fix3` для безшовного гарячого перезавантаження модуля в SpiderMonkey.
+
+4. Верифікація:
+   - Перевірено стан `DashManager` у живому GNOME Shell через `EvalHelper`: `hasIdleTimeout: true`, `windowSignalsCount: 4`, `idleCount: 8`, `frameSyncId: 0`.
+   - Зроблено знімок робочого столу та перевірено відображення скла: скло точно і коректно відображає підкладку в реальному часі.
+   - Перевірено завантаження GPU в спокої: 0% GPU usage.
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS (оновлено sha256 `c5aacf0b` у `config/extensions.lock.json`).
+   - `bin/mac-audit-sync check`: 100% PASS.

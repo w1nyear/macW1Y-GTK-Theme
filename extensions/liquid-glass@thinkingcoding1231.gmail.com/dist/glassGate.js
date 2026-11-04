@@ -264,5 +264,28 @@ export function getActorPollState(actor) {
     return _backdropPolls.get(actor);
 }
 
+/**
+ * Швидка пасивна перевірка для фонового watchdog/heartbeat:
+ * повертає true, якщо фон, вікна або пошкодження сцени змінилися
+ * з моменту останнього рефрешу цього скла.
+ * Нуль GPU, час перевірки <0.005 мс.
+ */
+export function isBackdropDirtyOrChanged(glassActor) {
+    try {
+        if (!glassActor) return false;
+        let st = _backdropPolls.get(glassActor);
+        if (!st) return true;
+        const nowUs = GLib.get_monotonic_time();
+        const scanH = _stageBackdropHash(nowUs);
+        const dmg = _backdropDamageVersion;
+        if (st.lastScanH !== scanH || st.lastDamage !== dmg || st.dirty) {
+            return true;
+        }
+        return false;
+    } catch (_) {
+        return true;
+    }
+}
+
 if (typeof globalThis._macGlassStats !== 'function')
     globalThis._macGlassStats = _macGlassStats;

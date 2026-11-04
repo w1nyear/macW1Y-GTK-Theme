@@ -478,6 +478,103 @@ export class DashManager {
       let fwId = (global.display as any).connect('notify::focus-window', () => this.wakeFrameSync());
       this._signals.push({ disconnect: () => { try { (global.display as any).disconnect(fwId); } catch (_) {} } });
     } catch (_) {}
+    try {
+      let wcId = (global.display as any).connect('window-created', () => this.wakeFrameSync());
+      this._signals.push({ disconnect: () => { try { (global.display as any).disconnect(wcId); } catch (_) {} } });
+    } catch (_) {}
+    try {
+      let waId = (global.display as any).connect('workareas-changed', () => this.wakeFrameSync());
+      this._signals.push({ disconnect: () => { try { (global.display as any).disconnect(waId); } catch (_) {} } });
+    } catch (_) {}
+    try {
+      let wemId = (global.display as any).connect('window-entered-monitor', () => this.wakeFrameSync());
+      this._signals.push({ disconnect: () => { try { (global.display as any).disconnect(wemId); } catch (_) {} } });
+    } catch (_) {}
+    try {
+      let wlmId = (global.display as any).connect('window-left-monitor', () => this.wakeFrameSync());
+      this._signals.push({ disconnect: () => { try { (global.display as any).disconnect(wlmId); } catch (_) {} } });
+    } catch (_) {}
+    try {
+      let wmPurgeId = (global.display as any).connect('gl-video-memory-purged', () => {
+        this._windowCloneManager?.rebuildClones();
+        this.wakeFrameSync();
+      });
+      this._signals.push({ disconnect: () => { try { (global.display as any).disconnect(wmPurgeId); } catch (_) {} } });
+    } catch (_) {}
+
+    if ((global as any).window_manager) {
+      try {
+        let wmSwId = (global as any).window_manager.connect('switch-workspace', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (global as any).window_manager.disconnect(wmSwId); } catch (_) {} } });
+      } catch (_) {}
+      try {
+        let wmMinId = (global as any).window_manager.connect('minimize', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (global as any).window_manager.disconnect(wmMinId); } catch (_) {} } });
+      } catch (_) {}
+      try {
+        let wmUnminId = (global as any).window_manager.connect('unminimize', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (global as any).window_manager.disconnect(wmUnminId); } catch (_) {} } });
+      } catch (_) {}
+      try {
+        let wmSzId = (global as any).window_manager.connect('size-change', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (global as any).window_manager.disconnect(wmSzId); } catch (_) {} } });
+      } catch (_) {}
+      try {
+        let wmDesId = (global as any).window_manager.connect('destroy', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (global as any).window_manager.disconnect(wmDesId); } catch (_) {} } });
+      } catch (_) {}
+    }
+
+    if ((global as any).workspace_manager) {
+      try {
+        let wsmSwId = (global as any).workspace_manager.connect('workspace-switched', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (global as any).workspace_manager.disconnect(wsmSwId); } catch (_) {} } });
+      } catch (_) {}
+      try {
+        let wsmActId = (global as any).workspace_manager.connect('active-workspace-changed', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (global as any).workspace_manager.disconnect(wsmActId); } catch (_) {} } });
+      } catch (_) {}
+      try {
+        let wsmDeskId = (global as any).workspace_manager.connect('showing-desktop-changed', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (global as any).workspace_manager.disconnect(wsmDeskId); } catch (_) {} } });
+      } catch (_) {}
+    }
+
+    if ((Main as any).overview) {
+      try {
+        let ovShowId = (Main as any).overview.connect('showing', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (Main as any).overview.disconnect(ovShowId); } catch (_) {} } });
+      } catch (_) {}
+      try {
+        let ovHideId = (Main as any).overview.connect('hiding', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (Main as any).overview.disconnect(ovHideId); } catch (_) {} } });
+      } catch (_) {}
+      try {
+        let ovHiddenId = (Main as any).overview.connect('hidden', () => {
+          this._windowCloneManager?.rebuildClones();
+          this.wakeFrameSync();
+        });
+        this._signals.push({ disconnect: () => { try { (Main as any).overview.disconnect(ovHiddenId); } catch (_) {} } });
+      } catch (_) {}
+    }
+
+    if ((Main as any).sessionMode) {
+      try {
+        let smId = (Main as any).sessionMode.connect('updated', () => this.wakeFrameSync());
+        this._signals.push({ disconnect: () => { try { (Main as any).sessionMode.disconnect(smId); } catch (_) {} } });
+      } catch (_) {}
+    }
+    if ((Main as any).screenShield) {
+      try {
+        let ssId = (Main as any).screenShield.connect('active-changed', () => {
+          if (!(Main as any).screenShield.active) {
+            this._windowCloneManager?.rebuildClones();
+            this.wakeFrameSync();
+          }
+        });
+        this._signals.push({ disconnect: () => { try { (Main as any).screenShield.disconnect(ssId); } catch (_) {} } });
+      } catch (_) {}
+    }
     let d2dInit = this.targetActor as any;
     while (d2dInit && d2dInit.constructor?.name !== 'DashToDock') {
       d2dInit = d2dInit.get_parent();
