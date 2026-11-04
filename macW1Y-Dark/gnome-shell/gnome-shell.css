@@ -4182,17 +4182,17 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-notification-app-name {
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
-  color: rgba(255, 255, 255, 0.78) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
   margin-bottom: 1px !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
 .mac-notification-title {
   font-size: 13.5px !important;
-  font-weight: 700 !important;
-  color: #ffffff !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.95) !important;
   margin-bottom: 2px !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
 }

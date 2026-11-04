@@ -195,7 +195,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         track_hover: true,
         x_expand: false,
         y_expand: false,
-        clip_to_allocation: true,
+        clip_to_allocation: false,
+        layout_manager: new Clutter.BinLayout(),
     });
     banner.set_style(CARD_BASE_STYLE);
     if (width) {
@@ -208,7 +209,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         x_expand: true,
         y_expand: true,
         clip_to_allocation: true,
-        style: 'padding: 13px 14px !important; spacing: 12px !important;',
+        style: 'padding: 13px 10px 14px 14px !important; spacing: 12px !important;',
     });
     banner.set_child(mainBox);
 
@@ -321,7 +322,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         y_align: Clutter.ActorAlign.START,
         reactive: true,
         can_focus: true,
-        style: 'background-color: rgba(255, 255, 255, 0.14) !important; border: none !important; box-shadow: none !important; border-radius: 9999px !important; padding: 5px !important; width: 22px !important; height: 22px !important; margin-top: 1px !important;',
+        style: 'background-color: rgba(255, 255, 255, 0.14) !important; border: none !important; box-shadow: none !important; border-radius: 9999px !important; padding: 5px !important; width: 22px !important; height: 22px !important; margin-top: -6px !important; margin-right: -6px !important;',
     });
     closeBtn.opacity = 0;
     closeBtn.visible = false;
@@ -329,12 +330,12 @@ export function buildNotificationCard(source, notification, options = {}) {
         closeIcon.gicon = closeBtn.hover ? giconHover : giconNormal;
         try {
             closeBtn.set_style(closeBtn.hover
-                ? 'background-color: rgba(255, 255, 255, 0.26) !important; border: none !important; border-radius: 9999px !important; padding: 5px !important; width: 22px !important; height: 22px !important; margin-top: 1px !important;'
-                : 'background-color: rgba(255, 255, 255, 0.14) !important; border: none !important; border-radius: 9999px !important; padding: 5px !important; width: 22px !important; height: 22px !important; margin-top: 1px !important;');
+                ? 'background-color: rgba(255, 255, 255, 0.26) !important; border: none !important; border-radius: 9999px !important; padding: 5px !important; width: 22px !important; height: 22px !important; margin-top: -6px !important; margin-right: -6px !important;'
+                : 'background-color: rgba(255, 255, 255, 0.14) !important; border: none !important; border-radius: 9999px !important; padding: 5px !important; width: 22px !important; height: 22px !important; margin-top: -6px !important; margin-right: -6px !important;');
         } catch (_) {}
     });
     rightRail.add_child(timeLabel);
-    rightRail.add_child(closeBtn);
+    banner.add_child(closeBtn);
 
     // Заголовок (тільки якщо відрізняється від імені застосунку — як у macOS)
     const rawTitle = (notification.title || '').trim();
@@ -478,21 +479,12 @@ export function buildNotificationCard(source, notification, options = {}) {
                 duration: 150,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             });
-            timeLabel.ease({
-                opacity: 0,
-                duration: 150,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                onComplete: () => {
-                    if (isCardHovered()) timeLabel.visible = false;
-                },
-            });
-        } else {
+            // "напис щойно приховуватись не має" - timeLabel stays visible
+            timeLabel.opacity = 255;
             timeLabel.visible = true;
-            timeLabel.ease({
-                opacity: 255,
-                duration: 150,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
+        } else {
+            timeLabel.opacity = 255;
+            timeLabel.visible = true;
             closeBtn.ease({
                 opacity: 0,
                 duration: 150,

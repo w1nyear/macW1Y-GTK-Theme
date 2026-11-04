@@ -212,7 +212,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     // Пілюля → картка (морф банерів): стілі сумісні зі старим API
     const CARD_PILL_STYLE = CARD_BASE_STYLE.replace(/border-radius:\s*[^;]+;/, 'border-radius: 9999px !important;');
     const CARD_MID_STYLE = CARD_BASE_STYLE.replace(/border-radius:\s*[^;]+;/, 'border-radius: 22px !important;');
-    const CLOSE_BASE = 'width: 22px !important; height: 22px !important; border-radius: 11px !important; background-color: rgba(255, 255, 255, 0.18) !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important; padding: 0 !important;';
+    const CLOSE_BASE = 'width: 22px !important; height: 22px !important; border-radius: 11px !important; background-color: rgba(255, 255, 255, 0.18) !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important; padding: 0 !important; margin: 0px !important;';
     const CLOSE_HOVER = CLOSE_BASE.replace('0.18', '0.28');
 
     const appName = String(source?.title ?? '').trim();
@@ -229,7 +229,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         track_hover: true,
         x_expand: true,
         y_expand: false,
-        clip_to_allocation: true,
+        clip_to_allocation: false,
         layout_manager: new Clutter.BinLayout(),
     });
     banner.set_style(isScreenshot
@@ -246,8 +246,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         y_expand: true,
         clip_to_allocation: true,
         style: isScreenshot
-            ? 'padding: 10px 14px !important; border-radius: 20px !important;'
-            : 'padding: 14px 14px 16px 14px !important; border-radius: 24px !important;',
+            ? 'padding: 10px 10px !important; border-radius: 20px !important;'
+            : 'padding: 14px 10px 16px 14px !important; border-radius: 24px !important;',
     });
     banner.set_child(mainBox);
 
@@ -330,28 +330,41 @@ export function buildNotificationCard(source, notification, options = {}) {
     let bodyLabel = null;
 
     if (isScreenshot) {
-        // Компактний вигляд скріншотів (новий вигляд macOS):
-        // Рядок 1: «Знімок зроблено» (або назва), Рядок 2: інструкція/статус
-        const shotTitle = rawTitle || (appName && !appName.includes('Захоплення') ? appName : t('screenshot_taken', 'Знімок зроблено'));
+        // Канонічний вигляд скріншотів macOS:
+        // Рядок 1: Назва програми «Скріншот» (bold 700)
+        // Рядок 2: Заголовок «Скріншот створено» (regular 400)
+        // Рядок 3: Додаткова інструкція/статус (якщо не порожнє)
+        const shotApp = appName && !appName.includes('Захоплення') ? appName : 'Скріншот';
+        appLabel = new St.Label({
+            text: shotApp,
+            y_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+            style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 12.5px !important; font-weight: 700 !important;',
+        });
+        try { appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
+        contentBox.add_child(appLabel);
+
+        const shotTitle = rawTitle || t('screenshot_taken', 'Скріншот створено');
         titleLabel = new St.Label({
             x_expand: true,
-            style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 13.5px !important; font-weight: 700 !important;',
+            style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.95) !important; font-size: 13.5px !important; font-weight: 400 !important;',
         });
         setLabelMarkup(titleLabel, shotTitle);
         try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
         contentBox.add_child(titleLabel);
 
-        const shotBody = bodyText || t('screenshot_saved', 'Знімок збережено в буфер обміну');
-        bodyLabel = new St.Label({
-            x_expand: true,
-            style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.82) !important; font-size: 12px !important; font-weight: 500 !important;',
-        });
-        setLabelMarkup(bodyLabel, shotBody);
-        bodyLabel.clutter_text.single_line_mode = false;
-        bodyLabel.clutter_text.line_wrap = true;
-        bodyLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
-        bodyLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
-        contentBox.add_child(bodyLabel);
+        if (bodyText) {
+            bodyLabel = new St.Label({
+                x_expand: true,
+                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.78) !important; font-size: 12px !important; font-weight: 400 !important;',
+            });
+            setLabelMarkup(bodyLabel, bodyText);
+            bodyLabel.clutter_text.single_line_mode = false;
+            bodyLabel.clutter_text.line_wrap = true;
+            bodyLabel.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
+            bodyLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+            contentBox.add_child(bodyLabel);
+        }
     } else {
         // Звичайні застосунки:
         const isDuplicateTitle = rawTitle.toLowerCase() === appName.toLowerCase();
@@ -364,7 +377,7 @@ export function buildNotificationCard(source, notification, options = {}) {
                 x_expand: true,
                 style: isCritical
                     ? 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ff453a !important; font-size: 13px !important; font-weight: 700 !important;'
-                    : 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.60) !important; font-size: 12px !important; font-weight: 600 !important;',
+                    : 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 12.5px !important; font-weight: 700 !important;',
             });
             try { appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
             contentBox.add_child(appLabel);
@@ -375,7 +388,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         if (displayTitle && (!isDuplicateTitle || !hasBody)) {
             titleLabel = new St.Label({
                 x_expand: true,
-                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 14px !important; font-weight: 700 !important;',
+                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.95) !important; font-size: 13.5px !important; font-weight: 400 !important;',
             });
             setLabelMarkup(titleLabel, displayTitle);
             try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
@@ -385,7 +398,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         if (hasBody) {
             bodyLabel = new St.Label({
                 x_expand: true,
-                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 13px !important; font-weight: 500 !important;',
+                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.85) !important; font-size: 12.5px !important; font-weight: 400 !important;',
             });
             setLabelMarkup(bodyLabel, bodyText);
             bodyLabel.clutter_text.single_line_mode = false;
@@ -440,12 +453,12 @@ export function buildNotificationCard(source, notification, options = {}) {
         contentBox.add_child(actionsBox);
     }
 
-    // 4. ✕ 22×22 + час у правому рейлі (тост-стиль, гліф ✕, без PNG)
+    // 4. ✕ 22×22 на куті оверлеєм + час у правому рейлі
     const timeLabel = new St.Label({
         text: formatToastAge(notification.datetime),
         x_align: Clutter.ActorAlign.END,
         y_align: Clutter.ActorAlign.START,
-        style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important; margin-top: 5px !important; margin-right: 5px !important;',
+        style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important; margin-top: 5px !important; margin-right: 0px !important;',
     });
     try { timeLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
 
@@ -453,6 +466,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         opacity: 0,
         visible: false,
         reactive: false,
+        x_expand: true,
+        y_expand: true,
         x_align: Clutter.ActorAlign.END,
         y_align: Clutter.ActorAlign.START,
         style: CLOSE_BASE,
@@ -460,6 +475,8 @@ export function buildNotificationCard(source, notification, options = {}) {
     closeBtn.set_size(22, 22);
     closeBtn.min_width = 22;
     closeBtn.min_height = 22;
+    closeBtn.translation_x = 6;
+    closeBtn.translation_y = -6;
     try {
         closeBtn.set_child(new St.Label({
             text: '✕',
@@ -476,15 +493,15 @@ export function buildNotificationCard(source, notification, options = {}) {
         layout_manager: new Clutter.BinLayout(),
         y_align: Clutter.ActorAlign.START,
         x_align: Clutter.ActorAlign.END,
-        style: 'margin-top: -5px !important; margin-right: -5px !important;',
+        style: 'margin-top: -5px !important; margin-right: -2px !important;',
     });
     rightRail.set_width(railW);
     rightRail.min_width = railW;
     rightRail.max_width = railW;
     rightRail.x_expand = false;
     rightRail.add_child(timeLabel);
-    rightRail.add_child(closeBtn);
     mainBox.add_child(rightRail);
+    banner.add_child(closeBtn);
 
     // Заглушка cardData (для замикань нижче)
     const cardData = {
@@ -558,16 +575,9 @@ export function buildNotificationCard(source, notification, options = {}) {
                     duration: 150,
                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 });
-                timeLabel.ease({
-                    opacity: 0,
-                    duration: 150,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                    onComplete: () => {
-                        try {
-                            if (isCardHovered() && timeLabel.get_stage()) timeLabel.visible = false;
-                        } catch (_) {}
-                    },
-                });
+                // "напис щойно приховуватись не має" - timeLabel stays visible
+                timeLabel.opacity = 255;
+                timeLabel.visible = true;
                 if (actionsBox) {
                     actionsBox.visible = true;
                     actionsBox.ease({
@@ -578,12 +588,8 @@ export function buildNotificationCard(source, notification, options = {}) {
                 }
                 measureCard(true, true);
             } else {
+                timeLabel.opacity = 255;
                 timeLabel.visible = true;
-                timeLabel.ease({
-                    opacity: 255,
-                    duration: 150,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                });
                 closeBtn.ease({
                     opacity: 0,
                     duration: 150,

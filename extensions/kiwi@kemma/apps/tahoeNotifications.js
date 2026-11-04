@@ -38,7 +38,7 @@ import {getPanelInk, watchInk} from './tahoeInk.js';
 import {closeAllCenters} from './centerManager.js';
 import {
     buildNotificationCard,
-} from './tahoeNotificationCard.js?v=notif_v15';
+} from './tahoeNotificationCard.js?v=notif_v16';
 import { t, tf } from './mac_i18n.js';
 
 let LiquidEffect = null;
@@ -130,7 +130,7 @@ function _getToastContentStyle(noglass = false) {
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
 
-    return `background-color: ${bg} !important; padding: 14px 14px 16px 14px !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: ${shadow} !important;`;
+    return `background-color: ${bg} !important; padding: 13px 10px 15px 14px !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: ${shadow} !important;`;
 }
 
 function _getSlabStyle(i, radius = 18) {
@@ -565,6 +565,7 @@ function _ensureToastBox() {
         _toastBox = new St.BoxLayout({
             vertical: true,
             reactive: true,
+            clip_to_allocation: false,
             style: `spacing: ${TOAST_SPACING}px;`,
         });
         _toastBox.set_width(TOAST_W);
@@ -636,14 +637,16 @@ function _makeToastCard(item, noglass = false) {
     })();
     const isCritical = urgency >= 2;
 
-    const slot = new Clutter.Actor();
+    const slot = new Clutter.Actor({
+        clip_to_allocation: false,
+    });
     slot.set_width(TOAST_W);
 
     // pill — контейнер з clip: карта-контент праворуч звужується/
     // розкривається (механiка tslab + tcontent у MacShell)
     const pill = new Clutter.Actor({
         layout_manager: new Clutter.BinLayout(),
-        clip_to_allocation: true,
+        clip_to_allocation: false,
     });
     slot.add_child(pill);
     slot._pill = pill;
@@ -722,7 +725,8 @@ function _makeToastCard(item, noglass = false) {
     try { iconTile.style += 'margin-right: 12px;'; } catch (_) {}
     content.add_child(iconTile);
 
-    // --- прача колонка: [термiнове/застосунок .. час] + сумарi + тiло ---
+    // --- права колонка: [термiнове/застосунок .. час] + сумарi + тiло ---
+    const COL_W = TOAST_W - 24 - 44 - 12;
     const textCol = new St.BoxLayout({
         vertical: true,
         x_expand: true,
@@ -731,40 +735,39 @@ function _makeToastCard(item, noglass = false) {
     });
     content.add_child(textCol);
 
-    // Правий рейл 76px - та сама структура, що в карток Центру: час i ✕
-    // лежать у ньому один над одним (BinLayout), крос-фейд при наведенні
-    const rail = new St.Widget({
-        layout_manager: new Clutter.BinLayout(),
-        y_align: Clutter.ActorAlign.START,
-    });
-    rail.set_width(76);
-    content.add_child(rail);
-
     const appName = String(source?.title ?? '').trim();
     const summary = String(n.title ?? '').trim();
     const body = String(n.body ?? '').trim();
 
-    const rowA = new St.BoxLayout({vertical: false, x_expand: true});
+    const rowA = new St.BoxLayout({
+        vertical: false,
+        x_expand: true,
+        y_align: Clutter.ActorAlign.CENTER,
+    });
     if (isCritical) {
         rowA.add_child(_toastLabel(`⚠ ${t('urgent', 'ТЕРМІНОВО')}`, {color: TOAST_INK_RED, size: 13, weight: 700, max: 28, expand: true}));
     } else if (appName) {
-        rowA.add_child(_toastLabel(appName, {color: TOAST_INK_SUB, size: 12, weight: 600, max: 40, expand: true, ellip: true}));
+        rowA.add_child(_toastLabel(appName, {color: '#ffffff', size: 12.5, weight: 700, max: 40, expand: true, ellip: true}));
+    } else {
+        const dummy = new St.Widget({x_expand: true});
+        rowA.add_child(dummy);
     }
-    const timeLabel = _toastLabel(t('just_now', 'Щойно'), {color: 'rgba(255, 255, 255, 0.55)', size: 12, weight: 500, max: 16, ellip: true});
+    const timeLabel = _toastLabel(t('just_now', 'Щойно'), {color: 'rgba(255, 255, 255, 0.55)', size: 12, weight: 500, max: 16, ellip: false});
     timeLabel.x_align = Clutter.ActorAlign.END;
-    timeLabel.y_align = Clutter.ActorAlign.START;
-    textCol.add_child(rowA);
-    rail.add_child(timeLabel);
+    timeLabel.y_align = Clutter.ActorAlign.CENTER;
+    timeLabel.style = (timeLabel.style || '') + ' margin-right: 0px !important;';
+    rowA.add_child(timeLabel);
     slot._timeLabel = timeLabel;
+    textCol.add_child(rowA);
 
     let summaryLabel = null;
     if (summary) {
-        summaryLabel = _toastLabel(summary, {color: TOAST_INK, size: 14, weight: 700, max: 110});
+        summaryLabel = _toastLabel(summary, {color: 'rgba(255, 255, 255, 0.95)', size: 13.5, weight: 400, max: 110});
         textCol.add_child(summaryLabel);
     }
     let bodyLabel = null;
     if (body) {
-        bodyLabel = _toastLabel(body, {color: TOAST_INK, size: 13, weight: 500, max: 170});
+        bodyLabel = _toastLabel(body, {color: 'rgba(255, 255, 255, 0.78)', size: 12.5, weight: 400, max: 170});
         textCol.add_child(bodyLabel);
     }
 
@@ -802,7 +805,7 @@ function _makeToastCard(item, noglass = false) {
         textCol.add_child(actionsBox);
     }
 
-    // --- ✕ 22×22 оверлеєм у верхньому правому куті повідомлення ---
+    // --- ✕ 22×22 оверлеєм прямо на куті без відступу, майже за межами елемента ---
     const closeBtn = new St.Button({
         opacity: 0,
         reactive: false,
@@ -813,8 +816,13 @@ function _makeToastCard(item, noglass = false) {
         style: 'width: 22px !important; height: 22px !important; border-radius: 11px !important;'
             + ' background-color: rgba(255, 255, 255, 0.18) !important;'
             + ' border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important; padding: 0 !important;'
-            + ' margin-top: 9px !important; margin-right: 9px !important;',
+            + ' margin: 0px !important;',
     });
+    closeBtn.set_size(22, 22);
+    closeBtn.min_width = 22;
+    closeBtn.min_height = 22;
+    closeBtn.translation_x = 6;
+    closeBtn.translation_y = -6;
     try {
         closeBtn.set_child(new St.Label({
             text: '✕',
@@ -831,7 +839,7 @@ function _makeToastCard(item, noglass = false) {
                     ? ' background-color: rgba(255, 255, 255, 0.28) !important;'
                     : ' background-color: rgba(255, 255, 255, 0.18) !important;')
                 + ' border: 1px solid rgba(255, 255, 255, 0.18) !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important; padding: 0 !important;'
-                + ' margin-top: 9px !important; margin-right: 9px !important;';
+                + ' margin: 0px !important;';
         } catch (_) {}
     });
     pill.add_child(closeBtn);
@@ -846,7 +854,7 @@ function _makeToastCard(item, noglass = false) {
     // реалiзує height-for-width). Колонка = 344px - та сама, що в
     // карток Центру (484 - паддiнги 14x2 - iконка 44 - маржа 12 -
     // рейл 76), тому висоти тоста i картки збігаються. ---
-    const COL_W = TOAST_W - 28 - 44 - 12 - 76;
+    // COL_W визначено вище: const COL_W = TOAST_W - 24 - 44 - 12 - 76;
     // висоти через Pango layout: Clutter.Text тримає той самий
     // лейаут, яким потім малює, тому висота піксельно збігається зі
     // стабільним рендером (get_preferred_height на неприйнятому
@@ -975,7 +983,7 @@ function _makeToastCard(item, noglass = false) {
         });
     } catch (_) {}
 
-    // --- наведення: час -> ✕ (крос-фейд), розкриття кнопок дій, пауза тоста ---
+    // --- наведення: ✕ на куті, напис часу не приховується, розкриття кнопок дій, пауза тоста ---
     try {
         const updateHover = () => {
             try {
@@ -986,11 +994,9 @@ function _makeToastCard(item, noglass = false) {
                     duration: 140,
                     mode: inM,
                 });
-                slot._timeLabel.ease({
-                    opacity: h ? 0 : 255,
-                    duration: 140,
-                    mode: inM,
-                });
+                // Напис "Щойно" приховуватись не має
+                slot._timeLabel.opacity = 255;
+                slot._timeLabel.visible = true;
                 try { closeBtn.set_reactive(h); } catch (_) {}
 
                 if (actionsBox) {

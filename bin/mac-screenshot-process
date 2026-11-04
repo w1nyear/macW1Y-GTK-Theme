@@ -68,16 +68,19 @@ def play_shutter():
         except Exception:
             pass
 
-def notify(title, message, icon="applets-screenshooter-symbolic"):
+def notify(title, message="", icon="applets-screenshooter-symbolic"):
     if shutil.which("notify-send"):
         try:
-            subprocess.Popen([
+            cmd = [
                 "notify-send",
                 "-a", "Скріншот",
                 "-h", "string:x-canonical-private-synchronous:mac-screenshot-notify",
                 "-i", icon,
-                title, message
-            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                title
+            ]
+            if message:
+                cmd.append(message)
+            subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception:
             pass
 
@@ -188,11 +191,9 @@ def process_image(file_path):
         actions = []
         if do_resize:
             actions.append(f"Оброблено до {target_name}")
-        if need_format_convert:
-            actions.append(f"Збережено у {target_ext.upper()[1:]}")
 
-        msg = " • ".join(actions) if actions else "Знімок збережено"
-        notify("Скріншот", msg)
+        msg = " • ".join(actions) if actions else ""
+        notify("Скріншот створено", msg)
         return dest_path
     except Exception as e:
         print(f"Error processing image {file_path}: {e}", file=sys.stderr)
@@ -280,10 +281,8 @@ def process_video(file_path):
             if dest_path != p and p.exists():
                 p.unlink()
 
-            msg = f"Збережено у {target_ext.upper()[1:]} ({target_fps} FPS)"
-            if target_w:
-                msg += f" • Оброблено до {target_name}"
-            notify("Запис екрана оброблено", msg, icon="video-x-generic-symbolic")
+            msg = f"Оброблено до {target_name}" if target_w else ""
+            notify("Запис екрана збережено", msg, icon="video-x-generic-symbolic")
             return dest_path
     except Exception as e:
         print(f"Error processing video {file_path}: {e}", file=sys.stderr)

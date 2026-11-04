@@ -44,7 +44,7 @@
         "50",
         "51"
       ],
-      "sha256": "1a8eea9dd59d320e78fd7e0350dae281210a34b486e3998d27b5e5c0bd8515fa",
+      "sha256": "85bafbef3cdd13b81ed2364a24256a156022aaa59ffb40be52a320dcc168b9c3",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -56,7 +56,7 @@
       "has_custom_patches": true,
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
       "last_verified": "2026-10-31",
-      "pinned_sha256": "de83fb6b3e1585e982cfa10b363ffebcc18fbaf2c79ebdaecec2cbf9f3a339db"
+      "pinned_sha256": "85bafbef3cdd13b81ed2364a24256a156022aaa59ffb40be52a320dcc168b9c3"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
       "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
@@ -260,7 +260,7 @@
         "50",
         "51"
       ],
-      "sha256": "1787874651e459a96829c4ad925b0eafbde1c4e4079c251ad9bc3486c92e9003",
+      "sha256": "cd452922ac6bf3729e92c1683fabf6e9f97b9ecf455d37007a00d8c4ef40437a",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -274,7 +274,7 @@
       "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
       "last_verified": "2026-11-02",
       "integrity_hash": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f",
-      "pinned_sha256": "1787874651e459a96829c4ad925b0eafbde1c4e4079c251ad9bc3486c92e9003"
+      "pinned_sha256": "cd452922ac6bf3729e92c1683fabf6e9f97b9ecf455d37007a00d8c4ef40437a"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
