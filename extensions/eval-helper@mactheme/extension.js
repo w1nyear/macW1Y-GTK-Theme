@@ -1921,10 +1921,10 @@ export default class EvalHelper extends Extension {
                 const controls = Main.overview?._overview?.controls;
                 if (!controls) return;
 
-                // 1. Stable, enlarged and lowered Workspaces Box (independent of panel expand/collapse)
+                // 1. Stable, centered and proportionally scaled Workspaces Box with generous Dock clearance
                 const lm = controls.layout_manager;
-                if (lm && !lm._macOverviewSpacingPatchedV2) {
-                    lm._macOverviewSpacingPatchedV2 = true;
+                if (lm && !lm._macOverviewSpacingPatchedV3) {
+                    lm._macOverviewSpacingPatchedV3 = true;
                     const origCompute = lm._origComputeWorkspacesBox || lm._computeWorkspacesBoxForState;
                     lm._origComputeWorkspacesBox = origCompute;
                     lm._computeWorkspacesBoxForState = function(state, box, ...rest) {
@@ -1936,30 +1936,72 @@ export default class EvalHelper extends Extension {
                             return res;
                         }
                         if (state === 1 /* OverviewControls.ControlsState.WINDOW_PICKER */) {
-                            const workArea = this._workAreaBox || box;
-                            const startY = workArea?.y1 ?? 34;
-                            const endY = workArea?.y2 ?? (mon.height - 92);
-                            const availableH = endY - startY;
-                            const buffer = Math.max(20, Math.round(availableH * 0.026));
+                            const workArea = Main.layoutManager.getWorkAreaForMonitor(mon.index);
+                            const topPanelH = 34;
+                            const dockH = mon.height - (workArea ? (workArea.y + workArea.height) : (mon.height - 92));
+                            const topClearance = Math.round(topPanelH + Math.max(38, mon.height * 0.042));
+                            const bottomClearance = Math.round(dockH + Math.max(65, mon.height * 0.070));
 
                             const res = new Clutter.ActorBox();
                             res.x1 = 0;
-                            res.y1 = startY + buffer;
+                            res.y1 = topClearance;
                             res.x2 = mon.width;
-                            res.y2 = endY - buffer;
+                            res.y2 = mon.height - bottomClearance;
                             return res;
                         }
                         return origCompute.call(this, state, box, ...rest);
                     };
                 }
 
-                // 2. Full-monitor workspace layout and background (eliminates gaps under menubar and dock)
+                // 2. Full-monitor workspace layout & background: guarantees 1:1 true 16:9 monitor aspect ratio,
+                // completely eliminating vertical stretching/distortion on wallpaper and desktop widgets!
                 (async () => {
                     try {
                         const { WorkspaceBackground, WorkspaceLayout } = await import('resource:///org/gnome/shell/ui/workspace.js');
-                        if (WorkspaceLayout && !WorkspaceLayout.prototype._macWorkareaPatched) {
-                            WorkspaceLayout.prototype._macWorkareaPatched = true;
-                            WorkspaceLayout.prototype._origGetAdjustedWorkarea = WorkspaceLayout.prototype._getAdjustedWorkarea;
+                        if (WorkspaceBackground && !WorkspaceBackground.prototype._macWorkareaPatchedV3) {
+                            WorkspaceBackground.prototype._macWorkareaPatchedV3 = true;
+                            Object.defineProperty(WorkspaceBackground.prototype, '_workarea', {
+                                configurable: true,
+                                enumerable: true,
+                                get() {
+                                    const mon = Main.layoutManager.monitors[this._monitorIndex] || Main.layoutManager.primaryMonitor;
+                                    if (!this._macMonWorkarea || this._macMonWidth !== mon.width || this._macMonHeight !== mon.height) {
+                                        this._macMonWidth = mon.width;
+                                        this._macMonHeight = mon.height;
+                                        this._macMonWorkarea = new Mtk.Rectangle({
+                                            x: 0,
+                                            y: 0,
+                                            width: mon.width,
+                                            height: mon.height,
+                                        });
+                                    }
+                                    return this._macMonWorkarea;
+                                },
+                                set(_) {}
+                            });
+                        }
+                        if (WorkspaceLayout && !WorkspaceLayout.prototype._macWorkareaPropPatchedV3) {
+                            WorkspaceLayout.prototype._macWorkareaPropPatchedV3 = true;
+                            Object.defineProperty(WorkspaceLayout.prototype, '_workarea', {
+                                configurable: true,
+                                enumerable: true,
+                                get() {
+                                    const mon = Main.layoutManager.monitors[this._monitorIndex] || Main.layoutManager.primaryMonitor;
+                                    if (!this._macMonWorkarea || this._macMonWidth !== mon.width || this._macMonHeight !== mon.height) {
+                                        this._macMonWidth = mon.width;
+                                        this._macMonHeight = mon.height;
+                                        this._macMonWorkarea = new Mtk.Rectangle({
+                                            x: 0,
+                                            y: 0,
+                                            width: mon.width,
+                                            height: mon.height,
+                                        });
+                                    }
+                                    return this._macMonWorkarea;
+                                },
+                                set(_) {}
+                            });
+                            WorkspaceLayout.prototype._origGetAdjustedWorkarea = WorkspaceLayout.prototype._origGetAdjustedWorkarea || WorkspaceLayout.prototype._getAdjustedWorkarea;
                             WorkspaceLayout.prototype._getAdjustedWorkarea = function(container) {
                                 const mon = Main.layoutManager.monitors[this._monitorIndex] || Main.layoutManager.primaryMonitor;
                                 return new Mtk.Rectangle({
