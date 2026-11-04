@@ -567,7 +567,6 @@ const TopLevelMenuButton = GObject.registerClass(
             });
         }
     }
-    }
 
     _setMenuOpenHandler(handler) {
         if (this._destroyed || !this.menu)

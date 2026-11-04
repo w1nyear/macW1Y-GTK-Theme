@@ -1938,9 +1938,9 @@ export default class EvalHelper extends Extension {
                         if (state === 1 /* OverviewControls.ControlsState.WINDOW_PICKER */) {
                             const baseBox = box || this._workAreaBox;
                             const [w, h] = baseBox.get_size();
-                            // Raised workspaces: compact top buffer below Spaces Bar, generous bottom buffer to clear Dock and app icon badges!
-                            const topBuffer = Math.max(48, Math.round(h * 0.046));
-                            const bottomBuffer = Math.max(145, Math.round(h * 0.138));
+                            // Enlarge workspace previews: compact top buffer clearing Spaces Bar, snug bottom buffer lowered close to Dock!
+                            const topBuffer = Math.max(84, Math.round(h * 0.088));
+                            const bottomBuffer = Math.max(8, Math.round(h * 0.01));
                             const res = baseBox.copy();
                             res.x1 = baseBox.x1 || 0;
                             res.y1 = (baseBox.y1 || 0) + topBuffer;

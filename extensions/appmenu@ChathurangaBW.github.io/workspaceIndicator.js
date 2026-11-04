@@ -91,6 +91,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         });
 
         this._isExpanded = false;
+        this._isHiding = false;
         this._isRenaming = false;
         this._activeRenameFinish = null;
         this._collapseTimeoutId = 0;
@@ -157,6 +158,9 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         this.add_child(this._thumbnailsBox);
 
         this.connect('notify::hover', () => {
+            if (this._isHiding || !Main.overview.visible || Main.overview._hiding) {
+                return;
+            }
             if (this.hover) {
                 if (this._collapseTimeoutId) {
                     GLib.source_remove(this._collapseTimeoutId);
@@ -252,6 +256,9 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             btn.set_child(lbl);
 
             btn.connect('notify::hover', () => {
+                if (this._isHiding || !Main.overview.visible || Main.overview._hiding) {
+                    return;
+                }
                 if (btn.hover) {
                     this._expand();
                     if (i !== this._activeIdx) {
@@ -740,6 +747,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
     }
 
     _expand() {
+        if (this._isHiding || !Main.overview.visible || Main.overview._hiding) return;
         if (this._isExpanded) return;
         this._isExpanded = true;
 
@@ -777,7 +785,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         Main.layoutManager.panelBox.remove_all_transitions();
         Main.panel.remove_all_transitions();
 
-        if (instant) {
+        if (instant || this._isHiding || !Main.overview.visible || Main.overview._hiding) {
             Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
             Main.panel.height = PANEL_NORMAL_HEIGHT;
         } else {
@@ -795,6 +803,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
     }
 
     onOverviewHiding() {
+        this._isHiding = true;
         if (this._collapseTimeoutId) {
             GLib.source_remove(this._collapseTimeoutId);
             this._collapseTimeoutId = 0;
@@ -803,10 +812,11 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             this._activeRenameFinish(true);
         }
         this._isRenaming = false;
-        this._collapse(false);
+        this._collapse(true);
     }
 
     destroy() {
+        this._isHiding = true;
         if (this._collapseTimeoutId) {
             GLib.source_remove(this._collapseTimeoutId);
             this._collapseTimeoutId = 0;
@@ -858,6 +868,8 @@ export class WorkspaceIndicatorController {
         this._stateAdjustmentSignalId = 0;
         this._wsScrollAdj = null;
         this._wsScrollSignalId = 0;
+        this._prevLeftBoxYAlign = undefined;
+        this._prevRightBoxYAlign = undefined;
         this._prevCenterBoxYAlign = undefined;
         this._spacesBar = new MacMissionControlSpacesBar();
 
@@ -1001,9 +1013,19 @@ export class WorkspaceIndicatorController {
 
         this._applyOverviewTransitionProgress(0.0);
 
-        if (Main.panel && Main.panel._centerBox && this._prevCenterBoxYAlign !== undefined) {
-            Main.panel._centerBox.y_align = this._prevCenterBoxYAlign;
-            this._prevCenterBoxYAlign = undefined;
+        if (Main.panel) {
+            if (Main.panel._leftBox && this._prevLeftBoxYAlign !== undefined) {
+                Main.panel._leftBox.y_align = this._prevLeftBoxYAlign;
+                this._prevLeftBoxYAlign = undefined;
+            }
+            if (Main.panel._rightBox && this._prevRightBoxYAlign !== undefined) {
+                Main.panel._rightBox.y_align = this._prevRightBoxYAlign;
+                this._prevRightBoxYAlign = undefined;
+            }
+            if (Main.panel._centerBox && this._prevCenterBoxYAlign !== undefined) {
+                Main.panel._centerBox.y_align = this._prevCenterBoxYAlign;
+                this._prevCenterBoxYAlign = undefined;
+            }
         }
     }
 
@@ -1049,15 +1071,33 @@ export class WorkspaceIndicatorController {
     _onOverviewShowing() {
         this._hideGnomeThumbnails();
 
-        // Anchor center box to top so spaces bar aligns with the top bar correctly
-        if (Main.panel && Main.panel._centerBox) {
-            if (this._prevCenterBoxYAlign === undefined) {
-                this._prevCenterBoxYAlign = Main.panel._centerBox.y_align;
-            }
-            Main.panel._centerBox.y_align = Clutter.ActorAlign.START;
+        if (this._spacesBar) {
+            this._spacesBar._isHiding = false;
+        }
 
-            if (!this._spacesBar.get_parent()) {
-                Main.panel._centerBox.add_child(this._spacesBar);
+        // Anchor center, left, and right boxes to START so top bar elements stay pinned to the top (y=0) and never shift to the bottom!
+        if (Main.panel) {
+            if (Main.panel._leftBox) {
+                if (this._prevLeftBoxYAlign === undefined) {
+                    this._prevLeftBoxYAlign = Main.panel._leftBox.y_align;
+                }
+                Main.panel._leftBox.y_align = Clutter.ActorAlign.START;
+            }
+            if (Main.panel._rightBox) {
+                if (this._prevRightBoxYAlign === undefined) {
+                    this._prevRightBoxYAlign = Main.panel._rightBox.y_align;
+                }
+                Main.panel._rightBox.y_align = Clutter.ActorAlign.START;
+            }
+            if (Main.panel._centerBox) {
+                if (this._prevCenterBoxYAlign === undefined) {
+                    this._prevCenterBoxYAlign = Main.panel._centerBox.y_align;
+                }
+                Main.panel._centerBox.y_align = Clutter.ActorAlign.START;
+
+                if (!this._spacesBar.get_parent()) {
+                    Main.panel._centerBox.add_child(this._spacesBar);
+                }
             }
         }
 
@@ -1116,14 +1156,24 @@ export class WorkspaceIndicatorController {
     }
 
     _onOverviewShown() {
+        if (this._spacesBar) {
+            this._spacesBar._isHiding = false;
+        }
         this._applyOverviewTransitionProgress(1.0);
     }
 
     _onOverviewHiding() {
         if (this._spacesBar) {
+            this._spacesBar._isHiding = true;
             this._spacesBar.onOverviewHiding();
             this._spacesBar.reactive = false;
         }
+
+        // Unconditionally force panel back to normal height immediately when overview starts hiding
+        Main.layoutManager.panelBox.remove_all_transitions();
+        Main.panel.remove_all_transitions();
+        Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
+        Main.panel.height = PANEL_NORMAL_HEIGHT;
 
         if (this._stateAdjustment) {
             this._onOverviewProgressChanged();
@@ -1168,9 +1218,29 @@ export class WorkspaceIndicatorController {
     _onOverviewHidden() {
         this._applyOverviewTransitionProgress(0.0);
 
-        if (Main.panel && Main.panel._centerBox && this._prevCenterBoxYAlign !== undefined) {
-            Main.panel._centerBox.y_align = this._prevCenterBoxYAlign;
-            this._prevCenterBoxYAlign = undefined;
+        if (this._spacesBar) {
+            this._spacesBar._isHiding = false;
+            this._spacesBar.onOverviewHiding();
+        }
+
+        Main.layoutManager.panelBox.remove_all_transitions();
+        Main.panel.remove_all_transitions();
+        Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
+        Main.panel.height = PANEL_NORMAL_HEIGHT;
+
+        if (Main.panel) {
+            if (Main.panel._leftBox && this._prevLeftBoxYAlign !== undefined) {
+                Main.panel._leftBox.y_align = this._prevLeftBoxYAlign;
+                this._prevLeftBoxYAlign = undefined;
+            }
+            if (Main.panel._rightBox && this._prevRightBoxYAlign !== undefined) {
+                Main.panel._rightBox.y_align = this._prevRightBoxYAlign;
+                this._prevRightBoxYAlign = undefined;
+            }
+            if (Main.panel._centerBox && this._prevCenterBoxYAlign !== undefined) {
+                Main.panel._centerBox.y_align = this._prevCenterBoxYAlign;
+                this._prevCenterBoxYAlign = undefined;
+            }
         }
     }
 
