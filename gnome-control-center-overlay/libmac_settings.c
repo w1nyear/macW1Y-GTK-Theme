@@ -8734,6 +8734,48 @@ static GtkListBoxRow *create_alert_row(const char *icon_name, const char *text, 
     return row;
 }
 
+static const char *get_panel_id_from_widget(GtkWidget *widget);
+
+typedef gboolean (*CcShellSetActivePanelFromIdFunc)(gpointer shell, const char *id, GVariant *parameters, GError **error);
+static CcShellSetActivePanelFromIdFunc orig_cc_shell_set_active_panel_from_id = NULL;
+
+static void update_window_active_panel_id(AdwNavigationSplitView *split_view, const char *new_id G_GNUC_UNUSED) {
+    if (!split_view) return;
+    GtkWidget *win = gtk_widget_get_ancestor(GTK_WIDGET(split_view), GTK_TYPE_WINDOW);
+    if (!win) return;
+
+    if (g_strcmp0(G_OBJECT_TYPE_NAME(win), "CcWindow") == 0) {
+        char **win_cur_id = (char **)((char *)win + 0x60);
+        if (win_cur_id && *win_cur_id) {
+            g_free(*win_cur_id);
+            *win_cur_id = NULL;
+        }
+
+        void *panel_list = *((void **)((char *)win + 0x38));
+        if (panel_list && G_IS_OBJECT(panel_list) && g_strcmp0(G_OBJECT_TYPE_NAME(panel_list), "CcPanelList") == 0) {
+            char **pl_cur_id = (char **)((char *)panel_list + 0x40);
+            if (pl_cur_id && *pl_cur_id) {
+                g_free(*pl_cur_id);
+                *pl_cur_id = NULL;
+            }
+        }
+    }
+}
+
+static gboolean switch_to_shell_panel_id(AdwNavigationSplitView *split_view, const char *id) {
+    if (!split_view || !id) return FALSE;
+    GtkWidget *win = gtk_widget_get_ancestor(GTK_WIDGET(split_view), GTK_TYPE_WINDOW);
+    if (!win) return FALSE;
+
+    if (!orig_cc_shell_set_active_panel_from_id) {
+        orig_cc_shell_set_active_panel_from_id = (CcShellSetActivePanelFromIdFunc)dlsym(RTLD_DEFAULT, "cc_shell_set_active_panel_from_id");
+    }
+    if (orig_cc_shell_set_active_panel_from_id) {
+        return orig_cc_shell_set_active_panel_from_id(win, id, NULL, NULL);
+    }
+    return FALSE;
+}
+
 static void activate_system_row_by_id(GtkWidget *root, const char *row_id) {
     if (!root) return;
     const char *bid = GTK_IS_BUILDABLE(root) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(root)) : NULL;
@@ -8750,6 +8792,12 @@ static void open_system_subpage(AdwNavigationSplitView *split_view, GtkListBox *
     if (!split_view || !box) return;
 
     g_object_set_data(G_OBJECT(split_view), "mac_target_subpage_row", (gpointer)row_id);
+
+    AdwNavigationPage *cur_content = adw_navigation_split_view_get_content(split_view);
+    const char *cur_cid = cur_content ? get_panel_id_from_widget(GTK_WIDGET(cur_content)) : NULL;
+    if (g_strcmp0(cur_cid, "mac-styling") == 0 || g_strcmp0(cur_cid, "widgets") == 0) {
+        switch_to_shell_panel_id(split_view, "system");
+    }
 
     for (GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(box)); child != NULL; child = gtk_widget_get_next_sibling(child)) {
         if (GTK_IS_LIST_BOX_ROW(child)) {
@@ -9057,28 +9105,11 @@ static void sync_sidebar_selection(AdwNavigationSplitView *split_view, const cha
     in_sync = FALSE;
 }
 
-static void on_main_listbox_selected_row_changed(GtkListBox *box, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data)
-{
-    AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
-    if (!box || !split_view || !G_IS_OBJECT(split_view) || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return;
-    GtkListBoxRow *row = gtk_list_box_get_selected_row(box);
-    if (!row || !G_IS_OBJECT(row)) return;
-
-    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
-        return;
-    }
-
-    MacPanelRowData *d = g_object_get_data(G_OBJECT(row), "data");
-    if (d && d->id) {
-        g_object_set_data(G_OBJECT(split_view), "mac_current_panel_id", (gpointer)d->id);
-    }
-    schedule_update_panel_headerbar(split_view);
-}
-
 static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
 {
     AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
     if (!split_view || !row || !G_IS_OBJECT(row) || !G_IS_OBJECT(split_view) || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return;
+    g_object_set_data(G_OBJECT(split_view), "mac_user_navigated", GINT_TO_POINTER(1));
 
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
         g_signal_stop_emission_by_name(box, "row-activated");
@@ -9092,8 +9123,9 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
         if (page) {
             adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
             adw_navigation_split_view_set_show_content(split_view, TRUE);
-            schedule_update_panel_headerbar(split_view);
             gtk_list_box_select_row(box, row);
+            update_window_active_panel_id(split_view, "widgets");
+            schedule_update_panel_headerbar(split_view);
         }
         return;
     }
@@ -9104,8 +9136,9 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
         if (page) {
             adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
             adw_navigation_split_view_set_show_content(split_view, TRUE);
-            schedule_update_panel_headerbar(split_view);
             gtk_list_box_select_row(box, row);
+            update_window_active_panel_id(split_view, "mac-styling");
+            schedule_update_panel_headerbar(split_view);
         }
         return;
     }
@@ -9113,8 +9146,15 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
     MacPanelRowData *d = g_object_get_data(G_OBJECT(row), "data");
     if (d && d->id) {
         g_object_set_data(G_OBJECT(split_view), "mac_current_panel_id", (gpointer)d->id);
+
+        AdwNavigationPage *cur_content = adw_navigation_split_view_get_content(split_view);
+        if (cur_content) {
+            const char *cur_cid = get_panel_id_from_widget(GTK_WIDGET(cur_content));
+            if (g_strcmp0(cur_cid, "mac-styling") == 0 || g_strcmp0(cur_cid, "widgets") == 0) {
+                switch_to_shell_panel_id(split_view, d->id);
+            }
+        }
     }
-    schedule_update_panel_headerbar(split_view);
 }
 
 static void find_labels_recursive(GtkWidget *widget, GList **list) {
@@ -9367,10 +9407,6 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             if (sp) {
                 adw_navigation_view_add(nv, ADW_NAVIGATION_PAGE(sp));
             }
-        }
-        if (g_getenv("MAC_SETTINGS_OPEN_STYLING") && !g_object_get_data(G_OBJECT(nv), "mac_styling_pushed")) {
-            g_object_set_data(G_OBJECT(nv), "mac_styling_pushed", GINT_TO_POINTER(1));
-            adw_navigation_view_push_by_tag(nv, "mac-styling");
         }
         if (g_getenv("MAC_SETTINGS_OPEN_SCREENSHOT") && !g_object_get_data(G_OBJECT(nv), "mac_screenshot_pushed")) {
             g_object_set_data(G_OBJECT(nv), "mac_screenshot_pushed", GINT_TO_POINTER(1));
@@ -9654,6 +9690,7 @@ static void style_sidebar_row_recursive(GtkWidget *widget) {
 static gboolean open_styling_delayed_cb(gpointer user_data) {
     AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
     if (!split_view || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return G_SOURCE_REMOVE;
+    if (g_object_get_data(G_OBJECT(split_view), "mac_user_navigated")) return G_SOURCE_REMOVE;
     GtkListBoxRow *row = g_object_get_data(G_OBJECT(split_view), "mac_styling_row");
     GtkListBox *box = g_object_get_data(G_OBJECT(split_view), "mac_main_listbox");
     if (box && row) {
@@ -9663,6 +9700,7 @@ static gboolean open_styling_delayed_cb(gpointer user_data) {
     if (page) {
         adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
         adw_navigation_split_view_set_show_content(split_view, TRUE);
+        update_window_active_panel_id(split_view, "mac-styling");
         schedule_update_panel_headerbar(split_view);
     }
     return G_SOURCE_REMOVE;
@@ -9906,7 +9944,6 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             gtk_list_box_invalidate_headers(main_listbox);
 
             g_signal_connect(main_listbox, "row-activated", G_CALLBACK(on_main_listbox_row_activated), split_view);
-            g_signal_connect(main_listbox, "notify::selected-row", G_CALLBACK(on_main_listbox_selected_row_changed), split_view);
             g_object_set_data(G_OBJECT(main_listbox), "mac_listbox_connected", GINT_TO_POINTER(1));
         }
 
@@ -9931,6 +9968,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             if (page) {
                 adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
                 adw_navigation_split_view_set_show_content(split_view, TRUE);
+                update_window_active_panel_id(split_view, "widgets");
                 schedule_update_panel_headerbar(split_view);
             }
         }
@@ -9944,30 +9982,13 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             if (page) {
                 adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
                 adw_navigation_split_view_set_show_content(split_view, TRUE);
+                update_window_active_panel_id(split_view, "mac-styling");
                 schedule_update_panel_headerbar(split_view);
             }
             g_timeout_add(100, open_styling_delayed_cb, split_view);
             g_timeout_add(300, open_styling_delayed_cb, split_view);
             g_timeout_add(600, open_styling_delayed_cb, split_view);
         }
-    }
-
-    if (g_getenv("MAC_SETTINGS_TEST_CLICKS") && main_listbox) {
-        printf("--- MAC_SETTINGS_TEST_CLICKS START ---\n");
-        int row_index = 0;
-        for (GtkListBoxRow *row = gtk_list_box_get_row_at_index(main_listbox, row_index);
-             row != NULL;
-             row = gtk_list_box_get_row_at_index(main_listbox, ++row_index)) {
-            const char *id = get_sidebar_row_panel_id(row);
-            g_signal_emit_by_name(main_listbox, "row-activated", row);
-            AdwNavigationPage *cp = adw_navigation_split_view_get_content(split_view);
-            const char *cur_id = g_object_get_data(G_OBJECT(split_view), "mac_current_panel_id");
-            printf("[%2d] Activated %-16s -> cur_id=%-16s content=%s\n",
-                   row_index, id ? id : "unknown", cur_id ? cur_id : (id ? id : "null"),
-                   cp ? G_OBJECT_TYPE_NAME(cp) : "null");
-        }
-        printf("--- MAC_SETTINGS_TEST_CLICKS END ---\n");
-        exit(0);
     }
 
     expand_clamps_recursive(GTK_WIDGET(window));

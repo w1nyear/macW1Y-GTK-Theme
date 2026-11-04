@@ -16198,3 +16198,33 @@ Task 634: Підвищення роздільної здатності мали�
      * Скрипт встановлено в `/usr/local/bin/mac-screenshot-process` з правами 755.
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
      * `bin/mac-audit-sync check`: 100% PASS.
+
+Task 635: Виправлення блокування переходу між розділами Параметрів після відкриття «Мак стилізація»
+1. Запит користувача:
+   - «я зайшов у мак стилізацію але від того моменту я не можу перейти в будь який інший пункт параметрів.»
+   - Долучено знімок Параметрів GNOME (gnome-control-center), де на бічній панелі підсвічено «Система», проте вміст праворуч залишався заблокованим на панелі «Мак стилізація» та не перемикався на будь-який інший пункт меню.
+
+2. Причина несправності:
+   - Внутрішній стан `CcWindow` та `CcPanelList`:
+     * При старті GNOME Control Center за замовчуванням відкриває розділ `"system"` і кешує його ID у `CcWindow->current_panel_id` (зсув 0x60) та `CcPanelList->current_panel_id` (зсув 0x40).
+     * При переході до «Мак стилізація» (`is_mac_styling_row`) вміст `AdwNavigationSplitView` примусово замінювався на `mac_styling_page`, але внутрішній кеш активної панелі у `CcWindow` залишався рівним `"system"`.
+     * Коли користувач намагався повернутися до «Система», функція `CcWindow::show_panel` (дисасембльована за адресою `0x823f8`) порівнювала цільовий ID (`"system"`) із закешованим `window->current_panel_id` (`"system"`). Оскільки ID збігалися, `CcWindow` вважав панель уже відкритою і повертався без завантаження та без виклику `adw_navigation_split_view_set_content`.
+   - Конфлікт вибору та синхронізації бічної панелі:
+     * Сигнал `notify::selected-row` на `main_listbox` синхронно викликав `schedule_update_panel_headerbar`, який через `sync_sidebar_selection` зчитував поточний вміст `split_view` (який ще був `mac-styling`) і насильно повертав виділення списку назад на рядок «Мак стилізація», перериваючи обробку кліку мишею.
+
+3. Реалізація та виправлення:
+   - control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c:
+     * Реалізовано функцію `update_window_active_panel_id(split_view, new_id)`:
+       - При відкритті кастомних панелей («Мак стилізація», «Віджети») коректно очищає закешований ID (`current_panel_id`) у структурах `CcWindow` (0x60) та `CcPanelList` (0x40), завдяки чому подальший клік на будь-який стандартний розділ (включно із «Система») гарантовано проходить перевірку зміни панелі в `CcWindow::show_panel`.
+     * Реалізовано функцію `switch_to_shell_panel_id(split_view, id)`:
+       - Викликає експортований метод інтерфейсу оболонки `cc_shell_set_active_panel_from_id` через `dlsym(RTLD_DEFAULT, "cc_shell_set_active_panel_from_id")`, що забезпечує миттєве та стабільне завантаження цільової панелі через штатний конвеєр GNOME Settings.
+     * Оновлено обробник `on_main_listbox_row_activated`:
+       - При переході з кастомної панелі («Мак стилізація» або «Віджети») на будь-який стандартний пункт бічної панелі викликається `switch_to_shell_panel_id(split_view, d->id)`.
+       - Усунено передчасний синхронний виклик `schedule_update_panel_headerbar` для стандартних рядків — оновлення заголовка та історії тепер викликається через сигнал `notify::content` на `split_view`, коли панель фактично завантажена.
+       - Видалено конфліктне підключення до `notify::selected-row` на `main_listbox`, що виключає скасування кліків користувача.
+       - Додано прапорець `mac_user_navigated` для скасування залишкових відкладених таймерів відкриття стилізації при старті.
+   - Синхронізація та перевірка:
+     * Зібрано бібліотеку `control-center/libmac_settings.so` та синхронізовано до `gnome-control-center-overlay/`, `lib/`, `~/.local/lib/`, `/usr/lib/x86_64-linux-gnu/`, `/usr/local/lib/` та `/usr/share/mactheme/gnome-control-center-overlay/`.
+     * Проведено автоматизований тест переходів (`verify_nav_step`): успішно підтверджено безперешкодний перехід за ланцюжком Mac Styling -> Система -> Wi-Fi -> Mac Styling -> Дисплеї -> Віджети -> Система.
+     * `bin/mac-audit-sync check`: 100% PASS.
+     * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
