@@ -1031,31 +1031,6 @@
                       </object>
                     </child>
                     <child>
-                      <object class="AdwActionRow" id="widget_radius_row">
-                        <property name="title">Заокруглення</property>
-                        <child type="suffix">
-                          <object class="GtkScale" id="widget_radius_scale">
-                            <property name="orientation">0</property>
-                            <property name="draw-value">true</property>
-                            <property name="digits">0</property>
-                            <property name="round-digits">0</property>
-                            <property name="width-request">200</property>
-                            <property name="adjustment">
-                              <object class="GtkAdjustment">
-                                <property name="lower">0</property>
-                                <property name="upper">40</property>
-                                <property name="step-increment">1</property>
-                                <property name="page-increment">5</property>
-                                <property name="value">35</property>
-                              </object>
-                            </property>
-                            <signal name="realize" handler="init_widget_radius"/>
-                            <signal name="value-changed" handler="on_widget_radius_changed"/>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
                       <object class="AdwActionRow" id="widget_blur_row">
                         <property name="title">Розмиття</property>
                         <child type="suffix">

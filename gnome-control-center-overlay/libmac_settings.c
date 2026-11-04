@@ -6579,6 +6579,11 @@ static GSettings *get_dw_settings(void) {
         GSettingsSchemaSource *src = g_settings_schema_source_get_default();
         if (src && g_settings_schema_source_lookup(src, DW_SCHEMA, TRUE)) {
             dw_settings = g_settings_new(DW_SCHEMA);
+            if (dw_settings) {
+                /* Widgets follow system light/dark theme automatically */
+                g_settings_set_boolean(dw_settings, "use-custom-widget-theme", FALSE);
+                g_settings_set_int(dw_settings, "appearance", 2);
+            }
         }
     }
     return dw_settings;
@@ -6602,19 +6607,21 @@ void on_dw_edit_mode_changed(void *widget, void *pspec, gpointer data) {
     g_settings_set_boolean(s, "edit-mode", active);
 }
 
-void on_dw_add_widgets_clicked(void *button, gpointer data) {
+G_MODULE_EXPORT void on_dw_add_widgets_clicked(void *button, gpointer data) {
     (void)button; (void)data;
+    g_print("macW1Y: on_dw_add_widgets_clicked invoked!\n");
     ensure_dw_extension_enabled();
     GSettings *s = get_dw_settings();
     if (s) {
         g_settings_set_boolean(s, "edit-mode", TRUE);
         g_settings_set_boolean(s, "open-widget-picker", TRUE);
     }
-    g_spawn_command_line_async("sh -c 'pkill -f org.gnome.Shell.Extensions 2>/dev/null; sleep 0.1; gnome-extensions prefs desktop-widgets@r3nhick'", NULL);
+    g_spawn_command_line_async("gjs -m /usr/local/bin/mac-widget-picker", NULL);
 }
 
-void on_dw_arrange_clicked(void *button, gpointer data) {
+G_MODULE_EXPORT void on_dw_arrange_clicked(void *button, gpointer data) {
     (void)button; (void)data;
+    g_print("macW1Y: on_dw_arrange_clicked invoked!\n");
     GSettings *s = get_dw_settings();
     if (s) {
         g_settings_set_boolean(s, "arrange-widgets", TRUE);
@@ -6816,9 +6823,111 @@ void on_dw_music_browsers_changed(void *widget, void *pspec, gpointer data) {
     g_settings_set_boolean(s, "music-ignore-browsers", active);
 }
 
-void on_dw_advanced_clicked(void *button, gpointer data) {
-    (void)button; (void)data;
-    g_spawn_command_line_async("sh -c 'pkill -f org.gnome.Shell.Extensions 2>/dev/null; sleep 0.1; gnome-extensions prefs desktop-widgets@r3nhick'", NULL);
+static void schedule_update_panel_headerbar(AdwNavigationSplitView *split_view);
+static AdwNavigationView *global_widgets_nav_view = NULL;
+
+static void bind_widgets_configurator_settings(GtkBuilder *builder) {
+    GSettings *s = get_dw_settings();
+    if (!s || !builder) return;
+
+    GObject *w;
+    #define BIND_SWITCH(id, key) \
+        if ((w = gtk_builder_get_object(builder, id))) { \
+            g_settings_bind(s, key, w, "active", G_SETTINGS_BIND_DEFAULT); \
+        }
+    #define BIND_SPIN(id, key) \
+        if ((w = gtk_builder_get_object(builder, id))) { \
+            g_settings_bind(s, key, w, "value", G_SETTINGS_BIND_DEFAULT); \
+        }
+    #define BIND_ENTRY(id, key) \
+        if ((w = gtk_builder_get_object(builder, id))) { \
+            g_settings_bind(s, key, w, "text", G_SETTINGS_BIND_DEFAULT); \
+        }
+
+    /* 1. Clocks */
+    BIND_SWITCH("cfg_digitalclock_show_seconds", "digitalclock-show-seconds");
+    BIND_SWITCH("cfg_digitalclock_smooth_seconds", "digitalclock-smooth-seconds");
+    BIND_SWITCH("cfg_clock_smooth_seconds", "clock-smooth-seconds");
+    BIND_SWITCH("cfg_digitalclock_show_ampm", "digitalclock-show-ampm");
+    BIND_SWITCH("cfg_binaryclock_use_accent", "binaryclock-use-accent-color");
+
+    /* 2. Calendar */
+    BIND_SPIN("cfg_calendar_lookahead_row", "calendar-lookahead");
+    BIND_SWITCH("cfg_calendar_use_accent", "calendar-use-accent-color");
+    BIND_SWITCH("cfg_calendar_show_page_dots", "calendar-show-page-dots");
+
+    /* 3. Weather */
+    BIND_SWITCH("cfg_weather_use_accent", "weather-use-accent-color");
+    BIND_SWITCH("cfg_weather_show_page_dots", "weather-show-page-dots");
+
+    /* 4. Battery */
+    BIND_SPIN("cfg_battery_slot_count_row", "battery-slot-count");
+    BIND_SWITCH("cfg_battery_show_percent", "battery-show-percent");
+    BIND_SWITCH("cfg_battery_use_accent", "battery-use-accent-color");
+
+    /* 5. Music */
+    BIND_SWITCH("cfg_music_ignore_browsers", "music-ignore-browsers");
+    BIND_ENTRY("cfg_music_custom_app_entry", "music-custom-app");
+
+    /* 6. System */
+    BIND_SWITCH("cfg_system_page_indicator_accent", "system-page-indicator-accent");
+    BIND_SWITCH("cfg_system_show_page_dashes", "system-show-page-dashes");
+
+    /* 7. Photos */
+    BIND_ENTRY("cfg_custom_photo_entry", "custom-photo");
+
+    /* 8. Pomodoro */
+    BIND_SPIN("cfg_pomodoro_work_row", "pomodoro-work-minutes");
+    BIND_SPIN("cfg_pomodoro_short_break_row", "pomodoro-short-break-minutes");
+    BIND_SPIN("cfg_pomodoro_long_break_row", "pomodoro-long-break-minutes");
+    BIND_SPIN("cfg_pomodoro_sessions_row", "pomodoro-sessions-before-long-break");
+
+    /* 9. Notes */
+    BIND_SPIN("cfg_notes_title_size_row", "notes-title-font-size");
+    BIND_SPIN("cfg_notes_content_size_row", "notes-content-font-size");
+
+    /* 10. GitHub */
+    BIND_ENTRY("cfg_github_username_entry", "github-username");
+    BIND_SWITCH("cfg_github_use_green", "github-use-green");
+
+    /* 11. Folders */
+    BIND_ENTRY("cfg_folder_file_manager_entry", "folder-file-manager");
+    BIND_SWITCH("cfg_folder_show_names", "folder-show-names");
+
+    /* 12. Screen Time */
+    BIND_SPIN("cfg_screentime_retention_row", "screentime-retention-days");
+    BIND_SWITCH("cfg_screentime_show_nav_buttons", "screentime-show-nav-buttons");
+
+    /* 13. Lava Lamp */
+    BIND_SWITCH("cfg_lava_use_accent", "lava-use-accent-color");
+
+    #undef BIND_SWITCH
+    #undef BIND_SPIN
+    #undef BIND_ENTRY
+}
+
+G_MODULE_EXPORT void on_dw_advanced_clicked(void *button, gpointer data) {
+    (void)data;
+    g_print("macW1Y: on_dw_advanced_clicked invoked!\n");
+    AdwNavigationView *nv = global_widgets_nav_view;
+    if (button && GTK_IS_WIDGET(button)) {
+        GtkWidget *ancestor = gtk_widget_get_ancestor(GTK_WIDGET(button), ADW_TYPE_NAVIGATION_VIEW);
+        if (ancestor) nv = ADW_NAVIGATION_VIEW(ancestor);
+    }
+    if (nv) {
+        adw_navigation_view_push_by_tag(nv, "widgets_configurator");
+        if (button && GTK_IS_WIDGET(button)) {
+            GtkWidget *sv = gtk_widget_get_ancestor(GTK_WIDGET(button), ADW_TYPE_NAVIGATION_SPLIT_VIEW);
+            if (sv) {
+                schedule_update_panel_headerbar(ADW_NAVIGATION_SPLIT_VIEW(sv));
+            }
+        }
+        if (g_last_split_view) {
+            schedule_update_panel_headerbar(g_last_split_view);
+        }
+    } else {
+        g_warning("macW1Y: on_dw_advanced_clicked could not find navigation view!");
+    }
 }
 
 static void find_list_boxes_recursive(GtkWidget *widget, GList **list)
@@ -6864,6 +6973,8 @@ static GtkWidget *get_widgets_page(void)
 
     if (loaded) {
         widgets_page = GTK_WIDGET(gtk_builder_get_object(builder, "widgets_page"));
+        global_widgets_nav_view = ADW_NAVIGATION_VIEW(gtk_builder_get_object(builder, "widgets_nav_view"));
+        bind_widgets_configurator_settings(builder);
         if (widgets_page) {
             g_object_ref(widgets_page);
         }
@@ -7410,7 +7521,7 @@ G_MODULE_EXPORT void on_screenshot_row_clicked(GtkWidget *widget, gpointer user_
         }
     }
     if (nv) {
-        if (!adw_navigation_view_find_page(nv, "screenshot")) {
+        if (nv != global_widgets_nav_view && !adw_navigation_view_find_page(nv, "screenshot")) {
             GtkWidget *sp = get_screenshot_page();
             if (sp) {
                 adw_navigation_view_add(nv, ADW_NAVIGATION_PAGE(sp));
@@ -8585,6 +8696,33 @@ static void init_mac_settings_css(void) {
         "  background-color: @accent_bg_color; "
         "  color: @accent_fg_color; "
         "} "
+        "button.mac-action-accent-btn, "
+        "window.mac-settings-window button.mac-action-accent-btn, "
+        "window.mac-settings-window button.suggested-action.circular { "
+        "  background-color: @accent_bg_color !important; "
+        "  color: #ffffff !important; "
+        "  border: none !important; "
+        "  box-shadow: none !important; "
+        "  min-width: 28px !important; "
+        "  min-height: 28px !important; "
+        "  padding: 4px !important; "
+        "  border-radius: 9999px !important; "
+        "} "
+        "button.mac-action-accent-btn:hover, "
+        "window.mac-settings-window button.mac-action-accent-btn:hover, "
+        "window.mac-settings-window button.suggested-action.circular:hover { "
+        "  background-color: color-mix(in srgb, @accent_bg_color 85%, white) !important; "
+        "  color: #ffffff !important; "
+        "} "
+        "button.mac-action-accent-btn image, "
+        "button.mac-action-accent-btn GtkImage, "
+        "window.mac-settings-window button.mac-action-accent-btn image, "
+        "window.mac-settings-window button.mac-action-accent-btn GtkImage, "
+        "window.mac-settings-window button.suggested-action image, "
+        "window.mac-settings-window button.suggested-action.circular image { "
+        "  color: #ffffff !important; "
+        "  -gtk-icon-palette: error #ffffff, success #ffffff, warning #ffffff; "
+        "} "
         "window.mac-settings-window button.suggested-action:hover, "
         "window.mac-settings-window menubutton.suggested-action > button:hover, "
         "window.mac-settings-window splitbutton.suggested-action > button:hover, "
@@ -8946,10 +9084,10 @@ static const char *get_panel_id_from_widget(GtkWidget *widget) {
 
     if (ADW_IS_NAVIGATION_PAGE(widget)) {
         const char *tag = adw_navigation_page_get_tag(ADW_NAVIGATION_PAGE(widget));
-        if (tag && (g_strcmp0(tag, "widgets") == 0 || g_strcmp0(tag, "widgets_page") == 0)) return "widgets";
+        if (tag && (g_strcmp0(tag, "widgets") == 0 || g_strcmp0(tag, "widgets_page") == 0 || g_strcmp0(tag, "widgets_main") == 0 || g_strcmp0(tag, "widgets_configurator") == 0)) return "widgets";
         if (tag && (g_strcmp0(tag, "mac-styling") == 0 || g_strcmp0(tag, "mac_styling_page") == 0)) return "mac-styling";
         const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
-        if (bid && (g_strcmp0(bid, "widgets") == 0 || g_strcmp0(bid, "widgets_page") == 0)) return "widgets";
+        if (bid && (g_strcmp0(bid, "widgets") == 0 || g_strcmp0(bid, "widgets_page") == 0 || g_strcmp0(bid, "widgets_main_page") == 0 || g_strcmp0(bid, "widgets_configurator_page") == 0)) return "widgets";
         if (bid && (g_strcmp0(bid, "mac-styling") == 0 || g_strcmp0(bid, "mac_styling_page") == 0)) return "mac-styling";
     }
     return NULL;
@@ -9402,7 +9540,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             g_signal_connect(nv, "notify::visible-page", G_CALLBACK(on_visible_page_changed_cb), split_view);
             g_object_set_data(G_OBJECT(nv), "mac_connected", GINT_TO_POINTER(1));
         }
-        if (!adw_navigation_view_find_page(nv, "screenshot")) {
+        if (nv != global_widgets_nav_view && !adw_navigation_view_find_page(nv, "screenshot")) {
             GtkWidget *sp = get_screenshot_page();
             if (sp) {
                 adw_navigation_view_add(nv, ADW_NAVIGATION_PAGE(sp));
@@ -9687,6 +9825,25 @@ static void style_sidebar_row_recursive(GtkWidget *widget) {
 }
 
 
+static gboolean open_widgets_delayed_cb(gpointer user_data) {
+    AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
+    if (!split_view || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return G_SOURCE_REMOVE;
+    if (g_object_get_data(G_OBJECT(split_view), "mac_user_navigated")) return G_SOURCE_REMOVE;
+    GtkListBoxRow *row = g_object_get_data(G_OBJECT(split_view), "mac_widgets_row");
+    GtkListBox *box = g_object_get_data(G_OBJECT(split_view), "mac_main_listbox");
+    if (box && row) {
+        gtk_list_box_select_row(box, row);
+    }
+    GtkWidget *page = get_widgets_page();
+    if (page) {
+        adw_navigation_split_view_set_content(split_view, ADW_NAVIGATION_PAGE(page));
+        adw_navigation_split_view_set_show_content(split_view, TRUE);
+        update_window_active_panel_id(split_view, "widgets");
+        schedule_update_panel_headerbar(split_view);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 static gboolean open_styling_delayed_cb(gpointer user_data) {
     AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
     if (!split_view || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return G_SOURCE_REMOVE;
@@ -9959,9 +10116,10 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         update_sidebar_group_spacing(main_listbox);
         g_idle_add(update_sidebar_group_spacing_idle, main_listbox);
 
-        if (g_getenv("MAC_SETTINGS_OPEN_WIDGETS") && !g_object_get_data(G_OBJECT(split_view), "mac_widgets_opened")) {
-            g_object_set_data(G_OBJECT(split_view), "mac_widgets_opened", GINT_TO_POINTER(1));
+        if (g_getenv("MAC_SETTINGS_OPEN_WIDGETS")) {
+            g_object_set_data(G_OBJECT(split_view), "mac_main_listbox", main_listbox);
             if (widgets_row) {
+                g_object_set_data(G_OBJECT(split_view), "mac_widgets_row", widgets_row);
                 gtk_list_box_select_row(main_listbox, widgets_row);
             }
             GtkWidget *page = get_widgets_page();
@@ -9971,11 +10129,15 @@ static gboolean mac_fix_settings_window(gpointer user_data)
                 update_window_active_panel_id(split_view, "widgets");
                 schedule_update_panel_headerbar(split_view);
             }
+            g_timeout_add(100, open_widgets_delayed_cb, split_view);
+            g_timeout_add(300, open_widgets_delayed_cb, split_view);
+            g_timeout_add(600, open_widgets_delayed_cb, split_view);
         }
 
         if (g_getenv("MAC_SETTINGS_OPEN_STYLING")) {
             g_object_set_data(G_OBJECT(split_view), "mac_main_listbox", main_listbox);
             if (mac_styling_row) {
+                g_object_set_data(G_OBJECT(split_view), "mac_styling_row", mac_styling_row);
                 gtk_list_box_select_row(main_listbox, mac_styling_row);
             }
             GtkWidget *page = get_mac_styling_page();

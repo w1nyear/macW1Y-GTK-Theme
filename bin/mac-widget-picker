@@ -1,0 +1,80 @@
+#!/usr/bin/env -S gjs -m
+import Gtk from 'gi://Gtk?version=4.0';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import Adw from 'gi://Adw?version=1';
+import { WidgetPickerDialog } from 'file:///home/vitaliy/MACTHEMEFILES/extensions/desktop-widgets@r3nhick/prefs/widgetPickerDialog.js';
+
+Adw.init();
+const settings = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.desktop-widgets-r3nhick' });
+settings.set_boolean('edit-mode', true);
+
+const DEFAULT_SIZES = {
+    clock: 'small',
+    digitalclock: 'small',
+    binaryclock: 'small',
+    calendar: 'medium',
+    weather: 'small',
+    battery: 'small',
+    screentime: 'medium',
+    system: 'medium',
+    music: 'medium',
+    pomodoro: 'small',
+    todo: 'medium',
+    notes: 'medium',
+    photos: 'medium',
+    lava: 'small',
+    applauncher: 'small',
+    folder: 'small',
+    github: 'medium',
+    stopwatch: 'small',
+    timer: 'small',
+};
+
+function addWidget(type) {
+    const serialized = settings.get_string('layout-json');
+    let parsed = null;
+    try {
+        parsed = JSON.parse(serialized);
+    } catch (_) {
+        parsed = null;
+    }
+    const widgets = parsed && Array.isArray(parsed.widgets) ? [...parsed.widgets] : [];
+    const size = DEFAULT_SIZES[type] ?? 'small';
+    const id = type + '-' + Date.now();
+    widgets.push({
+        id,
+        type,
+        size,
+        x: 24,
+        y: 80,
+        data: {},
+    });
+    settings.set_string('layout-json', JSON.stringify({ widgets }));
+}
+
+const app = new Adw.Application({
+    application_id: 'org.gnome.desktopwidgets.picker' + Math.floor(Math.random() * 100000),
+    flags: Gio.ApplicationFlags.FLAGS_NONE,
+});
+
+app.connect('activate', () => {
+    let extPath = '/home/vitaliy/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick';
+    const testFile = Gio.File.new_for_path(extPath);
+    if (!testFile.query_exists(null)) {
+        extPath = '/usr/share/gnome-shell/extensions/desktop-widgets@r3nhick';
+    }
+    try {
+        const dialog = new WidgetPickerDialog(null, extPath, (s) => s);
+        dialog.set_application(app);
+        dialog.connect('widget-selected', (_d, widgetType) => {
+            addWidget(widgetType);
+        });
+        dialog.present();
+        console.log("Dialog presented successfully!");
+    } catch (e) {
+        console.error("WidgetPickerDialog error:", e.stack || e);
+    }
+});
+
+app.run([]);

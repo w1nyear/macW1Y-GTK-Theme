@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-    <object class="AdwNavigationPage" id="widgets_page">
+
+  <!-- ГОЛОВНИЙ КОНТЕЙНЕР НАВІГАЦІЇ ВІДЖЕТІВ -->
+  <object class="AdwNavigationPage" id="widgets_page">
     <property name="title">Віджети</property>
     <property name="tag">widgets</property>
     <property name="child">
-      <object class="AdwToolbarView">
+      <object class="AdwNavigationView" id="widgets_nav_view">
+        <!-- 1. ГОЛОВНА СТОРІНКА: ВІДЖЕТИ -->
+        <child>
+          <object class="AdwNavigationPage" id="widgets_main_page">
+            <property name="title">Віджети</property>
+            <property name="tag">widgets_main</property>
+            <property name="child">
+              <object class="AdwToolbarView">
         <property name="extend-content-to-top-edge">False</property>
         <property name="extend-content-to-bottom-edge">True</property>
         <property name="top-bar-style">flat</property>
@@ -19,7 +28,7 @@
         <property name="content">
           <object class="AdwPreferencesPage">
 
-            <!-- 1. Робочий стіл та керування віджетами -->
+            <!-- 1.1 Робочий стіл та розташування -->
             <child>
               <object class="AdwPreferencesGroup">
                 <property name="title">Робочий стіл та розташування</property>
@@ -39,13 +48,16 @@
                   <object class="AdwActionRow" id="dw_add_widgets_row">
                     <property name="title">Додати віджети на стільницю</property>
                     <property name="subtitle">Відкрити меню вибору віджетів (Годинник, Погода, Батарея, Фото тощо)</property>
+                    <property name="activatable">true</property>
+                    <signal name="activated" handler="on_dw_add_widgets_clicked"/>
                     <child type="suffix">
                       <object class="GtkButton" id="dw_btn_add_widgets">
-                        <property name="label">Додати віджети…</property>
                         <property name="valign">center</property>
                         <property name="icon-name">list-add-symbolic</property>
                         <style>
                           <class name="suggested-action"/>
+                          <class name="circular"/>
+                          <class name="mac-action-accent-btn"/>
                         </style>
                         <signal name="clicked" handler="on_dw_add_widgets_clicked"/>
                       </object>
@@ -57,11 +69,17 @@
                   <object class="AdwActionRow" id="dw_arrange_row">
                     <property name="title">Впорядкувати за сіткою</property>
                     <property name="subtitle">Автоматично вирівняти всі розміщені віджети у спільну сітку</property>
+                    <property name="activatable">true</property>
+                    <signal name="activated" handler="on_dw_arrange_clicked"/>
                     <child type="suffix">
                       <object class="GtkButton" id="dw_btn_arrange">
-                        <property name="label">Вирівняти сітку</property>
                         <property name="valign">center</property>
                         <property name="icon-name">view-grid-symbolic</property>
+                        <style>
+                          <class name="suggested-action"/>
+                          <class name="circular"/>
+                          <class name="mac-action-accent-btn"/>
+                        </style>
                         <signal name="clicked" handler="on_dw_arrange_clicked"/>
                       </object>
                     </child>
@@ -96,16 +114,6 @@
                 </child>
 
                 <child>
-                  <object class="AdwSwitchRow" id="dw_pause_fullscreen_row">
-                    <property name="title">Призупиняти у повноекранному режимі</property>
-                    <property name="subtitle">Автоматично призупиняти анімації під час повноекранного режиму для економії ресурсів</property>
-                    <property name="active">true</property>
-                    <signal name="realize" handler="init_dw_pause_fullscreen"/>
-                    <signal name="notify::active" handler="on_dw_pause_fullscreen_changed"/>
-                  </object>
-                </child>
-
-                <child>
                   <object class="AdwSwitchRow" id="dw_panel_icon_row">
                     <property name="title">Значок на верхній панелі</property>
                     <property name="subtitle">Відображати значок швидкого перемикання віджетів у верхній панелі</property>
@@ -118,28 +126,11 @@
               </object>
             </child>
 
-            <!-- 2. Стиль та оформлення -->
+            <!-- 1.2 Стилізація та оформлення -->
             <child>
               <object class="AdwPreferencesGroup">
                 <property name="title">Стилізація та оформлення</property>
                 <property name="description">Зовнішній вигляд, закруглення кутів і прозорість карток віджетів</property>
-
-                <child>
-                  <object class="AdwComboRow" id="dw_theme_combo_row">
-                    <property name="title">Тема віджетів</property>
-                    <property name="subtitle">Колірна схема для карток віджетів</property>
-                    <property name="model">
-                      <object class="GtkStringList">
-                        <items>
-                          <item translatable="yes">Темна (macOS Dark)</item>
-                          <item translatable="yes">Світла (macOS Light)</item>
-                        </items>
-                      </object>
-                    </property>
-                    <signal name="realize" handler="init_dw_theme"/>
-                    <signal name="notify::selected" handler="on_dw_theme_changed"/>
-                  </object>
-                </child>
 
                 <child>
                   <object class="AdwActionRow" id="dw_border_radius_row">
@@ -208,7 +199,7 @@
               </object>
             </child>
 
-            <!-- 3. Поведінка компонентів -->
+            <!-- 1.3 Поведінка компонентів -->
             <child>
               <object class="AdwPreferencesGroup">
                 <property name="title">Поведінка компонентів</property>
@@ -247,7 +238,7 @@
               </object>
             </child>
 
-            <!-- 4. Розширене налаштування -->
+            <!-- 1.4 Розширене налаштування -->
             <child>
               <object class="AdwPreferencesGroup">
                 <property name="title">Розширене налаштування</property>
@@ -256,12 +247,18 @@
                 <child>
                   <object class="AdwActionRow" id="dw_advanced_row">
                     <property name="title">Повний конфігуратор віджетів</property>
-                    <property name="subtitle">Відкрити розширене вікно налаштування погоди, GitHub, Pomodoro, нотаток та завдань</property>
+                    <property name="subtitle">Відкрити розширені параметри всіх типів віджетів</property>
+                    <property name="activatable">true</property>
+                    <signal name="activated" handler="on_dw_advanced_clicked"/>
                     <child type="suffix">
                       <object class="GtkButton" id="dw_btn_advanced">
-                        <property name="label">Відкрити параметри…</property>
                         <property name="valign">center</property>
-                        <property name="icon-name">preferences-other-symbolic</property>
+                        <property name="icon-name">go-next-symbolic</property>
+                        <style>
+                          <class name="suggested-action"/>
+                          <class name="circular"/>
+                          <class name="mac-action-accent-btn"/>
+                        </style>
                         <signal name="clicked" handler="on_dw_advanced_clicked"/>
                       </object>
                     </child>
@@ -273,6 +270,437 @@
 
           </object>
         </property>
+      </object>
+    </property>
+  </object>
+</child>
+
+        <!-- 2. ПОВНИЙ КОНФІГУРАТОР ВІДЖЕТІВ (ВБУДОВАНА ПІДСТОРІНКА) -->
+        <child>
+          <object class="AdwNavigationPage" id="widgets_configurator_page">
+    <property name="title">Конфігуратор віджетів</property>
+    <property name="tag">widgets_configurator</property>
+    <property name="child">
+      <object class="AdwToolbarView">
+        <property name="extend-content-to-top-edge">False</property>
+        <property name="extend-content-to-bottom-edge">True</property>
+        <property name="top-bar-style">flat</property>
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <style>
+              <class name="flat"/>
+            </style>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwPreferencesPage">
+
+            <!-- 2.1 Годинники -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Годинники (Аналоговий, Цифровий, Бінарний)</property>
+                <property name="description">Формат відображення часу та секундні стрілки</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_digitalclock_show_seconds">
+                    <property name="title">Цифровий: показувати секунди</property>
+                    <property name="subtitle">Відображати секунди у цифровому годиннику</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_digitalclock_smooth_seconds">
+                    <property name="title">Цифровий: плавний рух</property>
+                    <property name="subtitle">Плавна анімація секундного індикатора</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_clock_smooth_seconds">
+                    <property name="title">Аналоговий: плавна секундна стрілка</property>
+                    <property name="subtitle">Плавний хід стрілки без дискретних кроків</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_digitalclock_show_ampm">
+                    <property name="title">Показувати AM / PM</property>
+                    <property name="subtitle">Відображення періоду доби у 12-годинному форматі</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_binaryclock_use_accent">
+                    <property name="title">Бінарний: системний акцентний колір</property>
+                    <property name="subtitle">Підсвічувати активні біти кольором macW1Y</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.2 Календар -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Календар та події</property>
+                <property name="description">Параметри відображення розкладу та дати</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_calendar_lookahead_row">
+                    <property name="title">Горизонт подій (днів)</property>
+                    <property name="subtitle">Кількість днів для пошуку найближчих подій</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_calendar_lookahead_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">30</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">14</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_calendar_use_accent">
+                    <property name="title">Використовувати акцентний колір</property>
+                    <property name="subtitle">Виділяти сьогоднішній день системним акцентом</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_calendar_show_page_dots">
+                    <property name="title">Точки сторінок календаря</property>
+                    <property name="subtitle">Відображати індикатори прокрутки місяців</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.3 Погода -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Погода</property>
+                <property name="description">Прогноз погоди та поточні метеоумови</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_weather_use_accent">
+                    <property name="title">Використовувати акцентний колір</property>
+                    <property name="subtitle">Підсвічувати піктограми погоди кольором теми</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_weather_show_page_dots">
+                    <property name="title">Точки перемикання прогнозу</property>
+                    <property name="subtitle">Показувати індикатор сторінок погоди</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.4 Батарея -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Батарея та живлення</property>
+                <property name="description">Кількість пристроїв та стиль індикатора заряду</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_battery_slot_count_row">
+                    <property name="title">Кількість слотів пристроїв</property>
+                    <property name="subtitle">Відображення батарей миші, клавіатури та навушників</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_battery_slot_count_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">4</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">1</property>
+                        <property name="value">2</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_battery_show_percent">
+                    <property name="title">Показувати відсоток заряду</property>
+                    <property name="subtitle">Числове значення відсотків під кільцем</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_battery_use_accent">
+                    <property name="title">Використовувати акцентний колір</property>
+                    <property name="subtitle">Забарвлювати кільце заряду в колір акценту</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.5 Музика -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Музичний плеєр</property>
+                <property name="description">Керування відтворенням аудіо та мультимедіа</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_music_ignore_browsers">
+                    <property name="title">Ігнорувати аудіо з веб-браузерів</property>
+                    <property name="subtitle">Не перехоплювати вкладки YouTube чи Spotify Web</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_music_custom_app_entry">
+                    <property name="title">Власний музичний додаток</property>
+                    <property name="text">spotify</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.6 Системний монітор -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Системний монітор</property>
+                <property name="description">Завантаження процесора, пам'яті, мережі та дисків</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_system_page_indicator_accent">
+                    <property name="title">Акцентний колір індикатора</property>
+                    <property name="subtitle">Застосовувати колір системи для вибраної сторінки</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_system_show_page_dashes">
+                    <property name="title">Пунктирні індикатори сторінок</property>
+                    <property name="subtitle">Стиль рисками замість крапок</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.7 Фотографії -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Фотографії</property>
+                <property name="description">Фоторамка на стільниці</property>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_custom_photo_entry">
+                    <property name="title">Шлях до фотографії або папки</property>
+                    <property name="text"></property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.8 Pomodoro таймер -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Pomodoro таймер</property>
+                <property name="description">Інтервали продуктивності та фокусування</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_work_row">
+                    <property name="title">Час фокусування (хвилини)</property>
+                    <property name="subtitle">Тривалість робочого інтервалу</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_work_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">60</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">25</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_short_break_row">
+                    <property name="title">Коротка перерва (хвилини)</property>
+                    <property name="subtitle">Тривалість відпочинку між сесіями</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_short_break_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">30</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">5</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_long_break_row">
+                    <property name="title">Довга перерва (хвилини)</property>
+                    <property name="subtitle">Тривалість великої перерви</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_long_break_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">60</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">15</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_sessions_row">
+                    <property name="title">Сесій до великої перерви</property>
+                    <property name="subtitle">Кількість інтервалів роботи перед відпочинком</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_sessions_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">10</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">1</property>
+                        <property name="value">4</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.9 Нотатки -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Нотатки</property>
+                <property name="description">Шрифти для швидких стікерів на стільниці</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_notes_title_size_row">
+                    <property name="title">Розмір шрифту заголовка (px)</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_notes_title_size_adj">
+                        <property name="lower">10</property>
+                        <property name="upper">36</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">2</property>
+                        <property name="value">16</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_notes_content_size_row">
+                    <property name="title">Розмір шрифту тексту нотатки (px)</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_notes_content_size_adj">
+                        <property name="lower">10</property>
+                        <property name="upper">28</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">2</property>
+                        <property name="value">13</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.10 GitHub -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">GitHub віджет</property>
+                <property name="description">Графік активності контрибуцій та профіль</property>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_github_username_entry">
+                    <property name="title">Ім'я користувача GitHub</property>
+                    <property name="text"></property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_github_use_green">
+                    <property name="title">Фірмовий зелений стиль GitHub</property>
+                    <property name="subtitle">Використовувати автентичні зелені кольори для матриці комітів</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.11 Папки -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Лаунчер папок</property>
+                <property name="description">Швидкий доступ до директорій</property>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_folder_file_manager_entry">
+                    <property name="title">Файловий менеджер</property>
+                    <property name="text">nautilus</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_folder_show_names">
+                    <property name="title">Показувати підписи папок</property>
+                    <property name="subtitle">Відображати текстові назви під іконками</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.12 Екранний час -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Екранний час</property>
+                <property name="description">Моніторинг активності та використання додатків</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_screentime_retention_row">
+                    <property name="title">Зберігати історію (днів)</property>
+                    <property name="subtitle">Кількість днів збереження статистики активності</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_screentime_retention_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">30</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">7</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_screentime_show_nav_buttons">
+                    <property name="title">Кнопки перемикання днів</property>
+                    <property name="subtitle">Стрілки навігації по попередніх днях</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <!-- 2.13 Лава-лампа -->
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Лава-лампа</property>
+                <property name="description">Декоративний фізичний віджет</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_lava_use_accent">
+                    <property name="title">Використовувати акцентний колір</property>
+                    <property name="subtitle">Забарвлювати краплі лави в колір системного акценту</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+          </object>
+        </property>
+      </object>
+    </property>
+  </object>
+</child>
       </object>
     </property>
   </object>
