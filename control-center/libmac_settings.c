@@ -9000,7 +9000,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view);
 static gboolean update_panel_headerbar_idle_cb(gpointer user_data)
 {
     AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
-    if (split_view && ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) {
+    if (split_view && G_IS_OBJECT(split_view) && ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) {
         update_panel_headerbar(split_view);
     }
     return G_SOURCE_REMOVE;
@@ -9008,7 +9008,7 @@ static gboolean update_panel_headerbar_idle_cb(gpointer user_data)
 
 static void schedule_update_panel_headerbar(AdwNavigationSplitView *split_view)
 {
-    if (!split_view || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return;
+    if (!split_view || !G_IS_OBJECT(split_view) || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return;
     update_panel_headerbar(split_view);
     g_idle_add(update_panel_headerbar_idle_cb, split_view);
     g_timeout_add(50, update_panel_headerbar_idle_cb, split_view);
@@ -9060,9 +9060,9 @@ static void sync_sidebar_selection(AdwNavigationSplitView *split_view, const cha
 static void on_main_listbox_selected_row_changed(GtkListBox *box, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data)
 {
     AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
-    if (!box || !split_view) return;
+    if (!box || !split_view || !G_IS_OBJECT(split_view) || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return;
     GtkListBoxRow *row = gtk_list_box_get_selected_row(box);
-    if (!row) return;
+    if (!row || !G_IS_OBJECT(row)) return;
 
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
         return;
@@ -9078,7 +9078,7 @@ static void on_main_listbox_selected_row_changed(GtkListBox *box, GParamSpec *ps
 static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
 {
     AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
-    if (!split_view || !row) return;
+    if (!split_view || !row || !G_IS_OBJECT(row) || !G_IS_OBJECT(split_view) || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return;
 
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
         g_signal_stop_emission_by_name(box, "row-activated");
