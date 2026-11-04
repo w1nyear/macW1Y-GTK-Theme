@@ -990,9 +990,6 @@ export class WorkspaceIndicatorController {
         this._stateAdjustmentSignalId = 0;
         this._wsScrollAdj = null;
         this._wsScrollSignalId = 0;
-        this._prevLeftBoxYAlign = undefined;
-        this._prevRightBoxYAlign = undefined;
-        this._prevCenterBoxYAlign = undefined;
         this._spacesBar = new MacMissionControlSpacesBar();
 
         this._connect();
@@ -1134,21 +1131,6 @@ export class WorkspaceIndicatorController {
         this._overviewSignals = [];
 
         this._applyOverviewTransitionProgress(0.0);
-
-        if (Main.panel) {
-            if (Main.panel._leftBox && this._prevLeftBoxYAlign !== undefined) {
-                Main.panel._leftBox.y_align = this._prevLeftBoxYAlign;
-                this._prevLeftBoxYAlign = undefined;
-            }
-            if (Main.panel._rightBox && this._prevRightBoxYAlign !== undefined) {
-                Main.panel._rightBox.y_align = this._prevRightBoxYAlign;
-                this._prevRightBoxYAlign = undefined;
-            }
-            if (Main.panel._centerBox && this._prevCenterBoxYAlign !== undefined) {
-                Main.panel._centerBox.y_align = this._prevCenterBoxYAlign;
-                this._prevCenterBoxYAlign = undefined;
-            }
-        }
     }
 
     _applyOverviewTransitionProgress(progress) {
@@ -1205,30 +1187,9 @@ export class WorkspaceIndicatorController {
         Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
         Main.panel.height = PANEL_NORMAL_HEIGHT;
 
-        // Anchor center, left, and right boxes to START so top bar elements stay pinned to the top (y=0) and never shift to the bottom!
-        if (Main.panel) {
-            if (Main.panel._leftBox) {
-                if (this._prevLeftBoxYAlign === undefined) {
-                    this._prevLeftBoxYAlign = Main.panel._leftBox.y_align;
-                }
-                Main.panel._leftBox.y_align = Clutter.ActorAlign.START;
-            }
-            if (Main.panel._rightBox) {
-                if (this._prevRightBoxYAlign === undefined) {
-                    this._prevRightBoxYAlign = Main.panel._rightBox.y_align;
-                }
-                Main.panel._rightBox.y_align = Clutter.ActorAlign.START;
-            }
-            if (Main.panel._centerBox) {
-                if (this._prevCenterBoxYAlign === undefined) {
-                    this._prevCenterBoxYAlign = Main.panel._centerBox.y_align;
-                }
-                Main.panel._centerBox.y_align = Clutter.ActorAlign.START;
-
-                if (!this._spacesBar.get_parent()) {
-                    Main.panel._centerBox.add_child(this._spacesBar);
-                }
-            }
+        // Ensure spacesBar is placed in centerBox
+        if (Main.panel?._centerBox && !this._spacesBar.get_parent()) {
+            Main.panel._centerBox.add_child(this._spacesBar);
         }
 
         if (!this._wsScrollAdj) {
@@ -1360,21 +1321,6 @@ export class WorkspaceIndicatorController {
         Main.panel.remove_all_transitions();
         Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
         Main.panel.height = PANEL_NORMAL_HEIGHT;
-
-        if (Main.panel) {
-            if (Main.panel._leftBox && this._prevLeftBoxYAlign !== undefined) {
-                Main.panel._leftBox.y_align = this._prevLeftBoxYAlign;
-                this._prevLeftBoxYAlign = undefined;
-            }
-            if (Main.panel._rightBox && this._prevRightBoxYAlign !== undefined) {
-                Main.panel._rightBox.y_align = this._prevRightBoxYAlign;
-                this._prevRightBoxYAlign = undefined;
-            }
-            if (Main.panel._centerBox && this._prevCenterBoxYAlign !== undefined) {
-                Main.panel._centerBox.y_align = this._prevCenterBoxYAlign;
-                this._prevCenterBoxYAlign = undefined;
-            }
-        }
     }
 
     _connect() {

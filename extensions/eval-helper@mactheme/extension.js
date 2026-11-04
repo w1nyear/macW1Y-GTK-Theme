@@ -1928,24 +1928,25 @@ export default class EvalHelper extends Extension {
                     const origCompute = lm._origComputeWorkspacesBox || lm._computeWorkspacesBoxForState;
                     lm._origComputeWorkspacesBox = origCompute;
                     lm._computeWorkspacesBoxForState = function(state, box, ...rest) {
+                        const mon = Main.layoutManager.primaryMonitor;
                         if (state === 0 /* ControlsState.HIDDEN (Desktop) */) {
-                            const mon = Main.layoutManager.primaryMonitor;
                             const res = new Clutter.ActorBox();
                             res.set_origin(0, 0);
                             res.set_size(mon.width, mon.height);
                             return res;
                         }
                         if (state === 1 /* OverviewControls.ControlsState.WINDOW_PICKER */) {
-                            const baseBox = box || this._workAreaBox;
-                            const [w, h] = baseBox.get_size();
-                            // Enlarge workspace previews: compact top buffer clearing Spaces Bar, snug bottom buffer lowered close to Dock!
-                            const topBuffer = Math.max(84, Math.round(h * 0.088));
-                            const bottomBuffer = Math.max(8, Math.round(h * 0.01));
-                            const res = baseBox.copy();
-                            res.x1 = baseBox.x1 || 0;
-                            res.y1 = (baseBox.y1 || 0) + topBuffer;
-                            res.x2 = res.x1 + w;
-                            res.y2 = Math.max(res.y1 + 100, (baseBox.y1 || 0) + h - bottomBuffer);
+                            const workArea = this._workAreaBox || box;
+                            const startY = workArea?.y1 ?? 34;
+                            const endY = workArea?.y2 ?? (mon.height - 92);
+                            const availableH = endY - startY;
+                            const buffer = Math.max(20, Math.round(availableH * 0.026));
+
+                            const res = new Clutter.ActorBox();
+                            res.x1 = 0;
+                            res.y1 = startY + buffer;
+                            res.x2 = mon.width;
+                            res.y2 = endY - buffer;
                             return res;
                         }
                         return origCompute.call(this, state, box, ...rest);
