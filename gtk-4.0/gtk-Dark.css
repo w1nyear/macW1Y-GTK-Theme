@@ -4038,7 +4038,6 @@ scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider:active {
   margin: -8px -17px;
   min-width: 38px;
   min-height: 20px;
-  max-height: 20px;
   background-color: transparent;
   background-image: url("assets/scalable/slider-glass.svg");
   background-repeat: no-repeat;
@@ -4059,7 +4058,6 @@ scale.vertical:not(.marks-before):not(.marks-after) > trough > slider:active {
   margin: -17px -8px;
   min-width: 20px;
   min-height: 38px;
-  max-width: 20px;
   background-color: transparent;
   background-image: url("assets/scalable/slider-glass-vertical.svg");
   background-repeat: no-repeat;
@@ -11449,6 +11447,8 @@ window.mac-settings-window cclistrow > box.header {
   padding: 0px;
   border-spacing: 10px;
 }
+
+
 
 
 

@@ -1812,42 +1812,126 @@ headerbar windowcontrols button.maximize:active {{
 }}
 
 /* =========================================================================
- * 13. Scrolled Lists & Undershoot Clean Transparency (No Darkening Gradients)
+ * 13. Scrolled Lists & Undershoot Soft macOS Gradient Dissolve
  * ========================================================================= */
 undershoot,
-undershoot.top,
-undershoot.bottom,
-scrolledwindow undershoot,
-scrolledwindow > undershoot,
-scrolledwindow > undershoot.top,
-scrolledwindow > undershoot.bottom,
-scrolledwindow.undershoot-top > undershoot.top,
-scrolledwindow.undershoot-bottom > undershoot.bottom,
-preferencespage > scrolledwindow undershoot,
-preferencespage > scrolledwindow > undershoot.top,
-preferencespage > scrolledwindow > undershoot.bottom,
-preferencespage > scrolledwindow.undershoot-top > undershoot.top,
-preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
-window.mac-settings-window preferencespage > scrolledwindow > undershoot.bottom,
-window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow > undershoot.top,
-window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top,
-.sidebar-pane undershoot,
-.sidebar-pane undershoot.top,
-.sidebar-pane undershoot.bottom,
-.sidebar-pane scrolledwindow undershoot,
-.content-pane undershoot,
-.content-pane undershoot.top,
-.content-pane undershoot.bottom,
-.content-pane scrolledwindow undershoot {{
+scrolledwindow > undershoot {{
   min-height: 0px;
   background: none;
   background-color: transparent;
   background-image: none;
   border: none;
   box-shadow: none;
+}}
+
+toolbarview.undershoot-top scrolledwindow > undershoot.top,
+toolbarview.undershoot-top scrolledwindow undershoot.top,
+scrolledwindow.undershoot-top > undershoot.top,
+scrolledwindow.undershoot-top undershoot.top,
+navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
+.content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
+.content-pane scrolledwindow.undershoot-top > undershoot.top,
+preferencespage > scrolledwindow.undershoot-top > undershoot.top {{
+  min-height: 36px;
+  background: linear-gradient(to bottom,
+    var(--mac-window-bg, {c["window_bg"]}) 0%,
+    alpha(var(--mac-window-bg, {c["window_bg"]}), 0.85) 30%,
+    alpha(var(--mac-window-bg, {c["window_bg"]}), 0.40) 65%,
+    transparent 100%);
+  border: none;
+  box-shadow: none;
+}}
+
+window.mac-settings-window toolbarview.undershoot-top scrolledwindow > undershoot.top,
+window.mac-settings-window toolbarview.undershoot-top scrolledwindow undershoot.top,
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
+window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .panel-has-switcher toolbarview.undershoot-top scrolledwindow > undershoot.top,
+window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .panel-has-switcher scrolledwindow.undershoot-top > undershoot.top {{
+  min-height: 54px;
+  background: linear-gradient(to bottom,
+    var(--mac-window-bg, {c["window_bg"]}) 0%,
+    var(--mac-window-bg, {c["window_bg"]}) 32px,
+    alpha(var(--mac-window-bg, {c["window_bg"]}), 0.85) 42px,
+    alpha(var(--mac-window-bg, {c["window_bg"]}), 0.40) 48px,
+    transparent 54px);
+  border: none;
+  box-shadow: none;
+}}
+
+toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+toolbarview.undershoot-bottom scrolledwindow undershoot.bottom,
+scrolledwindow.undershoot-bottom > undershoot.bottom,
+scrolledwindow.undershoot-bottom undershoot.bottom,
+navigation-view-page toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+.content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+.content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+window.mac-settings-window .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom {{
+  min-height: 28px;
+  background: linear-gradient(to top,
+    var(--mac-window-bg, {c["window_bg"]}) 0%,
+    alpha(var(--mac-window-bg, {c["window_bg"]}), 0.85) 30%,
+    alpha(var(--mac-window-bg, {c["window_bg"]}), 0.40) 65%,
+    transparent 100%);
+  border: none;
+  box-shadow: none;
+}}
+
+.sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
+.sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top {{
+  min-height: 48px;
+  background: linear-gradient(to bottom,
+    var(--mac-sidebar-bg, {c["sidebar_bg"]}) 0%,
+    var(--mac-sidebar-bg, {c["sidebar_bg"]}) 28px,
+    alpha(var(--mac-sidebar-bg, {c["sidebar_bg"]}), 0.85) 38px,
+    alpha(var(--mac-sidebar-bg, {c["sidebar_bg"]}), 0.40) 44px,
+    transparent 48px);
+  border: none;
+  box-shadow: none;
+}}
+
+.sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+.sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom {{
+  min-height: 28px;
+  background: linear-gradient(to top,
+    var(--mac-sidebar-bg, {c["sidebar_bg"]}) 0%,
+    alpha(var(--mac-sidebar-bg, {c["sidebar_bg"]}), 0.85) 30%,
+    alpha(var(--mac-sidebar-bg, {c["sidebar_bg"]}), 0.40) 65%,
+    transparent 100%);
+  border: none;
+  box-shadow: none;
+}}
+
+dialog scrolledwindow undershoot,
+dialog-host scrolledwindow undershoot,
+window.dialog scrolledwindow undershoot,
+messagedialog scrolledwindow undershoot,
+scrolledwindow.frame undershoot,
+scrolledwindow > treeview ~ undershoot,
+scrolledwindow > textview ~ undershoot,
+treeview ~ undershoot,
+textview ~ undershoot,
+popover scrolledwindow undershoot,
+columnview ~ undershoot {{
+  background: none;
+  background-image: none;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  min-height: 0px;
+  min-width: 0px;
 }}
 """
     return css

@@ -16595,3 +16595,40 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Перевірено перехід у вбудовану субсторінку конфігуратора віджетів (`settings_widgets_configurator_subpage.png`).
    - `bin/mac-audit-sync check`: 100% PASS.
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+================================================================================
+ЕТАП 646: Відновлення м'якого градієнтного розмиття/зникнення списків у стилі macOS Tahoe для всіх програм та вікна Параметрів
+================================================================================
+
+1. Мета:
+   - Відновити ефект м'якого градієнтного розмиття (зникнення/dissolve) контенту у верхній та нижній частинах списків під час прокручування у програмах та вікні «Параметри» (розділи «Мас стилізація», «Програми» тощо).
+   - Усунути грубе відсікання елементів списку рівною жорсткою лінією під верхньою панеллю.
+   - Забезпечити повну кришталеву прозорість верхньої панелі у вихідному нескроленому стані (без паразитичних темних смуг).
+
+2. Причини дефекту:
+   - У `fixes4.css`, `macw1y-components.css` (згенерованому через `bin/mac-build-theme`) та у динамічній CSS-інжекції `libmac_settings.c` властивості `undershoot` для селекторів `toolbarview.undershoot-top`, `scrolledwindow.undershoot-top` та `preferencespage` були примусово скинуті в `min-height: 0px; background: none;`.
+   - Через це рушій Libadwaita / GTK4 під час прокручування списків у будь-яких програмах не малював градієнт розчинення, а контент обрізався по твердій межі контейнера.
+   - Крім того, у `gtk-4.0/gtk.css` та `gtk-Dark.css` залишалися непідтримувані властивості `max-height: 20px` та `max-width: 20px` у селекторах слайдерів, що генерувало попередження теми GTK4.
+
+3. Реалізовані зміни:
+   - У `bin/mac-build-theme` (секція 13) та `/usr/local/bin/mac-build-theme`:
+     * Переписано правила для `toolbarview.undershoot-top scrolledwindow > undershoot.top`, `scrolledwindow.undershoot-top > undershoot.top`, `preferencespage > scrolledwindow.undershoot-top > undershoot.top` та `.content-pane`.
+     * Встановлено плавне розчинення `min-height: 36px` з 4-точковою кубічною альфа-кривою (`@window_bg_color` -> transparent).
+     * Для вікна «Параметри» (`window.mac-settings-window`) встановлено `min-height: 54px`: перші 32px захищають кнопки навігації `< >` та назву вікна від налізання тексту, а 22px створюють м'який перехід у прозорість.
+     * Для нижнього краю (`undershoot-bottom`) встановлено `min-height: 28px` розчинення до нижнього краю вікна.
+     * Для бічної панелі (`.sidebar-pane`) задано градієнт на основі кольору сайдбара `@sidebar_bg_color`.
+     * Базовий стан без скролінгу збережено повністю прозорим (`min-height: 0px; background: none;`), що виключає появу смуг при відкритті вікон.
+     * Збережено захист від білого світіння у діалогах, деревах списків (GtkTreeView / Apport) та popover.
+   - У `gtk-4.0/fixes4.css`, `config/gtk-4.0/fixes4.css`, `~/.config/gtk-4.0/fixes4.css`:
+     * Синхронізовано аналогічні правила для всіх програм GTK4.
+     * Вилучено невалідні `max-height` та `max-width` у стилях `scale > trough > slider:active`.
+   - У `control-center/libmac_settings.c` та `gnome-control-center-overlay/libmac_settings.c`:
+     * Оновлено CSS-інжекцію під нові класи `toolbarview.undershoot-top` та `preferencespage`.
+     * Перекомпільовано `libmac_settings.so` та скопійовано у всі 6 локацій перевірки.
+   - Запущено централізований білдер `bin/mac-build-theme` для синхронізації стилів по всій системі.
+
+4. Результати верифікації:
+   - Знято знімок у вихідному стані (`settings_mac_styling_unscrolled.png`): верхня панель повністю прозора, чистий вигляд без темних смуг.
+   - Знято знімок під час прокручування (`settings_mac_styling_scrolled_v2.png`): картка шпалер та елементи списку плавно й естетично розчиняються під прозорою навігаційною панеллю у стилі macOS Tahoe.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 аудитів успішно).
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
