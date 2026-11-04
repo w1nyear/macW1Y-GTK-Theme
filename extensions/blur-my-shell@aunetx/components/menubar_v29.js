@@ -5499,7 +5499,8 @@ export const MenuBarController = class MenuBarController {
                         }
 
                         // Check if child is an inactive system indicator (which would create huge empty gaps)
-                        const isHiddenSystem = ['tiling-assistant', 'unattended_upgrade', 'livepatch', 'software_update', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y'].some(s => role.includes(s));
+                        const isHiddenSystem = ['tiling-assistant', 'unattended_upgrade', 'livepatch', 'software_update', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery', 'macScreenCast'].some(s => role.includes(s));
+                        const isAppIndicator = role.startsWith('appindicator-') && !isHiddenSystem;
                         const isSubVisible = (c) => {
                             if (!c.visible) return false;
                             if (c.get_first_child) {
@@ -5509,7 +5510,7 @@ export const MenuBarController = class MenuBarController {
                             return true;
                         };
 
-                        if (isHiddenSystem || !isSubVisible(child)) {
+                        if (isHiddenSystem || (!isAppIndicator && !isSubVisible(child))) {
                             child.visible = false;
                             child.style = 'margin: 0 !important; padding: 0 !important; width: 0 !important; min-width: 0 !important; -natural-hpadding: 0 !important; -minimum-hpadding: 0 !important;';
                             continue;
@@ -5659,7 +5660,8 @@ export const MenuBarController = class MenuBarController {
                         try { return v?.container === child || v === child; } catch (_e) { return false; }
                     })?.[0] || '';
 
-                    const isHiddenSystem = ['tiling-assistant', 'unattended_upgrade', 'livepatch', 'software_update', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y'].some(s => role.includes(s));
+                    const isHiddenSystem = ['tiling-assistant', 'unattended_upgrade', 'livepatch', 'software_update', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery', 'macScreenCast'].some(s => role.includes(s));
+                    const isAppIndicator = role.startsWith('appindicator-') && !isHiddenSystem;
 
                     const isSubVisible = (c) => {
                         if (!c.visible) return false;
@@ -5670,7 +5672,7 @@ export const MenuBarController = class MenuBarController {
                         return true;
                     };
 
-                    if (isHiddenSystem || !isSubVisible(child)) {
+                    if (isHiddenSystem || (!isAppIndicator && !isSubVisible(child))) {
                         child.visible = false;
                         child.hide();
                         child.style = 'margin: 0 !important; padding: 0 !important; width: 0 !important; min-width: 0 !important; max-width: 0 !important; -natural-hpadding: 0 !important; -minimum-hpadding: 0 !important;';
@@ -5679,8 +5681,13 @@ export const MenuBarController = class MenuBarController {
 
                     // Visible items in right box: containers have 0 margin, matching left box
                     child.visible = true;
+                    child.clip_to_allocation = false;
+                    child.width = -1;
+                    if (!child.get_transition('opacity')) {
+                        child.opacity = 255;
+                    }
                     if (child !== quickSettings?.container) {
-                        child.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important; min-height: 28px !important;';
+                        child.style = 'margin: 0 !important; padding: 0 4px !important; height: 28px !important; min-height: 28px !important; width: auto !important; min-width: 24px !important; max-width: none !important; -natural-hpadding: 4px !important; -minimum-hpadding: 4px !important;';
                     }
                     child.set_y_align(Clutter.ActorAlign.CENTER);
 
@@ -5770,61 +5777,42 @@ export const MenuBarController = class MenuBarController {
             if (!child || child._macAnimHooked) return;
             child._macAnimHooked = true;
 
-            // Wrap destroy to animate smooth fade-out and collapse
-            const origDestroy = child.destroy.bind(child);
-            child.destroy = function() {
-                if (this._macIsExiting || this._destroyed || !this.get_parent()) {
-                    origDestroy();
-                    return;
-                }
-                this._macIsExiting = true;
-                this.remove_all_transitions();
-                this.clip_to_allocation = true;
-                const curW = this.width > 0 ? this.width : (this.get_preferred_width(-1)[1] || 36);
-                this.width = curW;
-                this.ease({
-                    width: 0,
-                    opacity: 0,
-                    duration: 220,
-                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                    onComplete: () => {
-                        origDestroy();
-                    }
-                });
-            };
-
-            // If it's an initial child on startup, don't animate entrance
+            // If it's an initial child on startup, ensure full visibility without entrance animation
             if (isInitial) {
                 child._macEntranceDone = true;
+                child.clip_to_allocation = false;
+                child.width = -1;
+                child.opacity = 255;
                 return;
             }
 
-            // Animate entrance if visible
+            // Animate entrance if visible with smooth opacity fade-in (without clamping width or clipping)
             const triggerEntrance = () => {
-                if (!child || child._destroyed || child._macIsExiting || child._macEntranceDone)
+                if (!child || child._destroyed || child._macEntranceDone)
                     return;
                 child._macEntranceDone = true;
+                child.clip_to_allocation = false;
+                child.width = -1;
                 child.opacity = 0;
-                child.clip_to_allocation = true;
 
-                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                    if (!child || child._destroyed || child._macIsExiting)
-                        return GLib.SOURCE_REMOVE;
-                    let [, natW] = child.get_preferred_width(-1);
-                    if (natW <= 0) natW = 36;
-                    child.width = 0;
-                    child.ease({
-                        width: natW,
-                        opacity: 255,
-                        duration: 280,
-                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                        onComplete: () => {
-                            if (!child._destroyed && !child._macIsExiting) {
-                                child.width = -1;
-                            }
+                child.ease({
+                    opacity: 255,
+                    duration: 260,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        if (!child._destroyed) {
+                            child.opacity = 255;
+                            child.width = -1;
+                            child.clip_to_allocation = false;
                         }
-                    });
-                    return GLib.SOURCE_REMOVE;
+                    },
+                    onStopped: () => {
+                        if (!child._destroyed) {
+                            child.opacity = 255;
+                            child.width = -1;
+                            child.clip_to_allocation = false;
+                        }
+                    }
                 });
             };
 
@@ -5832,10 +5820,13 @@ export const MenuBarController = class MenuBarController {
                 triggerEntrance();
             } else {
                 const sigId = child.connect('notify::visible', () => {
-                    if (child.visible && !child._macEntranceDone && !child._macIsExiting) {
+                    if (child.visible && !child._macEntranceDone) {
                         triggerEntrance();
                     }
                 });
+                this._menubarAnimSignalIds.push({ actor: child, id: sigId });
+            }
+        };
                 this._menubarAnimSignalIds.push({ actor: child, id: sigId });
             }
         };

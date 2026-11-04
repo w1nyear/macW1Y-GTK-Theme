@@ -16264,3 +16264,50 @@ Task 636: Запобігання перехопленню фокусу та ав
        - `agRemainsOnTop: true`, `zenityRaised: false` (активне вікно залишається на вершині Z-стека, фонове вікно не підіймається).
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS (усі хеші збігаються).
    - `bin/mac-audit-sync check`: 100% PASS (5/5 аудитів пройдено).
+
+
+Task 637: Виправлення злипання, напівпрозорості та приховування іконок програм у меню-барі
+1. Запит користувача:
+   - «Виправи те що іконки програм зїжджено в право до системних програм і напів прозоре. Виправи щоб правильно відображалось бо видно до двох програм через те що воно «соромиться» і ховається»
+   - Долучено знімок екрана верхнього меню-бару, де з 4 запущених програм (Droidcam, Zoom, Telegram, Antigravity) відображалася лише одна-дві іконки, значок був напівпрозорим, стиснутим та зсунутим впритул праворуч до системного перемикача мови «ук».
+
+2. Причина несправності:
+   - У попередньому коміті анімацій меню-бару `_setupMenubarActorAnimations()` у `menubar_v29.js`:
+     * Обробник `hookChild` при додаванні нового індикатора примусово виставляв `child.opacity = 0`, `child.clip_to_allocation = true`, а в `GLib.idle_add` примусово скидав `child.width = 0` та запускав анімацію `child.ease({ width: natW, opacity: 255 })`.
+     * Одночасно сигнал `child-added` викликав `_scheduleReorder()`, який через 50 мс запускав перевпорядкування `_reorderRightBox()` та змінював положення акторів через `set_child_at_index()`.
+     * У Clutter зміна індексу/структури контейнера миттєво скасовувала (`aborted`) незавершену плавну анімацію `ease()`, через що зворотний виклик `onComplete` ніколи не спрацьовував:
+       - Ширина акторів назавжди зависала на проміжних стиснутих значеннях (0px, 24px, 27px) замість `-1` (природний розмір).
+       - Непрозорість зависала на напівпрозорих значеннях (`opacity: 139`, `opacity: 160`) або залишалася повністю невидимою (`opacity: 0` для Telegram).
+       - Прапорець `clip_to_allocation: true` обрізав графіку іконки навпіл.
+     * Крім того, перевірка `!isSubVisible(child)` помилково вважала активні індикатори програм (`appindicator-`) невидимими, якщо в момент додавання дочірній віджет піктограми ще очікував на отримання піксельної карти з D-Bus, і примусово призначала їм стиль `width: 0 !important; max-width: 0 !important;`.
+
+3. Реалізація та виправлення:
+   - extensions/blur-my-shell@aunetx/components/menubar_v29.js:
+     * Оновлено `_setupMenubarActorAnimations()`:
+       - Видалено деструктивне занулення ширини `child.width = 0` та обрізання `clip_to_allocation = true`.
+       - Анімацію появи реалізовано суто через плавний `opacity: 0 -> 255` (fade in) за збереження природного розміру контейнера `width = -1`.
+       - Додано захисний обробник `onStopped`: у разі переривання або зміни порядку контейнера індикатор гарантовано та миттєво отримує `opacity: 255`, `width: -1` та `clip_to_allocation: false`.
+       - Прибрано небезпечне перехоплення системного методу `child.destroy`.
+     * Оновлено `_reorderRightBox()` та `_fixIndicatorShapes()`:
+       - Додано класифікатор `isAppIndicator = role.startsWith('appindicator-') && !isHiddenSystem`. Справжні користувацькі індикатори програм захищені від передчасного приховування перевіркою `isSubVisible`.
+       - Для всіх видимих елементів правого боку меню-бару закріплено `child.clip_to_allocation = false`, `child.width = -1`, `opacity: 255` (якщо не триває активна анімація) та стиль `width: auto !important; min-width: 24px !important; max-width: none !important;`.
+       - До `isHiddenSystem` включено неактивні фонові системні рудименти (`macWifi`, `macBluetooth`, `macVolume`, `macBattery`, `macScreenCast`), що виключає появу пустих розривів перед перемикачем мови.
+   - Синхронізація та перевірка:
+     * Зміни синхронізовано до `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v29.js`.
+     * Оновлено контрольні суми SHA-256 у `config/extensions.lock.json`.
+     * Застосовано виправлення безпосередньо у запущеній оболонці GNOME Shell.
+
+4. Верифікація:
+   - Отримано координати та геометрію всіх піктограм правого боку меню-бару:
+     * `desktop-widgets` (x=1293, w=44, op=255, clip=false)
+     * `droidcam` (x=1337, w=44, op=255, clip=false)
+     * `zoom` (x=1381, w=44, op=255, clip=false)
+     * `TelegramDesktop` (x=1425, w=44, op=255, clip=false)
+     * `Antigravity` (x=1469, w=44, op=255, clip=false)
+     * `keyboard` [ук] (x=1513, w=50, op=255, clip=false)
+     * `battery` (x=1563, w=96, op=255, clip=false)
+     * `control center` (x=1659, w=44, op=255, clip=false)
+     * `dateMenu` (x=1703, w=217, op=255, clip=false)
+   - Усі 4 програми відображаються одночасно, на 100% непрозорі, не обрізані та займають повноцінне місце зліва від мовного індикатора.
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+   - `bin/mac-audit-sync check`: 100% PASS.
