@@ -93,8 +93,11 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         this._isExpanded = false;
         this._isHiding = false;
         this._isRenaming = false;
+        this._allowHover = false;
         this._activeRenameFinish = null;
+        this._expandTimeoutId = 0;
         this._collapseTimeoutId = 0;
+        this._stageMotionId = 0;
         this._labelButtons = [];
         this._labelWidgets = [];
         this._activeIdx = -1;
@@ -158,29 +161,116 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         this.add_child(this._thumbnailsBox);
 
         this.connect('notify::hover', () => {
-            if (this._isHiding || !Main.overview.visible || Main.overview._hiding) {
+            if (!this._allowHover || this._isHiding || !Main.overview.visible || Main.overview._hiding) {
                 return;
             }
             if (this.hover) {
-                if (this._collapseTimeoutId) {
-                    GLib.source_remove(this._collapseTimeoutId);
-                    this._collapseTimeoutId = 0;
-                }
-                this._expand();
+                this._requestExpand();
             } else {
-                if (this._isRenaming) return;
-                if (this._collapseTimeoutId) {
-                    GLib.source_remove(this._collapseTimeoutId);
-                }
-                this._collapseTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, () => {
-                    this._collapseTimeoutId = 0;
-                    if (!this.hover && !this._isRenaming) {
-                        this._collapse();
-                    }
-                    return GLib.SOURCE_REMOVE;
-                });
+                this._requestCollapse();
             }
         });
+
+        this._thumbnailsBox.connect('notify::hover', () => {
+            if (!this._allowHover || this._isHiding || !Main.overview.visible || Main.overview._hiding) {
+                return;
+            }
+            if (this._thumbnailsBox.hover) {
+                if (this._collapseTimeoutId) {
+                    GLib.source_remove(this._collapseTimeoutId);
+                    this._collapseTimeoutId = 0;
+                }
+            } else {
+                this._requestCollapse();
+            }
+        });
+    }
+
+    _isPointerInSpacesBar() {
+        try {
+            const [px, py] = global.get_pointer();
+            const [sx, sy] = this.get_transformed_position();
+            const [sw, sh] = this.get_transformed_size();
+            const top = 0;
+            const bottom = Math.max(sy + sh, this._isExpanded ? PANEL_EXPANDED_HEIGHT : PANEL_NORMAL_HEIGHT);
+            const left = Math.max(0, sx - 20);
+            const right = sx + sw + 20;
+            return (px >= left && px <= right && py >= top && py <= bottom);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    _requestExpand() {
+        if (!this._allowHover || this._isHiding || !Main.overview.visible || Main.overview._hiding) {
+            return;
+        }
+        if (this._isExpanded) return;
+
+        if (this._collapseTimeoutId) {
+            GLib.source_remove(this._collapseTimeoutId);
+            this._collapseTimeoutId = 0;
+        }
+
+        if (this._expandTimeoutId) return;
+
+        this._expandTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 180, () => {
+            this._expandTimeoutId = 0;
+            if (!this._allowHover || this._isHiding || !Main.overview.visible || Main.overview._hiding) {
+                return GLib.SOURCE_REMOVE;
+            }
+            if (this._isPointerInSpacesBar() || this.hover) {
+                this._expand();
+            }
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _requestCollapse() {
+        if (this._isRenaming) return;
+        if (!this._isExpanded) return;
+
+        if (this._expandTimeoutId) {
+            GLib.source_remove(this._expandTimeoutId);
+            this._expandTimeoutId = 0;
+        }
+
+        if (this._collapseTimeoutId) return;
+
+        this._collapseTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+            this._collapseTimeoutId = 0;
+            if (this._isRenaming) return GLib.SOURCE_REMOVE;
+            if (!this._isPointerInSpacesBar()) {
+                this._collapse();
+            }
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _startStageMotionTracking() {
+        if (this._stageMotionId) return;
+        this._stageMotionId = global.stage.connect('motion-event', (_actor, event) => {
+            if (!this._isExpanded || this._isRenaming) return Clutter.EVENT_PROPAGATE;
+            const [x, y] = event.get_coords();
+            if (y > PANEL_EXPANDED_HEIGHT + 10) {
+                this._requestCollapse();
+            } else if (this._isPointerInSpacesBar()) {
+                if (this._collapseTimeoutId) {
+                    GLib.source_remove(this._collapseTimeoutId);
+                    this._collapseTimeoutId = 0;
+                }
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+    }
+
+    _stopStageMotionTracking() {
+        if (this._stageMotionId) {
+            try {
+                global.stage.disconnect(this._stageMotionId);
+            } catch (_) {}
+            this._stageMotionId = 0;
+        }
     }
 
     _isDescendant(actor, ancestor) {
@@ -256,11 +346,11 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             btn.set_child(lbl);
 
             btn.connect('notify::hover', () => {
-                if (this._isHiding || !Main.overview.visible || Main.overview._hiding) {
+                if (!this._allowHover || this._isHiding || !Main.overview.visible || Main.overview._hiding) {
                     return;
                 }
                 if (btn.hover) {
-                    this._expand();
+                    this._requestExpand();
                     if (i !== this._activeIdx) {
                         btn.set_style('background-color: rgba(255, 255, 255, 0.12); border-radius: 6px; padding: 2px 12px; margin: 0 4px;');
                         lbl.set_style('font-size: 13px; font-weight: 500; color: #ffffff;');
@@ -268,6 +358,9 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
                 } else if (!btn.hover && i !== this._activeIdx) {
                     btn.set_style('background-color: transparent; border-radius: 6px; padding: 2px 12px; margin: 0 4px;');
                     lbl.set_style('font-size: 13px; font-weight: 400; color: rgba(255, 255, 255, 0.75);');
+                    if (!this._isPointerInSpacesBar()) {
+                        this._requestCollapse();
+                    }
                 }
             });
 
@@ -751,6 +844,11 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         if (this._isExpanded) return;
         this._isExpanded = true;
 
+        if (this._expandTimeoutId) {
+            GLib.source_remove(this._expandTimeoutId);
+            this._expandTimeoutId = 0;
+        }
+
         this._buildThumbnails();
         this._labelsBox.visible = false;
         this._thumbnailsBox.visible = true;
@@ -768,10 +866,22 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             duration: 220,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         });
+
+        this._startStageMotionTracking();
     }
 
     _collapse(instant = false) {
         if (this._isRenaming) return;
+        if (this._expandTimeoutId) {
+            GLib.source_remove(this._expandTimeoutId);
+            this._expandTimeoutId = 0;
+        }
+        if (this._collapseTimeoutId) {
+            GLib.source_remove(this._collapseTimeoutId);
+            this._collapseTimeoutId = 0;
+        }
+        this._stopStageMotionTracking();
+
         if (!this._isExpanded && !instant) return;
         this._isExpanded = false;
 
@@ -804,10 +914,16 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
 
     onOverviewHiding() {
         this._isHiding = true;
+        this._allowHover = false;
+        if (this._expandTimeoutId) {
+            GLib.source_remove(this._expandTimeoutId);
+            this._expandTimeoutId = 0;
+        }
         if (this._collapseTimeoutId) {
             GLib.source_remove(this._collapseTimeoutId);
             this._collapseTimeoutId = 0;
         }
+        this._stopStageMotionTracking();
         if (this._activeRenameFinish) {
             this._activeRenameFinish(true);
         }
@@ -817,10 +933,16 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
 
     destroy() {
         this._isHiding = true;
+        this._allowHover = false;
+        if (this._expandTimeoutId) {
+            GLib.source_remove(this._expandTimeoutId);
+            this._expandTimeoutId = 0;
+        }
         if (this._collapseTimeoutId) {
             GLib.source_remove(this._collapseTimeoutId);
             this._collapseTimeoutId = 0;
         }
+        this._stopStageMotionTracking();
         if (this._activeRenameFinish) {
             this._activeRenameFinish(true);
         }
@@ -1073,7 +1195,15 @@ export class WorkspaceIndicatorController {
 
         if (this._spacesBar) {
             this._spacesBar._isHiding = false;
+            this._spacesBar._allowHover = false;
+            this._spacesBar._collapse(true);
         }
+
+        // Unconditionally force panel to normal compact height (34px) upon entering overview
+        Main.layoutManager.panelBox.remove_all_transitions();
+        Main.panel.remove_all_transitions();
+        Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
+        Main.panel.height = PANEL_NORMAL_HEIGHT;
 
         // Anchor center, left, and right boxes to START so top bar elements stay pinned to the top (y=0) and never shift to the bottom!
         if (Main.panel) {
@@ -1158,12 +1288,14 @@ export class WorkspaceIndicatorController {
     _onOverviewShown() {
         if (this._spacesBar) {
             this._spacesBar._isHiding = false;
+            this._spacesBar._allowHover = true;
         }
         this._applyOverviewTransitionProgress(1.0);
     }
 
     _onOverviewHiding() {
         if (this._spacesBar) {
+            this._spacesBar._allowHover = false;
             this._spacesBar._isHiding = true;
             this._spacesBar.onOverviewHiding();
             this._spacesBar.reactive = false;
@@ -1219,8 +1351,9 @@ export class WorkspaceIndicatorController {
         this._applyOverviewTransitionProgress(0.0);
 
         if (this._spacesBar) {
+            this._spacesBar._allowHover = false;
             this._spacesBar._isHiding = false;
-            this._spacesBar.onOverviewHiding();
+            this._spacesBar._collapse(true);
         }
 
         Main.layoutManager.panelBox.remove_all_transitions();
