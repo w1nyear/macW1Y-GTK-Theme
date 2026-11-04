@@ -2188,28 +2188,19 @@ export default class EvalHelper extends Extension {
 
 
 
-        // Steal focus / automatically raise windows that demand attention or are newly opened
+        // macOS-compliant notification & urgency handling:
+        // Background apps (e.g. Telegram, messaging, Zoom) receiving new messages must NEVER
+        // automatically raise or steal focus over the active foreground window.
+        // We also suppress the redundant/annoying GNOME "is ready" banner because
+        // the app's real notification is already handled by the notification center,
+        // and urgency is indicated by the dock icon (bounce/badge).
         const wah = Main.windowAttentionHandler;
         if (wah && !this._origOnWindowDemandsAttention) {
             this._origOnWindowDemandsAttention = wah._onWindowDemandsAttention.bind(wah);
-            wah._onWindowDemandsAttention = function(display, window) {
-                if (!window || window.has_focus() || window.is_skip_taskbar())
-                    return;
-                Main.activateWindow(window);
+            wah._onWindowDemandsAttention = function(_display, _window) {
+                // Do not steal focus, do not raise windows, and do not show redundant "is ready" popups
             };
         }
-
-        this._demandsAttentionId = global.display.connect('window-demands-attention', (display, window) => {
-            if (window && !window.has_focus() && !window.is_skip_taskbar()) {
-                Main.activateWindow(window);
-            }
-        });
-
-        this._markedUrgentId = global.display.connect('window-marked-urgent', (display, window) => {
-            if (window && !window.has_focus() && !window.is_skip_taskbar()) {
-                Main.activateWindow(window);
-            }
-        });
 
         // Dynamic macOS Accent Color Synchronization
         const ACCENT_COLOR_MAP = {

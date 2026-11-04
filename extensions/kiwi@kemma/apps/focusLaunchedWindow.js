@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Automatically focuses newly launched windows instead of showing alerts.
-
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+// macOS-compliant window attention handling:
+// Prevents background windows (such as messaging apps) from stealing focus or auto-raising.
 
 export class FocusMyWindow {
     enable() {
-        this._handlerid = global.display.connect('window-demands-attention', (display, window) => {
-            Main.activateWindow(window);
-        });
+        // No-op: Do not steal focus or auto-raise windows on demands-attention.
+        this._handlerid = null;
     }
 
     disable() {
