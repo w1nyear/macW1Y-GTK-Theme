@@ -864,6 +864,7 @@ const BatteryWidget = GObject.registerClass({
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.CENTER,
         });
+        this._box.spacing = 0;
         this.add_child(this._box);
 
         this._label = new St.Label({
@@ -871,7 +872,9 @@ const BatteryWidget = GObject.registerClass({
             style_class: 'mac-battery-percentage',
             visible: false,
         });
+        this._label.clip_to_allocation = true;
         this._box.add_child(this._label);
+        this._lastShowPercentage = undefined;
 
         this._drawingArea = new St.DrawingArea({
             width: 27,
@@ -1053,15 +1056,61 @@ const BatteryWidget = GObject.registerClass({
                 showPercentage = this._interfaceSettings.get_boolean('show-battery-percentage');
         } catch (_e) {}
 
-        if (showPercentage) {
-            const pctText = `${Math.round(this._upowerDevice.percentage)}%`;
-            if (this._label.text !== pctText)
-                this._label.text = pctText;
-            if (!this._label.visible)
+        const pctText = `${Math.round(this._upowerDevice.percentage)}%`;
+        if (this._label.text !== pctText)
+            this._label.text = pctText;
+
+        const box = this._label.get_parent();
+        if (box && box.spacing !== 0)
+            box.spacing = 0;
+
+        if (this._lastShowPercentage === undefined) {
+            this._lastShowPercentage = showPercentage;
+            this._label.clip_to_allocation = true;
+            this._label.visible = showPercentage;
+            this._label.opacity = showPercentage ? 255 : 0;
+            this._label.margin_right = showPercentage ? 6 : 0;
+            this._label.width = -1;
+        } else if (this._lastShowPercentage !== showPercentage) {
+            this._lastShowPercentage = showPercentage;
+            this._label.remove_all_transitions();
+            this._label.clip_to_allocation = true;
+
+            if (showPercentage) {
                 this._label.visible = true;
-        } else {
-            if (this._label.visible)
-                this._label.visible = false;
+                this._label.opacity = 0;
+                this._label.width = 0;
+                this._label.margin_right = 0;
+
+                let [, natW] = this._label.get_preferred_width(-1);
+                if (natW <= 0) natW = 39;
+
+                this._label.ease({
+                    width: natW,
+                    margin_right: 6,
+                    opacity: 255,
+                    duration: 350,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    onComplete: () => {
+                        this._label.width = -1;
+                    }
+                });
+            } else {
+                const curW = this._label.width > 0 ? this._label.width : this._label.get_preferred_width(-1)[1];
+                this._label.width = curW;
+
+                this._label.ease({
+                    width: 0,
+                    margin_right: 0,
+                    opacity: 0,
+                    duration: 300,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    onComplete: () => {
+                        this._label.visible = false;
+                        this._label.width = -1;
+                    }
+                });
+            }
         }
 
         const isCharging = (
@@ -3057,6 +3106,9 @@ export const MenuBarController = class MenuBarController {
                     this._scheduleReorder();
             });
         }
+
+        // 9. Setup macOS-style fade in/fade out and slide animations for menubar icons
+        this._setupMenubarActorAnimations();
     }
 
     _setupKeyboardMenu() {
@@ -5386,7 +5438,7 @@ export const MenuBarController = class MenuBarController {
         const quickSettings = Main.panel.statusArea?.quickSettings;
 
         const isAlive = (actor) => {
-            if (!actor) return false;
+            if (!actor || actor._macIsExiting) return false;
             try {
                 if (Object.prototype.toString.call(actor).includes('DISPOSED')) return false;
                 const _ = actor.visible;
@@ -5397,7 +5449,7 @@ export const MenuBarController = class MenuBarController {
         };
 
         const ensureInRightBox = (actor) => {
-            if (!isAlive(actor)) return false;
+            if (!isAlive(actor) || actor._macIsExiting) return false;
             try {
                 if (!rightBox.contains(actor)) {
                     const parent = actor.get_parent ? actor.get_parent() : null;
@@ -5710,10 +5762,119 @@ export const MenuBarController = class MenuBarController {
         } catch (_e) {}
     }
 
+    _setupMenubarActorAnimations() {
+        this._cleanupMenubarActorAnimations();
+        this._menubarAnimSignalIds = [];
+
+        const hookChild = (child, isInitial = false) => {
+            if (!child || child._macAnimHooked) return;
+            child._macAnimHooked = true;
+
+            // Wrap destroy to animate smooth fade-out and collapse
+            const origDestroy = child.destroy.bind(child);
+            child.destroy = function() {
+                if (this._macIsExiting || this._destroyed || !this.get_parent()) {
+                    origDestroy();
+                    return;
+                }
+                this._macIsExiting = true;
+                this.remove_all_transitions();
+                this.clip_to_allocation = true;
+                const curW = this.width > 0 ? this.width : (this.get_preferred_width(-1)[1] || 36);
+                this.width = curW;
+                this.ease({
+                    width: 0,
+                    opacity: 0,
+                    duration: 220,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    onComplete: () => {
+                        origDestroy();
+                    }
+                });
+            };
+
+            // If it's an initial child on startup, don't animate entrance
+            if (isInitial) {
+                child._macEntranceDone = true;
+                return;
+            }
+
+            // Animate entrance if visible
+            const triggerEntrance = () => {
+                if (!child || child._destroyed || child._macIsExiting || child._macEntranceDone)
+                    return;
+                child._macEntranceDone = true;
+                child.opacity = 0;
+                child.clip_to_allocation = true;
+
+                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                    if (!child || child._destroyed || child._macIsExiting)
+                        return GLib.SOURCE_REMOVE;
+                    let [, natW] = child.get_preferred_width(-1);
+                    if (natW <= 0) natW = 36;
+                    child.width = 0;
+                    child.ease({
+                        width: natW,
+                        opacity: 255,
+                        duration: 280,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        onComplete: () => {
+                            if (!child._destroyed && !child._macIsExiting) {
+                                child.width = -1;
+                            }
+                        }
+                    });
+                    return GLib.SOURCE_REMOVE;
+                });
+            };
+
+            if (child.visible) {
+                triggerEntrance();
+            } else {
+                const sigId = child.connect('notify::visible', () => {
+                    if (child.visible && !child._macEntranceDone && !child._macIsExiting) {
+                        triggerEntrance();
+                    }
+                });
+                this._menubarAnimSignalIds.push({ actor: child, id: sigId });
+            }
+        };
+
+        if (Main.panel?._rightBox) {
+            Main.panel._rightBox.get_children().forEach(c => hookChild(c, true));
+            const rightId = Main.panel._rightBox.connect('child-added', (_box, child) => {
+                if (this.enabled) hookChild(child, false);
+            });
+            this._menubarAnimSignalIds.push({ actor: Main.panel._rightBox, id: rightId });
+        }
+
+        if (Main.panel?._leftBox) {
+            Main.panel._leftBox.get_children().forEach(c => hookChild(c, true));
+            const leftId = Main.panel._leftBox.connect('child-added', (_box, child) => {
+                if (this.enabled) hookChild(child, false);
+            });
+            this._menubarAnimSignalIds.push({ actor: Main.panel._leftBox, id: leftId });
+        }
+    }
+
+    _cleanupMenubarActorAnimations() {
+        if (this._menubarAnimSignalIds) {
+            for (const item of this._menubarAnimSignalIds) {
+                try {
+                    if (item.actor && !item.actor._destroyed) {
+                        item.actor.disconnect(item.id);
+                    }
+                } catch (_) {}
+            }
+            this._menubarAnimSignalIds = [];
+        }
+    }
+
     disable() {
         if (!this.enabled)
             return;
         this.enabled = false;
+        this._cleanupMenubarActorAnimations();
         if (globalThis._macNotificationCenter === this) {
             globalThis._macNotificationCenter = null;
         }

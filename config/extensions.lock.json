@@ -18,7 +18,7 @@
         "49",
         "50"
       ],
-      "sha256": "d1e0e1d0b5072438a68278242f40527411c3d254a6f062a6a3246d61e45776fe",
+      "sha256": "0941f05f21b7d59ddab17282af63d9a3646843df833b205583630647dabe2d91",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -29,7 +29,7 @@
       ],
       "has_custom_patches": true,
       "patch_description": "macOS Monterey style spotlight, apple menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
-      "last_verified": "2026-11-03",
+      "last_verified": "2026-11-04",
       "pinned_sha256": "d8ef9a8470529770cad00fecac30074e2043c871c3fde08d9051f78d2a7f8b21"
     },
     "blur-my-shell@aunetx": {
@@ -44,7 +44,7 @@
         "50",
         "51"
       ],
-      "sha256": "85bafbef3cdd13b81ed2364a24256a156022aaa59ffb40be52a320dcc168b9c3",
+      "sha256": "5bf27dac94851a112fbaa27ca0b6be6758d04f989b2cf7e329c4182bdd7557b6",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -55,7 +55,7 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
-      "last_verified": "2026-10-31",
+      "last_verified": "2026-11-04",
       "pinned_sha256": "85bafbef3cdd13b81ed2364a24256a156022aaa59ffb40be52a320dcc168b9c3"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
@@ -260,7 +260,7 @@
         "50",
         "51"
       ],
-      "sha256": "cd452922ac6bf3729e92c1683fabf6e9f97b9ecf455d37007a00d8c4ef40437a",
+      "sha256": "11696db0e8355279d75c935b28f690a77b906752219ebafa4e507d04989d0700",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -272,7 +272,7 @@
       ],
       "has_custom_patches": true,
       "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
-      "last_verified": "2026-11-02",
+      "last_verified": "2026-11-04",
       "integrity_hash": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f",
       "pinned_sha256": "cd452922ac6bf3729e92c1683fabf6e9f97b9ecf455d37007a00d8c4ef40437a"
     },

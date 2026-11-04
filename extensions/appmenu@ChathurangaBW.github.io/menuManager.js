@@ -488,11 +488,33 @@ const TopLevelMenuButton = GObject.registerClass(
             this._loadIcon(label);
             return;
         }
-        this._titleWidget.set_text(_(label));
+        const newText = _(label);
+        if (this._titleWidget) {
+            if (this._titleWidget.text !== newText) {
+                if (this._titleWidget.text) {
+                    this._titleWidget.remove_all_transitions();
+                    this._titleWidget.opacity = 0;
+                    this._titleWidget.set_text(newText);
+                    this._titleWidget.ease({
+                        opacity: 255,
+                        duration: 180,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    });
+                } else {
+                    this._titleWidget.set_text(newText);
+                }
+            }
+        }
     }
 
     _loadIcon(label) {
         if (!this._titleWidget || !label) return;
+        const iconChanged = (this._currentIconLabel !== undefined && this._currentIconLabel !== label);
+        this._currentIconLabel = label;
+        if (iconChanged) {
+            this._titleWidget.remove_all_transitions();
+            this._titleWidget.opacity = 0;
+        }
 
         if (label === 'Apple' || label === 'apple-logo' || label.toLowerCase().includes('apple')) {
             const appleFile = Gio.File.new_for_path(
@@ -501,6 +523,13 @@ const TopLevelMenuButton = GObject.registerClass(
                 this._titleWidget.set_icon_name(null);
                 this._titleWidget.set_gicon(Gio.FileIcon.new(appleFile));
                 this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 16);
+                if (iconChanged) {
+                    this._titleWidget.ease({
+                        opacity: 255,
+                        duration: 180,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    });
+                }
                 return;
             }
         }
@@ -509,6 +538,13 @@ const TopLevelMenuButton = GObject.registerClass(
             this._titleWidget.set_gicon(null);
             this._titleWidget.set_icon_name(label);
             this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 16);
+            if (iconChanged) {
+                this._titleWidget.ease({
+                    opacity: 255,
+                    duration: 180,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+            }
             return;
         }
 
@@ -523,6 +559,14 @@ const TopLevelMenuButton = GObject.registerClass(
             this._titleWidget.set_icon_name(label);
             this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 16);
         }
+        if (iconChanged) {
+            this._titleWidget.ease({
+                opacity: 255,
+                duration: 180,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        }
+    }
     }
 
     _setMenuOpenHandler(handler) {

@@ -156,6 +156,8 @@ function _onBatteryRepaint(area) {
     cr.$dispose();
 }
 
+let _batteryLastShowPercentage = undefined;
+
 function _syncBatteryPercentageVisibility() {
     if (!_batteryLabel && _batteryButton) {
         try {
@@ -179,7 +181,64 @@ function _syncBatteryPercentageVisibility() {
     } catch (_) {
         showPercentage = false;
     }
-    _batteryLabel.visible = showPercentage;
+
+    const box = _batteryLabel.get_parent();
+    if (box && box.spacing !== 0) {
+        box.spacing = 0;
+    }
+
+    if (_batteryLastShowPercentage === undefined) {
+        _batteryLastShowPercentage = showPercentage;
+        _batteryLabel.clip_to_allocation = true;
+        _batteryLabel.visible = showPercentage;
+        _batteryLabel.opacity = showPercentage ? 255 : 0;
+        _batteryLabel.margin_right = showPercentage ? 6 : 0;
+        _batteryLabel.width = -1;
+        return;
+    }
+
+    if (_batteryLastShowPercentage === showPercentage)
+        return;
+
+    _batteryLastShowPercentage = showPercentage;
+    _batteryLabel.remove_all_transitions();
+    _batteryLabel.clip_to_allocation = true;
+
+    if (showPercentage) {
+        _batteryLabel.visible = true;
+        _batteryLabel.opacity = 0;
+        _batteryLabel.width = 0;
+        _batteryLabel.margin_right = 0;
+
+        let [, natW] = _batteryLabel.get_preferred_width(-1);
+        if (natW <= 0) natW = 39;
+
+        _batteryLabel.ease({
+            width: natW,
+            margin_right: 6,
+            opacity: 255,
+            duration: 350,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                _batteryLabel.width = -1;
+            }
+        });
+    } else {
+        const curW = _batteryLabel.width > 0 ? _batteryLabel.width : _batteryLabel.get_preferred_width(-1)[1];
+        _batteryLabel.width = curW;
+
+        _batteryLabel.ease({
+            width: 0,
+            margin_right: 0,
+            opacity: 0,
+            duration: 300,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                _batteryLabel.visible = false;
+                _batteryLabel.width = -1;
+            }
+        });
+    }
 }
 
 function _openPowerSettings() {
