@@ -16095,3 +16095,28 @@ Task 624: Синхронізація анімації зникнення кон�
        `bpOpacity` та `bgOpacity` збігаються на 100% (255 -> 254 -> 239 -> 201 -> 144 -> 67 -> 20 -> 0).
        Екранна точка прив'язки [124.5, 32] ідеально утримує стрілку меню та панель.
      * Після завершення анімації: обидва актори чисто приховані (`visible = false`, `opacity = 0`, `scale = [1, 1]`, `pivot = [0, 0]`), жодних залишкових затемнень чи завислих елементів скла.
+
+
+Task 629: Оновлення підпису облікового запису користувача на «Акаунт» та вирівнювання кнопки розблокування («Розблокувати...») у банері параметрів:
+1. Запит користувача:
+   - «у параметрах кнопку керування у попередженням типу на фото розблокувати правіше розмісти з відсутпом щоб був як зверху і знизу поменше. а слово обліковий запис епл зміни просто на текст акаунт.»
+   - Долучено зображення: media_1793740221391_5827f0af.png (кнопка «Розблокувати...» усередині інфобанера параметрів блокування) та media_1793740270858_df1dd83e.png (підпис користувача «Обліковий запис Apple» у бічній панелі «Параметри»).
+
+2. Реалізація:
+   - Заміна підпису «Обліковий запис Apple» на «Акаунт»:
+     * Оновлено ключ `apple_account` у `config/i18n/translations.json` («Обліковий запис Apple» -> «Акаунт», en: «Account»).
+     * Оновлено структуру таблиці перекладів у `gnome-control-center-overlay/mac_i18n.h`, `control-center/mac_i18n.h`, `src/mac_i18n.h`.
+     * У сирцях бібліотеки ін'єкцій `gnome-control-center-overlay/libmac_settings.c` та `control-center/libmac_settings.c` замінено fallback `mac_tr("apple_account", "Обліковий запис Apple")` на `mac_tr("apple_account", "Акаунт")`.
+   - Вирівнювання кнопки розблокування («Розблокувати...») усередині пілюльного банера:
+     * Досліджено структуру `AdwBanner` та `CcPermissionInfobar`: кнопки всередині банера центрувалися в природній виділеній області, утворюючи правий зазор 14px при відступах зверху та знизу 2px.
+     * У CSS тем `macW1Y-Dark` (`gtk.css`, `gtk-dark.css`), `config/gtk-4.0/` (`gtk.css`, `gtk-Dark.css`), `gtk-4.0/`, `~/.config/gtk-4.0/`, `/usr/share/themes/macW1Y-Dark/` та в ін'єкційних CSS-стилях `libmac_settings.c` додано правило:
+       `window.mac-settings-window banner button, window.mac-settings-window adwbanner button, window.mac-settings-window infobar button, window.mac-settings-window .permission-infobar button { margin-right: -12px; }`
+       із дзеркальним `margin-left: -12px; margin-right: 0px;` для `:dir(rtl)`.
+     * Тепер відступ праворуч становить рівно 2.0px, абсолютно симетрично відповідаючи верхньому (2.0px) та нижньому (2.0px) відступам кнопки від краю капсули.
+   - Компіляція, синхронізація та аудит:
+     * Перекомпільовано бібліотеку `libmac_settings.so` та синхронізовано з усіма цільовими розташуваннями (`control-center/`, `gnome-control-center-overlay/`, `lib/`, `~/.local/lib/`, `/usr/lib/x86_64-linux-gnu/`, `/usr/local/lib/`, `/usr/share/mactheme/gnome-control-center-overlay/`).
+     * Запущено `bin/mac-build-theme` для синхронізації стилів.
+     * `bin/mac-audit-sync check`: 100% PASS.
+     * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+     * Створено та перевірено візуальні знімки (`account_header_live.png` та `banner_dark_rendered.png`).
+

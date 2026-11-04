@@ -136,9 +136,9 @@ static MacStylingData state = {
     .notification_tint = 20,
     .notification_shadow = 35,
 
-    .spotlight_blur = 1,
-    .spotlight_tint = 10,
-    .spotlight_shadow = 18,
+    .spotlight_blur = 25,
+    .spotlight_tint = 15,
+    .spotlight_shadow = 35,
 
     .blur_sigma = 31,
     .blur_tint = 29,
@@ -254,20 +254,22 @@ static void load_config(void) {
                 state.liquid_shadow = 49;
 
             /* Group 3: Spotlight */
-            if (json_object_has_member(obj, "spotlight_blur"))
-                state.spotlight_blur = (int)json_object_get_int_member(obj, "spotlight_blur");
-            else
-                state.spotlight_blur = 1;
+            if (json_object_has_member(obj, "spotlight_blur")) {
+                int val = (int)json_object_get_int_member(obj, "spotlight_blur");
+                state.spotlight_blur = (val <= 1) ? 25 : val;
+            } else {
+                state.spotlight_blur = 25;
+            }
 
             if (json_object_has_member(obj, "spotlight_tint"))
                 state.spotlight_tint = (int)json_object_get_int_member(obj, "spotlight_tint");
             else
-                state.spotlight_tint = 10;
+                state.spotlight_tint = 15;
 
             if (json_object_has_member(obj, "spotlight_shadow"))
                 state.spotlight_shadow = (int)json_object_get_int_member(obj, "spotlight_shadow");
             else
-                state.spotlight_shadow = 18;
+                state.spotlight_shadow = 35;
 
             /* Group 3: Blur */
             if (json_object_has_member(obj, "blur_sigma"))
@@ -761,17 +763,40 @@ static void schedule_liquid_glass_apply(void) {
     liquid_glass_timer_id = g_timeout_add(100, (GSourceFunc)apply_liquid_glass_cb, NULL);
 }
 
+static void apply_spotlight_settings(void) {
+    save_styling_json();
+    /* Notify GNOME Shell via D-Bus to reload spotlight styling in real-time */
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    if (bus) {
+        g_dbus_connection_call(bus,
+            "org.gnome.Shell",
+            "/org/gnome/Shell/Extensions/EvalHelper",
+            "org.gnome.Shell.Extensions.EvalHelper",
+            "SyncSpotlightStyling",
+            NULL,
+            NULL,
+            G_DBUS_CALL_FLAGS_NONE,
+            -1,
+            NULL,
+            NULL,
+            NULL);
+        g_object_unref(bus);
+    }
+}
+
 static gboolean apply_spotlight_cb(gpointer user_data) {
     (void)user_data;
     spotlight_timer_id = 0;
-    save_styling_json();
+    apply_spotlight_settings();
     return G_SOURCE_REMOVE;
 }
 
 static void schedule_spotlight_apply(void) {
-    if (spotlight_timer_id == 0) {
-        spotlight_timer_id = g_timeout_add(60, (GSourceFunc)apply_spotlight_cb, NULL);
+    if (spotlight_timer_id != 0) {
+        g_source_remove(spotlight_timer_id);
+        spotlight_timer_id = 0;
     }
+    spotlight_timer_id = g_timeout_add(50, (GSourceFunc)apply_spotlight_cb, NULL);
 }
 
 static guint dock_timer_id = 0;
@@ -6008,11 +6033,14 @@ static void find_headerbars_recursive(GtkWidget *widget, GList **list)
     }
 }
 
+static AdwNavigationSplitView *g_last_split_view = NULL;
+
 static void find_navigation_split_view(GtkWidget *widget, AdwNavigationSplitView **split_view)
 {
     if (!widget || *split_view) return;
     if (ADW_IS_NAVIGATION_SPLIT_VIEW(widget)) {
         *split_view = ADW_NAVIGATION_SPLIT_VIEW(widget);
+        g_last_split_view = *split_view;
         return;
     }
     for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
@@ -6759,11 +6787,531 @@ static GtkWidget *get_mac_styling_page(void)
     return mac_styling_page;
 }
 
+/* ========================================================================= */
+/* Screenshot & Screencast Settings Panel                                    */
+/* ========================================================================= */
+
+typedef struct {
+    int image_format;        /* 0=PNG, 1=JPEG, 2=WebP */
+    int image_quality;       /* 70 - 100 */
+    gboolean show_cursor;    /* TRUE/FALSE */
+    gboolean shutter_sound;  /* TRUE/FALSE */
+    int timer_delay;         /* 0=0s, 1=3s, 2=5s, 3=10s */
+
+    int video_container;     /* 0=MP4, 1=WebM, 2=MKV */
+    int video_codec;         /* 0=H.264, 1=VP9, 2=AV1 */
+    int video_fps;           /* 0=60, 1=30 */
+    gboolean screencast_cursor; /* TRUE/FALSE */
+    gboolean record_audio;   /* TRUE/FALSE */
+
+    gboolean processing_enabled; /* TRUE/FALSE */
+    int processing_target;       /* 0=native, 1=1080p, 2=2k, 3=4k */
+    int processing_algorithm;    /* 0=lanczos, 1=bicubic, 2=unsharp */
+    int processing_scope;        /* 0=both, 1=screenshots, 2=screencasts */
+    gboolean keep_original;      /* TRUE/FALSE */
+} MacScreenshotData;
+
+static MacScreenshotData scr_state = {
+    .image_format = 0,
+    .image_quality = 95,
+    .show_cursor = TRUE,
+    .shutter_sound = TRUE,
+    .timer_delay = 0,
+    .video_container = 0,
+    .video_codec = 0,
+    .video_fps = 0,
+    .screencast_cursor = TRUE,
+    .record_audio = FALSE,
+    .processing_enabled = TRUE,
+    .processing_target = 2,
+    .processing_algorithm = 0,
+    .processing_scope = 0,
+    .keep_original = FALSE
+};
+
+static int scr_in_init = 0;
+
+static char *get_screenshot_json_path(void) {
+    const char *home = g_get_home_dir();
+    if (!home) return NULL;
+    return g_build_filename(home, ".config", "mac-styling", "screenshot.json", NULL);
+}
+
+static void load_screenshot_config(void) {
+    char *path = get_screenshot_json_path();
+    if (!path || !g_file_test(path, G_FILE_TEST_EXISTS)) {
+        g_free(path);
+        return;
+    }
+    JsonParser *parser = json_parser_new();
+    GError *error = NULL;
+    if (json_parser_load_from_file(parser, path, &error)) {
+        JsonNode *root = json_parser_get_root(parser);
+        if (root && JSON_NODE_HOLDS_OBJECT(root)) {
+            JsonObject *obj = json_node_get_object(root);
+            if (json_object_has_member(obj, "image_format"))
+                scr_state.image_format = (int)json_object_get_int_member(obj, "image_format");
+            if (json_object_has_member(obj, "image_quality"))
+                scr_state.image_quality = (int)json_object_get_int_member(obj, "image_quality");
+            if (json_object_has_member(obj, "show_cursor"))
+                scr_state.show_cursor = json_object_get_boolean_member(obj, "show_cursor");
+            if (json_object_has_member(obj, "shutter_sound"))
+                scr_state.shutter_sound = json_object_get_boolean_member(obj, "shutter_sound");
+            if (json_object_has_member(obj, "timer_delay"))
+                scr_state.timer_delay = (int)json_object_get_int_member(obj, "timer_delay");
+
+            if (json_object_has_member(obj, "video_container"))
+                scr_state.video_container = (int)json_object_get_int_member(obj, "video_container");
+            if (json_object_has_member(obj, "video_codec"))
+                scr_state.video_codec = (int)json_object_get_int_member(obj, "video_codec");
+            if (json_object_has_member(obj, "video_fps"))
+                scr_state.video_fps = (int)json_object_get_int_member(obj, "video_fps");
+            if (json_object_has_member(obj, "screencast_cursor"))
+                scr_state.screencast_cursor = json_object_get_boolean_member(obj, "screencast_cursor");
+            if (json_object_has_member(obj, "record_audio"))
+                scr_state.record_audio = json_object_get_boolean_member(obj, "record_audio");
+
+            if (json_object_has_member(obj, "processing_enabled"))
+                scr_state.processing_enabled = json_object_get_boolean_member(obj, "processing_enabled");
+            if (json_object_has_member(obj, "processing_target"))
+                scr_state.processing_target = (int)json_object_get_int_member(obj, "processing_target");
+            if (json_object_has_member(obj, "processing_algorithm"))
+                scr_state.processing_algorithm = (int)json_object_get_int_member(obj, "processing_algorithm");
+            if (json_object_has_member(obj, "processing_scope"))
+                scr_state.processing_scope = (int)json_object_get_int_member(obj, "processing_scope");
+            if (json_object_has_member(obj, "keep_original"))
+                scr_state.keep_original = json_object_get_boolean_member(obj, "keep_original");
+        }
+    }
+    if (error) g_error_free(error);
+    g_object_unref(parser);
+    g_free(path);
+}
+
+static void save_screenshot_config(void) {
+    char *path = get_screenshot_json_path();
+    if (!path) return;
+    char *dir = g_path_get_dirname(path);
+    g_mkdir_with_parents(dir, 0755);
+    g_free(dir);
+
+    char *json = g_strdup_printf(
+        "{\n"
+        "  \"image_format\": %d,\n"
+        "  \"image_quality\": %d,\n"
+        "  \"show_cursor\": %s,\n"
+        "  \"shutter_sound\": %s,\n"
+        "  \"timer_delay\": %d,\n"
+        "  \"video_container\": %d,\n"
+        "  \"video_codec\": %d,\n"
+        "  \"video_fps\": %d,\n"
+        "  \"screencast_cursor\": %s,\n"
+        "  \"record_audio\": %s,\n"
+        "  \"processing_enabled\": %s,\n"
+        "  \"processing_target\": %d,\n"
+        "  \"processing_algorithm\": %d,\n"
+        "  \"processing_scope\": %d,\n"
+        "  \"keep_original\": %s\n"
+        "}\n",
+        scr_state.image_format,
+        scr_state.image_quality,
+        scr_state.show_cursor ? "true" : "false",
+        scr_state.shutter_sound ? "true" : "false",
+        scr_state.timer_delay,
+        scr_state.video_container,
+        scr_state.video_codec,
+        scr_state.video_fps,
+        scr_state.screencast_cursor ? "true" : "false",
+        scr_state.record_audio ? "true" : "false",
+        scr_state.processing_enabled ? "true" : "false",
+        scr_state.processing_target,
+        scr_state.processing_algorithm,
+        scr_state.processing_scope,
+        scr_state.keep_original ? "true" : "false"
+    );
+
+    g_file_set_contents(path, json, -1, NULL);
+    g_free(json);
+    g_free(path);
+}
+
+G_MODULE_EXPORT void init_screenshot_format(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.image_format);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screenshot_format_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.image_format = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screenshot_quality(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    gtk_range_set_value(GTK_RANGE(widget), (double)scr_state.image_quality);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screenshot_quality_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.image_quality = (int)lround(gtk_range_get_value(GTK_RANGE(widget)));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screenshot_cursor(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.show_cursor);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screenshot_cursor_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.show_cursor = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screenshot_sound(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.shutter_sound);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screenshot_sound_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.shutter_sound = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screenshot_delay(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.timer_delay);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screenshot_delay_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.timer_delay = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screencast_container(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.video_container);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screencast_container_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.video_container = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screencast_codec(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.video_codec);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screencast_codec_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.video_codec = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screencast_fps(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.video_fps);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screencast_fps_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.video_fps = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screencast_cursor(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.screencast_cursor);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screencast_cursor_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.screencast_cursor = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_screencast_audio(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.record_audio);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_screencast_audio_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.record_audio = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_processing_enabled(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.processing_enabled);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_processing_enabled_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.processing_enabled = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_processing_resolution(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.processing_target);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_processing_resolution_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.processing_target = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_processing_scope(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.processing_scope);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_processing_scope_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.processing_scope = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_processing_algorithm(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), scr_state.processing_algorithm);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_processing_algorithm_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.processing_algorithm = (int)adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void init_processing_keep_original(void *widget, gpointer data) {
+    (void)data;
+    load_screenshot_config();
+    scr_in_init = 1;
+    adw_switch_row_set_active(ADW_SWITCH_ROW(widget), scr_state.keep_original);
+    scr_in_init = 0;
+}
+
+G_MODULE_EXPORT void on_processing_keep_original_changed(void *widget, gpointer data) {
+    (void)data;
+    if (scr_in_init) return;
+    scr_state.keep_original = adw_switch_row_get_active(ADW_SWITCH_ROW(widget));
+    save_screenshot_config();
+}
+
+G_MODULE_EXPORT void on_open_screenshots_folder_clicked(void *widget, gpointer data) {
+    (void)widget; (void)data;
+    const char *home = g_get_home_dir();
+    if (!home) return;
+    char *dir = g_build_filename(home, "Зображення", "Знімки екрана", NULL);
+    g_mkdir_with_parents(dir, 0755);
+    char *cmd = g_strdup_printf("xdg-open '%s' 2>/dev/null &", dir);
+    g_spawn_command_line_async(cmd, NULL);
+    g_free(cmd);
+    g_free(dir);
+}
+
+G_MODULE_EXPORT void on_open_screencasts_folder_clicked(void *widget, gpointer data) {
+    (void)widget; (void)data;
+    const char *home = g_get_home_dir();
+    if (!home) return;
+    char *dir = g_build_filename(home, "Відео", "Трансляції з екрана", NULL);
+    g_mkdir_with_parents(dir, 0755);
+    char *cmd = g_strdup_printf("xdg-open '%s' 2>/dev/null &", dir);
+    g_spawn_command_line_async(cmd, NULL);
+    g_free(cmd);
+    g_free(dir);
+}
+
+G_MODULE_EXPORT void on_reset_screenshot_defaults_clicked(void *widget, gpointer data) {
+    (void)widget; (void)data;
+    scr_state.image_format = 0;
+    scr_state.image_quality = 95;
+    scr_state.show_cursor = TRUE;
+    scr_state.shutter_sound = TRUE;
+    scr_state.timer_delay = 0;
+    scr_state.video_container = 0;
+    scr_state.video_codec = 0;
+    scr_state.video_fps = 0;
+    scr_state.screencast_cursor = TRUE;
+    scr_state.record_audio = FALSE;
+    scr_state.processing_enabled = TRUE;
+    scr_state.processing_target = 2;
+    scr_state.processing_algorithm = 0;
+    scr_state.processing_scope = 0;
+    scr_state.keep_original = FALSE;
+    save_screenshot_config();
+}
+
+static GtkWidget *get_screenshot_page(void)
+{
+    static GtkWidget *screenshot_page = NULL;
+    if (screenshot_page) return screenshot_page;
+
+    GtkBuilder *builder = gtk_builder_new();
+    const char *overlay_path = "/usr/share/mactheme/gnome-control-center-overlay/cc-screenshot-panel.ui";
+    char *user_path = NULL;
+    const char *home = g_get_home_dir();
+    if (home) {
+        user_path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "cc-screenshot-panel.ui", NULL);
+    }
+    const char *local_path = "/home/vitaliy/MACTHEMEFILES/control-center/cc-screenshot-panel.ui";
+
+    const char *path_to_use = NULL;
+    if (g_file_test(overlay_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = overlay_path;
+    } else if (user_path && g_file_test(user_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = user_path;
+    } else if (g_file_test(local_path, G_FILE_TEST_EXISTS)) {
+        path_to_use = local_path;
+    }
+
+    GError *error = NULL;
+    gboolean loaded = FALSE;
+    if (path_to_use) {
+        loaded = gtk_builder_add_from_file(builder, path_to_use, &error);
+    }
+    if (user_path) g_free(user_path);
+
+    if (loaded) {
+        screenshot_page = GTK_WIDGET(gtk_builder_get_object(builder, "screenshot_page"));
+        if (screenshot_page) {
+            g_object_ref(screenshot_page);
+        }
+    } else {
+        if (error) {
+            g_warning("macW1Y: Failed to load cc-screenshot-panel.ui: %s", error->message);
+            g_error_free(error);
+        }
+    }
+    g_object_unref(builder);
+    return screenshot_page;
+}
+
+static void schedule_update_panel_headerbar(AdwNavigationSplitView *split_view);
+
+G_MODULE_EXPORT void on_screenshot_row_clicked(GtkWidget *widget, gpointer user_data)
+{
+    (void)user_data;
+    AdwNavigationView *nv = NULL;
+    if (widget) {
+        GtkWidget *ancestor = gtk_widget_get_ancestor(widget, ADW_TYPE_NAVIGATION_VIEW);
+        if (ancestor) nv = ADW_NAVIGATION_VIEW(ancestor);
+    }
+    if (!nv && g_last_split_view) {
+        AdwNavigationPage *cp = adw_navigation_split_view_get_content(g_last_split_view);
+        if (cp) {
+            GList *nav_views = NULL;
+            find_navigation_views(GTK_WIDGET(cp), &nav_views);
+            if (nav_views) {
+                nv = ADW_NAVIGATION_VIEW(nav_views->data);
+                g_list_free(nav_views);
+            }
+        }
+    }
+    if (nv) {
+        if (!adw_navigation_view_find_page(nv, "screenshot")) {
+            GtkWidget *sp = get_screenshot_page();
+            if (sp) {
+                adw_navigation_view_add(nv, ADW_NAVIGATION_PAGE(sp));
+            }
+        }
+        adw_navigation_view_push_by_tag(nv, "screenshot");
+        if (g_last_split_view) {
+            schedule_update_panel_headerbar(g_last_split_view);
+        }
+    }
+}
+
 
 static void init_mac_settings_css(void) {
     static gboolean css_inited = FALSE;
     if (css_inited) return;
     css_inited = TRUE;
+
+    /* Sync slider glass SVGs to active accent color */
+    GSettingsSchemaSource *source = g_settings_schema_source_get_default();
+    if (source) {
+        GSettingsSchema *schema = g_settings_schema_source_lookup(source, "org.gnome.desktop.interface", TRUE);
+        if (schema) {
+            GSettings *iface_settings = g_settings_new("org.gnome.desktop.interface");
+            if (iface_settings) {
+                gchar *accent = g_settings_get_string(iface_settings, "accent-color");
+                if (accent) {
+                    char *argv[] = {
+                        "/home/vitaliy/MACTHEMEFILES/bin/mac-generate-slider-glass.py",
+                        accent,
+                        NULL
+                    };
+                    g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+                    g_free(accent);
+                }
+                g_object_unref(iface_settings);
+            }
+            g_settings_schema_unref(schema);
+        }
+    }
 
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
@@ -6976,6 +7524,19 @@ static void init_mac_settings_css(void) {
         "  border-radius: 9999px; "
         "  min-height: 24px; "
         "  padding: 2px 14px; "
+        "} "
+        "window.mac-settings-window banner button, "
+        "window.mac-settings-window adwbanner button, "
+        "window.mac-settings-window infobar button, "
+        "window.mac-settings-window .permission-infobar button { "
+        "  margin-right: -12px; "
+        "} "
+        "window.mac-settings-window banner button:dir(rtl), "
+        "window.mac-settings-window adwbanner button:dir(rtl), "
+        "window.mac-settings-window infobar button:dir(rtl), "
+        "window.mac-settings-window .permission-infobar button:dir(rtl) { "
+        "  margin-left: -12px; "
+        "  margin-right: 0px; "
         "} "
         "window.mac-settings-window banner button label, "
         "window.mac-settings-window adwbanner button label, "
@@ -7706,29 +8267,54 @@ static void init_mac_settings_css(void) {
         "  background-image: none; "
         "  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); "
         "} "
-        "window.mac-settings-window switch:active > slider, "
-        "window.mac-settings-window switch > slider:active, "
-        "window.mac-settings-window switch:checked:active > slider, "
-        "window.mac-settings-window switch:checked > slider:active { "
-        "  min-width: 32px; "
-        "  min-height: 22px; "
-        "  margin: 1px; "
-        "  background-color: transparent; "
-        "  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg'); "
-        "  background-repeat: no-repeat; "
-        "  background-size: 100% 100%; "
-        "  border: none; "
-        "  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.20); "
+        "window.mac-settings-window switch:not(:checked):active > slider, "
+        "window.mac-settings-window switch:not(:checked) > slider:active, "
+        "window.mac-settings-window switch:not(:checked):focus > slider { "
+        "  min-width: 26px !important; "
+        "  max-width: 26px !important; "
+        "  min-height: 20px !important; "
+        "  max-height: 20px !important; "
+        "  margin: 2px 1px !important; "
+        "  border-radius: 9999px !important; "
+        "  background-color: #d1d1d6 !important; "
+        "  background-image: none !important; "
+        "  border: 1px solid rgba(0, 0, 0, 0.15) !important; "
+        "  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28) !important; "
         "  transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1), "
-        "              min-height 100ms cubic-bezier(0, 0, 0.2, 1), "
         "              margin 100ms cubic-bezier(0, 0, 0.2, 1), "
-        "              background-image 100ms ease-in, "
+        "              background-color 100ms ease-in, "
         "              box-shadow 100ms cubic-bezier(0, 0, 0.2, 1); "
         "} "
-        "window.mac-settings-window scale { "
+        "window.mac-settings-window switch:checked:active > slider, "
+        "window.mac-settings-window switch:checked > slider:active, "
+        "window.mac-settings-window switch:checked:focus > slider { "
+        "  min-width: 26px !important; "
+        "  max-width: 26px !important; "
+        "  min-height: 20px !important; "
+        "  max-height: 20px !important; "
+        "  margin: 2px 1px !important; "
+        "  border-radius: 9999px !important; "
+        "  background-color: @accent_bg_color !important; "
+        "  background-image: none !important; "
+        "  border: 2px solid #ffffff !important; "
+        "  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important; "
+        "  transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1), "
+        "              margin 100ms cubic-bezier(0, 0, 0.2, 1), "
+        "              background-color 100ms ease-in, "
+        "              box-shadow 100ms cubic-bezier(0, 0, 0.2, 1); "
+        "} "
+        "window.mac-settings-window scale, "
+        "window.mac-settings-window scale.horizontal { "
         "  min-height: 24px; "
         "  min-width: 24px; "
-        "  padding: 4px; "
+        "  padding: 2px 0px; "
+        "  margin: 0px; "
+        "} "
+        "window.mac-settings-window scale > value { "
+        "  font-size: 11px; "
+        "  margin: 0px; "
+        "  padding: 0px; "
+        "  color: rgba(255, 255, 255, 0.45); "
         "} "
         "window.mac-settings-window scale > trough { "
         "  min-height: 4px; "
@@ -7747,51 +8333,92 @@ static void init_mac_settings_css(void) {
         "  box-shadow: none; "
         "} "
         "window.mac-settings-window scale.horizontal > trough > slider, "
-        "window.mac-settings-window scale > trough > slider { "
-        "  min-width: 20px; "
-        "  min-height: 20px; "
-        "  margin: -8px -10px; "
-        "  border-radius: 9999px; "
-        "  background-color: #ffffff; "
-        "  background-image: none; "
-        "  border: 1px solid rgba(0, 0, 0, 0.10); "
-        "  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.12); "
-        "  transition: min-width 220ms cubic-bezier(0.16, 1, 0.3, 1), "
-        "              min-height 220ms cubic-bezier(0.16, 1, 0.3, 1), "
-        "              margin 220ms cubic-bezier(0.16, 1, 0.3, 1), "
-        "              background-color 220ms cubic-bezier(0.16, 1, 0.3, 1), "
-        "              background-image 220ms cubic-bezier(0.16, 1, 0.3, 1), "
-        "              box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1), "
-        "              border 220ms cubic-bezier(0.16, 1, 0.3, 1); "
+        "window.mac-settings-window scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider, "
+        "window.mac-settings-window scale.horizontal.marks-before > trough > slider, "
+        "window.mac-settings-window scale.horizontal.marks-after > trough > slider, "
+        "window.mac-settings-window scale.horizontal slider, "
+        "window.mac-settings-window scale > trough > slider, "
+        "window.mac-settings-window scale slider { "
+        "  min-width: 20px !important; "
+        "  min-height: 20px !important; "
+        "  max-width: 20px !important; "
+        "  max-height: 20px !important; "
+        "  margin: -8px -10px !important; "
+        "  border-radius: 9999px !important; "
+        "  background-color: #ffffff !important; "
+        "  background-image: none !important; "
+        "  border: 1px solid rgba(0, 0, 0, 0.12) !important; "
+        "  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.12) !important; "
+        "  outline: none !important; "
+        "  transform: none !important; "
+        "  transition: box-shadow 150ms ease, border-color 150ms ease !important; "
         "} "
         "window.mac-settings-window scale.horizontal > trough > slider:hover, "
-        "window.mac-settings-window scale > trough > slider:hover { "
-        "  background-color: #ffffff; "
-        "  border-color: rgba(0, 0, 0, 0.12); "
-        "  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 3px 10px rgba(0, 0, 0, 0.15); "
+        "window.mac-settings-window scale.horizontal.marks-before > trough > slider:hover, "
+        "window.mac-settings-window scale.horizontal.marks-after > trough > slider:hover, "
+        "window.mac-settings-window scale.horizontal slider:hover, "
+        "window.mac-settings-window scale > trough > slider:hover, "
+        "window.mac-settings-window scale slider:hover { "
+        "  min-width: 20px !important; "
+        "  min-height: 20px !important; "
+        "  max-width: 20px !important; "
+        "  max-height: 20px !important; "
+        "  margin: -8px -10px !important; "
+        "  background-color: #ffffff !important; "
+        "  background-image: none !important; "
+        "  border: 1px solid rgba(0, 0, 0, 0.15) !important; "
+        "  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28), 0 3px 8px rgba(0, 0, 0, 0.16) !important; "
         "} "
         "window.mac-settings-window scale.horizontal > trough > slider:active, "
-        "window.mac-settings-window scale > trough > slider:active { "
-        "  min-width: 42px; "
-        "  min-height: 28px; "
-        "  margin: -12px -15px; "
-        "  background-color: transparent; "
-        "  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg'); "
-        "  background-repeat: no-repeat; "
-        "  background-size: 100% 100%; "
-        "  border: none; "
-        "  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20); "
+        "window.mac-settings-window scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider:active, "
+        "window.mac-settings-window scale.horizontal.marks-before > trough > slider:active, "
+        "window.mac-settings-window scale.horizontal.marks-after > trough > slider:active, "
+        "window.mac-settings-window scale.horizontal slider:active, "
+        "window.mac-settings-window scale > trough > slider:active, "
+        "window.mac-settings-window scale slider:active { "
+        "  min-width: 38px !important; "
+        "  min-height: 20px !important; "
+        "  max-width: 38px !important; "
+        "  max-height: 20px !important; "
+        "  margin: -8px -17px !important; "
+        "  border-radius: 9999px !important; "
+        "  background-color: transparent !important; "
+        "  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg') !important; "
+        "  background-repeat: no-repeat !important; "
+        "  background-size: 100% 100% !important; "
+        "  border: none !important; "
+        "  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20) !important; "
+        "  outline: none !important; "
+        "  transform: none !important; "
         "} "
-        "window.mac-settings-window scale.vertical > trough > slider:active { "
-        "  min-width: 28px; "
-        "  min-height: 42px; "
-        "  margin: -15px -12px; "
-        "  background-color: transparent; "
-        "  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg'); "
-        "  background-repeat: no-repeat; "
-        "  background-size: 100% 100%; "
-        "  border: none; "
-        "  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20); "
+        "window.mac-settings-window scale.vertical > trough > slider, "
+        "window.mac-settings-window scale.vertical slider { "
+        "  min-width: 20px !important; "
+        "  min-height: 20px !important; "
+        "  max-width: 20px !important; "
+        "  max-height: 20px !important; "
+        "  margin: -10px -8px !important; "
+        "  background-color: #ffffff !important; "
+        "  background-image: none !important; "
+        "  border: 1px solid rgba(0, 0, 0, 0.18) !important; "
+        "  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.22) !important; "
+        "} "
+        "window.mac-settings-window scale.vertical > trough > slider:active, "
+        "window.mac-settings-window scale.vertical slider:active { "
+        "  min-width: 20px !important; "
+        "  min-height: 38px !important; "
+        "  max-width: 20px !important; "
+        "  max-height: 38px !important; "
+        "  margin: -17px -8px !important; "
+        "  border-radius: 9999px !important; "
+        "  background-color: transparent !important; "
+        "  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg') !important; "
+        "  background-repeat: no-repeat !important; "
+        "  background-size: 100% 100% !important; "
+        "  border: none !important; "
+        "  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20) !important; "
+        "  outline: none !important; "
+        "  transform: none !important; "
         "} "
         "window.mac-settings-window scale:disabled { "
         "  filter: none; "
@@ -7919,7 +8546,7 @@ static GtkListBoxRow *create_account_row(AdwNavigationSplitView *split_view) {
     gtk_widget_add_css_class(name_lbl, "account-title");
     gtk_box_append(GTK_BOX(tbox), name_lbl);
 
-    GtkWidget *sub_lbl = gtk_label_new(mac_tr("apple_account", "Обліковий запис Apple"));
+    GtkWidget *sub_lbl = gtk_label_new(mac_tr("apple_account", "Акаунт"));
     gtk_label_set_xalign(GTK_LABEL(sub_lbl), 0.0);
     gtk_widget_add_css_class(sub_lbl, "account-subtitle");
     gtk_box_append(GTK_BOX(tbox), sub_lbl);
@@ -8596,9 +9223,19 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             g_signal_connect(nv, "notify::visible-page", G_CALLBACK(on_visible_page_changed_cb), split_view);
             g_object_set_data(G_OBJECT(nv), "mac_connected", GINT_TO_POINTER(1));
         }
+        if (!adw_navigation_view_find_page(nv, "screenshot")) {
+            GtkWidget *sp = get_screenshot_page();
+            if (sp) {
+                adw_navigation_view_add(nv, ADW_NAVIGATION_PAGE(sp));
+            }
+        }
         if (g_getenv("MAC_SETTINGS_OPEN_STYLING") && !g_object_get_data(G_OBJECT(nv), "mac_styling_pushed")) {
             g_object_set_data(G_OBJECT(nv), "mac_styling_pushed", GINT_TO_POINTER(1));
             adw_navigation_view_push_by_tag(nv, "mac-styling");
+        }
+        if (g_getenv("MAC_SETTINGS_OPEN_SCREENSHOT") && !g_object_get_data(G_OBJECT(nv), "mac_screenshot_pushed")) {
+            g_object_set_data(G_OBJECT(nv), "mac_screenshot_pushed", GINT_TO_POINTER(1));
+            adw_navigation_view_push_by_tag(nv, "screenshot");
         }
         const char *target_row = g_object_get_data(G_OBJECT(split_view), "mac_target_subpage_row");
         if (!target_row && g_getenv("MAC_SETTINGS_TARGET_ROW") && !g_object_get_data(G_OBJECT(nv), "mac_env_target_row_done")) {
@@ -8609,6 +9246,8 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             g_object_set_data(G_OBJECT(split_view), "mac_target_subpage_row", NULL);
             if (g_strcmp0(target_row, "mac_styling_row") == 0) {
                 adw_navigation_view_push_by_tag(nv, "mac-styling");
+            } else if (g_strcmp0(target_row, "screenshot_row") == 0) {
+                adw_navigation_view_push_by_tag(nv, "screenshot");
             }
             activate_system_row_by_id(GTK_WIDGET(content_page), target_row);
         }

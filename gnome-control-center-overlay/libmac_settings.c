@@ -7525,6 +7525,19 @@ static void init_mac_settings_css(void) {
         "  min-height: 24px; "
         "  padding: 2px 14px; "
         "} "
+        "window.mac-settings-window banner button, "
+        "window.mac-settings-window adwbanner button, "
+        "window.mac-settings-window infobar button, "
+        "window.mac-settings-window .permission-infobar button { "
+        "  margin-right: -12px; "
+        "} "
+        "window.mac-settings-window banner button:dir(rtl), "
+        "window.mac-settings-window adwbanner button:dir(rtl), "
+        "window.mac-settings-window infobar button:dir(rtl), "
+        "window.mac-settings-window .permission-infobar button:dir(rtl) { "
+        "  margin-left: -12px; "
+        "  margin-right: 0px; "
+        "} "
         "window.mac-settings-window banner button label, "
         "window.mac-settings-window adwbanner button label, "
         "window.mac-settings-window infobar button label, "
@@ -8533,7 +8546,7 @@ static GtkListBoxRow *create_account_row(AdwNavigationSplitView *split_view) {
     gtk_widget_add_css_class(name_lbl, "account-title");
     gtk_box_append(GTK_BOX(tbox), name_lbl);
 
-    GtkWidget *sub_lbl = gtk_label_new(mac_tr("apple_account", "Обліковий запис Apple"));
+    GtkWidget *sub_lbl = gtk_label_new(mac_tr("apple_account", "Акаунт"));
     gtk_label_set_xalign(GTK_LABEL(sub_lbl), 0.0);
     gtk_widget_add_css_class(sub_lbl, "account-subtitle");
     gtk_box_append(GTK_BOX(tbox), sub_lbl);

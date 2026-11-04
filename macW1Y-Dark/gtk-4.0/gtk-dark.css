@@ -10905,6 +10905,21 @@ window.mac-settings-window .mac-pill-btn {
     padding: 2px 14px;
 }
 
+window.mac-settings-window banner button,
+window.mac-settings-window adwbanner button,
+window.mac-settings-window infobar button,
+window.mac-settings-window .permission-infobar button {
+    margin-right: -12px;
+}
+
+window.mac-settings-window banner button:dir(rtl),
+window.mac-settings-window adwbanner button:dir(rtl),
+window.mac-settings-window infobar button:dir(rtl),
+window.mac-settings-window .permission-infobar button:dir(rtl) {
+    margin-left: -12px;
+    margin-right: 0px;
+}
+
 window.mac-settings-window banner button label,
 window.mac-settings-window adwbanner button label,
 window.mac-settings-window infobar button label,
