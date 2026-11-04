@@ -16632,3 +16632,43 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Знято знімок під час прокручування (`settings_mac_styling_scrolled_v2.png`): картка шпалер та елементи списку плавно й естетично розчиняються під прозорою навігаційною панеллю у стилі macOS Tahoe.
    - `bin/mac-audit-sync check`: 100% PASS (5/5 аудитів успішно).
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+================================================================================
+ЕТАП 647: Відновлення відображення та нативна горизонтальна macOS стилізація системних характеристик у Параметрах («Про систему»)
+================================================================================
+
+1. Мета:
+   - Виправити дефект у вікні «Параметри» (gnome-control-center), де на сторінці «Про систему» (CcAboutPage) праворуч були порожніми всі характеристики комп'ютера («Операційна система», «Модель обладнання», «Процесор», «Пам'ять», «Місткість диска»).
+   - Забезпечити безпомилкове відображення точних апаратних і системних даних у нативному стилі macOS Tahoe / Sonoma (System Settings -> General -> About):
+     * Горизонтальне розташування кожного рядка (Property Key зліва, Property Value праворуч).
+     * Назва характеристики зліва (font-weight: 400, колір alpha(@window_fg_color, 0.70)).
+     * Значення характеристики праворуч (font-weight: 500, колір @window_fg_color, можливість виділення/копіювання).
+     * Автоматична адаптація як до світлої, так і до темної теми без хардкоду.
+     * Стабільна робота без segfault / збоїв при переході до сторінки «Про систему».
+
+2. Причини дефектів та реалізація:
+   - Причина порожніх полів:
+     * Раніше у функції `hide_subtitles_recursive()` в `control-center/libmac_settings.c` та у загальних CSS-стилях було застосовано приховування для всіх `label.subtitle` у рядках `AdwActionRow`. На сторінці `CcAboutPage` рядки характеристик (`os_name_row`, `hardware_model_row`, `processor_row`, `memory_row`, `disk_row`) реалізовані як `AdwActionRow` з CSS-класом `.property`, де значенням характеристики є саме `subtitle`.
+     * Як наслідок, і C-код, і CSS-селектори примусово приховували та обнуляли розмір (`font-size: 0; min-height: 0; opacity: 0`) для цих значень.
+   - Реалізація:
+     * У `control-center/libmac_settings.c` та `gnome-control-center-overlay/libmac_settings.c`:
+       - Оновлено `hide_subtitles_recursive()`: додано перевірку `is_property_widget()`, що запобігає прихованню підписів для будь-яких рядків з класом `.property` або ID `os_name_row`, `hardware_model_row`, `processor_row`, `memory_row`, `disk_row`.
+       - Додано `format_property_rows_recursive()` та рекурсивний пошук `find_title_box_recursive()`: знаходить контейнер назви/підпису, перемикає орієнтацію на `GTK_ORIENTATION_HORIZONTAL` з відступом 16px, вирівнює назву по лівому краю (`halign: START, xalign: 0.0`), а значення — по правому краю (`halign: END, xalign: 1.0, hexpand: TRUE, selectable: TRUE`).
+       - Підключено сигнал `notify::subtitle` для автоматичного форматування при асинхронному оновленні (наприклад, підрахунку місткості диска).
+       - Виправлено навігацію до підсторінки: усунено небезпечний виклик `cc_panel_push_subpage` з некоректним типом аргументу, замінено на виклик `activate_system_row_by_id(content_page, "about_row")` з безпечною перевіркою від повторного пушу в стек навігації.
+     * У `control-center/libmac_settings.c`, `gtk-4.0/gtk.css`, `gtk-4.0/gtk-Dark.css` та синхронізованих темах:
+       - CSS-селектори приховування підписів обмежено виключно рядками `:not(.property)`.
+       - Додано нативні стилі `.property`: назва з м'яким контрастом `alpha(@window_fg_color, 0.70)`, значення з повним контрастом `@window_fg_color`, висота рядка 38px, відступи 0px 16px.
+     * Перекомпільовано `libmac_settings.so` та синхронізовано в усі системні директорії.
+     * Оновлено обгортку `bin/gnome-control-center` та `/usr/local/bin/gnome-control-center` для підтримки аргументу `about` / `info`.
+
+3. Результати верифікації:
+   - Захоплено контрольний знімок вікна («Параметри» -> «Про систему») `settings_about_final_crop.png`:
+     * «Операційна система»: `Ubuntu 26.04.1 LTS`
+     * «Модель обладнання»: `Acer Nitro ANV15-51`
+     * «Процесор»: `13th Gen Intel® Core™ i5-13420H × 12`
+     * «Пам'ять»: `16,0 ГіБ`
+     * «Місткість диска»: `1,0 ТБ`
+     * Всі поля ідеально вирівняні праворуч, читабельні, чіткі та естетично відповідають macOS Tahoe.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено успішно).
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.

@@ -7964,12 +7964,12 @@ static void init_mac_settings_css(void) {
         "  margin: 0px; "
         "  padding: 0px; "
         "} "
-        "window.mac-settings-window preferencesgroup label.subtitle, "
-        "window.mac-settings-window preferencesgroup .subtitle, "
-        "window.mac-settings-window list.boxed-list row label.subtitle, "
-        "window.mac-settings-window list.boxed-list row .subtitle, "
-        "window.mac-settings-window adwactionrow label.subtitle, "
-        "window.mac-settings-window adwactionrow .subtitle, "
+        "window.mac-settings-window preferencesgroup list.boxed-list row:not(.property) label.subtitle, "
+        "window.mac-settings-window preferencesgroup list.boxed-list row:not(.property) .subtitle, "
+        "window.mac-settings-window list.boxed-list row:not(.property) label.subtitle, "
+        "window.mac-settings-window list.boxed-list row:not(.property) .subtitle, "
+        "window.mac-settings-window adwactionrow:not(.property) label.subtitle, "
+        "window.mac-settings-window adwactionrow:not(.property) .subtitle, "
         "window.mac-settings-window adwswitchrow label.subtitle, "
         "window.mac-settings-window adwswitchrow .subtitle, "
         "window.mac-settings-window adwcomborow label.subtitle, "
@@ -7978,12 +7978,12 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window adwentryrow .subtitle, "
         "window.mac-settings-window cclistrow label.subtitle, "
         "window.mac-settings-window cclistrow .subtitle, "
-        "window.mac-settings-window preferencespage label.subtitle, "
-        "window.mac-settings-window preferencespage .subtitle, "
-        "window.mac-settings-window .content-pane label.subtitle, "
-        "window.mac-settings-window .content-pane .subtitle, "
-        "window.mac-settings-window .mac-settings-content label.subtitle, "
-        "window.mac-settings-window .mac-settings-content .subtitle { "
+        "window.mac-settings-window preferencespage list.boxed-list row:not(.property) label.subtitle, "
+        "window.mac-settings-window preferencespage list.boxed-list row:not(.property) .subtitle, "
+        "window.mac-settings-window .content-pane list.boxed-list row:not(.property) label.subtitle, "
+        "window.mac-settings-window .content-pane list.boxed-list row:not(.property) .subtitle, "
+        "window.mac-settings-window .mac-settings-content list.boxed-list row:not(.property) label.subtitle, "
+        "window.mac-settings-window .mac-settings-content list.boxed-list row:not(.property) .subtitle { "
         "  font-size: 0px; "
         "  min-height: 0px; "
         "  min-width: 0px; "
@@ -7991,6 +7991,41 @@ static void init_mac_settings_css(void) {
         "  padding: 0px; "
         "  line-height: 0; "
         "  opacity: 0; "
+        "} "
+        "window.mac-settings-window row.property, "
+        "window.mac-settings-window adwactionrow.property, "
+        "window.mac-settings-window list.boxed-list row.property { "
+        "  min-height: 38px; "
+        "  padding: 0px 16px; "
+        "} "
+        "window.mac-settings-window row.property > box.header, "
+        "window.mac-settings-window adwactionrow.property > box.header { "
+        "  min-height: 38px; "
+        "  margin: 0px; "
+        "  padding: 0px; "
+        "} "
+        "window.mac-settings-window row.property label.title, "
+        "window.mac-settings-window row.property .title, "
+        "window.mac-settings-window adwactionrow.property label.title, "
+        "window.mac-settings-window adwactionrow.property .title { "
+        "  font-size: 13px; "
+        "  font-weight: 400; "
+        "  color: alpha(@window_fg_color, 0.70); "
+        "  min-height: 20px; "
+        "  line-height: 1.2; "
+        "  opacity: 1; "
+        "} "
+        "window.mac-settings-window row.property label.subtitle, "
+        "window.mac-settings-window row.property .subtitle, "
+        "window.mac-settings-window adwactionrow.property label.subtitle, "
+        "window.mac-settings-window adwactionrow.property .subtitle { "
+        "  font-size: 13px; "
+        "  font-weight: 500; "
+        "  color: @window_fg_color; "
+        "  min-height: 20px; "
+        "  min-width: 20px; "
+        "  line-height: 1.2; "
+        "  opacity: 1; "
         "} "
         "window.mac-settings-window list.boxed-list row image.expander, "
         "window.mac-settings-window list.boxed-list row image:dir(ltr):last-child, "
@@ -8966,8 +9001,34 @@ static gboolean switch_to_shell_panel_id(AdwNavigationSplitView *split_view, con
 static void activate_system_row_by_id(GtkWidget *root, const char *row_id) {
     if (!root) return;
     const char *bid = GTK_IS_BUILDABLE(root) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(root)) : NULL;
-    if (g_strcmp0(bid, row_id) == 0) {
+    gboolean match = FALSE;
+    if (g_strcmp0(bid, row_id) == 0) match = TRUE;
+    if (!match && GTK_IS_ACTIONABLE(root)) {
+        GVariant *target = gtk_actionable_get_action_target_value(GTK_ACTIONABLE(root));
+        if (target && g_variant_is_of_type(target, G_VARIANT_TYPE_STRING)) {
+            const char *str = g_variant_get_string(target, NULL);
+            if (g_strcmp0(str, row_id) == 0 ||
+                (g_strcmp0(row_id, "about_row") == 0 && g_strcmp0(str, "about") == 0)) {
+                match = TRUE;
+            }
+        }
+    }
+    if (match) {
+        if (GTK_IS_LIST_BOX_ROW(root)) {
+            GtkWidget *parent = gtk_widget_get_ancestor(root, GTK_TYPE_LIST_BOX);
+            if (parent) {
+                gtk_list_box_select_row(GTK_LIST_BOX(parent), GTK_LIST_BOX_ROW(root));
+                g_signal_emit_by_name(parent, "row-activated", root);
+            }
+        }
         gtk_widget_activate(root);
+        if (GTK_IS_ACTIONABLE(root)) {
+            const char *act = gtk_actionable_get_action_name(GTK_ACTIONABLE(root));
+            GVariant *target = gtk_actionable_get_action_target_value(GTK_ACTIONABLE(root));
+            if (act && target) {
+                gtk_widget_activate_action_variant(root, act, target);
+            }
+        }
         return;
     }
     for (GtkWidget *child = gtk_widget_get_first_child(root); child != NULL; child = gtk_widget_get_next_sibling(child)) {
@@ -9001,6 +9062,27 @@ static void open_system_subpage(AdwNavigationSplitView *split_view, GtkListBox *
     if (content_p) {
         activate_system_row_by_id(GTK_WIDGET(content_p), row_id);
     }
+}
+
+static gboolean open_about_delayed_cb(gpointer user_data) {
+    AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
+    if (!split_view) return G_SOURCE_REMOVE;
+    AdwNavigationPage *content_page = adw_navigation_split_view_get_content(split_view);
+    if (content_page) {
+        GList *nav_views = NULL;
+        find_navigation_views(GTK_WIDGET(content_page), &nav_views);
+        if (nav_views) {
+            AdwNavigationView *nv = ADW_NAVIGATION_VIEW(nav_views->data);
+            AdwNavigationPage *vis = nv ? adw_navigation_view_get_visible_page(nv) : NULL;
+            const char *tag = vis ? adw_navigation_page_get_tag(vis) : NULL;
+            g_list_free(nav_views);
+            if (g_strcmp0(tag, "about") == 0) {
+                return G_SOURCE_REMOVE;
+            }
+        }
+        activate_system_row_by_id(GTK_WIDGET(content_page), "about_row");
+    }
+    return G_SOURCE_REMOVE;
 }
 
 static void find_clamp_boxes_recursive(GtkWidget *widget, GList **list) {
@@ -9194,10 +9276,102 @@ static void expand_clamps_recursive(GtkWidget *widget) {
     }
 }
 
+static void on_property_row_subtitle_notify(GObject *gobject, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data G_GNUC_UNUSED);
+
+static void find_title_box_recursive(GtkWidget *w, GtkWidget **out_box) {
+    if (!w || *out_box) return;
+    if (GTK_IS_BOX(w)) {
+        gboolean has_title = FALSE, has_subtitle = FALSE;
+        for (GtkWidget *ch = gtk_widget_get_first_child(w); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
+            if (GTK_IS_LABEL(ch)) {
+                if (gtk_widget_has_css_class(ch, "title")) has_title = TRUE;
+                if (gtk_widget_has_css_class(ch, "subtitle")) has_subtitle = TRUE;
+            }
+        }
+        if (has_title && has_subtitle) {
+            *out_box = w;
+            return;
+        }
+    }
+    for (GtkWidget *ch = gtk_widget_get_first_child(w); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
+        find_title_box_recursive(ch, out_box);
+    }
+}
+
+static gboolean is_property_widget(GtkWidget *widget) {
+    if (!widget) return FALSE;
+    if (gtk_widget_has_css_class(widget, "property")) return TRUE;
+    if (GTK_IS_BUILDABLE(widget)) {
+        const char *bid = gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget));
+        if (bid && (g_strcmp0(bid, "os_name_row") == 0 ||
+                    g_strcmp0(bid, "hardware_model_row") == 0 ||
+                    g_strcmp0(bid, "processor_row") == 0 ||
+                    g_strcmp0(bid, "memory_row") == 0 ||
+                    g_strcmp0(bid, "disk_row") == 0)) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static void format_property_rows_recursive(GtkWidget *widget) {
+    if (!widget) return;
+
+    if (is_property_widget(widget)) {
+        gtk_widget_set_visible(widget, TRUE);
+        GtkWidget *t_box = NULL;
+        find_title_box_recursive(widget, &t_box);
+        if (t_box) {
+            gtk_orientable_set_orientation(GTK_ORIENTABLE(t_box), GTK_ORIENTATION_HORIZONTAL);
+            gtk_widget_set_hexpand(t_box, TRUE);
+            gtk_box_set_spacing(GTK_BOX(t_box), 16);
+
+            for (GtkWidget *ch = gtk_widget_get_first_child(t_box); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
+                if (GTK_IS_LABEL(ch)) {
+                    gtk_widget_set_visible(ch, TRUE);
+                    if (gtk_widget_has_css_class(ch, "title")) {
+                        gtk_widget_set_hexpand(ch, FALSE);
+                        gtk_widget_set_halign(ch, GTK_ALIGN_START);
+                        gtk_label_set_xalign(GTK_LABEL(ch), 0.0f);
+                    } else if (gtk_widget_has_css_class(ch, "subtitle")) {
+                        gtk_widget_set_hexpand(ch, TRUE);
+                        gtk_widget_set_halign(ch, GTK_ALIGN_END);
+                        gtk_label_set_xalign(GTK_LABEL(ch), 1.0f);
+                        gtk_label_set_ellipsize(GTK_LABEL(ch), PANGO_ELLIPSIZE_END);
+                        gtk_label_set_selectable(GTK_LABEL(ch), TRUE);
+                    }
+                }
+            }
+        }
+        if (!g_object_get_data(G_OBJECT(widget), "mac_property_formatted")) {
+            g_signal_connect(widget, "notify::subtitle", G_CALLBACK(on_property_row_subtitle_notify), NULL);
+            g_object_set_data(G_OBJECT(widget), "mac_property_formatted", GINT_TO_POINTER(1));
+        }
+    }
+
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        format_property_rows_recursive(child);
+    }
+}
+
+static void on_property_row_subtitle_notify(GObject *gobject, GParamSpec *pspec G_GNUC_UNUSED, gpointer user_data G_GNUC_UNUSED) {
+    if (GTK_IS_WIDGET(gobject)) {
+        format_property_rows_recursive(GTK_WIDGET(gobject));
+    }
+}
+
 static void hide_subtitles_recursive(GtkWidget *widget) {
     if (!widget) return;
+    if (is_property_widget(widget)) {
+        return;
+    }
     if (GTK_IS_LABEL(widget)) {
         if (gtk_widget_has_css_class(widget, "subtitle")) {
+            GtkWidget *row = gtk_widget_get_ancestor(widget, GTK_TYPE_LIST_BOX_ROW);
+            if (row && is_property_widget(row)) {
+                gtk_widget_set_visible(widget, TRUE);
+                return;
+            }
             gtk_widget_set_visible(widget, FALSE);
         }
     }
@@ -9599,6 +9773,14 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             g_object_set_data(G_OBJECT(nv), "mac_screenshot_pushed", GINT_TO_POINTER(1));
             adw_navigation_view_push_by_tag(nv, "screenshot");
         }
+        if (g_getenv("MAC_SETTINGS_OPEN_ABOUT") && !g_object_get_data(G_OBJECT(split_view), "mac_about_pushed")) {
+            g_object_set_data(G_OBJECT(split_view), "mac_about_pushed", GINT_TO_POINTER(1));
+            if (content_page) {
+                activate_system_row_by_id(GTK_WIDGET(content_page), "about_row");
+            }
+            g_timeout_add(100, open_about_delayed_cb, split_view);
+            g_timeout_add(300, open_about_delayed_cb, split_view);
+        }
         const char *target_row = g_object_get_data(G_OBJECT(split_view), "mac_target_subpage_row");
         if (!target_row && g_getenv("MAC_SETTINGS_TARGET_ROW") && !g_object_get_data(G_OBJECT(nv), "mac_env_target_row_done")) {
             target_row = g_getenv("MAC_SETTINGS_TARGET_ROW");
@@ -9610,8 +9792,11 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
                 adw_navigation_view_push_by_tag(nv, "mac-styling");
             } else if (g_strcmp0(target_row, "screenshot_row") == 0) {
                 adw_navigation_view_push_by_tag(nv, "screenshot");
+            } else if (g_strcmp0(target_row, "about_row") == 0 || g_strcmp0(target_row, "about") == 0) {
+                activate_system_row_by_id(GTK_WIDGET(content_page), "about_row");
+            } else {
+                activate_system_row_by_id(GTK_WIDGET(content_page), target_row);
             }
-            activate_system_row_by_id(GTK_WIDGET(content_page), target_row);
         }
         vis_p = adw_navigation_view_get_visible_page(nv);
         if (vis_p) {
@@ -9633,6 +9818,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     expand_clamps_recursive(target_root);
     remove_panel_header_banner_if_any(target_root);
     hide_subtitles_recursive(target_root);
+    format_property_rows_recursive(target_root);
     fix_accent_color_buttons(target_root);
 
     sync_sidebar_selection(split_view, cur_id);

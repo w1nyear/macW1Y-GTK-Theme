@@ -11348,12 +11348,12 @@ window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top {
 /* =========================================================================
    macOS Settings Cards & Rows Styling
    ========================================================================= */
-window.mac-settings-window preferencesgroup label.subtitle,
-window.mac-settings-window preferencesgroup .subtitle,
-window.mac-settings-window list.boxed-list row label.subtitle,
-window.mac-settings-window list.boxed-list row .subtitle,
-window.mac-settings-window adwactionrow label.subtitle,
-window.mac-settings-window adwactionrow .subtitle,
+window.mac-settings-window preferencesgroup list.boxed-list row:not(.property) label.subtitle,
+window.mac-settings-window preferencesgroup list.boxed-list row:not(.property) .subtitle,
+window.mac-settings-window list.boxed-list row:not(.property) label.subtitle,
+window.mac-settings-window list.boxed-list row:not(.property) .subtitle,
+window.mac-settings-window adwactionrow:not(.property) label.subtitle,
+window.mac-settings-window adwactionrow:not(.property) .subtitle,
 window.mac-settings-window adwswitchrow label.subtitle,
 window.mac-settings-window adwswitchrow .subtitle,
 window.mac-settings-window adwcomborow label.subtitle,
@@ -11362,13 +11362,52 @@ window.mac-settings-window adwentryrow label.subtitle,
 window.mac-settings-window adwentryrow .subtitle,
 window.mac-settings-window cclistrow label.subtitle,
 window.mac-settings-window cclistrow .subtitle,
-window.mac-settings-window preferencespage label.subtitle,
-window.mac-settings-window preferencespage .subtitle,
-window.mac-settings-window .content-pane label.subtitle,
-window.mac-settings-window .content-pane .subtitle,
-window.mac-settings-window .mac-settings-content label.subtitle,
-window.mac-settings-window .mac-settings-content .subtitle {
+window.mac-settings-window preferencespage list.boxed-list row:not(.property) label.subtitle,
+window.mac-settings-window preferencespage list.boxed-list row:not(.property) .subtitle,
+window.mac-settings-window .content-pane list.boxed-list row:not(.property) label.subtitle,
+window.mac-settings-window .content-pane list.boxed-list row:not(.property) .subtitle,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.property) label.subtitle,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.property) .subtitle {
   font-size: 0px; min-height: 0px; min-width: 0px; margin: 0px; padding: 0px; line-height: 0; opacity: 0;
+}
+
+window.mac-settings-window row.property,
+window.mac-settings-window adwactionrow.property,
+window.mac-settings-window list.boxed-list row.property {
+  min-height: 38px;
+  padding: 0px 16px;
+}
+
+window.mac-settings-window row.property > box.header,
+window.mac-settings-window adwactionrow.property > box.header {
+  min-height: 38px;
+  margin: 0px;
+  padding: 0px;
+}
+
+window.mac-settings-window row.property label.title,
+window.mac-settings-window row.property .title,
+window.mac-settings-window adwactionrow.property label.title,
+window.mac-settings-window adwactionrow.property .title {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.70);
+  min-height: 20px;
+  line-height: 1.2;
+  opacity: 1;
+}
+
+window.mac-settings-window row.property label.subtitle,
+window.mac-settings-window row.property .subtitle,
+window.mac-settings-window adwactionrow.property label.subtitle,
+window.mac-settings-window adwactionrow.property .subtitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  min-height: 20px;
+  min-width: 20px;
+  line-height: 1.2;
+  opacity: 1;
 }
 
 window.mac-settings-window list.boxed-list row label.title,

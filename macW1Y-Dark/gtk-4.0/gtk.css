@@ -1295,8 +1295,8 @@ toast button.flat:active, popover.touch-selection button.flat:active, popover.ma
 }
 
 button.suggested-action {
-  color: #ffffff;
-  background-color: #2E7CF7;
+  color: @accent_fg_color;
+  background-color: @accent_bg_color;
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
@@ -1307,20 +1307,20 @@ button.suggested-action.flat {
   background-color: transparent;
   background-image: none;
   box-shadow: none;
-  color: #2E7CF7;
+  color: @accent_color;
 }
 
 button.suggested-action:hover {
-  color: #ffffff;
-  background-color: #478bf8;
+  color: @accent_fg_color;
+  background-color: color-mix(in srgb, @accent_bg_color 85%, white);
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
 }
 
 button.suggested-action:active, button.suggested-action:checked {
-  color: #ffffff;
-  background-color: #156df6;
+  color: @accent_fg_color;
+  background-color: color-mix(in srgb, @accent_bg_color 80%, black);
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
@@ -1436,8 +1436,8 @@ menubutton.popup > button.arrow-button.image-button, menubutton.popup > button.t
 }
 
 menubutton.suggested-action {
-  background-color: #2E7CF7;
-  color: white;
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
 }
 
 menubutton.destructive-action {
@@ -1575,8 +1575,8 @@ splitbutton.flat > menubutton > button {
 }
 
 splitbutton.suggested-action {
-  background-color: #2E7CF7;
-  color: white;
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
 }
 
 splitbutton.destructive-action {
@@ -2544,48 +2544,40 @@ headerbar button.star {
 
 headerbar splitbutton {
   border-radius: 9999px;
-  padding: 0;
+  padding: 3px;
   color: @headerbar_fg_color;
   background-color: transparent;
-  background-image: none;
-  box-shadow: none;
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 6px 20px alpha(#000000,0.15), inset 1px 2px 1px -1px alpha(#ffffff,0.08), inset -1px -1px 1px 0 alpha(#ffffff,0.08);
   border: none;
 }
 
 headerbar splitbutton:backdrop {
-  background-color: transparent;
+  background-color: alpha(@headerbar_fg_color,0.05);
   background-image: none;
   border: none;
   box-shadow: none;
 }
 
 headerbar splitbutton > separator {
-  background-color: transparent;
-  min-width: 0;
-  margin: 0;
+  background-color: alpha(currentColor,0.12);
+  min-width: 1px;
+  margin: 6px 2px;
 }
 
 headerbar splitbutton > button,
 headerbar splitbutton > button.image-button,
 headerbar splitbutton > menubutton > button,
 headerbar splitbutton > menubutton.popup > button, headerbar splitbutton.image-button > menubutton.popup > button.toggle:not(.image-button), headerbar splitbutton.image-button > button, headerbar splitbutton.text-button.image-button > button, headerbar splitbutton.image-text-button > button {
-  min-height: 28px;
-  min-width: 28px;
+  min-height: 24px;
+  min-width: 24px;
   padding: 3px;
-  border-radius: 9999px;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
 }
 
 headerbar splitbutton > button button {
   min-height: 24px;
   min-width: 24px;
   padding: 0;
-  border-radius: 9999px;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
 }
 
 headerbar splitbutton > button:not(:only-child):not(:first-child):not(:last-child),
@@ -2595,13 +2587,15 @@ headerbar splitbutton > menubutton:not(:only-child):not(:first-child):not(:last-
 
 headerbar splitbutton > button:dir(ltr),
 headerbar splitbutton > menubutton > button:dir(rtl) {
-  border-radius: 9999px;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
   margin-right: 0;
 }
 
 headerbar splitbutton > button:dir(rtl),
 headerbar splitbutton > menubutton > button:dir(ltr) {
-  border-radius: 9999px;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
   margin-left: 0;
 }
 
@@ -4044,7 +4038,6 @@ scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider:active {
   margin: -8px -17px;
   min-width: 38px;
   min-height: 20px;
-  max-height: 20px;
   background-color: transparent;
   background-image: url("assets/scalable/slider-glass.svg");
   background-repeat: no-repeat;
@@ -4065,7 +4058,6 @@ scale.vertical:not(.marks-before):not(.marks-after) > trough > slider:active {
   margin: -17px -8px;
   min-width: 20px;
   min-height: 38px;
-  max-width: 20px;
   background-color: transparent;
   background-image: url("assets/scalable/slider-glass-vertical.svg");
   background-repeat: no-repeat;
@@ -5395,26 +5387,14 @@ list.boxed-list > row.expander {
 }
 
 list.boxed-list > row:first-child, list.boxed-list > row:first-child.expander row.header {
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
-  border-bottom-left-radius: 0px;
-  border-bottom-right-radius: 0px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
 list.boxed-list > row:last-child, list.boxed-list > row:last-child.expander:not(:checked), list.boxed-list > row:last-child.expander:not(:checked) row.header, list.boxed-list > row:last-child.expander:checked list.nested, list.boxed-list > row:last-child.expander:checked list.nested > row:last-child {
-  border-bottom-left-radius: 14px;
-  border-bottom-right-radius: 14px;
-  border-top-left-radius: 0px;
-  border-top-right-radius: 0px;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
   border-bottom-width: 0;
-}
-
-list.boxed-list > row:only-child {
-  border-radius: 14px;
-}
-
-list.boxed-list > row:not(:first-child):not(:last-child) {
-  border-radius: 0px;
 }
 
 list.boxed-list-separate {
@@ -6907,19 +6887,25 @@ preferencesgroup button.accent, preferencesgroup button.accent:hover, preference
 preferencesgroup button.accent-button,
 preferencesgroup button.accent-button:hover,
 preferencesgroup button.accent-button:active,
-preferencesgroup button.accent-button:checked {
-  background-clip: content-box;
+preferencesgroup button.accent-button:checked,
+#accent_box button,
+#accent_box button:hover,
+#accent_box button:active,
+#accent_box button:checked {
+  background-clip: border-box;
   min-height: 24px;
   min-width: 24px;
-  padding: 2px;
+  padding: 0px;
+  margin: 0px 4px;
   border-radius: 9999px;
   outline: none;
   border: none;
+  -gtk-icon-source: none;
 }
 
 preferencesgroup button.accent:checked,
 preferencesgroup button.accent-button:checked {
-  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
+  -gtk-icon-source: none;
   color: white;
 }
 
@@ -8274,7 +8260,7 @@ preferencesgroup > box > box.header:not(.single-line) {
 }
 
 preferencesgroup > box > box.single-line {
-  min-height: 35px;
+  min-height: 34px;
 }
 
 preferencesgroup > box grid > box > switch {
@@ -9453,7 +9439,7 @@ panelthemeselector checkbutton.theme-selector radio:checked {
 
 themeselector checkbutton.theme-selector radio:checked,
 panelthemeselector checkbutton.theme-selector radio:checked {
-  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
+  -gtk-icon-source: none;
   color: white;
   background-color: @accent_bg_color;
 }
@@ -9600,7 +9586,7 @@ menu menuitem,
   background-color: transparent;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
+  transition: background-color 100ms ease, color 100ms ease;
 }
 
 menu menuitem label,
@@ -9627,8 +9613,7 @@ menu menuitem:selected,
   background-color: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 1px 4px alpha(@accent_bg_color, 0.40);
-  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
+  box-shadow: 0 2px 8px alpha(@accent_bg_color, 0.40);
 }
 
 menu menuitem:hover label,
@@ -9729,9 +9714,7 @@ popover.menu modelbutton,
 popover.menu button,
 popover modelbutton,
 .context-menu modelbutton,
-.popup-menu modelbutton,
-dropdown > popover.menu modelbutton,
-dropdown > popover.menu button {
+.popup-menu modelbutton {
   min-height: 22px;
   padding: 4px 12px;
   margin: 1px 6px;
@@ -9740,7 +9723,7 @@ dropdown > popover.menu button {
   background-color: transparent;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
+  transition: background-color 100ms ease, color 100ms ease;
 }
 
 popover.menu modelbutton label,
@@ -9763,15 +9746,12 @@ popover modelbutton:focus-visible,
 .context-menu modelbutton:hover,
 .context-menu modelbutton:focus-visible,
 .popup-menu modelbutton:hover,
-.popup-menu modelbutton:focus-visible,
-dropdown > popover.menu modelbutton:hover,
-dropdown > popover.menu button:hover {
+.popup-menu modelbutton:focus-visible {
   background-color: @accent_bg_color;
   background: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 1px 4px alpha(@accent_bg_color, 0.40);
-  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
+  box-shadow: none;
 }
 
 popover.menu modelbutton:selected:not(:hover):not(:focus-visible),
@@ -11368,12 +11348,12 @@ window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top {
 /* =========================================================================
    macOS Settings Cards & Rows Styling
    ========================================================================= */
-window.mac-settings-window preferencesgroup label.subtitle,
-window.mac-settings-window preferencesgroup .subtitle,
-window.mac-settings-window list.boxed-list row label.subtitle,
-window.mac-settings-window list.boxed-list row .subtitle,
-window.mac-settings-window adwactionrow label.subtitle,
-window.mac-settings-window adwactionrow .subtitle,
+window.mac-settings-window preferencesgroup list.boxed-list row:not(.property) label.subtitle,
+window.mac-settings-window preferencesgroup list.boxed-list row:not(.property) .subtitle,
+window.mac-settings-window list.boxed-list row:not(.property) label.subtitle,
+window.mac-settings-window list.boxed-list row:not(.property) .subtitle,
+window.mac-settings-window adwactionrow:not(.property) label.subtitle,
+window.mac-settings-window adwactionrow:not(.property) .subtitle,
 window.mac-settings-window adwswitchrow label.subtitle,
 window.mac-settings-window adwswitchrow .subtitle,
 window.mac-settings-window adwcomborow label.subtitle,
@@ -11382,13 +11362,52 @@ window.mac-settings-window adwentryrow label.subtitle,
 window.mac-settings-window adwentryrow .subtitle,
 window.mac-settings-window cclistrow label.subtitle,
 window.mac-settings-window cclistrow .subtitle,
-window.mac-settings-window preferencespage label.subtitle,
-window.mac-settings-window preferencespage .subtitle,
-window.mac-settings-window .content-pane label.subtitle,
-window.mac-settings-window .content-pane .subtitle,
-window.mac-settings-window .mac-settings-content label.subtitle,
-window.mac-settings-window .mac-settings-content .subtitle {
+window.mac-settings-window preferencespage list.boxed-list row:not(.property) label.subtitle,
+window.mac-settings-window preferencespage list.boxed-list row:not(.property) .subtitle,
+window.mac-settings-window .content-pane list.boxed-list row:not(.property) label.subtitle,
+window.mac-settings-window .content-pane list.boxed-list row:not(.property) .subtitle,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.property) label.subtitle,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.property) .subtitle {
   font-size: 0px; min-height: 0px; min-width: 0px; margin: 0px; padding: 0px; line-height: 0; opacity: 0;
+}
+
+window.mac-settings-window row.property,
+window.mac-settings-window adwactionrow.property,
+window.mac-settings-window list.boxed-list row.property {
+  min-height: 38px;
+  padding: 0px 16px;
+}
+
+window.mac-settings-window row.property > box.header,
+window.mac-settings-window adwactionrow.property > box.header {
+  min-height: 38px;
+  margin: 0px;
+  padding: 0px;
+}
+
+window.mac-settings-window row.property label.title,
+window.mac-settings-window row.property .title,
+window.mac-settings-window adwactionrow.property label.title,
+window.mac-settings-window adwactionrow.property .title {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.70);
+  min-height: 20px;
+  line-height: 1.2;
+  opacity: 1;
+}
+
+window.mac-settings-window row.property label.subtitle,
+window.mac-settings-window row.property .subtitle,
+window.mac-settings-window adwactionrow.property label.subtitle,
+window.mac-settings-window adwactionrow.property .subtitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  min-height: 20px;
+  min-width: 20px;
+  line-height: 1.2;
+  opacity: 1;
 }
 
 window.mac-settings-window list.boxed-list row label.title,
@@ -11426,14 +11445,9 @@ window.mac-settings-window preferencespage list:not(.boxed-list),
 window.mac-settings-window preferencespage row.button,
 window.mac-settings-window #add_user_button_row,
 window.mac-settings-window #add_enterprise_user_button_row,
-window.mac-settings-window #liquid_preview_container,
 window.mac-settings-window preferencesgroup.separate-rows list {
   margin-left: 15px;
   margin-right: 15px;
-}
-
-window.mac-settings-window #liquid_glass_preview_area {
-  border-radius: 14px;
 }
 
 window.mac-settings-window list.boxed-list row,
@@ -11450,12 +11464,11 @@ window.mac-settings-window adwentryrow,
 window.mac-settings-window adwexpanderrow,
 window.mac-settings-window adwspinrow,
 window.mac-settings-window cclistrow,
-window.mac-settings-window ccwificonnectionrow,
 window.mac-settings-window preferencespage row.button,
 window.mac-settings-window #add_user_button_row,
 window.mac-settings-window #add_enterprise_user_button_row,
 window.mac-settings-window list.boxed-list row.expander row.header {
-  min-height: 35px;
+  min-height: 34px;
   padding: 0px 14px;
   margin: 0px;
   border-bottom: none;
@@ -11467,27 +11480,12 @@ window.mac-settings-window adwactionrow > box.header,
 window.mac-settings-window adwswitchrow > box.header,
 window.mac-settings-window adwcomborow > box.header,
 window.mac-settings-window adwentryrow > box.header,
-window.mac-settings-window cclistrow > box.header,
-window.mac-settings-window ccwificonnectionrow > box.header {
-  min-height: 35px;
+window.mac-settings-window cclistrow > box.header {
+  min-height: 34px;
   margin: 0px;
   padding: 0px;
   border-spacing: 10px;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
