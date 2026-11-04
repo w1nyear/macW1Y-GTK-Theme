@@ -11,7 +11,14 @@ windowcontrols button {
   background-size: 16px 16px;
   background-position: center;
   margin: 0px;
-  padding: 1px;
+  padding: 0px;
+}
+
+windowcontrols button:hover,
+windowcontrols:hover button {
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  background-position: center;
 }
 
 /* This changes spacing between buttons */

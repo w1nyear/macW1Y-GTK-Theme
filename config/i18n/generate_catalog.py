@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate the macW1Y 0.4 System-Wide Localization Catalog.
+Generate the macW1Y 0.5 System-Wide Localization Catalog.
 Integrates the complete Ubuntu /usr/share/locale list, covering up to 194+ locales
 divided into 4 distinct tiers:
 - Tier 1: Verified Complete Primary (Ukrainian & English)
@@ -125,7 +125,7 @@ def main():
         seen.add(code)
 
     out_data = {
-        "version": "0.4.0",
+        "version": "0.5.0",
         "total_languages": len(catalog),
         "tiers": {
             "tier_1": {

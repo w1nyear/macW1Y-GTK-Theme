@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-/* macW1Y 0.4 C Localization Header */
+/* macW1Y 0.5 C Localization Header */
 #ifndef MAC_I18N_H
 #define MAC_I18N_H
 

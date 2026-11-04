@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-macW1Y 0.4 — System Audit, Project Synchronization & Reproducible Configuration Tool
+macW1Y 0.5 — System Audit, Project Synchronization & Reproducible Configuration Tool
 Audits the live system against the macW1Y repository, detects configuration drift,
 and exports clean, hardware-independent configurations.
 """
@@ -117,7 +117,7 @@ def audit_binaries():
     issues = []
     print("\n🔍 [3/5] Auditing Command-Line Tools & Scripts...")
     
-    core_scripts = ["mac-apply-theme", "mac-touchpad-daemon", "mac-diagnostics", "mac-extension-guard"]
+    core_scripts = ["mac-apply-theme", "mac-touchpad-daemon", "mac-diagnostics", "mac-extension-guard", "mac-build-theme", "mac-audit-sync"]
     for s in core_scripts:
         repo_file = BIN_DIR / s
         sys_file = Path("/usr/local/bin") / s
@@ -187,7 +187,7 @@ def export_clean_dconf():
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ["check", "audit", "verify"]:
         print("===================================================================")
-        print("          macW1Y 0.4 — System & Project Audit Tool                ")
+        print("          macW1Y 0.5 — System & Project Audit Tool                ")
         print("===================================================================")
         all_issues = []
         all_issues += audit_dock()

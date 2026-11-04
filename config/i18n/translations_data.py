@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# macW1Y 0.4 Full Multi-Language Translations Dictionary
+# macW1Y 0.5 Full Multi-Language Translations Dictionary
 # Total Languages: 34
 
 RTL_LANGUAGES = {'ar', 'fa', 'he'}

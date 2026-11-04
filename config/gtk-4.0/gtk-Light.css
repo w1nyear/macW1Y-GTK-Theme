@@ -3983,15 +3983,13 @@ scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider {
 
 scale.horizontal > trough > slider:active,
 scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider:active {
-  margin: -11px -14px;
-  min-width: 42px;
-  min-height: 28px;
-  background-color: transparent;
-  background-image: url("assets/scalable/slider-glass.svg");
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  border: none;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20);
+  margin: -8px -10px;
+  min-width: 20px;
+  min-height: 20px;
+  background-color: #ffffff;
+  background-image: none;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.22);
 }
 
 scale.vertical > trough > slider,
@@ -4003,15 +4001,13 @@ scale.vertical:not(.marks-before):not(.marks-after) > trough > slider {
 
 scale.vertical > trough > slider:active,
 scale.vertical:not(.marks-before):not(.marks-after) > trough > slider:active {
-  margin: -14px -11px;
-  min-width: 28px;
-  min-height: 42px;
-  background-color: transparent;
-  background-image: url("assets/scalable/slider-glass-vertical.svg");
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  border: none;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20);
+  margin: -10px -8px;
+  min-width: 20px;
+  min-height: 20px;
+  background-color: #ffffff;
+  background-image: none;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.22);
 }
 
 scale > trough {
@@ -6819,29 +6815,19 @@ preferencesgroup button.accent, preferencesgroup button.accent:hover, preference
 preferencesgroup button.accent-button,
 preferencesgroup button.accent-button:hover,
 preferencesgroup button.accent-button:active,
-preferencesgroup button.accent-button:checked,
-#accent_box button,
-#accent_box button:hover,
-#accent_box button:active,
-#accent_box button:checked {
-  background-clip: border-box;
+preferencesgroup button.accent-button:checked {
+  background-clip: content-box;
   min-height: 24px;
   min-width: 24px;
-  max-height: 24px;
-  max-width: 24px;
-  width: 24px;
-  height: 24px;
-  padding: 0px;
-  margin: 0px 4px;
+  padding: 2px;
   border-radius: 9999px;
   outline: none;
   border: none;
-  -gtk-icon-source: none;
 }
 
 preferencesgroup button.accent:checked,
 preferencesgroup button.accent-button:checked {
-  -gtk-icon-source: none;
+  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
   color: white;
 }
 
@@ -9371,7 +9357,7 @@ panelthemeselector checkbutton.theme-selector radio:checked {
 
 themeselector checkbutton.theme-selector radio:checked,
 panelthemeselector checkbutton.theme-selector radio:checked {
-  -gtk-icon-source: none;
+  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
   color: white;
   background-color: @accent_bg_color;
 }

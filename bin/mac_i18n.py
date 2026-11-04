@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# macW1Y 0.4 Unified i18n for Python utilities
+# macW1Y 0.5 Unified i18n for Python utilities
 
 import os
 import locale

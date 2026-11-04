@@ -1295,8 +1295,8 @@ toast button.flat:active, popover.touch-selection button.flat:active, popover.ma
 }
 
 button.suggested-action {
-  color: #ffffff;
-  background-color: #2E7CF7;
+  color: @accent_fg_color;
+  background-color: @accent_bg_color;
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
@@ -1307,20 +1307,20 @@ button.suggested-action.flat {
   background-color: transparent;
   background-image: none;
   box-shadow: none;
-  color: #2E7CF7;
+  color: @accent_color;
 }
 
 button.suggested-action:hover {
-  color: #ffffff;
-  background-color: #478bf8;
+  color: @accent_fg_color;
+  background-color: color-mix(in srgb, @accent_bg_color 85%, white);
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
 }
 
 button.suggested-action:active, button.suggested-action:checked {
-  color: #ffffff;
-  background-color: #156df6;
+  color: @accent_fg_color;
+  background-color: color-mix(in srgb, @accent_bg_color 80%, black);
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
@@ -1436,8 +1436,8 @@ menubutton.popup > button.arrow-button.image-button, menubutton.popup > button.t
 }
 
 menubutton.suggested-action {
-  background-color: #2E7CF7;
-  color: white;
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
 }
 
 menubutton.destructive-action {
@@ -1575,8 +1575,8 @@ splitbutton.flat > menubutton > button {
 }
 
 splitbutton.suggested-action {
-  background-color: #2E7CF7;
-  color: white;
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
 }
 
 splitbutton.destructive-action {
@@ -2544,48 +2544,40 @@ headerbar button.star {
 
 headerbar splitbutton {
   border-radius: 9999px;
-  padding: 0;
+  padding: 3px;
   color: @headerbar_fg_color;
   background-color: transparent;
-  background-image: none;
-  box-shadow: none;
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 6px 20px alpha(#000000,0.15), inset 1px 2px 1px -1px alpha(#ffffff,0.08), inset -1px -1px 1px 0 alpha(#ffffff,0.08);
   border: none;
 }
 
 headerbar splitbutton:backdrop {
-  background-color: transparent;
+  background-color: alpha(@headerbar_fg_color,0.05);
   background-image: none;
   border: none;
   box-shadow: none;
 }
 
 headerbar splitbutton > separator {
-  background-color: transparent;
-  min-width: 0;
-  margin: 0;
+  background-color: alpha(currentColor,0.12);
+  min-width: 1px;
+  margin: 6px 2px;
 }
 
 headerbar splitbutton > button,
 headerbar splitbutton > button.image-button,
 headerbar splitbutton > menubutton > button,
 headerbar splitbutton > menubutton.popup > button, headerbar splitbutton.image-button > menubutton.popup > button.toggle:not(.image-button), headerbar splitbutton.image-button > button, headerbar splitbutton.text-button.image-button > button, headerbar splitbutton.image-text-button > button {
-  min-height: 28px;
-  min-width: 28px;
+  min-height: 24px;
+  min-width: 24px;
   padding: 3px;
-  border-radius: 9999px;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
 }
 
 headerbar splitbutton > button button {
   min-height: 24px;
   min-width: 24px;
   padding: 0;
-  border-radius: 9999px;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
 }
 
 headerbar splitbutton > button:not(:only-child):not(:first-child):not(:last-child),
@@ -2595,13 +2587,15 @@ headerbar splitbutton > menubutton:not(:only-child):not(:first-child):not(:last-
 
 headerbar splitbutton > button:dir(ltr),
 headerbar splitbutton > menubutton > button:dir(rtl) {
-  border-radius: 9999px;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
   margin-right: 0;
 }
 
 headerbar splitbutton > button:dir(rtl),
 headerbar splitbutton > menubutton > button:dir(ltr) {
-  border-radius: 9999px;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
   margin-left: 0;
 }
 
@@ -3831,37 +3825,35 @@ switch:checked:disabled > slider {
   animation: none;
 }
 
-switch:active > slider,
-switch > slider:active {
-  min-width: 32px;
-  min-height: 22px;
-  margin: -1px -8px -1px 0px;
-  background-color: transparent;
-  background-image: url("assets/scalable/slider-glass.svg");
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  border: none;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.20);
+switch:not(:checked):active > slider,
+switch:not(:checked) > slider:active,
+switch:not(:checked):focus > slider {
+  min-width: 26px;
+  min-height: 20px;
+  margin: 2px 1px;
+  background-color: #d1d1d6;
+  background-image: none;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
   transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1),
               min-height 100ms cubic-bezier(0, 0, 0.2, 1),
-              background-image 100ms ease-in,
+              background-color 100ms ease-in,
               box-shadow 100ms cubic-bezier(0, 0, 0.2, 1);
 }
 
 switch:checked:active > slider,
-switch:checked > slider:active {
-  min-width: 32px;
-  min-height: 22px;
-  margin: -1px 0px -1px -8px;
-  background-color: transparent;
-  background-image: url("assets/scalable/slider-glass.svg");
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  border: none;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.20);
+switch:checked > slider:active,
+switch:checked:focus > slider {
+  min-width: 26px;
+  min-height: 20px;
+  margin: 2px 1px;
+  background-color: @accent_bg_color;
+  background-image: none;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: min-width 100ms cubic-bezier(0, 0, 0.2, 1),
               min-height 100ms cubic-bezier(0, 0, 0.2, 1),
-              background-image 100ms ease-in,
+              background-color 100ms ease-in,
               box-shadow 100ms cubic-bezier(0, 0, 0.2, 1);
 }
 
@@ -4036,16 +4028,17 @@ scale > trough > slider:disabled {
 
 scale.horizontal > trough > slider,
 scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider {
-  margin: -6px -8px;
-  min-width: 28px;
-  min-height: 18px;
+  margin: -8px -10px;
+  min-width: 20px;
+  min-height: 20px;
 }
 
 scale.horizontal > trough > slider:active,
 scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider:active {
-  margin: -11px -14px;
-  min-width: 42px;
-  min-height: 28px;
+  margin: -8px -17px;
+  min-width: 38px;
+  min-height: 20px;
+  max-height: 20px;
   background-color: transparent;
   background-image: url("assets/scalable/slider-glass.svg");
   background-repeat: no-repeat;
@@ -4056,16 +4049,17 @@ scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider:active {
 
 scale.vertical > trough > slider,
 scale.vertical:not(.marks-before):not(.marks-after) > trough > slider {
-  margin: -8px -6px;
-  min-width: 18px;
-  min-height: 28px;
+  margin: -10px -8px;
+  min-width: 20px;
+  min-height: 20px;
 }
 
 scale.vertical > trough > slider:active,
 scale.vertical:not(.marks-before):not(.marks-after) > trough > slider:active {
-  margin: -14px -11px;
-  min-width: 28px;
-  min-height: 42px;
+  margin: -17px -8px;
+  min-width: 20px;
+  min-height: 38px;
+  max-width: 20px;
   background-color: transparent;
   background-image: url("assets/scalable/slider-glass-vertical.svg");
   background-repeat: no-repeat;
@@ -6895,19 +6889,25 @@ preferencesgroup button.accent, preferencesgroup button.accent:hover, preference
 preferencesgroup button.accent-button,
 preferencesgroup button.accent-button:hover,
 preferencesgroup button.accent-button:active,
-preferencesgroup button.accent-button:checked {
-  background-clip: content-box;
+preferencesgroup button.accent-button:checked,
+#accent_box button,
+#accent_box button:hover,
+#accent_box button:active,
+#accent_box button:checked {
+  background-clip: border-box;
   min-height: 24px;
   min-width: 24px;
-  padding: 2px;
+  padding: 0px;
+  margin: 0px 4px;
   border-radius: 9999px;
   outline: none;
   border: none;
+  -gtk-icon-source: none;
 }
 
 preferencesgroup button.accent:checked,
 preferencesgroup button.accent-button:checked {
-  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
+  -gtk-icon-source: none;
   color: white;
 }
 
@@ -8262,7 +8262,7 @@ preferencesgroup > box > box.header:not(.single-line) {
 }
 
 preferencesgroup > box > box.single-line {
-  min-height: 35px;
+  min-height: 34px;
 }
 
 preferencesgroup > box grid > box > switch {
@@ -9441,7 +9441,7 @@ panelthemeselector checkbutton.theme-selector radio:checked {
 
 themeselector checkbutton.theme-selector radio:checked,
 panelthemeselector checkbutton.theme-selector radio:checked {
-  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
+  -gtk-icon-source: none;
   color: white;
   background-color: @accent_bg_color;
 }
@@ -9612,10 +9612,10 @@ menu menuitem:selected,
 .context-menu menuitem:hover,
 .context-menu menuitem:focus,
 .context-menu menuitem:selected {
-  background-color: #007aff;
+  background-color: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.40);
+  box-shadow: 0 2px 8px alpha(@accent_bg_color, 0.40);
 }
 
 menu menuitem:hover label,
@@ -9749,8 +9749,8 @@ popover modelbutton:focus-visible,
 .context-menu modelbutton:focus-visible,
 .popup-menu modelbutton:hover,
 .popup-menu modelbutton:focus-visible {
-  background-color: #007aff;
-  background: #007aff;
+  background-color: @accent_bg_color;
+  background: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
   box-shadow: none;
@@ -10656,8 +10656,8 @@ button#profile_fan_expand_btn:hover {
 
 button#profile_fan_expand_btn:checked {
     opacity: 1.0;
-    background-color: rgba(0, 122, 255, 0.22);
-    color: #007aff;
+    background-color: alpha(@accent_bg_color, 0.22);
+    color: @accent_bg_color;
 }
 
 row.fan-settings-subrow {
@@ -10692,9 +10692,9 @@ row.fan-settings-subrow:selected {
 }
 
 .fan-range-badge {
-    background-color: rgba(0, 122, 255, 0.16);
-    color: #007aff;
-    border: 1px solid rgba(0, 122, 255, 0.32);
+    background-color: alpha(@accent_bg_color, 0.16);
+    color: @accent_bg_color;
+    border: 1px solid alpha(@accent_bg_color, 0.32);
     border-radius: 8px;
     padding: 2px 10px;
     font-weight: 700;
@@ -11427,12 +11427,11 @@ window.mac-settings-window adwentryrow,
 window.mac-settings-window adwexpanderrow,
 window.mac-settings-window adwspinrow,
 window.mac-settings-window cclistrow,
-window.mac-settings-window ccwificonnectionrow,
 window.mac-settings-window preferencespage row.button,
 window.mac-settings-window #add_user_button_row,
 window.mac-settings-window #add_enterprise_user_button_row,
 window.mac-settings-window list.boxed-list row.expander row.header {
-  min-height: 35px;
+  min-height: 34px;
   padding: 0px 14px;
   margin: 0px;
   border-bottom: none;
@@ -11444,50 +11443,12 @@ window.mac-settings-window adwactionrow > box.header,
 window.mac-settings-window adwswitchrow > box.header,
 window.mac-settings-window adwcomborow > box.header,
 window.mac-settings-window adwentryrow > box.header,
-window.mac-settings-window cclistrow > box.header,
-window.mac-settings-window ccwificonnectionrow > box.header {
-  min-height: 35px;
+window.mac-settings-window cclistrow > box.header {
+  min-height: 34px;
   margin: 0px;
   padding: 0px;
   border-spacing: 10px;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

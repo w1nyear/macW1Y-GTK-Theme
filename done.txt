@@ -16405,3 +16405,34 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Перевірено завантаження GPU в спокої: 0% GPU usage.
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS (оновлено sha256 `c5aacf0b` у `config/extensions.lock.json`).
    - `bin/mac-audit-sync check`: 100% PASS.
+
+================================================================================
+ЕТАП 641: Оновлення версії релізу до 0.5 та повна двостороння синхронізація ПК із репозиторієм
+================================================================================
+
+1. Мета:
+   - Підвищити версію випуску macW1Y з 0.4 до 0.5 в інсталяторі install.sh, базових утилітах, заголовках, системних маркерах версій та системі i18n/l10n.
+   - Провести повний аудит та усунути всі розбіжності між реальною конфігурацією ПК (~/.config, /usr/local/bin, ~/.local/bin, /usr/share/themes) та файлами репозиторію (bin/, gtk-3.0/, gtk-4.0/, config/).
+
+2. Виявлені розбіжності та синхронізація:
+   - Версії:
+     * install.sh містив NEW_VERSION="0.4" та заголовок "Version 0.4". Оновлено до 0.5.
+     * ~/.local/share/macW1Y/version та ~/.config/mac-styling/version оновлено з 0.4 до 0.5.
+     * config/mac-styling/version оновлено з 0.2 до 0.5.
+     * Банери та заголовки в bin/mac-audit-sync, bin/mac-build-theme, bin/mac-graphics-profile, bin/mac-i18n-verify, bin/mac_i18n.py, config/i18n/catalog.json, config/i18n/build_translations.py, config/i18n/generate_catalog.py, config/i18n/generate_translations_data.py, config/i18n/translations_data.py, src/mac_i18n.h, control-center/mac_i18n.h, gnome-control-center-overlay/mac_i18n.h переведено на 0.5.
+   - Бінарні скрипти та утиліти:
+     * /usr/local/bin/mac-build-theme відставав від репозиторію (були відсутні останні правила слайдерів перемикачів switch:not(:checked):active > slider та прозорих заголовків). Синхронізовано з bin/mac-build-theme.
+     * ~/.local/bin/mac-ensure-extensions.sh відставав від версії з репозиторію (був відсутній 15-секундний D-Bus очікувач сесії). Синхронізовано з bin/mac-ensure-extensions.sh.
+     * До core_scripts в bin/mac-audit-sync додано автоматичну перевірку mac-build-theme та mac-audit-sync.
+   - Стилі GTK 3 та GTK 4:
+     * GTK 4: ~/.config/gtk-4.0/gtk.css містив нові стилі splitbutton (капсульні кнопки з padding: 0), виправлену геометрію слайдерів повзунків scale та адаптивні змінні @accent_bg_color. Повністю синхронізовано до gtk-4.0/gtk.css та config/gtk-4.0/gtk.css.
+     * GTK 4 fixes4.css: найновіша ревізія з чистим налаштуванням undershoot-top (0px замість затемнюючого градієнту) та прозорими заголовками з config/gtk-4.0/fixes4.css поширена на gtk-4.0/fixes4.css та ~/.config/gtk-4.0/fixes4.css.
+     * GTK 4 titlebuttons4.css та GTK 3 titlebuttons3.css: оновлено з padding: 0px та центруванням hover з config/ на gtk-4.0/, gtk-3.0/ та ~/.config/.
+     * GTK 3: ~/.config/gtk-3.0/gtk.css містив правила для перемикачів switch, повзунків scale та навігаційних кнопок Nautilus. Синхронізовано до gtk-3.0/gtk.css та config/gtk-3.0/gtk.css.
+     * Запущено централізований компілятор тем bin/mac-build-theme для регенерації та оновлення macw1y-tokens.css і macw1y-components.css у всіх активних середовищах (~/.config, ~/.themes, /usr/share/themes, gtk-3.0, gtk-4.0, config).
+
+3. Результати верифікації:
+   - bin/mac-audit-sync check: 100% PASS (5/5 аудитів успішно).
+   - bin/mac-extension-guard verify: 21/21 SUCCESS (усі хеші заблокованих розширень збігаються).
+   - bin/mac-i18n-verify: 100% SUCCESS (194 підтримуваних мов, валідація ключів та синтаксису install.sh).
+   - ./install.sh: коректно відображає встановлену версію 0.5 та версію пакету інсталятора 0.5.

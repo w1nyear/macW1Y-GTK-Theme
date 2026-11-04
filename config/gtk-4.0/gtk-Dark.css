@@ -4028,9 +4028,9 @@ scale > trough > slider:disabled {
 
 scale.horizontal > trough > slider,
 scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider {
-  margin: -6px -8px;
-  min-width: 28px;
-  min-height: 18px;
+  margin: -8px -10px;
+  min-width: 20px;
+  min-height: 20px;
 }
 
 scale.horizontal > trough > slider:active,
@@ -4049,8 +4049,8 @@ scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider:active {
 
 scale.vertical > trough > slider,
 scale.vertical:not(.marks-before):not(.marks-after) > trough > slider {
-  margin: -8px -6px;
-  min-width: 18px;
+  margin: -10px -8px;
+  min-width: 20px;
   min-height: 20px;
 }
 
@@ -11449,15 +11449,6 @@ window.mac-settings-window cclistrow > box.header {
   padding: 0px;
   border-spacing: 10px;
 }
-
-
-
-
-
-
-
-
-
 
 
 
