@@ -1525,7 +1525,7 @@ windowcontrols {
 .sidebar-pane headerbar windowcontrols {
   border-spacing: 7px;
   padding: 0;
-  margin-left: 12px;
+  margin-left: 0px;
 }
 
 .nautilus-window headerbar windowcontrols button,

@@ -17394,3 +17394,29 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Оновлено хеш цілісності eval-helper@mactheme у config/extensions.lock.json.
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS (5/5).
+
+Етап 673: Виправлення позиціонування елементів вікна Nautilus — зсув кнопок керування вікном (close/min/max) вліво та додавання верхнього відступу (дихання) для таб-бару / рядка шляху
+1. Аналіз зауважень та референсу:
+   - Кнопки світлофора (закрити, згорнути, розгорнути) у Nautilus були надто зміщені праворуч усередину бічної панелі (x=28..41px, центр 34.5px через накопичення margin-left: 12px та padding: 0 8px).
+   - Верхній таб-бар / капсула шляху («Домівка») впиралася впритул у верхню кромку вікна (y=2px), спричиняючи відчуття затиснутості без верхнього відступу.
+
+2. Модифікація перехоплювача та стилів Nautilus (src/mac_nautilus.c, libmac_nautilus.so):
+   - У custom_css перехоплювача:
+     * Для window.nautilus-window toolbarview > .top-bar (а також .content-pane і .sidebar-pane) встановлено padding-top: 5px замість 0px.
+     * Для window.nautilus-window tabbar додано margin-top: 4px, що забезпечує охайний вертикальний відступ для вкладок та капсули шляху (початок капсули зміщено з y=2 до комфортних y=7px).
+     * Для кнопок керування вікном windowcontrols усунено зайві паддінги (padding: 0px) та скориговано margin-left до -4px.
+   - Бібліотеку src/mac_nautilus.c перекомпільовано у lib/libmac_nautilus.so та встановлено до системного каталогу /usr/lib/x86_64-linux-gnu/libmac_nautilus.so з правами 755.
+
+3. Оновлення CSS у стилях тем та генераторі (bin/mac-build-theme, gtk-4.0/macw1y-components.css):
+   - У bin/mac-build-theme та gtk-4.0/macw1y-components.css змінено margin-left з 12px на 0px для .nautilus-window headerbar windowcontrols.
+   - Синхронізовано оновлені файли до всіх варіантів теми (macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid, config/gtk-4.0 та ~/.config/gtk-4.0/).
+   - Оновлено /usr/local/bin/mac-build-theme.
+
+4. Тестування та верифікація:
+   - Проведено перезапуск Nautilus і знято контрольні скріншоти (nautilus_final_crop.png, nautilus_final_tabs_crop.png).
+   - Точні виміри підтвердили:
+     * Центр червоної кнопки close змістився з x=34.5px на x=19.5px (діапазон x=13..26px), що відповідає стандарту macOS Tahoe Finder.
+     * Капсула вкладок/шляху опустилася на y=7px, отримавши чистий верхній відступ від рамки вікна.
+     * У багатотабовому режимі (Ctrl+T) вкладки відображаються рівно та гармонійно.
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS (5/5).
