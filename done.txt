@@ -16782,3 +16782,31 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
      * Оновлено хеші розширень у `config/extensions.lock.json`.
      * `bin/mac-audit-sync check`: 100% PASS (5/5).
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+ЕТАП 652: macW1Y 0.5 — Компактна верхня панель Nautilus у 2 рази (macOS Tahoe Finder ~32px) та круглі скляні кнопки праворуч (пошук, меню, перемикач вигляду)
+
+1. Вимоги завдання:
+   - Користувач повідомив: «у наутілусі верхню панель зменш вдвічі а кнопки справа що є мають мати крулий фон».
+
+2. Причини дефектів та аналіз:
+   - Висота верхньої панелі Nautilus:
+     * За замовчуванням Libadwaita AdwHeaderBar та AdwToolbarView мають внутрішній min-height: 48px плюс вертикальні відступи та padding (38-50px сумарно ~70px повної висоти).
+   - Кнопки справа без фону:
+     * У macw1y-components.css та bin/mac-build-theme для кнопок Nautilus (.nautilus-window headerbar button, splitbutton) було жорстко встановлено background: transparent; background-color: transparent; border: none; box-shadow: none;. Через це кнопки «🔍» (пошук), «···» (меню) та спліт-кнопка вигляду відображалися як «голі» іконки без напівпрозорого круглого скляного фону.
+
+3. Реалізація та виправлення:
+   - Зменшення висоти панелі вдвічі (до 32px):
+     * Встановлено min-height: 28px; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; для .nautilus-window toolbarview > .top-bar, .nautilus-window headerbar, .nautilus-content-headerbar, .nautilus-sidebar-headerbar, centerbox та windowhandle.
+     * Задано компактні розміри адресного рядка (#NautilusPathBar, min-height: 22px; font-size: 12px; padding: 1px 6px) та кнопок навігації історії (< | >, min-height: 24px; min-width: 24px).
+     * У src/mac_nautilus.c додано обнулення верхніх і нижніх відступів headerbar (gtk_widget_set_margin_top/bottom(..., 0)).
+   - Круглий напівпрозорий скляний фон кнопок праворуч:
+     * Для кнопок пошуку («🔍») та меню («···») застосовано ідеальні круглі кнопки 1:1 (min-width: 28px; min-height: 28px; border-radius: 9999px; background-color: rgba(255, 255, 255, 0.09); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15)).
+     * Для перемикача відображення (splitbutton) створено стиль цілісної заокругленої капсули (pill capsule, border-radius: 9999px) із напівпрозорим скляним фоном, що гармонійно поєднується з кнопками історії (< | >), без подвійних накладань фону на внутрішні кнопки.
+     * У src/mac_nautilus.c підвищено пріоритет ін'єкції CSS до GTK_STYLE_PROVIDER_PRIORITY_USER + 500, перекомпільовано lib/libmac_nautilus.so та оновлено /usr/lib/x86_64-linux-gnu/libmac_nautilus.so.
+   - Синхронізація стилів:
+     * Оновлено bin/mac-build-theme, config/gtk-4.0/macw1y-components.css, config/gtk-4.0/gtk.css та виконано збірку тем у ~/.config/gtk-4.0, ~/.themes/macW1Y-Dark та /usr/share/themes/macW1Y-Dark/.
+     * Оновлено /usr/local/bin/mac-build-theme.
+     * Здійснено перевірку живої сесії через EvalHelper Shell Screenshot — висота підтверджено зменшена з 70px до 35px (~50%), кнопки праворуч отримали круглий/капсульний скляний фон.
+   - Аудит та перевірка:
+     * bin/mac-audit-sync check: 100% PASS (5/5).
+     * bin/mac-extension-guard verify: 21/21 SUCCESS.

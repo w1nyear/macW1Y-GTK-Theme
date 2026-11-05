@@ -10348,6 +10348,163 @@ window.nautilus-window #NautilusPathBar {
     margin: 0;
 }
 
+window.nautilus-window .content-pane headerbar box.end > button,
+window.nautilus-window .content-pane headerbar .end > button,
+window.nautilus-window headerbar box.end > button,
+window.nautilus-window headerbar .end > button,
+window.nautilus-window headerbar button.mac-circle-button,
+window.nautilus-window headerbar menubutton.mac-circle-button > button,
+window.nautilus-window headerbar box.end > menubutton > button,
+window.nautilus-window headerbar .end > menubutton > button,
+window.nautilus-window .content-pane headerbar box.end > menubutton > button,
+window.nautilus-window .content-pane headerbar .end > menubutton > button {
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 9999px;
+    padding: 0;
+    margin: 2px 3px;
+    background-color: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    color: rgba(255, 255, 255, 0.90);
+    transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
+}
+
+window.nautilus-window .content-pane headerbar box.end > button:hover,
+window.nautilus-window .content-pane headerbar .end > button:hover,
+window.nautilus-window headerbar box.end > button:hover,
+window.nautilus-window headerbar .end > button:hover,
+window.nautilus-window headerbar button.mac-circle-button:hover,
+window.nautilus-window headerbar menubutton.mac-circle-button > button:hover,
+window.nautilus-window headerbar box.end > menubutton > button:hover,
+window.nautilus-window headerbar .end > menubutton > button:hover,
+window.nautilus-window .content-pane headerbar box.end > menubutton > button:hover,
+window.nautilus-window .content-pane headerbar .end > menubutton > button:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+window.nautilus-window .content-pane headerbar box.end > button:active,
+window.nautilus-window .content-pane headerbar box.end > button:checked,
+window.nautilus-window .content-pane headerbar .end > button:active,
+window.nautilus-window .content-pane headerbar .end > button:checked,
+window.nautilus-window headerbar box.end > button:active,
+window.nautilus-window headerbar box.end > button:checked,
+window.nautilus-window headerbar .end > button:active,
+window.nautilus-window headerbar .end > button:checked,
+window.nautilus-window headerbar button.mac-circle-button:active,
+window.nautilus-window headerbar button.mac-circle-button:checked,
+window.nautilus-window headerbar menubutton.mac-circle-button > button:active,
+window.nautilus-window headerbar menubutton.mac-circle-button > button:checked,
+window.nautilus-window headerbar box.end > menubutton > button:active,
+window.nautilus-window headerbar box.end > menubutton > button:checked,
+window.nautilus-window headerbar .end > menubutton > button:active,
+window.nautilus-window headerbar .end > menubutton > button:checked,
+window.nautilus-window .content-pane headerbar box.end > menubutton > button:active,
+window.nautilus-window .content-pane headerbar box.end > menubutton > button:checked {
+    background-color: rgba(255, 255, 255, 0.24);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+}
+
+window.nautilus-window headerbar splitbutton,
+window.nautilus-window headerbar NautilusViewControls splitbutton,
+window.nautilus-window headerbar #view_split_button,
+window.nautilus-window headerbar splitbutton.flat {
+    min-height: 26px;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    padding: 0;
+    margin: 2px 3px;
+    border-spacing: 0;
+}
+
+window.nautilus-window headerbar splitbutton > separator {
+    min-width: 1px;
+    min-height: 14px;
+    margin: 5px 0;
+    padding: 0;
+    background-color: rgba(255, 255, 255, 0.12);
+    border: none;
+}
+
+window.nautilus-window headerbar splitbutton > button {
+    min-width: 26px;
+    min-height: 26px;
+    padding: 0 4px 0 6px;
+    margin: 0;
+    border: none;
+    background: transparent;
+    background-color: transparent;
+    border-top-left-radius: 9999px;
+    border-bottom-left-radius: 9999px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: none;
+    color: rgba(255, 255, 255, 0.90);
+    transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+window.nautilus-window headerbar splitbutton > button:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+window.nautilus-window headerbar splitbutton > button:active,
+window.nautilus-window headerbar splitbutton > button:checked {
+    background-color: rgba(255, 255, 255, 0.20);
+    color: #ffffff;
+}
+
+window.nautilus-window headerbar splitbutton > menubutton {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+window.nautilus-window headerbar splitbutton > menubutton > button {
+    min-width: 20px;
+    min-height: 26px;
+    padding: 0 6px 0 2px;
+    margin: 0;
+    border: none;
+    background: transparent;
+    background-color: transparent;
+    border-top-right-radius: 9999px;
+    border-bottom-right-radius: 9999px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    box-shadow: none;
+    color: rgba(255, 255, 255, 0.90);
+    transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+window.nautilus-window headerbar splitbutton > menubutton > button:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+window.nautilus-window headerbar splitbutton > menubutton > button:active,
+window.nautilus-window headerbar splitbutton > menubutton > button:checked {
+    background-color: rgba(255, 255, 255, 0.20);
+    color: #ffffff;
+}
+
+window.nautilus-window .nautilus-pathbar button,
+window.nautilus-window #NautilusPathBar button,
+window.nautilus-window .nautilus-pathbar menubutton > button,
+window.nautilus-window #NautilusPathBar menubutton > button {
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}
+
 
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
 
@@ -11928,6 +12085,8 @@ window.mac-settings-window button.suggested-action.circular:active {
   color: #ffffff;
   border-radius: 9999px;
 }
+
+
 
 
 /* macW1Y Global Component Master Overrides (SSOT) */

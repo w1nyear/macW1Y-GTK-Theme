@@ -748,11 +748,32 @@ window.nautilus-window .nautilus-pathbar > scrolledwindow undershoot.right {
 .nautilus-window headerbar.default-decoration,
 .nautilus-window toolbarview > .top-bar,
 .nautilus-window toolbarview > .top-bar.flat,
-.nautilus-window toolbarview > .top-bar.raised {
+.nautilus-window toolbarview > .top-bar.raised,
+.nautilus-window .content-pane headerbar,
+.nautilus-window .sidebar-pane headerbar,
+.nautilus-window .nautilus-content-headerbar,
+.nautilus-window .nautilus-sidebar-headerbar {
+  min-height: 28px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  margin-top: 0px;
+  margin-bottom: 0px;
   box-shadow: none;
   border-bottom: none;
   border-bottom-style: none;
   border-bottom-color: transparent;
+}
+
+.nautilus-window toolbarview > .top-bar .collapse-spacing headerbar,
+.nautilus-window toolbarview > .top-bar .collapse-spacing headerbar > windowhandle > box,
+.nautilus-window headerbar > windowhandle,
+.nautilus-window headerbar > windowhandle > centerbox,
+.nautilus-window headerbar centerbox {
+  min-height: 28px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  margin-top: 0px;
+  margin-bottom: 0px;
 }
 
 .nautilus-window separator,
@@ -846,183 +867,163 @@ NautilusHistoryControls button:active {
 }
 
 /* Nautilus View Controls (splitbutton: grid/list + options dropdown) —
-   Clean transparent idle, fully circular buttons */
+   macOS Tahoe Finder pill capsule with circular ends */
 .nautilus-window headerbar splitbutton,
 .nautilus-window headerbar NautilusViewControls splitbutton,
 .nautilus-window headerbar #view_split_button,
-.nautilus-window headerbar splitbutton.flat,
-headerbar splitbutton,
-headerbar splitbutton.flat {
+.nautilus-window headerbar splitbutton.flat {
+  min-height: 26px;
   border-radius: 9999px;
-  background: transparent;
-  background-color: transparent;
-  background-image: none;
-  border: none;
-  box-shadow: none;
+  background-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   padding: 0;
-  margin: 0 4px;
+  margin: 2px 3px;
   border-spacing: 0;
 }
 
-.nautilus-window headerbar splitbutton > menubutton,
-headerbar splitbutton > menubutton {
-  margin: 0;
+.nautilus-window headerbar splitbutton > separator {
+  min-width: 1px;
+  min-height: 14px;
+  margin: 5px 0;
   padding: 0;
-  background: transparent;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-.nautilus-window headerbar splitbutton > separator,
-headerbar splitbutton > separator {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  background: transparent;
+  background-color: rgba(255, 255, 255, 0.12);
   border: none;
 }
 
-.nautilus-window headerbar splitbutton > button,
-.nautilus-window headerbar splitbutton > menubutton > button,
-.nautilus-window headerbar splitbutton.flat > button,
-.nautilus-window headerbar splitbutton.flat > menubutton > button,
-.nautilus-window headerbar NautilusViewControls splitbutton > button,
-.nautilus-window headerbar NautilusViewControls splitbutton > menubutton > button,
-.nautilus-window headerbar #view_split_button > button,
-.nautilus-window headerbar #view_split_button > menubutton > button,
-headerbar NautilusViewControls splitbutton > button,
-headerbar NautilusViewControls splitbutton > menubutton > button,
-NautilusViewControls splitbutton > button,
-NautilusViewControls splitbutton > menubutton > button,
-headerbar splitbutton > button,
-headerbar splitbutton > menubutton > button,
-headerbar splitbutton.flat > button,
-headerbar splitbutton.flat > menubutton > button {
-  min-width: 30px;
-  min-height: 30px;
-  border-radius: 9999px;
-  padding: 4px;
-  margin: 0 1px;
+.nautilus-window headerbar splitbutton > button {
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0 4px 0 6px;
+  margin: 0;
+  border: none;
   background: transparent;
   background-color: transparent;
-  background-image: none;
-  border: none;
-  border-style: none;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
   box-shadow: none;
-  outline: none;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.90);
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
-.nautilus-window headerbar splitbutton > button:hover,
-.nautilus-window headerbar splitbutton > menubutton > button:hover,
-.nautilus-window headerbar splitbutton.flat > button:hover,
-.nautilus-window headerbar splitbutton.flat > menubutton > button:hover,
-.nautilus-window headerbar NautilusViewControls splitbutton > button:hover,
-.nautilus-window headerbar NautilusViewControls splitbutton > menubutton > button:hover,
-.nautilus-window headerbar #view_split_button > button:hover,
-.nautilus-window headerbar #view_split_button > menubutton > button:hover,
-headerbar NautilusViewControls splitbutton > button:hover,
-headerbar NautilusViewControls splitbutton > menubutton > button:hover,
-NautilusViewControls splitbutton > button:hover,
-NautilusViewControls splitbutton > menubutton > button:hover,
-headerbar splitbutton > button:hover,
-headerbar splitbutton > menubutton > button:hover,
-headerbar splitbutton.flat > button:hover,
-headerbar splitbutton.flat > menubutton > button:hover {
-  background-color: rgba(255, 255, 255, 0.14);
-  border-radius: 9999px;
+.nautilus-window headerbar splitbutton > button:hover {
+  background-color: rgba(255, 255, 255, 0.12);
   color: #ffffff;
 }
 
 .nautilus-window headerbar splitbutton > button:active,
-.nautilus-window headerbar splitbutton > button:checked,
+.nautilus-window headerbar splitbutton > button:checked {
+  background-color: rgba(255, 255, 255, 0.20);
+  color: #ffffff;
+}
+
+.nautilus-window headerbar splitbutton > menubutton {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.nautilus-window headerbar splitbutton > menubutton > button {
+  min-width: 20px;
+  min-height: 26px;
+  padding: 0 6px 0 2px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  background-color: transparent;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.90);
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+.nautilus-window headerbar splitbutton > menubutton > button:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
 .nautilus-window headerbar splitbutton > menubutton > button:active,
-.nautilus-window headerbar splitbutton > menubutton > button:checked,
-.nautilus-window headerbar splitbutton.flat > button:active,
-.nautilus-window headerbar splitbutton.flat > button:checked,
-.nautilus-window headerbar splitbutton.flat > menubutton > button:active,
-.nautilus-window headerbar splitbutton.flat > menubutton > button:checked,
-.nautilus-window headerbar NautilusViewControls splitbutton > button:active,
-.nautilus-window headerbar NautilusViewControls splitbutton > button:checked,
-.nautilus-window headerbar NautilusViewControls splitbutton > menubutton > button:active,
-.nautilus-window headerbar NautilusViewControls splitbutton > menubutton > button:checked,
-.nautilus-window headerbar #view_split_button > button:active,
-.nautilus-window headerbar #view_split_button > button:checked,
-.nautilus-window headerbar #view_split_button > menubutton > button:active,
-.nautilus-window headerbar #view_split_button > menubutton > button:checked,
-headerbar NautilusViewControls splitbutton > button:active,
-headerbar NautilusViewControls splitbutton > button:checked,
-headerbar NautilusViewControls splitbutton > menubutton > button:active,
-headerbar NautilusViewControls splitbutton > menubutton > button:checked,
-NautilusViewControls splitbutton > button:active,
-NautilusViewControls splitbutton > button:checked,
-NautilusViewControls splitbutton > menubutton > button:active,
-NautilusViewControls splitbutton > menubutton > button:checked,
-headerbar splitbutton > button:active,
-headerbar splitbutton > button:checked,
-headerbar splitbutton > menubutton > button:active,
-headerbar splitbutton > menubutton > button:checked,
-headerbar splitbutton.flat > button:active,
-headerbar splitbutton.flat > button:checked,
-headerbar splitbutton.flat > menubutton > button:active,
-headerbar splitbutton.flat > menubutton > button:checked {
-  background-color: rgba(255, 255, 255, 0.22);
-  border-radius: 9999px;
+.nautilus-window headerbar splitbutton > menubutton > button:checked {
+  background-color: rgba(255, 255, 255, 0.20);
   color: #ffffff;
 }
 
 /* Nautilus headerbar individual circular control buttons (Search, Menu) */
-.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button),
-.nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button),
-.nautilus-window headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button),
-.nautilus-window headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button) {
-  min-width: 30px;
-  min-height: 30px;
+.nautilus-window .content-pane headerbar box.end > button,
+.nautilus-window .content-pane headerbar .end > button,
+.nautilus-window headerbar box.end > button,
+.nautilus-window headerbar .end > button,
+.nautilus-window headerbar button.mac-circle-button,
+.nautilus-window headerbar menubutton.mac-circle-button > button,
+.nautilus-window headerbar box.end > menubutton > button,
+.nautilus-window headerbar .end > menubutton > button,
+.nautilus-window .content-pane headerbar box.end > menubutton > button,
+.nautilus-window .content-pane headerbar .end > menubutton > button {
+  min-width: 28px;
+  min-height: 28px;
   border-radius: 9999px;
-  padding: 4px;
-  margin: 0 2px;
+  padding: 0;
+  margin: 2px 3px;
+  background-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  color: rgba(255, 255, 255, 0.90);
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
+}
+
+.nautilus-window .content-pane headerbar box.end > button:hover,
+.nautilus-window .content-pane headerbar .end > button:hover,
+.nautilus-window headerbar box.end > button:hover,
+.nautilus-window headerbar .end > button:hover,
+.nautilus-window headerbar button.mac-circle-button:hover,
+.nautilus-window headerbar menubutton.mac-circle-button > button:hover,
+.nautilus-window headerbar box.end > menubutton > button:hover,
+.nautilus-window headerbar .end > menubutton > button:hover,
+.nautilus-window .content-pane headerbar box.end > menubutton > button:hover,
+.nautilus-window .content-pane headerbar .end > menubutton > button:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.nautilus-window .content-pane headerbar box.end > button:active,
+.nautilus-window .content-pane headerbar box.end > button:checked,
+.nautilus-window .content-pane headerbar .end > button:active,
+.nautilus-window .content-pane headerbar .end > button:checked,
+.nautilus-window headerbar box.end > button:active,
+.nautilus-window headerbar box.end > button:checked,
+.nautilus-window headerbar .end > button:active,
+.nautilus-window headerbar .end > button:checked,
+.nautilus-window headerbar button.mac-circle-button:active,
+.nautilus-window headerbar button.mac-circle-button:checked,
+.nautilus-window headerbar menubutton.mac-circle-button > button:active,
+.nautilus-window headerbar menubutton.mac-circle-button > button:checked,
+.nautilus-window headerbar box.end > menubutton > button:active,
+.nautilus-window headerbar box.end > menubutton > button:checked,
+.nautilus-window headerbar .end > menubutton > button:active,
+.nautilus-window headerbar .end > menubutton > button:checked,
+.nautilus-window .content-pane headerbar box.end > menubutton > button:active,
+.nautilus-window .content-pane headerbar box.end > menubutton > button:checked {
+  background-color: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.nautilus-window .nautilus-pathbar button,
+.nautilus-window #NautilusPathBar button,
+.nautilus-window .nautilus-pathbar menubutton > button,
+.nautilus-window #NautilusPathBar menubutton > button {
   background: transparent;
   background-color: transparent;
-  background-image: none;
   border: none;
-  border-style: none;
   box-shadow: none;
-  color: rgba(255, 255, 255, 0.88);
-  transition: background-color 150ms ease-out, color 150ms ease-out;
-}
-
-.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):hover,
-.nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):hover,
-.nautilus-window headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):hover,
-.nautilus-window headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):hover {
-  background-color: rgba(255, 255, 255, 0.14);
-  border-radius: 9999px;
-  border: none;
-  border-style: none;
-  box-shadow: none;
-  color: #ffffff;
-}
-
-.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):active,
-.nautilus-window headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):checked,
-.nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-.nautilus-window headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
-.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):active,
-.nautilus-window .content-pane headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):checked,
-.nautilus-window headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):active,
-.nautilus-window headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):checked,
-.nautilus-window headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):active,
-.nautilus-window headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):checked {
-  background-color: rgba(255, 255, 255, 0.22);
-  border-radius: 9999px;
-  border: none;
-  border-style: none;
-  box-shadow: none;
-  color: #ffffff;
 }
 
 /* Icons and inner containers inside headerbar buttons MUST NEVER have a separate background */
