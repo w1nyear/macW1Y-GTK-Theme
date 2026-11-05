@@ -22,6 +22,7 @@ REQUIRED_EXTENSIONS=(
     "compiz-alike-magic-lamp-effect@hermes83.github.com"
     "Rounded_Corners@lennart-k"
     "macos-touchpad-gestures@mactheme"
+    "desktop-widgets@r3nhick"
     "custom-command-toggle@storageb.github.com"
     "volume-percentage-quick-settings@imdarktom"
     "quick-settings-scroll@diskmth.fr"
