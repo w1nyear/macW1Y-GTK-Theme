@@ -2856,6 +2856,14 @@ function _syncStack(s, monitor) {
         s.liquidBox.set_size(screenW, screenH);
     }
 
+    const isAnimating = (_panel?.box?.translation_x !== 0) || (_panel?.box?.scale_x !== 1.0) || _closing;
+    let doHeavy = true;
+    if (isAnimating) {
+        doHeavy = false;
+    }
+    if (!doHeavy)
+        return;
+
     s.wcm.setOffset(-monitorX, -monitorY);
     syncGlassCaptureClip({
         cloneContainer: s.cloneContainer,

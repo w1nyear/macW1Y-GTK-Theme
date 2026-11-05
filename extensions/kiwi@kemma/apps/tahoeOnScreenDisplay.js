@@ -312,10 +312,8 @@ function _computeTargetCoordinates(fsOverride = null) {
         // Fullscreen application (not maximized) or hidden menubar: center horizontally across the screen
         targetX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
     } else {
-        // Desktop or maximized window with visible menubar: align under the top-right tray / quick settings
-        const cx = Math.max(monitor.x + OSD_W / 2,
-            Math.min(monitor.x + monitor.width - OSD_W / 2, _anchorX(monitor)));
-        targetX = Math.round(cx - OSD_W / 2);
+        // Desktop or maximized window with visible menubar: align firmly to top-right with standard 16px margin (macOS Tahoe style)
+        targetX = Math.round(monitor.x + monitor.width - OSD_W - 16);
     }
     const targetY = monitor.y + panelH + 8;
     return { monitor, targetX, targetY };
@@ -374,8 +372,8 @@ function _animateReposition(targetX, targetY) {
 }
 
 function _applyPredictedPosition(smoothIfVisible = true, fsOverride = null) {
-    if (!_box)
-        return;
+    if (!_box || _box.visible)
+        return; // Etap 651: Never shift or drift OSD position while it is visible on screen
     const coords = _computeTargetCoordinates(fsOverride);
     if (!coords)
         return;
@@ -1007,12 +1005,18 @@ function _show(kind, title, iconL, iconR, value) {
     } catch (_) {}
 
     try {
-        const coords = _computeTargetCoordinates();
-        if (!coords)
-            return;
+        let boxX, boxY;
+        if (_box.visible) {
+            // Etap 651: While OSD is visible, keep position strictly stable - no drifting during volume adjustment
+            boxX = _box.x;
+            boxY = _box.y;
+        } else {
+            const coords = _computeTargetCoordinates();
+            if (!coords)
+                return;
 
-        const { targetX: boxX, targetY: boxY } = coords;
-        if (!_box.visible) {
+            boxX = coords.targetX;
+            boxY = coords.targetY;
             _cancelAnim();
             _box.set_position(boxX, boxY);
             if (_osdShadow) {
@@ -1021,8 +1025,6 @@ function _show(kind, title, iconL, iconR, value) {
                 if (_box.height > 0)
                     _osdShadow.set_height(_box.height);
             }
-        } else if (_box.x !== boxX || _box.y !== boxY) {
-            _animateReposition(boxX, boxY);
         }
 
         const firstShow = !_box.visible;

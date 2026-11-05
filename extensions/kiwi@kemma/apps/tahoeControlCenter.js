@@ -1603,7 +1603,7 @@ function _buildPanel() {
     }
     panelBg.set_position(X, Y);
     panelBg.width = W;
-    panelBg.translation_x = slideOffset;
+    panelBg.translation_x = 0;
     panelBg.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
     overlay.add_child(panelBg);
 
@@ -1617,7 +1617,7 @@ function _buildPanel() {
     }
     box.set_position(X, Y);
     box.width = W;
-    box.translation_x = slideOffset;
+    box.translation_x = 0;
     box.set_style('border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important;');
     box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
     overlay.add_child(box);
@@ -2420,6 +2420,18 @@ function _buildPanel() {
         translation_x: 0,
         duration: 260,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        onComplete: () => {
+            if (_panel?.box)
+                _panel.box.translation_x = 0;
+            if (_panel?.panelBg)
+                _panel.panelBg.translation_x = 0;
+            const m = Main.layoutManager.primaryMonitor;
+            for (const s of (_panel?.glass?.stacks || [])) {
+                try {
+                    _syncStack(s, m);
+                } catch (_) {}
+            }
+        }
     });
     panelBg.ease({
         translation_x: 0,
@@ -3770,12 +3782,18 @@ function _syncStack(s, monitor) {
     // [GPU-SAVE] Важку частину (клони + семпли UI + capture-clip) виконуємо
     // лише коли фон дійсно змінився, з жорсткою межею 60 FPS. У спокої
     // Control Center скло не перемалюється взагалі; пульс 1 Гц забезпечує
-    // узгодежність; анімації панелі оживляють власні хеш-межі.
+    // узгодежність; під час анімації (виїзду/закриття) важкі перемальовки
+    // блокуються, щоб забезпечити 60 FPS і не ламати віджети робочого столу.
+    const isAnimating = (p.box?.translation_x !== 0) || (p.box?.scale_x !== 1.0) || _closing;
     let doHeavy = true;
-    try {
-        doHeavy = glassRefreshDue ? glassRefreshDue(s.bgActor, extraH) : true;
-    } catch (_) {
-        doHeavy = true;
+    if (isAnimating) {
+        doHeavy = false;
+    } else {
+        try {
+            doHeavy = glassRefreshDue ? glassRefreshDue(s.bgActor, extraH) : true;
+        } catch (_) {
+            doHeavy = true;
+        }
     }
     if (!doHeavy)
         return;

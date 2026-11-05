@@ -6765,13 +6765,14 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 
 #NautilusPathBar, .nautilus-pathbar {
   border-radius: 9999px;
+  min-height: 22px;
   margin: 0;
-  padding: 3px;
+  padding: 1px 4px;
   color: @headerbar_fg_color;
   background-color: transparent;
-  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
-  box-shadow: 0 6px 20px alpha(#000000,0.15), inset 1px 2px 1px -1px alpha(#ffffff,0.08), inset -1px -1px 1px 0 alpha(#ffffff,0.08);
-  border: none;
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 1px 3px alpha(#000000, 0.15), inset 0 1px 0 alpha(#ffffff, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 #NautilusPathBar:backdrop, .nautilus-pathbar:backdrop {
@@ -6784,8 +6785,9 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 #NautilusPathBar #NautilusPathButton, #NautilusPathBar .nautilus-path-button, .nautilus-pathbar #NautilusPathButton, .nautilus-pathbar .nautilus-path-button {
   margin: 0;
   border-radius: 9999px;
-  min-height: 24px;
-  padding: 3px 6px;
+  min-height: 20px;
+  padding: 1px 6px;
+  font-size: 12px;
 }
 
 #NautilusPathBar #NautilusPathButton.current-dir, #NautilusPathBar .nautilus-path-button.current-dir, .nautilus-pathbar #NautilusPathButton.current-dir, .nautilus-pathbar .nautilus-path-button.current-dir {
@@ -6802,9 +6804,9 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 }
 
 #NautilusPathBar > menubutton > button, #NautilusPathBar > menubutton.flat.popup > button, .nautilus-pathbar > menubutton > button, .nautilus-pathbar > menubutton.flat.popup > button {
-  min-height: 24px;
-  min-width: 24px;
-  padding: 3px;
+  min-height: 20px;
+  min-width: 20px;
+  padding: 1px 3px;
   border-radius: 9999px;
 }
 
@@ -9954,9 +9956,7 @@ window.mac-settings-window .mac-settings-sidebar-headerbar,
 window.mac-settings-window navigation-split-view headerbar,
 navigation-split-view headerbar,
 overlay-split-view headerbar,
-overlay-split-view toolbarview > .top-bar headerbar,
-window.nautilus-window .content-pane headerbar,
-window.nautilus-window .sidebar-pane headerbar {
+overlay-split-view toolbarview > .top-bar headerbar {
     min-height: 48px;
     background: none;
     background-color: transparent;
@@ -10268,18 +10268,62 @@ window.nautilus-window .content-pane > scrolledwindow {
     box-shadow: none;
 }
 
-window.nautilus-window .content-pane headerbar {
+/* macOS Tahoe Finder Compact Toolbar (Task 650) */
+window.nautilus-window headerbar,
+window.nautilus-window .content-pane headerbar,
+window.nautilus-window .sidebar-pane headerbar,
+window.nautilus-window .nautilus-content-headerbar,
+window.nautilus-window .nautilus-sidebar-headerbar {
+    min-height: 28px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-top: 0px;
     background: transparent;
     background-color: transparent;
+    background-image: none;
+    border: none;
     border-bottom: none;
     box-shadow: none;
-    margin-top: -3px;
-    padding-left: 0px;
 }
 
-/* Etap 112: raise the toolbar strip a couple of pixels */
-window.nautilus-window .sidebar-pane headerbar {
-    margin-top: -3px;
+window.nautilus-window toolbarview > .top-bar,
+window.nautilus-window .content-pane toolbarview > .top-bar,
+window.nautilus-window .sidebar-pane toolbarview > .top-bar {
+    min-height: 28px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+window.nautilus-window headerbar windowhandle,
+window.nautilus-window headerbar centerbox {
+    min-height: 28px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+window.nautilus-window headerbar button.back {
+    min-height: 0px;
+    min-width: 0px;
+    padding: 0px;
+}
+
+window.nautilus-window .sidebar-pane headerbar windowcontrols {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding: 0 8px;
+}
+
+window.nautilus-window .sidebar-pane headerbar windowcontrols button.close,
+window.nautilus-window .sidebar-pane headerbar windowcontrols button.minimize,
+window.nautilus-window .sidebar-pane headerbar windowcontrols button.maximize {
+    min-width: 14px;
+    min-height: 14px;
+    padding: 0;
+    margin-top: 0px;
 }
 
 /* Shift top panel buttons */
@@ -10299,7 +10343,9 @@ window.nautilus-window .content-pane headerbar .start {
 window.nautilus-window .nautilus-pathbar,
 window.nautilus-window #NautilusPathBar {
     min-width: 0;
-    padding: 3px 12px;
+    min-height: 22px;
+    padding: 1px 8px;
+    margin: 0;
 }
 
 
@@ -11883,4 +11929,6 @@ window.mac-settings-window button.suggested-action.circular:active {
   border-radius: 9999px;
 }
 
+
+/* macW1Y Global Component Master Overrides (SSOT) */
 @import url("macw1y-components.css");

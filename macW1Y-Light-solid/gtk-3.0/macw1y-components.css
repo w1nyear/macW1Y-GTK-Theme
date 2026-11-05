@@ -1,0 +1,285 @@
+/* macW1Y 0.5 — Master Unified Component Stylesheet for GTK 3 */
+/* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
+
+/* Window Background */
+window:not(.desktopwindow),
+.background:not(.desktopwindow) {
+  background-color: #202022;
+  color: #ffffff;
+}
+
+window.desktopwindow,
+window.desktopwindow.background,
+.desktopwindow,
+.desktopwindow.background,
+window.desktopwindow decoration {
+  background-color: transparent;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: none;
+}
+
+/* GTK 3 Switches */
+switch {
+  min-width: 40px;
+  min-height: 23px;
+  padding: 0;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.16);
+  border: none;
+  box-shadow: none;
+}
+
+switch:checked {
+  background-color: @accent_bg_color;
+}
+
+switch slider {
+  min-width: 19px;
+  min-height: 19px;
+  margin: 2px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* GTK 3 Sliders (Scales) */
+scale trough {
+  min-height: 4px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.16);
+  border: none;
+}
+
+scale highlight {
+  min-height: 4px;
+  border-radius: 9999px;
+  background-color: @accent_bg_color;
+  border: none;
+}
+
+scale slider {
+  min-width: 20px;
+  min-height: 20px;
+  margin: -8px -10px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+}
+
+/* GTK 3 Buttons */
+button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat):not(.image-button):not(.circular) {
+  min-height: 24px;
+  padding: 3px 12px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.90);
+}
+
+button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat):not(.image-button):not(.circular):hover {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+/* macOS Tahoe Universal 1:1 Circular Icon & Action Buttons (Etap 651) */
+headerbar button.image-button,
+headerbar menubutton,
+headerbar menubutton > button,
+headerbar button.popup,
+headerbar button.circular,
+headerbar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize),
+.titlebar button.image-button,
+.titlebar menubutton,
+.titlebar menubutton > button,
+.titlebar button.popup,
+.titlebar button.circular,
+.titlebar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize),
+toolbar.inline-toolbar toolbutton > button,
+toolbar.inline-toolbar button.image-button,
+.inline-toolbar button.image-button,
+.inline-toolbar button:not(.text-button),
+#devtab-grid-toolbar button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  margin: 2px 3px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  color: rgba(255, 255, 255, 0.90);
+  background-image: none;
+}
+
+headerbar button.image-button:hover,
+headerbar menubutton:hover,
+headerbar menubutton > button:hover,
+headerbar button.popup:hover,
+headerbar button.circular:hover,
+headerbar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):hover,
+.titlebar button.image-button:hover,
+.titlebar menubutton:hover,
+.titlebar menubutton > button:hover,
+.titlebar button.popup:hover,
+.titlebar button.circular:hover,
+.titlebar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):hover,
+toolbar.inline-toolbar toolbutton > button:hover,
+toolbar.inline-toolbar button.image-button:hover,
+.inline-toolbar button.image-button:hover,
+.inline-toolbar button:not(.text-button):hover,
+#devtab-grid-toolbar button:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+}
+
+headerbar button.image-button:active,
+headerbar button.image-button:checked,
+headerbar menubutton:active,
+headerbar menubutton:checked,
+headerbar menubutton > button:active,
+headerbar menubutton > button:checked,
+headerbar button.popup:active,
+headerbar button.popup:checked,
+headerbar button.circular:active,
+headerbar button.circular:checked,
+headerbar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):active,
+headerbar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):checked,
+.titlebar button.image-button:active,
+.titlebar button.image-button:checked,
+.titlebar menubutton:active,
+.titlebar menubutton:checked,
+.titlebar menubutton > button:active,
+.titlebar menubutton > button:checked,
+.titlebar button.popup:active,
+.titlebar button.popup:checked,
+.titlebar button.circular:active,
+.titlebar button.circular:checked,
+.titlebar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):active,
+.titlebar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):checked,
+toolbar.inline-toolbar toolbutton > button:active,
+toolbar.inline-toolbar toolbutton > button:checked,
+toolbar.inline-toolbar button.image-button:active,
+toolbar.inline-toolbar button.image-button:checked,
+.inline-toolbar button.image-button:active,
+.inline-toolbar button.image-button:checked,
+.inline-toolbar button:not(.text-button):active,
+.inline-toolbar button:not(.text-button):checked,
+#devtab-grid-toolbar button:active,
+#devtab-grid-toolbar button:checked {
+  background-color: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+headerbar button.image-button image,
+headerbar menubutton > button image,
+headerbar button.popup image,
+headerbar button:not(.text-button) image,
+.titlebar button.image-button image,
+.titlebar menubutton > button image,
+.titlebar button.popup image,
+.titlebar button:not(.text-button) image,
+toolbar.inline-toolbar button image,
+toolbar.inline-toolbar toolbutton image,
+.inline-toolbar button image,
+#devtab-grid-toolbar button image {
+  padding: 0;
+  margin: 0;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+/* GTK 3 Window Controls (macOS Traffic Lights) */
+headerbar button.titlebutton,
+.titlebar button.titlebutton,
+windowcontrols button,
+windowcontrols button.close,
+windowcontrols button.minimize,
+windowcontrols button.maximize {
+  min-width: 16px;
+  min-height: 16px;
+  padding: 0;
+  margin: 0 2px;
+  border-radius: 9999px;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+}
+
+headerbar button.titlebutton:hover,
+.titlebar button.titlebutton:hover,
+windowcontrols button:hover,
+headerbar button.titlebutton:active,
+.titlebar button.titlebutton:active,
+windowcontrols button:active {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+}
+
+button.suggested-action {
+  background-color: @accent_bg_color;
+  border-color: @accent_bg_color;
+  color: @accent_fg_color;
+}
+
+/* GTK 3 Entries */
+entry {
+  min-height: 28px;
+  padding: 2px 10px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+entry:focus {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.20);
+}
+
+/* GTK 3 Scrollbars */
+scrollbar slider {
+  min-width: 6px;
+  min-height: 6px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.25);
+  border: none;
+}
+
+scrollbar slider:hover {
+  background-color: rgba(255, 255, 255, 0.40);
+}
+
+/* GTK 3 Scrolled Lists & Undershoot Clean Transparency */
+undershoot,
+undershoot.top,
+undershoot.bottom,
+scrolledwindow undershoot,
+scrolledwindow > undershoot,
+scrolledwindow > undershoot.top,
+scrolledwindow > undershoot.bottom {
+  min-height: 0px;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}

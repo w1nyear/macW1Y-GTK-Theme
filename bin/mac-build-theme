@@ -773,15 +773,12 @@ headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.tit
   min-width: 28px;
   min-height: 28px;
   border-radius: 9999px;
-  padding: 4px;
+  padding: 0;
   margin: 0 2px;
-  background: transparent;
-  background-color: transparent;
-  background-image: none;
-  border: none;
-  border-style: none;
-  box-shadow: none;
-  color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  color: rgba(255, 255, 255, 0.90);
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }}
 
@@ -790,11 +787,10 @@ headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover {{
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
-  border: none;
-  border-style: none;
-  box-shadow: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
   color: #ffffff;
 }}
 
@@ -803,12 +799,17 @@ headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active {{
-  background-color: rgba(255, 255, 255, 0.20);
+  background-color: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.16);
   border-radius: 9999px;
-  border: none;
-  border-style: none;
-  box-shadow: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   color: #ffffff;
+}}
+
+headerbar button image,
+headerbar menubutton > button image {{
+  padding: 0;
+  margin: 0;
 }}
 
 /* Nautilus Pathbar: completely clean, no white undershoot slivers or borders */
@@ -2035,7 +2036,7 @@ scale slider {{
 }}
 
 /* GTK 3 Buttons */
-button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat) {{
+button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat):not(.image-button):not(.circular) {{
   min-height: {d["button_min_height"]}px;
   padding: 3px 12px;
   border-radius: {g["button_action_radius"]}px;
@@ -2044,9 +2045,122 @@ button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat) {{
   color: {c["text_primary"]};
 }}
 
-button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat):hover {{
+button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat):not(.image-button):not(.circular):hover {{
   background-color: rgba(255, 255, 255, 0.14);
   color: #ffffff;
+}}
+
+/* macOS Tahoe Universal 1:1 Circular Icon & Action Buttons (Etap 651) */
+headerbar button.image-button,
+headerbar menubutton,
+headerbar menubutton > button,
+headerbar button.popup,
+headerbar button.circular,
+headerbar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize),
+.titlebar button.image-button,
+.titlebar menubutton,
+.titlebar menubutton > button,
+.titlebar button.popup,
+.titlebar button.circular,
+.titlebar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize),
+toolbar.inline-toolbar toolbutton > button,
+toolbar.inline-toolbar button.image-button,
+.inline-toolbar button.image-button,
+.inline-toolbar button:not(.text-button),
+#devtab-grid-toolbar button {{
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  margin: 2px 3px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  color: rgba(255, 255, 255, 0.90);
+  background-image: none;
+}}
+
+headerbar button.image-button:hover,
+headerbar menubutton:hover,
+headerbar menubutton > button:hover,
+headerbar button.popup:hover,
+headerbar button.circular:hover,
+headerbar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):hover,
+.titlebar button.image-button:hover,
+.titlebar menubutton:hover,
+.titlebar menubutton > button:hover,
+.titlebar button.popup:hover,
+.titlebar button.circular:hover,
+.titlebar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):hover,
+toolbar.inline-toolbar toolbutton > button:hover,
+toolbar.inline-toolbar button.image-button:hover,
+.inline-toolbar button.image-button:hover,
+.inline-toolbar button:not(.text-button):hover,
+#devtab-grid-toolbar button:hover {{
+  background-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+}}
+
+headerbar button.image-button:active,
+headerbar button.image-button:checked,
+headerbar menubutton:active,
+headerbar menubutton:checked,
+headerbar menubutton > button:active,
+headerbar menubutton > button:checked,
+headerbar button.popup:active,
+headerbar button.popup:checked,
+headerbar button.circular:active,
+headerbar button.circular:checked,
+headerbar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):active,
+headerbar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):checked,
+.titlebar button.image-button:active,
+.titlebar button.image-button:checked,
+.titlebar menubutton:active,
+.titlebar menubutton:checked,
+.titlebar menubutton > button:active,
+.titlebar menubutton > button:checked,
+.titlebar button.popup:active,
+.titlebar button.popup:checked,
+.titlebar button.circular:active,
+.titlebar button.circular:checked,
+.titlebar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):active,
+.titlebar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize):checked,
+toolbar.inline-toolbar toolbutton > button:active,
+toolbar.inline-toolbar toolbutton > button:checked,
+toolbar.inline-toolbar button.image-button:active,
+toolbar.inline-toolbar button.image-button:checked,
+.inline-toolbar button.image-button:active,
+.inline-toolbar button.image-button:checked,
+.inline-toolbar button:not(.text-button):active,
+.inline-toolbar button:not(.text-button):checked,
+#devtab-grid-toolbar button:active,
+#devtab-grid-toolbar button:checked {{
+  background-color: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}}
+
+headerbar button.image-button image,
+headerbar menubutton > button image,
+headerbar button.popup image,
+headerbar button:not(.text-button) image,
+.titlebar button.image-button image,
+.titlebar menubutton > button image,
+.titlebar button.popup image,
+.titlebar button:not(.text-button) image,
+toolbar.inline-toolbar button image,
+toolbar.inline-toolbar toolbutton image,
+.inline-toolbar button image,
+#devtab-grid-toolbar button image {{
+  padding: 0;
+  margin: 0;
+  min-width: 16px;
+  min-height: 16px;
 }}
 
 /* GTK 3 Window Controls (macOS Traffic Lights) */

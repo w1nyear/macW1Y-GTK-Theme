@@ -304,8 +304,8 @@ def process_image(file_path):
         if do_resize:
             actions.append(f"Оброблено до {target_name}")
 
-        msg = " • ".join(actions) if actions else ""
-        notify("Скріншот створено", msg)
+        # msg = " • ".join(actions) if actions else ""
+        # Etap 651: Do not send redundant notification for screenshot processing
         return dest_path
     except Exception as e:
         print(f"Error processing image {file_path}: {e}", file=sys.stderr)
