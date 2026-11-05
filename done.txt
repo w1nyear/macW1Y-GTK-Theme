@@ -17279,3 +17279,30 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Оновлено хеш цілісності eval-helper@mactheme у config/extensions.lock.json.
    - bin/mac-extension-guard verify: 21/21 SUCCESS (усі хеші верифіковано).
    - bin/mac-audit-sync check: 100% PASS (5/5 аудитів пройдено успішно).
+
+Етап 669: Зменшення ширини та висоти OSD меню зміни мови вдвічі
+1. Вимоги користувача:
+   - Зменшити ширину та висоту екранного меню зміни мови (поза полями вводу / OSD switcher) рівно вдвічі згідно з побажанням користувача.
+
+2. Модифікації у extensions/blur-my-shell@aunetx/components/mac_input_switcher_v11.js:
+   - Метод _buildOsdUI():
+     * Ширину меню _osdW зменшено з 310px до 155px (рівно вдвічі).
+     * Висоту елемента _itemH зменшено з 48px до 24px (вдвічі).
+     * Внутрішні відступи: _paddingX та _paddingY зменшено з 8px до 4px, міжрядковий проміжок _gap зменшено з 4px до 2px.
+     * Загальну висоту меню osdH зменшено зі 116px до 58px (2 * 4 + 2 * 24 + 2 = 58px, рівно вдвічі).
+     * Радіус заокруглення картки border-radius зменшено з 26px до 14px; _targetCornerRadius шейдера Liquid Glass оновлено до 14.0 для синхронізації скляного контуру.
+     * Тінь зменшено до box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35).
+     * Селекторну плашку _selectionPill скориговано: висота 24px, ширина 147px, border-radius: 10px.
+     * Розмір шрифту написів розкладок адаптовано під компактну висоту рядка: з 17px до 11px (вага 600 для виділеного та 500 для неактивного варіанту), текст відцентровано по вертикалі та горизонталі.
+   - Метод _setOsdPosition():
+     * Оновлено стилі шрифту 11px при перемиканні між варіантами та траєкторію зміщення targetY = this._paddingY + index * (this._itemH + this._gap).
+
+3. Синхронізація та візуальна перевірка:
+   - Файл скопійовано до ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/mac_input_switcher_v11.js.
+   - Компонент гаряче перезавантажено в пам'яті GNOME Shell.
+   - Знято та верифіковано контрольні знімки станів меню (osd_compact_crop.png та osd_compact_ua_crop.png): меню акуратне, компактне, форма та розмір рівно вдвічі менші (155x58px проти 310x116px), ефект Liquid Glass ідеально адаптований під новий радіус 14px.
+
+4. Верифікація та цілісність:
+   - Оновлено хеш цілісності blur-my-shell@aunetx у config/extensions.lock.json.
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS (5/5 аудитів успішно).
