@@ -16954,3 +16954,29 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Аудит системи:
      * `bin/mac-audit-sync check`: 100% PASS (5/5).
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+----------------------------------------------------------------------
+Етап 657: Суцільне розмиття фону в режимі огляду GNOME Shell Overview (macOS Mission Control Blur)
+----------------------------------------------------------------------
+1. Виявлена проблема:
+   - Під час відкриття огляду (Overview / Mission Control) фон не мав розмиття або закривався непрозорими картками шпалер робочих просторів (`WorkspaceBackground`).
+   - У GNOME Shell кожен робочий простір створює `WorkspaceBackground` із власним `BackgroundManager`, що рендерить чітку нерозмиту копію шпалер столу на 80% площі екрана, повністю перекриваючи підкладку розмиття від `blur-my-shell`.
+   - Додатково у `eval-helper@mactheme` шар `OverviewWallpaperManager` не містив активного ефекту розмиття для моніторів.
+
+2. Реалізовані зміни:
+   - У `extensions/eval-helper@mactheme/extension.js`:
+     * У класі `OverviewWallpaperManager._build()` до контейнера кожного монітора додано апаратне розмиття `Shell.BlurEffect({ brightness: 0.85, radius: 30, mode: Shell.BlurMode.ACTOR })`.
+     * У функції `patchMissionControlOverview()` пропатчено прототип `WorkspaceBackground.prototype._init`, щоб кожен створюваний фон робочого простору автоматично мав `opacity = 0`, `_bin.opacity = 0` та `_backgroundGroup.opacity = 0`.
+     * Створено обробник `hideWorkspaceBackgrounds`, підключений до сигналу `showing` у `Main.overview`, що гарантує 100% приховування будь-яких наявних та новостворених карток шпалер робочих просторів.
+   - Синхронізовано розширення до `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js`.
+   - Оновлено хеш цілісності `sha256` розширення у `config/extensions.lock.json` (`d45e4157...`).
+
+3. Жива перевірка та верифікація:
+   - Застосовано патч у працюючій сесії GNOME Shell через `EvalHelper.Eval`.
+   - Відкрито огляд та перевірено параметри акторів:
+     `bgOpacity: 0`, `bgBinOpacity: 0`, `bgGroupOpacity: 0`, `monBinEffects: ["Shell_BlurEffect"]`.
+   - Знято підтверджувальний скріншот екрана огляду: `overview_final_check.png`.
+     Весь екран позаду вікон, панелі просторів та Dock має суцільне, м'яке матове розмиття (Tahoe frosted glass), вікна вільно ширяють з тінями у стилі macOS.
+   - Аудит системи:
+     * `bin/mac-audit-sync check`: 100% PASS (5/5).
+     * `bin/mac-extension-guard verify`: 21/21 SUCCESS.

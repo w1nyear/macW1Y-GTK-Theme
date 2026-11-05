@@ -107,6 +107,15 @@ class OverviewWallpaperManager {
             });
             this._bgGroup.add_child(monBin);
 
+            try {
+                const blurEffect = new Shell.BlurEffect({
+                    brightness: 0.85,
+                    radius: 30,
+                    mode: Shell.BlurMode.ACTOR,
+                });
+                monBin.add_effect(blurEffect);
+            } catch (_) {}
+
             const bgMgr = new Background.BackgroundManager({
                 container: monBin,
                 monitorIndex: monitor.index,
@@ -2012,6 +2021,16 @@ export default class EvalHelper extends Extension {
                                 });
                             };
                         }
+                        if (WorkspaceBackground && !WorkspaceBackground.prototype._macOverviewBlurPatched) {
+                            WorkspaceBackground.prototype._macOverviewBlurPatched = true;
+                            const origInit = WorkspaceBackground.prototype._init;
+                            WorkspaceBackground.prototype._init = function(...args) {
+                                origInit.apply(this, args);
+                                this.opacity = 0;
+                                if (this._bin) this._bin.opacity = 0;
+                                if (this._backgroundGroup) this._backgroundGroup.opacity = 0;
+                            };
+                        }
                         if (WorkspaceBackground && !WorkspaceBackground.prototype._macClipPatched) {
                             WorkspaceBackground.prototype._macClipPatched = true;
                             WorkspaceBackground.prototype._origUpdateRoundedClipBounds = WorkspaceBackground.prototype._updateRoundedClipBounds;
@@ -2098,6 +2117,39 @@ export default class EvalHelper extends Extension {
                         controls._searchController._entry.opacity = 0;
                     }
                 }
+
+                // 9. Hide opaque WorkspaceBackground cards so overview background is continuously blurred
+                const hideWorkspaceBackgrounds = () => {
+                    try {
+                        const ws = Main.overview?._overview?._controls?._workspacesDisplay;
+                        if (!ws || !ws._workspacesViews) return;
+                        for (const view of ws._workspacesViews) {
+                            for (const wsActor of (view.get_children ? view.get_children() : [])) {
+                                if (wsActor._background) {
+                                    wsActor._background.opacity = 0;
+                                    if (wsActor._background._bin) wsActor._background._bin.opacity = 0;
+                                    if (wsActor._background._backgroundGroup) wsActor._background._backgroundGroup.opacity = 0;
+                                }
+                                for (const child of (wsActor.get_children ? wsActor.get_children() : [])) {
+                                    if (child.constructor?.name === 'WorkspaceBackground' ||
+                                        child.has_style_class_name?.('workspace-background')) {
+                                        child.opacity = 0;
+                                        if (child._bin) child._bin.opacity = 0;
+                                        if (child._backgroundGroup) child._backgroundGroup.opacity = 0;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (_) {}
+                };
+
+                if (!Main.overview._macHideWsBgConn) {
+                    Main.overview._macHideWsBgConn = Main.overview.connectObject(
+                        'showing', hideWorkspaceBackgrounds,
+                        this
+                    );
+                }
+                hideWorkspaceBackgrounds();
             } catch (e) {
                 console.error('[EvalHelper] patchMissionControlOverview error: ' + e);
             }
@@ -3122,6 +3174,7 @@ export default class EvalHelper extends Extension {
         }
 
         try { Main.overview.disconnectObject(this); } catch (_) {}
+        Main.overview._macHideWsBgConn = null;
 
         if (this._overviewWallpaperManager) {
             try { this._overviewWallpaperManager.destroy(); } catch (_) {}
