@@ -1295,8 +1295,8 @@ toast button.flat:active, popover.touch-selection button.flat:active, popover.ma
 }
 
 button.suggested-action {
-  color: @accent_fg_color;
-  background-color: @accent_bg_color;
+  color: #ffffff;
+  background-color: #2E7CF7;
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
@@ -1307,20 +1307,20 @@ button.suggested-action.flat {
   background-color: transparent;
   background-image: none;
   box-shadow: none;
-  color: @accent_color;
+  color: #2E7CF7;
 }
 
 button.suggested-action:hover {
-  color: @accent_fg_color;
-  background-color: color-mix(in srgb, @accent_bg_color 85%, white);
+  color: #ffffff;
+  background-color: #478bf8;
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
 }
 
 button.suggested-action:active, button.suggested-action:checked {
-  color: @accent_fg_color;
-  background-color: color-mix(in srgb, @accent_bg_color 80%, black);
+  color: #ffffff;
+  background-color: #156df6;
   background-image: none;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.15), inset 0 -1px rgba(255, 255, 255, 0.03);
   border-color: rgba(0, 0, 0, 0.15);
@@ -1436,8 +1436,8 @@ menubutton.popup > button.arrow-button.image-button, menubutton.popup > button.t
 }
 
 menubutton.suggested-action {
-  background-color: @accent_bg_color;
-  color: @accent_fg_color;
+  background-color: #2E7CF7;
+  color: white;
 }
 
 menubutton.destructive-action {
@@ -1575,8 +1575,8 @@ splitbutton.flat > menubutton > button {
 }
 
 splitbutton.suggested-action {
-  background-color: @accent_bg_color;
-  color: @accent_fg_color;
+  background-color: #2E7CF7;
+  color: white;
 }
 
 splitbutton.destructive-action {
@@ -2544,40 +2544,48 @@ headerbar button.star {
 
 headerbar splitbutton {
   border-radius: 9999px;
-  padding: 3px;
+  padding: 0;
   color: @headerbar_fg_color;
   background-color: transparent;
-  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
-  box-shadow: 0 6px 20px alpha(#000000,0.15), inset 1px 2px 1px -1px alpha(#ffffff,0.08), inset -1px -1px 1px 0 alpha(#ffffff,0.08);
+  background-image: none;
+  box-shadow: none;
   border: none;
 }
 
 headerbar splitbutton:backdrop {
-  background-color: alpha(@headerbar_fg_color,0.05);
+  background-color: transparent;
   background-image: none;
   border: none;
   box-shadow: none;
 }
 
 headerbar splitbutton > separator {
-  background-color: alpha(currentColor,0.12);
-  min-width: 1px;
-  margin: 6px 2px;
+  background-color: transparent;
+  min-width: 0;
+  margin: 0;
 }
 
 headerbar splitbutton > button,
 headerbar splitbutton > button.image-button,
 headerbar splitbutton > menubutton > button,
 headerbar splitbutton > menubutton.popup > button, headerbar splitbutton.image-button > menubutton.popup > button.toggle:not(.image-button), headerbar splitbutton.image-button > button, headerbar splitbutton.text-button.image-button > button, headerbar splitbutton.image-text-button > button {
-  min-height: 24px;
-  min-width: 24px;
+  min-height: 28px;
+  min-width: 28px;
   padding: 3px;
+  border-radius: 9999px;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 headerbar splitbutton > button button {
   min-height: 24px;
   min-width: 24px;
   padding: 0;
+  border-radius: 9999px;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 headerbar splitbutton > button:not(:only-child):not(:first-child):not(:last-child),
@@ -2587,15 +2595,13 @@ headerbar splitbutton > menubutton:not(:only-child):not(:first-child):not(:last-
 
 headerbar splitbutton > button:dir(ltr),
 headerbar splitbutton > menubutton > button:dir(rtl) {
-  border-top-right-radius: 9999px;
-  border-bottom-right-radius: 9999px;
+  border-radius: 9999px;
   margin-right: 0;
 }
 
 headerbar splitbutton > button:dir(rtl),
 headerbar splitbutton > menubutton > button:dir(ltr) {
-  border-top-left-radius: 9999px;
-  border-bottom-left-radius: 9999px;
+  border-radius: 9999px;
   margin-left: 0;
 }
 
@@ -5387,14 +5393,26 @@ list.boxed-list > row.expander {
 }
 
 list.boxed-list > row:first-child, list.boxed-list > row:first-child.expander row.header {
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
 }
 
 list.boxed-list > row:last-child, list.boxed-list > row:last-child.expander:not(:checked), list.boxed-list > row:last-child.expander:not(:checked) row.header, list.boxed-list > row:last-child.expander:checked list.nested, list.boxed-list > row:last-child.expander:checked list.nested > row:last-child {
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
   border-bottom-width: 0;
+}
+
+list.boxed-list > row:only-child {
+  border-radius: 14px;
+}
+
+list.boxed-list > row:not(:first-child):not(:last-child) {
+  border-radius: 0px;
 }
 
 list.boxed-list-separate {
@@ -6887,25 +6905,19 @@ preferencesgroup button.accent, preferencesgroup button.accent:hover, preference
 preferencesgroup button.accent-button,
 preferencesgroup button.accent-button:hover,
 preferencesgroup button.accent-button:active,
-preferencesgroup button.accent-button:checked,
-#accent_box button,
-#accent_box button:hover,
-#accent_box button:active,
-#accent_box button:checked {
-  background-clip: border-box;
+preferencesgroup button.accent-button:checked {
+  background-clip: content-box;
   min-height: 24px;
   min-width: 24px;
-  padding: 0px;
-  margin: 0px 4px;
+  padding: 2px;
   border-radius: 9999px;
   outline: none;
   border: none;
-  -gtk-icon-source: none;
 }
 
 preferencesgroup button.accent:checked,
 preferencesgroup button.accent-button:checked {
-  -gtk-icon-source: none;
+  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
   color: white;
 }
 
@@ -8260,7 +8272,7 @@ preferencesgroup > box > box.header:not(.single-line) {
 }
 
 preferencesgroup > box > box.single-line {
-  min-height: 34px;
+  min-height: 35px;
 }
 
 preferencesgroup > box grid > box > switch {
@@ -9439,7 +9451,7 @@ panelthemeselector checkbutton.theme-selector radio:checked {
 
 themeselector checkbutton.theme-selector radio:checked,
 panelthemeselector checkbutton.theme-selector radio:checked {
-  -gtk-icon-source: none;
+  -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
   color: white;
   background-color: @accent_bg_color;
 }
@@ -9586,7 +9598,7 @@ menu menuitem,
   background-color: transparent;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 100ms ease, color 100ms ease;
+  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 menu menuitem label,
@@ -9613,7 +9625,8 @@ menu menuitem:selected,
   background-color: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px alpha(@accent_bg_color, 0.40);
+  box-shadow: 0 1px 4px alpha(@accent_bg_color, 0.40);
+  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 menu menuitem:hover label,
@@ -9714,7 +9727,9 @@ popover.menu modelbutton,
 popover.menu button,
 popover modelbutton,
 .context-menu modelbutton,
-.popup-menu modelbutton {
+.popup-menu modelbutton,
+dropdown > popover.menu modelbutton,
+dropdown > popover.menu button {
   min-height: 22px;
   padding: 4px 12px;
   margin: 1px 6px;
@@ -9723,7 +9738,7 @@ popover modelbutton,
   background-color: transparent;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color 100ms ease, color 100ms ease;
+  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 popover.menu modelbutton label,
@@ -9746,12 +9761,15 @@ popover modelbutton:focus-visible,
 .context-menu modelbutton:hover,
 .context-menu modelbutton:focus-visible,
 .popup-menu modelbutton:hover,
-.popup-menu modelbutton:focus-visible {
+.popup-menu modelbutton:focus-visible,
+dropdown > popover.menu modelbutton:hover,
+dropdown > popover.menu button:hover {
   background-color: @accent_bg_color;
   background: @accent_bg_color;
   color: #ffffff;
   border-radius: 9999px;
-  box-shadow: none;
+  box-shadow: 0 1px 4px alpha(@accent_bg_color, 0.40);
+  transition: background-color 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), box-shadow 130ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 popover.menu modelbutton:selected:not(:hover):not(:focus-visible),
@@ -11391,7 +11409,7 @@ window.mac-settings-window adwactionrow.property label.title,
 window.mac-settings-window adwactionrow.property .title {
   font-size: 13px;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.70);
+  color: rgba(0, 0, 0, 0.60);
   min-height: 20px;
   line-height: 1.2;
   opacity: 1;
@@ -11403,7 +11421,7 @@ window.mac-settings-window adwactionrow.property label.subtitle,
 window.mac-settings-window adwactionrow.property .subtitle {
   font-size: 13px;
   font-weight: 500;
-  color: #ffffff;
+  color: #000000;
   min-height: 20px;
   min-width: 20px;
   line-height: 1.2;
@@ -11445,9 +11463,14 @@ window.mac-settings-window preferencespage list:not(.boxed-list),
 window.mac-settings-window preferencespage row.button,
 window.mac-settings-window #add_user_button_row,
 window.mac-settings-window #add_enterprise_user_button_row,
+window.mac-settings-window #liquid_preview_container,
 window.mac-settings-window preferencesgroup.separate-rows list {
   margin-left: 15px;
   margin-right: 15px;
+}
+
+window.mac-settings-window #liquid_glass_preview_area {
+  border-radius: 14px;
 }
 
 window.mac-settings-window list.boxed-list row,
@@ -11464,11 +11487,12 @@ window.mac-settings-window adwentryrow,
 window.mac-settings-window adwexpanderrow,
 window.mac-settings-window adwspinrow,
 window.mac-settings-window cclistrow,
+window.mac-settings-window ccwificonnectionrow,
 window.mac-settings-window preferencespage row.button,
 window.mac-settings-window #add_user_button_row,
 window.mac-settings-window #add_enterprise_user_button_row,
 window.mac-settings-window list.boxed-list row.expander row.header {
-  min-height: 34px;
+  min-height: 35px;
   padding: 0px 14px;
   margin: 0px;
   border-bottom: none;
@@ -11480,16 +11504,383 @@ window.mac-settings-window adwactionrow > box.header,
 window.mac-settings-window adwswitchrow > box.header,
 window.mac-settings-window adwcomborow > box.header,
 window.mac-settings-window adwentryrow > box.header,
-window.mac-settings-window cclistrow > box.header {
-  min-height: 34px;
+window.mac-settings-window cclistrow > box.header,
+window.mac-settings-window ccwificonnectionrow > box.header {
+  min-height: 35px;
   margin: 0px;
   padding: 0px;
   border-spacing: 10px;
 }
 
+window.mac-settings-window list.boxed-list > row:first-child,
+window.mac-settings-window list.boxed-list row:not(.expander):first-child,
+window.mac-settings-window preferencesgroup list > row:first-child,
+window.mac-settings-window preferencesgroup > box > box > list > row:first-child,
+window.mac-settings-window preferencespage list.boxed-list > row:first-child,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):first-child,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:first-child,
+window.mac-settings-window .content-pane list.boxed-list > row:first-child,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):first-child,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:first-child,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):first-child,
+window.mac-settings-window adwactionrow:first-child,
+window.mac-settings-window adwswitchrow:first-child,
+window.mac-settings-window adwcomborow:first-child,
+window.mac-settings-window adwentryrow:first-child,
+window.mac-settings-window adwexpanderrow:first-child,
+window.mac-settings-window adwspinrow:first-child,
+window.mac-settings-window cclistrow:first-child,
+window.mac-settings-window ccwificonnectionrow:first-child,
+window.mac-settings-window list.boxed-list > row:first-child.expander row.header {
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
 
+window.mac-settings-window list.boxed-list > row:last-child,
+window.mac-settings-window list.boxed-list row:not(.expander):last-child,
+window.mac-settings-window preferencesgroup list > row:last-child,
+window.mac-settings-window preferencesgroup > box > box > list > row:last-child,
+window.mac-settings-window preferencespage list.boxed-list > row:last-child,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):last-child,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:last-child,
+window.mac-settings-window .content-pane list.boxed-list > row:last-child,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):last-child,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:last-child,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):last-child,
+window.mac-settings-window adwactionrow:last-child,
+window.mac-settings-window adwswitchrow:last-child,
+window.mac-settings-window adwcomborow:last-child,
+window.mac-settings-window adwentryrow:last-child,
+window.mac-settings-window adwexpanderrow:last-child,
+window.mac-settings-window adwspinrow:last-child,
+window.mac-settings-window cclistrow:last-child,
+window.mac-settings-window ccwificonnectionrow:last-child,
+window.mac-settings-window list.boxed-list > row:last-child.expander:not(:checked) row.header {
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+}
 
+window.mac-settings-window list.boxed-list > row:not(:first-child):not(:last-child),
+window.mac-settings-window list.boxed-list row:not(.expander):not(:first-child):not(:last-child),
+window.mac-settings-window preferencesgroup list > row:not(:first-child):not(:last-child),
+window.mac-settings-window preferencesgroup > box > box > list > row:not(:first-child):not(:last-child),
+window.mac-settings-window preferencespage list.boxed-list > row:not(:first-child):not(:last-child),
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):not(:first-child):not(:last-child),
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:not(:first-child):not(:last-child),
+window.mac-settings-window .content-pane list.boxed-list > row:not(:first-child):not(:last-child),
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):not(:first-child):not(:last-child),
+window.mac-settings-window .mac-settings-content list.boxed-list > row:not(:first-child):not(:last-child),
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):not(:first-child):not(:last-child),
+window.mac-settings-window adwactionrow:not(:first-child):not(:last-child),
+window.mac-settings-window adwswitchrow:not(:first-child):not(:last-child),
+window.mac-settings-window adwcomborow:not(:first-child):not(:last-child),
+window.mac-settings-window adwentryrow:not(:first-child):not(:last-child),
+window.mac-settings-window adwexpanderrow:not(:first-child):not(:last-child),
+window.mac-settings-window adwspinrow:not(:first-child):not(:last-child),
+window.mac-settings-window cclistrow:not(:first-child):not(:last-child),
+window.mac-settings-window ccwificonnectionrow:not(:first-child):not(:last-child) {
+  border-radius: 0px;
+}
 
+window.mac-settings-window list.boxed-list > row:only-child,
+window.mac-settings-window list.boxed-list row:not(.expander):only-child,
+window.mac-settings-window preferencesgroup list > row:only-child,
+window.mac-settings-window preferencesgroup > box > box > list > row:only-child,
+window.mac-settings-window preferencespage list.boxed-list > row:only-child,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):only-child,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:only-child,
+window.mac-settings-window .content-pane list.boxed-list > row:only-child,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):only-child,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:only-child,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):only-child,
+window.mac-settings-window adwactionrow:only-child,
+window.mac-settings-window adwswitchrow:only-child,
+window.mac-settings-window adwcomborow:only-child,
+window.mac-settings-window adwentryrow:only-child,
+window.mac-settings-window adwexpanderrow:only-child,
+window.mac-settings-window adwspinrow:only-child,
+window.mac-settings-window cclistrow:only-child,
+window.mac-settings-window ccwificonnectionrow:only-child,
+window.mac-settings-window preferencespage row.button,
+window.mac-settings-window #add_user_button_row,
+window.mac-settings-window #add_enterprise_user_button_row {
+  border-radius: 14px;
+}
 
-/* macW1Y Global Component Master Overrides (SSOT) */
+window.mac-settings-window list.boxed-list > row:hover,
+window.mac-settings-window list.boxed-list row:not(.expander):hover,
+window.mac-settings-window list.boxed-list row.expander row.header:hover,
+window.mac-settings-window preferencesgroup list > row:hover,
+window.mac-settings-window preferencesgroup > box > box > list > row:hover,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):hover,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:hover,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):hover,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):hover,
+window.mac-settings-window preferencespage list.boxed-list row.expander row.header:hover,
+window.mac-settings-window .content-pane list.boxed-list row.expander row.header:hover,
+window.mac-settings-window .mac-settings-content list.boxed-list row.expander row.header:hover,
+window.mac-settings-window adwactionrow:hover,
+window.mac-settings-window adwswitchrow:hover,
+window.mac-settings-window adwcomborow:hover,
+window.mac-settings-window adwentryrow:hover,
+window.mac-settings-window adwexpanderrow:hover,
+window.mac-settings-window adwspinrow:hover,
+window.mac-settings-window cclistrow:hover,
+window.mac-settings-window ccwificonnectionrow:hover,
+window.mac-settings-window preferencespage row.button:hover,
+window.mac-settings-window #add_user_button_row:hover,
+window.mac-settings-window #add_enterprise_user_button_row:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  margin: 0px;
+}
+
+window.mac-settings-window list.boxed-list > row:first-child:hover,
+window.mac-settings-window list.boxed-list row:not(.expander):first-child:hover,
+window.mac-settings-window preferencesgroup list > row:first-child:hover,
+window.mac-settings-window preferencesgroup > box > box > list > row:first-child:hover,
+window.mac-settings-window preferencespage list.boxed-list > row:first-child:hover,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):first-child:hover,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:first-child:hover,
+window.mac-settings-window .content-pane list.boxed-list > row:first-child:hover,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):first-child:hover,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:first-child:hover,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):first-child:hover,
+window.mac-settings-window adwactionrow:first-child:hover,
+window.mac-settings-window adwswitchrow:first-child:hover,
+window.mac-settings-window adwcomborow:first-child:hover,
+window.mac-settings-window adwentryrow:first-child:hover,
+window.mac-settings-window adwexpanderrow:first-child:hover,
+window.mac-settings-window adwspinrow:first-child:hover,
+window.mac-settings-window cclistrow:first-child:hover,
+window.mac-settings-window ccwificonnectionrow:first-child:hover,
+window.mac-settings-window list.boxed-list > row:first-child.expander row.header:hover {
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+
+window.mac-settings-window list.boxed-list > row:last-child:hover,
+window.mac-settings-window list.boxed-list row:not(.expander):last-child:hover,
+window.mac-settings-window preferencesgroup list > row:last-child:hover,
+window.mac-settings-window preferencesgroup > box > box > list > row:last-child:hover,
+window.mac-settings-window preferencespage list.boxed-list > row:last-child:hover,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):last-child:hover,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:last-child:hover,
+window.mac-settings-window .content-pane list.boxed-list > row:last-child:hover,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):last-child:hover,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:last-child:hover,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):last-child:hover,
+window.mac-settings-window adwactionrow:last-child:hover,
+window.mac-settings-window adwswitchrow:last-child:hover,
+window.mac-settings-window adwcomborow:last-child:hover,
+window.mac-settings-window adwentryrow:last-child:hover,
+window.mac-settings-window adwexpanderrow:last-child:hover,
+window.mac-settings-window adwspinrow:last-child:hover,
+window.mac-settings-window cclistrow:last-child:hover,
+window.mac-settings-window ccwificonnectionrow:last-child:hover,
+window.mac-settings-window list.boxed-list > row:last-child.expander:not(:checked) row.header:hover {
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+}
+
+window.mac-settings-window list.boxed-list > row:not(:first-child):not(:last-child):hover,
+window.mac-settings-window list.boxed-list row:not(.expander):not(:first-child):not(:last-child):hover,
+window.mac-settings-window preferencesgroup list > row:not(:first-child):not(:last-child):hover,
+window.mac-settings-window preferencesgroup > box > box > list > row:not(:first-child):not(:last-child):hover,
+window.mac-settings-window preferencespage list.boxed-list > row:not(:first-child):not(:last-child):hover,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):not(:first-child):not(:last-child):hover,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:not(:first-child):not(:last-child):hover,
+window.mac-settings-window .content-pane list.boxed-list > row:not(:first-child):not(:last-child):hover,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):not(:first-child):not(:last-child):hover,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:not(:first-child):not(:last-child):hover,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):not(:first-child):not(:last-child):hover,
+window.mac-settings-window adwactionrow:not(:first-child):not(:last-child):hover,
+window.mac-settings-window adwswitchrow:not(:first-child):not(:last-child):hover,
+window.mac-settings-window adwcomborow:not(:first-child):not(:last-child):hover,
+window.mac-settings-window adwentryrow:not(:first-child):not(:last-child):hover,
+window.mac-settings-window adwexpanderrow:not(:first-child):not(:last-child):hover,
+window.mac-settings-window adwspinrow:not(:first-child):not(:last-child):hover,
+window.mac-settings-window cclistrow:not(:first-child):not(:last-child):hover,
+window.mac-settings-window ccwificonnectionrow:not(:first-child):not(:last-child):hover {
+  border-radius: 0px;
+}
+
+window.mac-settings-window list.boxed-list > row:only-child:hover,
+window.mac-settings-window list.boxed-list row:not(.expander):only-child:hover,
+window.mac-settings-window preferencesgroup list > row:only-child:hover,
+window.mac-settings-window preferencesgroup > box > box > list > row:only-child:hover,
+window.mac-settings-window preferencespage list.boxed-list > row:only-child:hover,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):only-child:hover,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:only-child:hover,
+window.mac-settings-window .content-pane list.boxed-list > row:only-child:hover,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):only-child:hover,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:only-child:hover,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):only-child:hover,
+window.mac-settings-window adwactionrow:only-child:hover,
+window.mac-settings-window adwswitchrow:only-child:hover,
+window.mac-settings-window adwcomborow:only-child:hover,
+window.mac-settings-window adwentryrow:only-child:hover,
+window.mac-settings-window adwexpanderrow:only-child:hover,
+window.mac-settings-window adwspinrow:only-child:hover,
+window.mac-settings-window cclistrow:only-child:hover,
+window.mac-settings-window ccwificonnectionrow:only-child:hover,
+window.mac-settings-window preferencespage row.button:hover,
+window.mac-settings-window #add_user_button_row:hover,
+window.mac-settings-window #add_enterprise_user_button_row:hover {
+  border-radius: 14px;
+}
+
+window.mac-settings-window list.boxed-list > row:active,
+window.mac-settings-window list.boxed-list row:not(.expander):active,
+window.mac-settings-window list.boxed-list row.expander row.header:active,
+window.mac-settings-window preferencesgroup list > row:active,
+window.mac-settings-window preferencesgroup > box > box > list > row:active,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):active,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:active,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):active,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):active,
+window.mac-settings-window preferencespage list.boxed-list row.expander row.header:active,
+window.mac-settings-window .content-pane list.boxed-list row.expander row.header:active,
+window.mac-settings-window .mac-settings-content list.boxed-list row.expander row.header:active,
+window.mac-settings-window adwactionrow:active,
+window.mac-settings-window adwswitchrow:active,
+window.mac-settings-window adwcomborow:active,
+window.mac-settings-window adwentryrow:active,
+window.mac-settings-window adwexpanderrow:active,
+window.mac-settings-window adwspinrow:active,
+window.mac-settings-window cclistrow:active,
+window.mac-settings-window ccwificonnectionrow:active,
+window.mac-settings-window preferencespage row.button:active,
+window.mac-settings-window #add_user_button_row:active,
+window.mac-settings-window #add_enterprise_user_button_row:active {
+  background-color: rgba(255, 255, 255, 0.09);
+  margin: 0px;
+}
+
+window.mac-settings-window list.boxed-list > row:first-child:active,
+window.mac-settings-window list.boxed-list row:not(.expander):first-child:active,
+window.mac-settings-window preferencesgroup list > row:first-child:active,
+window.mac-settings-window preferencesgroup > box > box > list > row:first-child:active,
+window.mac-settings-window preferencespage list.boxed-list > row:first-child:active,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):first-child:active,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:first-child:active,
+window.mac-settings-window .content-pane list.boxed-list > row:first-child:active,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):first-child:active,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:first-child:active,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):first-child:active,
+window.mac-settings-window adwactionrow:first-child:active,
+window.mac-settings-window adwswitchrow:first-child:active,
+window.mac-settings-window adwcomborow:first-child:active,
+window.mac-settings-window adwentryrow:first-child:active,
+window.mac-settings-window adwexpanderrow:first-child:active,
+window.mac-settings-window adwspinrow:first-child:active,
+window.mac-settings-window cclistrow:first-child:active,
+window.mac-settings-window ccwificonnectionrow:first-child:active,
+window.mac-settings-window list.boxed-list > row:first-child.expander row.header:active {
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+
+window.mac-settings-window list.boxed-list > row:last-child:active,
+window.mac-settings-window list.boxed-list row:not(.expander):last-child:active,
+window.mac-settings-window preferencesgroup list > row:last-child:active,
+window.mac-settings-window preferencesgroup > box > box > list > row:last-child:active,
+window.mac-settings-window preferencespage list.boxed-list > row:last-child:active,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):last-child:active,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:last-child:active,
+window.mac-settings-window .content-pane list.boxed-list > row:last-child:active,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):last-child:active,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:last-child:active,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):last-child:active,
+window.mac-settings-window adwactionrow:last-child:active,
+window.mac-settings-window adwswitchrow:last-child:active,
+window.mac-settings-window adwcomborow:last-child:active,
+window.mac-settings-window adwentryrow:last-child:active,
+window.mac-settings-window adwexpanderrow:last-child:active,
+window.mac-settings-window adwspinrow:last-child:active,
+window.mac-settings-window cclistrow:last-child:active,
+window.mac-settings-window ccwificonnectionrow:last-child:active,
+window.mac-settings-window list.boxed-list > row:last-child.expander:not(:checked) row.header:active {
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+}
+
+window.mac-settings-window list.boxed-list > row:not(:first-child):not(:last-child):active,
+window.mac-settings-window list.boxed-list row:not(.expander):not(:first-child):not(:last-child):active,
+window.mac-settings-window preferencesgroup list > row:not(:first-child):not(:last-child):active,
+window.mac-settings-window preferencesgroup > box > box > list > row:not(:first-child):not(:last-child):active,
+window.mac-settings-window preferencespage list.boxed-list > row:not(:first-child):not(:last-child):active,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):not(:first-child):not(:last-child):active,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:not(:first-child):not(:last-child):active,
+window.mac-settings-window .content-pane list.boxed-list > row:not(:first-child):not(:last-child):active,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):not(:first-child):not(:last-child):active,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:not(:first-child):not(:last-child):active,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):not(:first-child):not(:last-child):active,
+window.mac-settings-window adwactionrow:not(:first-child):not(:last-child):active,
+window.mac-settings-window adwswitchrow:not(:first-child):not(:last-child):active,
+window.mac-settings-window adwcomborow:not(:first-child):not(:last-child):active,
+window.mac-settings-window adwentryrow:not(:first-child):not(:last-child):active,
+window.mac-settings-window adwexpanderrow:not(:first-child):not(:last-child):active,
+window.mac-settings-window adwspinrow:not(:first-child):not(:last-child):active,
+window.mac-settings-window cclistrow:not(:first-child):not(:last-child):active,
+window.mac-settings-window ccwificonnectionrow:not(:first-child):not(:last-child):active {
+  border-radius: 0px;
+}
+
+window.mac-settings-window list.boxed-list > row:only-child:active,
+window.mac-settings-window list.boxed-list row:not(.expander):only-child:active,
+window.mac-settings-window preferencesgroup list > row:only-child:active,
+window.mac-settings-window preferencesgroup > box > box > list > row:only-child:active,
+window.mac-settings-window preferencespage list.boxed-list > row:only-child:active,
+window.mac-settings-window preferencespage list.boxed-list row:not(.expander):only-child:active,
+window.mac-settings-window preferencespage list:not(.boxed-list) > row:only-child:active,
+window.mac-settings-window .content-pane list.boxed-list > row:only-child:active,
+window.mac-settings-window .content-pane list.boxed-list row:not(.expander):only-child:active,
+window.mac-settings-window .mac-settings-content list.boxed-list > row:only-child:active,
+window.mac-settings-window .mac-settings-content list.boxed-list row:not(.expander):only-child:active,
+window.mac-settings-window adwactionrow:only-child:active,
+window.mac-settings-window adwswitchrow:only-child:active,
+window.mac-settings-window adwcomborow:only-child:active,
+window.mac-settings-window adwentryrow:only-child:active,
+window.mac-settings-window adwexpanderrow:only-child:active,
+window.mac-settings-window adwspinrow:only-child:active,
+window.mac-settings-window cclistrow:only-child:active,
+window.mac-settings-window ccwificonnectionrow:only-child:active,
+window.mac-settings-window preferencespage row.button:active,
+window.mac-settings-window #add_user_button_row:active,
+window.mac-settings-window #add_enterprise_user_button_row:active {
+  border-radius: 14px;
+}
+
+window.mac-settings-window list.boxed-list row button:not(.accent-button),
+window.mac-settings-window adwactionrow button:not(.accent-button) {
+  border-radius: 6px;
+}
+
+window.mac-settings-window list.boxed-list row button:not(.accent-button):hover,
+window.mac-settings-window adwactionrow button:not(.accent-button):hover,
+window.mac-settings-window list.boxed-list row button:not(.accent-button):active,
+window.mac-settings-window adwactionrow button:not(.accent-button):active {
+  border-radius: 6px;
+}
+
+button.mac-action-accent-btn:active,
+window.mac-settings-window button.mac-action-accent-btn:active,
+window.mac-settings-window button.suggested-action.circular:active {
+  background-color: color-mix(in srgb, @accent_bg_color 75%, black);
+  color: #ffffff;
+  border-radius: 9999px;
+}
+
 @import url("macw1y-components.css");

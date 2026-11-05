@@ -16672,3 +16672,40 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
      * Всі поля ідеально вирівняні праворуч, читабельні, чіткі та естетично відповідають macOS Tahoe.
    - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено успішно).
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+
+================================================================================
+ЕТАП 648: Виправлення радіусів заокруглення для рядків та кнопок при натисканні (:active) у Параметрах
+================================================================================
+
+1. Мета:
+   - Виправити дефект у вікні «Параметри» (gnome-control-center), де під час натискання / затискання кнопки чи рядка (активний стан :active, наприклад, кнопка-рядок «Оновлення програм») з'являвся сірий прямокутний фон без заокруглення кутів (з гострими кутами 0px), який вилазив за межі заокругленої картки групи (14px).
+   - Забезпечити бездоганне збереження радіусів заокруглення для всіх рядків і кнопок у :hover, :active, :selected та нормальному стані:
+     * Окремі рядки (row:only-child): 14px з усіх 4 кутів.
+     * Перший рядок групи (row:first-child): верхні кути 14px, нижні 0px.
+     * Останній рядок групи (row:last-child): нижні кути 14px, верхні 0px.
+     * Проміжні рядки (row:not(:first-child):not(:last-child)): прямокутні 0px.
+     * Окремі кнопки-рядки (row.button, #add_user_button_row, #add_enterprise_user_button_row тощо): 14px.
+     * Кнопки всередині рядків (row button:not(.accent-button)): 6px.
+     * Круглі та капсульні кнопки дій (button.mac-action-accent-btn, button.suggested-action.circular): 9999px.
+
+2. Причини дефектів та реалізація:
+   - Причина виникнення гострих кутів:
+     * У CSS control-center/libmac_settings.c та gtk.css для селекторів :hover та :active (зокрема preferencespage list.boxed-list row:not(.expander):active) було встановлено border-radius: 0px; з надмірною специфічністю, що перебивало селектори :only-child, :first-child та :last-child.
+     * У GTK4 контейнер GtkListBox не здійснює overflow: hidden, тому фоновий колір рядка рендериться безпосередньо до його власних меж.
+     * Наявність непідтримуваних токенів !important у GTK4 CSS призводила до попереджень парсера (Junk at end of value) та ігнорування правил.
+   - Реалізація:
+     * Очищено невалідні токени !important у правилах GTK4 CSS.
+     * Вилучено деструктивне border-radius: 0px; із базових селекторів :active та :hover.
+     * Додано точні розширені селектори з пріоритетом специфічності для всіх типів рядків (adwactionrow, adwswitchrow, adwcomborow, adwentryrow, adwexpanderrow, adwspinrow, cclistrow, ccwificonnectionrow тощо) у станах :only-child:active, :first-child:active, :last-child:active.
+     * Додано правила для кнопок всередині рядків (border-radius: 6px) та круглих/акцентних кнопок дій (border-radius: 9999px).
+     * Зміни внесено у control-center/libmac_settings.c, gnome-control-center-overlay/libmac_settings.c, перекомпільовано libmac_settings.so та розгорнуто в усі цільові шляхи.
+     * Синхронізовано стилі у gtk-4.0/gtk.css, gtk-4.0/gtk-Dark.css, config/gtk-4.0/, macW1Y-Dark/ та macW1Y-Dark-solid/.
+
+3. Результати верифікації:
+   - Захоплено контрольні знімки за допомогою Clutter virtual pointer у вікні «Параметри»:
+     * settings_active_update_pressed.png: «Оновлення програм» (only-child рядок) під час затискання лівої клавіші миші має ідеальні гладкі кути 14px з усіх 4 боків без сірих прямокутних виступів.
+     * settings_multi_first_pressed.png: перший рядок групи має заокруглені верхні кути 14px та плоскі нижні 0px.
+     * settings_multi_last_pressed.png: останній рядок групи має заокруглені нижні кути 14px та плоскі верхні 0px.
+   - bin/mac-audit-sync check: 100% PASS (5/5 перевірок пройдено успішно).
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
