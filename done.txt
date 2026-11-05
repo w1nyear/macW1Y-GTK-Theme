@@ -17359,3 +17359,38 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Оновлено хеш цілісності eval-helper@mactheme у config/extensions.lock.json.
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS (5/5).
+
+Етап 672: Редизайн Alt+Tab перемикача додатків у стилі плаваючого macOS Dock із фоном Liquid Glass, обводкою фокусу/hover навколо іконки та невідсіканою назвою програми внизу
+1. Аналіз вимог та референсу:
+   - Фон елемента: плаваюча капсульна скляна плашка Liquid Glass (BackdropGlass shader) із закругленими краями радіусом 28px, делікатним темним тонуванням (0.06), легким бліком та розмиттям 20px.
+   - Горизонтальне розташування іконок із док-інтервалами (10px) та збалансованими відступами (padding: 14px 20px 14px 20px).
+   - Обводка (рамка-сквіркл) облягає безпосередньо іконку програми (_iconBin, 66x66px із внутрішнім відступом 7px для 52px іконки):
+     * Активний стан (фокус): рамка 2px solid rgba(255, 255, 255, 0.45), напівпрозора підкладка rgba(255, 255, 255, 0.14), легка тінь box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25).
+     * Стан наведення (hover): рамка 2px solid rgba(255, 255, 255, 0.30), підкладка rgba(255, 255, 255, 0.08).
+     * Неактивний стан: прозора рамка та фон.
+   - Назва поточної програми внизу під іконкою (замість індикатора запуску в доці):
+     * Для неактивних іконок назви приховані (нульова висота та прозорість 0).
+     * Для активного/наведеного елемента назва відображається повністю без будь-якого відсікання тексту (навіть для довгих назв типу «Текстовий редактор», «Системні параметри»). Реалізовано динамічне центрування єдиної плаваючої мітки _activeAppLabel через vfunc_allocate.
+
+2. Реалізація у extensions/eval-helper@mactheme/extension.js:
+   - У SwitcherList.prototype:
+     * Додано _macUpdateItemVisual(i) для миттєвого перемикання стилів активного, hover та неактивного станів сквіркл-тайла іконки.
+     * Реалізовано _macAllocPatchedV11 у vfunc_allocate для точного центрування _activeAppLabel безпосередньо під активною іконкою за координатами relX + (item.width - natW) / 2 з природною шириною natW.
+     * У highlight(index) зв'язано оновлення тексту _activeAppLabel та показ для обраного додатка.
+     * У addItem(item, label) налаштовано підписку notify::hover для миттєвого відображення hover-обводки та назви програми при наведенні курсора миші.
+   - У AppSwitcher.prototype (altTab.js):
+     * Перехоплено highlight(n), який делегує виконання оновленому SwitcherList.prototype.highlight та приховує зайві стрілки навігації.
+     * У _setIconSize налаштовано пропорції dock-HUD: 52px текстура іконки всередині 66px сквіркла з радіусом 18px та 7px відступу, ширина комірки 74px (з адаптивним зменшенням масштабу при великій кількості вікон).
+   - У SwitcherPopup.prototype.show:
+     * Задано капсульний стиль плашки: border-radius: 28px !important, padding: 14px 20px 14px 20px !important, spacing: 10px.
+     * Підключено BackdropGlass шейдер із радіусом 28.0px, розмиттям 20.0px та тонуванням 0.06.
+
+3. Оновлення CSS стилів у темах:
+   - У gnome-shell-theme/gnome-shell.css, macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid та ~/.themes/ оновлено правила для .switcher-list, .switcher-list-item-container, .alt-tab-icon-bin, .alt-tab-icon-bin:hover, .alt-tab-icon-bin:selected та .alt-tab-app-label.
+
+4. Тестування та верифікація:
+   - Розширення та стилі гаряче перезавантажено в пам'яті GNOME Shell без перезапуску сесії.
+   - Знято контрольні скріншоти живого Alt+Tab інтерфейсу (alttab_texteditor_long_crop.png, alttab_perfect_verified_crop.png). Перевірено повну відповідність референсу: плаваючий dock-капсуль, рамки на фокусованій та наведеній іконках, повне невідсічене ім'я «Текстовий редактор» по центру внизу.
+   - Оновлено хеш цілісності eval-helper@mactheme у config/extensions.lock.json.
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS (5/5).

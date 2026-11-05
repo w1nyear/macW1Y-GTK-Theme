@@ -3003,10 +3003,10 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list {
   background-color: rgba(240, 240, 240, 0.40) !important;
   background: rgba(240, 240, 240, 0.40) !important;
-  border-radius: 38px !important;
+  border-radius: 28px !important;
   border: 1px solid rgba(255, 255, 255, 0.50) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25) !important;
-  padding: 22px 18px 14px 18px !important;
+  padding: 14px 20px 14px 20px !important;
 }
 
 .switcher-list .item-box,
@@ -3016,7 +3016,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list .item-box:selected,
 .switcher-list .item-box:highlighted,
 .switcher-list .item-box:outlined {
-  padding: 0px 4px !important;
+  padding: 0px !important;
   border-radius: 0px !important;
   border: none !important;
   background-color: transparent !important;
@@ -3030,26 +3030,29 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 
 /* Rounded squircle highlight wrapping STRICTLY around icon only */
 .alt-tab-icon-bin {
-  padding: 3px !important;
-  border-radius: 22px !important;
-  border: 1px solid transparent !important;
+  padding: 7px !important;
+  border-radius: 18px !important;
+  border: 2px solid transparent !important;
   background-color: transparent !important;
   background: none !important;
   box-shadow: none !important;
-  transition-duration: 120ms !important;
+  transition-duration: 150ms !important;
 }
 
-.alt-tab-icon-bin:hover {
-  background-color: rgba(0, 0, 0, 0.08) !important;
-  border: 1px solid rgba(0, 0, 0, 0.14) !important;
-  box-shadow: none !important;
+.alt-tab-icon-bin:hover,
+.switcher-list .item-box:hover .alt-tab-icon-bin {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+  border: 2px solid rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
 }
 
 .alt-tab-icon-bin:selected,
-.alt-tab-icon-bin.selected {
-  background-color: rgba(0, 0, 0, 0.16) !important;
-  border: 1px solid rgba(0, 0, 0, 0.22) !important;
-  box-shadow: none !important;
+.alt-tab-icon-bin.selected,
+.switcher-list .item-box:selected .alt-tab-icon-bin,
+.switcher-list .item-box.selected .alt-tab-icon-bin {
+  background-color: rgba(0, 0, 0, 0.12) !important;
+  border: 2px solid rgba(0, 0, 0, 0.28) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
 }
 
 /* App name label underneath selected icon */
@@ -3064,8 +3067,8 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
   color: #1d1d1f !important;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
   text-align: center !important;
-  margin-top: 8px !important;
-  padding: 0 4px !important;
+  margin-top: 4px !important;
+  padding: 0 1px !important;
 }
 
 .switcher-list .thumbnail-box {
@@ -3083,7 +3086,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 .switcher-list .switcher-list-item-container {
-  spacing: 6px !important;
+  spacing: 10px !important;
 }
 
 .switcher-arrow {

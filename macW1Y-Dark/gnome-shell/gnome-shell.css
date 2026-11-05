@@ -3025,12 +3025,12 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 .switcher-list {
-  background-color: rgba(25, 25, 25, 0.35) !important;
-  background: rgba(25, 25, 25, 0.35) !important;
-  border-radius: 20px !important;
+  background-color: rgba(22, 22, 22, 0.40) !important;
+  background: rgba(22, 22, 22, 0.40) !important;
+  border-radius: 28px !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.40) !important;
-  padding: 8px 8px 5px 8px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
+  padding: 14px 20px 14px 20px !important;
 }
 
 .switcher-list .item-box,
@@ -3054,26 +3054,29 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 
 /* Rounded squircle highlight wrapping STRICTLY around icon only */
 .alt-tab-icon-bin {
-  padding: 1px !important;
-  border-radius: 15px !important;
-  border: 1px solid transparent !important;
+  padding: 7px !important;
+  border-radius: 18px !important;
+  border: 2px solid transparent !important;
   background-color: transparent !important;
   background: none !important;
   box-shadow: none !important;
-  transition-duration: 120ms !important;
+  transition-duration: 150ms !important;
 }
 
-.alt-tab-icon-bin:hover {
-  background-color: rgba(255, 255, 255, 0.14) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow: none !important;
+.alt-tab-icon-bin:hover,
+.switcher-list .item-box:hover .alt-tab-icon-bin {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border: 2px solid rgba(255, 255, 255, 0.30) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
 .alt-tab-icon-bin:selected,
-.alt-tab-icon-bin.selected {
-  background-color: rgba(255, 255, 255, 0.28) !important;
-  border: 1px solid rgba(255, 255, 255, 0.45) !important;
-  box-shadow: none !important;
+.alt-tab-icon-bin.selected,
+.switcher-list .item-box:selected .alt-tab-icon-bin,
+.switcher-list .item-box.selected .alt-tab-icon-bin {
+  background-color: rgba(255, 255, 255, 0.14) !important;
+  border: 2px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
 }
 
 /* App name label underneath selected icon */
@@ -3083,12 +3086,12 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list .item-box StLabel,
 .switcher-list .item-box .label {
   font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif !important;
-  font-size: 10px !important;
+  font-size: 11px !important;
   font-weight: 500 !important;
   color: #ffffff !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   text-align: center !important;
-  margin-top: 3px !important;
+  margin-top: 4px !important;
   padding: 0 1px !important;
 }
 
@@ -3107,7 +3110,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 .switcher-list .switcher-list-item-container {
-  spacing: 2px !important;
+  spacing: 10px !important;
 }
 
 .switcher-arrow {

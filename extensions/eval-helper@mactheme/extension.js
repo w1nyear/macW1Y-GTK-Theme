@@ -1071,14 +1071,99 @@ export default class EvalHelper extends Extension {
                 const SwitcherList = SwitcherPopupMod.SwitcherList;
                 if (!SwitcherPopup || !SwitcherList) return;
 
-                // 1. Patch SwitcherList.prototype.highlight so ONLY the focused item shows its program name underneath
-                // and the focus squircle wraps strictly around the icon actor (_iconBin / _icon)
-                if (!SwitcherList.prototype._macHighlightPatchedV9) {
-                    SwitcherList.prototype._macHighlightPatchedV9 = true;
-                    const origHighlight = SwitcherList.prototype.highlight;
+                // 1. Helper to update visual outline for an item in SwitcherList
+                SwitcherList.prototype._macUpdateItemVisual = function(i) {
+                    if (!Array.isArray(this._items) || i < 0 || i >= this._items.length) return;
+                    const item = this._items[i];
+                    if (!item) return;
+                    const child = item.get_child ? item.get_child() : null;
+                    const iconActor = child?._iconBin || child?._icon || (child?.get_children ? child.get_children()[0] : null);
+                    const label = child?.label || item.label_actor;
+                    const isSelected = (i === this._highlighted);
+                    const isHovered = item.hover && !isSelected;
+
+                    if (iconActor) {
+                        if (isSelected) {
+                            iconActor.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid rgba(255, 255, 255, 0.45) !important; background-color: rgba(255, 255, 255, 0.14) !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important; transition-duration: 150ms !important;';
+                            if (typeof iconActor.add_style_pseudo_class === 'function') iconActor.add_style_pseudo_class('selected');
+                            if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('selected');
+                        } else if (isHovered) {
+                            iconActor.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid rgba(255, 255, 255, 0.30) !important; background-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; transition-duration: 150ms !important;';
+                            if (typeof iconActor.remove_style_pseudo_class === 'function') iconActor.remove_style_pseudo_class('selected');
+                            if (typeof iconActor.remove_style_class_name === 'function') iconActor.remove_style_class_name('selected');
+                        } else {
+                            iconActor.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;';
+                            if (typeof iconActor.remove_style_pseudo_class === 'function') iconActor.remove_style_pseudo_class('selected');
+                            if (typeof iconActor.remove_style_class_name === 'function') iconActor.remove_style_class_name('selected');
+                        }
+                    }
+
+                    if (label) {
+                        label.opacity = 0;
+                        if (typeof label.set_height === 'function') label.set_height(0);
+                    }
+                };
+
+                // 2. Patch SwitcherList.prototype.vfunc_allocate so the shared dock title label is dynamically allocated
+                // directly centered underneath the active/hovered icon with zero text clipping.
+                if (!SwitcherList.prototype._macAllocPatchedV11) {
+                    SwitcherList.prototype._macAllocPatchedV11 = true;
+                    const origVfuncAllocate = SwitcherList.prototype._macOrigVfuncAllocate || SwitcherList.prototype.vfunc_allocate;
+                    SwitcherList.prototype._macOrigVfuncAllocate = origVfuncAllocate;
+                    SwitcherList.prototype.vfunc_allocate = function(box) {
+                        origVfuncAllocate.call(this, box);
+                        if (this._activeAppLabel && this._activeAppLabel.visible && this._highlighted >= 0 && Array.isArray(this._items) && this._items[this._highlighted]) {
+                            const item = this._items[this._highlighted];
+                            const [minW, natW] = this._activeAppLabel.get_preferred_width(-1);
+                            const [minH, natH] = this._activeAppLabel.get_preferred_height(natW);
+
+                            const [absX] = item.get_transformed_position();
+                            const [thisX] = this.get_transformed_position();
+                            const relX = (absX != null && thisX != null) ? Math.round(absX - thisX) : Math.round(item.allocation.x1);
+
+                            const lBox = new Clutter.ActorBox();
+                            lBox.x1 = Math.round(relX + (item.width - natW) / 2);
+                            lBox.x2 = lBox.x1 + natW;
+                            lBox.y2 = this.height - 4;
+                            lBox.y1 = lBox.y2 - natH;
+                            this._activeAppLabel.allocate(lBox);
+                        }
+                    };
+                }
+
+                // 3. Patch SwitcherList.prototype.highlight to update item outlines and center the shared active app title
+                if (!SwitcherList.prototype._macHighlightPatchedV11) {
+                    SwitcherList.prototype._macHighlightPatchedV11 = true;
+                    const origHighlight = SwitcherList.prototype._macOrigHighlight || SwitcherList.prototype.highlight;
+                    SwitcherList.prototype._macOrigHighlight = origHighlight;
                     SwitcherList.prototype.highlight = function(index, justOutline) {
                         origHighlight.call(this, index, justOutline);
                         if (!Array.isArray(this._items)) return;
+                        this._highlighted = index;
+
+                        if (!this._activeAppLabel) {
+                            this._activeAppLabel = new St.Label({
+                                style_class: 'alt-tab-app-label',
+                            });
+                            this._activeAppLabel.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important;';
+                            if (this._activeAppLabel.clutter_text) {
+                                this._activeAppLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+                                this._activeAppLabel.clutter_text.line_wrap = false;
+                            }
+                            this.add_child(this._activeAppLabel);
+                        }
+
+                        if (index >= 0 && index < this._items.length) {
+                            const item = this._items[index];
+                            const child = item?.get_child ? item.get_child() : null;
+                            const name = child?.label?.text || item?.label_actor?.text || '';
+                            this._activeAppLabel.text = name;
+                            this._activeAppLabel.opacity = 255;
+                            this._activeAppLabel.show();
+                        } else {
+                            this._activeAppLabel.opacity = 0;
+                        }
+
                         for (let i = 0; i < this._items.length; i++) {
                             const item = this._items[i];
                             if (!item) continue;
@@ -1086,95 +1171,109 @@ export default class EvalHelper extends Extension {
                             item.remove_style_pseudo_class('outlined');
                             item.remove_style_pseudo_class('highlighted');
                             item.remove_style_class_name('selected');
-
-                            const child = item.get_child ? item.get_child() : null;
-                            const iconActor = child?._iconBin || child?._icon || (child?.get_children ? child.get_children()[0] : null);
-                            const label = child?.label || item.label_actor;
-
-                            if (iconActor) {
-                                if (i === index) {
-                                    if (typeof iconActor.add_style_pseudo_class === 'function') iconActor.add_style_pseudo_class('selected');
-                                    if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('selected');
-                                } else {
-                                    if (typeof iconActor.remove_style_pseudo_class === 'function') iconActor.remove_style_pseudo_class('selected');
-                                    if (typeof iconActor.remove_style_class_name === 'function') iconActor.remove_style_class_name('selected');
-                                }
-                            }
-
-                            if (label) {
-                                if (i === index) {
-                                    label.opacity = 255;
-                                    if (!label.visible) label.show();
-                                } else {
-                                    label.opacity = 0;
-                                }
-                            }
+                            this._macUpdateItemVisual(i);
                         }
+                        this.queue_relayout();
                     };
                 }
 
-                // 2. Patch SwitcherList.prototype.addItem to hide labels by default, enforce non-square button, and hide scroll arrows
-                if (!SwitcherList.prototype._macAddItemPatchedV9) {
-                    SwitcherList.prototype._macAddItemPatchedV9 = true;
-                    const origAddItem = SwitcherList.prototype.addItem;
+                // 4. Patch SwitcherList.prototype.addItem to enforce dock-like item width, hide scroll arrows, and connect hover
+                if (!SwitcherList.prototype._macAddItemPatchedV11) {
+                    SwitcherList.prototype._macAddItemPatchedV11 = true;
+                    const origAddItem = SwitcherList.prototype._macOrigAddItem || SwitcherList.prototype.addItem;
+                    SwitcherList.prototype._macOrigAddItem = origAddItem;
                     SwitcherList.prototype.addItem = function(item, label) {
                         const bbox = origAddItem.call(this, item, label);
                         bbox._square = false;
-                        if (typeof bbox.set_width === 'function') bbox.set_width(60);
-                        bbox.style = 'padding: 0px !important; margin: 0px !important;';
-                        if (label) label.opacity = 0;
+                        if (typeof bbox.set_width === 'function') bbox.set_width(74);
+                        bbox.style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; border: none !important; box-shadow: none !important;';
+                        if (label) {
+                            label.opacity = 0;
+                            if (typeof label.set_height === 'function') label.set_height(0);
+                        }
                         const child = bbox.get_child ? bbox.get_child() : null;
-                        if (child?.label) child.label.opacity = 0;
+                        if (child?.label) {
+                            child.label.opacity = 0;
+                            if (typeof child.label.set_height === 'function') child.label.set_height(0);
+                        }
                         const iconActor = child?._iconBin || child?._icon || (child?.get_children ? child.get_children()[0] : null);
                         if (iconActor) {
                             if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
                             iconActor.x_align = Clutter.ActorAlign.CENTER;
                             iconActor.y_align = Clutter.ActorAlign.CENTER;
+                            if (typeof iconActor.set_size === 'function') iconActor.set_size(66, 66);
+                            iconActor.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;';
                         }
                         if (this._leftArrow) this._leftArrow.opacity = 0;
                         if (this._rightArrow) this._rightArrow.opacity = 0;
+
+                        bbox.connect('notify::hover', () => {
+                            const idx = this._items.indexOf(bbox);
+                            if (typeof this._macUpdateItemVisual === 'function') {
+                                this._macUpdateItemVisual(idx);
+                            }
+                            if (bbox.hover && this._activeAppLabel && idx >= 0) {
+                                const ch = bbox?.get_child ? bbox.get_child() : null;
+                                const nm = ch?.label?.text || bbox?.label_actor?.text || '';
+                                if (nm) {
+                                    this._activeAppLabel.text = nm;
+                                    this._activeAppLabel.opacity = 255;
+                                    this._activeAppLabel.show();
+                                    this.queue_relayout();
+                                }
+                            }
+                        });
+
                         return bbox;
                     };
                 }
 
-                // 3. Patch AppIcon to format label, add squircle class to iconBin, and hide label by default
-                if (AltTabMod.AppIcon && !AltTabMod.AppIcon.prototype._macPatchedV9) {
-                    AltTabMod.AppIcon.prototype._macPatchedV9 = true;
-                    const origAppIconInit = AltTabMod.AppIcon.prototype._init;
+                // 5. Patch AppIcon to format label, add squircle class to iconBin, and hide label by default
+                if (AltTabMod.AppIcon && !AltTabMod.AppIcon.prototype._macPatchedV11) {
+                    AltTabMod.AppIcon.prototype._macPatchedV11 = true;
+                    const origAppIconInit = AltTabMod.AppIcon.prototype._macOrigInit || AltTabMod.AppIcon.prototype._init;
+                    AltTabMod.AppIcon.prototype._macOrigInit = origAppIconInit;
                     AltTabMod.AppIcon.prototype._init = function(app) {
                         origAppIconInit.call(this, app);
                         if (this._iconBin) {
                             this._iconBin.add_style_class_name('alt-tab-icon-bin');
                             this._iconBin.x_align = Clutter.ActorAlign.CENTER;
                             this._iconBin.y_align = Clutter.ActorAlign.CENTER;
+                            if (typeof this._iconBin.set_size === 'function') this._iconBin.set_size(66, 66);
+                            this._iconBin.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;';
                         }
                         if (this.label) {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.opacity = 0;
+                            if (typeof this.label.set_height === 'function') this.label.set_height(0);
                             this.label.x_align = Clutter.ActorAlign.CENTER;
-                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 10px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 3px !important;';
+                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
                             if (this.label.clutter_text) {
-                                this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+                                this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
+                                this.label.clutter_text.x_align = Clutter.ActorAlign.CENTER;
                             }
                         }
                     };
                 }
 
-                // 4. Patch WindowIcon & WindowSwitcher for touchpad gestures & fallback switcher
-                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV9) {
-                    AltTabMod.WindowIcon.prototype._macPatchedV9 = true;
-                    const origWindowIconInit = AltTabMod.WindowIcon.prototype._init;
+                // 6. Patch WindowIcon & WindowSwitcher for touchpad gestures & fallback switcher
+                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV11) {
+                    AltTabMod.WindowIcon.prototype._macPatchedV11 = true;
+                    const origWindowIconInit = AltTabMod.WindowIcon.prototype._macOrigInit || AltTabMod.WindowIcon.prototype._init;
+                    AltTabMod.WindowIcon.prototype._macOrigInit = origWindowIconInit;
                     AltTabMod.WindowIcon.prototype._init = function(window, mode) {
                         origWindowIconInit.call(this, window, mode);
                         if (typeof this.set_size === 'function') {
-                            try { this.set_size(56); } catch (_) {}
+                            try { this.set_size(52); } catch (_) {}
                         }
                         const iconActor = this._iconBin || this._icon || (this.get_children ? this.get_children()[0] : null);
                         if (iconActor) {
                             if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
                             iconActor.x_align = Clutter.ActorAlign.CENTER;
                             iconActor.y_align = Clutter.ActorAlign.CENTER;
+                            if (typeof iconActor.set_size === 'function') iconActor.set_size(66, 66);
+                            iconActor.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;';
                         }
                         if (this.label) {
                             try {
@@ -1186,10 +1285,12 @@ export default class EvalHelper extends Extension {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.x_align = Clutter.ActorAlign.CENTER;
                             this.label.opacity = 0;
-                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 10px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; text-align: center !important; margin-top: 3px !important;';
+                            if (typeof this.label.set_height === 'function') this.label.set_height(0);
+                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
                             if (this.label.clutter_text) {
-                                this.label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+                                this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
+                                this.label.clutter_text.x_align = Clutter.ActorAlign.CENTER;
                             }
                             if (!this.label.get_parent()) {
                                 this.add_child(this.label);
@@ -1198,13 +1299,14 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 5. Hide multi-window arrows in AppSwitcher and enforce crisp 56px icon size & minimal spacing
+                // 7. Hide multi-window arrows in AppSwitcher and enforce crisp dock-proportional sizing & spacing
                 try {
                     const dummyPopup = new AltTabMod.AppSwitcherPopup();
                     const AppSwitcherProto = dummyPopup._switcherList ? Object.getPrototypeOf(dummyPopup._switcherList) : null;
-                    if (AppSwitcherProto && !AppSwitcherProto._macPatchedV9) {
-                        AppSwitcherProto._macPatchedV9 = true;
-                        const origAddIcon = AppSwitcherProto._addIcon;
+                    if (AppSwitcherProto && !AppSwitcherProto._macPatchedV11) {
+                        AppSwitcherProto._macPatchedV11 = true;
+                        const origAddIcon = AppSwitcherProto._macOrigAddIcon || AppSwitcherProto._addIcon;
+                        AppSwitcherProto._macOrigAddIcon = origAddIcon;
                         AppSwitcherProto._addIcon = function(appIcon) {
                             origAddIcon.call(this, appIcon);
                             this._squareItems = false;
@@ -1212,8 +1314,8 @@ export default class EvalHelper extends Extension {
                                 const lastItem = this._items[this._items.length - 1];
                                 if (lastItem) {
                                     lastItem._square = false;
-                                    if (typeof lastItem.set_width === 'function') lastItem.set_width(60);
-                                    lastItem.style = 'padding: 0px !important; margin: 0px !important;';
+                                    if (typeof lastItem.set_width === 'function') lastItem.set_width(74);
+                                    lastItem.style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; border: none !important; box-shadow: none !important;';
                                 }
                             }
                             if (Array.isArray(this._arrows)) {
@@ -1222,9 +1324,8 @@ export default class EvalHelper extends Extension {
                                 }
                             }
                         };
-                        const origHighlight = AppSwitcherProto.highlight;
                         AppSwitcherProto.highlight = function(n, justOutline) {
-                            origHighlight.call(this, n, justOutline);
+                            SwitcherList.prototype.highlight.call(this, n, justOutline);
                             if (Array.isArray(this._arrows)) {
                                 for (const arrow of this._arrows) {
                                     if (arrow) arrow.hide();
@@ -1234,31 +1335,61 @@ export default class EvalHelper extends Extension {
                         AppSwitcherProto._setIconSize = function() {
                             const primary = Main.layoutManager.primaryMonitor;
                             const availWidth = primary ? primary.width - 160 : 1600;
-                            let iconSize = 56;
-                            if (this._items.length * 68 > availWidth) iconSize = 48;
-                            if (this._items.length * 56 > availWidth) iconSize = 40;
-                            if (this._items.length * 46 > availWidth) iconSize = 32;
+                            let iconSize = 52;
+                            let tileW = 66;
+                            let itemW = 74;
+                            let radius = 18;
+                            let pad = 7;
+                            if (this._items.length * 74 > availWidth) {
+                                iconSize = 44;
+                                tileW = 56;
+                                itemW = 62;
+                                radius = 15;
+                                pad = 6;
+                            }
+                            if (this._items.length * 62 > availWidth) {
+                                iconSize = 36;
+                                tileW = 46;
+                                itemW = 50;
+                                radius = 12;
+                                pad = 5;
+                            }
+                            if (this._items.length * 50 > availWidth) {
+                                iconSize = 28;
+                                tileW = 36;
+                                itemW = 40;
+                                radius = 10;
+                                pad = 4;
+                            }
                             this._iconSize = iconSize;
                             this._squareItems = false;
-                            const itemW = iconSize + 4;
                             for (let i = 0; i < this.icons.length; i++) {
                                 if (this._items[i]) {
                                     this._items[i]._square = false;
                                     if (typeof this._items[i].set_width === 'function') this._items[i].set_width(itemW);
-                                    this._items[i].style = 'padding: 0px !important; margin: 0px !important;';
+                                    this._items[i].style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; border: none !important; box-shadow: none !important;';
                                 }
                                 if (this.icons[i]) {
                                     this.icons[i].set_size(iconSize);
+                                    this.icons[i].style = 'padding: 0px !important; margin: 0px !important; spacing: 0px !important;';
                                     const iconActor = this.icons[i]._iconBin || this.icons[i]._icon || (this.icons[i].get_children ? this.icons[i].get_children()[0] : null);
                                     if (iconActor) {
                                         if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
                                         iconActor.x_align = Clutter.ActorAlign.CENTER;
                                         iconActor.y_align = Clutter.ActorAlign.CENTER;
+                                        if (typeof iconActor.set_size === 'function') iconActor.set_size(tileW, tileW);
+                                        iconActor.style = `padding: ${pad}px !important; border-radius: ${radius}px !important;`;
                                     }
                                     if (this.icons[i].label) {
                                         this.icons[i].label.add_style_class_name('alt-tab-app-label');
                                         this.icons[i].label.opacity = 0;
                                         this.icons[i].label.x_align = Clutter.ActorAlign.CENTER;
+                                        this.icons[i].label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
+                                        if (this.icons[i].label.clutter_text) {
+                                            this.icons[i].label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+                                            this.icons[i].label.clutter_text.line_wrap = false;
+                                            this.icons[i].label.clutter_text.x_align = Clutter.ActorAlign.CENTER;
+                                        }
                                     }
                                 }
                             }
@@ -1267,13 +1398,14 @@ export default class EvalHelper extends Extension {
                     dummyPopup.destroy();
                 } catch (_) {}
 
-                // 6. Hide label in WindowSwitcher
+                // 7. Hide label in WindowSwitcher
                 try {
                     const dummyWinPopup = new AltTabMod.WindowSwitcherPopup();
                     const WinSwitcherProto = dummyWinPopup._switcherList ? Object.getPrototypeOf(dummyWinPopup._switcherList) : null;
-                    if (WinSwitcherProto && !WinSwitcherProto._macPatchedV5) {
-                        WinSwitcherProto._macPatchedV5 = true;
-                        const origWinSwitcherInit = WinSwitcherProto._init;
+                    if (WinSwitcherProto && !WinSwitcherProto._macPatchedV10) {
+                        WinSwitcherProto._macPatchedV10 = true;
+                        const origWinSwitcherInit = WinSwitcherProto._macOrigInit || WinSwitcherProto._init;
+                        WinSwitcherProto._macOrigInit = origWinSwitcherInit;
                         WinSwitcherProto._init = function(windows, mode) {
                             origWinSwitcherInit.call(this, windows, mode);
                             if (this._label) {
@@ -1301,10 +1433,10 @@ export default class EvalHelper extends Extension {
                         });
                         glass.setIsDock(false);
                         glass.setCornerSmoothingEnabled(0.0);
-                        glass.setCornerRadius(20.0);
+                        glass.setCornerRadius(28.0);
                         glass.setTintColor(0.0, 0.0, 0.0);
-                        glass.setTintStrength(0.04);
-                        glass.setBlurRadius(15.0);
+                        glass.setTintStrength(0.06);
+                        glass.setBlurRadius(20.0);
                         glass.setPadding(0);
                         try {
                             glass._effect?.setSurfaceLightEnabled?.(true);
@@ -1331,15 +1463,16 @@ export default class EvalHelper extends Extension {
                 // Preload glass asynchronously
                 getSwitcherGlass().catch(() => {});
 
-                if (!SwitcherPopup.prototype._macLQVisualPatchedV9) {
-                    SwitcherPopup.prototype._macLQVisualPatchedV9 = true;
-                    const origShow = SwitcherPopup.prototype.show;
+                if (!SwitcherPopup.prototype._macLQVisualPatchedV10) {
+                    SwitcherPopup.prototype._macLQVisualPatchedV10 = true;
+                    const origShow = SwitcherPopup.prototype._macOrigShow || SwitcherPopup.prototype.show;
+                    SwitcherPopup.prototype._macOrigShow = origShow;
                     SwitcherPopup.prototype.show = function(backward, binding, mask) {
                         if (this._switcherList) {
                             this._switcherList._squareItems = false;
-                            this._switcherList.style = 'padding: 8px 8px 5px 8px !important; border-radius: 20px !important;';
+                            this._switcherList.style = 'background-color: rgba(22, 22, 22, 0.40) !important; border-radius: 28px !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important; padding: 14px 20px 14px 20px !important;';
                             if (this._switcherList._list) {
-                                this._switcherList._list.style = 'spacing: 2px !important;';
+                                this._switcherList._list.style = 'spacing: 10px !important;';
                             }
                         }
                         const res = origShow.call(this, backward, binding, mask);
@@ -1390,8 +1523,8 @@ export default class EvalHelper extends Extension {
                                     const bgH = Math.round(slH);
 
                                     // Dynamic Liquid Glass parameters from settings (Liquid Glass group)
-                                    let blurRad = 18.0;
-                                    let tintStr = 0.05;
+                                    let blurRad = 20.0;
+                                    let tintStr = 0.06;
                                     let tR = 0.0, tG = 0.0, tB = 0.0;
                                     try {
                                         const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
@@ -1424,7 +1557,7 @@ export default class EvalHelper extends Extension {
                                     switcherGlass.set_position(primary.x, primary.y);
                                     switcherGlass.set_size(primary.width, primary.height);
                                     switcherGlass.setResolution(primary.width, primary.height);
-                                    switcherGlass.setCornerRadius(20.0);
+                                    switcherGlass.setCornerRadius(28.0);
                                     switcherGlass.setBlurRadius(blurRad);
                                     switcherGlass.setTintStrength(tintStr);
                                     switcherGlass.setTintColor(tR, tG, tB);
