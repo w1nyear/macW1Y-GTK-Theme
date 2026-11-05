@@ -300,12 +300,8 @@ def process_image(file_path):
         if dest_path != p and p.exists():
             p.unlink()
 
-        actions = []
-        if do_resize:
-            actions.append(f"Оброблено до {target_name}")
-
-        # msg = " • ".join(actions) if actions else ""
-        # Etap 651: Do not send redundant notification for screenshot processing
+        # Screenshots: GNOME Shell already sends the native screenshot notification.
+        # Do not send any processing notifications so there is exactly ONE notification for screenshots.
         return dest_path
     except Exception as e:
         print(f"Error processing image {file_path}: {e}", file=sys.stderr)
@@ -423,7 +419,7 @@ def process_video(file_path):
             if dest_path != p and p.exists():
                 p.unlink()
 
-            msg = f"Оброблено до {target_name}" if target_w else ""
+            msg = ""
             notify("Запис екрана збережено", msg, icon="video-x-generic-symbolic")
             return dest_path
     except Exception as e:
