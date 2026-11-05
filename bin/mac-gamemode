@@ -162,44 +162,23 @@ def is_on_battery():
 
 def set_platform_profile(profile):
     """
-    Sets the ACPI platform profile matching supported choices on this laptop
-    (e.g. low-power, quiet, balanced, balanced-performance).
+    Sets the ACPI platform profile safely.
+    Per user requirement: switching between power-saver, balanced, and performance
+    must NOT change fan speeds. Always ensure platform_profile remains 'balanced'
+    so the Acer EC firmware never alters hardware fan curves or RPM levels.
     """
     targets = [
         '/sys/firmware/acpi/platform_profile',
         '/sys/devices/platform/acer-wmi/platform-profile/platform-profile-0/profile'
     ]
-    choices = []
-    if os.path.exists('/sys/firmware/acpi/platform_profile_choices'):
-        try:
-            with open('/sys/firmware/acpi/platform_profile_choices', 'r') as f:
-                choices = f.read().strip().split()
-        except Exception:
-            pass
-
-    val = profile
-    if profile in ['performance', 'balanced-performance', 'gaming', 'game']:
-        if 'balanced-performance' in choices:
-            val = 'balanced-performance'
-        elif 'performance' in choices:
-            val = 'performance'
-        else:
-            val = 'balanced'
-    elif profile in ['quiet', 'silent', 'low']:
-        if 'quiet' in choices:
-            val = 'quiet'
-        elif 'low-power' in choices:
-            val = 'low-power'
-        else:
-            val = 'balanced'
-    elif profile in ['balanced', 'normal', 'desktop']:
-        val = 'balanced' if 'balanced' in choices else profile
-
     for p in targets:
         if os.path.exists(p):
             try:
-                with open(p, 'w') as f:
-                    f.write(f'{val}\n')
+                with open(p, 'r') as f:
+                    curr = f.read().strip()
+                if curr != 'balanced':
+                    with open(p, 'w') as f:
+                        f.write('balanced\n')
             except Exception:
                 pass
 
@@ -541,21 +520,17 @@ def daemon_loop():
             peak_temp = max(cpu_t, gpu_t)
 
             # Check if user changed power profile in GNOME Settings or via powerprofilesctl
+            # Note: Switching modes between power-saver, balanced, and performance
+            # must NOT change fan speeds. Do not force gaming/quiet modes on simple profile toggle.
             sys_profile = get_system_power_profile()
             if sys_profile and sys_profile != last_sys_profile:
                 last_sys_profile = sys_profile
-                if sys_profile == 'performance':
-                    set_manual_override('gaming', sync_dbus=False)
-                elif sys_profile == 'power-saver':
-                    set_manual_override('quiet', sync_dbus=False)
-                elif sys_profile == 'balanced':
-                    set_manual_override('balanced', sync_dbus=False)
                 current_mode = None
 
             manual_ovr = get_manual_override()
             game_active = any_game_running()
 
-            if manual_ovr == 'gaming' or (manual_ovr is None and (game_active or sys_profile == 'performance')):
+            if manual_ovr == 'gaming' or (manual_ovr is None and game_active):
                 # --- GAME MODE ---
                 if peak_temp >= GAME_HARD_LIMIT:
                     game_overtemp_count += 1

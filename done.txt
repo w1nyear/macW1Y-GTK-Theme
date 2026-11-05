@@ -17306,3 +17306,28 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Оновлено хеш цілісності blur-my-shell@aunetx у config/extensions.lock.json.
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS (5/5 аудитів успішно).
+
+Етап 670: Заборона зміни швидкості вентиляторів при перемиканні режимів живлення та видалення налаштування вентиляторів із Параметрів
+1. Вимоги користувача та обмеження:
+   - Перемикання режимів між «Заощадження енергії», «Баланс» та «Швидкодія» не повинно змінювати швидкість вентиляторів.
+   - Повністю видалити функціонал регулювання швидкості вентиляторів із вікна системних параметрів (GNOME Control Center).
+   - Суворе обмеження: не змінювати налаштування акумулятора та швидкість заряджання («ШВИДКІСТЬ АКУМУЛЯТОРІВ НЕ ЗМІНЮЙ!»).
+
+2. Модифікації у демоні живлення bin/mac-gamemode:
+   - Усунено перехоплення перемикання системних профілів у циклі daemon_loop: видалено автоматичне встановлення режимів gaming та quiet при зміні профілю на performance або power-saver.
+   - Метод set_platform_profile() закріплено на профілі 'balanced' — при зміні енергетичних профілів ACPI-профіль (/sys/firmware/acpi/platform_profile) ноутбука не переводиться у 'balanced-performance' або 'quiet', що виключає втручання прошивки EC у криві обертів кулерів.
+   - Всі параметри та логіку роботи з акумулятором (is_on_battery тощо) збережено без будь-яких змін.
+   - Оновлений файл скопійовано до /usr/local/bin/mac-gamemode та перезапущено службу mac-gamemode.service.
+
+3. Видалення інтерфейсу керування вентиляторами з Параметрів (GNOME Control Center):
+   - У шаблонах control-center/cc-power-profile-row.ui та gnome-control-center-overlay/cc-power-profile-row.ui повністю видалено кнопку-стрілку розкриття списку profile_fan_expand_btn та прив'язані до неї сигнали.
+   - У бібліотеці ін'єкцій control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c функцію setup_power_profile_row_fan_button() перетворено на no-op, а з обробників шаблонів вилучено зв'язування колбеків вентиляторів.
+   - Бібліотеку control-center/libmac_settings.so скомпільовано та синхронізовано з усіма 6 цільовими шляхами (включно з /usr/lib/x86_64-linux-gnu/libmac_settings.so).
+   - З обгортки bin/gnome-control-center, /usr/local/bin/gnome-control-center та /usr/bin/gnome-control-center прибрано оверлей cc-power-profile-row.ui.
+
+4. Тестування та верифікація:
+   - Проведено тест зміни режимів powerprofilesctl set power-saver, performance, balanced: стан /sys/firmware/acpi/platform_profile стабільно залишається 'balanced', оберти вентиляторів не змінюються.
+   - Знято контрольний знімок вікна «Живлення» у Параметрах (power_panel_verification.png): кнопки розкриття, спливаючі підказки та повзунки вентиляторів повністю відсутні, відображаються лише стандартні радіокнопки режимів.
+   - Налаштування акумулятора залишилися недоторканими.
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS (5/5).

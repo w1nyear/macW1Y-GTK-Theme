@@ -5953,34 +5953,10 @@ static void find_toggle_button_child(GtkWidget *widget, gpointer data) {
 }
 
 static void setup_power_profile_row_fan_button(GtkWidget *row) {
-    if (!row || !GTK_IS_WIDGET(row)) return;
-    if (g_object_get_data(G_OBJECT(row), "fan_btn_setup_done")) return;
-    g_object_set_data(G_OBJECT(row), "fan_btn_setup_done", GINT_TO_POINTER(1));
-
-    GtkWidget *btn = NULL;
-    find_toggle_button_child(row, &btn);
-    gboolean created_dynamic = FALSE;
-
-    if (!btn) {
-        btn = gtk_toggle_button_new();
-        gtk_button_set_icon_name(GTK_BUTTON(btn), "pan-down-symbolic");
-        gtk_widget_set_valign(btn, GTK_ALIGN_CENTER);
-        gtk_widget_set_tooltip_text(btn, mac_tr("fan_speed", "Швидкість вентиляторів"));
-        gtk_widget_add_css_class(btn, "flat");
-        gtk_widget_add_css_class(btn, "circular");
-        adw_action_row_add_suffix(ADW_ACTION_ROW(row), btn);
-        created_dynamic = TRUE;
-    }
-
-    if (btn) {
-        gtk_widget_set_name(btn, "profile_fan_expand_btn");
-        register_fan_expand_button(btn);
-        if (created_dynamic && !g_object_get_data(G_OBJECT(btn), "signals_hooked")) {
-            g_object_set_data(G_OBJECT(btn), "signals_hooked", GINT_TO_POINTER(1));
-            g_signal_connect(btn, "toggled", G_CALLBACK(mac_power_profile_fan_btn_toggled), NULL);
-        }
-        mac_power_profile_fan_btn_realize(btn, NULL);
-    }
+    (void)row;
+    /* Feature removed per user request: switching power modes must not change fan speeds,
+     * and fan control UI is removed from Settings. */
+    return;
 }
 
 void gtk_widget_init_template(GtkWidget *widget)
@@ -5988,13 +5964,6 @@ void gtk_widget_init_template(GtkWidget *widget)
     static void (*orig_init_template)(GtkWidget *) = NULL;
     if (!orig_init_template) orig_init_template = dlsym(RTLD_NEXT, "gtk_widget_init_template");
     if (orig_init_template) orig_init_template(widget);
-
-    if (widget) {
-        GType profile_row_type = g_type_from_name("CcPowerProfileRow");
-        if (profile_row_type != 0 && g_type_is_a(G_OBJECT_TYPE(widget), profile_row_type)) {
-            setup_power_profile_row_fan_button(widget);
-        }
-    }
 }
 
 void gtk_widget_class_set_template_from_resource(GtkWidgetClass *widget_class, const char *resource_name)
@@ -6002,11 +5971,6 @@ void gtk_widget_class_set_template_from_resource(GtkWidgetClass *widget_class, c
     static void (*orig_set_template)(GtkWidgetClass *, const char *) = NULL;
     if (!orig_set_template) orig_set_template = dlsym(RTLD_NEXT, "gtk_widget_class_set_template_from_resource");
     if (orig_set_template) orig_set_template(widget_class, resource_name);
-
-    if (resource_name && g_strcmp0(resource_name, "/org/gnome/control-center/power/cc-power-profile-row.ui") == 0) {
-        gtk_widget_class_bind_template_callback_full(widget_class, "mac_power_profile_fan_btn_realize", G_CALLBACK(mac_power_profile_fan_btn_realize));
-        gtk_widget_class_bind_template_callback_full(widget_class, "mac_power_profile_fan_btn_toggled", G_CALLBACK(mac_power_profile_fan_btn_toggled));
-    }
 }
 
 /* Stubs for backward compatibility if ever referenced */
