@@ -17171,3 +17171,26 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Оновлено `config/extensions.lock.json` з новими sha256 для `desktop-widgets@r3nhick` та `eval-helper@mactheme`.
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
+
+Етап 665: Відновлення клікабельності кнопок та пунктів у всіх контекстних меню, меню барі та параметрах
+1. Діагностика причини блокування кліків миші по пунктах меню:
+   - У `eval-helper@mactheme/extension.js` патч `BoxPointer.prototype.open` залишав прапорець `this._muteInput = true;` увімкненим (він скидався в `false` тільки в асинхронному колбеку `onComplete` анімації `this.ease`).
+   - У GNOME Shell метод `BoxPointer.prototype.vfunc_captured_event(event)` при `_muteInput === true` перехоплював усі події миші (`BUTTON_PRESS`, `BUTTON_RELEASE`) та повертав `Clutter.EVENT_STOP`, повністю відкидаючи кліки ще до того, як вони досягали пунктів `PopupMenuItem` чи жестів `Clutter.ClickGesture`.
+   - В результаті жоден пункт у меню Apple («Вийти з системи...», «Системні параметри...»), у меню додатків («Параметри...», «Сховати...»), у статус-барі («Edit Mode») чи у контекстних меню віджетів не реагував на клік миші.
+   - Крім того, виклик `this.set_position(box.x1, box.y1)` у `BoxPointer.prototype.open` та `_showContextMenu` конфліктував з алокацією Mutter і призводив до зміщення координат пікінгу.
+
+2. Виправлення у `eval-helper@mactheme/extension.js`:
+   - Синхронно при виклику `BoxPointer.prototype.open` встановлено `this._muteInput = false;`, `this._muteKeys = false;`, `this._isClosingAnimation = false;`, а також `this.opacity = 255;`.
+   - Видалено некоректний виклик `this.set_position(box.x1, box.y1)`.
+   - Перевизначено `BoxPointer.prototype.vfunc_captured_event`: коли меню відкрите (`this.visible && !this._isClosingAnimation`), події вказівника миші (кліки, скроли, переміщення) гарантовано повертають `Clutter.EVENT_PROPAGATE` і ніколи не глушаться, що виключає блокування взаємодії.
+   - У `PopupSwitchMenuItem.prototype.activate` забезпечено безпечну перевірку типу події перед викликом `this.emit('activate', event)` (тільки якщо передано валідний `Clutter.Event`), що усунуло помилку `Wrong type undefined; boxed type ClutterEvent expected` та блокування перемикачів.
+
+3. Виправлення у `desktop-widgets@r3nhick/extension.js`:
+   - Видалено ручний виклик `set_position(box.x1, box.y1)` перед відкриттям контекстного меню, передавши позиціонування нативному механізму GNOME `BoxPointer.setPosition`.
+
+4. Верифікація та синхронізація:
+   - Протестовано наживо через D-Bus EvalHelper: `pressPropagates: true`, `releasePropagates: true`, `bpMuteInput: false`.
+   - Усі 42 активні меню на робочому столі успішно розблоковані.
+   - Оновлено `config/extensions.lock.json` з актуальними контрольними сумами sha256.
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено).

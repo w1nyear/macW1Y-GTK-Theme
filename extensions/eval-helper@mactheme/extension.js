@@ -968,11 +968,15 @@ export default class EvalHelper extends Extension {
                         if (this._switch?.mapped)
                             this.toggle();
 
-                        if (!event || (event.type?.() === Clutter.EventType.KEY_PRESS &&
-                            event.get_key_symbol?.() === Clutter.KEY_space))
+                        if (event && typeof event.type === 'function' &&
+                            event.type() === Clutter.EventType.KEY_PRESS &&
+                            typeof event.get_key_symbol === 'function' &&
+                            event.get_key_symbol() === Clutter.KEY_space)
                             return;
 
-                        this.emit('activate', event);
+                        if (event && (event instanceof Clutter.Event || (typeof Clutter.Event === 'function' && event instanceof Clutter.Event))) {
+                            this.emit('activate', event);
+                        }
                     };
                 }
 
@@ -2805,21 +2809,17 @@ export default class EvalHelper extends Extension {
                 if (!this._origBoxPointerOpen) {
                     this._origBoxPointerOpen = BoxPointer.BoxPointer.prototype.open;
                     this._origBoxPointerClose = BoxPointer.BoxPointer.prototype.close;
+                    this._origBoxPointerCapturedEvent = BoxPointer.BoxPointer.prototype.vfunc_captured_event;
                 }
                 BoxPointer.BoxPointer.prototype.open = function(animate, onComplete) {
                     if (this._closeTimeoutId) {
                         GLib.source_remove(this._closeTimeoutId);
                         this._closeTimeoutId = 0;
                     }
-                    if (this._sourceActor && this._sourceActor.mapped) {
-                        try {
-                            const box = this.get_allocation_box();
-                            this._reposition(box);
-                            this.set_position(box.x1, box.y1);
-                        } catch (_) {}
-                    }
+                    this._isClosingAnimation = false;
                     this.remove_all_transitions();
                     this._muteKeys = false;
+                    this._muteInput = false;
                     this.show();
 
                     const pivotY = (this.arrowSide === St.Side.BOTTOM) ? 1.0 : 0.0;
@@ -2827,6 +2827,7 @@ export default class EvalHelper extends Extension {
                     this.set_pivot_point(pivotX, pivotY);
                     this.translation_x = 0;
                     this.translation_y = 0;
+                    this.opacity = 255;
 
                     const getMenuUIM = (boxPointer) => {
                         return boxPointer?._delegate?._liquidGlassUIManager ||
@@ -2844,24 +2845,18 @@ export default class EvalHelper extends Extension {
                         if (bg) {
                             bg._isClosingAnimation = false;
                             bg.remove_all_transitions();
-                            bg.opacity = 0;
+                            bg.opacity = 255;
                             bg.visible = true;
                             bg.scale_x = 1.0;
                             bg.scale_y = 1.0;
                             bg.translation_x = 0;
                             bg.translation_y = 0;
                             bg.set_pivot_point(0.0, 0.0);
-                            bg.ease({
-                                opacity: 255,
-                                duration: 75,
-                                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                            });
                         }
                     } catch (_) {}
 
                     // When animate is explicitly disabled (0 or false), show instantly
                     if (animate === 0 || animate === false) {
-                        this.opacity = 255;
                         this.scale_x = 1.0;
                         this.scale_y = 1.0;
                         this._muteInput = false;
@@ -2870,12 +2865,10 @@ export default class EvalHelper extends Extension {
                     }
 
                     // Ultra-responsive authentic macOS Tahoe appearance: immediate visibility (no delay/lag) with snappy 75ms micro-spring
-                    this.opacity = 0;
                     this.scale_x = 0.98;
                     this.scale_y = 0.98;
 
                     this.ease({
-                        opacity: 255,
                         scale_x: 1.0,
                         scale_y: 1.0,
                         duration: 75,
@@ -2896,6 +2889,7 @@ export default class EvalHelper extends Extension {
                         if (onComplete) onComplete();
                         return;
                     }
+                    this._isClosingAnimation = true;
                     this.remove_all_transitions();
                     this._muteInput = true;
                     this._muteKeys = true;
@@ -2915,6 +2909,7 @@ export default class EvalHelper extends Extension {
                             GLib.source_remove(this._closeTimeoutId);
                             this._closeTimeoutId = 0;
                         }
+                        this._isClosingAnimation = false;
                         this.hide();
                         this.opacity = 0;
                         this.scale_x = 1.0;
@@ -3016,6 +3011,28 @@ export default class EvalHelper extends Extension {
                         mode: Clutter.AnimationMode.EASE_IN_QUAD,
                         onComplete: finalizeClose
                     });
+                };
+
+                BoxPointer.BoxPointer.prototype.vfunc_captured_event = function(event) {
+                    if (event.type() === Clutter.EventType.ENTER ||
+                        event.type() === Clutter.EventType.LEAVE)
+                        return Clutter.EVENT_PROPAGATE;
+
+                    // When menu is open and not in close animation, never block pointer events (clicks, scrolls, gestures)
+                    if (this.visible && !this._isClosingAnimation) {
+                        const type = event.type();
+                        if (type !== Clutter.EventType.KEY_PRESS && type !== Clutter.EventType.KEY_RELEASE)
+                            return Clutter.EVENT_PROPAGATE;
+                    }
+
+                    const mute = event.type() === Clutter.EventType.KEY_PRESS ||
+                        event.type() === Clutter.EventType.KEY_RELEASE
+                        ? this._muteKeys : this._muteInput;
+
+                    if (mute)
+                        return Clutter.EVENT_STOP;
+
+                    return Clutter.EVENT_PROPAGATE;
                 };
 
                 // Instant AppIndicator context menu activation (eliminate 400ms double-click timeout)
@@ -3151,10 +3168,12 @@ export default class EvalHelper extends Extension {
                 import('resource:///org/gnome/shell/ui/boxpointer.js').then((BoxPointer) => {
                     if (this._origBoxPointerOpen) BoxPointer.BoxPointer.prototype.open = this._origBoxPointerOpen;
                     if (this._origBoxPointerClose) BoxPointer.BoxPointer.prototype.close = this._origBoxPointerClose;
+                    if (this._origBoxPointerCapturedEvent) BoxPointer.BoxPointer.prototype.vfunc_captured_event = this._origBoxPointerCapturedEvent;
                 });
             } catch (_) {}
             this._origBoxPointerOpen = null;
             this._origBoxPointerClose = null;
+            this._origBoxPointerCapturedEvent = null;
         }
 
         if (this._origWmDestroyWindow && Main.wm) {

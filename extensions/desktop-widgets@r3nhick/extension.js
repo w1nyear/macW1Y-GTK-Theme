@@ -3615,13 +3615,6 @@ class WidgetController {
     menu.addMenuItem(removeItem);
 
     view.contextMenu = menu;
-    try {
-      if (menu._boxPointer && typeof menu._boxPointer._reposition === 'function') {
-        const box = menu.actor.get_allocation_box();
-        menu._boxPointer._reposition(box);
-        menu.actor.set_position(box.x1, box.y1);
-      }
-    } catch (_) {}
     menu.open();
   };
 
