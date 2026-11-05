@@ -363,11 +363,7 @@ preferencespage list.boxed-list > row:hover + row,
 }
 
 preferencesgroup > box > box.header,
-preferencesgroup box.header,
-preferencesgroup > box > label.title,
-preferencesgroup > label.title,
-label.heading,
-.heading {
+preferencesgroup box.header {
   font-size: 13.5px;
   font-weight: 700;
   color: #ffffff;
@@ -375,6 +371,26 @@ label.heading,
   margin-right: 15px;
   margin-bottom: 4px;
   padding-left: 0px;
+}
+
+preferencesgroup > box > box.header label.heading,
+preferencesgroup > box > box.header .heading,
+preferencesgroup > box > box.header label.title,
+preferencesgroup > box > box.header label,
+preferencesgroup box.header label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-left: 0px;
+  margin-right: 0px;
+  padding-left: 0px;
+}
+
+label.heading,
+.heading {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 /* =========================================================================

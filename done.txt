@@ -17483,3 +17483,40 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Знято контрольні скріншоти (topbar_stage675_final_crop.png, topbar_stage675_left_crop.png):
      * Відстань між іконками статусу тепер становить рівно 16–18 px (Telegram ↔ Antigravity: 16 px, Antigravity ↔ [ук]: 16 px, [ук] ↔ батарея: 18 px, батарея ↔ Центр керування: 18 px, Центр керування ↔ дата/час: 18 px).
      * Ритм і відстані ідеально гармоніюють із 20 px інтервалами текстових пунктів лівого меню-бару.
+
+Етап 676: Виправлення подвійного відступу назв груп у Параметрах (GNOME Control Center) та вирівнювання по лівому краю в один рівень з картками й описами
+1. Діагностика та аналіз причин зміщення назви групи:
+   - На фото користувача заголовок групи («Бірки», «Попередження» тощо) мав подвійний відступ праворуч (+15..30 px) порівняно з описом групи, прев’ю-картками та пунктами списку (boxed-list).
+   - Детальний аналіз віджетів Libadwaita та структури AdwPreferencesGroup показав наявність подвійного нашарування відступів (Double Margin Bug):
+     * AdwPreferencesGroup має структуру: preferencesgroup > box > box.header > box.labels > label.heading (заголовок) + label.body.dimmed (опис), нижче — list.boxed-list (картка).
+     * Контейнер box.header отримував margin-left: 15px згідно з правилом теми.
+     * Проте в control-center/libmac_settings.c, gtk-4.0/macw1y-components.css та bin/mac-build-theme селектор label.heading, .heading також призначав margin-left: 15px! Оскільки заголовок має клас heading, він отримував додатковий відступ всередині box.header (+15 px, сумарно 30 px). При цьому опис (.body.dimmed) не має класу heading і не зсувався.
+     * Додатково функція expand_clamps_recursive() у libmac_settings.c містила код, який при знаходженні віджета з класом heading програмно встановлював gtk_widget_set_margin_start(parent, 15) для батьківського box.labels, що спричиняло ще одне додаткове зміщення.
+     * Контейнери прев’ю (GtkBox id=*_preview_container) у файлі розмітки cc-mac-styling-panel.ui мали захардкоджені значення margin-start=20 та margin-end=20 замість системного card_margin_x = 15 px.
+
+2. Виконані виправлення та уніфікація вирівнювання:
+   - У control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c:
+     * Усунено селектори label.heading та .heading із блоку CSS, що задає margin-left: 15px;.
+     * Додано специфічне скидання margin-left: 0px; margin-right: 0px; padding-left: 0px; для всіх міток усередині box.header (preferencesgroup > box > box.header label.heading, preferencesgroup > box > box.header label.title, preferencesgroup box.header label).
+     * У функції expand_clamps_recursive(): додано перевірку gtk_widget_get_ancestor(widget, ADW_TYPE_PREFERENCES_GROUP). Якщо віджет знаходиться всередині групи налаштувань, його margin_start і margin_end, а також відступи батьківського боксу скидаються в 0, забезпечуючи точне вирівнювання за контейнером box.header.
+     * Бібліотеку libmac_settings.so скомпільовано та розгорнуто в усі 6 системних і локальних цільових директорій.
+   - У bin/mac-build-theme:
+     * Розділено стилізацію шрифтів заголовків (font-size, font-weight, color) та відступів.
+     * Забезпечено скидання margin-left: 0px; padding-left: 0px; для ярликів усередині preferencesgroup box.header.
+     * Оновлено копію у /usr/local/bin/mac-build-theme.
+     * Перегенеровано всі теми, файли токенів та macw1y-components.css за допомогою bin/mac-build-theme.
+   - У gtk-4.0/gtk.css, gtk-4.0/gtk-Dark.css, config/gtk-4.0/gtk.css, config/gtk-4.0/gtk-Dark.css:
+     * Оновлено селектори заголовків груп та синхронізовано правила скидання відступів.
+   - У control-center/cc-mac-styling-panel.ui та gnome-control-center-overlay/cc-mac-styling-panel.ui:
+     * В усіх 10 прев'ю-контейнерах (liquid, menubar, dock, labels, alerts, notifications, spotlight, blur, context_menu, widgets) margin-start та margin-end зменшено з 20 px до 15 px.
+     * Оновлений файл розмітки синхронізовано до /usr/share/mactheme/gnome-control-center-overlay/ та ~/.local/share/gnome-control-center-overlay/.
+
+3. Верифікація та контроль якості:
+   - Успішно пройдено повний аудит системи bin/mac-audit-sync check: 100% PASS (5/5).
+   - Успішно пройдено перевірку цілісності розширень bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - Знято тестові скріншоти вікон та зрізи пікселів (birky_exact_crop.png, gcc_keyboard_card_crop.png):
+     * Заголовок «Бірки»: координата X = 28 px.
+     * Опис «Параметри розмиття...»: координата X = 28 px.
+     * Прев'ю-картка: координата X = 27 px (грань), 28 px (контент).
+     * Рядки списку параметрів: координата X = 27 px (картка), 43 px (текст із внутрішнім паддінгом 14 px + 2 px).
+     * Досягнуто бездоганне 100% вертикальне вирівнювання лівої межі заголовків груп із картками й описами в усіх панелях Параметрів.

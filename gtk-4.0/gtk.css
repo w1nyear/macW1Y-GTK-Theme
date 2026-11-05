@@ -10972,17 +10972,27 @@ window.mac-settings-window .content-pane preferencesgroup > box > box.header,
 window.mac-settings-window .mac-settings-content preferencesgroup > box > box.header,
 window.mac-settings-window preferencesgroup > box > box.header,
 window.mac-settings-window preferencesgroup box.header,
-window.mac-settings-window preferencesgroup > box > label.title,
-window.mac-settings-window preferencesgroup > label.title,
 window.mac-settings-window preferencespage .boxed-list-title,
-window.mac-settings-window preferencespage label.heading,
-window.mac-settings-window .mac-settings-content label.heading,
-window.mac-settings-window label.heading,
 window.mac-settings-window #list_label,
 window.mac-settings-window .mac-panel-section-title {
     margin-left: 15px;
     margin-right: 15px;
     margin-bottom: 4px;
+    padding-left: 0px;
+}
+
+window.mac-settings-window preferencesgroup > box > box.header label.heading,
+window.mac-settings-window preferencesgroup > box > box.header .heading,
+window.mac-settings-window preferencesgroup > box > box.header label.title,
+window.mac-settings-window preferencesgroup > box > box.header label,
+window.mac-settings-window preferencesgroup box.header label,
+preferencesgroup > box > box.header label.heading,
+preferencesgroup > box > box.header .heading,
+preferencesgroup > box > box.header label.title,
+preferencesgroup > box > box.header label,
+preferencesgroup box.header label {
+    margin-left: 0px;
+    margin-right: 0px;
     padding-left: 0px;
 }
 
@@ -11882,6 +11892,8 @@ window.mac-settings-window button.suggested-action.circular:active {
   color: #ffffff;
   border-radius: 9999px;
 }
+
+
 
 
 

@@ -27,8 +27,8 @@
                     <child>
                       <object class="GtkBox" id="liquid_preview_container">
                         <property name="orientation">1</property>
-                        <property name="margin-start">20</property>
-                        <property name="margin-end">20</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
                         <property name="margin-top">4</property>
                         <property name="margin-bottom">12</property>
                         <child>
@@ -243,8 +243,8 @@
                     <child>
                       <object class="GtkBox" id="menubar_preview_container">
                         <property name="orientation">1</property>
-                        <property name="margin-start">20</property>
-                        <property name="margin-end">20</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
                         <property name="margin-top">4</property>
                         <property name="margin-bottom">12</property>
                         <child>
@@ -317,8 +317,8 @@
                     <child>
                       <object class="GtkBox" id="dock_preview_container">
                         <property name="orientation">1</property>
-                        <property name="margin-start">20</property>
-                        <property name="margin-end">20</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
                         <property name="margin-top">4</property>
                         <property name="margin-bottom">12</property>
                         <child>
@@ -416,8 +416,8 @@
                     <child>
                       <object class="GtkBox" id="labels_preview_container">
                         <property name="orientation">1</property>
-                        <property name="margin-start">20</property>
-                        <property name="margin-end">20</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
                         <property name="margin-top">4</property>
                         <property name="margin-bottom">12</property>
                         <child>
@@ -515,8 +515,8 @@
                     <child>
                       <object class="GtkBox" id="alerts_preview_container">
                         <property name="orientation">1</property>
-                        <property name="margin-start">20</property>
-                        <property name="margin-end">20</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
                         <property name="margin-top">4</property>
                         <property name="margin-bottom">12</property>
                         <child>
@@ -614,8 +614,8 @@
                     <child>
                       <object class="GtkBox" id="notifications_preview_container">
                         <property name="orientation">1</property>
-                        <property name="margin-start">20</property>
-                        <property name="margin-end">20</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
                         <property name="margin-top">4</property>
                         <property name="margin-bottom">12</property>
                         <child>
@@ -713,8 +713,8 @@
                     <child>
                       <object class="GtkBox" id="spotlight_preview_container">
                         <property name="orientation">1</property>
-                        <property name="margin-start">20</property>
-                        <property name="margin-end">20</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
                         <property name="margin-top">4</property>
                         <property name="margin-bottom">12</property>
                         <child>
@@ -812,8 +812,8 @@
                     <child>
                       <object class="GtkBox" id="blur_preview_container">
                         <property name="orientation">1</property>
-                        <property name="margin-start">20</property>
-                        <property name="margin-end">20</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
                         <property name="margin-top">4</property>
                         <property name="margin-bottom">12</property>
                         <child>
@@ -886,8 +886,8 @@
                     <child>
                       <object class="GtkBox" id="context_menu_preview_container">
                         <property name="orientation">1</property>
-                        <property name="margin-start">20</property>
-                        <property name="margin-end">20</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
                         <property name="margin-top">4</property>
                         <property name="margin-bottom">12</property>
                         <child>
@@ -1017,8 +1017,8 @@
                     <child>
                       <object class="GtkBox" id="widgets_preview_container">
                         <property name="orientation">1</property>
-                        <property name="margin-start">20</property>
-                        <property name="margin-end">20</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
                         <property name="margin-top">4</property>
                         <property name="margin-bottom">12</property>
                         <child>

@@ -7891,17 +7891,26 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-content preferencesgroup > box > box.header, "
         "window.mac-settings-window preferencesgroup > box > box.header, "
         "window.mac-settings-window preferencesgroup box.header, "
-        "window.mac-settings-window preferencesgroup > box > label.title, "
-        "window.mac-settings-window preferencesgroup > label.title, "
         "window.mac-settings-window preferencespage .boxed-list-title, "
-        "window.mac-settings-window preferencespage label.heading, "
-        "window.mac-settings-window .mac-settings-content label.heading, "
-        "window.mac-settings-window label.heading, "
         "window.mac-settings-window #list_label, "
         "window.mac-settings-window .mac-panel-section-title { "
         "  margin-left: 15px; "
         "  margin-right: 15px; "
         "  margin-bottom: 4px; "
+        "  padding-left: 0px; "
+        "} "
+        "window.mac-settings-window preferencesgroup > box > box.header label.heading, "
+        "window.mac-settings-window preferencesgroup > box > box.header .heading, "
+        "window.mac-settings-window preferencesgroup > box > box.header label.title, "
+        "window.mac-settings-window preferencesgroup > box > box.header label, "
+        "window.mac-settings-window preferencesgroup box.header label, "
+        "preferencesgroup > box > box.header label.heading, "
+        "preferencesgroup > box > box.header .heading, "
+        "preferencesgroup > box > box.header label.title, "
+        "preferencesgroup > box > box.header label, "
+        "preferencesgroup box.header label { "
+        "  margin-left: 0px; "
+        "  margin-right: 0px; "
         "  padding-left: 0px; "
         "} "
         "window.mac-settings-window preferencespage list.boxed-list row.expander, "
@@ -9514,7 +9523,16 @@ static void expand_clamps_recursive(GtkWidget *widget) {
     }
     if (GTK_IS_LABEL(widget)) {
         const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
-        if (g_strcmp0(bid, "list_label") == 0 || gtk_widget_has_css_class(widget, "heading")) {
+        GtkWidget *ancestor_group = gtk_widget_get_ancestor(widget, ADW_TYPE_PREFERENCES_GROUP);
+        if (ancestor_group != NULL) {
+            gtk_widget_set_margin_start(widget, 0);
+            gtk_widget_set_margin_end(widget, 0);
+            GtkWidget *parent = gtk_widget_get_parent(widget);
+            if (parent && GTK_IS_BOX(parent)) {
+                gtk_widget_set_margin_start(parent, 0);
+                gtk_widget_set_margin_end(parent, 0);
+            }
+        } else if (g_strcmp0(bid, "list_label") == 0 || gtk_widget_has_css_class(widget, "heading")) {
             GtkWidget *parent = gtk_widget_get_parent(widget);
             if (parent && GTK_IS_BOX(parent)) {
                 gtk_widget_set_margin_start(parent, 15);
