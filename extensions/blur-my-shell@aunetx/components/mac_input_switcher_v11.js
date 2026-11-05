@@ -66,25 +66,15 @@ function getShortLabel(source) {
     return (source.shortName || source.id || '?').substring(0, 2);
 }
 
-function getOsdCode(source) {
-    if (!source) return '?';
-    const short = (source.shortName || '').toLowerCase();
-    if (short) return short;
-    const id = (source.id || '').toLowerCase();
-    if (id === 'us') return 'en';
-    if (id === 'ua') return 'uk';
-    return id.substring(0, 2);
-}
-
 function getOsdLabel(source) {
     if (!source) return '';
     const id = (source.id || '').toLowerCase();
     const short = (source.shortName || '').toLowerCase();
-    if (id === 'ua' || id === 'uk' || short === 'uk' || short === 'ua') return 'Українська';
+    if (id === 'us' || id === 'en' || short === 'en' || id.startsWith('us') || id.startsWith('en')) return 'ABC';
+    if (id === 'ua' || id === 'uk' || short === 'uk' || short === 'ua' || id.startsWith('ua') || id.startsWith('uk')) return 'Українська';
     if (source.displayName) {
-        return source.displayName;
+        return source.displayName.replace(/\s*\(.*?\)/, '');
     }
-    if (id === 'us' || id === 'en' || short === 'en') return 'Англійська (США)';
     if (id === 'ru' || short === 'ru') return 'Русская';
     if (id === 'by' || short === 'by') return 'Беларуская';
     if (id === 'pl' || short === 'pl') return 'Polski';
@@ -373,38 +363,28 @@ export const MacInputSourcePopup = GObject.registerClass({
 
     _buildOsdUI() {
         const N = this._items.length;
-        const paddingX = 8;
-        const paddingTop = 8;
-        const slotW = 60;
-        const slotH = 90;
-        const gap = 4;
-        const bottomH = 30;
+        this._paddingX = 8;
+        this._paddingY = 8;
+        this._itemH = 48;
+        this._gap = 4;
+        this._osdW = 310;
 
-        const cardW = 2 * paddingX + N * slotW + (N - 1) * gap;
-        const cardH = paddingTop + slotH + bottomH;
-
-        this._osdW = cardW;
-        this._osdH = cardH;
-        this._paddingX = paddingX;
-        this._paddingTop = paddingTop;
-        this._slotW = slotW;
-        this._slotH = slotH;
-        this._gap = gap;
-        this._bottomH = bottomH;
+        const osdH = 2 * this._paddingY + N * this._itemH + (N - 1) * this._gap;
+        this._osdH = osdH;
 
         const monitor = Main.layoutManager.currentMonitor || Main.layoutManager.primaryMonitor;
-        this._osdX = monitor.x + Math.round((monitor.width - cardW) / 2);
-        this._osdY = monitor.y + Math.round((monitor.height - cardH) / 2);
+        this._osdX = monitor.x + Math.round((monitor.width - this._osdW) / 2);
+        this._osdY = monitor.y + Math.round((monitor.height - osdH) / 2);
 
-        // 1. Unified box with LQ-Visual glass & dark translucent background
+        // 1. Unified box with Liquid Glass backdrop
         this._osdBox = new St.Widget({
-            style: 'background-color: rgba(30, 30, 30, 0.70) !important; ' +
-                   'border-radius: 22px !important; ' +
-                   'border: 1px solid rgba(255, 255, 255, 0.18) !important; ' +
-                   'box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45) !important; ' +
+            style: 'background-color: transparent !important; ' +
+                   'border-radius: 26px !important; ' +
+                   'border: 1px solid rgba(255, 255, 255, 0.30) !important; ' +
+                   'box-shadow: 0 16px 36px rgba(0, 0, 0, 0.40) !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
-            width: cardW,
-            height: cardH,
+            width: this._osdW,
+            height: osdH,
             x: this._osdX,
             y: this._osdY,
             opacity: 0,
@@ -414,79 +394,62 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._osdBox.set_pivot_point(0.5, 0.5);
         this.add_child(this._osdBox);
         this._targetBox = this._osdBox;
-        this._targetCornerRadius = 22.0;
+        this._targetCornerRadius = 26.0;
 
-        // 2. Selection pill (horizontal movement)
+        // 2. Selection pill (wide rounded rectangle, vertical movement)
+        const pillW = this._osdW - 2 * this._paddingX;
         this._selectionPill = new St.Widget({
-            style: 'background-color: rgba(255, 255, 255, 0.18) !important; ' +
-                   'border-radius: 16px !important; ' +
-                   'border: 1px solid rgba(255, 255, 255, 0.35) !important; ' +
-                   'box-shadow: none !important; ' +
+            style: 'background-color: rgba(255, 255, 255, 0.26) !important; ' +
+                   'border-radius: 18px !important; ' +
+                   'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
+                   'box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
-            width: slotW,
-            height: slotH,
-            x: paddingX + this._currentIndex * (slotW + gap),
-            y: paddingTop
+            width: pillW,
+            height: this._itemH,
+            x: this._paddingX,
+            y: this._paddingY + this._currentIndex * (this._itemH + this._gap),
         });
         this._osdBox.add_child(this._selectionPill);
 
-        // 3. Language short labels in horizontal slots
+        // 3. Language labels centered in vertical rows
         this._labels = [];
         this._items.forEach((item, i) => {
             const isSelected = (i === this._currentIndex);
             const lbl = new St.Label({
-                text: getOsdCode(item),
+                text: getOsdLabel(item),
                 style: isSelected
-                    ? 'color: #ffffff; font-weight: 600; font-size: 18px; text-align: center; padding: 0 !important; margin: 0 !important;'
-                    : 'color: rgba(255, 255, 255, 0.60); font-weight: 500; font-size: 18px; text-align: center; padding: 0 !important; margin: 0 !important;',
-                x: paddingX + i * (slotW + gap),
-                y: paddingTop,
-                width: slotW,
-                height: slotH
+                    ? 'color: #ffffff; font-weight: 600; font-size: 17px; text-align: center; padding: 0 !important; margin: 0 !important;'
+                    : 'color: rgba(255, 255, 255, 0.75); font-weight: 500; font-size: 17px; text-align: center; padding: 0 !important; margin: 0 !important;',
+                x: this._paddingX,
+                y: this._paddingY + i * (this._itemH + this._gap),
+                width: pillW,
+                height: this._itemH,
             });
             lbl.clutter_text.x_align = Clutter.ActorAlign.CENTER;
             lbl.clutter_text.y_align = Clutter.ActorAlign.CENTER;
             this._osdBox.add_child(lbl);
             this._labels.push(lbl);
         });
-
-        // 4. Localized full name of the currently selected language centered at bottom
-        const currentItem = this._items[this._currentIndex];
-        this._bottomLabel = new St.Label({
-            text: getOsdLabel(currentItem),
-            style: 'color: #ffffff; font-weight: 500; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,0.40); text-align: center; padding: 0 !important; margin: 0 !important;',
-            x: 0,
-            y: paddingTop + slotH + 2,
-            width: cardW,
-            height: bottomH - 2
-        });
-        this._bottomLabel.clutter_text.x_align = Clutter.ActorAlign.CENTER;
-        this._bottomLabel.clutter_text.y_align = Clutter.ActorAlign.CENTER;
-        this._osdBox.add_child(this._bottomLabel);
     }
 
     _setOsdPosition(index, animate = true) {
         if (!this._selectionPill) return;
 
-        const targetX = this._paddingX + index * (this._slotW + this._gap);
+        const targetY = this._paddingY + index * (this._itemH + this._gap);
         if (animate) {
             this._selectionPill.ease({
-                x: targetX,
+                y: targetY,
                 duration: 180,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             });
         } else {
-            this._selectionPill.x = targetX;
-        }
-
-        if (this._bottomLabel && this._items[index]) {
-            this._bottomLabel.text = getOsdLabel(this._items[index]);
+            this._selectionPill.y = targetY;
         }
 
         this._labels.forEach((lbl, i) => {
             lbl.style = (i === index)
-                ? 'color: #ffffff; font-weight: 600; font-size: 18px; text-align: center; padding: 0 !important; margin: 0 !important;'
-                : 'color: rgba(255, 255, 255, 0.60); font-weight: 500; font-size: 18px; text-align: center; padding: 0 !important; margin: 0 !important;';
+                ? 'color: #ffffff; font-weight: 600; font-size: 17px; text-align: center; padding: 0 !important; margin: 0 !important;'
+                : 'color: rgba(255, 255, 255, 0.75); font-weight: 500; font-size: 17px; text-align: center; padding: 0 !important; margin: 0 !important;';
         });
     }
 
@@ -629,13 +592,15 @@ export const MacInputSourcePopup = GObject.registerClass({
     }
 
     _keyPressHandler(keysym, action) {
-        if (action === this._action || keysym === Clutter.KEY_space) {
+        if (action === this._action || keysym === Clutter.KEY_space ||
+            keysym === Clutter.KEY_Down || keysym === Clutter.KEY_Tab) {
             this._select(this._next(), true);
             try { this._items[this._selectedIndex]?.activate(true); } catch (_) {}
             return Clutter.EVENT_STOP;
         }
 
-        if (action === this._actionBackward || keysym === Clutter.KEY_Left) {
+        if (action === this._actionBackward || keysym === Clutter.KEY_Up ||
+            keysym === Clutter.KEY_ISO_Left_Tab || keysym === Clutter.KEY_Left) {
             this._select(this._previous(), true);
             try { this._items[this._selectedIndex]?.activate(true); } catch (_) {}
             return Clutter.EVENT_STOP;

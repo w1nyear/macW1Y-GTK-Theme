@@ -17219,3 +17219,39 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Оновлено `config/extensions.lock.json`.
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
    - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено).
+
+Етап 667: Відновлення автентичного вертикального вигляду Liquid Glass для екранного меню зміни мови (OSD Switcher) поза полями вводу
+1. Аналіз вимог користувача та референсів (v0.3 / v0.4):
+   - Користувач надав скріншоти оригінального вигляду OSD перемикача мов (не в полі вводу):
+     * Широка округла форма картки (border-radius 26px, ширина 310px, висота 116px).
+     * Фон — чистий нативний Liquid Glass (BackdropGlass шейдер з відблисками та заломленням світла).
+     * Вибір мов по вертикалі: зверху «ABC» (англійська розкладка), знизу «Українська».
+     * Активний елемент підсвічується широкою напівпрозорою пігулкою (rgba(255, 255, 255, 0.26) з border-radius 18px), білий текст 600.
+     * Неактивний елемент — без фонової плашки, напівпрозорий білий текст (rgba(255, 255, 255, 0.75)).
+     * Плавне ковзання пігулки по осі Y при переході між варіантами.
+
+2. Модифікації у extensions/blur-my-shell@aunetx/components/mac_input_switcher_v11.js:
+   - Функція getOsdLabel(source):
+     * Для розкладок us, en повертає автентичну macOS-назву «ABC».
+     * Для розкладок ua, uk повертає «Українська».
+   - Метод _buildOsdUI():
+     * Переведено з горизонтальних комірок назад на вертикальний стек елементів згідно з макетом 0.3/0.4.
+     * Параметри геометрії: _osdW = 310, _itemH = 48, _paddingX = 8, _paddingY = 8, _gap = 4.
+     * _osdBox: border-radius: 26px, тонка скляна рамка 1px solid rgba(255, 255, 255, 0.30), м'яка тінь box-shadow: 0 16px 36px rgba(0, 0, 0, 0.40).
+     * Траєкторія та форма вибору: _selectionPill з висотою 48px, шириною 294px і border-radius: 18px.
+     * Написи розкладок відцентровано всередині кожного рядка (Clutter.ActorAlign.CENTER).
+     * _targetCornerRadius оновлено до 26.0 для точної синхронізації геометрії Liquid Glass шейдера.
+   - Метод _setOsdPosition(index, animate):
+     * Анімація переміщення пігулки здійснюється по вертикальній осі y: targetY = this._paddingY + index * (this._itemH + this._gap).
+     * Оновлення колірних стилів для виділеного (#ffffff; font-weight: 600) та невиділеного пунктів (rgba(255, 255, 255, 0.75)).
+   - Клавіатурна навігація у _keyPressHandler:
+     * Додано підтримку KEY_Down та KEY_Tab для руху вперед.
+     * Додано підтримку KEY_Up та KEY_ISO_Left_Tab для руху назад.
+
+3. Синхронізація та верифікація:
+   - Файл синхронізовано з ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/mac_input_switcher_v11.js.
+   - Компонент гаряче перезавантажено в робочій сесії GNOME Shell.
+   - Проведено візуальне тестування обох станів (вибрано «ABC» та вибрано «Українська») зі зняттям скріншотів — вигляд повністю відповідає референсам користувача.
+   - Оновлено хеш цілісності sha256 розширення blur-my-shell@aunetx у config/extensions.lock.json.
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS (5/5).

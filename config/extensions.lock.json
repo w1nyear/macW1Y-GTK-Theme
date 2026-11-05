@@ -44,7 +44,7 @@
         "50",
         "51"
       ],
-      "sha256": "9a853cf88ca1efcc27975b8c928cd2421d138a75a8dc39a0283d1e3456e27a81",
+      "sha256": "48db359aa7a04ce04ef64d82cf29ddb0f3706539fb73c68b2e98b60d9ef5245a",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -56,7 +56,8 @@
       "has_custom_patches": true,
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
       "last_verified": "2026-11-04",
-      "pinned_sha256": "85bafbef3cdd13b81ed2364a24256a156022aaa59ffb40be52a320dcc168b9c3"
+      "pinned_sha256": "85bafbef3cdd13b81ed2364a24256a156022aaa59ffb40be52a320dcc168b9c3",
+      "dir_hash": "48db359a"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
       "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
