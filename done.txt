@@ -17520,3 +17520,23 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
      * Прев'ю-картка: координата X = 27 px (грань), 28 px (контент).
      * Рядки списку параметрів: координата X = 27 px (картка), 43 px (текст із внутрішнім паддінгом 14 px + 2 px).
      * Досягнуто бездоганне 100% вертикальне вирівнювання лівої межі заголовків груп із картками й описами в усіх панелях Параметрів.
+
+- [x] Завдання 677: Плавна фізична анімація розширення точки слайдера (slider thumb) при переході з пасивного в активний стан та усунення попереджень GTK CSS парсера
+1. Діагностика та аналіз причин відсутності анімації:
+   - При натисканні та утриманні бігунка слайдера перехід між пасивним станом (біла кругла точка 20×20 px) та активним станом (витягнута капсула рідкого скла 38×20 px) відбувався миттєво без плавної інтерполяції.
+   - У control-center/libmac_settings.c правила для вікна window.mac-settings-window scale slider перекривали загальні правила теми та обмежували transition лише властивостями box-shadow 150ms ease, border-color 150ms ease; з примусовим transform: none;. Властивості min-width, min-height, margin, background-color та просторові деформації взагалі не мали анімації переходу.
+   - Крім того, наявність непідтримуваних GTK CSS властивостей max-width та max-height (у правилах повзунків та перемикачів) спричиняла спам помилок теми: Theme parser error: No property named "max-width" та max-height.
+
+2. Виконані інженерні зміни:
+   - Створено пружні Keyframe-анімації Apple Spring @keyframes macSliderExpandH (для горизонтальних слайдерів) та @keyframes macSliderExpandV (для вертикальних слайдерів) з динамічним розширенням від scale(0.75, 0.90) з легким фізичним перельотом (overshoot scale(1.05, 1.02)) та поверненням у стабільні scale(1.0, 1.0).
+   - Додано плавні перехідні криві transition: min-width 240ms cubic-bezier(0.16, 1, 0.3, 1), min-height 240ms cubic-bezier(0.16, 1, 0.3, 1), margin 240ms cubic-bezier(0.16, 1, 0.3, 1), background-color 240ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1), border-color 240ms cubic-bezier(0.16, 1, 0.3, 1), transform 240ms cubic-bezier(0.16, 1, 0.3, 1); як для пасивного стану, так і для :hover (з делікатним scale(1.05)).
+   - Для :active підключено animation: macSliderExpandH 220ms cubic-bezier(0.16, 1, 0.3, 1); (і macSliderExpandV відповідно), що забезпечує тактильне візуальне враження «розтягування» точки в рідку скляну капсулу при затисканні миші, а при відпусканні — зворотне плавне стискання назад у круглу білу точку за 240 мс.
+   - Видалено всі непідтримувані властивості max-width і max-height у control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c.
+   - Оновлено bin/mac-build-theme (додано keyframes та transitions у генератор gtk4_components_css), синхронізовано gtk-4.0/gtk.css, gtk-4.0/gtk-Dark.css, config/gtk-4.0/ та ~/.config/gtk-4.0/.
+   - Перекомпільовано control-center/libmac_settings.so та синхронізовано в усі цільові директорії.
+
+3. Верифікація:
+   - bin/mac-audit-sync check: 100% PASS (5/5).
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - Повністю усунено помилки CSS парсера GTK при запуску Параметрів.
+   - Створено валідаційний анімований GIF slider_live_expansion_verified.gif, де підтверджено плавне розширення бігунка з 20 px до 35..38 px та повернення назад.
