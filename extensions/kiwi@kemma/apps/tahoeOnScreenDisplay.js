@@ -242,14 +242,21 @@ function _disconnectTrackedSignals() {
 
 function _anchorX(monitor) {
     try {
-        const btn = Main.panel?.statusArea?.['ydotool-trigger-button'] ||
-                    Main.panel?.statusArea?.['quickSettings'];
-        const actor = btn?.actor ?? btn;
-        if (actor) {
-            const [x] = actor.get_transformed_position();
-            const w = actor.width || 0;
-            if (x > 0 && w > 0)
-                return Math.round(x + w / 2);
+        const candidates = [
+            Main.panel?.statusArea?.['ydotool-trigger-button'],
+            Main.panel?.statusArea?.['macVolume'],
+            Main.panel?.statusArea?.['quickSettings'],
+        ];
+        for (const btn of candidates) {
+            if (!btn)
+                continue;
+            const actor = btn.actor ?? btn;
+            if (actor && actor.visible) {
+                const [x] = actor.get_transformed_position();
+                const w = actor.width || 0;
+                if (typeof x === 'number' && !isNaN(x) && x > 0 && w > 0)
+                    return Math.round(x + w / 2);
+            }
         }
     } catch (_) {}
     return Math.round(monitor.x + monitor.width - 170);
@@ -312,8 +319,12 @@ function _computeTargetCoordinates(fsOverride = null) {
         // Fullscreen application (not maximized) or hidden menubar: center horizontally across the screen
         targetX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
     } else {
-        // Desktop or maximized window with visible menubar: align firmly to top-right with standard 16px margin (macOS Tahoe style)
-        targetX = Math.round(monitor.x + monitor.width - OSD_W - 16);
+        // Desktop or maximized window with visible menubar: center horizontally directly under the icon (macOS Tahoe style)
+        const anchorCenter = _anchorX(monitor);
+        const margin = 16;
+        const cx = Math.round(anchorCenter - OSD_W / 2);
+        // Ensure within monitor boundaries with margin
+        targetX = Math.max(monitor.x + margin, Math.min(monitor.x + monitor.width - OSD_W - margin, cx));
     }
     const targetY = monitor.y + panelH + 8;
     return { monitor, targetX, targetY };
