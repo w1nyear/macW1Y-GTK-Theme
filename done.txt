@@ -17140,3 +17140,34 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Оновлено контрольні суми розширень у `config/extensions.lock.json`.
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
+
+----------------------------------------------------------------------
+Етап 664: Виправлення меню віджетів, перемикачів та видалення кнопки редагування
+----------------------------------------------------------------------
+1. Виправлення спалаху меню на старій позиції після переміщення віджета:
+   - У `BoxPointer.prototype.open` (`extensions/eval-helper@mactheme/extension.js`) додано негайний розрахунок координат через `this._reposition(box)` та `this.set_position(box.x1, box.y1)` перед відображенням меню.
+   - Початкову прозорість встановлено в 0 з плавним 75ms cubic fade-in та скейлом, що повністю усунуло навіть однокадровий стрибок зі старих координат.
+   - У `finishDrag` (`desktop-widgets@r3nhick/extension.js`) додано обов'язкове знищення попереднього меню при завершенні перетягування.
+
+2. Усунення миготіння фону шпалерою при відкритті ПКМ меню віджета:
+   - Додано селектор `.desktop-widgets-context-menu .popup-menu-content` з підкладкою `rgba(30, 30, 34, 0.78)` у `desktop-widgets/stylesheet.css`, `macW1Y-Dark/gnome-shell/gnome-shell.css`, `gnome-shell-theme` та системні теми.
+   - Тло меню тепер з нульового кадру має напівпрозоре матове скло, що виключає просвічування «голої» шпалери до відмальовування шейдерів.
+
+3. Видалення перемикача «Glass» з контекстного меню віджета:
+   - Повністю видалено пункт `glassItem` з `_showContextMenu` у `desktop-widgets@r3nhick/extension.js`.
+
+4. Виправлення роботи перемикачів («Edit Mode» у меню барі та «Lock Position» у віджетах):
+   - Усунуто фатальну помилку GNOME 47 `TypeError: can't access property "type", event is null` у `PopupSwitchMenuItem.prototype.activate`, коли `Clutter.get_current_event()` повертає `null` у колбеку жестів.
+   - Знято `PanGesture` з ручки перемикача (`_handle`) та підключено подію відпускання клавіші миші `button-release-event` з `Clutter.EVENT_STOP`, щоб клік у будь-яку точку рядка або на сам тумблер плавно перемикав стан і не закривав меню.
+
+5. Видалення кнопки «три точки» (сітка розміру) під час редагування віджетів:
+   - З `_addEditControls` у `desktop-widgets@r3nhick/extension.js` видалено створення кнопки `sizeButton` та меню `sizeMenu`.
+   - В оверлеї редагування залишено лише кнопку закріплення (📌) та закриття (✕), як у чистому стилі macOS.
+
+6. Верифікація:
+   - Знято скріншот оверлею редагування віджетів (`widgets_edit_mode_crop.png`): кнопки розміру немає, інтерфейс чистий і симетричний.
+   - Знято скріншот контекстного меню віджета (`widget_context_menu_crop.png`): пункт «Glass» відсутній, фон не миготить, меню позиціонується точно.
+   - Протестовано наживо перемикання тумблера «Edit Mode» у статус-барі та «Закріпити позицію» у віджетах: стан успішно перемикається без помилок.
+   - Оновлено `config/extensions.lock.json` з новими sha256 для `desktop-widgets@r3nhick` та `eval-helper@mactheme`.
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).

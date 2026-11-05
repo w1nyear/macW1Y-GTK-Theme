@@ -237,7 +237,7 @@
         "49",
         "50"
       ],
-      "sha256": "88df35c5178a27a32055adb28391350a0ae96004ec677fa7b37597940dc81a06",
+      "sha256": "a092d0399ef90ab59dcb4d762c576fafad323561c811ff3ea5396533642af177",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -247,8 +247,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macOS Alt+Tab switcher enhancements",
-      "last_verified": "2026-11-04",
-      "pinned_sha256": "8b11895e13bc14a93df84c6283c857c9b02eed1762c330a6c2666a548ec97e08"
+      "last_verified": "2026-11-05",
+      "pinned_sha256": "a092d0399ef90ab59dcb4d762c576fafad323561c811ff3ea5396533642af177"
     },
     "kiwi@kemma": {
       "uuid": "kiwi@kemma",
@@ -577,7 +577,7 @@
         "50",
         "51"
       ],
-      "sha256": "1f5228449eb791e79fa13e71048baed32121b30eb88d245c888b4f18f727f53c",
+      "sha256": "27bc1e89b09d501c6b6def1ea39e7baf59ccb4df2536bb30f8ee3efc342ca5ac",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
@@ -587,8 +587,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Liquid Glass GLSL shader scalar uniform binding fix, frosted card styling, and safe snippet support for GNOME 50",
-      "last_verified": "2026-10-31",
-      "pinned_sha256": "1f5228449eb791e79fa13e71048baed32121b30eb88d245c888b4f18f727f53c"
+      "last_verified": "2026-11-05",
+      "pinned_sha256": "27bc1e89b09d501c6b6def1ea39e7baf59ccb4df2536bb30f8ee3efc342ca5ac"
     },
     "ubuntu-appindicators@ubuntu.com": {
       "uuid": "ubuntu-appindicators@ubuntu.com",

@@ -859,9 +859,23 @@ class WidgetController {
     }));
 
     const editItem = new PopupMenu.PopupSwitchMenuItem(_('Edit Mode'), this._editMode);
+    const editSw = editItem._switch;
+    if (editSw) {
+      if (editSw._panGesture && editSw._handle) {
+        try { editSw._handle.remove_action(editSw._panGesture); } catch (_) {}
+      }
+      editSw.connect('button-release-event', () => { editItem.toggle(); return Clutter.EVENT_STOP; });
+      if (editSw._handle) {
+        editSw._handle.connect('button-release-event', () => { editItem.toggle(); return Clutter.EVENT_STOP; });
+      }
+    };
     editItem.connectObject('toggled', (_item, state) => {
       this._layoutSettings.set_boolean('edit-mode', state);
     }, this);
+    editItem.connect('button-release-event', () => {
+      editItem.toggle();
+      return Clutter.EVENT_STOP;
+    });
 
     this._editModeMenuItem = editItem;
     this._indicator.menu.addMenuItem(editItem);
@@ -2981,141 +2995,8 @@ class WidgetController {
     pinButton.connectObject('clicked', () => this.togglePin(view.widget.id), this);
     this._layer.add_child(pinButton);
 
-    const widgetModule = WIDGETS.get(view.widget.type);
-    const supportedSizes = widgetModule?.supportedSizes ?? [];
     let sizeButton = null;
     let sizeMenu = null;
-
-    // Show size button if widget supports multiple sizes
-    // OR if there are 2+ widgets in stack (main + at least 1 added)
-    const hasStack = Array.isArray(view.widget.stack) && view.widget.stack.length > 0;
-    const totalWidgets = 1 + (view.widget.stack?.length ?? 0);
-    const canResize = supportedSizes.length > 0 || (hasStack && totalWidgets >= 2);
-
-    if (canResize) {
-      sizeButton = new St.Button({
-        style_class: 'icon-button widget-edit-size',
-        icon_name: 'view-grid-symbolic',
-        reactive: true,
-        can_focus: true,
-        track_hover: true,
-        accessible_name: _('Widget size'),
-      });
-
-      this._layer.add_child(sizeButton);
-
-// The size picker is a real shell PopupMenu — identical to the
-// right-click context menu look: popup panel with the arrow, native
-// row hover highlight and a DOT ornament on the current size.
-sizeMenu = new PopupMenu.PopupMenu(sizeButton, 0.25, St.Side.TOP);
-Main.uiGroup.add_child(sizeMenu.actor);
-sizeMenu.actor.hide();
-
-// A manager gives the menu the stock dismissal: a press anywhere outside
-// the menu (that isn't the picker button) closes it.
-const sizeMenuManager = view.sizeMenuManager ?? new PopupMenu.PopupMenuManager(view.actor);
-sizeMenuManager.addMenu(sizeMenu);
-view.sizeMenuManager = sizeMenuManager;
-
-let sizeMenuDestroyed = false;
-let lastAutoClose = 0;
-sizeMenu.actor.connect('destroy', () => {
-  sizeMenuDestroyed = true;
-});
-sizeMenu.connect('open-state-changed', (_menu, isOpen) => {
-  if (!isOpen) {
-    lastAutoClose = Date.now();
-  };
-});
-
-// Collect all possible sizes from main widget and stack
-// For stacked widgets, show all sizes but disable those not supported by all widgets
-const allSizes = new Set();
-const widgetTypes = [view.widget.type];
-if (hasStack) {
-  for (const entry of view.widget.stack) {
-    if (entry?.type) {
-      widgetTypes.push(entry.type);
-    }
-  }
-}
-
-// If widget has native sizes, use them; otherwise use all standard sizes
-if (supportedSizes.length > 0) {
-  for (const size of supportedSizes) {
-    allSizes.add(size);
-  }
-} else if (hasStack) {
-  // For stacked widgets without native sizes, show common sizes
-  for (const size of ['small', 'medium', 'large', 'portrait', 'compact']) {
-    allSizes.add(size);
-  }
-}
-
-const sizeMenuItems = new Map();
-for (const sizeKey of orderedSizes([...allSizes])) {
-  // Check if ALL widgets in the container support this size
-  let allSupport = true;
-  for (const type of widgetTypes) {
-    const mod = WIDGETS.get(type);
-    const modSizes = mod?.supportedSizes ?? [];
-    if (modSizes.length > 0 && !modSizes.includes(sizeKey)) {
-      allSupport = false;
-      break;
-    }
-  }
-
-  const menuItem = new PopupMenu.PopupMenuItem(sizeLabel(sizeKey));
-  menuItem.setSensitive(allSupport);
-  menuItem.connectObject('activate', () => {
-    if (allSupport) {
-      this._setWidgetSize(view.widget, sizeKey);
-    }
-  }, this);
-  sizeMenu.addMenuItem(menuItem);
-  sizeMenuItems.set(sizeKey, menuItem);
-};
-
-sizeButton.connectObject('clicked', () => {
-  this._hideContextMenus();
-
-  // Only one menu open at a time.
-  for (const otherView of this._views.values()) {
-    if (otherView.sizeMenu && otherView.sizeMenu !== sizeMenu && otherView.sizeMenu.isOpen) {
-      otherView.sizeMenu.close();
-    };
-  };
-
-  if (sizeMenu.isOpen) {
-    sizeMenu.close();
-    return;
-  };
-
-  // The manager's own dismissal ran for this same press: reopening here
-  // would fight it — treat the press as the close.
-  if (Date.now() - lastAutoClose < 300) {
-    return;
-  };
-
-  // Dot ornament marks the current size
-  // For stacked widgets, show the active page's size instead of host widget size
-  const currentSize = this._getEffectiveSize(view);
-  
-  for (const [sizeKey, menuItem] of sizeMenuItems) {
-    menuItem.setOrnament(currentSize === sizeKey
-      ? PopupMenu.Ornament.DOT
-      : PopupMenu.Ornament.NONE);
-  };
-
-  sizeMenu.open();
-}, this);
-
-sizeButton.connectObject('destroy', () => {
-  if (!sizeMenuDestroyed && sizeMenu) {
-    sizeMenu.destroy();
-  };
-}, this);
-    };
 
     let photoButton = null;
 
@@ -3399,6 +3280,10 @@ sizeButton.connectObject('destroy', () => {
       delete widget.oldX;
       delete widget.oldY;
       
+      view.sizeMenu?.destroy();
+      view.sizeMenu = null;
+      view.contextMenu?.destroy();
+      view.contextMenu = null;
       this._animateWidget(widget, true);
       this._cancelActiveDrag();
       this._saveWidgets();
@@ -3649,6 +3534,7 @@ sizeButton.connectObject('destroy', () => {
     // GNOME PopupMenu attached to the widget wrapper, manager for dismissal,
     // and Switch rows — 1:1 with the reference look.
     const menu = new PopupMenu.PopupMenu(view.actor, 0.5, St.Side.TOP);
+    menu.actor.add_style_class_name('desktop-widgets-context-menu');
     view.contextMenuManager.addMenu(menu);
     Main.uiGroup.add_child(menu.actor);
     menu.actor.hide();
@@ -3688,31 +3574,26 @@ sizeButton.connectObject('destroy', () => {
       menu.addMenuItem(photoItem);
     };
 
-    // Widget-in-widget pages: DISABLED for now (commented out). Re-enable later.
-    // const stackItem = new PopupMenu.PopupMenuItem(_('Widget pages…'));
-    // stackItem.connectObject('activate', () => {
-    //   this._openStackPanel(view);
-    // }, this);
-    // menu.addMenuItem(stackItem);
-
-    // Switch rows mirror the reference's Glass/Lock toggles. Glass is the
-    // global style-mode (0 = glass, 1 = solid) — the same switch that lives
-    // in preferences, now quickly reachable from the widget itself; the
-    // 'changed::appearance' listener above rebuilds styles live.
-    const glassItem = new PopupMenu.PopupSwitchMenuItem(_('Glass'), this._layoutSettings.get_int('style-mode') === 0);
-    glassItem.connectObject('toggled', (_item, on) => {
-      const mode = on ? 0 : 1;
-      if (this._layoutSettings.get_int('style-mode') !== mode)
-        this._layoutSettings.set_int('style-mode', mode);
-    }, this);
-    menu.addMenuItem(glassItem);
-
     const lockItem = new PopupMenu.PopupSwitchMenuItem(_('Lock Position'), Boolean(view.widget.pinned));
+    const lockSw = lockItem._switch;
+    if (lockSw) {
+      if (lockSw._panGesture && lockSw._handle) {
+        try { lockSw._handle.remove_action(lockSw._panGesture); } catch (_) {}
+      }
+      lockSw.connect('button-release-event', () => { lockItem.toggle(); return Clutter.EVENT_STOP; });
+      if (lockSw._handle) {
+        lockSw._handle.connect('button-release-event', () => { lockItem.toggle(); return Clutter.EVENT_STOP; });
+      }
+    };
     lockItem.connectObject('toggled', (_item, on) => {
       if (Boolean(view.widget.pinned) !== on) {
         this.togglePin(view.widget.id);
       };
     }, this);
+    lockItem.connect('button-release-event', () => {
+      lockItem.toggle();
+      return Clutter.EVENT_STOP;
+    });
     menu.addMenuItem(lockItem);
 
     const settingsItem = new PopupMenu.PopupMenuItem(_('Widget settings'));
@@ -3734,6 +3615,13 @@ sizeButton.connectObject('destroy', () => {
     menu.addMenuItem(removeItem);
 
     view.contextMenu = menu;
+    try {
+      if (menu._boxPointer && typeof menu._boxPointer._reposition === 'function') {
+        const box = menu.actor.get_allocation_box();
+        menu._boxPointer._reposition(box);
+        menu.actor.set_position(box.x1, box.y1);
+      }
+    } catch (_) {}
     menu.open();
   };
 

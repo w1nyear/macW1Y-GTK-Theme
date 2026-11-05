@@ -962,6 +962,20 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
+                if (PopupMenu.PopupSwitchMenuItem && !PopupMenu.PopupSwitchMenuItem.prototype._origMacActivate) {
+                    PopupMenu.PopupSwitchMenuItem.prototype._origMacActivate = PopupMenu.PopupSwitchMenuItem.prototype.activate;
+                    PopupMenu.PopupSwitchMenuItem.prototype.activate = function(event) {
+                        if (this._switch?.mapped)
+                            this.toggle();
+
+                        if (!event || (event.type?.() === Clutter.EventType.KEY_PRESS &&
+                            event.get_key_symbol?.() === Clutter.KEY_space))
+                            return;
+
+                        this.emit('activate', event);
+                    };
+                }
+
                 if (Main.panel.menuManager && !Main.panel.menuManager._origMacGlideAddMenu) {
                     Main.panel.menuManager._origMacGlideAddMenu = Main.panel.menuManager.addMenu;
                     const origAdd = Main.panel.menuManager._origMacGlideAddMenu;
@@ -2797,6 +2811,13 @@ export default class EvalHelper extends Extension {
                         GLib.source_remove(this._closeTimeoutId);
                         this._closeTimeoutId = 0;
                     }
+                    if (this._sourceActor && this._sourceActor.mapped) {
+                        try {
+                            const box = this.get_allocation_box();
+                            this._reposition(box);
+                            this.set_position(box.x1, box.y1);
+                        } catch (_) {}
+                    }
                     this.remove_all_transitions();
                     this._muteKeys = false;
                     this.show();
@@ -2823,13 +2844,18 @@ export default class EvalHelper extends Extension {
                         if (bg) {
                             bg._isClosingAnimation = false;
                             bg.remove_all_transitions();
-                            bg.opacity = 255;
+                            bg.opacity = 0;
                             bg.visible = true;
                             bg.scale_x = 1.0;
                             bg.scale_y = 1.0;
                             bg.translation_x = 0;
                             bg.translation_y = 0;
                             bg.set_pivot_point(0.0, 0.0);
+                            bg.ease({
+                                opacity: 255,
+                                duration: 75,
+                                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                            });
                         }
                     } catch (_) {}
 
@@ -2844,11 +2870,12 @@ export default class EvalHelper extends Extension {
                     }
 
                     // Ultra-responsive authentic macOS Tahoe appearance: immediate visibility (no delay/lag) with snappy 75ms micro-spring
-                    this.opacity = 255;
+                    this.opacity = 0;
                     this.scale_x = 0.98;
                     this.scale_y = 0.98;
 
                     this.ease({
+                        opacity: 255,
                         scale_x: 1.0,
                         scale_y: 1.0,
                         duration: 75,
@@ -3296,6 +3323,10 @@ export default class EvalHelper extends Extension {
         if (PopupMenu.PopupMenu.prototype._origMacGlideOpen) {
             PopupMenu.PopupMenu.prototype.open = PopupMenu.PopupMenu.prototype._origMacGlideOpen;
             PopupMenu.PopupMenu.prototype._origMacGlideOpen = null;
+        }
+        if (PopupMenu.PopupSwitchMenuItem?.prototype?._origMacActivate) {
+            PopupMenu.PopupSwitchMenuItem.prototype.activate = PopupMenu.PopupSwitchMenuItem.prototype._origMacActivate;
+            PopupMenu.PopupSwitchMenuItem.prototype._origMacActivate = null;
         }
         if (Main.panel.menuManager?._origMacGlideAddMenu) {
             Main.panel.menuManager.addMenu = Main.panel.menuManager._origMacGlideAddMenu;

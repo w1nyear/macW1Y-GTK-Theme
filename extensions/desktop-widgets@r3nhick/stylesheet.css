@@ -237,3 +237,17 @@
 .button.widget-gallery-size-chip-selected {
 	color: white;
 }
+
+/* Desktop Widgets Context Menu Styling - prevents wallpaper flash and provides authentic macOS glass surface */
+.desktop-widgets-context-menu {
+    border-radius: 20px !important;
+}
+
+.desktop-widgets-context-menu .popup-menu-content {
+    background-color: rgba(30, 30, 34, 0.78) !important;
+    background: rgba(30, 30, 34, 0.78) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35) !important;
+    padding: 6px !important;
+}
