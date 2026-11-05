@@ -17042,3 +17042,29 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Аудит системи:
      * `bin/mac-audit-sync check`: 100% PASS (5/5).
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+----------------------------------------------------------------------
+Етап 660: Повна верифікація персистентності теми перед перезавантаженням системи (Safe Reboot Audit)
+----------------------------------------------------------------------
+1. Причина сповіщення про перезавантаження:
+   - Перевірено системний журнал `/var/run/reboot-required.pkgs`: оновлено системний пакунок `gnome-shell`.
+   - Індикатор «Потрібно перезавантажити систему» у верхній панелі штатно пропонує застосувати оновлення бінарних компонентів.
+
+2. Аудит персистентності та захисту теми:
+   - Бінарний захист оболонки (`dpkg-divert`):
+     * Оригінальний оновлений бінарник автоматично відведено у `/usr/bin/gnome-shell.real`.
+     * Скрипт-обгортка `/usr/bin/gnome-shell` з інжекцією `G_RESOURCE_OVERLAYS` та аварійним watchdog залишається непорушним.
+   - Розширення та сторожові служби:
+     * Усі 21 розширення перевірено у `config/extensions.lock.json` (`mac-extension-guard verify`: 21/21 SUCCESS).
+     * До списку обов'язкових розширень `REQUIRED_EXTENSIONS` у [`bin/mac-ensure-extensions.sh`](file:///home/vitaliy/MACTHEMEFILES/bin/mac-ensure-extensions.sh) додано `desktop-widgets@r3nhick`. Служба автозапуску гарантує активацію всіх 21 розширень при кожному старті сесії.
+   - Системні налаштування GSettings/dconf:
+     * Теми GTK (`macW1Y-Dark`), Shell (`macW1Y-Dark`), іконок (`MacTahoe-dark`), курсорів (`macOS`), шрифтів (`SF Pro Text 11`), Dock та віджетів стільниці збережені в базі dconf і надійно завантажуються після старту.
+   - Bootloader, сплеш та екран входу:
+     * GRUB: тема `apple-mac` активна в `/boot/grub/grub.cfg`.
+     * Plymouth: тема `apple-mac` у `/etc/plymouth/plymouthd.conf`.
+     * GDM: тема `macW1Y-Dark` у `/etc/alternatives/gdm-theme.gresource`.
+   - Виправлення Wine для CapCut:
+     * Скрипт автопатчингу `/usr/local/bin/mac-capcut-fix` та перехоплювач `metasecml.dll` збережено на постійній основі.
+
+3. Висновок:
+   - Перезавантаження на 100% безпечне. Жоден елемент теми не «злетить».
