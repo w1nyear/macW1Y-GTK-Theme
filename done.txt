@@ -16915,3 +16915,42 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Аудит та перевірка:
      * `bin/mac-audit-sync check`: 100% PASS (5/5).
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+================================================================================
+Етап 656: Видалення непрозорої білої/сірої плашки (undershoot.top) над списком у Параметрах (GNOME Control Center) та забезпечення природної прозорості й розмиття списку
+================================================================================
+Час виконання: листопад 2026
+Статус: Завершено (100% PASS, 21/21 Extensions Guard)
+
+1. Діагностика та локалізація дефекту:
+   - Користувач надав фото вікна «Параметри» (GNOME Control Center), де безпосередньо під пошуковим рядком «🔍 Пошук» над елементами списку лівої бічної панелі (Wi-Fi / Мережа / Живлення) відображався непрозорий біло-сірий прямокутний блок висотою 48px.
+   - Вимога користувача: повністю видалити цей білий елемент, залишивши виключно природну напівпрозорість та розмиття фону вікна/панелі (liquid glass blur) під час прокручування списку.
+   - Аналіз коду виявив:
+     * У `control-center/libmac_settings.c` (та `gnome-control-center-overlay/libmac_settings.c`) у динамічній інжекції CSS селектори `.sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top` та `.sidebar-pane scrolledwindow.undershoot-top > undershoot.top` задавали `min-height: 48px;` з градієнтом `linear-gradient(to bottom, @sidebar_bg_color 0%, ..., transparent 48px);`.
+     * У темній темі колір `@sidebar_bg_color` на напівпрозорій бічній панелі малювався як брудно-сіра/білувата непрозора плашка, що накладалася на верхні рядки списку під час гортання.
+     * Аналогічні правила були присутні у `bin/mac-build-theme`, `config/gtk-4.0/fixes4.css`, `gtk-4.0/fixes4.css`, `gtk-4.0/gtk.css` та `gtk-4.0/gtk-Dark.css`.
+
+2. Реалізовані зміни:
+   - Повне видалення штучного градієнта та обнулення всіх undershoot у бічних панелях списків:
+     * У бібліотеці інжекції `control-center/libmac_settings.c` та `gnome-control-center-overlay/libmac_settings.c` замінено правила undershoot для вікна `window.mac-settings-window`:
+       всі селектори бічної панелі (`.sidebar-pane undershoot`, `.sidebar-pane undershoot.top`, `.sidebar-pane undershoot.bottom`, `toolbarview.undershoot-*`, `.mac-settings-sidebar-list`, тощо) тепер мають суворо:
+       `min-height: 0px; min-width: 0px; background: none; background-color: transparent; background-image: none; border: none; box-shadow: none; opacity: 0;`.
+     * У `bin/mac-build-theme` для селекторів `.sidebar-pane undershoot*`, `window.mac-settings-window .sidebar-pane undershoot*`, `navigation-split-view > .sidebar-pane undershoot*` встановлено повну прозорість та нульові розміри.
+     * У `config/gtk-4.0/fixes4.css`, `gtk-4.0/fixes4.css`, `gtk-4.0/gtk.css` та `gtk-4.0/gtk-Dark.css` також повністю вимкнено будь-які штучні плашки та градієнти над бічними панелями.
+     * Виправлено синтаксис (видалено помилковий `!important`, непідтримуваний рушієм GTK CSS), забезпечивши 100% чистий парсинг CSS без попереджень теми.
+
+3. Компіляція та синхронізація:
+   - Скомпільовано оновлену бібліотеку `libmac_settings.so` через `gcc -shared -fPIC -O2`.
+   - Синхронізовано `libmac_settings.so` на всі 7 цільових локацій:
+     `control-center/libmac_settings.so`, `gnome-control-center-overlay/libmac_settings.so`, `lib/libmac_settings.so`, `~/.local/lib/libmac_settings.so`, `/usr/lib/x86_64-linux-gnu/libmac_settings.so`, `/usr/local/lib/libmac_settings.so`, `/usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so`.
+   - Запущено `python3 bin/mac-build-theme` для перекомпіляції глобальних тем.
+   - Оновлено бінарник `/usr/local/bin/mac-build-theme`.
+
+4. Жива перевірка та верифікація:
+   - Перезапущено `gnome-control-center` у системі.
+   - Знято контрольні знімки екрана:
+     * `settings_fixed_scrolled.png` — список прокручений донизу: безпосередньо під пошуковим рядком «🔍 Пошук» немає жодної білої чи сірої смуги; елементи плавно прокручуються з чистою прозорістю фону вікна.
+     * `settings_fixed_mid_scroll.png` та `settings_sidebar_crop.png` — пункт «Система» знаходиться точно під верхнім краєм прокрутки: текст та іконка залишаються повністю чіткими, читабельними, без перекриття білими плашками.
+   - Аудит системи:
+     * `bin/mac-audit-sync check`: 100% PASS (5/5).
+     * `bin/mac-extension-guard verify`: 21/21 SUCCESS.

@@ -420,7 +420,6 @@ preferencespage > scrolledwindow.undershoot-top > undershoot.top {
 
 window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
 window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
 window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow.undershoot-top > undershoot.top,
 window.mac-settings-window .panel-has-switcher scrolledwindow.undershoot-top > undershoot.top {
   min-height: 54px;
@@ -438,8 +437,7 @@ scrolledwindow.undershoot-bottom > undershoot.bottom,
 .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
 preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
 window.mac-settings-window preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom {
+window.mac-settings-window .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom {
   min-height: 28px;
   background: linear-gradient(to top,
     @window_bg_color 0%,
@@ -450,29 +448,41 @@ window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom 
   box-shadow: none;
 }
 
+.sidebar-pane undershoot,
+.sidebar-pane undershoot.top,
+.sidebar-pane undershoot.bottom,
+.sidebar-pane scrolledwindow undershoot,
+.sidebar-pane scrolledwindow > undershoot,
+.sidebar-pane scrolledwindow > undershoot.top,
+.sidebar-pane scrolledwindow > undershoot.bottom,
 .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top {
-  min-height: 48px;
-  background: linear-gradient(to bottom,
-    @sidebar_bg_color 0%,
-    @sidebar_bg_color 28px,
-    alpha(@sidebar_bg_color, 0.85) 38px,
-    alpha(@sidebar_bg_color, 0.40) 44px,
-    transparent 48px);
-  border: none;
-  box-shadow: none;
-}
-
 .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom {
-  min-height: 28px;
-  background: linear-gradient(to top,
-    @sidebar_bg_color 0%,
-    alpha(@sidebar_bg_color, 0.85) 30%,
-    alpha(@sidebar_bg_color, 0.40) 65%,
-    transparent 100%);
+.sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
+.sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+window.mac-settings-window .sidebar-pane undershoot,
+window.mac-settings-window .sidebar-pane undershoot.top,
+window.mac-settings-window .sidebar-pane undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow undershoot,
+window.mac-settings-window .sidebar-pane scrolledwindow > undershoot,
+window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.top,
+window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
+window.mac-settings-window .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar undershoot,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow undershoot,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar-list undershoot {
+  min-height: 0px;
+  min-width: 0px;
+  background: none;
+  background-color: transparent;
+  background-image: none;
   border: none;
   box-shadow: none;
+  opacity: 0;
 }
 
 undershoot.left,
