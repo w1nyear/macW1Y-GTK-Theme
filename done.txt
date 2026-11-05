@@ -17068,3 +17068,30 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
 
 3. Висновок:
    - Перезавантаження на 100% безпечне. Жоден елемент теми не «злетить».
+
+----------------------------------------------------------------------
+Етап 661: Повна синхронізація параметрів мак-стилізації та аудит файлів теми
+----------------------------------------------------------------------
+1. Синхронізація параметрів dconf / GSettings до репозиторію:
+   - Запущено інструмент `bin/mac-audit-sync export`.
+   - Збережено живий стан налаштувань GNOME, Dash/Dock, віджетів стільниці, сповіщень, Liquid Glass та Blur-my-shell у `dconf/gnome-all.dconf`.
+   - Автоматично відфільтровано апаратні прив'язки (назви конекторів моніторів, monitor IDs), забезпечивши повну портативність конфігурації.
+   - Синхронізовано налаштування: відступи віджетів (15px), радіус розмиття сповіщень (35), курсори macOS, звуки macOS, стилізація темного режиму.
+
+2. Аудит файлів живої системи проти репозиторію:
+   - Командні скрипти (/usr/local/bin vs bin/): 100% збіг хешів усіх бінарників та утиліт.
+   - Спільні бібліотеки: усі 7 екземплярів `libmac_settings.so` в системі та репозиторії ідентичні за MD5 (`1f1e296bd5e4659a9cecf62dc35982bb`).
+   - Синхронізовано сирцеві файли `libmac_settings.c` та `mac_i18n.h` у `/usr/share/mactheme/gnome-control-center-overlay/`.
+   - Розширення GNOME Shell: оновлено `Rounded_Corners@lennart-k` у репозиторії до версії з pinned lock (`a28915da...`). Усі 21 розширення мають 100% відповідність за `mac-extension-guard verify`.
+   - GTK 4.0 та GTK 3.0 CSS:
+     * Синхронізовано живі файли `gtk.css`, `gtk-Dark.css` та `fixes4.css` з `~/.config/gtk-4.0/` у `MACTHEMEFILES/gtk-4.0/` та `MACTHEMEFILES/config/gtk-4.0/` (включно з розмиттям undershoot списків без білих смуг).
+     * Синхронізовано `gtk.css` для GTK 3.0 у `MACTHEMEFILES/gtk-3.0/` та `config/gtk-3.0/`.
+     * Синхронізовано помаранчеві акцентні SVG слайдерів `slider-glass.svg` та `slider-glass-vertical.svg`.
+   - Теми та іконки:
+     * Теми `~/.themes/macW1Y-Dark` та `/usr/share/themes/macW1Y-Dark` повністю узгоджені з `MACTHEMEFILES/macW1Y-Dark/`.
+     * Додано іконки `controlcenter.png` та `controlcenter-dark.png` до `MACTHEMEFILES/icons/`.
+
+3. Результати фінального контролю:
+   - `bin/mac-audit-sync check`: 100% PASS (5/5 перевірок пройдено успішно).
+   - `bin/mac-extension-guard verify`: VERIFICATION SUCCESS (21/21 розширень валідовано).
+   - Повна синхронізація живої системи та проекту досягнута.

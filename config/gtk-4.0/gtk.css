@@ -6765,14 +6765,13 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 
 #NautilusPathBar, .nautilus-pathbar {
   border-radius: 9999px;
-  min-height: 22px;
   margin: 0;
-  padding: 1px 4px;
+  padding: 3px;
   color: @headerbar_fg_color;
   background-color: transparent;
-  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-  box-shadow: 0 1px 3px alpha(#000000, 0.15), inset 0 1px 0 alpha(#ffffff, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 6px 20px alpha(#000000,0.15), inset 1px 2px 1px -1px alpha(#ffffff,0.08), inset -1px -1px 1px 0 alpha(#ffffff,0.08);
+  border: none;
 }
 
 #NautilusPathBar:backdrop, .nautilus-pathbar:backdrop {
@@ -6785,9 +6784,8 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 #NautilusPathBar #NautilusPathButton, #NautilusPathBar .nautilus-path-button, .nautilus-pathbar #NautilusPathButton, .nautilus-pathbar .nautilus-path-button {
   margin: 0;
   border-radius: 9999px;
-  min-height: 20px;
-  padding: 1px 6px;
-  font-size: 12px;
+  min-height: 24px;
+  padding: 3px 6px;
 }
 
 #NautilusPathBar #NautilusPathButton.current-dir, #NautilusPathBar .nautilus-path-button.current-dir, .nautilus-pathbar #NautilusPathButton.current-dir, .nautilus-pathbar .nautilus-path-button.current-dir {
@@ -6804,9 +6802,9 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 }
 
 #NautilusPathBar > menubutton > button, #NautilusPathBar > menubutton.flat.popup > button, .nautilus-pathbar > menubutton > button, .nautilus-pathbar > menubutton.flat.popup > button {
-  min-height: 20px;
-  min-width: 20px;
-  padding: 1px 3px;
+  min-height: 24px;
+  min-width: 24px;
+  padding: 3px;
   border-radius: 9999px;
 }
 
@@ -9956,7 +9954,9 @@ window.mac-settings-window .mac-settings-sidebar-headerbar,
 window.mac-settings-window navigation-split-view headerbar,
 navigation-split-view headerbar,
 overlay-split-view headerbar,
-overlay-split-view toolbarview > .top-bar headerbar {
+overlay-split-view toolbarview > .top-bar headerbar,
+window.nautilus-window .content-pane headerbar,
+window.nautilus-window .sidebar-pane headerbar {
     min-height: 48px;
     background: none;
     background-color: transparent;
@@ -10268,62 +10268,18 @@ window.nautilus-window .content-pane > scrolledwindow {
     box-shadow: none;
 }
 
-/* macOS Tahoe Finder Compact Toolbar (Task 650) */
-window.nautilus-window headerbar,
-window.nautilus-window .content-pane headerbar,
-window.nautilus-window .sidebar-pane headerbar,
-window.nautilus-window .nautilus-content-headerbar,
-window.nautilus-window .nautilus-sidebar-headerbar {
-    min-height: 28px;
-    padding-top: 0px;
-    padding-bottom: 0px;
-    margin-top: 0px;
+window.nautilus-window .content-pane headerbar {
     background: transparent;
     background-color: transparent;
-    background-image: none;
-    border: none;
     border-bottom: none;
     box-shadow: none;
+    margin-top: -3px;
+    padding-left: 0px;
 }
 
-window.nautilus-window toolbarview > .top-bar,
-window.nautilus-window .content-pane toolbarview > .top-bar,
-window.nautilus-window .sidebar-pane toolbarview > .top-bar {
-    min-height: 28px;
-    padding-top: 0px;
-    padding-bottom: 0px;
-    margin-top: 0px;
-    margin-bottom: 0px;
-}
-
-window.nautilus-window headerbar windowhandle,
-window.nautilus-window headerbar centerbox {
-    min-height: 28px;
-    padding-top: 0px;
-    padding-bottom: 0px;
-    margin-top: 0px;
-    margin-bottom: 0px;
-}
-
-window.nautilus-window headerbar button.back {
-    min-height: 0px;
-    min-width: 0px;
-    padding: 0px;
-}
-
-window.nautilus-window .sidebar-pane headerbar windowcontrols {
-    margin-top: 0px;
-    margin-bottom: 0px;
-    padding: 0 8px;
-}
-
-window.nautilus-window .sidebar-pane headerbar windowcontrols button.close,
-window.nautilus-window .sidebar-pane headerbar windowcontrols button.minimize,
-window.nautilus-window .sidebar-pane headerbar windowcontrols button.maximize {
-    min-width: 14px;
-    min-height: 14px;
-    padding: 0;
-    margin-top: 0px;
+/* Etap 112: raise the toolbar strip a couple of pixels */
+window.nautilus-window .sidebar-pane headerbar {
+    margin-top: -3px;
 }
 
 /* Shift top panel buttons */
@@ -10343,166 +10299,7 @@ window.nautilus-window .content-pane headerbar .start {
 window.nautilus-window .nautilus-pathbar,
 window.nautilus-window #NautilusPathBar {
     min-width: 0;
-    min-height: 22px;
-    padding: 1px 8px;
-    margin: 0;
-}
-
-window.nautilus-window .content-pane headerbar box.end > button,
-window.nautilus-window .content-pane headerbar .end > button,
-window.nautilus-window headerbar box.end > button,
-window.nautilus-window headerbar .end > button,
-window.nautilus-window headerbar button.mac-circle-button,
-window.nautilus-window headerbar menubutton.mac-circle-button > button,
-window.nautilus-window headerbar box.end > menubutton > button,
-window.nautilus-window headerbar .end > menubutton > button,
-window.nautilus-window .content-pane headerbar box.end > menubutton > button,
-window.nautilus-window .content-pane headerbar .end > menubutton > button {
-    min-width: 28px;
-    min-height: 28px;
-    border-radius: 9999px;
-    padding: 0;
-    margin: 2px 3px;
-    background-color: rgba(255, 255, 255, 0.09);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-    color: rgba(255, 255, 255, 0.90);
-    transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
-}
-
-window.nautilus-window .content-pane headerbar box.end > button:hover,
-window.nautilus-window .content-pane headerbar .end > button:hover,
-window.nautilus-window headerbar box.end > button:hover,
-window.nautilus-window headerbar .end > button:hover,
-window.nautilus-window headerbar button.mac-circle-button:hover,
-window.nautilus-window headerbar menubutton.mac-circle-button > button:hover,
-window.nautilus-window headerbar box.end > menubutton > button:hover,
-window.nautilus-window headerbar .end > menubutton > button:hover,
-window.nautilus-window .content-pane headerbar box.end > menubutton > button:hover,
-window.nautilus-window .content-pane headerbar .end > menubutton > button:hover {
-    background-color: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-}
-
-window.nautilus-window .content-pane headerbar box.end > button:active,
-window.nautilus-window .content-pane headerbar box.end > button:checked,
-window.nautilus-window .content-pane headerbar .end > button:active,
-window.nautilus-window .content-pane headerbar .end > button:checked,
-window.nautilus-window headerbar box.end > button:active,
-window.nautilus-window headerbar box.end > button:checked,
-window.nautilus-window headerbar .end > button:active,
-window.nautilus-window headerbar .end > button:checked,
-window.nautilus-window headerbar button.mac-circle-button:active,
-window.nautilus-window headerbar button.mac-circle-button:checked,
-window.nautilus-window headerbar menubutton.mac-circle-button > button:active,
-window.nautilus-window headerbar menubutton.mac-circle-button > button:checked,
-window.nautilus-window headerbar box.end > menubutton > button:active,
-window.nautilus-window headerbar box.end > menubutton > button:checked,
-window.nautilus-window headerbar .end > menubutton > button:active,
-window.nautilus-window headerbar .end > menubutton > button:checked,
-window.nautilus-window .content-pane headerbar box.end > menubutton > button:active,
-window.nautilus-window .content-pane headerbar box.end > menubutton > button:checked {
-    background-color: rgba(255, 255, 255, 0.24);
-    border-color: rgba(255, 255, 255, 0.16);
-    color: #ffffff;
-}
-
-window.nautilus-window headerbar splitbutton,
-window.nautilus-window headerbar NautilusViewControls splitbutton,
-window.nautilus-window headerbar #view_split_button,
-window.nautilus-window headerbar splitbutton.flat {
-    min-height: 26px;
-    border-radius: 9999px;
-    background-color: rgba(255, 255, 255, 0.09);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-    padding: 0;
-    margin: 2px 3px;
-    border-spacing: 0;
-}
-
-window.nautilus-window headerbar splitbutton > separator {
-    min-width: 1px;
-    min-height: 14px;
-    margin: 5px 0;
-    padding: 0;
-    background-color: rgba(255, 255, 255, 0.12);
-    border: none;
-}
-
-window.nautilus-window headerbar splitbutton > button {
-    min-width: 26px;
-    min-height: 26px;
-    padding: 0 4px 0 6px;
-    margin: 0;
-    border: none;
-    background: transparent;
-    background-color: transparent;
-    border-top-left-radius: 9999px;
-    border-bottom-left-radius: 9999px;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    box-shadow: none;
-    color: rgba(255, 255, 255, 0.90);
-    transition: background-color 150ms ease-out, color 150ms ease-out;
-}
-
-window.nautilus-window headerbar splitbutton > button:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-}
-
-window.nautilus-window headerbar splitbutton > button:active,
-window.nautilus-window headerbar splitbutton > button:checked {
-    background-color: rgba(255, 255, 255, 0.20);
-    color: #ffffff;
-}
-
-window.nautilus-window headerbar splitbutton > menubutton {
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-}
-
-window.nautilus-window headerbar splitbutton > menubutton > button {
-    min-width: 20px;
-    min-height: 26px;
-    padding: 0 6px 0 2px;
-    margin: 0;
-    border: none;
-    background: transparent;
-    background-color: transparent;
-    border-top-right-radius: 9999px;
-    border-bottom-right-radius: 9999px;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    box-shadow: none;
-    color: rgba(255, 255, 255, 0.90);
-    transition: background-color 150ms ease-out, color 150ms ease-out;
-}
-
-window.nautilus-window headerbar splitbutton > menubutton > button:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-}
-
-window.nautilus-window headerbar splitbutton > menubutton > button:active,
-window.nautilus-window headerbar splitbutton > menubutton > button:checked {
-    background-color: rgba(255, 255, 255, 0.20);
-    color: #ffffff;
-}
-
-window.nautilus-window .nautilus-pathbar button,
-window.nautilus-window #NautilusPathBar button,
-window.nautilus-window .nautilus-pathbar menubutton > button,
-window.nautilus-window #NautilusPathBar menubutton > button {
-    background: transparent;
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
+    padding: 3px 12px;
 }
 
 
@@ -10650,60 +10447,61 @@ window.mac-settings-window scrolledwindow > undershoot.bottom {
     box-shadow: none;
 }
 
-/* Sidebar / Leftbar: strictly transparent, NO white gradient, NO static bands */
-.sidebar-pane undershoot,
+/* Sidebar / Leftbar: disappearance shader matching dark background, NO white */
 .sidebar-pane undershoot.top,
-.sidebar-pane undershoot.bottom,
-.sidebar-pane scrolledwindow undershoot,
-.sidebar-pane scrolledwindow > undershoot,
+.sidebar-pane scrolledwindow undershoot.top,
 .sidebar-pane scrolledwindow > undershoot.top,
-.sidebar-pane scrolledwindow > undershoot.bottom,
 .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
-.sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
 .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-.sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-navigation-split-view > .sidebar-pane undershoot,
 navigation-split-view > .sidebar-pane undershoot.top,
-navigation-split-view > .sidebar-pane undershoot.bottom,
-navigation-split-view > .sidebar-pane scrolledwindow undershoot,
-navigation-split-view > .sidebar-pane scrolledwindow > undershoot,
+navigation-split-view > .sidebar-pane scrolledwindow undershoot.top,
 navigation-split-view > .sidebar-pane scrolledwindow > undershoot.top,
-navigation-split-view > .sidebar-pane scrolledwindow > undershoot.bottom,
 navigation-split-view > .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
-navigation-split-view > .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-navigation-split-view > .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-navigation-split-view > .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-window.mac-settings-window .sidebar-pane undershoot,
 window.mac-settings-window .sidebar-pane undershoot.top,
-window.mac-settings-window .sidebar-pane undershoot.bottom,
-window.mac-settings-window .sidebar-pane scrolledwindow undershoot,
-window.mac-settings-window .sidebar-pane scrolledwindow > undershoot,
+window.mac-settings-window .sidebar-pane scrolledwindow undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.top,
-window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-window.mac-settings-window .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-window.mac-settings-window .mac-settings-sidebar undershoot,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow undershoot,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.top,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.bottom,
-window.mac-settings-window .mac-settings-sidebar-list undershoot,
-window.nautilus-window .sidebar-pane undershoot,
 window.nautilus-window .sidebar-pane undershoot.top,
-window.nautilus-window .sidebar-pane undershoot.bottom,
-window.nautilus-window .sidebar-pane scrolledwindow undershoot,
-window.nautilus-window .sidebar-pane scrolledwindow > undershoot,
-window.nautilus-window .sidebar-pane scrolledwindow > undershoot.top,
-window.nautilus-window .sidebar-pane scrolledwindow > undershoot.bottom {
-    background: none;
-    background-image: none;
-    background-color: transparent;
+window.nautilus-window .sidebar-pane scrolledwindow undershoot.top,
+window.nautilus-window .sidebar-pane scrolledwindow > undershoot.top {
+    min-height: 38px;
+    background: linear-gradient(to bottom,
+        alpha(@window_bg_color, 0.88) 0%,
+        alpha(@window_bg_color, 0.70) 25%,
+        alpha(@window_bg_color, 0.45) 50%,
+        alpha(@window_bg_color, 0.20) 75%,
+        transparent 100%);
+    backdrop-filter: blur(10px);
     border: none;
     box-shadow: none;
-    min-height: 0px;
-    min-width: 0px;
-    opacity: 0;
+}
+
+.sidebar-pane undershoot.bottom,
+.sidebar-pane scrolledwindow undershoot.bottom,
+.sidebar-pane scrolledwindow > undershoot.bottom,
+.sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+.sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+navigation-split-view > .sidebar-pane undershoot.bottom,
+navigation-split-view > .sidebar-pane scrolledwindow undershoot.bottom,
+navigation-split-view > .sidebar-pane scrolledwindow > undershoot.bottom,
+navigation-split-view > .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .sidebar-pane undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.nautilus-window .sidebar-pane undershoot.bottom,
+window.nautilus-window .sidebar-pane scrolledwindow undershoot.bottom,
+window.nautilus-window .sidebar-pane scrolledwindow > undershoot.bottom {
+    min-height: 38px;
+    background: linear-gradient(to top,
+        alpha(@window_bg_color, 0.88) 0%,
+        alpha(@window_bg_color, 0.70) 25%,
+        alpha(@window_bg_color, 0.45) 50%,
+        alpha(@window_bg_color, 0.20) 75%,
+        transparent 100%);
+    backdrop-filter: blur(10px);
+    border: none;
+    box-shadow: none;
 }
 
 /* Keep dialogs, treeviews, textviews, and popovers free of white glow */
@@ -12084,6 +11882,8 @@ window.mac-settings-window button.suggested-action.circular:active {
   color: #ffffff;
   border-radius: 9999px;
 }
+
+
 
 
 

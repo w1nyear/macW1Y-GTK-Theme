@@ -25,26 +25,9 @@ export default class extends Extension {
             () => this.drawCorners()
         )
         this.drawCorners()
-
-        // Keep corner decorations strictly above any new uiGroup children (e.g. fullscreen overlays)
-        this._childAddedId = Main.layoutManager.uiGroup.connect('child-added', (_group, child) => {
-            if (child && !child.has_style_class_name?.('corner-decoration')) {
-                for (let corner of Object.values(this.corners)) {
-                    try {
-                        if (corner && corner.get_parent() === Main.layoutManager.uiGroup) {
-                            Main.layoutManager.uiGroup.set_child_above_sibling(corner, child);
-                        }
-                    } catch (_) {}
-                }
-            }
-        });
     }
 
     disable() {
-        if (this._childAddedId) {
-            Main.layoutManager.uiGroup.disconnect(this._childAddedId);
-            this._childAddedId = 0;
-        }
         this.destroyCorners()
         if (this._monitorListener) Gio.DBus.session.signal_unsubscribe(this._monitorListener)
         this._settings.disconnect(this._bindHandle)
