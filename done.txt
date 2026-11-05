@@ -17119,3 +17119,24 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Оновлено хеш цілісності `kiwi@kemma` у `config/extensions.lock.json`.
    - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
    - `bin/mac-audit-sync check`: 100% PASS (5/5).
+
+----------------------------------------------------------------------
+Етап 663: Видалення тіні під hover/selected елементами контекстних меню
+----------------------------------------------------------------------
+1. Діагностика та локалізація тіні:
+   - Досліджено стилізацію виділених елементів меню (`popup-menu-item:hover`, `popup-menu-item:selected`, `.mac-menu-hover-pill`).
+   - Виявлено: властивість `box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40)` у CSS та `box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35)` в інлайн-стилях JS створювали темний ореол тіні під помаранчевою плашкою hover у меню програми.
+
+2. Виправлення:
+   - Встановлено `box-shadow: none !important;` для:
+     * `~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css` (і всіх варіантів у репозиторії та `/usr/share/themes/`).
+     * `extensions/appmenu@ChathurangaBW.github.io/stylesheet.css` та `menuManager.js`.
+     * `extensions/eval-helper@mactheme/extension.js`.
+     * `extensions/blur-my-shell@aunetx/components/menubar_v29.js`.
+   - Застосовано зміни наживо до активної сесії оболонки через перезавантаження стилів та оновлення існуючих екземплярів pill.
+
+3. Верифікація:
+   - Знято підтверджувальний скріншот `menu_hover_no_shadow.png`: виділений пункт меню («Сховати Antigravity») відображається з чистою, гладкою акцентною плашкою без будь-яких зайвих тіней.
+   - Оновлено контрольні суми розширень у `config/extensions.lock.json`.
+   - `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+   - `bin/mac-audit-sync check`: 100% PASS (5/5).

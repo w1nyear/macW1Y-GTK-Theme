@@ -201,7 +201,7 @@ class MacMenuHoverGlide {
     _ensurePill() {
         const accent = getSystemAccentColor();
         if (this._pill && this._pill.get_parent()) {
-            this._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+            this._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: none !important;`;
             return;
         }
         const box = this._menu.box;
@@ -218,7 +218,7 @@ class MacMenuHoverGlide {
         this._pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
-            style: `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`,
+            style: `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: none !important;`,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START,
             x_expand: false,
@@ -322,7 +322,7 @@ class MacMenuHoverGlide {
             this._activeItem = child;
             this._pill.remove_all_transitions();
             const accent = getSystemAccentColor();
-            this._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+            this._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: none !important;`;
 
             if (this._pill.opacity === 0) {
                 this._pill.translation_x = tx;
@@ -2654,7 +2654,7 @@ export default class EvalHelper extends Extension {
                 const updatePillActor = (act) => {
                     if (!act) return;
                     if (act.name === 'mac-menu-hover-pill' || act.has_style_class_name?.('mac-menu-hover-pill')) {
-                        act.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+                        act.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: none !important;`;
                     }
                     if (act.get_children) {
                         for (const child of act.get_children()) {
@@ -2667,7 +2667,7 @@ export default class EvalHelper extends Extension {
                 for (let name of Object.keys(Main.panel.statusArea)) {
                     let ind = Main.panel.statusArea[name];
                     if (ind?.menu?._macHoverTracker?._pill) {
-                        ind.menu._macHoverTracker._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+                        ind.menu._macHoverTracker._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: none !important;`;
                     }
                 }
             }, this);

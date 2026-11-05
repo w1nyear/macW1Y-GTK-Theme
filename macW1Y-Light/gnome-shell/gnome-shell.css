@@ -6016,7 +6016,7 @@ StWidget.focused .app-grid-running-dot {
   background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
-  box-shadow: 0 1px 4px -st-accent-color !important;
+  box-shadow: none !important;
 }
 
 .mac-cc-submenu-row:hover,
@@ -6327,7 +6327,7 @@ StWidget.focused .app-grid-running-dot {
 .mac-menu-hover-pill {
   background-color: -st-accent-color !important;
   border-radius: 9999px !important;
-  box-shadow: 0 1px 4px -st-accent-color !important;
+  box-shadow: none !important;
 }
 
 .mac-menu-hover-glide-active .popup-menu-item:hover,

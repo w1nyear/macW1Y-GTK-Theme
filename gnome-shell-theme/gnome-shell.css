@@ -20,6 +20,8 @@
 stage {
   font-size: 1em;
   color: #dedede;
+  -st-accent-color: #ff6a00;
+  -st-accent-fg-color: #ffffff;
 }
 
 /* General Typography */
@@ -4180,17 +4182,17 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-notification-app-name {
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
-  color: rgba(255, 255, 255, 0.78) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
   margin-bottom: 1px !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
 .mac-notification-title {
   font-size: 13.5px !important;
-  font-weight: 700 !important;
-  color: #ffffff !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.95) !important;
   margin-bottom: 2px !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
 }
@@ -6101,7 +6103,7 @@ StWidget.focused .app-grid-running-dot {
   background-color: -st-accent-color !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important;
+  box-shadow: none !important;
 }
 
 .mac-cc-submenu-row:hover,
@@ -6416,7 +6418,7 @@ StWidget.focused .app-grid-running-dot {
 .mac-menu-hover-pill {
   background-color: -st-accent-color !important;
   border-radius: 9999px !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important;
+  box-shadow: none !important;
 }
 
 .mac-menu-hover-glide-active .popup-menu-item:hover,

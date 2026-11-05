@@ -2025,7 +2025,7 @@ class MenuHoverTracker {
     _ensurePill() {
         const accent = getSystemAccentColor();
         if (this._pill && this._pill.get_parent()) {
-            this._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+            this._pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: none !important;`;
             return;
         }
         const box = this._menu.box;
@@ -2041,7 +2041,7 @@ class MenuHoverTracker {
         this._pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
-            style: `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`,
+            style: `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: none !important;`,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START,
             x_expand: false,

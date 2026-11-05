@@ -121,7 +121,7 @@ class AppMenuHoverGlide {
                 this._accentSignalId = this._interfaceSettings.connect('changed::accent-color', () => {
                     const acc = getSystemAccentColor();
                     if (this.pill) {
-                        this.pill.style = `background-color: ${acc} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+                        this.pill.style = `background-color: ${acc} !important; border-radius: 9999px !important; box-shadow: none !important;`;
                     }
                 });
             } catch (_) {}
@@ -131,7 +131,7 @@ class AppMenuHoverGlide {
     ensurePill() {
         const accent = getSystemAccentColor();
         if (this.pill && this.pill.get_parent()) {
-            this.pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`;
+            this.pill.style = `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: none !important;`;
             return;
         }
         const box = this.menu.box;
@@ -148,7 +148,7 @@ class AppMenuHoverGlide {
         this.pill = new St.Widget({
             name: 'mac-menu-hover-pill',
             style_class: 'mac-menu-hover-pill',
-            style: `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;`,
+            style: `background-color: ${accent} !important; border-radius: 9999px !important; box-shadow: none !important;`,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.START,
             x_expand: false,
