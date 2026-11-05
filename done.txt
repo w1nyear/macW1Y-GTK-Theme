@@ -17449,3 +17449,37 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Знято верифікаційні знімки живого інтерфейсу topbar_with_pct_crop.png та topbar_without_pct_crop.png, перевірено динамічне ввімкнення та вимкнення відсотка.
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS (5/5).
+
+Етап 675: Компактне гармонійне розміщення елементів правого меню-бару з відступами, еквівалентними тексту лівого меню-бару
+1. Діагностика та аналіз геометрії:
+   - У лівому меню-барі відстань між суміжними текстовими пунктами («Файл» → «Редагування» → «Вигляд» → «Перехід» → «Вікно») складає точно 20 px.
+   - У правому меню-барі елементи статусу (трей додатків, мовний індикатор, батарея, Центр керування, годинник) були надто розтягнуті: відстань між іконками досягала 36–50 px.
+   - Причина роздутих інтервалів полягала у нашаруванні кількох стилів:
+     * Кожен контейнер St_Bin мав margin: 0, padding: 0 4px (сумарно 8 px між сусідами).
+     * Внутрішні кнопки .panel-button мали margin: 2px 4px та padding: 0 6px (ще 20 px між сусідами).
+     * Статусні іконки .system-status-icon мали padding: 4px у gnome-shell.css (ще 8 px).
+     * IndicatorStatusIcon мав жорсткий інлайн-стиль -natural-hpadding: 10px.
+
+2. Виконані зміни та оптимізація розмітки:
+   - У extensions/blur-my-shell@aunetx/components/menubar_v29.js:
+     * У методі _fixIndicatorShapes() контейнерам St_Bin у rightBox встановлено нульовий padding: padding: 0 !important; margin: 0 !important;.
+     * Внутрішнім кнопкам .panel-button призначено компактні симетричні відступи: margin: 2px 3px !important; padding: 0 5px !important; -natural-hpadding: 5px !important; -minimum-hpadding: 5px !important;.
+     * Для віджета годинника dateMenu встановлено точковий відступ margin: 0 0 0 4px !important; padding: 0 !important;, щоб текст годинника природно починався з відступом 18 px від кнопки Центру керування.
+     * Усунено зайві внутрішні відступи всередині контейнерів іконок: .system-status-icon отримує padding: 0 !important; margin: 0 !important;.
+   - У extensions/ubuntu-appindicators@ubuntu.com/indicatorStatusIcon.js:
+     * Зменшено дефолтний відступ у компактному режимі IndicatorBaseStatusIcon.DEFAULT_STYLE з 10px до 5px (-natural-hpadding: 5px).
+   - У файлах теми GNOME Shell (gnome-shell-theme/gnome-shell.css та macW1Y-Dark/gnome-shell/gnome-shell.css):
+     * Додано специфічні CSS-правила для #panel #panelRight .panel-button (-natural-hpadding: 5px !important; padding: 0 5px !important; margin: 2px 3px !important;).
+     * Додано правила для #panel #panelRight .panel-button.clock-display (margin: 0 0 0 4px !important; padding: 0 !important;).
+     * Обнулено padding та margin для іконок статусу: #panel #panelRight .system-status-icon, #panel #panelRight .panel-button .system-status-icon { padding: 0 !important; margin: 0 !important; }.
+     * Зміни синхронізовано до системної директорії тем ~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css.
+
+3. Верифікація та контроль якості:
+   - Оновлені версії розширень синхронізовано до ~/.local/share/gnome-shell/extensions/.
+   - Оновлено контрольні хеші цілісності в config/extensions.lock.json для blur-my-shell@aunetx та ubuntu-appindicators@ubuntu.com.
+   - Запущено верифікацію:
+     * bin/mac-extension-guard verify: 21/21 SUCCESS.
+     * bin/mac-audit-sync check: 100% PASS (5/5).
+   - Знято контрольні скріншоти (topbar_stage675_final_crop.png, topbar_stage675_left_crop.png):
+     * Відстань між іконками статусу тепер становить рівно 16–18 px (Telegram ↔ Antigravity: 16 px, Antigravity ↔ [ук]: 16 px, [ук] ↔ батарея: 18 px, батарея ↔ Центр керування: 18 px, Центр керування ↔ дата/час: 18 px).
+     * Ритм і відстані ідеально гармоніюють із 20 px інтервалами текстових пунктів лівого меню-бару.

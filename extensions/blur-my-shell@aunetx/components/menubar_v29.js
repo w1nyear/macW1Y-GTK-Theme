@@ -5670,7 +5670,13 @@ export const MenuBarController = class MenuBarController {
                     if (child === ccBtn || (ccBtn && child.contains && child.contains(ccBtn))) {
                         child.visible = true;
                         child.show();
-                        child.style = 'margin: 0 !important; padding: 0 4px !important; height: 28px !important; min-height: 28px !important; width: auto !important; min-width: 24px !important; max-width: none !important; -natural-hpadding: 4px !important; -minimum-hpadding: 4px !important;';
+                        child.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important; min-height: 28px !important; width: auto !important;';
+                        const inner = child.get_first_child ? child.get_first_child() : child;
+                        if (inner && inner.style !== undefined) {
+                            inner.visible = true;
+                            inner.show();
+                            inner.style = 'margin: 2px 3px !important; padding: 0 5px !important; height: 28px !important; min-height: 28px !important; width: auto !important; -natural-hpadding: 5px !important; -minimum-hpadding: 5px !important;';
+                        }
                         continue;
                     }
                     if (child === quickSettings || child === quickSettings?.container || child?.name === 'quickSettings' || (child.contains && child.contains(quickSettings))) {
@@ -5686,6 +5692,13 @@ export const MenuBarController = class MenuBarController {
                     if (child === dateMenu || child === dateMenu?.container || child?.name === 'dateMenu') {
                         child.visible = true;
                         child.show();
+                        child.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important;';
+                        const inner = child.get_first_child ? child.get_first_child() : child;
+                        if (inner && inner.style !== undefined) {
+                            inner.visible = true;
+                            inner.show();
+                            inner.style = 'margin: 0 0 0 4px !important; padding: 0 !important; height: 28px !important;';
+                        }
                         continue;
                     }
 
@@ -5721,9 +5734,18 @@ export const MenuBarController = class MenuBarController {
                         child.opacity = 255;
                     }
                     if (child !== quickSettings?.container) {
-                        child.style = 'margin: 0 !important; padding: 0 4px !important; height: 28px !important; min-height: 28px !important; width: auto !important; min-width: 24px !important; max-width: none !important; -natural-hpadding: 4px !important; -minimum-hpadding: 4px !important;';
+                        child.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important; min-height: 28px !important; width: auto !important;';
                     }
                     child.set_y_align(Clutter.ActorAlign.CENTER);
+
+                    const btn = child.get_first_child ? child.get_first_child() : child;
+                    if (btn && btn.style !== undefined) {
+                        if (btn.has_style_class_name && btn.has_style_class_name('clock-display')) {
+                            btn.style = 'margin: 0 0 0 4px !important; padding: 0 !important; height: 28px !important;';
+                        } else {
+                            btn.style = 'margin: 2px 3px !important; padding: 0 5px !important; height: 28px !important; min-height: 28px !important; width: auto !important; -natural-hpadding: 5px !important; -minimum-hpadding: 5px !important;';
+                        }
+                    }
 
                     // Clean up internal boxes and center background app icons
                     if (child.get_children) {
@@ -5732,12 +5754,19 @@ export const MenuBarController = class MenuBarController {
                                 sub.set_x_align(Clutter.ActorAlign.CENTER);
                                 sub.set_y_align(Clutter.ActorAlign.CENTER);
 
+                                if (sub.has_style_class_name && sub.has_style_class_name('system-status-icon')) {
+                                    sub.style = 'padding: 0 !important; margin: 0 !important;';
+                                }
+
                                 if (sub instanceof St.BoxLayout) {
                                     sub.spacing = 0;
                                     for (const item of sub.get_children()) {
                                         try {
                                             item.set_x_align(Clutter.ActorAlign.CENTER);
                                             item.set_y_align(Clutter.ActorAlign.CENTER);
+                                            if (item.has_style_class_name && item.has_style_class_name('system-status-icon')) {
+                                                item.style = 'padding: 0 !important; margin: 0 !important;';
+                                            }
                                             // Hide empty label that pushes the icon off-center
                                             if (item instanceof St.Label && (!item.text || item.text.trim() === '')) {
                                                 item.visible = false;
@@ -5760,6 +5789,9 @@ export const MenuBarController = class MenuBarController {
                 dateMenu.container.show();
                 dateMenu.container.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important;';
             }
+            if (dateMenu) {
+                dateMenu.style = 'margin: 0 0 0 4px !important; padding: 0 !important; height: 28px !important;';
+            }
         } catch (_e) {}
 
         // Special styling for Control Center: matching 28px height
@@ -5769,12 +5801,12 @@ export const MenuBarController = class MenuBarController {
             if (ccBtn) {
                 ccBtn.visible = true;
                 ccBtn.show();
-                ccBtn.style = 'margin: 0 !important; padding: 0 4px !important; height: 28px !important; min-height: 28px !important; width: auto !important; min-width: 24px !important; max-width: none !important; -natural-hpadding: 4px !important; -minimum-hpadding: 4px !important;';
+                ccBtn.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important; min-height: 28px !important; width: auto !important;';
                 const inner = ccBtn.get_first_child ? ccBtn.get_first_child() : ccBtn;
                 if (inner) {
                     inner.visible = true;
                     inner.show();
-                    inner.style = null;
+                    inner.style = 'margin: 2px 3px !important; padding: 0 5px !important; height: 28px !important; min-height: 28px !important; width: auto !important; -natural-hpadding: 5px !important; -minimum-hpadding: 5px !important;';
                 }
                 if (quickSettings) {
                     quickSettings.visible = false;
