@@ -2752,6 +2752,8 @@ function _syncStack(s, monitor) {
     const p = _panel;
     if (!p)
         return;
+    if (_closing || (p.box && p.box.translation_x !== 0))
+        return;
     const monitorX = monitor.x;
     const monitorY = monitor.y;
     const screenW = monitor.width;
