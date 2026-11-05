@@ -9,6 +9,7 @@ import Clutter from 'gi://Clutter';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
 import Mtk from 'gi://Mtk';
+import Graphene from 'gi://Graphene';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 const EvalIface = `
@@ -2039,16 +2040,19 @@ export default class EvalHelper extends Extension {
                                 });
                             };
                         }
-                        if (WorkspaceBackground && !WorkspaceBackground.prototype._macOverviewBlurPatched) {
-                            WorkspaceBackground.prototype._macOverviewBlurPatched = true;
-                            const origInit = WorkspaceBackground.prototype._init;
+
+                        if (WorkspaceBackground && !WorkspaceBackground.prototype._macVisiblePatched) {
+                            WorkspaceBackground.prototype._macVisiblePatched = true;
+                            const origInit = WorkspaceBackground.prototype._origInit || WorkspaceBackground.prototype._init;
+                            WorkspaceBackground.prototype._origInit = origInit;
                             WorkspaceBackground.prototype._init = function(...args) {
                                 origInit.apply(this, args);
-                                this.opacity = 0;
-                                if (this._bin) this._bin.opacity = 0;
-                                if (this._backgroundGroup) this._backgroundGroup.opacity = 0;
+                                this.opacity = 255;
+                                if (this._bin) this._bin.opacity = 255;
+                                if (this._backgroundGroup) this._backgroundGroup.opacity = 255;
                             };
                         }
+
                         if (WorkspaceBackground && !WorkspaceBackground.prototype._macClipPatched) {
                             WorkspaceBackground.prototype._macClipPatched = true;
                             WorkspaceBackground.prototype._origUpdateRoundedClipBounds = WorkspaceBackground.prototype._updateRoundedClipBounds;
@@ -2136,24 +2140,23 @@ export default class EvalHelper extends Extension {
                     }
                 }
 
-                // 9. Hide opaque WorkspaceBackground cards so overview background is continuously blurred
-                const hideWorkspaceBackgrounds = () => {
+                // 9. Keep WorkspaceBackground desktop cards fully visible (opacity = 255) in overview
+                const showWorkspaceBackgrounds = () => {
                     try {
                         const ws = Main.overview?._overview?._controls?._workspacesDisplay;
                         if (!ws || !ws._workspacesViews) return;
                         for (const view of ws._workspacesViews) {
                             for (const wsActor of (view.get_children ? view.get_children() : [])) {
                                 if (wsActor._background) {
-                                    wsActor._background.opacity = 0;
-                                    if (wsActor._background._bin) wsActor._background._bin.opacity = 0;
-                                    if (wsActor._background._backgroundGroup) wsActor._background._backgroundGroup.opacity = 0;
-                                }
-                                for (const child of (wsActor.get_children ? wsActor.get_children() : [])) {
-                                    if (child.constructor?.name === 'WorkspaceBackground' ||
-                                        child.has_style_class_name?.('workspace-background')) {
-                                        child.opacity = 0;
-                                        if (child._bin) child._bin.opacity = 0;
-                                        if (child._backgroundGroup) child._backgroundGroup.opacity = 0;
+                                    wsActor._background.opacity = 255;
+                                    wsActor._background.visible = true;
+                                    if (wsActor._background._bin) {
+                                        wsActor._background._bin.opacity = 255;
+                                        wsActor._background._bin.visible = true;
+                                    }
+                                    if (wsActor._background._backgroundGroup) {
+                                        wsActor._background._backgroundGroup.opacity = 255;
+                                        wsActor._background._backgroundGroup.visible = true;
                                     }
                                 }
                             }
@@ -2161,13 +2164,16 @@ export default class EvalHelper extends Extension {
                     } catch (_) {}
                 };
 
-                if (!Main.overview._macHideWsBgConn) {
-                    Main.overview._macHideWsBgConn = Main.overview.connectObject(
-                        'showing', hideWorkspaceBackgrounds,
+                if (!Main.overview._macShowWsBgConn) {
+                    Main.overview._macShowWsBgConn = Main.overview.connectObject(
+                        'showing', showWorkspaceBackgrounds,
+                        'shown', showWorkspaceBackgrounds,
                         this
                     );
                 }
-                hideWorkspaceBackgrounds();
+                showWorkspaceBackgrounds();
+
+
             } catch (e) {
                 console.error('[EvalHelper] patchMissionControlOverview error: ' + e);
             }
@@ -3223,6 +3229,7 @@ export default class EvalHelper extends Extension {
 
         try { Main.overview.disconnectObject(this); } catch (_) {}
         Main.overview._macHideWsBgConn = null;
+        Main.overview._macShowWsBgConn = null;
 
         if (this._overviewWallpaperManager) {
             try { this._overviewWallpaperManager.destroy(); } catch (_) {}

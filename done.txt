@@ -17255,3 +17255,27 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Оновлено хеш цілісності sha256 розширення blur-my-shell@aunetx у config/extensions.lock.json.
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS (5/5).
+
+Етап 668: Відновлення відображення карток робочих столів у режимі огляду (Mission Control / GNOME Shell Overview)
+1. Діагностика причини зникнення робочих столів в огляді:
+   - В ході оптимізацій у Етапі 657 для досягнення безшовного розмитого фону було приховано картки WorkspaceBackground:
+     * WorkspaceBackground.prototype._init примусово встановлював opacity = 0, this._bin.opacity = 0 та this._backgroundGroup.opacity = 0.
+     * Обробник hideWorkspaceBackgrounds, підключений до сигналу showing у Main.overview, скидав прозорість усіх прев'ю стільниць на 0 при кожному відкритті огляду.
+   - В результаті користувач бачив тільки вікна, що ширяли на суцільному розмитому тлі, а самі картки стільниць із шпалерами, заокругленими кутами та віджетами (desktop-widgets) були невидимі.
+
+2. Виправлення у extensions/eval-helper@mactheme/extension.js:
+   - Видалено деструктивний обробник hideWorkspaceBackgrounds та патч _macOverviewBlurPatched.
+   - Встановлено гарантований стан WorkspaceBackground.prototype._init: opacity = 255, this._bin.opacity = 255, this._backgroundGroup.opacity = 255.
+   - Додано захисний механізм showWorkspaceBackgrounds, підключений до подій showing та shown об'єкта Main.overview, який підтримує повну непрозорість (opacity = 255) і видимість (visible = true) для фонових груп і контейнерів стільниць.
+   - Забезпечено коректне імпортування Graphene (gi://Graphene) для розрахунку моніторних меж заокругленого відсікання.
+   - У методі disable() додано очищення слухача Main.overview._macShowWsBgConn.
+
+3. Синхронізація та перезавантаження:
+   - Зміни скопійовано до ~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js.
+   - Розширення eval-helper@mactheme перезавантажено в пам'яті GNOME Shell, а залишковий слухач showing чисто відключено.
+   - Виконано тестове відкриття огляду та знято контрольний знімок екрана (overview_desktop_restored_final.png). Картки робочих столів з шпалерами, заокругленими краями, сусідніми робочими столами та віджетами повністю відновлені в автентичному дизайні 1:1.
+
+4. Верифікація та цілісність:
+   - Оновлено хеш цілісності eval-helper@mactheme у config/extensions.lock.json.
+   - bin/mac-extension-guard verify: 21/21 SUCCESS (усі хеші верифіковано).
+   - bin/mac-audit-sync check: 100% PASS (5/5 аудитів пройдено успішно).
