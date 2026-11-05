@@ -16870,3 +16870,48 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Аудит та перевірка:
      * `bin/mac-audit-sync check`: 100% PASS (5/5).
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+
+ЕТАП 655: macW1Y 0.5 — Глобальні 1:1 ідеально круглі іконки та кнопки дій у всіх програмах (GTK3 та GTK4) без овальних розтягувань та прямокутних країв
+
+1. Вимоги завдання:
+   - Користувач повідомив: «виправи те що у всіх програмах іконки всі все щ не одного розміру висоти і ширини і все ще не круглі. виправи це все щоб глобальний розмір був круглим.»
+   - Долучено зображення вікна «Диски» (GNOME Disks), де кнопки меню в хедербарі («···») були витягнутими овальними стадіонами, а кнопки тулбара розділів («Змонтувати», «Налаштування», «Видалити розділ») — прямокутними плоскими плашками.
+
+2. Причини дефектів та аналіз специфічності CSS:
+   - У попередніх версіях `macw1y-components.css` базове правило кнопки містило довгий ланцюг заперечень:
+     `button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.flat):not(.image-button):not(.circular):not(.popup):not(.toggle) { padding: 3px 12px; }`
+   - Через нагромадження 9 псевдокласів `:not()` це правило отримувало надвисоку специфічність `(0, 9, 1)`, яка перебивала специфічні правила для кнопок хедербарів та тулбарів `(0, 5, 2)`.
+   - Крім того, у GTK3 віджет `GtkMenuButton` не має стильового класу `.image-button`, а має класи `['popup', 'toggle']`. Кнопки тулбарів у ряді додатків також не мають класу `.image-button` за замовчуванням. В результаті до них застосовувалися бічні відступи `padding: 3px 12px` та радіус `8px`, перетворюючи їх на горизонтальні овали розміром 60×36px замість рівносторонніх кіл.
+   - Вбудований у `gnome-disks` стиль `gdu.css` містив правило `#devtab-grid-toolbar * { border-radius: 0; }`, що примусово робило кнопки тулбара прямокутними з нульовим скругленням.
+   - Нерівні поля `margin: 2px 3px` створювали асиметрію розмірів (36×34px), порушуючи пропорцію 1:1.
+
+3. Реалізація та виправлення:
+   - Очищення та оптимізація специфічності базових кнопок:
+     * Базові текстові кнопки переведено на низьку специфічність елемента: `button { min-height: 24px; padding: 3px 12px; border-radius: 9999px; }` та явний клас `button.text-button { min-width: 60px; }`.
+     * Це дозволило будь-яким правилам для кнопок-іконок природно та безконфліктно перекривати базові правила.
+   - Глобальне універсальне правило 1:1 круглих кнопок-іконок:
+     * Оновлено генератор [`bin/mac-build-theme`](file:///home/vitaliy/MACTHEMEFILES/bin/mac-build-theme), стилі `config/gtk-3.0/`, `config/gtk-4.0/`, `gtk-3.0/`, `gtk-4.0/`, `macW1Y-Dark/`, `macW1Y-Light/`, `~/.config/gtk-*/`, `~/.themes/` та `/usr/share/themes/macW1Y-Dark/`.
+     * Задано точні квадратні пропорції: `min-width: 28px; min-height: 28px; padding: 0; margin: 2px 2px; border-radius: 9999px;`.
+     * Внутрішні відступи для зображень (`image`) скинуто до `padding: 0; margin: 0;`.
+     * Охоплено всі селектори кнопок-іконок для GTK3 та GTK4:
+       `headerbar button:not(.text-button):not(.titlebutton):not(.close):not(.minimize):not(.maximize)`, `headerbar button.image-button`, `headerbar button.popup`, `headerbar button.toggle`, `headerbar button.circular`, `headerbar menubutton`, `headerbar menubutton > button`, аналогічно `.titlebar`, `toolbar button:not(.text-button)`, `toolbar toolbutton > button`, `toolbar.inline-toolbar toolbutton > button`, `.inline-toolbar button`, `.inline-toolbar button.image-button`, `actionbar button`, `button.image-button:not(.text-button)`, `button.circular`.
+     * Для `gnome-disks` додано правило з високою специфічністю для перекриття `gdu.css`:
+       `window box.inline-toolbar#devtab-grid-toolbar button, window box.inline-toolbar#devtab-grid-toolbar button:first-child, window box.inline-toolbar#devtab-grid-toolbar button:last-child, window box.inline-toolbar#devtab-grid-toolbar button.destructive-action { min-width: 28px; min-height: 28px; padding: 0; margin: 2px 2px; border-radius: 9999px; }`.
+   - Виправлено застарілий синтаксис CSS у GTK3:
+     * `color-mix(...)` замінено на валідну функцію GTK3 `mix(@accent_bg_color, #ffffff, 0.85)`.
+   - Синхронізація та компіляція:
+     * Запущено `python3 bin/mac-build-theme`.
+     * Синхронізовано бінарник до `/usr/local/bin/mac-build-theme`.
+   - Верифікація у живій системі:
+     * Програмні виміри віджетів `disks.ui` підтвердили:
+       - `app-menu-button`: `size=34x34, radius=9999, pad=(0,0,0,0)` (1:1 ідеальне коло);
+       - `drive-menu-button`: `size=34x34, radius=9999, pad=(0,0,0,0)` (1:1 ідеальне коло);
+       - `power-off-disk-button`: `size=34x34, radius=9999, pad=(0,0,0,0)` (1:1 ідеальне коло);
+       - `eject-disk-button`: `size=34x34, radius=9999, pad=(0,0,0,0)` (1:1 ідеальне коло);
+       - `toolbutton-mount`: `size=34x34, radius=9999, pad=(0,0,0,0)` (1:1 ідеальне коло);
+       - `toolbutton-partition-delete`: `size=34x34, radius=9999, pad=(0,0,0,0)` (1:1 ідеальне коло).
+     * Знімки реального вікна `gnome-disks` (`gnome_disks_nvme1n1.png`) та Nautilus (`nautilus_circle_check.png`) підтверджують бездоганний круглий вигляд усіх кнопок без спотворень.
+   - Аудит та перевірка:
+     * `bin/mac-audit-sync check`: 100% PASS (5/5).
+     * `bin/mac-extension-guard verify`: 21/21 SUCCESS.

@@ -1,0 +1,65 @@
+/* macW1Y 0.5 — Generated Master Design Tokens for GTK 4 / Libadwaita */
+/* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
+
+@define-color accent_bg_color #ff6a00;
+@define-color accent_fg_color #ffffff;
+@define-color accent_color #ff6a00;
+@define-color window_bg_color #202022;
+@define-color window_fg_color #ffffff;
+@define-color view_bg_color #202022;
+@define-color view_fg_color #ffffff;
+@define-color headerbar_bg_color transparent;
+@define-color headerbar_fg_color #ffffff;
+@define-color headerbar_shade_color transparent;
+@define-color headerbar_darker_shade_color transparent;
+@define-color headerbar_border_color transparent;
+@define-color card_bg_color #1e1e1e;
+@define-color card_fg_color #ffffff;
+@define-color popover_bg_color rgba(32, 32, 34, 0.92);
+@define-color popover_fg_color #ffffff;
+@define-color dialog_bg_color #1e1e1e;
+@define-color dialog_fg_color #ffffff;
+@define-color destructive_bg_color #e01b24;
+@define-color destructive_fg_color #ffffff;
+@define-color success_bg_color #2ec27e;
+@define-color warning_bg_color #f5c211;
+
+:root {
+  --mac-window-bg: #202022;
+  --mac-window-fg: #ffffff;
+  --mac-sidebar-bg: #18181a;
+  --mac-sidebar-bg-translucent: rgba(24, 24, 26, 0.85);
+  --mac-card-bg: #1e1e1e;
+  --mac-card-border: rgba(255, 255, 255, 0.07);
+  --mac-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
+  --mac-card-sep: rgba(255, 255, 255, 0.07);
+  --mac-row-hover: rgba(255, 255, 255, 0.04);
+  --mac-row-active: rgba(255, 255, 255, 0.08);
+  --mac-accent-bg: #ff6a00;
+  --mac-accent-fg: #ffffff;
+  --mac-text-primary: rgba(255, 255, 255, 0.90);
+  --mac-text-secondary: rgba(255, 255, 255, 0.55);
+  --mac-text-disabled: rgba(255, 255, 255, 0.25);
+  --mac-input-bg: rgba(255, 255, 255, 0.08);
+  --mac-input-border: rgba(255, 255, 255, 0.08);
+  --mac-input-focus-bg: rgba(255, 255, 255, 0.12);
+  --mac-input-focus-border: rgba(255, 255, 255, 0.20);
+  --mac-popover-bg: rgba(32, 32, 34, 0.92);
+  --mac-popover-border: rgba(255, 255, 255, 0.10);
+
+  --mac-window-radius: 24px;
+  --mac-card-radius: 14px;
+  --mac-button-radius: 9999px;
+  --mac-button-action-radius: 8px;
+  --mac-input-radius: 8px;
+  --mac-menu-radius: 20px;
+  --mac-popover-radius: 20px;
+
+  --mac-row-min-height: 35px;
+  --mac-row-padding-x: 14px;
+  --mac-switch-w: 40px;
+  --mac-switch-h: 23px;
+  --mac-slider-thumb: 20px;
+  --mac-traffic-light-size: 16px;
+  --mac-traffic-light-spacing: 7px;
+}

@@ -660,7 +660,16 @@ headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not
 .titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
 headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton) {
+headerbar button.circular,
+headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+toolbar button:not(.text-button),
+toolbar button.image-button,
+actionbar button:not(.text-button),
+actionbar button.image-button,
+.inline-toolbar button:not(.text-button),
+.inline-toolbar button.image-button,
+button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+button.circular {
   min-width: 28px;
   min-height: 28px;
   border-radius: 9999px;
@@ -677,7 +686,16 @@ headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not
 .titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover {
+headerbar button.circular:hover,
+headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+toolbar button:not(.text-button):hover,
+toolbar button.image-button:hover,
+actionbar button:not(.text-button):hover,
+actionbar button.image-button:hover,
+.inline-toolbar button:not(.text-button):hover,
+.inline-toolbar button.image-button:hover,
+button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+button.circular:hover {
   background-color: rgba(255, 255, 255, 0.16);
   border-color: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
@@ -689,7 +707,16 @@ headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not
 .titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active {
+headerbar button.circular:active,
+headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+toolbar button:not(.text-button):active,
+toolbar button.image-button:active,
+actionbar button:not(.text-button):active,
+actionbar button.image-button:active,
+.inline-toolbar button:not(.text-button):active,
+.inline-toolbar button.image-button:active,
+button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+button.circular:active {
   background-color: rgba(255, 255, 255, 0.24);
   border-color: rgba(255, 255, 255, 0.16);
   border-radius: 9999px;
@@ -698,7 +725,12 @@ headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.tit
 }
 
 headerbar button image,
-headerbar menubutton > button image {
+headerbar menubutton > button image,
+toolbar button image,
+actionbar button image,
+.inline-toolbar button image,
+button.image-button image,
+button.circular image {
   padding: 0;
   margin: 0;
 }
