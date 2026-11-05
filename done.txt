@@ -17540,3 +17540,29 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - Повністю усунено помилки CSS парсера GTK при запуску Параметрів.
    - Створено валідаційний анімований GIF slider_live_expansion_verified.gif, де підтверджено плавне розширення бігунка з 20 px до 35..38 px та повернення назад.
+
+- [x] Завдання 678: Реалізація ефекту плавного зникнення (градієнтного розчинення) елементів списку при прокрутці під шапку у Параметрах (macOS Dissolve Gradient)
+1. Діагностика та аналіз причин відсутності ефекту розчинення:
+   - На знімку екрана користувача при прокручуванні списку на панелі «Мас стилізація» верхні елементи списку («Розмиття», «Тінь доку») різко обрізалися твердою горизонтальною лінією під верхньою панеллю навігації без будь-якого градієнта розчинення.
+   - У ході аудиту виявлено дві першопричини:
+     1) У control-center/libmac_settings.c (рядки 8639–8682) для усунення непрозорого блоку над полем пошуку лівого сайдбару було встановлено занадто широке правило, яке примусово обнуляло undershoot на всіх елементах вікна window.mac-settings-window (preferencespage, .content-pane, toolbarview undershoot.top) з властивостями min-height: 0px; opacity: 0; background: none;. Через це GTK4 оверлей розчинення взагалі вимикався у вікні налаштувань.
+     2) У bin/mac-build-theme селектори використовували preferencespage > scrolledwindow.undershoot-top > undershoot.top. У GTK4 клас .undershoot-top встановлюється на контейнер AdwToolbarView, тоді як сам віджет scrolledwindow класу .undershoot-top не має, через що селектор не спрацьовував.
+     3) Крім того, градієнт мав жорстку суцільну плашку на перші 32 px замість м'якого спаду прозорості від самого краю.
+
+2. Виконані інженерні зміни:
+   - У control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c:
+     * Відокремлено сайдбар від панелей контенту: обнулення оверлеїв залишено виключно для .sidebar-pane, .mac-settings-sidebar та .mac-settings-sidebar-list.
+     * Для панелей контенту (preferencespage, .content-pane, toolbarview.undershoot-top, .panel-has-switcher) створено повноцінне правило оверлею розчинення undershoot.top заввишки 48 px з градієнтом від кольору фону вікна @window_bg_color (100% непрозорість на 0 px) через 90% (16 px) та 40% (32 px) до повної прозорості (48 px).
+     * Для нижнього краю додано м'який undershoot.bottom заввишки 28 px.
+   - У bin/mac-build-theme:
+     * Оновлено Розділ 13: виправлено селектори на валідні GTK4 вузли preferencespage scrolledwindow undershoot.top та toolbarview.undershoot-top scrolledwindow undershoot.top.
+     * Забезпечено м'який плавний спад градієнта від var(--mac-window-bg) 0% до transparent 48px.
+     * Синхронізовано до /usr/local/bin/mac-build-theme та перекомпільовано всі теми GTK4/GTK3.
+   - Перекомпільовано control-center/libmac_settings.so та синхронізовано бібліотеку в усі 7 системних цілей (/usr/lib/x86_64-linux-gnu/, /usr/local/lib/, ~/.local/lib/, ~/.local/share/, /usr/share/mactheme/, lib/, gnome-control-center-overlay/).
+
+3. Верифікація та контроль якості:
+   - Проведено автоматизоване тестування у Wayland через Clutter Virtual Pointer Device та знято реальний знімок екрана прокрученого вікна (gcc_list_fade_verified.png).
+   - Зафіксовано плавний аналітичний профіль спаду контрасту по вертикалі (від y=45..50 px diff=0 — повне розчинення у колір фону, до y=105 px mean diff=273 — повна видимість контенту) без жодних різких зрізів чи блоків.
+   - Перевірено нульовий стан (unscrolled adj == 0): при непрокрученому стані undershoot.top не відображається (0 паразитних пікселів).
+   - bin/mac-audit-sync check: 100% PASS (5/5).
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
