@@ -1,0 +1,44 @@
+#!/bin/bash
+# mac-capcut-fix: Auto-patcher and stabilizer for CapCut under Wine on Linux
+# Resolves:
+# 1. ByteDance security audit crash in metasecml.dll (via proxy VEH wrapper)
+# 2. Chromium Embedded Framework (CEF) 0xe0000008 crash in libcef.dll (via LocalAlloc heap fallback)
+
+set -e
+
+WINE_PREFIX="${WINEPREFIX:-$HOME/.wine}"
+CAPCUT_BASE="$WINE_PREFIX/drive_c/users"
+
+FIX_DIR="/home/vitaliy/MACTHEMEFILES/src/capcut-wine-fix"
+PROXY_DLL="$FIX_DIR/metasecml.dll"
+
+find "$CAPCUT_BASE" -maxdepth 6 -type d -path "*/CapCut/Apps/*" 2>/dev/null | while read -r app_dir; do
+    # Skip if not a version directory containing CapCut.exe
+    [ -f "$app_dir/CapCut.exe" ] || continue
+
+    # 1. Fix metasecml.dll
+    if [ -f "$app_dir/metasecml.dll" ] && [ ! -f "$app_dir/metasecml_real.dll" ]; then
+        mv "$app_dir/metasecml.dll" "$app_dir/metasecml_real.dll"
+        if [ -f "$PROXY_DLL" ]; then
+            cp "$PROXY_DLL" "$app_dir/metasecml.dll"
+        fi
+    fi
+
+    # 2. Fix cef/libcef.dll
+    CEF_DLL="$app_dir/cef/libcef.dll"
+    if [ -f "$CEF_DLL" ]; then
+        python3 -c "
+path = '$CEF_DLL'
+orig_sig = bytes.fromhex('4883fbff7406e8d7150000cce8f1150000cccccccccc')
+patch = bytes.fromhex('b9400000004889daff15b08285074883c4205bc39090')
+
+with open(path, 'r+b') as f:
+    f.seek(0x4e6c05a)
+    cur = f.read(22)
+    if cur == orig_sig:
+        f.seek(0x4e6c05a)
+        f.write(patch)
+        print('Patched libcef.dll at', path)
+" 2>/dev/null || true
+    fi
+done

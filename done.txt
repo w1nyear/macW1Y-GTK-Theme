@@ -16980,3 +16980,35 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Аудит системи:
      * `bin/mac-audit-sync check`: 100% PASS (5/5).
      * `bin/mac-extension-guard verify`: 21/21 SUCCESS.
+
+----------------------------------------------------------------------
+Етап 658: Виправлення крашів та повна стабілізація CapCut у Wine (CEF OOM Fallback + ByteDance Security Fix)
+----------------------------------------------------------------------
+1. Виявлені проблеми та діагностика крашів:
+   - CapCut 7.5 під Wine зазнавав двох критичних збоїв:
+     * Перший краш (через ~10 секунд): Фоновий потік безпеки ByteDance (metasecml.dll + 0x20973) викликав Access Violation під час сканування Eventlog та реєстру через неініціалізований покажчик (-1).
+     * Другий краш / зависання UI: Chromium Embedded Framework (libcef.dll) генерував SEH-виключення 0xe0000008 (base::TerminateBecauseOutOfMemory), коли внутрішній PartitionAlloc не міг виділити 256 КБ під час запуску CEF-потоку браузера (CrBrowserMain). Загибель робочого потоку CEF призводила до блокування основного потоку в NtWaitForAlertByThreadId ("CapCut не відповідає").
+     * Також при відкритті вибору файлів виникали помилки мережевих інтерфейсів та брандмауера (fwpolicy2_get_FirewallEnabled повертав E_NOTIMPL).
+
+2. Реалізовані зміни та усунення проблем:
+   - Встановлено всі необхідні системні кодеки та бібліотеки Wine:
+     * GStreamer 32/64-bit (gstreamer1.0-libav, gstreamer1.0-plugins-bad, gstreamer1.0-plugins-ugly, gstreamer1.0-vaapi, libavcodec-extra, cabextract, winbind).
+     * vcrun2022, corefonts, tahoma через Winetricks.
+     * Рідний d3dcompiler_47.dll та виправлення NetFwPolicy2 у hnetcfg.dll (VARIANT_TRUE для файрвола).
+   - Створено та скомпільовано проксі-бібліотеку metasecml.dll (src/capcut-wine-fix/metasecml.c):
+     * Повна прозоро перенаправляє всі 37 експортів до оригінальної metasecml_real.dll.
+     * Реєструє пріоритетний Vectored Exception Handler (VEH), який перехоплює Access Violation у потоці аудиту metasecml_real.dll та чисто викликає ExitThread(0), запобігаючи виклику Breakpad/Crashpad.
+   - Розроблено та застосовано хірургічний бінарний патч для cef/libcef.dll (зміщення 0x4e6c05a, RVA 0x4e6ca5a):
+     * Замінено виклик фатального аварійного завершення TerminateBecauseOutOfMemory на безпечний фолбек до системної пам'яті Windows LocalAlloc(LPTR, size) через IAT (RVA 0xc6c4d18).
+     * Тепер за будь-якого збою PartitionAlloc потік CEF автоматично отримує запитану пам'ять із купи ОС, цикл повідомлень не переривається і вікно не зависає.
+   - Створено утиліту авто-патчингу bin/mac-capcut-fix (/usr/local/bin/mac-capcut-fix), інтегровану у bin/mac-wine-runner. Будь-який запуск CapCut автоматично перевіряє та підтримує патчі в актуальному стані.
+
+3. Жива перевірка та верифікація:
+   - Запущено CapCut під Wine: програма стабільно працює, модальні вікна та дашборд відкриваються без затримок.
+   - Успішно закрито модальне вікно "Recommended".
+   - Натиснуто "+ Create project": відкрився повний відеоредактор CapCut з плеєром, таймлайном, інспекторами та робочим простором.
+   - Натиснуто іконку імпорту медіа: системний діалог вибору файлів ("Select a media resource") відкрився миттєво, без жодного крашу чи зависання; після скасування проект залишається повністю інтерактивним.
+   - Знято підтверджувальні скріншоти:
+     * capcut_main_dashboard.png (робоче головне вікно)
+     * capcut_editor_full.png (повний редактор проекту)
+     * capcut_file_dialog_cropped.png (діалог вибору файлів)
