@@ -1623,9 +1623,12 @@ export default class EvalHelper extends Extension {
                         const blurRadius = Math.max(0.0, Math.min(50.0, styling.alertBlur));
                         const shadowIntensity = Math.max(0.0, Math.min(1.0, styling.alertShadow / 100.0));
 
+                        const isTrash = dialogBox.has_style_class_name('mac-empty-trash-dialog');
+                        const radius = isTrash ? 24.0 : 30.0;
+
                         // Tahoe-widget / macOS Alert look: Liquid Glass shader
                         glass.setResolution(screenW, screenH);
-                        glass.setCornerRadius(30.0);
+                        glass.setCornerRadius(radius);
                         glass.setTintColor(0.0, 0.0, 0.0);
                         glass.setTintStrength(tintStrength);
                         glass.setBlurRadius(blurRadius);
@@ -1641,7 +1644,10 @@ export default class EvalHelper extends Extension {
                         } catch (_) {}
 
                         try {
-                            dialogBox.set_style(`background-color: rgba(30, 30, 30, ${tintStrength.toFixed(2)}) !important; border-radius: 30px !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; box-shadow: 0 16px 36px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;`);
+                            const extra = isTrash
+                                ? ' width: 270px !important; min-width: 270px !important; max-width: 270px !important; padding: 22px 18px 18px 18px !important;'
+                                : '';
+                            dialogBox.set_style(`background-color: rgba(30, 30, 30, ${tintStrength.toFixed(2)}) !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; box-shadow: 0 16px 36px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;${extra}`);
                         } catch (_) {}
 
                         // Generous clip padding so drop shadows and blur never get hard-clipped
@@ -1807,20 +1813,30 @@ export default class EvalHelper extends Extension {
                     destroyOnClose: true,
                 });
 
-                if (dlg.dialogLayout?._dialog) {
-                    dlg.dialogLayout._dialog.set_style('width: 280px; min-width: 280px; max-width: 280px; padding: 24px 20px 20px 20px;');
+                const d = dlg.dialogLayout?._dialog;
+                if (d) {
+                    const origSetStyle = d.set_style.bind(d);
+                    d.set_style = function(s) {
+                        let news = s;
+                        if (!news.includes('padding:')) {
+                            news = news.replace(/border-radius:\s*\d+px/g, 'border-radius: 24px') +
+                                ' width: 270px !important; min-width: 270px !important; max-width: 270px !important; padding: 22px 18px 18px 18px !important;';
+                        }
+                        origSetStyle(news);
+                    };
+                    d.set_style('width: 270px; min-width: 270px; max-width: 270px; padding: 22px 18px 18px 18px !important; border-radius: 24px !important;');
                 }
 
                 const content = new St.BoxLayout({
                     vertical: true,
                     x_align: Clutter.ActorAlign.CENTER,
                     y_align: Clutter.ActorAlign.CENTER,
-                    style: 'spacing: 0px;',
+                    style: 'spacing: 0px; width: 234px;',
                 });
 
                 const title = new St.Label({
                     text: 'Спорожнити смітник?',
-                    style: 'font-size: 19px; font-weight: bold; color: #ffffff; text-align: center; margin-bottom: 8px;',
+                    style: 'font-size: 17px; font-weight: 700; color: #ffffff; text-align: center; margin-bottom: 6px;',
                 });
                 title.clutter_text.set_line_wrap(true);
                 title.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
@@ -1828,7 +1844,7 @@ export default class EvalHelper extends Extension {
 
                 const body = new St.Label({
                     text: 'Усі об\u2019єкти у смітнику буде\nвилучено остаточно',
-                    style: 'font-size: 13.5px; color: rgba(255, 255, 255, 0.85); text-align: center; margin-bottom: 20px; line-height: 1.3;',
+                    style: 'font-size: 13px; color: rgba(255, 255, 255, 0.75); text-align: center; margin-bottom: 18px; line-height: 1.35;',
                 });
                 body.clutter_text.set_line_wrap(true);
                 body.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
@@ -1839,7 +1855,7 @@ export default class EvalHelper extends Extension {
                 const bl = dlg.dialogLayout.buttonLayout;
                 bl.layout_manager.orientation = Clutter.Orientation.VERTICAL;
                 bl.layout_manager.spacing = 8;
-                bl.set_style('padding: 0; width: 280px;');
+                bl.set_style('padding: 0 !important; margin: 0 !important; width: 234px !important;');
 
                 const confirmBtn = dlg.addButton({
                     label: 'Спорожнити смітник',
@@ -1849,14 +1865,24 @@ export default class EvalHelper extends Extension {
                     },
                     default: true,
                 });
-                confirmBtn.set_style('background-color: #eb5545 !important; background-gradient-direction: none !important; color: white !important; font-weight: bold; font-size: 14.5px; border-radius: 12px !important; min-height: 40px; height: 40px; width: 100%; margin: 0;');
+                const updateConfirmStyle = () => {
+                    const bg = confirmBtn.hover ? '#ff453a' : '#eb5545';
+                    confirmBtn.set_style(`background-color: ${bg} !important; background-gradient-direction: none !important; color: white !important; font-weight: 600; font-size: 14px; border-radius: 11px !important; min-height: 36px; height: 36px; width: 234px !important; margin: 0; padding: 0;`);
+                };
+                confirmBtn.connect('notify::hover', updateConfirmStyle);
+                updateConfirmStyle();
 
                 const cancelBtn = dlg.addButton({
                     label: 'Скасувати',
                     action: () => dlg.close(),
                     key: Clutter.KEY_Escape,
                 });
-                cancelBtn.set_style('background-color: rgba(255, 255, 255, 0.14) !important; background-gradient-direction: none !important; color: white !important; font-weight: 500; font-size: 14.5px; border-radius: 12px !important; min-height: 40px; height: 40px; width: 100%; margin: 0;');
+                const updateCancelStyle = () => {
+                    const bg = cancelBtn.hover ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.14)';
+                    cancelBtn.set_style(`background-color: ${bg} !important; background-gradient-direction: none !important; color: white !important; font-weight: 500; font-size: 14px; border-radius: 11px !important; min-height: 36px; height: 36px; width: 234px !important; margin: 0; padding: 0;`);
+                };
+                cancelBtn.connect('notify::hover', updateCancelStyle);
+                updateCancelStyle();
 
                 dlg.open();
                 globalThis._macActiveEmptyTrashDialog = dlg;

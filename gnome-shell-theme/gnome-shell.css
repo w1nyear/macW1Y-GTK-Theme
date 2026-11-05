@@ -3546,17 +3546,23 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-empty-trash-dialog {
-  border-radius: 30px !important;
-  padding: 0 !important;
+  border-radius: 24px !important;
+  padding: 22px 18px 18px 18px !important;
+  width: 270px !important;
+  min-width: 270px !important;
+  max-width: 270px !important;
 }
 
 .mac-empty-trash-dialog .modal-dialog-content-box {
   padding: 0 !important;
+  margin: 0 !important;
   max-width: none !important;
 }
 
 .mac-empty-trash-dialog .modal-dialog-button-box {
-  padding: 0 22px 22px 22px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  spacing: 8px !important;
 }
 
 .modal-dialog .modal-dialog-button:last-child,
