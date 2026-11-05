@@ -6199,12 +6199,112 @@ static void find_navigation_views(GtkWidget *widget, GList **list)
 {
     if (!widget) return;
     if (ADW_IS_NAVIGATION_VIEW(widget)) {
+        adw_navigation_view_set_animate_transitions(ADW_NAVIGATION_VIEW(widget), FALSE);
         *list = g_list_append(*list, widget);
         return;
     }
     for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
         find_navigation_views(child, list);
     }
+}
+
+static void schedule_update_panel_headerbar(AdwNavigationSplitView *split_view);
+
+/* Fast instant navigation hooks: eliminate the 0.5s spring slide lag across Settings */
+void adw_navigation_view_push(AdwNavigationView *self, AdwNavigationPage *page)
+{
+    static void (*orig_adw_nav_push)(AdwNavigationView *, AdwNavigationPage *) = NULL;
+    if (!orig_adw_nav_push) orig_adw_nav_push = dlsym(RTLD_NEXT, "adw_navigation_view_push");
+    if (self && G_IS_OBJECT(self) && ADW_IS_NAVIGATION_VIEW(self)) {
+        adw_navigation_view_set_animate_transitions(self, FALSE);
+    }
+    if (orig_adw_nav_push) orig_adw_nav_push(self, page);
+    if (g_last_split_view) {
+        schedule_update_panel_headerbar(g_last_split_view);
+    }
+}
+
+void adw_navigation_view_push_by_tag(AdwNavigationView *self, const char *tag)
+{
+    static void (*orig_adw_nav_push_by_tag)(AdwNavigationView *, const char *) = NULL;
+    if (!orig_adw_nav_push_by_tag) orig_adw_nav_push_by_tag = dlsym(RTLD_NEXT, "adw_navigation_view_push_by_tag");
+    if (self && G_IS_OBJECT(self) && ADW_IS_NAVIGATION_VIEW(self)) {
+        adw_navigation_view_set_animate_transitions(self, FALSE);
+    }
+    if (orig_adw_nav_push_by_tag) orig_adw_nav_push_by_tag(self, tag);
+    if (g_last_split_view) {
+        schedule_update_panel_headerbar(g_last_split_view);
+    }
+}
+
+gboolean adw_navigation_view_pop(AdwNavigationView *self)
+{
+    static gboolean (*orig_adw_nav_pop)(AdwNavigationView *) = NULL;
+    if (!orig_adw_nav_pop) orig_adw_nav_pop = dlsym(RTLD_NEXT, "adw_navigation_view_pop");
+    if (self && G_IS_OBJECT(self) && ADW_IS_NAVIGATION_VIEW(self)) {
+        adw_navigation_view_set_animate_transitions(self, FALSE);
+    }
+    gboolean res = FALSE;
+    if (orig_adw_nav_pop) res = orig_adw_nav_pop(self);
+    if (g_last_split_view) {
+        schedule_update_panel_headerbar(g_last_split_view);
+    }
+    return res;
+}
+
+gboolean adw_navigation_view_pop_to_page(AdwNavigationView *self, AdwNavigationPage *page)
+{
+    static gboolean (*orig_adw_nav_pop_to_page)(AdwNavigationView *, AdwNavigationPage *) = NULL;
+    if (!orig_adw_nav_pop_to_page) orig_adw_nav_pop_to_page = dlsym(RTLD_NEXT, "adw_navigation_view_pop_to_page");
+    if (self && G_IS_OBJECT(self) && ADW_IS_NAVIGATION_VIEW(self)) {
+        adw_navigation_view_set_animate_transitions(self, FALSE);
+    }
+    gboolean res = FALSE;
+    if (orig_adw_nav_pop_to_page) res = orig_adw_nav_pop_to_page(self, page);
+    if (g_last_split_view) {
+        schedule_update_panel_headerbar(g_last_split_view);
+    }
+    return res;
+}
+
+gboolean adw_navigation_view_pop_to_tag(AdwNavigationView *self, const char *tag)
+{
+    static gboolean (*orig_adw_nav_pop_to_tag)(AdwNavigationView *, const char *) = NULL;
+    if (!orig_adw_nav_pop_to_tag) orig_adw_nav_pop_to_tag = dlsym(RTLD_NEXT, "adw_navigation_view_pop_to_tag");
+    if (self && G_IS_OBJECT(self) && ADW_IS_NAVIGATION_VIEW(self)) {
+        adw_navigation_view_set_animate_transitions(self, FALSE);
+    }
+    gboolean res = FALSE;
+    if (orig_adw_nav_pop_to_tag) res = orig_adw_nav_pop_to_tag(self, tag);
+    if (g_last_split_view) {
+        schedule_update_panel_headerbar(g_last_split_view);
+    }
+    return res;
+}
+
+void adw_navigation_view_replace(AdwNavigationView *self, AdwNavigationPage **pages, int n_pages)
+{
+    static void (*orig_adw_nav_replace)(AdwNavigationView *, AdwNavigationPage **, int) = NULL;
+    if (!orig_adw_nav_replace) orig_adw_nav_replace = dlsym(RTLD_NEXT, "adw_navigation_view_replace");
+    if (self && G_IS_OBJECT(self) && ADW_IS_NAVIGATION_VIEW(self)) {
+        adw_navigation_view_set_animate_transitions(self, FALSE);
+    }
+    if (orig_adw_nav_replace) orig_adw_nav_replace(self, pages, n_pages);
+    if (g_last_split_view) {
+        schedule_update_panel_headerbar(g_last_split_view);
+    }
+}
+
+void adw_navigation_split_view_set_content(AdwNavigationSplitView *self, AdwNavigationPage *content)
+{
+    static void (*orig_set_content)(AdwNavigationSplitView *, AdwNavigationPage *) = NULL;
+    if (!orig_set_content) orig_set_content = dlsym(RTLD_NEXT, "adw_navigation_split_view_set_content");
+    if (content && G_IS_OBJECT(content)) {
+        GList *nvs = NULL;
+        find_navigation_views(GTK_WIDGET(content), &nvs);
+        g_list_free(nvs);
+    }
+    if (orig_set_content) orig_set_content(self, content);
 }
 
 typedef struct {
@@ -6974,6 +7074,9 @@ static GtkWidget *get_widgets_page(void)
     if (loaded) {
         widgets_page = GTK_WIDGET(gtk_builder_get_object(builder, "widgets_page"));
         global_widgets_nav_view = ADW_NAVIGATION_VIEW(gtk_builder_get_object(builder, "widgets_nav_view"));
+        if (global_widgets_nav_view) {
+            adw_navigation_view_set_animate_transitions(global_widgets_nav_view, FALSE);
+        }
         bind_widgets_configurator_settings(builder);
         if (widgets_page) {
             g_object_ref(widgets_page);
@@ -9449,14 +9552,17 @@ static void remove_panel_header_banner_if_any(GtkWidget *widget) {
 static void expand_clamps_recursive(GtkWidget *widget) {
     if (!widget) return;
     if (g_strcmp0(G_OBJECT_TYPE_NAME(widget), "AdwClamp") == 0) {
-        adw_clamp_set_maximum_size(ADW_CLAMP(widget), 1800);
-        adw_clamp_set_tightening_threshold(ADW_CLAMP(widget), 1600);
-        gtk_widget_set_valign(widget, GTK_ALIGN_START);
-        gtk_widget_set_vexpand(widget, FALSE);
-        GtkWidget *child = gtk_widget_get_first_child(widget);
-        if (child && GTK_IS_BOX(child)) {
-            gtk_widget_set_valign(child, GTK_ALIGN_START);
-            gtk_widget_set_vexpand(child, FALSE);
+        if (!g_object_get_data(G_OBJECT(widget), "mac_clamp_expanded")) {
+            adw_clamp_set_maximum_size(ADW_CLAMP(widget), 1800);
+            adw_clamp_set_tightening_threshold(ADW_CLAMP(widget), 1600);
+            gtk_widget_set_valign(widget, GTK_ALIGN_START);
+            gtk_widget_set_vexpand(widget, FALSE);
+            GtkWidget *child = gtk_widget_get_first_child(widget);
+            if (child && GTK_IS_BOX(child)) {
+                gtk_widget_set_valign(child, GTK_ALIGN_START);
+                gtk_widget_set_vexpand(child, FALSE);
+            }
+            g_object_set_data(G_OBJECT(widget), "mac_clamp_expanded", GINT_TO_POINTER(1));
         }
     }
     if (ADW_IS_PREFERENCES_GROUP(widget)) {
@@ -9596,11 +9702,14 @@ static void fix_accent_color_buttons(GtkWidget *widget) {
     const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
     const char *name = gtk_widget_get_name(widget);
     if (g_strcmp0(bid, "accent_box") == 0 || g_strcmp0(name, "accent_box") == 0) {
-        gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
-        for (GtkWidget *b = gtk_widget_get_first_child(widget); b; b = gtk_widget_get_next_sibling(b)) {
-            gtk_widget_set_size_request(b, 24, 24);
-            gtk_widget_set_valign(b, GTK_ALIGN_CENTER);
-            gtk_widget_set_halign(b, GTK_ALIGN_CENTER);
+        if (!g_object_get_data(G_OBJECT(widget), "mac_accent_box_fixed")) {
+            g_object_set_data(G_OBJECT(widget), "mac_accent_box_fixed", GINT_TO_POINTER(1));
+            gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
+            for (GtkWidget *b = gtk_widget_get_first_child(widget); b; b = gtk_widget_get_next_sibling(b)) {
+                gtk_widget_set_size_request(b, 24, 24);
+                gtk_widget_set_valign(b, GTK_ALIGN_CENTER);
+                gtk_widget_set_halign(b, GTK_ALIGN_CENTER);
+            }
         }
         return;
     }
@@ -9610,9 +9719,11 @@ static void fix_accent_color_buttons(GtkWidget *widget) {
 }
 
 static void update_panel_headerbar(AdwNavigationSplitView *split_view);
+static guint s_update_headerbar_idle_id = 0;
 
 static gboolean update_panel_headerbar_idle_cb(gpointer user_data)
 {
+    s_update_headerbar_idle_id = 0;
     AdwNavigationSplitView *split_view = ADW_NAVIGATION_SPLIT_VIEW(user_data);
     if (split_view && G_IS_OBJECT(split_view) && ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) {
         update_panel_headerbar(split_view);
@@ -9624,10 +9735,9 @@ static void schedule_update_panel_headerbar(AdwNavigationSplitView *split_view)
 {
     if (!split_view || !G_IS_OBJECT(split_view) || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return;
     update_panel_headerbar(split_view);
-    g_idle_add(update_panel_headerbar_idle_cb, split_view);
-    g_timeout_add(50, update_panel_headerbar_idle_cb, split_view);
-    g_timeout_add(150, update_panel_headerbar_idle_cb, split_view);
-    g_timeout_add(300, update_panel_headerbar_idle_cb, split_view);
+    if (s_update_headerbar_idle_id == 0) {
+        s_update_headerbar_idle_id = g_idle_add(update_panel_headerbar_idle_cb, split_view);
+    }
 }
 
 static void sync_sidebar_selection(AdwNavigationSplitView *split_view, const char *panel_id) {
@@ -10139,6 +10249,19 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         const char *header_title = NULL;
         if (is_subpage && vis_p) {
             header_title = adw_navigation_page_get_title(vis_p);
+            if (!header_title || !header_title[0]) {
+                const char *tag = adw_navigation_page_get_tag(vis_p);
+                if (tag) {
+                    if (g_strcmp0(tag, "about") == 0) header_title = mac_tr("about", "Про систему");
+                    else if (g_strcmp0(tag, "datetime") == 0) header_title = mac_tr("datetime", "Дата й час");
+                    else if (g_strcmp0(tag, "region") == 0) header_title = mac_tr("region", "Регіон та мова");
+                    else if (g_strcmp0(tag, "users") == 0) header_title = mac_tr("users", "Користувачі");
+                    else if (g_strcmp0(tag, "remote-desktop") == 0) header_title = mac_tr("remote_desktop", "Віддалена стільниця");
+                    else if (g_strcmp0(tag, "screenshot") == 0) header_title = mac_tr("screenshot", "Скріншот");
+                    else if (g_strcmp0(tag, "multitasking") == 0) header_title = mac_tr("multitasking", "Багатозадачність");
+                    else if (g_strcmp0(tag, "apps") == 0) header_title = mac_tr("apps", "Програми");
+                }
+            }
         }
         if (!header_title || !header_title[0]) {
             header_title = get_active_sidebar_panel_title(split_view);
@@ -10539,6 +10662,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             gtk_list_box_set_header_func(main_listbox, NULL, NULL, NULL);
             gtk_list_box_invalidate_sort(main_listbox);
             gtk_list_box_invalidate_headers(main_listbox);
+            gtk_list_box_set_activate_on_single_click(main_listbox, TRUE);
 
             g_signal_connect(main_listbox, "row-activated", G_CALLBACK(on_main_listbox_row_activated), split_view);
             g_object_set_data(G_OBJECT(main_listbox), "mac_listbox_connected", GINT_TO_POINTER(1));

@@ -16709,3 +16709,30 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
      * settings_multi_last_pressed.png: останній рядок групи має заокруглені нижні кути 14px та плоскі верхні 0px.
    - bin/mac-audit-sync check: 100% PASS (5/5 перевірок пройдено успішно).
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
+
+
+ЕТАП 649: macW1Y 0.5 — Усунення 0.5с затримки та перехід на миттєве нативне відкриття пунктів і підсторінок у Параметрах (GNOME Control Center)
+
+1. Вимоги завдання:
+   - Користувач повідомив: «на відкриття будь якого пункту у параметрах потрібно деякий час 0.5с».
+   - Усунути затримку ~0.5 секунди при переході між підсторінками та пунктами у «Параметрах» (gnome-control-center).
+   - Забезпечити миттєвий відгук (0 мс / наступний кадр) при відкритті підсторінок («Про систему», «Дата й час», «Користувачі», «Багатозадачність», «Оновлення програм», «Скріншот» тощо) та бічної панелі без затримок переходу, що повністю відповідає нативній поведінці macOS System Settings.
+
+2. Причини дефектів та реалізація:
+   - Причини затримки 0.5с:
+     * У Libadwaita для контейнерів `AdwNavigationView` типово увімкнена фізична пружинна анімація ковзання (`animate_transitions = TRUE`), яка триває 450–500 мс при кожному переході (`adw_navigation_view_push`, `adw_navigation_view_push_by_tag`, `adw_navigation_view_pop`).
+     * Каскадні таймери у функції `schedule_update_panel_headerbar`: щоразу при переході запускалося 4 черги оновлень (0 мс, idle, 50 мс, 150 мс, 300 мс), де `expand_clamps_recursive` повторно викликав `g_object_set` для максимального розміру на всіх контейнерах `AdwClamp`, провокуючи багаторазовий перерахунок макета вікна під час анімації.
+   - Реалізація:
+     * Впроваджено функцію `adw_navigation_view_set_animate_transitions(..., FALSE)` для всіх виявлених `AdwNavigationView` та конфігуратора віджетів.
+     * Реалізовано LD_PRELOAD-перехоплювачі для навігаційних методів Libadwaita (`adw_navigation_view_push`, `adw_navigation_view_push_by_tag`, `adw_navigation_view_pop`, `adw_navigation_view_pop_to_page`, `adw_navigation_view_pop_to_tag`, `adw_navigation_view_replace`), що гарантують відключення пружинної анімації перед зміною сторінки та ініціюють миттєву синхронізацію заголовка.
+     * Оптимізовано `schedule_update_panel_headerbar`: усунено затримкові таймери (50 мс, 150 мс, 300 мс), замінено на єдиний здебаунсений idle-виклик (`s_update_headerbar_idle_id`).
+     * Захищено `expand_clamps_recursive` прапорцем `"mac_clamp_expanded"`, що виключає зайві перерахунки макетів GTK.
+     * Захищено `fix_accent_color_buttons` прапорцем `"mac_accent_box_fixed"`.
+     * Встановлено `gtk_list_box_set_activate_on_single_click(main_listbox, TRUE)`.
+     * Додано нативне визначення заголовків підсторінок за тегами у навігаційній панелі (`mac-nav-box`).
+     * Перекомпільовано та синхронізовано `libmac_settings.so` в усіх 7 канонічних розташуваннях (/usr/local/lib, /usr/share/mactheme, ~/.local/lib тощо).
+
+3. Результати верифікації:
+   - Перевірено перехід на підсторінки («Дата й час», «Користувачі», «Дисплеї» тощо): перехід відбувається миттєво без 500 мс слайд-затримки (підтверджено контрольними знімками datetime_row_opened.png та display_panel.png).
+   - bin/mac-audit-sync check: 100% PASS (5/5 перевірок пройдено успішно).
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
