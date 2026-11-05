@@ -17420,3 +17420,32 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
      * У багатотабовому режимі (Ctrl+T) вкладки відображаються рівно та гармонійно.
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS (5/5).
+
+Етап 674: Виправлення збереження налаштування відображення відсотка заряду акумулятора після перезаходу в сесію
+1. Причина проблеми:
+   - У розширенні Kiwi (extensions/kiwi@kemma/apps/topbarButtons.js) мітка _batteryLabel ініціалізувалася з дефолтним visible: true та width: -1. При створенні елемента під час старту сесії ширина natural width (39px) та початковий текст залишалися у розмітці, а при анімації зникнення onComplete виставляв width = -1 замість 0, що викликало розкриття та показ відсотка заряду під час повторного входу в сесію.
+   - У розширенні WACK Lockscreen Clock (extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/lockscreenMenuBar.js) на локскріні та екрані блокування відсоток акумулятора було жорстко захардкоджено без перевірки налаштування org.gnome.desktop.interface show-battery-percentage. Крім того, метод _restoreDesktopPanel() при виході з локскріну примусово розкривав child.visible = true для всіх дочірніх контейнерів rightBox, включно з прихованими системними індикаторами та quickSettings._indicators.
+   - У налаштуваннях Kiwi (prefs.js) перемикач battery-percentage був прив'язаний до внутрішнього ключа розширення, дефолт якого був true, замість синхронізації з системним параметром GNOME.
+   - У розширенні Blur-My-Shell (menubar_v29.js) BatteryWidget мав аналогічне скидання ширини до -1 при showPercentage = false.
+
+2. Виконані виправлення:
+   - У extensions/kiwi@kemma/apps/topbarButtons.js:
+     * _batteryLabel тепер конструюється з початковим visible: showPctInitial, opacity: showPctInitial ? 255 : 0, width: showPctInitial ? -1 : 0, text: '' та margin_right: showPctInitial ? 6 : 0.
+     * У _syncBatteryPercentageVisibility(): коли showPercentage = false, встановлюється width = 0, opacity = 0, text = '', margin_right = 0; при завершенні ease-анімації width фіксується в 0 (а не скидається в -1).
+     * У _updateBattery(): значення тексту _batteryLabel.text виставляється лише за умови showPercentage === true. Якщо вимкнено — текст очищується, width = 0, visible = false.
+     * У disable(): скидається _batteryLastShowPercentage = undefined.
+   - У extensions/kiwi@kemma/prefs.js:
+     * Перемикач відсотка заряду тепер безпосередньо прив'язаний до системного ключа org.gnome.desktop.interface show-battery-percentage та автоматично оновлює внутрішній ключ розширення.
+   - У extensions/blur-my-shell@aunetx/components/menubar_v29.js:
+     * У BatteryWidget _label ініціалізується з урахуванням showPctInitial, при showPercentage = false ширина надійно фіксується у 0px, а текст очищується.
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/lockscreenMenuBar.js:
+     * Підключено прослуховування зміни ключа org.gnome.desktop.interface show-battery-percentage.
+     * _ensureBatteryWidget() та _updateBattery() на локскріні тепер суворо дотримуються стану налаштування (якщо вимкнено — відсоток приховується з width = 0 та text = '').
+     * _restoreDesktopPanel() більше не розгортає примусово приховані компоненти Control Center (macBattery, macWifi, macBluetooth, macVolume) та не скидає стиль quickSettings._indicators.
+
+3. Синхронізація та цілісність:
+   - Усі оновлені файли скопійовано до системних та користувацьких шляхів (~/.local/share/gnome-shell/extensions/ та /usr/share/gnome-shell/extensions/).
+   - Оновлено хеші цілісності в config/extensions.lock.json для kiwi@kemma, wack-lockscreen-clock@... та blur-my-shell@aunetx.
+   - Знято верифікаційні знімки живого інтерфейсу topbar_with_pct_crop.png та topbar_without_pct_crop.png, перевірено динамічне ввімкнення та вимкнення відсотка.
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS (5/5).

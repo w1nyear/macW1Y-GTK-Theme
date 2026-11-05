@@ -69,7 +69,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeQuickSettingsEnable: ${e}`);
         }
         try {
-            const tbUri = this.dir.get_child('apps').get_child('topbarButtons.js').get_uri() + '?v=tb_v11';
+            const tbUri = this.dir.get_child('apps').get_child('topbarButtons.js').get_uri() + '?v=tb_v12';
             import(tbUri).then(mod => {
                 if (this._topbarButtonsMod && this._topbarButtonsMod !== mod) {
                     try { this._topbarButtonsMod.disable(); } catch (_) {}

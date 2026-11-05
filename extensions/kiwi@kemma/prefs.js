@@ -554,26 +554,27 @@ export default class KiwiPreferences extends ExtensionPreferences {
         calendarExpander.add_row(indicatorStyleRow);
         calendarExpander.add_row(keepPanelRow);
 
-        // Battery percentage clashes with GNOME's own top bar percentage, so
-        // the row is greyed out while that setting is on
-        const batteryRow = new Adw.SwitchRow({
-            title: _("Battery Percentage"),
-            active: settings.get_boolean('battery-percentage'),
-        });
-        windowTitleGroup.add(batteryRow);
-        settings.bind('battery-percentage', batteryRow, 'active', Gio.SettingsBindFlags.DEFAULT);
-
+        // Battery percentage synchronized with GNOME Settings (org.gnome.desktop.interface show-battery-percentage)
         const interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
         window._kiwiInterfaceSettings = interfaceSettings;
-        const syncBatteryRow = () => {
-            const gnomeShowsPercentage = interfaceSettings.get_boolean('show-battery-percentage');
-            batteryRow.sensitive = !gnomeShowsPercentage;
-            batteryRow.subtitle = gnomeShowsPercentage
-                ? _("Unavailable while GNOME Settings shows the battery percentage in the top bar")
-                : _("Show battery percentage in the top bar when below 20%");
+
+        const batteryRow = new Adw.SwitchRow({
+            title: _("Battery Percentage"),
+            subtitle: _("Show battery percentage next to the battery icon in the top bar"),
+            active: interfaceSettings.get_boolean('show-battery-percentage'),
+        });
+        windowTitleGroup.add(batteryRow);
+        interfaceSettings.bind('show-battery-percentage', batteryRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+
+        const syncKiwiSetting = () => {
+            const val = interfaceSettings.get_boolean('show-battery-percentage');
+            try {
+                if (settings.get_boolean('battery-percentage') !== val)
+                    settings.set_boolean('battery-percentage', val);
+            } catch (_) {}
         };
-        syncBatteryRow();
-        interfaceSettings.connect('changed::show-battery-percentage', syncBatteryRow);
+        syncKiwiSetting();
+        interfaceSettings.connect('changed::show-battery-percentage', syncKiwiSetting);
 
         this._addSwitchRows(settings, windowTitleGroup, [
             { key: 'custom-dnd-button', title: _("Custom Do Not Disturb Button"), subtitle: _("Replace the system Do Not Disturb button with Kiwi's custom implementation") },

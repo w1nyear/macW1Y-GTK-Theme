@@ -44,7 +44,7 @@
         "50",
         "51"
       ],
-      "sha256": "4f16424df180221fc41b652c55699ff9d13aa38febede7a635db8973952ab329",
+      "sha256": "408e54d0f8146e7c6e23acc2f37b41ad6a3b68985fcb97db131cb17b46cabc00",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -55,8 +55,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
-      "last_verified": "2026-11-04",
-      "pinned_sha256": "85bafbef3cdd13b81ed2364a24256a156022aaa59ffb40be52a320dcc168b9c3",
+      "last_verified": "2026-11-06",
+      "pinned_sha256": "408e54d0f8146e7c6e23acc2f37b41ad6a3b68985fcb97db131cb17b46cabc00",
       "dir_hash": "48db359a"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
@@ -261,7 +261,7 @@
         "50",
         "51"
       ],
-      "sha256": "0072367091dcc78939aa80770505c3d065ce2854e26c96e761998e2638a2614e",
+      "sha256": "61081d3bb08d83326be85677859f9ce0f166af81287f180245f31b196abdd54b",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -273,9 +273,9 @@
       ],
       "has_custom_patches": true,
       "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
-      "last_verified": "2026-11-04",
+      "last_verified": "2026-11-06",
       "integrity_hash": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f",
-      "pinned_sha256": "cd452922ac6bf3729e92c1683fabf6e9f97b9ecf455d37007a00d8c4ef40437a",
+      "pinned_sha256": "61081d3bb08d83326be85677859f9ce0f166af81287f180245f31b196abdd54b",
       "expected_hash": "3986c471"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
@@ -518,7 +518,7 @@
         "49",
         "50"
       ],
-      "sha256": "21fce00cd3200eac5f6a7bc8caef3f3b62d71a31b9348e0a051213bbad09b71d",
+      "sha256": "899624639a6a6367d44cf990c3790ca09b4138006a536bfa4a4f2a349a254859",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -526,8 +526,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575)",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "21fce00cd3200eac5f6a7bc8caef3f3b62d71a31b9348e0a051213bbad09b71d"
+      "last_verified": "2026-11-06",
+      "pinned_sha256": "899624639a6a6367d44cf990c3790ca09b4138006a536bfa4a4f2a349a254859"
     },
     "wifi-hotspot-quick-settings@aryan10.github.io": {
       "uuid": "wifi-hotspot-quick-settings@aryan10.github.io",

@@ -867,10 +867,21 @@ const BatteryWidget = GObject.registerClass({
         this._box.spacing = 0;
         this.add_child(this._box);
 
+        let showPctInitial = false;
+        try {
+            this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            showPctInitial = this._interfaceSettings.get_boolean('show-battery-percentage');
+            this._interfaceSettings.connectObject('changed::show-battery-percentage', () => this._sync(), this);
+        } catch (_e) {}
+
         this._label = new St.Label({
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'mac-battery-percentage',
-            visible: false,
+            text: '',
+            visible: showPctInitial,
+            opacity: showPctInitial ? 255 : 0,
+            width: showPctInitial ? -1 : 0,
+            margin_right: showPctInitial ? 6 : 0,
         });
         this._label.clip_to_allocation = true;
         this._box.add_child(this._label);
@@ -1056,9 +1067,17 @@ const BatteryWidget = GObject.registerClass({
                 showPercentage = this._interfaceSettings.get_boolean('show-battery-percentage');
         } catch (_e) {}
 
-        const pctText = `${Math.round(this._upowerDevice.percentage)}%`;
-        if (this._label.text !== pctText)
-            this._label.text = pctText;
+        if (showPercentage) {
+            const pctText = `${Math.round(this._upowerDevice.percentage)}%`;
+            if (this._label.text !== pctText)
+                this._label.text = pctText;
+        } else {
+            this._label.text = '';
+            this._label.visible = false;
+            this._label.opacity = 0;
+            this._label.width = 0;
+            this._label.margin_right = 0;
+        }
 
         const box = this._label.get_parent();
         if (box && box.spacing !== 0)
@@ -1070,7 +1089,10 @@ const BatteryWidget = GObject.registerClass({
             this._label.visible = showPercentage;
             this._label.opacity = showPercentage ? 255 : 0;
             this._label.margin_right = showPercentage ? 6 : 0;
-            this._label.width = -1;
+            this._label.width = showPercentage ? -1 : 0;
+            if (!showPercentage) {
+                this._label.text = '';
+            }
         } else if (this._lastShowPercentage !== showPercentage) {
             this._lastShowPercentage = showPercentage;
             this._label.remove_all_transitions();
@@ -1081,6 +1103,9 @@ const BatteryWidget = GObject.registerClass({
                 this._label.opacity = 0;
                 this._label.width = 0;
                 this._label.margin_right = 0;
+
+                const pctText = `${Math.round(this._upowerDevice.percentage)}%`;
+                this._label.text = pctText;
 
                 let [, natW] = this._label.get_preferred_width(-1);
                 if (natW <= 0) natW = 39;
@@ -1107,7 +1132,9 @@ const BatteryWidget = GObject.registerClass({
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                     onComplete: () => {
                         this._label.visible = false;
-                        this._label.width = -1;
+                        this._label.width = 0;
+                        this._label.margin_right = 0;
+                        this._label.text = '';
                     }
                 });
             }

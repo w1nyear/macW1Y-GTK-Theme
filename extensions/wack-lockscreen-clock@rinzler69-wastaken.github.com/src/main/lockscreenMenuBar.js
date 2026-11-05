@@ -25,6 +25,14 @@ export class LockscreenMenuBarManager {
         if (this._isActive) return;
         this._isActive = true;
 
+        try {
+            this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            const id = this._interfaceSettings.connect('changed::show-battery-percentage', () => {
+                this._updateBattery();
+            });
+            this._signals.push({ obj: this._interfaceSettings, id });
+        } catch (_) {}
+
         this._overrideSessionMode();
         this._initBattery();
         this._applyMenuBar();
@@ -156,7 +164,30 @@ export class LockscreenMenuBarManager {
             if (!pctProp) return;
             const percentage = pctProp.unpack();
             const state = stateProp ? stateProp.unpack() : 0;
-            this._batteryLabel.text = `${Math.round(percentage)}%`;
+
+            let showPercentage = false;
+            try {
+                if (!this._interfaceSettings)
+                    this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+                showPercentage = this._interfaceSettings.get_boolean('show-battery-percentage');
+            } catch (_) {
+                showPercentage = false;
+            }
+
+            if (showPercentage) {
+                this._batteryLabel.text = `${Math.round(percentage)}%`;
+                this._batteryLabel.visible = true;
+                this._batteryLabel.opacity = 255;
+                this._batteryLabel.width = -1;
+                this._batteryLabel.margin_right = 6;
+            } else {
+                this._batteryLabel.text = '';
+                this._batteryLabel.visible = false;
+                this._batteryLabel.opacity = 0;
+                this._batteryLabel.width = 0;
+                this._batteryLabel.margin_right = 0;
+            }
+
             this._batteryIcon.icon_name = this._iconForLevel(percentage, state);
             if (this._batteryWidget) {
                 this._batteryWidget.visible = true;
@@ -185,9 +216,20 @@ export class LockscreenMenuBarManager {
             style: 'spacing: 6px;',
         });
 
+        let showPctInitial = false;
+        try {
+            if (!this._interfaceSettings)
+                this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            showPctInitial = this._interfaceSettings.get_boolean('show-battery-percentage');
+        } catch (_) {}
+
         this._batteryLabel = new St.Label({
             style_class: 'wack-battery-label kiwi-battery-label',
-            text: '--%',
+            text: '',
+            visible: showPctInitial,
+            opacity: showPctInitial ? 255 : 0,
+            width: showPctInitial ? -1 : 0,
+            margin_right: showPctInitial ? 6 : 0,
             y_align: Clutter.ActorAlign.CENTER,
             style: "font-family: 'SF Pro Text', -apple-system, sans-serif !important; font-size: 14px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.95) !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;",
         });
@@ -330,13 +372,6 @@ export class LockscreenMenuBarManager {
             } catch (_) {}
         }
 
-        const qs = Main.panel?.statusArea?.quickSettings;
-        if (qs?._indicators) {
-            qs._indicators.visible = true;
-            qs._indicators.opacity = 255;
-            qs._indicators.style = null;
-        }
-
         if (this._origSessionModePanel && Main.sessionMode) {
             Main.sessionMode.panel = this._origSessionModePanel;
         }
@@ -345,6 +380,13 @@ export class LockscreenMenuBarManager {
         for (const box of boxes) {
             for (const child of box.get_children()) {
                 if (child === this._batteryWidget) continue;
+                const role = Object.entries(Main.panel.statusArea || {}).find(([_, v]) => {
+                    try { return v?.container === child || v === child; } catch (_) { return false; }
+                })?.[0] || '';
+                // Elements managed by Control Center & menubar must not be forcefully unhidden
+                if (['macBattery', 'macWifi', 'macBluetooth', 'macVolume', 'macScreenCast'].includes(role)) {
+                    continue;
+                }
                 child.visible = true;
                 child.show();
                 child.opacity = 255;

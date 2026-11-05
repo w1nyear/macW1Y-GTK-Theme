@@ -193,12 +193,25 @@ function _syncBatteryPercentageVisibility() {
         _batteryLabel.visible = showPercentage;
         _batteryLabel.opacity = showPercentage ? 255 : 0;
         _batteryLabel.margin_right = showPercentage ? 6 : 0;
-        _batteryLabel.width = -1;
+        _batteryLabel.width = showPercentage ? -1 : 0;
+        if (!showPercentage) {
+            _batteryLabel.text = '';
+        } else if (_currentBatteryPercentage !== null) {
+            _batteryLabel.text = `${Math.round(_currentBatteryPercentage)}%`;
+        }
         return;
     }
 
-    if (_batteryLastShowPercentage === showPercentage)
+    if (_batteryLastShowPercentage === showPercentage) {
+        if (!showPercentage) {
+            _batteryLabel.visible = false;
+            _batteryLabel.opacity = 0;
+            _batteryLabel.width = 0;
+            _batteryLabel.margin_right = 0;
+            _batteryLabel.text = '';
+        }
         return;
+    }
 
     _batteryLastShowPercentage = showPercentage;
     _batteryLabel.remove_all_transitions();
@@ -209,6 +222,9 @@ function _syncBatteryPercentageVisibility() {
         _batteryLabel.opacity = 0;
         _batteryLabel.width = 0;
         _batteryLabel.margin_right = 0;
+        if (_currentBatteryPercentage !== null) {
+            _batteryLabel.text = `${Math.round(_currentBatteryPercentage)}%`;
+        }
 
         let [, natW] = _batteryLabel.get_preferred_width(-1);
         if (natW <= 0) natW = 39;
@@ -220,7 +236,8 @@ function _syncBatteryPercentageVisibility() {
             duration: 350,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
-                _batteryLabel.width = -1;
+                if (_batteryLabel)
+                    _batteryLabel.width = -1;
             }
         });
     } else {
@@ -234,8 +251,12 @@ function _syncBatteryPercentageVisibility() {
             duration: 300,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
-                _batteryLabel.visible = false;
-                _batteryLabel.width = -1;
+                if (_batteryLabel) {
+                    _batteryLabel.visible = false;
+                    _batteryLabel.width = 0;
+                    _batteryLabel.margin_right = 0;
+                    _batteryLabel.text = '';
+                }
             }
         });
     }
@@ -283,8 +304,23 @@ function _updateBattery() {
         const state = stateProp.unpack();
         _currentBatteryPercentage = percentage;
         _currentBatteryState = state;
-        // macOS shows "87 %" style: rounded number + icon
-        _batteryLabel.text = `${Math.round(percentage)}%`;
+        let showPercentage = false;
+        try {
+            if (!_interfaceSettings)
+                _interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            showPercentage = _interfaceSettings.get_boolean('show-battery-percentage');
+        } catch (_) {
+            showPercentage = false;
+        }
+        if (showPercentage) {
+            _batteryLabel.text = `${Math.round(percentage)}%`;
+        } else {
+            _batteryLabel.text = '';
+            _batteryLabel.visible = false;
+            _batteryLabel.opacity = 0;
+            _batteryLabel.width = 0;
+            _batteryLabel.margin_right = 0;
+        }
         _batteryDrawingArea.queue_repaint();
     } catch (_) {
         // keep last value
@@ -383,6 +419,16 @@ function _toggleSpotlight() {
 
 export function enable() {
     if (!_batteryButton && !Main.panel.statusArea['kiwi-wifi-button']) {
+        if (!_interfaceSettings) {
+            try {
+                _interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            } catch (_) {}
+        }
+        let initialShowPct = false;
+        try {
+            initialShowPct = _interfaceSettings ? _interfaceSettings.get_boolean('show-battery-percentage') : false;
+        } catch (_) {}
+
         _batteryButton = new PanelMenu.Button(0.0, 'Battery', true);
         _batteryBox = new St.BoxLayout({
             style_class: 'kiwi-battery-box',
@@ -392,7 +438,11 @@ export function enable() {
         });
         _batteryLabel = new St.Label({
             style_class: 'kiwi-battery-label',
-            text: '--%',
+            text: '',
+            visible: initialShowPct,
+            opacity: initialShowPct ? 255 : 0,
+            width: initialShowPct ? -1 : 0,
+            margin_right: initialShowPct ? 6 : 0,
             y_align: Clutter.ActorAlign.CENTER,
         });
         _batteryDrawingArea = new St.DrawingArea({
@@ -530,6 +580,7 @@ export function disable() {
     }
     _batteryBox = null;
     _batteryLabel = null;
+    _batteryLastShowPercentage = undefined;
     if (_batteryDrawingArea) {
         try { _batteryDrawingArea.destroy(); } catch (_) {}
         _batteryDrawingArea = null;
