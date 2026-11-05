@@ -3144,6 +3144,8 @@ export default class EvalHelper extends Extension {
             } catch (_) {}
             return GLib.SOURCE_CONTINUE;
         });
+
+        this._setupWineWindowStacking();
     }
 
     disable() {
@@ -3350,6 +3352,98 @@ export default class EvalHelper extends Extension {
         if (Main.panel.menuManager?._origMacGlideAddMenu) {
             Main.panel.menuManager.addMenu = Main.panel.menuManager._origMacGlideAddMenu;
             Main.panel.menuManager._origMacGlideAddMenu = null;
+        }
+
+        if (this._wineWindowCreatedId) {
+            try { global.display.disconnect(this._wineWindowCreatedId); } catch (_) {}
+            this._wineWindowCreatedId = 0;
+        }
+        if (this._wineFocusWindowId) {
+            try { global.display.disconnect(this._wineFocusWindowId); } catch (_) {}
+            this._wineFocusWindowId = 0;
+        }
+    }
+
+    _setupWineWindowStacking() {
+        const isWineWindow = (w) => {
+            if (!w) return false;
+            try {
+                const cls = (w.get_wm_class() || '').toLowerCase();
+                const instance = (w.get_wm_class_instance() || '').toLowerCase();
+                return cls.includes('.exe') || cls.includes('wine') || instance.includes('.exe') || instance.includes('wine');
+            } catch (_) {
+                return false;
+            }
+        };
+
+        const sanitizeWineWindow = (w) => {
+            if (!isWineWindow(w)) return;
+            try {
+                if (w.is_above()) {
+                    w.unmake_above();
+                }
+            } catch (_) {}
+
+            if (!w._macWineAboveSignalId) {
+                try {
+                    w._macWineAboveSignalId = w.connect('notify::above', () => {
+                        if (w.is_above()) {
+                            w.unmake_above();
+                        }
+                    });
+                } catch (_) {}
+            }
+
+            const focused = global.display.focus_window;
+            if (focused && !isWineWindow(focused)) {
+                try {
+                    w.lower_with_transients();
+                } catch (_) {
+                    try { w.lower(); } catch (_) {}
+                }
+            }
+        };
+
+        for (const actor of global.get_window_actors()) {
+            const w = actor.meta_window;
+            if (w) sanitizeWineWindow(w);
+        }
+
+        try {
+            this._wineWindowCreatedId = global.display.connect('window-created', (_display, window) => {
+                if (window) sanitizeWineWindow(window);
+            });
+        } catch (e) {
+            console.error(`[EvalHelper] wine window-created connect error: ${e}`);
+        }
+
+        try {
+            this._wineFocusWindowId = global.display.connect('notify::focus-window', () => {
+                const focused = global.display.focus_window;
+                if (!focused) return;
+                const wineFocused = isWineWindow(focused);
+                if (!wineFocused) {
+                    for (const actor of global.get_window_actors()) {
+                        const w = actor.meta_window;
+                        if (!w || w === focused) continue;
+                        if (isWineWindow(w)) {
+                            try {
+                                if (w.is_above()) w.unmake_above();
+                                w.lower_with_transients();
+                            } catch (_) {
+                                try { w.lower(); } catch (_) {}
+                            }
+                        }
+                    }
+                    try {
+                        focused.raise_and_make_recent_on_workspace();
+                    } catch (_) {
+                        try { focused.raise(); } catch (_) {}
+                    }
+                }
+            });
+        } catch (e) {
+            console.error(`[EvalHelper] wine focus-window connect error: ${e}`);
         }
     }
 }

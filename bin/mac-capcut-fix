@@ -3,6 +3,7 @@
 # Resolves:
 # 1. ByteDance security audit crash in metasecml.dll (via proxy VEH wrapper)
 # 2. Chromium Embedded Framework (CEF) 0xe0000008 crash in libcef.dll (via LocalAlloc heap fallback)
+# 3. Preview video decoding / black screen fix in vesdk.ini (enable_cpu_decode=1)
 
 set -e
 
@@ -22,23 +23,108 @@ find "$CAPCUT_BASE" -maxdepth 6 -type d -path "*/CapCut/Apps/*" 2>/dev/null | wh
         if [ -f "$PROXY_DLL" ]; then
             cp "$PROXY_DLL" "$app_dir/metasecml.dll"
         fi
+    elif [ -f "$PROXY_DLL" ] && [ -f "$app_dir/metasecml_real.dll" ]; then
+        # Ensure proxy is up to date
+        cp "$PROXY_DLL" "$app_dir/metasecml.dll"
     fi
 
-    # 2. Fix cef/libcef.dll
+    # 2. Dynamically patch cef/libcef.dll
     CEF_DLL="$app_dir/cef/libcef.dll"
     if [ -f "$CEF_DLL" ]; then
         python3 -c "
-path = '$CEF_DLL'
-orig_sig = bytes.fromhex('4883fbff7406e8d7150000cce8f1150000cccccccccc')
-patch = bytes.fromhex('b9400000004889daff15b08285074883c4205bc39090')
+import struct, os, sys
 
-with open(path, 'r+b') as f:
-    f.seek(0x4e6c05a)
-    cur = f.read(22)
-    if cur == orig_sig:
-        f.seek(0x4e6c05a)
-        f.write(patch)
-        print('Patched libcef.dll at', path)
+def patch_libcef(path):
+    if not os.path.exists(path):
+        return
+    with open(path, 'rb') as f:
+        data = bytearray(f.read())
+    
+    orig_sig = bytes.fromhex('4883fbff7406e8d7150000cce8f1150000cccccccccc')
+    sig_pos = data.find(orig_sig)
+    if sig_pos == -1:
+        return
+    
+    e_lfanew = struct.unpack_from('<I', data, 0x3c)[0]
+    magic = struct.unpack_from('<H', data, e_lfanew + 0x18)[0]
+    if magic != 0x20b:
+        return
+    
+    import_dir_rva, _ = struct.unpack_from('<II', data, e_lfanew + 0x90)
+    num_sections = struct.unpack_from('<H', data, e_lfanew + 0x6)[0]
+    opt_header_size = struct.unpack_from('<H', data, e_lfanew + 0x14)[0]
+    sec_offset = e_lfanew + 0x18 + opt_header_size
+    
+    sections = []
+    for i in range(num_sections):
+        s_name, s_vsize, s_va, s_raw_size, s_raw_ptr = struct.unpack_from('<8sIIII', data, sec_offset + i * 40)
+        sections.append((s_va, s_vsize, s_raw_ptr, s_raw_size))
+        
+    def rva_to_file(rva):
+        for va, vsize, raw_ptr, raw_size in sections:
+            if va <= rva < va + max(vsize, raw_size):
+                return raw_ptr + (rva - va)
+        return None
+        
+    def file_to_rva(fpos):
+        for va, vsize, raw_ptr, raw_size in sections:
+            if raw_ptr <= fpos < raw_ptr + raw_size:
+                return va + (fpos - raw_ptr)
+        return None
+        
+    local_alloc_iat_rva = None
+    curr_desc = rva_to_file(import_dir_rva)
+    while True:
+        original_first_thunk, timestamp, forwarder, name_rva, first_thunk = struct.unpack_from('<IIIII', data, curr_desc)
+        if name_rva == 0 and first_thunk == 0:
+            break
+        name_file = rva_to_file(name_rva)
+        dll_name = data[name_file:data.find(b'\0', name_file)].decode('ascii', errors='ignore').lower()
+        if 'kernel32' in dll_name:
+            thunk_rva = original_first_thunk if original_first_thunk != 0 else first_thunk
+            thunk_file = rva_to_file(thunk_rva)
+            iat_rva = first_thunk
+            while True:
+                entry = struct.unpack_from('<Q', data, thunk_file)[0]
+                if entry == 0:
+                    break
+                if not (entry & (1 << 63)):
+                    hint_rva = entry & 0x7fffffff
+                    hint_file = rva_to_file(hint_rva)
+                    func_name = data[hint_file+2:data.find(b'\0', hint_file+2)].decode('ascii', errors='ignore')
+                    if func_name == 'LocalAlloc':
+                        local_alloc_iat_rva = iat_rva
+                        break
+                thunk_file += 8
+                iat_rva += 8
+            if local_alloc_iat_rva:
+                break
+        curr_desc += 20
+        
+    if not local_alloc_iat_rva:
+        return
+        
+    sig_rva = file_to_rva(sig_pos)
+    call_inst_rva = sig_rva + 8
+    next_inst_rva = call_inst_rva + 6
+    disp32 = (local_alloc_iat_rva - next_inst_rva) & 0xffffffff
+    
+    patch = bytearray(b'\xb9\x40\x00\x00\x00\x48\x89\xda\xff\x15')
+    patch += struct.pack('<I', disp32)
+    patch += b'\x48\x83\xc4\x20\x5b\xc3\x90\x90'
+    data[sig_pos:sig_pos+22] = patch
+    with open(path, 'wb') as f:
+        f.write(data)
+    print(f'Patched {path}')
+
+patch_libcef('$CEF_DLL')
 " 2>/dev/null || true
+    fi
+done
+
+# 3. Stabilize vesdk.ini for preview video playback
+find "$CAPCUT_BASE" -maxdepth 6 -type f -path "*/CapCut/User Data/Config/vesdk.ini" 2>/dev/null | while read -r vesdk_file; do
+    if grep -q "enable_cpu_decode=0" "$vesdk_file"; then
+        sed -i 's/enable_cpu_decode=0/enable_cpu_decode=1/g' "$vesdk_file"
     fi
 done

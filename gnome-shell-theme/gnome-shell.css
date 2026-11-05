@@ -2653,7 +2653,7 @@ StEntry StLabel.hint-text {
 
 .popup-sub-menu {
   background-color: rgba(255, 255, 255, 0.15) !important;
-  border-radius: 0 0 8px 8px !important;
+  border-radius: 20px !important;
   border: none;
   box-shadow: none;
 }
