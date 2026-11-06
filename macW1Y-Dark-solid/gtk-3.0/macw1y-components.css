@@ -150,18 +150,84 @@ button.circular {
 /* GTK3 Sidebar headerbar: clean window controls, no redundant app title */
 paned.horizontal > headerbar:first-child .title,
 paned.horizontal > headerbar:first-child label.title,
+paned.horizontal > headerbar:first-child windowtitle,
 paned.horizontal > box > headerbar:first-child .title,
 paned.horizontal > box > headerbar:first-child label.title,
+paned.horizontal > box > headerbar:first-child windowtitle,
+paned.horizontal > box:first-child > headerbar .title,
+paned.horizontal > box:first-child > headerbar label.title,
+paned.horizontal > box:first-child > headerbar windowtitle,
 .sidebar headerbar .title,
 .sidebar headerbar label.title,
+.sidebar headerbar windowtitle,
 .navigation-sidebar headerbar .title,
-.navigation-sidebar headerbar label.title {
+.navigation-sidebar headerbar label.title,
+.navigation-sidebar headerbar windowtitle,
+leaflet > headerbar:first-child .title,
+leaflet > headerbar:first-child label.title,
+leaflet > headerbar:first-child windowtitle,
+leaflet > box > headerbar:first-child .title,
+leaflet > box > headerbar:first-child label.title,
+leaflet > box > headerbar:first-child windowtitle,
+leaflet > box:first-child > headerbar .title,
+leaflet > box:first-child > headerbar label.title,
+leaflet > box:first-child > headerbar windowtitle,
+leaflet.unfolded > headerbar:first-child .title,
+leaflet.unfolded > headerbar:first-child label.title,
+leaflet.unfolded > headerbar:first-child windowtitle,
+leaflet.unfolded > box:first-child > headerbar .title,
+leaflet.unfolded > box:first-child > headerbar label.title,
+leaflet.unfolded > box:first-child > headerbar windowtitle,
+.unfolded > headerbar:first-child .title,
+.unfolded > headerbar:first-child label.title,
+.unfolded > headerbar:first-child windowtitle,
+.unfolded > box:first-child > headerbar .title,
+.unfolded > box:first-child > headerbar label.title,
+.unfolded > box:first-child > headerbar windowtitle,
+flap > headerbar:first-child .title,
+flap > headerbar:first-child label.title,
+flap > headerbar:first-child windowtitle,
+flap > box:first-child > headerbar .title,
+flap > box:first-child > headerbar label.title,
+flap > box:first-child > headerbar windowtitle,
+headerbar.titlebar.tweak-titlebar-left .title,
+headerbar.titlebar.tweak-titlebar-left label.title,
+headerbar.titlebar.tweak-titlebar-left windowtitle,
+#disks-side-headerbar .title,
+#disks-side-headerbar label.title,
+#disks-side-headerbar windowtitle,
+#disks-side-headerbar box > label.title,
+#disks-side-headerbar label {
   opacity: 0;
   min-width: 0;
   min-height: 0;
   font-size: 0px;
   margin: 0;
   padding: 0;
+}
+
+/* =========================================================================
+ * 1.1.1 TRULY GLOBAL (GTK3): default window titles hidden in EVERY GTK3 app
+ *   headerbar (main & split). Dialogs render titles in plain box.titlebar,
+ *   which is NOT a headerbar node, so their titles stay intact.
+ * ========================================================================= */
+headerbar label.title,
+headerbar .title {
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+  font-size: 0px;
+  margin: 0;
+  padding: 0;
+}
+
+/* 1.1.2 (GTK3) restore inside dialogs that expose a real headerbar node */
+dialog headerbar label.title,
+dialog headerbar .title,
+window dialog headerbar label.title,
+window dialog headerbar .title {
+  opacity: 1;
+  font-size: inherit;
 }
 
 headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):hover,
@@ -393,4 +459,18 @@ scrolledwindow > undershoot.bottom {
   background-image: none;
   border: none;
   box-shadow: none;
+}
+
+/* =========================================================================
+ * 99. FINAL REASSERTIONS (GTK3) — діалоги з реальним headerbar-вузлом
+ *  зберігають свої заголовки після всіх інших правил.
+ * ========================================================================= */
+dialog headerbar label.title,
+dialog headerbar .title,
+window dialog headerbar label.title,
+window dialog headerbar .title {
+  opacity: 1;
+  font-size: inherit;
+  min-width: 0;
+  min-height: 0;
 }

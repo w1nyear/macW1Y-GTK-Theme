@@ -8,8 +8,22 @@ headerbar .titlebutton {
   padding: 1px;
 }
 
-headerbar box.horizontal.left {
+headerbar box.horizontal.left,
+headerbar > box.left {
+  padding-left: 0px;
+}
+
+window headerbar,
+window headerbar.titlebar,
+window headerbar.default-decoration,
+headerbar.default-decoration,
+headerbar {
   padding-left: 8px;
+}
+
+headerbar button.titlebutton.close,
+headerbar button.titlebutton:first-child {
+  margin-left: 0px;
 }
 
 /* Geary fixes*/
@@ -38,10 +52,7 @@ button.image-button:hover,
 button.thin-button:hover,
 box.horizontal.linked.raised > button:hover {
   background-color: alpha(currentColor, 0.15);
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
-  border-bottom-left-radius: 6px;
-  border-bottom-right-radius: 6px;
+  border-radius: 9999px;
 }
 button.image-button:active,
 button.thin-button:active,
@@ -78,84 +89,8 @@ popover.menu modelbutton:hover,
 .context-menu > .menu-item:hover,
 menuitem:hover,
 .menuitem:hover {
-  background-color: @theme_selected_bg_color;
-  color: @theme_selected_fg_color;
-  border-radius: 9999px;
-}
-
-/* ============================================================
-   Completely remove overscroll glow (overshoot) and fake gradients
-   across all GTK3 applications
-   ============================================================ */
-overshoot,
-overshoot.top,
-overshoot.bottom,
-overshoot.left,
-overshoot.right,
-scrolledwindow overshoot,
-scrolledwindow overshoot.top,
-scrolledwindow overshoot.bottom,
-scrolledwindow overshoot.left,
-scrolledwindow overshoot.right,
-scrolledwindow > overshoot,
-scrolledwindow > overshoot.top,
-scrolledwindow > overshoot.bottom,
-scrolledwindow > overshoot.left,
-scrolledwindow > overshoot.right {
-  background: none;
-  background-image: none;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-undershoot.left,
-undershoot.right,
-scrolledwindow undershoot.left,
-scrolledwindow undershoot.right,
-scrolledwindow > undershoot.left,
-scrolledwindow > undershoot.right {
-  background: none;
-  background-image: none;
-  border: none;
-  box-shadow: none;
-}
-
-undershoot.top,
-scrolledwindow undershoot.top,
-scrolledwindow > undershoot.top {
-  min-height: 28px;
-  background: linear-gradient(to bottom,
-    @theme_bg_color 0%,
-    alpha(@theme_bg_color, 0.85) 30%,
-    alpha(@theme_bg_color, 0.4) 65%,
-    transparent 100%);
-  border: none;
-  box-shadow: none;
-}
-
-undershoot.bottom,
-scrolledwindow undershoot.bottom,
-scrolledwindow > undershoot.bottom {
-  min-height: 28px;
-  background: linear-gradient(to top,
-    @theme_bg_color 0%,
-    alpha(@theme_bg_color, 0.85) 30%,
-    alpha(@theme_bg_color, 0.4) 65%,
-    transparent 100%);
-  border: none;
-  box-shadow: none;
-}
-
-.sidebar-pane undershoot,
-.sidebar-pane undershoot.top,
-.sidebar-pane undershoot.bottom,
-.sidebar-pane scrolledwindow undershoot,
-placessidebar undershoot {
-  background: none !important;
-  background-image: none !important;
-  border: none !important;
+  background-color: @accent_bg_color;
+  color: #ffffff !important;
+  border-radius: 6px !important;
   box-shadow: none !important;
-  min-height: 0px !important;
 }
-

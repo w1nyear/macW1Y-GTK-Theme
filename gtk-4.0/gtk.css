@@ -11911,16 +11911,24 @@ window.mac-settings-window #add_enterprise_user_button_row:active {
   border-radius: 14px;
 }
 
-window.mac-settings-window list.boxed-list row button:not(.accent-button),
-window.mac-settings-window adwactionrow button:not(.accent-button) {
-  border-radius: 6px;
+window.mac-settings-window list.boxed-list row button.text-button:not(.accent-button),
+window.mac-settings-window adwactionrow button.text-button:not(.accent-button) {
+  border-radius: 8px;
 }
 
-window.mac-settings-window list.boxed-list row button:not(.accent-button):hover,
-window.mac-settings-window adwactionrow button:not(.accent-button):hover,
-window.mac-settings-window list.boxed-list row button:not(.accent-button):active,
-window.mac-settings-window adwactionrow button:not(.accent-button):active {
-  border-radius: 6px;
+window.mac-settings-window list.boxed-list row button:not(.text-button):not(.accent-button),
+window.mac-settings-window adwactionrow button:not(.text-button):not(.accent-button),
+window.mac-settings-window list.boxed-list row button.image-button,
+window.mac-settings-window adwactionrow button.image-button,
+window.mac-settings-window list.boxed-list row button.circular,
+window.mac-settings-window adwactionrow button.circular,
+window.mac-settings-window list.boxed-list row box.suffixes button:not(.text-button),
+window.mac-settings-window adwactionrow box.suffixes button:not(.text-button) {
+  border-radius: 9999px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0px;
+  margin: 10px 3px;
 }
 
 button.mac-action-accent-btn:active,
@@ -11930,6 +11938,8 @@ window.mac-settings-window button.suggested-action.circular:active {
   color: #ffffff;
   border-radius: 9999px;
 }
+
+
 
 
 

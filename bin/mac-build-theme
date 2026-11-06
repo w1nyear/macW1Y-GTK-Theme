@@ -183,36 +183,119 @@ toolbarview > .top-bar.raised {{
  * ========================================================================= */
 navigation-split-view .sidebar-pane headerbar windowtitle,
 navigation-split-view .sidebar-pane headerbar label.title,
+navigation-split-view .sidebar-pane headerbar .title,
 navigation-split-view headerbar.mac-sidebar-header windowtitle,
 navigation-split-view headerbar.mac-sidebar-header label.title,
+navigation-split-view headerbar.mac-sidebar-header .title,
 navigation-split-view > headerbar:first-child windowtitle,
 navigation-split-view > headerbar:first-child label.title,
+navigation-split-view > headerbar:first-child .title,
+navigation-split-view > box:first-child > headerbar windowtitle,
+navigation-split-view > box:first-child > headerbar label.title,
+navigation-split-view > box:first-child > headerbar .title,
 overlay-split-view .sidebar-pane headerbar windowtitle,
 overlay-split-view .sidebar-pane headerbar label.title,
+overlay-split-view .sidebar-pane headerbar .title,
 overlay-split-view headerbar.mac-sidebar-header windowtitle,
 overlay-split-view headerbar.mac-sidebar-header label.title,
+overlay-split-view headerbar.mac-sidebar-header .title,
 overlay-split-view > headerbar:first-child windowtitle,
 overlay-split-view > headerbar:first-child label.title,
+overlay-split-view > headerbar:first-child .title,
+overlay-split-view > box:first-child > headerbar windowtitle,
+overlay-split-view > box:first-child > headerbar label.title,
+overlay-split-view > box:first-child > headerbar .title,
 .sidebar-pane headerbar windowtitle,
 .sidebar-pane headerbar label.title,
+.sidebar-pane headerbar .title,
 .sidebar headerbar windowtitle,
 .sidebar headerbar label.title,
+.sidebar headerbar .title,
 .navigation-sidebar headerbar windowtitle,
 .navigation-sidebar headerbar label.title,
+.navigation-sidebar headerbar .title,
 paned.horizontal > headerbar:first-child windowtitle,
 paned.horizontal > headerbar:first-child label.title,
+paned.horizontal > headerbar:first-child .title,
 paned.horizontal > box > headerbar:first-child windowtitle,
 paned.horizontal > box > headerbar:first-child label.title,
+paned.horizontal > box > headerbar:first-child .title,
+paned.horizontal > box:first-child > headerbar windowtitle,
+paned.horizontal > box:first-child > headerbar label.title,
+paned.horizontal > box:first-child > headerbar .title,
 leaflet > headerbar:first-child windowtitle,
 leaflet > headerbar:first-child label.title,
+leaflet > headerbar:first-child .title,
+leaflet > box > headerbar:first-child windowtitle,
+leaflet > box > headerbar:first-child label.title,
+leaflet > box > headerbar:first-child .title,
+leaflet > box:first-child > headerbar windowtitle,
+leaflet > box:first-child > headerbar label.title,
+leaflet > box:first-child > headerbar .title,
+leaflet.unfolded > headerbar:first-child windowtitle,
+leaflet.unfolded > headerbar:first-child label.title,
+leaflet.unfolded > headerbar:first-child .title,
+leaflet.unfolded > box:first-child > headerbar windowtitle,
+leaflet.unfolded > box:first-child > headerbar label.title,
+leaflet.unfolded > box:first-child > headerbar .title,
+.unfolded > headerbar:first-child windowtitle,
+.unfolded > headerbar:first-child label.title,
+.unfolded > headerbar:first-child .title,
+.unfolded > box:first-child > headerbar windowtitle,
+.unfolded > box:first-child > headerbar label.title,
+.unfolded > box:first-child > headerbar .title,
 flap > headerbar:first-child windowtitle,
-flap > headerbar:first-child label.title {{
+flap > headerbar:first-child label.title,
+flap > headerbar:first-child .title,
+flap > box:first-child > headerbar windowtitle,
+flap > box:first-child > headerbar label.title,
+flap > box:first-child > headerbar .title,
+#disks-side-headerbar .title,
+#disks-side-headerbar label.title,
+#disks-side-headerbar windowtitle {{
   opacity: 0;
   min-width: 0;
   min-height: 0;
   font-size: 0px;
   margin: 0;
   padding: 0;
+}}
+
+/* =========================================================================
+ * 1.1.1 TRULY GLOBAL: default window titles hidden in EVERY GTK4/Libadwaita app
+ *   (Adw.HeaderBar default title label, Gtk.HeaderBar title, AdwWindowTitle).
+ *   System dialogs restore their own headers in section 1.1.2 / 99.
+ * ========================================================================= */
+headerbar label.title,
+headerbar .title,
+headerbar windowtitle {{
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+  font-size: 0px;
+  margin: 0;
+  padding: 0;
+}}
+
+/* 1.1.2 Restore titles inside system dialogs (Open/Save/Print, Gtk.Dialog,
+ *   Adw.Dialog, file chooser and other dialog windows). */
+dialog headerbar windowtitle,
+dialog headerbar label.title,
+dialog headerbar .title,
+window dialog headerbar windowtitle,
+window dialog headerbar label.title,
+window dialog headerbar .title,
+window.dialog headerbar windowtitle,
+window.dialog headerbar label.title,
+window.dialog headerbar .title,
+filechooser headerbar windowtitle,
+filechooser headerbar label.title,
+filechooser headerbar .title,
+window.filechooser headerbar windowtitle,
+window.filechooser headerbar label.title,
+window.filechooser headerbar .title {{
+  opacity: 1;
+  font-size: inherit;
 }}
 
 /* =========================================================================
@@ -893,6 +976,8 @@ actionbar button:not(.text-button),
 actionbar button.image-button,
 .inline-toolbar button:not(.text-button),
 .inline-toolbar button.image-button,
+splitbutton.image-button > button,
+menubutton.image-button > button,
 button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton),
 button.circular {{
   min-width: 28px;
@@ -919,6 +1004,8 @@ actionbar button:not(.text-button):hover,
 actionbar button.image-button:hover,
 .inline-toolbar button:not(.text-button):hover,
 .inline-toolbar button.image-button:hover,
+splitbutton.image-button > button:hover,
+menubutton.image-button > button:hover,
 button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 button.circular:hover {{
   background-color: rgba(255, 255, 255, 0.16);
@@ -940,6 +1027,8 @@ actionbar button:not(.text-button):active,
 actionbar button.image-button:active,
 .inline-toolbar button:not(.text-button):active,
 .inline-toolbar button.image-button:active,
+splitbutton.image-button > button:active,
+menubutton.image-button > button:active,
 button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 button.circular:active {{
   background-color: rgba(255, 255, 255, 0.24);
@@ -2153,6 +2242,32 @@ columnview ~ undershoot {{
   min-height: 0px;
   min-width: 0px;
 }}
+
+/* =========================================================================
+ * 99. FINAL REASSERTIONS (GTK4) — системні діалоги завжди показують
+ *  власні заголовки, попри глобальне приховування назв основних вікон.
+ *  Стоїть в кінці файлу, щоб перемогти будь-які раніше додані правила.
+ * ========================================================================= */
+dialog headerbar windowtitle,
+dialog headerbar label.title,
+dialog headerbar .title,
+window dialog headerbar windowtitle,
+window dialog headerbar label.title,
+window dialog headerbar .title,
+window.dialog headerbar windowtitle,
+window.dialog headerbar label.title,
+window.dialog headerbar .title,
+filechooser headerbar windowtitle,
+filechooser headerbar label.title,
+filechooser headerbar .title,
+window.filechooser headerbar windowtitle,
+window.filechooser headerbar label.title,
+window.filechooser headerbar .title {{
+  opacity: 1;
+  font-size: inherit;
+  min-width: 0;
+  min-height: 0;
+}}
 """
     return css
 
@@ -2334,18 +2449,84 @@ button.circular {{
 /* GTK3 Sidebar headerbar: clean window controls, no redundant app title */
 paned.horizontal > headerbar:first-child .title,
 paned.horizontal > headerbar:first-child label.title,
+paned.horizontal > headerbar:first-child windowtitle,
 paned.horizontal > box > headerbar:first-child .title,
 paned.horizontal > box > headerbar:first-child label.title,
+paned.horizontal > box > headerbar:first-child windowtitle,
+paned.horizontal > box:first-child > headerbar .title,
+paned.horizontal > box:first-child > headerbar label.title,
+paned.horizontal > box:first-child > headerbar windowtitle,
 .sidebar headerbar .title,
 .sidebar headerbar label.title,
+.sidebar headerbar windowtitle,
 .navigation-sidebar headerbar .title,
-.navigation-sidebar headerbar label.title {{
+.navigation-sidebar headerbar label.title,
+.navigation-sidebar headerbar windowtitle,
+leaflet > headerbar:first-child .title,
+leaflet > headerbar:first-child label.title,
+leaflet > headerbar:first-child windowtitle,
+leaflet > box > headerbar:first-child .title,
+leaflet > box > headerbar:first-child label.title,
+leaflet > box > headerbar:first-child windowtitle,
+leaflet > box:first-child > headerbar .title,
+leaflet > box:first-child > headerbar label.title,
+leaflet > box:first-child > headerbar windowtitle,
+leaflet.unfolded > headerbar:first-child .title,
+leaflet.unfolded > headerbar:first-child label.title,
+leaflet.unfolded > headerbar:first-child windowtitle,
+leaflet.unfolded > box:first-child > headerbar .title,
+leaflet.unfolded > box:first-child > headerbar label.title,
+leaflet.unfolded > box:first-child > headerbar windowtitle,
+.unfolded > headerbar:first-child .title,
+.unfolded > headerbar:first-child label.title,
+.unfolded > headerbar:first-child windowtitle,
+.unfolded > box:first-child > headerbar .title,
+.unfolded > box:first-child > headerbar label.title,
+.unfolded > box:first-child > headerbar windowtitle,
+flap > headerbar:first-child .title,
+flap > headerbar:first-child label.title,
+flap > headerbar:first-child windowtitle,
+flap > box:first-child > headerbar .title,
+flap > box:first-child > headerbar label.title,
+flap > box:first-child > headerbar windowtitle,
+headerbar.titlebar.tweak-titlebar-left .title,
+headerbar.titlebar.tweak-titlebar-left label.title,
+headerbar.titlebar.tweak-titlebar-left windowtitle,
+#disks-side-headerbar .title,
+#disks-side-headerbar label.title,
+#disks-side-headerbar windowtitle,
+#disks-side-headerbar box > label.title,
+#disks-side-headerbar label {{
   opacity: 0;
   min-width: 0;
   min-height: 0;
   font-size: 0px;
   margin: 0;
   padding: 0;
+}}
+
+/* =========================================================================
+ * 1.1.1 TRULY GLOBAL (GTK3): default window titles hidden in EVERY GTK3 app
+ *   headerbar (main & split). Dialogs render titles in plain box.titlebar,
+ *   which is NOT a headerbar node, so their titles stay intact.
+ * ========================================================================= */
+headerbar label.title,
+headerbar .title {{
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+  font-size: 0px;
+  margin: 0;
+  padding: 0;
+}}
+
+/* 1.1.2 (GTK3) restore inside dialogs that expose a real headerbar node */
+dialog headerbar label.title,
+dialog headerbar .title,
+window dialog headerbar label.title,
+window dialog headerbar .title {{
+  opacity: 1;
+  font-size: inherit;
 }}
 
 headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):hover,
@@ -2577,6 +2758,20 @@ scrolledwindow > undershoot.bottom {{
   background-image: none;
   border: none;
   box-shadow: none;
+}}
+
+/* =========================================================================
+ * 99. FINAL REASSERTIONS (GTK3) — діалоги з реальним headerbar-вузлом
+ *  зберігають свої заголовки після всіх інших правил.
+ * ========================================================================= */
+dialog headerbar label.title,
+dialog headerbar .title,
+window dialog headerbar label.title,
+window dialog headerbar .title {{
+  opacity: 1;
+  font-size: inherit;
+  min-width: 0;
+  min-height: 0;
 }}
 """
     return css

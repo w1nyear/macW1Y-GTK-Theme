@@ -17639,3 +17639,50 @@ Task 641: Глобальне виправлення круглих кнопок 
      * Заголовки у бічній панелі поруч зі світлофором відсутні.
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS (5/5 перевірок пройдено без зауважень).
+
+
+================================================================================
+Task 642: Справжньо глобальне приховування назв вікон біля кнопок-світлофора та гарантоване коло 1:1 для всіх icon-buttons (GTK4 + GTK3)
+================================================================================
+1. Вихідна проблема:
+   - Task 641 приховував назву програми лише у передбачених структурних селекторах (navigation-split-view / overlay-split-view / .sidebar-pane / paned / leaflet / flap). Дефолтні заголовки в одноколових GTK4- вікон (Adw.HeaderBar default title = headerbar > windowhandle > box > widget > label.title) та Gtk.HeaderBar (label.title) НЕ інвалідувалися, тож назви все ще виднілися біля кнопок-світлофор.
+   - AdwSplitButton (іконна кнопка з роздільником і меню) не мав класу .image-button на внутрішній кнопці ⇒ не ставав колом 1:1 у глобальному правилі.
+   - GTK3 додатки (наприклад GNOME Tweaks) показували назву вікон у головному headerbar.
+
+2. Діагностика (жіва інтроспекція GTK 4.19 / Adw 1.8 через python3 gi):
+   - GTK4 Adw.HeaderBar: дефолтний title = (headerbar) > (windowhandle) > (box) > (widget) > (label.title).
+   - Gtk.HeaderBar: аналогічно label з класом .title (вузол windowtitle відсутній).
+   - Явний AdwWindowTitle: вузол windowtitle з label.title/label.subtitle.
+   -Системні діалоги: Gtk.MessageDialog (класи window.cs.dialog.message; заголовок у звичайній box.titlebar — НЕ headerbar ⇒ не торкається приховування); Gtk.FileChooserDialog (window.cs.dialog.filechooser з РЕАЛЬНИМ headerbar.node!), Adw.AlertDialog (вузол dialog, заголовки .title-2/.title-4 поза headerbar), Adw.MessageDialog (window.cs.messagedialog, titlebar box без label.title).
+   - Adw.SplitButton: вузол splitbutton отримує клас .image-button (іконна) або .text-button (текстова); внутрішня кнопка без класів ⇒ це дозволяє прицільно коло-розкривати іконну варіант.
+
+3. Реалізовані зміни:
+   - У bin/mac-build-theme (генератор SSOT-компонентів GTK4/GTK3):
+     * Нова секція 1.1.1 TRULY GLOBAL (GTK4): селектори
+       'headerbar label.title, headerbar .title, headerbar windowtitle' — opacity: 0; min-width/min-height: 0; font-size: 0px; margin/padding: 0.
+       Дія: назви системних вікон приховуються у КОЖНОМУ GTK4/Libadwaita застосунку, незалежно від контейнера.
+     * Нова секція 1.1.2: відновлення заголовків із системних діалогів
+       (dialog, window dialog, window.dialog, filechooser, window.filechooser × windowtitle/label.title/.title): opacity: 1; font-size: inherit.
+     * In секції 6 (кнопки) у базовий список круглих правил додано: 'splitbutton.image-button > button, menubutton.image-button > button' (та у варіантах hover/active) — гарантована ідеальна коло 1:1 з border-radius 9999px, padding 0.
+     * Нова секція 99 FINAL REASSERTIONS (GTK4) у самому кінці файлу: повторне відновлення заголовків у system-діалогах як гарантія порядку каскаду.
+     * Аналогічно GTK3: секція 1.1.1 TRULY GLOBAL — 'headerbar label.title, headerbar .title' приховання у ВсЯКОМУ GTK3 headerbar (в GTK3 message-діалоги рендерять назву в box.titlebar — поза headerbar, тому їх назви збережено); секція 1.1.2 для 'dialog headerbar' можливих випадків; Cекція 99 FINAL у кінці GTK3 компонентів.
+     * Сгенеровано та синхронізовано: gtk-4.0/, gtk-3.0/ (репо), config/gtk-4.0/ config/gtk-3.0/, ~/.config/gtk-4.0/ ~/.config/gtk-3.0/ (user-level GTK4/GTK3 consumer), ~/.themes/macW1Y-* (4 теми), /usr/share/themes/macW1Y-Dark.
+     * Оновлено бінарник /usr/local/bin/mac-build-theme.
+   - У control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c (синтетичні копії, синхронізовані cp):
+     * Область window.mac-settings-window: приховання 'headerbar windowtitle / headerbar label.title' на рівні библиотеки CSS-injection (він вставляє CSS з приоритетом APPLICATION+200, який перебиває у User slot).
+     * Відновлення заголовків у діалогах вікна Settings: 'window.mac-settings-window dialog headerbar windowtitle/label.title'.
+     * Круглі split-кнопки: 'window.mac-settings-window splitbutton.image-button > button' (base, :hover, :active) з border-radius 9999px, 28×28, padding 0.
+   - Компіляція: gcc -shared -fPIC -O2 -I/usr/include/libadwaita-1 -I/usr/include/gtk-4.0 -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/glycin-2 -I/usr/include/cairo -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/pixman-1 -I/usr/include/graphene-1.0 -I/usr/lib/x86_64-linux-gnu/graphene-1.0/include -mfpmath=sse -msse -msse2 -I/usr/include/fribidi -I/usr/include/appstream -I/usr/include/json-glib-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/sysprof-6 -pthread — libmac_settings.so оновлено та синхронізовано на всі ціль=output без пропуску: control-center/, gnome-control-center-overlay/, lib/, ~/.local/lib/, /usr/local/lib/, /usr/lib/x86_64-linux-gnu/, /usr/share/mactheme/gnome-control-center-overlay/.
+
+4. Верифікація та контроль якості:
+   - Знято живі контрольні знімки через EvalHelper + Shell.Screenshot (1920×1080):
+     * /tmp/opencode/desktop_now.png — вихідний стан (Text Editor + Adw AlertDialog зберігання).
+     * /tmp/opencode/check1_nautilus_calc.png — Nautilus та калькулятор ПЕРЕЗАПУЩЕННІ: заголовки у headerbar відсутні, кнопки-світлофор зліва круглі, 'Базовий' пілка + кругла меню-кнопка — чисто.
+     * /tmp/opencode/check2_gtk3_zenity.png — GNOME Tweaks (GTK3): назва в headerbar приховано, payload; zenity GTK info-діалог зберігає власний текстовий заголовок у тілі.
+     * /tmp/opencode/check3_settings.png — GNOME Settings після компіляції і перезапуску: назву 'Параметри системи' у headerbar приховано; бічна панель без глазур, панельна назва 'Система' за для навігації лишається як внутрішній шлях.
+   - У згенерованих файлах перевірено наявність маркерів секцій:
+     * ~/.config/gtk-4.0/macw1y-components.css: рядки 156 (1.1.1 TRULY GLOBAL) і 2138 (99. FINAL REASSERTIONS).
+     * ~/.config/gtk-3.0/macw1y-components.css: рядок 210 (1.1.1 TRULY GLOBAL GTK3).
+     * strings /usr/local/lib/libmac_settings.so | grep splitbutton.image-button → присутності підтверджено.
+
+5. Статус: Завершено (глобально, GTK4 + GTK3, повбезічно у всіх діалогах).
