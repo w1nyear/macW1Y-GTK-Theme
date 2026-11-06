@@ -43,6 +43,14 @@ macW1Y/
 ├── cpu-power-manager.service     # Systemd service for CPU power manager
 ├── apply_plymouth.sh             # Script to install and apply Plymouth boot theme
 ├── toggle-launchpad.sh           # Script to trigger Launchpad / Application Grid
+├── AI_INSTRUCTIONS.md            # AI agent deployment instructions
+├── gnome-control-center-overlay/ # macOS styling injections for GNOME Control Center
+├── gnome-shell-overlay/         # GNOME Shell custom overlay module
+├── extension-manager/           # Custom GNOME extension manager helper library
+├── services/                    # Systemd user service overrides
+├── dracut.conf.d/               # Dracut kernel module configuration
+├── etc/                         # System configuration overlays
+├── zramswap                     # zram swap helper script
 ├── macW1Y-Dark/                  # Dark theme suite for GTK3, GTK4, and GNOME Shell
 ├── macW1Y-Dark-solid/            # Opaque variant of the dark theme
 ├── macW1Y-Light/                 # Light theme suite for GTK3, GTK4, and GNOME Shell
@@ -74,7 +82,6 @@ macW1Y/
 ├── config/                       # Application configurations, GTK settings, and locks
 ├── gtk-3.0/                      # User-specific GTK3 styling
 ├── gtk-4.0/                      # User-specific GTK4 styling
-├── themes/                       # Additional theme variations and accents
 ├── sounds/                       # Authentic macOS system audio and alerts
 ├── touchpad/                     # Hardware uinput multitouch gesture daemon
 ├── wack-system/                  # Lockscreen clock, widgets, and animation system
@@ -157,6 +164,16 @@ macW1Y includes a custom, low-latency touchpad daemon (`mac-touchpad-daemon`) ru
 - **4-Finger Single Tap:** Instantly toggle Mission Control overview.
 - **4-Finger Double Tap:** Open Launchpad / Application Grid.
 - **4-Finger Horizontal Swipe:** Fluidly switch between virtual workspaces.
+
+---
+
+## Integrated Projects
+
+This project integrates **Widgets** by [r3nhick](https://github.com/r3nhick/desktop-widgets).
+
+[[Widgets by r3nhick]](https://github.com/r3nhick/desktop-widgets)
+
+The integrated Widgets extension is distributed under the **GNU General Public License v3.0** (see the extension's [LICENSE](extensions/desktop-widgets@r3nhick/LICENSE) for details). Permission for use within macW1Y was obtained from the developers; all copyrights are reserved.
 
 ---
 

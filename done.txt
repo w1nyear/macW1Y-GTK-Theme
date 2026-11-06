@@ -17836,3 +17836,25 @@ Task 646: Екранне меню зміни мови (OSD switcher) — збі�
    - Конфігурація extensions.lock.json оновлена (sha256 / dir_hash для blur-my-shell@aunetx).
 
 6. Статус: Завершено.
+
+================================================================================
+Task 647: Оновлення README.md — структура файлів та інформація про Widgets
+================================================================================
+1. Вимога користувача:
+   - Після редагування README.md (видалення непотрібного тексту та додавання ліцензійної
+     інформації про використання Widgets) оновити іншу застарілу інформацію в файлі,
+     зокрема структуру файлів та інші дані.
+
+2. Виконані зміни — file:///home/vitaliy/macW1Y/README.md:
+   - Оновлено блок Project Structure:
+     * Видалено запис про відсутню директорію `themes/` (Additional theme variations and accents).
+     * Додано поточні top-level записи: AI_INSTRUCTIONS.md, gnome-control-center-overlay/,
+       gnome-shell-overlay/, extension-manager/, services/, dracut.conf.d/, etc/, zramswap.
+   - Оновлено розділ Integrated Projects:
+     * Додано посилання на LICENSE віджетів Widgets (GNU General Public License v3.0)
+       через file:///home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/LICENSE.
+
+3. Синхронізація та верифікація:
+   - git diff перевірено: зміни README.md збережені в рабочій копії репозиторію macW1Y.
+
+4. Статус: Завершено.
