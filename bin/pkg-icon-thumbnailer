@@ -1,0 +1,889 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# pkg-icon-thumbnailer — GNOME Files (Nautilus) thumbnailer для macW1Y.
+# Замінює generic-іконки дистрибутивних/Portable-пакетів на іконку програми всередині:
+#   AppImage (squashfs-offset-скан, без потреби exec-біта), .deb (dpkg-deb),
+#   .snap (squashfs), .exe/.dll (wrestool+icotool), .ipa/.apk (zipfile+plistlib),
+#   .tar.gz/.tar.xz/.tar.zst/.tgz/.tar.bz2/... (tar --wildcards), .rpm (rpm2cpio||7z).
+# Fallback: fuzzy-match імені файлу до встановлених desktop-записів (/usr/share/applications).
+# Використання: pkg-icon-thumbnailer -s SIZE -i INPUT -o OUTPUT.png
+# Код написано для macW1Y Transformation Pack (ліцензія проекту).
+
+import argparse
+import configparser
+import difflib
+import fnmatch
+import glob
+import io
+import os
+import re
+import shutil
+import struct
+import subprocess
+import sys
+import tarfile
+import zipfile
+
+CHUNK = 4 * 255  # не критично; реально 2MiB нижче
+SQ_MAGIC = b"hsqs"  # squashfs little-endian superblock magic
+
+
+def log(msg):
+    try:
+        sys.stderr.write("[pkg-icon-thumbs] %s\n" % msg)
+    except Exception:
+        pass
+
+
+# --------------------------------------------------------------------------
+# Rendering helpers (GdkPixbuf первинно; PIL як fallback)
+# --------------------------------------------------------------------------
+def _pixbuf_new_from_stream_at_scale(stream, w, h):
+    import gi
+
+    gi.require_version("GdkPixbuf", "2.0")
+    from gi.repository import GdkPixbuf  # noqa: доступно в сендбоксі (/usr)
+
+    return GdkPixbuf.Pixbuf.new_from_stream_at_scale(stream, w, h, True)
+
+
+def render_to_png_bytes(data, max_side):
+    """Рендерить байти зображення у PNG. Результат повертає bytes або None."""
+    out_bytes = None
+    # 1) GdkPixbuf (png/jpg/gif/bmp/ico/svg через librsvg)
+    try:
+        import gi
+
+        gi.require_version("GdkPixbuf", "2.0")
+        from gi.repository import Gio, GdkPixbuf  # NOQA
+
+        st = Gio.MemoryInputStream.new_from_data(data)
+        pb = GdkPixbuf.Pixbuf.new_from_stream_at_scale(st, max_side, max_side, True)
+        if pb is not None:
+            ok, buf = pb.save_to_bufferv("png", [], [])
+            out_bytes = bytes(buf) if ok else None
+    except Exception as e:  # NOQA
+        log("pixbuf render err: %s" % e)
+        out_bytes = None
+    # 2) PIL fallback (png/jpg/gif/bmp/ico)
+    if not out_bytes:
+        try:
+            from PIL import Image
+
+            img = Image.open(io.BytesIO(data))
+            img = img.convert("RGBA")
+            img.thumbnail((max(max_side, 1), max(max_side, 1)))
+            b = io.BytesIO()
+            img.save(b, "PNG")
+            out_bytes = b.getvalue()
+        except Exception as e:  # NOQA
+            log("PIL render err: %s" % e)
+    return out_bytes
+
+
+def render_to_png_file(path, out, max_side):
+    """Рендерить файл із диска → PNG у out. Повертає True/False."""
+    ok = False
+    try:
+        import gi
+
+        gi.require_version("GdkPixbuf", "2.0")
+        from gi.repository import Gio, GdkPixbuf
+
+        fl = Gio.File.new_for_path(path)
+        st = fl.read()
+        pb = GdkPixbuf.Pixbuf.new_from_stream_at_scale(st, max_side, max_side, True)
+        if pb is not None:
+            pb.savev(out, "png", [], [])
+            ok = True
+    except Exception as e:  # NOQA
+        log("pixbuf file render err: %s" % e)
+    if not ok:
+        try:
+            from PIL import Image
+
+            img = Image.open(path)
+            img = img.convert("RGBA")
+            img.thumbnail((max(max_side, 1), max(max_side, 1)))
+            img.save(out, "PNG")
+            ok = True
+        except Exception as e:  # NOQA
+            log("PIL file render err: %s" % e)
+    return ok
+
+
+IMG_EXT = (".png", ".svg", ".svgz", ".xpm", ".ico", ".jpg", ".jpeg", ".gif", ".bmp")
+
+
+def is_image(path):
+    low = path.lower()
+    return low.endswith(IMG_EXT)
+
+
+def pick_best_image(paths):
+    """Вибирає найкраще зображення: спершу png найбільшого розміру, тоді svg."""
+    pngs = [p for p in paths if p.lower().endswith(".png")]
+    svgs = [p for p in paths if p.lower().endswith((".svg", ".svgz"))]
+    if pngs:
+        return max(pngs, key=lambda p: (os.path.getsize(p) or 0))
+    if svgs:
+        return max(svgs, key=lambda p: (os.path.getsize(p) or 0))
+    others = [p for p in paths if is_image(p)]
+    if others:
+        return max(others, key=lambda p: (os.path.getsize(p) or 0))
+    return None
+
+
+def find_icon_in_tree(root, wanted_names):
+    """Шукає іконку в дерево root: 1) точна назва; 2) найбільший png; 3) svg."""
+    wanted = [w for w in (wanted_names or []) if isinstance(w, str) and w]
+    pool = []
+    for dirpath, _dirs, files in os.walk(root):
+        for f in files:
+            if is_image(f):
+                pool.append(os.path.join(dirpath, f))
+    if not pool:
+        return None
+    exact = []
+    for w in wanted:
+        bare = os.path.splitext(os.path.basename(w))[0]
+        for p in pool:
+            base = os.path.splitext(os.path.basename(p))[0]
+            if base == bare or base == os.path.basename(w):
+                exact.append(p)
+    if exact:
+        return pick_best_image(exact)
+    return pick_best_image(pool)
+
+
+def parse_desktop_icon_names(desktop_paths):
+    """Парсить name= з Icon= усіх знайдених .desktop файлів."""
+    names = []
+    for dp in desktop_paths:
+        try:
+            cp = configparser.RawConfigParser()
+            cp.optionxform = str
+            cp.read(dp, encoding="utf-8", errors="ignore")
+            if cp.has_section("Desktop Entry"):
+                ic = cp.get("Desktop Entry", "Icon", fallback=None)
+                if ic and not ic.startswith("/"):
+                    names.append(ic)
+        except Exception:
+            continue
+    return names
+
+
+def collect_files_by_patterns(tree_root, patterns):
+    out = []
+    for pat in patterns:
+        out.extend(glob.glob(os.path.join(tree_root, "**", pat), recursive=True))
+        out.extend(glob.glob(os.path.join(tree_root, pat), recursive=False))
+    uniq = [p for p in dict.fromkeys(out) if os.path.isfile(p)]
+    return uniq
+
+
+# --------------------------------------------------------------------------
+# Fallback: fuzzy match до встановлених програм (system agnostic paths only)
+# --------------------------------------------------------------------------
+def tokens_of(basename):
+    s = re.sub(r"\.(appimage|appimg|deb|snap|exe|dll|ipa|apk|rpm)$", "", basename.lower())
+    s = re.sub(r"(\.tar)?\.(gz|xz|bz2|zst|lz4|lz|tgz|tbz2|txz|tar)$", "", s)
+    s = re.sub(r"[_\-\[\]()]+", " ", s)
+    s = re.sub(r"\b(v?\d+(\.\d+)+)\b", " ", s)  # версії
+    s = re.sub(r"\b(64|32|x64|x86|i386|amd64|tar|linux)\b", " ", s)
+    return [t for t in s.split() if t and len(t) > 1]
+
+
+def fuzzy_installed_icon_file(basename):
+    try:
+        toks = tokens_of(basename)
+        if not toks:
+            return None
+        cand = " ".join(toks)
+        import csv  # NOQA
+
+        best = None
+        best_score = 0.0
+        best_icon = None
+        import glob as _g
+
+        for df in _g.glob("/usr/share/applications/*.desktop"):
+            try:
+                cp = configparser.RawConfigParser()
+                cp.optionxform = str
+                cp.read(df, encoding="utf-8", errors="ignore")
+                if not cp.has_section("Desktop Entry"):
+                    continue
+                entry = dict(cp.items("Desktop Entry"))
+                if entry.get("NoDisplay", "").lower() in ("true", "1"):
+                    continue
+                name = (entry.get("Name") or entry.get("GenericName") or "").lower()
+                exe = (entry.get("Exec") or "").lower()
+                binname = re.sub(r"[ %].*$", "", exe.split("/")[-1]) if exe else ""
+                score = max(
+                    difflib.SequenceMatcher(None, cand, name).ratio(),
+                    difflib.SequenceMatcher(None, cand, binname).ratio() if binname else 0.0,
+                )
+                hit = 0.0
+                for t in toks:
+                    if t and t in name:
+                        hit = max(hit, 0.55)
+                    if binname and t in binname:
+                        hit = max(hit, 0.6)
+                score = max(score, hit)
+                ic = entry.get("Icon")
+                if ic and score > best_score:
+                    best_score = score
+                    best = ic
+                    best_icon = df
+            except Exception:
+                continue
+        if best_score < 0.6 or not best:
+            return None
+        # Ручне розрішення назви іконки через /usr/share/icons + /usr/share/pixmaps
+        if best.startswith("/"):
+            return best if os.path.isfile(best) else None
+        candidates = []
+        for sz in ("256x256", "512x512", "128x128", "scalable", "96x96", "64x64", "48x48", "32x32"):
+            for ext in ("png", "svg", "xpm"):
+                candidates.extend(
+                    glob.glob("/usr/share/icons/*/apps/*%s*/%s/%s.%s" % ("", sz, best, ext))
+                )
+                candidates.extend(glob.glob("/usr/share/icons/*/apps/%s/%s.%s" % (sz, best, ext)))
+        candidates.extend(glob.glob("/usr/share/pixmaps/%s.*" % best))
+        candidates = [c for c in candidates if os.path.isfile(c)]
+        return pick_best_image(candidates)
+    except Exception as e:  # NOQA
+        log("fuzzy err: %s" % e)
+        return None
+
+
+# --------------------------------------------------------------------------
+# Кінцевий рендер: (flle-or-bytes, name) → PNG у out
+# --------------------------------------------------------------------------
+def finish(icon_file, icon_bytes, out, max_side, basename):
+    if icon_bytes:
+        data = render_to_png_bytes(icon_bytes, max_side)
+        if data:
+            with open(out, "wb") as fh:
+                fh.write(data)
+            return 0
+    if icon_file and os.path.isfile(icon_file):
+        if is_image(icon_file) and render_to_png_file(icon_file, out, max_side):
+            return 0
+    # Fallback: угадуємо яку програму встановлено з цим іменем
+    fb = fuzzy_installed_icon_file(basename)
+    if fb and is_image(fb):
+        if render_to_png_file(fb, out, max_side):
+            return 0
+    # Не впоралися — повертаємо 1: GNOME лишить generic-іконку
+    return 1
+
+
+# --------------------------------------------------------------------------
+# Kind detection
+# --------------------------------------------------------------------------
+def detect_kind(path):
+    base = os.path.basename(path).lower()
+    ext = os.path.splitext(base)[1]
+    if base.endswith(".appimage") or base.endswith(".appimg"):
+        return "appimage"
+    if base.endswith(".snap"):
+        return "squash"
+    if base.endswith((".deb", ".dhh", ".udeb")):
+        return "deb"
+    if base.endswith(".rpm"):
+        return "rpm"
+    if base.endswith((".ipa",)):
+        return "ipa"
+    if base.endswith(".apk"):
+        return "apk"
+    if base.endswith((".exe", ".msi", ".scr", ".cpl", ".dll", ".efi")):
+        return "exe"
+    for suf in (".tar.xz", ".tar.gz", ".tar.bz2", ".tar.zst", ".tar.lz4", ".tar.lz", ".tar"):
+        if base.endswith(suf):
+            return "tar"
+    if ext in (".tgz", ".txz", ".tbz2", ".tzst"):
+        return "tar"
+    if ext in (".xz", ".gz", ".bz2", ".zst", ".lz4", ".lz"):
+        # у сендбоксі gnome-desktop тимчасовий файл може мати назву
+        # 'gnome-desktop-file-to-thumbnail.<ext>', але MIME — tar-архів
+        return "tar"
+    return None
+
+
+# --------------------------------------------------------------------------
+# Squashfs (AppImage / snap)
+# --------------------------------------------------------------------------
+def _valid_squashfs_sb(f, offset, file_size):
+    """Перевіряє, чи на offset лежить валідний squashfs superblock (v3/v4)."""
+    try:
+        if offset + 41 > file_size:
+            return False
+        f.seek(offset)
+        sb = f.read(48)
+        if len(sb) < 44 or sb[0:4] != SQ_MAGIC:
+            return False
+        inodes, mkfs, bsize, frags = struct.unpack("<IIII", sb[4:20])
+        comp, blog, flags, ids, major, minor = struct.unpack("<HHHHHH", sb[20:32])
+        (bytes_used,) = struct.unpack("<Q", sb[40:48])
+        if major not in (3, 4):
+            return False
+        if not (1 <= inodes <= 20_000_000):
+            return False
+        # block_size: степінь двійки у розумних межах
+        if bsize < 1024 or bsize > (1 << 30) or (bsize & (bsize - 1)) != 0:
+            if not (major == 4 and bsize == 0):  # v4.1+ допускає композитніAUSE? ні
+                return False
+        if comp > 9:
+            return False
+        if bytes_used < 64 or bytes_used > file_size:
+            return False
+        return True
+    except Exception:
+        return False
+
+
+def find_squashfs_offset(path):
+    """Сканує файл у пошуку першого ВАЛІДНОГО суперблока squashfs.
+    Перше входження магії може бути хибним (байти всередині ELF runtime stub)."""
+    try:
+        size = os.path.getsize(path)
+        step = 2 * 1024 * 1024
+        off = 0
+        with open(path, "rb") as f:
+            found = []
+            prev_tail = b""
+            while off < size:
+                f.seek(off)
+                buf = f.read(step)
+                if not buf:
+                    break
+                hay = prev_tail + buf
+                base = off - len(prev_tail)
+                idx = 0
+                while True:
+                    idx = hay.find(SQ_MAGIC, idx)
+                    if idx == -1:
+                        break
+                    cand = base + idx
+                    if _valid_squashfs_sb(f, cand, size):
+                        return cand
+                    found.append(cand)
+                    idx += 1
+                tail = hay[-3:]
+                off += len(buf)
+                prev_tail = tail
+            if found:
+                log("hsqs candidates but no valid SB: %r" % (found[:5],))
+    except Exception as e:  # NOQA
+        log("sq scan err: %s" % e)
+    return None
+
+
+def _sq_listing_paths(offset, input):
+    """Швидкий листинг squashfs: повертає список відносних шляхів (без 'squashfs-root/')."""
+    try:
+        p = subprocess.run(
+            ["unsquashfs", "-l", "-o", str(offset), input],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=120,
+        )
+        out = []
+        prefix = "squashfs-root/"
+        for line in (p.stdout or b"").decode("utf-8", "ignore").splitlines():
+            s = line.strip()
+            if not s.startswith(prefix):
+                continue
+            rel = s[len(prefix) :]
+            if rel:
+                out.append(rel)
+        return out
+    except Exception as e:  # NOQA
+        log("sq listing err: %s" % e)
+    return []
+
+
+def _sq_extract_exact(offset, input, paths, tmp):
+    """Витягує набір ТОЧНИХ шляхів одним викликом unsquashfs."""
+    if not paths:
+        return False
+    try:
+        r = subprocess.run(
+            ["unsquashfs", "-f", "-n", "-o", str(offset), "-d", tmp, input] + list(paths),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=180,
+        )
+        return r.returncode == 0
+    except Exception as e:  # NOQA
+        log("sq extract err: %s" % e)
+    return False
+
+
+def _size_token(path):
+    """Парсить '512x512'/'scalable'/'128x128' із шляху іконки → ранг (більше = краще)."""
+    m = re.search(r"(\d+)x(\d+)", path)
+    if m:
+        try:
+            return int(m.group(1)) * int(m.group(2))
+        except Exception:
+            return 0
+    low = path.lower()
+    if low.endswith(".svg") or "/scalable/" in low:
+        return 200  # вектор: середній пріоритет (дає чіткість, але рендер складніший)
+    return 0
+
+
+def squashicon(input, out, max_side, basename):
+    offset = find_squashfs_offset(input)
+    if offset is None:
+        log("no valid squashfs superblock")
+        return 1
+    parent = os.path.dirname(os.path.abspath(out))
+    tmp = os.path.join(parent, ".pkg-thumb-%d" % os.getpid())
+    try:
+        os.makedirs(tmp, exist_ok=True)
+        entries = _sq_listing_paths(offset, input)
+        if not entries:
+            log("empty listing, fallback pattern mode")
+            return 1
+        sete = set(entries)
+        # 1) витягуємо desktop-записи (корінь пріоритетний) та .DirIcon
+        desktops = []
+        for e in entries:
+            if e.lower().endswith(".desktop"):
+                desktops.append(e)
+        desktops.sort(key=lambda p: p.count("/"))  # shallow first
+        desktops = desktops[:12]
+        extract = []
+        if ".DirIcon" in sete:
+            extract.append(".DirIcon")
+        for main_desktop in ("*.desktop",):
+            pass
+        extract += desktops
+        _sq_extract_exact(offset, input, extract, tmp)
+        names = parse_desktop_icon_names(
+            [os.path.join(tmp, os.path.basename(d)) for d in desktops
+             if os.path.isfile(os.path.join(tmp, os.path.basename(d)))]
+        )
+        # target симлінка .DirIcon (без потреби парсити -ll)
+        targets = []
+        dicon = os.path.join(tmp, ".DirIcon")
+        if os.path.lexists(dicon):
+            try:
+                tgt = os.readlink(dicon)
+                targets.append(tgt.lstrip("/"))
+            except Exception:
+                pass
+        wanted_stems = set()
+        for n in names + targets:
+            wanted_stems.add(os.path.splitext(os.path.basename(n))[0].lower())
+        # 2) кандидати-іконки зі списку
+        cands = []
+        stem_pngs = []
+        root_pngs = []
+        iconish = []
+        for e in entries:
+            low = e.lower()
+            if not low.endswith((".png", ".svg", ".svgz", ".xpm")):
+                continue
+            stem = os.path.splitext(os.path.basename(e))[0].lower()
+            if stem in wanted_stems:
+                stem_pngs.append(e)
+            elif "/" not in e:
+                root_pngs.append(e)
+            elif "icon" in low or "logo" in low:
+                iconish.append(e)
+        stem_pngs.sort(key=_size_token, reverse=True)
+        root_pngs.sort(key=_size_token, reverse=True)
+        iconish.sort(key=_size_token, reverse=True)
+        cands = stem_pngs + root_pngs + iconish
+        cands = cands[:6]
+        icon_file = None
+        if cands:
+            _sq_extract_exact(offset, input, [c.split("/", 1)[0] != "." and c or c for c in cands], tmp)
+            for c in cands:
+                f = os.path.join(tmp, c)
+                if os.path.isfile(f):
+                    icon_file = f
+                    break
+        if not icon_file:
+            return finish(None, None, out, max_side, basename)
+        return finish(icon_file, None, out, max_side, basename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# --------------------------------------------------------------------------
+# deb
+# --------------------------------------------------------------------------
+def debicon(input, out, max_side, basename):
+    parent = os.path.dirname(os.path.abspath(out))
+    tmp = os.path.join(parent, ".pkg-thumb-%d" % os.getpid())
+    try:
+        os.makedirs(tmp, exist_ok=True)
+        r = subprocess.run(
+            ["dpkg-deb", "-x", input, tmp],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=300,
+        )
+        if r.returncode != 0:
+            return 1
+        desktops = collect_files_by_patterns(tmp, ("*.desktop",))
+        names = parse_desktop_icon_names(desktops)
+        icon_file = find_icon_in_tree(tmp, names)
+        if not icon_file:
+            return 1
+        return finish(icon_file, None, out, max_side, basename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# --------------------------------------------------------------------------
+# tar.*
+# --------------------------------------------------------------------------
+TAR_DIRS = []
+
+
+def taricon(input, out, max_side, basename):
+    parent = os.path.dirname(os.path.abspath(out))
+    tmp = os.path.join(parent, ".pkg-thumb-%d" % os.getpid())
+    try:
+        os.makedirs(tmp, exist_ok=True)
+        mode = None
+        low = input.lower()
+        if low.endswith(".tar.zst") or low.endswith(".tzst") or low.endswith(".zst"):
+            mode = "r:zst"
+        elif low.endswith(".tar.xz") or low.endswith(".txz") or low.endswith(".xz"):
+            mode = "r:xz"
+        elif low.endswith(".tar.gz") or low.endswith(".tgz") or low.endswith(".gz"):
+            mode = "r:gz"
+        elif low.endswith(".tar.bz2") or low.endswith(".tbz2") or low.endswith(".bz2"):
+            mode = "r:bz2"
+        elif low.endswith(".tar.lz4") or low.endswith(".lz4"):
+            mode = "r:lz4"
+        elif low.endswith(".tar.lz") or low.endswith(".lz"):
+            mode = "r:lzma"
+        elif low.endswith(".tar"):
+            mode = "r:"
+        if mode is None:
+            return 1
+        try:
+            tf = tarfile.open(input, mode)
+        except Exception as e:
+            log("tar open err: %s" % e)
+            return 1
+        picked = []
+        extracted = False
+        try:
+            with tf:
+                names = tf.getnames()
+                for n in names:
+                    ln = n.lower()
+                    base = os.path.basename(ln)
+                    if not base:
+                        continue
+                    is_img = base.endswith(IMG_EXT)
+                    is_desktop = base.endswith(".desktop")
+                    iconish = ("icon" in base or "logo" in base)
+                    if (is_desktop or is_img) and (
+                        "share/icons" in ln or "share/pixmaps" in ln or
+                        "share/applications" in ln or ln.count("/") <= 2 or iconish
+                    ):
+                        picked.append(n)
+                    if len(picked) > 300:
+                        break
+                if picked:
+                    pick_set = set(picked)
+                    try:
+                        tf.extractall(
+                            tmp,
+                            members=[mi for mi in tf.getmembers() if mi.name in pick_set],
+                            filter="data",
+                        )
+                    except TypeError:
+                        tf.extractall(
+                            tmp,
+                            members=[mi for mi in tf.getmembers() if mi.name in pick_set],
+                        )
+                    extracted = True
+        except Exception as e:  # NOQA
+            log("tar list/extract err: %s" % e)
+            return 1
+        if not extracted:
+            return finish(None, None, out, max_side, basename)
+        desktops = collect_files_by_patterns(tmp, ("*.desktop",))
+        names = parse_desktop_icon_names(desktops)
+        icon_file = find_icon_in_tree(tmp, names)
+        if not icon_file:
+            return finish(None, None, out, max_side, basename)
+        return finish(icon_file, None, out, max_side, basename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# --------------------------------------------------------------------------
+# ipa / apk (zip)
+# --------------------------------------------------------------------------
+def _emit_zip_png(zf, entry, out, max_side):
+    """Читає png із zip-запису і рендерить у out. Повертає True при успіху."""
+    try:
+        data = zf.read(entry)
+        png = render_to_png_bytes(data, max_side)
+        if png:
+            with open(out, "wb") as fh:
+                fh.write(png)
+            return True
+    except Exception as e:  # NOQA
+        log("zip render err (%s): %s" % (entry, e))
+    return False
+
+
+def ipa_apkicon(input, out, max_side, basename):
+    try:
+        zf = zipfile.ZipFile(input)
+    except Exception as e:
+        log("zip err: %s" % e)
+        return 1
+    names = zf.namelist()
+    lowbase = basename.lower()
+    try:
+        if lowbase.endswith(".ipa"):
+            # Головний plist ЛІШЕ у Payload/<Name>.app/Info.plist (один сегмент)
+            main_pl = None
+            for n in names:
+                if n.startswith("Payload/") and n.endswith(".app/Info.plist"):
+                    seg = n[len("Payload/") :].split("/")[0]
+                    if n == "Payload/" + seg + "/Info.plist":
+                        main_pl = n
+                        break
+            icon_file_names = []
+            display_name = None
+            if main_pl:
+                try:
+                    import plistlib
+
+                    d = plistlib.loads(zf.read(main_pl))
+                    store = lambda key, lst: (
+                        [str(x) for x in (lst or []) if x]
+                    )  # NOQA
+                    prim = (d.get("CFBundleIcons") or {}).get("CFBundlePrimaryIcon") or {}
+                    icon_file_names.extend(store(None, prim.get("CFBundleIconFiles")))
+                    if prim.get("CFBundleIconName"):
+                        icon_file_names.append(str(prim["CFBundleIconName"]))
+                    for k in ("CFBundleIconFile", "CFBundleIconName"):
+                        if d.get(k):
+                            icon_file_names.append(str(d[k]))
+                    display_name = d.get("CFBundleDisplayName") or d.get("CFBundleName")
+                except Exception as e:  # NOQA
+                    log("plist err: %s" % e)
+            cands = []
+            for n in names:
+                b = os.path.basename(n)
+                for ifn in icon_file_names:
+                    if b == ifn + ".png" or b == ifn or b.startswith(ifn + ".png@"):
+                        cands.append(n)
+            if not cands:
+                # прямі png У корені .app (AppIcon / iTunesArtwork), не в бандлах
+                cands = [
+                    n
+                    for n in names
+                    if n.startswith("Payload/")
+                    and re.match(r"^Payload/[^/]+\.app/[^/]+$", n)
+                    and re.search(r"(?i)(appicon|itunesartwork|iconartwork|appicon60|appicon76)", os.path.basename(n))
+                    and n.lower().endswith(".png")
+                ]
+            if not cands:
+                cands = [
+                    n
+                    for n in names
+                    if n.startswith("Payload/")
+                    and re.match(r"^Payload/[^/]+\.app/[^/]+$", n)
+                    and n.lower().endswith(".png")
+                ]
+            cands = [n for n in cands if n.lower().endswith((".png", ".jpg", ".jpeg"))]
+            if cands:
+                # prefers AppIcon-подібні, далі найбільший
+                def rank(n):
+                    b = os.path.basename(n).lower()
+                    return (0 if "appicon" in b or "itunesartwork" in b else 1, zf.getinfo(n).file_size)
+
+                cands.sort(key=rank, reverse=True)
+                for n in cands[:8]:
+                    if _emit_zip_png(zf, n, out, max_side):
+                        return 0
+            return finish(None, None, out, max_side, basename)
+        # .apk: прямий підхід — png із mipmap*/ic_launcher, далі найбільша
+        cands = [
+            n
+            for n in names
+            if n.lower().endswith(".png")
+            and ("mipmap" in n.lower() or "ic_launcher" in n.lower())
+        ]
+        if not cands:
+            cands = [n for n in names if n.lower().endswith(".png")]
+        cands.sort(key=lambda n: zf.getinfo(n).file_size, reverse=True)
+        for n in cands[:8]:
+            if _emit_zip_png(zf, n, out, max_side):
+                return 0
+        return finish(None, None, out, max_side, basename)
+    finally:
+        try:
+            zf.close()
+        except Exception:
+            pass
+
+
+# --------------------------------------------------------------------------
+# exe / dll (Windows PE)
+# --------------------------------------------------------------------------
+def exeicon(input, out, max_side, basename):
+    parent = os.path.dirname(os.path.abspath(out))
+    tmp = os.path.join(parent, ".pkg-thumb-%d" % os.getpid())
+    try:
+        os.makedirs(tmp, exist_ok=True)
+        rc = 0
+        for typeid in (14, 3, 2):  # 14=RT_GROUP_ICON, 3=RT_ICON, 2=RT_BITMAP
+            cmd = ["wrestool", "-x", "-t", str(typeid), "-o", tmp, input]
+            r = subprocess.run(
+                cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120
+            )
+            if r.returncode == 0:
+                rc = 0
+            icons = [p for p in glob.glob(tmp + "/**/*", recursive=True) if p.endswith((".ico", ".cur"))]
+            pngs = []
+            if icons:
+                pngdir = os.path.join(tmp, "png")
+                os.makedirs(pngdir, exist_ok=True)
+                for ic in icons:
+                    try:
+                        icotool_ret = subprocess.run(
+                            ["icotool", "-x", "-o", pngdir, ic],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                            timeout=60,
+                        )
+                    except Exception:
+                        icotool_ret = None
+                pngs = [p for p in glob.glob(pngdir + "/**/*.png", recursive=True)]
+            if pngs:
+                best = max(pngs, key=os.path.getsize)
+                if render_to_png_file(best, out, max_side):
+                    return 0
+            # Pillow умеет .ico .cur напряму
+            if icons:
+                if render_to_png_file(icons[0], out, max_side):
+                    return 0
+            if len(os.listdir(tmp)) > 40:
+                break
+        # Не знайдено — fuzzy по системних записах
+        return finish(None, None, out, max_side, basename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# --------------------------------------------------------------------------
+# rpm
+# --------------------------------------------------------------------------
+def rpmicon(input, out, max_side, basename):
+    parent = os.path.dirname(os.path.abspath(out))
+    tmp = os.path.join(parent, ".pkg-thumb-%d" % os.getpid())
+    try:
+        os.makedirs(tmp, exist_ok=True)
+        tool = shutil.which("rpm2cpio")
+        if tool:
+            with open(os.path.join(tmp, "payload.cpio"), "wb") as w:
+                r = subprocess.run([tool, input], stdout=w, stderr=subprocess.DEVNULL, timeout=240)
+            if r.returncode == 0:
+                subprocess.run(
+                    ["cpio", "-iudm", "--no-absolute-filenames"],
+                    input=None,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    cwd=tmp,
+                    timeout=300,
+                )
+                # cpio читає stdin; але ми не передали дані — використаємо окремий pipe
+        # Спрощено: спробуємо через bsdtar/7z
+        for in_cmd, out_cmd in (
+            (["bsdtar", "-xf", input, "-C", tmp], None),
+            (
+                ["7z", "x", "-y", "-o" + tmp, input],
+                None,
+            ),
+        ):
+            r = subprocess.run(
+                in_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=240
+            )
+            if r.returncode == 0:
+                desktops = collect_files_by_patterns(tmp, ("*.desktop",))
+                names = parse_desktop_icon_names(desktops)
+                icon_file = find_icon_in_tree(tmp, names)
+                if icon_file:
+                    return finish(icon_file, None, out, max_side, basename)
+        return finish(None, None, out, max_side, basename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+# --------------------------------------------------------------------------
+# main
+# --------------------------------------------------------------------------
+def main():
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("-s", "--size", type=int, default=128)
+    ap.add_argument("-i", "--input", required=False)
+    ap.add_argument("-o", "--output", required=False)
+    args, back_compat = ap.parse_known_args()
+    # Дозволяємо і plain: pkg-icon-thumbnailer in out size
+    if not args.input or not args.output:
+        pos = [a for a in back_compat if not a.startswith("-")]
+        if len(pos) >= 2:
+            args.input, args.output = pos[0], pos[1]
+            if len(pos) >= 3:
+                try:
+                    args.size = int(pos[2])
+                except Exception:
+                    pass
+    if not args.input or not args.output:
+        return 2
+    out = os.path.abspath(args.output)
+    parent = os.path.dirname(out)
+    try:
+        os.makedirs(parent, exist_ok=True)
+        probe = os.path.join(parent, ".rw-probe-%d" % os.getpid())
+        with open(probe, "w") as f:
+            f.write("1")
+        os.unlink(probe)
+    except Exception as e:
+        log("output dir not writable: %s" % e)
+        return 2
+    basename = os.path.basename(args.input)
+    kind = detect_kind(args.input)
+    max_side = max(16, min(int(args.size or 128), 512))
+    try:
+        if kind == "appimage" or kind == "squash":
+            return squashicon(args.input, out, max_side, basename)
+        if kind == "deb":
+            return debicon(args.input, out, max_side, basename)
+        if kind == "tar":
+            return taricon(args.input, out, max_side, basename)
+        if kind == "ipa" or kind == "apk":
+            return ipa_apkicon(args.input, out, max_side, basename)
+        if kind == "exe":
+            return exeicon(args.input, out, max_side, basename)
+        if kind == "rpm":
+            return rpmicon(args.input, out, max_side, basename)
+    except Exception as e:
+        log("main err: %s" % e)
+        return 1
+    # Незнаний тип, але MIME попав у список (наприклад application/zip для .zip)
+    # → нічого не пишемо; Nautilus лишить generic
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

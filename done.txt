@@ -17686,3 +17686,40 @@ Task 642: Справжньо глобальне приховування наз�
      * strings /usr/local/lib/libmac_settings.so | grep splitbutton.image-button → присутності підтверджено.
 
 5. Статус: Завершено (глобально, GTK4 + GTK3, повбезічно у всіх діалогах).
+
+================================================================================
+Task 643: Custom-мініатюризатор іконок програм для пакетів AppImage/deb/exe/ipa/архівів у GNOME Files (Nautilus)
+================================================================================
+1. Вихідна проблема:
+   - У GNOME Files (Nautilus 50.2.2) файли пакетів (.AppImage, .deb, .exe/.dll, .ipa/.apk, .tar.* і др.) показували generic-іконки типів файлів замість іконок програм всередині них. Користувач просив: «замість ось цих іконок файлів appimage, exe, deb, та інших нехай відображатимуться іконки програм. система має знаходити іконки».
+
+2. Рішення — власний GNOME .thumbnailer:
+   - /home/vitaliy/macW1Y/bin/pkg-icon-thumbnailer (Python 3.14) — витягує вбудовувану іконку програми з пакета та рендерить її у PNG мініатюру для Nautilus через ГNOME .thumbnailer механізм.
+   - Стратегії вилучення іконок:
+     * AppImage / .snap: скан файлу на валідний squashfs superblock (магія hsqs + перевірка в3/v4, щоб не потрапити на байти у ELF stub), потім unsquashfs -l (швидкий лістинг метаданих), вилучення .DirIcon + *.desktop (Icon=), пошук іконки за назвою / розміром із usr/share/icons точковим unsquashfs -o <offset>. Немає потреби у exec-біті файлів.
+     * .deb: dpkg-deb -x → пошук іконок у usr/share/icons / usr/share/pixmaps + Icon= з .desktop.
+     * .tar.* (.tar.xz/.tar.gz/.tar.bz2/.tar.zst/.tgz/.txz...): tarfile (stdlib, без зовнішньої `tar`) з вилученням candydat-іконок (*share/icons/*, *share/pixmaps/*, *.desktop, *.png з "icon"/"logo" у імені, кореневі) + Icon= з desktop-файлів.
+     * .ipa/.apk: zipfile + plistlib (Payload/<Name>.app/Info.plist → CFBundleIcons/CFBundlePrimaryIcon/CFBundleIconFile; падбек — AppIcon/iTunesArtwork/* у корені .app, для .apk — mipmap*/ic_launcher), рендер через GdkPixbuf/PIL.
+     * .exe/.dll: wrestool (ресурси іконок) + icotool → PNG (під cấp .ico/.cur напряму через Pillow).
+     * .rpm: rpm2cpio/bsdtar/7z спроби → такий самий пошук іконок.
+   - Fallback: fuzzy-додзвіз по імені файлу до /usr/share/applications/*.desktop (difflib ≥ 0.6) + ручне розрішення іконки через /usr/share/icons/*/apps + /usr/share/pixmaps.
+   - Рендер: GdkPixbuf (gi.require_version("GdkPixbuf","2.0")) з Pillow fallback; SVG через librsvg-завантажувач GdkPixbuf.
+   - Всі тимчасові файли створюються поруч із виходом (батьківська директорія %o), нічого з $HOME не читається (сендбокс bwrap гnome-desktop бачить лише /usr, вхідний файл та вихідну директорію).
+
+3. Реєстрація thumbnailera:
+   - /home/vitaliy/macW1Y/config/thumbnailers/pkg-icons.thumbnailer — MimeType: application/vnd.appimage;application/x-appimage;application/vnd.debian.binary-package;application/x-deb;application/x-debian-package;application/vnd.snap;application/x-ms-dos-executable;application/x-msdownload;application/vnd.microsoft.portable-executable;application/x-xz-compressed-tar;application/x-compressed-tar;application/x-gzip-compressed-tar;application/x-tgz;application/x-bzip-compressed-tar;application/x-zstd-compressed-tar;application/x-lz4-compressed-tar;application/x-tar;application/x-rpm;application/zip;application/vnd.iphone;application/vnd.android.package-archive; (application/zip обмежено логікою скрипта лише до .ipa/.apk базових імен, щоб не змінити вигляд звичайних zip-архівів).
+   - Exec=/usr/local/bin/pkg-icon-thumbnailer -s %s -i %i -o %o, TryExec=/usr/local/bin/pkg-icon-thumbnailer.
+   - Розгорнуто: /usr/local/bin/pkg-icon-thumbnailer (+chmod +x), /usr/local/share/thumbnailers/pkg-icons.thumbnailer, ~/.local/share/thumbnailers/pkg-icons.thumbnailer.
+
+4. Верифікація end-to-end (без Meta.restart, Wayland):
+   - Прямі тести скрипта: DAMX tar.xz (0.4s, іконка пінгвіна), Bionic 1.2GB AppImage (0.2s), Liner AppImage (0.15s), chroma ipa — Spotify іконка.
+   - У живому Nautilus (перезапуск через setsid nautilus ~/Downloads, очищення ~/.cache/thumbnails): generate_thumbnail через bwrap-сендбокс gnome-desktop給 4/4 файлів реальні іконки у ~/.cache/thumbnails/large/, fail-стопка порожня. Скриншот Files: /tmp/opencode/nautilus-downloads.png — усі чотири пакети показують іконки програм.
+   - Примітка: вже відкриті GTK-програми потрібно перезапустити, щоб подивитися зміни (Nautilus перезапущено під час перевірки).
+
+5. Файли:
+   - Джерело: file:///home/vitaliy/macW1Y/bin/pkg-icon-thumbnailer
+   - Розгорнуто: file:///usr/local/bin/pkg-icon-thumbnailer
+   - .thumbnailer: file:///home/vitaliy/macW1Y/config/thumbnailers/pkg-icons.thumbnailer → file:///usr/local/share/thumbnailers/pkg-icons.thumbnailer + file:///home/vitaliy/.local/share/thumbnailers/pkg-icons.thumbnailer
+   - Скриншот перевірки: file:///tmp/opencode/nautilus-downloads.png
+
+6. Статус: Завершено (всі чотири тестові пакети в Files показують іконки програм).
