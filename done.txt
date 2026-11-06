@@ -17723,3 +17723,23 @@ Task 643: Custom-мініатюризатор іконок програм для
    - Скриншот перевірки: file:///tmp/opencode/nautilus-downloads.png
 
 6. Статус: Завершено (всі чотири тестові пакети в Files показують іконки програм).
+
+================================================================================
+Task 644: Док не оновлює фон після виходу з огляду (Overview) — розмиття застарілою шпалерою
+================================================================================
+1. Вихідна проблема:
+   - Після виходу з огляду (Overview), а також під час анімації входу/виходу з огляду, док-панель (Dash to Dock з динамічним блюром) не оновлює фон — показує розмивчасту/застарілу шпалеру. Фон оновлюється лише після того, як користувач triggere переміщення доку (наприклад, відкриття меню календаря чи зміни розміру).
+
+2. Причина:
+   - Динамічний BlurEffect (`bms-dock-blur`, режим BACKGROUND) на `dash_background` зйомлює поточну шпалеру вживу. Під час огляду GNOME Shell змінює/приховує фон, а після повернення з огляду ефект блюра не перемальовується автоматично, тому залишає застаріле зображення фону.
+
+3. Рішення — file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/dash_to_dock.js:
+   - Додано метод `_refresh_overview_blur()`, який викликає `queue_repaint()` на кожному ефекті `bms-dock-blur` усіх активних днів (`this.dashes`).
+   - `connect_to_overview()` тепер підписується на `showing`/`hidden` `Main.overview` завжди (раніше — лише якщо увімкнено `UNBLUR_IN_OVERVIEW`) і викликає `_refresh_overview_blur()` після обох подій, щоб блюр доку відновився під актуальну шпалеру відразу після виходу з огляду.
+
+4. Розгортання:
+   - file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/dash_to_dock.js → file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/dash_to_dock.js
+   - Екстеншен `blur-my-shell@aunetx` перезавантажено через `gnome-extensions disable/enable` (без Meta.restart, Wayland).
+   - Лог gnome-shell без помилок завантаження компонента.
+
+5. Статус: Завершено.

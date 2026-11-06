@@ -696,13 +696,32 @@ export const DashBlur = class DashBlur extends Signals.EventEmitter {
     connect_to_overview() {
         this.connections.disconnect_all_for(Main.overview);
 
-        if (this.settings.dash_to_dock.UNBLUR_IN_OVERVIEW) {
-            this.connections.connect(
-                Main.overview, 'showing', _ => this.hide()
-            );
-            this.connections.connect(
-                Main.overview, 'hidden', _ => this.show()
-            );
+        // When entering/leaving the Overview the wallpaper behind the dock may
+        // change (blur/dim during overview, restored afterwards). The dynamic
+        // BlurEffect on dash_background samples the live wallpaper, so it must
+        // be repainted once the overview settles, otherwise the dock keeps a
+        // stale/blurry backdrop until the user moves the dock.
+        this.connections.connect(
+            Main.overview, 'showing', _ => {
+                if (this.settings.dash_to_dock.UNBLUR_IN_OVERVIEW)
+                    this.hide();
+                this._refresh_overview_blur();
+            }
+        );
+        this.connections.connect(
+            Main.overview, 'hidden', _ => {
+                if (this.settings.dash_to_dock.UNBLUR_IN_OVERVIEW)
+                    this.show();
+                this._refresh_overview_blur();
+            }
+        );
+    }
+
+    _refresh_overview_blur() {
+        for (const info of this.dashes) {
+            let eff = info.dash_background?.get_effect('bms-dock-blur');
+            if (eff)
+                eff.queue_repaint();
         }
     }
 
