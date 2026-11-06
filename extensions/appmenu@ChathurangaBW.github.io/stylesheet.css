@@ -233,6 +233,16 @@
 }
 
 /* AppMenu Menubar Popup Menus */
+.appmenu-popup-menu,
+.appmenu-popup-menu.popup-menu-boxpointer,
+.popup-menu-boxpointer.appmenu-popup-menu {
+    -arrow-rise: 0px !important;
+    -arrow-base: 0px !important;
+    -arrow-border-radius: 0px !important;
+    -arrow-border-width: 0px !important;
+    -boxpointer-gap: 0px !important;
+}
+
 .appmenu-popup-menu-content,
 .appmenu-popup-menu .popup-menu-content,
 .appmenu-popup-menu.popup-menu-boxpointer .popup-menu-content {

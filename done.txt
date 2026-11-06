@@ -17566,3 +17566,43 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - Перевірено нульовий стан (unscrolled adj == 0): при непрокрученому стані undershoot.top не відображається (0 паразитних пікселів).
    - bin/mac-audit-sync check: 100% PASS (5/5).
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
+
+- [x] Завдання 679: Усунення трикутної стрілки (▲) контекстного меню та вирівнювання меню панелі строго під кнопкою яблучка (Apple Menu & Menubar Popups macOS Sonoma/Tahoe Alignment)
+1. Діагностика та аналіз причин зміщення та появи стрілки:
+   - На знімку користувача при відкритті меню яблучка спостерігалося дві проблеми:
+     1) У лівому верхньому кутку спливаючого вікна малювалася трикутна стрілка-покажчик («дзьоб» / «bubble beak» ▲), спрямована в бік панелі.
+     2) Меню відкривалося не під самим яблучком (x = 4..10 px), а було примусово зміщене праворуч на x = 22 px — опиняючись під сусіднім заголовком програми «Antigravity».
+   - У ході аудиту GNOME Shell BoxPointer (boxpointer.js) виявлено:
+     * GNOME Shell малює трикутний покажчик у методі _drawBorder(area), якщо у стилях задано ненульову висоту -arrow-rise (> 0). У базових темах .popup-menu-boxpointer мав -arrow-rise: 8px та -arrow-base: 18px.
+     * У методі BoxPointer._reposition(allocationBox) вираховується безпечний відступ для стрілки: margin = 4 * borderRadius + borderWidth + arrowBase (до 98 px). Якщо координата джерела потрапляє в зону скруглення (arrowOrigin <= x1 + borderRadius + halfBase), GNOME Shell примусово зсуває все вікно праворуч: resX += arrowOrigin - x1. Для кнопки яблучка шириною 36 px зі стартовою позицією x = 4 px це викликало зсув на 18 px праворуч (до x = 22 px), викидаючи меню з-під логотипу яблучка.
+
+2. Виконані інженерні зміни:
+   - В extensions/appmenu@ChathurangaBW.github.io/menuManager.js:
+     * У класі TopLevelMenuButton реалізовано метод _setupMenuBoxPointer():
+       - Встановлено bp._drawBorder = function() {}; для повного приглушення Cairo-відмальовки трикутного покажчика.
+       - Встановлено menu.setSourceAlignment(0.0), bp.setSourceAlignment(0.0) та bp._arrowAlignment = 0.0.
+       - Перехоплено метод bp._reposition(allocationBox) для точного розрахунку координати targetX = sourceX (з перевіркою меж робочої області workarea). Меню позиціонується строго за лівим краєм кнопки джерела без паразитного зсуву.
+     * Забезпечено виклик _setupMenuBoxPointer() як при ініціалізації кнопки (_init), так і при кожному оновленні списку пунктів меню (rebuildMenu).
+   - В extensions/appmenu@ChathurangaBW.github.io/stylesheet.css:
+     * Для селекторів .appmenu-popup-menu, .appmenu-popup-menu.popup-menu-boxpointer та .popup-menu-boxpointer.appmenu-popup-menu додано директиви:
+       -arrow-rise: 0px !important;
+       -arrow-base: 0px !important;
+       -arrow-border-radius: 0px !important;
+       -arrow-border-width: 0px !important;
+       -boxpointer-gap: 0px !important;
+   - У темах gnome-shell.css (macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid, gnome-shell-theme):
+     * Додано нульові параметри стрілки для .appmenu-popup-menu.
+     * Синхронізовано стилі до системних директорій ~/.themes/ та /usr/share/themes/.
+   - Синхронізація розширень та захист цілісності:
+     * Оновлені файли menuManager.js та stylesheet.css скопійовано у ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/.
+     * Оновлено хеш цілісності у config/extensions.lock.json (7332eaf12b723df4cddbf3915ea49fa382b26ca55d145e2b8dd7890d3cb957c1).
+     * Застосовано патч у живій сесії GNOME Shell через EvalHelper без перезапуску системи.
+
+3. Верифікація та контроль якості:
+   - Проведено автоматизований замір координат у Wayland сесії через EvalHelper:
+     * btn0 (Apple button): x = 4 px, y = 2 px, width = 36 px.
+     * menu.actor (Apple menu): x = 4 px, y = 32 px (меню розташоване строго під кнопкою від самого її початку, внутрішній вміст меню вирівняно на x = 10 px точно під центром яблучка).
+   - Знято та верифіковано знімок екрана apple_menu_verified.png: стрілка-покажчик повністю відсутня (rise = 0, чистий радіусний верх меню без дзьоба).
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS (5/5).
+

@@ -335,8 +335,10 @@ const TopLevelMenuButton = GObject.registerClass(
     _init(label, children, appInstance = null, menuManagerInstance = null, isAppName = false) {
       super._init(0.0, label);
       this.add_style_class_name('appmenu-panel-button');
-      this.menu.actor.add_style_class_name('appmenu-popup-menu');
-      this.menu.box.add_style_class_name('appmenu-popup-menu-content');
+
+      // macOS Menubar: Eliminate triangular pointer arrow and align menu flush with button
+      this._setupMenuBoxPointer();
+
       this._appInstance = appInstance;
       this._menuManagerInstance = menuManagerInstance;
       this._isIcon = false;
@@ -609,6 +611,54 @@ const TopLevelMenuButton = GObject.registerClass(
         this._subMenuSignalIds = [];
     }
 
+    _setupMenuBoxPointer() {
+      if (!this.menu)
+          return;
+      if (typeof this.menu.setSourceAlignment === 'function')
+          this.menu.setSourceAlignment(0.0);
+      if (this.menu.actor)
+          this.menu.actor.add_style_class_name('appmenu-popup-menu');
+      if (this.menu.box)
+          this.menu.box.add_style_class_name('appmenu-popup-menu-content');
+      const bp = this.menu._boxPointer;
+      if (!bp)
+          return;
+      bp._drawBorder = function() {};
+      if (typeof bp.setSourceAlignment === 'function')
+          bp.setSourceAlignment(0.0);
+      bp._arrowAlignment = 0.0;
+      if (!bp._origReposition) {
+          bp._origReposition = bp._reposition;
+          bp._reposition = function(allocationBox) {
+              this._origReposition(allocationBox);
+              if (!this._sourceActor || !allocationBox)
+                  return;
+              try {
+                  const [sourceX] = this._sourceActor.get_transformed_position();
+                  const curOrigin = allocationBox.get_origin();
+                  const monitorIndex = Main.layoutManager.findIndexForActor(this._sourceActor);
+                  const workarea = Main.layoutManager.getWorkAreaForMonitor(monitorIndex);
+                  const [, , natWidth] = this.get_preferred_size();
+                  let targetX = sourceX;
+                  if (targetX < workarea.x + 4)
+                      targetX = workarea.x + 4;
+                  if (targetX + natWidth > workarea.x + workarea.width - 4)
+                      targetX = workarea.x + workarea.width - 4 - natWidth;
+
+                  let parent = this.get_parent();
+                  let success, x, y;
+                  while (parent && !success) {
+                      [success, x, y] = parent.transform_stage_point(targetX, curOrigin[1]);
+                      parent = parent.get_parent();
+                  }
+                  if (success) {
+                      allocationBox.set_origin(Math.floor(x), Math.floor(curOrigin[1]));
+                  }
+              } catch (_e) {}
+          };
+      }
+    }
+
     rebuildMenu(children, openHandler = null) {
         if (this._destroyed || !this.menu)
             return;
@@ -621,8 +671,7 @@ const TopLevelMenuButton = GObject.registerClass(
             // Do not rebuild a popup whose actor was disposed during reload.
             return;
         }
-        this.menu.actor.add_style_class_name('appmenu-popup-menu');
-        this.menu.box.add_style_class_name('appmenu-popup-menu-content');
+        this._setupMenuBoxPointer();
         this._setMenuOpenHandler(openHandler);
         this._buildSubMenu(children, this.menu);
         this._macHoverGlide?.updateItems();
