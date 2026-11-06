@@ -363,11 +363,13 @@ export const MacInputSourcePopup = GObject.registerClass({
 
     _buildOsdUI() {
         const N = this._items.length;
-        this._paddingX = 4;
-        this._paddingY = 4;
-        this._itemH = 24;
-        this._gap = 2;
-        this._osdW = 155;
+        // Етап 646: екранне меню зміни мови (OSD switcher) збільшено в 1.5 рази
+        // (попередня конфігурація після Етапу 669 була компактною: 155x58).
+        this._paddingX = 6;
+        this._paddingY = 6;
+        this._itemH = 36;
+        this._gap = 3;
+        this._osdW = 232;
 
         const osdH = 2 * this._paddingY + N * this._itemH + (N - 1) * this._gap;
         this._osdH = osdH;
@@ -379,9 +381,9 @@ export const MacInputSourcePopup = GObject.registerClass({
         // 1. Unified box with Liquid Glass backdrop
         this._osdBox = new St.Widget({
             style: 'background-color: transparent !important; ' +
-                   'border-radius: 14px !important; ' +
+                   'border-radius: 21px !important; ' +
                    'border: 1px solid rgba(255, 255, 255, 0.30) !important; ' +
-                   'box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35) !important; ' +
+                   'box-shadow: 0 12px 27px rgba(0, 0, 0, 0.35) !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
             width: this._osdW,
             height: osdH,
@@ -394,15 +396,15 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._osdBox.set_pivot_point(0.5, 0.5);
         this.add_child(this._osdBox);
         this._targetBox = this._osdBox;
-        this._targetCornerRadius = 14.0;
+        this._targetCornerRadius = 21.0;
 
         // 2. Selection pill (wide rounded rectangle, vertical movement)
         const pillW = this._osdW - 2 * this._paddingX;
         this._selectionPill = new St.Widget({
             style: 'background-color: rgba(255, 255, 255, 0.26) !important; ' +
-                   'border-radius: 10px !important; ' +
+                   'border-radius: 15px !important; ' +
                    'border: 1px solid rgba(255, 255, 255, 0.20) !important; ' +
-                   'box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15) !important; ' +
+                   'box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important; ' +
                    'padding: 0 !important; margin: 0 !important;',
             width: pillW,
             height: this._itemH,
@@ -418,8 +420,8 @@ export const MacInputSourcePopup = GObject.registerClass({
             const lbl = new St.Label({
                 text: getOsdLabel(item),
                 style: isSelected
-                    ? 'color: #ffffff; font-weight: 600; font-size: 11px; text-align: center; padding: 0 !important; margin: 0 !important;'
-                    : 'color: rgba(255, 255, 255, 0.75); font-weight: 500; font-size: 11px; text-align: center; padding: 0 !important; margin: 0 !important;',
+                    ? 'color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; padding: 0 !important; margin: 0 !important;'
+                    : 'color: rgba(255, 255, 255, 0.75); font-weight: 500; font-size: 16px; text-align: center; padding: 0 !important; margin: 0 !important;',
                 x: this._paddingX,
                 y: this._paddingY + i * (this._itemH + this._gap),
                 width: pillW,
@@ -448,8 +450,8 @@ export const MacInputSourcePopup = GObject.registerClass({
 
         this._labels.forEach((lbl, i) => {
             lbl.style = (i === index)
-                ? 'color: #ffffff; font-weight: 600; font-size: 11px; text-align: center; padding: 0 !important; margin: 0 !important;'
-                : 'color: rgba(255, 255, 255, 0.75); font-weight: 500; font-size: 11px; text-align: center; padding: 0 !important; margin: 0 !important;';
+                ? 'color: #ffffff; font-weight: 600; font-size: 16px; text-align: center; padding: 0 !important; margin: 0 !important;'
+                : 'color: rgba(255, 255, 255, 0.75); font-weight: 500; font-size: 16px; text-align: center; padding: 0 !important; margin: 0 !important;';
         });
     }
 

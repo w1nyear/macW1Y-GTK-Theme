@@ -17792,3 +17792,47 @@ Task 645: Кнопка «Додати віджети» у Параметрах �
      glib-2.0, gmodule-2.0, gtk4, libadwaita-1, json-glib-1.0).
 
 5. Статус: Завершено.
+
+================================================================================
+Task 646: Екранне меню зміни мови (OSD switcher) — збільшення в 1.5 рази
+================================================================================
+1. Вимога користувача:
+   - Збільшити екранне меню зміни мови (OSD switcher, яке показується поза полями вводу,
+     вертикальний список мов з Liquid Glass карточкою) на 1.5 рази відповідно до попередньої
+     компактної конфігурації (після Task 669).
+
+2. Контекст (попередні етапи):
+   - Task 667: відновлено автентичний вертикальний Liquid Glass вигляд OSD меню зміни мови
+     (ширина 310px, висота 116px, itemH 48, borderRadius 26).
+   - Task 669: зменшено OSD меню зміни мови вдвічі (310x116 -> 155x58; itemH 48 -> 24, font 17 -> 11,
+     borderRadius 26 -> 14, cornerRadius 14, box-shadow 0 8px 18).
+
+3. Рішення — file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/mac_input_switcher_v11.js
+   (клас MacInputSourcePopup, метод _buildOsdUI() / _setOsdPosition()):
+   - Метод _buildOsdUI():
+     * _paddingX / _paddingY: 4 -> 6 (1.5x).
+     * _itemH: 24 -> 36 (1.5x).
+     * _gap: 2 -> 3 (1.5x).
+     * _osdW: 155 -> 232 (1.5x, ~232.5 округлено).
+     * _osdH: обчислюється з нових параметрів (2 * _paddingY + N * _itemH + (N - 1) * _gap);
+       для 2 мов: 2*6 + 2*36 + 1*3 = 87 (1.5x від попередніх 58).
+     * border-radius картки OSD: 14px -> 21px; _targetCornerRadius шейдера Liquid Glass: 14.0 -> 21.0.
+     * box-shadow: 0 8px 18 -> 0 12px 27.
+     * Селекторна плашка _selectionPill: width = _osdW - 2 * _paddingX = 220, height = _itemH = 36,
+       border-radius: 10px -> 15px, box-shadow: 0 1px 4 -> 0 2px 6.
+     * Шрифти написів мов: font-size 11px -> 16px (~11*1.5 = 16.5 округлено).
+   - Метод _setOsdPosition(): стилі написів та траєкторія зсуву пігулки оновлено автоматично
+     через нові _paddingY / _itemH / _gap (targetY = _paddingY + index * (_itemH + _gap)).
+
+4. Синхронізація та розгортання:
+   - Файл синхронізовано з ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/mac_input_switcher_v11.js
+     (diff: ІДЕНТИЧНИЙ).
+   - Гаряче перезавантаження через D-Bus EvalHelper (org.gnome.Shell.Extensions.EvalHelper ->
+     Main.extensionManager.reloadExtension) без Meta.restart на Wayland.
+
+5. Верифікація та цілісність:
+   - bin/mac-extension-guard verify: 21/21 SUCCESS (новий dir hash: 84d8a95e4a2d8d03ecf6880632fa90b1569aadcff517de81761c5551834e24eb).
+   - bin/mac-audit-sync check: 100% PASS (5/5).
+   - Конфігурація extensions.lock.json оновлена (sha256 / dir_hash для blur-my-shell@aunetx).
+
+6. Статус: Завершено.
