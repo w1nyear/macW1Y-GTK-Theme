@@ -6653,10 +6653,38 @@ static GSettings *get_dw_settings(void) {
     return dw_settings;
 }
 
+static GtkWidget *g_dw_edit_mode_row = NULL;
+
+/* Увімкнути / вимкнути режим редагування віджетів і оновити перемикач у Параметрах. */
+static void dw_set_edit_mode(gboolean active) {
+    GSettings *s = get_dw_settings();
+    if (!s) return;
+    g_settings_set_boolean(s, "edit-mode", active);
+    if (g_dw_edit_mode_row)
+        adw_switch_row_set_active(ADW_SWITCH_ROW(g_dw_edit_mode_row), active);
+}
+
+/* При закритті вікна Параметрів режим редагування віджетів має вимкнутися. */
+static gboolean dw_settings_window_close_cb(GtkWindow *win, gpointer user_data) {
+    (void)win; (void)user_data;
+    dw_set_edit_mode(FALSE);
+    return FALSE;
+}
+
+static void dw_attach_settings_close_handler(AdwNavigationSplitView *sv) {
+    if (!sv) return;
+    GtkWidget *win = gtk_widget_get_ancestor(GTK_WIDGET(sv), GTK_TYPE_WINDOW);
+    if (!win) return;
+    if (g_object_get_data(G_OBJECT(win), "mac-dw-close-connected")) return;
+    g_signal_connect(win, "close-request", G_CALLBACK(dw_settings_window_close_cb), NULL);
+    g_object_set_data(G_OBJECT(win), "mac-dw-close-connected", GINT_TO_POINTER(1));
+}
+
 void init_dw_edit_mode(void *widget, gpointer data) {
     (void)data;
     GSettings *s = get_dw_settings();
     if (!s || !widget) return;
+    g_dw_edit_mode_row = GTK_WIDGET(widget);
     in_init = 1;
     adw_switch_row_set_active(ADW_SWITCH_ROW(widget), g_settings_get_boolean(s, "edit-mode"));
     in_init = 0;
@@ -6675,12 +6703,14 @@ G_MODULE_EXPORT void on_dw_add_widgets_clicked(void *button, gpointer data) {
     (void)button; (void)data;
     g_print("macW1Y: on_dw_add_widgets_clicked invoked!\n");
     ensure_dw_extension_enabled();
+    /* Віджети додаємо всередині вікна Параметрів — окремого вікна не відкриваємо.
+       Увімкнути режим редагування, щоб віджети можна було додавати/перетягувати на робочому столі. */
+    dw_set_edit_mode(TRUE);
     GSettings *s = get_dw_settings();
-    if (s) {
-        g_settings_set_boolean(s, "edit-mode", TRUE);
+    if (s)
         g_settings_set_boolean(s, "open-widget-picker", TRUE);
-    }
-    g_spawn_command_line_async("gjs -m /usr/local/bin/mac-widget-picker", NULL);
+    GtkWidget *anc = gtk_widget_get_ancestor(GTK_WIDGET(button), ADW_TYPE_NAVIGATION_SPLIT_VIEW);
+    dw_attach_settings_close_handler(ADW_NAVIGATION_SPLIT_VIEW(anc));
 }
 
 G_MODULE_EXPORT void on_dw_arrange_clicked(void *button, gpointer data) {
@@ -9854,6 +9884,10 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
     if (!split_view || !row || !G_IS_OBJECT(row) || !G_IS_OBJECT(split_view) || !ADW_IS_NAVIGATION_SPLIT_VIEW(split_view)) return;
     g_object_set_data(G_OBJECT(split_view), "mac_user_navigated", GINT_TO_POINTER(1));
 
+    gboolean is_widgets_row = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"));
+    if (!is_widgets_row)
+        dw_set_edit_mode(FALSE);  /* вихід із розділу Віджети — вимкнути режим редагування */
+
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
         g_signal_stop_emission_by_name(box, "row-activated");
         open_system_subpage(split_view, box, "users_row");
@@ -9869,6 +9903,8 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
             gtk_list_box_select_row(box, row);
             update_window_active_panel_id(split_view, "widgets");
             schedule_update_panel_headerbar(split_view);
+            dw_set_edit_mode(TRUE);           /* відкриття розділу Віджети — увімкнути режим редагування */
+            dw_attach_settings_close_handler(split_view);  /* закриття Параметрів — вимкнути режим редагування */
         }
         return;
     }
@@ -10763,6 +10799,8 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             g_timeout_add(100, open_widgets_delayed_cb, split_view);
             g_timeout_add(300, open_widgets_delayed_cb, split_view);
             g_timeout_add(600, open_widgets_delayed_cb, split_view);
+            dw_set_edit_mode(TRUE);
+            dw_attach_settings_close_handler(split_view);
         }
 
         if (g_getenv("MAC_SETTINGS_OPEN_STYLING")) {

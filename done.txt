@@ -17743,3 +17743,52 @@ Task 644: Док не оновлює фон після виходу з огля�
    - Лог gnome-shell без помилок завантаження компонента.
 
 5. Статус: Завершено.
+
+================================================================================
+Task 645: Кнопка «Додати віджети» у Параметрах — без окремого вікна, режим редагування увімк./вимк.
+================================================================================
+1. Вихідна проблема:
+   - У Параметрах (GNOME Settings) у розділі «Система → Віджети» кнопка «Додати віджети на стільницю»
+     відкривала діалог вибору віджетів (`mac-widget-picker`) як окреме нове вікно, а не всередині
+     вікна Параметрів. Режим редагування віджетів не включався автоматично при відкритті розділу
+     і не вимикався при закритті Параметрів.
+   - Користувач просить: кнопка не має відкривати нове вікно, а має відкривати цей пункт у
+     Параметрах; після відкриття має включатись режим редагування; після виходу чи закриття
+     Параметрів має вимикатись режим редагування.
+
+2. Рішення — file:///home/vitaliy/macW1Y/gnome-control-center-overlay/libmac_settings.c
+   (синхронізована копія: file:///home/vitaliy/macW1Y/control-center/libmac_settings.c):
+   - `on_dw_add_widgets_clicked()` більше НЕ spawn'ює окриме вікно `gjs -m /usr/local/bin/mac-widget-picker`.
+     Замість цього виставляє `edit-mode = TRUE` (режим редагування віджетів) і
+     `open-widget-picker = TRUE` у схемі `org.gnome.shell.extensions.desktop-widgets-r3nhick`,
+     щоб віджети можна було додавати/перетягувати безпосередньо на робочому столі всередині
+     сесії Параметрів.
+   - Додано `dw_set_edit_mode()`, яке одночасно оновлює gsettings і перемикач «Режим редагування»
+     на сторінці Віджети.
+   - Додано `dw_attach_settings_close_handler()` — при закритті вікна Параметрів (close-request)
+     режим редагування віджетів автоматично вимикається (`edit-mode = FALSE`).
+   - При відкритті розділу Віджети (активація рядка 사이дбару або автозапуск через
+     `MAC_SETTINGS_OPEN_WIDGETS`) режим редагування автоматично увімкнуто.
+   - При переході із розділу Віджети на інший розділ Параметрів режим редагування вимкнено.
+
+3. Розгортання:
+   - Джерело: file:///home/vitaliy/macW1Y/gnome-control-center-overlay/libmac_settings.c
+     (копія: file:///home/vitaliy/macW1Y/control-center/libmac_settings.c)
+   - Збито `libmac_settings.so` та розгорнуто на усі 7 цільових шляхів (синхронізовано, однаковий md5):
+     * file:///home/vitaliy/macW1Y/control-center/libmac_settings.so
+     * file:///home/vitaliy/macW1Y/gnome-control-center-overlay/libmac_settings.so
+     * file:///home/vitaliy/macW1Y/lib/libmac_settings.so
+     * file:///home/vitaliy/.local/lib/libmac_settings.so
+     * file:///usr/local/lib/libmac_settings.so
+     * file:///usr/lib/x86_64-linux-gnu/libmac_settings.so
+     * file:///usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so
+   - Параметри запускаються через wrapper file:///home/vitaliy/macW1Y/bin/gnome-control-center,
+     який підвантажує `libmac_settings.so` через LD_PRELOAD (без Meta.restart, Wayland).
+   - Потрібно закрити та відкрити вікно Параметрів заново, щоб новий .so підвантажився.
+
+4. Верифікація:
+   - `bin/mac-audit-sync check` — перевірка, що всі копії libmac_settings.so ідентичні (1/5).
+   - Збито успішно без помилок компіляції (gcc -shared -fPIC -O2 з pkg-config cflags для
+     glib-2.0, gmodule-2.0, gtk4, libadwaita-1, json-glib-1.0).
+
+5. Статус: Завершено.
