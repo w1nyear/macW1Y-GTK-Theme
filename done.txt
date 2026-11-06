@@ -17606,3 +17606,36 @@ Task 640: Fix Dock Glass Background Staling & Desync After Idle / Inactivity
    - bin/mac-extension-guard verify: 21/21 SUCCESS.
    - bin/mac-audit-sync check: 100% PASS (5/5).
 
+
+================================================================================
+Task 641: Глобальне виправлення круглих кнопок 1:1 та приглушення назви програми біля кнопок світлофора
+================================================================================
+1. Вихідна проблема:
+   - Кнопки дій з іконками (image-button, suffix buttons, circular buttons) мали непропорційні розміри (наприклад, кнопка (i) в AdwActionRow відображалася як прямокутний блок 40x28 px з border-radius 6px замість правильного кола 1:1, а кнопка меню «...» у заголовках витягувалась по вертикалі).
+   - У сайдбарах та спліт-вікнах (наприклад, у Resources / «Системний монітор») поруч із зеленим кружечком світлофора відображалася назва програми («Ресурси»), що суперечило естетиці macOS.
+   - Вимоги користувача: виправити геометрію кнопок на рівну ширину та висоту 1:1 (ідеальне коло), усунути назви програм біля кнопок керування вікном, та забезпечити дійсно глобальне застосування змін.
+
+2. Реалізовані інженерні зміни:
+   - У bin/mac-build-theme:
+     * Додано розділ 1.1 приглушення назви програми у сайдбар-заголовках для GTK4 та GTK3:
+       Селектори navigation-split-view .sidebar-pane headerbar windowtitle, overlay-split-view ..., paned.horizontal > headerbar:first-child windowtitle, leaflet, flap тощо отримали нульовий розмір, нульові відступи та повну прозорість (opacity: 0; min-width: 0; min-height: 0; font-size: 0px; margin: 0; padding: 0;).
+     * Розділ 6 (Headerbar control buttons): встановлено відступи margin: 5px 3px; та точні розміри min-width: 28px; min-height: 28px; border-radius: 9999px; padding: 0; для запобігання вертикального витягування кнопок всередині AdwHeaderBar (висота контенту 38 px мінус 10 px вертикальних відступів дає точні 28x28 px).
+     * Розділ 15 (Content row buttons): розділено правила для текстових кнопок (.text-button) та кнопок-іконок (.image-button, .circular, суфіксні кнопки без тексту). Для кнопок-іконок задано min-width: 28px; min-height: 28px; border-radius: 9999px; padding: 0; margin: 10px 3px; background: transparent;.
+     * Оновлено GTK3 секцію із синхронізацією круглих кнопок та приглушенням назви програми у бічних заголовках.
+   - У control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c:
+     * Замінено загальне правило для рядкових кнопок на роздільні визначення: кнопки з текстом отримали радіус 8px і padding, а іконки та суфіксні кнопки в AdwActionRow отримали круглу геометрію (min-width: 28px; min-height: 28px; border-radius: 9999px;).
+     * Додано приглушення назв програм у бічних заголовках.
+     * Перекомпільовано бібліотеку libmac_settings.so та синхронізовано її в усі 7 цільових системних директорій (control-center/, gnome-control-center-overlay/, lib/, ~/.local/share/gnome-control-center-overlay/, ~/.local/lib/, /usr/local/lib/, /usr/lib/x86_64-linux-gnu/, /usr/share/mactheme/...).
+   - Синхронізація глобальних тем:
+     * Запущено mac-build-theme з генерацією SSOT токенів та компонентів у ~/.config/gtk-4.0/, ~/.config/gtk-3.0/, ~/.themes/, /usr/share/themes/ та каталогах репозиторію.
+     * Бінарник bin/mac-build-theme синхронізовано з /usr/local/bin/mac-build-theme.
+
+3. Верифікація та контроль якості:
+   - Знято та перевірено знімок Resources (resources_header_crop_live.png):
+     * Біля кнопок світлофора повністю відсутній заголовок «Ресурси».
+     * Кнопка меню «...» має ідеальне співвідношення сторін 1:1 (28x28 px) та повністю круглий контур.
+   - Знято та перевірено знімок GNOME Settings (exact_auto_login_suffix.png):
+     * Кнопка інформації (i) у рядку «Автоматичний вхід» є ідеальним колом 1:1 із круглим радіусом 9999px поруч із перемикачем.
+     * Заголовки у бічній панелі поруч зі світлофором відсутні.
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - bin/mac-audit-sync check: 100% PASS (5/5 перевірок пройдено без зауважень).

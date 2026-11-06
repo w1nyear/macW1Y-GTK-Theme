@@ -70,6 +70,43 @@ toolbarview > .top-bar.raised {
 }
 
 /* =========================================================================
+ * 1.1 macOS Authentic Sidebar Header: Clean Window Controls, No Redundant App Title
+ * ========================================================================= */
+navigation-split-view .sidebar-pane headerbar windowtitle,
+navigation-split-view .sidebar-pane headerbar label.title,
+navigation-split-view headerbar.mac-sidebar-header windowtitle,
+navigation-split-view headerbar.mac-sidebar-header label.title,
+navigation-split-view > headerbar:first-child windowtitle,
+navigation-split-view > headerbar:first-child label.title,
+overlay-split-view .sidebar-pane headerbar windowtitle,
+overlay-split-view .sidebar-pane headerbar label.title,
+overlay-split-view headerbar.mac-sidebar-header windowtitle,
+overlay-split-view headerbar.mac-sidebar-header label.title,
+overlay-split-view > headerbar:first-child windowtitle,
+overlay-split-view > headerbar:first-child label.title,
+.sidebar-pane headerbar windowtitle,
+.sidebar-pane headerbar label.title,
+.sidebar headerbar windowtitle,
+.sidebar headerbar label.title,
+.navigation-sidebar headerbar windowtitle,
+.navigation-sidebar headerbar label.title,
+paned.horizontal > headerbar:first-child windowtitle,
+paned.horizontal > headerbar:first-child label.title,
+paned.horizontal > box > headerbar:first-child windowtitle,
+paned.horizontal > box > headerbar:first-child label.title,
+leaflet > headerbar:first-child windowtitle,
+leaflet > headerbar:first-child label.title,
+flap > headerbar:first-child windowtitle,
+flap > headerbar:first-child label.title {
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+  font-size: 0px;
+  margin: 0;
+  padding: 0;
+}
+
+/* =========================================================================
  * 2. Navigation Sidebars (macOS Sequoia / Tahoe Item Styling)
  * ========================================================================= */
 navigation-split-view list,
@@ -753,7 +790,7 @@ button.circular {
   min-height: 28px;
   border-radius: 9999px;
   padding: 0;
-  margin: 0 2px;
+  margin: 5px 3px;
   background-color: rgba(255, 255, 255, 0.09);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
@@ -1172,68 +1209,115 @@ headerbar splitbutton icon,
   padding: 0;
 }
 
-/* Flat and icon-only buttons in content rows (clean, transparent idle, subtle hover) */
+/* Flat and icon-only buttons in content rows (macOS circular 1:1) */
 adwactionrow button.image-button,
-adwactionrow button.flat,
+adwactionrow button.circular,
 preferencespage row button.image-button,
-preferencespage row button.flat,
+preferencespage row button.circular,
 preferencesgroup row button.image-button,
-preferencesgroup row button.flat,
+preferencesgroup row button.circular,
 list.boxed-list row button.image-button,
-list.boxed-list row button.flat,
-adwactionrow > box.header > box.suffixes > button,
-adwactionrow box.suffixes button,
-list.boxed-list row box.suffixes button,
-preferencespage row box.suffixes button,
-preferencesgroup row box.suffixes button {
+list.boxed-list row button.circular,
+adwactionrow > box.header > box.suffixes > button.image-button,
+adwactionrow > box.header > box.suffixes > button.circular,
+adwactionrow > box.header > box.suffixes > button:not(.text-button),
+adwactionrow box.suffixes button.image-button,
+adwactionrow box.suffixes button.circular,
+adwactionrow box.suffixes button:not(.text-button),
+list.boxed-list row box.suffixes button.image-button,
+list.boxed-list row box.suffixes button.circular,
+list.boxed-list row box.suffixes button:not(.text-button),
+preferencespage row box.suffixes button.image-button,
+preferencespage row box.suffixes button.circular,
+preferencespage row box.suffixes button:not(.text-button),
+preferencesgroup row box.suffixes button.image-button,
+preferencesgroup row box.suffixes button.circular,
+preferencesgroup row box.suffixes button:not(.text-button),
+row.property button.image-button,
+row button.image-button,
+row button.circular {
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 9999px;
+  padding: 0;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-left: 3px;
+  margin-right: 3px;
   background: transparent;
   background-color: transparent;
   background-image: none;
   border: none;
   border-style: none;
   box-shadow: none;
-  padding: 4px;
-  border-radius: 6px;
   color: rgba(255, 255, 255, 0.85);
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
 adwactionrow button.image-button:hover,
-adwactionrow button.flat:hover,
+adwactionrow button.circular:hover,
 preferencespage row button.image-button:hover,
-preferencespage row button.flat:hover,
+preferencespage row button.circular:hover,
 preferencesgroup row button.image-button:hover,
-preferencesgroup row button.flat:hover,
+preferencesgroup row button.circular:hover,
 list.boxed-list row button.image-button:hover,
-list.boxed-list row button.flat:hover,
-adwactionrow > box.header > box.suffixes > button:hover,
-adwactionrow box.suffixes button:hover,
-list.boxed-list row box.suffixes button:hover,
-preferencespage row box.suffixes button:hover,
-preferencesgroup row box.suffixes button:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+list.boxed-list row button.circular:hover,
+adwactionrow > box.header > box.suffixes > button.image-button:hover,
+adwactionrow > box.header > box.suffixes > button.circular:hover,
+adwactionrow > box.header > box.suffixes > button:not(.text-button):hover,
+adwactionrow box.suffixes button.image-button:hover,
+adwactionrow box.suffixes button.circular:hover,
+adwactionrow box.suffixes button:not(.text-button):hover,
+list.boxed-list row box.suffixes button.image-button:hover,
+list.boxed-list row box.suffixes button.circular:hover,
+list.boxed-list row box.suffixes button:not(.text-button):hover,
+preferencespage row box.suffixes button.image-button:hover,
+preferencespage row box.suffixes button.circular:hover,
+preferencespage row box.suffixes button:not(.text-button):hover,
+preferencesgroup row box.suffixes button.image-button:hover,
+preferencesgroup row box.suffixes button.circular:hover,
+preferencesgroup row box.suffixes button:not(.text-button):hover,
+row.property button.image-button:hover,
+row button.image-button:hover,
+row button.circular:hover {
+  background-color: rgba(255, 255, 255, 0.12);
   border: none;
   border-style: none;
+  border-radius: 9999px;
   box-shadow: none;
   color: #ffffff;
 }
 
 adwactionrow button.image-button:active,
-adwactionrow button.flat:active,
+adwactionrow button.circular:active,
 preferencespage row button.image-button:active,
-preferencespage row button.flat:active,
+preferencespage row button.circular:active,
 preferencesgroup row button.image-button:active,
-preferencesgroup row button.flat:active,
+preferencesgroup row button.circular:active,
 list.boxed-list row button.image-button:active,
-list.boxed-list row button.flat:active,
-adwactionrow > box.header > box.suffixes > button:active,
-adwactionrow box.suffixes button:active,
-list.boxed-list row box.suffixes button:active,
-preferencespage row box.suffixes button:active,
-preferencesgroup row box.suffixes button:active {
-  background-color: rgba(255, 255, 255, 0.14);
+list.boxed-list row button.circular:active,
+adwactionrow > box.header > box.suffixes > button.image-button:active,
+adwactionrow > box.header > box.suffixes > button.circular:active,
+adwactionrow > box.header > box.suffixes > button:not(.text-button):active,
+adwactionrow box.suffixes button.image-button:active,
+adwactionrow box.suffixes button.circular:active,
+adwactionrow box.suffixes button:not(.text-button):active,
+list.boxed-list row box.suffixes button.image-button:active,
+list.boxed-list row box.suffixes button.circular:active,
+list.boxed-list row box.suffixes button:not(.text-button):active,
+preferencespage row box.suffixes button.image-button:active,
+preferencespage row box.suffixes button.circular:active,
+preferencespage row box.suffixes button:not(.text-button):active,
+preferencesgroup row box.suffixes button.image-button:active,
+preferencesgroup row box.suffixes button.circular:active,
+preferencesgroup row box.suffixes button:not(.text-button):active,
+row.property button.image-button:active,
+row button.image-button:active,
+row button.circular:active {
+  background-color: rgba(255, 255, 255, 0.20);
   border: none;
   border-style: none;
+  border-radius: 9999px;
   box-shadow: none;
   color: #ffffff;
 }
