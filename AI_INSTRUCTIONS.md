@@ -1,240 +1,265 @@
 # macOS Tahoe / Sequoia Transformation Pack for Ubuntu (GNOME Shell 50 на Wayland)
-## Головний маніфест та технічний довідник розробника для ШІ / AI Developer Handbook
+## Головний маніфест, технічна архітектура та керівництво розробника для ШІ / AI Master Handbook
 
-Цей файл є обов'язковою інструкцією для будь-якого ШІ-асистента, який продовжує розробку, виправляє баги чи оптимізує цей проект. **Перед початком будь-якої роботи уважно прочитай цей документ!**
+Цей документ є **єдиним джерелом істини (Single Source of Truth)** і обов'язковим технічним маніфестом для будь-якого ШІ-асистента, який працює з цим проектом. Проект розробляється як цілісна комерційна та інженерна екосистема.
+
+> [!IMPORTANT]
+> **ГОЛОВНИЙ ПРИНЦИП РОБОТИ — ВИКОНАННЯ ЗАВДАННЯ ЗА ОДИН ЗАПИТ (Single-Turn Execution):**
+> Користувач цінує швидкість, точність і повну автономність. ШІ не повинен зупинятися на півдорозі, задавати тривіальні питання або залишати систему в неробочому стані. Отримавши запит, ви зобов'язані:
+> 1. Проаналізувати проблему в повному обсязі;
+> 2. Внести всі зміни в код/UI;
+> 3. Скомпільувати всі необхідні бібліотеки;
+> 4. Розгорнути та синхронізувати зміни на **всі** системні шляхи;
+> 5. Оновити хеші та пройти автоматичний аудит (`mac-audit-sync check` та `mac-extension-guard verify`);
+> 6. Додати запис у `done.txt` та оновити `~/Desktop/done.txt`;
+> 7. Зробити локальний git-коміт;
+> 8. Надати вичерпну відповідь українською мовою з клікабельними посиланнями `file://`.
 
 ---
 
-## 1. Залізні правила та непорушні обмеження проекту
+## 1. Залізні правила та непорушні обмеження (Iron Rules)
 
 > [!CAUTION]
 > **ПРАВИЛО 1: СУВОРО ЗАБОРОНЕНО `git push`**
-> Ніколи, ні за яких умов не виконуйте команду `git push` або будь-які відправлення у віддалені репозиторії! Усі коміти мають бути виключно **локальними** (`git commit -m "..."`).
+> Ніколи, ні за яких умов не виконуйте команду `git push`, не налаштовуйте віддалені пуші і не надсилайте дані у віддалені репозиторії! Усі коміти мають бути виключно **локальними** (`git commit -m "..."`).
+
+> [!CAUTION]
+> **ПРАВИЛО 2: НІКОЛИ НЕ ЧІПАТИ ТА НЕ КОМІТИТИ GRUB PNG-ІКОНКИ**
+> Каталоги `grub/apple-mac/icons/`, `grub/apple-mac-usb/icons/`, `grub/apple-mac-usb2/icons/` містять специфічні графічні ресурси. **Ніколи не додавайте їх у `git add`** і не модифікуйте без прямої вимоги користувача. При виконанні комітів додавайте файли точково або виключайте файли grub.
 
 > [!IMPORTANT]
-> **ПРАВИЛО 2: МОВА СПІЛКУВАННЯ — ВИКЛЮЧНО УКРАЇНСЬКА**
-> Усі відповіді користувачеві, пояснення, коментарі в чаті та записи в журналі `done.txt` ведуться **суворо українською мовою**.
+> **ПРАВИЛО 3: МОВА СПІЛКУВАННЯ ТА ЖУРНАЛІВ — ВИКЛЮЧНО УКРАЇНСЬКА**
+> Усі відповіді користувачеві в чаті, коментарі до коду, пояснення та звіти у файлі `done.txt` ведуться **суворо українською мовою**.
 
 > [!IMPORTANT]
-> **ПРАВИЛО 3: ОБОВ'ЯЗКОВІ КЛІКАБЕЛЬНІ ПОСИЛАННЯ `file://`**
-> Кожен файл, клас, метод, константа чи шлях, згаданий у вашій відповіді, **МУСИТЬ** бути оформлений як клікабельне markdown-посилання формату GitHub із протоколом `file://`, наприклад:
-> - [`applications_menu_v5b.js`](file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js)
-> - [`open()`](file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js#L1110-L1180)
-> - [`styling.json`](file:///home/vitaliy/.config/mac-styling/styling.json)
+> **ПРАВИЛО 4: ОБОВ'ЯЗКОВІ КЛІКАБЕЛЬНІ ПОСИЛАННЯ `file://`**
+> Кожен згаданий у вашій відповіді файл, каталог, клас або функція **МУСИТЬ** бути оформлений як клікабельне markdown-посилання формату GitHub із протоколом `file://`, наприклад:
+> - [`libmac_settings.c`](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+> - [`cc-widgets-panel.ui`](file:///home/vitaliy/MACTHEMEFILES/control-center/cc-widgets-panel.ui#L705-L735)
+> - [`done.txt`](file:///home/vitaliy/MACTHEMEFILES/done.txt)
 
 > [!IMPORTANT]
-> **ПРАВИЛО 4: СИНХРОНІЗАЦІЯ З ГОЛОВНИМ РЕПОЗИТОРІЄМ**
-> Фізична папка проєкту — це `/home/vitaliy/macW1Y/`, а `/home/vitaliy/MACTHEMEFILES` — це символічне посилання (symlink) на неї:
+> **ПРАВИЛО 5: РЕПОЗИТОРІЙ ЯК SOURCE OF TRUTH ТА СИМЛІНК**
+> Фізична директорія репозиторію — `/home/vitaliy/macW1Y/`.
+> Каталог `/home/vitaliy/MACTHEMEFILES` — це символічне посилання (symlink) на `/home/vitaliy/macW1Y`:
 > `MACTHEMEFILES -> /home/vitaliy/macW1Y`
-> Вони вказують на одні й ті самі фізичні файли на диску.
-> Будь-яка зміна у робочій системі (`~/.local/share/gnome-shell/extensions/...`, `~/.themes/...`, `~/.config/...`) **НЕГАЙНО** копіюється в репозиторій `~/macW1Y/` (або через symlink `~/MACTHEMEFILES/`). Робити подвійне копіювання в обидва шляхи не потрібно. Репозиторій є основним джерелом істини (Source of Truth).
+> Вони посилаються на одні й ті самі фізичні файли на диску. Основна робоча директорія — `/home/vitaliy/MACTHEMEFILES`. Будь-яка зміна у live-системі (`~/.local/...`, `/usr/...`) обов'язково дублюється в репозиторій.
 
 > [!IMPORTANT]
-> **ПРАВИЛО 5: ЖУРНАЛ `done.txt` ТА ЛОКАЛЬНИЙ ГІТ-КОМІТ**
-> Після виконання кожного завдання:
-> 1. Допишіть структурований звіт у кінець [`done.txt`](file:///home/vitaliy/MACTHEMEFILES/done.txt) з новим номером етапу.
-> 2. Зробіть локальний коміт: `git add -A && git commit -m "..."` у папці `/home/vitaliy/MACTHEMEFILES/`.
+> **ПРАВИЛО 6: ЖУРНАЛ `done.txt` ТА `~/Desktop/done.txt`**
+> Після успішного завершення завдання:
+> 1. Допишіть структурований звіт у кінець [`done.txt`](file:///home/vitaliy/MACTHEMEFILES/done.txt) з наступним порядковим номером Task XXX.
+> 2. Скопіюйте оновлений `done.txt` на робочий стіл: `cp done.txt /home/vitaliy/Desktop/done.txt`.
+
+> [!IMPORTANT]
+> **ПРАВИЛО 7: ОБОВ'ЯЗКОВИЙ АУДИТ ПЕРЕД ЗВІТУВАННЯМ**
+> Перед наданням відповіді користувачеві обов'язково запустіть і переконайтеся у 100% успіху:
+> 1. `bin/mac-audit-sync check` — повинен повертати **100% PASS**.
+> 2. `bin/mac-extension-guard verify` — повинен повертати **21/21 SUCCESS**.
 
 > [!WARNING]
-> **ПРАВИЛО 6: ПРЕФІКС `LD_PRELOAD=` У ТЕРМІНАЛІ**
-> У системному середовищі може бути експортована пошкоджена бібліотека `libmacpopover.so`. Через це виконання системних команд або python-скриптів без очищення оточення повертає помилку. Завжди починайте виконання команд bash/python з:
+> **ПРАВИЛО 8: ОЧИЩЕННЯ LD_PRELOAD ПРИ НЕОБХІДНОСТІ**
+> Якщо в терміналі виникають помилки з `libmacpopover.so` чи сторонніми бібліотеками, виконуйте системні команди з префіксом:
 > ```bash
-> LD_PRELOAD= <ваша команда>
+> LD_PRELOAD= <команда>
 > ```
 
 ---
 
-## 2. Що це за проект та архітектура системи
+## 2. Матриця розгортання та синхронізації файлів (Deployment Matrix)
 
-Це проект ультрареалістичної трансформації Ubuntu у **macOS Tahoe / Sequoia** на базі **GNOME Shell 50.1 під керуванням Wayland**.
+У системі працює декілька шарів оверлеїв (користувацькі та загальносистемні). Зміна файлу лише в одному місці призведе до розсинхронізації та збою `mac-audit-sync`. Завжди синхронізуйте файли за такою матрицею:
 
-### Архітектура активних компонентів та розширень:
-1. **[`liquid-glass@thinkingcoding1231.gmail.com`](file:///home/vitaliy/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/)**
-   - Власний конвеєр GLSL-шейдерів для матового рідкого скла (`BackdropGlass`).
-   - Клонує вікна через `WindowCloneManager`, семплує UI через `UILayerSampler`, генерує фізично коректну рефракцію, хроматичну аберацію та м'яке освітлення країв (rim light).
-2. **[`appmenu@ChathurangaBW.github.io`](file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/)**
-   - Меню програми у верхній панелі (Global Menu).
-   - **Spotlight** (`searchDialog_v5.js`): спливаюча пілюля пошуку з морфінгом.
-   - **Центр програм / Launchpad** (`applications_menu_v5b.js`): сітка додатків, категорії, пошук.
-   - **Історія буфера обміну** (`clipboardDialog_v2.js`): картки скопійованих фрагментів.
-3. **[`kiwi@kemma`](file:///home/vitaliy/.local/share/gnome-shell/extensions/kiwi@kemma/)**
-   - **Центр сповіщень macOS Tahoe** (`apps/tahoeNotifications.js`, `apps/tahoeNotificationCard.js`): темні акрилові картки сповіщень, групування у стопки, підтримка розмиття.
-4. **[`blur-my-shell@aunetx`](file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/)**
-   - Верхня панель `menubar_v29.js`, огляд (overview), швидкі параметри.
-   - Підсистема стилізації `styling.json`.
-5. **[`eval-helper@mactheme`](file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/)**
-   - D-Bus інтерфейс `org.gnome.Shell.Extensions.EvalHelper` за шляхом `/org/gnome/Shell/Extensions/EvalHelper`.
-   - Дозволяє виконувати довільний JavaScript у контексті GNOME Shell з python-скриптів.
-6. **[`wack-lockscreen-clock@rinzler69-wastaken.github.com`](file:///home/vitaliy/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/)**
-   - Екран блокування та GDM гретер у стилі Cupertino.
-7. **[`dash2dock-motion@unmade.space`](file:///home/vitaliy/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/) та [`cupertino-dock-lite`](file:///home/vitaliy/.local/share/gnome-shell/extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/)**
-   - Нижня Dock-панель із фізикою збільшення іконок та скляним матовим тінтом.
-
----
-
-## 3. Візуальний канон та специфікація елементів (Design Standards)
-
-Усі елементи інтерфейсу мають суворо відповідати мові дизайну macOS Tahoe / Sequoia:
-
-### 1. Центр сповіщень (Notification Center) та плаваючі банери
-- **Стиль картки**: насичений темний матовий акрил з розмиттям:
-  ```css
-  background-color: rgba(45, 45, 47, 0.76) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
+### 1. Бібліотека GNOME Settings (`libmac_settings`)
+- **Вихідні файли C (мають бути 100% ідентичними)**:
+  - `control-center/libmac_settings.c`
+  - `gnome-control-center-overlay/libmac_settings.c`
+- **Команда компіляції** (зверніть увагу: вихідний `.c` файл ставиться **перед** бібліотеками, щоб лінкер коректно підтягнув `json-glib`):
+  ```bash
+  gcc -shared -fPIC -O2 control-center/libmac_settings.c $(pkg-config --cflags --libs gtk4 libadwaita-1 json-glib-1.0) -o control-center/libmac_settings.so
   ```
-- **Заокруглення**: суворо `16px` (у конфігу `~/.config/mac-styling/styling.json` параметр `notif_radius` має бути `16`).
-- **Верхній рядок**: розділений flex-розпіркою:
-  - Ліворуч: іконка програми (36x36px, `border-radius: 9px`, `clip_to_allocation: true`), назва програми (жирний білий текст 13px), лічильник стопки.
-  - Праворуч: часова мітка ("14:22" або "Вчора, 18:30"), яка при наведенні курсору плавно поступається місцем кнопці закриття (✕).
-- **Заголовок та дублювання**: якщо заголовок збігається з назвою застосунку (наприклад, "Antigravity"), заголовок приховується.
-- **Тіло сповіщення (Body Text)**: багаторядкове перенесення! Ширина текстового контейнера 366px, `line_wrap: true`, `single_line_mode: false`, `wrap_mode: Pango.WrapMode.WORD_CHAR`. Текст ніколи не повинен обрізатися в один рядок із трикрапкою!
-- **Кнопки дій**: прямокутні капсули із заокругленням 7px, паддінгами `4px 12px`, напівпрозорою підкладкою `rgba(255, 255, 255, 0.16)` у правому нижньому кутку.
-- **Стопки (MacNotificationGroup)**: підкладки `layer1` (`rgba(38, 38, 40, 0.72)`) та `layer2` (`rgba(30, 30, 32, 0.65)`) з виступом 6px та 11px знизу. Внутрішні шари не повинні просвічувати крізь текст!
+- **Усі цільові шляхи бінарника `.so` (синхронізувати без винятку!)**:
+  ```bash
+  cp control-center/libmac_settings.so gnome-control-center-overlay/libmac_settings.so
+  cp control-center/libmac_settings.so lib/libmac_settings.so
+  cp control-center/libmac_settings.so ~/.local/lib/libmac_settings.so
+  cp control-center/libmac_settings.so ~/.local/share/gnome-control-center-overlay/libmac_settings.so 2>/dev/null || true
+  sudo cp control-center/libmac_settings.so /usr/local/lib/libmac_settings.so
+  sudo cp control-center/libmac_settings.so /usr/lib/x86_64-linux-gnu/libmac_settings.so
+  sudo cp control-center/libmac_settings.so /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so
+  ```
 
-### 2. Spotlight (Пошук ⌘Space)
-- **Пілюля в спокої**: ширина 714px, висота 54px, заокруглення 26px (`CORNER_RADIUS = 26.0`).
-- **Рідке скло**: `BackdropGlass` з `owner: 'spotlight'`, паддінг 0, розмиття 8.0, тінт темний `rgba(0.16, 0.16, 0.18, 0.12)`.
-- **Розширення**: плавний морфінг за висотою при введенні запиту або перемиканні категорій (Файли, Програми, Буфер).
+### 2. UI-файли панелей GNOME Settings (`*.ui`)
+Файли інтерфейсу (`cc-widgets-panel.ui`, `cc-power-panel.ui`, `cc-mac-styling-panel.ui`, `cc-window.ui`, `cc-system-panel.ui`, `cc-mouse-panel.ui`):
+- `control-center/<file>.ui`
+- `gnome-control-center-overlay/<file>.ui`
+- `~/.local/share/gnome-control-center-overlay/<file>.ui`
+- `/usr/share/mactheme/gnome-control-center-overlay/<file>.ui` (через `sudo cp`)
 
-### 3. Центр програм (Applications Center / Launchpad)
-- **Розміри**: ширина 714px, висота 530px, заокруглення 26px.
-- **Сітка**: 7 колонок (`COLUMNS = 7`), ширина колонки 94px, розмір іконки 52px.
-- **Рядок заголовка**: іконка App Store (синя літера "A"), рядок пошуку з підказкою `| Програми`, кнопка дій "...".
-- **Категорії**: перемикачі (Утиліти, Спілкування, Продуктивність, Інше) з горизонтальним вирівнюванням.
-- **Підкладка**: динамічний `BackdropGlass` із обов'язковим викликом `forceRefresh(1)` при відкритті, щоб скло не показувало старий застиглий буфер.
+### 3. GNOME Shell Розширення (21 активне розширення)
+- Джерело в репозиторії: `extensions/<uuid>/`
+- Системне live-розширення: `~/.local/share/gnome-shell/extensions/<uuid>/`
+- **КРИТИЧНО**: після будь-якого редагування файлів розширення обов'язково оновіть хеш у `config/extensions.lock.json`!
+  Алгоритм оновлення хешу:
+  1. Знайдіть функцію розрахунку хешу директорії в `bin/mac-extension-guard` (сортування файлів, sha256 відносних шляхів і вмісту).
+  2. Оновіть поля `sha256` та `pinned_sha256` у `config/extensions.lock.json` для відповідного UUID.
+  3. Перевірте командою: `bin/mac-extension-guard verify` (має бути **21/21 SUCCESS**).
 
-### 4. Верхня панель (MenuBar)
-- **Висота**: суворо 28px (`height: 28px !important; min-height: 28px !important`).
-- **Відступи праворуч**: суворо 8px між усіма елементами індикаторів (`margin: 2px 4px !important`).
-- **Порядок іконок справа**:
-  `[Трей сторонніх додатків] -> [Wi-Fi] -> [Bluetooth] -> [Звук] -> [Батарея (одна!)] -> [Мова (uk/en)] -> [Control Center (34x28px)] -> [Дата/Час]`.
-- **Control Center Button**: пілюля 34x28px з іконкою повзунків, що відкриває меню впритул до правого краю екрана.
+### 4. Системні скрипти та утиліти (`bin/`)
+- Файли у репозиторії: `bin/<script_name>`
+- Системне встановлення: `/usr/local/bin/<script_name>` (через `sudo cp`)
+- Перевіряється у тесті [3/5] утиліти `bin/mac-audit-sync check`.
 
-### 5. Екран блокування (GDM Lock Screen)
-- **Стиль**: Cupertino (wack-lockscreen-clock + user-theme).
-- **Шпалери**: `/usr/share/backgrounds/GoldenGate_Day.jpg`.
-- **Тема Shell**: `macW1Y-Dark`.
-- **Шрифти**: `SF Pro Text` / `SF Pro Display`.
-- **Тіні**: легкі напівпрозорі тіні під годинником та датою (`0 1px 3px rgba(0, 0, 0, 0.20)`).
-
----
-
-## 4. Технічні підводні камені та правила розробки (GJS / Clutter / Wayland)
-
-### 1. Кешування ES-модулів у GJS (GNOME Shell 45+ / 50+)
-> [!WARNING]
-> GJS кешує імпортовані ES-модулі в пам'яті процесу GNOME Shell за їхнім URI. 
-> Статичні імпорти на початку файлу (`import ... from './file.js'`) кешуються назавжди! Навіть вимкнення та повторне увімкнення розширення (`disableExtension` / `enableExtension`) **НЕ призводить** до повторного читання файлів з диска!
-
-**Як правильно застосовувати зміни без повного перезапуску системи:**
-1. **Для допоміжних файлів розширень**:
-   Використовуйте версіонування у динамічних імпортах:
-   ```javascript
-   const mod = await import(`${baseUri}/myModule.js?v=${Date.now()}`);
-   ```
-   Або створюйте нову версію файлу (`file_v5b.js`) та оновлюйте імпорт.
-2. **Для повного оновлення розширення**:
-   У GNOME Shell 50 доступний спеціальний метод `reloadExtension`:
-   ```javascript
-   const ext = Main.extensionManager.lookup('appmenu@ChathurangaBW.github.io');
-   await Main.extensionManager.reloadExtension(ext);
-   ```
-   Він повністю скидає кеш та перезавантажує модуль розширення без розриву сесії!
-
-### 2. Специфіка Wayland
-- На відміну від X11, на Wayland функція `Meta.restart()` **не працює**.
-- Перезапуск GNOME Shell на Wayland означає завершення сеансу (logout).
-- Тому **всі налагодження та тестування** проводяться виключно в живому режимі через D-Bus EvalHelper без перезапуску оболонки!
-
-### 3. Як тестувати та викликати код через `EvalHelper`
-У системі розгорнуто `eval-helper@mactheme`. Викликати будь-який код JS можна з python:
-```python
-import dbus
-
-bus = dbus.SessionBus()
-obj = bus.get_object('org.gnome.Shell', '/org/gnome/Shell/Extensions/EvalHelper')
-iface = dbus.Interface(obj, 'org.gnome.Shell.Extensions.EvalHelper')
-
-code = """(() => {
-    // Ваш код тут
-    return JSON.stringify({ ok: true });
-})()"""
-print(iface.Eval(code))
-```
-
-### 4. Робота з `BackdropGlass` (Liquid Glass)
-- При створенні `BackdropGlass`:
-  Обов'язково додавайте виключення (`addExclusion`) для самого діалогу, його контейнера та бекдропу, щоб скло не намагалося розмити саме себе.
-- При відкритті діалогу:
-  Завжди викликайте `this._glass.forceRefresh(1)`, щоб оновити клони вікон і захопити актуальний екран під склом.
-- При закритті діалогу:
-  Ніколи не залишайте старе скло висіти у пам'яті. Викликайте `destroy()` або приховуйте його з плавним `ease({ opacity: 0 })`.
-- **Запобігання витоку акторів у `uiGroup`**:
-  Перед створенням нового екземпляра діалогу завжди перевіряйте наявність старих осиротілих акторів у `Main.layoutManager.uiGroup` і знищуйте їх, інакше GPU буде перевантажений закільцьованими шейдерами!
-
-### 5. Обов'язкова валідація GObject акторів
-У середовищі GJS не можна просто писати `if (actor)`. Якщо C-об'єкт було знищено в Mutter, звернення до його властивостей викине критичний виняток `Object has been already deallocated`.
-**Завжди використовуйте перевірки:**
-```javascript
-const _gobjectToString = GObject.Object.prototype.toString;
-
-function _isActorValid(actor) {
-    if (!actor) return false;
-    try {
-        const desc = _gobjectToString.call(actor);
-        if (desc.includes('(DISPOSED)') || desc.includes('(FINALIZED)')) return false;
-        if (actor._cleanedUp) return false;
-        return typeof actor.visible === 'boolean';
-    } catch (_) {
-        return false;
-    }
-}
-
-function _isGlassAlive(glass) {
-    if (!glass) return false;
-    try {
-        const desc = _gobjectToString.call(glass);
-        if (desc.includes('(DISPOSED)') || desc.includes('(FINALIZED)')) return false;
-        if (glass._cleanedUp) return false;
-        return typeof glass.visible === 'boolean' && glass.get_parent() !== null;
-    } catch (_) {
-        return false;
-    }
-}
-```
-
-### 6. Взаємне виключення меню (`_macCloseAllCenters`)
-macOS одночасно показує лише одне головне спливаюче меню. У системі оголошена глобальна функція `globalThis._macCloseAllCenters(callerName)`.
-При відкритті будь-якого меню (Spotlight, Applications, Notification Center, Control Center, Clipboard) необхідно викликати:
-```javascript
-if (typeof globalThis._macCloseAllCenters === 'function') {
-    globalThis._macCloseAllCenters('applications'); // або 'spotlight' тощо
-}
-```
+### 5. Теми GTK 3 / GTK 4
+- Теми: `macW1Y-Dark`, `macW1Y-Light`, `macW1Y-Dark-solid`, `macW1Y-Light-solid`
+- Шляхи: `~/.themes/<theme_name>/`, `/usr/share/themes/<theme_name>/` та в корені репозиторію.
 
 ---
 
-## 5. Покроковий алгоритм дій ШІ при отриманні завдання (Step-by-Step Workflow)
+## 3. Архітектура ключових підсистем
 
-Коли користувач просить внести правку, полагодити баг чи змінити поведінку:
+### 1. Інтегрована панель Параметрів (GNOME Control Center) та `libmac_settings`
+`libmac_settings.so` впроваджується в GNOME Settings через механізм `LD_PRELOAD`:
+- **Сайдбар та оверлеї**: перехоплює створення `AdwNavigationSplitView` у `cc-window.ui`.
+- **Власні розділи**:
+  - `widgets` («Віджети»): повне керування віджетами, перемикач режиму редагування, вирівнювання за сіткою, відступи між віджетами, розширені налаштування (`widgets_configurator`), та вбудована галерея додавання віджетів (`widgets_picker`).
+  - `mac-styling` («Стилізація macOS»): налаштування ефектів матового скла Liquid Glass, відтінку, розмиття, кольорів акценту.
+  - `account` («Обліковий запис»): картка профілю у верхній частині сайдбару з переходом до параметрів користувача.
+- **Вбудована галерея вибору віджетів (`widgets_picker`)**:
+  - Підсторінка `AdwNavigationPage` з тегом `widgets_picker` всередині `widgets_nav_view`.
+  - Містить 19 віджетів з категоріями, іконками, описами та кнопками [Додати].
+  - При натисканні на кнопку або активації рядка виконується додавання відповідного об'єкта у GSettings `layout-json` через `json-glib` та виводиться сповіщення `AdwToast`.
+  - **Автоматичний життєвий цикл режиму редагування**:
+    * Вхід у галерею (`on_dw_add_widgets_clicked` або сигнал `shown` сторінки): `dw_set_edit_mode(TRUE)`.
+    * Вихід із галереї (сигнали `hidden` / `popped` при натисканні назад `<`): `dw_set_edit_mode(FALSE)`.
+    * Перехід на інший розділ сайдбару: `dw_set_edit_mode(FALSE)` та скидання на `widgets_main`.
+    * Закриття вікна Параметрів: `dw_settings_window_close_cb()` скидає `dw_set_edit_mode(FALSE)`.
 
-1. **Діагностика**:
-   - Перевірте стан розширення через `EvalHelper` або `journalctl -xe --since "2 minutes ago"`.
-   - З'ясуйте точну помилку, рядок коду та причину.
-2. **Внесення виправлень**:
-   - Відредагуйте цільовий файл у робочому каталозі `~/.local/share/gnome-shell/extensions/...`.
-   - Дотримуйтесь правил валідації акторів, безпечних блоків `try ... catch` та уникнення витоків.
-3. **Застосування змін (Hot Reload)**:
-   - Перезавантажте модуль через `Main.extensionManager.reloadExtension(ext)`.
-   - Перевірте через python/dbus стан: `ext.state === 1 (ENABLED)` і відсутність помилок `ext.error`.
-4. **Тестування та перевірка**:
-   - Програмно викличте функцію відкриття/закриття меню або відповідної дії.
-   - Переконайтеся, що всі елементи мають коректну непрозорість (`opacity: 255`), геометрію та обробники подій.
-5. **Синхронізація та фіксація**:
-   - Скопіюйте всі змінені файли до `/home/vitaliy/MACTHEMEFILES/` та `/home/vitaliy/macW1Y/`. це для того аби користувач при встановленні отримав той вигляд системи як у нас зараз
-   - Додайте новий розділ до [`done.txt`](file:///home/vitaliy/MACTHEMEFILES/done.txt).
-   - Зробіть локальний коміт у git (`git add -A && git commit -m "..."`). **СУВОРО БЕЗ GIT PUSH!**
-6. **Відповідь користувачеві**:
-   - Надайте чітку, лаконічну відповідь українською мовою з клікабельними `file://` посиланнями на всі змінені файли та ключові функції.
+### 2. Віджети стільниці (`desktop-widgets@r3nhick`)
+- **Схема GSettings**: `org.gnome.shell.extensions.desktop-widgets-r3nhick`.
+- **Ключі**:
+  - `edit-mode` (boolean): активує перетягування, зміну розміру та рамки віджетів.
+  - `layout-json` (string): JSON-документ версії 3 зі списком розміщених віджетів:
+    ```json
+    {
+      "version": 3,
+      "widgets": [
+        {
+          "id": "clock-1793898864421",
+          "type": "clock",
+          "size": "small",
+          "x": 24,
+          "y": 80,
+          "data": {},
+          "stack": [],
+          "pinned": false
+        }
+      ]
+    }
+    ```
+  - `open-widget-picker` (boolean): при виклику з меню індикатора запускає `gnome-control-center widgets`.
+  - `arrange-widgets` (boolean): запит автовирівнювання за сіткою.
+
+### 3. Рідке матове скло Liquid Glass (`liquid-glass@thinkingcoding1231.gmail.com`)
+- Реалізує шейдерний ефект `BackdropGlass` (рефракція, хроматична аберація, внутрішнє підсвічування граней).
+- **Важливі правила**:
+  - Завжди виключати діалог із власного семплювання скла (`addExclusion`), інакше виникає рекурсивне розмиття.
+  - При відкритті викликати `forceRefresh(1)` для захоплення актуального фону.
+  - При закритті викликати `destroy()` для запобігання витоку акторів у `Main.layoutManager.uiGroup`.
+
+### 4. Центр сповіщень macOS Tahoe (`kiwi@kemma`)
+- Розташування: `apps/tahoeNotifications.js`, `apps/tahoeNotificationCard.js`.
+- Дизайн: темно-акрилова картка `rgba(45, 45, 47, 0.76)`, радіус 16px, стопки з виступом, плавне закриття.
+- **Адаптивна висота**: контейнер сповіщення повинен вміщувати іконку програми, назву, багаторядкове тіло повідомлення (`line_wrap: true`, `wrap_mode: Pango.WrapMode.WORD_CHAR`) та кнопки дій без накладання чи обрізання.
+
+### 5. Dock-панель та меню
+- Док налаштований через `dash2dock-motion` + `cupertino-dock-lite`.
+- Стандарт macW1Y: плаваючий док (float dock), фіксований розмір 54px, без connector lock.
+- У разі виходу з огляду (overview) фон доку оновлюється під актуальні шпалери за допомогою `bin/mac-dock-fix`.
+
+### 6. Віконні кнопки керування (Traffic Lights)
+- Розташовані ліворуч (стиль macOS): червона (закрити), жовта (згорнути), зелена (розгорнути).
+- Заголовки вікон: назва програми не дублюється біля кнопок керування.
+- Усі кнопки мають рівні пропорції (ширина дорівнює висоті, круглі пілюлі/кружечки за дизайном Cupertino).
+
+### 7. Іконки файлів та асоціації програм
+- Для AppImage, deb, exe, zip, tar.xz система повинна показувати специфічні значки застосунків/документів, а не безликі системні заглушки.
+- Використовуються MIME-асоціації в `~/.local/share/applications/`, `/usr/share/applications/` та скрипти вилучення іконок.
+
+---
+
+## 4. Покроковий протокол виконання завдання "ЗА ОДИН ЗАПИТ"
+
+Будь-яке нове завдання виконуйте строго за цим протоколом без зупинки:
+
+```mermaid
+flowchart TD
+    A["1. Отримання запиту"] --> B["2. Глибокий аналіз коду та логів"]
+    B --> C["3. Внесення виправлень (Код / UI / CSS)"]
+    C --> D{"Чи змінювався C код?"}
+    D -- Так --> E["4. Компіляція libmac_settings.so з прапорцями"]
+    D -- Ні --> F["5. Синхронізація на всі цільові шляхи"]
+    E --> F
+    F --> G{"Чи змінювались розширення?"}
+    G -- Так --> H["6. Оновлення extensions.lock.json"]
+    G -- Ні --> I["7. Тестування (Python / UI / DBus)"]
+    H --> I
+    I --> J["8. Запуск bin/mac-audit-sync check (100% PASS)"]
+    J --> K["9. Запуск bin/mac-extension-guard verify (21/21 SUCCESS)"]
+    K --> L["10. Запис у done.txt та cp на Desktop"]
+    L --> M["11. Локальний git commit (БЕЗ grub PNG, БЕЗ push)"]
+    M --> N["12. Відповідь користувачеві українською мовою з file://"]
+```
+
+### Детальні кроки протоколу:
+
+1. **Аналіз**:
+   - Знайдіть усі файли, пов'язані з проблемою (використовуйте `grep -rn`, перевіряйте symlink `MACTHEMEFILES` та репозиторій).
+   - Якщо помилка у GNOME Shell — перевірте останні логи: `journalctl -xe --since "3 minutes ago" | grep -iE "error|warning|gnome-shell"`.
+
+2. **Редагування**:
+   - Внесіть зміни у вихідні файли репозиторію.
+   - Дотримуйтесь стандартів відступів, безпечних перевірок об'єктів GObject (`_isActorValid`, перевірка на `DISPOSED`/`FINALIZED`).
+
+3. **Компіляція та розгортання**:
+   - Якщо змінено `libmac_settings.c` — скомпільуйте з правильним порядком аргументів:
+     `gcc -shared -fPIC -O2 control-center/libmac_settings.c $(pkg-config --cflags --libs gtk4 libadwaita-1 json-glib-1.0) -o control-center/libmac_settings.so`
+   - Розкопіюйте бінарник та UI-файли на **всі** обов'язкові шляхи (див. Матрицю розгортання вище).
+
+4. **Оновлення хешів розширень (при необхідності)**:
+   - Якщо змінювався код розширення в `extensions/`, оновіть хеш директорії в `config/extensions.lock.json`.
+   - Запустіть `bin/mac-extension-guard verify` і переконайтеся у результаті `21/21 SUCCESS`.
+
+5. **Тестування**:
+   - Проведіть пряму верифікацію (завантаження UI у Gtk.Builder через Python, емуляція викликів сигналів, перевірка GSettings).
+
+6. **Аудит системи**:
+   - Запустіть `bin/mac-audit-sync check`. Результат **МУСИТЬ** бути:
+     `AUDIT RESULT: 100% PASS! System and repository are in sync.`
+
+7. **Журнал та коміт**:
+   - Сформуйте структурований розділ `Task XXX: <Назва>` у [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt).
+   - Скопіюйте файл: `cp done.txt /home/vitaliy/Desktop/done.txt`.
+   - Додайте файли в індекс git (тільки змінені файли проекту, **БЕЗ** `grub/.../*.png`):
+     ```bash
+     git add <змінені_файли> done.txt
+     git commit -m "feat/fix: опис змін"
+     ```
+   - **НІКОЛИ НЕ РОБІТЬ `git push`!**
+
+8. **Фінальна відповідь**:
+   - Лаконічно, професійно та структуровано українською мовою опишіть вирішення проблеми.
+   - Обов'язково вкажіть клікабельні `file://` посилання на всі змінені файли та ключові функції.
+
+---
+
+## 5. Чек-лист типових помилок ШІ (Чого категорично не можна робити)
+
+1. ❌ **Не виконати `git push`**: суворо заборонено!
+2. ❌ **Не комітити `grub/.../icons/*.png`**: ці файли не повинні потрапляти до комітів!
+3. ❌ **Не оновлювати лише один екземпляр файлу**: у проекті є кілька дзеркал (`control-center/`, `gnome-control-center-overlay/`, `/usr/share/...`). Потрібно оновлювати **всі** дзеркала!
+4. ❌ **Не ставити бібліотеки перед сирцем у gcc**: `gcc ... $(pkg-config --libs) file.c` призводить до того, що лінкер викидає бібліотеки! Завжди пишіть: `gcc ... file.c $(pkg-config --libs ...) -o out.so`.
+5. ❌ **Не забувати оновити `extensions.lock.json`**: будь-яка зміна у розширенні без оновлення хешу ламає `mac-extension-guard verify`.
+6. ❌ **Не забувати про `~/Desktop/done.txt`**: користувач переглядає звіт саме на робочому столі.
+7. ❌ **Не залишати текстові шляхи без посилання `file://`**: кожна згадка файлу в чаті має бути клікабельною.
+8. ❌ **Не питати очевидних дозволів**: у вас є повний доступ і інструменти — аналізуйте, виправляйте, компілюйте, тестуйте та здавайте готову роботу за один запит!
