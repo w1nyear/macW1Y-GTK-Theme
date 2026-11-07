@@ -23,7 +23,7 @@ favorites=['🎃']
 [net/nokyan/Resources]
 graph-data-points=uint32 60
 is-maximized=false
-last-viewed-page='gpu-0000:01:00.0'
+last-viewed-page='cpu'
 processes-sort-by=uint32 3
 processes-sort-by-ascending=false
 refresh-speed='VeryFast'
@@ -54,6 +54,10 @@ palette='Vs Code'
 [org/gnome/Ptyxis/Profiles/fdeeded7c6afd076814425e76ad24e65]
 opacity=1.0
 palette='Vs Code'
+
+[org/gnome/baobab/ui]
+is-maximized=false
+window-size=(960, 600)
 
 [org/gnome/boxes]
 first-run=false
@@ -126,6 +130,7 @@ interval-seconds=uint32 1800
 play-sound=true
 
 [org/gnome/desktop/input-sources]
+current=uint32 1
 mru-sources=[('xkb', 'ua'), ('xkb', 'us')]
 sources=[('xkb', 'us'), ('xkb', 'ua')]
 
@@ -333,7 +338,7 @@ command-history=['killall -3 gnome-shell', 'logout', 'r']
 disable-extension-version-validation=true
 disable-user-extensions=false
 disabled-extensions=['apps-menu@gnome-shell-extensions.gcampax.github.com', 'ubuntu-dock@ubuntu.com', 'snapd-prompting@canonical.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'tiling-assistant@ubuntu.com', 'stage-manager@gnome-stage-manager', 'dash-to-dock@micxgx.gmail.com', 'spotlight@nin']
-enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'ubuntu-appindicators@ubuntu.com', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'Rounded_Corners@lennart-k', 'custom-command-toggle@storageb.github.com', 'volume-percentage-quick-settings@imdarktom', 'quick-settings-scroll@diskmth.fr', 'wifi-hotspot-quick-settings@aryan10.github.io', 'top-bar-organizer@julian.gse.jsts.xyz', 'ding@rastersoft.com', 'run-cmd@custom.extension', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'cupertino-dock-lite@rinzler69-wastaken.github.com', 'macos-touchpad-gestures@mactheme', 'desktop-widgets@r3nhick', 'dash2dock-motion@unmade.space', 'kiwi@kemma', 'appmenu@ChathurangaBW.github.io', 'liquid-glass@thinkingcoding1231.gmail.com', 'blur-my-shell@aunetx', 'eval-helper@mactheme']
+enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'ubuntu-appindicators@ubuntu.com', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'Rounded_Corners@lennart-k', 'custom-command-toggle@storageb.github.com', 'volume-percentage-quick-settings@imdarktom', 'quick-settings-scroll@diskmth.fr', 'wifi-hotspot-quick-settings@aryan10.github.io', 'top-bar-organizer@julian.gse.jsts.xyz', 'ding@rastersoft.com', 'run-cmd@custom.extension', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'cupertino-dock-lite@rinzler69-wastaken.github.com', 'macos-touchpad-gestures@mactheme', 'desktop-widgets@r3nhick', 'dash2dock-motion@unmade.space', 'liquid-glass@thinkingcoding1231.gmail.com', 'eval-helper@mactheme', 'kiwi@kemma', 'appmenu@ChathurangaBW.github.io', 'blur-my-shell@aunetx']
 favorite-apps=['org.gnome.Nautilus.desktop', 'launchpad.desktop', 'google-chrome.desktop', 'antigravity_antigravity.desktop', 'ai.opencode.desktop.desktop', 'org.gnome.Ptyxis.desktop', 'telegram-desktop_telegram-desktop.desktop', 'steam_steam.desktop', 'org.gnome.Boxes.desktop', 'org.gnome.Settings.desktop']
 last-selected-power-profile='performance'
 welcome-dialog-last-shown-version='50.1'
@@ -426,7 +431,7 @@ unblur-in-overview=false
 
 [org/gnome/shell/extensions/blur-my-shell/popup]
 blur=true
-brightness=0.86499999999999999
+brightness=0.92500000000000004
 corner-radius=24
 dialog-corner-radius=24
 menu-corner-radius=14
@@ -541,15 +546,15 @@ workspace-agnostic-urgent-windows=true
 appearance=2
 arrange-widgets=false
 battery-show-percent=true
-blur-radius-px=1
+blur-radius-px=3
 calendar-lookahead=3
 clock-smooth-seconds=false
 digitalclock-show-seconds=false
 drag-active=false
 edit-mode=false
-layout-json='{"version":3,"widgets":[{"id":"clock-1","type":"clock","size":"small","x":1715,"y":49,"data":{"sizeManual":true},"stack":[],"pinned":false},{"id":"calendar-1","type":"calendar","size":"medium","x":1510,"y":254,"data":{},"stack":[],"pinned":false},{"id":"battery-1","type":"battery","size":"mini","x":1648,"y":459,"data":{"sizeManual":true},"stack":[],"pinned":false}]}'
+layout-json='{"version":3,"widgets":[{"id":"clock-1","type":"clock","size":"small","x":1715,"y":49,"data":{"sizeManual":true},"stack":[],"pinned":false},{"id":"calendar-1","type":"calendar","size":"medium","x":1510,"y":254,"data":{},"stack":[],"pinned":false},{"id":"battery-1","type":"battery","size":"mini","x":1650,"y":459,"data":{"sizeManual":true},"stack":[],"pinned":false},{"id":"system-1793898864421","type":"system","size":"medium","x":1305,"y":49,"data":{},"stack":[],"pinned":false}]}'
 music-ignore-browsers=true
-open-widget-picker=true
+open-widget-picker=false
 pause-animations-fullscreen=true
 show-panel-icon=true
 style-border-radius=35
@@ -641,14 +646,14 @@ application-window-whitelist=['org.gnome.Settings', 'gnome-control-center', 'org
 blur-method=1
 blur-my-shell-popup-blur=false
 desktop-menu-blur-radius=3
-desktop-menu-brightness=0.90000000000000002
+desktop-menu-brightness=0.92500000000000004
 desktop-menu-content-opacity=1.0
 desktop-menu-contrast=1.02
 desktop-menu-corner-radius=20.0
 desktop-menu-saturation=1.1499999999999999
 desktop-menu-tint-color='#000000'
-desktop-menu-tint-strength=0.20000000000000001
-detected-extra-menus=['a11y', 'appindicator-:1.144@/org/ayatana/NotificationItem/livepatch', 'appindicator-:1.144@/org/ayatana/NotificationItem/software_update_available', 'appindicator-:1.144@/org/ayatana/NotificationItem/un_reboot', 'appindicator-:1.144@/org/ayatana/NotificationItem/unattended_upgrade', 'appindicator-:1.217@/StatusNotifierItem', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'desktop-widgets@r3nhick', 'dwellClick', 'keyboard', 'macBattery', 'macBluetooth', 'macPrivacy', 'macScreenCast', 'macVolume', 'macWifi']
+desktop-menu-tint-strength=0.14999999999999999
+detected-extra-menus=['a11y', 'appindicator-:1.144@/org/ayatana/NotificationItem/livepatch', 'appindicator-:1.144@/org/ayatana/NotificationItem/software_update_available', 'appindicator-:1.144@/org/ayatana/NotificationItem/unattended_upgrade', 'appindicator-:1.221@/StatusNotifierItem', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'desktop-widgets@r3nhick', 'dwellClick', 'keyboard', 'macBattery', 'macBluetooth', 'macPrivacy', 'macScreenCast', 'macVolume', 'macWifi']
 dock-blur-radius=1
 dock-brightness=1.0
 dock-contrast=1.02
@@ -704,7 +709,7 @@ glass-shininess=42.0
 glass-specular-intensity=0.10000000000000001
 menu-animation-interval-ms=3
 menu-blur-radius=3
-menu-brightness=0.90000000000000002
+menu-brightness=0.92500000000000004
 menu-contrast=1.02
 menu-corner-radius=20.0
 menu-enable-adaptive-text-color=false
@@ -717,10 +722,10 @@ menu-spring-damping=22.0
 menu-spring-mass=1.0
 menu-spring-stiffness=120.0
 menu-tint-color='#000000'
-menu-tint-strength=0.20000000000000001
+menu-tint-strength=0.14999999999999999
 menu-x-offset=29
 menu-y-offset=-2
-notification-blur-radius=35
+notification-blur-radius=0
 notification-brightness=1.0
 notification-contrast=1.0
 notification-corner-radius=24.0
@@ -729,7 +734,7 @@ notification-glass-expand=0
 notification-sample-interval-ms=400
 notification-saturation=1.0
 notification-tint-color='#29292e'
-notification-tint-strength=0.040000000000000001
+notification-tint-strength=0.14999999999999999
 notification-y-offset=10
 osd-blur-radius=0
 osd-brightness=1.0
@@ -745,7 +750,7 @@ osd-y-offset=24
 output-logs=true
 panel-menu-animation-interval-ms=16
 panel-menu-blur-radius=3
-panel-menu-brightness=0.90000000000000002
+panel-menu-brightness=0.92500000000000004
 panel-menu-contrast=1.02
 panel-menu-corner-radius=20.0
 panel-menu-enable-adaptive-text-color=true
@@ -758,7 +763,7 @@ panel-menu-spring-damping=22.0
 panel-menu-spring-mass=1.0
 panel-menu-spring-stiffness=120.0
 panel-menu-tint-color='#000000'
-panel-menu-tint-strength=0.20000000000000001
+panel-menu-tint-strength=0.14999999999999999
 panel-menu-x-offset=0
 panel-menu-y-offset=0
 quick-settings-apply-to=1
@@ -819,8 +824,16 @@ locations=@av []
 enabled=false
 
 [org/gtk/gtk4/settings/file-chooser]
+date-format='regular'
+location-mode='path-bar'
 show-hidden=false
+sidebar-width=140
+sort-column='name'
 sort-directories-first=true
+sort-order='ascending'
+type-format='category'
+view-type='list'
+window-size=(851, 332)
 
 [org/gtk/settings/color-chooser]
 custom-colors=[(0.44705882668495178, 0.62352943420410156, 0.81176471710205078, 0.0)]

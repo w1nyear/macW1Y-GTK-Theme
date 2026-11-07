@@ -1,18 +1,17 @@
 {
   "image_format": 0,
-  "image_quality": 95,
+  "image_quality": 90,
   "show_cursor": true,
   "shutter_sound": true,
   "timer_delay": 0,
   "video_container": 0,
   "video_codec": 0,
   "video_fps": 0,
+  "screencast_cursor": true,
   "record_audio": false,
   "processing_enabled": true,
   "processing_target": 2,
   "processing_algorithm": 0,
   "processing_scope": 0,
-  "keep_original": false,
-  "screenshots_dir": "~/Зображення/Знімки екрана",
-  "screencasts_dir": "~/Відео/Трансляції з екрана"
+  "keep_original": false
 }

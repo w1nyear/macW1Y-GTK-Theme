@@ -1,21 +1,23 @@
 [/]
-debug=true
+brightness=0.86499999999999999
+debug=false
 hacks-level=1
-pipelines={'pipeline_default': {'name': <'Default'>, 'effects': <[<{'type': <'native_static_gaussian_blur'>, 'id': <'effect_000000000000'>, 'params': <{'unscaled_radius': <30.0>, 'brightness': <0.59999999999999998>}>}>]>}, 'pipeline_default_rounded': {'name': <'Default rounded'>, 'effects': <[<{'type': <'native_static_gaussian_blur'>, 'id': <'effect_000000000001'>, 'params': <{'unscaled_radius': <30.0>, 'brightness': <0.59999999999999998>}>}>, <{'type': <'corner'>, 'id': <'effect_000000000002'>, 'params': <{'radius': <24.0>}>}>]>}, 'pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc': {'name': <'MenuBar'>, 'effects': <[<{'type': <'gradient_panel'>, 'id': <'effect_00680760882466'>, 'params': <{'top_darkness': <0>, 'bottom_darkness': <0>, 'top_blur': <5>, 'bottom_blur': <0>}>}>]>}}
+pipelines={'pipeline_default': {'name': <'Default'>, 'effects': <[<{'type': <'native_static_gaussian_blur'>, 'id': <'effect_000000000000'>, 'params': <{'unscaled_radius': <30>, 'brightness': <0.59999999999999998>}>}>]>}, 'pipeline_default_rounded': {'name': <'Default rounded'>, 'effects': <[<{'type': <'native_static_gaussian_blur'>, 'id': <'effect_000000000001'>, 'params': <{'unscaled_radius': <30>, 'brightness': <0.59999999999999998>}>}>, <{'type': <'corner'>, 'id': <'effect_000000000002'>, 'params': <{'radius': <24>}>}>]>}, 'pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc': {'name': <'MenuBar'>, 'effects': <[<{'type': <'gradient_panel'>, 'id': <'effect_00680760882466'>, 'params': <{'top_darkness': <0>, 'bottom_darkness': <0>, 'top_blur': <25>, 'bottom_blur': <0>}>}>]>}}
 rounded-blur-found=true
 settings-version=2
+sigma=31
 
 [appfolder]
-blur=false
-brightness=1.0
-sigma=30
+blur=true
+brightness=0.86499999999999999
+sigma=31
 style-dialogs=1
 
 [applications]
-blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegram-desktop', 'telegram-desktop', 'TelegramDesktop', 'Telegram', 'org.telegram.desktop', 'antigravity', 'Antigravity', 'google-chrome', 'Google-chrome', 'steam', 'Steam']
+blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegram-desktop', 'telegram-desktop', 'TelegramDesktop', 'Telegram', 'org.telegram.desktop', 'antigravity', 'Antigravity', 'google-chrome', 'Google-chrome', 'chromium', 'Chromium', 'firefox', 'Firefox', 'Brave-browser', 'brave-browser', 'steam', 'Steam', 'steamwebhelper', 'cs2', 'csgo_linux64', 'gamescope', 'wine', 'wine64', 'lutris', 'heroic', 'mpv', 'vlc', 'Vlc', 'CapCut', 'capcut', 'discord', 'Discord', 'code', 'Code', 'blender', 'obs', 'obs64', 'gimp', 'inkscape']
 blur=false
 blur-on-overview=true
-brightness=1.0
+brightness=0.86499999999999999
 corner-radius=24
 corner-when-maximized=false
 dynamic-opacity=false
@@ -24,7 +26,8 @@ opacity=255
 pipeline='pipeline_default'
 sigma=10
 static-blur=false
-whitelist=['org.gnome.Settings', 'gnome-control-center', 'org.gnome.Nautilus', 'nautilus', 'org.gnome.DiskUtility', 'gnome-disks', 'org.gnome.baobab', 'baobab', 'org.gnome.tweaks', 'gnome-tweaks', 'org.gnome.Logs', 'gnome-logs', 'org.gnome.seahorse.Application', 'seahorse', 'org.gnome.Calculator', 'gnome-calculator', 'org.gnome.SystemMonitor', 'gnome-system-monitor', 'org.gnome.Characters', 'gnome-characters', 'org.gnome.font-viewer', 'org.gnome.TextEditor', 'gnome-text-editor', 'net.nokyan.Resources', 'resources', 'org.gnome.Ptyxis', 'org.gnome.Terminal', 'gnome-terminal', 'gnome-terminal-server', 'org.gnome.Loupe', 'loupe', 'org.gnome.Papers', 'org.gnome.Evince', 'evince', 'org.gnome.Calendar', 'org.gnome.Clocks', 'org.gnome.Weather', 'org.gnome.Contacts', 'org.gnome.Software', 'org.gnome.Snapshot', 'snapshot']
+unblur-when-fullscreen=true
+whitelist=['*gnome*', 'org.gnome.*', 'gnome-*', '*boxes*', '*Boxes*', '*calculator*', '*Calculator*', '*text-editor*', '*TextEditor*', '*file-roller*', '*seahorse*', '*baobab*', '*disks*', '*DiskUtility*', '*tweaks*', '*Resources*', '*loupe*', '*papers*', '*snapshot*', '*weather*', '*clocks*', '*contacts*', '*maps*', '*music*', '*totem*', '*tour*', '*font-viewer*', '*characters*', '*logs*', '*sysprof*', '*connections*', '*software*', '*zenity*', 'net.nokyan.Resources', 'resources']
 
 [coverflow-alt-tab]
 blur=false
@@ -36,15 +39,16 @@ brightness=1.0
 corner-radius=28
 override-background=false
 pipeline='pipeline_default_rounded'
-sigma=10
+sigma=1
 static-blur=false
 style-dash-to-dock=0
 unblur-in-overview=true
 
 [lockscreen]
 blur=false
-brightness=1.0
+brightness=0.86499999999999999
 pipeline='pipeline_default'
+sigma=31
 
 [notification]
 blur=false
@@ -52,8 +56,9 @@ sigma=10
 
 [overview]
 blur=true
-brightness=1.0
+brightness=0.86499999999999999
 pipeline='pipeline_default'
+sigma=31
 style-components=0
 
 [panel]
@@ -66,13 +71,13 @@ gradient-panel=true
 gradient-panel-mode=0
 override-background=true
 pipeline='pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc'
-sigma=10
+sigma=9
 static-blur=true
 unblur-in-overview=false
 
 [popup]
-blur=false
-brightness=1.0
+blur=true
+brightness=0.92500000000000004
 corner-radius=24
 dialog-corner-radius=24
 menu-corner-radius=14
@@ -88,10 +93,11 @@ sigma=10
 
 [screenshot]
 blur=false
-brightness=1.0
+brightness=0.86499999999999999
 pipeline='pipeline_default'
+sigma=31
 
 [window-list]
 blur=false
-brightness=1.0
-sigma=30
+brightness=0.86499999999999999
+sigma=31
