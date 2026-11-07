@@ -567,6 +567,15 @@ class WidgetController {
       'changed::battery-show-percent', () => this._scheduleAppearance('refresh'),
       'changed::battery-use-accent-color', () => this._scheduleAppearance('refresh'),
       'changed::arrange-widgets', () => this._onArrangeRequested(),
+      // Widget picker deep-link: any writer of the `open-widget-picker` flag
+      // (CC «Add Widgets» button in the Widgets page, panel «Add Widgets» item)
+      // opens the preferences window here; the window-open handler consumes
+      // the flag and presents the widget picker.
+      'changed::open-widget-picker', () => {
+        if (this._layoutSettings.get_boolean('open-widget-picker')) {
+          this._extension.openPreferences();
+        }
+      },
       'changed::edit-mode-binding', () => this._registerEditModeBinding(),
       'changed::calendar-weekday-format', () => this._refreshCalendarWeekdays(),
       'changed::calendar-use-accent-color', () => this._refreshCalendarWeekdays(),
@@ -884,7 +893,6 @@ class WidgetController {
     const addWidgetsItem = new PopupMenu.PopupMenuItem(_('Add Widgets'));
     addWidgetsItem.connectObject('activate', () => {
       this._layoutSettings.set_boolean('open-widget-picker', true);
-      this._extension.openPreferences();
     }, this);
     this._indicator.menu.addMenuItem(addWidgetsItem);
 

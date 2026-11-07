@@ -17893,3 +17893,42 @@ Task 649: Створення RC-архіву релізу без .git — macW1Y
    - `tar tzf /home/vitaliy/macW1Y_05_RC.tar.gz | grep -c '^macW1Y/\.git/'` → 0 (відсутність .git підтверджено).
 
 4. Статус: Завершено.
+================================================================================
+Task 650: Виправлення кнопки «Додати віджети» у Параметрах — меню віджетів не відкривалося
+================================================================================
+1. Вимога користувача:
+   - Під час тестування виправити проблему: у Параметрах (GNOME Settings) у розділі
+     «Віджети» кнопка «Додати віджети на стільницю» не відкривала меню віджетів.
+
+2. Причина:
+   - Task 645: `on_dw_add_widgets_clicked()` (gnome-control-center-overlay/libmac_settings.c)
+     виставляє `open-widget-picker = TRUE` + `edit-mode = TRUE` у схемі
+     `org.gnome.shell.extensions.desktop-widgets-r3nhick`.
+   - Флаг `open-widget-picker` був сприйняттєваний ЛИШЕ в open-handler'і вікна prefs-розширення
+     (extensions/desktop-widgets@r3nhick/prefs.js, `if (settings.get_boolean('open-widget-picker'))`).
+   - У потоці «GNOME Settings -> Widgets -> кнопка Додати віджети» UI розташований всередині
+     вікна GNOME Control Center (вбудований cc-widgets-panel.ui), а не у prefs-вікні розширення,
+     тому сприйняття флага не відбувалося й меню віджетів не відкривалося.
+
+3. Рішення — file:///home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/extension.js:
+   - Додано GSettings-хендлер `changed::open-widget-picker` у enable() (connectObject): при
+     увімкненні флага — відкрити preferences-вікно (`this._extension.openPreferences()`),
+     яке вже одночасно сприймає флаг на open і відкриває WidgetPickerDialog.
+   - Пункт меню панелі «Add Widgets» тепер виступає ЛИШЕ через встановлення флага (single path).
+
+4. Синхронізація та розгортання:
+   - Live-файл: /home/vitaliy/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick/extension.js
+     (diff: ІДЕНТИЧНИЙ з /home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/extension.js).
+   - Оновлено pinned_sha256 / sha256 у /home/vitaliy/macW1Y/config/extensions.lock.json
+     (UUID: desktop-widgets@r3nhick, dir_hash: d39076cd84016374e7d6888b9dceb35b5d0da3a1bd97d523fc5c426625efe5b5).
+
+5. Верифікація:
+   - bin/mac-extension-guard verify — 21/21 SUCCESS.
+   - bin/mac-audit-sync check — 100% PASS.
+   - Гаряче перезавантаження через D-Bus EvalHelper (org.gnome.Shell.Extensions.EvalHelper.Eval
+     -> Main.extensionManager.reloadExtension('desktop-widgets@r3nhick')) викликало внутрішню
+     помилку Shell (unloadExtension/_changeExtensionState) у поточній сесії — потребує повторного
+     тестування / перезапуску сесії.
+
+6. Статус: Завершено (кодова база виправлена та синхронізована; live hot-reload у поточній
+     сесії потребує повторного проходження).
