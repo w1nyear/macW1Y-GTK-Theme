@@ -6699,18 +6699,184 @@ void on_dw_edit_mode_changed(void *widget, void *pspec, gpointer data) {
     g_settings_set_boolean(s, "edit-mode", active);
 }
 
+static void schedule_update_panel_headerbar(AdwNavigationSplitView *split_view);
+static AdwNavigationView *global_widgets_nav_view = NULL;
+static AdwToastOverlay *global_widgets_picker_toast_overlay = NULL;
+G_MODULE_EXPORT void on_widgets_nav_view_popped(AdwNavigationView *nv, AdwNavigationPage *page, gpointer user_data);
+
+static const char *get_default_widget_size(const char *type) {
+    if (!type) return "small";
+    if (g_strcmp0(type, "applauncher") == 0 ||
+        g_strcmp0(type, "binaryclock") == 0 ||
+        g_strcmp0(type, "photos") == 0 ||
+        g_strcmp0(type, "battery") == 0 ||
+        g_strcmp0(type, "music") == 0 ||
+        g_strcmp0(type, "todo") == 0 ||
+        g_strcmp0(type, "github") == 0 ||
+        g_strcmp0(type, "screentime") == 0 ||
+        g_strcmp0(type, "notes") == 0 ||
+        g_strcmp0(type, "lava") == 0 ||
+        g_strcmp0(type, "stopwatch") == 0 ||
+        g_strcmp0(type, "folder") == 0 ||
+        g_strcmp0(type, "timer") == 0) {
+        return "medium";
+    }
+    return "small";
+}
+
+static void add_widget_to_desktop(GtkWidget *widget, const char *type, const char *label) {
+    g_print("macW1Y: add_widget_to_desktop type=%s, label=%s\n", type ? type : "null", label ? label : "null");
+    ensure_dw_extension_enabled();
+    dw_set_edit_mode(TRUE);
+
+    GSettings *s = get_dw_settings();
+    if (!s || !type) return;
+
+    char *json_str = g_settings_get_string(s, "layout-json");
+    JsonParser *parser = json_parser_new();
+    const char *initial = (json_str && *json_str) ? json_str : "{\"version\":3,\"widgets\":[]}";
+    if (!json_parser_load_from_data(parser, initial, -1, NULL)) {
+        json_parser_load_from_data(parser, "{\"version\":3,\"widgets\":[]}", -1, NULL);
+    }
+
+    JsonNode *root = json_parser_get_root(parser);
+    if (!root || !JSON_NODE_HOLDS_OBJECT(root)) {
+        if (json_str) g_free(json_str);
+        g_object_unref(parser);
+        return;
+    }
+
+    JsonObject *root_obj = json_node_get_object(root);
+    if (!json_object_has_member(root_obj, "version")) {
+        json_object_set_int_member(root_obj, "version", 3);
+    }
+
+    JsonArray *widgets_arr = NULL;
+    if (json_object_has_member(root_obj, "widgets")) {
+        widgets_arr = json_object_get_array_member(root_obj, "widgets");
+    }
+    if (!widgets_arr) {
+        widgets_arr = json_array_new();
+        json_object_set_array_member(root_obj, "widgets", widgets_arr);
+    }
+
+    guint count = json_array_get_length(widgets_arr);
+    gint64 now_ms = g_get_real_time() / 1000;
+    char *widget_id = g_strdup_printf("%s-%" G_GINT64_FORMAT, type, now_ms);
+
+    JsonObject *w_obj = json_object_new();
+    json_object_set_string_member(w_obj, "id", widget_id);
+    json_object_set_string_member(w_obj, "type", type);
+    json_object_set_string_member(w_obj, "size", get_default_widget_size(type));
+    json_object_set_int_member(w_obj, "x", 24 + ((count % 8) * 30));
+    json_object_set_int_member(w_obj, "y", 80 + ((count % 8) * 30));
+    json_object_set_object_member(w_obj, "data", json_object_new());
+    json_object_set_array_member(w_obj, "stack", json_array_new());
+    json_object_set_boolean_member(w_obj, "pinned", FALSE);
+
+    json_array_add_object_element(widgets_arr, w_obj);
+
+    JsonGenerator *gen = json_generator_new();
+    json_generator_set_root(gen, root);
+    gsize out_len = 0;
+    char *out_str = json_generator_to_data(gen, &out_len);
+    if (out_str) {
+        g_settings_set_string(s, "layout-json", out_str);
+        g_free(out_str);
+    }
+
+    g_object_unref(gen);
+    g_object_unref(parser);
+    if (json_str) g_free(json_str);
+    g_free(widget_id);
+
+    /* Показуємо спливаюче сповіщення у вікні вибору віджетів */
+    AdwToastOverlay *toast_overlay = global_widgets_picker_toast_overlay;
+    if (!toast_overlay && widget && GTK_IS_WIDGET(widget)) {
+        GtkWidget *anc = gtk_widget_get_ancestor(widget, ADW_TYPE_TOAST_OVERLAY);
+        if (anc) toast_overlay = ADW_TOAST_OVERLAY(anc);
+    }
+    if (toast_overlay) {
+        char *toast_msg = g_strdup_printf("Віджет «%s» додано на стільницю", label ? label : type);
+        AdwToast *toast = adw_toast_new(toast_msg);
+        adw_toast_set_timeout(toast, 2);
+        adw_toast_overlay_add_toast(toast_overlay, toast);
+        g_free(toast_msg);
+    }
+}
+
+G_MODULE_EXPORT void on_dw_add_clock(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "clock", "Аналоговий годинник"); }
+G_MODULE_EXPORT void on_dw_add_digitalclock(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "digitalclock", "Цифровий годинник"); }
+G_MODULE_EXPORT void on_dw_add_binaryclock(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "binaryclock", "Бінарний годинник"); }
+G_MODULE_EXPORT void on_dw_add_calendar(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "calendar", "Календар"); }
+G_MODULE_EXPORT void on_dw_add_weather(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "weather", "Погода"); }
+G_MODULE_EXPORT void on_dw_add_photos(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "photos", "Фотогалерея"); }
+G_MODULE_EXPORT void on_dw_add_battery(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "battery", "Рівень заряду"); }
+G_MODULE_EXPORT void on_dw_add_music(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "music", "Музичний плеєр"); }
+G_MODULE_EXPORT void on_dw_add_todo(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "todo", "Список справ"); }
+G_MODULE_EXPORT void on_dw_add_github(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "github", "Активність GitHub"); }
+G_MODULE_EXPORT void on_dw_add_screentime(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "screentime", "Екранний час"); }
+G_MODULE_EXPORT void on_dw_add_system(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "system", "Системний монітор"); }
+G_MODULE_EXPORT void on_dw_add_notes(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "notes", "Нотатки"); }
+G_MODULE_EXPORT void on_dw_add_pomodoro(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "pomodoro", "Таймер Pomodoro"); }
+G_MODULE_EXPORT void on_dw_add_lava(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "lava", "Лава-лампа"); }
+G_MODULE_EXPORT void on_dw_add_stopwatch(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "stopwatch", "Секундомір"); }
+G_MODULE_EXPORT void on_dw_add_folder(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "folder", "Швидка папка"); }
+G_MODULE_EXPORT void on_dw_add_timer(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "timer", "Таймер зворотного відліку"); }
+G_MODULE_EXPORT void on_dw_add_applauncher(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "applauncher", "Панель запуску"); }
+
+G_MODULE_EXPORT void on_widgets_picker_shown(AdwNavigationPage *page, gpointer user_data) {
+    (void)page; (void)user_data;
+    g_print("macW1Y: widgets_picker shown -> turning edit mode ON\n");
+    dw_set_edit_mode(TRUE);
+}
+
+G_MODULE_EXPORT void on_widgets_picker_hidden(AdwNavigationPage *page, gpointer user_data) {
+    (void)page; (void)user_data;
+    g_print("macW1Y: widgets_picker hidden -> turning edit mode OFF\n");
+    dw_set_edit_mode(FALSE);
+}
+
+G_MODULE_EXPORT void on_widgets_nav_view_popped(AdwNavigationView *nv, AdwNavigationPage *page, gpointer user_data) {
+    (void)nv; (void)user_data;
+    if (!page || !ADW_IS_NAVIGATION_PAGE(page)) return;
+    const char *tag = adw_navigation_page_get_tag(page);
+    g_print("macW1Y: widgets nav page popped, tag=%s\n", tag ? tag : "null");
+    if (tag && g_strcmp0(tag, "widgets_picker") == 0) {
+        dw_set_edit_mode(FALSE);
+    }
+    if (g_last_split_view) {
+        schedule_update_panel_headerbar(g_last_split_view);
+    }
+}
+
 G_MODULE_EXPORT void on_dw_add_widgets_clicked(void *button, gpointer data) {
-    (void)button; (void)data;
+    (void)data;
     g_print("macW1Y: on_dw_add_widgets_clicked invoked!\n");
     ensure_dw_extension_enabled();
-    /* Віджети додаємо всередині вікна Параметрів — окремого вікна не відкриваємо.
-       Увімкнути режим редагування, щоб віджети можна було додавати/перетягувати на робочому столі. */
     dw_set_edit_mode(TRUE);
-    GSettings *s = get_dw_settings();
-    if (s)
-        g_settings_set_boolean(s, "open-widget-picker", TRUE);
-    GtkWidget *anc = gtk_widget_get_ancestor(GTK_WIDGET(button), ADW_TYPE_NAVIGATION_SPLIT_VIEW);
-    dw_attach_settings_close_handler(ADW_NAVIGATION_SPLIT_VIEW(anc));
+
+    AdwNavigationView *nv = global_widgets_nav_view;
+    if (button && GTK_IS_WIDGET(button)) {
+        GtkWidget *ancestor = gtk_widget_get_ancestor(GTK_WIDGET(button), ADW_TYPE_NAVIGATION_VIEW);
+        if (ancestor) nv = ADW_NAVIGATION_VIEW(ancestor);
+    }
+    if (nv) {
+        adw_navigation_view_push_by_tag(nv, "widgets_picker");
+        if (button && GTK_IS_WIDGET(button)) {
+            GtkWidget *sv = gtk_widget_get_ancestor(GTK_WIDGET(button), ADW_TYPE_NAVIGATION_SPLIT_VIEW);
+            if (sv) {
+                schedule_update_panel_headerbar(ADW_NAVIGATION_SPLIT_VIEW(sv));
+                dw_attach_settings_close_handler(ADW_NAVIGATION_SPLIT_VIEW(sv));
+            }
+        }
+        if (g_last_split_view) {
+            schedule_update_panel_headerbar(g_last_split_view);
+            dw_attach_settings_close_handler(g_last_split_view);
+        }
+    } else {
+        g_warning("macW1Y: on_dw_add_widgets_clicked could not find navigation view!");
+    }
 }
 
 G_MODULE_EXPORT void on_dw_arrange_clicked(void *button, gpointer data) {
@@ -6917,9 +7083,6 @@ void on_dw_music_browsers_changed(void *widget, void *pspec, gpointer data) {
     g_settings_set_boolean(s, "music-ignore-browsers", active);
 }
 
-static void schedule_update_panel_headerbar(AdwNavigationSplitView *split_view);
-static AdwNavigationView *global_widgets_nav_view = NULL;
-
 static void bind_widgets_configurator_settings(GtkBuilder *builder) {
     GSettings *s = get_dw_settings();
     if (!s || !builder) return;
@@ -7068,8 +7231,10 @@ static GtkWidget *get_widgets_page(void)
     if (loaded) {
         widgets_page = GTK_WIDGET(gtk_builder_get_object(builder, "widgets_page"));
         global_widgets_nav_view = ADW_NAVIGATION_VIEW(gtk_builder_get_object(builder, "widgets_nav_view"));
+        global_widgets_picker_toast_overlay = ADW_TOAST_OVERLAY(gtk_builder_get_object(builder, "widgets_picker_toast_overlay"));
         if (global_widgets_nav_view) {
             adw_navigation_view_set_animate_transitions(global_widgets_nav_view, FALSE);
+            g_signal_connect(global_widgets_nav_view, "popped", G_CALLBACK(on_widgets_nav_view_popped), NULL);
         }
         bind_widgets_configurator_settings(builder);
         if (widgets_page) {
@@ -9611,10 +9776,10 @@ static const char *get_panel_id_from_widget(GtkWidget *widget) {
 
     if (ADW_IS_NAVIGATION_PAGE(widget)) {
         const char *tag = adw_navigation_page_get_tag(ADW_NAVIGATION_PAGE(widget));
-        if (tag && (g_strcmp0(tag, "widgets") == 0 || g_strcmp0(tag, "widgets_page") == 0 || g_strcmp0(tag, "widgets_main") == 0 || g_strcmp0(tag, "widgets_configurator") == 0)) return "widgets";
+        if (tag && (g_strcmp0(tag, "widgets") == 0 || g_strcmp0(tag, "widgets_page") == 0 || g_strcmp0(tag, "widgets_main") == 0 || g_strcmp0(tag, "widgets_configurator") == 0 || g_strcmp0(tag, "widgets_picker") == 0)) return "widgets";
         if (tag && (g_strcmp0(tag, "mac-styling") == 0 || g_strcmp0(tag, "mac_styling_page") == 0)) return "mac-styling";
         const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
-        if (bid && (g_strcmp0(bid, "widgets") == 0 || g_strcmp0(bid, "widgets_page") == 0 || g_strcmp0(bid, "widgets_main_page") == 0 || g_strcmp0(bid, "widgets_configurator_page") == 0)) return "widgets";
+        if (bid && (g_strcmp0(bid, "widgets") == 0 || g_strcmp0(bid, "widgets_page") == 0 || g_strcmp0(bid, "widgets_main_page") == 0 || g_strcmp0(bid, "widgets_configurator_page") == 0 || g_strcmp0(bid, "widgets_picker_page") == 0)) return "widgets";
         if (bid && (g_strcmp0(bid, "mac-styling") == 0 || g_strcmp0(bid, "mac_styling_page") == 0)) return "mac-styling";
     }
     return NULL;
@@ -9885,8 +10050,12 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
     g_object_set_data(G_OBJECT(split_view), "mac_user_navigated", GINT_TO_POINTER(1));
 
     gboolean is_widgets_row = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"));
-    if (!is_widgets_row)
+    if (!is_widgets_row) {
         dw_set_edit_mode(FALSE);  /* вихід із розділу Віджети — вимкнути режим редагування */
+        if (global_widgets_nav_view) {
+            adw_navigation_view_pop_to_tag(global_widgets_nav_view, "widgets_main");
+        }
+    }
 
     if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
         g_signal_stop_emission_by_name(box, "row-activated");
@@ -9903,7 +10072,6 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
             gtk_list_box_select_row(box, row);
             update_window_active_panel_id(split_view, "widgets");
             schedule_update_panel_headerbar(split_view);
-            dw_set_edit_mode(TRUE);           /* відкриття розділу Віджети — увімкнути режим редагування */
             dw_attach_settings_close_handler(split_view);  /* закриття Параметрів — вимкнути режим редагування */
         }
         return;
@@ -10506,6 +10674,15 @@ static gboolean open_widgets_delayed_cb(gpointer user_data) {
         adw_navigation_split_view_set_show_content(split_view, TRUE);
         update_window_active_panel_id(split_view, "widgets");
         schedule_update_panel_headerbar(split_view);
+        GSettings *s = get_dw_settings();
+        if (s && g_settings_get_boolean(s, "open-widget-picker")) {
+            g_settings_set_boolean(s, "open-widget-picker", FALSE);
+            if (global_widgets_nav_view) {
+                adw_navigation_view_push_by_tag(global_widgets_nav_view, "widgets_picker");
+                dw_set_edit_mode(TRUE);
+                schedule_update_panel_headerbar(split_view);
+            }
+        }
     }
     return G_SOURCE_REMOVE;
 }
@@ -10799,7 +10976,6 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             g_timeout_add(100, open_widgets_delayed_cb, split_view);
             g_timeout_add(300, open_widgets_delayed_cb, split_view);
             g_timeout_add(600, open_widgets_delayed_cb, split_view);
-            dw_set_edit_mode(TRUE);
             dw_attach_settings_close_handler(split_view);
         }
 

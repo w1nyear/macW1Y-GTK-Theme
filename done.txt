@@ -17932,3 +17932,53 @@ Task 650: Виправлення кнопки «Додати віджети» у
 
 6. Статус: Завершено (кодова база виправлена та синхронізована; live hot-reload у поточній
      сесії потребує повторного проходження).
+
+================================================================================
+Task 651: Вбудована галерея вибору віджетів у Параметрах з автоматичним керуванням режимом редагування
+================================================================================
+1. Вимога користувача:
+   - Кнопка «Додати віджети на стільницю» у Параметрах (розділ «Віджети») не повинна
+     відкривати сторонніх вікон, а має відкривати вбудоване меню/підсторінку вибору віджетів
+     прямо всередині Параметрів.
+   - Одночасно з відкриттям вибору віджетів автоматично вмикається режим редагування стільниці.
+   - Після виходу з вибору віджетів (кнопка назад < або перехід в інший розділ) чи закриття
+     Параметрів режим редагування стільниці автоматично вимикається.
+   - Забезпечено вибір та додавання усіх 19 віджетів безпосередньо зі списку з показом Toast.
+
+2. Реалізовані зміни:
+   - control-center/cc-widgets-panel.ui та gnome-control-center-overlay/cc-widgets-panel.ui:
+     * Додано підсторінку AdwNavigationPage `widgets_picker_page` (тег: `widgets_picker`, заголовок: «Додати віджети»)
+       всередині `widgets_nav_view` з AdwToastOverlay та повним каталогом із 19 віджетів за 5 категоріями
+       (Годинники та час, Продуктивність та планування, Системні показники, Інформація та зв’язок, Мультимедіа та декор).
+     * Додано обробники сигналів `shown` -> `on_widgets_picker_shown` та `hidden` -> `on_widgets_picker_hidden`.
+     * Додано обробник сигналу `popped` -> `on_widgets_nav_view_popped` на `widgets_nav_view`.
+   - control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c:
+     * Реалізовано `on_dw_add_widgets_clicked()`: виконує `adw_navigation_view_push_by_tag(nv, "widgets_picker")`
+       та увімкнення режиму редагування `dw_set_edit_mode(TRUE)`.
+     * Реалізовано життєвий цикл режиму редагування:
+       - `on_widgets_picker_shown()`: увімкнення `dw_set_edit_mode(TRUE)`.
+       - `on_widgets_picker_hidden()` та `on_widgets_nav_view_popped()`: вимкнення `dw_set_edit_mode(FALSE)`.
+       - `on_main_listbox_row_activated()`: при навігації на будь-який інший розділ `dw_set_edit_mode(FALSE)`
+         та скидання `widgets_nav_view` на `widgets_main`.
+       - `dw_settings_window_close_cb()`: при закритті вікна Параметрів `dw_set_edit_mode(FALSE)`.
+     * Реалізовано додавання віджетів на стільницю `add_widget_to_desktop()` через `json-glib`:
+       парсер `layout-json`, додавання об'єкта віджета з правильним розміром за замовчуванням
+       (get_default_widget_size), координатами та збереженням у GSettings з показом AdwToast сповіщення.
+     * Додано всі 19 функцій-колбеків `on_dw_add_<type>()` для кожного типу віджета.
+     * Оновлено ідентифікацію панелі у функції get_panel_id_from_widget для тегів `widgets_picker` та `widgets_picker_page`.
+   - extensions/desktop-widgets@r3nhick/extension.js:
+     * Прибрано `openPreferences()` зі сценарію `open-widget-picker`, перенаправлено на `gnome-control-center widgets`.
+   - config/extensions.lock.json:
+     * Оновлено хеш цілісності `desktop-widgets@r3nhick` для проходження `mac-extension-guard verify`.
+
+3. Синхронізація та розгортання:
+   - Всі 4 копії cc-widgets-panel.ui синхронізовані (control-center, gnome-control-center-overlay, ~/.local/share/..., /usr/share/mactheme/...).
+   - Скомпільовано та синхронізовано всі 6 копій libmac_settings.so.
+   - Синхронізовано extensions/desktop-widgets@r3nhick/extension.js з ~/.local/share/gnome-shell/extensions/...
+
+4. Верифікація:
+   - bin/mac-extension-guard verify — 21/21 SUCCESS.
+   - bin/mac-audit-sync check — 100% PASS.
+   - Тестування вхід/вихід підсторінки, додавання віджета та збереження стану edit-mode пройдено успішно.
+
+5. Статус: Завершено.
