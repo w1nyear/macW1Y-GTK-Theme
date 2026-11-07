@@ -7,7 +7,7 @@
 ---
 
 <p align="center">
-  <img src="screen.webm" alt="macW1Y Desktop Preview" width="100%" />
+  <video src="screen.mov" width="100%" autoplay loop muted playsinline controls></video>
 </p>
 
 ---
