@@ -10,6 +10,7 @@
 #include <gtk/gtk.h>
 #include <adwaita.h>
 #include <json-glib/json-glib.h>
+#include <pango/pangocairo.h>
 
 
 #include <math.h>
@@ -3090,14 +3091,238 @@ void init_notifications_preview(void *widget, gpointer data) {
 }
 
 /* ========================================================================= */
-/* Live Preview: Spotlight Preview                                           */
+/* Live Preview: Spotlight Preview & Interactive Easter Egg                  */
 /* ========================================================================= */
 
 static GtkWidget *g_spotlight_preview_w = NULL;
+static gboolean spotlight_input_active = FALSE;
+static gboolean spotlight_easter_egg_revealed = FALSE;
+static char spotlight_input_text[128] = {0};
+static gboolean spotlight_cursor_visible = TRUE;
+static guint spotlight_cursor_timer_id = 0;
+static guint64 spotlight_last_click_time = 0;
+static int spotlight_consecutive_clicks = 0;
+
 static void redraw_spotlight_preview(void) {
     if (g_spotlight_preview_w && GTK_IS_WIDGET(g_spotlight_preview_w)) {
         gtk_widget_queue_draw(g_spotlight_preview_w);
     }
+}
+
+static gboolean spotlight_cursor_blink_cb(gpointer user_data) {
+    (void)user_data;
+    if (!spotlight_input_active || !g_spotlight_preview_w || !GTK_IS_WIDGET(g_spotlight_preview_w)) {
+        spotlight_cursor_timer_id = 0;
+        return G_SOURCE_REMOVE;
+    }
+    spotlight_cursor_visible = !spotlight_cursor_visible;
+    redraw_spotlight_preview();
+    return G_SOURCE_CONTINUE;
+}
+
+static void draw_safari_compass_icon(cairo_t *cr, double cx, double cy, double radius) {
+    cairo_save(cr);
+
+    // Drop shadow under Safari icon
+    cairo_arc(cr, cx, cy + 1.0, radius + 0.5, 0, 2 * G_PI);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.28);
+    cairo_fill(cr);
+
+    // Outer Blue circular gradient
+    cairo_pattern_t *bg_pat = cairo_pattern_create_linear(cx, cy - radius, cx, cy + radius);
+    cairo_pattern_add_color_stop_rgb(bg_pat, 0.0, 0.12, 0.65, 0.98); // #1FA6FA
+    cairo_pattern_add_color_stop_rgb(bg_pat, 1.0, 0.04, 0.40, 0.84); // #0A66D6
+    cairo_arc(cr, cx, cy, radius, 0, 2 * G_PI);
+    cairo_set_source(cr, bg_pat);
+    cairo_fill(cr);
+    cairo_pattern_destroy(bg_pat);
+
+    // White rim border
+    cairo_arc(cr, cx, cy, radius - 0.5, 0, 2 * G_PI);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.35);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+
+    // Subtle compass dial ticks (12 points)
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.45);
+    cairo_set_line_width(cr, 0.8);
+    for (int i = 0; i < 12; i++) {
+        double angle = i * (G_PI / 6.0);
+        double r1 = radius - 3.2;
+        double r2 = radius - 1.6;
+        cairo_move_to(cr, cx + r1 * cos(angle), cy + r1 * sin(angle));
+        cairo_line_to(cr, cx + r2 * cos(angle), cy + r2 * sin(angle));
+        cairo_stroke(cr);
+    }
+
+    // Compass Needle rotated -45 deg (pointing North-East / 01:30)
+    cairo_save(cr);
+    cairo_translate(cr, cx, cy);
+    cairo_rotate(cr, -G_PI / 4.0);
+
+    double needle_len = radius - 3.0;
+    double needle_w = 3.2;
+
+    // Red half (North-East)
+    cairo_move_to(cr, 0, -needle_len);
+    cairo_line_to(cr, needle_w, 0);
+    cairo_line_to(cr, 0, 0);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 1.0, 0.23, 0.19); // #FF3B30
+    cairo_fill(cr);
+
+    cairo_move_to(cr, 0, -needle_len);
+    cairo_line_to(cr, -needle_w, 0);
+    cairo_line_to(cr, 0, 0);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 0.90, 0.15, 0.12);
+    cairo_fill(cr);
+
+    // White half (South-West)
+    cairo_move_to(cr, 0, needle_len);
+    cairo_line_to(cr, needle_w, 0);
+    cairo_line_to(cr, 0, 0);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 0.96, 0.96, 0.98);
+    cairo_fill(cr);
+
+    cairo_move_to(cr, 0, needle_len);
+    cairo_line_to(cr, -needle_w, 0);
+    cairo_line_to(cr, 0, 0);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, 0.82, 0.82, 0.85);
+    cairo_fill(cr);
+
+    cairo_restore(cr);
+
+    // Center pivot
+    cairo_arc(cr, cx, cy, 1.8, 0, 2 * G_PI);
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    cairo_fill(cr);
+
+    cairo_restore(cr);
+}
+
+static void on_spotlight_preview_clicked(GtkGestureClick *gesture, int n_press, double x, double y, gpointer user_data) {
+    (void)gesture;
+    GtkWidget *widget = GTK_WIDGET(user_data);
+
+    // If Easter Egg is revealed and user clicked on the "esc" close badge
+    if (spotlight_easter_egg_revealed && g_spotlight_preview_w && GTK_IS_WIDGET(g_spotlight_preview_w)) {
+        int width = gtk_widget_get_width(g_spotlight_preview_w);
+        int height = gtk_widget_get_height(g_spotlight_preview_w);
+        double sw = CLAMP((double)width - 40.0, 360.0, 520.0);
+        double sx = (width - sw) / 2.0;
+        double sy = (height - 286.0) / 2.0;
+        double esc_w = 42.0, esc_h = 20.0;
+        double esc_x = sx + sw - esc_w - 14.0;
+        double esc_y = sy + 15.0;
+        if (x >= esc_x - 6.0 && x <= esc_x + esc_w + 6.0 && y >= esc_y - 6.0 && y <= esc_y + esc_h + 6.0) {
+            spotlight_input_active = FALSE;
+            spotlight_easter_egg_revealed = FALSE;
+            spotlight_input_text[0] = '\0';
+            spotlight_consecutive_clicks = 0;
+            if (spotlight_cursor_timer_id != 0) {
+                g_source_remove(spotlight_cursor_timer_id);
+                spotlight_cursor_timer_id = 0;
+            }
+            gtk_widget_set_size_request(g_spotlight_preview_w, -1, 150);
+            gtk_widget_set_cursor_from_name(g_spotlight_preview_w, "default");
+            redraw_spotlight_preview();
+            return;
+        }
+    }
+
+    guint64 now = g_get_monotonic_time();
+    if (now - spotlight_last_click_time < 1200000) { // within 1.2s
+        spotlight_consecutive_clicks++;
+    } else {
+        spotlight_consecutive_clicks = 1;
+    }
+    spotlight_last_click_time = now;
+
+    if (n_press >= 3 || spotlight_consecutive_clicks >= 3) {
+        spotlight_input_active = TRUE;
+        spotlight_cursor_visible = TRUE;
+        if (spotlight_cursor_timer_id == 0) {
+            spotlight_cursor_timer_id = g_timeout_add(500, spotlight_cursor_blink_cb, NULL);
+        }
+        gtk_widget_grab_focus(widget);
+        gtk_widget_set_cursor_from_name(widget, "text");
+        redraw_spotlight_preview();
+    } else if (spotlight_input_active) {
+        gtk_widget_grab_focus(widget);
+        gtk_widget_set_cursor_from_name(widget, "text");
+    }
+}
+
+static gboolean on_spotlight_key_pressed(GtkEventControllerKey *controller,
+                                        guint keyval,
+                                        guint keycode,
+                                        GdkModifierType state_mask,
+                                        gpointer user_data) {
+    (void)controller; (void)keycode; (void)state_mask; (void)user_data;
+    if (!spotlight_input_active) return FALSE;
+
+    if (keyval == GDK_KEY_BackSpace) {
+        size_t len = strlen(spotlight_input_text);
+        if (len > 0) {
+            size_t i = len - 1;
+            while (i > 0 && ((unsigned char)spotlight_input_text[i] & 0xC0) == 0x80) {
+                i--;
+            }
+            spotlight_input_text[i] = '\0';
+        }
+        if (strcasestr(spotlight_input_text, "macw1y") != NULL ||
+            strcasestr(spotlight_input_text, "ьфсц1н") != NULL) {
+            spotlight_easter_egg_revealed = TRUE;
+            gtk_widget_set_size_request(g_spotlight_preview_w, -1, 330);
+        } else {
+            if (spotlight_easter_egg_revealed) {
+                spotlight_easter_egg_revealed = FALSE;
+                gtk_widget_set_size_request(g_spotlight_preview_w, -1, 150);
+            }
+        }
+        spotlight_cursor_visible = TRUE;
+        redraw_spotlight_preview();
+        return TRUE;
+    } else if (keyval == GDK_KEY_Escape) {
+        spotlight_input_active = FALSE;
+        spotlight_easter_egg_revealed = FALSE;
+        spotlight_input_text[0] = '\0';
+        spotlight_consecutive_clicks = 0;
+        if (spotlight_cursor_timer_id != 0) {
+            g_source_remove(spotlight_cursor_timer_id);
+            spotlight_cursor_timer_id = 0;
+        }
+        gtk_widget_set_size_request(g_spotlight_preview_w, -1, 150);
+        if (g_spotlight_preview_w && GTK_IS_WIDGET(g_spotlight_preview_w)) {
+            gtk_widget_set_cursor_from_name(g_spotlight_preview_w, "default");
+        }
+        redraw_spotlight_preview();
+        return TRUE;
+    } else if (keyval == GDK_KEY_Return || keyval == GDK_KEY_KP_Enter) {
+        return TRUE;
+    } else {
+        gunichar ch = gdk_keyval_to_unicode(keyval);
+        if (ch >= 32 && ch != 0x7F) {
+            char utf[8] = {0};
+            int bytes = g_unichar_to_utf8(ch, utf);
+            utf[bytes] = '\0';
+            if (strlen(spotlight_input_text) + bytes < sizeof(spotlight_input_text) - 1) {
+                strcat(spotlight_input_text, utf);
+            }
+            if (strcasestr(spotlight_input_text, "macw1y") != NULL ||
+                strcasestr(spotlight_input_text, "ьфсц1н") != NULL) {
+                spotlight_easter_egg_revealed = TRUE;
+                gtk_widget_set_size_request(g_spotlight_preview_w, -1, 330);
+            }
+            spotlight_cursor_visible = TRUE;
+            redraw_spotlight_preview();
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
@@ -3120,52 +3345,194 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.22);
     cairo_paint(cr);
 
-    double sw = 290.0, sh = 46.0, sr = 23.0;
-    double sx = (width - sw) / 2.0;
-    double sy = (height - sh) / 2.0;
-
     int blur_r = CLAMP(state.spotlight_blur, 6, 50);
     cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
 
     double tint_a = 0.26 + ((double)state.spotlight_tint / 100.0) * 0.55;
     double shadow_a = ((double)state.spotlight_shadow / 100.0) * 0.85;
 
-    draw_frosted_glass_card(cr, blurred_bg, sx, sy, sw, sh, sr, tint_a, shadow_a, 0.16);
-
-    // Accent magnifying glass
     double ar, ag, ab;
     get_system_accent_color(&ar, &ag, &ab);
-    cairo_set_source_rgb(cr, ar, ag, ab);
-    cairo_set_line_width(cr, 1.8);
-    cairo_arc(cr, sx + 22.0, sy + 21.0, 6.0, 0, 2 * G_PI);
-    cairo_stroke(cr);
-    cairo_move_to(cr, sx + 26.5, sy + 25.5);
-    cairo_line_to(cr, sx + 31.0, sy + 30.0);
-    cairo_stroke(cr);
 
-    // Placeholder
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_font_size(cr, 12.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.72);
-    cairo_move_to(cr, sx + 38.0, sy + 27.5);
-    cairo_show_text(cr, "Пошук у Spotlight...");
+    if (spotlight_easter_egg_revealed) {
+        double sw = CLAMP((double)width - 40.0, 360.0, 520.0);
+        double sh = 286.0;
+        double sr = 16.0;
+        double sx = (width - sw) / 2.0;
+        double sy = (height - sh) / 2.0;
 
-    // Shortcut badge
-    double badge_w = 60.0, badge_h = 22.0;
-    double bx = sx + sw - badge_w - 12.0;
-    double by = sy + (sh - badge_h) / 2.0;
-    draw_rounded_rect_path(cr, bx, by, badge_w, badge_h, 7.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
-    cairo_fill(cr);
-    draw_rounded_rect_path(cr, bx + 0.5, by + 0.5, badge_w - 1.0, badge_h - 1.0, 7.0);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
-    cairo_set_line_width(cr, 0.8);
-    cairo_stroke(cr);
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 9.5);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
-    cairo_move_to(cr, bx + 7.5, by + 14.5);
-    cairo_show_text(cr, "⌘ Пробіл");
+        // Expanded Spotlight window card
+        draw_frosted_glass_card(cr, blurred_bg, sx, sy, sw, sh, sr, tint_a, shadow_a, 0.18);
+        draw_rounded_rect_path(cr, sx + 0.5, sy + 0.5, sw - 1.0, sh - 1.0, sr);
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
+        cairo_set_line_width(cr, 1.0);
+        cairo_stroke(cr);
+
+        // Top search bar
+        // Magnifying glass
+        cairo_set_source_rgb(cr, ar, ag, ab);
+        cairo_set_line_width(cr, 2.0);
+        cairo_arc(cr, sx + 25.0, sy + 25.0, 7.0, 0, 2 * G_PI);
+        cairo_stroke(cr);
+        cairo_move_to(cr, sx + 30.5, sy + 30.5);
+        cairo_line_to(cr, sx + 36.5, sy + 36.5);
+        cairo_stroke(cr);
+
+        // Search text
+        cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+        cairo_set_font_size(cr, 16.0);
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
+        cairo_move_to(cr, sx + 46.0, sy + 31.0);
+        cairo_show_text(cr, spotlight_input_text);
+
+        // Blinking cursor
+        if (spotlight_cursor_visible) {
+            cairo_text_extents_t ext;
+            cairo_text_extents(cr, spotlight_input_text, &ext);
+            cairo_rectangle(cr, sx + 46.0 + ext.x_advance + 2.0, sy + 15.0, 2.0, 20.0);
+            cairo_set_source_rgba(cr, ar, ag, ab, 0.95);
+            cairo_fill(cr);
+        }
+
+        // Close / ESC badge
+        double esc_w = 42.0, esc_h = 20.0;
+        double esc_x = sx + sw - esc_w - 14.0;
+        double esc_y = sy + 15.0;
+        draw_rounded_rect_path(cr, esc_x, esc_y, esc_w, esc_h, 6.0);
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
+        cairo_fill(cr);
+        cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+        cairo_set_font_size(cr, 9.5);
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.70);
+        cairo_move_to(cr, esc_x + 11.5, esc_y + 13.5);
+        cairo_show_text(cr, "esc");
+
+        // Separator line
+        cairo_move_to(cr, sx + 14.0, sy + 51.0);
+        cairo_line_to(cr, sx + sw - 14.0, sy + 51.0);
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
+        cairo_set_line_width(cr, 1.0);
+        cairo_stroke(cr);
+
+        // Safari header row
+        draw_safari_compass_icon(cr, sx + 34.0, sy + 76.0, 15.0);
+
+        cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+        cairo_set_font_size(cr, 13.0);
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+        cairo_move_to(cr, sx + 58.0, sy + 73.0);
+        cairo_show_text(cr, "Результати у інтернеті");
+
+        cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+        cairo_set_font_size(cr, 10.5);
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.52);
+        cairo_move_to(cr, sx + 58.0, sy + 87.0);
+        cairo_show_text(cr, "Safari — веб-пошук");
+
+        // Snippet card
+        double card_x = sx + 14.0;
+        double card_y = sy + 102.0;
+        double card_w = sw - 28.0;
+        double card_h = sh - 116.0;
+        draw_rounded_rect_path(cr, card_x, card_y, card_w, card_h, 10.0);
+        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.22);
+        cairo_fill(cr);
+        draw_rounded_rect_path(cr, card_x + 0.5, card_y + 0.5, card_w - 1.0, card_h - 1.0, 10.0);
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.10);
+        cairo_set_line_width(cr, 1.0);
+        cairo_stroke(cr);
+
+        // Pango formatted description
+        PangoLayout *layout = pango_cairo_create_layout(cr);
+        pango_layout_set_width(layout, (int)((card_w - 24.0) * PANGO_SCALE));
+        pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
+        pango_layout_set_spacing(layout, (int)(4.0 * PANGO_SCALE));
+        PangoFontDescription *desc = pango_font_description_from_string("SF Pro Text 11.5");
+        pango_layout_set_font_description(layout, desc);
+        pango_font_description_free(desc);
+
+        const char *markup =
+            "<span foreground=\"#f0f2f5\">"
+            "<b>macW1Y</b> is the less popular but the most alike macOS modpack that makes GNOME beautiful with Liquid Glass and Apple HIG design."
+            "</span>\n\n"
+            "<span foreground=\"#ff94c2\">"
+            "Also this modpack was made by a femboy. In Telegram @w1nyear channel chat you can find w1nyear's thighs with thigh highs."
+            "</span>";
+
+        pango_layout_set_markup(layout, markup, -1);
+        cairo_move_to(cr, card_x + 12.0, card_y + 12.0);
+        pango_cairo_show_layout(cr, layout);
+        g_object_unref(layout);
+    } else {
+        // Normal spotlight pill
+        double sw = 290.0, sh = 46.0, sr = 23.0;
+        double sx = (width - sw) / 2.0;
+        double sy = (height - sh) / 2.0;
+
+        draw_frosted_glass_card(cr, blurred_bg, sx, sy, sw, sh, sr, tint_a, shadow_a, 0.16);
+
+        // Magnifying glass
+        cairo_set_source_rgb(cr, ar, ag, ab);
+        cairo_set_line_width(cr, 1.8);
+        cairo_arc(cr, sx + 22.0, sy + 21.0, 6.0, 0, 2 * G_PI);
+        cairo_stroke(cr);
+        cairo_move_to(cr, sx + 26.5, sy + 25.5);
+        cairo_line_to(cr, sx + 31.0, sy + 30.0);
+        cairo_stroke(cr);
+
+        if (spotlight_input_active) {
+            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+            if (spotlight_input_text[0] != '\0') {
+                cairo_set_font_size(cr, 13.0);
+                cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+                cairo_move_to(cr, sx + 38.0, sy + 27.5);
+                cairo_show_text(cr, spotlight_input_text);
+
+                if (spotlight_cursor_visible) {
+                    cairo_text_extents_t ext;
+                    cairo_text_extents(cr, spotlight_input_text, &ext);
+                    cairo_rectangle(cr, sx + 38.0 + ext.x_advance + 2.0, sy + 14.0, 1.5, 18.0);
+                    cairo_set_source_rgba(cr, ar, ag, ab, 0.95);
+                    cairo_fill(cr);
+                }
+            } else {
+                // Empty text with blinking cursor
+                if (spotlight_cursor_visible) {
+                    cairo_rectangle(cr, sx + 38.0, sy + 14.0, 1.5, 18.0);
+                    cairo_set_source_rgba(cr, ar, ag, ab, 0.95);
+                    cairo_fill(cr);
+                }
+                cairo_set_font_size(cr, 12.0);
+                cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.38);
+                cairo_move_to(cr, sx + 42.0, sy + 27.5);
+                cairo_show_text(cr, "Пошук у Spotlight...");
+            }
+        } else {
+            // Static Placeholder
+            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+            cairo_set_font_size(cr, 12.0);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.72);
+            cairo_move_to(cr, sx + 38.0, sy + 27.5);
+            cairo_show_text(cr, "Пошук у Spotlight...");
+
+            // Shortcut badge
+            double badge_w = 60.0, badge_h = 22.0;
+            double bx = sx + sw - badge_w - 12.0;
+            double by = sy + (sh - badge_h) / 2.0;
+            draw_rounded_rect_path(cr, bx, by, badge_w, badge_h, 7.0);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
+            cairo_fill(cr);
+            draw_rounded_rect_path(cr, bx + 0.5, by + 0.5, badge_w - 1.0, badge_h - 1.0, 7.0);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
+            cairo_set_line_width(cr, 0.8);
+            cairo_stroke(cr);
+            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_set_font_size(cr, 9.5);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
+            cairo_move_to(cr, bx + 7.5, by + 14.5);
+            cairo_show_text(cr, "⌘ Пробіл");
+        }
+    }
 
     cairo_restore(cr);
 
@@ -3179,6 +3546,17 @@ void init_spotlight_preview(void *widget, gpointer data) {
     (void)data;
     g_spotlight_preview_w = GTK_WIDGET(widget);
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), spotlight_preview_draw_func, NULL, NULL);
+
+    gtk_widget_set_focusable(GTK_WIDGET(widget), TRUE);
+
+    GtkGestureClick *click = GTK_GESTURE_CLICK(gtk_gesture_click_new());
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click), 0);
+    g_signal_connect(click, "pressed", G_CALLBACK(on_spotlight_preview_clicked), widget);
+    gtk_widget_add_controller(GTK_WIDGET(widget), GTK_EVENT_CONTROLLER(click));
+
+    GtkEventController *key_ctrl = gtk_event_controller_key_new();
+    g_signal_connect(key_ctrl, "key-pressed", G_CALLBACK(on_spotlight_key_pressed), widget);
+    gtk_widget_add_controller(GTK_WIDGET(widget), key_ctrl);
 }
 
 /* ========================================================================= */
