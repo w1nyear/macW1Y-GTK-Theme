@@ -2348,11 +2348,11 @@ StEntry StLabel.hint-text {
 }
 
 #panel #panelRight .panel-button {
-  -natural-hpadding: 10px !important;
-  -minimum-hpadding: 10px !important;
-  padding: 0 10px !important;
-  margin: 2px 4px !important;
-  min-width: 36px !important;
+  -natural-hpadding: 7px !important;
+  -minimum-hpadding: 7px !important;
+  padding: 0 7px !important;
+  margin: 2px 3px !important;
+  min-width: 30px !important;
   height: 28px !important;
   min-height: 28px !important;
 }

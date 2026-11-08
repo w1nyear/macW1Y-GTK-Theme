@@ -18221,3 +18221,32 @@ Task 659: Збільшення ширини кнопок та відстані �
    - Візуальна перевірка скріншотом підтвердила гармонійні та рівномірні інтервали (~44-48px між центрами всіх іконок).
 
 4. Статус: Завершено.
+
+================================================================================
+Task 660: Точне коригування відступів та ширини кнопок у меню-барі (зменшення на ~1.5x)
+================================================================================
+1. Вимога користувача:
+   - Зробити відступ між іконками програм приблизно на півтори меншим (золота середина
+     між початковим затісним та попереднім розширеним станом).
+
+2. Технічні деталі та реалізація:
+   - У extensions/blur-my-shell@aunetx/components/menubar_v29.js:
+     * Відкориговано інлайн-стиль кнопок: padding зменшено з 10px до 7px (-natural-hpadding: 7px, -minimum-hpadding: 7px),
+       поля margin встановлено у 2px 3px, а min-width встановлено у 30px (разом ширина слота 36px, відстань між центрами 36px замість 44px).
+     * Синхронізовано до системної директорії ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v29.js
+       та гаряче перепідвантажено в активному MenubarController.
+   - У extensions/ubuntu-appindicators@ubuntu.com/indicatorStatusIcon.js:
+     * Оновлено DEFAULT_STYLE на '-natural-hpadding: 7px; min-width: 30px'.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/ubuntu-appindicators@ubuntu.com/.
+   - У gnome-shell-theme/gnome-shell.css та всіх варіантах тем (macW1Y-Dark, macW1Y-Light, macW1Y-Dark-solid, macW1Y-Light-solid):
+     * Оновлено правила #panel #panelRight .panel-button (padding: 0 7px !important; margin: 2px 3px !important; min-width: 30px !important;).
+     * Оновлено кнопку Центру керування на width: 32px !important; min-width: 32px !important;.
+     * Синхронізовано до ~/.themes/.
+   - Оновлено контрольні хеші цілісності в config/extensions.lock.json для blur-my-shell@aunetx та ubuntu-appindicators@ubuntu.com.
+
+3. Результати тестування та перевірок:
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - Візуальна перевірка скріншотом підтвердила ідеальну пропорцію та баланс іконок меню-бару.
+
+4. Статус: Завершено.

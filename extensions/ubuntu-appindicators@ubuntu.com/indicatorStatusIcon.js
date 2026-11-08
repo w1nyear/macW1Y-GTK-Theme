@@ -195,7 +195,7 @@ class IndicatorBaseStatusIcon extends PanelMenu.Button {
         if (!settings.get_boolean('compact-mode-enabled'))
             return null; // drop to default -natural-hpadding.
 
-        return '-natural-hpadding: 10px; min-width: 36px';
+        return '-natural-hpadding: 7px; min-width: 30px';
     }
 
     _updateCompactMode() {
