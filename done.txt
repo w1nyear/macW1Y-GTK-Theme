@@ -18384,3 +18384,35 @@ Task 664: Відновлення плавного зникання списку 
      * Аналіз профілю яскравості по осі Y підтвердив плавний оптичний градієнт розчинення елементів списку (зникання) без різкого відсікання та без білих плям.
 
 5. Статус: Завершено.
+
+
+Task 665: Видалення паразитного розділювача (separator) зверху контекстного меню іконок Dock (ПКМ)
+1. Мета:
+   - Видалити зайву горизонтальну лінію-розподільник (дескриптор/розділювач), яка з'являлася на самому верху контекстного меню (ПКМ) іконок на док-панелі (зокрема для термінала, запущених та неактивних програм), де над нею немає жодних кнопок.
+   - Забезпечити бездоганний вигляд контекстних меню Dock у повній відповідності з Apple HIG та macOS Tahoe / Sequoia (меню починається відразу з першого пункту або списку вікон без фантомних розділювачів нагорі).
+
+2. Причина несправності:
+   - У розширенні dash2dock-motion@unmade.space у файлі appIcons.js метод _rebuildMenu() починався з виклику this.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(appItemLabel));, де appItemLabel дорівнював назві програми (наприклад, «Термінал»). Крім того, при наявності вікон додавався ще один PopupSeparatorMenuItem(_('Open Windows')), а в DockShowAppsIconMenu — PopupSeparatorMenuItem(__('Dash2Dock Motion')).
+   - У темах macW1Y для збереження ультратонкого дизайну розділювачі .popup-separator-menu-item мають висоту 1px, а текст приховується/згортається. Через наявність непорожнього тексту у item.label.text вбудована логіка GNOME Shell _updateSeparatorVisibility() не приховувала цей елемент на індексі 0. У результаті на самій верхівці меню малювалася зайва 1-піксельна лінія без жодних пунктів над нею.
+
+3. Реалізоване рішення:
+   - У extensions/dash2dock-motion@unmade.space/appIcons.js:
+     * Видалено безумовне додавання PopupSeparatorMenuItem(appItemLabel) на індексі 0 (залишено лише індикатор оновлення, якщо програма безпосередньо оновлюється).
+     * Видалено зайвий PopupSeparatorMenuItem(_('Open Windows')) перед списком вікон — вікна тепер виводяться чисто вгорі меню.
+     * Розділювач між відкритими вікнами та діями програми (_appendSeparator()) тепер додається лише тоді, коли відкриті вікна дійсно присутні (windows.length > 0), виключаючи появу прихованих або фантомних розділювачів при закритих програмах.
+     * Видалено заголовок PopupSeparatorMenuItem у DockShowAppsIconMenu для іконки додатків / Launchpad.
+     * Синхронізовано appIcons.js між репозиторієм та ~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/.
+   - У extensions/eval-helper@mactheme/extension.js:
+     * У хук PopupMenu.prototype.open додано захисний механізм suppressLeadingSeparator(menu), який гарантує, що жодне спливаюче контекстне меню ніколи не відображатиме PopupSeparatorMenuItem на першій видимій позиції (індекс 0).
+     * Синхронізовано та активовано в системі.
+   - Оновлено хеші sha256 у config/extensions.lock.json для dash2dock-motion@unmade.space та eval-helper@mactheme.
+
+4. Результати тестування та перевірок:
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-diagnostics — Результат: Система стабільна. Всі 5 блоків перевірок успішні.
+   - Зафіксовано контрольний знімок контекстного меню Ptyxis (Термінал):
+     * dock_menu_fixed.png та dock_menu_top_fixed.png.
+     * Попіксельний аналіз підтвердив: меню починається безпосередньо з пункту «Launch using Discrete Graphics Card» на тлі скла вікна (22, 22, 25) без жодних паразитичних ліній над ним.
+
+5. Статус: Завершено.

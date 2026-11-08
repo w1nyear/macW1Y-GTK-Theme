@@ -939,11 +939,26 @@ export default class EvalHelper extends Extension {
                     }
                 }
 
+                const suppressLeadingSeparator = (menu) => {
+                    if (!menu || !menu.box) return;
+                    try {
+                        const items = menu._getMenuItems ? menu._getMenuItems() : [];
+                        for (const item of items) {
+                            if (!item.actor?.visible) continue;
+                            if (item instanceof PopupMenu.PopupSeparatorMenuItem) {
+                                item.actor.hide();
+                            }
+                            break;
+                        }
+                    } catch (_) {}
+                };
+
                 if (!PopupMenu.PopupMenu.prototype._origMacGlideOpen) {
                     PopupMenu.PopupMenu.prototype._origMacGlideOpen = PopupMenu.PopupMenu.prototype.open;
                     const origOpen = PopupMenu.PopupMenu.prototype._origMacGlideOpen;
                     PopupMenu.PopupMenu.prototype.open = function(animate) {
                         try {
+                            suppressLeadingSeparator(this);
                             attachToMenu(this);
                         } catch (e) {
                             console.error(`[EvalHelper] MacMenuHoverGlide open error: ${e}`);

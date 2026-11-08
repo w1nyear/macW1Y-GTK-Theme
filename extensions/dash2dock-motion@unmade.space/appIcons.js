@@ -1430,10 +1430,10 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
     _rebuildMenu() {
         this.removeAll();
 
-        const appItemLabel = this.sourceActor.updating
-            ? _('%s is being updated…').format(this.sourceActor.name)
-            : this.sourceActor.name;
-        this.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(appItemLabel));
+        if (this.sourceActor.updating) {
+            const appItemLabel = _('%s is being updated…').format(this.sourceActor.name);
+            this.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(appItemLabel));
+        }
 
         const {app} = this.sourceActor;
 
@@ -1451,12 +1451,6 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
         } else {
             const windows = this.sourceActor.getInterestingWindows();
 
-            if (windows.length > 0) {
-                this.addMenuItem(
-                    /* Translators: This is the heading of a list of open windows */
-                    new PopupMenu.PopupSeparatorMenuItem(_('Open Windows')));
-            }
-
             windows.forEach(window => {
                 const title = window.title ? window.title : app.get_name();
                 const item = this._appendMenuItem(title);
@@ -1467,7 +1461,9 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
         }
 
         if (!app.is_window_backed()) {
-            this._appendSeparator();
+            const windows = this.sourceActor.getInterestingWindows();
+            if (windows.length > 0)
+                this._appendSeparator();
 
             const appInfo = app.get_app_info();
             const actions = this.sourceActor.updating ? [] : appInfo.list_actions();
@@ -1910,8 +1906,6 @@ export const DockShowAppsIcon = GObject.registerClass({
 class DockShowAppsIconMenu extends DockAppIconMenu {
     _rebuildMenu() {
         this.removeAll();
-
-        this.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(__('Dash2Dock Motion')));
 
         const item = this._appendMenuItem(_('Settings'));
         item.connect('activate', () =>
