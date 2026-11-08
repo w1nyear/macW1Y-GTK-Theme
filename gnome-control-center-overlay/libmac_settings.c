@@ -3103,9 +3103,65 @@ static guint spotlight_cursor_timer_id = 0;
 static guint64 spotlight_last_click_time = 0;
 static int spotlight_consecutive_clicks = 0;
 
+/* Smooth Expansion / Collapse Animation Engine */
+static guint spotlight_anim_tick_id = 0;
+static gint64 spotlight_anim_last_time = 0;
+static double spotlight_anim_current_progress = 0.0; /* 0.0 = collapsed, 1.0 = expanded */
+static double spotlight_anim_target_progress = 0.0;
+
 static void redraw_spotlight_preview(void) {
     if (g_spotlight_preview_w && GTK_IS_WIDGET(g_spotlight_preview_w)) {
         gtk_widget_queue_draw(g_spotlight_preview_w);
+    }
+}
+
+static gboolean spotlight_anim_tick_cb(GtkWidget *widget G_GNUC_UNUSED,
+                                       GdkFrameClock *frame_clock G_GNUC_UNUSED,
+                                       gpointer user_data G_GNUC_UNUSED)
+{
+    if (!g_spotlight_preview_w || !GTK_IS_WIDGET(g_spotlight_preview_w)) {
+        spotlight_anim_tick_id = 0;
+        return G_SOURCE_REMOVE;
+    }
+
+    gint64 now = g_get_monotonic_time();
+    double dt = (double)(now - spotlight_anim_last_time) / 1000000.0;
+    spotlight_anim_last_time = now;
+    if (dt <= 0.0) dt = 0.016;
+    if (dt > 0.05) dt = 0.05;
+
+    double diff = spotlight_anim_target_progress - spotlight_anim_current_progress;
+    if (fabs(diff) < 0.002) {
+        spotlight_anim_current_progress = spotlight_anim_target_progress;
+        int req_h = (int)lround(150.0 + spotlight_anim_current_progress * (330.0 - 150.0));
+        gtk_widget_set_size_request(g_spotlight_preview_w, -1, req_h);
+        spotlight_anim_tick_id = 0;
+        redraw_spotlight_preview();
+        return G_SOURCE_REMOVE;
+    }
+
+    /* Critically damped macOS-style fluid exponential easing */
+    double speed = (spotlight_anim_target_progress > spotlight_anim_current_progress) ? 14.0 : 18.0;
+    double factor = 1.0 - exp(-speed * dt);
+    spotlight_anim_current_progress += diff * factor;
+
+    int req_h = (int)lround(150.0 + spotlight_anim_current_progress * (330.0 - 150.0));
+    gtk_widget_set_size_request(g_spotlight_preview_w, -1, req_h);
+    redraw_spotlight_preview();
+
+    return G_SOURCE_CONTINUE;
+}
+
+static void spotlight_start_anim(double target)
+{
+    spotlight_anim_target_progress = target;
+    if (g_spotlight_preview_w && GTK_IS_WIDGET(g_spotlight_preview_w)) {
+        if (spotlight_anim_tick_id == 0) {
+            spotlight_anim_last_time = g_get_monotonic_time();
+            spotlight_anim_tick_id = gtk_widget_add_tick_callback(g_spotlight_preview_w,
+                                                                 spotlight_anim_tick_cb,
+                                                                 NULL, NULL);
+        }
     }
 }
 
@@ -3207,17 +3263,19 @@ static void on_spotlight_preview_clicked(GtkGestureClick *gesture, int n_press, 
     (void)gesture;
     GtkWidget *widget = GTK_WIDGET(user_data);
 
-    // If Easter Egg is revealed and user clicked on the "esc" close badge
-    if (spotlight_easter_egg_revealed && g_spotlight_preview_w && GTK_IS_WIDGET(g_spotlight_preview_w)) {
+    // If Easter Egg is revealed or expanding and user clicked on the "esc" close badge
+    if (spotlight_anim_current_progress > 0.6 && g_spotlight_preview_w && GTK_IS_WIDGET(g_spotlight_preview_w)) {
         int width = gtk_widget_get_width(g_spotlight_preview_w);
         int height = gtk_widget_get_height(g_spotlight_preview_w);
-        double sw = CLAMP((double)width - 40.0, 360.0, 520.0);
+        double max_sw = CLAMP((double)width - 40.0, 360.0, 520.0);
+        double sw = 290.0 + spotlight_anim_current_progress * (max_sw - 290.0);
+        double sh = 46.0 + spotlight_anim_current_progress * (286.0 - 46.0);
         double sx = (width - sw) / 2.0;
-        double sy = (height - 286.0) / 2.0;
+        double sy = (height - sh) / 2.0;
         double esc_w = 42.0, esc_h = 20.0;
         double esc_x = sx + sw - esc_w - 14.0;
         double esc_y = sy + 15.0;
-        if (x >= esc_x - 6.0 && x <= esc_x + esc_w + 6.0 && y >= esc_y - 6.0 && y <= esc_y + esc_h + 6.0) {
+        if (x >= esc_x - 8.0 && x <= esc_x + esc_w + 8.0 && y >= esc_y - 8.0 && y <= esc_y + esc_h + 8.0) {
             spotlight_input_active = FALSE;
             spotlight_easter_egg_revealed = FALSE;
             spotlight_input_text[0] = '\0';
@@ -3226,9 +3284,8 @@ static void on_spotlight_preview_clicked(GtkGestureClick *gesture, int n_press, 
                 g_source_remove(spotlight_cursor_timer_id);
                 spotlight_cursor_timer_id = 0;
             }
-            gtk_widget_set_size_request(g_spotlight_preview_w, -1, 150);
+            spotlight_start_anim(0.0);
             gtk_widget_set_cursor_from_name(g_spotlight_preview_w, "default");
-            redraw_spotlight_preview();
             return;
         }
     }
@@ -3275,12 +3332,14 @@ static gboolean on_spotlight_key_pressed(GtkEventControllerKey *controller,
         }
         if (strcasestr(spotlight_input_text, "macw1y") != NULL ||
             strcasestr(spotlight_input_text, "ьфсц1н") != NULL) {
-            spotlight_easter_egg_revealed = TRUE;
-            gtk_widget_set_size_request(g_spotlight_preview_w, -1, 330);
+            if (!spotlight_easter_egg_revealed) {
+                spotlight_easter_egg_revealed = TRUE;
+                spotlight_start_anim(1.0);
+            }
         } else {
             if (spotlight_easter_egg_revealed) {
                 spotlight_easter_egg_revealed = FALSE;
-                gtk_widget_set_size_request(g_spotlight_preview_w, -1, 150);
+                spotlight_start_anim(0.0);
             }
         }
         spotlight_cursor_visible = TRUE;
@@ -3295,11 +3354,10 @@ static gboolean on_spotlight_key_pressed(GtkEventControllerKey *controller,
             g_source_remove(spotlight_cursor_timer_id);
             spotlight_cursor_timer_id = 0;
         }
-        gtk_widget_set_size_request(g_spotlight_preview_w, -1, 150);
+        spotlight_start_anim(0.0);
         if (g_spotlight_preview_w && GTK_IS_WIDGET(g_spotlight_preview_w)) {
             gtk_widget_set_cursor_from_name(g_spotlight_preview_w, "default");
         }
-        redraw_spotlight_preview();
         return TRUE;
     } else if (keyval == GDK_KEY_Return || keyval == GDK_KEY_KP_Enter) {
         return TRUE;
@@ -3314,8 +3372,10 @@ static gboolean on_spotlight_key_pressed(GtkEventControllerKey *controller,
             }
             if (strcasestr(spotlight_input_text, "macw1y") != NULL ||
                 strcasestr(spotlight_input_text, "ьфсц1н") != NULL) {
-                spotlight_easter_egg_revealed = TRUE;
-                gtk_widget_set_size_request(g_spotlight_preview_w, -1, 330);
+                if (!spotlight_easter_egg_revealed) {
+                    spotlight_easter_egg_revealed = TRUE;
+                    spotlight_start_anim(1.0);
+                }
             }
             spotlight_cursor_visible = TRUE;
             redraw_spotlight_preview();
@@ -3354,184 +3414,193 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
     double ar, ag, ab;
     get_system_accent_color(&ar, &ag, &ab);
 
-    if (spotlight_easter_egg_revealed) {
-        double sw = CLAMP((double)width - 40.0, 360.0, 520.0);
-        double sh = 286.0;
-        double sr = 16.0;
-        double sx = (width - sw) / 2.0;
-        double sy = (height - sh) / 2.0;
+    double p = spotlight_anim_current_progress;
 
-        // Expanded Spotlight window card
-        draw_frosted_glass_card(cr, blurred_bg, sx, sy, sw, sh, sr, tint_a, shadow_a, 0.18);
-        draw_rounded_rect_path(cr, sx + 0.5, sy + 0.5, sw - 1.0, sh - 1.0, sr);
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
-        cairo_set_line_width(cr, 1.0);
-        cairo_stroke(cr);
+    /* Animated dimensions interpolated continuously by the frame clock */
+    double min_sw = 290.0, max_sw = CLAMP((double)width - 40.0, 360.0, 520.0);
+    double sw = min_sw + p * (max_sw - min_sw);
+    double min_sh = 46.0, max_sh = 286.0;
+    double sh = min_sh + p * (max_sh - min_sh);
+    double min_sr = 23.0, max_sr = 16.0;
+    double sr = min_sr + p * (max_sr - min_sr);
+    double sx = (width - sw) / 2.0;
+    double sy = (height - sh) / 2.0;
 
-        // Top search bar
-        // Magnifying glass
-        cairo_set_source_rgb(cr, ar, ag, ab);
-        cairo_set_line_width(cr, 2.0);
-        cairo_arc(cr, sx + 25.0, sy + 25.0, 7.0, 0, 2 * G_PI);
-        cairo_stroke(cr);
-        cairo_move_to(cr, sx + 30.5, sy + 30.5);
-        cairo_line_to(cr, sx + 36.5, sy + 36.5);
-        cairo_stroke(cr);
+    // Draw frosted glass card
+    draw_frosted_glass_card(cr, blurred_bg, sx, sy, sw, sh, sr, tint_a, shadow_a, 0.16 + p * 0.04);
+    draw_rounded_rect_path(cr, sx + 0.5, sy + 0.5, sw - 1.0, sh - 1.0, sr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12 + p * 0.10);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
 
-        // Search text
-        cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-        cairo_set_font_size(cr, 16.0);
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
-        cairo_move_to(cr, sx + 46.0, sy + 31.0);
-        cairo_show_text(cr, spotlight_input_text);
+    // Magnifying glass icon (smoothly positions with card expansion)
+    double icon_cx = sx + 22.0 + p * 3.0;
+    double icon_cy = sy + 21.0 + p * 4.0;
+    double icon_r = 6.0 + p * 1.0;
+    cairo_set_source_rgb(cr, ar, ag, ab);
+    cairo_set_line_width(cr, 1.8 + p * 0.2);
+    cairo_arc(cr, icon_cx, icon_cy, icon_r, 0, 2 * G_PI);
+    cairo_stroke(cr);
+    cairo_move_to(cr, icon_cx + icon_r * 0.72, icon_cy + icon_r * 0.72);
+    cairo_line_to(cr, icon_cx + icon_r * 0.72 + 4.5 + p * 1.5, icon_cy + icon_r * 0.72 + 4.5 + p * 1.5);
+    cairo_stroke(cr);
 
-        // Blinking cursor
-        if (spotlight_cursor_visible) {
-            cairo_text_extents_t ext;
-            cairo_text_extents(cr, spotlight_input_text, &ext);
-            cairo_rectangle(cr, sx + 46.0 + ext.x_advance + 2.0, sy + 15.0, 2.0, 20.0);
-            cairo_set_source_rgba(cr, ar, ag, ab, 0.95);
-            cairo_fill(cr);
-        }
+    // Search input text / placeholder
+    double text_x = sx + 38.0 + p * 8.0;
+    double text_y = sy + 27.5 + p * 3.5;
+    double font_sz = 12.0 + p * 4.0;
+    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(cr, font_sz);
 
-        // Close / ESC badge
-        double esc_w = 42.0, esc_h = 20.0;
-        double esc_x = sx + sw - esc_w - 14.0;
-        double esc_y = sy + 15.0;
-        draw_rounded_rect_path(cr, esc_x, esc_y, esc_w, esc_h, 6.0);
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
-        cairo_fill(cr);
-        cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-        cairo_set_font_size(cr, 9.5);
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.70);
-        cairo_move_to(cr, esc_x + 11.5, esc_y + 13.5);
-        cairo_show_text(cr, "esc");
+    if (spotlight_input_active) {
+        if (spotlight_input_text[0] != '\0') {
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95 + p * 0.03);
+            cairo_move_to(cr, text_x, text_y);
+            cairo_show_text(cr, spotlight_input_text);
 
-        // Separator line
-        cairo_move_to(cr, sx + 14.0, sy + 51.0);
-        cairo_line_to(cr, sx + sw - 14.0, sy + 51.0);
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
-        cairo_set_line_width(cr, 1.0);
-        cairo_stroke(cr);
-
-        // Safari header row
-        draw_safari_compass_icon(cr, sx + 34.0, sy + 76.0, 15.0);
-
-        cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-        cairo_set_font_size(cr, 13.0);
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-        cairo_move_to(cr, sx + 58.0, sy + 73.0);
-        cairo_show_text(cr, "Результати у інтернеті");
-
-        cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-        cairo_set_font_size(cr, 10.5);
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.52);
-        cairo_move_to(cr, sx + 58.0, sy + 87.0);
-        cairo_show_text(cr, "Safari — веб-пошук");
-
-        // Snippet card
-        double card_x = sx + 14.0;
-        double card_y = sy + 102.0;
-        double card_w = sw - 28.0;
-        double card_h = sh - 116.0;
-        draw_rounded_rect_path(cr, card_x, card_y, card_w, card_h, 10.0);
-        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.22);
-        cairo_fill(cr);
-        draw_rounded_rect_path(cr, card_x + 0.5, card_y + 0.5, card_w - 1.0, card_h - 1.0, 10.0);
-        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.10);
-        cairo_set_line_width(cr, 1.0);
-        cairo_stroke(cr);
-
-        // Pango formatted description
-        PangoLayout *layout = pango_cairo_create_layout(cr);
-        pango_layout_set_width(layout, (int)((card_w - 24.0) * PANGO_SCALE));
-        pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
-        pango_layout_set_spacing(layout, (int)(4.0 * PANGO_SCALE));
-        PangoFontDescription *desc = pango_font_description_from_string("SF Pro Text 11.5");
-        pango_layout_set_font_description(layout, desc);
-        pango_font_description_free(desc);
-
-        const char *markup =
-            "<span foreground=\"#f0f2f5\">"
-            "<b>macW1Y</b> is the less popular but the most alike macOS modpack that makes GNOME beautiful with Liquid Glass and Apple HIG design."
-            "</span>\n\n"
-            "<span foreground=\"#ff94c2\">"
-            "Also this modpack was made by a femboy. In Telegram @w1nyear channel chat you can find w1nyear's thighs with thigh highs."
-            "</span>";
-
-        pango_layout_set_markup(layout, markup, -1);
-        cairo_move_to(cr, card_x + 12.0, card_y + 12.0);
-        pango_cairo_show_layout(cr, layout);
-        g_object_unref(layout);
-    } else {
-        // Normal spotlight pill
-        double sw = 290.0, sh = 46.0, sr = 23.0;
-        double sx = (width - sw) / 2.0;
-        double sy = (height - sh) / 2.0;
-
-        draw_frosted_glass_card(cr, blurred_bg, sx, sy, sw, sh, sr, tint_a, shadow_a, 0.16);
-
-        // Magnifying glass
-        cairo_set_source_rgb(cr, ar, ag, ab);
-        cairo_set_line_width(cr, 1.8);
-        cairo_arc(cr, sx + 22.0, sy + 21.0, 6.0, 0, 2 * G_PI);
-        cairo_stroke(cr);
-        cairo_move_to(cr, sx + 26.5, sy + 25.5);
-        cairo_line_to(cr, sx + 31.0, sy + 30.0);
-        cairo_stroke(cr);
-
-        if (spotlight_input_active) {
-            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-            if (spotlight_input_text[0] != '\0') {
-                cairo_set_font_size(cr, 13.0);
-                cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
-                cairo_move_to(cr, sx + 38.0, sy + 27.5);
-                cairo_show_text(cr, spotlight_input_text);
-
-                if (spotlight_cursor_visible) {
-                    cairo_text_extents_t ext;
-                    cairo_text_extents(cr, spotlight_input_text, &ext);
-                    cairo_rectangle(cr, sx + 38.0 + ext.x_advance + 2.0, sy + 14.0, 1.5, 18.0);
-                    cairo_set_source_rgba(cr, ar, ag, ab, 0.95);
-                    cairo_fill(cr);
-                }
-            } else {
-                // Empty text with blinking cursor
-                if (spotlight_cursor_visible) {
-                    cairo_rectangle(cr, sx + 38.0, sy + 14.0, 1.5, 18.0);
-                    cairo_set_source_rgba(cr, ar, ag, ab, 0.95);
-                    cairo_fill(cr);
-                }
-                cairo_set_font_size(cr, 12.0);
-                cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.38);
-                cairo_move_to(cr, sx + 42.0, sy + 27.5);
-                cairo_show_text(cr, "Пошук у Spotlight...");
+            if (spotlight_cursor_visible) {
+                cairo_text_extents_t ext;
+                cairo_text_extents(cr, spotlight_input_text, &ext);
+                cairo_rectangle(cr, text_x + ext.x_advance + 2.0, sy + 14.0 + p * 1.0, 1.5 + p * 0.5, 18.0 + p * 2.0);
+                cairo_set_source_rgba(cr, ar, ag, ab, 0.95);
+                cairo_fill(cr);
             }
         } else {
-            // Static Placeholder
-            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+            if (spotlight_cursor_visible) {
+                cairo_rectangle(cr, text_x, sy + 14.0, 1.5, 18.0);
+                cairo_set_source_rgba(cr, ar, ag, ab, 0.95);
+                cairo_fill(cr);
+            }
             cairo_set_font_size(cr, 12.0);
-            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.72);
-            cairo_move_to(cr, sx + 38.0, sy + 27.5);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.38);
+            cairo_move_to(cr, text_x + 4.0, text_y);
             cairo_show_text(cr, "Пошук у Spotlight...");
+        }
+    } else {
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.72);
+        cairo_move_to(cr, text_x, text_y);
+        cairo_show_text(cr, "Пошук у Spotlight...");
+    }
 
-            // Shortcut badge
+    // Shortcut badge "⌘ Пробіл" (fades out during expansion)
+    if (p < 0.7 && !spotlight_input_active) {
+        double badge_alpha = CLAMP((0.6 - p) / 0.6, 0.0, 1.0);
+        if (badge_alpha > 0.02) {
             double badge_w = 60.0, badge_h = 22.0;
             double bx = sx + sw - badge_w - 12.0;
             double by = sy + (sh - badge_h) / 2.0;
             draw_rounded_rect_path(cr, bx, by, badge_w, badge_h, 7.0);
-            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14 * badge_alpha);
             cairo_fill(cr);
             draw_rounded_rect_path(cr, bx + 0.5, by + 0.5, badge_w - 1.0, badge_h - 1.0, 7.0);
-            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18 * badge_alpha);
             cairo_set_line_width(cr, 0.8);
             cairo_stroke(cr);
             cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
             cairo_set_font_size(cr, 9.5);
-            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88 * badge_alpha);
             cairo_move_to(cr, bx + 7.5, by + 14.5);
             cairo_show_text(cr, "⌘ Пробіл");
         }
+    }
+
+    // Close "esc" badge (fades in as window expands)
+    if (p > 0.15) {
+        double esc_alpha = CLAMP((p - 0.15) / 0.85, 0.0, 1.0);
+        if (esc_alpha > 0.02) {
+            double esc_w = 42.0, esc_h = 20.0;
+            double esc_x = sx + sw - esc_w - 14.0;
+            double esc_y = sy + 15.0;
+            draw_rounded_rect_path(cr, esc_x, esc_y, esc_w, esc_h, 6.0);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12 * esc_alpha);
+            cairo_fill(cr);
+            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_set_font_size(cr, 9.5);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.70 * esc_alpha);
+            cairo_move_to(cr, esc_x + 11.5, esc_y + 13.5);
+            cairo_show_text(cr, "esc");
+        }
+    }
+
+    // Content area below search bar with fluid clipping and slide-in
+    if (p > 0.08) {
+        cairo_save(cr);
+        draw_rounded_rect_path(cr, sx, sy, sw, sh, sr);
+        cairo_clip(cr);
+
+        // Separator line
+        cairo_move_to(cr, sx + 14.0, sy + 51.0);
+        cairo_line_to(cr, sx + sw - 14.0, sy + 51.0);
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12 * p);
+        cairo_set_line_width(cr, 1.0);
+        cairo_stroke(cr);
+
+        if (p > 0.18) {
+            double content_alpha = CLAMP((p - 0.18) / 0.82, 0.0, 1.0);
+            double slide_y = (1.0 - content_alpha) * 18.0;
+
+            cairo_save(cr);
+            cairo_translate(cr, 0, slide_y);
+
+            // Safari header row
+            draw_safari_compass_icon(cr, sx + 34.0, sy + 76.0, 15.0);
+
+            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_set_font_size(cr, 13.0);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95 * content_alpha);
+            cairo_move_to(cr, sx + 58.0, sy + 73.0);
+            cairo_show_text(cr, "Результати у інтернеті");
+
+            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+            cairo_set_font_size(cr, 10.5);
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.52 * content_alpha);
+            cairo_move_to(cr, sx + 58.0, sy + 87.0);
+            cairo_show_text(cr, "Safari — веб-пошук");
+
+            // Snippet description card
+            double card_x = sx + 14.0;
+            double card_y = sy + 102.0;
+            double card_w = sw - 28.0;
+            double card_h = sh - 116.0;
+            if (card_h > 24.0) {
+                draw_rounded_rect_path(cr, card_x, card_y, card_w, card_h, 10.0);
+                cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.22 * content_alpha);
+                cairo_fill(cr);
+                draw_rounded_rect_path(cr, card_x + 0.5, card_y + 0.5, card_w - 1.0, card_h - 1.0, 10.0);
+                cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.10 * content_alpha);
+                cairo_set_line_width(cr, 1.0);
+                cairo_stroke(cr);
+
+                // Pango formatted description
+                PangoLayout *layout = pango_cairo_create_layout(cr);
+                pango_layout_set_width(layout, (int)((card_w - 24.0) * PANGO_SCALE));
+                pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
+                pango_layout_set_spacing(layout, (int)(4.0 * PANGO_SCALE));
+                PangoFontDescription *desc = pango_font_description_from_string("SF Pro Text 11.5");
+                pango_layout_set_font_description(layout, desc);
+                pango_font_description_free(desc);
+
+                char hex_main[16], hex_femboy[16];
+                snprintf(hex_main, sizeof(hex_main), "#f0f2f5%02x", (int)(content_alpha * 245));
+                snprintf(hex_femboy, sizeof(hex_femboy), "#ff94c2%02x", (int)(content_alpha * 245));
+
+                char markup[768];
+                snprintf(markup, sizeof(markup),
+                    "<span foreground=\"%s\">"
+                    "<b>macW1Y</b> is the less popular but the most alike macOS modpack that makes GNOME beautiful with Liquid Glass and Apple HIG design."
+                    "</span>\n\n"
+                    "<span foreground=\"%s\">"
+                    "Also this modpack was made by a femboy. In Telegram @w1nyear channel chat you can find w1nyear's thighs with thigh highs."
+                    "</span>", hex_main, hex_femboy);
+
+                pango_layout_set_markup(layout, markup, -1);
+                cairo_move_to(cr, card_x + 12.0, card_y + 12.0);
+                pango_cairo_show_layout(cr, layout);
+                g_object_unref(layout);
+            }
+            cairo_restore(cr);
+        }
+        cairo_restore(cr);
     }
 
     cairo_restore(cr);
