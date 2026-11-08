@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
 #   macOS Sequoia / Tahoe Transformation Modpack (macW1Y Release)
-#  Installer & Maintenance System - Version 0.5
+#  Installer & Maintenance System - Version 0.6
 # ==============================================================================
 
 set -e
 
 # Version Constants
-NEW_VERSION="0.5"
+NEW_VERSION="0.6"
 
 # ANSI Color Codes
 C_RESET="\033[0m"

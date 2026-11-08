@@ -482,7 +482,7 @@ for lang in remaining_languages:
 out_file = os.path.join(os.path.dirname(__file__), "translations_data.py")
 with open(out_file, "w", encoding="utf-8") as f:
     f.write("# SPDX-License-Identifier: GPL-3.0-or-later\n")
-    f.write(f"# macW1Y 0.5 Full Multi-Language Translations Dictionary\n")
+    f.write(f"# macW1Y 0.6 Full Multi-Language Translations Dictionary\n")
     f.write(f"# Total Languages: {len(TRANSLATIONS)}\n\n")
     f.write(f"RTL_LANGUAGES = {repr(RTL_LANGUAGES)}\n\n")
     f.write(f"TRANSLATIONS = {json.dumps(TRANSLATIONS, ensure_ascii=False, indent=4)}\n")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-macW1Y 0.5 - Unified Internationalization (i18n/l10n) Build System.
+macW1Y 0.6 - Unified Internationalization (i18n/l10n) Build System.
 Compiles central translations into:
 1. config/i18n/translations.json
 2. extensions/appmenu@ChathurangaBW.github.io/mac_i18n.js
@@ -30,7 +30,7 @@ def main():
 
     # 2. Generate mac_i18n.js for GJS Extensions
     js_template = '''// SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y 0.5 Unified Internationalization & Localization Runtime
+// macW1Y 0.6 Unified Internationalization & Localization Runtime
 // Automatically adapts to Ubuntu system locale and GNOME preferences.
 
 import GLib from 'gi://GLib';
@@ -116,7 +116,7 @@ export function tf(key, params = {}, fallback, overrideLocale = null) {
 
     # 3. Generate Python module bin/mac_i18n.py
     py_module = '''# SPDX-License-Identifier: GPL-3.0-or-later
-# macW1Y 0.5 Unified i18n for Python utilities
+# macW1Y 0.6 Unified i18n for Python utilities
 
 import os
 import locale
@@ -188,7 +188,7 @@ def tf(key, params=None, fallback=None, override_locale=None):
     ]
     
     c_header = '''/* SPDX-License-Identifier: GPL-3.0-or-later */
-/* macW1Y 0.5 C Localization Header */
+/* macW1Y 0.6 C Localization Header */
 #ifndef MAC_I18N_H
 #define MAC_I18N_H
 

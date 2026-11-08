@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-macW1Y 0.5 — Centralized Master Theme Compiler (mac-build-theme)
+macW1Y 0.6 — Centralized Master Theme Compiler (mac-build-theme)
 Reads Single Source of Truth (SSOT) from config/macw1y-tokens.json
 and generates unified stylesheets for GTK 4, GTK 3, and Libadwaita.
 """
@@ -29,7 +29,7 @@ def generate_gtk4_tokens_css(tokens):
     d = tokens["dimensions"]
     t = tokens["typography"]
     
-    css = f"""/* macW1Y 0.5 — Generated Master Design Tokens for GTK 4 / Libadwaita */
+    css = f"""/* macW1Y 0.6 — Generated Master Design Tokens for GTK 4 / Libadwaita */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 @define-color accent_bg_color {c["accent_bg"]};
@@ -107,7 +107,7 @@ def generate_gtk4_components_css(tokens):
     slider_glass_url = "file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg"
     slider_glass_v_url = "file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg"
 
-    css = f"""/* macW1Y 0.5 — Master Unified Component Stylesheet for GTK 4 / Libadwaita */
+    css = f"""/* macW1Y 0.6 — Master Unified Component Stylesheet for GTK 4 / Libadwaita */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 /* =========================================================================
@@ -2276,7 +2276,7 @@ def generate_gtk3_tokens_css(tokens):
     g = tokens["geometry"]
     d = tokens["dimensions"]
     
-    css = f"""/* macW1Y 0.5 — Master Design Tokens for GTK 3 */
+    css = f"""/* macW1Y 0.6 — Master Design Tokens for GTK 3 */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 @define-color accent_bg_color {c["accent_bg"]};
@@ -2297,7 +2297,7 @@ def generate_gtk3_components_css(tokens):
     e = tokens["effects"]
     t = tokens["typography"]
 
-    css = f"""/* macW1Y 0.5 — Master Unified Component Stylesheet for GTK 3 */
+    css = f"""/* macW1Y 0.6 — Master Unified Component Stylesheet for GTK 3 */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 /* Window Background */
@@ -2804,7 +2804,7 @@ def place_master_imports(file_path):
 
 def build_all():
     print("===================================================================")
-    print("       macW1Y 0.5 — Master UI Theme Compiler (mac-build-theme)     ")
+    print("       macW1Y 0.6 — Master UI Theme Compiler (mac-build-theme)     ")
     print("===================================================================")
     
     tokens = load_tokens()

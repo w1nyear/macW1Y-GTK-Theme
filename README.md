@@ -201,4 +201,4 @@ The integrated Widgets extension is distributed under the **GNU General Public L
 
 **Official Repository:** https://github.com/w1nyear/macW1Y-GTK-Theme
 
-**Version:** 0.5
+**Version:** 0.6

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Generates config/i18n/translations_data.py containing comprehensive translations
-for all 34 supported major languages in macW1Y 0.5.
+for all 34 supported major languages in macW1Y 0.6.
 """
 import os
 import json
@@ -463,7 +463,7 @@ RTL_LANGUAGES = {"ar", "he", "fa"}
 out_file = os.path.join(os.path.dirname(__file__), "translations_data.py")
 with open(out_file, "w", encoding="utf-8") as f:
     f.write("# SPDX-License-Identifier: GPL-3.0-or-later\n")
-    f.write("# Auto-generated translations data for macW1Y 0.5\n\n")
+    f.write("# Auto-generated translations data for macW1Y 0.6\n\n")
     f.write(f"RTL_LANGUAGES = {repr(RTL_LANGUAGES)}\n\n")
     f.write(f"TRANSLATIONS = {json.dumps(TRANSLATIONS, ensure_ascii=False, indent=4)}\n")
 

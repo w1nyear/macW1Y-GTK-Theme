@@ -18085,3 +18085,42 @@ Task 655: Інтеграція та вивантаження демонстра�
 
 3. Статус: Завершено.
 
+================================================================================
+Task 656: Оновлення версії теми до 0.6 та синхронізація компонентів репозиторію і системи
+================================================================================
+1. Вимога користувача:
+   - Розпочати розробку версії 0.6 та оновити версію у всіх файлах цієї теми.
+   - Підготувати проект до подальшого завершення розробки інтерфейсу.
+
+2. Виконані дії:
+   - Оновлено версію до 0.6 у файлі конфігурації стилізації config/mac-styling/version
+     та синхронізовано з живою системою (~/.config/mac-styling/version).
+   - Оновлено інсталятор install.sh (NEW_VERSION="0.6", заголовок v0.6).
+   - Оновлено документацію проекту README.md (Version: 0.6).
+   - Оновлено інструменти та скрипти аудиту й оптимізації:
+     * bin/mac-audit-sync (v0.6) та синхронізовано в /usr/local/bin/mac-audit-sync
+     * bin/mac-build-theme (v0.6) та синхронізовано в /usr/local/bin/mac-build-theme
+     * bin/mac-graphics-profile (v0.6)
+     * bin/mac-i18n-verify (v0.6)
+     * bin/mac_i18n.py (v0.6)
+   - Оновлено системну локалізацію та заголовки C/i18n:
+     * control-center/mac_i18n.h (v0.6)
+     * gnome-control-center-overlay/mac_i18n.h (v0.6)
+     * src/mac_i18n.h (v0.6)
+     * config/i18n/catalog.json (0.6.0)
+     * config/i18n/generate_catalog.py (0.6.0)
+     * config/i18n/build_translations.py (v0.6)
+     * config/i18n/generate_translations_data.py (v0.6)
+     * config/i18n/generate_full_dictionaries.py (v0.6)
+     * config/i18n/translations_data.py (v0.6)
+   - Запущено компілятор теми mac-build-theme для регенерації всіх master design tokens
+     та компонентних стилів GTK 3 / GTK 4 / Libadwaita для всіх варіантів теми.
+
+3. Результати аудиту та перевірок:
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-i18n-verify — RESULT: macW1Y 0.6 i18n/l10n VALIDATION 100% SUCCESSFUL.
+
+4. Статус: Завершено.
+
+

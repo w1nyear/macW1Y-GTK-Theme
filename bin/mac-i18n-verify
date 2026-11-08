@@ -36,7 +36,7 @@ def check(title, condition, detail=""):
         return False
 
 def main():
-    print(f"\n{C_CYAN}{C_BOLD}=== macW1Y 0.5 i18n / l10n VALIDATION SUITE ==={C_RESET}\n")
+    print(f"\n{C_CYAN}{C_BOLD}=== macW1Y 0.6 i18n / l10n VALIDATION SUITE ==={C_RESET}\n")
     all_ok = True
 
     # 1. Catalog Verification
@@ -159,7 +159,7 @@ def main():
     # SUMMARY
     print("\n" + "="*80)
     if all_ok:
-        print(f"{C_GREEN}{C_BOLD}RESULT: macW1Y 0.5 i18n/l10n VALIDATION 100% SUCCESSFUL.{C_RESET}\n")
+        print(f"{C_GREEN}{C_BOLD}RESULT: macW1Y 0.6 i18n/l10n VALIDATION 100% SUCCESSFUL.{C_RESET}\n")
         return 0
     else:
         print(f"{C_RED}{C_BOLD}RESULT: Validation failed with issues.{C_RESET}\n")
