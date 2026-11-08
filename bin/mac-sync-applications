@@ -367,6 +367,45 @@ def _sync_internal():
     except Exception:
         pass
 
+    # Ensure reverse-DNS alias desktop files exist for AppImages in LOCAL_APPS_DIR
+    # so GNOME Shell window tracker and compositor match running windows directly
+    alias_created = False
+    for df in glob.glob(os.path.join(LOCAL_APPS_DIR, "appimage-*.desktop")):
+        try:
+            with open(df, "r", errors="ignore") as f:
+                content = f.read()
+            if "X-Mac-AppImage=true" not in content:
+                continue
+
+            icon_val = ""
+            swm_val = ""
+            for line in content.splitlines():
+                if line.startswith("Icon="):
+                    icon_val = line.split("=", 1)[1].strip()
+                elif line.startswith("StartupWMClass="):
+                    swm_val = line.split("=", 1)[1].strip()
+
+            aliases = set()
+            if icon_val and "." in icon_val and not icon_val.startswith("/"):
+                aliases.add(f"{icon_val}.desktop")
+            if swm_val and "." in swm_val:
+                aliases.add(f"{swm_val}.desktop")
+
+            for alias in aliases:
+                if alias == os.path.basename(df):
+                    continue
+                alias_path = os.path.join(LOCAL_APPS_DIR, alias)
+                if not os.path.exists(alias_path):
+                    with open(alias_path, "w") as af:
+                        af.write(content)
+                    os.chmod(alias_path, 0o755)
+                    alias_created = True
+        except Exception:
+            pass
+
+    if alias_created:
+        subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     search_dirs = [
         "/usr/share/applications",
         "/var/lib/snapd/desktop/applications",
@@ -710,6 +749,7 @@ def extract_appimage_metadata(dest_binary, temp_dir):
 
     if desktops:
         try:
+            embedded_meta["desktop_id"] = os.path.basename(desktops[0])
             with open(desktops[0], "r", errors="ignore") as df:
                 for line in df:
                     line = line.strip()
@@ -822,6 +862,28 @@ X-Mac-Real-Path={dest_binary}
     with open(local_desktop, "w") as df:
         df.write(desktop_content)
     os.chmod(local_desktop, 0o755)
+
+    # Create reverse-DNS alias desktop files so GNOME Shell window tracker and compositor
+    # match Wayland app_id / WM_CLASS to this desktop entry
+    aliases = set()
+    if meta.get("desktop_id") and meta["desktop_id"].endswith(".desktop"):
+        aliases.add(meta["desktop_id"])
+    if icon_path and "." in icon_path and not icon_path.startswith("/"):
+        aliases.add(f"{icon_path}.desktop")
+    if startup_wmclass and "." in startup_wmclass:
+        aliases.add(f"{startup_wmclass}.desktop")
+
+    for alias in aliases:
+        if alias != f"appimage-{safe_id}.desktop":
+            alias_path = os.path.join(LOCAL_APPS_DIR, alias)
+            try:
+                if os.path.lexists(alias_path):
+                    os.remove(alias_path)
+                with open(alias_path, "w") as af:
+                    af.write(desktop_content)
+                os.chmod(alias_path, 0o755)
+            except Exception:
+                pass
 
     subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()

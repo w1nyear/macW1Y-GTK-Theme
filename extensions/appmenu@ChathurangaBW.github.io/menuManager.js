@@ -44,6 +44,21 @@ function getSystemAccentColor() {
     }
 }
 
+function formatAppIdentifier(identifier) {
+    if (!identifier || typeof identifier !== 'string') return '';
+    let s = identifier.trim();
+    s = s.replace(/\.desktop$/i, '');
+    if (/^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(s)) {
+        const parts = s.split('.');
+        s = parts[parts.length - 1];
+    }
+    s = s.replace(/[-_]?(appimage|linux|x86_64|amd64|bin)$/i, '');
+    s = s.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+    s = s.replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+    s = s.replace(/[-_]+/g, ' ').trim();
+    return s.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
 // Default panel icon — `start-here-symbolic` adapts to every distro's icon theme
 const DEFAULT_ICON = 'start-here-symbolic';
 
@@ -1000,15 +1015,57 @@ export class MenuManager {
                     isAppFocused = true;
                 } else if (window.get_wm_class()) {
                     const wmClass = window.get_wm_class();
-                    let fallbackApp = this._appSystem.lookup_desktop_wmclass(wmClass);
+                    const wmLower = wmClass.toLowerCase();
+                    const parts = wmClass.split('.');
+                    const lastPart = parts[parts.length - 1];
+                    const lastLower = lastPart.toLowerCase();
+                    const midPart = parts.length > 2 ? parts[1].toLowerCase() : '';
+
+                    let fallbackApp = this._appSystem.lookup_desktop_wmclass(wmClass) ||
+                                      this._appSystem.lookup_desktop_wmclass(wmLower) ||
+                                      this._appSystem.lookup_app(wmClass + '.desktop') ||
+                                      this._appSystem.lookup_app(wmLower + '.desktop');
+
                     if (!fallbackApp) {
-                        fallbackApp = this._appSystem.lookup_desktop_wmclass(wmClass.toLowerCase());
+                        const candidates = [
+                            lastPart,
+                            lastLower,
+                            'appimage-' + lastLower,
+                            midPart ? 'appimage-' + midPart : null,
+                            midPart ? midPart : null,
+                        ].filter(Boolean);
+
+                        for (const cand of candidates) {
+                            fallbackApp = this._appSystem.lookup_desktop_wmclass(cand) ||
+                                          this._appSystem.lookup_app(cand + '.desktop') ||
+                                          this._appSystem.lookup_app(cand.toLowerCase() + '.desktop');
+                            if (fallbackApp) break;
+                        }
                     }
+
+                    if (!fallbackApp) {
+                        try {
+                            const installed = this._appSystem.get_installed();
+                            for (const appInfo of installed) {
+                                const swm = (appInfo.get_startup_wm_class?.() || appInfo.get_string?.('StartupWMClass') || '').toLowerCase();
+                                if (swm && (swm === wmLower || swm === lastLower || wmLower.endsWith(swm) || swm.endsWith(lastLower))) {
+                                    fallbackApp = this._appSystem.lookup_app(appInfo.get_id());
+                                    if (fallbackApp) break;
+                                }
+                                const id = (appInfo.get_id?.() || '').toLowerCase();
+                                if (id === `appimage-${lastLower}.desktop` || (midPart && id === `appimage-${midPart}.desktop`)) {
+                                    fallbackApp = this._appSystem.lookup_app(appInfo.get_id());
+                                    if (fallbackApp) break;
+                                }
+                            }
+                        } catch (_) {}
+                    }
+
                     if (fallbackApp) {
                         detectedApp = fallbackApp;
                         appName = fallbackApp.get_name();
                     } else {
-                        appName = wmClass.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                        appName = formatAppIdentifier(wmClass);
                     }
                     isAppFocused = true;
                 }
@@ -1016,6 +1073,11 @@ export class MenuManager {
         }
 
         const wmClass = window?.get_wm_class?.() ?? '';
+
+        // Clean up any remaining reverse-DNS app names
+        if (appName && /^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(appName.trim())) {
+            appName = formatAppIdentifier(appName);
+        }
 
         // Etap 113: mac Finder naming — Nautilus windows are called "Finder"
         {

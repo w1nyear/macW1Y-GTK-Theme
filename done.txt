@@ -18286,3 +18286,43 @@ Task 661: Виправлення UI Spotlight: усунення виходу с�
      * Відступ скролбара від нижнього заокругленого краю: 24px (повне усунення виходу за межі заокруглення).
 
 4. Статус: Завершено.
+
+================================================================================
+Task 662: Виправлення відображення системних назв програм у меню-барі та підтримка AppImage аліасів
+================================================================================
+1. Вимога користувача:
+   - Деякі програми (наприклад, Prism Launcher, встановлений через перекидання AppImage у пункт "Програми" в Nautilus) замість зрозумілого імені мають системну назву у меню-барі: "org.prismlauncher.PrismLauncher".
+   - Виправити відображення системних назв на коректні та красиві назви програм у стилі macOS HIG.
+
+2. Причина проблеми та технічний аналіз:
+   - AppImage-пакети містять внутрішні reverse-DNS ідентифікатори вікон (Wayland app_id / X11 WM_CLASS), наприклад org.prismlauncher.PrismLauncher або dev.khcrysalis.PlumeImpactor.
+   - Демон mac-sync-applications раніше створював десктоп-файли виключно під назвами appimage-{id}.desktop (наприклад, appimage-prismlauncher.desktop).
+   - ShellWindowTracker у GNOME Shell очікує точний збіг app_id з назвою десктоп-файлу (org.prismlauncher.PrismLauncher.desktop). Через невідповідність ShellWindowTracker не міг пов'язати вікно програми з десктоп-файлом.
+   - У свою чергу extensions/appmenu@ChathurangaBW.github.io/menuManager.js при відсутності detectedApp брав сирий window.get_wm_class(), що призводило до появи рядка "org.prismlauncher.PrismLauncher" біля яблучка в меню-барі.
+
+3. Реалізація та зміни:
+   - У extensions/appmenu@ChathurangaBW.github.io/menuManager.js:
+     * Додано функцію formatAppIdentifier(identifier), яка очищує системні reverse-DNS префікси, видаляє технічні суфікси пакування (appimage, linux, x86_64 тощо), розбиває CamelCase/PascalCase на слова (PrismLauncher -> Prism Launcher) та нормалізує регістр кожного слова.
+     * Значно розширено логіку пошуку fallbackApp:
+       1) Прямий пошук wm_class та id через lookup_desktop_wmclass / lookup_app;
+       2) Пошук за складовими частинами reverse-DNS та префіксом appimage-;
+       3) Сканування всіх встановлених застосунків у Shell.AppSystem за атрибутом StartupWMClass або id;
+       4) Якщо десктоп-файл відсутній взагалі — форматування wmClass через formatAppIdentifier.
+     * Додано фінальну санітизацію appName, якщо рядок відповідає формату reverse-DNS, перетворюючи його на красиву назву.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/menuManager.js.
+   - У bin/mac-sync-applications:
+     * В extract_appimage_metadata додано збереження desktop_id з внутрішнього .desktop файлу AppImage.
+     * В install_appimage додано автоматичне створення reverse-DNS аліасів (наприклад, ~/.local/share/applications/org.prismlauncher.PrismLauncher.desktop) з оновленням десктоп-бази даних.
+     * У функції _sync_internal додано синхронізацію та генерацію відсутніх reverse-DNS аліасів для всіх наявних AppImage-пакетів.
+     * Оновлено копію /usr/local/bin/mac-sync-applications та перезапущено службу mac-app-manager.service.
+   - Оновлено контрольний хеш цілісності розширення appmenu@ChathurangaBW.github.io у config/extensions.lock.json.
+
+4. Результати тестування та перевірок:
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - Shell.AppSystem тепер миттєво знаходить десктоп-записи за reverse-DNS:
+     * org.prismlauncher.PrismLauncher -> "Prism Launcher"
+     * dev.khcrysalis.PlumeImpactor -> "Plume Impactor"
+   - Тестування в меню-барі підтвердило повернення імені "Prism Launcher" замість системного ідентифікатора.
+
+5. Статус: Завершено.
