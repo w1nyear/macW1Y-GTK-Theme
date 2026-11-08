@@ -3311,9 +3311,16 @@ export default class EvalHelper extends Extension {
         });
 
         this._setupWineWindowStacking();
+        this._setupMinimizedWindowSnapshotManager();
     }
 
     disable() {
+        if (this._snapshotCleanups) {
+            this._snapshotCleanups.forEach(fn => {
+                try { fn(); } catch (_) {}
+            });
+            this._snapshotCleanups = null;
+        }
         if (Main.screenshotUI) {
             if (this._screenshotTakenSignalId) {
                 try { Main.screenshotUI.disconnect(this._screenshotTakenSignalId); } catch (_) {}
@@ -3611,5 +3618,162 @@ export default class EvalHelper extends Extension {
         } catch (e) {
             console.error(`[EvalHelper] wine focus-window connect error: ${e}`);
         }
+    }
+
+    _setupMinimizedWindowSnapshotManager() {
+        const SNAPSHOT_OVERLAY_NAME = 'mac-window-snapshot-overlay';
+
+        const captureWindowSnapshot = (actor) => {
+            if (!actor || !actor.mapped || !actor.meta_window) return null;
+            try {
+                const snap = actor.paint_to_content(null);
+                if (snap) {
+                    actor.meta_window._macCachedSnapshot = snap;
+                    return snap;
+                }
+            } catch (_) {}
+            return actor.meta_window._macCachedSnapshot || null;
+        };
+
+        const applySnapshotOverlay = (actor) => {
+            if (!actor || !actor.meta_window) return;
+            const snap = actor.meta_window._macCachedSnapshot;
+            if (!snap) return;
+
+            try {
+                let overlay = actor.get_children().find(c => c.name === SNAPSHOT_OVERLAY_NAME);
+                if (!overlay) {
+                    overlay = new Clutter.Actor({
+                        name: SNAPSHOT_OVERLAY_NAME,
+                        width: actor.width,
+                        height: actor.height,
+                        content: snap,
+                    });
+                    actor.add_child(overlay);
+                } else {
+                    overlay.width = actor.width;
+                    overlay.height = actor.height;
+                    overlay.content = snap;
+                }
+                overlay.show();
+            } catch (_) {}
+        };
+
+        const removeSnapshotOverlay = (actor) => {
+            if (!actor) return;
+            try {
+                let overlay = actor.get_children().find(c => c.name === SNAPSHOT_OVERLAY_NAME);
+                if (overlay) {
+                    overlay.destroy();
+                }
+            } catch (_) {}
+        };
+
+        this._snapshotCleanups = [];
+
+        // 1. Continuous focus tracking to capture fresh window snapshot before focus lost
+        let lastFocus = null;
+        this._snapshotFocusId = global.display.connect('notify::focus-window', () => {
+            if (lastFocus && !lastFocus.minimized) {
+                const a = lastFocus.get_compositor_private?.();
+                if (a && a.mapped) captureWindowSnapshot(a);
+            }
+            const win = global.display.focus_window;
+            lastFocus = win;
+            if (win && !win.minimized) {
+                const a = win.get_compositor_private?.();
+                if (a && a.mapped) captureWindowSnapshot(a);
+            }
+        });
+        this._snapshotCleanups.push(() => {
+            if (this._snapshotFocusId) {
+                global.display.disconnect(this._snapshotFocusId);
+                this._snapshotFocusId = null;
+            }
+        });
+
+        // 2. Pre-minimize hook: capture snapshot and apply overlay immediately
+        this._snapshotMinId = global.window_manager.connect('minimize', (e, actor) => {
+            if (actor) {
+                captureWindowSnapshot(actor);
+                applySnapshotOverlay(actor);
+            }
+        });
+        this._snapshotCleanups.push(() => {
+            if (this._snapshotMinId) {
+                global.window_manager.disconnect(this._snapshotMinId);
+                this._snapshotMinId = null;
+            }
+        });
+
+        // 3. Pre-unminimize hook: ensure overlay is applied during animation
+        this._snapshotUnminId = global.window_manager.connect('unminimize', (e, actor) => {
+            if (actor) {
+                applySnapshotOverlay(actor);
+            }
+        });
+        this._snapshotCleanups.push(() => {
+            if (this._snapshotUnminId) {
+                global.window_manager.disconnect(this._snapshotUnminId);
+                this._snapshotUnminId = null;
+            }
+        });
+
+        // 4. Window minimized state tracking: clean up overlay after unminimize animation finishes
+        const trackWindow = (win) => {
+            if (!win || win._macSnapshotTracked) return;
+            win._macSnapshotTracked = true;
+            const id = win.connect('notify::minimized', () => {
+                const actor = win.get_compositor_private?.();
+                if (!win.minimized && actor) {
+                    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
+                        if (!win.minimized && actor) {
+                            removeSnapshotOverlay(actor);
+                        }
+                        return GLib.SOURCE_REMOVE;
+                    });
+                } else if (win.minimized && actor) {
+                    applySnapshotOverlay(actor);
+                }
+            });
+            this._snapshotCleanups.push(() => {
+                try { win.disconnect(id); } catch (_) {}
+                delete win._macSnapshotTracked;
+            });
+        };
+
+        this._snapshotWinCreatedId = global.display.connect('window-created', (d, win) => trackWindow(win));
+        this._snapshotCleanups.push(() => {
+            if (this._snapshotWinCreatedId) {
+                global.display.disconnect(this._snapshotWinCreatedId);
+                this._snapshotWinCreatedId = null;
+            }
+        });
+
+        global.get_window_actors().forEach(a => {
+            if (a.meta_window) {
+                trackWindow(a.meta_window);
+                if (a.mapped && !a.meta_window.minimized) captureWindowSnapshot(a);
+            }
+        });
+
+        // 5. Overview showing hook: ensure minimized windows have overlay
+        this._snapshotOverviewId = Main.overview.connect('showing', () => {
+            global.get_window_actors().forEach(actor => {
+                if (actor && actor.meta_window) {
+                    if (actor.meta_window.minimized) {
+                        applySnapshotOverlay(actor);
+                    } else if (actor.mapped) {
+                        captureWindowSnapshot(actor);
+                    }
+                }
+            });
+        });
+        this._snapshotCleanups.push(() => {
+            if (this._snapshotOverviewId) {
+                Main.overview.disconnect(this._snapshotOverviewId);
+                this._snapshotOverviewId = null;
+            }
+        });
     }
 }

@@ -27,6 +27,7 @@
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
+import GLib from 'gi://GLib';
 
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
@@ -36,6 +37,52 @@ import { SettingsData } from './settings_data.js';
 
 const MINIMIZE_EFFECT_NAME = 'minimize-magic-lamp-effect';
 const UNMINIMIZE_EFFECT_NAME = 'unminimize-magic-lamp-effect';
+const SNAPSHOT_OVERLAY_NAME = 'mac-window-snapshot-overlay';
+
+function captureWindowSnapshot(actor) {
+    if (!actor || !actor.mapped || !actor.meta_window) return null;
+    try {
+        const snap = actor.paint_to_content(null);
+        if (snap) {
+            actor.meta_window._macCachedSnapshot = snap;
+            return snap;
+        }
+    } catch (_) {}
+    return actor.meta_window._macCachedSnapshot || null;
+}
+
+function applySnapshotOverlay(actor) {
+    if (!actor || !actor.meta_window) return;
+    const snap = actor.meta_window._macCachedSnapshot;
+    if (!snap) return;
+
+    try {
+        let overlay = actor.get_children().find(c => c.name === SNAPSHOT_OVERLAY_NAME);
+        if (!overlay) {
+            overlay = new Clutter.Actor({
+                name: SNAPSHOT_OVERLAY_NAME,
+                width: actor.width,
+                height: actor.height,
+                content: snap,
+            });
+            actor.add_child(overlay);
+        } else {
+            overlay.width = actor.width;
+            overlay.height = actor.height;
+            overlay.content = snap;
+        }
+    } catch (_) {}
+}
+
+function removeSnapshotOverlay(actor) {
+    if (!actor) return;
+    try {
+        let overlay = actor.get_children().find(c => c.name === SNAPSHOT_OVERLAY_NAME);
+        if (overlay) {
+            overlay.destroy();
+        }
+    } catch (_) {}
+}
 
 export default class CompizMagicLampEffectExtension extends Extension {
 
@@ -66,7 +113,50 @@ export default class CompizMagicLampEffectExtension extends Extension {
             return;
         };
 
+        // Continuous snapshot tracking for focused windows
+        this._lastFocusWindow = null;
+        this._focusNotifyId = global.display.connect('notify::focus-window', () => {
+            if (this._lastFocusWindow && !this._lastFocusWindow.minimized) {
+                const actor = this._lastFocusWindow.get_compositor_private?.();
+                if (actor && actor.mapped) {
+                    captureWindowSnapshot(actor);
+                }
+            }
+            const win = global.display.focus_window;
+            this._lastFocusWindow = win;
+            if (win && !win.minimized) {
+                const actor = win.get_compositor_private?.();
+                if (actor && actor.mapped) {
+                    captureWindowSnapshot(actor);
+                }
+            }
+        });
+
+        this._overviewShowingId = Main.overview.connect('showing', () => {
+            global.get_window_actors().forEach(actor => {
+                if (actor && actor.meta_window) {
+                    if (actor.meta_window.minimized) {
+                        applySnapshotOverlay(actor);
+                    } else if (actor.mapped) {
+                        captureWindowSnapshot(actor);
+                    }
+                }
+            });
+        });
+
+        this._windowCreatedId = global.display.connect('window-created', (d, win) => {
+            this._trackWindow(win);
+        });
+        global.get_window_actors().forEach(actor => {
+            if (actor.meta_window) this._trackWindow(actor.meta_window);
+        });
+
         this.minimizeId = global.window_manager.connect("minimize", (e, actor) => {
+            if (actor) {
+                captureWindowSnapshot(actor);
+                applySnapshotOverlay(actor);
+            }
+
             if (Main.overview.visible) {
                 Main.wm._shellwm.original_completed_minimize(actor);
                 return;
@@ -81,9 +171,16 @@ export default class CompizMagicLampEffectExtension extends Extension {
 
         this.unminimizeId = global.window_manager.connect("unminimize", (e, actor) => {
             actor.show();
+            if (actor) {
+                applySnapshotOverlay(actor);
+            }
 
             if (Main.overview.visible) {
                 Main.wm._shellwm.original_completed_unminimize(actor);
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+                    removeSnapshotOverlay(actor);
+                    return GLib.SOURCE_REMOVE;
+                });
                 return;
             }
 
@@ -95,9 +192,39 @@ export default class CompizMagicLampEffectExtension extends Extension {
         });
     }
 
+    _trackWindow(win) {
+        if (!win || win._macLampTracked) return;
+        win._macLampTracked = true;
+        win.connectObject('notify::minimized', () => {
+            const actor = win.get_compositor_private?.();
+            if (!win.minimized && actor) {
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
+                    if (!win.minimized && actor) {
+                        removeSnapshotOverlay(actor);
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
+            } else if (win.minimized && actor) {
+                applySnapshotOverlay(actor);
+            }
+        }, this);
+    }
+
     disable() {
         if (this.settingsData) {
             this.settingsData = null;
+        }
+        if (this._focusNotifyId) {
+            global.display.disconnect(this._focusNotifyId);
+            this._focusNotifyId = null;
+        }
+        if (this._overviewShowingId) {
+            Main.overview.disconnect(this._overviewShowingId);
+            this._overviewShowingId = null;
+        }
+        if (this._windowCreatedId) {
+            global.display.disconnect(this._windowCreatedId);
+            this._windowCreatedId = null;
         }
         if (this.minimizeId) {
             global.window_manager.disconnect(this.minimizeId);
@@ -109,6 +236,11 @@ export default class CompizMagicLampEffectExtension extends Extension {
         }
     
         global.get_window_actors().forEach((actor) => {
+            if (actor.meta_window) {
+                actor.meta_window.disconnectObject(this);
+                delete actor.meta_window._macLampTracked;
+            }
+            removeSnapshotOverlay(actor);
             this.destroyActorEffect(actor);
         });
         
@@ -465,6 +597,12 @@ class MagicLampUnminimizeEffect extends AbstractCommonMagicLampEffect {
     
     destroy_actor(actor) {
         Main.wm._shellwm.original_completed_unminimize(actor);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+            if (actor && actor.meta_window && !actor.meta_window.minimized) {
+                removeSnapshotOverlay(actor);
+            }
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     on_tick_elapsed(timer, msecs) {
