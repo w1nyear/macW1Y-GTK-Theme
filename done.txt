@@ -18354,3 +18354,33 @@ Task 663: Виправлення відображення вікон прогр�
      * Розгортання: оверлей активний під час анімації та коректно знищується (hasOverlay: false) при переході до інтерактивного стану.
 
 5. Статус: Завершено.
+
+
+Task 664: Відновлення плавного зникання списку (undershoot dissolve) лівої бічної панелі в Параметрах (GNOME Control Center)
+1. Мета:
+   - Відновити ефект плавного зникання елементів списку (soft gradient dissolve / undershoot) лівої бічної панелі (leftbar) у додатку «Параметри» (GNOME Control Center) під час прокручування списку під пошуковий рядок та над нижнім краєм вікна згідно з дизайном macOS Tahoe / Sequoia.
+   - Усунути різке грубе обрізання тексту та іконок рядків під полем пошуку (зокрема пункту «Bluetooth» та сусідніх), забезпечивши делікатне розчинення без появи будь-яких паразитичних білих або сірих непрозорих плашок.
+
+2. Причина несправності:
+   - На Етапі 656 через боротьбу зі старою статичною непрозорою плашкою (яка виникала через неправильне використання кольору @sidebar_bg_color) було застосовано надмірно агресивне правило, що примусово обнуляло всі псевдоелементи undershoot лівої бічної панелі (.sidebar-pane undershoot*, window.mac-settings-window .sidebar-pane undershoot*, .mac-settings-sidebar undershoot*) за допомогою min-height: 0px; opacity: 0; background: none;.
+   - Оскільки libmac_settings.so інжектує стилі з пріоритетом GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 200, а macw1y-components.css імпортується останнім у gtk.css, це придушувало будь-яке градієнтне зникнення списку. Елементи при прокручуванні впиралися в жорстку 1-піксельну межу під полем пошуку без розмиття.
+
+3. Реалізоване рішення:
+   - У gnome-control-center-overlay/libmac_settings.c та control-center/libmac_settings.c відновлено селектори undershoot.top та undershoot.bottom для бічної панелі:
+     * Для undershoot.top налаштовано м'який багатоточковий градієнт розчинення заввишки 34px: від alpha(@window_bg_color, 0.85) на 8px через 50% на 18px до повної прозорості на 34px. Завдяки використанню нативного @window_bg_color градієнт безшовно зливається з темним склом вікна без утворення будь-яких білих/сірих меж.
+     * Для undershoot.bottom додано м'який градієнт розчинення заввишки 24px (від 85% до 0%).
+     * Горизонтальні undershoot (left/right) примусово скинуто в 0px.
+   - Відповідні правила додано до генератора bin/mac-build-theme.
+   - Скомпільовано оновлену бібліотеку libmac_settings.so через gcc -shared -fPIC -O2 з прапорцями GTK4, Libadwaita та json-glib-1.0.
+   - Синхронізовано бінарник libmac_settings.so на всі 7 цільових локацій.
+   - Запущено python3 bin/mac-build-theme для оновлення системних і користувацьких файлів macw1y-components.css та тем.
+   - Оновлено копію /usr/local/bin/mac-build-theme.
+
+4. Результати тестування та перевірок:
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - Перевірено роботу Параметрів наживо (PID 741012):
+     * Знято контрольні скріншоти settings_scrolled_leftbar_fixed.png та sidebar_scrolled_top_fixed.png під час прокручування лівої панелі.
+     * Аналіз профілю яскравості по осі Y підтвердив плавний оптичний градієнт розчинення елементів списку (зникання) без різкого відсікання та без білих плям.
+
+5. Статус: Завершено.
