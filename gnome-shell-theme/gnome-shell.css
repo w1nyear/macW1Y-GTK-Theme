@@ -2350,15 +2350,19 @@ StEntry StLabel.hint-text {
 }
 
 #panel #panelRight .panel-button {
-  -natural-hpadding: 5px !important;
-  -minimum-hpadding: 5px !important;
-  padding: 0 5px !important;
-  margin: 2px 3px !important;
+  -natural-hpadding: 10px !important;
+  -minimum-hpadding: 10px !important;
+  padding: 0 10px !important;
+  margin: 2px 4px !important;
+  min-width: 36px !important;
+  height: 28px !important;
+  min-height: 28px !important;
 }
 
 #panel #panelRight .panel-button.clock-display {
   margin: 0 0 0 4px !important;
   padding: 0 !important;
+  min-width: auto !important;
 }
 
 #panel #panelRight .system-status-icon,
@@ -6040,7 +6044,7 @@ StWidget.focused .app-grid-running-dot {
   y-align: center !important;
 }
 
-/* Control Center Icon Button (width roughly equal to height: 34px x 28px) */
+/* Control Center Icon Button (width roughly equal to height: 36px x 28px) */
 #panel .panel-button.mac-control-center-button,
 #panel .panel-button#quickSettings,
 #panel #quickSettings.panel-button {
@@ -6048,9 +6052,9 @@ StWidget.focused .app-grid-running-dot {
   -minimum-hpadding: 0px !important;
   padding: 0 !important;
   margin: 0 !important;
-  width: 34px !important;
+  width: 36px !important;
   height: 28px !important;
-  min-width: 34px !important;
+  min-width: 36px !important;
   min-height: 28px !important;
   border-radius: 9999px !important;
 }

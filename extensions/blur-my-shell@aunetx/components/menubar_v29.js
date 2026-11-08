@@ -5675,7 +5675,7 @@ export const MenuBarController = class MenuBarController {
                         if (inner && inner.style !== undefined) {
                             inner.visible = true;
                             inner.show();
-                            inner.style = 'margin: 2px 3px !important; padding: 0 5px !important; height: 28px !important; min-height: 28px !important; width: auto !important; -natural-hpadding: 5px !important; -minimum-hpadding: 5px !important;';
+                            inner.style = 'margin: 2px 4px !important; padding: 0 10px !important; height: 28px !important; min-height: 28px !important; min-width: 36px !important; width: auto !important; -natural-hpadding: 10px !important; -minimum-hpadding: 10px !important;';
                         }
                         continue;
                     }
@@ -5697,7 +5697,7 @@ export const MenuBarController = class MenuBarController {
                         if (inner && inner.style !== undefined) {
                             inner.visible = true;
                             inner.show();
-                            inner.style = 'margin: 0 0 0 4px !important; padding: 0 !important; height: 28px !important;';
+                            inner.style = 'margin: 0 0 0 4px !important; padding: 0 !important; height: 28px !important; min-width: auto !important;';
                         }
                         continue;
                     }
@@ -5741,9 +5741,9 @@ export const MenuBarController = class MenuBarController {
                     const btn = child.get_first_child ? child.get_first_child() : child;
                     if (btn && btn.style !== undefined) {
                         if (btn.has_style_class_name && btn.has_style_class_name('clock-display')) {
-                            btn.style = 'margin: 0 0 0 4px !important; padding: 0 !important; height: 28px !important;';
+                            btn.style = 'margin: 0 0 0 4px !important; padding: 0 !important; height: 28px !important; min-width: auto !important;';
                         } else {
-                            btn.style = 'margin: 2px 3px !important; padding: 0 5px !important; height: 28px !important; min-height: 28px !important; width: auto !important; -natural-hpadding: 5px !important; -minimum-hpadding: 5px !important;';
+                            btn.style = 'margin: 2px 4px !important; padding: 0 10px !important; height: 28px !important; min-height: 28px !important; min-width: 36px !important; width: auto !important; -natural-hpadding: 10px !important; -minimum-hpadding: 10px !important;';
                         }
                     }
 
@@ -5806,7 +5806,7 @@ export const MenuBarController = class MenuBarController {
                 if (inner) {
                     inner.visible = true;
                     inner.show();
-                    inner.style = 'margin: 2px 3px !important; padding: 0 5px !important; height: 28px !important; min-height: 28px !important; width: auto !important; -natural-hpadding: 5px !important; -minimum-hpadding: 5px !important;';
+                    inner.style = 'margin: 2px 4px !important; padding: 0 10px !important; height: 28px !important; min-height: 28px !important; min-width: 36px !important; width: auto !important; -natural-hpadding: 10px !important; -minimum-hpadding: 10px !important;';
                 }
                 if (quickSettings) {
                     quickSettings.visible = false;

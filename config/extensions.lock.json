@@ -44,7 +44,7 @@
         "50",
         "51"
       ],
-      "sha256": "84d8a95e4a2d8d03ecf6880632fa90b1569aadcff517de81761c5551834e24eb",
+      "sha256": "7d5771c1e79f90d0cda612ae8175f39eb5eb7d5a2cd32fd182ec118f8b4ceffb",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -55,9 +55,9 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
-      "last_verified": "2026-11-06",
+      "last_verified": "2026-11-08",
       "pinned_sha256": "408e54d0f8146e7c6e23acc2f37b41ad6a3b68985fcb97db131cb17b46cabc00",
-      "dir_hash": "84d8a95e"
+      "dir_hash": "7d5771c1"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
       "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
@@ -603,7 +603,7 @@
         "49",
         "50"
       ],
-      "sha256": "c13be608211bc374ce987d716f9b94de9d936226c4936bc5bad5ff623aca7ec1",
+      "sha256": "cf54677c4bebbd42a974018b686a20f9795ac00acfae035628ab0df38d7dc234",
       "status": "locked",
       "source": "apt_system",
       "macw1y_components": [
@@ -611,7 +611,7 @@
       ],
       "has_custom_patches": false,
       "patch_description": "System tray indicators",
-      "last_verified": "2026-10-27",
+      "last_verified": "2026-11-08",
       "pinned_sha256": "cb5a70bc9bdad6c8eee8be4eec63e03df9b80069cbac9ffea4d7b326d83faffd"
     }
   }

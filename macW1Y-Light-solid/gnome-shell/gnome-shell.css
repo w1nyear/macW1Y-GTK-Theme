@@ -2345,6 +2345,28 @@ StEntry StLabel.hint-text {
   margin: 0;
 }
 
+#panel #panelRight .panel-button {
+  -natural-hpadding: 10px !important;
+  -minimum-hpadding: 10px !important;
+  padding: 0 10px !important;
+  margin: 2px 4px !important;
+  min-width: 36px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+}
+
+#panel #panelRight .panel-button.clock-display {
+  margin: 0 0 0 4px !important;
+  padding: 0 !important;
+  min-width: auto !important;
+}
+
+#panel #panelRight .system-status-icon,
+#panel #panelRight .panel-button .system-status-icon {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
 #panel .panel-button .panel-status-menu-box StLabel {
   padding: 0 0 0 2px;
 }

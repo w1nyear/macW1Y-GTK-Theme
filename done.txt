@@ -18190,3 +18190,34 @@ Task 658: Плавна 60fps анімація розгортання та зго
    - bin/mac-extension-guard verify — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
 
 4. Статус: Завершено.
+
+================================================================================
+Task 659: Збільшення ширини кнопок та відстані між іконками програм у меню-барі
+================================================================================
+1. Вимога користувача:
+   - Зробити більшу дистанцію між іконками програм у меню-барі (трей: Steam, Telegram, три крапки тощо),
+     так само як у Центрі керування та між акумулятором.
+   - Збільшити ширину елементів кнопок, щоб відступ був достатній і природний.
+
+2. Технічні деталі та реалізація:
+   - Дослідження геометрії показало, що кнопки додатків (IndicatorStatusIcon) мали ширину лише 26px
+     (контейнер 32px), що створювало затісний інтервал між іконками (32px між центрами проти 44px між акумулятором і Центром керування).
+   - У extensions/blur-my-shell@aunetx/components/menubar_v29.js:
+     * У методі _fixIndicatorShapes() оновлено інлайн-стиль для кнопок правої панелі:
+       margin: 2px 4px !important; padding: 0 10px !important; height: 28px !important; min-height: 28px !important; min-width: 36px !important; width: auto !important; -natural-hpadding: 10px !important; -minimum-hpadding: 10px !important;.
+     * Віджет годинника dateMenu зберіг індивідуальний компактний стиль (min-width: auto !important; margin: 0 0 0 4px !important; padding: 0 !important;).
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v29.js.
+   - У extensions/ubuntu-appindicators@ubuntu.com/indicatorStatusIcon.js:
+     * У методі DEFAULT_STYLE встановлено -natural-hpadding: 10px; min-width: 36px.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/ubuntu-appindicators@ubuntu.com/indicatorStatusIcon.js.
+   - У файлах стилів GNOME Shell (gnome-shell-theme/gnome-shell.css, macW1Y-Dark, macW1Y-Light, macW1Y-Dark-solid, macW1Y-Light-solid):
+     * Призначено селектор #panel #panelRight .panel-button з padding: 0 10px !important; margin: 2px 4px !important; min-width: 36px !important; height: 28px !important;.
+     * Синхронізовано до ~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css та інших варіантів тем.
+   - Оновлено контрольні хеші цілісності в config/extensions.lock.json для blur-my-shell@aunetx та ubuntu-appindicators@ubuntu.com.
+
+3. Результати тестування та перевірок:
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - Візуальна перевірка скріншотом підтвердила гармонійні та рівномірні інтервали (~44-48px між центрами всіх іконок).
+
+4. Статус: Завершено.
