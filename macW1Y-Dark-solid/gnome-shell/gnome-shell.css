@@ -6842,7 +6842,7 @@ StWidget.focused .app-grid-running-dot {
 .mac-spotlight-scroll StScrollBar,
 .mac-clipboard-scroll StScrollBar {
   padding: 0 !important;
-  margin: 2px 1px 2px 0 !important;
+  margin: 10px 4px 24px 0 !important;
 }
 
 .mac-notif-center-scroll StScrollBar .vhandle,

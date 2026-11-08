@@ -387,3 +387,10 @@
     -st-vfade-offset: 0px !important;
 }
 
+.mac-launchpad-scroll StScrollBar,
+.mac-spotlight-scroll StScrollBar,
+.mac-clipboard-scroll StScrollBar {
+    padding: 0 !important;
+    margin: 10px 4px 24px 0 !important;
+}
+

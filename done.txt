@@ -18250,3 +18250,39 @@ Task 660: Точне коригування відступів та ширини
    - Візуальна перевірка скріншотом підтвердила ідеальну пропорцію та баланс іконок меню-бару.
 
 4. Статус: Завершено.
+
+================================================================================
+Task 661: Виправлення UI Spotlight: усунення виходу скролбара за межі вікна та симетричне центрування сітки програм
+================================================================================
+1. Вимога користувача:
+   - Виправити UI Spotlight (режим перегляду програм/Launchpad): скролбар виходить за межі елементу внизу через закруглені кути вікна.
+   - Підсунути іконки програм нижче і правіше, щоб відступи від країв елемента (зліва, справа та знизу) були абсолютно однаковими.
+
+2. Технічні деталі та реалізація:
+   - У extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js:
+     * Додано функцію setupScrollbarConstraints(scrollView), яка для St.ScrollBar накладає обмеження padding: 0 !important; margin: 10px 4px 24px 0 !important;.
+       Це зупиняє повзунок та доріжку скролбара на відстані 24px від нижнього краю вікна, що унеможливлює вихід скролбара за радіус заокруглення кута (26px) у прозору/чорну область за межами скляного вікна.
+     * Застосовано setupScrollbarConstraints для всіх списків зі скролом: _scrollView (пошук), _filesScrollView (файли), _appsScrollView (програми) та _clipboardScrollView (буфер обміну).
+     * Відкориговано внутрішні відступи сітки програм _appsContentBox: змінено з padding: 0 14px 20px 14px; на padding: 3px 21px 21px 21px;.
+     * Відкориговано бічні відступи рядка категорій _appsCategoryRow та розділювача _appsDivider з 18px на 21px для ідеальної вертикальної відповідності сітці.
+     * Завдяки ширині діалогового вікна 714px та сітці з 7 колонок (шириною 672px) відступи стали симетричними: 21-22px зліва, 21-22px справа та 20-21px знизу від останнього ряду.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js.
+   - У extensions/appmenu@ChathurangaBW.github.io/stylesheet.css:
+     * Додано CSS правила .mac-launchpad-scroll StScrollBar, .mac-spotlight-scroll StScrollBar, .mac-clipboard-scroll StScrollBar { padding: 0 !important; margin: 10px 4px 24px 0 !important; }.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/stylesheet.css.
+   - У gnome-shell-theme/gnome-shell.css та всіх варіантах тем (macW1Y-Dark, macW1Y-Light, macW1Y-Dark-solid, macW1Y-Light-solid):
+     * Оновлено правила .mac-spotlight-scroll StScrollBar, .mac-clipboard-scroll StScrollBar з margin: 10px 4px 24px 0 !important;.
+     * Синхронізовано до ~/.themes/.
+   - Оновлено контрольний хеш цілісності розширення appmenu@ChathurangaBW.github.io у config/extensions.lock.json.
+   - Виконано гаряче перезавантаження модулів Spotlight через EvalHelper без переривання сесії GNOME Shell.
+
+3. Результати тестування та перевірок:
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - Перевірка геометричних координат віджетів:
+     * Відступ зліва від лівого краю вікна: 22px
+     * Відступ справа від правого краю вікна: 22px
+     * Відступ знизу від нижнього краю вікна: 20px
+     * Відступ скролбара від нижнього заокругленого краю: 24px (повне усунення виходу за межі заокруглення).
+
+4. Статус: Завершено.
