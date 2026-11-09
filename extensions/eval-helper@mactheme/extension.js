@@ -1080,10 +1080,33 @@ export default class EvalHelper extends Extension {
                     if (Main.sessionMode?.isLocked) return true;
                     const fw = typeof disp.get_focus_window === 'function' ? disp.get_focus_window() : null;
                     if (fw && !fw.is_destroyed?.()) {
+                        const winType = typeof fw.get_window_type === 'function' ? fw.get_window_type() : 0;
+                        if (winType === 1 || fw.get_title?.()?.includes('Desktop Icons')) {
+                            return false;
+                        }
                         if (typeof fw.is_fullscreen === 'function' && fw.is_fullscreen()) return true;
                         if (fw.fullscreen) return true;
-                        if (typeof fw.is_screen_sized === 'function' && fw.is_screen_sized()) return true;
-                        if (typeof fw.is_monitor_sized === 'function' && fw.is_monitor_sized()) return true;
+                        const wmClass = (fw.get_wm_class?.() || '').toLowerCase();
+                        const isGame = (
+                            wmClass.includes('steam_app_') ||
+                            wmClass.includes('gamescope') ||
+                            wmClass === 'wine' || wmClass === 'wine64' ||
+                            wmClass.endsWith('.exe') ||
+                            wmClass === 'retroarch' ||
+                            wmClass === 'lutris' ||
+                            wmClass === 'heroic' ||
+                            wmClass === 'ryujinx' ||
+                            wmClass === 'yuzu' ||
+                            wmClass === 'rpcs3' ||
+                            wmClass === 'pcsx2' ||
+                            wmClass === 'dosbox' ||
+                            wmClass === 'ppsspp'
+                        );
+                        if (isGame) {
+                            if (fw.maximized_horizontally && fw.maximized_vertically) return true;
+                            if (typeof fw.is_screen_sized === 'function' && fw.is_screen_sized()) return true;
+                            if (typeof fw.is_monitor_sized === 'function' && fw.is_monitor_sized()) return true;
+                        }
                     }
                     return false;
                 };

@@ -3623,6 +3623,9 @@ export const MacSpotlightDialog = GObject.registerClass({
 let _spotlightDialog = null;
 
 export function isSpotlightBlocked() {
+    if (typeof globalThis.isMacSpotlightBlocked === 'function' && globalThis.isMacSpotlightBlocked !== isSpotlightBlocked) {
+        return globalThis.isMacSpotlightBlocked();
+    }
     try {
         const disp = global.display;
         if (!disp) return false;
@@ -3662,16 +3665,17 @@ export function isSpotlightBlocked() {
         // 5. Focused window checks
         const fw = typeof disp.get_focus_window === 'function' ? disp.get_focus_window() : null;
         if (fw && !fw.is_destroyed?.()) {
+            const winType = typeof fw.get_window_type === 'function' ? fw.get_window_type() : 0;
+            // Desktop window (type 1 / DESKTOP) or desktop background must NEVER block Spotlight
+            if (winType === 1 || fw.get_title?.()?.includes('Desktop Icons')) {
+                return false;
+            }
+
+            // True fullscreen window
             if (typeof fw.is_fullscreen === 'function' && fw.is_fullscreen()) {
                 return true;
             }
             if (fw.fullscreen) {
-                return true;
-            }
-            if (typeof fw.is_screen_sized === 'function' && fw.is_screen_sized()) {
-                return true;
-            }
-            if (typeof fw.is_monitor_sized === 'function' && fw.is_monitor_sized()) {
                 return true;
             }
 
@@ -3694,6 +3698,12 @@ export function isSpotlightBlocked() {
             );
             if (isGame) {
                 if (fw.maximized_horizontally && fw.maximized_vertically) {
+                    return true;
+                }
+                if (typeof fw.is_screen_sized === 'function' && fw.is_screen_sized()) {
+                    return true;
+                }
+                if (typeof fw.is_monitor_sized === 'function' && fw.is_monitor_sized()) {
                     return true;
                 }
             }

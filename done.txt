@@ -18856,3 +18856,41 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
 
 4. Статус: Завершено.
+
+Завдання 677: Виправлення відкриття Spotlight та меню Spotlight (Applications), коли жодна програма не відкрита або активний робочий стіл
+===================================================================
+1. Проблема:
+   - Коли жодна програма не була відкрита, або коли користувач клікав по робочому столу (фокус переходив на фонове вікно робочого столу), Spotlight та Spotlight меню переставали відкриватися як за гарячою клавішею Ctrl+Space, так і по кліку на іконку Spotlight чи меню програм.
+   - Причина полягала в перевірці блокування `isSpotlightBlocked()`, впровадженій для повноекранних ігор. Фонове вікно Desktop Icons NG ("Desktop Icons 1", тип `Meta.WindowType.DESKTOP` = 1) займає весь монітор і повертає `is_screen_sized() === true` та `is_monitor_sized() === true`.
+   - Через відсутність виключення для вікон робочого столу функція помилково вважала Desktop Icons повноекранною програмою/грою і блокувала Spotlight, а також знімала глобальний хоткей `search-shortcut` у Mutter.
+
+2. Реалізовані зміни:
+   - extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js:
+     * Оновлено логіку `isSpotlightBlocked()`: додано пряму перевірку типу фокусованого вікна `fw.get_window_type() === 1` (`Meta.WindowType.DESKTOP`) або за назвою `"Desktop Icons"` — у таких випадках вікно гарантовано не блокує виклик (`return false`).
+     * Перевірки `is_screen_sized()` та `is_monitor_sized()` обмежено виключно процесами ігор (`isGame`) або справжнім повноекранним станом (`is_fullscreen()`), що унеможливлює помилкове блокування звичайних або фонових вікон.
+     * Додано перевірку делегування до `globalThis.isMacSpotlightBlocked`.
+   - extensions/eval-helper@mactheme/extension.js:
+     * Синхронізовано ідентичну логіку розпізнавання вікон робочого столу та ігор у запасній реалізації `isSpotlightBlocked()`.
+   - Синхронізація та гаряче оновлення:
+     * Оновлено копії файлів у `~/.local/share/gnome-shell/extensions/`.
+     * Проведено динамічне перезавантаження модуля `searchDialog_v5.js` у живому оточенні GNOME Shell без виходу з сесії.
+     * Оновлено глобальні обробники `globalThis.isMacSpotlightBlocked`, `toggleMacSpotlight` та синхронізовано реєстрацію хоткею `search-shortcut`.
+   - config/extensions.lock.json:
+     * Оновлено контрольні суми sha256 для `appmenu@ChathurangaBW.github.io` (`86148801ae3477f67902bff9ca2b3eed82c8311242d36ac1bd3eb32bbaa66154`) та `eval-helper@mactheme` (`0b501a90acd8a6e604e0a4d5128546166f2f30720c2ee4ab137b160e5be208b6`).
+
+3. Результати тестування:
+   - Перевірка при фокусі на Desktop Icons NG ("Desktop Icons 1"):
+     * `isBlockedWithDesktop`: `false`.
+     * `openWithDesktop ('search')`: `true` (відкривається та закривається бездоганно).
+     * `openWithDesktop ('apps')`: `true`, `mode: "apps"` (меню програм відкривається та закривається бездоганно).
+   - Перевірка при фокусі на звичайних вікнах додатків:
+     * `blockedWithNormal`: `false`.
+     * `openWithNormal`: `true`.
+   - Перевірка захисту від ігор та захоплення курсору:
+     * `gameBlocked`: `true`.
+     * `fsBlocked`: `true`.
+     * `cursorHiddenBlocked`: `true`.
+   - `bin/mac-extension-guard verify`: `VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes`.
+   - `bin/mac-audit-sync check`: `100% PASS! System and repository are in sync`.
+
+4. Статус: Завершено.
