@@ -13,6 +13,39 @@ const SYSTEM_FILE = '/etc/macW1Y/macSetupWizard';
 const VERSION_FILE = `${GLib.get_home_dir()}/.config/mac-styling/version`;
 const ICON_PATH = `${GLib.get_home_dir()}/.local/share/icons/MacTahoe-dark/apps/scalable/preferences-desktop-theme.svg`;
 
+const ACCENT_COLOR_MAP = {
+    'blue':   '#007aff',
+    'teal':   '#30b0c7',
+    'green':  '#34c759',
+    'yellow': '#ffcc00',
+    'orange': '#ff6a00',
+    'red':    '#ff3b30',
+    'pink':   '#ff2d55',
+    'purple': '#af52de',
+    'slate':  '#8e8e93',
+    'brown':  '#a27447',
+};
+
+export function getAccentColor() {
+    try {
+        const settings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        const name = settings.get_string('accent-color');
+        return ACCENT_COLOR_MAP[name] || '#ff6a00';
+    } catch (_) {
+        return '#ff6a00';
+    }
+}
+
+export function hexToRgba(hex, alpha) {
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    const num = parseInt(c, 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function getModpackVersion() {
     try {
         if (GLib.file_test(VERSION_FILE, GLib.FileTest.EXISTS)) {
@@ -274,7 +307,7 @@ export class MacSetupWizard {
         });
 
         const welcomeLabel = new St.Label({
-            text: 'Welcome to Mac',
+            text: 'Welcome to macW1Y',
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
@@ -311,12 +344,23 @@ export class MacSetupWizard {
             reactive: true
         });
 
+        // Use a 46x46 St.Bin to guarantee perfect pixel-level centering of the arrow icon
+        const iconBin = new St.Bin({
+            width: 46,
+            height: 46,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER
+        });
+
         const arrowIcon = new St.Icon({
             icon_name: 'go-next-symbolic',
             icon_size: 18,
-            style: 'color: #ffffff; margin-top: 13px; margin-left: 14px;'
+            style: 'color: #ffffff;',
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER
         });
-        circleBtn.set_child(arrowIcon);
+        iconBin.set_child(arrowIcon);
+        circleBtn.set_child(iconBin);
 
         circleBtn.connect('enter-event', () => {
             circleBtn.style = "width: 46px; height: 46px; border-radius: 9999px; " +
@@ -389,12 +433,32 @@ export class MacSetupWizard {
         }
     }
 
+    _applyNextBtnStyle() {
+        if (!this._nextBtn) return;
+        const bg = this._accentColor || '#ff6a00';
+        const shadow = hexToRgba(bg, 0.38);
+        this._nextBtn.style = `padding: 7px 26px; border-radius: 9999px; font-size: 13px; font-weight: 600; ` +
+                              `background-color: ${bg}; color: #ffffff; border: none; box-shadow: 0 2px 10px ${shadow};`;
+    }
+
+    _applyBackBtnStyle() {
+        if (!this._backBtn) return;
+        const titleColor = this._isDark ? '#ffffff' : '#1d1d1f';
+        const bg = this._isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.06)';
+        const border = this._isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.10)';
+        this._backBtn.style = `padding: 7px 22px; border-radius: 9999px; font-size: 13px; font-weight: 500; ` +
+                              `background-color: ${bg}; color: ${titleColor}; border: 1px solid ${border};`;
+    }
+
     _buildScreen2() {
         const stageW = global.stage.width;
         const stageH = global.stage.height;
-        const cardW = 700;
-        const cardH = 520;
+        this._cardW = 760;
+        this._cardH = 540;
+        const cardW = this._cardW;
+        const cardH = this._cardH;
         const version = getModpackVersion();
+        this._accentColor = getAccentColor();
 
         const cardBg = this._isDark ? '#28282a' : '#ffffff';
         const cardBorder = this._isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)';
@@ -418,14 +482,14 @@ export class MacSetupWizard {
             vertical: true,
             width: cardW,
             height: cardH,
-            style: 'padding: 32px 36px;'
+            style: 'padding: 28px 32px 20px 32px;'
         });
 
         // 1. Top Header: App icon + Title + Subtitle
         const headerBox = new St.BoxLayout({
             vertical: true,
             x_align: Clutter.ActorAlign.CENTER,
-            style: 'margin-bottom: 20px;'
+            style: 'margin-bottom: 18px;'
         });
 
         // macOS App Icon (squircle preferences-desktop-theme)
@@ -442,7 +506,7 @@ export class MacSetupWizard {
             appIconWidget = new St.Icon({
                 icon_name: 'preferences-desktop-theme-symbolic',
                 icon_size: 64,
-                style: `color: ${this._isDark ? '#ffffff' : '#007aff'}; margin-bottom: 8px;`
+                style: `color: ${this._accentColor}; margin-bottom: 8px;`
             });
         }
         headerBox.add_child(appIconWidget);
@@ -463,48 +527,64 @@ export class MacSetupWizard {
         // 2. Middle Content Stack Container
         this._pageContainer = new St.BoxLayout({
             vertical: true,
-            width: cardW - 72,
-            height: 250,
+            width: cardW - 64,
+            height: 270,
             x_align: Clutter.ActorAlign.FILL,
-            y_align: Clutter.ActorAlign.FILL
+            y_align: Clutter.ActorAlign.FILL,
+            y_expand: true
         });
         mainLayout.add_child(this._pageContainer);
 
-        // 3. Bottom Action Bar
+        // 3. Bottom Action Bar (Placed lower down and right-aligned, as in Photo 4)
         this._bottomBar = new St.BoxLayout({
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.CENTER,
-            width: cardW - 72,
-            style: 'margin-top: 16px;'
+            width: cardW - 64,
+            style: 'spacing: 12px; margin-top: auto; margin-bottom: 2px;'
         });
+
+        // Spacer pushes all action buttons to the right
+        const spacer = new St.Widget({ x_expand: true });
+        this._bottomBar.add_child(spacer);
 
         this._backBtn = new St.Button({
             label: 'Назад',
-            style: `padding: 6px 18px; border-radius: 9999px; font-size: 13px; font-weight: 500; ` +
-                   `background-color: ${this._isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'}; ` +
-                   `color: ${titleColor}; border: none;`,
             can_focus: true,
             reactive: true,
             opacity: 0
         });
+        this._applyBackBtnStyle();
         this._backBtn.connect('clicked', () => {
             this._prevPage();
         });
+        this._backBtn.connect('enter-event', () => {
+            const titleColor = this._isDark ? '#ffffff' : '#1d1d1f';
+            const bg = this._isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.10)';
+            const border = this._isDark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.16)';
+            this._backBtn.style = `padding: 7px 22px; border-radius: 9999px; font-size: 13px; font-weight: 500; ` +
+                                  `background-color: ${bg}; color: ${titleColor}; border: 1px solid ${border};`;
+        });
+        this._backBtn.connect('leave-event', () => {
+            this._applyBackBtnStyle();
+        });
         this._bottomBar.add_child(this._backBtn);
-
-        // Spacer
-        const spacer = new St.Widget({ x_expand: true });
-        this._bottomBar.add_child(spacer);
 
         this._nextBtn = new St.Button({
             label: 'Продовжити',
-            style: 'padding: 6px 22px; border-radius: 9999px; font-size: 13px; font-weight: 600; ' +
-                   'background-color: #007aff; color: #ffffff; border: none; box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);',
             can_focus: true,
             reactive: true
         });
+        this._applyNextBtnStyle();
         this._nextBtn.connect('clicked', () => {
             this._nextPage();
+        });
+        this._nextBtn.connect('enter-event', () => {
+            const bg = this._accentColor || '#ff6a00';
+            this._nextBtn.style = `padding: 7px 26px; border-radius: 9999px; font-size: 13px; font-weight: 600; ` +
+                                  `background-color: ${bg}; color: #ffffff; border: none; box-shadow: 0 4px 16px ${hexToRgba(bg, 0.55)};`;
+        });
+        this._nextBtn.connect('leave-event', () => {
+            this._applyNextBtnStyle();
         });
         this._bottomBar.add_child(this._nextBtn);
         mainLayout.add_child(this._bottomBar);
@@ -540,11 +620,12 @@ export class MacSetupWizard {
             this._backBtn.opacity = 0;
             this._backBtn.reactive = false;
             this._nextBtn.set_label('Продовжити');
+            this._applyNextBtnStyle();
 
             const page1Box = new St.BoxLayout({
                 vertical: true,
                 x_align: Clutter.ActorAlign.FILL,
-                style: 'spacing: 10px;'
+                style: 'spacing: 12px;'
             });
 
             const items = [
@@ -569,24 +650,24 @@ export class MacSetupWizard {
                 const row = new St.BoxLayout({
                     x_align: Clutter.ActorAlign.FILL,
                     y_align: Clutter.ActorAlign.CENTER,
-                    style: `background-color: ${rowBg}; border: 1px solid ${rowBorder}; border-radius: 12px; padding: 12px 16px; spacing: 14px;`
+                    style: `background-color: ${rowBg}; border: 1px solid ${rowBorder}; border-radius: 14px; padding: 14px 20px; spacing: 16px;`
                 });
 
                 const icon = new St.Icon({
                     icon_name: item.icon,
-                    icon_size: 24,
-                    style: 'color: #007aff;'
+                    icon_size: 26,
+                    style: `color: ${this._accentColor}; min-width: 30px;`
                 });
                 row.add_child(icon);
 
-                const textBox = new St.BoxLayout({ vertical: true });
+                const textBox = new St.BoxLayout({ vertical: true, x_expand: true });
                 const rTitle = new St.Label({
                     text: item.title,
                     style: `font-size: 13px; font-weight: 600; color: ${titleColor};`
                 });
                 const rDesc = new St.Label({
                     text: item.desc,
-                    style: `font-size: 11px; font-weight: 400; color: ${subColor}; margin-top: 2px;`
+                    style: `font-size: 11px; font-weight: 400; color: ${subColor}; margin-top: 3px;`
                 });
                 textBox.add_child(rTitle);
                 textBox.add_child(rDesc);
@@ -602,16 +683,18 @@ export class MacSetupWizard {
             this._subtitleLabel.text = 'Спробуйте перемістити міні-вікно macOS всередині області трьома пальцями на тачпаді.';
             this._backBtn.opacity = 255;
             this._backBtn.reactive = true;
+            this._applyBackBtnStyle();
             this._nextBtn.set_label('Продовжити');
+            this._applyNextBtnStyle();
 
             const page2Box = new St.BoxLayout({
                 vertical: true,
-                x_align: Clutter.ActorAlign.CENTER
+                x_align: Clutter.ActorAlign.FILL
             });
 
-            // Interactive Container Area
-            const areaW = 628;
-            const areaH = 175;
+            // Interactive Container Area (Wider!)
+            const areaW = this._cardW - 64; // 696px
+            const areaH = 185;
             const areaBg = this._isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.04)';
             const areaBorder = this._isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
 
@@ -623,8 +706,8 @@ export class MacSetupWizard {
             });
 
             // Mini macOS Window Actor inside Test Area
-            const miniW = 210;
-            const miniH = 115;
+            const miniW = 240;
+            const miniH = 125;
             let miniX = Math.round((areaW - miniW) / 2);
             let miniY = Math.round((areaH - miniH) / 2);
 
@@ -680,7 +763,7 @@ export class MacSetupWizard {
             const folderIcon = new St.Icon({
                 icon_name: 'folder-symbolic',
                 icon_size: 28,
-                style: 'color: #007aff;'
+                style: `color: ${this._accentColor};`
             });
             const folderLabel = new St.Label({
                 text: 'Документи',
@@ -747,7 +830,9 @@ export class MacSetupWizard {
             this._subtitleLabel.text = 'Першопочаткове налаштування macW1Y завершено. Можна продовжувати роботу.';
             this._backBtn.opacity = 255;
             this._backBtn.reactive = true;
+            this._applyBackBtnStyle();
             this._nextBtn.set_label('Почати роботу');
+            this._applyNextBtnStyle();
 
             const page3Box = new St.BoxLayout({
                 vertical: true,
@@ -759,7 +844,7 @@ export class MacSetupWizard {
             const banner = new St.BoxLayout({
                 x_align: Clutter.ActorAlign.FILL,
                 y_align: Clutter.ActorAlign.CENTER,
-                style: 'background-color: rgba(52, 199, 89, 0.12); border: 1px solid rgba(52, 199, 89, 0.30); border-radius: 12px; padding: 12px 16px; spacing: 14px;'
+                style: 'background-color: rgba(52, 199, 89, 0.12); border: 1px solid rgba(52, 199, 89, 0.30); border-radius: 14px; padding: 14px 20px; spacing: 16px;'
             });
             const checkIcon = new St.Icon({
                 icon_name: 'emblem-ok-symbolic',
@@ -768,7 +853,7 @@ export class MacSetupWizard {
             });
             banner.add_child(checkIcon);
 
-            const bannerText = new St.BoxLayout({ vertical: true });
+            const bannerText = new St.BoxLayout({ vertical: true, x_expand: true });
             const bTitle = new St.Label({
                 text: 'Система готова до роботи',
                 style: `font-size: 13px; font-weight: 600; color: ${titleColor};`
@@ -785,7 +870,7 @@ export class MacSetupWizard {
             // Quick Tips Box
             const tipsBox = new St.BoxLayout({
                 vertical: true,
-                style: `background-color: ${rowBg}; border: 1px solid ${rowBorder}; border-radius: 12px; padding: 12px 16px; spacing: 8px;`
+                style: `background-color: ${rowBg}; border: 1px solid ${rowBorder}; border-radius: 14px; padding: 14px 20px; spacing: 10px;`
             });
             const tipsTitle = new St.Label({
                 text: 'Корисні комбінації та підказки:',
@@ -803,11 +888,11 @@ export class MacSetupWizard {
                 const tr = new St.BoxLayout({
                     x_align: Clutter.ActorAlign.FILL,
                     y_align: Clutter.ActorAlign.CENTER,
-                    style: 'spacing: 10px;'
+                    style: 'spacing: 12px;'
                 });
                 const kBadge = new St.Label({
                     text: t.key,
-                    style: `font-size: 11px; font-weight: 600; color: #007aff; background-color: ${this._isDark ? 'rgba(0, 122, 255, 0.15)' : 'rgba(0, 122, 255, 0.10)'}; padding: 2px 8px; border-radius: 6px;`
+                    style: `font-size: 11px; font-weight: 600; color: ${this._accentColor}; background-color: ${hexToRgba(this._accentColor, this._isDark ? 0.20 : 0.12)}; padding: 3px 10px; border-radius: 6px;`
                 });
                 const dLabel = new St.Label({
                     text: t.desc,
