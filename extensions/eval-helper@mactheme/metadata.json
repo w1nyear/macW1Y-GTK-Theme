@@ -2,6 +2,10 @@
   "name": "Eval Helper",
   "description": "Enables unsafe mode and notification grouping",
   "uuid": "eval-helper@mactheme",
+  "session-modes": [
+    "user",
+    "ubuntu"
+  ],
   "shell-version": [
     "46",
     "47",

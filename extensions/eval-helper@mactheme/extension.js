@@ -536,6 +536,33 @@ export default class EvalHelper extends Extension {
             });
         } catch (_) {}
 
+        // Ensure wack-lockscreen-clock unlock fade is enabled without requiring wack-shell
+        try {
+            const patchWackFade = () => {
+                const wack = Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.stateObj;
+                if (wack) {
+                    const proto = Object.getPrototypeOf(wack);
+                    if (proto && !proto._macFadePatched) {
+                        proto._macFadePatched = true;
+                        proto._syncCupertinoUnlockFade = function() {
+                            if (!this._settings) return;
+                            const isPowerSaver = this._powerProfilesProxy?.ActiveProfile === 'power-saver';
+                            this._cupertinoUnlockFade = this._settings.get_string('lockscreen-mode') === 'cupertino' &&
+                                this._settings.get_boolean('cupertino-unlock-fade') &&
+                                !isPowerSaver;
+                        };
+                    }
+                    wack._syncCupertinoUnlockFade();
+                }
+            };
+            patchWackFade();
+            this._wackExtStateSignalId = Main.extensionManager?.connect('extension-state-changed', (_mgr, ext) => {
+                if (ext.uuid === 'wack-lockscreen-clock@rinzler69-wastaken.github.com' && ext.state === 1) {
+                    patchWackFade();
+                }
+            });
+        } catch (_) {}
+
         // macOS Screenshot & Screencast integration
         try {
             if (Main.screenshotUI) {
@@ -3507,6 +3534,11 @@ export default class EvalHelper extends Extension {
         if (this._userThemeSignalId && this._userThemeSettings) {
             this._userThemeSettings.disconnect(this._userThemeSignalId);
             this._userThemeSignalId = null;
+        }
+
+        if (this._wackExtStateSignalId && Main.extensionManager) {
+            try { Main.extensionManager.disconnect(this._wackExtStateSignalId); } catch (_) {}
+            this._wackExtStateSignalId = 0;
         }
 
         if (this._origUpdateFavoriteItem) {

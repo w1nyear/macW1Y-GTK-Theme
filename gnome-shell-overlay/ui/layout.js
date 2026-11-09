@@ -838,6 +838,9 @@ export const LayoutManager = GObject.registerClass({
                 const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
                 this.panelBox.translation_y = -panelH;
                 this.panelBox.opacity = 0;
+                if (this._coverPane) {
+                    this.uiGroup.set_child_above_sibling(this.panelBox, this._coverPane);
+                }
             }
 
             // Hide open windows
@@ -863,8 +866,11 @@ export const LayoutManager = GObject.registerClass({
             if (!this._macUiGroupChildAddedId) {
                 this._macUiGroupChildAddedId = this.uiGroup.connect('child-added', (_group, child) => {
                     if (!this._startingUp) return;
-                    if (this._coverPane && child !== this._coverPane) {
+                    if (this._coverPane && child !== this._coverPane && child !== this.panelBox) {
                         this.uiGroup.set_child_above_sibling(this._coverPane, null);
+                        if (this.panelBox) {
+                            this.uiGroup.set_child_above_sibling(this.panelBox, this._coverPane);
+                        }
                     }
                     if (child.name === 'dashtodockContainer') {
                         child.remove_all_transitions();
@@ -1141,6 +1147,10 @@ export const LayoutManager = GObject.registerClass({
             const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
             this.panelBox.translation_y = -panelH;
             this.panelBox.opacity = 0;
+            this.panelBox.show();
+            if (this._coverPane) {
+                this.uiGroup.set_child_above_sibling(this.panelBox, this._coverPane);
+            }
             this.panelBox.ease({
                 translation_y: 0,
                 opacity: 255,
@@ -1173,13 +1183,17 @@ export const LayoutManager = GObject.registerClass({
             this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer'));
         if (widgetLayer) {
             widgetLayer.remove_all_transitions();
-            widgetLayer.opacity = 0;
             widgetLayer.show();
-            widgetLayer.ease({
-                opacity: 255,
-                duration: DURATION,
-                mode: MODE,
-            });
+            if (widgetLayer.get_parent() === global.window_group) {
+                widgetLayer.opacity = 255;
+            } else {
+                widgetLayer.opacity = 0;
+                widgetLayer.ease({
+                    opacity: 255,
+                    duration: DURATION,
+                    mode: MODE,
+                });
+            }
         }
 
         // Window group smoothly fades in
@@ -1197,8 +1211,12 @@ export const LayoutManager = GObject.registerClass({
         const dockContainers = this.uiGroup.get_children().filter(c => c.name === 'dashtodockContainer');
         const glassActors = this.uiGroup.get_children().filter(c => c.name === 'liquid-glass-bg-actor');
 
+        try { global._liquidGlassDockSync?.(); } catch (_) {}
+
         for (const dc of dockContainers) {
+            const dockH = dc.height > 0 ? dc.height : 92;
             dc.remove_all_transitions();
+            dc.translation_y = -dockH;
             dc.opacity = 0;
             dc.show();
             dc.ease({
@@ -1219,6 +1237,7 @@ export const LayoutManager = GObject.registerClass({
             // Explicitly ensure the inner dash and icons are fully visible and at resting coordinates
             const dock = dc._dock;
             if (dock) {
+                dock.translation_y = -dockH;
                 if (dock.dash) {
                     dock.dash.remove_all_transitions();
                     dock.dash.opacity = 255;

@@ -130,6 +130,14 @@ export default class WackLockscreenClockExtension extends Extension {
 
         this._isActive = true;
 
+        try {
+            const eh = Main.extensionManager?.lookup('eval-helper@mactheme');
+            if (eh) {
+                if (!eh.sessionModes?.includes('ubuntu')) eh.sessionModes = ['user', 'ubuntu'];
+                if (eh.state !== 1) Main.extensionManager._callExtensionEnable('eval-helper@mactheme').catch(() => {});
+            }
+        } catch (_) {}
+
         this._gdmManager = null;
         this._crossSessionManager = null;
         if (Main.sessionMode.currentMode === 'gdm') {
@@ -977,11 +985,8 @@ export default class WackLockscreenClockExtension extends Extension {
         if (!this._settings)
             return;
 
-        const wackShell = Main.extensionManager.lookup('wack-shell@rinzler69-wastaken.github.com');
-        const wackShellEnabled = wackShell && wackShell.state === 1;
         const isPowerSaver = this._powerProfilesProxy?.ActiveProfile === 'power-saver';
         this._cupertinoUnlockFade = this._settings.get_string('lockscreen-mode') === 'cupertino' &&
-            wackShellEnabled &&
             this._settings.get_boolean('cupertino-unlock-fade') &&
             !isPowerSaver;
     }

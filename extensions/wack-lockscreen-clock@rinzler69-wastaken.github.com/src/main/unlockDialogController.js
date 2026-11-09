@@ -220,31 +220,50 @@ export class UnlockDialogController {
                     const duration = this._extension._cupertinoUnlockFadeDuration;
                     const mode = Clutter.AnimationMode.EASE_OUT_QUAD;
 
-                    const panelBox = Main.layoutManager.panelBox || Main.panel;
+                    const panelBox = Main.layoutManager.panelBox;
                     if (panelBox) {
                         panelBox.remove_all_transitions();
-                        const panelHeight = panelBox.height || 40;
+                        const panelHeight = panelBox.height > 0 ? panelBox.height : 34;
                         panelBox.translation_y = -panelHeight;
                         panelBox.opacity = 0;
+                        panelBox.show();
                         panelBox.ease({ translation_y: 0, opacity: 255, duration, mode });
                     }
                     if (panel && panel !== panelBox) {
                         panel.remove_all_transitions();
-                        const panelHeight = panel.height || 40;
-                        panel.translation_y = -panelHeight;
+                        panel.translation_y = 0;
                         panel.opacity = 255;
-                        panel.ease({ translation_y: 0, duration, mode });
                     }
 
-                    // Animate dock sliding in from bottom
+                    // Animate dock and Liquid Glass smoothly and synchronously fading in at resting position
                     const d2d = Main.layoutManager.uiGroup?.get_children()?.find(c => c.name === 'dashtodockContainer');
+                    const dockH = (d2d && d2d.height > 0) ? d2d.height : 92;
                     if (d2d) {
                         d2d.remove_all_transitions();
-                        const dockH = d2d.height > 0 ? d2d.height : 92;
-                        d2d.translation_y = 0;
+                        d2d.translation_y = -dockH;
                         d2d.opacity = 0;
+                        d2d.show();
                         d2d.ease({
-                            translation_y: -dockH,
+                            opacity: 255,
+                            duration,
+                            mode,
+                        });
+                        if (d2d._dock?.dash) {
+                            d2d._dock.dash.remove_all_transitions();
+                            d2d._dock.dash.opacity = 255;
+                            d2d._dock.dash.translation_x = 0;
+                            d2d._dock.dash.translation_y = 0;
+                        }
+                    }
+
+                    // Synchronize Liquid Glass background actor
+                    try { global._liquidGlassDockSync?.(); } catch (_) {}
+                    const lgActors = Main.layoutManager.uiGroup?.get_children()?.filter(c => c.name === 'liquid-glass-bg-actor') || [];
+                    for (const lg of lgActors) {
+                        lg.remove_all_transitions();
+                        lg.opacity = 0;
+                        lg.show();
+                        lg.ease({
                             opacity: 255,
                             duration,
                             mode,
@@ -314,7 +333,8 @@ export class UnlockDialogController {
                             child !== Main.layoutManager._systemBackground &&
                             child !== Main.layoutManager._coverPane &&
                             child !== Main.layoutManager.panelBox &&
-                            child.name !== 'dashtodockContainer') {
+                            child.name !== 'dashtodockContainer' &&
+                            child.name !== 'liquid-glass-bg-actor') {
                             if (child.visible && child.opacity < 255) {
                                 child.remove_all_transitions();
                                 child.opacity = 0;
@@ -329,16 +349,21 @@ export class UnlockDialogController {
 
                     // Animate desktop widgets layer (desktop-widgets@r3nhick) smoothly fading in
                     const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
-                    const widgetLayer = widgetsExt?.stateObj?._controller?._layer;
+                    const widgetLayer = widgetsExt?.stateObj?._controller?._layer ||
+                        Main.layoutManager._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer') || c.name === 'widget-layer');
                     if (widgetLayer) {
                         widgetLayer.remove_all_transitions();
-                        widgetLayer.opacity = 0;
                         widgetLayer.show();
-                        widgetLayer.ease({
-                            opacity: 255,
-                            duration,
-                            mode,
-                        });
+                        if (widgetLayer.get_parent() === global.window_group) {
+                            widgetLayer.opacity = 255;
+                        } else {
+                            widgetLayer.opacity = 0;
+                            widgetLayer.ease({
+                                opacity: 255,
+                                duration,
+                                mode,
+                            });
+                        }
                     }
 
                     const clockWrapper = this._extension._clockLayoutManager?.clockWrapper;

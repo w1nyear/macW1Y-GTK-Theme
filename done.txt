@@ -18538,3 +18538,50 @@ Task 669: Виправлення перекриття поля вводу пар
    - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
 
 5. Статус: Завершено.
+
+===================================================================
+Task 670: Плавна та синхронна анімація появи елементів робочого столу при переході/вході в сесію з GDM/екрана блокування (виїзд меню-бару, прозорість віджетів, синхронна поява Dock та Liquid Glass)
+===================================================================
+
+1. Задача:
+   - Після входу в сесію після GDM/розблокування робочий стіл повинен з'являтися плавно та синхронно:
+     * Верхній меню-бар повинен плавно виїжджати зверху (translation_y = -34 -> 0, opacity: 0 -> 255).
+     * Віджети робочого столу (desktop-widgets@r3nhick) повинні плавно з'являтися через прозорість.
+     * Док та Liquid Glass повинні з'являтися строго синхронно: док не повинен починатися внизу і стрибати вгору, а скло Liquid Glass не повинно запізнюватися та з'являтися окремо після іконок.
+
+2. Причина несправності:
+   - Блокування анімації розблокування WACK:
+     У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/extension.js метод _syncCupertinoUnlockFade() вимагав wackShell && wackShell.state === 1. Оскільки в системі встановлено модульні компоненти macW1Y, розширення wack-shell відсутнє, через що _cupertinoUnlockFade завжди дорівнював false. Внаслідок цього UnlockDialogController.js скасовував усю кастомну анімацію розблокування, і робочий стіл з'являвся раптово без виїзду меню-бару та плавного прояву.
+   - Стрибок дока та запізнення скла Liquid Glass:
+     В UnlockDialogController.js док d2d примусово скидався у translation_y = 0 (що зміщувало його вниз на 92 px під екран), а потім анімувався у -dockH. При slY >= screenBottom розширення liquid-glass у dockManager.js викликало this.bgActor.hide(); this.bgActor.opacity = 0;. Через це скло було повністю вимкнене весь час підйому дока та вмикалося зі запізненням лише після прибуття іконок на місце.
+   - Перекриття панелі оверлеєм:
+     У gnome-shell-overlay/ui/layout.js фоновий шар _coverPane переміщувався на самий верх uiGroup поверх panelBox, перекриваючи його анімацію виїзду.
+   - Квадратичне затемнення віджетів:
+     Шар віджетів є дочірнім до global.window_group. При одночасному анімуванні window_group та widgetLayer непрозорість накладалася подвійно.
+
+3. Реалізоване рішення:
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/extension.js:
+     * Прибрано залежність від wack-shell у _syncCupertinoUnlockFade(), зробивши плавний перехід Cupertino активним при увімкненому налаштуванні.
+     * Додано автоперевірку та увімкнення eval-helper@mactheme для режиму сесії ubuntu.
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/unlockDialogController.js:
+     * Синхронізовано виїзд меню-бару: panelBox.translation_y = -panelHeight, panelBox.opacity = 0, panelBox.ease({ translation_y: 0, opacity: 255 }).
+     * Усунено стрибок дока та затримку скла: d2d зафіксовано на штатній координаті translation_y = -dockH, opacity: 0 -> 255. Скло liquid-glass-bg-actor синхронізовано через global._liquidGlassDockSync?.() та анімується opacity: 0 -> 255 в ідентичній фазі та тривалості. Скло присутнє на доку з 0-го кадру появи без затримок.
+     * Оновлено анімацію віджетів widgetLayer з урахуванням батьківського контейнера global.window_group.
+   - У gnome-shell-overlay/ui/layout.js та /usr/share/mactheme/gnome-shell-overlay/ui/layout.js:
+     * panelBox розміщено над _coverPane (set_child_above_sibling(this.panelBox, this._coverPane)), щоб виїзд меню-бару відображався поверх шпалер.
+     * Закріплено translation_y = -dockH перед стартом анімації сесії, усунувши стартовий стрибок.
+     * Додано синхронну появу liquid-glass-bg-actor та іконок дока.
+   - У extensions/eval-helper@mactheme/extension.js та metadata.json:
+     * Додано підтримку режиму ubuntu у metadata.json (session-modes: ["user", "ubuntu"]).
+     * Додано динамічний патч _syncCupertinoUnlockFade для поточного сеансу GNOME Shell, завдяки чому плавний перехід працює відразу без потреби перезавантаження комп'ютера.
+   - Синхронізовано системні каталоги розширень та оновлено хеші в config/extensions.lock.json.
+
+4. Результати тестування та перевірок:
+   - Перевірено активний стан у живому середовищі GNOME Shell:
+     * eval-helper@mactheme: стан ACTIVE, DBus-сервіс відповідає успішно.
+     * wack-lockscreen-clock: _cupertinoUnlockFade: true, duration: 400 мс.
+     * d2d та liquid-glass-bg-actor змонтовані на єдиній базовій координаті translation_y = -dockH, забезпечуючи 100% синхронний прояв скла разом з іконками.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+
+5. Статус: Завершено.
