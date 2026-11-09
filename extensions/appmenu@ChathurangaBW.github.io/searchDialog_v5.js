@@ -366,6 +366,11 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._appSystem = Shell.AppSystem.get_default();
         this._resultButtons = [];
         this._selectedIndex = -1;
+        this._appsGridButtons = [];
+        this._selectedAppIndex = -1;
+        this._mouseMoved = false;
+        this._initialPointerX = 0;
+        this._initialPointerY = 0;
         this._debounceId = 0;
         this._lastQuery = '';
         this._modalGrab = null;
@@ -409,6 +414,15 @@ export const MacSpotlightDialog = GObject.registerClass({
         );
         this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
         this.add_child(this._box);
+        this._box.connect('motion-event', (_actor, event) => {
+            if (!this._mouseMoved) {
+                const [x, y] = event.get_coords();
+                if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                    this._mouseMoved = true;
+                }
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
         this._syncLoopId = 0;
         this._isClosing = false;
         this._glassSyncQueued = false;
@@ -491,10 +505,22 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._searchIcon.connect('notify::hover', () => {
             if (this._mode !== 'search') {
-                this._searchIcon.opacity = this._searchIcon.hover ? 255 : 200;
+                this._searchIcon.opacity = (this._searchIcon.hover && this._mouseMoved) ? 255 : 200;
             } else {
                 this._searchIcon.opacity = 255;
             }
+        });
+        this._searchIcon.connect('motion-event', (_actor, event) => {
+            if (!this._mouseMoved) {
+                const [x, y] = event.get_coords();
+                if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                    this._mouseMoved = true;
+                }
+            }
+            if (this._mouseMoved && this._mode !== 'search') {
+                this._searchIcon.opacity = this._searchIcon.hover ? 255 : 200;
+            }
+            return Clutter.EVENT_PROPAGATE;
         });
         this._searchPill.add_child(this._searchIcon);
 
@@ -879,16 +905,50 @@ export const MacSpotlightDialog = GObject.registerClass({
 
             if (this._mode === 'search') {
                 if (symbol === Clutter.KEY_Down) {
+                    this._resetPointerTracking();
                     this._moveSelection(1);
                     return Clutter.EVENT_STOP;
                 }
                 if (symbol === Clutter.KEY_Up) {
+                    this._resetPointerTracking();
                     this._moveSelection(-1);
                     return Clutter.EVENT_STOP;
                 }
                 if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
                     this._activateCurrent();
                     return Clutter.EVENT_STOP;
+                }
+            } else if (this._mode === 'apps') {
+                const total = this._appsGridButtons ? this._appsGridButtons.length : 0;
+                if (total > 0) {
+                    let handled = false;
+                    let next = this._selectedAppIndex >= 0 ? this._selectedAppIndex : 0;
+                    if (symbol === Clutter.KEY_Down) {
+                        next = Math.min(next + APPS_COLUMNS, total - 1);
+                        handled = true;
+                    } else if (symbol === Clutter.KEY_Up) {
+                        next = Math.max(next - APPS_COLUMNS, 0);
+                        handled = true;
+                    } else if (symbol === Clutter.KEY_Right) {
+                        next = (next + 1) % total;
+                        handled = true;
+                    } else if (symbol === Clutter.KEY_Left) {
+                        next = (next - 1 + total) % total;
+                        handled = true;
+                    } else if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
+                        const idx = this._selectedAppIndex >= 0 ? this._selectedAppIndex : 0;
+                        const btn = this._appsGridButtons[idx];
+                        if (btn?._app) {
+                            this.close();
+                            btn._app.activate();
+                        }
+                        return Clutter.EVENT_STOP;
+                    }
+                    if (handled) {
+                        this._resetPointerTracking();
+                        this._setSelectedAppIndex(next);
+                        return Clutter.EVENT_STOP;
+                    }
                 }
             }
 
@@ -945,8 +1005,26 @@ export const MacSpotlightDialog = GObject.registerClass({
         btn.set_child(icon);
 
         btn.connect('notify::hover', () => {
+            if (!this._mouseMoved) {
+                btn.set_style(BTN_NORMAL_STYLE);
+                return;
+            }
             btn.set_style(btn.hover ? BTN_HOVER_STYLE : BTN_NORMAL_STYLE);
             try { this._syncGlass(); } catch (_) {}
+        });
+
+        btn.connect('motion-event', (_actor, event) => {
+            if (!this._mouseMoved) {
+                const [x, y] = event.get_coords();
+                if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                    this._mouseMoved = true;
+                }
+            }
+            if (this._mouseMoved) {
+                btn.set_style(btn.hover ? BTN_HOVER_STYLE : BTN_NORMAL_STYLE);
+                try { this._syncGlass(); } catch (_) {}
+            }
+            return Clutter.EVENT_PROPAGATE;
         });
 
         btn.connect('clicked', () => {
@@ -1005,7 +1083,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             });
 
             btn.connect('notify::hover', () => {
-                const hover = btn.hover;
+                const hover = btn.hover && this._mouseMoved;
                 const active = (this._selectedAppsCategory === cat.id);
                 if (active) {
                     btn.set_style(
@@ -1023,6 +1101,27 @@ export const MacSpotlightDialog = GObject.registerClass({
                         'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
                     );
                 }
+            });
+
+            btn.connect('motion-event', (_actor, event) => {
+                if (!this._mouseMoved) {
+                    const [x, y] = event.get_coords();
+                    if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                        this._mouseMoved = true;
+                    }
+                }
+                if (this._mouseMoved) {
+                    const active = (this._selectedAppsCategory === cat.id);
+                    if (!active) {
+                        btn.set_style(
+                            'background-color: rgba(255, 255, 255, 0.20); ' +
+                            'border: none !important; ' +
+                            'box-shadow: none; ' +
+                            'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
+                        );
+                    }
+                }
+                return Clutter.EVENT_PROPAGATE;
             });
 
             this._appsCategoryRow.add_child(btn);
@@ -1199,7 +1298,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             });
 
             btn.connect('notify::hover', () => {
-                if (btn.hover && this._activeFilter !== f.id) {
+                if (btn.hover && this._mouseMoved && this._activeFilter !== f.id) {
                     btn.set_style(
                         'background-color: rgba(255, 255, 255, 0.22); ' +
                         'border-radius: 14px; ' +
@@ -1214,6 +1313,24 @@ export const MacSpotlightDialog = GObject.registerClass({
                         'margin-right: 8px;'
                     );
                 }
+            });
+
+            btn.connect('motion-event', (_actor, event) => {
+                if (!this._mouseMoved) {
+                    const [x, y] = event.get_coords();
+                    if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                        this._mouseMoved = true;
+                    }
+                }
+                if (this._mouseMoved && this._activeFilter !== f.id) {
+                    btn.set_style(
+                        'background-color: rgba(255, 255, 255, 0.22); ' +
+                        'border-radius: 14px; ' +
+                        'padding: 5px 14px; ' +
+                        'margin-right: 8px;'
+                    );
+                }
+                return Clutter.EVENT_PROPAGATE;
             });
 
             btn._filterId = f.id;
@@ -1524,6 +1641,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._resultButtons = [];
                 this._selectedIndex = -1;
                 this._lastQuery = '';
+                this._resetPointerTracking();
 
                 this._box.set_style(
                     'background-color: transparent !important; ' +
@@ -1597,6 +1715,18 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
     }
 
+    _resetPointerTracking() {
+        this._mouseMoved = false;
+        try {
+            const [px, py] = global.get_pointer();
+            this._initialPointerX = px;
+            this._initialPointerY = py;
+        } catch (_) {
+            this._initialPointerX = 0;
+            this._initialPointerY = 0;
+        }
+    }
+
     _syncGlass() {
         try {
             if ((!this._isOpen && !this._isClosing) || !_isGlassAlive(this._glass)) {
@@ -1668,11 +1798,14 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
                 const styling = this._readStyling() || {};
                 const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
+                const b1Hover = this._mouseMoved && this._btnApps.hover;
+                const b2Hover = this._mouseMoved && this._btnFiles.hover;
+                const b3Hover = this._mouseMoved && this._btnClipboard.hover;
                 const regions = [
                     { x: pillX, y: pillY, w: pillW, h: pillH, tintR, tintG, tintB, baseStrength: spotTint },
-                    { x: b1X, y: b1Y, w: b1W, h: b1H, tintR, tintG, tintB, baseStrength: this._btnApps.hover ? spotTint * 2.5 : spotTint },
-                    { x: b2X, y: b2Y, w: b2W, h: b2H, tintR, tintG, tintB, baseStrength: this._btnFiles.hover ? spotTint * 2.5 : spotTint },
-                    { x: b3X, y: b3Y, w: b3W, h: b3H, tintR, tintG, tintB, baseStrength: this._btnClipboard.hover ? spotTint * 2.5 : spotTint },
+                    { x: b1X, y: b1Y, w: b1W, h: b1H, tintR, tintG, tintB, baseStrength: b1Hover ? spotTint * 2.5 : spotTint },
+                    { x: b2X, y: b2Y, w: b2W, h: b2H, tintR, tintG, tintB, baseStrength: b2Hover ? spotTint * 2.5 : spotTint },
+                    { x: b3X, y: b3Y, w: b3W, h: b3H, tintR, tintG, tintB, baseStrength: b3Hover ? spotTint * 2.5 : spotTint },
                 ];
 
                 const minX = Math.min(pillX, b1X, b2X, b3X);
@@ -1680,7 +1813,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const maxX = Math.max(pillX + pillW, b1X + b1W, b2X + b2W, b3X + b3W);
                 const maxY = Math.max(pillY + pillH, b1Y + b1H, b2Y + b2H, b3Y + b3H);
 
-                const key = `m:${pillX},${pillY},${pillW},${pillH}:${b1X},${b1Y},${b1W},${b1H}:${b2X},${b2Y},${b2W},${b2H}:${b3X},${b3Y},${b3W},${b3H}:${targetOpacity}:${this._btnApps.hover}:${this._btnFiles.hover}:${this._btnClipboard.hover}:${spotTint}`;
+                const key = `m:${pillX},${pillY},${pillW},${pillH}:${b1X},${b1Y},${b1W},${b1H}:${b2X},${b2Y},${b2W},${b2H}:${b3X},${b3Y},${b3W},${b3H}:${targetOpacity}:${b1Hover}:${b2Hover}:${b3Hover}:${spotTint}`;
                 if (this._lastGeometryKey === key) return;
                 this._lastGeometryKey = key;
 
@@ -1722,6 +1855,7 @@ export const MacSpotlightDialog = GObject.registerClass({
     _setMode(newMode) {
         if (this._mode === newMode) return;
         this._mode = newMode;
+        this._resetPointerTracking();
         this._entry.text = '';
 
         if (newMode === 'search') {
@@ -1845,6 +1979,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
         this._isOpen = true;
         this._isClosing = false;
+        this._resetPointerTracking();
         const focused = global.display.get_focus_window();
         if (focused && !focused.is_destroyed?.()) {
             this._targetWindow = focused;
@@ -2641,9 +2776,21 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._activate(item);
             });
             btn.connect('notify::hover', () => {
-                if (btn.hover) {
+                if (btn.hover && this._mouseMoved) {
                     this._setSelectedIndex(i);
                 }
+            });
+            btn.connect('motion-event', (_actor, event) => {
+                if (!this._mouseMoved) {
+                    const [x, y] = event.get_coords();
+                    if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                        this._mouseMoved = true;
+                    }
+                }
+                if (this._mouseMoved) {
+                    this._setSelectedIndex(i);
+                }
+                return Clutter.EVENT_PROPAGATE;
             });
 
             this._resultButtons.push(btn);
@@ -2654,6 +2801,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         const targetHeight = EXP_PILL_HEIGHT + 14 + visibleCount * 52;
         this._expandToHeight(targetHeight);
 
+        this._resetPointerTracking();
         this._setSelectedIndex(0);
     }
 
@@ -2678,6 +2826,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
     _moveSelection(delta) {
         if (this._resultButtons.length === 0) return;
+        this._resetPointerTracking();
         let next = this._selectedIndex + delta;
         if (next < 0) next = this._resultButtons.length - 1;
         if (next >= this._resultButtons.length) next = 0;
@@ -2685,8 +2834,10 @@ export const MacSpotlightDialog = GObject.registerClass({
     }
 
     _activateCurrent() {
-        if (this._selectedIndex >= 0 && this._resultButtons[this._selectedIndex]) {
-            this._activate(this._resultButtons[this._selectedIndex].itemData);
+        let idx = this._selectedIndex;
+        if (idx < 0 && this._resultButtons.length > 0) idx = 0;
+        if (idx >= 0 && this._resultButtons[idx]) {
+            this._activate(this._resultButtons[idx].itemData);
         }
     }
 
@@ -2953,11 +3104,23 @@ export const MacSpotlightDialog = GObject.registerClass({
         col.add_child(titleLbl);
 
         btn.connect('notify::hover', () => {
-            if (btn.hover) {
+            if (btn.hover && this._mouseMoved) {
                 btn.set_style('width: 124px; min-width: 124px; padding: 8px 4px; border-radius: 12px; margin-right: 4px; background-color: rgba(255, 255, 255, 0.12);');
             } else {
                 btn.set_style('width: 124px; min-width: 124px; padding: 8px 4px; border-radius: 12px; margin-right: 4px; background-color: transparent;');
             }
+        });
+        btn.connect('motion-event', (_actor, event) => {
+            if (!this._mouseMoved) {
+                const [x, y] = event.get_coords();
+                if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                    this._mouseMoved = true;
+                }
+            }
+            if (this._mouseMoved) {
+                btn.set_style('width: 124px; min-width: 124px; padding: 8px 4px; border-radius: 12px; margin-right: 4px; background-color: rgba(255, 255, 255, 0.12);');
+            }
+            return Clutter.EVENT_PROPAGATE;
         });
 
         btn.connect('clicked', () => {
@@ -2980,6 +3143,8 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
 
         this._appsContentBox.destroy_all_children();
+        this._appsGridButtons = [];
+        this._selectedAppIndex = -1;
 
         const apps = this._filterApps(q);
 
@@ -3006,8 +3171,14 @@ export const MacSpotlightDialog = GObject.registerClass({
             }
 
             const app = apps[i];
-            const btn = this._createAppGridItem(app);
+            const btn = this._createAppGridItem(app, i);
             currentRow.add_child(btn);
+            this._appsGridButtons.push(btn);
+        }
+
+        if (this._appsGridButtons.length > 0) {
+            this._resetPointerTracking();
+            this._setSelectedAppIndex(0);
         }
 
         if (!hasFilter) {
@@ -3017,7 +3188,24 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
     }
 
-    _createAppGridItem(app) {
+    _setSelectedAppIndex(index) {
+        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 82px; min-height: 82px; max-height: 82px; margin: 0 1px; padding: 6px 2px 4px 2px; border-radius: 12px;`;
+        if (this._selectedAppIndex >= 0 && this._appsGridButtons[this._selectedAppIndex]) {
+            const prev = this._appsGridButtons[this._selectedAppIndex];
+            prev.remove_style_class_name('selected');
+            prev.set_style(`${baseStyle} background-color: transparent;`);
+        }
+
+        this._selectedAppIndex = index;
+        if (this._selectedAppIndex >= 0 && this._appsGridButtons[this._selectedAppIndex]) {
+            const curr = this._appsGridButtons[this._selectedAppIndex];
+            curr.add_style_class_name('selected');
+            curr.set_style(`${baseStyle} background-color: rgba(255, 255, 255, 0.16);`);
+            try { Util.ensureActorVisibleInScrollView?.(this._appsScrollView, curr); } catch (_) {}
+        }
+    }
+
+    _createAppGridItem(app, index) {
         const item = new St.Button({
             style_class: 'mac-app-grid-item',
             reactive: true,
@@ -3059,12 +3247,26 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
         box.add_child(label);
 
+        item._app = app;
         item.connect('notify::hover', () => {
-            if (item.hover) {
-                item.set_style(`${baseStyle} background-color: rgba(255, 255, 255, 0.12);`);
-            } else {
+            if (item.hover && this._mouseMoved) {
+                this._setSelectedAppIndex(index);
+            } else if (!item.hover && this._selectedAppIndex !== index) {
                 item.set_style(`${baseStyle} background-color: transparent;`);
             }
+        });
+
+        item.connect('motion-event', (_actor, event) => {
+            if (!this._mouseMoved) {
+                const [x, y] = event.get_coords();
+                if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                    this._mouseMoved = true;
+                }
+            }
+            if (this._mouseMoved) {
+                this._setSelectedAppIndex(index);
+            }
+            return Clutter.EVENT_PROPAGATE;
         });
 
         item.connect('clicked', () => {
@@ -3236,11 +3438,24 @@ export const MacSpotlightDialog = GObject.registerClass({
             row.add_child(copyBtn);
 
             rowBtn.connect('notify::hover', () => {
-                if (rowBtn.hover) {
+                if (rowBtn.hover && this._mouseMoved) {
                     rowBtn.set_style('padding: 8px 12px; margin-bottom: 4px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.16);');
                 } else {
                     rowBtn.set_style('padding: 8px 12px; margin-bottom: 4px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.06);');
                 }
+            });
+
+            rowBtn.connect('motion-event', (_actor, event) => {
+                if (!this._mouseMoved) {
+                    const [x, y] = event.get_coords();
+                    if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                        this._mouseMoved = true;
+                    }
+                }
+                if (this._mouseMoved) {
+                    rowBtn.set_style('padding: 8px 12px; margin-bottom: 4px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.16);');
+                }
+                return Clutter.EVENT_PROPAGATE;
             });
 
             rowBtn.connect('clicked', () => {

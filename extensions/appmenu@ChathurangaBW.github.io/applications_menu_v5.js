@@ -284,6 +284,10 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._selectedCategory = null;
         this._categoryButtons = [];
         this._gridButtons = [];
+        this._hoveredIndex = 0;
+        this._mouseMoved = false;
+        this._initialPointerX = 0;
+        this._initialPointerY = 0;
         this._currentQuery = '';
         this._searchTimeoutId = 0;
         this._stageSignalId = 0;
@@ -339,6 +343,15 @@ export const MacApplicationsDialog = GObject.registerClass({
         );
         this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
         this.add_child(this._box);
+        this._box.connect('motion-event', (_actor, event) => {
+            if (!this._mouseMoved) {
+                const [x, y] = event.get_coords();
+                if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                    this._mouseMoved = true;
+                }
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
         this._syncLoopId = 0;
         this._isClosing = false;
         this._box.connect('notify::x', () => this._syncGlass());
@@ -545,19 +558,34 @@ export const MacApplicationsDialog = GObject.registerClass({
                 return Clutter.EVENT_STOP;
             }
             if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
-                if (this._gridButtons.length > 0) {
-                    const first = this._gridButtons[0];
-                    if (first?.app) {
-                        this._launchApp(first.app);
-                    }
+                const idx = (this._hoveredIndex >= 0 && this._hoveredIndex < this._gridButtons.length) ? this._hoveredIndex : 0;
+                if (this._gridButtons[idx]?.app) {
+                    this._launchApp(this._gridButtons[idx].app);
                 }
                 return Clutter.EVENT_STOP;
             }
-            if (symbol === Clutter.KEY_Down) {
-                if (this._gridButtons.length > 0) {
-                    this._gridButtons[0].grab_key_focus();
+            const total = this._gridButtons.length;
+            if (total > 0) {
+                let handled = false;
+                let next = this._hoveredIndex >= 0 ? this._hoveredIndex : 0;
+                if (symbol === Clutter.KEY_Down) {
+                    next = Math.min(next + COLUMNS, total - 1);
+                    handled = true;
+                } else if (symbol === Clutter.KEY_Up) {
+                    next = Math.max(next - COLUMNS, 0);
+                    handled = true;
+                } else if (symbol === Clutter.KEY_Right) {
+                    next = (next + 1) % total;
+                    handled = true;
+                } else if (symbol === Clutter.KEY_Left) {
+                    next = (next - 1 + total) % total;
+                    handled = true;
                 }
-                return Clutter.EVENT_STOP;
+                if (handled) {
+                    this._resetPointerTracking();
+                    this._setHoveredIndex(next);
+                    return Clutter.EVENT_STOP;
+                }
             }
             return Clutter.EVENT_PROPAGATE;
         });
@@ -611,7 +639,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             });
 
             btn.connect('notify::hover', () => {
-                const hover = btn.hover;
+                const hover = btn.hover && this._mouseMoved;
                 const active = (this._selectedCategory === cat.id);
                 if (active) {
                     btn.set_style(
@@ -630,6 +658,27 @@ export const MacApplicationsDialog = GObject.registerClass({
                         'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
                     );
                 }
+            });
+
+            btn.connect('motion-event', (_actor, event) => {
+                if (!this._mouseMoved) {
+                    const [x, y] = event.get_coords();
+                    if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                        this._mouseMoved = true;
+                    }
+                }
+                if (this._mouseMoved) {
+                    const active = (this._selectedCategory === cat.id);
+                    if (!active) {
+                        btn.set_style(
+                            'background-color: rgba(255, 255, 255, 0.20); ' +
+                            'border: none !important; ' +
+                            'box-shadow: none; ' +
+                            'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
+                        );
+                    }
+                }
+                return Clutter.EVENT_PROPAGATE;
             });
 
             this._categoryRow.add_child(btn);
@@ -782,6 +831,35 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
             return GLib.SOURCE_CONTINUE;
         });
+    }
+
+    _resetPointerTracking() {
+        this._mouseMoved = false;
+        try {
+            const [px, py] = global.get_pointer();
+            this._initialPointerX = px;
+            this._initialPointerY = py;
+        } catch (_) {
+            this._initialPointerX = 0;
+            this._initialPointerY = 0;
+        }
+    }
+
+    _setHoveredIndex(index) {
+        const baseStyle = `width: ${COLUMN_WIDTH}px; min-width: ${COLUMN_WIDTH}px; max-width: ${COLUMN_WIDTH}px; height: 82px; min-height: 82px; max-height: 82px; margin: 0 1px; padding: 6px 2px 4px 2px; border-radius: 12px;`;
+        if (this._hoveredIndex >= 0 && this._gridButtons[this._hoveredIndex]) {
+            const prev = this._gridButtons[this._hoveredIndex];
+            prev.remove_style_class_name('selected');
+            prev.set_style(`${baseStyle} background-color: transparent;`);
+        }
+
+        this._hoveredIndex = index;
+        if (this._hoveredIndex >= 0 && this._gridButtons[this._hoveredIndex]) {
+            const curr = this._gridButtons[this._hoveredIndex];
+            curr.add_style_class_name('selected');
+            curr.set_style(`${baseStyle} background-color: rgba(255, 255, 255, 0.16);`);
+            try { Util.ensureActorVisibleInScrollView?.(this._scrollView, curr); } catch (_) {}
+        }
     }
 
     _syncGlass() {
@@ -1021,19 +1099,32 @@ export const MacApplicationsDialog = GObject.registerClass({
         const baseStyle = `width: ${COLUMN_WIDTH}px; min-width: ${COLUMN_WIDTH}px; max-width: ${COLUMN_WIDTH}px; height: 82px; min-height: 82px; max-height: 82px; margin: 0 1px; padding: 6px 2px 4px 2px; border-radius: 12px;`;
 
         item.connect('notify::hover', () => {
-            if (item.hover) {
-                item.set_style(`${baseStyle} background-color: rgba(255, 255, 255, 0.12);`);
-            } else if (!item.has_key_focus()) {
+            if (item.hover && this._mouseMoved) {
+                this._setHoveredIndex(index);
+            } else if (!item.hover && this._hoveredIndex !== index) {
                 item.set_style(`${baseStyle} background-color: transparent;`);
             }
         });
 
+        item.connect('motion-event', (_actor, event) => {
+            if (!this._mouseMoved) {
+                const [x, y] = event.get_coords();
+                if (Math.abs(x - this._initialPointerX) > 2 || Math.abs(y - this._initialPointerY) > 2) {
+                    this._mouseMoved = true;
+                }
+            }
+            if (this._mouseMoved) {
+                this._setHoveredIndex(index);
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+
         item.connect('key-focus-in', () => {
-            item.set_style(`${baseStyle} background-color: rgba(255, 255, 255, 0.20);`);
+            this._setHoveredIndex(index);
         });
 
         item.connect('key-focus-out', () => {
-            if (!item.hover) {
+            if (this._hoveredIndex !== index) {
                 item.set_style(`${baseStyle} background-color: transparent;`);
             }
         });
@@ -1106,24 +1197,25 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
 
             const total = this._gridButtons.length;
+            let next = -1;
             if (symbol === Clutter.KEY_Right && (index + 1 < total)) {
-                this._gridButtons[index + 1].grab_key_focus();
-                return Clutter.EVENT_STOP;
-            }
-            if (symbol === Clutter.KEY_Left && (index - 1 >= 0)) {
-                this._gridButtons[index - 1].grab_key_focus();
-                return Clutter.EVENT_STOP;
-            }
-            if (symbol === Clutter.KEY_Down && (index + COLUMNS < total)) {
-                this._gridButtons[index + COLUMNS].grab_key_focus();
-                return Clutter.EVENT_STOP;
-            }
-            if (symbol === Clutter.KEY_Up) {
+                next = index + 1;
+            } else if (symbol === Clutter.KEY_Left && (index - 1 >= 0)) {
+                next = index - 1;
+            } else if (symbol === Clutter.KEY_Down && (index + COLUMNS < total)) {
+                next = index + COLUMNS;
+            } else if (symbol === Clutter.KEY_Up) {
                 if (index - COLUMNS >= 0) {
-                    this._gridButtons[index - COLUMNS].grab_key_focus();
+                    next = index - COLUMNS;
                 } else {
                     this._entry.grab_key_focus();
+                    return Clutter.EVENT_STOP;
                 }
+            }
+            if (next >= 0) {
+                this._resetPointerTracking();
+                this._setHoveredIndex(next);
+                this._gridButtons[next].grab_key_focus();
                 return Clutter.EVENT_STOP;
             }
 
@@ -1179,6 +1271,11 @@ export const MacApplicationsDialog = GObject.registerClass({
                 });
                 this._gridContainer.add_child(gridDivider);
             }
+        }
+
+        if (this._gridButtons.length > 0) {
+            this._resetPointerTracking();
+            this._setHoveredIndex(0);
         }
     }
 
@@ -1250,6 +1347,10 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._selectedCategory = null;
         this._buildCategoryButtons();
         this._refreshGrid(false);
+        this._resetPointerTracking();
+        if (this._gridButtons.length > 0) {
+            this._setHoveredIndex(0);
+        }
 
         this._box.set_position(targetX, targetY);
         this._box.set_size(DIALOG_WIDTH, DIALOG_HEIGHT);

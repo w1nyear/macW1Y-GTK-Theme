@@ -18708,3 +18708,45 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
 
 5. Статус: Завершено.
+
+===================================================================
+Завдання 673: Виправлення підсвічування (hover) та клавіатурної навігації у Spotlight та меню програм (Spotlight Menu)
+===================================================================
+1. Проблема:
+   - При відкритті Spotlight або меню Spotlight / Програми, якщо курсор миші нерухомо знаходився над будь-яким елементом списку або сітки, Clutter автоматично призначав йому стан hover.
+   - Через це перший елемент списку втрачав виділення, а навігація клавіатурними стрілками стартувала від випадкового елемента під курсором замість першого в списку.
+   - Під час введення пошукового запиту елемент під курсором знову перехоплював виділення.
+   - Користувач зажадав: виділення/hover має завжди за замовчуванням стояти на першому елементі списку/сітки. Перехід hover на елемент під курсором має відбуватися виключно у разі реального фізичного руху миші (руху курсора). Навігація клавіатурою має послідовно йти від першого елемента, без втручання нерухомого курсора.
+
+2. Реалізовані зміни:
+   - extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js:
+     * Додано стан відстеження миші: `this._mouseMoved = false`, `this._initialPointerX`, `this._initialPointerY`, `this._appsGridButtons = []`, `this._selectedAppIndex = -1`.
+     * Створено метод `_resetPointerTracking()` для скидання `_mouseMoved = false` та фіксації поточної позиції вказівника (`global.get_pointer()`).
+     * Підключено слухач `motion-event` на контейнер `this._box` та елементи інтерфейсу: перехід у стан `_mouseMoved = true` відбувається лише за умови реального зміщення курсора більше ніж на 2 пікселі (`dx > 2 || dy > 2`).
+     * У `_renderResults(items)`: сигнал `notify::hover` тепер оновлює виділення лише за умови `this._mouseMoved === true`. За замовчуванням завжди викликається `this._setSelectedIndex(0)` із попереднім скиданням трекінгу миші.
+     * У `_moveSelection(delta)`: при натисканні клавіш стрілок вгору/вниз викликається `this._resetPointerTracking()`, що скидає статус руху миші та фіксує координати, забезпечуючи плавне послідовне перемикання між результатами від індексу 0 (або поточного вибору) без перехоплення нерухомою мишею.
+     * У `_loadAppsView()` (режим 'apps' / меню програм Spotlight): реалізовано збереження масиву `this._appsGridButtons`, за замовчуванням виділяється перший додаток (`this._setSelectedAppIndex(0)`), додано метод `_setSelectedAppIndex(index)` з підсвічуванням та видимістю у ScrollView.
+     * У `key-press-event` текстового поля для `_mode === 'apps'`: реалізовано повноцінну сіткову клавіатурну навігацію по 7 колонках (Вниз +7, Вгору -7, Вправо +1, Вліво -1, Enter для запуску програми), із захистом від нерухомої миші через `_resetPointerTracking()`.
+     * Круглі кнопки дій (`_btnApps`, `_btnFiles`, `_btnClipboard`), пігулки фільтрів категорій, елементи списку файлів та рядки буфера обміну також захищено від випадкового hover через перевірку `_mouseMoved`.
+     * У шейдері Liquid Glass розрахунок яскравості кнопок дій переведено на перевірку `(this._mouseMoved && btn.hover)`.
+   - extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js та applications_menu_v5.js:
+     * Синхронізовано аналогічну логіку: додано `_mouseMoved`, `_initialPointerX`, `_initialPointerY`, `_hoveredIndex = 0`.
+     * Реалізовано метод `_setHoveredIndex(index)` та `_resetPointerTracking()`.
+     * У `_buildGridItems()` та `open()` перший додаток у сітці автоматично отримує виділення (`this._setHoveredIndex(0)`).
+     * Обробник `notify::hover` елементів сітки та кнопок категорій активується лише при `this._mouseMoved === true`.
+     * У `ct.connect('key-press-event')` стрілки навігації та Enter запускають поточний виділений додаток `this._gridButtons[this._hoveredIndex].app`.
+   - config/extensions.lock.json:
+     * Оновлено хеш sha256 для розширення `appmenu@ChathurangaBW.github.io` (`45f40f73359921c221bcdd34d83c17a701a1ae0c0c82ad31ff2565269ef82ce2`).
+   - Синхронізація:
+     * Оновлені файли скопійовано до `~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/`.
+
+3. Результати тестування:
+   - Тестування в живому середовищі через DBus EvalHelper:
+     * Режим пошуку Spotlight (порожній запит): `{"isOpen": true, "mode": "search", "mouseMoved": false, "selectedIndex": -1}`.
+     * Режим пошуку Spotlight із текстом: `{"numResults": 9, "selectedIndex": 0, "firstBtnSelected": true, "mouseMoved": false}` — перший елемент завжди виділений за замовчуванням.
+     * Клавіатурне переміщення `_moveSelection(1)`: `{"selectedIndex": 1, "firstBtnSelected": false, "secondBtnSelected": true, "mouseMoved": false}` — плавний перехід без перехоплення мишею.
+     * Режим меню програм (Apps): `{"mode": "apps", "selectedAppIndex": 0, "firstAppSelected": true, "totalApps": 58, "mouseMoved": false}` — 58 програм завантажено, перша виділена, нерухома миша не перехоплює стан.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+
+4. Статус: Завершено.
