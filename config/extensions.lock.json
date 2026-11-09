@@ -138,7 +138,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "84ec5f1a4c210b577030a259709243a693c110542041a124d9940870708445ed",
+      "sha256": "c7b3ebe53331f45cb9f061b6c092f404dff7f812115b8bddb99bf3bb50c501d9",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -167,7 +167,7 @@
         "docking.js": "5a1da662a0987fb62d213606050ed2bc069500de33312fdd0e22cc3112252e2e",
         "fileManager1API.js": "141341f2fc7a5cea14a543e17fc8d89b1d5ff7d694b67cf50ae561df749c2eda",
         "prefs.js": "f58463bdf01d1016e4d2e0f26781d52d9f986e4821c0fcaf430bfca1b7d9c096",
-        "appIcons.js": "321361a693fd476a5a410544bde82ff4fc749d164e747231bb0a5356f144b757",
+        "appIcons.js": "64c8774b0a6c8f79f5a1c3fbfabc179292a31045e2e452b25ea3c90a7d89faf1",
         "appSpread.js": "2c4a7f8a4aab3f2829b8523809a005aaee4b56686c0dabdb9dc48e6c3131527f",
         "magnifier.js": "cd8b3ddd13cebaa5af2d2251f4238ee65e1b7420264044b9eee15fe1f93f140f",
         "iconTint.js": "d51338b4c4458ce78a6ae6956d87c22f5a502d74ce0756fc0f78680b8a501c6f",
