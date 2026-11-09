@@ -126,11 +126,14 @@ save_version() {
     mkdir -p "$TARGET_HOME/.local/share/macW1Y" "$TARGET_HOME/.config/mac-styling"
     echo "$ver" > "$TARGET_HOME/.local/share/macW1Y/version"
     echo "$ver" > "$TARGET_HOME/.config/mac-styling/version"
+    echo "1" > "$TARGET_HOME/.local/share/macW1Y/macSetupWizard"
+    echo "1" > "$TARGET_HOME/.config/mac-styling/macSetupWizard"
     chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.local/share/macW1Y" "$TARGET_HOME/.config/mac-styling" 2>/dev/null || true
     
     if [ -w "/etc" ] || [ "$EUID" -eq 0 ] || sudo -n true 2>/dev/null; then
         sudo mkdir -p /etc/macW1Y
         echo "$ver" | sudo tee /etc/macW1Y/version >/dev/null
+        echo "1" | sudo tee /etc/macW1Y/macSetupWizard >/dev/null
     fi
 }
 

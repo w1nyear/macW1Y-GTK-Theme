@@ -1,6 +1,7 @@
 {
   "_version": "1.0",
   "_description": "macW1Y Single Source of Truth (SSOT) Master Configuration",
+  "macSetupWizard": 1,
   "theme": {
     "gtk_theme": "macW1Y-Dark",
     "icon_theme": "MacTahoe-dark",

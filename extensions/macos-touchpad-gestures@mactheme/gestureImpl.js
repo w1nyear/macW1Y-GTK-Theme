@@ -19,6 +19,86 @@ export default class GestureImpl {
     }
 
     enable() {
+        try {
+            const EvalIface = `
+            <node>
+              <interface name="org.gnome.Shell.Extensions.EvalHelper">
+                <method name="Eval">
+                  <arg type="s" direction="in" name="code"/>
+                  <arg type="s" direction="out" name="result"/>
+                </method>
+                <method name="ShowSetupWizard">
+                  <arg type="b" direction="in" name="force"/>
+                  <arg type="b" direction="out" name="success"/>
+                </method>
+                <method name="GetSetupWizardStatus">
+                  <arg type="s" direction="out" name="status"/>
+                </method>
+                <method name="ResetSetupWizard">
+                  <arg type="b" direction="out" name="success"/>
+                </method>
+              </interface>
+            </node>`;
+            this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(EvalIface, {
+                Eval: async (code) => {
+                    try {
+                        let res = eval(code);
+                        if (res && typeof res.then === 'function')
+                            res = await res;
+                        return JSON.stringify(res !== undefined ? res : null) ?? 'null';
+                    } catch (e) {
+                        return `ERROR: ${e?.name}: ${e?.message}\n${e?.stack || e}`;
+                    }
+                },
+                ShowSetupWizard: async (force) => {
+                    try {
+                        const m = await import(`file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=${Date.now()}`);
+                        return m.startSetupWizard(force);
+                    } catch (e) {
+                        return false;
+                    }
+                },
+                GetSetupWizardStatus: async () => {
+                    try {
+                        const m = await import(`file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=${Date.now()}`);
+                        return JSON.stringify({
+                            active: !!globalThis.macSetupWizardActive,
+                            flag: m.getSetupWizardFlag(),
+                            version: m.getModpackVersion(),
+                            hasTouchpad: m.hasTouchpadGestures()
+                        });
+                    } catch (e) {
+                        return JSON.stringify({ error: String(e) });
+                    }
+                },
+                ResetSetupWizard: async () => {
+                    try {
+                        const m = await import(`file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=${Date.now()}`);
+                        m.setSetupWizardFlag(true);
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                }
+            });
+            this._dbusImpl.export(Gio.DBus.session, '/org/gnome/Shell/Extensions/EvalHelper');
+            log('[EvalHelper] DBus interface registered at /org/gnome/Shell/Extensions/EvalHelper');
+        } catch (e) {
+            log(`[EvalHelper] DBus registration error: ${e}`);
+        }
+
+        // Automatic setup wizard launch if flag is 1 on startup
+        try {
+            import(`file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=${Date.now()}`).then(m => {
+                if (m.getSetupWizardFlag()) {
+                    GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                        m.startSetupWizard(false);
+                        return GLib.SOURCE_REMOVE;
+                    });
+                }
+            }).catch(() => {});
+        } catch (_) {}
+
         // 1. Strict 4-finger restriction for Workspace Horizontal Animation
         this._setupStrictWorkspaceSwipe();
 
@@ -38,6 +118,10 @@ export default class GestureImpl {
     }
 
     disable() {
+        if (this._dbusImpl) {
+            try { this._dbusImpl.unexport(); } catch (_) {}
+            this._dbusImpl = null;
+        }
         if (this._stageEventId) {
             global.stage.disconnect(this._stageEventId);
             this._stageEventId = 0;
@@ -247,13 +331,22 @@ export default class GestureImpl {
             this._commitAltTab();
             this._showCursor();
         } else if (cmd.startsWith('DRAG_START')) {
+            if (typeof globalThis.macSetupWizardGestureHook === 'function') {
+                if (globalThis.macSetupWizardGestureHook('DRAG_START', 0, 0)) return;
+            }
             this._handleDragStart();
         } else if (cmd.startsWith('DRAG_MOVE')) {
             const parts = cmd.split(' ');
             const dx = parseInt(parts[1], 10) || 0;
             const dy = parseInt(parts[2], 10) || 0;
+            if (typeof globalThis.macSetupWizardGestureHook === 'function') {
+                if (globalThis.macSetupWizardGestureHook('DRAG_MOVE', dx, dy)) return;
+            }
             this._handleDragMove(dx, dy);
         } else if (cmd === 'DRAG_END') {
+            if (typeof globalThis.macSetupWizardGestureHook === 'function') {
+                if (globalThis.macSetupWizardGestureHook('DRAG_END', 0, 0)) return;
+            }
             this._handleDragEnd();
         }
     }

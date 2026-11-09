@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+"""
+mac-setup-wizard — macOS Setup Wizard Controller for macW1Y
+Controls initial MacBook setup wizard display on user login / post-installation.
+"""
+
+import sys
+import os
+import json
+import subprocess
+
+CONFIG_FILE = os.path.expanduser("~/.config/mac-styling/macSetupWizard")
+LOCAL_FILE = os.path.expanduser("~/.local/share/macW1Y/macSetupWizard")
+SYSTEM_FILE = "/etc/macW1Y/macSetupWizard"
+VERSION_FILE = os.path.expanduser("~/.config/mac-styling/version")
+
+def get_version():
+    if os.path.exists(VERSION_FILE):
+        try:
+            with open(VERSION_FILE, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return "0.6"
+
+def get_flag():
+    for p in [CONFIG_FILE, LOCAL_FILE, SYSTEM_FILE]:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    val = f.read().strip()
+                    if val in ["1", "0"]:
+                        return int(val)
+            except Exception:
+                pass
+    return 0
+
+def set_flag(val):
+    val_str = "1\n" if str(val).strip() in ["1", "true", "True"] else "0\n"
+    for p in [CONFIG_FILE, LOCAL_FILE]:
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        try:
+            with open(p, "w", encoding="utf-8") as f:
+                f.write(val_str)
+        except Exception as e:
+            print(f"Warning: could not write to {p}: {e}", file=sys.stderr)
+    
+    if os.path.exists("/etc/macW1Y") and (os.access("/etc/macW1Y", os.W_OK) or os.geteuid() == 0):
+        try:
+            with open(SYSTEM_FILE, "w", encoding="utf-8") as f:
+                f.write(val_str)
+        except Exception:
+            pass
+    elif os.geteuid() != 0:
+        subprocess.run(["sudo", "mkdir", "-p", "/etc/macW1Y"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["sudo", "tee", SYSTEM_FILE], input=val_str.encode(), check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def call_shell_eval(js_code):
+    cmd = ["gdbus", "call", "--session", "--dest", "org.gnome.Shell",
+           "--object-path", "/org/gnome/Shell/Extensions/EvalHelper",
+           "--method", "org.gnome.Shell.Extensions.EvalHelper.Eval", js_code]
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
+        if res.returncode == 0:
+            out = res.stdout.strip()
+            if out.startswith("('") and out.endswith("',)"):
+                inner = out[2:-3].encode("utf-8").decode("unicode_escape")
+                return True, inner
+            return True, out
+        return False, res.stderr.strip()
+    except Exception as e:
+        return False, str(e)
+
+def cmd_status():
+    ver = get_version()
+    flag = get_flag()
+    print("===================================================================")
+    print("         macW1Y — macOS Setup Wizard Status (macSetupWizard)      ")
+    print("===================================================================")
+    print(f"  • Modpack Version:     macW1Y v{ver}")
+    print(f"  • macSetupWizard Flag: {flag} ({'Увімкнено (зʼявиться при наступному вході)' if flag == 1 else 'Вимкнено (робота налаштована)'})")
+    
+    js = """(() => {
+        return import('file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
+            .then(m => JSON.stringify({
+                active: !!globalThis.macSetupWizardActive,
+                flag: m.getSetupWizardFlag(),
+                version: m.getModpackVersion(),
+                hasTouchpad: m.hasTouchpadGestures()
+            }))
+            .catch(e => JSON.stringify({ error: String(e) }));
+    })()"""
+    ok, out = call_shell_eval(js)
+    if ok and out:
+        try:
+            d = json.loads(out)
+            print(f"  • Shell Wizard Active: {d.get('active', False)}")
+            print(f"  • Touchpad Gestures:   {d.get('hasTouchpad', False)}")
+        except Exception:
+            pass
+    print("===================================================================")
+
+def cmd_start(force=True):
+    print("🚀 Запуск macOS Setup Wizard на екрані...")
+    js = f"""(() => {{
+        return import('file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
+            .then(m => m.startSetupWizard({str(force).lower()}))
+            .catch(e => 'Error: ' + e);
+    }})()"""
+    ok, out = call_shell_eval(js)
+    if ok:
+        print("  ✓ Setup Wizard успішно запущено.")
+    else:
+        print(f"  ⚠️ Не вдалося викликати інтерфейс Shell: {out}", file=sys.stderr)
+
+def cmd_reset():
+    set_flag(1)
+    js = """(() => {
+        return import('file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
+            .then(m => { m.setSetupWizardFlag(true); return true; })
+            .catch(() => false);
+    })()"""
+    call_shell_eval(js)
+    print("  ✓ macSetupWizard встановлено в 1. Меню зʼявиться при наступному вході в систему.")
+
+def main():
+    if len(sys.argv) < 2:
+        cmd_status()
+        return
+
+    arg = sys.argv[1].lower()
+    if arg in ["status", "-s", "--status"]:
+        cmd_status()
+    elif arg in ["start", "show", "preview", "--preview", "-p"]:
+        cmd_start(force=True)
+    elif arg in ["reset", "--reset"]:
+        cmd_reset()
+    elif arg == "set" and len(sys.argv) > 2:
+        val = 1 if sys.argv[2] in ["1", "true", "True", "enable"] else 0
+        set_flag(val)
+        print(f"  ✓ macSetupWizard встановлено в {val}")
+    elif arg in ["stop", "close", "hide"]:
+        js = """(() => {
+            return import('file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
+                .then(m => { m.stopSetupWizard(); return true; })
+                .catch(() => false);
+        })()"""
+        call_shell_eval(js)
+        print("  ✓ Setup Wizard зупинено.")
+    else:
+        print("Usage: mac-setup-wizard [status | start | reset | set 1|0 | stop]")
+
+if __name__ == "__main__":
+    main()

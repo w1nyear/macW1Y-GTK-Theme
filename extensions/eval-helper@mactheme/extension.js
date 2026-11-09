@@ -11,6 +11,7 @@ import St from 'gi://St';
 import Mtk from 'gi://Mtk';
 import Graphene from 'gi://Graphene';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+import * as MacSetupWizard from './macSetupWizard.js';
 
 const EvalIface = `
 <node>
@@ -32,6 +33,16 @@ const EvalIface = `
       <arg type="b" direction="out" name="success"/>
     </method>
     <method name="SyncSpotlightStyling">
+      <arg type="b" direction="out" name="success"/>
+    </method>
+    <method name="ShowSetupWizard">
+      <arg type="b" direction="in" name="force"/>
+      <arg type="b" direction="out" name="success"/>
+    </method>
+    <method name="GetSetupWizardStatus">
+      <arg type="s" direction="out" name="status"/>
+    </method>
+    <method name="ResetSetupWizard">
       <arg type="b" direction="out" name="success"/>
     </method>
   </interface>
@@ -503,10 +514,57 @@ export default class EvalHelper extends Extension {
                         return false;
                     }
                 },
+                ShowSetupWizard: (force) => {
+                    try {
+                        return MacSetupWizard.startSetupWizard(force);
+                    } catch (e) {
+                        console.error(`[EvalHelper] ShowSetupWizard error: ${e}`);
+                        return false;
+                    }
+                },
+                GetSetupWizardStatus: () => {
+                    try {
+                        return JSON.stringify({
+                            active: !!globalThis.macSetupWizardActive,
+                            flag: MacSetupWizard.getSetupWizardFlag(),
+                            version: MacSetupWizard.getModpackVersion(),
+                            hasTouchpad: MacSetupWizard.hasTouchpadGestures()
+                        });
+                    } catch (e) {
+                        return JSON.stringify({ error: String(e) });
+                    }
+                },
+                ResetSetupWizard: () => {
+                    try {
+                        MacSetupWizard.setSetupWizardFlag(true);
+                        return true;
+                    } catch (e) {
+                        console.error(`[EvalHelper] ResetSetupWizard error: ${e}`);
+                        return false;
+                    }
+                },
             });
             this._dbusImpl.export(Gio.DBus.session, '/org/gnome/Shell/Extensions/EvalHelper');
         } catch (e) {
             console.error(`[EvalHelper] DBus export error: ${e}`);
+        }
+
+        // Global helpers for setup wizard
+        globalThis.startMacSetupWizard = (force = false) => MacSetupWizard.startSetupWizard(force);
+        globalThis.stopMacSetupWizard = () => MacSetupWizard.stopSetupWizard();
+        globalThis.getMacSetupWizardStatus = () => ({
+            active: !!globalThis.macSetupWizardActive,
+            flag: MacSetupWizard.getSetupWizardFlag(),
+            version: MacSetupWizard.getModpackVersion(),
+            hasTouchpad: MacSetupWizard.hasTouchpadGestures()
+        });
+
+        // Automatically launch setup wizard if macSetupWizard flag is 1 on login
+        if (MacSetupWizard.getSetupWizardFlag()) {
+            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                MacSetupWizard.startSetupWizard(false);
+                return GLib.SOURCE_REMOVE;
+            });
         }
 
         // Permanently prevent GNOME from disabling user extensions or resetting theme
@@ -3553,6 +3611,9 @@ export default class EvalHelper extends Extension {
     }
 
     disable() {
+        try {
+            MacSetupWizard.stopSetupWizard();
+        } catch (_) {}
         if (this._snapshotCleanups) {
             this._snapshotCleanups.forEach(fn => {
                 try { fn(); } catch (_) {}

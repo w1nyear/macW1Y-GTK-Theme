@@ -18967,3 +18967,60 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - `bin/mac-audit-sync check`: `100% PASS! System and repository are in sync`.
 
 4. Статус: Завершено.
+
+================================================================================
+Завдання 680: Реалізація macOS Setup Wizard (macSetupWizard) для першопочаткового налаштування
+================================================================================
+1. Вимоги користувача:
+   - Створити macOS Setup Wizard, що з'являється як першопочаткове налаштування MacBook після входу в акаунт, якщо значення "macSetupWizard" дорівнює 1.
+   - Після встановлення чи оновлення модпаку значення прапорця macSetupWizard має дорівнювати 1 у конфігураційних файлах модпаку поряд із версією.
+   - При вході в акаунт елементи робочого столу (верхня панель, док, іконки) не повинні з'являтися.
+   - Екран 1 (референс фото 1): заблюрений фон шпалери, посередині текст "Welcome to Mac" шрифтом і стилем як годинник на екрані блокування, внизу кругла кнопка "Продовжити" як у GRUB меню.
+   - Екран 2 (референс фото 2): після продовження з'являється біле або темне модальне меню (залежно від теми) на заблюреному фоні.
+     * Заголовок: "macW1Y [версія] успішно встановлено".
+     * Іконка меню: фірмова іконка з пункту "Mac стилізація" у Параметрах (стає офіційною іконкою macW1Y).
+     * Якщо ПК має тачпад і підтримує жести, система пропонує спробувати жест переміщення вікна 3 пальцями на елементі, схожому на міні-вікно macOS.
+     * Далі вікно: "Цей Mac налаштовано" і можна продовжувати роботу.
+     * Після завершення значення macSetupWizard дорівнює 0 (надалі не з'являється).
+     * Елементи всередині перемикаються плавно без зникнення самого вікна.
+     * Після оновлення, чистого оновлення чи повторного встановлення модпаку значення прапорця знову стає 1.
+
+2. Реалізовані зміни:
+   - Конфігурація та прапорець macSetupWizard:
+     * Створено файл config/mac-styling/macSetupWizard (за замовчуванням 1 у дистрибутиві).
+     * Синхронізовано з ~/.config/mac-styling/macSetupWizard, ~/.local/share/macW1Y/macSetupWizard та /etc/macW1Y/macSetupWizard.
+     * Оновлено config/macw1y-manifest.json ("macSetupWizard": 1).
+     * Оновлено install.sh (save_version()): автоматичний запис 1 у всі цільові шляхи при будь-якому типу інсталяції чи оновлення.
+   - Офіційна іконка macW1Y:
+     * Зареєстровано векторну іконку macw1y.svg (на базі preferences-desktop-theme з Параметрів):
+       - assets/icons/macw1y.svg
+       - ~/.local/share/icons/MacTahoe-dark/apps/scalable/macw1y.svg
+       - ~/.local/share/icons/MacTahoe/apps/scalable/macw1y.svg
+       - /usr/share/icons/hicolor/scalable/apps/macw1y.svg
+   - Системний модуль GNOME Shell (macSetupWizard.js):
+     * Створено extensions/eval-helper@mactheme/macSetupWizard.js:
+       - Повний блюр фону (Shell.BlurEffect ACTOR з радіусом 60) + напівпрозоре затемнення (scrim).
+       - Ізоляція робочого столу: приховування Main.panel, dashtodockContainer та ding-container.
+       - Екран 1: ідеально центрований напис "Welcome to Mac" (SF Pro Rounded 64px, тінь годинника lockscreen) та кругла кнопка з шевроном внизу.
+       - Екран 2: модальна картка 700x520px (adaptive light/dark) з заокругленням 22px, іконкою macw1y, заголовком "macW1Y [версія] успішно встановлено" та трьома сторінками з плавною анімацією:
+         1) Огляд компонентів та покращень macW1Y.
+         2) Інтерактивне тренування жесту 3 пальців: міні-вікно Finder з світлофорами, переміщуване виключно через тачпад-жест (перевірка через Socket та Clutter.InputDeviceType.TOUCHPAD_DEVICE).
+         3) Завершення "Цей Mac налаштовано", список гарячих клавіш та кнопка "Почати роботу" (встановлює macSetupWizard = 0 та відновлює панель/док).
+   - Інтеграція жесту 3 пальців:
+     * Оновлено extensions/macos-touchpad-gestures@mactheme/gestureImpl.js та touchpad/macos-touchpad-gestures@mactheme/gestureImpl.js: додано диспетчеризацію globalThis.macSetupWizardGestureHook(cmd, dx, dy).
+   - Утиліта керування та аудиту:
+     * Створено bin/mac-setup-wizard та встановлено в /usr/local/bin/mac-setup-wizard (команди status, start, reset, set-flag, get-flag).
+     * Оновлено bin/mac-audit-sync (включено mac-setup-wizard до списку core scripts).
+   - Оновлення хешів розширень:
+     * Оновлено config/extensions.lock.json для eval-helper@mactheme та macos-touchpad-gestures@mactheme.
+
+3. Результати тестування:
+   - bin/mac-setup-wizard status: коректне читання версії та прапорця.
+   - Повний цикл рендерингу та взаємодії (Screen 1 -> Screen 2 -> Gesture Demo -> Completion):
+     * Візуальні артефакти: crop_welcome_live.png, crop_btn_live.png, crop_card_page1_real.png, crop_card_page2_moved.png, crop_card_page3.png.
+     * Підтверджено точну відповідність дизайну референсам фото 1 та фото 2.
+   - Безпечне відновлення панелі та дока після натискання "Почати роботу" або mac-setup-wizard finish.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
+   - bin/mac-audit-sync check: 100% PASS!
+
+4. Статус: Завершено.
