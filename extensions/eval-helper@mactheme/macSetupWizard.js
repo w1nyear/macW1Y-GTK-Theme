@@ -27,17 +27,27 @@ export function getModpackVersion() {
 }
 
 export function getSetupWizardFlag() {
-    for (const f of [USER_CONFIG_FILE, USER_LOCAL_FILE, SYSTEM_FILE]) {
+    for (const f of [USER_CONFIG_FILE, USER_LOCAL_FILE]) {
         try {
             if (GLib.file_test(f, GLib.FileTest.EXISTS)) {
                 const [ok, bytes] = GLib.file_get_contents(f);
                 if (ok) {
                     const s = new TextDecoder().decode(bytes).trim();
+                    if (s === '0') return false;
                     if (s === '1') return true;
                 }
             }
         } catch (_) {}
     }
+    try {
+        if (GLib.file_test(SYSTEM_FILE, GLib.FileTest.EXISTS)) {
+            const [ok, bytes] = GLib.file_get_contents(SYSTEM_FILE);
+            if (ok) {
+                const s = new TextDecoder().decode(bytes).trim();
+                return s === '1';
+            }
+        }
+    } catch (_) {}
     return false;
 }
 
@@ -53,7 +63,7 @@ export function setSetupWizardFlag(val) {
         }
     }
     try {
-        if (GLib.file_test('/etc/macW1Y', GLib.FileTest.EXISTS)) {
+        if (GLib.file_test(SYSTEM_FILE, GLib.FileTest.EXISTS)) {
             GLib.file_set_contents(SYSTEM_FILE, `${str}\n`);
         }
     } catch (_) {}
@@ -137,46 +147,22 @@ export class MacSetupWizard {
     _isolateDesktop() {
         this._hiddenElements = [];
 
-        // 1. Top Panel
+        // Top Panel
         if (Main.panel) {
             this._hiddenElements.push({
                 actor: Main.panel,
-                origOpacity: (Main.panel.opacity > 0) ? Main.panel.opacity : 255,
+                origOpacity: 255,
                 origReactive: true
             });
             Main.panel.opacity = 0;
             Main.panel.reactive = false;
-        }
-
-        // 2. Dock Container & Desktop Icons
-        const uiChildren = Main.layoutManager.uiGroup.get_children();
-        for (const child of uiChildren) {
-            const name = child.name || '';
-            const cname = child.constructor.name || '';
-            if (name === 'dashtodockContainer' || cname === 'DashToDock' || name === 'dock-container') {
-                this._hiddenElements.push({
-                    actor: child,
-                    origOpacity: (child.opacity > 0) ? child.opacity : 255,
-                    origReactive: true
-                });
-                child.opacity = 0;
-                child.reactive = false;
-            } else if (name === 'iconsContainer' || cname === 'DesktopIcons' || name === 'ding-container') {
-                this._hiddenElements.push({
-                    actor: child,
-                    origOpacity: (child.opacity > 0) ? child.opacity : 255,
-                    origReactive: true
-                });
-                child.opacity = 0;
-                child.reactive = false;
-            }
         }
     }
 
     _restoreDesktop() {
         for (const item of this._hiddenElements) {
             try {
-                const targetOpacity = (item.origOpacity !== undefined && item.origOpacity > 0) ? item.origOpacity : 255;
+                const targetOpacity = item.origOpacity !== undefined ? item.origOpacity : 255;
                 if (item.actor && item.actor.ease) {
                     item.actor.ease({
                         opacity: targetOpacity,
@@ -197,11 +183,25 @@ export class MacSetupWizard {
         }
         this._hiddenElements = [];
 
-        // Safety fallback: ensure Main.panel is visible and reactive
+        // Safety fallback: ensure Main.panel is fully visible and reactive
         if (Main.panel) {
             Main.panel.opacity = 255;
             Main.panel.reactive = true;
         }
+
+        // Safety fallback: ensure Dock, Liquid Glass, and Desktop Icons are 100% restored
+        try {
+            for (const child of Main.layoutManager.uiGroup.get_children()) {
+                const name = child.name || '';
+                const cname = child.constructor.name || '';
+                if (name === 'dashtodockContainer' || cname === 'DashToDock' || name === 'dock-container' ||
+                    name === 'iconsContainer' || cname === 'DesktopIcons' || name === 'ding-container' ||
+                    name.includes('liquid-glass')) {
+                    child.opacity = 255;
+                    child.reactive = true;
+                }
+            }
+        } catch (_) {}
     }
 
     _buildOverlay() {
@@ -247,6 +247,7 @@ export class MacSetupWizard {
         this._overlay.add_child(scrim);
 
         Main.layoutManager.uiGroup.add_child(this._overlay);
+        Main.layoutManager.uiGroup.set_child_above_sibling(this._overlay, null);
 
         this._overlay.ease({
             opacity: 255,

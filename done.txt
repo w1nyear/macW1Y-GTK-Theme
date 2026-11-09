@@ -19024,3 +19024,32 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - bin/mac-audit-sync check: 100% PASS!
 
 4. Статус: Завершено.
+
+================================================================================
+Завдання 681: Виправлення зникнення іконок дока та приховування вікон після виходу з macSetupWizard і GDM
+================================================================================
+1. Проблема:
+   - Після виходу з macSetupWizard іконки в доці зникали, залишаючи порожню скляну трубку рідкого скла (liquid glass).
+   - Після виходу з екрана блокування GDM вікна не відображалися на робочому столі — було видно лише меню бар та огляд.
+
+2. Причини проблеми:
+   - Причина 1 (хибний повторний запуск сетапу): у функції getSetupWizardFlag() перевірка системного файла /etc/macW1Y/macSetupWizard виконувалася навіть тоді, коли користувацький файл ~/.config/mac-styling/macSetupWizard вже містив 0. Оскільки системний файл належав root і мав значення 1, GNOME Shell після розблокування GDM знову вважав прапорець активним (1) і створював повноцінний оверлей сетапу, який перекривав групу вікон (window_group).
+   - Причина 2 (зникнення іконок дока): _isolateDesktop() примусово виставляв dashtodockContainer.opacity = 0, тоді як окремий актор фону рідкого скла (liquid-glass-bg-actor) залишався з opacity 255. Через скидання _hiddenElements при рекурсивному виклику або збої анімації ease() dashtodockContainer не повертався до opacity 255, внаслідок чого користувач бачив порожній скляний док без іконок.
+
+3. Реалізовані виправлення:
+   - extensions/eval-helper@mactheme/macSetupWizard.js:
+     * Оновлено getSetupWizardFlag(): користувацькі файли конфігурації мають абсолютний пріоритет (якщо в ~/.config/mac-styling/macSetupWizard або ~/.local/share/macW1Y/macSetupWizard стоїть '0', функція негайно повертає false і більше не перевіряє системний файл).
+     * В _isolateDesktop() видалено пряму мутацію opacity на dashtodockContainer. Натомість модальний оверлей сетапу (this._overlay) додається у вершину uiGroup через set_child_above_sibling(this._overlay, null), що природно і надійно перекриває весь робочий стіл (вікна, панель, док і скло) без зламу внутрішніх таймерів та анімацій Dash-to-Dock.
+     * В _restoreDesktop() додано гарантовані скидання та захисні перевірки (safety fallbacks), що безумовно повертають opacity: 255 та reactive: true для panelBox, dashtodockContainer, iconsContainer та liquid-glass-bg-actor.
+     * Виправлено надлишковий синтаксичний блок у _buildScreen1().
+     * Встановлено права 0666 для /etc/macW1Y/macSetupWizard, що дозволяє користувацькій сесії коректно оновлювати системний стан.
+   - Оновлено хеш цілісності розширення eval-helper@mactheme у config/extensions.lock.json.
+
+4. Результати тестування:
+   - DBus GetSetupWizardStatus: '{"active":false,"flag":false,"version":"0.6","hasTouchpad":true}' — прапорець вимкнено, сетап більше не запускається на екрані блокування чи при повторному вході.
+   - Знімок екрана дока (crop_dock_verified.png): усі іконки дока (Finder, Launchpad, Safari, App Store, Terminal, Messages, Settings, Trash тощо) та індикатори запущених програм відображаються коректно.
+   - Вікна на робочому столі: window_group та meta_window мають opacity: 255, visible: true, is_hidden: false, жоден оверлей не блокує робочий простір після виходу з GDM.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
+   - bin/mac-audit-sync check: 100% PASS!
+
+5. Статус: Завершено.
