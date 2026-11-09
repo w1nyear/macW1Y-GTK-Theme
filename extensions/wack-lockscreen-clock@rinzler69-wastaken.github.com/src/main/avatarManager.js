@@ -9,19 +9,27 @@ export class AvatarManager {
 
     _suppressUserWell(authPrompt) {
         if (!authPrompt?._userWell) return;
-        authPrompt._userWell.visible = false;
+        authPrompt._userWell.visible = true;
         authPrompt._userWell.opacity = 0;
+        authPrompt._userWell.reactive = false;
+        authPrompt._userWell.can_focus = false;
+        authPrompt._userWell.y_expand = false;
+        authPrompt._userWell.y_align = Clutter.ActorAlign.START;
         const uw = authPrompt._userWell.get_child();
         if (uw) {
-            uw.visible = false;
+            uw.visible = true;
             uw.opacity = 0;
+            uw.reactive = false;
+            uw.can_focus = false;
             if (uw._avatar) {
-                uw._avatar.visible = false;
+                uw._avatar.visible = true;
                 uw._avatar.opacity = 0;
+                uw._avatar.reactive = false;
             }
             if (uw._label) {
-                uw._label.visible = false;
+                uw._label.visible = true;
                 uw._label.opacity = 0;
+                uw._label.reactive = false;
             }
         }
     }
@@ -72,17 +80,24 @@ export class AvatarManager {
         if (authPrompt?._userWell) {
             authPrompt._userWell.visible = true;
             authPrompt._userWell.opacity = 255;
+            authPrompt._userWell.reactive = true;
+            authPrompt._userWell.can_focus = true;
+            authPrompt._userWell.y_expand = true;
             const promptUserWidget = authPrompt._userWell.get_child();
             if (promptUserWidget) {
                 promptUserWidget.visible = true;
                 promptUserWidget.opacity = 255;
+                promptUserWidget.reactive = true;
+                promptUserWidget.can_focus = true;
                 if (promptUserWidget._avatar) {
                     promptUserWidget._avatar.visible = true;
                     promptUserWidget._avatar.opacity = 255;
+                    promptUserWidget._avatar.reactive = true;
                 }
                 if (promptUserWidget._label) {
                     promptUserWidget._label.visible = true;
                     promptUserWidget._label.opacity = 255;
+                    promptUserWidget._label.reactive = true;
                 }
             }
         }

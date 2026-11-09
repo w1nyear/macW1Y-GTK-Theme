@@ -18493,3 +18493,48 @@ Task 668: Усунення візуального артефакту (непра
    - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
 
 5. Статус: Завершено.
+
+===================================================================
+Task 669: Виправлення перекриття поля вводу пароля поверх аватара користувача та усунення обрізання тексту дати на екрані блокування/GDM
+===================================================================
+
+1. Задача:
+   - Виправити відображення елементів у GDM/екрані блокування при сесії користувача:
+     * Поле введення пароля («Пароль») накладалося прямо поверх аватара та імені користувача («Віталій»).
+     * Текст дати над годинником («понеділок, 9 листопада») був обрізаний зверху по горизонталі приблизно на 35–40%.
+
+2. Причина несправності:
+   - Перекриття поля введення:
+     В AuthPrompt GNOME Shell віджет користувача `this._userWell` (аватар + ім'я) та поле введення пароля `this._inputWell` розміщені вертикально всередині `St.BoxLayout`. У класах `AvatarManager` (`_suppressUserWell`) та `UnlockDialogController` для приховування системного блоку користувача викликалося `authPrompt._userWell.visible = false;`. У контейнерах Clutter/St елемент з `visible = false` повністю виключається з розрахунку геометрії (`allocation = 0×0`). У результаті `this._inputWell` піднімався у координату y = 0 і накладався точно на коло аватара та ім'я користувача в `restPromptContainer`.
+   - Обрізання тексту дати:
+     У `ClockLayoutManager` та `GdmClockManager` висота дати розраховувалася з резервним мінімумом `Math.max(20, Math.ceil(dateHeight))`. На момент первинного розрахунку геометрії стилі CSS мітки ще не були застосовані, повертаючи нестилізовану висоту 20 px. Для шрифту `SF Pro Display 28px` природна висота становить ~34–36 px. Примусовий `set_size(effectiveDateW, 20)` із вертикальним центруванням зміщував внутрішній `ClutterText` у координату y = -7 px, зрізаючи верхню третину символів.
+
+3. Реалізоване рішення:
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/avatarManager.js та unlockDialogController.js:
+     * Замінено `visible = false` на невидимий спейсер: `visible = true`, `opacity = 0`, `reactive = false`, `can_focus = false`, `y_expand = false`, `y_align = Clutter.ActorAlign.START`. Тепер `_userWell` зберігає свою фізичну висоту 102 px, розміщуючи капсулу пароля строго під аватаром та ім'ям користувача.
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/stylesheet.css:
+     * Для `.wack-cupertino-prompt .login-dialog-prompt-entry` встановлено `margin-top: 10px !important;` для витонченого відступу у стилі macOS Tahoe.
+     * Для `.wack-date` додано `line-height: 1.25;` та `padding: 4px 8px;`.
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/wackClock.js:
+     * Додано `padding: 4px 8px; font-size: 28px;` у `_applyTextStyle()` для `this._dateOutput`.
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/clockLayoutManager.js, src/pro/gdmClockManager.js, pro/gdmClockManager.js, src/pro/gdm.css, pro/gdm.css:
+     * Додано виклик `dateLabel.ensure_style()` перед визначенням геометрії.
+     * Збільшено мінімальну висоту дати `effectiveDateH` до `Math.max(42, Math.ceil(dateHeight))` (у GDM до `Math.max(42, Math.min(80, Math.ceil(preferredDateH)))`).
+     * Підключено слухач `notify::text` до `dateLabel` для динамічного оновлення розмірів мітки при зміні дати.
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/extension.js:
+     * Додано динамічне перезавантаження ES-модулів підсистем з міткою часу для уникнення застарілого кешу імпортів.
+   - Синхронізовано системні каталоги:
+     * ~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/
+     * /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/
+     * wack-system/
+   - Оновлено деревоподібний хеш цілісності в config/extensions.lock.json.
+
+4. Результати тестування та перевірок:
+   - Перевірено живе середовище екрана блокування в GNOME Shell:
+     * `ap_userWell_visible`: true, `opacity`: 0, `pref_h`: [102, 102] px.
+     * `ap_inputWell_pref`: [56, 76] px, загальна висота блоку `[170, 190] px`. Поле пароля розташоване чітко під аватаром та ім'ям користувача.
+     * Текст дати: розмір [204, 42] px, зміщення `ct_y = 0` px — повне відображення всіх символів без обрізання.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+
+5. Статус: Завершено.

@@ -47,6 +47,43 @@ import { CupertinoPromptManager } from './src/main/cupertinoPromptManager.js';
 import { UnlockDialogController } from './src/main/unlockDialogController.js';
 import { ScreenShieldCurtainManager } from './src/main/curtainManager.js';
 
+let _ClockLayoutManagerClass = ClockLayoutManager;
+let _AvatarManagerClass = AvatarManager;
+let _UnlockDialogControllerClass = UnlockDialogController;
+
+import(`./src/main/clockLayoutManager.js?t=${Date.now()}`).then(m => {
+    if (m?.ClockLayoutManager) {
+        _ClockLayoutManagerClass = m.ClockLayoutManager;
+        const ext = Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.stateObj;
+        if (ext && ext._dialog) {
+            ext._clockLayoutManager = new m.ClockLayoutManager(ext);
+            const lockDialogGroup = Main.screenShield?._lockDialogGroup || (Main.layoutManager?.uiGroup || null);
+            ext._clockLayoutManager.setup(ext._dialog, lockDialogGroup);
+        }
+    }
+}).catch(() => {});
+import(`./src/main/avatarManager.js?t=${Date.now()}`).then(m => {
+    if (m?.AvatarManager) {
+        _AvatarManagerClass = m.AvatarManager;
+        const ext = Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.stateObj;
+        if (ext && ext._dialog) {
+            ext._avatarManager = new m.AvatarManager(ext);
+            ext._avatarManager.setupCupertinoAvatarOverride();
+        }
+    }
+}).catch(() => {});
+import(`./src/main/unlockDialogController.js?t=${Date.now()}`).then(m => {
+    if (m?.UnlockDialogController) {
+        _UnlockDialogControllerClass = m.UnlockDialogController;
+        const ext = Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.stateObj;
+        if (ext && ext._dialog) {
+            const lockDialogGroup = Main.screenShield?._lockDialogGroup || (Main.layoutManager?.uiGroup || null);
+            ext._unlockDialogController = new m.UnlockDialogController(ext);
+            ext._unlockDialogController.install(ext._dialog, lockDialogGroup);
+        }
+    }
+}).catch(() => {});
+
 export default class WackLockscreenClockExtension extends Extension {
     get _promptActive() {
         return (this._dialog?._adjustment?.value ?? 0) > 0;
@@ -228,16 +265,39 @@ export default class WackLockscreenClockExtension extends Extension {
         // Subsystem instantiations
         this._themeManager = new ThemeManager(this);
         this._wallpaperManager = new WallpaperManager(this);
-        this._clockLayoutManager = new ClockLayoutManager(this);
+        const ClmClass = this._ClockLayoutManagerClass || _ClockLayoutManagerClass || ClockLayoutManager;
+        this._clockLayoutManager = new ClmClass(this);
         this._messageManager = new LockscreenMessageManager(this);
         this._promptStyling = new PromptStyling(this);
-        const AvClass = this._AvatarManagerClass || AvatarManager;
+        const AvClass = this._AvatarManagerClass || _AvatarManagerClass || AvatarManager;
         this._avatarManager = new AvClass(this);
         const CpClass = this._CupertinoPromptManagerClass || CupertinoPromptManager;
         this._cupertinoPromptManager = new CpClass(this);
-        const ControllerClass = this._UnlockDialogControllerClass || UnlockDialogController;
+        const ControllerClass = this._UnlockDialogControllerClass || _UnlockDialogControllerClass || UnlockDialogController;
         this._unlockDialogController = new ControllerClass(this);
         this._notifManager = new NotificationManager(this);
+
+        import(`./src/main/clockLayoutManager.js?t=${Date.now()}`).then(m => {
+            if (m?.ClockLayoutManager && this._dialog === dialog) {
+                this._ClockLayoutManagerClass = m.ClockLayoutManager;
+                this._clockLayoutManager = new m.ClockLayoutManager(this);
+                this._clockLayoutManager.setup(dialog, lockDialogGroup);
+            }
+        }).catch(() => {});
+        import(`./src/main/avatarManager.js?t=${Date.now()}`).then(m => {
+            if (m?.AvatarManager && this._dialog === dialog) {
+                this._AvatarManagerClass = m.AvatarManager;
+                this._avatarManager = new m.AvatarManager(this);
+                this._avatarManager.setupCupertinoAvatarOverride();
+            }
+        }).catch(() => {});
+        import(`./src/main/unlockDialogController.js?t=${Date.now()}`).then(m => {
+            if (m?.UnlockDialogController && this._dialog === dialog) {
+                this._UnlockDialogControllerClass = m.UnlockDialogController;
+                this._unlockDialogController = new m.UnlockDialogController(this);
+                this._unlockDialogController.install(dialog, lockDialogGroup);
+            }
+        }).catch(() => {});
 
         try { this._themeManager.applyUserTheme(); } catch (e) { console.error(`[WACK] applyUserTheme: ${e}`); }
 

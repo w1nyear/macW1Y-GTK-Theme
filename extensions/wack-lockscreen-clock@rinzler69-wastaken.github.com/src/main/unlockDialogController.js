@@ -43,14 +43,20 @@ export class UnlockDialogController {
             if (this._extension._avatarManager) {
                 this._extension._avatarManager.setupCupertinoAvatarOverride();
             } else if (authPrompt._userWell) {
-                authPrompt._userWell.visible = false;
+                authPrompt._userWell.visible = true;
                 authPrompt._userWell.opacity = 0;
+                authPrompt._userWell.reactive = false;
+                authPrompt._userWell.can_focus = false;
+                authPrompt._userWell.y_expand = false;
+                authPrompt._userWell.y_align = Clutter.ActorAlign.START;
                 const uw = authPrompt._userWell.get_child();
                 if (uw) {
-                    uw.visible = false;
+                    uw.visible = true;
                     uw.opacity = 0;
-                    if (uw._avatar) { uw._avatar.visible = false; uw._avatar.opacity = 0; }
-                    if (uw._label) { uw._label.visible = false; uw._label.opacity = 0; }
+                    uw.reactive = false;
+                    uw.can_focus = false;
+                    if (uw._avatar) { uw._avatar.visible = true; uw._avatar.opacity = 0; uw._avatar.reactive = false; }
+                    if (uw._label) { uw._label.visible = true; uw._label.opacity = 0; uw._label.reactive = false; }
                 }
             }
             if (authPrompt._message) {
@@ -483,14 +489,20 @@ export class UnlockDialogController {
 
                 const authPrompt = dialog._authPrompt ?? dialog._promptBox?._authPrompt;
                 if (authPrompt?._userWell) {
-                    authPrompt._userWell.visible = false;
+                    authPrompt._userWell.visible = true;
                     authPrompt._userWell.opacity = 0;
+                    authPrompt._userWell.reactive = false;
+                    authPrompt._userWell.can_focus = false;
+                    authPrompt._userWell.y_expand = false;
+                    authPrompt._userWell.y_align = Clutter.ActorAlign.START;
                     const uw = authPrompt._userWell.get_child();
                     if (uw) {
-                        uw.visible = false;
+                        uw.visible = true;
                         uw.opacity = 0;
-                        if (uw._avatar) { uw._avatar.visible = false; uw._avatar.opacity = 0; }
-                        if (uw._label) { uw._label.visible = false; uw._label.opacity = 0; }
+                        uw.reactive = false;
+                        uw.can_focus = false;
+                        if (uw._avatar) { uw._avatar.visible = true; uw._avatar.opacity = 0; uw._avatar.reactive = false; }
+                        if (uw._label) { uw._label.visible = true; uw._label.opacity = 0; uw._label.reactive = false; }
                     }
                 }
                 const mainBox = authPrompt?._mainBox;

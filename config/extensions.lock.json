@@ -518,15 +518,15 @@
         "49",
         "50"
       ],
-      "sha256": "ce9724a662722c8f39753a8b6c9dc024fabfcc3d6af7239f9502901861d04141",
+      "sha256": "609441fac73f7c94b4c715db5871ecb89f9e80de8b152bfbbbe326a012332d73",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
         "sonoma_lockscreen_clock"
       ],
       "has_custom_patches": true,
-      "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575)",
-      "last_verified": "2026-11-06",
+      "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575); GDM lockscreen date and prompt positioning (Task 669)",
+      "last_verified": "2026-11-09",
       "pinned_sha256": "899624639a6a6367d44cf990c3790ca09b4138006a536bfa4a4f2a349a254859"
     },
     "wifi-hotspot-quick-settings@aryan10.github.io": {

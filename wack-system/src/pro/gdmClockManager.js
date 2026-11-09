@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { WackClock } from '../main/wackClock.js';
@@ -8,12 +9,20 @@ import {
 } from '../main/constants.js';
 import { GDM_DATETIME_TOP_FRACTION } from './gdmUtils.js';
 
+let GdmGlassClockClass = null;
+import('./gdmGlassClock.js').then(m => {
+    GdmGlassClockClass = m.GdmGlassClock;
+}).catch(err => {
+    console.error(`[WACK/GDM] Warning: could not pre-load GdmGlassClock: ${err.message}`);
+});
+
 export class GdmClockManager {
     constructor(gdmManager) {
         this._gdm = gdmManager;
         this.clock = null;
         this.clockWrapper = null;
         this.timeLabel = null;
+        this.glassClock = null;
         this.clockPressed = false;
         this.menuWasOpenOnPress = false;
         this.dateMenuOpenStateId = 0;
@@ -25,6 +34,10 @@ export class GdmClockManager {
         }
 
         // 1. Clean up any existing instances in this manager
+        if (this.glassClock) {
+            try { this.glassClock.destroy(); } catch (_) {}
+            this.glassClock = null;
+        }
         if (this.clockWrapper) {
             try { this.clockWrapper.destroy(); } catch (_) {}
             this.clockWrapper = null;
@@ -76,9 +89,9 @@ export class GdmClockManager {
         if (typeof this.clock.setWeight === 'function')
             this.clock.setWeight('600'); // Open Runde SemiBold
         if (typeof this.clock.setLetterSpacing === 'function')
-            this.clock.setLetterSpacing(-4); // було -2px у stylesheet — ще щільніше на пару px
+            this.clock.setLetterSpacing(-6); // щільніше розташування цифр
         if (typeof this.clock.setColonRise === 'function')
-            this.clock.setColonRise(12.41); // 0.09695em × 128px — ':' по центру висоти цифр (метрика Open Runde)
+            this.clock.setColonRise(13.0); // ':' точно по центру висоти часу (метрика Open Runde)
 
         const dateLabel = this.clock._dateOutput;
         const timeLabel = this.clock._time;
@@ -96,6 +109,36 @@ export class GdmClockManager {
         this.clockWrapper.add_child(dateLabel);
         this.clockWrapper.add_child(timeLabel);
 
+        // GDM Liquid Glass Clock: replaces the solid fill of the time text with refractive liquid glass
+        const initGlassClock = (Cls) => {
+            if (!Cls || !this.clockWrapper) return;
+            try {
+                const extPath = this._gdm?._extension?.path ||
+                    Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.path ||
+                    '/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com';
+                this.glassClock = new Cls(extPath, () => this.positionClock());
+                this.clockWrapper.add_child(this.glassClock.actor);
+                if (this.timeLabel?.text) {
+                    this.glassClock.setText(this.timeLabel.text);
+                }
+                this.positionClock();
+            } catch (e) {
+                console.error(`[WACK/GDM] Failed to initialize Liquid Glass Clock: ${e}`);
+                this.glassClock = null;
+            }
+        };
+
+        if (GdmGlassClockClass) {
+            initGlassClock(GdmGlassClockClass);
+        } else {
+            import('./gdmGlassClock.js').then(m => {
+                GdmGlassClockClass = m.GdmGlassClock;
+                initGlassClock(GdmGlassClockClass);
+            }).catch(e => {
+                console.error(`[WACK/GDM] Failed to dynamically load gdmGlassClock: ${e.message}`);
+            });
+        }
+
         centerClockLabel(timeLabel, this.clockWrapper);
         centerClockLabel(dateLabel, this.clockWrapper);
 
@@ -110,15 +153,21 @@ export class GdmClockManager {
 
         this.clockWrapper.visible = true;
         this.clockWrapper.opacity = 255;
+        dateLabel.set_style("color: #ffffff !important; font-family: 'SF Pro Display', -apple-system, sans-serif !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; padding: 4px 8px !important;");
         dateLabel.visible = true;
         dateLabel.opacity = 255;
         timeLabel.visible = true;
         timeLabel.opacity = 255;
 
+        dateLabel.connectObject('notify::text', () => this.positionClock(), this);
+
         if (dialog)
             this._gdm._connectAllocation(dialog, () => this.positionClock());
 
         this.timeLabel.connectObject('notify::text', () => {
+            if (this.glassClock && this.timeLabel?.text) {
+                this.glassClock.setText(this.timeLabel.text);
+            }
             this.positionClock();
         }, this);
 
@@ -136,6 +185,11 @@ export class GdmClockManager {
     }
 
     teardown() {
+        if (this.glassClock) {
+            this.glassClock.destroy();
+            this.glassClock = null;
+        }
+
         if (this.timeLabel) {
             this.timeLabel.disconnectObject(this);
             this.timeLabel = null;
@@ -192,21 +246,98 @@ export class GdmClockManager {
         let startX = (alloc && alloc.x1 >= 0 && alloc.x1 < 32768) ? alloc.x1 : monitor.x;
 
         const topY = monitor.y + Math.floor(h * GDM_DATETIME_TOP_FRACTION);
+        this.clock._dateOutput.ensure_style();
         const rawDateH = this.clock._dateOutput.get_preferred_height(-1)[1];
-        const preferredDateH = (rawDateH > 0 && rawDateH < 500) ? rawDateH : 30;
-        const effectiveDateH = Math.max(22, Math.min(60, Math.ceil(preferredDateH)));
+        const preferredDateH = (rawDateH > 0 && rawDateH < 500) ? rawDateH : 36;
+        const effectiveDateH = Math.max(42, Math.min(80, Math.ceil(preferredDateH)));
         const timeY = effectiveDateH - 4;
 
-        const rawTimeH = this.clock._time.get_preferred_height(-1)[1];
-        const preferredTimeH = (rawTimeH > 0 && rawTimeH < 1000) ? rawTimeH : 150;
-        const effectiveTimeH = Math.max(120, Math.min(250, Math.ceil(preferredTimeH)));
+        const oldDateConstraint = this.clock._dateOutput.get_constraint('wack-clock-center-x');
+        if (oldDateConstraint) {
+            this.clock._dateOutput.remove_constraint(oldDateConstraint);
+        }
+        const [, rawDateW] = this.clock._dateOutput.get_preferred_width(-1);
+        const preferredDateW = (rawDateW > 0 && rawDateW < w) ? Math.ceil(rawDateW) : Math.min(600, w);
+        const dateX = Math.round((w - preferredDateW) / 2);
 
-        this.clockWrapper.set_size(w, timeY + effectiveTimeH + 20);
+        this.clock._dateOutput.set_position(dateX, 0);
+        this.clock._dateOutput.set_size(preferredDateW, effectiveDateH);
+        if (this.clock._dateOutput.clutter_text) {
+            this.clock._dateOutput.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+            this.clock._dateOutput.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+        }
+        this.clock._dateOutput.set_x_align(Clutter.ActorAlign.CENTER);
+
+        if (this.glassClock) {
+            this.glassClock.sync();
+            const [fw, fh] = this.glassClock.fieldSize;
+            const rx = 48; // FIELD_RANGE
+            const ry = 48;
+
+            if (this.glassClock.isReady && fw > 1 && fh > 1) {
+                const glassX = Math.round((w - fw) / 2);
+                const glassY = Math.round(timeY - ry);
+                this.glassClock.actor.set_position(glassX, glassY);
+                this.glassClock.actor.set_size(fw, fh);
+                this.glassClock.actor.visible = true;
+                this.glassClock.actor.opacity = 255;
+
+                this.timeLabel.visible = false;
+                this.timeLabel.opacity = 0;
+
+                const visibleClockH = Math.max(120, fh - 2 * ry);
+                this.clockWrapper.set_size(w, timeY + visibleClockH + 20);
+            } else {
+                this.glassClock.actor.visible = false;
+                this.glassClock.actor.opacity = 0;
+
+                const oldTimeConstraint = this.clock._time.get_constraint('wack-clock-center-x');
+                if (oldTimeConstraint) {
+                    this.clock._time.remove_constraint(oldTimeConstraint);
+                }
+
+                const [, rawTimeW] = this.clock._time.get_preferred_width(-1);
+                const preferredTimeW = (rawTimeW > 0 && rawTimeW < w) ? Math.ceil(rawTimeW) : Math.min(800, w);
+                const timeX = Math.round((w - preferredTimeW) / 2);
+                this.timeLabel.set_position(timeX, timeY);
+                this.timeLabel.set_size(preferredTimeW, 150);
+                if (this.timeLabel.clutter_text) {
+                    this.timeLabel.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+                    this.timeLabel.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+                }
+                this.timeLabel.set_x_align(Clutter.ActorAlign.CENTER);
+                this.timeLabel.visible = true;
+                this.timeLabel.opacity = 255;
+
+                this.clockWrapper.set_size(w, timeY + 150 + 20);
+            }
+        } else {
+            const rawTimeH = this.clock._time.get_preferred_height(-1)[1];
+            const preferredTimeH = (rawTimeH > 0 && rawTimeH < 1000) ? rawTimeH : 150;
+            const effectiveTimeH = Math.max(120, Math.min(250, Math.ceil(preferredTimeH)));
+
+            const oldTimeConstraint = this.clock._time.get_constraint('wack-clock-center-x');
+            if (oldTimeConstraint) {
+                this.clock._time.remove_constraint(oldTimeConstraint);
+            }
+            const [, rawTimeW] = this.clock._time.get_preferred_width(-1);
+            const preferredTimeW = (rawTimeW > 0 && rawTimeW < w) ? Math.ceil(rawTimeW) : Math.min(800, w);
+            const timeX = Math.round((w - preferredTimeW) / 2);
+
+            this.clockWrapper.set_size(w, timeY + effectiveTimeH + 20);
+            this.clock._time.set_position(timeX, timeY);
+            this.clock._time.set_size(preferredTimeW, effectiveTimeH);
+            if (this.timeLabel.clutter_text) {
+                this.timeLabel.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+                this.timeLabel.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+            }
+            this.timeLabel.set_x_align(Clutter.ActorAlign.CENTER);
+            this.timeLabel.visible = true;
+            this.timeLabel.opacity = 255;
+        }
+
         this.clockWrapper.set_position(startX, topY);
         this.clockWrapper.set_pivot_point(0.5, 0.5);
-
-        this.clock._dateOutput.set_position(0, 0);
-        this.clock._time.set_position(0, timeY);
         this.clockWrapper.opacity = 255;
         this.clockWrapper.visible = true;
 

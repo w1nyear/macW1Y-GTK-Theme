@@ -83,8 +83,10 @@ export class ClockLayoutManager {
         this.dateLabel = dateLabel;
         this.timeLabel = timeLabel;
         if (this.dateLabel) {
-            this.dateLabel.set_style("color: #ffffff !important; font-family: 'SF Pro Display', -apple-system, sans-serif !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;");
+            this.dateLabel.set_style("color: #ffffff !important; font-family: 'SF Pro Display', -apple-system, sans-serif !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; padding: 4px 8px !important;");
         }
+
+        dateLabel.connectObject('notify::text', () => this.positionClock(), this);
 
         timeLabel.connectObject('notify::text', () => {
             if (this.glassClock && timeLabel?.text) {
@@ -161,8 +163,9 @@ export class ClockLayoutManager {
 
         const topY = monitorY + Math.floor(monitorHeight * DATETIME_TOP_FRACTION);
 
-        const [, dateHeight] = dateLabel.get_preferred_height(-1) || [0, 24];
-        const effectiveDateH = Math.max(20, Math.ceil(dateHeight));
+        dateLabel.ensure_style();
+        const [, dateHeight] = dateLabel.get_preferred_height(-1) || [0, 36];
+        const effectiveDateH = Math.max(42, Math.ceil(dateHeight));
         const timeY = effectiveDateH - 4;
 
         const oldDateConstraint = dateLabel.get_constraint('wack-clock-center-x');

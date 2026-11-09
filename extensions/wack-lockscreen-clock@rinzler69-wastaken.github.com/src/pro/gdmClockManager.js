@@ -153,11 +153,13 @@ export class GdmClockManager {
 
         this.clockWrapper.visible = true;
         this.clockWrapper.opacity = 255;
-        dateLabel.set_style("color: #ffffff !important; font-family: 'SF Pro Display', -apple-system, sans-serif !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;");
+        dateLabel.set_style("color: #ffffff !important; font-family: 'SF Pro Display', -apple-system, sans-serif !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; padding: 4px 8px !important;");
         dateLabel.visible = true;
         dateLabel.opacity = 255;
         timeLabel.visible = true;
         timeLabel.opacity = 255;
+
+        dateLabel.connectObject('notify::text', () => this.positionClock(), this);
 
         if (dialog)
             this._gdm._connectAllocation(dialog, () => this.positionClock());
@@ -244,9 +246,10 @@ export class GdmClockManager {
         let startX = (alloc && alloc.x1 >= 0 && alloc.x1 < 32768) ? alloc.x1 : monitor.x;
 
         const topY = monitor.y + Math.floor(h * GDM_DATETIME_TOP_FRACTION);
+        this.clock._dateOutput.ensure_style();
         const rawDateH = this.clock._dateOutput.get_preferred_height(-1)[1];
-        const preferredDateH = (rawDateH > 0 && rawDateH < 500) ? rawDateH : 30;
-        const effectiveDateH = Math.max(22, Math.min(60, Math.ceil(preferredDateH)));
+        const preferredDateH = (rawDateH > 0 && rawDateH < 500) ? rawDateH : 36;
+        const effectiveDateH = Math.max(42, Math.min(80, Math.ceil(preferredDateH)));
         const timeY = effectiveDateH - 4;
 
         const oldDateConstraint = this.clock._dateOutput.get_constraint('wack-clock-center-x');
