@@ -243,6 +243,23 @@
     -boxpointer-gap: 0px !important;
 }
 
+.appmenu-cascading-menu {
+    min-width: 220px;
+}
+
+.appmenu-popup-menu-item .popup-menu-arrow,
+.appmenu-popup-menu .popup-menu-arrow {
+    icon-size: 12px !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    margin-left: 12px !important;
+}
+
+.appmenu-popup-menu-item:hover .popup-menu-arrow,
+.appmenu-popup-menu-item:selected .popup-menu-arrow,
+.appmenu-popup-menu-item:active .popup-menu-arrow {
+    color: #ffffff !important;
+}
+
 .appmenu-popup-menu-content,
 .appmenu-popup-menu .popup-menu-content,
 .appmenu-popup-menu.popup-menu-boxpointer .popup-menu-content {

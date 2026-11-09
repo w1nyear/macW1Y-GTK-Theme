@@ -18,6 +18,7 @@ import { buildGoMenu } from './menus/goMenu.js';
 import { buildWindowMenu } from './menus/windowMenu.js';
 import { buildHelpMenu } from './menus/helpMenu.js';
 import { RecentItemsSubmenu } from './recentItemsSubmenu.js';
+import { CascadingSubmenuMenuItem } from './cascadingSubmenuMenuItem.js';
 import { RealMenuManager } from './realMenuManager.js';
 import * as Logger from './logger.js';
 
@@ -721,18 +722,13 @@ const TopLevelMenuButton = GObject.registerClass(
           headerItem.add_style_class_name('appmenu-popup-menu-item');
           parentMenu.addMenuItem(headerItem);
         } else if (item.type === "submenu") {
-          const subMenu = new PopupMenu.PopupSubMenuMenuItem(label);
-          subMenu.menu.actor.add_style_class_name('appmenu-popup-menu');
-          subMenu.menu.box.add_style_class_name('appmenu-popup-menu-content');
+          const recentMenuManager = this._menuManagerInstance?._recentMenuManager ?? null;
+          const subMenu = new CascadingSubmenuMenuItem(label, parentMenu, recentMenuManager);
           subMenu.add_style_class_name('appmenu-popup-menu-item');
           if (typeof item.onOpen === 'function') {
-              const sid = subMenu.menu.connect('open-state-changed', (_menu, isOpen) => {
-                  if (isOpen)
-                      item.onOpen();
-              });
-              this._subMenuSignalIds.push({ target: subMenu.menu, id: sid });
+              subMenu.setOnOpen(item.onOpen);
           }
-          this._buildSubMenu(item.children, subMenu.menu);
+          this._buildSubMenu(item.children || [], subMenu.menu);
           parentMenu.addMenuItem(subMenu);
         } else if (item.type === "recent-submenu") {
           const recentMenuManager = this._menuManagerInstance?._recentMenuManager ?? null;
