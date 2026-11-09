@@ -18416,3 +18416,48 @@ Task 665: Видалення паразитного розділювача (sepa
      * Попіксельний аналіз підтвердив: меню починається безпосередньо з пункту «Launch using Discrete Graphics Card» на тлі скла вікна (22, 22, 25) без жодних паразитичних ліній над ним.
 
 5. Статус: Завершено.
+
+Task 666: Корекція позиціонування підказок (dock label pills) над іконками дока
+1. Вимога користувача:
+   - Бір-таги програм при наведенні/утриманні на док опустити нижче, ближче до верхнього краю іконок.
+   - Раніше при збільшенні (magnification) та підйомі (rise) пігулка з назвою програми зависала на висоті понад 35-46px над видимою іконкою через вимірювання габаритів по високому контейнеру DockDashItemContainer (84px), а не по самій графічній іконці.
+
+2. Реалізоване рішення:
+   - У extensions/dash2dock-motion@unmade.space/appIcons.js:
+     * У функції positionItemLabel(item) замінено вимірювання за item.child ?? item на точне націлювання на внутрішній графічний елемент іконки: const visual = item.child?.icon?._iconBin ?? item.child?.icon ?? item.child ?? item;.
+     * Встановлено лаконічний відступ у 6px над верхнім краєм збільшеної пігулки-іконки (y = stageY - labelHeight - yOffset - 6).
+     * Синхронізовано з ~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/appIcons.js та застосовано гарячий патч у середовищі GNOME Shell без перезапуску сесії.
+   - Оновлено хеші sha256 у config/extensions.lock.json для dash2dock-motion@unmade.space.
+
+3. Результати:
+   - bin/mac-extension-guard verify: 21/21 SUCCESS.
+   - Підказка назви програми тепер прилягає до іконки на відстані рівно 6px, відповідаючи стандартам macOS HIG.
+
+Task 667: Оновлення іконки акумулятора на екрані блокування GDM/сесії до нового стилю macOS Tahoe, вертикальне центрування та додавання перемикача розкладки клавіатури
+1. Вимога користувача:
+   - Іконка акумулятора GDM блокування при сесії і поза сесією стара а не нова.
+   - Опустити її нижче, бо вона була надто високо (притиснута до верхнього краю).
+   - Додати іконку розкладки клавіатури лівіше акумулятора.
+
+2. Причина несправності:
+   - У розширенні wack-lockscreen-clock@rinzler69-wastaken.github.com у файлі src/main/lockscreenMenuBar.js:
+     * Віджет акумулятора створювався через звичайний St.Widget без менеджера компонування (Clutter.BinLayout). Через це внутрішній box розміщувався на y = 0, притискаючись до самого верху 34px панелі і зміщуючись на 7px вище відносно сусідніх елементів Control Center та годинника.
+     * Використовувалася стара стандартна системна іконка St.Icon({ icon_name: 'battery-level-*-symbolic' }) замість сучасного macOS Tahoe Cairo DrawingArea.
+     * У списку дозволених елементів allowed примусово приховувалися всі інші елементи панелі (включно з keyboard / InputSourceIndicator), а в sessionMode.panel.right розкладка взагалі виключалася.
+
+3. Реалізоване рішення:
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/lockscreenMenuBar.js:
+     * Реалізовано векторне малювання сучасної іконки акумулятора через St.DrawingArea та Cairo API (метод _onRepaintBattery()): заокруглена капсула, термінальний контакт, плавне кольорове заповнення рівня заряду (зелений #28cd41 при заряджанні, червоний <=10%, жовтий <=20%, білий), та блискавка зі світловим контрастним обведенням при підключенні живлення.
+     * Віджет акумулятора _batteryWidget тепер будується на базі St.Bin з y_align: Clutter.ActorAlign.CENTER та height: 34px, завдяки чому іконка ідеально вирівняна по вертикальній осі панелі (17.0px) разом з Control Center та годинником.
+     * Додано 'keyboard' до desiredPanel.right у _overrideSessionMode().
+     * Додано метод _setupKeyboard(kb) та інтегровано kbActor (Main.panel.statusArea.keyboard) до списку allowed на позицію 0 (лівіше від акумулятора). Порядок тепер строго відповідає macOS: [Розкладка клавіатури] [Акумулятор] [Control Center] [Дата і час].
+   - Оновлено стилі у stylesheet.css, pro/gdm.css, src/pro/gdm.css:
+     * .wack-battery-icon { width: 27px !important; height: 16px !important; margin: 0 !important; padding: 0 !important; }.
+   - Синхронізовано файли з ~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/, /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/ (для GDM поза сесією) та wack-system/.
+   - Оновлено цілісність у config/extensions.lock.json.
+
+4. Результати тестування та перевірок:
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+
+5. Статус: Завершено.

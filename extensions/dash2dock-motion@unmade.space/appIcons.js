@@ -2069,10 +2069,9 @@ function _ensureLabelTail(label, position) {
  * This function is used for both DockShowAppsIcon and DockDashItemContainer
  */
 export function positionItemLabel(item) {
-    // Measure the transformed extents of the visual actor, item.child when
-    // there is one, so the label follows the magnified edge of the icon
-    // rather than its base layout box.
-    const visual = item.child ?? item;
+    // Measure the transformed extents of the visual icon actor so the label
+    // follows the magnified squircle edge closely rather than the tall tile box.
+    const visual = item.child?.icon?._iconBin ?? item.child?.icon ?? item.child ?? item;
     const extents = visual.get_transformed_extents();
     const stageX = extents.get_x();
     const stageY = extents.get_y();
@@ -2093,22 +2092,22 @@ export function positionItemLabel(item) {
         yOffset = Math.floor((itemHeight - labelHeight) / 2);
         y = stageY + yOffset;
         xOffset = labelOffset;
-        x = stageX + itemWidth + xOffset;
+        x = stageX + itemWidth + xOffset + 6;
         break;
     case St.Side.RIGHT:
         yOffset = Math.floor((itemHeight - labelHeight) / 2);
         y = stageY + yOffset;
         xOffset = labelOffset;
-        x = Math.round(stageX) - labelWidth - xOffset;
+        x = Math.round(stageX) - labelWidth - xOffset - 6;
         break;
     case St.Side.TOP:
-        y = stageY + labelOffset + itemHeight;
+        y = stageY + itemHeight + (labelOffset || 0) + 6;
         xOffset = Math.floor((itemWidth - labelWidth) / 2);
         x = stageX + xOffset;
         break;
     case St.Side.BOTTOM:
-        yOffset = labelOffset;
-        y = stageY - labelHeight - yOffset - 7;
+        yOffset = labelOffset || 0;
+        y = stageY - labelHeight - yOffset - 6;
         xOffset = Math.floor((itemWidth - labelWidth) / 2);
         x = stageX + xOffset;
         break;

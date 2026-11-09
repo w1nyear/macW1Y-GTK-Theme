@@ -558,7 +558,10 @@
 }
 
 .wack-battery-icon {
-    icon-size: 20px !important;
+    width: 27px !important;
+    height: 16px !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .wack-cc-icon {
