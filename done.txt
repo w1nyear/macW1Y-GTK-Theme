@@ -18637,3 +18637,74 @@ Task 671: Плавне зникання та поява іконок робоч�
    - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
 
 5. Статус: Завершено.
+
+Task 672: Вимкнення показу іконок у tar-архівах (статичні стандартні macOS-іконки) та виправлення шахового сіро-білого фону на видобутих іконках AppImage, EXE та DEB у Nautilus:
+1. Запит користувача:
+   - «Виключи показ іконок у tar.gz файлах. Нехай у архівах буде статично. А іконки app image чи exe чи deb зараз замість прозорого фону мають сірий білий фон клітинками. Виправи»
+
+2. Діагностика причин:
+   - Показ внутрішніх іконок програм у tar-архівах:
+     * У конфігурації генератора прев'ю /usr/local/bin/pkg-icon-thumbnailer (та ~/.local/share/thumbnailers/pkg-icons.thumbnailer) було прописано обробку tar MIME-типів (application/x-xz-compressed-tar, application/x-compressed-tar, application/x-gzip-compressed-tar, application/x-tgz, application/x-bzip-compressed-tar, application/x-zstd-compressed-tar, application/x-lz4-compressed-tar, application/x-tar).
+     * Функція detect_kind() визначала "tar" та викликала розпаковку tarfile (taricon()), внаслідок чого архіви отримували динамічні іконки замість фірмової статичної іконки macOS Archive.
+   - Шаховий сіро-білий фон клітинками під прозорими іконками AppImage, EXE, DEB:
+     * Дослідження видобутих PNG-файлів у кеші ~/.cache/thumbnails/ показало, що самі зображення генеруються з абсолютно чистим RGBA альфа-каналом (альфа 0 на кутах та прозорих областях, без запеченого шахового малюнка).
+     * Причина виявилася у вбудованому CSS файлового менеджера Nautilus (/org/gnome/nautilus/style.css): селектор .view .thumbnail, .nautilus-properties .thumbnail примусово накладав background: url('/org/gnome/nautilus/image/checkerboard.png') repeat;, border-radius: 2px; та рамку-тінь box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.18), 0px 0px 0px 1px var(--shade-color), 0px 2px 0px 0px var(--shade-color);, розраховану на фотографії. Оскільки іконки AppImage, EXE та DEB мають форму заокруглених squircle чи вільних фігур з прозорим фоном, Nautilus відображав через прозорі пікселі системний сіро-білий шаховий малюнок checkerboard.png.
+     * Попереднє правило у fixes4.css (.thumbnail, .icon .thumbnail) мало нижчу специфічність за .view .thumbnail Nautilus і не перебивало вбудоване правило, а спроби використання !important у GTK CSS відкидалися парсером як помилка синтаксису ("Junk at end of value").
+
+3. Реалізовані зміни:
+   - config/thumbnailers/pkg-icons.thumbnailer та ~/.local/share/thumbnailers/pkg-icons.thumbnailer:
+     * Вилучено всі tar MIME-типи. Архіви більше не надсилаються до генератора прев'ю і завжди відображаються зі статичною стандартною macOS-іконкою.
+   - bin/pkg-icon-thumbnailer та /usr/local/bin/pkg-icon-thumbnailer:
+     * У detect_kind() прибрано обробку .tar.*, .tgz, .txz, .tbz2 тощо — функція повертає None.
+     * У main() вилучено виклик taricon().
+     * Очищено кешовані раніше прев'ю для архівів із ~/.cache/thumbnails/ (вилучено 7 застарілих кеш-файлів).
+   - src/mac_nautilus.c (libmac_nautilus.so):
+     * До custom_css перехоплювача додано повне скидання шахового фону та прямокутної рамки для всіх видів мініатюр у Nautilus:
+       window.nautilus-window .view .thumbnail,
+       window.nautilus-window .nautilus-properties .thumbnail,
+       window.nautilus-window .nautilus-grid-view .thumbnail,
+       window.nautilus-window .nautilus-list-view .thumbnail,
+       window.nautilus-window gridview > child .thumbnail,
+       window.nautilus-window columnview > listview > row .thumbnail,
+       .view .thumbnail,
+       .nautilus-properties .thumbnail,
+       .nautilus-grid-view .thumbnail,
+       .nautilus-list-view .thumbnail,
+       .thumbnail,
+       .icon .thumbnail,
+       .grid-view .thumbnail,
+       picture.thumbnail,
+       image.thumbnail,
+       widget.thumbnail {
+           background: none;
+           background-image: none;
+           background-color: transparent;
+           box-shadow: none;
+           border-width: 0px;
+           border-style: none;
+           border-radius: 0px;
+       }
+       .view .thumbnail {
+           filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.3));
+       }
+     * Перекомпільовано lib/libmac_nautilus.so та встановлено в /usr/lib/x86_64-linux-gnu/libmac_nautilus.so з правами 755.
+   - bin/mac-build-theme:
+     * До функцій generate_gtk4_components_css() та generate_gtk3_components_css() додано розділ 100 з правилами чистої прозорості для мініатюр файлів у стилі macOS Finder.
+     * Запущено компіляцію теми — оновлено macw1y-components.css у всіх темах та ~/.config/gtk-4.0/.
+     * Оновлено /usr/local/bin/mac-build-theme.
+   - config/gtk-4.0/fixes4.css, gtk-4.0/fixes4.css, ~/.config/gtk-4.0/fixes4.css, extensions/kiwi@kemma/css/fixes4.css:
+     * Синхронізовано оновлені селектори з нульовим фоном та м'яким силуетним drop-shadow замість шахового малюнка.
+   - config/extensions.lock.json:
+     * Оновлено контрольні хеші sha256 та pinned_sha256 для kiwi@kemma після оновлення fixes4.css.
+
+4. Результати тестування та перевірок:
+   - Знято контрольний знімок екрана Nautilus у теці Завантажене (nautilus_content_crop.png):
+     * opencode-desktop-linux-amd64.deb: відображає автентичну squircle-іконку програми з чистою прозорістю без шахового фону та прямокутної рамки.
+     * notepad.exe: відображає нативну іконку блокнота з олівцем із чистою прозорістю навколо іконки.
+     * PrismLauncher-Linux-x86_64.AppImage, Liner-0.2.10.AppImage, Bionic-1.1.9-6-x64.AppImage: усі видобуті іконки AppImage мають ідеально прозорий фон.
+     * DAMX-1.0.2.tar.xz: відображає статичну класичну зелену іконку macOS Archive без будь-яких динамічних мініатюр усередині.
+   - Тест на парсинг GTK CSS: 0 попереджень та 0 помилок синтаксису при старті Nautilus.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+
+5. Статус: Завершено.

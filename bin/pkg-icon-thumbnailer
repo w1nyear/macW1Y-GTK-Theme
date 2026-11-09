@@ -300,15 +300,7 @@ def detect_kind(path):
         return "apk"
     if base.endswith((".exe", ".msi", ".scr", ".cpl", ".dll", ".efi")):
         return "exe"
-    for suf in (".tar.xz", ".tar.gz", ".tar.bz2", ".tar.zst", ".tar.lz4", ".tar.lz", ".tar"):
-        if base.endswith(suf):
-            return "tar"
-    if ext in (".tgz", ".txz", ".tbz2", ".tzst"):
-        return "tar"
-    if ext in (".xz", ".gz", ".bz2", ".zst", ".lz4", ".lz"):
-        # у сендбоксі gnome-desktop тимчасовий файл може мати назву
-        # 'gnome-desktop-file-to-thumbnail.<ext>', але MIME — tar-архів
-        return "tar"
+    # tar-архіви вимкнено — мають відображатися зі статичною стандартною macOS-іконкою
     return None
 
 
@@ -869,8 +861,6 @@ def main():
             return squashicon(args.input, out, max_side, basename)
         if kind == "deb":
             return debicon(args.input, out, max_side, basename)
-        if kind == "tar":
-            return taricon(args.input, out, max_side, basename)
         if kind == "ipa" or kind == "apk":
             return ipa_apkicon(args.input, out, max_side, basename)
         if kind == "exe":

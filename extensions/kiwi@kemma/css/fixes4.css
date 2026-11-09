@@ -51,12 +51,34 @@ listview.view > row.activatable > cell {
   min-height: 16px;
 }
 
-/* Remove checkered alpha channel drawing around thumbnails and icons. Creates more cleaner look */
+/* Remove checkered alpha channel drawing around thumbnails and icons. Creates cleaner macOS look */
+window.nautilus-window .view .thumbnail,
+window.nautilus-window .nautilus-properties .thumbnail,
+window.nautilus-window .nautilus-grid-view .thumbnail,
+window.nautilus-window .nautilus-list-view .thumbnail,
+window.nautilus-window gridview > child .thumbnail,
+window.nautilus-window columnview > listview > row .thumbnail,
+.view .thumbnail,
+.nautilus-properties .thumbnail,
+.nautilus-grid-view .thumbnail,
+.nautilus-list-view .thumbnail,
 .thumbnail,
 .icon .thumbnail,
-.grid-view .thumbnail {
+.grid-view .thumbnail,
+picture.thumbnail,
+image.thumbnail,
+widget.thumbnail {
   background: none;
+  background-image: none;
+  background-color: transparent;
   box-shadow: none;
+  border-width: 0px;
+  border-style: none;
+  border-radius: 0px;
+}
+
+.view .thumbnail {
+  filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.3));
 }
 
 /* Adding accent color to Floating bar */
@@ -231,9 +253,6 @@ window toolbarview > revealer.top-bar,
 window toolbarview > .top-bar.raised,
 window toolbarview > .top-bar.raised.border,
 window .top-bar,
-window.mac-settings-window toolbarview > .top-bar,
-window.mac-settings-window toolbarview > .top-bar.flat,
-window.mac-settings-window toolbarview > revealer.top-bar,
 navigation-split-view toolbarview > .top-bar,
 overlay-split-view toolbarview > .top-bar,
 window.nautilus-window .content-pane toolbarview > .top-bar,
@@ -253,6 +272,112 @@ headerbar.default-decoration {
   border: none;
   border-bottom: none;
   box-shadow: none;
+}
+
+/* Settings top bar and headerbars are strictly transparent so list dissolution shader is visible */
+window.mac-settings-window toolbarview > .top-bar,
+window.mac-settings-window toolbarview > .top-bar.flat,
+window.mac-settings-window toolbarview > .top-bar.raised,
+window.mac-settings-window toolbarview > .top-bar.raised.border,
+window.mac-settings-window toolbarview > revealer.top-bar,
+window.mac-settings-window headerbar,
+window.mac-settings-window headerbar.flat,
+window.mac-settings-window headerbar.default-decoration,
+window.mac-settings-window .mac-settings-content-headerbar,
+window.mac-settings-window .mac-settings-content-headerbar.has-view-switcher,
+window.mac-settings-window .mac-settings-switcher-headerbar,
+window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+window.mac-settings-window .mac-panel-title-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-left: 4px;
+  margin-top: 1px;
+}
+
+window.mac-settings-window .mac-nav-pill,
+window.mac-settings-window .mc-toggle-group.mac-nav-pill {
+  padding: 0;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+window.mac-settings-window .mac-nav-pill > button,
+window.mac-settings-window .mc-toggle-group.mac-nav-pill > button,
+window.mac-settings-window .mac-nav-btn {
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0;
+  margin: 0;
+  border-radius: 9999px;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.85);
+  transition: background-color 150ms ease-out;
+}
+
+window.mac-settings-window .mac-nav-pill > button:first-child,
+window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:first-child,
+window.mac-settings-window .mac-nav-pill > button:last-child,
+window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:last-child,
+window.mac-settings-window .mac-nav-pill > button + button,
+window.mac-settings-window .mc-toggle-group > button + button {
+  border-radius: 9999px;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  border-left: none;
+}
+
+window.mac-settings-window .mac-nav-pill > button:hover,
+window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:hover,
+window.mac-settings-window .mac-nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-radius: 9999px;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+}
+
+window.mac-settings-window .mac-nav-pill > button:active,
+window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:active,
+window.mac-settings-window .mac-nav-btn:active {
+  background-color: rgba(255, 255, 255, 0.20);
+  color: #ffffff;
+  border-radius: 9999px;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+}
+
+window.mac-settings-window .mac-nav-pill separator,
+window.mac-settings-window .mc-toggle-group.mac-nav-pill separator,
+window.mac-settings-window separator.mac-nav-sep {
+  min-width: 1px;
+  background-color: rgba(255, 255, 255, 0.12);
+  border: none;
+  opacity: 1;
+  margin: 4px 0px;
 }
 
 window toolbarview > .top-bar headerbar,
@@ -288,52 +413,86 @@ window.nautilus-window .sidebar-pane headerbar {
   box-shadow: none;
 }
 
-/* Settings content list dissolution starting from top of scrolled window */
-preferencespage > scrolledwindow.undershoot-top > undershoot.top,
-preferencespage > scrolledwindow > undershoot.top,
-window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
-window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window .content-pane scrolledwindow > undershoot.top,
-window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window scrolledwindow > undershoot.top {
-  min-height: 84px;
-  background: linear-gradient(to bottom,
-    @window_bg_color 0%,
-    alpha(@window_bg_color, 0.96) 20%,
-    alpha(@window_bg_color, 0.85) 45%,
-    alpha(@window_bg_color, 0.55) 70%,
-    alpha(@window_bg_color, 0.20) 88%,
-    transparent 100%);
-  backdrop-filter: blur(10px);
+/* Settings content list and applications: Soft macOS Tahoe gradient dissolve when scrolled */
+scrolledwindow > undershoot,
+undershoot {
+  min-height: 0px;
+  background: none;
+  background-color: transparent;
+  background-image: none;
   border: none;
   box-shadow: none;
 }
 
+scrolledwindow.undershoot-top > undershoot.top,
 toolbarview.undershoot-top scrolledwindow > undershoot.top,
 navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-.content-pane scrolledwindow > undershoot.top,
-scrolledwindow.undershoot-top > undershoot.top {
-  min-height: 38px;
+.content-pane scrolledwindow.undershoot-top > undershoot.top,
+preferencespage > scrolledwindow.undershoot-top > undershoot.top {
+  min-height: 32px;
   background: linear-gradient(to bottom,
-    alpha(@window_bg_color, 0.40) 0%,
-    alpha(@window_bg_color, 0.20) 50%,
+    @window_bg_color 0%,
+    alpha(@window_bg_color, 0.85) 30%,
+    alpha(@window_bg_color, 0.40) 65%,
     transparent 100%);
-  backdrop-filter: blur(10px);
   border: none;
   box-shadow: none;
 }
 
-undershoot.bottom,
-scrolledwindow > undershoot.bottom,
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .content-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .panel-has-switcher scrolledwindow.undershoot-top > undershoot.top {
+  min-height: 54px;
+  background: linear-gradient(to bottom,
+    @window_bg_color 0%,
+    @window_bg_color 32px,
+    alpha(@window_bg_color, 0.85) 42px,
+    alpha(@window_bg_color, 0.40) 48px,
+    transparent 54px);
+  border: none;
+  box-shadow: none;
+}
+
 scrolledwindow.undershoot-bottom > undershoot.bottom,
-.sidebar-pane undershoot.bottom,
-.sidebar-pane scrolledwindow > undershoot.bottom,
-.content-pane undershoot.bottom,
-.content-pane scrolledwindow > undershoot.bottom {
-  background: none;
-  background-image: none;
+.content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window preferencespage > scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .content-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom {
+  min-height: 28px;
+  background: linear-gradient(to top,
+    @window_bg_color 0%,
+    alpha(@window_bg_color, 0.85) 30%,
+    alpha(@window_bg_color, 0.40) 65%,
+    transparent 100%);
+  border: none;
+  box-shadow: none;
+}
+
+.sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top {
+  min-height: 48px;
+  background: linear-gradient(to bottom,
+    @sidebar_bg_color 0%,
+    @sidebar_bg_color 28px,
+    alpha(@sidebar_bg_color, 0.85) 38px,
+    alpha(@sidebar_bg_color, 0.40) 44px,
+    transparent 48px);
+  border: none;
+  box-shadow: none;
+}
+
+.sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom {
+  min-height: 28px;
+  background: linear-gradient(to top,
+    @sidebar_bg_color 0%,
+    alpha(@sidebar_bg_color, 0.85) 30%,
+    alpha(@sidebar_bg_color, 0.40) 65%,
+    transparent 100%);
   border: none;
   box-shadow: none;
 }

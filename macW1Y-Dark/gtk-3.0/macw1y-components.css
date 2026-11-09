@@ -474,3 +474,35 @@ window dialog headerbar .title {
   min-width: 0;
   min-height: 0;
 }
+
+/* =========================================================================
+ * 100. Nautilus & File Thumbnails Clean Transparency (macOS Finder style)
+ * ========================================================================= */
+window.nautilus-window .view .thumbnail,
+window.nautilus-window .nautilus-properties .thumbnail,
+window.nautilus-window .nautilus-grid-view .thumbnail,
+window.nautilus-window .nautilus-list-view .thumbnail,
+window.nautilus-window gridview > child .thumbnail,
+window.nautilus-window columnview > listview > row .thumbnail,
+.view .thumbnail,
+.nautilus-properties .thumbnail,
+.nautilus-grid-view .thumbnail,
+.nautilus-list-view .thumbnail,
+.thumbnail,
+.icon .thumbnail,
+.grid-view .thumbnail,
+picture.thumbnail,
+image.thumbnail,
+widget.thumbnail {
+  background: none;
+  background-image: none;
+  background-color: transparent;
+  box-shadow: none;
+  border-width: 0px;
+  border-style: none;
+  border-radius: 0px;
+}
+
+.view .thumbnail {
+  filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.3));
+}

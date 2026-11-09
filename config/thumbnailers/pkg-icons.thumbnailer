@@ -1,4 +1,4 @@
 [Thumbnailer Entry]
 TryExec=/usr/local/bin/pkg-icon-thumbnailer
 Exec=/usr/local/bin/pkg-icon-thumbnailer -s %s -i %i -o %o
-MimeType=application/vnd.appimage;application/x-appimage;application/vnd.debian.binary-package;application/x-deb;application/x-debian-package;application/vnd.snap;application/x-ms-dos-executable;application/x-msdownload;application/vnd.microsoft.portable-executable;application/x-xz-compressed-tar;application/x-compressed-tar;application/x-gzip-compressed-tar;application/x-tgz;application/x-bzip-compressed-tar;application/x-zstd-compressed-tar;application/x-lz4-compressed-tar;application/x-tar;application/x-rpm;application/zip;application/vnd.iphone;application/vnd.android.package-archive;
+MimeType=application/vnd.appimage;application/x-appimage;application/vnd.debian.binary-package;application/x-deb;application/x-debian-package;application/vnd.snap;application/x-ms-dos-executable;application/x-msdownload;application/vnd.microsoft.portable-executable;application/x-rpm;application/zip;application/vnd.iphone;application/vnd.android.package-archive;
