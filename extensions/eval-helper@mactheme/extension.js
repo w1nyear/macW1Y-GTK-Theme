@@ -2553,23 +2553,69 @@ export default class EvalHelper extends Extension {
                                       mw.get_title?.()?.startsWith('Desktop Icons'));
                     });
                 };
-                const DING_FADE_DURATION = 250;
-                const DING_FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
+                const DING_FADE_DURATION = 280;
+                const DING_FADE_MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
+
+                let _dingClones = [];
+                const cleanupDingClones = () => {
+                    for (const c of _dingClones) {
+                        try {
+                            c.remove_all_transitions();
+                            if (c.get_parent()) {
+                                c.get_parent().remove_child(c);
+                            }
+                            c.destroy();
+                        } catch (_) {}
+                    }
+                    _dingClones = [];
+                };
+                globalThis._macCleanupDingClones = cleanupDingClones;
+
+                const ensureDingClones = (initialOpacity = 255) => {
+                    cleanupDingClones();
+                    const ovGroup = Main.layoutManager.overviewGroup;
+                    if (!ovGroup) return;
+                    const dingActors = getDingActors();
+                    if (!dingActors.length) return;
+
+                    const bgIdx = ovGroup.get_children().findIndex(c => c.name === 'mac-overview-wallpaper-group');
+                    const targetIdx = bgIdx >= 0 ? bgIdx + 1 : 0;
+
+                    for (const actor of dingActors) {
+                        try {
+                            const clone = new Clutter.Clone({
+                                source: actor,
+                                reactive: false,
+                                opacity: initialOpacity,
+                            });
+                            clone.set_position(actor.x, actor.y);
+                            clone.set_size(actor.width, actor.height);
+                            ovGroup.insert_child_at_index(clone, targetIdx);
+                            _dingClones.push(clone);
+                        } catch (_) {}
+                    }
+                };
 
                 if (!Main.overview._macDingShowingConn) {
                     Main.overview._macDingShowingConn = Main.overview.connect('showing', () => {
-                        for (const actor of getDingActors()) {
-                            actor.remove_all_transitions();
-                            actor.ease({
+                        ensureDingClones(255);
+                        for (const clone of _dingClones) {
+                            clone.ease({
                                 opacity: 0,
                                 duration: DING_FADE_DURATION,
                                 mode: DING_FADE_MODE,
+                                onComplete: () => cleanupDingClones(),
                             });
+                        }
+                        for (const actor of getDingActors()) {
+                            actor.remove_all_transitions();
+                            actor.opacity = 0;
                         }
                     });
                 }
                 if (!Main.overview._macDingShownConn) {
                     Main.overview._macDingShownConn = Main.overview.connect('shown', () => {
+                        cleanupDingClones();
                         for (const actor of getDingActors()) {
                             actor.remove_all_transitions();
                             actor.opacity = 0;
@@ -2578,18 +2624,20 @@ export default class EvalHelper extends Extension {
                 }
                 if (!Main.overview._macDingHidingConn) {
                     Main.overview._macDingHidingConn = Main.overview.connect('hiding', () => {
-                        for (const actor of getDingActors()) {
-                            actor.remove_all_transitions();
-                            actor.ease({
+                        ensureDingClones(0);
+                        for (const clone of _dingClones) {
+                            clone.ease({
                                 opacity: 255,
                                 duration: DING_FADE_DURATION,
                                 mode: DING_FADE_MODE,
+                                onComplete: () => cleanupDingClones(),
                             });
                         }
                     });
                 }
                 if (!Main.overview._macDingHiddenConn) {
                     Main.overview._macDingHiddenConn = Main.overview.connect('hidden', () => {
+                        cleanupDingClones();
                         for (const actor of getDingActors()) {
                             actor.remove_all_transitions();
                             actor.opacity = 255;
@@ -2604,9 +2652,15 @@ export default class EvalHelper extends Extension {
                             const val = stateAdj.value;
                             const progress = Math.min(1, Math.max(0, val));
                             const targetOpacity = Math.round(255 * (1 - progress));
-                            for (const actor of getDingActors()) {
-                                if (actor.get_transition('opacity')) continue;
-                                actor.opacity = targetOpacity;
+                            if (!_dingClones.length && (Main.overview.visible || Main.overview._animationInProgress) && targetOpacity > 0 && targetOpacity < 255) {
+                                ensureDingClones(targetOpacity);
+                            }
+                            for (const clone of _dingClones) {
+                                if (clone.get_transition('opacity')) continue;
+                                clone.opacity = targetOpacity;
+                            }
+                            if (progress >= 1) {
+                                cleanupDingClones();
                             }
                         }
                     });
@@ -3803,6 +3857,10 @@ export default class EvalHelper extends Extension {
             if (stateAdj && stateAdj._macDingStateConn) {
                 try { stateAdj.disconnect(stateAdj._macDingStateConn); } catch (_) {}
                 stateAdj._macDingStateConn = null;
+            }
+            if (globalThis._macCleanupDingClones) {
+                try { globalThis._macCleanupDingClones(); } catch (_) {}
+                globalThis._macCleanupDingClones = null;
             }
         }
         Main.overview._macHideWsBgConn = null;

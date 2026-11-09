@@ -286,7 +286,10 @@ var DesktopGrid = class extends SignalManager.SignalManager{
             }
             [x, y] = this.coordinatesLocalToGlobal(x, y);
         }
-        if (this._desktopManager.intersectsWidget(x, y, this._elementWidth, this._elementHeight)) {
+        let keepArranged = this._desktopManager.keepArranged || this._desktopManager.keepStacked;
+        let hx = keepArranged ? 0 : (this._desktopManager.dragHotspotX || 0);
+        let hy = keepArranged ? 0 : (this._desktopManager.dragHotspotY || 0);
+        if (this._desktopManager.intersectsWidget(x - hx, y - hy, this._elementWidth, this._elementHeight)) {
             print('[DING] Drop rejected: target position collides with desktop widget');
             Gtk.drag_finish(context, false, false, Gtk.get_current_event_time());
             this.unHighLightGrids();
@@ -340,9 +343,11 @@ var DesktopGrid = class extends SignalManager.SignalManager{
         }
         let newSelectedList = [];
         let keepArranged = this._desktopManager.keepArranged || this._desktopManager.keepStacked;
+        let hx = keepArranged ? 0 : (this._desktopManager.dragHotspotX || 0);
+        let hy = keepArranged ? 0 : (this._desktopManager.dragHotspotY || 0);
         for (let [x, y] of selectedList) {
-            let checkX = ox + x;
-            let checkY = oy + y;
+            let checkX = ox + x - hx;
+            let checkY = oy + y - hy;
             if (this._desktopManager.intersectsWidget(checkX, checkY, this._elementWidth, this._elementHeight)) {
                 continue;
             }
@@ -522,7 +527,7 @@ var DesktopGrid = class extends SignalManager.SignalManager{
             fileItem.isDrive && addVolumesOpposite);
         let freeX, freeY;
         let keepArranged = this._desktopManager.keepArranged || this._desktopManager.keepStacked;
-        if (!keepArranged && x !== undefined && y !== undefined) {
+        if (!keepArranged && x !== undefined && y !== undefined && coordinatesAction !== Enums.StoredCoordinates.ASSIGN) {
             if (!this._desktopManager.intersectsWidget(x, y, this._elementWidth, this._elementHeight)) {
                 let [lx, ly] = this.coordinatesGlobalToLocal(x, y);
                 lx = DesktopIconsUtil.clamp(lx - elementSpacing, 0, Math.max(0, this._width - this._elementWidth));
@@ -579,6 +584,10 @@ var DesktopGrid = class extends SignalManager.SignalManager{
 
         placeX = DesktopIconsUtil.clamp(placeX, 0, this._maxColumns - 1);
         placeY = DesktopIconsUtil.clamp(placeY, 0, this._maxRows - 1);
+        let keepArranged = this._desktopManager.keepArranged || this._desktopManager.keepStacked;
+        if (!keepArranged && (coordinatesAction != Enums.StoredCoordinates.ASSIGN)) {
+            return [placeX, placeY];
+        }
         if (this._isEmptyAt(placeX, placeY) && (coordinatesAction != Enums.StoredCoordinates.ASSIGN)) {
             return [placeX, placeY];
         }

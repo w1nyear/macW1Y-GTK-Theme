@@ -19228,3 +19228,52 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - bin/mac-audit-sync check: 100% PASS!
 
 4. Статус: Завершено.
+
+===================================================================
+Task 688: Плавна анімація зникання та появи іконок робочого столу (Desktop Icons / DING) через Clutter.Clone у Mission Control / Setup Wizard та вільне позиціонування поза сіткою (no grid snap)
+===================================================================
+
+1. Задача:
+   - Забезпечити плавне зникання та появу іконок на робочому столі з анімацією непрозорості (fade-out / fade-in), оскільки раніше вони зникали миттєво без жодної анімації.
+   - Вимкнути примусову прив'язку до дискретної сітки («не по сітці має бути»): реалізувати вільне позиціонування файлів та папок на робочому столі у довільних координатах без округлення до комірок сітки за стандартом macOS Finder.
+
+2. Причина несправності:
+   - Миттєве зникання іконок:
+     * GNOME Shell при вході в Огляд (Main.overview.show()) миттєво встановлює global.window_group.visible = false через Main.layoutManager._updateVisibility().
+     * Крім того, оверлейний шар Main.layoutManager.overviewGroup містить mac-overview-wallpaper-group з непрозорістю 255 на z-рівні над window_group, через що всі актори DING перекривалися в перший же кадр.
+     * У macSetupWizard.js метод _isolateDesktop() приховував лише Main.panel, не анімуючи згасання акторів DING.
+   - Прив'язка до сітки та накладання файлів:
+     * У desktopGrid.js функція _getEmptyPlaceClosestTo перевіряла дискретні комірки сітки _isEmptyAt(placeX, placeY) і при збереженні зміщувала іконку до найближчого вільного вузла сітки або викидала помилку переповнення.
+     * При перетягуванні doMoveWithDragAndDrop не враховував зміщення точки захоплення курсора всередині іконки (_calculateOffset), через що іконка стрибала відносно положення миші.
+     * При створенні нових файлів без заданих координат (Enums.StoredCoordinates.ASSIGN) обчислювалися координати (0, 0), через що нові файли скидалися один на один у верхній кут.
+
+3. Реалізоване рішення:
+   - extensions/eval-helper@mactheme/extension.js:
+     * Створено динамічний шар клонів Clutter.Clone для кожного актора DING, що монтується в Main.layoutManager.overviewGroup безпосередньо над фоном шпалер mac-overview-wallpaper-group та під робочими просторами.
+     * На сигналі showing клони плавно зникають з easing Clutter.AnimationMode.EASE_OUT_CUBIC (тривалість 280мс: opacity 255 -> 0), після чого очищуються.
+     * На сигналі hiding створюються клони з opacity 0 і плавно з'являються до 255 (250мс: opacity 0 -> 255).
+     * Додано підтримку жесту тачпада через stateAdjustment notify::value: непрозорість клонів синхронізована з прогресом жесту (Math.round(255 * (1 - progress))).
+     * При вимкненні розширення в disable() забезпечено повне очищення клонів.
+   - extensions/eval-helper@mactheme/macSetupWizard.js:
+     * У _isolateDesktop() додано плавне згасання акторів DING через ease({ opacity: 0, duration: 350, mode: EASE_OUT_QUAD }).
+     * При виході з майстра налаштувань _restoreDesktop() повертає їхню непрозорість до 255 з плавною анімацією 400мс.
+   - extensions/ding-patches/desktopGrid.js:
+     * У addFileItemCloseTo() забезпечено, що вільні координати freeX, freeY застосовуються для довільного позиціонування тільки тоді, коли coordinatesAction !== Enums.StoredCoordinates.ASSIGN, запобігаючи накладанню нових файлів.
+     * У _getEmptyPlaceClosestTo() для вільного режиму (!keepArranged && coordinatesAction != ASSIGN) скасовано відкидання зайнятості комірок сітки: повертаються точні координати [placeX, placeY] без стрибків по сітці.
+     * У receiveDrop() та refreshDrag() додано врахування зміщення хотспоту курсора миші (dragHotspotX, dragHotspotY), що усуває стрибки та дозволяє плавно малювати рамку й розміщувати іконку точно за курсором.
+   - extensions/ding-patches/desktopManager.js:
+     * В onDragBegin() та onDragEnd() додано фіксацію та скидання зсуву курсора захоплення dragHotspotX, dragHotspotY через _calculateOffset().
+     * У doMoveWithDragAndDrop() при вільному переміщенні координати точки скидання коригуються на точний офсет захоплення миші без прив'язки до сітки getGridAt().
+   - Синхронізація системи:
+     * Файли desktopGrid.js та desktopManager.js скопійовано до /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/.
+     * Оновлено робочий процес DING (автоматичний перезапуск gjs).
+     * Оновлено контрольні суми sha256 у config/extensions.lock.json для eval-helper@mactheme та ding@rastersoft.com.
+     * Оновлено файли розширення eval-helper@mactheme у ~/.local/share/gnome-shell/extensions/.
+
+4. Результати перевірки:
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+   - Тестування розміщення файлів: тестові файли зберігають довільні координати (наприклад, 123, 456) без зсуву до сітки, нові файли коректно займають чергові позиції без накладання один на один.
+   - Тестування анімації Огляду: Clutter.Clone бездоганно передає текстуру DING та плавно згасає при вході в Mission Control і плавно повертається при виході.
+
+5. Статус: Завершено.

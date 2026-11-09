@@ -551,6 +551,8 @@ var DesktopManager = class {
         if (this.sortSpecialFolders && keepArranged) {
             return;
         }
+        let hx = keepArranged ? 0 : (this.dragHotspotX || 0);
+        let hy = keepArranged ? 0 : (this.dragHotspotY || 0);
         if (keepArranged) {
             // Find the grid where the destination lies and aim towards the positive side, middle of grid to ensure drop in the grid
             for (let desktop of this._desktops) {
@@ -561,6 +563,9 @@ var DesktopManager = class {
                     break;
                 }
             }
+        } else {
+            xDestination -= hx;
+            yDestination -= hy;
         }
         let deltaX = xDestination - xOrigin;
         let deltaY = yDestination - yOrigin;
@@ -612,6 +617,9 @@ var DesktopManager = class {
 
     onDragBegin(item) {
         this.dragItem = item;
+        let [hx, hy] = (item && item._calculateOffset) ? item._calculateOffset(item._eventBox) : [0, 0];
+        this.dragHotspotX = hx;
+        this.dragHotspotY = hy;
     }
 
     onDragMotion(x, y) {
@@ -649,6 +657,8 @@ var DesktopManager = class {
 
     onDragEnd() {
         this.dragItem = null;
+        this.dragHotspotX = 0;
+        this.dragHotspotY = 0;
     }
 
     onDragDataReceived(context, xDestination, yDestination, selection, info, forceLocal, forceCopy) {

@@ -190,6 +190,31 @@ export class MacSetupWizard {
             Main.panel.opacity = 0;
             Main.panel.reactive = false;
         }
+
+        // Desktop Icons (DING) smooth fade-out animation
+        try {
+            const dingActors = (global.window_group?.get_children() || []).filter(c => {
+                const mw = c.meta_window || c.get_meta_window?.();
+                return mw && (mw.get_gtk_application_id?.() === 'com.rastersoft.ding' ||
+                              mw.get_title?.()?.startsWith('Desktop Icons'));
+            });
+            for (const actor of dingActors) {
+                this._hiddenElements.push({
+                    actor,
+                    origOpacity: 255,
+                    origReactive: true
+                });
+                actor.ease({
+                    opacity: 0,
+                    duration: 350,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        actor.opacity = 0;
+                        actor.reactive = false;
+                    }
+                });
+            }
+        } catch (_) {}
     }
 
     _restoreDesktop() {
