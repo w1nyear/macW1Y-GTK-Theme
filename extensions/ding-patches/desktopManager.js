@@ -468,22 +468,118 @@ var DesktopManager = class {
         }
     }
 
+    getWidgetRectangles() {
+        try {
+            if (!this._desktopWidgetsSettings) {
+                const GioSSS = Gio.SettingsSchemaSource;
+                const schemaSource = GioSSS.get_default();
+                if (schemaSource && schemaSource.lookup('org.gnome.shell.extensions.desktop-widgets-r3nhick', true)) {
+                    this._desktopWidgetsSettings = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.desktop-widgets-r3nhick' });
+                }
+            }
+            if (!this._desktopWidgetsSettings) return [];
+
+            const jsonStr = this._desktopWidgetsSettings.get_string('layout-json');
+            if (!jsonStr) return [];
+            const data = JSON.parse(jsonStr);
+            const widgets = data.widgets || [];
+            const gap = 15;
+            const CELL_SIZE = 190;
+            const MINI_CELL_SIZE = 120;
+            const WIDGET_CELL_SIZES = {
+                main: CELL_SIZE,
+                mini: MINI_CELL_SIZE,
+                compact: { width: CELL_SIZE, height: MINI_CELL_SIZE },
+            };
+            const WIDGET_SIZE_SHAPES = {
+                minismall: [1, 1, 'mini'],
+                mini: [2, 1, 'mini'],
+                portraitmini: [1, 2, 'mini'],
+                minilarge: [2, 2, 'mini'],
+                compact: [2, 1, 'compact'],
+                small: [1, 1, 'main'],
+                medium: [2, 1, 'main'],
+                portrait: [1, 2, 'main'],
+                large: [2, 2, 'main'],
+                tall: [2, 4, 'main'],
+                wide: [4, 2, 'main'],
+                huge: [4, 4, 'main'],
+            };
+            const rects = [];
+            for (const w of widgets) {
+                const shape = WIDGET_SIZE_SHAPES[w.size] || [1, 1, 'main'];
+                const [cols, rows, family] = shape;
+                const base = WIDGET_CELL_SIZES[family] || CELL_SIZE;
+                let width, height;
+                if (typeof base === 'object') {
+                    width = cols * base.width + (cols - 1) * gap;
+                    height = rows * base.height + (rows - 1) * gap;
+                } else {
+                    width = cols * base + (cols - 1) * gap;
+                    height = rows * base + (rows - 1) * gap;
+                }
+                rects.push({
+                    x: w.x,
+                    y: w.y,
+                    w: width,
+                    h: height,
+                });
+            }
+            return rects;
+        } catch (e) {
+            return [];
+        }
+    }
+
+    intersectsWidget(x, y, w = 120, h = 120, margin = 10) {
+        const rects = this.getWidgetRectangles();
+        for (const r of rects) {
+            const rx = r.x - margin;
+            const ry = r.y - margin;
+            const rw = r.w + 2 * margin;
+            const rh = r.h + 2 * margin;
+            if (x < rx + rw && x + w > rx &&
+                y < ry + rh && y + h > ry) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     doMoveWithDragAndDrop(xOrigin, yOrigin, xDestination, yDestination) {
         let keepArranged = this.keepArranged || this.keepStacked;
         if (this.sortSpecialFolders && keepArranged) {
             return;
         }
-        // Find the grid where the destination lies and aim towards the positive side, middle of grid to ensure drop in the grid
-        for (let desktop of this._desktops) {
-            let grid = desktop.getGridAt(xDestination, yDestination, true);
-            if (grid !== null) {
-                xDestination = grid[0] + desktop._elementWidth / 2;
-                yDestination = grid[1] + desktop._elementHeight / 2;
-                break;
+        if (keepArranged) {
+            // Find the grid where the destination lies and aim towards the positive side, middle of grid to ensure drop in the grid
+            for (let desktop of this._desktops) {
+                let grid = desktop.getGridAt(xDestination, yDestination, true);
+                if (grid !== null) {
+                    xDestination = grid[0] + desktop._elementWidth / 2;
+                    yDestination = grid[1] + desktop._elementHeight / 2;
+                    break;
+                }
             }
         }
         let deltaX = xDestination - xOrigin;
         let deltaY = yDestination - yOrigin;
+
+        // Ensure target position doesn't collide with any desktop widgets
+        for (let item of this._fileList) {
+            if (item.isSelected) {
+                let [x, y] = item.getCoordinates();
+                let targetX = x + deltaX;
+                let targetY = y + deltaY;
+                let iw = item.container?.get_allocated_width?.() || 120;
+                let ih = item.container?.get_allocated_height?.() || 120;
+                if (this.intersectsWidget(targetX, targetY, iw, ih)) {
+                    print(`[DING] Move rejected: target (${targetX}, ${targetY}) collides with desktop widget`);
+                    return;
+                }
+            }
+        }
+
         let fileItems = [];
         for (let item of this._fileList) {
             if (item.isSelected) {
@@ -1617,6 +1713,11 @@ var DesktopManager = class {
                 fileItem.dropCoordinates = null;
             }
             let [itemX, itemY] = fileItem.savedCoordinates;
+            if (this.intersectsWidget(itemX, itemY, 120, 120)) {
+                fileItem.savedCoordinates = null;
+                notAssignedYet.push(fileItem);
+                continue;
+            }
             let addedToDesktop = false;
             for (let desktop of this._desktops) {
                 if (desktop.getDistance(itemX, itemY) == 0) {

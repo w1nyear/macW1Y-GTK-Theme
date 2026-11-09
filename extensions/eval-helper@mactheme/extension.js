@@ -2328,6 +2328,73 @@ export default class EvalHelper extends Extension {
                     });
                 }
 
+                // Desktop Icons (DING) smooth opacity fade on overview open/close
+                const getDingActors = () => {
+                    return (global.window_group?.get_children() || []).filter(c => {
+                        const mw = c.meta_window || c.get_meta_window?.();
+                        return mw && (mw.get_gtk_application_id?.() === 'com.rastersoft.ding' ||
+                                      mw.get_title?.()?.startsWith('Desktop Icons'));
+                    });
+                };
+                const DING_FADE_DURATION = 250;
+                const DING_FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
+
+                if (!Main.overview._macDingShowingConn) {
+                    Main.overview._macDingShowingConn = Main.overview.connect('showing', () => {
+                        for (const actor of getDingActors()) {
+                            actor.remove_all_transitions();
+                            actor.ease({
+                                opacity: 0,
+                                duration: DING_FADE_DURATION,
+                                mode: DING_FADE_MODE,
+                            });
+                        }
+                    });
+                }
+                if (!Main.overview._macDingShownConn) {
+                    Main.overview._macDingShownConn = Main.overview.connect('shown', () => {
+                        for (const actor of getDingActors()) {
+                            actor.remove_all_transitions();
+                            actor.opacity = 0;
+                        }
+                    });
+                }
+                if (!Main.overview._macDingHidingConn) {
+                    Main.overview._macDingHidingConn = Main.overview.connect('hiding', () => {
+                        for (const actor of getDingActors()) {
+                            actor.remove_all_transitions();
+                            actor.ease({
+                                opacity: 255,
+                                duration: DING_FADE_DURATION,
+                                mode: DING_FADE_MODE,
+                            });
+                        }
+                    });
+                }
+                if (!Main.overview._macDingHiddenConn) {
+                    Main.overview._macDingHiddenConn = Main.overview.connect('hidden', () => {
+                        for (const actor of getDingActors()) {
+                            actor.remove_all_transitions();
+                            actor.opacity = 255;
+                        }
+                    });
+                }
+
+                const stateAdj = controls?._stateAdjustment;
+                if (stateAdj && !stateAdj._macDingStateConn) {
+                    stateAdj._macDingStateConn = stateAdj.connect('notify::value', () => {
+                        if (Main.overview._animationInProgress || Main.overview.visible) {
+                            const val = stateAdj.value;
+                            const progress = Math.min(1, Math.max(0, val));
+                            const targetOpacity = Math.round(255 * (1 - progress));
+                            for (const actor of getDingActors()) {
+                                if (actor.get_transition('opacity')) continue;
+                                actor.opacity = targetOpacity;
+                            }
+                        }
+                    });
+                }
+
                 // 4. Hide and keep AppDisplay hidden
                 controls._updateAppDisplayVisibility = function() {
                     if (this._appDisplay) {
@@ -3479,6 +3546,34 @@ export default class EvalHelper extends Extension {
         }
 
         try { Main.overview.disconnectObject(this); } catch (_) {}
+        if (Main.overview) {
+            if (Main.overview._macDingShowingConn) {
+                try { Main.overview.disconnect(Main.overview._macDingShowingConn); } catch (_) {}
+                Main.overview._macDingShowingConn = null;
+            }
+            if (Main.overview._macDingShownConn) {
+                try { Main.overview.disconnect(Main.overview._macDingShownConn); } catch (_) {}
+                Main.overview._macDingShownConn = null;
+            }
+            if (Main.overview._macDingHidingConn) {
+                try { Main.overview.disconnect(Main.overview._macDingHidingConn); } catch (_) {}
+                Main.overview._macDingHidingConn = null;
+            }
+            if (Main.overview._macDingHiddenConn) {
+                try { Main.overview.disconnect(Main.overview._macDingHiddenConn); } catch (_) {}
+                Main.overview._macDingHiddenConn = null;
+            }
+            if (Main.overview._macWgHidingConn) {
+                try { Main.overview.disconnect(Main.overview._macWgHidingConn); } catch (_) {}
+                Main.overview._macWgHidingConn = null;
+            }
+            const controls = Main.overview._overview?.controls;
+            const stateAdj = controls?._stateAdjustment;
+            if (stateAdj && stateAdj._macDingStateConn) {
+                try { stateAdj.disconnect(stateAdj._macDingStateConn); } catch (_) {}
+                stateAdj._macDingStateConn = null;
+            }
+        }
         Main.overview._macHideWsBgConn = null;
         Main.overview._macShowWsBgConn = null;
 
