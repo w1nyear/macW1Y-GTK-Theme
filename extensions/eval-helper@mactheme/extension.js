@@ -2165,6 +2165,10 @@ export default class EvalHelper extends Extension {
                     try { globalThis._macActiveEmptyTrashDialog.close(); } catch (_) {}
                     globalThis._macActiveEmptyTrashDialog = null;
                 }
+                if (globalThis._macRestoreTrashPanel) {
+                    try { globalThis._macRestoreTrashPanel(); } catch (_) {}
+                    globalThis._macRestoreTrashPanel = null;
+                }
 
                 const ModalDialogMod = await import('resource:///org/gnome/shell/ui/modalDialog.js');
                 const ModalDialog = ModalDialogMod.ModalDialog;
@@ -2174,6 +2178,75 @@ export default class EvalHelper extends Extension {
                     styleClass: 'modal-dialog mac-empty-trash-dialog',
                     destroyOnClose: true,
                 });
+
+                // Dim top menu bar in sync with modal backdrop
+                let panelScrim = null;
+                try {
+                    const stageW = global.stage.width;
+                    const panelH = Main.panel.height || 34;
+                    panelScrim = new St.Widget({
+                        name: 'macPanelDimScrim',
+                        x: 0,
+                        y: 0,
+                        width: stageW,
+                        height: panelH,
+                        reactive: false,
+                        opacity: 0,
+                        style: 'background-color: rgba(0, 0, 0, 0.45);'
+                    });
+                    Main.layoutManager.uiGroup.add_child(panelScrim);
+                    if (Main.layoutManager.panelBox) {
+                        Main.layoutManager.uiGroup.set_child_above_sibling(panelScrim, Main.layoutManager.panelBox);
+                    }
+                    panelScrim.ease({
+                        opacity: 255,
+                        duration: 150,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD
+                    });
+                } catch (_) {}
+
+                try {
+                    Main.panel.ease({
+                        opacity: 130,
+                        duration: 150,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD
+                    });
+                } catch (_) {}
+
+                let panelRestored = false;
+                const restorePanel = () => {
+                    if (panelRestored) return;
+                    panelRestored = true;
+                    globalThis._macRestoreTrashPanel = null;
+                    try {
+                        Main.panel.ease({
+                            opacity: 255,
+                            duration: 150,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD
+                        });
+                    } catch (_) {
+                        if (Main.panel) Main.panel.opacity = 255;
+                    }
+                    if (panelScrim) {
+                        try {
+                            panelScrim.ease({
+                                opacity: 0,
+                                duration: 150,
+                                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                                onComplete: () => {
+                                    try { panelScrim.destroy(); } catch (_) {}
+                                }
+                            });
+                        } catch (_) {
+                            try { panelScrim.destroy(); } catch (_) {}
+                        }
+                        panelScrim = null;
+                    }
+                };
+                globalThis._macRestoreTrashPanel = restorePanel;
+
+                dlg.connect('closed', restorePanel);
+                dlg.connect('destroy', restorePanel);
 
                 const d = dlg.dialogLayout?._dialog;
                 if (d) {
