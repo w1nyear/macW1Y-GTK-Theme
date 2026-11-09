@@ -1698,11 +1698,16 @@ export default class EvalHelper extends Extension {
                     } catch (_) {}
                     glass.hide();
 
+                    let checkShaderTimerId = 0;
                     const state = {
                         dialogActor, dialogLayout, dialogBox, glass,
                         lastX: null, lastY: null, lastW: null, lastH: null,
                     };
                     const cleanUpState = () => {
+                        if (checkShaderTimerId) {
+                            try { GLib.source_remove(checkShaderTimerId); } catch (_) {}
+                            checkShaderTimerId = 0;
+                        }
                         globalThis._macDlgStates?.delete(state);
                         try { glass.destroy(); } catch (_) {}
                         if (dialogActor._macDlgGlassState === state)
@@ -1714,11 +1719,30 @@ export default class EvalHelper extends Extension {
                         dialogActor
                     );
                     dialogActor.connectObject(
+                        'opened', () => syncDialogGlass(state),
+                        'closed', () => { if (glass.visible) glass.hide(); },
                         'notify::opacity', () => syncDialogGlass(state),
                         'notify::visible', () => syncDialogGlass(state),
                         'destroy', cleanUpState,
                         dialogActor
                     );
+
+                    // Wait for shader initialization if not immediately ready
+                    if (!glass._effect?._shadersLoaded) {
+                        checkShaderTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 20, () => {
+                            if (dialogActor.is_finalized?.() || glass.is_finalized?.()) {
+                                checkShaderTimerId = 0;
+                                return GLib.SOURCE_REMOVE;
+                            }
+                            if (glass._effect?._shadersLoaded) {
+                                checkShaderTimerId = 0;
+                                syncDialogGlass(state);
+                                return GLib.SOURCE_REMOVE;
+                            }
+                            return GLib.SOURCE_CONTINUE;
+                        });
+                    }
+
                     syncDialogGlass(state);
                     return state;
                 };
@@ -1729,14 +1753,17 @@ export default class EvalHelper extends Extension {
                     if (!dialogActor || !dialogBox || !glass) return;
                     if (dialogActor.is_finalized?.() || dialogBox.is_finalized?.() || glass.is_finalized?.()) return;
 
+                    const isOpening = (dialogActor._state === ModalDialogMod.State.OPENING);
+                    const isClosing = (dialogActor._state === ModalDialogMod.State.CLOSING || dialogActor._state === ModalDialogMod.State.CLOSED);
                     const isOpeningOrOpen = dialogActor.visible && dialogActor.mapped && dialogActor.opacity > 0;
-                    if (!isOpeningOrOpen) {
+                    const shadersReady = (glass._effect?._shadersLoaded === true);
+
+                    // During open animation (State.OPENING), during close, or before shaders finish loading:
+                    // Keep glass hidden so no unshaded background quad or raw FBO snapshot flashes on screen.
+                    if (!isOpeningOrOpen || isOpening || isClosing || !shadersReady) {
                         if (glass.visible) glass.hide();
                         return;
                     }
-
-                    glass.opacity = dialogActor.opacity;
-                    if (!glass.visible) glass.show();
 
                     let monitorIndex = -1;
                     try {
@@ -1752,7 +1779,10 @@ export default class EvalHelper extends Extension {
 
                     const [diagAbsX, diagAbsY] = dialogBox.get_transformed_position();
                     const [w, h] = dialogBox.get_size();
-                    if (diagAbsX == null || diagAbsY == null || Number.isNaN(diagAbsX) || Number.isNaN(diagAbsY) || w <= 1 || h <= 1) return;
+                    if (diagAbsX == null || diagAbsY == null || Number.isNaN(diagAbsX) || Number.isNaN(diagAbsY) || w <= 1 || h <= 1) {
+                        if (glass.visible) glass.hide();
+                        return;
+                    }
 
                     const localBgX = Math.round(diagAbsX - monitorX);
                     const localBgY = Math.round(diagAbsY - monitorY);
@@ -1798,9 +1828,21 @@ export default class EvalHelper extends Extension {
                             dialogBox.set_style(`background-color: rgba(30, 30, 30, ${tintStrength.toFixed(2)}) !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; box-shadow: 0 16px 36px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;${extra}`);
                         } catch (_) {}
 
-                        // Generous clip padding so drop shadows and blur never get hard-clipped
-                        const CLIP_PAD = 160;
+                        // Calibrated clip padding (40px) matching dock and notifications to allow soft shadow gradient without clipping, avoiding oversized 160px backdrop box
+                        const CLIP_PAD = 40;
                         glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
+                    }
+
+                    if (!glass.visible) {
+                        glass.opacity = 0;
+                        glass.show();
+                        glass.ease({
+                            opacity: dialogActor.opacity,
+                            duration: 120,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                    } else if (!glass.get_transition('opacity')) {
+                        glass.opacity = dialogActor.opacity;
                     }
 
                     if (typeof glass.syncSources === 'function') glass.syncSources();
@@ -1872,12 +1914,13 @@ export default class EvalHelper extends Extension {
                 }
                 try { if (Main.endSessionDialog) attachIfSystemDialog(Main.endSessionDialog); } catch (_) {}
 
+                globalThis._macAttachDialogGlass = attachDialogGlass;
                 if (!ModalDialog.prototype._macDlgGlassPatchedV1) {
                     ModalDialog.prototype._macDlgGlassPatchedV1 = true;
-                    const origOpen = ModalDialog.prototype.open;
+                    ModalDialog.prototype._macOrigOpen = ModalDialog.prototype.open;
                     ModalDialog.prototype.open = function (...args) {
-                        try { attachDialogGlass(this); } catch (_) {}
-                        return origOpen.call(this, ...args);
+                        try { globalThis._macAttachDialogGlass?.(this); } catch (_) {}
+                        return (this._macOrigOpen || ModalDialog.prototype._macOrigOpen).call(this, ...args);
                     };
                 }
             } catch (e) {

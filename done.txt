@@ -18461,3 +18461,35 @@ Task 667: Оновлення іконки акумулятора на екран
    - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
 
 5. Статус: Завершено.
+
+Task 668: Усунення візуального артефакту (неправильно масштабованого фонового прямокутника) під час анімації появи діалогового вікна «Спорожнити смітник?»
+---------------------------------------------------------------------------------
+1. Вихідні вимоги:
+   - Під час анімації появи вікна-попередження про видалення сміття з кошика («Спорожнити смітник?») позаду картки діалогу з'являвся візуальний баг — великий прямокутник із сирим, не затемненим фоном робочого столу та білою рамкою.
+   - Повністю усунути цей графічний артефакт під час анімації появи та закриття, забезпечивши чисте, плавне відмальовування модального діалогу із розмиттям рідкого скла (Liquid Glass / Tahoe) без будь-яких спотворень.
+
+2. Причина несправності:
+   - При виклику showMacEmptyTrashDialog() створюється екземпляр ModalDialog (який використовує _fadeOpen для плавної анімації прозорості 0 -> 255 за 100 мс) та затемнювач екрана Lightbox (RadialShaderEffect).
+   - У розширенні eval-helper@mactheme метод patchModalDialogLQVisual хукав ModalDialog.prototype.open і для кожного нового діалогу асинхронно створював new BackdropGlass({ owner: 'modal-dialog' }) та додавав його до dialogActor.backgroundStack.
+   - Оскільки backgroundStack у ModalDialog піднімається через _lightbox.highlight(_backgroundBin) вище за затемнювач Lightbox, актор скла відмальовується поверх темного фону.
+   - У LiquidEffect при створенні нового BackdropGlass файли GLSL-шейдерів завантажуються з диска асинхронно. У перші 16–32 мс (_shadersLoaded == false або відсутність _compositePipeline) спрацьовував резервний шлях super.vfunc_paint_target(), який відмальовував сирий FBO буфер захоплення (клон робочого столу lg-modal-dialog-bgclone) як суцільний непрозорий прямокутник.
+   - Додатково в syncDialogGlass було встановлено надмірний паддінг обрізки CLIP_PAD = 160 (розмір обрізки складав 628×540 px при розмірі діалогу 270×220 px), і актор скла показувався (glass.show()) ще до завершення анімації появи ModalDialog.State.OPENING та до стабілізації геометрії координат.
+
+3. Реалізоване рішення:
+   - У extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js, dist/liquidEffect_v2.js та src/liquidEffect.ts:
+     * Усунено малювання сирого захопленого буфера super.vfunc_paint_target() для модальних діалогів при неготовності шейдерів (!this._shadersLoaded || !this._compositePipeline). Якщо шейдер ще компілюється, актор нічого не малює, унеможливлюючи появу сирого фонового знімка.
+   - У extensions/eval-helper@mactheme/extension.js:
+     * У методі syncDialogGlass: актор скла glass залишається строго прихованим під час анімації відкриття (dialogActor._state === ModalDialogMod.State.OPENING), під час закриття (CLOSING / CLOSED), а також поки шейдери скла не перейшли в стан повної готовності (glass._effect?._shadersLoaded === true).
+     * Скориговано паддінг обрізки тіні CLIP_PAD зі 160 px до каліброваних 40 px (аналогічно до dockManager та notificationManager), що повністю покриває м'який спад тіні без виходу за межі діалогової картки.
+     * Реалізовано плавне згасання скла при закритті та шовковисту появу (glass.ease({ opacity: 255, duration: 120 })) лише після повного відкриття діалогу (ModalDialogMod.State.OPENED), коли геометрія та позиція повністю стабілізовані.
+     * Забезпечено динамічне делегування ModalDialog.prototype.open через globalThis._macAttachDialogGlass для надійного оновлення хука.
+   - Синхронізовано всі змінені файли до ~/.local/share/gnome-shell/extensions/.
+   - Оновлено хеші контролю цілісності розширень у config/extensions.lock.json.
+
+4. Результати тестування та перевірок:
+   - Зафіксовано часовий трекінг життєвого циклу діалогу: під час State.OPENING (t=0..32 мс) скло приховане (glassVis=false, clip=null), відмальовується чиста напівпрозора картка діалогу ModalDialog, а при переході в State.OPENED (t=50 мс) скло акуратно вмикається з компактною обрізкою [766, 390, 388, 300].
+   - Зафіксовано скріншоти trash_anim_during_open.png та trash_anim_fully_opened.png: підтверджено повну відсутність фонового прямокутника, білих рамок та спотворень під час відкриття діалогу.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+
+5. Статус: Завершено.

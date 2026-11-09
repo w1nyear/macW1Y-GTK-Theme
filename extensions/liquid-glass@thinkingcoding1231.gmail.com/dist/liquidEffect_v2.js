@@ -1627,6 +1627,8 @@ export const LiquidEffect_v2 = _registerLiquidEffect_v2(class LiquidEffect_v2 ex
         }
         // ── Wait for async shaders ──────────────────────────────────────────────
         if (!this._shadersLoaded) {
+            if (this._owner === 'modal-dialog' || this._owner === 'dialog' || this._owner?.includes?.('dialog'))
+                return;
             super.vfunc_paint_target(_paintNode, paintContext);
             return;
         }
@@ -1640,6 +1642,8 @@ export const LiquidEffect_v2 = _registerLiquidEffect_v2(class LiquidEffect_v2 ex
             }
             catch (e) {
                 this._logger?.error(`[Liquid Glass] Pipeline initialization failed: ${e}`);
+                if (this._owner === 'modal-dialog' || this._owner === 'dialog' || this._owner?.includes?.('dialog'))
+                    return;
                 // Fall back to OffscreenEffect's default drawing.
                 super.vfunc_paint_target(_paintNode, paintContext);
                 return;
@@ -1650,6 +1654,8 @@ export const LiquidEffect_v2 = _registerLiquidEffect_v2(class LiquidEffect_v2 ex
         // (they're built dynamically), so they're intentionally excluded from
         // this required-pipeline check.
         if (!this._compositePipeline || !this._downsamplePipeline || !this._upsamplePipeline) {
+            if (this._owner === 'modal-dialog' || this._owner === 'dialog' || this._owner?.includes?.('dialog'))
+                return;
             super.vfunc_paint_target(_paintNode, paintContext);
             return;
         }
