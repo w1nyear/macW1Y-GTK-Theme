@@ -2092,26 +2092,26 @@ export function positionItemLabel(item) {
         yOffset = Math.floor((itemHeight - labelHeight) / 2);
         y = stageY + yOffset;
         xOffset = labelOffset;
-        x = stageX + itemWidth - (node.get_margin(St.Side.RIGHT) || 0) + xOffset + 14;
+        x = stageX + itemWidth - (node.get_margin(St.Side.RIGHT) || 0) + xOffset + 20;
         break;
     case St.Side.RIGHT:
         yOffset = Math.floor((itemHeight - labelHeight) / 2);
         y = stageY + yOffset;
         xOffset = labelOffset;
-        x = Math.round(stageX) - labelWidth + (node.get_margin(St.Side.LEFT) || 0) - xOffset - 14;
+        x = Math.round(stageX) - labelWidth + (node.get_margin(St.Side.LEFT) || 0) - xOffset - 20;
         break;
     case St.Side.TOP:
-        y = stageY + itemHeight - (node.get_margin(St.Side.TOP) || 0) + labelOffset + 14;
+        y = stageY + itemHeight - (node.get_margin(St.Side.TOP) || 0) + labelOffset + 20;
         xOffset = Math.floor((itemWidth - labelWidth) / 2);
         x = stageX + xOffset;
         break;
     case St.Side.BOTTOM:
     default:
         // stageY is the top edge of the visible squircle icon. The visible pill
-        // bottom is at (y + labelHeight - marginBottom). Setting a clean 14px gap
-        // steps the tag back comfortably according to macOS Tahoe / Sonoma HIG,
-        // avoiding overcrowding or touching the icon.
-        y = stageY - labelHeight + (node.get_margin(St.Side.BOTTOM) || 0) - labelOffset - 14;
+        // bottom is at (y + labelHeight - marginBottom). Setting a gap of 20px
+        // steps the tag back comfortably, giving the downward arrow tail ~8-10px
+        // of clear breathing room above the magnified icon.
+        y = stageY - labelHeight + (node.get_margin(St.Side.BOTTOM) || 0) - labelOffset - 20;
         xOffset = Math.floor((itemWidth - labelWidth) / 2);
         x = stageX + xOffset;
         break;

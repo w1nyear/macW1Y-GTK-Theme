@@ -18827,3 +18827,32 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
 
 4. Статус: Завершено.
+
+Завдання 676: Додаткове коригування вертикального відступу бір-тагів дока (gap 20px) з урахуванням висоти стрілки підказки (arrow tail)
+===================================================================
+1. Проблема:
+   - При активному збільшенні (magnification) іконки дока (наприклад, Spotify) кінчик стрілки-вказівника (`_arrowTailActor` з висотою вильоту `rise = 7px`) торкався верхнього контуру іконки, що було зафіксовано користувачем на доданому знімку.
+   - Користувач зажадав: «ще чуть чуть дальше бір таги».
+
+2. Реалізовані зміни:
+   - extensions/dash2dock-motion@unmade.space/appIcons.js:
+     * У функції `positionItemLabel(item)` відступ пігулки збільшено з 14px до 20px:
+       `y = stageY - labelHeight + (node.get_margin(St.Side.BOTTOM) || 0) - labelOffset - 20;`
+     * Завдяки цьому кінчик стрілки-вказівника отримав комфортні 8px чистого повітряного простору над збільшеною іконкою, повністю виключаючи торкання контуру скруглення.
+     * Аналогічно синхронізовано відступи 20px для бічних та верхньої орієнтацій дока.
+   - Синхронізація та гаряче оновлення:
+     * Оновлений файл скопійовано до `~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/appIcons.js`.
+     * Проведено гаряче оновлення прототипу `DockDashItemContainer` у пам'яті GNOME Shell без перезавантаження та виходу з сесії.
+   - config/extensions.lock.json:
+     * Оновлено контрольні суми sha256 для файлу `appIcons.js` (`c51b2def66e31bd5400f800ddca397a478e50a23473c6f5c0fa4813b59f69cdb`) та загальний хеш `dash2dock-motion@unmade.space` (`8ed597c23eda624234b59f868cf57c62cea130bfc1ef5b8d068b63b8637eedfa`).
+
+3. Результати тестування:
+   - Вимірювання у живому середовищі для іконки Spotify:
+     * Верхній край іконки (`stageY`): `1006px`.
+     * Координата кінчика стрілки (`tailTipY`): `998px`.
+     * Чистий зазор між кінчиком стрілки та іконкою: рівно `8px` (`1006 - 998 = 8px`).
+     * Кінчик стрілки та сама пігулка більше не торкаються іконки за жодних умов збільшення.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+
+4. Статус: Завершено.
