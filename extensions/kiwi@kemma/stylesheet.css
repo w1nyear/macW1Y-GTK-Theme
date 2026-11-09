@@ -111,6 +111,12 @@
   color: rgba(0, 0, 0, 0.9);
 }
 
+/* Compact spacing for Date & Notification Center */
+#panel .panel-button.clock-display .clock {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
 /* Hover and active pills: the shell overlays them in white, which vanishes on a
    light wallpaper. Mirror the shell's own alpha steps in dark. The clock paints
    its pill on the inner .clock node, so it needs its own selectors. */

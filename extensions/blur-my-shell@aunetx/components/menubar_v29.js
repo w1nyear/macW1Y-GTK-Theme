@@ -5675,7 +5675,7 @@ export const MenuBarController = class MenuBarController {
                         if (inner && inner.style !== undefined) {
                             inner.visible = true;
                             inner.show();
-                            inner.style = 'margin: 2px 3px !important; padding: 0 7px !important; height: 28px !important; min-height: 28px !important; min-width: 30px !important; width: auto !important; -natural-hpadding: 7px !important; -minimum-hpadding: 7px !important;';
+                            inner.style = 'margin: 2px 2px 2px 3px !important; padding: 0 6px !important; height: 28px !important; min-height: 28px !important; min-width: 28px !important; width: auto !important; -natural-hpadding: 6px !important; -minimum-hpadding: 6px !important;';
                         }
                         continue;
                     }
@@ -5697,7 +5697,10 @@ export const MenuBarController = class MenuBarController {
                         if (inner && inner.style !== undefined) {
                             inner.visible = true;
                             inner.show();
-                            inner.style = 'margin: 0 0 0 4px !important; padding: 0 !important; height: 28px !important; min-width: auto !important;';
+                            inner.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important; min-width: auto !important;';
+                        }
+                        if (dateMenu?._clockDisplay) {
+                            dateMenu._clockDisplay.style = 'padding-left: 6px !important; padding-right: 6px !important;';
                         }
                         continue;
                     }
@@ -5741,7 +5744,10 @@ export const MenuBarController = class MenuBarController {
                     const btn = child.get_first_child ? child.get_first_child() : child;
                     if (btn && btn.style !== undefined) {
                         if (btn.has_style_class_name && btn.has_style_class_name('clock-display')) {
-                            btn.style = 'margin: 0 0 0 4px !important; padding: 0 !important; height: 28px !important; min-width: auto !important;';
+                            btn.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important; min-width: auto !important;';
+                            if (dateMenu?._clockDisplay) {
+                                dateMenu._clockDisplay.style = 'padding-left: 6px !important; padding-right: 6px !important;';
+                            }
                         } else {
                             btn.style = 'margin: 2px 3px !important; padding: 0 7px !important; height: 28px !important; min-height: 28px !important; min-width: 30px !important; width: auto !important; -natural-hpadding: 7px !important; -minimum-hpadding: 7px !important;';
                         }
@@ -5790,7 +5796,10 @@ export const MenuBarController = class MenuBarController {
                 dateMenu.container.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important;';
             }
             if (dateMenu) {
-                dateMenu.style = 'margin: 0 0 0 4px !important; padding: 0 !important; height: 28px !important;';
+                dateMenu.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important;';
+                if (dateMenu._clockDisplay) {
+                    dateMenu._clockDisplay.style = 'padding-left: 6px !important; padding-right: 6px !important;';
+                }
             }
         } catch (_e) {}
 
@@ -5806,7 +5815,7 @@ export const MenuBarController = class MenuBarController {
                 if (inner) {
                     inner.visible = true;
                     inner.show();
-                    inner.style = 'margin: 2px 3px !important; padding: 0 7px !important; height: 28px !important; min-height: 28px !important; min-width: 30px !important; width: auto !important; -natural-hpadding: 7px !important; -minimum-hpadding: 7px !important;';
+                    inner.style = 'margin: 2px 2px 2px 3px !important; padding: 0 6px !important; height: 28px !important; min-height: 28px !important; min-width: 28px !important; width: auto !important; -natural-hpadding: 6px !important; -minimum-hpadding: 6px !important;';
                 }
                 if (quickSettings) {
                     quickSettings.visible = false;

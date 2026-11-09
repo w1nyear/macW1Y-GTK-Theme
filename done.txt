@@ -19088,3 +19088,30 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - bin/mac-audit-sync check: 100% PASS!
 
 4. Статус: Завершено.
+
+
+--------------------------------------------------------------------------------
+683. Зменшення відступу між Центром керування та Центром сповіщень у верхній панелі
+1. Мета завдання:
+   - Зменшити завеликий візуальний відступ між Центром керування (кнопкою перемикачів Control Center / quickSettings) та Центром сповіщень (годинником / датою dateMenu) у правому куті меню-бару згідно з наданим скріншотом користувача.
+
+2. Реалізовані зміни:
+   - extensions/blur-my-shell@aunetx/components/menubar_v29.js:
+     * Усунено зайвий лівий відступ `margin: 0 0 0 4px` на кнопці `dateMenu` (встановлено `margin: 0 !important; padding: 0 !important;`).
+     * Скориговано внутрішні відступи напису дати та часу (`dateMenu._clockDisplay`) до симетричних і компактних `padding-left: 6px !important; padding-right: 6px !important;` (замість стандартного системного 12px Yaru padding).
+     * Зменшено правий відступ кнопки Центру керування (`ydotool-trigger-button`): встановлено `margin: 2px 2px 2px 3px !important; padding: 0 6px !important; min-width: 28px !important;`, що збалансувало відстань як зліва від батареї, так і справа до годинника.
+     * Забезпечено збереження нативних пропорцій та гармонійного вигляду капсули підсвічування при наведенні (hover pill).
+   - extensions/kiwi@kemma/stylesheet.css:
+     * Додано CSS правило `#panel .panel-button.clock-display .clock { padding-left: 6px !important; padding-right: 6px !important; }` для персистентного збереження компактних відступів при будь-яких перезавантаженнях тем.
+   - Синхронізовано оновлені файли до ~/.local/share/gnome-shell/extensions/.
+   - Оновлено контрольні суми sha256 для blur-my-shell@aunetx та kiwi@kemma у config/extensions.lock.json.
+
+3. Результати тестування:
+   - Знімки екрана:
+     * crop_topbar_current.png (до): візуальний розрив між іконкою Центру керування та початком тексту дати становив 34px.
+     * crop_topbar_test3.png / crop_topbar_final.png (після): розрив скорочено до ~23px, що ідеально відповідає відстані між індикатором батареї та Центром керування (~22px) і нативній розмітці macOS.
+     * crop_topbar_hover.png: капсула наведення (hover pill) на годиннику рівномірна з симетричними відступами по 6px з обох сторін.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
+   - bin/mac-audit-sync check: 100% PASS!
+
+4. Статус: Завершено.
