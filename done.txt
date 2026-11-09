@@ -18894,3 +18894,35 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - `bin/mac-audit-sync check`: `100% PASS! System and repository are in sync`.
 
 4. Статус: Завершено.
+
+Завдання 678: Оптимізація обробки кліків USB-миші (усунення пропусків легких і швидких натискань)
+===================================================================
+1. Проблема:
+   - Користувач повідомив, що підключена USB-миша (USB OPTICAL MOUSE, ID 275d:0ba6) в Ubuntu погано реєструє легкі або швидкі кліки (наприклад, під час ігор або повсякденної роботи).
+   - Діагностика показала комплекс причин:
+     1) У libinput за замовчуванням увімкнено програмний фільтр брязкоту контактів (button debouncing). При легких, швидких або коротких натисканнях кінцевого вимикача мікроперемикача стан сигналу інтерпретувався як брязкіт (chatter) і клік ковтався / ігнорувався.
+     2) Працював механізм енергозбереження USB (autosuspend = 2с). При коротких паузах порт переходив у сплячий режим, через що перше легке натискання витрачалося на пробудження інтерфейсу або затримувалося.
+     3) Стандартна частота опитування ядра для Low Speed USB-мишей (mousepoll=0 за замовчуванням bInterval 10ms = 100Hz) створювала додаткову затримку реєстрації подій.
+
+2. Реалізовані зміни:
+   - /etc/libinput/local-overrides.quirks (з копією в config/libinput/local-overrides.quirks):
+     * Створено конфігурацію кварок libinput з параметром `ModelBouncingKeys=1` як для конкретної моделі `*USB OPTICAL MOUSE*`, так і глобально для `MatchUdevType=mouse`.
+     * Це вимикає примусове програмне ковтання швидких/легких кліків у libinput, передаючи кожне фізичне замикання кнопки безпосередньо у віконний менеджер (Mutter/Wayland) та додатки без затримок.
+   - /etc/udev/rules.d/99-usb-mouse-autosuspend.rules (з копією в config/udev/99-usb-mouse-autosuspend.rules):
+     * Налаштовано правило udev, яке примусово встановлює `power/control="on"` для USB-мишей (клас 03 протокол 02 та конкретно ID 275d:0ba6), повністю вимикаючи сплячий режим та усуваючи затримки пробудження.
+   - /etc/modprobe.d/usbhid.conf (з копією в config/modprobe/usbhid.conf):
+     * Встановлено `options usbhid mousepoll=1` (максимальна частота опитування 1000Hz/1ms для високошвидкісних мишей та 125Hz/8ms для низькошвидкісних).
+   - Застосування наживо без виходу з сесії та перезавантаження:
+     * Параметр `mousepoll` оновлено в `/sys/module/usbhid/parameters/mousepoll`.
+     * Перезавантажено правила udev (`udevadm control --reload-rules && udevadm trigger`).
+     * Проведено гаряче перепідключення пристрою на рівні драйвера `usbhid` (`unbind`/`bind` для `3-1:1.0`).
+     * Mutter та Clutter автоматично переініціалізували пристрій `/dev/input/event5` з підтягуванням нових кварок libinput.
+
+3. Результати тестування:
+   - `libinput quirks list /dev/input/by-id/usb-275d_USB_OPTICAL_MOUSE-event-mouse`: повертає `ModelBouncingKeys=1`.
+   - `cat /sys/bus/usb/devices/3-1/power/control`: `on` (автопризупинення вимкнено).
+   - `cat /sys/module/usbhid/parameters/mousepoll`: `1` (мінімальна затримка опитування).
+   - `bin/mac-extension-guard verify`: `VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes`.
+   - `bin/mac-audit-sync check`: `100% PASS! System and repository are in sync`.
+
+4. Статус: Завершено.

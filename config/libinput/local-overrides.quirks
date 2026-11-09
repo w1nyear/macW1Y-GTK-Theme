@@ -1,0 +1,7 @@
+[USB Optical Mouse Debounce Override]
+MatchName=*USB OPTICAL MOUSE*
+ModelBouncingKeys=1
+
+[Disable Mouse Debounce Globally]
+MatchUdevType=mouse
+ModelBouncingKeys=1

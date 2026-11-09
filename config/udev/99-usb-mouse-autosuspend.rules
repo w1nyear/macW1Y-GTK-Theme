@@ -1,0 +1,3 @@
+# Disable autosuspend for USB mice to prevent dropped or delayed clicks
+ACTION=="add|change", SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="03", ATTR{bInterfaceProtocol}=="02", TEST=="power/control", ATTR{power/control}="on"
+ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="275d", ATTR{idProduct}=="0ba6", TEST=="power/control", ATTR{power/control}="on"
