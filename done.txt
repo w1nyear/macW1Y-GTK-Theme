@@ -18750,3 +18750,50 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
 
 4. Статус: Завершено.
+
+Завдання 674: Блокування виклику Spotlight (Ctrl+Space) у повноекранних вікнах, іграх та при захопленні миші
+===================================================================
+1. Проблема:
+   - При активному повноекранному режимі (повноекранні вікна, ігри через Steam, Wine, Proton, Gamescope, перегляд відео на весь екран тощо) або при захопленні курсора миші (pointer lock, відносне позиціонування курсора в 3D/FPS іграх тощо) натискання комбінації Ctrl+Space перехоплювалося композитором Mutter та викликало меню Spotlight.
+   - У іграх клавіша Пробіл із модифікатором (Ctrl+Space) використовується для стрибків, присідань або спеціальних дій, через що випадкове відкриття вікна пошуку переривало ігровий процес та блокувало передачу клавіші у гру.
+
+2. Реалізовані зміни:
+   - extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js:
+     * Реалізовано функцію `isSpotlightBlocked()`, яка здійснює комплексний моніторинг контексту:
+       1) Перевірка захоплення вказівника чи дисплея: `global.display.is_grabbed()`.
+       2) Перевірка приховування або захоплення курсора трекером вказівника: `global.backend.get_cursor_tracker().get_pointer_visible() === false` (активно під час захоплення миші у шутерах, SDL/Wayland relative mouse mode, Pointer Lock API).
+       3) Перевірка повноекранного режиму монітора: `global.display.get_monitor_in_fullscreen(curMon)`, `Main.layoutManager.primaryMonitor.inFullscreen`, `Main.layoutManager.monitors.some(m => m.inFullscreen)`.
+       4) Перевірка блокування сесії: `Main.sessionMode.isLocked`.
+       5) Перевірка активного вікна фокусу (`fw`): `fw.is_fullscreen()`, `fw.fullscreen`, `fw.is_screen_sized()`, `fw.is_monitor_sized()`.
+       6) Перевірка ігрових процесів та лаунчерів (`steam_app_*`, `gamescope`, `wine`, `proton`, `lutris`, `heroic`, `retroarch`, `ryujinx`, `yuzu`, `rpcs3`, `pcsx2`, `dosbox`, `ppsspp`): автоматичне блокування виклику Spotlight при повноекранному чи максимізованому стані вікна гри.
+     * Функцію експортовано та зареєстровано у глобальному просторі `globalThis.isMacSpotlightBlocked = isSpotlightBlocked;`.
+     * У методі `open(initialMode)` додано перевірку: якщо `isSpotlightBlocked()`, виконання негайно переривається.
+     * У функції `toggleSearchDialog(initialMode)` додано захист від відкриття у заблокованому стані: `if (isSpotlightBlocked()) return;`.
+     * У конструкторі `MacSpotlightDialog._init()` підключено динамічні слухачі подій `notify::focus-window`, `in-fullscreen-changed`, `grab-op-begin` дисплея та `visibility-changed` трекера курсора: якщо Spotlight був відкритий і користувач перемкнувся на повноекранне вікно чи гру, Spotlight миттєво і плавно закривається (`this.close(true)`).
+     * У `_onDestroy()` реалізовано коректне відключення зареєстрованих слухачів сигналів.
+   - extensions/appmenu@ChathurangaBW.github.io/extension.js:
+     * Оновлено реєстрацію гарячої клавіші `search-shortcut` та `clipboard-shortcut`: маску `Shell.ActionMode.ALL` замінено на `Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP`, що усуває обробку шортката Mutter у повноекранному режимі.
+     * У зворотні виклики клавіш додано перевірку `if (isMacSpotlightBlocked()) return;`.
+     * Створено механізм динамічної синхронізації клавіатурних перехоплень `_syncSpotlightKeybinding()`: коли `isSpotlightBlocked()` повертає `true`, гаряча клавіша `search-shortcut` тимчасово видаляється з Mutter (`Main.wm.removeKeybinding('search-shortcut')`), що дозволяє композитору безперешкодно передавати «сирі» клавіші Ctrl+Space безпосередньо у гру без перехоплення shell. Коли фокус повертається до звичайного вікна, шорткат автоматично повертається (`_addSearchKeybinding()`).
+     * Підключено спостереження за подіями `notify::focus-window`, `in-fullscreen-changed`, `grab-op-begin`, `grab-op-end`, `visibility-changed` та `size-change`.
+   - extensions/eval-helper@mactheme/extension.js:
+     * У методі `patchSpotlightKeybinding` синхронізовано логіку: замінено `Shell.ActionMode.ALL` на `Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP`, додано виклик `isSpotlightBlocked()` та динамічне зняття/відновлення клавіатурного перехоплення під час ігор і повноекранного режиму.
+   - config/extensions.lock.json:
+     * Оновлено контрольні суми sha256 для розширень `appmenu@ChathurangaBW.github.io` (`0ff1ca1ae37109ca93ad5b5840ff491c3c2c69f3816a5098fa0b13c8dc8d6a3f`) та `eval-helper@mactheme` (`b5b7b91ee17d3e1210387930469ba2689ea1f1d718b8d00236bacad3b0e6ad1f`).
+   - Синхронізація:
+     * Файли скопійовано до `~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/` та `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/`.
+
+3. Результати тестування:
+   - Перевірка логіки блокування в живому середовищі через DBus EvalHelper:
+     * Захоплення дисплея (`disp.is_grabbed = true`): `isBlockedWhenGrabbed: true, openedWhileGrabbed: false` — Spotlight не викликається.
+     * Захоплення курсора трекером (`tracker.get_pointer_visible = false`): `isBlockedWhenCursorHidden: true, openedWhenCursorHidden: false` — ігровий режим надійно блокує меню.
+     * Повноекранне вікно (`fw.is_fullscreen = true`): `isBlockedWhenFullscreen: true, openedWhenFullscreen: false` — блокування підтверджено.
+     * Розмір вікна на весь монітор (`fw.is_screen_sized = true`): `isBlockedWhenScreenSized: true, openedWhenScreenSized: false` — borderless fullscreen вікна захищені.
+     * Повноекранний монітор (`disp.get_monitor_in_fullscreen = true`): `isBlockedWhenMonFullscreen: true, openedWhenMonFullscreen: false` — захист спрацьовує.
+     * Автоматичне закриття відкритого Spotlight при старті захоплення (`grab-op-begin`): `wasOpen: true, isOpenAfterGrab: false` — Spotlight автоматично закривається без зависань.
+     * Динамічне зняття перехоплення клавіші з Mutter: `blockedSearchInstalled: false, unblockedSearchInstalled: true` — Mutter вивільняє Ctrl+Space для гри, а при поверненні фокусу відновлює клавішу.
+     * Нормальний режим на робочому столі: `openState: true, closedState: false` — стандартна функціональність Spotlight працює бездоганно.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+
+4. Статус: Завершено.

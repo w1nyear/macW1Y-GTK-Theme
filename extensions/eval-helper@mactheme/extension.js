@@ -1045,6 +1045,7 @@ export default class EvalHelper extends Extension {
 
 
         // Ensure search-shortcut Ctrl+Space connects to redesigned macOS Liquid Glass Spotlight
+        // with strict suppression in fullscreen apps and when pointer/mouse is grabbed/captured (games)
         const patchSpotlightKeybinding = async () => {
             try {
                 // Ensure ibus doesn't intercept Control+space
@@ -1063,31 +1064,93 @@ export default class EvalHelper extends Extension {
                     ext.stateObj._settings.set_strv('search-shortcut', ['<Control>space', '<Primary>space']);
                 } catch (_) {}
 
-                Main.wm.removeKeybinding('search-shortcut');
-                Main.wm.addKeybinding(
-                    'search-shortcut',
-                    ext.stateObj._settings,
-                    Meta.KeyBindingFlags.NONE,
-                    Shell.ActionMode.ALL,
-                    async () => {
-                        try {
-                            if (typeof globalThis._macSpotlightToggle === 'function') {
-                                globalThis._macSpotlightToggle();
-                                return;
-                            }
-                            if (typeof globalThis.toggleMacSpotlight === 'function') {
-                                globalThis.toggleMacSpotlight();
-                                return;
-                            }
-                            const mod = await import(`file://${ext.path}/searchDialog_v5.js?t=${Date.now()}`);
-                            if (mod?.toggleSearchDialog) {
-                                mod.toggleSearchDialog();
-                            }
-                        } catch (e) {
-                            console.error(`[EvalHelper] toggleSearchDialog error: ${e}`);
+                const isSpotlightBlocked = () => {
+                    if (typeof globalThis.isMacSpotlightBlocked === 'function') {
+                        return globalThis.isMacSpotlightBlocked();
+                    }
+                    const disp = global.display;
+                    if (!disp) return false;
+                    if (typeof disp.is_grabbed === 'function' && disp.is_grabbed()) return true;
+                    const tracker = global.backend?.get_cursor_tracker?.();
+                    if (tracker && typeof tracker.get_pointer_visible === 'function' && tracker.get_pointer_visible() === false) return true;
+                    const curMon = typeof disp.get_current_monitor === 'function' ? disp.get_current_monitor() : -1;
+                    if (curMon >= 0 && typeof disp.get_monitor_in_fullscreen === 'function' && disp.get_monitor_in_fullscreen(curMon)) return true;
+                    if (Main.layoutManager?.primaryMonitor?.inFullscreen) return true;
+                    if (Main.layoutManager?.monitors?.some?.(m => m?.inFullscreen)) return true;
+                    if (Main.sessionMode?.isLocked) return true;
+                    const fw = typeof disp.get_focus_window === 'function' ? disp.get_focus_window() : null;
+                    if (fw && !fw.is_destroyed?.()) {
+                        if (typeof fw.is_fullscreen === 'function' && fw.is_fullscreen()) return true;
+                        if (fw.fullscreen) return true;
+                        if (typeof fw.is_screen_sized === 'function' && fw.is_screen_sized()) return true;
+                        if (typeof fw.is_monitor_sized === 'function' && fw.is_monitor_sized()) return true;
+                    }
+                    return false;
+                };
+
+                let searchShortcutInstalled = false;
+                const syncShortcut = () => {
+                    const blocked = isSpotlightBlocked();
+                    if (blocked) {
+                        if (searchShortcutInstalled) {
+                            Main.wm.removeKeybinding('search-shortcut');
+                            searchShortcutInstalled = false;
+                        }
+                    } else {
+                        if (!searchShortcutInstalled) {
+                            Main.wm.removeKeybinding('search-shortcut');
+                            Main.wm.addKeybinding(
+                                'search-shortcut',
+                                ext.stateObj._settings,
+                                Meta.KeyBindingFlags.NONE,
+                                Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP,
+                                async () => {
+                                    if (isSpotlightBlocked()) return;
+                                    try {
+                                        if (typeof globalThis._macSpotlightToggle === 'function') {
+                                            globalThis._macSpotlightToggle();
+                                            return;
+                                        }
+                                        if (typeof globalThis.toggleMacSpotlight === 'function') {
+                                            globalThis.toggleMacSpotlight();
+                                            return;
+                                        }
+                                        const mod = await import(`file://${ext.path}/searchDialog_v5.js?t=${Date.now()}`);
+                                        if (mod?.toggleSearchDialog) {
+                                            mod.toggleSearchDialog();
+                                        }
+                                    } catch (e) {
+                                        console.error(`[EvalHelper] toggleSearchDialog error: ${e}`);
+                                    }
+                                }
+                            );
+                            searchShortcutInstalled = true;
                         }
                     }
-                );
+                };
+
+                syncShortcut();
+
+                if (!this._spotlightBlockWatcherInstalled) {
+                    this._spotlightBlockWatcherInstalled = true;
+                    const disp = global.display;
+                    if (disp) {
+                        disp.connectObject?.(
+                            'notify::focus-window', () => syncShortcut(),
+                            'in-fullscreen-changed', () => syncShortcut(),
+                            'grab-op-begin', () => syncShortcut(),
+                            'grab-op-end', () => syncShortcut(),
+                            this
+                        );
+                    }
+                    const tracker = global.backend?.get_cursor_tracker?.();
+                    if (tracker) {
+                        tracker.connectObject?.('visibility-changed', () => syncShortcut(), this);
+                    }
+                    if (global.window_manager) {
+                        global.window_manager.connectObject?.('size-change', () => syncShortcut(), this);
+                    }
+                }
             } catch (e) {
                 console.error(`[EvalHelper] patchSpotlightKeybinding error: ${e}`);
             }
@@ -3543,6 +3606,17 @@ export default class EvalHelper extends Extension {
         if (this._mapId) {
             global.window_manager.disconnect(this._mapId);
             this._mapId = null;
+        }
+
+        if (global.display) {
+            try { global.display.disconnectObject(this); } catch (_) {}
+        }
+        const cursorTracker = global.backend?.get_cursor_tracker?.();
+        if (cursorTracker) {
+            try { cursorTracker.disconnectObject(this); } catch (_) {}
+        }
+        if (global.window_manager) {
+            try { global.window_manager.disconnectObject(this); } catch (_) {}
         }
 
         try { Main.overview.disconnectObject(this); } catch (_) {}

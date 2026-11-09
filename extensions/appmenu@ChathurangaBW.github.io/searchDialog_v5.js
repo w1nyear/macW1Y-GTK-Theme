@@ -989,6 +989,29 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._initializingGlass = false;
         this._initGlassPromise = this._initGlass().catch(() => {});
+
+        // Auto-close if entering fullscreen or game grab
+        const disp = global.display;
+        if (disp) {
+            disp.connectObject?.(
+                'notify::focus-window', () => {
+                    if (this._isOpen && isSpotlightBlocked()) this.close(true);
+                },
+                'in-fullscreen-changed', () => {
+                    if (this._isOpen && isSpotlightBlocked()) this.close(true);
+                },
+                'grab-op-begin', () => {
+                    if (this._isOpen && isSpotlightBlocked()) this.close(true);
+                },
+                this
+            );
+        }
+        const cursorTracker = global.backend?.get_cursor_tracker?.();
+        if (cursorTracker) {
+            cursorTracker.connectObject?.('visibility-changed', () => {
+                if (this._isOpen && isSpotlightBlocked()) this.close(true);
+            }, this);
+        }
     }
 
     _createCircleButton(iconName, tooltipText, onClick) {
@@ -1968,6 +1991,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             }
             return;
         }
+        if (isSpotlightBlocked()) return;
         if (Main.overview?.visible) return;
         if (typeof globalThis._macCloseAllCenters === 'function') {
             globalThis._macCloseAllCenters('spotlight');
@@ -3579,6 +3603,13 @@ export const MacSpotlightDialog = GObject.registerClass({
             try { this._glass.destroy(); } catch (_) {}
             this._glass = null;
         }
+        if (global.display) {
+            try { global.display.disconnectObject(this); } catch (_) {}
+        }
+        const cursorTracker = global.backend?.get_cursor_tracker?.();
+        if (cursorTracker) {
+            try { cursorTracker.disconnectObject(this); } catch (_) {}
+        }
         this._virtualDevice = null;
         this._targetWindow = null;
     }
@@ -3590,6 +3621,90 @@ export const MacSpotlightDialog = GObject.registerClass({
 });
 
 let _spotlightDialog = null;
+
+export function isSpotlightBlocked() {
+    try {
+        const disp = global.display;
+        if (!disp) return false;
+
+        // 1. Mutter pointer or display grabbed (games, modal grabs, drag-drop)
+        if (typeof disp.is_grabbed === 'function' && disp.is_grabbed()) {
+            return true;
+        }
+
+        // 2. Cursor visibility / pointer captured (FPS games, SDL relative mouse mode, pointer lock)
+        const cursorTracker = global.backend?.get_cursor_tracker?.();
+        if (cursorTracker && typeof cursorTracker.get_pointer_visible === 'function') {
+            if (cursorTracker.get_pointer_visible() === false) {
+                return true;
+            }
+        }
+
+        // 3. Monitor in fullscreen
+        const curMon = typeof disp.get_current_monitor === 'function' ? disp.get_current_monitor() : -1;
+        if (curMon >= 0 && typeof disp.get_monitor_in_fullscreen === 'function') {
+            if (disp.get_monitor_in_fullscreen(curMon)) {
+                return true;
+            }
+        }
+        if (Main.layoutManager?.primaryMonitor?.inFullscreen) {
+            return true;
+        }
+        if (Main.layoutManager?.monitors?.some?.(m => m?.inFullscreen)) {
+            return true;
+        }
+
+        // 4. Session locked
+        if (Main.sessionMode?.isLocked) {
+            return true;
+        }
+
+        // 5. Focused window checks
+        const fw = typeof disp.get_focus_window === 'function' ? disp.get_focus_window() : null;
+        if (fw && !fw.is_destroyed?.()) {
+            if (typeof fw.is_fullscreen === 'function' && fw.is_fullscreen()) {
+                return true;
+            }
+            if (fw.fullscreen) {
+                return true;
+            }
+            if (typeof fw.is_screen_sized === 'function' && fw.is_screen_sized()) {
+                return true;
+            }
+            if (typeof fw.is_monitor_sized === 'function' && fw.is_monitor_sized()) {
+                return true;
+            }
+
+            // Games / game runners
+            const wmClass = (fw.get_wm_class?.() || '').toLowerCase();
+            const isGame = (
+                wmClass.includes('steam_app_') ||
+                wmClass.includes('gamescope') ||
+                wmClass === 'wine' || wmClass === 'wine64' ||
+                wmClass.endsWith('.exe') ||
+                wmClass === 'retroarch' ||
+                wmClass === 'lutris' ||
+                wmClass === 'heroic' ||
+                wmClass === 'ryujinx' ||
+                wmClass === 'yuzu' ||
+                wmClass === 'rpcs3' ||
+                wmClass === 'pcsx2' ||
+                wmClass === 'dosbox' ||
+                wmClass === 'ppsspp'
+            );
+            if (isGame) {
+                if (fw.maximized_horizontally && fw.maximized_vertically) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    } catch (_) {
+        return false;
+    }
+}
+globalThis.isMacSpotlightBlocked = isSpotlightBlocked;
 
 export function ensureSearchDialog() {
     if (_spotlightDialog) {
@@ -3632,6 +3747,10 @@ export function toggleSearchDialog(initialMode = 'search') {
             _spotlightDialog._setMode(mode);
             return;
         }
+    }
+
+    if (isSpotlightBlocked()) {
+        return;
     }
 
     const isClipboardOpen = !!(globalThis._macClipboardGlobalInstance?._isOpen);

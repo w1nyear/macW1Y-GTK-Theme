@@ -54,9 +54,35 @@ export default class AppMenuExtension extends Extension {
         const initialWindow = global.display.get_focus_window();
         this._updateMenu(initialWindow);
 
-        global.display.connectObject('notify::focus-window', () => {
-            this._scheduleMenuUpdate();
-        }, this);
+        global.display.connectObject(
+            'notify::focus-window', () => {
+                this._scheduleMenuUpdate();
+                this._syncSpotlightKeybinding();
+            },
+            'in-fullscreen-changed', () => {
+                this._syncSpotlightKeybinding();
+            },
+            'grab-op-begin', () => {
+                this._syncSpotlightKeybinding();
+            },
+            'grab-op-end', () => {
+                this._syncSpotlightKeybinding();
+            },
+            this
+        );
+
+        const tracker = global.backend?.get_cursor_tracker?.();
+        if (tracker) {
+            tracker.connectObject?.('visibility-changed', () => {
+                this._syncSpotlightKeybinding();
+            }, this);
+        }
+
+        if (global.window_manager) {
+            global.window_manager.connectObject?.('size-change', () => {
+                this._syncSpotlightKeybinding();
+            }, this);
+        }
 
         this._syncOverviewButton();
 
@@ -169,7 +195,15 @@ export default class AppMenuExtension extends Extension {
             this._settings,
             Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP,
-            () => (globalThis._macSpotlightToggle ? globalThis._macSpotlightToggle() : toggleSearchDialog())
+            () => {
+                if (typeof globalThis.isMacSpotlightBlocked === 'function' && globalThis.isMacSpotlightBlocked()) {
+                    return;
+                }
+                if (globalThis._macSpotlightToggle)
+                    globalThis._macSpotlightToggle();
+                else
+                    toggleSearchDialog();
+            }
         );
         this._searchShortcutInstalled = true;
     }
@@ -190,8 +224,16 @@ export default class AppMenuExtension extends Extension {
             'clipboard-shortcut',
             this._settings,
             Meta.KeyBindingFlags.NONE,
-            Shell.ActionMode.NORMAL,
-            () => (globalThis.toggleMacClipboard ? globalThis.toggleMacClipboard() : toggleSearchDialog('clipboard'))
+            Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP,
+            () => {
+                if (typeof globalThis.isMacSpotlightBlocked === 'function' && globalThis.isMacSpotlightBlocked()) {
+                    return;
+                }
+                if (globalThis.toggleMacClipboard)
+                    globalThis.toggleMacClipboard();
+                else
+                    toggleSearchDialog('clipboard');
+            }
         );
         this._clipboardShortcutInstalled = true;
     }
@@ -202,6 +244,33 @@ export default class AppMenuExtension extends Extension {
 
         Main.wm.removeKeybinding('clipboard-shortcut');
         this._clipboardShortcutInstalled = false;
+    }
+
+    _syncSpotlightKeybinding() {
+        const blocked = (typeof globalThis.isMacSpotlightBlocked === 'function')
+            ? globalThis.isMacSpotlightBlocked()
+            : false;
+
+        if (blocked) {
+            if (this._searchShortcutInstalled) {
+                this._removeSearchKeybinding();
+            }
+            if (this._clipboardShortcutInstalled) {
+                this._removeClipboardKeybinding();
+            }
+            try {
+                if (globalThis._macSpotlightGlobalInstance?._isOpen) {
+                    globalThis._macSpotlightGlobalInstance.close(true);
+                }
+            } catch (_) {}
+        } else {
+            if (!this._searchShortcutInstalled) {
+                this._addSearchKeybinding();
+            }
+            if (!this._clipboardShortcutInstalled) {
+                this._addClipboardKeybinding();
+            }
+        }
     }
 
     _updateMenu(window) {
@@ -245,6 +314,13 @@ export default class AppMenuExtension extends Extension {
         this._removeStalePanelButtons(uuid);
 
         global.display.disconnectObject(this);
+        const tracker = global.backend?.get_cursor_tracker?.();
+        if (tracker) {
+            try { tracker.disconnectObject(this); } catch (_) {}
+        }
+        if (global.window_manager) {
+            try { global.window_manager.disconnectObject(this); } catch (_) {}
+        }
         if (Main.sessionMode) {
             try { Main.sessionMode.disconnectObject(this); } catch (_) {}
         }
