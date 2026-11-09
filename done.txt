@@ -18926,3 +18926,44 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - `bin/mac-audit-sync check`: `100% PASS! System and repository are in sync`.
 
 4. Статус: Завершено.
+
+
+Завдання 679: Глобальне оновлення зовнішнього вигляду кнопок: радіо, список (combobox/dropdown) та звичайна кнопка (push button) у стилі macOS Tahoe
+===================================================================
+1. Проблема:
+   - Користувач надав еталонний знімок елементів інтерфейсу з macOS (з налаштувань) та дав вказівку оновити глобальний вигляд трьох компонентів:
+     1) Радіокнопки (radio button):
+        - Неактивна (unselected): суцільне світло-сіре/напівпрозоре коло без контурної рамки та без пустого кільця.
+        - Активна (selected): суцільне коло акцентного кольору з чіткою білою круглою крапкою в центрі.
+     2) Список / випадне меню (dropdown / combobox):
+        - Суцільний прозорий фон рядка без прямокутної рамки введення (flat borderless row).
+        - Праворуч — фірмовий круглий жетон-бейдж (circular badge, діаметр 22px) з контрастним напівпрозорим фоном (`alpha(currentColor, 0.09)`) та вертикальними шевронами ⬍ (`combobox-arrow-symbolic.svg`).
+     3) Звичайна кнопка (push button):
+        - macOS плоска прямокутна кнопка з м'яким радіусом заокруглення 6px (відповідає кнопці "Navigation Timing...").
+        - Напівпрозорий монолітний фон `alpha(currentColor, 0.08)`, відсутність зовнішньої чорної рамки та тіней, напівжирний нативний шрифт.
+     - Зміни мали бути застосовані ГЛОБАЛЬНО для всіх додатків у системі (GTK 3, GTK 4, Libadwaita).
+
+2. Реалізовані зміни:
+   - config/macw1y-tokens.json:
+     * Оновлено глобальний токен геометрії дій `button_action_radius` з 8 на 6 пікселів (точна геометрія macOS Tahoe кнопок дій).
+   - bin/mac-build-theme:
+     * Оновлено генератор стилів GTK 4 (`generate_gtk4_components_css`):
+       - Секція 6 (Кнопки дій): налаштовано універсальні плоскі кнопки з `border-radius: 6px`, `background-color: alpha(currentColor, 0.08)`, `border: none`, `box-shadow: none` для звичайних кнопок та кнопок у рядках списків і діалогах.
+       - Секція 8 (Dropdown / Combobox): налаштовано прозорий фон для `dropdown`, `combobox` та круглий жетон для стрілки (`dropdown arrow`, `combobox arrow`) з розмірами 22x22px, круглим фоном `alpha(currentColor, 0.09)` та векторним символом ⬍.
+       - Секція 9 (Радіокнопки): прибрано застарілі рамки та порожнисті круги, налаштовано монолітне суцільне коло діаметром 18px (`alpha(currentColor, 0.18)`), а для вибраного стану (`:checked`) — акцентний фон з чіткою білою точкою через `radial-gradient(circle, #ffffff 0%, #ffffff 28%, transparent 30%)`.
+     * Оновлено генератор стилів GTK 3 (`generate_gtk3_components_css`):
+       - Синхронізовано плоскі кнопки дій з `border-radius: 6px`, відсутністю рамок і тіней.
+       - Додано селектори для `combobox` та `combobox arrow` з macOS круглим бейджем 22px.
+       - Додано селектори для `checkbutton radio` та `radio` з суцільним колом 18px та векторним радіальним градієнтом крапки.
+     * Очищено специфічні властивості, несумісні з парсером GTK (видалено непідтримувані `max-width`/`max-height` у GTK4 та `filter`/`-gtk-icon-size` у GTK3), забезпечивши чисте завантаження без попереджень (zero warnings).
+   - Компіляція та глобальне поширення (mac-build-theme):
+     * Згенеровано та розгорнуто оновлені файли стилів у репозиторії (`gtk-4.0/macw1y-components.css`, `gtk-3.0/macw1y-components.css`, `macW1Y-*/`), у користувацькій конфігурації (`~/.config/gtk-4.0/`, `~/.config/gtk-3.0/`, `~/.themes/`) та системних директоріях (`/usr/share/themes/macW1Y-Dark/`, `/usr/local/bin/mac-build-theme`).
+
+3. Результати тестування:
+   - Парсинг GTK 4 CSS Provider: `GTK4 CSS parsed cleanly with zero warnings!`.
+   - Парсинг GTK 3 CSS Provider: `GTK3 CSS parsed cleanly with zero warnings or errors!`.
+   - Офлайн рендеринг тестових компонентів (Offscreen GTK3): підтверджено коректне відображення випадаючого списку з круглою кнопкою стрілки, монолітних радіокнопок з акцентним заповненням та білою точкою, а також прямокутної кнопки з радіусом 6px.
+   - `bin/mac-extension-guard verify`: `VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes` (21/21).
+   - `bin/mac-audit-sync check`: `100% PASS! System and repository are in sync`.
+
+4. Статус: Завершено.

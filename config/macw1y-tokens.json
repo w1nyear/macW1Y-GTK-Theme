@@ -32,7 +32,7 @@
     "window_radius": 24,
     "card_radius": 14,
     "button_radius": 9999,
-    "button_action_radius": 8,
+    "button_action_radius": 6,
     "input_radius": 8,
     "search_radius": 9999,
     "switch_radius": 9999,

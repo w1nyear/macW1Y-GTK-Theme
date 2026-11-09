@@ -918,49 +918,60 @@ levelbar trough block.filled {{
 }}
 
 /* =========================================================================
- * 6. Buttons, Segmented Controls & Keycaps
+ * 6. Buttons, Segmented Controls & Keycaps (macOS Tahoe Flat Push Buttons)
  * ========================================================================= */
-adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button),
-list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button),
-preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button),
-preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button),
-dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button),
-window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button),
-.content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button) {{
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill),
+button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
+adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
+list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
+preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
+preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
+dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
+window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
+.content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action) {{
   min-height: {d["button_min_height"]}px;
   padding: 3px 12px;
   border-radius: {g["button_action_radius"]}px;
-  background-color: {c["input_bg"]};
-  border: 1px solid {c["input_border"]};
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-  color: {c["text_primary"]};
+  background-color: alpha(currentColor, 0.08);
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: @window_fg_color;
   font-size: 13px;
   font-weight: 500;
-  transition: background-color {e["transition_hover"]}, border-color {e["transition_hover"]}, color {e["transition_hover"]};
+  transition: background-color {e["transition_hover"]}, color {e["transition_hover"]};
 }}
 
-adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover,
-list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover,
-preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover,
-preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover,
-dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover,
-window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover,
-.content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):hover {{
-  background-color: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill):hover,
+button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
+adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
+list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
+preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
+preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
+dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
+window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
+.content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover {{
+  background-color: alpha(currentColor, 0.14);
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: @window_fg_color;
 }}
 
-adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active,
-list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active,
-preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active,
-preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active,
-dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active,
-window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active,
-.content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):active {{
-  background-color: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill):active,
+button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
+adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
+list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
+preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
+preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
+dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
+window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
+.content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active {{
+  background-color: alpha(currentColor, 0.22);
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: @window_fg_color;
 }}
 
 /* Headerbar control buttons - macOS style (excluding windowcontrols and splitbuttons) */
@@ -1747,23 +1758,35 @@ searchbar {{
 }}
 
 /* =========================================================================
- * 8. Dropdowns & Selection Controls
+ * 8. Dropdowns & Selection Controls (macOS Tahoe Flat Seamless + Circular Badge)
  * ========================================================================= */
 dropdown,
-combobox {{
+combobox,
+dropdown > button.combo,
+combobox > box.linked > button,
+combobox button.combo,
+dropdown > button,
+combobox > box > button {{
   min-height: 24px;
-  padding: 1px 8px;
-  border-radius: 7px;
-  background-color: {c["input_bg"]};
-  border: 1px solid {c["input_border"]};
+  padding: 2px 2px 2px 8px;
+  border-radius: 6px;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  outline: none;
   color: {c["text_primary"]};
   font-size: 13px;
+  font-weight: normal;
   transition: background-color {e["transition_hover"]};
 }}
 
 dropdown:hover,
-combobox:hover {{
-  background-color: rgba(255, 255, 255, 0.12);
+combobox:hover,
+dropdown:hover > button.combo,
+combobox:hover > box.linked > button {{
+  background-color: alpha(currentColor, 0.04);
   color: #ffffff;
 }}
 
@@ -1776,35 +1799,161 @@ combobox > box.linked > button {{
   min-height: 22px;
 }}
 
+/* Circular arrow badge on the right of dropdown */
+dropdown arrow,
+combobox arrow,
+dropdown button.combo arrow,
+combobox button.combo arrow,
+dropdown > button.combo > box > image,
+combobox > box.linked > button arrow,
+combobox > box > button arrow {{
+  min-width: 22px;
+  min-height: 22px;
+  margin: 0 0 0 6px;
+  padding: 0;
+  border-radius: 9999px;
+  border: none;
+  box-shadow: none;
+  background-color: alpha(currentColor, 0.09);
+  color: @window_fg_color;
+  -gtk-icon-source: -gtk-scaled(url("assets/scalable/combobox-arrow-symbolic.svg"), url("assets/scalable/combobox-arrow-symbolic@2.svg"));
+  -gtk-icon-size: 12px;
+  transition: background-color {e["transition_hover"]}, color {e["transition_hover"]};
+}}
+
+dropdown:hover arrow,
+combobox:hover arrow,
+dropdown button.combo:hover arrow,
+combobox button.combo:hover arrow,
+dropdown:hover > button.combo > box > image {{
+  background-color: alpha(currentColor, 0.16);
+  color: @window_fg_color;
+}}
+
+dropdown:checked arrow,
+combobox:checked arrow,
+dropdown button.combo:checked arrow,
+combobox button.combo:checked arrow {{
+  background-color: alpha(currentColor, 0.24);
+}}
+
+/* In AdwActionRow and Preference rows */
+adwactionrow dropdown,
+adwactionrow combobox,
+preferencespage row dropdown,
+preferencespage row combobox,
+list.boxed-list row dropdown,
+list.boxed-list row combobox {{
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}}
+
 /* =========================================================================
- * 9. Checkboxes & Radio Buttons
+ * 9. Checkboxes & Radio Buttons (macOS Tahoe Solid Circle + Accent Dot)
  * ========================================================================= */
-checkbutton check,
-checkbutton radio {{
+checkbutton check {{
   min-width: 18px;
   min-height: 18px;
   margin: 0;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.25);
   background-color: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
   box-shadow: none;
 }}
 
-checkbutton check {{
-  border-radius: 4px;
-}}
-
-checkbutton radio {{
-  border-radius: 9999px;
-}}
-
 checkbutton check:checked,
-checkbutton radio:checked,
-checkbutton check:indeterminate,
-checkbutton radio:indeterminate {{
+checkbutton check:indeterminate {{
   background-color: @accent_bg_color;
   border-color: @accent_bg_color;
   color: @accent_fg_color;
+}}
+
+/* macOS Radio Button: Solid filled circle when unselected, Accent with white dot when selected */
+checkbutton radio,
+radio {{
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  border-radius: 9999px;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  background-color: alpha(currentColor, 0.18);
+  background-image: none;
+  -gtk-icon-source: none;
+  transition: background-color {e["transition_hover"]};
+}}
+
+checkbutton radio:hover,
+radio:hover {{
+  background-color: alpha(currentColor, 0.25);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  -gtk-icon-source: none;
+}}
+
+checkbutton radio:active,
+radio:active {{
+  background-color: alpha(currentColor, 0.32);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  -gtk-icon-source: none;
+}}
+
+checkbutton radio:checked,
+radio:checked,
+checkbutton radio:indeterminate,
+radio:indeterminate {{
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: 9999px;
+  border: none;
+  box-shadow: none;
+  background-color: @accent_bg_color;
+  background-image: radial-gradient(circle, #ffffff 0%, #ffffff 28%, transparent 30%);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  color: #ffffff;
+  -gtk-icon-source: none;
+}}
+
+checkbutton radio:checked:hover,
+radio:checked:hover {{
+  background-color: mix(#ffffff, @accent_bg_color, 0.85);
+  background-image: radial-gradient(circle, #ffffff 0%, #ffffff 28%, transparent 30%);
+  border: none;
+  box-shadow: none;
+}}
+
+checkbutton radio:checked:active,
+radio:checked:active {{
+  background-color: mix(#000000, @accent_bg_color, 0.90);
+  background-image: radial-gradient(circle, #ffffff 0%, #ffffff 28%, transparent 30%);
+  border: none;
+  box-shadow: none;
+}}
+
+checkbutton radio:disabled,
+radio:disabled {{
+  background-color: alpha(currentColor, 0.08);
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  -gtk-icon-source: none;
+}}
+
+checkbutton radio:checked:disabled,
+radio:checked:disabled {{
+  background-color: alpha(@accent_bg_color, 0.40);
+  background-image: radial-gradient(circle, #ffffff 0%, #ffffff 28%, transparent 30%);
+  border: none;
+  box-shadow: none;
 }}
 
 /* =========================================================================
@@ -2449,32 +2598,52 @@ scale slider {{
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
 }}
 
-/* GTK 3 Base Push Buttons */
-button {{
+/* GTK 3 Base Push Buttons (macOS Tahoe Flat Push Buttons) */
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill) {{
   min-height: {d["button_min_height"]}px;
   padding: 3px 12px;
-  border-radius: 9999px;
-  background-color: {c["input_bg"]};
-  border: 1px solid {c["input_border"]};
-  color: {c["text_primary"]};
+  border-radius: {g["button_action_radius"]}px;
+  background-color: alpha(currentColor, 0.08);
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: @theme_fg_color;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color {e["transition_hover"]}, color {e["transition_hover"]};
 }}
 
-button.text-button {{
+button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action) {{
   min-height: {d["button_min_height"]}px;
   min-width: 60px;
   padding: 3px 12px;
-  border-radius: 9999px;
+  border-radius: {g["button_action_radius"]}px;
+  background-color: alpha(currentColor, 0.08);
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: @theme_fg_color;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color {e["transition_hover"]}, color {e["transition_hover"]};
 }}
 
-button:hover {{
-  background-color: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill):hover,
+button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover {{
+  background-color: alpha(currentColor, 0.14);
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: @theme_fg_color;
 }}
 
-button:active {{
-  background-color: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill):active,
+button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active {{
+  background-color: alpha(currentColor, 0.22);
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: @theme_fg_color;
 }}
 
 /* macOS Tahoe Universal 1:1 Circular Icon & Action Buttons (Etap 655) */
@@ -2882,8 +3051,170 @@ widget.thumbnail {{
   border-radius: 0px;
 }}
 
-.view .thumbnail {{
-  filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.3));
+/* =========================================================================
+ * Dropdowns & Selection Controls (macOS Tahoe Circular Badge Dropdowns)
+ * ========================================================================= */
+combobox,
+combobox > box.linked > button,
+combobox button.combo,
+combobox > box > button {{
+  min-height: 24px;
+  padding: 2px 2px 2px 8px;
+  border-radius: 6px;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  color: @theme_fg_color;
+  font-size: 13px;
+  transition: background-color {e["transition_hover"]};
+}}
+
+combobox:hover,
+combobox:hover > box.linked > button {{
+  background-color: alpha(currentColor, 0.04);
+  border: none;
+  box-shadow: none;
+  color: @theme_fg_color;
+}}
+
+combobox arrow,
+combobox button arrow,
+combobox > box.linked > button arrow,
+combobox > box > button arrow {{
+  min-width: 22px;
+  min-height: 22px;
+  margin: 0 0 0 6px;
+  padding: 0;
+  border-radius: 9999px;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  background-color: alpha(currentColor, 0.09);
+  color: @theme_fg_color;
+  -gtk-icon-source: -gtk-scaled(url("assets/scalable/combobox-arrow-symbolic.svg"), url("assets/scalable/combobox-arrow-symbolic@2.svg"));
+  transition: background-color {e["transition_hover"]}, color {e["transition_hover"]};
+}}
+
+combobox:hover arrow,
+combobox button:hover arrow,
+combobox > box.linked > button:hover arrow {{
+  background-color: alpha(currentColor, 0.16);
+  color: @theme_fg_color;
+}}
+
+combobox:checked arrow,
+combobox button:checked arrow,
+combobox > box.linked > button:checked arrow {{
+  background-color: alpha(currentColor, 0.24);
+}}
+
+/* =========================================================================
+ * Checkboxes & Radio Buttons (macOS Tahoe Solid Circle + Accent Dot)
+ * ========================================================================= */
+checkbutton check {{
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  box-shadow: none;
+}}
+
+checkbutton check:checked,
+checkbutton check:indeterminate {{
+  background-color: @theme_selected_bg_color;
+  border-color: @theme_selected_bg_color;
+  color: @theme_selected_fg_color;
+}}
+
+/* macOS Radio Button: Solid filled circle when unselected, Accent with white dot when selected */
+checkbutton radio,
+radio {{
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  border-radius: 9999px;
+  border: none;
+  border-style: none;
+  box-shadow: none;
+  background-color: alpha(currentColor, 0.18);
+  background-image: none;
+  -gtk-icon-source: none;
+  transition: background-color {e["transition_hover"]};
+}}
+
+checkbutton radio:hover,
+radio:hover {{
+  background-color: alpha(currentColor, 0.25);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  -gtk-icon-source: none;
+}}
+
+checkbutton radio:active,
+radio:active {{
+  background-color: alpha(currentColor, 0.32);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  -gtk-icon-source: none;
+}}
+
+checkbutton radio:checked,
+radio:checked,
+checkbutton radio:indeterminate,
+radio:indeterminate {{
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: 9999px;
+  border: none;
+  box-shadow: none;
+  background-color: @theme_selected_bg_color;
+  background-image: radial-gradient(circle, #ffffff 0%, #ffffff 28%, transparent 30%);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  color: #ffffff;
+  -gtk-icon-source: none;
+}}
+
+checkbutton radio:checked:hover,
+radio:checked:hover {{
+  background-color: mix(#ffffff, @theme_selected_bg_color, 0.85);
+  background-image: radial-gradient(circle, #ffffff 0%, #ffffff 28%, transparent 30%);
+  border: none;
+  box-shadow: none;
+}}
+
+checkbutton radio:checked:active,
+radio:checked:active {{
+  background-color: mix(#000000, @theme_selected_bg_color, 0.90);
+  background-image: radial-gradient(circle, #ffffff 0%, #ffffff 28%, transparent 30%);
+  border: none;
+  box-shadow: none;
+}}
+
+checkbutton radio:disabled,
+radio:disabled {{
+  background-color: alpha(currentColor, 0.08);
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  -gtk-icon-source: none;
+}}
+
+checkbutton radio:checked:disabled,
+radio:checked:disabled {{
+  background-color: alpha(@theme_selected_bg_color, 0.40);
+  background-image: radial-gradient(circle, #ffffff 0%, #ffffff 28%, transparent 30%);
+  border: none;
+  box-shadow: none;
 }}
 """
     return css
