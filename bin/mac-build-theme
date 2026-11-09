@@ -312,10 +312,16 @@ list.navigation-sidebar {{
 navigation-split-view list row,
 overlay-split-view list row,
 .navigation-sidebar row,
-list.navigation-sidebar row {{
+list.navigation-sidebar row,
+placessidebar row,
+placessidebar .navigation-sidebar row,
+navigation-split-view list.navigation-sidebar row,
+.nautilus-window .sidebar-pane placessidebar row,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row,
+window.nautilus-window .sidebar-pane placessidebar row {{
   min-height: {d["sidebar_row_height"]}px;
-  padding: 3px 8px;
-  margin: 1.5px 12px 1.5px 8px;
+  padding: 3px 6px;
+  margin: 1.5px 8px;
   border-radius: {g["sidebar_row_radius"]}px;
   font-size: 13px;
   color: {c["text_primary"]};
@@ -325,7 +331,13 @@ list.navigation-sidebar row {{
 navigation-split-view list row:hover,
 overlay-split-view list row:hover,
 .navigation-sidebar row:hover,
-list.navigation-sidebar row:hover {{
+list.navigation-sidebar row:hover,
+placessidebar row:hover,
+placessidebar .navigation-sidebar row:hover,
+navigation-split-view list.navigation-sidebar row:hover,
+.nautilus-window .sidebar-pane placessidebar row:hover,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:hover,
+window.nautilus-window .sidebar-pane placessidebar row:hover {{
   border-radius: {g["sidebar_row_radius"]}px;
   background-color: {c["row_hover"]};
 }}
@@ -452,9 +464,18 @@ overlay-split-view list row image,
 list.navigation-sidebar row image,
 placessidebar row image,
 .nautilus-window .sidebar-pane row image,
+.nautilus-window .sidebar-pane placessidebar row image,
 navigationview.sidebar list row image,
-.sidebar-pane list row image {{
+.sidebar-pane list row image,
+.sidebar-orange-icon,
+image.sidebar-orange-icon,
+.sidebar-neutral-icon,
+image.sidebar-neutral-icon {{
+  min-width: 18px;
+  min-height: 18px;
+  -gtk-icon-size: 18px;
   margin-right: 8px;
+  color: rgba(255, 255, 255, 0.90);
 }}
 
 navigation-split-view list row:selected image,
@@ -1172,9 +1193,9 @@ headerbar NautilusHistoryControls {{
 headerbar NautilusHistoryControls button,
 headerbar .history-controls button,
 NautilusHistoryControls button {{
-  min-width: 28px;
-  min-height: 28px;
-  padding: 3px 6px;
+  min-width: 18px;
+  min-height: 18px;
+  padding: 1px 3px;
   margin: 0 1px;
   border-radius: 9999px;
   background: transparent;
@@ -1186,6 +1207,17 @@ NautilusHistoryControls button {{
   outline: none;
   color: rgba(255, 255, 255, 0.88);
   transition: background-color 150ms ease-out, color 150ms ease-out;
+}}
+
+.nautilus-window headerbar NautilusHistoryControls button image,
+.nautilus-window headerbar .history-controls button image,
+.nautilus-window headerbar #history_controls button image,
+headerbar NautilusHistoryControls button image,
+headerbar .history-controls button image,
+NautilusHistoryControls button image {{
+  min-width: 11px;
+  min-height: 11px;
+  -gtk-icon-size: 11px;
 }}
 
 .nautilus-window headerbar NautilusHistoryControls button:first-child,
@@ -1312,7 +1344,7 @@ NautilusHistoryControls button:active {{
   color: #ffffff;
 }}
 
-/* Nautilus headerbar individual circular control buttons (Search, Menu) */
+/* Nautilus headerbar individual circular control buttons (Search, Menu) — 1.5x smaller */
 .nautilus-window .content-pane headerbar box.end > button,
 .nautilus-window .content-pane headerbar .end > button,
 .nautilus-window headerbar box.end > button,
@@ -1323,8 +1355,8 @@ NautilusHistoryControls button:active {{
 .nautilus-window headerbar .end > menubutton > button,
 .nautilus-window .content-pane headerbar box.end > menubutton > button,
 .nautilus-window .content-pane headerbar .end > menubutton > button {{
-  min-width: 28px;
-  min-height: 28px;
+  min-width: 19px;
+  min-height: 19px;
   border-radius: 9999px;
   padding: 0;
   margin: 2px 3px;
@@ -1333,6 +1365,21 @@ NautilusHistoryControls button:active {{
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   color: rgba(255, 255, 255, 0.90);
   transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
+}}
+
+.nautilus-window .content-pane headerbar box.end > button image,
+.nautilus-window .content-pane headerbar .end > button image,
+.nautilus-window headerbar box.end > button image,
+.nautilus-window headerbar .end > button image,
+.nautilus-window headerbar button.mac-circle-button image,
+.nautilus-window headerbar menubutton.mac-circle-button > button image,
+.nautilus-window headerbar box.end > menubutton > button image,
+.nautilus-window headerbar .end > menubutton > button image,
+.nautilus-window .content-pane headerbar box.end > menubutton > button image,
+.nautilus-window .content-pane headerbar .end > menubutton > button image {{
+  min-width: 11px;
+  min-height: 11px;
+  -gtk-icon-size: 11px;
 }}
 
 .nautilus-window .content-pane headerbar box.end > button:hover,

@@ -10122,12 +10122,14 @@ placessidebar row,
 placessidebar .navigation-sidebar row,
 navigation-split-view list.navigation-sidebar row,
 .nautilus-window .sidebar-pane placessidebar row,
-.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row {
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row,
+window.nautilus-window .sidebar-pane placessidebar row {
     border-radius: 8px;
-    margin: 1px 6px;
-    padding: 4px 8px;
-    min-height: 28px;
-    color: rgba(255, 255, 255, 0.85);
+    margin: 1.5px 8px;
+    padding: 3px 6px;
+    min-height: 32px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.90);
     background-clip: padding-box;
     outline: none;
     transition: background-color 60ms ease, color 60ms ease;
@@ -10234,14 +10236,67 @@ navigation-split-view list.navigation-sidebar row:not(:hover),
     margin-bottom: 2px;
 }
 
-/* Orange/Accent icon color for Favorites and Top items */
+/* Sidebar icons styled identical to Settings (clean neutral symbolic) */
 .sidebar-orange-icon,
 image.sidebar-orange-icon,
 .navigation-sidebar row image.sidebar-orange-icon,
 list.navigation-sidebar row image.sidebar-orange-icon,
 placessidebar row image.sidebar-orange-icon,
-.navigation-sidebar row.sidebar-accent-icon image {
-    color: @accent_bg_color;
+.navigation-sidebar row.sidebar-accent-icon image,
+.navigation-sidebar row image,
+list.navigation-sidebar row image,
+placessidebar row image,
+.nautilus-window .sidebar-pane placessidebar row image,
+window.nautilus-window .sidebar-pane placessidebar row image {
+    min-width: 18px;
+    min-height: 18px;
+    -gtk-icon-size: 18px;
+    background-color: transparent;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin-right: 8px;
+    margin-left: 0px;
+    color: rgba(255, 255, 255, 0.90);
+}
+
+.navigation-sidebar row:selected image,
+list.navigation-sidebar row:selected image,
+placessidebar row:selected image,
+.nautilus-window .sidebar-pane placessidebar row:selected image,
+window.nautilus-window .sidebar-pane placessidebar row:selected image,
+.navigation-sidebar row:selected image.sidebar-orange-icon,
+list.navigation-sidebar row:selected image.sidebar-orange-icon,
+placessidebar row:selected image.sidebar-orange-icon,
+.navigation-sidebar row:selected .sidebar-orange-icon,
+placessidebar row:selected .sidebar-orange-icon {
+    color: #ffffff;
+    background-color: transparent;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.navigation-sidebar row label,
+list.navigation-sidebar row label,
+placessidebar row label,
+.nautilus-window .sidebar-pane placessidebar row label,
+window.nautilus-window .sidebar-pane placessidebar row label {
+    font-size: 13px;
+    margin-top: 1px;
+    margin-bottom: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+.navigation-sidebar row:selected label,
+list.navigation-sidebar row:selected label,
+placessidebar row:selected label,
+.nautilus-window .sidebar-pane placessidebar row:selected label,
+window.nautilus-window .sidebar-pane placessidebar row:selected label {
+    color: #ffffff;
+    font-weight: 500;
 }
 
 /* Neutral icon color for Mounts and Trash */
@@ -10250,7 +10305,7 @@ image.sidebar-neutral-icon,
 .navigation-sidebar row image.sidebar-neutral-icon,
 list.navigation-sidebar row image.sidebar-neutral-icon,
 placessidebar row image.sidebar-neutral-icon {
-    color: rgba(255, 255, 255, 0.65);
+    color: rgba(255, 255, 255, 0.90);
 }
 
 /* Subtle separator before Trash */
@@ -11912,6 +11967,7 @@ window.mac-settings-window button.suggested-action.circular:active {
   color: #ffffff;
   border-radius: 9999px;
 }
+
 
 
 
