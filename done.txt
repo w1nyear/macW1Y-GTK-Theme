@@ -18797,3 +18797,33 @@ Task 672: Вимкнення показу іконок у tar-архівах (с
    - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
 
 4. Статус: Завершено.
+
+Завдання 675: Корекція відступу бір-тагів (dock label pills) над іконками дока — збільшення дистанції до стандарту macOS Tahoe (14px)
+===================================================================
+1. Проблема:
+   - Раніше при наведенні/утриманні курсора на іконку дока нижній край пігулки з назвою програми (`.dash-label`) прилягав надто щільно до верхнього контуру іконки або торкався його (дистанція становила всього 2-4px, як показано на скріншоті користувача).
+   - Користувач зажадав: «бір таги на док чуть дальше відступи бо це занадто».
+
+2. Реалізовані зміни:
+   - extensions/dash2dock-motion@unmade.space/appIcons.js:
+     * У функції `positionItemLabel(item)` відкалібровано вертикальний зазор між видимим нижнім краєм пігулки та верхнім краєм заокругленої іконки (`stageY`).
+     * Встановлено чистий, пропорційний відступ у 14px:
+       `y = stageY - labelHeight + (node.get_margin(St.Side.BOTTOM) || 0) - labelOffset - 14;`
+     * Аналогічно відкалібровано відступи для інших орієнтацій дока (`LEFT`, `RIGHT`, `TOP`).
+   - Синхронізація та гаряче оновлення:
+     * Оновлений файл скопійовано до `~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/appIcons.js`.
+     * Через DBus EvalHelper проведено оновлення `DockDashItemContainer.prototype.showLabel` та `updateLabelPosition` у живій пам'яті GNOME Shell без перезапуску сесії.
+   - config/extensions.lock.json:
+     * Оновлено хеш sha256 для файлу `appIcons.js` (`9388e3e7c8ce53f2dd6b637ef336e14c1908ca52cde5302a92602125828584b0`) та загальний хеш розширення `dash2dock-motion@unmade.space` (`77606438a9376b8d91a34d7c36a249cf47a60f91109d712bcc06952379371bd5`).
+
+3. Результати тестування:
+   - Попіксельна перевірка геометрії у живому середовищі:
+     * `stageY = 1006` (верхній край іконки Термінала).
+     * `labelY = 967`, висота пігулки `labelHeight = 25`.
+     * Нижній край пігулки: `labelY + labelHeight = 992`.
+     * Реальний видимий зазор між іконкою та пігулкою: `1006 - 992 = 14px`.
+     * Створено контрольний знімок екрана `dock_gap_14_exact_crop.png`: пігулка має витончену дистанцію, не торкається іконки і водночас не зависає в повітрі, строго відповідаючи пропорціям macOS Tahoe / Sonoma.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+
+4. Статус: Завершено.
