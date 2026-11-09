@@ -454,9 +454,11 @@ export class MacSetupWizard {
         const stageW = global.stage.width;
         const stageH = global.stage.height;
         this._cardW = 760;
-        this._cardH = 540;
+        this._cardH = 550;
         const cardW = this._cardW;
         const cardH = this._cardH;
+        const padX = 22;
+        const contentW = cardW - (padX * 2);
         const version = getModpackVersion();
         this._accentColor = getAccentColor();
 
@@ -482,14 +484,14 @@ export class MacSetupWizard {
             vertical: true,
             width: cardW,
             height: cardH,
-            style: 'padding: 28px 32px 20px 32px;'
+            style: 'padding: 46px 22px 20px 22px;'
         });
 
         // 1. Top Header: App icon + Title + Subtitle
         const headerBox = new St.BoxLayout({
             vertical: true,
             x_align: Clutter.ActorAlign.CENTER,
-            style: 'margin-bottom: 18px;'
+            style: 'margin-bottom: 20px;'
         });
 
         // macOS App Icon (squircle preferences-desktop-theme)
@@ -500,13 +502,13 @@ export class MacSetupWizard {
             appIconWidget = new St.Icon({
                 gicon: gicon,
                 icon_size: 64,
-                style: 'margin-bottom: 8px;'
+                style: 'margin-bottom: 10px;'
             });
         } catch (_) {
             appIconWidget = new St.Icon({
                 icon_name: 'preferences-desktop-theme-symbolic',
                 icon_size: 64,
-                style: `color: ${this._accentColor}; margin-bottom: 8px;`
+                style: `color: ${this._accentColor}; margin-bottom: 10px;`
             });
         }
         headerBox.add_child(appIconWidget);
@@ -527,7 +529,7 @@ export class MacSetupWizard {
         // 2. Middle Content Stack Container
         this._pageContainer = new St.BoxLayout({
             vertical: true,
-            width: cardW - 64,
+            width: contentW,
             height: 270,
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.FILL,
@@ -535,22 +537,19 @@ export class MacSetupWizard {
         });
         mainLayout.add_child(this._pageContainer);
 
-        // 3. Bottom Action Bar (Placed lower down and right-aligned, as in Photo 4)
+        // 3. Bottom Action Bar: Back button on the LEFT, Continue button on the RIGHT
         this._bottomBar = new St.BoxLayout({
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.CENTER,
-            width: cardW - 64,
+            width: contentW,
             style: 'spacing: 12px; margin-top: auto; margin-bottom: 2px;'
         });
-
-        // Spacer pushes all action buttons to the right
-        const spacer = new St.Widget({ x_expand: true });
-        this._bottomBar.add_child(spacer);
 
         this._backBtn = new St.Button({
             label: 'Назад',
             can_focus: true,
-            reactive: true,
+            reactive: false,
+            visible: false,
             opacity: 0
         });
         this._applyBackBtnStyle();
@@ -568,6 +567,9 @@ export class MacSetupWizard {
             this._applyBackBtnStyle();
         });
         this._bottomBar.add_child(this._backBtn);
+
+        const spacer = new St.Widget({ x_expand: true });
+        this._bottomBar.add_child(spacer);
 
         this._nextBtn = new St.Button({
             label: 'Продовжити',
@@ -617,6 +619,7 @@ export class MacSetupWizard {
         if (this._currentPage === 1) {
             this._titleLabel.text = `macW1Y ${getModpackVersion()} успішно встановлено`;
             this._subtitleLabel.text = 'Оновлена конфігурація та нативні компоненти macOS Tahoe';
+            this._backBtn.visible = false;
             this._backBtn.opacity = 0;
             this._backBtn.reactive = false;
             this._nextBtn.set_label('Продовжити');
@@ -681,6 +684,7 @@ export class MacSetupWizard {
         } else if (this._currentPage === 2 && hasTouchpadGestures()) {
             this._titleLabel.text = 'Жест переміщення трьома пальцями';
             this._subtitleLabel.text = 'Спробуйте перемістити міні-вікно macOS всередині області трьома пальцями на тачпаді.';
+            this._backBtn.visible = true;
             this._backBtn.opacity = 255;
             this._backBtn.reactive = true;
             this._applyBackBtnStyle();
@@ -692,8 +696,8 @@ export class MacSetupWizard {
                 x_align: Clutter.ActorAlign.FILL
             });
 
-            // Interactive Container Area (Wider!)
-            const areaW = this._cardW - 64; // 696px
+            // Interactive Container Area (Wider: 716px)
+            const areaW = this._cardW - 44; // 716px
             const areaH = 185;
             const areaBg = this._isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.04)';
             const areaBorder = this._isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
@@ -828,6 +832,7 @@ export class MacSetupWizard {
             this._currentPage = 3;
             this._titleLabel.text = 'Цей Mac налаштовано';
             this._subtitleLabel.text = 'Першопочаткове налаштування macW1Y завершено. Можна продовжувати роботу.';
+            this._backBtn.visible = true;
             this._backBtn.opacity = 255;
             this._backBtn.reactive = true;
             this._applyBackBtnStyle();
