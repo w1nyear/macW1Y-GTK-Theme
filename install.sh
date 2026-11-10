@@ -631,6 +631,9 @@ install_extensions() {
                 fi
             fi
         done
+        if [ "$TARGET_HOME" != "/home/vitaliy" ]; then
+            find "$EXT_USER_DIR" -type f \( -name "*.js" -o -name "*.json" -o -name "*.css" \) -exec sed -i "s|/home/vitaliy|$TARGET_HOME|g" {} + 2>/dev/null || true
+        fi
         chown -R "${TARGET_USER}:${TARGET_USER}" "$EXT_USER_DIR"
     fi
     

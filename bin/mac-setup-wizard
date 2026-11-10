@@ -81,7 +81,8 @@ def cmd_status():
     print(f"  • macSetupWizard Flag: {flag} ({'Увімкнено (зʼявиться при наступному вході)' if flag == 1 else 'Вимкнено (робота налаштована)'})")
     
     js = """(() => {
-        return import('file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
+        const home = imports.gi.GLib.get_home_dir();
+        return import('file://' + home + '/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
             .then(m => JSON.stringify({
                 active: !!globalThis.macSetupWizardActive,
                 flag: m.getSetupWizardFlag(),
@@ -103,7 +104,8 @@ def cmd_status():
 def cmd_start(force=True):
     print("🚀 Запуск macOS Setup Wizard на екрані...")
     js = f"""(() => {{
-        return import('file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
+        const home = imports.gi.GLib.get_home_dir();
+        return import('file://' + home + '/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
             .then(m => m.startSetupWizard({str(force).lower()}))
             .catch(e => 'Error: ' + e);
     }})()"""
@@ -116,7 +118,8 @@ def cmd_start(force=True):
 def cmd_reset():
     set_flag(1)
     js = """(() => {
-        return import('file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
+        const home = imports.gi.GLib.get_home_dir();
+        return import('file://' + home + '/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
             .then(m => { m.setSetupWizardFlag(true); return true; })
             .catch(() => false);
     })()"""
@@ -141,7 +144,8 @@ def main():
         print(f"  ✓ macSetupWizard встановлено в {val}")
     elif arg in ["stop", "close", "hide"]:
         js = """(() => {
-            return import('file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
+            const home = imports.gi.GLib.get_home_dir();
+            return import('file://' + home + '/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
                 .then(m => { m.stopSetupWizard(); return true; })
                 .catch(() => false);
         })()"""
