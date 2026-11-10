@@ -14,6 +14,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { getTopbarInk, watchInk } from './tahoeInk.js';
+import { t } from './mac_i18n.js';
 
 // Cairo-rendered macOS recording indicator icon:
 // A solid circular disc with a centered rounded square cutout.
@@ -110,7 +111,7 @@ const MacScreenCastButton = GObject.registerClass({
     _init() {
         super._init(0.5, 'macScreenCast', false);
         this.add_style_class_name('mac-screencast-button');
-        this.accessible_name = 'Запис екрана / Трансляція';
+        this.accessible_name = t('screencast_title', 'Запис екрана / Трансляція');
         this.accessible_role = Atk.Role.MENU;
 
         this._icon = new MacScreenCastIcon();
@@ -183,7 +184,7 @@ const MacScreenCastButton = GObject.registerClass({
 
         this._titleLabel = new St.Label({
             style_class: 'mac-screencast-head-title',
-            text: 'Запис екрана',
+            text: t('screen_recording', 'Запис екрана'),
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
         });
@@ -213,17 +214,17 @@ const MacScreenCastButton = GObject.registerClass({
         });
 
         // Row: Source
-        this._srcRow = this._createInfoRow('Джерело:', 'Весь екран');
+        this._srcRow = this._createInfoRow(t('source_label', 'Джерело:'), t('entire_screen', 'Весь екран'));
         card.add_child(this._srcRow.box);
 
         // Row: Resolution
         const mon = Main.layoutManager.primaryMonitor;
         const resText = mon ? `${mon.width} × ${mon.height}` : '1920 × 1080';
-        this._resRow = this._createInfoRow('Роздільність:', resText);
+        this._resRow = this._createInfoRow(t('resolution_label', 'Роздільність:'), resText);
         card.add_child(this._resRow.box);
 
         // Row: Destination / Type
-        this._destRow = this._createInfoRow('Збереження:', 'Папка «Відео»');
+        this._destRow = this._createInfoRow(t('save_location_label', 'Збереження:'), t('videos_folder', 'Папка «Відео»'));
         card.add_child(this._destRow.box);
 
         cardItem.add_child(card);
@@ -252,7 +253,7 @@ const MacScreenCastButton = GObject.registerClass({
             y_align: Clutter.ActorAlign.CENTER,
         });
         this._stopLabel = new St.Label({
-            text: 'Зупинити запис',
+            text: t('stop_recording', 'Зупинити запис'),
             y_align: Clutter.ActorAlign.CENTER,
         });
         stopRow.add_child(stopIcon);
@@ -272,13 +273,13 @@ const MacScreenCastButton = GObject.registerClass({
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         // Section 4: Secondary actions
-        this._openFolderItem = new PopupMenu.PopupMenuItem('Відкрити папку із записами');
+        this._openFolderItem = new PopupMenu.PopupMenuItem(t('open_recordings_folder', 'Відкрити папку із записами'));
         this._openFolderItem.connect('activate', () => {
             this._openVideosFolder();
         });
         this.menu.addMenuItem(this._openFolderItem);
 
-        const ssItem = new PopupMenu.PopupMenuItem('Зробити знімок екрана…');
+        const ssItem = new PopupMenu.PopupMenuItem(t('take_screenshot', 'Зробити знімок екрана…'));
         ssItem.connect('activate', () => {
             try {
                 Main.screenshotUI?.open();
@@ -286,7 +287,7 @@ const MacScreenCastButton = GObject.registerClass({
         });
         this.menu.addMenuItem(ssItem);
 
-        const dispItem = new PopupMenu.PopupMenuItem('Параметри дисплея…');
+        const dispItem = new PopupMenu.PopupMenuItem(t('display_settings', 'Параметри дисплея…'));
         dispItem.connect('activate', () => {
             try {
                 Gio.AppInfo.create_from_commandline('gnome-control-center display', null, 0).launch([], null);
@@ -389,21 +390,21 @@ const MacScreenCastButton = GObject.registerClass({
 
         if (active) {
             if (isRec && isShare) {
-                this._titleLabel.text = 'Запис та трансляція';
-                this._stopLabel.text = 'Зупинити все';
-                this._destRow.l.text = 'Статус:';
+                this._titleLabel.text = t('recording_and_broadcast', 'Запис та трансляція');
+                this._stopLabel.text = t('stop_all', 'Зупинити все');
+                this._destRow.l.text = t('status_label', 'Статус:');
                 this._destRow.v.text = 'Запис + PipeWire трансляція';
                 this._openFolderItem.visible = true;
             } else if (isRec) {
-                this._titleLabel.text = 'Запис екрана';
-                this._stopLabel.text = 'Зупинити запис';
-                this._destRow.l.text = 'Збереження:';
-                this._destRow.v.text = 'Папка «Відео»';
+                this._titleLabel.text = t('screen_recording', 'Запис екрана');
+                this._stopLabel.text = t('stop_recording', 'Зупинити запис');
+                this._destRow.l.text = t('save_location_label', 'Збереження:');
+                this._destRow.v.text = t('videos_folder', 'Папка «Відео»');
                 this._openFolderItem.visible = true;
             } else {
-                this._titleLabel.text = 'Трансляція екрана';
-                this._stopLabel.text = 'Зупинити трансляцію';
-                this._destRow.l.text = 'Сесія:';
+                this._titleLabel.text = t('screen_broadcast', 'Трансляція екрана');
+                this._stopLabel.text = t('stop_broadcast', 'Зупинити трансляцію');
+                this._destRow.l.text = t('session_label', 'Сесія:');
                 this._destRow.v.text = 'PipeWire ScreenCast';
                 this._openFolderItem.visible = false;
             }
@@ -439,8 +440,8 @@ const MacScreenCastButton = GObject.registerClass({
         if (active) {
             this._isRecording = (mode === 'recording');
             this._isSharing = (mode === 'sharing');
-            this._titleLabel.text = mode === 'recording' ? 'Запис екрана' : 'Трансляція екрана';
-            this._stopLabel.text = mode === 'recording' ? 'Зупинити запис' : 'Зупинити трансляцію';
+            this._titleLabel.text = mode === 'recording' ? t('screen_recording', 'Запис екрана') : t('screen_broadcast', 'Трансляція екрана');
+            this._stopLabel.text = mode === 'recording' ? t('stop_recording', 'Зупинити запис') : t('stop_broadcast', 'Зупинити трансляцію');
             this.visible = true;
             this._ensurePosition();
             if (!this._timerId) {

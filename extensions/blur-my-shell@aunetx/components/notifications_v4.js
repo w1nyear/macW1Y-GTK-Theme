@@ -7,6 +7,7 @@ import Pango from 'gi://Pango';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Layout from 'resource:///org/gnome/shell/ui/layout.js';
 import * as utils from '../conveniences/utils.js';
+import { t, tf } from './mac_i18n.js';
 
 const BlurModule = await utils.import_in_shell_only('gi://Blur');
 const Shell = await utils.import_in_shell_only('gi://Shell');
@@ -142,7 +143,7 @@ export function formatNotificationTimestamp(datetime) {
     if (diffDays <= 0) {
         return timeStr;
     } else if (diffDays === 1) {
-        return `Вчора, ${timeStr}`;
+        return tf('time_yesterday', { time: timeStr }, `Вчора, ${timeStr}`);
     } else if (dt.get_year() === now.get_year()) {
         return `${dt.format('%d.%m')}, ${timeStr}`;
     } else {
@@ -162,15 +163,15 @@ export function formatRelativeNotifAge(datetime) {
     const diffSec = Math.max(0, now.to_unix() - dt.to_unix());
     const min = Math.floor(diffSec / 60);
     if (min < 1)
-        return 'тільки що';
+        return t('time_just_now', 'тільки що');
     if (min < 60)
-        return `${min} хв тому`;
+        return tf('time_mins_ago', { min }, `${min} хв тому`);
     const h = Math.floor(min / 60);
     if (h < 24)
-        return `${h} год тому`;
+        return tf('time_hours_ago', { h }, `${h} год тому`);
     const d = Math.floor(h / 24);
     if (d < 7)
-        return `${d} дн тому`;
+        return tf('time_days_ago', { d }, `${d} дн тому`);
     return formatNotificationTimestamp(dt);
 }
 
@@ -267,7 +268,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     const isUrgent = (notification.urgency === 2); // MessageTray.Urgency.CRITICAL
 
     const appLabel = new St.Label({
-        text: isUrgent ? 'ТЕРМІНОВО' : (source?.title || 'Повідомлення'),
+        text: isUrgent ? t('urgent', 'ТЕРМІНОВО') : (source?.title || t('notification', 'Повідомлення')),
         style_class: isUrgent ? 'mac-notification-urgent' : 'mac-notification-app-name',
         y_align: Clutter.ActorAlign.CENTER,
     });
@@ -644,7 +645,7 @@ export class MacNotificationGroup {
         // Collapse button
         this.collapseBtn = new St.Button({
             style_class: 'mac-notification-collapse-btn',
-            label: 'Згорнути',
+            label: t('collapse', 'Згорнути'),
             style: 'background-color: rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.85); font-size: 11px; font-weight: 500; border-radius: 9999px; padding: 4px 18px; margin: 6px auto 2px auto; border: 1px solid rgba(255, 255, 255, 0.18);',
             x_align: Clutter.ActorAlign.CENTER,
             reactive: true,

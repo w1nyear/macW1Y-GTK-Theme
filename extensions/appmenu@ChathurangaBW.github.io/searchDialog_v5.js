@@ -1595,7 +1595,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
     _initFilterPills() {
         const filters = [
-            { id: 'preview', label: 'Перегляд' },
+            { id: 'preview', label: t('preview', 'Перегляд') },
             { id: 'pages', label: 'Pages' },
             { id: 'pdf', label: 'PDF' },
             { id: 'video', label: 'QuickTime Player' },
@@ -3309,11 +3309,17 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
         // 2. Complement with standard directories (bounded to 15 items per dir)
         const dirs = [
-            GLib.build_filenamev([GLib.get_home_dir(), 'Завантаження']),
-            GLib.build_filenamev([GLib.get_home_dir(), 'Зображення', 'Знімки екрана']),
-            GLib.build_filenamev([GLib.get_home_dir(), 'Документи']),
-            GLib.build_filenamev([GLib.get_home_dir(), 'Десктоп']),
-        ];
+            GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD),
+            GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS),
+            GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES),
+            GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DESKTOP),
+        ].filter(Boolean);
+        const picsDir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES);
+        if (picsDir) {
+            dirs.push(GLib.build_filenamev([picsDir, 'Screenshots']));
+            dirs.push(GLib.build_filenamev([picsDir, 'Знімки екрана']));
+            dirs.push(GLib.build_filenamev([picsDir, 'Zrzuty ekranu']));
+        }
         for (const d of dirs) {
             try {
                 if (!GLib.file_test(d, GLib.FileTest.IS_DIR)) continue;
@@ -3376,7 +3382,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         // Section 1: "Пропозиції" (Suggestions) - Top 5 items
         const suggestions = allFiles.slice(0, 5);
         const suggTitle = new St.Label({
-            text: 'Пропозиції',
+            text: t('suggestions', 'Пропозиції'),
             style: 'font-size: 13px; font-weight: 700; color: #ffffff !important; margin: 4px 6px 10px 6px; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20);',
             x_align: Clutter.ActorAlign.START,
         });
@@ -3398,7 +3404,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         const recents = allFiles.slice(5);
         if (recents.length > 0) {
             const recentTitle = new St.Label({
-                text: 'Недавні',
+                text: t('recent', 'Недавні'),
                 style: 'font-size: 13px; font-weight: 700; color: #ffffff !important; margin: 10px 6px 10px 6px; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20);',
                 x_align: Clutter.ActorAlign.START,
             });

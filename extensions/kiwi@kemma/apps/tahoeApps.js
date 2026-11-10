@@ -11,6 +11,7 @@ import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { dockContainers } from './dockUtils.js';
+import { t } from './mac_i18n.js';
 
 // Liquid-glass helpers live in another extension. Static
 // `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
@@ -688,7 +689,7 @@ class TahoeApps {
 
         const entry = new St.Entry({
             style_class: 'tahoe-search',
-            hint_text: 'Приложения',
+            hint_text: t('applications', 'Applications'),
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
         });

@@ -12,6 +12,7 @@ import Mtk from 'gi://Mtk';
 import Graphene from 'gi://Graphene';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as MacSetupWizard from './macSetupWizard.js';
+import { t } from './mac_i18n.js';
 
 const EvalIface = `
 <node>
@@ -2270,7 +2271,7 @@ export default class EvalHelper extends Extension {
                 });
 
                 const title = new St.Label({
-                    text: 'Спорожнити смітник?',
+                    text: t('empty_trash_prompt', 'Спорожнити смітник?'),
                     style: 'font-size: 17px; font-weight: 700; color: #ffffff; text-align: center; margin-bottom: 6px;',
                 });
                 title.clutter_text.set_line_wrap(true);
@@ -2278,7 +2279,7 @@ export default class EvalHelper extends Extension {
                 content.add_child(title);
 
                 const body = new St.Label({
-                    text: 'Усі об\u2019єкти у смітнику буде\nвилучено остаточно',
+                    text: t('empty_trash_desc', 'Усі об’єкти у смітнику буде\nвилучено остаточно'),
                     style: 'font-size: 13px; color: rgba(255, 255, 255, 0.75); text-align: center; margin-bottom: 18px; line-height: 1.35;',
                 });
                 body.clutter_text.set_line_wrap(true);
@@ -2293,7 +2294,7 @@ export default class EvalHelper extends Extension {
                 bl.set_style('padding: 0 !important; margin: 0 !important; width: 234px !important;');
 
                 const confirmBtn = dlg.addButton({
-                    label: 'Спорожнити смітник',
+                    label: t('empty_trash_action', 'Спорожнити смітник'),
                     action: () => {
                         dlg.close();
                         emptyTrashInternal();
@@ -2308,7 +2309,7 @@ export default class EvalHelper extends Extension {
                 updateConfirmStyle();
 
                 const cancelBtn = dlg.addButton({
-                    label: 'Скасувати',
+                    label: t('cancel', 'Скасувати'),
                     action: () => dlg.close(),
                     key: Clutter.KEY_Escape,
                 });

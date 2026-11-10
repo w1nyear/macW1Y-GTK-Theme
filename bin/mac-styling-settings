@@ -317,10 +317,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
         info_icon = Gtk.Image.new_from_icon_name("dialog-information-symbolic")
         pill_box.append(info_icon)
 
-        warn_label = Gtk.Label(label="Потрібно вийти з сесії, аби все коректно виглядало")
+        warn_label = Gtk.Label(label=t("need_logout_notice", "Потрібно вийти з сесії, аби все коректно виглядало"))
         pill_box.append(warn_label)
 
-        logout_btn = Gtk.Button(label="Вийти з сесії")
+        logout_btn = Gtk.Button(label=t("logout_btn", "Вийти з сесії"))
         logout_btn.add_css_class("suggested-action")
         logout_btn.connect("clicked", self.on_logout_clicked)
         pill_box.append(logout_btn)
@@ -339,10 +339,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
 
         self.profile_keys = ["balanced", "high", "performance", "auto"]
         model = Gtk.StringList.new([
-            "⚖️ Баланс (Balanced — плавні 165 Гц, оптимізований Liquid Glass)",
-            "✨ Висока якість (High Quality — максимальна деталізація)",
-            "🚀 Швидкодія (Performance — для автономності/батареї)",
-            "🔋 Авто (Адаптація від мережі / живлення батареї)"
+            t("profile_balanced", "⚖️ Баланс (Balanced — плавні 165 Гц, оптимізований Liquid Glass)"),
+            t("profile_high", "✨ Висока якість (High Quality — максимальна деталізація)"),
+            t("profile_performance", "🚀 Швидкодія (Performance — для автономності/батареї)"),
+            t("profile_auto", "🔋 Авто (Адаптація від мережі / живлення батареї)")
         ])
         row.set_model(model)
 
@@ -386,8 +386,12 @@ class MacStylingWindow(Adw.ApplicationWindow):
     def _create_tint_controls(self, group, title, current_mode, current_strength):
         mode_row = Adw.ComboRow()
         mode_row.set_title(title)
-        mode_row.set_subtitle("Режим: вимкнено, затемнення або засвітлення")
-        model = Gtk.StringList.new(["Вимкнено", "Затемнення", "Засвітлення"])
+        mode_row.set_subtitle(t("tint_mode_sub", "Режим: вимкнено, затемнення або засвітлення"))
+        model = Gtk.StringList.new([
+            t("tint_mode_disabled", "Вимкнено"),
+            t("tint_mode_darken", "Затемнення"),
+            t("tint_mode_lighten", "Засвітлення")
+        ])
         mode_row.set_model(model)
         idx = 0
         if current_mode == "dark":
@@ -399,8 +403,8 @@ class MacStylingWindow(Adw.ApplicationWindow):
         group.add(mode_row)
 
         strength_row = Adw.ActionRow()
-        strength_row.set_title("Сила тінту")
-        strength_row.set_subtitle("Непрозорість шару тінтування (%)")
+        strength_row.set_title(t("tint_strength", "Сила тінту"))
+        strength_row.set_subtitle(t("tint_strength_sub", "Непрозорість шару тінтування (%)"))
         scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
         scale.set_value(current_strength)
         scale.set_size_request(200, -1)
@@ -744,7 +748,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
 
     def on_run_diagnostics_clicked(self, _btn):
         self.diag_btn.set_sensitive(False)
-        self.diag_status_row.set_subtitle("Виконується діагностика системи...")
+        self.diag_status_row.set_subtitle(t("diag_running", "Виконується діагностика системи..."))
 
         def _worker():
             try:
@@ -764,13 +768,13 @@ class MacStylingWindow(Adw.ApplicationWindow):
             def _update_ui():
                 self.diag_btn.set_sensitive(True)
                 if is_ok:
-                    self.diag_status_row.set_subtitle("Всі компоненти відповідають еталону SSOT (OK)")
+                    self.diag_status_row.set_subtitle(t("diag_ok", "Всі компоненти відповідають еталону SSOT (OK)"))
                     self.diag_status_icon.set_from_icon_name("emblem-ok-symbolic")
                 else:
-                    self.diag_status_row.set_subtitle("Виявлено відхилення від еталону macW1Y")
+                    self.diag_status_row.set_subtitle(t("diag_deviation", "Виявлено відхилення від еталону macW1Y"))
                     self.diag_status_icon.set_from_icon_name("dialog-warning-symbolic")
 
-                self._show_report_dialog("Результати системної діагностики macW1Y", output)
+                self._show_report_dialog(t("diag_results_title", "Результати системної діагностики macW1Y"), output)
 
             GLib.idle_add(_update_ui)
 
@@ -778,7 +782,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
 
     def on_restore_theme_clicked(self, _btn):
         self.restore_btn.set_sensitive(False)
-        self.diag_status_row.set_subtitle("Застосування еталонних налаштувань SSOT...")
+        self.diag_status_row.set_subtitle(t("ssot_applying", "Застосування еталонних налаштувань SSOT..."))
 
         def _worker():
             try:
@@ -798,13 +802,13 @@ class MacStylingWindow(Adw.ApplicationWindow):
             def _update_ui():
                 self.restore_btn.set_sensitive(True)
                 if is_ok:
-                    self.diag_status_row.set_subtitle("Оформлення успішно відновлено до еталону SSOT!")
+                    self.diag_status_row.set_subtitle(t("ssot_success", "Оформлення успішно відновлено до еталону SSOT!"))
                     self.diag_status_icon.set_from_icon_name("emblem-ok-symbolic")
-                    self._show_info_dialog("Відновлення оформлення", "Оформлення macW1Y успішно відновлено до канонічного еталону SSOT!\nВсі налаштування GTK, Shell, розширень та іконок синхронізовано.")
+                    self._show_info_dialog(t("ssot_restored_title", "Відновлення оформлення"), t("ssot_restored_body", "Оформлення macW1Y успішно відновлено до канонічного еталону SSOT!\nВсі налаштування GTK, Shell, розширень та іконок синхронізовано."))
                 else:
-                    self.diag_status_row.set_subtitle("Помилка під час відновлення оформлення")
+                    self.diag_status_row.set_subtitle(t("ssot_error", "Помилка під час відновлення оформлення"))
                     self.diag_status_icon.set_from_icon_name("dialog-error-symbolic")
-                    self._show_report_dialog("Помилка відновлення", output)
+                    self._show_report_dialog(t("ssot_error", "Помилка відновлення"), output)
 
             GLib.idle_add(_update_ui)
 
@@ -830,14 +834,14 @@ class MacStylingWindow(Adw.ApplicationWindow):
 
         scrolled.set_child(tv)
         dialog.set_extra_child(scrolled)
-        dialog.add_response("close", "Закрити")
+        dialog.add_response("close", t("close", "Закрити"))
         dialog.set_default_response("close")
         dialog.set_close_response("close")
         dialog.present(self)
 
     def _show_info_dialog(self, title, message):
         dialog = Adw.AlertDialog.new(title, message)
-        dialog.add_response("ok", "Гаразд")
+        dialog.add_response("ok", t("ok", "Гаразд"))
         dialog.set_default_response("ok")
         dialog.set_close_response("ok")
         dialog.present(self)

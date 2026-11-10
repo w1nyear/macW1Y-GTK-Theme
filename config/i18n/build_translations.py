@@ -52,6 +52,18 @@ export const TRANSLATIONS = ''' + json.dumps(TRANSLATIONS, ensure_ascii=False, i
 export function getLocale() {
     if (_debugLocale) return _debugLocale;
     try {
+        const file = `${GLib.get_home_dir()}/.config/mac-styling/locale`;
+        if (GLib.file_test(file, GLib.FileTest.EXISTS)) {
+            const [ok, bytes] = GLib.file_get_contents(file);
+            if (ok) {
+                const s = new TextDecoder().decode(bytes).trim().toLowerCase();
+                if (s && TRANSLATIONS[s]) return s;
+                const base = s.split('_')[0];
+                if (base && TRANSLATIONS[base]) return base;
+            }
+        }
+    } catch (_) {}
+    try {
         const langs = GLib.get_language_names();
         for (const l of langs) {
             if (!l || l === 'C' || l === 'POSIX') continue;
@@ -102,11 +114,12 @@ export function tf(key, params = {}, fallback, overrideLocale = null) {
 }
 '''
 
-    # Write mac_i18n.js to the 3 target extension locations
+    # Write mac_i18n.js to the 4 target extension locations
     js_destinations = [
         os.path.join(REPO_ROOT, "extensions/appmenu@ChathurangaBW.github.io/mac_i18n.js"),
         os.path.join(REPO_ROOT, "extensions/blur-my-shell@aunetx/components/mac_i18n.js"),
         os.path.join(REPO_ROOT, "extensions/kiwi@kemma/apps/mac_i18n.js"),
+        os.path.join(REPO_ROOT, "extensions/eval-helper@mactheme/mac_i18n.js"),
     ]
     for dest in js_destinations:
         os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -127,6 +140,19 @@ RTL_LANGUAGES = set(''' + repr(list(RTL_LANGUAGES)) + ''')
 TRANSLATIONS = ''' + json.dumps(TRANSLATIONS, ensure_ascii=False, indent=4) + '''
 
 def get_locale():
+    # Check ~/.config/mac-styling/locale first
+    loc_file = os.path.expanduser("~/.config/mac-styling/locale")
+    if os.path.exists(loc_file):
+        try:
+            with open(loc_file, "r", encoding="utf-8") as f:
+                s = f.read().strip().lower()
+                if s in TRANSLATIONS:
+                    return s
+                base = s.split('_')[0]
+                if base in TRANSLATIONS:
+                    return base
+        except Exception:
+            pass
     # Check env vars first
     for env in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
         val = os.environ.get(env)
@@ -196,6 +222,22 @@ def tf(key, params=None, fallback=None, override_locale=None):
 #include <string.h>
 
 static inline const char *mac_get_locale(void) {
+    gchar *loc_path = g_build_filename(g_get_home_dir(), ".config", "mac-styling", "locale", NULL);
+    if (g_file_test(loc_path, G_FILE_TEST_EXISTS)) {
+        gchar *contents = NULL;
+        if (g_file_get_contents(loc_path, &contents, NULL, NULL) && contents) {
+            g_strstrip(contents);
+            if (g_str_has_prefix(contents, "pl")) { g_free(contents); g_free(loc_path); return "pl"; }
+            if (g_str_has_prefix(contents, "uk")) { g_free(contents); g_free(loc_path); return "uk"; }
+            if (g_str_has_prefix(contents, "en")) { g_free(contents); g_free(loc_path); return "en"; }
+            if (g_str_has_prefix(contents, "de")) { g_free(contents); g_free(loc_path); return "de"; }
+            if (g_str_has_prefix(contents, "fr")) { g_free(contents); g_free(loc_path); return "fr"; }
+            if (g_str_has_prefix(contents, "es")) { g_free(contents); g_free(loc_path); return "es"; }
+            if (g_str_has_prefix(contents, "it")) { g_free(contents); g_free(loc_path); return "it"; }
+            g_free(contents);
+        }
+    }
+    g_free(loc_path);
     const gchar * const *langs = g_get_language_names();
     if (!langs) return "en";
     for (int i = 0; langs[i] != NULL; i++) {

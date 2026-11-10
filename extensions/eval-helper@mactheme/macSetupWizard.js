@@ -6,11 +6,13 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Clutter from 'gi://Clutter';
 import Pango from 'gi://Pango';
 import St from 'gi://St';
+import { t, tf, getLocale, setDebugLocale } from './mac_i18n.js';
 
 const USER_CONFIG_FILE = `${GLib.get_home_dir()}/.config/mac-styling/macSetupWizard`;
 const USER_LOCAL_FILE = `${GLib.get_home_dir()}/.local/share/macW1Y/macSetupWizard`;
 const SYSTEM_FILE = '/etc/macW1Y/macSetupWizard';
 const VERSION_FILE = `${GLib.get_home_dir()}/.config/mac-styling/version`;
+const LOCALE_CONFIG_FILE = `${GLib.get_home_dir()}/.config/mac-styling/locale`;
 const ICON_PATH = `${GLib.get_home_dir()}/.local/share/icons/MacTahoe-dark/apps/scalable/preferences-desktop-theme.svg`;
 
 const ACCENT_COLOR_MAP = {
@@ -25,6 +27,58 @@ const ACCENT_COLOR_MAP = {
     'slate':  '#8e8e93',
     'brown':  '#a27447',
 };
+
+export const SUPPORTED_LANGUAGES = [
+    { code: 'uk', native: 'Українська', name: 'Ukrainian' },
+    { code: 'en', native: 'English', name: 'English' },
+    { code: 'pl', native: 'Polski', name: 'Polish' },
+    { code: 'de', native: 'Deutsch', name: 'German' },
+    { code: 'fr', native: 'Français', name: 'French' },
+    { code: 'es', native: 'Español', name: 'Spanish' },
+    { code: 'it', native: 'Italiano', name: 'Italian' },
+    { code: 'pt', native: 'Português', name: 'Portuguese' },
+    { code: 'cs', native: 'Čeština', name: 'Czech' },
+    { code: 'sk', native: 'Slovenčina', name: 'Slovak' },
+    { code: 'nl', native: 'Nederlands', name: 'Dutch' },
+    { code: 'ro', native: 'Română', name: 'Romanian' },
+    { code: 'hu', native: 'Magyar', name: 'Hungarian' },
+    { code: 'bg', native: 'Български', name: 'Bulgarian' },
+    { code: 'hr', native: 'Hrvatski', name: 'Croatian' },
+    { code: 'sr', native: 'Српски', name: 'Serbian' },
+    { code: 'sl', native: 'Slovenščina', name: 'Slovenian' },
+    { code: 'lt', native: 'Lietuvių', name: 'Lithuanian' },
+    { code: 'lv', native: 'Latviešu', name: 'Latvian' },
+    { code: 'et', native: 'Eesti', name: 'Estonian' },
+    { code: 'be', native: 'Беларуская', name: 'Belarusian' },
+    { code: 'ru', native: 'Русский', name: 'Russian' },
+    { code: 'tr', native: 'Türkçe', name: 'Turkish' },
+    { code: 'ja', native: '日本語', name: 'Japanese' },
+    { code: 'ko', native: '한국어', name: 'Korean' },
+    { code: 'zh', native: '简体中文', name: 'Chinese Simplified' },
+    { code: 'zh_tw', native: '繁體中文', name: 'Chinese Traditional' },
+    { code: 'hi', native: 'हिन्दी', name: 'Hindi' },
+    { code: 'bn', native: 'বাংলা', name: 'Bengali' },
+    { code: 'th', native: 'ไทย', name: 'Thai' },
+    { code: 'vi', native: 'Tiếng Việt', name: 'Vietnamese' },
+    { code: 'ar', native: 'العربية', name: 'Arabic' },
+    { code: 'he', native: 'עברית', name: 'Hebrew' },
+    { code: 'fa', native: 'فارسی', name: 'Persian' },
+];
+
+export function getSortedLanguageList(systemLocale) {
+    const sysCode = (systemLocale || 'en').split('.')[0].replace('-', '_').toLowerCase();
+    const baseCode = sysCode.split('_')[0];
+
+    let sysLang = SUPPORTED_LANGUAGES.find(l => l.code === sysCode || l.code === baseCode);
+    if (!sysLang) {
+        sysLang = SUPPORTED_LANGUAGES.find(l => l.code === 'en') || SUPPORTED_LANGUAGES[0];
+    }
+
+    const others = SUPPORTED_LANGUAGES.filter(l => l.code !== sysLang.code);
+    others.sort((a, b) => a.native.localeCompare(b.native, 'en'));
+
+    return [sysLang, ...others];
+}
 
 export function getAccentColor() {
     try {
@@ -57,6 +111,17 @@ export function getModpackVersion() {
         }
     } catch (_) {}
     return '0.6';
+}
+
+export function saveModpackLocale(langCode) {
+    try {
+        const dir = GLib.path_get_dirname(LOCALE_CONFIG_FILE);
+        GLib.mkdir_with_parents(dir, 0o755);
+        GLib.file_set_contents(LOCALE_CONFIG_FILE, `${langCode}\n`);
+    } catch (e) {
+        console.error(`[macSetupWizard] Error writing locale: ${e}`);
+    }
+    setDebugLocale(langCode);
 }
 
 export function getSetupWizardFlag() {
@@ -128,7 +193,7 @@ export class MacSetupWizard {
         this._dialogCard = null;
         this._pageContainer = null;
         this._currentPage = 1;
-        this._totalPages = 3;
+        this._totalPages = 4;
         this._hiddenElements = [];
         this._miniWin = null;
         this._gestureSuccess = false;
@@ -136,6 +201,9 @@ export class MacSetupWizard {
         this._step2ContinueBtn = null;
         this._step2StatusLabel = null;
         this._isDark = true;
+        this._selectedLocale = getLocale();
+        this._sortedLanguages = getSortedLanguageList(this._selectedLocale);
+        this._langRowButtons = new Map();
     }
 
     start({ force = false } = {}) {
@@ -165,13 +233,16 @@ export class MacSetupWizard {
             this._isDark = true;
         }
 
+        this._selectedLocale = getLocale();
+        this._sortedLanguages = getSortedLanguageList(this._selectedLocale);
+
         // Hide desktop elements
         this._isolateDesktop();
 
         // Build fullscreen overlay with blurred background
         this._buildOverlay();
 
-        // Build Screen 1: Welcome to Mac (Photo 1)
+        // Build Screen 1: Welcome to Mac intro
         this._buildScreen1();
 
         return true;
@@ -344,7 +415,7 @@ export class MacSetupWizard {
         this._welcomeBox.add_child(welcomeLabel);
         this._overlay.add_child(this._welcomeBox);
 
-        // Continue Button at Bottom (Reference: Photo 1 / GRUB menu)
+        // Continue Button at Bottom
         const btnBoxW = 140;
         const btnBoxH = 90;
         this._continueBtnBox = new St.BoxLayout({
@@ -369,7 +440,6 @@ export class MacSetupWizard {
             reactive: true
         });
 
-        // Use a 46x46 St.Bin to guarantee perfect pixel-level centering of the arrow icon
         const iconBin = new St.Bin({
             width: 46,
             height: 46,
@@ -401,7 +471,7 @@ export class MacSetupWizard {
         });
 
         const labelText = new St.Label({
-            text: 'Продовжити',
+            text: t('wizard_continue', 'Continue', this._selectedLocale),
             style: "font-family: 'SF Pro Text', -apple-system, sans-serif; " +
                    "font-size: 13px; font-weight: 500; color: rgba(255, 255, 255, 0.92); " +
                    "text-align: center; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.60); margin-top: 6px;"
@@ -452,7 +522,7 @@ export class MacSetupWizard {
                         this._continueBtnBox.destroy();
                         this._continueBtnBox = null;
                     }
-                    this._buildScreen2();
+                    this._buildCard();
                 }
             });
         }
@@ -475,7 +545,7 @@ export class MacSetupWizard {
                               `background-color: ${bg}; color: ${titleColor}; border: 1px solid ${border};`;
     }
 
-    _buildScreen2() {
+    _buildCard() {
         const stageW = global.stage.width;
         const stageH = global.stage.height;
         this._cardW = 760;
@@ -484,7 +554,6 @@ export class MacSetupWizard {
         const cardH = this._cardH;
         const padX = 22;
         const contentW = cardW - (padX * 2);
-        const version = getModpackVersion();
         this._accentColor = getAccentColor();
 
         const cardBg = this._isDark ? '#28282a' : '#ffffff';
@@ -509,43 +578,30 @@ export class MacSetupWizard {
             vertical: true,
             width: cardW,
             height: cardH,
-            style: 'padding: 46px 22px 20px 22px;'
+            style: 'padding: 40px 22px 20px 22px;'
         });
 
-        // 1. Top Header: App icon + Title + Subtitle
+        // 1. Top Header: App / Globe icon + Title + Subtitle
         const headerBox = new St.BoxLayout({
             vertical: true,
             x_align: Clutter.ActorAlign.CENTER,
-            style: 'margin-bottom: 20px;'
+            style: 'margin-bottom: 16px;'
         });
 
-        // macOS App Icon (squircle preferences-desktop-theme)
-        let appIconWidget;
-        try {
-            const iconFile = Gio.File.new_for_path(ICON_PATH);
-            const gicon = new Gio.FileIcon({ file: iconFile });
-            appIconWidget = new St.Icon({
-                gicon: gicon,
-                icon_size: 64,
-                style: 'margin-bottom: 10px;'
-            });
-        } catch (_) {
-            appIconWidget = new St.Icon({
-                icon_name: 'preferences-desktop-theme-symbolic',
-                icon_size: 64,
-                style: `color: ${this._accentColor}; margin-bottom: 10px;`
-            });
-        }
-        headerBox.add_child(appIconWidget);
+        this._headerIcon = new St.Icon({
+            icon_size: 56,
+            style: 'margin-bottom: 10px;'
+        });
+        headerBox.add_child(this._headerIcon);
 
         this._titleLabel = new St.Label({
-            text: `macW1Y ${version} успішно встановлено`,
+            text: '',
             style: `font-family: 'SF Pro Display', -apple-system, sans-serif; font-size: 22px; font-weight: 700; color: ${titleColor}; text-align: center;`
         });
         headerBox.add_child(this._titleLabel);
 
         this._subtitleLabel = new St.Label({
-            text: 'Налаштування та оптимізація робочого простору',
+            text: '',
             style: `font-family: 'SF Pro Text', -apple-system, sans-serif; font-size: 13px; font-weight: 400; color: ${subColor}; text-align: center; margin-top: 3px;`
         });
         headerBox.add_child(this._subtitleLabel);
@@ -555,7 +611,7 @@ export class MacSetupWizard {
         this._pageContainer = new St.BoxLayout({
             vertical: true,
             width: contentW,
-            height: 270,
+            height: 280,
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.FILL,
             y_expand: true
@@ -571,7 +627,7 @@ export class MacSetupWizard {
         });
 
         this._backBtn = new St.Button({
-            label: 'Назад',
+            label: t('wizard_back', 'Назад', this._selectedLocale),
             can_focus: true,
             reactive: false,
             visible: false,
@@ -597,7 +653,7 @@ export class MacSetupWizard {
         this._bottomBar.add_child(spacer);
 
         this._nextBtn = new St.Button({
-            label: 'Продовжити',
+            label: t('wizard_continue', 'Продовжити', this._selectedLocale),
             can_focus: true,
             reactive: true
         });
@@ -619,7 +675,7 @@ export class MacSetupWizard {
         this._dialogCard.add_child(mainLayout);
         this._overlay.add_child(this._dialogCard);
 
-        // Render Page 1
+        // Render Page 1 (Language Selection)
         this._currentPage = 1;
         this._renderCurrentPage();
 
@@ -632,6 +688,28 @@ export class MacSetupWizard {
         });
     }
 
+    _selectLanguage(langCode) {
+        this._selectedLocale = langCode;
+        saveModpackLocale(langCode);
+
+        // Update header texts in real time
+        this._titleLabel.text = t('select_language', 'Виберіть мову', langCode);
+        this._subtitleLabel.text = t('select_language_sub', 'Виберіть основну мову для інтерфейсу системи.', langCode);
+        this._nextBtn.set_label(t('wizard_continue', 'Продовжити', langCode));
+        this._backBtn.set_label(t('wizard_back', 'Назад', langCode));
+
+        // Update list styles
+        for (const [code, row] of this._langRowButtons.entries()) {
+            const isSelected = (code === langCode);
+            row.btn.style = isSelected
+                ? 'background-color: #007aff; border-radius: 6px; padding: 6px 14px; margin: 2px 4px;'
+                : 'background-color: transparent; border-radius: 6px; padding: 6px 14px; margin: 2px 4px;';
+            row.label.style = isSelected
+                ? 'font-size: 13px; font-weight: 600; color: #ffffff;'
+                : `font-size: 13px; font-weight: 400; color: ${this._isDark ? '#e0e0e0' : '#1d1d1f'};`;
+        }
+    }
+
     _renderCurrentPage() {
         this._pageContainer.destroy_all_children();
         globalThis.macSetupWizardGestureHook = null;
@@ -640,17 +718,134 @@ export class MacSetupWizard {
         const subColor = this._isDark ? '#a1a1a6' : '#86868b';
         const rowBg = this._isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.03)';
         const rowBorder = this._isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+        const curLang = this._selectedLocale;
 
         if (this._currentPage === 1) {
-            this._titleLabel.text = `macW1Y ${getModpackVersion()} успішно встановлено`;
-            this._subtitleLabel.text = 'Оновлена конфігурація та нативні компоненти macOS Tahoe';
+            // Screen 1: Language Selection (Reference Photo)
+            this._headerIcon.gicon = null;
+            this._headerIcon.icon_name = 'preferences-desktop-locale-symbolic';
+            this._headerIcon.icon_size = 56;
+            this._headerIcon.style = 'color: #007aff; margin-bottom: 10px;';
+
+            this._titleLabel.text = t('select_language', 'Виберіть мову', curLang);
+            this._subtitleLabel.text = t('select_language_sub', 'Виберіть основну мову для інтерфейсу системи.', curLang);
+
             this._backBtn.visible = false;
             this._backBtn.opacity = 0;
             this._backBtn.reactive = false;
-            this._nextBtn.set_label('Продовжити');
+
+            this._nextBtn.set_label(t('wizard_continue', 'Продовжити', curLang));
             this._applyNextBtnStyle();
 
-            const page1Box = new St.BoxLayout({
+            const centerWrapper = new St.BoxLayout({
+                vertical: true,
+                x_align: Clutter.ActorAlign.CENTER,
+                y_align: Clutter.ActorAlign.CENTER,
+                x_expand: true,
+                y_expand: true
+            });
+
+            const listW = 380;
+            const listH = 260;
+            const boxBg = this._isDark ? 'rgba(0, 0, 0, 0.22)' : 'rgba(255, 255, 255, 0.9)';
+            const boxBorder = this._isDark ? 'rgba(0, 122, 255, 0.45)' : 'rgba(0, 122, 255, 0.55)';
+
+            const listBox = new St.Widget({
+                width: listW,
+                height: listH,
+                reactive: true,
+                style: `background-color: ${boxBg}; border: 1.5px solid ${boxBorder}; border-radius: 10px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);`
+            });
+
+            const scrollView = new St.ScrollView({
+                width: listW,
+                height: listH,
+                hscrollbar_policy: 1, // NEVER
+                vscrollbar_policy: 0, // AUTOMATIC
+                style: 'padding: 4px;'
+            });
+
+            const itemsBox = new St.BoxLayout({
+                vertical: true,
+                width: listW - 12,
+                style: 'spacing: 1px;'
+            });
+
+            this._langRowButtons.clear();
+            for (const item of this._sortedLanguages) {
+                const isSelected = (item.code === this._selectedLocale);
+                const rowBtn = new St.Button({
+                    can_focus: true,
+                    reactive: true,
+                    x_align: Clutter.ActorAlign.FILL,
+                    style: isSelected
+                        ? 'background-color: #007aff; border-radius: 6px; padding: 6px 14px; margin: 2px 4px;'
+                        : 'background-color: transparent; border-radius: 6px; padding: 6px 14px; margin: 2px 4px;'
+                });
+
+                const rowLabel = new St.Label({
+                    text: item.native,
+                    style: isSelected
+                        ? 'font-size: 13px; font-weight: 600; color: #ffffff;'
+                        : `font-size: 13px; font-weight: 400; color: ${this._isDark ? '#e0e0e0' : '#1d1d1f'};`
+                });
+
+                rowBtn.set_child(rowLabel);
+
+                rowBtn.connect('clicked', () => {
+                    this._selectLanguage(item.code);
+                });
+
+                rowBtn.connect('enter-event', () => {
+                    if (item.code !== this._selectedLocale) {
+                        rowBtn.style = `background-color: ${this._isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'}; border-radius: 6px; padding: 6px 14px; margin: 2px 4px;`;
+                    }
+                });
+
+                rowBtn.connect('leave-event', () => {
+                    if (item.code !== this._selectedLocale) {
+                        rowBtn.style = 'background-color: transparent; border-radius: 6px; padding: 6px 14px; margin: 2px 4px;';
+                    }
+                });
+
+                this._langRowButtons.set(item.code, { btn: rowBtn, label: rowLabel });
+                itemsBox.add_child(rowBtn);
+            }
+
+            scrollView.set_child(itemsBox);
+            listBox.add_child(scrollView);
+            centerWrapper.add_child(listBox);
+            this._pageContainer.add_child(centerWrapper);
+
+        } else if (this._currentPage === 2) {
+            // Screen 2: Features Overview
+            try {
+                const iconFile = Gio.File.new_for_path(ICON_PATH);
+                this._headerIcon.gicon = new Gio.FileIcon({ file: iconFile });
+                this._headerIcon.icon_name = null;
+                this._headerIcon.icon_size = 60;
+                this._headerIcon.style = 'margin-bottom: 10px;';
+            } catch (_) {
+                this._headerIcon.gicon = null;
+                this._headerIcon.icon_name = 'preferences-desktop-theme-symbolic';
+                this._headerIcon.icon_size = 60;
+                this._headerIcon.style = `color: ${this._accentColor}; margin-bottom: 10px;`;
+            }
+
+            const ver = getModpackVersion();
+            this._titleLabel.text = tf('wizard_welcome_title', { version: ver }, `macW1Y ${ver} успішно встановлено`, curLang);
+            this._subtitleLabel.text = t('wizard_welcome_sub', 'Оновлена конфігурація та нативні компоненти macOS Tahoe', curLang);
+
+            this._backBtn.visible = true;
+            this._backBtn.opacity = 255;
+            this._backBtn.reactive = true;
+            this._backBtn.set_label(t('wizard_back', 'Назад', curLang));
+            this._applyBackBtnStyle();
+
+            this._nextBtn.set_label(t('wizard_continue', 'Продовжити', curLang));
+            this._applyNextBtnStyle();
+
+            const page2Box = new St.BoxLayout({
                 vertical: true,
                 x_align: Clutter.ActorAlign.FILL,
                 style: 'spacing: 12px;'
@@ -659,18 +854,18 @@ export class MacSetupWizard {
             const items = [
                 {
                     icon: 'preferences-desktop-theme-symbolic',
-                    title: 'macOS Tahoe Liquid Glass & SSOT',
-                    desc: 'Повний набір єдиних стилів GTK3/GTK4, плавні вікна, шрифти Apple SF Pro та нативні віджети.'
+                    title: t('wizard_feat1_title', 'macOS Tahoe Liquid Glass & SSOT', curLang),
+                    desc: t('wizard_feat1_desc', 'Повний набір єдиних стилів GTK3/GTK4, плавні вікна, шрифти Apple SF Pro та нативні віджети.', curLang)
                 },
                 {
                     icon: 'preferences-system-performance-symbolic',
-                    title: 'Апаратне прискорення та відгук',
-                    desc: 'Стабільні 60-120 FPS, високошвидкісна частота опитування миші та плавна анімація інтерфейсу.'
+                    title: t('wizard_feat2_title', 'Апаратне прискорення та відгук', curLang),
+                    desc: t('wizard_feat2_desc', 'Стабільні 60-120 FPS, високошвидкісна частота опитування миші та плавна анімація інтерфейсу.', curLang)
                 },
                 {
                     icon: 'input-touchpad-symbolic',
-                    title: 'Підтримка жестів Apple Trackpad',
-                    desc: 'Нативне 3-пальцеве переміщення вікон, 4-пальцеві віртуальні столи та розумний буфер обміну.'
+                    title: t('wizard_feat3_title', 'Підтримка жестів Apple Trackpad', curLang),
+                    desc: t('wizard_feat3_desc', 'Нативне 3-пальцеве переміщення вікон, 4-пальцеві віртуальні столи та розумний буфер обміну.', curLang)
                 }
             ];
 
@@ -701,28 +896,36 @@ export class MacSetupWizard {
                 textBox.add_child(rDesc);
                 row.add_child(textBox);
 
-                page1Box.add_child(row);
+                page2Box.add_child(row);
             }
 
-            this._pageContainer.add_child(page1Box);
+            this._pageContainer.add_child(page2Box);
 
-        } else if (this._currentPage === 2 && hasTouchpadGestures()) {
-            this._titleLabel.text = 'Жест переміщення трьома пальцями';
-            this._subtitleLabel.text = 'Спробуйте перемістити міні-вікно macOS всередині області трьома пальцями на тачпаді.';
+        } else if (this._currentPage === 3 && hasTouchpadGestures()) {
+            // Screen 3: Trackpad gestures
+            this._headerIcon.gicon = null;
+            this._headerIcon.icon_name = 'input-touchpad-symbolic';
+            this._headerIcon.icon_size = 56;
+            this._headerIcon.style = `color: ${this._accentColor}; margin-bottom: 10px;`;
+
+            this._titleLabel.text = t('wizard_gesture_title', 'Жест переміщення трьома пальцями', curLang);
+            this._subtitleLabel.text = t('wizard_gesture_sub', 'Спробуйте перемістити міні-вікно macOS всередині області трьома пальцями на тачпаді.', curLang);
+
             this._backBtn.visible = true;
             this._backBtn.opacity = 255;
             this._backBtn.reactive = true;
+            this._backBtn.set_label(t('wizard_back', 'Назад', curLang));
             this._applyBackBtnStyle();
-            this._nextBtn.set_label('Продовжити');
+
+            this._nextBtn.set_label(t('wizard_continue', 'Продовжити', curLang));
             this._applyNextBtnStyle();
 
-            const page2Box = new St.BoxLayout({
+            const page3Box = new St.BoxLayout({
                 vertical: true,
                 x_align: Clutter.ActorAlign.FILL
             });
 
-            // Interactive Container Area (Wider: 716px)
-            const areaW = this._cardW - 44; // 716px
+            const areaW = this._cardW - 44;
             const areaH = 185;
             const areaBg = this._isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.04)';
             const areaBorder = this._isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
@@ -734,7 +937,6 @@ export class MacSetupWizard {
                 style: `background-color: ${areaBg}; border: 1px dashed ${areaBorder}; border-radius: 14px;`
             });
 
-            // Mini macOS Window Actor inside Test Area
             const miniW = 240;
             const miniH = 125;
             let miniX = Math.round((areaW - miniW) / 2);
@@ -758,7 +960,6 @@ export class MacSetupWizard {
                 height: miniH
             });
 
-            // Mini Window Titlebar
             const miniTitlebar = new St.BoxLayout({
                 x_align: Clutter.ActorAlign.FILL,
                 y_align: Clutter.ActorAlign.CENTER,
@@ -766,7 +967,6 @@ export class MacSetupWizard {
                 style: `padding: 6px 8px; border-bottom: 1px solid ${this._isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'}; spacing: 5px;`
             });
 
-            // Traffic lights
             const tlRed = new St.Widget({ style: 'width: 8px; height: 8px; border-radius: 9999px; background-color: #ff5f56;' });
             const tlYellow = new St.Widget({ style: 'width: 8px; height: 8px; border-radius: 9999px; background-color: #ffbd2e;' });
             const tlGreen = new St.Widget({ style: 'width: 8px; height: 8px; border-radius: 9999px; background-color: #27c93f;' });
@@ -782,7 +982,6 @@ export class MacSetupWizard {
             miniTitlebar.add_child(miniTitle);
             miniLayout.add_child(miniTitlebar);
 
-            // Mini Window Body
             const miniBody = new St.BoxLayout({
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
@@ -795,7 +994,7 @@ export class MacSetupWizard {
                 style: `color: ${this._accentColor};`
             });
             const folderLabel = new St.Label({
-                text: 'Документи',
+                text: t('bookmark_documents', 'Документи', curLang),
                 style: `font-size: 11px; font-weight: 500; color: ${titleColor};`
             });
             miniBody.add_child(folderIcon);
@@ -804,28 +1003,25 @@ export class MacSetupWizard {
 
             this._miniWin.add_child(miniLayout);
 
-            // User clicks with normal cursor: prompt them to use 3 fingers!
             this._miniWin.connect('button-press-event', () => {
                 if (this._step2StatusLabel && !this._gestureSuccess) {
-                    this._step2StatusLabel.text = '⚠️ Переміщення працює виключно жестом трьох пальців по тачпаду!';
+                    this._step2StatusLabel.text = t('wizard_gesture_warn', '⚠️ Переміщення працює виключно жестом трьох пальців по тачпаду!', curLang);
                     this._step2StatusLabel.style = 'font-size: 12px; font-weight: 600; color: #ff9f0a; margin-top: 8px;';
                 }
                 return Clutter.EVENT_PROPAGATE;
             });
 
             testArea.add_child(this._miniWin);
-            page2Box.add_child(testArea);
+            page3Box.add_child(testArea);
 
-            // Status Label
             this._gestureDistance = 0;
             this._gestureSuccess = false;
             this._step2StatusLabel = new St.Label({
-                text: 'Очікування жесту: покладіть три пальці на тачпад і проведіть у будь-який бік',
+                text: t('wizard_gesture_wait', 'Очікування жесту: покладіть три пальці на тачпад і проведіть у будь-який бік', curLang),
                 style: `font-size: 12px; font-weight: 500; color: ${subColor}; text-align: center; margin-top: 8px;`
             });
-            page2Box.add_child(this._step2StatusLabel);
+            page3Box.add_child(this._step2StatusLabel);
 
-            // Setup Gesture Hook for 3-finger drag
             globalThis.macSetupWizardGestureHook = (cmd, dx = 0, dy = 0) => {
                 if (!this._miniWin) return false;
 
@@ -838,7 +1034,7 @@ export class MacSetupWizard {
                     if (this._gestureDistance > 25 && !this._gestureSuccess) {
                         this._gestureSuccess = true;
                         if (this._step2StatusLabel) {
-                            this._step2StatusLabel.text = '✓ Чудово! Жест трьома пальцями працює бездоганно.';
+                            this._step2StatusLabel.text = t('wizard_gesture_success', '✓ Чудово! Жест трьома пальцями працює бездоганно.', curLang);
                             this._step2StatusLabel.style = 'font-size: 12px; font-weight: 600; color: #34c759; margin-top: 8px;';
                         }
                     }
@@ -850,21 +1046,29 @@ export class MacSetupWizard {
                 return false;
             };
 
-            this._pageContainer.add_child(page2Box);
+            this._pageContainer.add_child(page3Box);
 
         } else {
-            // Step 3: Setup Complete
-            this._currentPage = 3;
-            this._titleLabel.text = 'Цей Mac налаштовано';
-            this._subtitleLabel.text = 'Першопочаткове налаштування macW1Y завершено. Можна продовжувати роботу.';
+            // Screen 4: Setup Complete
+            this._currentPage = 4;
+            this._headerIcon.gicon = null;
+            this._headerIcon.icon_name = 'emblem-ok-symbolic';
+            this._headerIcon.icon_size = 56;
+            this._headerIcon.style = 'color: #34c759; margin-bottom: 10px;';
+
+            this._titleLabel.text = t('wizard_done_title', 'Цей Mac налаштовано', curLang);
+            this._subtitleLabel.text = t('wizard_done_sub', 'Першопочаткове налаштування macW1Y завершено. Можна продовжувати роботу.', curLang);
+
             this._backBtn.visible = true;
             this._backBtn.opacity = 255;
             this._backBtn.reactive = true;
+            this._backBtn.set_label(t('wizard_back', 'Назад', curLang));
             this._applyBackBtnStyle();
-            this._nextBtn.set_label('Почати роботу');
+
+            this._nextBtn.set_label(t('wizard_start', 'Почати роботу', curLang));
             this._applyNextBtnStyle();
 
-            const page3Box = new St.BoxLayout({
+            const page4Box = new St.BoxLayout({
                 vertical: true,
                 x_align: Clutter.ActorAlign.FILL,
                 style: 'spacing: 12px;'
@@ -885,17 +1089,17 @@ export class MacSetupWizard {
 
             const bannerText = new St.BoxLayout({ vertical: true, x_expand: true });
             const bTitle = new St.Label({
-                text: 'Система готова до роботи',
+                text: t('wizard_ready_title', 'Система готова до роботи', curLang),
                 style: `font-size: 13px; font-weight: 600; color: ${titleColor};`
             });
             const bDesc = new St.Label({
-                text: 'Усі системні розширення, нативні стилі та драйвери жестів синхронізовані.',
+                text: t('wizard_ready_desc', 'Усі системні розширення, нативні стилі та драйвери жестів синхронізовані.', curLang),
                 style: `font-size: 11px; font-weight: 400; color: ${subColor}; margin-top: 2px;`
             });
             bannerText.add_child(bTitle);
             bannerText.add_child(bDesc);
             banner.add_child(bannerText);
-            page3Box.add_child(banner);
+            page4Box.add_child(banner);
 
             // Quick Tips Box
             const tipsBox = new St.BoxLayout({
@@ -903,64 +1107,79 @@ export class MacSetupWizard {
                 style: `background-color: ${rowBg}; border: 1px solid ${rowBorder}; border-radius: 14px; padding: 14px 20px; spacing: 10px;`
             });
             const tipsTitle = new St.Label({
-                text: 'Корисні комбінації та підказки:',
+                text: t('wizard_tips_title', 'Корисні комбінації та підказки:', curLang),
                 style: `font-size: 12px; font-weight: 600; color: ${titleColor}; margin-bottom: 4px;`
             });
             tipsBox.add_child(tipsTitle);
 
             const tips = [
-                { key: 'Ctrl + Пробіл', desc: 'Розумний швидкий пошук Spotlight' },
-                { key: 'F4 або Super', desc: 'Повноекранне меню програм Launchpad' },
-                { key: 'Правий верхній кут', desc: 'Швидкі перемикачі та Центр керування' }
+                {
+                    key: t('wizard_tip1_key', 'Ctrl + Пробіл', curLang),
+                    desc: t('wizard_tip1_desc', 'Розумний швидкий пошук Spotlight', curLang)
+                },
+                {
+                    key: t('wizard_tip2_key', 'F4 або Super', curLang),
+                    desc: t('wizard_tip2_desc', 'Повноекранне меню програм Launchpad', curLang)
+                },
+                {
+                    key: t('wizard_tip3_key', 'Правий верхній кут', curLang),
+                    desc: t('wizard_tip3_desc', 'Швидкі перемикачі та Центр керування', curLang)
+                }
             ];
 
-            for (const t of tips) {
+            for (const tItem of tips) {
                 const tr = new St.BoxLayout({
                     x_align: Clutter.ActorAlign.FILL,
                     y_align: Clutter.ActorAlign.CENTER,
                     style: 'spacing: 12px;'
                 });
                 const kBadge = new St.Label({
-                    text: t.key,
+                    text: tItem.key,
                     style: `font-size: 11px; font-weight: 600; color: ${this._accentColor}; background-color: ${hexToRgba(this._accentColor, this._isDark ? 0.20 : 0.12)}; padding: 3px 10px; border-radius: 6px;`
                 });
                 const dLabel = new St.Label({
-                    text: t.desc,
+                    text: tItem.desc,
                     style: `font-size: 11px; font-weight: 400; color: ${subColor};`
                 });
                 tr.add_child(kBadge);
                 tr.add_child(dLabel);
                 tipsBox.add_child(tr);
             }
-            page3Box.add_child(tipsBox);
+            page4Box.add_child(tipsBox);
 
-            this._pageContainer.add_child(page3Box);
+            this._pageContainer.add_child(page4Box);
         }
     }
 
     _nextPage() {
         if (this._currentPage === 1) {
-            if (hasTouchpadGestures()) {
-                this._currentPage = 2;
-            } else {
-                this._currentPage = 3;
-            }
+            this._currentPage = 2;
             this._renderCurrentPage();
         } else if (this._currentPage === 2) {
-            this._currentPage = 3;
+            if (hasTouchpadGestures()) {
+                this._currentPage = 3;
+            } else {
+                this._currentPage = 4;
+            }
             this._renderCurrentPage();
         } else if (this._currentPage === 3) {
+            this._currentPage = 4;
+            this._renderCurrentPage();
+        } else if (this._currentPage === 4) {
             this.finish();
         }
     }
 
     _prevPage() {
-        if (this._currentPage === 3) {
+        if (this._currentPage === 4) {
             if (hasTouchpadGestures()) {
-                this._currentPage = 2;
+                this._currentPage = 3;
             } else {
-                this._currentPage = 1;
+                this._currentPage = 2;
             }
+            this._renderCurrentPage();
+        } else if (this._currentPage === 3) {
+            this._currentPage = 2;
             this._renderCurrentPage();
         } else if (this._currentPage === 2) {
             this._currentPage = 1;
@@ -969,6 +1188,9 @@ export class MacSetupWizard {
     }
 
     finish() {
+        // Persist final chosen locale
+        saveModpackLocale(this._selectedLocale);
+
         // Mark wizard as completed (0)
         setSetupWizardFlag(false);
         globalThis.macSetupWizardActive = false;

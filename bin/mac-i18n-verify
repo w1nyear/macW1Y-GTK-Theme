@@ -105,6 +105,7 @@ def main():
         "extensions/appmenu@ChathurangaBW.github.io/mac_i18n.js",
         "extensions/blur-my-shell@aunetx/components/mac_i18n.js",
         "extensions/kiwi@kemma/apps/mac_i18n.js",
+        "extensions/eval-helper@mactheme/mac_i18n.js",
         "bin/mac_i18n.py",
         "control-center/mac_i18n.h",
         "src/mac_i18n.h",

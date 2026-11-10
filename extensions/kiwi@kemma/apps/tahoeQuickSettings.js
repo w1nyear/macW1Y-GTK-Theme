@@ -23,6 +23,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Slider} from 'resource:///org/gnome/shell/ui/slider.js';
 import {getPanelInk, watchInk, notePanelRect} from './tahoeInk.js';
+import { t } from './mac_i18n.js';
 
 const ACCENT_COLOR_MAP = {
     'blue':   '#007aff',
@@ -860,7 +861,7 @@ function _buildPanel() {
     });
     leftCol.add_child(btPill.btn);
 
-    const modePill = _makePill('power-profile-balanced-symbolic', _('Режим'), _('Баланс'));
+    const modePill = _makePill('power-profile-balanced-symbolic', t('power_mode_short', 'Режим'), t('power_balanced', 'Баланс'));
     modePill.btn.connect('clicked', () => _cyclePowerMode(state));
     modePill.btn.connect('button-press-event', (_actor, event) => {
         if (event.get_button() === 3) {
@@ -1741,25 +1742,25 @@ function _refreshPowerMode(pill) {
     if (!pill) return;
     try {
         const profile = _getPowerProfile();
-        let subtitle = _('Баланс');
+        let subtitle = t('power_balanced', 'Баланс');
         let iconName = 'power-profile-balanced-symbolic';
         let isActive = false;
 
         if (profile === 'performance') {
-            subtitle = _('Швидкодія');
+            subtitle = t('power_performance', 'Швидкодія');
             iconName = 'power-profile-performance-symbolic';
             isActive = true;
         } else if (profile === 'power-saver') {
-            subtitle = _('Заощадження');
+            subtitle = t('power_saver', 'Заощадження');
             iconName = 'power-profile-power-saver-symbolic';
             isActive = false;
         } else {
-            subtitle = _('Баланс');
+            subtitle = t('power_balanced', 'Баланс');
             iconName = 'power-profile-balanced-symbolic';
             isActive = false;
         }
 
-        if (pill.title) pill.title.text = _('Режим');
+        if (pill.title) pill.title.text = t('power_mode_short', 'Режим');
         if (pill.subtitle) pill.subtitle.text = subtitle;
         if (pill.icon) pill.icon.icon_name = iconName;
         _setActive(pill.btn, isActive);
@@ -1853,7 +1854,7 @@ async function _openPowerModeSubmenu(sourceActor, state) {
         // 1. Header
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         const headerLbl = new St.Label({
-            text: _('Режим живлення') || 'Режим живлення',
+            text: t('power_mode', 'Режим живлення'),
             style: 'font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: 0.5px !important; margin: 4px 8px !important;',
         });
         secHeader.add_child(headerLbl);
@@ -1862,20 +1863,20 @@ async function _openPowerModeSubmenu(sourceActor, state) {
         const modes = [
             {
                 id: 'performance',
-                title: _('Швидкодія') || 'Швидкодія',
-                desc: _('Висока швидкодія та споживання енергії') || 'Висока швидкодія',
+                title: t('power_performance', 'Швидкодія'),
+                desc: t('power_performance_desc', 'Висока швидкодія та споживання енергії'),
                 icon: 'power-profile-performance-symbolic',
             },
             {
                 id: 'balanced',
-                title: _('Баланс') || 'Баланс',
-                desc: _('Стандартна швидкодія та споживання енергії') || 'Стандартна швидкодія',
+                title: t('power_balanced', 'Баланс'),
+                desc: t('power_balanced_desc', 'Стандартна швидкодія та споживання енергії'),
                 icon: 'power-profile-balanced-symbolic',
             },
             {
                 id: 'power-saver',
-                title: _('Заощадження') || 'Заощадження',
-                desc: _('Знижена швидкодія та споживання енергії') || 'Знижена швидкодія',
+                title: t('power_saver', 'Заощадження'),
+                desc: t('power_saver_desc', 'Знижена швидкодія та споживання енергії'),
                 icon: 'power-profile-power-saver-symbolic',
             },
         ];
@@ -1933,7 +1934,7 @@ async function _openPowerModeSubmenu(sourceActor, state) {
         const settItem = new PopupMenu.PopupBaseMenuItem({reactive: true, can_focus: false, style_class: 'mac-menu-item-row'});
         sharedMod.setupMacMenuItem(settItem);
         const settLbl = new St.Label({
-            text: _('Параметри живлення…') || 'Параметри живлення…',
+            text: t('power_settings', 'Параметри живлення…'),
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'color: #ffffff !important;',
