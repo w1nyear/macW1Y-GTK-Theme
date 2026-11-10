@@ -137,17 +137,15 @@ function formatTimeAgo(timestamp) {
 }
 
 const PILL_COLLAPSED_STYLE =
-    'height: 54px; min-height: 54px; padding: 0 14px; ' +
-    'background-gradient-direction: vertical !important; ' +
-    'background-gradient-start: rgba(255, 255, 255, 0.16) !important; ' +
-    'background-gradient-end: rgba(255, 255, 255, 0.03) !important; ' +
-    'border: 1px solid rgba(255, 255, 255, 0.24) !important; ' +
+    'height: 52px; min-height: 52px; padding: 0 16px; ' +
+    'background-color: transparent !important; ' +
+    'background: none !important; ' +
+    'border: 1px solid rgba(255, 255, 255, 0.28) !important; ' +
     'border-radius: 27px; ' +
-    'box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28) !important;';
+    'box-shadow: none !important;';
 
 const PILL_EXPANDED_STYLE =
-    'height: 54px; min-height: 54px; padding: 0 14px; ' +
-    'background-gradient-direction: none !important; ' +
+    'height: 54px; min-height: 54px; padding: 0 16px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
     'border: none !important; ' +
@@ -275,21 +273,18 @@ function _consumeMorphFrom() {
 
 const BTN_NORMAL_STYLE =
     'width: 50px; min-width: 50px; height: 50px; min-height: 50px; ' +
-    'border-radius: 26px; ' +
-    'background-gradient-direction: vertical !important; ' +
-    'background-gradient-start: rgba(255, 255, 255, 0.16) !important; ' +
-    'background-gradient-end: rgba(255, 255, 255, 0.03) !important; ' +
-    'border: 1px solid rgba(255, 255, 255, 0.24) !important; ' +
-    'box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28) !important;';
+    'border-radius: 25px; ' +
+    'background-color: transparent !important; ' +
+    'background: none !important; ' +
+    'border: 1px solid rgba(255, 255, 255, 0.28) !important; ' +
+    'box-shadow: none !important;';
 
 const BTN_HOVER_STYLE =
     'width: 50px; min-width: 50px; height: 50px; min-height: 50px; ' +
-    'border-radius: 26px; ' +
-    'background-gradient-direction: vertical !important; ' +
-    'background-gradient-start: rgba(255, 255, 255, 0.32) !important; ' +
-    'background-gradient-end: rgba(255, 255, 255, 0.14) !important; ' +
+    'border-radius: 25px; ' +
+    'background-color: rgba(255, 255, 255, 0.16) !important; ' +
     'border: 1px solid rgba(255, 255, 255, 0.44) !important; ' +
-    'box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;';
+    'box-shadow: none !important;';
 
 const SETTINGS_PANELS = [
     { key: 'panel_wifi', fallback: 'Wi-Fi', match: ['wifi', 'вайфай', 'вай-фай', 'мережа', 'wi-fi', 'wlan', 'internet'], panel: 'wifi' },
@@ -471,7 +466,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             'border: none !important; ' +
             'box-shadow: none !important;'
         );
-        this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
+        this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.AUTOMATIC_FOR_OPACITY);
         this.add_child(this._box);
         this._box.connect('motion-event', (_actor, event) => {
             if (!this._mouseMoved) {
@@ -2105,6 +2100,10 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             const hasResults = this._resultsWrapper && this._resultsWrapper.visible && (box.height > PILL_HEIGHT + 10);
             const isExpanded = this._buttonsCollapsed || hasText || hasResults || this._mode !== 'search' || this._isCollapsing;
 
+            const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
+            const styling = this._readStyling() || {};
+            const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
+
             if (!isExpanded && this._searchPill && this._btnApps && this._btnFiles && this._btnClipboard) {
                 const pillPos = this._searchPill.get_transformed_position();
                 const b1Pos = this._btnApps.get_transformed_position();
@@ -2131,9 +2130,6 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 const b3W = Math.round((this._btnClipboard.width || BUTTON_SIZE) * scaleX);
                 const b3H = Math.round((this._btnClipboard.height || BUTTON_SIZE) * scaleY);
 
-                const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
-                const styling = this._readStyling() || {};
-                const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
                 const b1Hover = this._mouseMoved && this._btnApps.hover;
                 const b2Hover = this._mouseMoved && this._btnFiles.hover;
                 const b3Hover = this._mouseMoved && this._btnClipboard.hover;
@@ -2179,10 +2175,6 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 const bgW = Math.round(activeW * scaleX);
                 const bgH = Math.round(rawH * scaleY);
 
-                const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
-                const styling = this._readStyling() || {};
-                const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
-
                 const key = `s:${localBgX},${localBgY},${bgW},${bgH}:${targetOpacity}:${spotTint}`;
                 if (this._lastGeometryKey === key) return;
                 this._lastGeometryKey = key;
@@ -2196,7 +2188,9 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 this._glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
                 this._glass.wakeFrameSync?.();
             }
-        } catch (_) {}
+        } catch (err) {
+            console.error('[Spotlight] _syncGlass error:', err);
+        }
     }
 
     _setMode(newMode) {
@@ -2222,6 +2216,9 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             });
         } else {
             this._collapseButtonsAndExpandPill();
+            try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
+            this._buttonsBox.visible = false;
+            this._buttonsBox.opacity = 0;
 
             // Set Mode Headers & Content
             this._searchView.visible = false;
