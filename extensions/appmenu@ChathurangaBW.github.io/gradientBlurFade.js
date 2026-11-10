@@ -379,3 +379,195 @@ export function applyGradientBlurFade(actor, topOffset = 48.0, bottomOffset = 76
     effect.attachTo(target, scroll);
     return effect;
 }
+
+const HORIZONTAL_GRADIENT_FADE_SHADER = `
+    uniform sampler2D tex;
+    uniform float width;
+    uniform float height;
+    uniform float fade_offset_left;
+    uniform float fade_offset_right;
+    uniform float fade_edges_left;
+    uniform float fade_edges_right;
+
+    void main() {
+        vec2 uv = cogl_tex_coord_in[0].st;
+        float x = uv.x * max(1.0, width);
+        
+        float t = 0.0;
+        if (fade_edges_left > 0.5 && x < fade_offset_left && fade_offset_left > 0.0) {
+            float dist_left = x;
+            float p_left = clamp(1.0 - (dist_left / fade_offset_left), 0.0, 1.0);
+            t = max(t, p_left);
+        }
+        if (fade_edges_right > 0.5 && x > (width - fade_offset_right) && fade_offset_right > 0.0) {
+            float dist_right = width - x;
+            float p_right = clamp(1.0 - (dist_right / fade_offset_right), 0.0, 1.0);
+            t = max(t, p_right);
+        }
+
+        vec4 sharp = texture2D(tex, uv);
+        if (t <= 0.001) {
+            cogl_color_out = sharp;
+            return;
+        }
+
+        float alpha_fade = 1.0 - smoothstep(0.15, 1.0, t);
+        cogl_color_out = sharp * clamp(alpha_fade, 0.0, 1.0);
+    }
+`;
+
+let HorizontalEffectClass = globalThis.__AppmenuHorizontalGradientFadeEffect;
+if (!HorizontalEffectClass) {
+    HorizontalEffectClass = GObject.registerClass(
+    class AppmenuHorizontalGradientFadeEffect extends Clutter.ShaderEffect {
+        constructor(leftOffset = 26.0, rightOffset = 26.0) {
+            super();
+            this.set_shader_source(HORIZONTAL_GRADIENT_FADE_SHADER);
+            this._leftOffset = leftOffset;
+            this._rightOffset = rightOffset;
+            this._fadeLeft = false;
+            this._fadeRight = false;
+            this._targetActor = null;
+            this._scrollView = null;
+            this._adj = null;
+            this._updateAdj = null;
+        }
+    });
+    globalThis.__AppmenuHorizontalGradientFadeEffect = HorizontalEffectClass;
+}
+
+HorizontalEffectClass.prototype.attachTo = function(actor, scrollView = null) {
+    if (!actor) return;
+    try {
+        this.set_shader_source(HORIZONTAL_GRADIENT_FADE_SHADER);
+    } catch (_) {}
+    this._targetActor = actor;
+    actor.add_effect(this);
+
+    actor.connectObject('notify::allocation', () => this.updateBounds(), this);
+    actor.connectObject('destroy', () => this.detach(), this);
+
+    let sv = scrollView;
+    if (!sv) {
+        if (actor.hadjustment) {
+            sv = actor;
+        } else if (actor.get_children) {
+            const findSv = (node) => {
+                if (!node) return null;
+                if (node.hadjustment || (node instanceof St.ScrollView)) return node;
+                if (node.get_children) {
+                    for (const c of node.get_children()) {
+                        const found = findSv(c);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+            sv = findSv(actor);
+        }
+    }
+
+    const adj = sv ? (sv.hadjustment || (sv.get_hadjustment && sv.get_hadjustment())) : null;
+    if (adj) {
+        this._adj = adj;
+        const onAdjChanged = () => {
+            const val = adj.value;
+            const upper = adj.upper;
+            const page = adj.page_size;
+            const canScroll = upper > page + 1.0;
+
+            const fadeLeft = canScroll && val > 1.0;
+            const fadeRight = canScroll && val < (upper - page - 1.0);
+
+            if (fadeLeft !== this._fadeLeft || fadeRight !== this._fadeRight) {
+                this._fadeLeft = fadeLeft;
+                this._fadeRight = fadeRight;
+                _setFloat(this, 'fade_edges_left', fadeLeft ? 1.0 : 0.0);
+                _setFloat(this, 'fade_edges_right', fadeRight ? 1.0 : 0.0);
+                this.queue_repaint();
+            }
+        };
+        this._updateAdj = onAdjChanged;
+        adj.connectObject('changed', onAdjChanged, 'notify::value', onAdjChanged, 'notify::upper', onAdjChanged, 'notify::page-size', onAdjChanged, this);
+        onAdjChanged();
+
+        if (sv) {
+            this._scrollView = sv;
+            sv.connectObject('scroll-event', (_actor, event) => {
+                const direction = event.get_scroll_direction();
+                let delta = 0;
+                if (direction === Clutter.ScrollDirection.UP) {
+                    delta = -1;
+                } else if (direction === Clutter.ScrollDirection.DOWN) {
+                    delta = 1;
+                } else if (direction === Clutter.ScrollDirection.SMOOTH) {
+                    const [dx, dy] = event.get_scroll_delta();
+                    delta = (Math.abs(dx) > Math.abs(dy)) ? dx : dy;
+                }
+                if (delta !== 0) {
+                    const lower = adj.lower;
+                    const upper = adj.upper;
+                    const pageSize = adj.page_size;
+                    const maxVal = Math.max(lower, upper - pageSize);
+                    if (maxVal > lower) {
+                        const step = Math.max(30, adj.step_increment || 40);
+                        adj.value = Math.clamp(adj.value + delta * step, lower, maxVal);
+                        return Clutter.EVENT_STOP;
+                    }
+                }
+                return Clutter.EVENT_PROPAGATE;
+            }, this);
+        }
+    }
+    this.updateBounds();
+};
+
+HorizontalEffectClass.prototype.detach = function() {
+    if (this._scrollView) {
+        this._scrollView.disconnectObject(this);
+        this._scrollView = null;
+    }
+    if (this._adj) {
+        this._adj.disconnectObject(this);
+        this._adj = null;
+    }
+    this._updateAdj = null;
+    if (this._targetActor) {
+        this._targetActor.disconnectObject(this);
+        this._targetActor = null;
+    }
+};
+
+HorizontalEffectClass.prototype.updateBounds = function() {
+    if (!this._targetActor) return;
+    const [w, h] = this._targetActor.get_size();
+    if (w > 0 && h > 0) {
+        _setFloat(this, 'width', w);
+        _setFloat(this, 'height', h);
+        _setFloat(this, 'fade_offset_left', this._leftOffset);
+        _setFloat(this, 'fade_offset_right', this._rightOffset);
+        _setFloat(this, 'fade_edges_left', this._fadeLeft ? 1.0 : 0.0);
+        _setFloat(this, 'fade_edges_right', this._fadeRight ? 1.0 : 0.0);
+        this.queue_repaint();
+    }
+    if (this._updateAdj) {
+        this._updateAdj();
+    }
+};
+
+export const HorizontalGradientFadeEffect = HorizontalEffectClass;
+
+export function applyHorizontalGradientFade(actor, leftOffset = 26.0, rightOffset = 26.0, scrollView = null) {
+    if (!actor) return null;
+    let target = actor;
+    let scroll = scrollView;
+    if (!scroll && actor.hadjustment) {
+        scroll = actor;
+        if (actor.get_parent()) {
+            target = actor.get_parent();
+        }
+    }
+    const effect = new HorizontalGradientFadeEffect(leftOffset, rightOffset);
+    effect.attachTo(target, scroll);
+    return effect;
+}

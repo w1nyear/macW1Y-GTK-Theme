@@ -825,24 +825,241 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._appsView.add_child(this._appsDivider);
 
-        // Category Filter Bar (horizontal scrollable bar with half-sized pills)
+const HORIZONTAL_GRADIENT_FADE_SHADER = `
+    uniform sampler2D tex;
+    uniform float width;
+    uniform float height;
+    uniform float fade_offset_left;
+    uniform float fade_offset_right;
+    uniform float fade_edges_left;
+    uniform float fade_edges_right;
+
+    void main() {
+        vec2 uv = cogl_tex_coord_in[0].st;
+        float x = uv.x * max(1.0, width);
+        
+        float t = 0.0;
+        if (fade_edges_left > 0.5 && x < fade_offset_left && fade_offset_left > 0.0) {
+            float dist_left = x;
+            float p_left = clamp(1.0 - (dist_left / fade_offset_left), 0.0, 1.0);
+            t = max(t, p_left);
+        }
+        if (fade_edges_right > 0.5 && x > (width - fade_offset_right) && fade_offset_right > 0.0) {
+            float dist_right = width - x;
+            float p_right = clamp(1.0 - (dist_right / fade_offset_right), 0.0, 1.0);
+            t = max(t, p_right);
+        }
+
+        vec4 sharp = texture2D(tex, uv);
+        if (t <= 0.001) {
+            cogl_color_out = sharp;
+            return;
+        }
+
+        float alpha_fade = 1.0 - smoothstep(0.15, 1.0, t);
+        cogl_color_out = sharp * clamp(alpha_fade, 0.0, 1.0);
+    }
+`;
+
+function _setShaderFloat(effect, name, val) {
+    try {
+        effect.set_uniform_value(name, parseFloat(val) + 0.0001);
+    } catch (_) {}
+}
+
+let AppmenuHorizontalFadeEffect = globalThis.__AppmenuHorizontalFadeEffect;
+if (!AppmenuHorizontalFadeEffect) {
+    AppmenuHorizontalFadeEffect = GObject.registerClass(
+    class AppmenuHorizontalFadeEffect extends Clutter.ShaderEffect {
+        constructor(leftOffset = 26.0, rightOffset = 26.0) {
+            super();
+            this.set_shader_source(HORIZONTAL_GRADIENT_FADE_SHADER);
+            this._leftOffset = leftOffset;
+            this._rightOffset = rightOffset;
+            this._fadeLeft = false;
+            this._fadeRight = false;
+            this._targetActor = null;
+            this._scrollView = null;
+            this._adj = null;
+            this._updateAdj = null;
+        }
+    });
+    globalThis.__AppmenuHorizontalFadeEffect = AppmenuHorizontalFadeEffect;
+}
+
+AppmenuHorizontalFadeEffect.prototype.attachTo = function(actor, scrollView = null) {
+    if (!actor) return;
+    try {
+        this.set_shader_source(HORIZONTAL_GRADIENT_FADE_SHADER);
+    } catch (_) {}
+    this._targetActor = actor;
+    actor.add_effect(this);
+
+    actor.connectObject('notify::allocation', () => this.updateBounds(), this);
+    actor.connectObject('destroy', () => this.detach(), this);
+
+    let sv = scrollView;
+    if (!sv) {
+        if (actor.hadjustment) {
+            sv = actor;
+        } else if (actor.get_children) {
+            const findSv = (node) => {
+                if (!node) return null;
+                if (node.hadjustment || (node instanceof St.ScrollView)) return node;
+                if (node.get_children) {
+                    for (const c of node.get_children()) {
+                        const found = findSv(c);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+            sv = findSv(actor);
+        }
+    }
+
+    const adj = sv ? (sv.hadjustment || (sv.get_hadjustment && sv.get_hadjustment())) : null;
+    if (adj) {
+        this._adj = adj;
+        const onAdjChanged = () => {
+            const val = adj.value;
+            const upper = adj.upper;
+            const page = adj.page_size;
+            const canScroll = upper > page + 1.0;
+
+            const fadeLeft = canScroll && val > 1.0;
+            const fadeRight = canScroll && val < (upper - page - 1.0);
+
+            if (fadeLeft !== this._fadeLeft || fadeRight !== this._fadeRight) {
+                this._fadeLeft = fadeLeft;
+                this._fadeRight = fadeRight;
+                _setShaderFloat(this, 'fade_edges_left', fadeLeft ? 1.0 : 0.0);
+                _setShaderFloat(this, 'fade_edges_right', fadeRight ? 1.0 : 0.0);
+                this.queue_repaint();
+            }
+        };
+        this._updateAdj = onAdjChanged;
+        adj.connectObject('changed', onAdjChanged, 'notify::value', onAdjChanged, 'notify::upper', onAdjChanged, 'notify::page-size', onAdjChanged, this);
+        onAdjChanged();
+
+        if (sv) {
+            this._scrollView = sv;
+            sv.connectObject('scroll-event', (_actor, event) => {
+                const direction = event.get_scroll_direction();
+                let delta = 0;
+                if (direction === Clutter.ScrollDirection.UP) {
+                    delta = -1;
+                } else if (direction === Clutter.ScrollDirection.DOWN) {
+                    delta = 1;
+                } else if (direction === Clutter.ScrollDirection.SMOOTH) {
+                    const [dx, dy] = event.get_scroll_delta();
+                    delta = (Math.abs(dx) > Math.abs(dy)) ? dx : dy;
+                }
+                if (delta !== 0) {
+                    const lower = adj.lower;
+                    const upper = adj.upper;
+                    const pageSize = adj.page_size;
+                    const maxVal = Math.max(lower, upper - pageSize);
+                    if (maxVal > lower) {
+                        const step = Math.max(30, adj.step_increment || 40);
+                        adj.value = Math.clamp(adj.value + delta * step, lower, maxVal);
+                        return Clutter.EVENT_STOP;
+                    }
+                }
+                return Clutter.EVENT_PROPAGATE;
+            }, this);
+        }
+    }
+    this.updateBounds();
+};
+
+AppmenuHorizontalFadeEffect.prototype.detach = function() {
+    if (this._scrollView) {
+        this._scrollView.disconnectObject(this);
+        this._scrollView = null;
+    }
+    if (this._adj) {
+        this._adj.disconnectObject(this);
+        this._adj = null;
+    }
+    this._updateAdj = null;
+    if (this._targetActor) {
+        this._targetActor.disconnectObject(this);
+        this._targetActor = null;
+    }
+};
+
+AppmenuHorizontalFadeEffect.prototype.updateBounds = function() {
+    if (!this._targetActor) return;
+    const [w, h] = this._targetActor.get_size();
+    if (w > 0 && h > 0) {
+        _setShaderFloat(this, 'width', w);
+        _setShaderFloat(this, 'height', h);
+        _setShaderFloat(this, 'fade_offset_left', this._leftOffset);
+        _setShaderFloat(this, 'fade_offset_right', this._rightOffset);
+        _setShaderFloat(this, 'fade_edges_left', this._fadeLeft ? 1.0 : 0.0);
+        _setShaderFloat(this, 'fade_edges_right', this._fadeRight ? 1.0 : 0.0);
+        this.queue_repaint();
+    }
+    if (this._updateAdj) {
+        this._updateAdj();
+    }
+};
+
+function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0, scrollView = null) {
+    if (!actor) return null;
+    let target = actor;
+    let scroll = scrollView;
+    if (!scroll && actor.hadjustment) {
+        scroll = actor;
+        if (actor.get_parent()) {
+            target = actor.get_parent();
+        }
+    }
+    const effect = new AppmenuHorizontalFadeEffect(leftOffset, rightOffset);
+    effect.attachTo(target, scroll);
+    return effect;
+}
+
+        // Category Filter Bar with horizontal scroll wrapper and left/right fade
+        this._appsCategoryWrapper = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            style: 'height: 24px; min-height: 24px; max-height: 24px; margin-bottom: 8px; margin-left: 18px; margin-right: 18px;',
+        });
+        this._appsView.add_child(this._appsCategoryWrapper);
+
         this._appsCategoryScrollView = new St.ScrollView({
             style_class: 'mac-category-scroll',
             overlay_scrollbars: true,
             vscrollbar_policy: St.PolicyType.NEVER,
-            hscrollbar_policy: St.PolicyType.AUTOMATIC,
+            hscrollbar_policy: St.PolicyType.EXTERNAL,
             enable_mouse_scrolling: true,
             x_expand: true,
-            style: 'height: 24px; min-height: 24px; max-height: 24px; margin-bottom: 8px; margin-left: 18px; margin-right: 18px;',
+            style: 'height: 24px; min-height: 24px; max-height: 24px;',
         });
+        this._appsCategoryWrapper.add_child(this._appsCategoryScrollView);
+        applyAppmenuHorizontalFade(this._appsCategoryWrapper, 24.0, 24.0, this._appsCategoryScrollView);
+
         this._appsCategoryRow = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'height: 20px; min-height: 20px;',
         });
         this._appsCategoryScrollView.add_child(this._appsCategoryRow);
-        this._appsView.add_child(this._appsCategoryScrollView);
         this._buildAppsCategoryButtons();
+
+        try {
+            for (const child of this._appsCategoryScrollView.get_children()) {
+                if (child instanceof St.ScrollBar) {
+                    child.hide();
+                    child.opacity = 0;
+                    child.height = 0;
+                    child.width = 0;
+                    child.visible = false;
+                }
+            }
+        } catch (_) {}
 
         this._appsScrollWrapper = new St.Widget({
             layout_manager: new Clutter.BinLayout(),
@@ -2013,6 +2230,14 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._selectedAppsCategory = null;
                 this._buildAppsCategoryButtons();
                 this._loadAppsView();
+                try {
+                    const vAdj = this._appsScrollView?.get_vadjustment?.() || this._appsScrollView?.vadjustment;
+                    if (vAdj) vAdj.set_value(0);
+                } catch (_) {}
+                try {
+                    const hAdj = this._appsCategoryScrollView?.get_hadjustment?.() || this._appsCategoryScrollView?.hadjustment;
+                    if (hAdj) hAdj.set_value(0);
+                } catch (_) {}
                 this._expandToHeight(530);
             } else if (newMode === 'clipboard') {
                 const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-clipboard.svg`);
@@ -2154,6 +2379,14 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._selectedAppsCategory = null;
                 this._buildAppsCategoryButtons();
                 this._loadAppsView();
+                try {
+                    const vAdj = this._appsScrollView?.get_vadjustment?.() || this._appsScrollView?.vadjustment;
+                    if (vAdj) vAdj.set_value(0);
+                } catch (_) {}
+                try {
+                    const hAdj = this._appsCategoryScrollView?.get_hadjustment?.() || this._appsCategoryScrollView?.hadjustment;
+                    if (hAdj) hAdj.set_value(0);
+                } catch (_) {}
             } else if (initialMode === 'clipboard') {
                 const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-clipboard.svg`);
                 this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
@@ -2415,6 +2648,14 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._resultsBox.destroy_all_children();
             this._resultButtons = [];
             this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
+            try {
+                const vAdj = this._appsScrollView?.get_vadjustment?.() || this._appsScrollView?.vadjustment;
+                if (vAdj) vAdj.set_value(0);
+            } catch (_) {}
+            try {
+                const hAdj = this._appsCategoryScrollView?.get_hadjustment?.() || this._appsCategoryScrollView?.hadjustment;
+                if (hAdj) hAdj.set_value(0);
+            } catch (_) {}
             return;
         }
 
@@ -2477,6 +2718,14 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._resultsBox.destroy_all_children();
                 this._resultButtons = [];
                 this._box.set_size(DIALOG_WIDTH, PILL_HEIGHT);
+                try {
+                    const vAdj = this._appsScrollView?.get_vadjustment?.() || this._appsScrollView?.vadjustment;
+                    if (vAdj) vAdj.set_value(0);
+                } catch (_) {}
+                try {
+                    const hAdj = this._appsCategoryScrollView?.get_hadjustment?.() || this._appsCategoryScrollView?.hadjustment;
+                    if (hAdj) hAdj.set_value(0);
+                } catch (_) {}
                 this._box.translation_x = 0;
                 this._box.translation_y = 0;
                 this._box.scale_x = 1.0;
@@ -3221,6 +3470,15 @@ export const MacSpotlightDialog = GObject.registerClass({
         const hasFilter = !!q || !!this._selectedAppsCategory;
 
         if (!hasFilter && this._appsDefaultLoaded && this._appsContentBox.get_n_children() > 0) {
+            try {
+                const vAdj = this._appsScrollView?.get_vadjustment?.() || this._appsScrollView?.vadjustment;
+                if (vAdj) vAdj.set_value(0);
+            } catch (_) {}
+            try {
+                const hAdj = this._appsCategoryScrollView?.get_hadjustment?.() || this._appsCategoryScrollView?.hadjustment;
+                if (hAdj) hAdj.set_value(0);
+            } catch (_) {}
+            this._setSelectedAppIndex(0);
             return;
         }
 
@@ -3246,7 +3504,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             if (!hasFilter && i === APPS_COLUMNS) {
                 const sep = new St.Widget({
                     x_expand: true,
-                    style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.12); margin: 4px 6px 6px 6px;',
+                    style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.12); margin: 6px 6px 12px 6px;',
                 });
                 this._appsContentBox.add_child(sep);
             }
@@ -3255,7 +3513,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 currentRow = new St.BoxLayout({
                     vertical: false,
                     x_expand: true,
-                    style: 'margin-bottom: 4px;',
+                    style: 'margin-bottom: 11px;',
                 });
                 this._appsContentBox.add_child(currentRow);
             }
@@ -3271,6 +3529,15 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._setSelectedAppIndex(0);
         }
 
+        try {
+            const vAdj = this._appsScrollView?.get_vadjustment?.() || this._appsScrollView?.vadjustment;
+            if (vAdj) vAdj.set_value(0);
+        } catch (_) {}
+        try {
+            const hAdj = this._appsCategoryScrollView?.get_hadjustment?.() || this._appsCategoryScrollView?.hadjustment;
+            if (hAdj) hAdj.set_value(0);
+        } catch (_) {}
+
         if (!hasFilter) {
             this._appsDefaultLoaded = true;
         } else {
@@ -3279,7 +3546,7 @@ export const MacSpotlightDialog = GObject.registerClass({
     }
 
     _setSelectedAppIndex(index) {
-        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 68px; min-height: 68px; max-height: 68px; margin: 0 1px; padding: 3px 2px 2px 2px; border-radius: 10px;`;
+        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 74px; min-height: 74px; max-height: 74px; margin: 0 1px; padding: 4px 2px 4px 2px; border-radius: 11px;`;
         if (this._selectedAppIndex >= 0 && this._appsGridButtons[this._selectedAppIndex]) {
             const prev = this._appsGridButtons[this._selectedAppIndex];
             prev.remove_style_class_name('selected');
@@ -3307,7 +3574,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         item.set_width(APPS_COLUMN_WIDTH);
         item.width = APPS_COLUMN_WIDTH;
-        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 68px; min-height: 68px; max-height: 68px; margin: 0 1px; padding: 3px 2px 2px 2px; border-radius: 10px;`;
+        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 74px; min-height: 74px; max-height: 74px; margin: 0 1px; padding: 4px 2px 4px 2px; border-radius: 11px;`;
         item.set_style(`${baseStyle} background-color: transparent;`);
 
         const box = new St.BoxLayout({
@@ -3319,7 +3586,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         item.set_child(box);
 
         const iconActor = createSmoothAppIcon(app, APPS_ICON_SIZE);
-        iconActor.set_style('margin-bottom: 2px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
+        iconActor.set_style('margin-bottom: 4px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
         box.add_child(iconActor);
 
         const label = new St.Label({

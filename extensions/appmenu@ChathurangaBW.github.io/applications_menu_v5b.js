@@ -1137,7 +1137,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         item.set_child(box);
 
         const iconActor = createSmoothAppIcon(app, ICON_SIZE);
-        iconActor.set_style('margin-bottom: 2px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
+        iconActor.set_style('margin-bottom: 4px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
         box.add_child(iconActor);
 
         const label = new St.Label({
