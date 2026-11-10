@@ -19429,3 +19429,37 @@ Task 692: Редизайн та пропорційна оптимізація б
    - `bin/mac-audit-sync check`: 100% PASS! System and repository are in sync.
 
 4. Статус: Завершено.
+
+
+================================================================================
+Task 693: Усунення подвійного огортання (вкладених карток) для пунктів списків AdwExpanderRow у параметрах системи
+Дата: 10 листопада 2026
+Статус: Завершено (SUCCESS)
+
+1. Вимоги завдання:
+   - Усунути візуальний дефект у параметрах системи (GNOME Control Center), коли для списків параметрів (AdwExpanderRow) усередині загальної картки групи створювався додатковий внутрішній елемент-обгортка (окрема картка з рамкою, фоном, тінню та радіусом).
+   - Забезпечити відображення всіх пунктів списку в єдиній цілісній картці без внутрішніх ізольованих рамок навколо кожного пункту.
+   - Забезпечити, щоб кнопка розгортання параметра просто розгортала дочірній вміст внизу всередині тієї ж самої картки з акуратними розділювачами.
+
+2. Виявлені особливості та технічні рішення:
+   - Внутрішня структура Libadwaita AdwExpanderRow:
+     * Віджет AdwExpanderRow містить внутрішній GtkListBox для рядка заголовка (row.expander > box > list) та ще один внутрішній GtkListBox з класом .nested для дочірніх рядків (row.expander > box > revealer > list.nested).
+     * У CSS стилів параметрів (control-center/libmac_settings.c та bin/mac-build-theme) використовувалися надто широкі селектори: preferencesgroup list, preferencespage list.
+     * Внаслідок цього внутрішній list кожного AdwExpanderRow отримував повний набір властивостей картки: background-color, border: 1px solid, border-radius: 14px, box-shadow, margin: 12px 15px.
+     * Додатково правило preferencesgroup list > row:only-child надавало внутрішньому заголовку border-radius: 14px, перетворюючи кожен пункт списку на окрему капсулу-бульбашку всередині зовнішньої картки.
+   - Реалізовані зміни:
+     * У control-center/libmac_settings.c, gnome-control-center-overlay/libmac_settings.c та bin/mac-build-theme звужено область дії селекторів карток до прямих контейнерів груп: list.boxed-list:not(.nested), preferencesgroup > box > box > list.boxed-list:not(.nested), preferencesgroup > box > list.boxed-list:not(.nested), виключивши будь-які внутрішні списки expander-рядків.
+     * Впроваджено явне скидання стилів для row.expander, adwexpanderrow, row.expander > box > list, row.expander list.nested: прозорий фон, відсутність меж (border: none), нульові відступи (margin: 0; padding: 0;), відсутність тіней та заокруглень.
+     * Додано підтримку плавних розділювачів (border-image: linear-gradient(...)) для розгорнутих вкладених списків row.expander:checked list.nested та row.expander list.nested > row.
+     * Налаштовано коректні заокруглення кутів (14px) тільки для крайніх елементів при розгортанні: row:last-child.expander:checked list.nested > row:last-child.
+   - Бібліотеку libmac_settings.so перекомпільовано та синхронізовано в усіх системних каталогах (/usr/lib/x86_64-linux-gnu/, /usr/local/lib/, ~/.local/lib/, /usr/share/mactheme/gnome-control-center-overlay/).
+   - Виконано mac-build-theme для оновлення системних тем GTK-4.0 та GTK-3.0.
+
+3. Результати верифікації:
+   - Всі пункти списків у параметрах (зокрема "Асистент з набирання" / Typing Assist) відображаються як суцільні безшовні рядки всередині єдиної зовнішньої картки.
+   - Подвійні обгортки та ізольовані внутрішні рамки навколо пунктів повністю усунуто.
+   - При розгортанні елемента дочірні пункти плавно розгортаються вниз безпосередньо всередині картки з тонким розділювачем та відповідним macOS відступом.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
+
+4. Статус: Завершено.

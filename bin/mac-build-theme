@@ -548,14 +548,12 @@ placessidebar row:selected .sidebar-neutral-icon {{
 /* =========================================================================
  * 3. Cards & Grouped Containers (Unified macW1Y Boxed Lists)
  * ========================================================================= */
-list.boxed-list,
-preferencesgroup list,
-preferencesgroup > box > box > list,
-preferencesgroup > box > list,
-preferencespage list.boxed-list,
-preferencespage list,
-.content-pane list.boxed-list,
-.mac-settings-content list.boxed-list,
+list.boxed-list:not(.nested),
+preferencesgroup > box > box > list.boxed-list:not(.nested),
+preferencesgroup > box > list.boxed-list:not(.nested),
+preferencespage list.boxed-list:not(.nested),
+.content-pane list.boxed-list:not(.nested),
+.mac-settings-content list.boxed-list:not(.nested),
 .card {{
   background-color: var(--mac-card-bg, {c["card_bg"]});
   background-image: none;
@@ -565,6 +563,76 @@ preferencespage list,
   margin-left: {d["card_margin_x"]}px;
   margin-right: {d["card_margin_x"]}px;
   margin-bottom: {d["card_margin_bottom"]}px;
+}}
+
+/* Expander row reset & child list styling */
+row.expander,
+adwexpanderrow,
+list.boxed-list row.expander,
+list.boxed-list adwexpanderrow,
+preferencesgroup row.expander,
+preferencespage row.expander {{
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+}}
+
+row.expander > box > list,
+row.expander list.nested,
+row.expander list,
+adwexpanderrow list,
+list.boxed-list row.expander list,
+preferencesgroup row.expander list,
+preferencespage row.expander list,
+preferencesgroup list.nested,
+preferencespage list.nested {{
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+}}
+
+row.expander row.header,
+row.expander > box.header,
+row.expander > box > list > row.header,
+adwexpanderrow row.header {{
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  background-color: transparent;
+}}
+
+row.expander list.nested > row {{
+  min-height: {d["row_min_height"]}px;
+  padding: 0px {d["row_padding_x"]}px 0px 24px;
+  margin: 0px;
+  background-color: transparent;
+}}
+
+row.expander list.nested > row:hover {{
+  background-color: {c["row_hover"]};
+}}
+
+row.expander list.nested > row:active {{
+  background-color: {c["row_active"]};
+}}
+
+list.boxed-list > row:last-child.expander:checked list.nested > row:last-child,
+list.boxed-list > row:only-child.expander:checked list.nested > row:last-child {{
+  border-bottom-left-radius: {g["card_radius"]}px;
+  border-bottom-right-radius: {g["card_radius"]}px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
 }}
 
 list.boxed-list row,
@@ -641,7 +709,9 @@ preferencespage list.boxed-list row:not(.expander):hover,
 list.boxed-list > row + row,
 preferencespage list.boxed-list > row + row,
 .content-pane list.boxed-list > row + row,
-.mac-settings-content list.boxed-list > row + row {{
+.mac-settings-content list.boxed-list > row + row,
+row.expander:checked list.nested,
+row.expander list.nested > row {{
   border-top: 1px solid transparent;
   border-image: linear-gradient(to right, transparent 0%, transparent 2%, {c["card_separator"]} 2%, {c["card_separator"]} 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
 }}
