@@ -881,9 +881,11 @@ install_settings_overlay() {
     fi
     
     rm -f "$APP_DIR/mac-styling-settings.desktop"
+    rm -f "$APP_DIR/mac-widgets-settings.desktop"
+    sudo rm -f "/usr/share/applications/mac-widgets-settings.desktop" 2>/dev/null || true
     
     # 1. Core macOS theme components (always installed)
-    for core_df in launchpad.desktop mac-app-launcher.desktop org.gnome.Settings.desktop mac-widgets-settings.desktop; do
+    for core_df in launchpad.desktop mac-app-launcher.desktop org.gnome.Settings.desktop; do
         if [ -f "$SCRIPT_DIR/applications/$core_df" ]; then
             cp -f "$SCRIPT_DIR/applications/$core_df" "$APP_DIR/"
             sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/$core_df" 2>/dev/null || true

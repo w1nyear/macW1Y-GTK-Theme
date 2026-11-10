@@ -19463,3 +19463,33 @@ Task 693: Усунення подвійного огортання (вкладе
    - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
 
 4. Статус: Завершено.
+
+
+================================================================================
+Task 694: Видалення ярлика «Віджети» зі списку програм
+Дата: 10 листопада 2026
+Статус: Завершено (SUCCESS)
+
+1. Вимоги завдання:
+   - Видалити програму/ярлик «Віджети» (Desktop Widgets) зі списку встановлених програм (папка «Програми» в Nautilus та меню застосунків).
+   - Забезпечити, щоб налаштування віджетів залишалися доступними в стандартному вікні «Параметри» (GNOME Settings), але не відображалися як окрема програма в каталозі ~/Applications.
+
+2. Реалізовані зміни та технічні рішення:
+   - Демон синхронізації застосунків (bin/mac-sync-applications):
+     * Додано mac-widgets-settings.desktop та mac-styling-settings.desktop до SYSTEM_DESKTOP_EXCLUDES та перевірки фільтрації.
+     * Оновлену версію встановлено в /usr/local/bin/mac-sync-applications та перезапущено активний демон.
+   - Інсталятор системи (install.sh):
+     * Вилучено mac-widgets-settings.desktop зі списку core_df.
+     * Додано автоматичне видалення mac-widgets-settings.desktop з $APP_DIR та /usr/share/applications/.
+   - Стільничні файли та бази даних:
+     * У applications/mac-widgets-settings.desktop додано NoDisplay=true.
+     * Видалено /usr/share/applications/mac-widgets-settings.desktop, ~/.local/share/applications/mac-widgets-settings.desktop та ~/Applications/Віджети.desktop.
+     * Оновлено кеш баз даних desktop-файлів через update-desktop-database.
+     * Проведено синхронізацію через mac-sync-applications sync (перевірено відсутність ярлика у ~/Applications).
+
+3. Результати верифікації:
+   - У каталозі ~/Applications/ (папка «Програми» в Nautilus) ярлик «Віджети» повністю видалено.
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
+
+4. Статус: Завершено.

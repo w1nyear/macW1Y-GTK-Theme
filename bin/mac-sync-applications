@@ -12,7 +12,9 @@ SYSTEM_DESKTOP_EXCLUDES = {
     'org.gnome.Extensions.desktop',
     'session-properties.desktop',
     'org.gnome.Nautilus.desktop',
-    'nautilus.desktop'
+    'nautilus.desktop',
+    'mac-widgets-settings.desktop',
+    'mac-styling-settings.desktop'
 }
 
 def get_gpu_targets():
@@ -430,7 +432,7 @@ def _sync_internal():
                 base = file
                 if base in seen_ids:
                     continue
-                if base in ('wine.desktop', 'winetricks.desktop') or base.startswith(('winecfg', 'wine-wineboot', 'winefile', 'wineconsole', 'winedbg', 'winepath')):
+                if base in ('wine.desktop', 'winetricks.desktop', 'mac-widgets-settings.desktop', 'mac-styling-settings.desktop') or base.startswith(('winecfg', 'wine-wineboot', 'winefile', 'wineconsole', 'winedbg', 'winepath')):
                     continue
                 try:
                     app_info = Gio.DesktopAppInfo.new_from_filename(f)
