@@ -211,8 +211,8 @@ navigation-split-view list.navigation-sidebar row,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row,
 window.nautilus-window .sidebar-pane placessidebar row {
   min-height: 32px;
-  padding: 3px 6px;
-  margin: 1.5px 8px;
+  padding: 3px 6px 3px 4px;
+  margin: 1.5px 8px 1.5px 4px;
   border-radius: 8px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.90);
@@ -366,6 +366,48 @@ image.sidebar-neutral-icon {
   min-height: 18px;
   -gtk-icon-size: 18px;
   margin-right: 8px;
+  margin-left: 3px;
+  color: rgba(255, 255, 255, 0.90);
+}
+
+placessidebar .navigation-sidebar > row button.sidebar-button,
+placessidebar row button.sidebar-button,
+placessidebar row #eject_button,
+placessidebar row button,
+.nautilus-window .sidebar-pane placessidebar row button.sidebar-button,
+.nautilus-window .sidebar-pane placessidebar row button#eject_button,
+.nautilus-window .sidebar-pane placessidebar row button,
+window.nautilus-window .sidebar-pane placessidebar row button.sidebar-button,
+window.nautilus-window .sidebar-pane placessidebar row button#eject_button,
+window.nautilus-window .sidebar-pane placessidebar row button {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  margin: 0 4px 0 0;
+  border-radius: 9999px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+placessidebar .navigation-sidebar > row button.sidebar-button image,
+placessidebar .navigation-sidebar > row button.sidebar-button > image,
+placessidebar row button.sidebar-button image,
+placessidebar row #eject_button image,
+placessidebar row button image,
+.nautilus-window .sidebar-pane placessidebar row button.sidebar-button image,
+.nautilus-window .sidebar-pane placessidebar row button#eject_button image,
+.nautilus-window .sidebar-pane placessidebar row button image,
+window.nautilus-window .sidebar-pane placessidebar row button.sidebar-button image,
+window.nautilus-window .sidebar-pane placessidebar row button#eject_button image,
+window.nautilus-window .sidebar-pane placessidebar row button image,
+image.mac-eject-icon,
+.mac-eject-icon {
+  min-width: 14px;
+  min-height: 14px;
+  -gtk-icon-size: 14px;
+  margin: 0;
+  padding: 0;
   color: rgba(255, 255, 255, 0.90);
 }
 
@@ -1054,40 +1096,48 @@ window.nautilus-window .nautilus-pathbar > scrolledwindow undershoot.right {
   border: none;
 }
 
-/* Nautilus History Controls (< | >) — transparent pill capsule, circular buttons */
+/* Nautilus History Controls (< | >) — proportional 26px height matching right view button */
+.nautilus-window headerbar .mac-history-controls,
 .nautilus-window headerbar NautilusHistoryControls,
 .nautilus-window headerbar .history-controls,
 .nautilus-window headerbar #history_controls,
 headerbar NautilusHistoryControls {
+  min-height: 26px;
   background: transparent;
   background-color: transparent;
   border: none;
+  padding: 0;
+  margin: 2px 4px;
 }
 
+.nautilus-window headerbar .mac-history-controls > box,
+.nautilus-window headerbar .mac-history-controls box,
 .nautilus-window headerbar NautilusHistoryControls > box,
 .nautilus-window headerbar .history-controls > box,
 .nautilus-window headerbar #history_controls > box {
+  min-height: 26px;
   border-radius: 9999px;
-  background: transparent;
-  background-color: transparent;
-  background-image: none;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-  margin: 0 4px;
+  background-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  padding: 0 1px;
+  margin: 0;
   border-spacing: 0;
 }
 
+.nautilus-window headerbar .mac-history-controls button,
+.nautilus-window headerbar button.mac-history-button,
+button.mac-history-button,
 .nautilus-window headerbar NautilusHistoryControls button,
 .nautilus-window headerbar .history-controls button,
 .nautilus-window headerbar #history_controls button,
 headerbar NautilusHistoryControls button,
 headerbar .history-controls button,
 NautilusHistoryControls button {
-  min-width: 18px;
-  min-height: 18px;
-  padding: 1px 3px;
-  margin: 0 1px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  margin: 1px 0;
   border-radius: 9999px;
   background: transparent;
   background-color: transparent;
@@ -1100,15 +1150,19 @@ NautilusHistoryControls button {
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
+.nautilus-window headerbar button.mac-history-button image,
+button.mac-history-button image,
 .nautilus-window headerbar NautilusHistoryControls button image,
 .nautilus-window headerbar .history-controls button image,
 .nautilus-window headerbar #history_controls button image,
 headerbar NautilusHistoryControls button image,
 headerbar .history-controls button image,
 NautilusHistoryControls button image {
-  min-width: 11px;
-  min-height: 11px;
-  -gtk-icon-size: 11px;
+  min-width: 12px;
+  min-height: 12px;
+  -gtk-icon-size: 12px;
+  margin: 0;
+  padding: 0;
 }
 
 .nautilus-window headerbar NautilusHistoryControls button:first-child,
@@ -1235,22 +1289,18 @@ NautilusHistoryControls button:active {
   color: #ffffff;
 }
 
-/* Nautilus headerbar individual circular control buttons (Search, Menu) — 1.5x smaller */
+/* Nautilus headerbar individual circular control buttons (Search) */
 .nautilus-window .content-pane headerbar box.end > button,
 .nautilus-window .content-pane headerbar .end > button,
 .nautilus-window headerbar box.end > button,
 .nautilus-window headerbar .end > button,
 .nautilus-window headerbar button.mac-circle-button,
-.nautilus-window headerbar menubutton.mac-circle-button > button,
-.nautilus-window headerbar box.end > menubutton > button,
-.nautilus-window headerbar .end > menubutton > button,
-.nautilus-window .content-pane headerbar box.end > menubutton > button,
-.nautilus-window .content-pane headerbar .end > menubutton > button {
-  min-width: 19px;
-  min-height: 19px;
+.nautilus-window headerbar button.mac-search-button {
+  min-width: 26px;
+  min-height: 26px;
   border-radius: 9999px;
   padding: 0;
-  margin: 2px 3px;
+  margin: 2px 4px;
   background-color: rgba(255, 255, 255, 0.09);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
@@ -1258,19 +1308,29 @@ NautilusHistoryControls button:active {
   transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
 }
 
+.nautilus-window headerbar menubutton.mac-circle-button,
+.nautilus-window headerbar box.end > menubutton,
+.nautilus-window headerbar .end > menubutton,
+.nautilus-window .content-pane headerbar box.end > menubutton,
+.nautilus-window .content-pane headerbar .end > menubutton {
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+
 .nautilus-window .content-pane headerbar box.end > button image,
 .nautilus-window .content-pane headerbar .end > button image,
 .nautilus-window headerbar box.end > button image,
 .nautilus-window headerbar .end > button image,
 .nautilus-window headerbar button.mac-circle-button image,
-.nautilus-window headerbar menubutton.mac-circle-button > button image,
-.nautilus-window headerbar box.end > menubutton > button image,
-.nautilus-window headerbar .end > menubutton > button image,
-.nautilus-window .content-pane headerbar box.end > menubutton > button image,
-.nautilus-window .content-pane headerbar .end > menubutton > button image {
-  min-width: 11px;
-  min-height: 11px;
-  -gtk-icon-size: 11px;
+.nautilus-window headerbar button.mac-search-button image {
+  min-width: 13px;
+  min-height: 13px;
+  -gtk-icon-size: 13px;
+  margin: 0;
+  padding: 0;
 }
 
 .nautilus-window .content-pane headerbar box.end > button:hover,

@@ -743,10 +743,24 @@ static gint mac_sidebar_sort_func(GtkListBoxRow *row1, GtkListBoxRow *row2, gpoi
     return res;
 }
 
+static gboolean is_inside_button(GtkWidget *widget)
+{
+    for (GtkWidget *p = widget; p != NULL; p = gtk_widget_get_parent(p)) {
+        if (GTK_IS_BUTTON(p)) return TRUE;
+    }
+    return FALSE;
+}
+
 static void find_and_style_images(GtkWidget *widget, gboolean orange G_GNUC_UNUSED)
 {
     if (!widget) return;
     if (GTK_IS_IMAGE(widget)) {
+        if (is_inside_button(widget)) {
+            gtk_widget_remove_css_class(widget, "sidebar-orange-icon");
+            gtk_widget_remove_css_class(widget, "sidebar-neutral-icon");
+            gtk_widget_add_css_class(widget, "mac-eject-icon");
+            return;
+        }
         gtk_widget_remove_css_class(widget, "sidebar-orange-icon");
         gtk_widget_add_css_class(widget, "sidebar-neutral-icon");
         return;
@@ -1023,11 +1037,31 @@ static void find_split_view(GtkWidget *widget, AdwOverlaySplitView **split_view)
 
 static void remove_from_headerbar(AdwHeaderBar *hb, GtkWidget *widget)
 {
-    if (!hb || !widget) return;
-    adw_header_bar_remove(hb, widget);
+    if (!hb || !widget || !GTK_IS_WIDGET(widget)) return;
+    g_object_ref(widget);
     GtkWidget *parent = gtk_widget_get_parent(widget);
     if (parent && GTK_IS_BOX(parent)) {
         gtk_box_remove(GTK_BOX(parent), widget);
+    } else {
+        adw_header_bar_remove(hb, widget);
+    }
+    gtk_widget_set_visible(widget, FALSE);
+    g_object_unref(widget);
+}
+
+static void style_history_buttons(GtkWidget *widget)
+{
+    if (!widget) return;
+    gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+    gtk_widget_set_size_request(widget, -1, 26);
+    if (GTK_IS_BUTTON(widget)) {
+        gtk_widget_set_size_request(widget, 24, 24);
+        gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+        gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
+        gtk_widget_add_css_class(widget, "mac-history-button");
+    }
+    for (GtkWidget *ch = gtk_widget_get_first_child(widget); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
+        style_history_buttons(ch);
     }
 }
 
@@ -1035,8 +1069,15 @@ static void shift_start_box(GtkWidget *widget)
 {
     if (!widget) return;
     if (g_strcmp0(G_OBJECT_TYPE_NAME(widget), "NautilusHistoryControls") == 0) {
-        gtk_widget_set_margin_start(widget, 15);
-        fprintf(stderr, "[MAC-NAUTILUS] Found NautilusHistoryControls! Set margin_start to 15\n");
+        fprintf(stderr, "[MAC-NAUTILUS] History controls type=%s css_name=%s\n",
+                G_OBJECT_TYPE_NAME(widget), gtk_widget_get_css_name(widget));
+        gtk_widget_add_css_class(widget, "mac-history-controls");
+        gtk_widget_set_margin_start(widget, 10);
+        gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+        gtk_widget_set_halign(widget, GTK_ALIGN_CENTER);
+        gtk_widget_set_size_request(widget, -1, 26);
+        style_history_buttons(widget);
+        fprintf(stderr, "[MAC-NAUTILUS] Found NautilusHistoryControls! Configured proportional 26px height\n");
         return;
     }
     for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
@@ -1259,45 +1300,46 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window headerbar box.end > button,\n"
             "window.nautilus-window headerbar .end > button,\n"
             "window.nautilus-window headerbar button.mac-circle-button,\n"
-            "window.nautilus-window headerbar menubutton.mac-circle-button > button,\n"
-            "window.nautilus-window headerbar box.end > menubutton > button,\n"
-            "window.nautilus-window headerbar .end > menubutton > button,\n"
-            "window.nautilus-window .content-pane headerbar box.end > menubutton > button,\n"
-            "window.nautilus-window .content-pane headerbar .end > menubutton > button {\n"
-            "    min-width: 19px;\n"
-            "    min-height: 19px;\n"
+            "window.nautilus-window headerbar button.mac-search-button {\n"
+            "    min-width: 26px;\n"
+            "    min-height: 26px;\n"
             "    border-radius: 9999px;\n"
             "    padding: 0;\n"
-            "    margin: 2px 3px;\n"
+            "    margin: 2px 4px;\n"
             "    background-color: rgba(255, 255, 255, 0.09);\n"
             "    border: 1px solid rgba(255, 255, 255, 0.08);\n"
             "    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);\n"
             "    color: rgba(255, 255, 255, 0.90);\n"
+            "}\n"
+            "window.nautilus-window headerbar menubutton.mac-circle-button,\n"
+            "window.nautilus-window headerbar box.end > menubutton,\n"
+            "window.nautilus-window headerbar .end > menubutton,\n"
+            "window.nautilus-window .content-pane headerbar box.end > menubutton,\n"
+            "window.nautilus-window .content-pane headerbar .end > menubutton {\n"
+            "    opacity: 0;\n"
+            "    min-width: 0;\n"
+            "    min-height: 0;\n"
+            "    padding: 0;\n"
+            "    margin: 0;\n"
             "}\n"
             "window.nautilus-window .content-pane headerbar box.end > button image,\n"
             "window.nautilus-window .content-pane headerbar .end > button image,\n"
             "window.nautilus-window headerbar box.end > button image,\n"
             "window.nautilus-window headerbar .end > button image,\n"
             "window.nautilus-window headerbar button.mac-circle-button image,\n"
-            "window.nautilus-window headerbar menubutton.mac-circle-button > button image,\n"
-            "window.nautilus-window headerbar box.end > menubutton > button image,\n"
-            "window.nautilus-window headerbar .end > menubutton > button image,\n"
-            "window.nautilus-window .content-pane headerbar box.end > menubutton > button image,\n"
-            "window.nautilus-window .content-pane headerbar .end > menubutton > button image {\n"
-            "    min-width: 11px;\n"
-            "    min-height: 11px;\n"
-            "    -gtk-icon-size: 11px;\n"
+            "window.nautilus-window headerbar button.mac-search-button image {\n"
+            "    min-width: 13px;\n"
+            "    min-height: 13px;\n"
+            "    -gtk-icon-size: 13px;\n"
+            "    margin: 0;\n"
+            "    padding: 0;\n"
             "}\n"
             "window.nautilus-window .content-pane headerbar box.end > button:hover,\n"
             "window.nautilus-window .content-pane headerbar .end > button:hover,\n"
             "window.nautilus-window headerbar box.end > button:hover,\n"
             "window.nautilus-window headerbar .end > button:hover,\n"
             "window.nautilus-window headerbar button.mac-circle-button:hover,\n"
-            "window.nautilus-window headerbar menubutton.mac-circle-button > button:hover,\n"
-            "window.nautilus-window headerbar box.end > menubutton > button:hover,\n"
-            "window.nautilus-window headerbar .end > menubutton > button:hover,\n"
-            "window.nautilus-window .content-pane headerbar box.end > menubutton > button:hover,\n"
-            "window.nautilus-window .content-pane headerbar .end > menubutton > button:hover {\n"
+            "window.nautilus-window headerbar button.mac-search-button:hover {\n"
             "    background-color: rgba(255, 255, 255, 0.16);\n"
             "    border-color: rgba(255, 255, 255, 0.12);\n"
             "    color: #ffffff;\n"
@@ -1312,14 +1354,8 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window headerbar .end > button:checked,\n"
             "window.nautilus-window headerbar button.mac-circle-button:active,\n"
             "window.nautilus-window headerbar button.mac-circle-button:checked,\n"
-            "window.nautilus-window headerbar menubutton.mac-circle-button > button:active,\n"
-            "window.nautilus-window headerbar menubutton.mac-circle-button > button:checked,\n"
-            "window.nautilus-window headerbar box.end > menubutton > button:active,\n"
-            "window.nautilus-window headerbar box.end > menubutton > button:checked,\n"
-            "window.nautilus-window headerbar .end > menubutton > button:active,\n"
-            "window.nautilus-window headerbar .end > menubutton > button:checked,\n"
-            "window.nautilus-window .content-pane headerbar box.end > menubutton > button:active,\n"
-            "window.nautilus-window .content-pane headerbar box.end > menubutton > button:checked {\n"
+            "window.nautilus-window headerbar button.mac-search-button:active,\n"
+            "window.nautilus-window headerbar button.mac-search-button:checked {\n"
             "    background-color: rgba(255, 255, 255, 0.24);\n"
             "    border-color: rgba(255, 255, 255, 0.16);\n"
             "    color: #ffffff;\n"
@@ -1407,23 +1443,61 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "    border: none;\n"
             "    box-shadow: none;\n"
             "}\n"
-            "window.nautilus-window headerbar NautilusHistoryControls button,\n"
-            "window.nautilus-window headerbar #history_controls button {\n"
-            "    min-width: 16px;\n"
-            "    min-height: 16px;\n"
+            "window.nautilus-window headerbar .mac-history-controls,\n"
+            "window.nautilus-window headerbar NautilusHistoryControls,\n"
+            "window.nautilus-window headerbar .history-controls,\n"
+            "window.nautilus-window headerbar #history_controls,\n"
+            "headerbar NautilusHistoryControls {\n"
+            "    min-height: 26px;\n"
+            "    padding: 0;\n"
+            "    margin: 2px 4px;\n"
+            "}\n"
+            "window.nautilus-window headerbar .mac-history-controls > box,\n"
+            "window.nautilus-window headerbar .mac-history-controls box,\n"
+            "window.nautilus-window headerbar NautilusHistoryControls > box,\n"
+            "window.nautilus-window headerbar .history-controls > box,\n"
+            "window.nautilus-window headerbar #history_controls > box {\n"
+            "    min-height: 26px;\n"
+            "    border-radius: 9999px;\n"
             "    padding: 0 1px;\n"
-            "    margin: 0 1px;\n"
+            "    margin: 0;\n"
+            "    background-color: rgba(255, 255, 255, 0.09);\n"
+            "    border: 1px solid rgba(255, 255, 255, 0.08);\n"
+            "    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);\n"
+            "}\n"
+            "window.nautilus-window headerbar .mac-history-controls button,\n"
+            "window.nautilus-window headerbar button.mac-history-button,\n"
+            "button.mac-history-button,\n"
+            "window.nautilus-window headerbar NautilusHistoryControls button,\n"
+            "window.nautilus-window headerbar .history-controls button,\n"
+            "window.nautilus-window headerbar #history_controls button,\n"
+            "headerbar NautilusHistoryControls button,\n"
+            "headerbar .history-controls button,\n"
+            "NautilusHistoryControls button {\n"
+            "    min-width: 24px;\n"
+            "    min-height: 24px;\n"
+            "    padding: 0;\n"
+            "    margin: 1px 0;\n"
             "    border-radius: 9999px;\n"
             "    background: transparent;\n"
+            "    background-color: transparent;\n"
             "    border: none;\n"
             "    box-shadow: none;\n"
             "    color: rgba(255, 255, 255, 0.88);\n"
             "}\n"
+            "window.nautilus-window headerbar button.mac-history-button image,\n"
+            "button.mac-history-button image,\n"
             "window.nautilus-window headerbar NautilusHistoryControls button image,\n"
-            "window.nautilus-window headerbar #history_controls button image {\n"
-            "    min-width: 11px;\n"
-            "    min-height: 11px;\n"
-            "    -gtk-icon-size: 11px;\n"
+            "window.nautilus-window headerbar .history-controls button image,\n"
+            "window.nautilus-window headerbar #history_controls button image,\n"
+            "headerbar NautilusHistoryControls button image,\n"
+            "headerbar .history-controls button image,\n"
+            "NautilusHistoryControls button image {\n"
+            "    min-width: 12px;\n"
+            "    min-height: 12px;\n"
+            "    -gtk-icon-size: 12px;\n"
+            "    margin: 0;\n"
+            "    padding: 0;\n"
             "}\n"
             "window.nautilus-window headerbar NautilusHistoryControls button:hover,\n"
             "window.nautilus-window headerbar #history_controls button:hover {\n"
@@ -1441,8 +1515,8 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window .sidebar-pane list.navigation-sidebar row,\n"
             "window.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row {\n"
             "    min-height: 32px;\n"
-            "    padding: 3px 6px;\n"
-            "    margin: 1.5px 8px;\n"
+            "    padding: 3px 6px 3px 4px;\n"
+            "    margin: 1.5px 8px 1.5px 4px;\n"
             "    border-radius: 8px;\n"
             "    font-size: 13px;\n"
             "    color: rgba(255, 255, 255, 0.90);\n"
@@ -1476,7 +1550,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "    box-shadow: none;\n"
             "    padding: 0;\n"
             "    margin-right: 8px;\n"
-            "    margin-left: 0px;\n"
+            "    margin-left: 3px;\n"
             "    color: rgba(255, 255, 255, 0.90);\n"
             "}\n"
             "window.nautilus-window .sidebar-pane placessidebar row:selected image,\n"
@@ -1485,6 +1559,40 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window .sidebar-pane placessidebar row:selected image.sidebar-orange-icon,\n"
             "window.nautilus-window .sidebar-pane placessidebar row:selected image.sidebar-neutral-icon {\n"
             "    color: #ffffff;\n"
+            "}\n"
+            "window.nautilus-window .sidebar-pane placessidebar row button.sidebar-button,\n"
+            "window.nautilus-window .sidebar-pane placessidebar row button#eject_button,\n"
+            "window.nautilus-window .sidebar-pane placessidebar row button,\n"
+            "placessidebar .navigation-sidebar > row button.sidebar-button,\n"
+            "placessidebar row button.sidebar-button,\n"
+            "placessidebar row #eject_button,\n"
+            "placessidebar row button {\n"
+            "    min-width: 24px;\n"
+            "    min-height: 24px;\n"
+            "    padding: 0;\n"
+            "    margin: 0 4px 0 0;\n"
+            "    border-radius: 9999px;\n"
+            "    border: none;\n"
+            "    background-color: rgba(255, 255, 255, 0.12);\n"
+            "    box-shadow: none;\n"
+            "}\n"
+            "window.nautilus-window .sidebar-pane placessidebar row button.sidebar-button image,\n"
+            "window.nautilus-window .sidebar-pane placessidebar row button#eject_button image,\n"
+            "window.nautilus-window .sidebar-pane placessidebar row button image,\n"
+            "window.nautilus-window .sidebar-pane placessidebar row button image.mac-eject-icon,\n"
+            "image.mac-eject-icon,\n"
+            ".mac-eject-icon,\n"
+            "placessidebar .navigation-sidebar > row button.sidebar-button image,\n"
+            "placessidebar .navigation-sidebar > row button.sidebar-button > image,\n"
+            "placessidebar row button.sidebar-button image,\n"
+            "placessidebar row #eject_button image,\n"
+            "placessidebar row button image {\n"
+            "    min-width: 14px;\n"
+            "    min-height: 14px;\n"
+            "    -gtk-icon-size: 14px;\n"
+            "    margin: 0;\n"
+            "    padding: 0;\n"
+            "    color: rgba(255, 255, 255, 0.90);\n"
             "}\n"
             "window.nautilus-window .sidebar-pane placessidebar row label,\n"
             "window.nautilus-window .sidebar-pane placessidebar list.navigation-sidebar row label,\n"
@@ -1582,6 +1690,8 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
         GtkWidget *search_btn = NULL;
         GtkWidget *menu_btn = NULL;
         find_buttons_in_sidebar(GTK_WIDGET(sidebar_hb), &search_btn, &menu_btn);
+        fprintf(stderr, "[MAC-NAUTILUS] find_buttons_in_sidebar: search_btn=%p, menu_btn=%p\n",
+                (void*)search_btn, (void*)menu_btn);
 
         /* 1. Hide title and title-widget in sidebar headerbar (no title near controls) */
         adw_header_bar_set_show_title(sidebar_hb, FALSE);
@@ -1593,19 +1703,22 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
         adw_header_bar_set_show_start_title_buttons(content_hb, FALSE);
         adw_header_bar_set_show_end_title_buttons(content_hb, FALSE);
 
-        /* 2. Reparent search and menu buttons to content headerbar (right side, separate buttons) */
+        /* 2. Reparent search to content headerbar, hide menu button */
         if (menu_btn) {
-            g_object_ref(menu_btn);
             remove_from_headerbar(sidebar_hb, menu_btn);
-            gtk_widget_add_css_class(menu_btn, "mac-circle-button");
-            adw_header_bar_pack_end(content_hb, menu_btn);
-            g_object_unref(menu_btn);
         }
         if (search_btn) {
             g_object_ref(search_btn);
             remove_from_headerbar(sidebar_hb, search_btn);
+            gtk_widget_set_visible(search_btn, TRUE);
+            gtk_widget_set_valign(search_btn, GTK_ALIGN_CENTER);
+            gtk_widget_set_halign(search_btn, GTK_ALIGN_CENTER);
+            gtk_widget_set_size_request(search_btn, 26, 26);
             gtk_widget_add_css_class(search_btn, "mac-circle-button");
+            gtk_widget_add_css_class(search_btn, "mac-search-button");
             adw_header_bar_pack_end(content_hb, search_btn);
+            fprintf(stderr, "[MAC-NAUTILUS] Reparented search_btn to content_hb, visible=%d\n",
+                    gtk_widget_get_visible(search_btn));
             g_object_unref(search_btn);
         }
 

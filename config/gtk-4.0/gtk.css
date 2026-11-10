@@ -10143,8 +10143,8 @@ navigation-split-view list.navigation-sidebar row,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row,
 window.nautilus-window .sidebar-pane placessidebar row {
     border-radius: 8px;
-    margin: 1.5px 8px;
-    padding: 3px 6px;
+    margin: 1.5px 8px 1.5px 4px;
+    padding: 3px 6px 3px 4px;
     min-height: 32px;
     font-size: 13px;
     color: rgba(255, 255, 255, 0.90);
@@ -10275,7 +10275,41 @@ window.nautilus-window .sidebar-pane placessidebar row image {
     box-shadow: none;
     padding: 0;
     margin-right: 8px;
-    margin-left: 0px;
+    margin-left: 3px;
+    color: rgba(255, 255, 255, 0.90);
+}
+
+/* Eject / Unmount button and icon centered inside placessidebar row */
+window.nautilus-window .sidebar-pane placessidebar row button.sidebar-button,
+window.nautilus-window .sidebar-pane placessidebar row button#eject_button,
+window.nautilus-window .sidebar-pane placessidebar row button,
+placessidebar .navigation-sidebar > row button.sidebar-button,
+placessidebar row button.sidebar-button,
+placessidebar row #eject_button,
+placessidebar row button {
+    min-width: 24px;
+    min-height: 24px;
+    padding: 0;
+    margin: 0 4px 0 0;
+    border-radius: 9999px;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.12);
+    box-shadow: none;
+}
+
+window.nautilus-window .sidebar-pane placessidebar row button.sidebar-button image,
+window.nautilus-window .sidebar-pane placessidebar row button#eject_button image,
+window.nautilus-window .sidebar-pane placessidebar row button image,
+placessidebar .navigation-sidebar > row button.sidebar-button image,
+placessidebar .navigation-sidebar > row button.sidebar-button > image,
+placessidebar row button.sidebar-button image,
+placessidebar row #eject_button image,
+placessidebar row button image {
+    min-width: 14px;
+    min-height: 14px;
+    -gtk-icon-size: 14px;
+    margin: 0;
+    padding: 0;
     color: rgba(255, 255, 255, 0.90);
 }
 
@@ -12019,9 +12053,6 @@ window.mac-settings-window button.suggested-action.circular:active {
 
 
 
-/* macW1Y Global Component Master Overrides (SSOT) */
-@import url("macw1y-components.css");
-
 /* macOS Tahoe Terminal Redesign */
 .ptyxis-window headerbar,
 .ptyxis-window headerbar.flat,
@@ -12103,3 +12134,10 @@ image.mac-terminal-folder-icon {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.85);
 }
+
+
+
+
+
+/* macW1Y Global Component Master Overrides (SSOT) */
+@import url("macw1y-components.css");
