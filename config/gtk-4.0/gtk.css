@@ -4000,36 +4000,6 @@ scale {
   padding: 12px;
 }
 
-@keyframes macSliderExpandH {
-  0% {
-    transform: scale(0.75, 0.90);
-    opacity: 0.90;
-  }
-  60% {
-    transform: scale(1.05, 1.02);
-    opacity: 1.0;
-  }
-  100% {
-    transform: scale(1.0, 1.0);
-    opacity: 1.0;
-  }
-}
-
-@keyframes macSliderExpandV {
-  0% {
-    transform: scale(0.90, 0.75);
-    opacity: 0.90;
-  }
-  60% {
-    transform: scale(1.02, 1.05);
-    opacity: 1.0;
-  }
-  100% {
-    transform: scale(1.0, 1.0);
-    opacity: 1.0;
-  }
-}
-
 scale > trough > slider {
   background-color: #ffffff;
   background-image: none;
@@ -4037,15 +4007,13 @@ scale > trough > slider {
   border-radius: 9999px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.10);
   background-clip: padding-box;
-  transform: scale(1.0);
   transition: min-width 220ms cubic-bezier(0.16, 1, 0.3, 1),
               min-height 220ms cubic-bezier(0.16, 1, 0.3, 1),
               margin 220ms cubic-bezier(0.16, 1, 0.3, 1),
               background-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
               background-image 220ms cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
-              border 220ms cubic-bezier(0.16, 1, 0.3, 1),
-              transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+              border 220ms cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
 }
 
@@ -4053,14 +4021,12 @@ scale > trough > slider:hover {
   background-color: #ffffff;
   border-color: rgba(0, 0, 0, 0.12);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22), 0 3px 10px rgba(0, 0, 0, 0.14);
-  transform: scale(1.05);
 }
 
 scale > trough > slider:active {
   background-color: transparent;
   border: none;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20);
-  transform: scale(1.0);
 }
 
 scale > trough > slider:disabled {
@@ -4087,8 +4053,6 @@ scale.horizontal:not(.marks-before):not(.marks-after) > trough > slider:active {
   background-size: 100% 100%;
   border: none;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20);
-  animation: macSliderExpandH 220ms cubic-bezier(0.16, 1, 0.3, 1);
-  transform: scale(1.0);
 }
 
 scale.vertical > trough > slider,
@@ -4109,8 +4073,6 @@ scale.vertical:not(.marks-before):not(.marks-after) > trough > slider:active {
   background-size: 100% 100%;
   border: none;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20);
-  animation: macSliderExpandV 220ms cubic-bezier(0.16, 1, 0.3, 1);
-  transform: scale(1.0);
 }
 
 scale > trough {
@@ -6806,27 +6768,27 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 
 #NautilusPathBar, .nautilus-pathbar {
   border-radius: 9999px;
-  margin: 0;
-  padding: 3px;
+  margin: 2px 4px;
+  padding: 0 4px;
+  min-height: 26px;
   color: @headerbar_fg_color;
-  background-color: transparent;
-  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
-  box-shadow: 0 6px 20px alpha(#000000,0.15), inset 1px 2px 1px -1px alpha(#ffffff,0.08), inset -1px -1px 1px 0 alpha(#ffffff,0.08);
-  border: none;
+  background-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 #NautilusPathBar:backdrop, .nautilus-pathbar:backdrop {
-  background-color: alpha(@headerbar_fg_color,0.05);
-  background-image: none;
-  border: none;
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.05);
   box-shadow: none;
 }
 
 #NautilusPathBar #NautilusPathButton, #NautilusPathBar .nautilus-path-button, .nautilus-pathbar #NautilusPathButton, .nautilus-pathbar .nautilus-path-button {
-  margin: 0;
+  margin: 0 1px;
   border-radius: 9999px;
-  min-height: 24px;
-  padding: 3px 6px;
+  min-height: 22px;
+  padding: 0 6px;
+  font-size: 12.5px;
 }
 
 #NautilusPathBar #NautilusPathButton.current-dir, #NautilusPathBar .nautilus-path-button.current-dir, .nautilus-pathbar #NautilusPathButton.current-dir, .nautilus-pathbar .nautilus-path-button.current-dir {
@@ -6840,12 +6802,14 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 
 #NautilusPathBar > menubutton, #NautilusPathBar > menubutton.flat.popup, .nautilus-pathbar > menubutton, .nautilus-pathbar > menubutton.flat.popup {
   margin: 0;
+  padding: 0;
 }
 
 #NautilusPathBar > menubutton > button, #NautilusPathBar > menubutton.flat.popup > button, .nautilus-pathbar > menubutton > button, .nautilus-pathbar > menubutton.flat.popup > button {
-  min-height: 24px;
-  min-width: 24px;
-  padding: 3px;
+  min-height: 22px;
+  min-width: 22px;
+  padding: 0 4px;
+  margin: 0;
   border-radius: 9999px;
 }
 
@@ -10143,14 +10107,12 @@ placessidebar row,
 placessidebar .navigation-sidebar row,
 navigation-split-view list.navigation-sidebar row,
 .nautilus-window .sidebar-pane placessidebar row,
-.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row,
-window.nautilus-window .sidebar-pane placessidebar row {
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row {
     border-radius: 8px;
-    margin: 1.5px 8px 1.5px 4px;
-    padding: 3px 6px 3px 4px;
-    min-height: 32px;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.90);
+    margin: 1px 6px;
+    padding: 4px 8px;
+    min-height: 28px;
+    color: rgba(255, 255, 255, 0.85);
     background-clip: padding-box;
     outline: none;
     transition: background-color 60ms ease, color 60ms ease;
@@ -10257,101 +10219,14 @@ navigation-split-view list.navigation-sidebar row:not(:hover),
     margin-bottom: 2px;
 }
 
-/* Sidebar icons styled identical to Settings (clean neutral symbolic) */
+/* Orange/Accent icon color for Favorites and Top items */
 .sidebar-orange-icon,
 image.sidebar-orange-icon,
 .navigation-sidebar row image.sidebar-orange-icon,
 list.navigation-sidebar row image.sidebar-orange-icon,
 placessidebar row image.sidebar-orange-icon,
-.navigation-sidebar row.sidebar-accent-icon image,
-.navigation-sidebar row image,
-list.navigation-sidebar row image,
-placessidebar row image,
-.nautilus-window .sidebar-pane placessidebar row image,
-window.nautilus-window .sidebar-pane placessidebar row image {
-    min-width: 18px;
-    min-height: 18px;
-    -gtk-icon-size: 18px;
-    background-color: transparent;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-    margin-right: 8px;
-    margin-left: 3px;
-    color: rgba(255, 255, 255, 0.90);
-}
-
-/* Eject / Unmount button and icon centered inside placessidebar row */
-window.nautilus-window .sidebar-pane placessidebar row button.sidebar-button,
-window.nautilus-window .sidebar-pane placessidebar row button#eject_button,
-window.nautilus-window .sidebar-pane placessidebar row button,
-placessidebar .navigation-sidebar > row button.sidebar-button,
-placessidebar row button.sidebar-button,
-placessidebar row #eject_button,
-placessidebar row button {
-    min-width: 24px;
-    min-height: 24px;
-    padding: 0;
-    margin: 0 4px 0 0;
-    border-radius: 9999px;
-    border: none;
-    background-color: rgba(255, 255, 255, 0.12);
-    box-shadow: none;
-}
-
-window.nautilus-window .sidebar-pane placessidebar row button.sidebar-button image,
-window.nautilus-window .sidebar-pane placessidebar row button#eject_button image,
-window.nautilus-window .sidebar-pane placessidebar row button image,
-placessidebar .navigation-sidebar > row button.sidebar-button image,
-placessidebar .navigation-sidebar > row button.sidebar-button > image,
-placessidebar row button.sidebar-button image,
-placessidebar row #eject_button image,
-placessidebar row button image {
-    min-width: 14px;
-    min-height: 14px;
-    -gtk-icon-size: 14px;
-    margin: 0;
-    padding: 0;
-    color: rgba(255, 255, 255, 0.90);
-}
-
-.navigation-sidebar row:selected image,
-list.navigation-sidebar row:selected image,
-placessidebar row:selected image,
-.nautilus-window .sidebar-pane placessidebar row:selected image,
-window.nautilus-window .sidebar-pane placessidebar row:selected image,
-.navigation-sidebar row:selected image.sidebar-orange-icon,
-list.navigation-sidebar row:selected image.sidebar-orange-icon,
-placessidebar row:selected image.sidebar-orange-icon,
-.navigation-sidebar row:selected .sidebar-orange-icon,
-placessidebar row:selected .sidebar-orange-icon {
-    color: #ffffff;
-    background-color: transparent;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-}
-
-.navigation-sidebar row label,
-list.navigation-sidebar row label,
-placessidebar row label,
-.nautilus-window .sidebar-pane placessidebar row label,
-window.nautilus-window .sidebar-pane placessidebar row label {
-    font-size: 13px;
-    margin-top: 1px;
-    margin-bottom: 0px;
-    padding-top: 0px;
-    padding-bottom: 0px;
-}
-
-.navigation-sidebar row:selected label,
-list.navigation-sidebar row:selected label,
-placessidebar row:selected label,
-.nautilus-window .sidebar-pane placessidebar row:selected label,
-window.nautilus-window .sidebar-pane placessidebar row:selected label {
-    color: #ffffff;
-    font-weight: 500;
+.navigation-sidebar row.sidebar-accent-icon image {
+    color: @accent_bg_color;
 }
 
 /* Neutral icon color for Mounts and Trash */
@@ -10360,7 +10235,7 @@ image.sidebar-neutral-icon,
 .navigation-sidebar row image.sidebar-neutral-icon,
 list.navigation-sidebar row image.sidebar-neutral-icon,
 placessidebar row image.sidebar-neutral-icon {
-    color: rgba(255, 255, 255, 0.90);
+    color: rgba(255, 255, 255, 0.65);
 }
 
 /* Subtle separator before Trash */
@@ -10429,7 +10304,32 @@ window.nautilus-window .content-pane headerbar .start {
 window.nautilus-window .nautilus-pathbar,
 window.nautilus-window #NautilusPathBar {
     min-width: 0;
-    padding: 3px 12px;
+    min-height: 26px;
+    padding: 0 4px;
+}
+
+window.nautilus-window .sidebar-pane placessidebar,
+window.nautilus-window .sidebar-pane placessidebar > scrolledwindow,
+window.nautilus-window .sidebar-pane placessidebar list.navigation-sidebar,
+window.nautilus-window .sidebar-pane list.navigation-sidebar {
+    padding-left: 0px;
+    margin-left: 0px;
+}
+
+window.nautilus-window .sidebar-pane placessidebar row,
+window.nautilus-window .sidebar-pane placessidebar list.navigation-sidebar row,
+window.nautilus-window .sidebar-pane list.navigation-sidebar row,
+window.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row {
+    min-height: 32px;
+    padding: 3px 6px 3px 6px;
+    margin: 1.5px 8px 1.5px 0px;
+}
+
+window.nautilus-window .sidebar-pane placessidebar row image,
+window.nautilus-window .sidebar-pane placessidebar list.navigation-sidebar row image,
+window.nautilus-window .sidebar-pane list.navigation-sidebar row image {
+    margin-left: 8px;
+    margin-right: 8px;
 }
 
 
@@ -11102,27 +11002,17 @@ window.mac-settings-window .content-pane preferencesgroup > box > box.header,
 window.mac-settings-window .mac-settings-content preferencesgroup > box > box.header,
 window.mac-settings-window preferencesgroup > box > box.header,
 window.mac-settings-window preferencesgroup box.header,
+window.mac-settings-window preferencesgroup > box > label.title,
+window.mac-settings-window preferencesgroup > label.title,
 window.mac-settings-window preferencespage .boxed-list-title,
+window.mac-settings-window preferencespage label.heading,
+window.mac-settings-window .mac-settings-content label.heading,
+window.mac-settings-window label.heading,
 window.mac-settings-window #list_label,
 window.mac-settings-window .mac-panel-section-title {
     margin-left: 15px;
     margin-right: 15px;
     margin-bottom: 4px;
-    padding-left: 0px;
-}
-
-window.mac-settings-window preferencesgroup > box > box.header label.heading,
-window.mac-settings-window preferencesgroup > box > box.header .heading,
-window.mac-settings-window preferencesgroup > box > box.header label.title,
-window.mac-settings-window preferencesgroup > box > box.header label,
-window.mac-settings-window preferencesgroup box.header label,
-preferencesgroup > box > box.header label.heading,
-preferencesgroup > box > box.header .heading,
-preferencesgroup > box > box.header label.title,
-preferencesgroup > box > box.header label,
-preferencesgroup box.header label {
-    margin-left: 0px;
-    margin-right: 0px;
     padding-left: 0px;
 }
 
@@ -12003,24 +11893,16 @@ window.mac-settings-window #add_enterprise_user_button_row:active {
   border-radius: 14px;
 }
 
-window.mac-settings-window list.boxed-list row button.text-button:not(.accent-button),
-window.mac-settings-window adwactionrow button.text-button:not(.accent-button) {
-  border-radius: 8px;
+window.mac-settings-window list.boxed-list row button:not(.accent-button),
+window.mac-settings-window adwactionrow button:not(.accent-button) {
+  border-radius: 6px;
 }
 
-window.mac-settings-window list.boxed-list row button:not(.text-button):not(.accent-button),
-window.mac-settings-window adwactionrow button:not(.text-button):not(.accent-button),
-window.mac-settings-window list.boxed-list row button.image-button,
-window.mac-settings-window adwactionrow button.image-button,
-window.mac-settings-window list.boxed-list row button.circular,
-window.mac-settings-window adwactionrow button.circular,
-window.mac-settings-window list.boxed-list row box.suffixes button:not(.text-button),
-window.mac-settings-window adwactionrow box.suffixes button:not(.text-button) {
-  border-radius: 9999px;
-  min-width: 28px;
-  min-height: 28px;
-  padding: 0px;
-  margin: 10px 3px;
+window.mac-settings-window list.boxed-list row button:not(.accent-button):hover,
+window.mac-settings-window adwactionrow button:not(.accent-button):hover,
+window.mac-settings-window list.boxed-list row button:not(.accent-button):active,
+window.mac-settings-window adwactionrow button:not(.accent-button):active {
+  border-radius: 6px;
 }
 
 button.mac-action-accent-btn:active,
@@ -12031,112 +11913,6 @@ window.mac-settings-window button.suggested-action.circular:active {
   border-radius: 9999px;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* macOS Tahoe Terminal Redesign */
-.ptyxis-window headerbar,
-.ptyxis-window headerbar.flat,
-.ptyxis-window headerbar.default-decoration,
-.ptyxis-window .main-header-bar,
-window.ptyxis-window headerbar {
-  min-height: 38px;
-  padding-top: 0px;
-  padding-bottom: 0px;
-  padding-left: 4px;
-  padding-right: 4px;
-  margin-top: 0px;
-  margin-bottom: 0px;
-}
-
-.ptyxis-window headerbar windowhandle,
-.ptyxis-window headerbar > windowhandle > box {
-  min-height: 38px;
-  padding-top: 0px;
-  padding-bottom: 0px;
-  margin-top: 0px;
-  margin-bottom: 0px;
-}
-
-.ptyxis-window headerbar windowcontrols {
-  min-height: 38px;
-  padding-top: 0px;
-  padding-bottom: 0px;
-  margin-top: 0px;
-  margin-bottom: 0px;
-}
-
-.ptyxis-window headerbar windowcontrols button {
-  min-height: 16px;
-  min-width: 16px;
-  padding: 0;
-  margin-top: 11px;
-  margin-bottom: 11px;
-}
-
-.mac-terminal-title-box {
-  margin-left: 8px;
-}
-
-.mac-terminal-folder-icon,
-picture.mac-terminal-folder-icon,
-image.mac-terminal-folder-icon {
-  min-width: 11px;
-  min-height: 11px;
-  margin-right: 2px;
-}
-
-.mac-terminal-folder-label {
-  font-family: 'SF Mono', monospace;
-  font-weight: 500;
-  font-size: 11px;
-  color: #ffffff;
-}
-
-.mac-terminal-sep {
-  font-family: 'SF Mono', monospace;
-  font-weight: 400;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
-  margin-left: 3px;
-  margin-right: 3px;
-}
-
-.mac-terminal-path-label {
-  font-family: 'SF Mono', monospace;
-  font-weight: 400;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.mac-terminal-size-label {
-  font-family: 'SF Mono', monospace;
-  font-weight: 400;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.85);
-}
 
 
 

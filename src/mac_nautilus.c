@@ -1011,6 +1011,39 @@ static void hide_folder_search_button(GtkWidget *widget)
     }
 }
 
+static void style_pathbar_children(GtkWidget *widget)
+{
+    if (!widget) return;
+    gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+    gtk_widget_set_vexpand(widget, FALSE);
+    if (GTK_IS_SCROLLED_WINDOW(widget)) {
+        gtk_widget_set_size_request(widget, -1, 24);
+    }
+    if (GTK_IS_BUTTON(widget) || GTK_IS_MENU_BUTTON(widget)) {
+        gtk_widget_set_size_request(widget, -1, 22);
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        style_pathbar_children(child);
+    }
+}
+
+static void find_and_style_pathbar(GtkWidget *widget)
+{
+    if (!widget) return;
+    const char *type_name = G_OBJECT_TYPE_NAME(widget);
+    if (g_strcmp0(type_name, "NautilusPathBar") == 0 || gtk_widget_has_css_class(widget, "nautilus-pathbar")) {
+        gtk_widget_set_valign(widget, GTK_ALIGN_CENTER);
+        gtk_widget_set_vexpand(widget, FALSE);
+        gtk_widget_set_size_request(widget, -1, 26);
+        gtk_widget_add_css_class(widget, "mac-pathbar");
+        style_pathbar_children(widget);
+        return;
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+        find_and_style_pathbar(child);
+    }
+}
+
 static void find_headerbars_recursive(GtkWidget *widget, GList **list)
 {
     if (!widget) return;
@@ -1280,20 +1313,124 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "    padding: 0px;\n"
             "}\n"
             "window.nautilus-window .nautilus-pathbar,\n"
-            "window.nautilus-window #NautilusPathBar {\n"
-            "    min-width: 0;\n"
+            "window.nautilus-window #NautilusPathBar,\n"
+            "window.nautilus-window .mac-pathbar,\n"
+            "headerbar .nautilus-pathbar,\n"
+            "headerbar #NautilusPathBar,\n"
+            ".nautilus-pathbar,\n"
+            "#NautilusPathBar {\n"
+            "    min-height: 26px;\n"
+            "    padding: 0 4px;\n"
+            "    margin: 2px 4px;\n"
+            "    border-radius: 9999px;\n"
+            "    background-color: rgba(255, 255, 255, 0.09);\n"
+            "    border: 1px solid rgba(255, 255, 255, 0.08);\n"
+            "    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar:backdrop,\n"
+            "window.nautilus-window #NautilusPathBar:backdrop,\n"
+            "headerbar .nautilus-pathbar:backdrop,\n"
+            ".nautilus-pathbar:backdrop,\n"
+            "#NautilusPathBar:backdrop {\n"
+            "    background-color: rgba(255, 255, 255, 0.06);\n"
+            "    border-color: rgba(255, 255, 255, 0.05);\n"
+            "    box-shadow: none;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar > scrolledwindow,\n"
+            "window.nautilus-window #NautilusPathBar > scrolledwindow,\n"
+            "headerbar .nautilus-pathbar > scrolledwindow,\n"
+            ".nautilus-pathbar > scrolledwindow {\n"
             "    min-height: 22px;\n"
-            "    padding: 1px 8px;\n"
+            "    padding: 0;\n"
+            "    margin: 0;\n"
+            "    background: transparent;\n"
+            "    border: none;\n"
+            "    box-shadow: none;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar > scrolledwindow > viewport,\n"
+            "window.nautilus-window #NautilusPathBar > scrolledwindow > viewport,\n"
+            ".nautilus-pathbar > scrolledwindow > viewport {\n"
+            "    background: transparent;\n"
+            "    padding: 0;\n"
             "    margin: 0;\n"
             "}\n"
-            "window.nautilus-window #NautilusPathBar #NautilusPathButton,\n"
+            "window.nautilus-window .nautilus-pathbar .nautilus-path-button,\n"
             "window.nautilus-window #NautilusPathBar .nautilus-path-button,\n"
             "window.nautilus-window .nautilus-pathbar #NautilusPathButton,\n"
-            "window.nautilus-window .nautilus-pathbar .nautilus-path-button {\n"
+            "window.nautilus-window #NautilusPathBar #NautilusPathButton,\n"
+            "headerbar .nautilus-pathbar .nautilus-path-button,\n"
+            ".nautilus-path-button {\n"
+            "    min-height: 22px;\n"
+            "    padding: 0 6px;\n"
+            "    margin: 0 1px;\n"
+            "    font-size: 12.5px;\n"
+            "    border-radius: 9999px;\n"
+            "    background: transparent;\n"
+            "    border: none;\n"
+            "    box-shadow: none;\n"
+            "    color: rgba(255, 255, 255, 0.90);\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar .nautilus-path-button:hover,\n"
+            "window.nautilus-window #NautilusPathBar .nautilus-path-button:hover,\n"
+            ".nautilus-path-button:hover {\n"
+            "    background-color: rgba(255, 255, 255, 0.12);\n"
+            "    color: #ffffff;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar .nautilus-path-button:active,\n"
+            "window.nautilus-window #NautilusPathBar .nautilus-path-button:active,\n"
+            ".nautilus-path-button:active {\n"
+            "    background-color: rgba(255, 255, 255, 0.20);\n"
+            "    color: #ffffff;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar .nautilus-path-button image,\n"
+            "window.nautilus-window #NautilusPathBar .nautilus-path-button image,\n"
+            ".nautilus-path-button image {\n"
+            "    min-width: 14px;\n"
+            "    min-height: 14px;\n"
+            "    -gtk-icon-size: 14px;\n"
+            "    margin: 0 4px 0 0;\n"
+            "    padding: 0;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar .nautilus-path-button label,\n"
+            "window.nautilus-window #NautilusPathBar .nautilus-path-button label,\n"
+            ".nautilus-path-button label {\n"
             "    margin: 0;\n"
-            "    min-height: 20px;\n"
-            "    padding: 1px 6px;\n"
-            "    font-size: 12px;\n"
+            "    padding: 0;\n"
+            "    line-height: 1;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar > menubutton,\n"
+            "window.nautilus-window #NautilusPathBar > menubutton,\n"
+            "headerbar .nautilus-pathbar > menubutton,\n"
+            ".nautilus-pathbar > menubutton {\n"
+            "    min-height: 22px;\n"
+            "    margin: 0;\n"
+            "    padding: 0;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar > menubutton > button,\n"
+            "window.nautilus-window #NautilusPathBar > menubutton > button,\n"
+            "headerbar .nautilus-pathbar > menubutton > button,\n"
+            ".nautilus-pathbar > menubutton > button {\n"
+            "    min-height: 22px;\n"
+            "    min-width: 22px;\n"
+            "    padding: 0 4px;\n"
+            "    margin: 0;\n"
+            "    border-radius: 9999px;\n"
+            "    background: transparent;\n"
+            "    border: none;\n"
+            "    box-shadow: none;\n"
+            "    color: rgba(255, 255, 255, 0.85);\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar > menubutton > button:hover,\n"
+            "window.nautilus-window #NautilusPathBar > menubutton > button:hover,\n"
+            ".nautilus-pathbar > menubutton > button:hover {\n"
+            "    background-color: rgba(255, 255, 255, 0.12);\n"
+            "    color: #ffffff;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-pathbar > menubutton > button:active,\n"
+            "window.nautilus-window #NautilusPathBar > menubutton > button:active,\n"
+            ".nautilus-pathbar > menubutton > button:active {\n"
+            "    background-color: rgba(255, 255, 255, 0.20);\n"
+            "    color: #ffffff;\n"
             "}\n"
             "window.nautilus-window .content-pane headerbar box.end > button,\n"
             "window.nautilus-window .content-pane headerbar .end > button,\n"
@@ -1510,13 +1647,20 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "    color: #ffffff;\n"
             "}\n"
             "/* Sidebar buttons identical to Settings */\n"
+            "window.nautilus-window .sidebar-pane placessidebar,\n"
+            "window.nautilus-window .sidebar-pane placessidebar > scrolledwindow,\n"
+            "window.nautilus-window .sidebar-pane placessidebar list.navigation-sidebar,\n"
+            "window.nautilus-window .sidebar-pane list.navigation-sidebar {\n"
+            "    padding-left: 0px;\n"
+            "    margin-left: 0px;\n"
+            "}\n"
             "window.nautilus-window .sidebar-pane placessidebar row,\n"
             "window.nautilus-window .sidebar-pane placessidebar list.navigation-sidebar row,\n"
             "window.nautilus-window .sidebar-pane list.navigation-sidebar row,\n"
             "window.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row {\n"
             "    min-height: 32px;\n"
-            "    padding: 3px 6px 3px 4px;\n"
-            "    margin: 1.5px 8px 1.5px 4px;\n"
+            "    padding: 3px 6px 3px 6px;\n"
+            "    margin: 1.5px 8px 1.5px 0px;\n"
             "    border-radius: 8px;\n"
             "    font-size: 13px;\n"
             "    color: rgba(255, 255, 255, 0.90);\n"
@@ -1550,7 +1694,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "    box-shadow: none;\n"
             "    padding: 0;\n"
             "    margin-right: 8px;\n"
-            "    margin-left: 3px;\n"
+            "    margin-left: 8px;\n"
             "    color: rgba(255, 255, 255, 0.90);\n"
             "}\n"
             "window.nautilus-window .sidebar-pane placessidebar row:selected image,\n"
@@ -1722,8 +1866,9 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             g_object_unref(search_btn);
         }
 
-        /* 3. Hide redundant folder search button from pathbar */
+        /* 3. Hide redundant folder search button from pathbar and style pathbar to 26px */
         hide_folder_search_button(GTK_WIDGET(content_hb));
+        find_and_style_pathbar(GTK_WIDGET(content_hb));
 
         /* 4. Compact top/bottom margin and increase left width/margin by 15px */
         gtk_widget_set_margin_top(GTK_WIDGET(content_hb), 0);

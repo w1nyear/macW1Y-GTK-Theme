@@ -229,8 +229,8 @@ navigation-split-view list.navigation-sidebar row,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row,
 window.nautilus-window .sidebar-pane placessidebar row {
   min-height: 32px;
-  padding: 3px 6px 3px 4px;
-  margin: 1.5px 8px 1.5px 4px;
+  padding: 3px 6px 3px 6px;
+  margin: 1.5px 8px 1.5px 0px;
   border-radius: 8px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.90);
@@ -384,7 +384,7 @@ image.sidebar-neutral-icon {
   min-height: 18px;
   -gtk-icon-size: 18px;
   margin-right: 8px;
-  margin-left: 3px;
+  margin-left: 8px;
   color: rgba(255, 255, 255, 0.90);
 }
 
@@ -1102,14 +1102,74 @@ button.circular image {
   margin: 0;
 }
 
-/* Nautilus Pathbar: completely clean, no white undershoot slivers or borders */
+/* Nautilus Pathbar: strictly 26px height matching headerbar controls */
 .nautilus-window .nautilus-pathbar,
 .nautilus-pathbar,
-window.nautilus-window .nautilus-pathbar {
-  border: none;
-  border-style: none;
-  box-shadow: none;
+window.nautilus-window .nautilus-pathbar,
+#NautilusPathBar,
+window.nautilus-window #NautilusPathBar {
+  min-height: 26px;
+  padding: 0 4px;
+  margin: 2px 4px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   outline: none;
+}
+
+.nautilus-window .nautilus-pathbar > scrolledwindow,
+.nautilus-pathbar > scrolledwindow,
+window.nautilus-window .nautilus-pathbar > scrolledwindow {
+  min-height: 22px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.nautilus-window .nautilus-pathbar .nautilus-path-button,
+.nautilus-path-button,
+window.nautilus-window .nautilus-pathbar .nautilus-path-button {
+  min-height: 22px;
+  padding: 0 6px;
+  margin: 0 1px;
+  font-size: 12.5px;
+  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.90);
+}
+
+.nautilus-window .nautilus-pathbar .nautilus-path-button image,
+.nautilus-path-button image {
+  min-width: 14px;
+  min-height: 14px;
+  -gtk-icon-size: 14px;
+  margin: 0 4px 0 0;
+  padding: 0;
+}
+
+.nautilus-window .nautilus-pathbar > menubutton,
+.nautilus-pathbar > menubutton {
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+}
+
+.nautilus-window .nautilus-pathbar > menubutton > button,
+.nautilus-pathbar > menubutton > button {
+  min-height: 22px;
+  min-width: 22px;
+  padding: 0 4px;
+  margin: 0;
+  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .nautilus-window .nautilus-pathbar undershoot,

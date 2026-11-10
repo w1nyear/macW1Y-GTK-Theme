@@ -19917,3 +19917,44 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - bin/mac-i18n-verify: 100% SUCCESSFUL.
 
 4. Статус: Завершено.
+
+Завдання 705: Nautilus — калібрування висоти капсули адресної панелі (Pathbar) до 26px та розширення кнопок лівої панелі (Sidebar) вліво зі збільшеним відступом іконки
+1. Опис завдання:
+   - У Nautilus зменшити висоту поля/капсули поточного каталогу (NautilusPathBar, де відображається "Домівка" та кнопки хлібних крихт) до 26px, щоб вона ідеально відповідала висоті решти елементів верхньої панелі (історії < >, пошуку, розділеної кнопки перегляду).
+   - Збільшити ширину кнопок у лівій панелі (Sidebar / placessidebar) в ліву сторону (прибрати зайвий відступ margin-left з 4px до 0px та padding-left контейнера).
+   - Збільшити відстань відступу іконки від лівого краю всередині кнопок бічної панелі (margin-left іконки збільшено з 3px до 8px, padding-left рядка 6px), забезпечивши пропорційний естетичний вигляд у стилі macOS.
+   - Суворо дотримуватись правил проекту: завершувати всі процеси в терміналі перед закінченням промпту, не виходити із сесії, не робити скріншотів через композитор і не архівувати каталог без окремого запиту.
+
+2. Реалізовані зміни:
+   - Впроваджено функціонал калібрування в C-бібліотеку libmac_nautilus.so (src/mac_nautilus.c):
+     * Додано рекурсивні функції style_pathbar_children() та find_and_style_pathbar() для автоматичного вирівнювання NautilusPathBar по центру (GTK_ALIGN_CENTER), вимкнення вертикального розтягування (vexpand=FALSE) та явного запиту висоти size_request(-1, 26).
+     * Дочірнім scrolledwindow та кнопкам встановлено size_request(-1, 24) та size_request(-1, 22).
+     * В інжектованому CSS (пріоритет GTK_STYLE_PROVIDER_PRIORITY_USER + 500) налаштовано капсульну геометрію:
+       .nautilus-pathbar, #NautilusPathBar { min-height: 26px; padding: 0 4px; margin: 2px 4px; border-radius: 9999px; background-color: rgba(255, 255, 255, 0.09); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); }
+       .nautilus-pathbar > scrolledwindow { min-height: 22px; padding: 0; margin: 0; background: transparent; border: none; box-shadow: none; }
+       .nautilus-path-button { min-height: 22px; padding: 0 6px; margin: 0 1px; font-size: 12.5px; border-radius: 9999px; background: transparent; border: none; box-shadow: none; color: rgba(255, 255, 255, 0.90); }
+       .nautilus-path-button image { min-width: 14px; min-height: 14px; -gtk-icon-size: 14px; margin: 0 4px 0 0; padding: 0; }
+       .nautilus-pathbar > menubutton > button { min-height: 22px; min-width: 22px; padding: 0 4px; margin: 0; border-radius: 9999px; background: transparent; border: none; box-shadow: none; }
+     * Для лівої панелі (Sidebar):
+       .sidebar-pane placessidebar, .sidebar-pane placessidebar list.navigation-sidebar { padding-left: 0px; margin-left: 0px; }
+       .sidebar-pane placessidebar row { min-height: 32px; padding: 3px 6px 3px 6px; margin: 1.5px 8px 1.5px 0px; border-radius: 8px; font-size: 13px; }
+       .sidebar-pane placessidebar row image { min-width: 18px; min-height: 18px; -gtk-icon-size: 18px; margin-left: 8px; margin-right: 8px; }
+   - Синхронізовано та вичищено GTK4 стилі:
+     * Оновлено macW1Y-Dark/gtk-4.0/macw1y-components.css, macW1Y-Dark/gtk-4.0/gtk.css, macW1Y-Dark/gtk-4.0/gtk-dark.css.
+     * Синхронізовано з config/gtk-4.0/ та gtk-4.0/.
+     * Оновлено активні системні копії у ~/.config/gtk-4.0/ та ~/.themes/macW1Y-Dark/gtk-4.0/.
+     * Повністю усунуто непідтримувані GTK-властивості (max-height, height, !important), досягнуто 0 попереджень парсера.
+   - Перекомпільовано та інстальовано бінарник:
+     * gcc з флагами GTK4 та Adwaita зібрав lib/libmac_nautilus.so.
+     * Встановлено у /usr/lib/x86_64-linux-gnu/libmac_nautilus.so (chmod 755).
+   - Синхронізовано теку релізу:
+     * rsync до /home/vitaliy/macW1Y 06065 PRIVATE/ (без створення архівів та без .git).
+
+3. Результати тестування та верифікації:
+   - nautilus -q: чисте закриття, 0 помилок синтаксису CSS теми.
+   - bin/mac-extension-guard verify: 100% SUCCESS (21/21 розширень валідні).
+   - bin/mac-audit-sync check: 100% PASS! (5/5 тестів пройдено).
+   - bin/mac-i18n-verify: 100% SUCCESSFUL (194 мови валідні).
+   - Усі фонові процеси в терміналі перевірено та завершено.
+
+4. Статус: Завершено.
