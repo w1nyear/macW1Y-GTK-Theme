@@ -7,6 +7,22 @@
 #include <string.h>
 
 static inline const char *mac_get_locale(void) {
+    gchar *loc_path = g_build_filename(g_get_home_dir(), ".config", "mac-styling", "locale", NULL);
+    if (g_file_test(loc_path, G_FILE_TEST_EXISTS)) {
+        gchar *contents = NULL;
+        if (g_file_get_contents(loc_path, &contents, NULL, NULL) && contents) {
+            g_strstrip(contents);
+            if (g_str_has_prefix(contents, "pl")) { g_free(contents); g_free(loc_path); return "pl"; }
+            if (g_str_has_prefix(contents, "uk")) { g_free(contents); g_free(loc_path); return "uk"; }
+            if (g_str_has_prefix(contents, "en")) { g_free(contents); g_free(loc_path); return "en"; }
+            if (g_str_has_prefix(contents, "de")) { g_free(contents); g_free(loc_path); return "de"; }
+            if (g_str_has_prefix(contents, "fr")) { g_free(contents); g_free(loc_path); return "fr"; }
+            if (g_str_has_prefix(contents, "es")) { g_free(contents); g_free(loc_path); return "es"; }
+            if (g_str_has_prefix(contents, "it")) { g_free(contents); g_free(loc_path); return "it"; }
+            g_free(contents);
+        }
+    }
+    g_free(loc_path);
     const gchar * const *langs = g_get_language_names();
     if (!langs) return "en";
     for (int i = 0; langs[i] != NULL; i++) {
@@ -90,6 +106,7 @@ static const MacCKeyEntry MAC_C_ENTRIES[] = {
     { "storage_alert", "Сховище iCloud заповнено", "iCloud Storage Full", "iCloud-Speicher voll", "Stockage iCloud saturé", "Almacenamiento de iCloud lleno", "Pamięć iCloud jest pełna" },
     { "software_update_alert", "Доступне оновлення ПЗ", "Software Update Available", "Softwareupdate verfügbar", "Mise à jour logicielle disponible", "Actualización de software disponible", "Dostępna aktualizacja oprogramowania" },
     { "search", "Пошук", "Search", "Suchen", "Recherche", "Buscar", "Szukaj" },
+    { "ssot_restored_notification", "Оформлення успішно відновлено до еталону SSOT!", "Theme successfully restored to SSOT baseline!", "Design erfolgreich auf SSOT-Standard zurückgesetzt!", "Thème restauré avec succès selon le standard SSOT !", "¡Tema restaurado con éxito al estándar SSOT!", "Motyw pomyślnie przywrócony do standardu SSOT!" },
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 };
 

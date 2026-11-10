@@ -1,0 +1,1385 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: desktop-widgets@r3nhick\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-10 21:00+0200\n"
+"PO-Revision-Date: 2026-11-10 21:00+0200\n"
+"Last-Translator: macW1Y i18n Team\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "%s commits"
+msgstr "%s commitów"
+
+msgid "%sh %sm"
+msgstr "%sg %smin"
+
+msgid "%sm"
+msgstr "%smin"
+
+msgid "- [ ] Task 1\n- [x] Task 2\n\n**Click edit to start**"
+msgstr "- [ ] Zadanie 1\n- [x] Zadanie 2\n\n**Kliknij edytuj, aby rozpocząć**"
+
+msgid "12-hour"
+msgstr "12-godzinny"
+
+msgid "1×1"
+msgstr "1×1"
+
+msgid "1×1 mini"
+msgstr "1×1 mini"
+
+msgid "1×2"
+msgstr "1×2"
+
+msgid "1×2 mini"
+msgstr "1×2 mini"
+
+msgid "24-hour"
+msgstr "24-godzinny"
+
+msgid "2×1"
+msgstr "2×1"
+
+msgid "2×1 mini"
+msgstr "2×1 mini"
+
+msgid "2×2"
+msgstr "2×2"
+
+msgid "2×2 mini"
+msgstr "2×2 mini"
+
+msgid "2×4"
+msgstr "2×4"
+
+msgid "4×2"
+msgstr "4×2"
+
+msgid "4×4"
+msgstr "4×4"
+
+msgid "AM"
+msgstr "AM"
+
+msgid "About"
+msgstr "O programie"
+
+msgid "Accent Color"
+msgstr "Kolor akcentu"
+
+msgid "Add"
+msgstr "Dodaj"
+
+msgid "Add Applications"
+msgstr "Dodaj aplikacje"
+
+msgid "Add Apps"
+msgstr "Dodaj aplikacje"
+
+msgid "Add Folder"
+msgstr "Dodaj folder"
+
+msgid "Add Widget"
+msgstr "Dodaj widżet"
+
+msgid "Add a Folder Launcher widget from the General page first"
+msgstr "Najpierw dodaj widżet otwierania folderów na stronie Ogólne"
+
+msgid "Add a new widget to your desktop."
+msgstr "Dodaj nowy widżet do biurka."
+
+msgid "Add an App Launcher widget from the General page first"
+msgstr "Najpierw dodaj widżet uruchamiania aplikacji na stronie Ogólne"
+
+msgid "Adjust the visual size of the device indicators displayed inside the battery charge rings."
+msgstr "Dostosuj rozmiar wskaźników urządzeń wewnątrz pierścieni baterii."
+
+msgid "Align all widgets into a grid of columns and rows"
+msgstr "Wyrównaj wszystkie widżety do siatki kolumn i wierszy"
+
+msgid "All day"
+msgstr "Cały dzień"
+
+msgid "Analog Clock"
+msgstr "Zegar analogowy"
+
+msgid "Animated metaballs"
+msgstr "Animowane krople cieczy"
+
+msgid "Animation shown when no track is playing"
+msgstr "Animacja wyświetlana, gdy żaden utwór nie jest odtwarzany"
+
+msgid "App Launcher"
+msgstr "Uruchamianie aplikacji"
+
+msgid "App Launcher Widget"
+msgstr "Widżet uruchamiania aplikacji"
+
+msgid "App launched when the widget is clicked. Takes priority over built-in players"
+msgstr "Aplikacja uruchamiana po kliknięciu widżetu. Ma pierwszeństwo przed odtwarzaczami wbudowanymi"
+
+msgid "Appearance"
+msgstr "Wygląd"
+
+msgid "Appearance of the clock on your desktop."
+msgstr "Wygląd zegara na Twoim biurku."
+
+msgid "Application to open folders with"
+msgstr "Aplikacja do otwierania folderów"
+
+msgid "Applications"
+msgstr "Aplikacje"
+
+msgid "Applied to all GitHub widgets. Empty to set a username per widget"
+msgstr "Applied to all GitHub widgets. Empty to set a username per widget"
+
+msgid "Apply a glass effect with transparency and blur to all widgets"
+msgstr "Apply a glass effect with transparency and blur to all widgets"
+
+msgid "Apps"
+msgstr "Apps"
+
+msgid "Apps shown on this widget, in grid order"
+msgstr "Apps shown on this widget, in grid order"
+
+msgid "Apr"
+msgstr "Apr"
+
+msgid "Arrange by Grid"
+msgstr "Wyrównaj do siatki"
+
+msgid "Arrange widgets"
+msgstr "Arrange widgets"
+
+msgid "Aug"
+msgstr "Aug"
+
+msgid "Auto"
+msgstr "Automatycznie"
+
+msgid "Auto-center widgets to screen"
+msgstr "Automatycznie wyśrodkuj widżety na ekranie"
+
+msgid "Automatic layout"
+msgstr "Układ automatyczny"
+
+msgid "Automatically pause widget animations when a window is fullscreen to save resources"
+msgstr "Automatically pause widget animations when a window is fullscreen to save resources"
+
+msgid "Available with the 12-hour format"
+msgstr "Available with the 12-hour format"
+
+msgid "Background"
+msgstr "Tło"
+
+msgid "Background Color"
+msgstr "Kolor tła"
+
+msgid "Background opacity"
+msgstr "Przezroczystość tła"
+
+msgid "Battery"
+msgstr "Bateria"
+
+msgid "Battery Widget"
+msgstr "Widżet baterii"
+
+msgid "Battery icon size"
+msgstr "Battery icon size"
+
+msgid "Battery slot count"
+msgstr "Battery slot count"
+
+msgid "Binary Clock"
+msgstr "Zegar binarny"
+
+msgid "Binary Clock Widget"
+msgstr "Widżet zegara binarnego"
+
+msgid "Bluetooth"
+msgstr "Bluetooth"
+
+msgid "Blur radius of the glass effect"
+msgstr "Blur radius of the glass effect"
+
+msgid "Blur radius of the shadow"
+msgstr "Blur radius of the shadow"
+
+msgid "Border"
+msgstr "Ramka"
+
+msgid "Border Color"
+msgstr "Kolor ramki"
+
+msgid "Border Radius"
+msgstr "Border Radius"
+
+msgid "Border Width"
+msgstr "Border Width"
+
+msgid "Border radius"
+msgstr "Promień zaokrąglenia"
+
+msgid "Box Shadow"
+msgstr "Box Shadow"
+
+msgid "Break"
+msgstr "Break"
+
+msgid "Browse all widgets with icons and search"
+msgstr "Browse all widgets with icons and search"
+
+msgid "CPU, RAM, Disk"
+msgstr "Obciążenie CPU, RAM i dysku"
+
+msgid "Cached"
+msgstr "Cached"
+
+msgid "Calendar"
+msgstr "Kalendarz"
+
+msgid "Calendar Widget"
+msgstr "Widżet kalendarza"
+
+msgid "Cancel"
+msgstr "Anuluj"
+
+msgid "Categories"
+msgstr "Kategorie"
+
+msgid "Category"
+msgstr "Kategoria"
+
+msgid "Centiseconds"
+msgstr "Centiseconds"
+
+msgid "Change photo"
+msgstr "Change photo"
+
+msgid "Choose application"
+msgstr "Choose application"
+
+msgid "Choose background color"
+msgstr "Choose background color"
+
+msgid "Choose border color"
+msgstr "Choose border color"
+
+msgid "Choose shadow color. Leave unset for default."
+msgstr "Choose shadow color. Leave unset for default."
+
+msgid "Choose…"
+msgstr "Wybierz…"
+
+msgid "Classic round clock"
+msgstr "Klasyczny okrągły zegar"
+
+msgid "Clear"
+msgstr "Wyczyść"
+
+msgid "Click to configure"
+msgstr "Kliknij, aby skonfigurować"
+
+msgid "Click to set username"
+msgstr "Click to set username"
+
+msgid "Click username to configure"
+msgstr "Click username to configure"
+
+msgid "Clock"
+msgstr "Zegar"
+
+msgid "Clocks"
+msgstr "Zegary"
+
+msgid "Close"
+msgstr "Zamknij"
+
+msgid "Color"
+msgstr "Kolor"
+
+msgid "Completed:"
+msgstr "Completed:"
+
+msgid "Computer"
+msgstr "Computer"
+
+msgid "Configure"
+msgstr "Konfiguruj"
+
+msgid "Configure Widget"
+msgstr "Konfiguruj widżet"
+
+msgid "Configure desktop widgets. Changes apply immediately."
+msgstr "Configure desktop widgets. Changes apply immediately."
+
+msgid "Configure how your pictures are scaled and cropped inside the Photos widget bounds."
+msgstr "Configure how your pictures are scaled and cropped inside the Photos widget bounds."
+
+msgid "Configure the Pomodoro timer durations and work sessions."
+msgstr "Configure the Pomodoro timer durations and work sessions."
+
+msgid "Configure the appearance of animated lava balls."
+msgstr "Configure the appearance of animated lava balls."
+
+msgid "Contain"
+msgstr "Contain"
+
+msgid "Content"
+msgstr "Treść"
+
+msgid "Content font size"
+msgstr "Content font size"
+
+msgid "Corner radius"
+msgstr "Promień rogów"
+
+msgid "Corner roundness of widgets"
+msgstr "Corner roundness of widgets"
+
+msgid "Could not delete the layout"
+msgstr "Could not delete the layout"
+
+msgid "Could not export the layout"
+msgstr "Could not export the layout"
+
+msgid "Could not import the layout"
+msgstr "Could not import the layout"
+
+msgid "Could not launch %s"
+msgstr "Could not launch %s"
+
+msgid "Could not open %s"
+msgstr "Could not open %s"
+
+msgid "Could not read the file"
+msgstr "Could not read the file"
+
+msgid "Could not restore the layout"
+msgstr "Could not restore the layout"
+
+msgid "Could not save the layout"
+msgstr "Could not save the layout"
+
+msgid "Could not write the file"
+msgstr "Could not write the file"
+
+msgid "Countdown timer"
+msgstr "Minutnik odliczający"
+
+msgid "Cover"
+msgstr "Cover"
+
+msgid "Current"
+msgstr "Bieżący"
+
+msgid "Current conditions"
+msgstr "Bieżące warunki atmosferyczne"
+
+msgid "Current streak"
+msgstr "Current streak"
+
+msgid "Custom"
+msgstr "Własny"
+
+msgid "Custom Color"
+msgstr "Własny kolor"
+
+msgid "Custom accent color used by all widgets"
+msgstr "Custom accent color used by all widgets"
+
+msgid "Custom app"
+msgstr "Custom app"
+
+msgid "Customize the GitHub Activity widget appearance."
+msgstr "Customize the GitHub Activity widget appearance."
+
+msgid "Customize the Notes widget font sizes."
+msgstr "Customize the Notes widget font sizes."
+
+msgid "Customize the appearance of all widgets."
+msgstr "Customize the appearance of all widgets."
+
+msgid "Daily"
+msgstr "Codziennie"
+
+msgid "Dark"
+msgstr "Ciemny"
+
+msgid "Date"
+msgstr "Data"
+
+msgid "Days of data to keep before older days are deleted"
+msgstr "Days of data to keep before older days are deleted"
+
+msgid "Dec"
+msgstr "Dec"
+
+msgid "Delete"
+msgstr "Usuń"
+
+msgid "Delete saved layout?"
+msgstr "Delete saved layout?"
+
+msgid "Description"
+msgstr "Opis"
+
+msgid "Desktop"
+msgstr "Biurko"
+
+msgid "Desktop & Placement"
+msgstr "Biurko i rozmieszczenie"
+
+msgid "Desktop Widgets"
+msgstr "Widżety biurka"
+
+msgid "Device"
+msgstr "Device"
+
+msgid "Digital Clock"
+msgstr "Zegar cyfrowy"
+
+msgid "Digital Clock Widget"
+msgstr "Widżet zegara cyfrowego"
+
+msgid "Display folder names below icons"
+msgstr "Display folder names below icons"
+
+msgid "Display the charge percentage below each ring"
+msgstr "Display the charge percentage below each ring"
+
+msgid "Documents"
+msgstr "Documents"
+
+msgid "Done"
+msgstr "Gotowe"
+
+msgid "Download"
+msgstr "Download"
+
+msgid "Downloads"
+msgstr "Downloads"
+
+msgid "Edit"
+msgstr "Edytuj"
+
+msgid "Edit Mode"
+msgstr "Tryb edycji"
+
+msgid "Edit Mode Shortcut"
+msgstr "Edit Mode Shortcut"
+
+msgid "Edit mode"
+msgstr "Edit mode"
+
+msgid "Empty state GIF"
+msgstr "Empty state GIF"
+
+msgid "Enable"
+msgstr "Włącz"
+
+msgid "Enable to move and remove widgets on the desktop"
+msgstr "Enable to move and remove widgets on the desktop"
+
+msgid "Enabled"
+msgstr "Włączone"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "Error loading"
+msgstr "Error loading"
+
+msgid "Export"
+msgstr "Export"
+
+msgid "Export layout"
+msgstr "Export layout"
+
+msgid "F"
+msgstr "F"
+
+msgid "Fast"
+msgstr "Szybko"
+
+msgid "Feb"
+msgstr "Feb"
+
+msgid "Fetching…"
+msgstr "Fetching…"
+
+msgid "File Manager"
+msgstr "File Manager"
+
+msgid "Files"
+msgstr "Files"
+
+msgid "Firefox"
+msgstr "Firefox"
+
+msgid "Focus"
+msgstr "Focus"
+
+msgid "Folder"
+msgstr "Folder"
+
+msgid "Folder Launcher"
+msgstr "Otwieranie folderów"
+
+msgid "Folder Launcher Widget"
+msgstr "Widżet otwierania folderów"
+
+msgid "Folder Launcher Widgets"
+msgstr "Folder Launcher Widgets"
+
+msgid "Folder does not exist: %s"
+msgstr "Folder does not exist: %s"
+
+msgid "Folders"
+msgstr "Folders"
+
+msgid "Folders shown on this widget, in grid order"
+msgstr "Folders shown on this widget, in grid order"
+
+msgid "Font"
+msgstr "Czcionka"
+
+msgid "Font size"
+msgstr "Rozmiar czcionki"
+
+msgid "Font size in pixels for the notes content text"
+msgstr "Font size in pixels for the notes content text"
+
+msgid "Font size in pixels for the notes title"
+msgstr "Font size in pixels for the notes title"
+
+msgid "Fri"
+msgstr "Fri"
+
+msgid "GNOME Weather"
+msgstr "GNOME Weather"
+
+msgid "GNU General Public License, version 3 or later"
+msgstr "GNU General Public License, version 3 or later"
+
+msgid "Geek time display"
+msgstr "Wyświetlacz czasu dla entuzjastów"
+
+msgid "General"
+msgstr "Ogólne"
+
+msgid "GitHub"
+msgstr "GitHub"
+
+msgid "GitHub Activity"
+msgstr "GitHub Activity"
+
+msgid "GitHub Widget"
+msgstr "Widżet GitHub"
+
+msgid "GitHub username"
+msgstr "GitHub username"
+
+msgid "Glass"
+msgstr "Szkło"
+
+msgid "Glass Blur"
+msgstr "Glass Blur"
+
+msgid "Glass Opacity"
+msgstr "Glass Opacity"
+
+msgid "Glass Style"
+msgstr "Glass Style"
+
+msgid "Glass widgets are redrawn every frame with transparency effects, which raises GPU load. If the desktop becomes slow or your GPU heats up, turn Glass Style off."
+msgstr "Glass widgets are redrawn every frame with transparency effects, which raises GPU load. If the desktop becomes slow or your GPU heats up, turn Glass Style off."
+
+msgid "Global Settings"
+msgstr "Global Settings"
+
+msgid "Global shortcut to toggle edit mode. Press Backspace to clear."
+msgstr "Global shortcut to toggle edit mode. Press Backspace to clear."
+
+msgid "Grid"
+msgstr "Siatka"
+
+msgid "H:%s L:%s"
+msgstr "H:%s L:%s"
+
+msgid "Height"
+msgstr "Wysokość"
+
+msgid "Help"
+msgstr "Pomoc"
+
+msgid "Hide"
+msgstr "Ukryj"
+
+msgid "History"
+msgstr "Historia"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "Hours"
+msgstr "Godziny"
+
+msgid "How large the device icon is inside the charging ring"
+msgstr "How large the device icon is inside the charging ring"
+
+msgid "How the clock shows the hour"
+msgstr "How the clock shows the hour"
+
+msgid "How the photo fits the widget bounds"
+msgstr "How the photo fits the widget bounds"
+
+msgid "How weekday labels appear in the calendar header"
+msgstr "How weekday labels appear in the calendar header"
+
+msgid "I'm waiting 🐾"
+msgstr "I'm waiting 🐾"
+
+msgid "Icon"
+msgstr "Ikona"
+
+msgid "Icons"
+msgstr "Ikony"
+
+msgid "Ignore Web Browsers"
+msgstr "Ignore Web Browsers"
+
+msgid "Image viewer"
+msgstr "Przeglądarka zdjęć"
+
+msgid "Import"
+msgstr "Import"
+
+msgid "Import layout"
+msgstr "Import layout"
+
+msgid "Information"
+msgstr "Informacje"
+
+msgid "It feels like"
+msgstr "It feels like"
+
+msgid "Jan"
+msgstr "Jan"
+
+msgid "Jul"
+msgstr "Jul"
+
+msgid "Jun"
+msgstr "Jun"
+
+msgid "Keep history for"
+msgstr "Keep history for"
+
+msgid "Keyboard"
+msgstr "Keyboard"
+
+msgid "Large"
+msgstr "Large"
+
+msgid "Launched when the widget is clicked: %s"
+msgstr "Launched when the widget is clicked: %s"
+
+msgid "Lava Lamp"
+msgstr "Lampa lawowa"
+
+msgid "Lava Lamp Widget"
+msgstr "Widżet lampy lawowej"
+
+msgid "Layout"
+msgstr "Układ"
+
+msgid "Length of the focus/work phase in minutes"
+msgstr "Length of the focus/work phase in minutes"
+
+msgid "Length of the long break in minutes"
+msgstr "Length of the long break in minutes"
+
+msgid "Length of the short break in minutes"
+msgstr "Length of the short break in minutes"
+
+msgid "Less"
+msgstr "Less"
+
+msgid "License"
+msgstr "License"
+
+msgid "Light"
+msgstr "Jasny"
+
+msgid "Linux os"
+msgstr "Linux os"
+
+msgid "Load a widget layout from a JSON file"
+msgstr "Load a widget layout from a JSON file"
+
+msgid "Location"
+msgstr "Lokalizacja"
+
+msgid "Lock"
+msgstr "Zablokuj"
+
+msgid "Long Break"
+msgstr "Long Break"
+
+msgid "Long break duration"
+msgstr "Long break duration"
+
+msgid "Longest streak"
+msgstr "Longest streak"
+
+msgid "M"
+msgstr "M"
+
+msgid "Make cake"
+msgstr "Make cake"
+
+msgid "Make tea"
+msgstr "Make tea"
+
+msgid "Manage apps for each widget. Changes apply instantly."
+msgstr "Manage apps for each widget. Changes apply instantly."
+
+msgid "Manage folders for each widget. Changes apply instantly."
+msgstr "Manage folders for each widget. Changes apply instantly."
+
+msgid "Mar"
+msgstr "Mar"
+
+msgid "Maximum apps reached"
+msgstr "Maximum apps reached"
+
+msgid "Maximum number of devices shown"
+msgstr "Maximum number of devices shown"
+
+msgid "May"
+msgstr "May"
+
+msgid "Media"
+msgstr "Multimedia"
+
+msgid "Media controls"
+msgstr "Sterowanie multimediami"
+
+msgid "Medium"
+msgstr "Średni"
+
+msgid "Min : Sec"
+msgstr "Min : Sec"
+
+msgid "Minutes"
+msgstr "Minuty"
+
+msgid "Modern time display"
+msgstr "Nowoczesny wyświetlacz czasu"
+
+msgid "Mon"
+msgstr "Mon"
+
+msgid "Monthly calendar view"
+msgstr "Miesięczny widok kalendarza"
+
+msgid "More"
+msgstr "More"
+
+msgid "Mouse"
+msgstr "Mouse"
+
+msgid "Move down"
+msgstr "Move down"
+
+msgid "Move up"
+msgstr "Move up"
+
+msgid "Music"
+msgstr "Muzyka"
+
+msgid "Music Player"
+msgstr "Odtwarzacz muzyki"
+
+msgid "Music Widget"
+msgstr "Widżet muzyki"
+
+msgid "Name"
+msgstr "Nazwa"
+
+msgid "New accelerator…"
+msgstr "New accelerator…"
+
+msgid "New task…"
+msgstr "New task…"
+
+msgid "Next"
+msgstr "Dalej"
+
+msgid "No"
+msgstr "Nie"
+
+msgid "No App Launcher widgets found"
+msgstr "No App Launcher widgets found"
+
+msgid "No Folder Launcher widgets found"
+msgstr "No Folder Launcher widgets found"
+
+msgid "No activity recorded"
+msgstr "No activity recorded"
+
+msgid "No apps configured"
+msgstr "No apps configured"
+
+msgid "No events today"
+msgstr "No events today"
+
+msgid "No folders configured"
+msgstr "No folders configured"
+
+msgid "No matching applications"
+msgstr "No matching applications"
+
+msgid "No tasks yet"
+msgstr "No tasks yet"
+
+msgid "None"
+msgstr "Brak"
+
+msgid "Not a valid widget layout"
+msgstr "Not a valid widget layout"
+
+msgid "Notes"
+msgstr "Notatki"
+
+msgid "Notes Widget"
+msgstr "Widżet notatek"
+
+msgid "Notifications"
+msgstr "Powiadomienia"
+
+msgid "Nov"
+msgstr "Nov"
+
+msgid "Number of completed work sessions before a long break"
+msgstr "Number of completed work sessions before a long break"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Oct"
+msgstr "Oct"
+
+msgid "Off"
+msgstr "Wył."
+
+msgid "Offline — cached"
+msgstr "Offline — cached"
+
+msgid "On"
+msgstr "Wł."
+
+msgid "Only available in the 2×1 and 2×1 mini sizes"
+msgstr "Only available in the 2×1 and 2×1 mini sizes"
+
+msgid "Opacity of the glass background"
+msgstr "Opacity of the glass background"
+
+msgid "Open"
+msgstr "Otwórz"
+
+msgid "Open Weather to set a location"
+msgstr "Open Weather to set a location"
+
+msgid "Options"
+msgstr "Opcje"
+
+msgid "Override the system accent color for all widgets"
+msgstr "Override the system accent color for all widgets"
+
+msgid "Overwrite"
+msgstr "Overwrite"
+
+msgid "Overwrite existing layout?"
+msgstr "Overwrite existing layout?"
+
+msgid "PM"
+msgstr "PM"
+
+msgid "Padding"
+msgstr "Margines wewnętrzny"
+
+msgid "Pause"
+msgstr "Wstrzymaj"
+
+msgid "Pause animations in fullscreen"
+msgstr "Pause animations in fullscreen"
+
+msgid "Per-app screen time is tracked automatically while the widget is on your desktop."
+msgstr "Per-app screen time is tracked automatically while the widget is on your desktop."
+
+msgid "Photo size"
+msgstr "Photo size"
+
+msgid "Photos"
+msgstr "Zdjęcia"
+
+msgid "Photos Widget"
+msgstr "Widżet zdjęć"
+
+msgid "Pick a saved layout to restore or delete"
+msgstr "Pick a saved layout to restore or delete"
+
+msgid "Pictures"
+msgstr "Pictures"
+
+msgid "Pin widget"
+msgstr "Pin widget"
+
+msgid "Pinned Apps"
+msgstr "Pinned Apps"
+
+msgid "Pinned Folders"
+msgstr "Pinned Folders"
+
+msgid "Placement"
+msgstr "Rozmieszczenie"
+
+msgid "Play"
+msgstr "Odtwórz"
+
+msgid "Play something to get going"
+msgstr "Play something to get going"
+
+msgid "Pomodoro"
+msgstr "Pomodoro"
+
+msgid "Pomodoro Timer"
+msgstr "Minutnik Pomodoro"
+
+msgid "Pomodoro Widget"
+msgstr "Widżet Pomodoro"
+
+msgid "Position"
+msgstr "Pozycja"
+
+msgid "Power status"
+msgstr "Stan zasilania i baterii"
+
+msgid "Preferences"
+msgstr "Preferencje"
+
+msgid "Preferences for the date widget on your desktop."
+msgstr "Preferences for the date widget on your desktop."
+
+msgid "Preferences for the media player widget on your desktop."
+msgstr "Preferences for the media player widget on your desktop."
+
+msgid "Preset name"
+msgstr "Preset name"
+
+msgid "Prevent browsers (Chrome, Firefox, etc.) from taking over the music widget."
+msgstr "Prevent browsers (Chrome, Firefox, etc.) from taking over the music widget."
+
+msgid "Preview"
+msgstr "Podgląd"
+
+msgid "Productivity"
+msgstr "Produktywność"
+
+msgid "Quick Notes"
+msgstr "Quick Notes"
+
+msgid "Quick add"
+msgstr "Quick add"
+
+msgid "Quick app access"
+msgstr "Szybki dostęp do programów"
+
+msgid "Quick folder access"
+msgstr "Szybki dostęp do folderów"
+
+msgid "Quick notes"
+msgstr "Szybkie notatki"
+
+msgid "Refresh"
+msgstr "Odśwież"
+
+msgid "Remove"
+msgstr "Usuń"
+
+msgid "Remove widget"
+msgstr "Remove widget"
+
+msgid "Report an Issue"
+msgstr "Report an Issue"
+
+msgid "Repository stats"
+msgstr "Statystyki repozytoriów"
+
+msgid "Reset"
+msgstr "Zresetuj"
+
+msgid "Reset Style"
+msgstr "Reset Style"
+
+msgid "Reset default widgets"
+msgstr "Reset default widgets"
+
+msgid "Restart"
+msgstr "Uruchom ponownie"
+
+msgid "Restore"
+msgstr "Restore"
+
+msgid "Restore default widget appearance"
+msgstr "Restore default widget appearance"
+
+msgid "Restore or delete the selected preset"
+msgstr "Restore or delete the selected preset"
+
+msgid "Restore the default widget layout"
+msgstr "Restore the default widget layout"
+
+msgid "Save"
+msgstr "Zapisz"
+
+msgid "Save layout"
+msgstr "Save layout"
+
+msgid "Save the current widget layout to a JSON file"
+msgstr "Save the current widget layout to a JSON file"
+
+msgid "Save the current widget positions under a name and restore them later."
+msgstr "Save the current widget positions under a name and restore them later."
+
+msgid "Saved Layouts"
+msgstr "Saved Layouts"
+
+msgid "Saved presets"
+msgstr "Saved presets"
+
+msgid "Scale"
+msgstr "Skala"
+
+msgid "Screen Time"
+msgstr "Czas przed ekranem"
+
+msgid "Screen Time Widget"
+msgstr "Widżet czasu przed ekranem"
+
+msgid "Search applications..."
+msgstr "Search applications..."
+
+msgid "Seconds"
+msgstr "Sekundy"
+
+msgid "Select"
+msgstr "Wybierz"
+
+msgid "Select Folder"
+msgstr "Select Folder"
+
+msgid "Select Widget"
+msgstr "Wybierz widżet"
+
+msgid "Select a photo"
+msgstr "Select a photo"
+
+msgid "Select photo"
+msgstr "Select photo"
+
+msgid "Select widget type from dropdown"
+msgstr "Select widget type from dropdown"
+
+msgid "Sep"
+msgstr "Sep"
+
+msgid "Sessions before long break"
+msgstr "Sessions before long break"
+
+msgid "Set user"
+msgstr "Set user"
+
+msgid "Settings"
+msgstr "Ustawienia"
+
+msgid "Settings that apply to all Folder Launcher widgets."
+msgstr "Settings that apply to all Folder Launcher widgets."
+
+msgid "Shadow Size"
+msgstr "Shadow Size"
+
+msgid "Short break duration"
+msgstr "Short break duration"
+
+msgid "Show"
+msgstr "Pokaż"
+
+msgid "Show AM/PM"
+msgstr "Show AM/PM"
+
+msgid "Show battery percentage"
+msgstr "Show battery percentage"
+
+msgid "Show folder names"
+msgstr "Show folder names"
+
+msgid "Show seconds"
+msgstr "Show seconds"
+
+msgid "Single letter (M T W)"
+msgstr "Single letter (M T W)"
+
+msgid "Size"
+msgstr "Rozmiar"
+
+msgid "Slow"
+msgstr "Wolno"
+
+msgid "Small"
+msgstr "Mały"
+
+msgid "Space between widgets and screen edges"
+msgstr "Space between widgets and screen edges"
+
+msgid "Spacing"
+msgstr "Odstępy"
+
+msgid "Standard"
+msgstr "Standardowy"
+
+msgid "Start"
+msgstr "Start"
+
+msgid "Stop"
+msgstr "Stop"
+
+msgid "Stopwatch"
+msgstr "Stoper"
+
+msgid "Stopwatch Widget"
+msgstr "Widżet stopera"
+
+msgid "Stretch"
+msgstr "Stretch"
+
+msgid "Style"
+msgstr "Styl"
+
+msgid "Synced %s"
+msgstr "Synced %s"
+
+msgid "System"
+msgstr "System"
+
+msgid "System & Battery"
+msgstr "System i bateria"
+
+msgid "System Monitor"
+msgstr "Monitor systemu"
+
+msgid "System Widget"
+msgstr "Widżet systemowy"
+
+msgid "T"
+msgstr "T"
+
+msgid "T %s"
+msgstr "T %s"
+
+msgid "Task"
+msgstr "Task"
+
+msgid "Task manager"
+msgstr "Menedżer zadań"
+
+msgid "Tasks"
+msgstr "Tasks"
+
+msgid "Terminal"
+msgstr "Terminal"
+
+msgid "Theme"
+msgstr "Motyw"
+
+msgid "Thickness of widget borders"
+msgstr "Thickness of widget borders"
+
+msgid "This file is not a valid layout"
+msgstr "This file is not a valid layout"
+
+msgid "Time"
+msgstr "Czas"
+
+msgid "Time & Clocks"
+msgstr "Czas i zegary"
+
+msgid "Time format"
+msgstr "Time format"
+
+msgid "Time management timer"
+msgstr "Minutnik zarządzania czasem"
+
+msgid "Timer"
+msgstr "Minutnik"
+
+msgid "Timer Widget"
+msgstr "Widżet minutnika"
+
+msgid "Timer finished!"
+msgstr "Timer finished!"
+
+msgid "Timer with lap tracking"
+msgstr "Stoper z pomiarem okrążeń"
+
+msgid "Title"
+msgstr "Tytuł"
+
+msgid "Title font size"
+msgstr "Title font size"
+
+msgid "Title..."
+msgstr "Title..."
+
+msgid "To-Do"
+msgstr "Do zrobienia"
+
+msgid "To-Do List"
+msgstr "Lista zadań"
+
+msgid "To-Do Widget"
+msgstr "Widżet listy zadań"
+
+msgid "Today"
+msgstr "Dzisiaj"
+
+msgid "Todo List"
+msgstr "Lista zadań"
+
+msgid "Tomorrow"
+msgstr "Jutro"
+
+msgid "Top Bar"
+msgstr "Górny pasek"
+
+msgid "Transparency"
+msgstr "Przezroczystość"
+
+msgid "Transparency of all desktop widgets"
+msgstr "Transparency of all desktop widgets"
+
+msgid "Two letters (Mo Tu We)"
+msgstr "Two letters (Mo Tu We)"
+
+msgid "Type"
+msgstr "Typ"
+
+msgid "Type the shortcut to toggle edit mode. Press Backspace to clear."
+msgstr "Type the shortcut to toggle edit mode. Press Backspace to clear."
+
+msgid "Units"
+msgstr "Jednostki"
+
+msgid "Unknown artist"
+msgstr "Unknown artist"
+
+msgid "Unknown widget"
+msgstr "Unknown widget"
+
+msgid "Unknown widget type"
+msgstr "Unknown widget type"
+
+msgid "Unpin widget"
+msgstr "Unpin widget"
+
+msgid "Upcoming"
+msgstr "Nadchodzące"
+
+msgid "Upload"
+msgstr "Upload"
+
+msgid "Usage tracker"
+msgstr "Śledzenie czasu korzystania"
+
+msgid "Use Custom Accent Color"
+msgstr "Use Custom Accent Color"
+
+msgid "Use GitHub Green Colors"
+msgstr "Use GitHub Green Colors"
+
+msgid "Use GitHub's default green color scheme instead of the theme accent color"
+msgstr "Use GitHub's default green color scheme instead of the theme accent color"
+
+msgid "Use accent color"
+msgstr "Use accent color"
+
+msgid "Use system or custom accent color from Appearance settings. When disabled, uses neutral gray."
+msgstr "Use system or custom accent color from Appearance settings. When disabled, uses neutral gray."
+
+msgid "Version %s"
+msgstr "Version %s"
+
+msgid "View sources on GitHub"
+msgstr "View sources on GitHub"
+
+msgid "W"
+msgstr "W"
+
+msgid "Weather"
+msgstr "Pogoda"
+
+msgid "Weather Widget"
+msgstr "Widżet pogody"
+
+msgid "Weather unavailable"
+msgstr "Weather unavailable"
+
+msgid "Wed"
+msgstr "Wed"
+
+msgid "Weekday format"
+msgstr "Weekday format"
+
+msgid "Widget"
+msgstr "Widżet"
+
+msgid "Widget Styling"
+msgstr "Widget Styling"
+
+msgid "Widget gallery"
+msgstr "Widget gallery"
+
+msgid "Widget gap (px)"
+msgstr "Widget gap (px)"
+
+msgid "Widget opacity"
+msgstr "Widget opacity"
+
+msgid "Widget size"
+msgstr "Widget size"
+
+msgid "Widgets"
+msgstr "Widżety"
+
+msgid "Width"
+msgstr "Szerokość"
+
+msgid "Work duration"
+msgstr "Work duration"
+
+msgid "Yes"
+msgstr "Tak"
+
+msgid "Yesterday"
+msgstr "Wczoraj"
+
+msgid "⚠ Warning: Glass Style increases GPU usage"
+msgstr "⚠ Ostrzeżenie: styl Glass zwiększa obciążenie GPU"
+

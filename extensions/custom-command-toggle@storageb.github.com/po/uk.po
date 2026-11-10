@@ -1,0 +1,322 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: custom-command-toggle\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-11-10 12:00+0200\n"
+"Last-Translator: macW1Y i18n Team\n"
+"Language-Team: Ukrainian\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "About"
+msgstr "Про розширення"
+
+msgid "Add menu item"
+msgstr "Додати пункт меню"
+
+msgid "Advanced"
+msgstr "Розширені"
+
+msgid "All settings reset to defaults"
+msgstr "Усі параметри скинуто до типових"
+
+msgid "All toggles and extension settings will be reset to their default values. This action cannot be undone."
+msgstr "Усі перемикачі та параметри розширення будуть скинуті до типових значень. Цю дію неможливо скасувати."
+
+msgid "Always off"
+msgstr "Завжди вимкнено"
+
+msgid "Always on"
+msgstr "Завжди увімкнено"
+
+msgid "Amount of time to delay command from running after startup"
+msgstr "Затримка запуску команди після старту"
+
+msgid "Appearance"
+msgstr "Вигляд"
+
+msgid "Application Not Found"
+msgstr "Програму не знайдено"
+
+msgid "Apply"
+msgstr "Застосувати"
+
+msgid "Assign Shortcut"
+msgstr "Призначити скорочення"
+
+msgid "Backup and Restore"
+msgstr "Резервне копіювання та відновлення"
+
+msgid "Button %d"
+msgstr "Кнопка %d"
+
+msgid "Button Click Action"
+msgstr "Дія при кліку на кнопку"
+
+msgid "Button behavior when clicked"
+msgstr "Поведінка кнопки при кліку"
+
+msgid "Button name:"
+msgstr "Назва кнопки:"
+
+msgid "Cancel"
+msgstr "Скасувати"
+
+msgid "Check Command Exit Code"
+msgstr "Перевіряти код завершення команди"
+
+msgid "Check Status Command:"
+msgstr "Команда перевірки стану:"
+
+msgid "Check Status Search Term:"
+msgstr "Рядок пошуку для стану:"
+
+msgid "Click + to add a menu item"
+msgstr "Натисніть +, щоб додати пункт меню"
+
+msgid "Click Apply to save and reinitialize toggle states"
+msgstr "Натисніть Застосувати, щоб зберегти та переініціалізувати стани перемикачів"
+
+msgid "Click to export the toggles.ini configuration file to the home directory"
+msgstr "Натисніть для експорту файлу toggles.ini у домашній каталог"
+
+msgid "Click to import the toggles.ini configuration file from the home directory"
+msgstr "Натисніть для імпорту файлу toggles.ini з домашнього каталогу"
+
+msgid "Click to restore all toggles and settings to their default values"
+msgstr "Натисніть для відновлення всіх перемикачів і параметрів до типових"
+
+msgid "Close Menu After Button Press"
+msgstr "Закривати меню після натискання кнопки"
+
+msgid "Close the system menu immediately after clicking toggle button"
+msgstr "Закривати системне меню одразу після кліку на кнопку перемикача"
+
+msgid "Command Configuration"
+msgstr "Конфігурація команди"
+
+msgid "Command Sync Behavior"
+msgstr "Поведінка синхронізації команди"
+
+msgid "Command copied to clipboard"
+msgstr "Команду скопійовано в буфер обміну"
+
+msgid "Command output"
+msgstr "Вивід команди"
+
+msgid "Command sync is disabled. To enable, set the Button Click Action to Toggle."
+msgstr "Синхронізацію команди вимкнено. Для увімкнення встановіть дію кліку на Перемикання."
+
+msgid "Command:"
+msgstr "Команда:"
+
+msgid "Commands"
+msgstr "Команди"
+
+msgid "Configuration"
+msgstr "Конфігурація"
+
+msgid "Confirm Reset"
+msgstr "Підтвердження скидання"
+
+msgid "Copy command to clipboard"
+msgstr "Скопіювати команду в буфер обміну"
+
+msgid "Detailed Logging"
+msgstr "Детальний журнал"
+
+msgid "Details"
+msgstr "Деталі"
+
+msgid "Discussions"
+msgstr "Обговорення"
+
+msgid "Enter the Check Status Command and Search Term in the Commands section above. If the specified Search Term appears in the command's output, the button will be set to ON at startup. Otherwise, the button will be set to OFF."
+msgstr "Введіть команду перевірки стану та рядок пошуку вище. Якщо рядок знайдено у виводі, кнопка увімкнеться при старті. Інакше вона залишиться вимкненою."
+
+msgid "Export Configuration"
+msgstr "Експорт конфігурації"
+
+msgid "Export Error"
+msgstr "Помилка експорту"
+
+msgid "Extension Page"
+msgstr "Сторінка розширення"
+
+msgid "Failed to export settings\\n\\n%s"
+msgstr "Не вдалося експортувати параметри\\n\\n%s"
+
+msgid "Failed to import configuration\\n\\n%s"
+msgstr "Не вдалося імпортувати конфігурацію\\n\\n%s"
+
+msgid "Failed to reset settings"
+msgstr "Не вдалося скинути параметри"
+
+msgid "File Not Found"
+msgstr "Файл не знайдено"
+
+msgid "File not found"
+msgstr "Файл не знайдено"
+
+msgid "Find links to the User Guide, Icon List, and other helpful information in the menu at the top of this window."
+msgstr "Посилання на посібник, список піктограм та інше знаходяться в меню вгорі вікна."
+
+msgid "GitHub Page"
+msgstr "Сторінка GitHub"
+
+msgid "Help and resources"
+msgstr "Довідка та ресурси"
+
+msgid "Hide this toggle"
+msgstr "Сховати цей перемикач"
+
+msgid "How often to check the command output and update button state"
+msgstr "Як часто перевіряти вивід команди та оновлювати стан кнопки"
+
+msgid "Icon List"
+msgstr "Список піктограм"
+
+msgid "Icon:"
+msgstr "Піктограма:"
+
+msgid "Import Configuration"
+msgstr "Імпорт конфігурації"
+
+msgid "Import Error"
+msgstr "Помилка імпорту"
+
+msgid "Initial State"
+msgstr "Початковий стан"
+
+msgid "Keep Toggle State Synced"
+msgstr "Підтримувати стан перемикача синхронізованим"
+
+msgid "Keep toggle button state synced with a command's output"
+msgstr "Синхронізувати стан кнопки з виводом команди"
+
+msgid "Keyboard Shortcut"
+msgstr "Клавіатурне скорочення"
+
+msgid "Menu Commands"
+msgstr "Команди меню"
+
+msgid "My Button"
+msgstr "Моя кнопка"
+
+msgid "Name:"
+msgstr "Назва:"
+
+msgid "New Menu Item"
+msgstr "Новий пункт меню"
+
+msgid "No toggles found in %s."
+msgstr "Не знайдено перемикачів у %s."
+
+msgid "Not assigned"
+msgstr "Не призначено"
+
+msgid "Number of Toggle Buttons"
+msgstr "Кількість кнопок перемикачів"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Off"
+msgstr "Вимк."
+
+msgid "On"
+msgstr "Увімк."
+
+msgid "Only toggle if the command executes successfully (returns exit code 0)"
+msgstr "Перемикати лише якщо команда завершилася успішно (код 0)"
+
+msgid "Open"
+msgstr "Відкрити"
+
+msgid "Polling Frequency (seconds)"
+msgstr "Частота опитування (секунди)"
+
+msgid "Press Esc to cancel or Backspace to disable the shortcut"
+msgstr "Натисніть Esc для скасування або Backspace для вимкнення скорочення"
+
+msgid "Previous state"
+msgstr "Попередній стан"
+
+msgid "Remove menu item"
+msgstr "Видалити пункт меню"
+
+msgid "Remove shortcut"
+msgstr "Видалити скорочення"
+
+msgid "Reset"
+msgstr "Скинути"
+
+msgid "Reset to Defaults"
+msgstr "Відновити типові"
+
+msgid "Resources"
+msgstr "Ресурси"
+
+msgid "Run Command at Startup"
+msgstr "Запускати команду при старті"
+
+msgid "Run associated toggle command at login/startup"
+msgstr "Запускати команду при вході/старті"
+
+msgid "Set a keyboard shortcut for toggle button"
+msgstr "Встановити клавіатурне скорочення для кнопки"
+
+msgid "Settings"
+msgstr "Параметри"
+
+msgid "Settings exported to: %s"
+msgstr "Параметри експортовано до: %s"
+
+msgid "Show Indicator Icon"
+msgstr "Показувати піктограму індикатора"
+
+msgid "Show this toggle"
+msgstr "Показувати цей перемикач"
+
+msgid "Show top bar icon when toggle button is switched on"
+msgstr "Показувати піктограму у верхній панелі, коли кнопку увімкнено"
+
+msgid "Startup Behavior"
+msgstr "Поведінка при старті"
+
+msgid "Startup Delay (seconds)"
+msgstr "Затримка старту (секунди)"
+
+msgid "State of the toggle button at login/startup"
+msgstr "Стан кнопки при вході/старті"
+
+msgid "Successfully imported %d toggle"
+msgstr "Успішно імпортовано %d перемикач"
+
+msgid "To view output, run the following in a terminal then restart extension:\\n%s"
+msgstr "Щоб переглянути вивід, виконайте в терміналі та перезапустіть розширення:\\n%s"
+
+msgid "Toggle"
+msgstr "Перемикач"
+
+msgid "Toggle Behavior"
+msgstr "Поведінка перемикача"
+
+msgid "Toggle Button"
+msgstr "Кнопка перемикача"
+
+msgid "Toggle OFF Command:"
+msgstr "Команда вимкнення:"
+
+msgid "Toggle ON Command:"
+msgstr "Команда ввімкнення:"
+
+msgid "User Guide"
+msgstr "Посібник користувача"
+
+msgid "What's New"
+msgstr "Що нового"
+

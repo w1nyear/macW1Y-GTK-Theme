@@ -1,0 +1,139 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: display-brightness-ddcutil\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-11-10 12:00+0200\n"
+"Last-Translator: macW1Y i18n Team\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "Add Custom Shortcut"
+msgstr "Dodaj własny skrót"
+
+msgid "Advanced Settings"
+msgstr "Ustawienia zaawansowane"
+
+msgid "All"
+msgstr "Wszystkie"
+
+msgid "Allow Zero Brightness"
+msgstr "Zezwalaj na zerową jasność"
+
+msgid "Button Location"
+msgstr "Położenie przycisku"
+
+msgid "Decrease Brightness"
+msgstr "Zmniejsz jasność"
+
+msgid "Disable Display State Check"
+msgstr "Wyłącz sprawdzanie stanu ekranu"
+
+msgid "Disables the check for the display power state before changing brightness, might help in detecting more displays"
+msgstr "Wyłącza sprawdzanie stanu zasilania ekranu przed zmianą jasności, co może pomóc w wykrywaniu większej liczby monitorów"
+
+msgid "Enable \"All\" Slider"
+msgstr "Włącz suwak „Wszystkie”"
+
+msgid "Enable \"Internal\" Slider"
+msgstr "Włącz suwak „Wbudowany”"
+
+msgid "Enter the new shortcut"
+msgstr "Wprowadź nowy skrót"
+
+msgid "General"
+msgstr "Ogólne"
+
+msgid "Hide System Indicator"
+msgstr "Ukryj wskaźnik systemowy"
+
+msgid "Increase Brightness"
+msgstr "Zwiększ jasność"
+
+msgid "Initializing"
+msgstr "Inicjalizacja"
+
+msgid "Internal"
+msgstr "Wbudowany"
+
+msgid "Keyboard Shortcuts"
+msgstr "Skróty klawiszowe"
+
+msgid "Need to disable (Only \"All\" slider)"
+msgstr "Należy wyłączyć (Tylko suwak „Wszystkie”)"
+
+msgid "Need to enable (\"All\" slider)"
+msgstr "Należy włączyć (suwak „Wszystkie”)"
+
+msgid "Position in System Indicator"
+msgstr "Pozycja we wskaźniku systemowym"
+
+msgid "Position in System Menu"
+msgstr "Pozycja w menu systemowym"
+
+msgid "Press Esc to cancel the keyboard shortcut."
+msgstr "Naciśnij Esc, aby anulować skrót klawiszowy."
+
+msgid "Reload"
+msgstr "Przeładuj"
+
+msgid "Reserved or invalid binding"
+msgstr "Zastrzeżone lub nieprawidłowe przypisanie"
+
+msgid "Set Shortcut…"
+msgstr "Ustaw skrót…"
+
+msgid "Settings"
+msgstr "Ustawienia"
+
+msgid "Show Display Name"
+msgstr "Pokaż nazwę ekranu"
+
+msgid "Show OSD"
+msgstr "Pokaż OSD"
+
+msgid "Show Value Label"
+msgstr "Pokaż etykietę wartości"
+
+msgid "Step Change %"
+msgstr "Krok zmiany %"
+
+msgid "Submenu mode cannot be enabled in TopBar mode "
+msgstr "Tryb podmenu nie może być włączony w trybie paska górnego "
+
+msgid "System Menu"
+msgstr "Menu systemowe"
+
+msgid "Top Bar"
+msgstr "Górny pasek"
+
+msgid "Use Only \"All\" Slider"
+msgstr "Używaj tylko suwaka „Wszystkie”"
+
+msgid "Use Quick Settings Sub Menu"
+msgstr "Użyj podmenu w Szybkich ustawieniach"
+
+msgid "VCP codes in use"
+msgstr "Używane kody VCP"
+
+msgid "Brightness"
+msgstr "Jasność"
+
+msgid "White Backlight"
+msgstr "Białe podświetlenie"
+
+msgid "Verbose debugging"
+msgstr "Szczegółowe debugowanie"
+
+msgid "`ddcutil` Additional Arguments"
+msgstr "Dodatkowe argumenty `ddcutil`"
+
+msgid "`ddcutil` Binary Path"
+msgstr "Ścieżka do pliku binarnego `ddcutil`"
+
+msgid "`ddcutil` Sleep Multiplier ms"
+msgstr "Mnożnik uśpienia ms `ddcutil`"
+

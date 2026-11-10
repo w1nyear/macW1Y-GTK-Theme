@@ -14,17 +14,100 @@ unset __VK_LAYER_NV_optimus
 unset VK_DRIVER_FILES
 unset VK_ICD_FILENAMES
 
+# Detect active system/macW1Y locale
+LOCALE="en"
+if [ -f "$HOME/.config/mac-styling/locale" ]; then
+    LOCALE=$(cat "$HOME/.config/mac-styling/locale" | tr '[:upper:]' '[:lower:]' | tr -d ' \n\r')
+elif [ -n "$LANGUAGE" ]; then
+    LOCALE=$(echo "$LANGUAGE" | cut -d: -f1 | cut -d_ -f1 | tr '[:upper:]' '[:lower:]')
+elif [ -n "$LANG" ]; then
+    LOCALE=$(echo "$LANG" | cut -d. -f1 | cut -d_ -f1 | tr '[:upper:]' '[:lower:]')
+fi
+
+case "$LOCALE" in
+    pl*)
+        I18N_TITLE="Wybierz program Windows (.exe, .msi)"
+        I18N_FILTER="Pliki Windows (*.exe, *.msi, *.bat, *.cmd) | *.exe *.EXE *.msi *.MSI *.bat *.BAT *.cmd *.CMD"
+        I18N_USAGE="Użycie: mac-wine-runner <ścieżka_do_pliku.exe|msi|bat> [argumenty...]"
+        I18N_NOT_FOUND="Błąd: plik '%s' nie został odnaleziony.\n"
+        I18N_SETUP_TITLE="Konfiguracja Wine"
+        I18N_SETUP_MSG="Inicjalizacja środowiska Windows po raz pierwszy..."
+        I18N_ERR_TITLE="Błąd Wine"
+        I18N_ERR_MSG="Wine nie jest zainstalowane w systemie."
+        ;;
+    uk*)
+        I18N_TITLE="Оберіть Windows програму (.exe, .msi)"
+        I18N_FILTER="Windows файли (*.exe, *.msi, *.bat, *.cmd) | *.exe *.EXE *.msi *.MSI *.bat *.BAT *.cmd *.CMD"
+        I18N_USAGE="Використання: mac-wine-runner <шлях_до_файлу.exe|msi|bat> [аргументи...]"
+        I18N_NOT_FOUND="Помилка: файл '%s' не знайдено.\n"
+        I18N_SETUP_TITLE="Налаштування Wine"
+        I18N_SETUP_MSG="Ініціалізація середовища Windows вперше..."
+        I18N_ERR_TITLE="Помилка Wine"
+        I18N_ERR_MSG="Wine не встановлено в системі."
+        ;;
+    de*)
+        I18N_TITLE="Windows-Anwendung auswählen (.exe, .msi)"
+        I18N_FILTER="Windows-Dateien (*.exe, *.msi, *.bat, *.cmd) | *.exe *.EXE *.msi *.MSI *.bat *.BAT *.cmd *.CMD"
+        I18N_USAGE="Verwendung: mac-wine-runner <dateipfad.exe|msi|bat> [argumente...]"
+        I18N_NOT_FOUND="Fehler: Datei '%s' nicht gefunden.\n"
+        I18N_SETUP_TITLE="Wine-Einrichtung"
+        I18N_SETUP_MSG="Windows-Umgebung wird erstmalig initialisiert..."
+        I18N_ERR_TITLE="Wine-Fehler"
+        I18N_ERR_MSG="Wine ist nicht im System installiert."
+        ;;
+    fr*)
+        I18N_TITLE="Sélectionnez une application Windows (.exe, .msi)"
+        I18N_FILTER="Fichiers Windows (*.exe, *.msi, *.bat, *.cmd) | *.exe *.EXE *.msi *.MSI *.bat *.BAT *.cmd *.CMD"
+        I18N_USAGE="Utilisation : mac-wine-runner <chemin_fichier.exe|msi|bat> [arguments...]"
+        I18N_NOT_FOUND="Erreur : fichier '%s' introuvable.\n"
+        I18N_SETUP_TITLE="Configuration de Wine"
+        I18N_SETUP_MSG="Initialisation de l'environnement Windows pour la première fois..."
+        I18N_ERR_TITLE="Erreur Wine"
+        I18N_ERR_MSG="Wine n'est pas installé sur le système."
+        ;;
+    es*)
+        I18N_TITLE="Seleccionar aplicación de Windows (.exe, .msi)"
+        I18N_FILTER="Archivos de Windows (*.exe, *.msi, *.bat, *.cmd) | *.exe *.EXE *.msi *.MSI *.bat *.BAT *.cmd *.CMD"
+        I18N_USAGE="Uso: mac-wine-runner <ruta_archivo.exe|msi|bat> [argumentos...]"
+        I18N_NOT_FOUND="Error: archivo '%s' no encontrado.\n"
+        I18N_SETUP_TITLE="Configuración de Wine"
+        I18N_SETUP_MSG="Inicializando entorno Windows por primera vez..."
+        I18N_ERR_TITLE="Error de Wine"
+        I18N_ERR_MSG="Wine no está instalado en el sistema."
+        ;;
+    it*)
+        I18N_TITLE="Seleziona applicazione Windows (.exe, .msi)"
+        I18N_FILTER="File Windows (*.exe, *.msi, *.bat, *.cmd) | *.exe *.EXE *.msi *.MSI *.bat *.BAT *.cmd *.CMD"
+        I18N_USAGE="Uso: mac-wine-runner <percorso_file.exe|msi|bat> [argomenti...]"
+        I18N_NOT_FOUND="Errore: file '%s' non trovato.\n"
+        I18N_SETUP_TITLE="Configurazione Wine"
+        I18N_SETUP_MSG="Inizializzazione ambiente Windows per la prima volta..."
+        I18N_ERR_TITLE="Errore Wine"
+        I18N_ERR_MSG="Wine non è installato nel sistema."
+        ;;
+    *)
+        I18N_TITLE="Select Windows Application (.exe, .msi)"
+        I18N_FILTER="Windows files (*.exe, *.msi, *.bat, *.cmd) | *.exe *.EXE *.msi *.MSI *.bat *.BAT *.cmd *.CMD"
+        I18N_USAGE="Usage: mac-wine-runner <path_to_file.exe|msi|bat> [arguments...]"
+        I18N_NOT_FOUND="Error: file '%s' not found.\n"
+        I18N_SETUP_TITLE="Wine Setup"
+        I18N_SETUP_MSG="Initializing Windows environment for the first time..."
+        I18N_ERR_TITLE="Wine Error"
+        I18N_ERR_MSG="Wine is not installed on the system."
+        ;;
+esac
+
 if [ $# -lt 1 ]; then
     if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
         if command -v zenity >/dev/null 2>&1; then
-            TARGET=$(zenity --file-selection --title="Оберіть Windows програму (.exe, .msi)" --file-filter="Windows файли (*.exe, *.msi, *.bat, *.cmd) | *.exe *.EXE *.msi *.MSI *.bat *.BAT *.cmd *.CMD" 2>/dev/null || true)
+            TARGET=$(zenity --file-selection --title="$I18N_TITLE" --file-filter="$I18N_FILTER" 2>/dev/null || true)
             if [ -z "$TARGET" ]; then
                 exit 0
             fi
         fi
     fi
     if [ -z "$TARGET" ]; then
-        echo "Використання: mac-wine-runner <шлях_до_файлу.exe|msi|bat> [аргументи...]" >&2
+        echo "$I18N_USAGE" >&2
         exit 1
     fi
 else
@@ -37,7 +120,7 @@ if [[ "$TARGET" =~ ^file:// ]]; then
 fi
 
 if [ ! -e "$TARGET" ]; then
-    echo "Помилка: файл '$TARGET' не знайдено." >&2
+    printf "$I18N_NOT_FOUND" "$TARGET" >&2
     exit 1
 fi
 
@@ -56,7 +139,7 @@ export WINEDEBUG="${WINEDEBUG:--all}"
 # If wine prefix doesn't exist yet, run silent wineboot
 if [ ! -d "$WINEPREFIX" ]; then
     if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
-        notify-send -a "macOS" -i "system-software-install" "Налаштування Wine" "Ініціалізація середовища Windows вперше..." 2>/dev/null || true
+        notify-send -a "macOS" -i "system-software-install" "$I18N_SETUP_TITLE" "$I18N_SETUP_MSG" 2>/dev/null || true
     fi
     wineboot -u >/dev/null 2>&1 || true
 fi
@@ -152,8 +235,8 @@ if [ -z "$REAL_WINE" ] || [ ! -x "$REAL_WINE" ]; then
 fi
 
 if [ -z "$REAL_WINE" ]; then
-    notify-send -u critical -a "macOS" "Помилка Wine" "Wine не встановлено в системі." 2>/dev/null || true
-    echo "Wine is not installed." >&2
+    notify-send -u critical -a "macOS" "$I18N_ERR_TITLE" "$I18N_ERR_MSG" 2>/dev/null || true
+    echo "$I18N_ERR_MSG" >&2
     exit 1
 fi
 

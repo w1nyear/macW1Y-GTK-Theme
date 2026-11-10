@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+  <template class="CcPowerProfileRow" parent="AdwActionRow">
+    <property name="selectable">false</property>
+    <property name="activatable-widget">button</property>
+    <property name="use-underline">true</property>
+    <child type="prefix">
+      <object class="GtkCheckButton" id="button">
+        <signal name="toggled" handler="cc_power_profile_row_button_toggled_cb" object="CcPowerProfileRow" />
+        <property name="valign">3</property>
+      </object>
+    </child>
+  </template>
+</interface>

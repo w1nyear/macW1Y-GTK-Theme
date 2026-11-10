@@ -1,0 +1,1337 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+
+  
+  <object class="AdwNavigationPage" id="widgets_page">
+    <property name="title">Widgets</property>
+    <property name="tag">widgets</property>
+    <property name="child">
+      <object class="AdwNavigationView" id="widgets_nav_view">
+        <signal name="popped" handler="on_widgets_nav_view_popped" />
+        
+        <child>
+          <object class="AdwNavigationPage" id="widgets_main_page">
+            <property name="title">Widgets</property>
+            <property name="tag">widgets_main</property>
+            <property name="child">
+              <object class="AdwToolbarView">
+        <property name="extend-content-to-top-edge">False</property>
+        <property name="extend-content-to-bottom-edge">True</property>
+        <property name="top-bar-style">flat</property>
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <style>
+              <class name="flat" />
+            </style>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwPreferencesPage">
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Escritorio y ubicación</property>
+                <property name="description">Administrar widgets de escritorio y su comportamiento</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_edit_mode_row">
+                    <property name="title">Modo de edición</property>
+                    <property name="subtitle">Permitir arrastrar, redimensionar y eliminar widgets en el escritorio</property>
+                    <property name="active">false</property>
+                    <signal name="realize" handler="init_dw_edit_mode" />
+                    <signal name="notify::active" handler="on_dw_edit_mode_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_add_widgets_row">
+                    <property name="title">Añadir widgets al escritorio</property>
+                    <property name="subtitle">Abrir selector de widgets (Reloj, Clima, Batería, Fotos, etc.)</property>
+                    <property name="activatable">true</property>
+                    <signal name="activated" handler="on_dw_add_widgets_clicked" />
+                    <child type="suffix">
+                      <object class="GtkButton" id="dw_btn_add_widgets">
+                        <property name="valign">center</property>
+                        <property name="icon-name">list-add-symbolic</property>
+                        <style>
+                          <class name="suggested-action" />
+                          <class name="circular" />
+                          <class name="mac-action-accent-btn" />
+                        </style>
+                        <signal name="clicked" handler="on_dw_add_widgets_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_arrange_row">
+                    <property name="title">Alinear a la cuadrícula</property>
+                    <property name="subtitle">Alinear automáticamente todos los widgets en una cuadrícula común</property>
+                    <property name="activatable">true</property>
+                    <signal name="activated" handler="on_dw_arrange_clicked" />
+                    <child type="suffix">
+                      <object class="GtkButton" id="dw_btn_arrange">
+                        <property name="valign">center</property>
+                        <property name="icon-name">view-grid-symbolic</property>
+                        <style>
+                          <class name="suggested-action" />
+                          <class name="circular" />
+                          <class name="mac-action-accent-btn" />
+                        </style>
+                        <signal name="clicked" handler="on_dw_arrange_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_gap_row">
+                    <property name="title">Espaciado de widgets</property>
+                    <property name="subtitle">Distancia en píxeles entre los widgets y los bordes de la pantalla</property>
+                    <child type="suffix">
+                      <object class="GtkScale" id="dw_gap_scale">
+                        <property name="orientation">0</property>
+                        <property name="draw-value">true</property>
+                        <property name="digits">0</property>
+                        <property name="round-digits">0</property>
+                        <property name="width-request">200</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">0</property>
+                            <property name="upper">50</property>
+                            <property name="step-increment">1</property>
+                            <property name="page-increment">5</property>
+                            <property name="value">15</property>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_dw_gap" />
+                        <signal name="value-changed" handler="on_dw_gap_changed" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_panel_icon_row">
+                    <property name="title">Icono en la barra superior</property>
+                    <property name="subtitle">Mostrar icono de alternancia de widgets en la barra superior</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_dw_panel_icon" />
+                    <signal name="notify::active" handler="on_dw_panel_icon_changed" />
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Estilo y apariencia</property>
+                <property name="description">Aspecto, radio de esquinas y opacidad de las tarjetas de widgets</property>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_border_radius_row">
+                    <property name="title">Radio de esquinas</property>
+                    <property name="subtitle">Radio de redondeo de las tarjetas de widgets (px)</property>
+                    <child type="suffix">
+                      <object class="GtkScale" id="dw_border_radius_scale">
+                        <property name="orientation">0</property>
+                        <property name="draw-value">true</property>
+                        <property name="digits">0</property>
+                        <property name="round-digits">0</property>
+                        <property name="width-request">200</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">0</property>
+                            <property name="upper">40</property>
+                            <property name="step-increment">1</property>
+                            <property name="page-increment">5</property>
+                            <property name="value">35</property>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_dw_border_radius" />
+                        <signal name="value-changed" handler="on_dw_border_radius_changed" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_opacity_row">
+                    <property name="title">Opacidad de widgets</property>
+                    <property name="subtitle">Nivel de opacidad del fondo de los widgets (%)</property>
+                    <child type="suffix">
+                      <object class="GtkScale" id="dw_opacity_scale">
+                        <property name="orientation">0</property>
+                        <property name="draw-value">true</property>
+                        <property name="digits">0</property>
+                        <property name="round-digits">0</property>
+                        <property name="width-request">200</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">10</property>
+                            <property name="upper">100</property>
+                            <property name="step-increment">1</property>
+                            <property name="page-increment">5</property>
+                            <property name="value">85</property>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_dw_opacity" />
+                        <signal name="value-changed" handler="on_dw_opacity_changed" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_use_custom_accent_row">
+                    <property name="title">Color de acento personalizado</property>
+                    <property name="subtitle">Usar color seleccionado en lugar del acento del sistema</property>
+                    <property name="active">false</property>
+                    <signal name="realize" handler="init_dw_use_custom_accent" />
+                    <signal name="notify::active" handler="on_dw_use_custom_accent_changed" />
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Comportamiento de componentes</property>
+                <property name="description">Parámetros de módulos informativos individuales</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_clock_seconds_row">
+                    <property name="title">Mostrar segundos en el reloj</property>
+                    <property name="subtitle">Indicador de segundos para relojes digitales y analógicos</property>
+                    <property name="active">false</property>
+                    <signal name="realize" handler="init_dw_clock_seconds" />
+                    <signal name="notify::active" handler="on_dw_clock_seconds_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_battery_percent_row">
+                    <property name="title">Mostrar porcentaje de batería</property>
+                    <property name="subtitle">Valor numérico de carga bajo el anillo de batería</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_dw_battery_percent" />
+                    <signal name="notify::active" handler="on_dw_battery_percent_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_music_browsers_row">
+                    <property name="title">Música: ignorar navegadores</property>
+                    <property name="subtitle">No mostrar pestañas de audio de Chrome o Firefox en el widget reproductor</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_dw_music_browsers" />
+                    <signal name="notify::active" handler="on_dw_music_browsers_changed" />
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Configuración avanzada</property>
+                <property name="description">Configuración detallada de los 19 tipos de widgets</property>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_advanced_row">
+                    <property name="title">Configurador completo de widgets</property>
+                    <property name="subtitle">Abrir configuración avanzada de todos los tipos de widgets</property>
+                    <property name="activatable">true</property>
+                    <signal name="activated" handler="on_dw_advanced_clicked" />
+                    <child type="suffix">
+                      <object class="GtkButton" id="dw_btn_advanced">
+                        <property name="valign">center</property>
+                        <property name="icon-name">go-next-symbolic</property>
+                        <style>
+                          <class name="suggested-action" />
+                          <class name="circular" />
+                          <class name="mac-action-accent-btn" />
+                        </style>
+                        <signal name="clicked" handler="on_dw_advanced_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+          </object>
+        </property>
+      </object>
+    </property>
+  </object>
+</child>
+
+        
+        <child>
+          <object class="AdwNavigationPage" id="widgets_configurator_page">
+    <property name="title">Configurador de widgets</property>
+    <property name="tag">widgets_configurator</property>
+    <property name="child">
+      <object class="AdwToolbarView">
+        <property name="extend-content-to-top-edge">False</property>
+        <property name="extend-content-to-bottom-edge">True</property>
+        <property name="top-bar-style">flat</property>
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <style>
+              <class name="flat" />
+            </style>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwPreferencesPage">
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Relojes (Analógico, Digital, Binario)</property>
+                <property name="description">Formato de visualización de hora y segunderos</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_digitalclock_show_seconds">
+                    <property name="title">Digital: mostrar segundos</property>
+                    <property name="subtitle">Mostrar segundos en el reloj digital</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_digitalclock_smooth_seconds">
+                    <property name="title">Digital: transición suave</property>
+                    <property name="subtitle">Animación continua del indicador de segundos</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_clock_smooth_seconds">
+                    <property name="title">Analógico: segundero continuo</property>
+                    <property name="subtitle">Movimiento continuo y fluido de la aguja sin saltos</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_digitalclock_show_ampm">
+                    <property name="title">Mostrar AM / PM</property>
+                    <property name="subtitle">Mostrar período del día en formato de 12 horas (AM/PM)</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_binaryclock_use_accent">
+                    <property name="title">Binario: color de acento del sistema</property>
+                    <property name="subtitle">Resaltar bits activos con el color del tema macW1Y</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Calendario y eventos</property>
+                <property name="description">Opciones de visualización de agenda y fecha</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_calendar_lookahead_row">
+                    <property name="title">Horizonte de eventos (días)</property>
+                    <property name="subtitle">Número de días para buscar próximos eventos</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_calendar_lookahead_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">30</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">14</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_calendar_use_accent">
+                    <property name="title">Usar color de acento</property>
+                    <property name="subtitle">Resaltar el día de hoy con el acento del sistema</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_calendar_show_page_dots">
+                    <property name="title">Puntos de páginas de calendario</property>
+                    <property name="subtitle">Mostrar indicadores de desplazamiento de meses</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Clima</property>
+                <property name="description">Pronóstico del tiempo y condiciones actuales</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_weather_use_accent">
+                    <property name="title">Usar color de acento</property>
+                    <property name="subtitle">Resaltar iconos meteorológicos con el color de acento</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_weather_show_page_dots">
+                    <property name="title">Puntos de cambio de pronóstico</property>
+                    <property name="subtitle">Mostrar indicador de puntos de páginas meteorológicas</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Batería y energía</property>
+                <property name="description">Número de dispositivos y estilo del indicador de carga</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_battery_slot_count_row">
+                    <property name="title">Número de ranuras de dispositivos</property>
+                    <property name="subtitle">Mostrar batería de ratón, teclado y auriculares</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_battery_slot_count_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">4</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">1</property>
+                        <property name="value">2</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_battery_show_percent">
+                    <property name="title">Mostrar porcentaje de carga</property>
+                    <property name="subtitle">Valor numérico de porcentaje bajo el anillo</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_battery_use_accent">
+                    <property name="title">Usar color de acento</property>
+                    <property name="subtitle">Colorear el anillo de carga con el color de acento</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Reproductor de música</property>
+                <property name="description">Controlar reproducción de audio y medios</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_music_ignore_browsers">
+                    <property name="title">Ignorar audio de navegadores</property>
+                    <property name="subtitle">No interceptar pestañas de YouTube o Spotify Web</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_music_custom_app_entry">
+                    <property name="title">Aplicación de música personalizada</property>
+                    <property name="text">spotify</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Monitor del sistema</property>
+                <property name="description">Uso de CPU, memoria, red y discos</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_system_page_indicator_accent">
+                    <property name="title">Color de acento del indicador</property>
+                    <property name="subtitle">Aplicar color del sistema a la página seleccionada</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_system_show_page_dashes">
+                    <property name="title">Indicadores de página punteados</property>
+                    <property name="subtitle">Estilo de guiones en lugar de puntos</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Fotos</property>
+                <property name="description">Marco de fotos en el escritorio</property>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_custom_photo_entry">
+                    <property name="title">Ruta a la foto o carpeta</property>
+                    <property name="text" />
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Temporizador Pomodoro</property>
+                <property name="description">Intervalos de productividad y concentración</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_work_row">
+                    <property name="title">Tiempo de concentración (minutos)</property>
+                    <property name="subtitle">Duración del intervalo de trabajo</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_work_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">60</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">25</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_short_break_row">
+                    <property name="title">Descanso corto (minutos)</property>
+                    <property name="subtitle">Duración del descanso entre sesiones</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_short_break_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">30</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">5</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_long_break_row">
+                    <property name="title">Descanso largo (minutos)</property>
+                    <property name="subtitle">Duración del descanso largo</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_long_break_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">60</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">15</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_sessions_row">
+                    <property name="title">Sesiones hasta el descanso largo</property>
+                    <property name="subtitle">Número de intervalos de trabajo antes del descanso largo</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_sessions_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">10</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">1</property>
+                        <property name="value">4</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Notas</property>
+                <property name="description">Fuentes para notas adhesivas en el escritorio</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_notes_title_size_row">
+                    <property name="title">Tamaño de fuente del título (px)</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_notes_title_size_adj">
+                        <property name="lower">10</property>
+                        <property name="upper">36</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">2</property>
+                        <property name="value">16</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_notes_content_size_row">
+                    <property name="title">Tamaño de fuente del texto de la nota (px)</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_notes_content_size_adj">
+                        <property name="lower">10</property>
+                        <property name="upper">28</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">2</property>
+                        <property name="value">13</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Widget de GitHub</property>
+                <property name="description">Gráfico de actividad de contribuciones y perfil</property>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_github_username_entry">
+                    <property name="title">Nombre de usuario de GitHub</property>
+                    <property name="text" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_github_use_green">
+                    <property name="title">Estilo verde característico de GitHub</property>
+                    <property name="subtitle">Usar colores verdes auténticos para la matriz de commits</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Lanzador de carpetas</property>
+                <property name="description">Acceso rápido a directorios</property>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_folder_file_manager_entry">
+                    <property name="title">Administrador de archivos</property>
+                    <property name="text">nautilus</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_folder_show_names">
+                    <property name="title">Mostrar etiquetas de carpetas</property>
+                    <property name="subtitle">Mostrar etiquetas de texto debajo de los iconos</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Tiempo de pantalla</property>
+                <property name="description">Monitoreo de actividad y uso de aplicaciones</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_screentime_retention_row">
+                    <property name="title">Conservar historial (días)</property>
+                    <property name="subtitle">Número de días para conservar el historial de actividad</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_screentime_retention_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">30</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">7</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_screentime_show_nav_buttons">
+                    <property name="title">Botones de cambio de día</property>
+                    <property name="subtitle">Flechas de navegación por días anteriores</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Lámpara de lava</property>
+                <property name="description">Widget de física decorativo</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_lava_use_accent">
+                    <property name="title">Usar color de acento</property>
+                    <property name="subtitle">Colorear las gotas de lava con el acento del sistema</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+          </object>
+        </property>
+      </object>
+    </property>
+  </object>
+</child>
+
+        
+        <child>
+          <object class="AdwNavigationPage" id="widgets_picker_page">
+            <property name="title">Añadir widgets</property>
+            <property name="tag">widgets_picker</property>
+            <signal name="shown" handler="on_widgets_picker_shown" />
+            <signal name="hidden" handler="on_widgets_picker_hidden" />
+            <property name="child">
+              <object class="AdwToolbarView">
+                <property name="extend-content-to-top-edge">False</property>
+                <property name="extend-content-to-bottom-edge">True</property>
+                <property name="top-bar-style">flat</property>
+                <child type="top">
+                  <object class="AdwHeaderBar">
+                    <style>
+                      <class name="flat" />
+                    </style>
+                  </object>
+                </child>
+                <property name="content">
+                  <object class="AdwToastOverlay" id="widgets_picker_toast_overlay">
+                    <property name="child">
+                      <object class="AdwPreferencesPage">
+
+                        
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Relojes y hora</property>
+                            <property name="description">Relojes analógicos, digitales y binarios, temporizadores y cronómetros</property>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_clock">
+                                <property name="title">Reloj analógico</property>
+                                <property name="subtitle">Reloj clásico de esfera redonda</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_clock" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">preferences-system-time-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_clock">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir reloj analógico al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_clock" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_digitalclock">
+                                <property name="title">Reloj digital</property>
+                                <property name="subtitle">Pantalla numérica moderna de hora y fecha</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_digitalclock" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">alarm-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_digitalclock">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir reloj digital al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_digitalclock" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_binaryclock">
+                                <property name="title">Reloj binario</property>
+                                <property name="subtitle">Visualización de la hora en matriz binaria para entusiastas</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_binaryclock" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">view-grid-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_binaryclock">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir reloj binario al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_binaryclock" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_stopwatch">
+                                <property name="title">Cronómetro</property>
+                                <property name="subtitle">Cronómetro práctico con registro de vueltas</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_stopwatch" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">timer-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_stopwatch">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir cronómetro al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_stopwatch" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_timer">
+                                <property name="title">Temporizador</property>
+                                <property name="subtitle">Temporizador de cuenta atrás con alarma de fin</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_timer" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">preferences-system-time-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_timer">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir temporizador al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_timer" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                        
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Productividad</property>
+                            <property name="description">Calendario, notas, tareas, Pomodoro y acceso rápido</property>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_calendar">
+                                <property name="title">Calendario</property>
+                                <property name="subtitle">Vista mensual de fechas y días de la semana</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_calendar" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">x-office-calendar-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_calendar">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir calendario al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_calendar" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_todo">
+                                <property name="title">Lista de tareas</property>
+                                <property name="subtitle">Lista de verificación compacta de tareas diarias</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_todo" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">checkbox-checked-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_todo">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir lista de tareas al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_todo" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_notes">
+                                <property name="title">Notas</property>
+                                <property name="subtitle">Notas rápidas de texto directamente en el escritorio</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_notes" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">text-editor-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_notes">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir notas al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_notes" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_screentime">
+                                <property name="title">Tiempo de pantalla</property>
+                                <property name="subtitle">Monitorear la actividad y el tiempo de uso de las aplicaciones</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_screentime" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">preferences-system-parental-controls-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_screentime">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir Tiempo de pantalla al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_screentime" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_pomodoro">
+                                <property name="title">Pomodoro</property>
+                                <property name="subtitle">Temporizador de trabajo enfocado e intervalos de descanso</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_pomodoro" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">appointment-soon-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_pomodoro">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir Pomodoro al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_pomodoro" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_applauncher">
+                                <property name="title">Lanzador de aplicaciones</property>
+                                <property name="subtitle">Inicio rápido de aplicaciones favoritas</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_applauncher" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">application-x-executable-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_applauncher">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir lanzador de aplicaciones al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_applauncher" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_folder">
+                                <property name="title">Lanzador de carpetas</property>
+                                <property name="subtitle">Navegación rápida a carpetas frecuentes</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_folder" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">folder-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_folder">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir lanzador de carpetas al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_folder" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                        
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Monitoreo del sistema</property>
+                            <property name="description">Nivel de batería, uso de CPU, RAM y disco</property>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_battery">
+                                <property name="title">Batería</property>
+                                <property name="subtitle">Porcentaje de batería, estado y tiempo restante</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_battery" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">battery-level-100-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_battery">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir widget de batería al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_battery" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_system">
+                                <property name="title">Monitor del sistema</property>
+                                <property name="subtitle">Indicadores circulares de uso de CPU, RAM y disco</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_system" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">utilities-system-monitor-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_system">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir monitor del sistema al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_system" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                        
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Información y Web</property>
+                            <property name="description">Pronóstico del tiempo y estadísticas de GitHub</property>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_weather">
+                                <property name="title">Clima</property>
+                                <property name="subtitle">Temperatura actual, estado del cielo y pronóstico del tiempo</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_weather" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">weather-few-clouds-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_weather">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir clima al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_weather" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_github">
+                                <property name="title">GitHub</property>
+                                <property name="subtitle">Matriz de contribuciones y estadísticas de repositorios</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_github" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">network-server-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_github">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir widget de GitHub al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_github" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                        
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Multimedia y decoración</property>
+                            <property name="description">Controles de música, galería de fotos y widgets de relajación</property>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_music">
+                                <property name="title">Reproductor de música</property>
+                                <property name="subtitle">Controles de reproducción, título y carátula</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_music" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">multimedia-player-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_music">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir reproductor de música al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_music" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_photos">
+                                <property name="title">Galería de fotos</property>
+                                <property name="subtitle">Presentación de fotos favoritas en el escritorio</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_photos" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">image-x-generic-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_photos">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir galería de fotos al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_photos" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_lava">
+                                <property name="title">Lámpara de lava</property>
+                                <property name="subtitle">Widget de física decorativo con gotas animadas</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_lava" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">color-select-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_lava">
+                                    <property name="label">Añadir</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Añadir lámpara de lava al escritorio</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_lava" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </object>
+</interface>

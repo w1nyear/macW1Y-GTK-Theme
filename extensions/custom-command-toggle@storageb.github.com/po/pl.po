@@ -1,0 +1,322 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: custom-command-toggle\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-11-10 12:00+0200\n"
+"Last-Translator: macW1Y i18n Team\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "About"
+msgstr "O rozszerzeniu"
+
+msgid "Add menu item"
+msgstr "Dodaj element menu"
+
+msgid "Advanced"
+msgstr "Zaawansowane"
+
+msgid "All settings reset to defaults"
+msgstr "Wszystkie ustawienia przywrócono do domyślnych"
+
+msgid "All toggles and extension settings will be reset to their default values. This action cannot be undone."
+msgstr "Wszystkie przełączniki i ustawienia rozszerzenia zostaną zresetowane do wartości domyślnych. Tej operacji nie można cofnąć."
+
+msgid "Always off"
+msgstr "Zawsze wyłączone"
+
+msgid "Always on"
+msgstr "Zawsze włączone"
+
+msgid "Amount of time to delay command from running after startup"
+msgstr "Czas opóźnienia uruchomienia polecenia po starcie"
+
+msgid "Appearance"
+msgstr "Wygląd"
+
+msgid "Application Not Found"
+msgstr "Nie znaleziono programu"
+
+msgid "Apply"
+msgstr "Zastosuj"
+
+msgid "Assign Shortcut"
+msgstr "Przypisz skrót"
+
+msgid "Backup and Restore"
+msgstr "Kopia zapasowa i przywracanie"
+
+msgid "Button %d"
+msgstr "Przycisk %d"
+
+msgid "Button Click Action"
+msgstr "Działanie po kliknięciu przycisku"
+
+msgid "Button behavior when clicked"
+msgstr "Zachowanie przycisku po kliknięciu"
+
+msgid "Button name:"
+msgstr "Nazwa przycisku:"
+
+msgid "Cancel"
+msgstr "Anuluj"
+
+msgid "Check Command Exit Code"
+msgstr "Sprawdź kod wyjścia polecenia"
+
+msgid "Check Status Command:"
+msgstr "Polecenie sprawdzania stanu:"
+
+msgid "Check Status Search Term:"
+msgstr "Fraza wyszukiwania stanu:"
+
+msgid "Click + to add a menu item"
+msgstr "Kliknij +, aby dodać element menu"
+
+msgid "Click Apply to save and reinitialize toggle states"
+msgstr "Kliknij Zastosuj, aby zapisać i zresetować stany przełączników"
+
+msgid "Click to export the toggles.ini configuration file to the home directory"
+msgstr "Kliknij, aby wyeksportować plik toggles.ini do katalogu domowego"
+
+msgid "Click to import the toggles.ini configuration file from the home directory"
+msgstr "Kliknij, aby zaimportować plik toggles.ini z katalogu domowego"
+
+msgid "Click to restore all toggles and settings to their default values"
+msgstr "Kliknij, aby przywrócić wszystkie przełączniki i ustawienia do wartości domyślnych"
+
+msgid "Close Menu After Button Press"
+msgstr "Zamknij menu po naciśnięciu przycisku"
+
+msgid "Close the system menu immediately after clicking toggle button"
+msgstr "Zamknij menu systemowe natychmiast po kliknięciu przycisku przełącznika"
+
+msgid "Command Configuration"
+msgstr "Konfiguracja polecenia"
+
+msgid "Command Sync Behavior"
+msgstr "Zachowanie synchronizacji polecenia"
+
+msgid "Command copied to clipboard"
+msgstr "Polecenie skopiowano do schowka"
+
+msgid "Command output"
+msgstr "Wyjście polecenia"
+
+msgid "Command sync is disabled. To enable, set the Button Click Action to Toggle."
+msgstr "Synchronizacja polecenia jest wyłączona. Aby włączyć, ustaw działanie kliknięcia na Przełącz."
+
+msgid "Command:"
+msgstr "Polecenie:"
+
+msgid "Commands"
+msgstr "Polecenia"
+
+msgid "Configuration"
+msgstr "Konfiguracja"
+
+msgid "Confirm Reset"
+msgstr "Potwierdź reset"
+
+msgid "Copy command to clipboard"
+msgstr "Kopiuj polecenie do schowka"
+
+msgid "Detailed Logging"
+msgstr "Szczegółowe rejestrowanie"
+
+msgid "Details"
+msgstr "Szczegóły"
+
+msgid "Discussions"
+msgstr "Dyskusje"
+
+msgid "Enter the Check Status Command and Search Term in the Commands section above. If the specified Search Term appears in the command's output, the button will be set to ON at startup. Otherwise, the button will be set to OFF."
+msgstr "Wprowadź polecenie sprawdzania stanu i frazę wyszukiwania powyżej. Jeśli fraza pojawi się w wyjściu, przycisk włączy się przy starcie. W przeciwnym razie pozostanie wyłączony."
+
+msgid "Export Configuration"
+msgstr "Eksportuj konfigurację"
+
+msgid "Export Error"
+msgstr "Błąd eksportu"
+
+msgid "Extension Page"
+msgstr "Strona rozszerzenia"
+
+msgid "Failed to export settings\\n\\n%s"
+msgstr "Nie udało się wyeksportować ustawień\\n\\n%s"
+
+msgid "Failed to import configuration\\n\\n%s"
+msgstr "Nie udało się zaimportować konfiguracji\\n\\n%s"
+
+msgid "Failed to reset settings"
+msgstr "Nie udało się zresetować ustawień"
+
+msgid "File Not Found"
+msgstr "Nie znaleziono pliku"
+
+msgid "File not found"
+msgstr "Plik nie został odnaleziony"
+
+msgid "Find links to the User Guide, Icon List, and other helpful information in the menu at the top of this window."
+msgstr "Łącza do podręcznika użytkownika, listy ikon i innych informacji znajdziesz w menu u góry okna."
+
+msgid "GitHub Page"
+msgstr "Strona GitHub"
+
+msgid "Help and resources"
+msgstr "Pomoc i zasoby"
+
+msgid "Hide this toggle"
+msgstr "Ukryj ten przełącznik"
+
+msgid "How often to check the command output and update button state"
+msgstr "Jak często sprawdzać wyjście polecenia i aktualizować stan przycisku"
+
+msgid "Icon List"
+msgstr "Lista ikon"
+
+msgid "Icon:"
+msgstr "Ikona:"
+
+msgid "Import Configuration"
+msgstr "Importuj konfigurację"
+
+msgid "Import Error"
+msgstr "Błąd importu"
+
+msgid "Initial State"
+msgstr "Stan początkowy"
+
+msgid "Keep Toggle State Synced"
+msgstr "Utrzymuj stan przełącznika zsynchronizowany"
+
+msgid "Keep toggle button state synced with a command's output"
+msgstr "Synchronizuj stan przycisku z wyjściem polecenia"
+
+msgid "Keyboard Shortcut"
+msgstr "Skrót klawiszowy"
+
+msgid "Menu Commands"
+msgstr "Polecenia menu"
+
+msgid "My Button"
+msgstr "Mój przycisk"
+
+msgid "Name:"
+msgstr "Nazwa:"
+
+msgid "New Menu Item"
+msgstr "Nowy element menu"
+
+msgid "No toggles found in %s."
+msgstr "Nie znaleziono przełączników w %s."
+
+msgid "Not assigned"
+msgstr "Nieprzypisane"
+
+msgid "Number of Toggle Buttons"
+msgstr "Liczba przycisków przełączników"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Off"
+msgstr "Wył."
+
+msgid "On"
+msgstr "Wł."
+
+msgid "Only toggle if the command executes successfully (returns exit code 0)"
+msgstr "Przełączaj tylko wtedy, gdy polecenie zakończy się sukcesem (kod wyjścia 0)"
+
+msgid "Open"
+msgstr "Otwórz"
+
+msgid "Polling Frequency (seconds)"
+msgstr "Częstotliwość odpytywania (sekundy)"
+
+msgid "Press Esc to cancel or Backspace to disable the shortcut"
+msgstr "Naciśnij Esc, aby anulować, lub Backspace, aby wyłączyć skrót"
+
+msgid "Previous state"
+msgstr "Poprzedni stan"
+
+msgid "Remove menu item"
+msgstr "Usuń element menu"
+
+msgid "Remove shortcut"
+msgstr "Usuń skrót"
+
+msgid "Reset"
+msgstr "Resetuj"
+
+msgid "Reset to Defaults"
+msgstr "Przywróć domyślne"
+
+msgid "Resources"
+msgstr "Zasoby"
+
+msgid "Run Command at Startup"
+msgstr "Uruchom polecenie przy starcie"
+
+msgid "Run associated toggle command at login/startup"
+msgstr "Uruchom powiązane polecenie przy logowaniu/starcie"
+
+msgid "Set a keyboard shortcut for toggle button"
+msgstr "Ustaw skrót klawiszowy dla przycisku"
+
+msgid "Settings"
+msgstr "Ustawienia"
+
+msgid "Settings exported to: %s"
+msgstr "Ustawienia wyeksportowano do: %s"
+
+msgid "Show Indicator Icon"
+msgstr "Pokaż ikonę wskaźnika"
+
+msgid "Show this toggle"
+msgstr "Pokaż ten przełącznik"
+
+msgid "Show top bar icon when toggle button is switched on"
+msgstr "Pokaż ikonę na górnym pasku, gdy przycisk jest włączony"
+
+msgid "Startup Behavior"
+msgstr "Zachowanie przy starcie"
+
+msgid "Startup Delay (seconds)"
+msgstr "Opóźnienie startu (sekundy)"
+
+msgid "State of the toggle button at login/startup"
+msgstr "Stan przycisku przy logowaniu/starcie"
+
+msgid "Successfully imported %d toggle"
+msgstr "Pomyślnie zaimportowano %d przełącznik"
+
+msgid "To view output, run the following in a terminal then restart extension:\\n%s"
+msgstr "Aby zobaczyć wyjście, uruchom w terminalu, a następnie zrestartuj rozszerzenie:\\n%s"
+
+msgid "Toggle"
+msgstr "Przełącz"
+
+msgid "Toggle Behavior"
+msgstr "Zachowanie przełączania"
+
+msgid "Toggle Button"
+msgstr "Przycisk przełącznika"
+
+msgid "Toggle OFF Command:"
+msgstr "Polecenie wyłączenia:"
+
+msgid "Toggle ON Command:"
+msgstr "Polecenie włączenia:"
+
+msgid "User Guide"
+msgstr "Podręcznik użytkownika"
+
+msgid "What's New"
+msgstr "Co nowego"
+

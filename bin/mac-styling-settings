@@ -849,7 +849,18 @@ class MacStylingWindow(Adw.ApplicationWindow):
     def on_test_notif_clicked(self, _btn):
         self.apply_realtime()
         self.save_css()
-        run_cmd('notify-send "macOS Notification" "Тестове сповіщення з підтримкою широкої картки 395px, тіней та нативного скла!"')
+        loc = get_locale().split('_')[0]
+        test_msgs = {
+            "pl": ("Powiadomienie macOS", "Powiadomienie testowe z obsługą szerokiej karty 395px, cieni i natywnego szkła!"),
+            "uk": ("Сповіщення macOS", "Тестове сповіщення з підтримкою широкої картки 395px, тіней та нативного скла!"),
+            "de": ("macOS-Benachrichtigung", "Testbenachrichtigung mit Unterstützung für 395px-Karten, Schatten und natives Glas!"),
+            "fr": ("Notification macOS", "Notification de test prenant en charge les cartes larges de 395px, les ombres et le verre natif !"),
+            "es": ("Notificación de macOS", "¡Notificación de prueba compatible con tarjeta ancha de 395px, sombras y vidrio nativo!"),
+            "it": ("Notifica di macOS", "Notifica di test che supporta schede larghe 395px, ombre e vetro nativo!"),
+            "en": ("macOS Notification", "Test notification supporting wide 395px card, drop shadows and native glass!")
+        }
+        title, body = test_msgs.get(loc, test_msgs["en"])
+        run_cmd(f'notify-send "{title}" "{body}"')
 
     def on_logout_clicked(self, _btn):
         run_cmd("gnome-session-quit --logout")

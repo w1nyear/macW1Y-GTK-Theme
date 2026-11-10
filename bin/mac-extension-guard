@@ -305,23 +305,65 @@ def show_extension_warning_dialog(uuid):
                              flags=Gio.ApplicationFlags.FLAGS_NONE)
 
         def do_activate(self):
-            win = Adw.ApplicationWindow(application=self)
-            win.set_title("Контроль версій macW1Y")
+            loc = "en"
+            try:
+                loc_f = os.path.expanduser("~/.config/mac-styling/locale")
+                if os.path.exists(loc_f):
+                    with open(loc_f, "r") as lf:
+                        loc = lf.read().strip().lower()
+                elif os.environ.get("LANG"):
+                    loc = os.environ.get("LANG", "").split(".")[0].split("_")[0].lower()
+            except Exception:
+                pass
+
+            if loc.startswith("pl"):
+                win.set_title("Kontrola wersji macW1Y")
+                body_text = (
+                    f"Uwaga: dla rozszerzenia «{info.get('name', uuid)}» dostępna jest nowsza wersja ({avail_v}).\n\n"
+                    f"macW1Y nie został jeszcze skonfigurowany ani przetestowany do pracy z nią. "
+                    f"Aktualizacja może zmienić wygląd, wyłączyć część funkcji lub spowodować "
+                    f"konflikty z Liquid Glass, paskiem menu, Dockiem lub innymi elementami.\n\n"
+                    f"• Bieżąca zablokowana wersja: {inst_v}\n"
+                    f"• Dostępna nowa wersja: {avail_v}\n"
+                    f"• Zależne komponenty macW1Y: {components}"
+                )
+                dlg_title = "Uwaga: dostępna nieprzetestowana aktualizacja"
+                btn_keep = "Zachowaj bieżącą wersję"
+                btn_update = "Zaktualizuj mimo to"
+            elif loc.startswith("uk"):
+                win.set_title("Контроль версій macW1Y")
+                body_text = (
+                    f"Увага: для розширення «{info.get('name', uuid)}» доступна новіша версія ({avail_v}).\n\n"
+                    f"macW1Y ще не налаштований і не протестований для роботи з нею. "
+                    f"Оновлення може змінити зовнішній вигляд, вимкнути частину функцій або спричинити "
+                    f"конфлікти з Liquid Glass, менюбаром, доком чи іншими компонентами.\n\n"
+                    f"• Поточна зафіксована версія: {inst_v}\n"
+                    f"• Доступна нова версія: {avail_v}\n"
+                    f"• Залежні компоненти macW1Y: {components}"
+                )
+                dlg_title = "Увага: доступне неперевірене оновлення"
+                btn_keep = "Зберегти поточну версію"
+                btn_update = "Оновити все одно"
+            else:
+                win.set_title("macW1Y Version Guard")
+                body_text = (
+                    f"Warning: A newer version ({avail_v}) is available for extension \"{info.get('name', uuid)}\".\n\n"
+                    f"macW1Y has not yet been configured or tested to work with it. "
+                    f"Updating may alter the visual style, disable certain features, or cause "
+                    f"conflicts with Liquid Glass, menubar, dock, or other components.\n\n"
+                    f"• Current locked version: {inst_v}\n"
+                    f"• Available new version: {avail_v}\n"
+                    f"• Dependent macW1Y components: {components}"
+                )
+                dlg_title = "Warning: Untested update available"
+                btn_keep = "Keep Current Version"
+                btn_update = "Update Anyway"
+            
             win.set_default_size(520, 320)
             
-            body_text = (
-                f"Увага: для розширення «{info.get('name', uuid)}» доступна новіша версія ({avail_v}).\n\n"
-                f"macW1Y ще не налаштований і не протестований для роботи з нею. "
-                f"Оновлення може змінити зовнішній вигляд, вимкнути частину функцій або спричинити "
-                f"конфлікти з Liquid Glass, менюбаром, доком чи іншими компонентами.\n\n"
-                f"• Поточна зафіксована версія: {inst_v}\n"
-                f"• Доступна нова версія: {avail_v}\n"
-                f"• Залежні компоненти macW1Y: {components}"
-            )
-            
-            dialog = Adw.AlertDialog.new("Увага: доступне неперевірене оновлення", body_text)
-            dialog.add_response("keep", "Зберегти поточну версію")
-            dialog.add_response("update", "Оновити все одно")
+            dialog = Adw.AlertDialog.new(dlg_title, body_text)
+            dialog.add_response("keep", btn_keep)
+            dialog.add_response("update", btn_update)
             dialog.set_response_appearance("update", Adw.ResponseAppearance.DESTRUCTIVE)
             dialog.set_default_response("keep")
             dialog.set_close_response("keep")

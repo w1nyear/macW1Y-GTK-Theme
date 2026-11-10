@@ -5,7 +5,7 @@ import os
 import locale
 import json
 
-RTL_LANGUAGES = set(['he', 'fa', 'ar'])
+RTL_LANGUAGES = set(['he', 'ar', 'fa'])
 
 TRANSLATIONS = {
     "en": {
@@ -292,7 +292,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Mac Styling",
+        "apple_account": "Account",
+        "storage_alert": "iCloud Storage Full",
+        "software_update_alert": "Software Update Available",
+        "search": "Search",
+        "ssot_restored_notification": "Theme successfully restored to SSOT baseline!"
     },
     "uk": {
         "wifi": "Wi-Fi",
@@ -578,7 +585,14 @@ TRANSLATIONS = {
         "ssot_success": "Оформлення успішно відновлено до еталону SSOT!",
         "ssot_restored_title": "Відновлення оформлення",
         "ssot_restored_body": "Оформлення macW1Y успішно відновлено до канонічного стандарту Tahoe.",
-        "ssot_error": "Помилка під час відновлення оформлення"
+        "ssot_error": "Помилка під час відновлення оформлення",
+        "widgets": "Віджети",
+        "mac_styling": "Mac стилізація",
+        "apple_account": "Акаунт",
+        "storage_alert": "Сховище iCloud заповнено",
+        "software_update_alert": "Доступне оновлення ПЗ",
+        "search": "Пошук",
+        "ssot_restored_notification": "Оформлення успішно відновлено до еталону SSOT!"
     },
     "pl": {
         "wifi": "Wi-Fi",
@@ -864,7 +878,14 @@ TRANSLATIONS = {
         "ssot_success": "Wygląd został pomyślnie przywrócony do wzorca SSOT!",
         "ssot_restored_title": "Przywrócenie wyglądu",
         "ssot_restored_body": "Wygląd macW1Y został pomyślnie przywrócony do standardu Tahoe.",
-        "ssot_error": "Błąd podczas przywracania wyglądu"
+        "ssot_error": "Błąd podczas przywracania wyglądu",
+        "widgets": "Widżety",
+        "mac_styling": "Stylizacja Mac",
+        "apple_account": "Konto",
+        "storage_alert": "Pamięć iCloud jest pełna",
+        "software_update_alert": "Dostępna aktualizacja oprogramowania",
+        "search": "Szukaj",
+        "ssot_restored_notification": "Motyw pomyślnie przywrócony do standardu SSOT!"
     },
     "de": {
         "wifi": "WLAN",
@@ -1150,7 +1171,14 @@ TRANSLATIONS = {
         "ssot_success": "Design erfolgreich auf SSOT-Standard zurückgesetzt!",
         "ssot_restored_title": "Design wiederhergestellt",
         "ssot_restored_body": "macW1Y-Design erfolgreich auf Tahoe-Standard wiederhergestellt.",
-        "ssot_error": "Fehler beim Wiederherstellen des Designs"
+        "ssot_error": "Fehler beim Wiederherstellen des Designs",
+        "widgets": "Widgets",
+        "mac_styling": "Mac-Stil",
+        "apple_account": "Account",
+        "storage_alert": "iCloud-Speicher voll",
+        "software_update_alert": "Softwareupdate verfügbar",
+        "search": "Suchen",
+        "ssot_restored_notification": "Design erfolgreich auf SSOT-Standard zurückgesetzt!"
     },
     "fr": {
         "wifi": "Wi-Fi",
@@ -1436,7 +1464,14 @@ TRANSLATIONS = {
         "ssot_success": "Style restauré avec succès au standard SSOT !",
         "ssot_restored_title": "Style restauré",
         "ssot_restored_body": "Le style macW1Y a été restauré avec succès au standard Tahoe.",
-        "ssot_error": "Erreur lors de la restauration du style"
+        "ssot_error": "Erreur lors de la restauration du style",
+        "widgets": "Widgets",
+        "mac_styling": "Style Mac",
+        "apple_account": "Compte",
+        "storage_alert": "Stockage iCloud saturé",
+        "software_update_alert": "Mise à jour logicielle disponible",
+        "search": "Recherche",
+        "ssot_restored_notification": "Thème restauré avec succès selon le standard SSOT !"
     },
     "es": {
         "wifi": "Wi-Fi",
@@ -1722,7 +1757,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Estilo Mac",
+        "apple_account": "Cuenta",
+        "storage_alert": "Almacenamiento de iCloud lleno",
+        "software_update_alert": "Actualización de software disponible",
+        "search": "Buscar",
+        "ssot_restored_notification": "¡Tema restaurado con éxito al estándar SSOT!"
     },
     "pt": {
         "wifi": "Wi-Fi",
@@ -2008,7 +2050,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Estilo Mac",
+        "apple_account": "Conta",
+        "storage_alert": "Armazenamento do iCloud cheio",
+        "software_update_alert": "Atualização de software disponível",
+        "search": "Pesquisar",
+        "ssot_restored_notification": "Tema restaurado com sucesso para o padrão SSOT!"
     },
     "it": {
         "wifi": "Wi-Fi",
@@ -2294,7 +2343,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widget",
+        "mac_styling": "Stile Mac",
+        "apple_account": "Account",
+        "storage_alert": "Spazio iCloud esaurito",
+        "software_update_alert": "Aggiornamento software disponibile",
+        "search": "Cerca",
+        "ssot_restored_notification": "Tema ripristinato con successo allo standard SSOT!"
     },
     "zh": {
         "wifi": "Wi-Fi",
@@ -2580,7 +2636,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "小组件",
+        "mac_styling": "Mac 风格",
+        "apple_account": "账户",
+        "storage_alert": "iCloud 储存空间已满",
+        "software_update_alert": "有可用软件更新",
+        "search": "搜索",
+        "ssot_restored_notification": "主题已成功恢复至 SSOT 基准！"
     },
     "ja": {
         "wifi": "Wi-Fi",
@@ -2866,7 +2929,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "ウィジェット",
+        "mac_styling": "Macスタイル",
+        "apple_account": "アカウント",
+        "storage_alert": "iCloudストレージが上限に達しました",
+        "software_update_alert": "ソフトウェアアップデートがあります",
+        "search": "検索",
+        "ssot_restored_notification": "テーマがSSOTベースラインに正常に復元されました！"
     },
     "ko": {
         "wifi": "Wi-Fi",
@@ -3152,7 +3222,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "위젯",
+        "mac_styling": "Mac 스타일",
+        "apple_account": "계정",
+        "storage_alert": "iCloud 저장 공간 가득 참",
+        "software_update_alert": "소프트웨어 업데이트 사용 가능",
+        "search": "검색",
+        "ssot_restored_notification": "테마가 SSOT 기준선으로 성공적으로 복원되었습니다!"
     },
     "ar": {
         "wifi": "Wi-Fi",
@@ -3438,7 +3515,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "أدوات",
+        "mac_styling": "نمط ماك",
+        "apple_account": "الحساب",
+        "storage_alert": "مساحة تخزين iCloud ممتلئة",
+        "software_update_alert": "تحديث البرنامج متوفر",
+        "search": "بحث",
+        "ssot_restored_notification": "تمت استعادة السمة بنجاح إلى معيار SSOT!"
     },
     "he": {
         "wifi": "Wi-Fi",
@@ -3724,7 +3808,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "ווידג׳טים",
+        "mac_styling": "סגנון Mac",
+        "apple_account": "חשבון",
+        "storage_alert": "שטח האחסון ב-iCloud מלא",
+        "software_update_alert": "עדכון תוכנה זמין",
+        "search": "חיפוש",
+        "ssot_restored_notification": "ערכת הנושא שוחזרה בהצלחה לתקן SSOT!"
     },
     "ru": {
         "wifi": "Wi-Fi",
@@ -4010,7 +4101,14 @@ TRANSLATIONS = {
         "ssot_success": "Оформление успешно восстановлено до эталона SSOT!",
         "ssot_restored_title": "Восстановление оформления",
         "ssot_restored_body": "Оформление macW1Y успешно восстановлено до канонического стандарта Tahoe.",
-        "ssot_error": "Ошибка при восстановлении оформления"
+        "ssot_error": "Ошибка при восстановлении оформления",
+        "widgets": "Виджеты",
+        "mac_styling": "Mac стилизация",
+        "apple_account": "Учётная запись",
+        "storage_alert": "Хранилище iCloud заполнено",
+        "software_update_alert": "Доступно обновление ПО",
+        "search": "Поиск",
+        "ssot_restored_notification": "Оформление успешно восстановлено до эталона SSOT!"
     },
     "tr": {
         "wifi": "Wi-Fi",
@@ -4296,7 +4394,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Araç Takımları",
+        "mac_styling": "Mac Tarzı",
+        "apple_account": "Hesap",
+        "storage_alert": "iCloud Saklama Alanı Dolu",
+        "software_update_alert": "Yazılım Güncellemesi Mevcut",
+        "search": "Ara",
+        "ssot_restored_notification": "Tema başarıyla SSOT standardına geri yüklendi!"
     },
     "cs": {
         "wifi": "Wi-Fi",
@@ -4582,7 +4687,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgety",
+        "mac_styling": "Styl Mac",
+        "apple_account": "Účet",
+        "storage_alert": "Úložiště na iCloudu je plné",
+        "software_update_alert": "K dispozici je aktualizace softwaru",
+        "search": "Hledat",
+        "ssot_restored_notification": "Motiv úspěšně obnoven na standard SSOT!"
     },
     "nl": {
         "wifi": "Wifi",
@@ -4868,7 +4980,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Mac-stijl",
+        "apple_account": "Account",
+        "storage_alert": "iCloud-opslag vol",
+        "software_update_alert": "Software-update beschikbaar",
+        "search": "Zoeken",
+        "ssot_restored_notification": "Thema succesvol hersteld naar SSOT-standaard!"
     },
     "sk": {
         "wifi": "Wi-Fi",
@@ -5154,7 +5273,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgety",
+        "mac_styling": "Štýl Mac",
+        "apple_account": "Účet",
+        "storage_alert": "Úložisko na iCloude je plné",
+        "software_update_alert": "K dispozícii je aktualizácia softvéru",
+        "search": "Hľadať",
+        "ssot_restored_notification": "Motív úspešne obnovený na štandard SSOT!"
     },
     "ro": {
         "wifi": "Wi-Fi",
@@ -5440,7 +5566,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgeturi",
+        "mac_styling": "Stil Mac",
+        "apple_account": "Cont",
+        "storage_alert": "Spațiul de stocare iCloud este plin",
+        "software_update_alert": "Actualizare software disponibilă",
+        "search": "Căutare",
+        "ssot_restored_notification": "Tema a fost restaurată cu succes la standardul SSOT!"
     },
     "hu": {
         "wifi": "Wi-Fi",
@@ -5726,7 +5859,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgetek",
+        "mac_styling": "Mac stílus",
+        "apple_account": "Fiók",
+        "storage_alert": "Az iCloud tárhely megtelt",
+        "software_update_alert": "Szoftverfrissítés érhető el",
+        "search": "Keresés",
+        "ssot_restored_notification": "A téma sikeresen visszaállítva az SSOT szabványra!"
     },
     "bg": {
         "wifi": "Wi-Fi",
@@ -6012,7 +6152,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Уиджети",
+        "mac_styling": "Mac стилизация",
+        "apple_account": "Акаунт",
+        "storage_alert": "Хранилището на iCloud е пълно",
+        "software_update_alert": "Налична е актуализация на софтуера",
+        "search": "Търсене",
+        "ssot_restored_notification": "Темата бе успешно възстановена до стандарта SSOT!"
     },
     "sr": {
         "wifi": "Wi-Fi",
@@ -6298,7 +6445,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Виџети",
+        "mac_styling": "Mac стилизација",
+        "apple_account": "Налог",
+        "storage_alert": "iCloud меморија је пуна",
+        "software_update_alert": "Доступно ажурирање софтвера",
+        "search": "Претрага",
+        "ssot_restored_notification": "Тема је успешно враћена на SSOT стандард!"
     },
     "hr": {
         "wifi": "Wi-Fi",
@@ -6584,7 +6738,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgeti",
+        "mac_styling": "Mac stil",
+        "apple_account": "Račun",
+        "storage_alert": "iCloud memorija je puna",
+        "software_update_alert": "Dostupno ažuriranje softvera",
+        "search": "Pretraži",
+        "ssot_restored_notification": "Tema je uspješno vraćena na SSOT standard!"
     },
     "sl": {
         "wifi": "Wi-Fi",
@@ -6870,7 +7031,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Gradniki",
+        "mac_styling": "Slog Mac",
+        "apple_account": "Račun",
+        "storage_alert": "Shramba iCloud je polna",
+        "software_update_alert": "Na voljo je posodobitev programske opreme",
+        "search": "Iskanje",
+        "ssot_restored_notification": "Tema je bila uspešno obnovljena na standard SSOT!"
     },
     "lt": {
         "wifi": "Wi-Fi",
@@ -7156,7 +7324,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Mac Styling",
+        "apple_account": "Account",
+        "storage_alert": "iCloud Storage Full",
+        "software_update_alert": "Software Update Available",
+        "search": "Search",
+        "ssot_restored_notification": "Theme successfully restored to SSOT baseline!"
     },
     "lv": {
         "wifi": "Wi-Fi",
@@ -7442,7 +7617,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Mac Styling",
+        "apple_account": "Account",
+        "storage_alert": "iCloud Storage Full",
+        "software_update_alert": "Software Update Available",
+        "search": "Search",
+        "ssot_restored_notification": "Theme successfully restored to SSOT baseline!"
     },
     "et": {
         "wifi": "Wi-Fi",
@@ -7728,7 +7910,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Mac Styling",
+        "apple_account": "Account",
+        "storage_alert": "iCloud Storage Full",
+        "software_update_alert": "Software Update Available",
+        "search": "Search",
+        "ssot_restored_notification": "Theme successfully restored to SSOT baseline!"
     },
     "be": {
         "wifi": "Wi-Fi",
@@ -8014,7 +8203,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Віджэты",
+        "mac_styling": "Mac стылізацыя",
+        "apple_account": "Уліковы запіс",
+        "storage_alert": "Сховішча iCloud запоўнена",
+        "software_update_alert": "Даступна абнаўленне ПЗ",
+        "search": "Пошук",
+        "ssot_restored_notification": "Афармленне паспяхова адноўлена да эталону SSOT!"
     },
     "hi": {
         "wifi": "Wi-Fi",
@@ -8300,7 +8496,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Mac Styling",
+        "apple_account": "Account",
+        "storage_alert": "iCloud Storage Full",
+        "software_update_alert": "Software Update Available",
+        "search": "Search",
+        "ssot_restored_notification": "Theme successfully restored to SSOT baseline!"
     },
     "bn": {
         "wifi": "Wi-Fi",
@@ -8586,7 +8789,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Mac Styling",
+        "apple_account": "Account",
+        "storage_alert": "iCloud Storage Full",
+        "software_update_alert": "Software Update Available",
+        "search": "Search",
+        "ssot_restored_notification": "Theme successfully restored to SSOT baseline!"
     },
     "zh_tw": {
         "wifi": "Wi-Fi",
@@ -8872,7 +9082,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Mac Styling",
+        "apple_account": "Account",
+        "storage_alert": "iCloud Storage Full",
+        "software_update_alert": "Software Update Available",
+        "search": "Search",
+        "ssot_restored_notification": "Theme successfully restored to SSOT baseline!"
     },
     "th": {
         "wifi": "Wi-Fi",
@@ -9158,7 +9375,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Mac Styling",
+        "apple_account": "Account",
+        "storage_alert": "iCloud Storage Full",
+        "software_update_alert": "Software Update Available",
+        "search": "Search",
+        "ssot_restored_notification": "Theme successfully restored to SSOT baseline!"
     },
     "vi": {
         "wifi": "Wi-Fi",
@@ -9444,7 +9668,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "Widgets",
+        "mac_styling": "Mac Styling",
+        "apple_account": "Account",
+        "storage_alert": "iCloud Storage Full",
+        "software_update_alert": "Software Update Available",
+        "search": "Search",
+        "ssot_restored_notification": "Theme successfully restored to SSOT baseline!"
     },
     "fa": {
         "wifi": "وای‌فای",
@@ -9730,7 +9961,14 @@ TRANSLATIONS = {
         "ssot_success": "Styling successfully restored to SSOT baseline!",
         "ssot_restored_title": "Styling Restored",
         "ssot_restored_body": "macW1Y styling successfully restored to canonical Tahoe standard.",
-        "ssot_error": "Error restoring styling"
+        "ssot_error": "Error restoring styling",
+        "widgets": "ابزارک‌ها",
+        "mac_styling": "سبک مک",
+        "apple_account": "حساب",
+        "storage_alert": "حافظه آی‌کلاد پر است",
+        "software_update_alert": "به‌روزرسانی نرم‌افزار موجود است",
+        "search": "جستجو",
+        "ssot_restored_notification": "طرح زمینه با موفقیت به استاندارد SSOT بازیابی شد!"
     }
 }
 

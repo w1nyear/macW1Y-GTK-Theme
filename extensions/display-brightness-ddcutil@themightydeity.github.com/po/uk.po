@@ -1,0 +1,139 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: display-brightness-ddcutil\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-11-10 12:00+0200\n"
+"Last-Translator: macW1Y i18n Team\n"
+"Language-Team: Ukrainian\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "Add Custom Shortcut"
+msgstr "Додати власне скорочення"
+
+msgid "Advanced Settings"
+msgstr "Розширені параметри"
+
+msgid "All"
+msgstr "Усі"
+
+msgid "Allow Zero Brightness"
+msgstr "Дозволити нульову яскравість"
+
+msgid "Button Location"
+msgstr "Розташування кнопки"
+
+msgid "Decrease Brightness"
+msgstr "Зменшити яскравість"
+
+msgid "Disable Display State Check"
+msgstr "Вимкнути перевірку стану дисплея"
+
+msgid "Disables the check for the display power state before changing brightness, might help in detecting more displays"
+msgstr "Вимикає перевірку стану живлення дисплея перед зміною яскравості, що може допомогти у виявленні більшої кількості моніторів"
+
+msgid "Enable \"All\" Slider"
+msgstr "Увімкнути повзунок «Усі»"
+
+msgid "Enable \"Internal\" Slider"
+msgstr "Увімкнути повзунок «Вбудований»"
+
+msgid "Enter the new shortcut"
+msgstr "Введіть нове скорочення"
+
+msgid "General"
+msgstr "Загальні"
+
+msgid "Hide System Indicator"
+msgstr "Сховати системний індикатор"
+
+msgid "Increase Brightness"
+msgstr "Збільшити яскравість"
+
+msgid "Initializing"
+msgstr "Ініціалізація"
+
+msgid "Internal"
+msgstr "Вбудований"
+
+msgid "Keyboard Shortcuts"
+msgstr "Клавіатурні скорочення"
+
+msgid "Need to disable (Only \"All\" slider)"
+msgstr "Необхідно вимкнути (Лише повзунок «Усі»)"
+
+msgid "Need to enable (\"All\" slider)"
+msgstr "Необхідно ввімкнути (повзунок «Усі»)"
+
+msgid "Position in System Indicator"
+msgstr "Позиція в системному індикаторі"
+
+msgid "Position in System Menu"
+msgstr "Позиція в системному меню"
+
+msgid "Press Esc to cancel the keyboard shortcut."
+msgstr "Натисніть Esc для скасування клавіатурного скорочення."
+
+msgid "Reload"
+msgstr "Перезавантажити"
+
+msgid "Reserved or invalid binding"
+msgstr "Зарезервована або недійсна комбінація"
+
+msgid "Set Shortcut…"
+msgstr "Встановити скорочення…"
+
+msgid "Settings"
+msgstr "Параметри"
+
+msgid "Show Display Name"
+msgstr "Показувати назву дисплея"
+
+msgid "Show OSD"
+msgstr "Показувати екранне сповіщення (OSD)"
+
+msgid "Show Value Label"
+msgstr "Показувати значення"
+
+msgid "Step Change %"
+msgstr "Крок зміни %"
+
+msgid "Submenu mode cannot be enabled in TopBar mode "
+msgstr "Режим підменю неможливо увімкнути в режимі верхньої панелі "
+
+msgid "System Menu"
+msgstr "Системне меню"
+
+msgid "Top Bar"
+msgstr "Верхня панель"
+
+msgid "Use Only \"All\" Slider"
+msgstr "Використовувати лише повзунок «Усі»"
+
+msgid "Use Quick Settings Sub Menu"
+msgstr "Використовувати підменю Швидких параметрів"
+
+msgid "VCP codes in use"
+msgstr "Використовувані коди VCP"
+
+msgid "Brightness"
+msgstr "Яскравість"
+
+msgid "White Backlight"
+msgstr "Біле підсвічування"
+
+msgid "Verbose debugging"
+msgstr "Детальне налагодження"
+
+msgid "`ddcutil` Additional Arguments"
+msgstr "Додаткові аргументи `ddcutil`"
+
+msgid "`ddcutil` Binary Path"
+msgstr "Шлях до виконуваного файлу `ddcutil`"
+
+msgid "`ddcutil` Sleep Multiplier ms"
+msgstr "Множник очікування ms `ddcutil`"
+

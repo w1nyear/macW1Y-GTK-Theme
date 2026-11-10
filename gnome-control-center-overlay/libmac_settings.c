@@ -4776,7 +4776,10 @@ void on_run_diagnostics_clicked(void *widget, gpointer data) {
 
 void on_restore_theme_clicked(void *widget, gpointer data) {
     (void)widget; (void)data;
-    g_spawn_command_line_async("/bin/bash -c '/usr/local/bin/mac-apply-theme && notify-send -i preferences-desktop-theme \"macW1Y\" \"Оформлення успішно відновлено до еталону SSOT!\"'", NULL);
+    char *cmd = g_strdup_printf("/bin/bash -c '/usr/local/bin/mac-apply-theme && notify-send -i preferences-desktop-theme \"macW1Y\" \"%s\"'",
+                                mac_tr("ssot_restored_notification", "Оформлення успішно відновлено до еталону SSOT!"));
+    g_spawn_command_line_async(cmd, NULL);
+    g_free(cmd);
 }
 
 static void *g_game_mode_switch_w = NULL;
@@ -7645,35 +7648,81 @@ static void find_list_boxes_recursive(GtkWidget *widget, GList **list)
     }
 }
 
+static char *mac_get_localized_ui_path(const char *basename)
+{
+    const char *loc = mac_get_locale();
+    const char *home = g_get_home_dir();
+    char *path = NULL;
+
+    /* 1. If locale is not Ukrainian, try localized overlay directory first */
+    if (loc && strcmp(loc, "uk") != 0) {
+        /* System localized overlay */
+        path = g_build_filename("/usr/share/mactheme/gnome-control-center-overlay/locales", loc, basename, NULL);
+        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+        g_free(path);
+
+        /* User localized overlay */
+        if (home) {
+            path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "locales", loc, basename, NULL);
+            if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+            g_free(path);
+        }
+
+        /* Repo localized overlay */
+        path = g_build_filename("/home/vitaliy/MACTHEMEFILES/control-center/locales", loc, basename, NULL);
+        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+        g_free(path);
+
+        /* Fallback to English localized overlay if language overlay missing */
+        if (strcmp(loc, "en") != 0) {
+            path = g_build_filename("/usr/share/mactheme/gnome-control-center-overlay/locales", "en", basename, NULL);
+            if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+            g_free(path);
+
+            if (home) {
+                path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "locales", "en", basename, NULL);
+                if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+                g_free(path);
+            }
+
+            path = g_build_filename("/home/vitaliy/MACTHEMEFILES/control-center/locales", "en", basename, NULL);
+            if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+            g_free(path);
+        }
+    }
+
+    /* Fallback to default overlay (Ukrainian / SSOT baseline) */
+    path = g_build_filename("/usr/share/mactheme/gnome-control-center-overlay", basename, NULL);
+    if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+    g_free(path);
+
+    if (home) {
+        path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", basename, NULL);
+        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+        g_free(path);
+    }
+
+    path = g_build_filename("/home/vitaliy/MACTHEMEFILES/control-center", basename, NULL);
+    if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+    g_free(path);
+
+    return NULL;
+}
+
 static GtkWidget *get_widgets_page(void)
 {
     static GtkWidget *widgets_page = NULL;
     if (widgets_page) return widgets_page;
 
     GtkBuilder *builder = gtk_builder_new();
-    const char *overlay_path = "/usr/share/mactheme/gnome-control-center-overlay/cc-widgets-panel.ui";
-    char *user_path = NULL;
-    const char *home = g_get_home_dir();
-    if (home) {
-        user_path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "cc-widgets-panel.ui", NULL);
-    }
-    const char *local_path = "/home/vitaliy/MACTHEMEFILES/control-center/cc-widgets-panel.ui";
-
-    const char *path_to_use = NULL;
-    if (g_file_test(overlay_path, G_FILE_TEST_EXISTS)) {
-        path_to_use = overlay_path;
-    } else if (user_path && g_file_test(user_path, G_FILE_TEST_EXISTS)) {
-        path_to_use = user_path;
-    } else if (g_file_test(local_path, G_FILE_TEST_EXISTS)) {
-        path_to_use = local_path;
-    }
+    char *path_to_use = mac_get_localized_ui_path("cc-widgets-panel.ui");
 
     GError *error = NULL;
     gboolean loaded = FALSE;
     if (path_to_use) {
         loaded = gtk_builder_add_from_file(builder, path_to_use, &error);
+        g_free(path_to_use);
     }
-    if (user_path) g_free(user_path);
 
     if (loaded) {
         widgets_page = GTK_WIDGET(gtk_builder_get_object(builder, "widgets_page"));
@@ -7705,29 +7754,14 @@ static GtkWidget *get_mac_styling_page(void)
     start_wallpaper_preload();
 
     GtkBuilder *builder = gtk_builder_new();
-    const char *overlay_path = "/usr/share/mactheme/gnome-control-center-overlay/cc-mac-styling-panel.ui";
-    char *user_path = NULL;
-    const char *home = g_get_home_dir();
-    if (home) {
-        user_path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "cc-mac-styling-panel.ui", NULL);
-    }
-    const char *local_path = "/home/vitaliy/MACTHEMEFILES/control-center/cc-mac-styling-panel.ui";
-
-    const char *path_to_use = NULL;
-    if (g_file_test(overlay_path, G_FILE_TEST_EXISTS)) {
-        path_to_use = overlay_path;
-    } else if (user_path && g_file_test(user_path, G_FILE_TEST_EXISTS)) {
-        path_to_use = user_path;
-    } else if (g_file_test(local_path, G_FILE_TEST_EXISTS)) {
-        path_to_use = local_path;
-    }
+    char *path_to_use = mac_get_localized_ui_path("cc-mac-styling-panel.ui");
 
     GError *error = NULL;
     gboolean loaded = FALSE;
     if (path_to_use) {
         loaded = gtk_builder_add_from_file(builder, path_to_use, &error);
+        g_free(path_to_use);
     }
-    if (user_path) g_free(user_path);
 
     if (loaded) {
         mac_styling_page = GTK_WIDGET(gtk_builder_get_object(builder, "mac_styling_page"));
@@ -8169,29 +8203,14 @@ static GtkWidget *get_screenshot_page(void)
     if (screenshot_page) return screenshot_page;
 
     GtkBuilder *builder = gtk_builder_new();
-    const char *overlay_path = "/usr/share/mactheme/gnome-control-center-overlay/cc-screenshot-panel.ui";
-    char *user_path = NULL;
-    const char *home = g_get_home_dir();
-    if (home) {
-        user_path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "cc-screenshot-panel.ui", NULL);
-    }
-    const char *local_path = "/home/vitaliy/MACTHEMEFILES/control-center/cc-screenshot-panel.ui";
-
-    const char *path_to_use = NULL;
-    if (g_file_test(overlay_path, G_FILE_TEST_EXISTS)) {
-        path_to_use = overlay_path;
-    } else if (user_path && g_file_test(user_path, G_FILE_TEST_EXISTS)) {
-        path_to_use = user_path;
-    } else if (g_file_test(local_path, G_FILE_TEST_EXISTS)) {
-        path_to_use = local_path;
-    }
+    char *path_to_use = mac_get_localized_ui_path("cc-screenshot-panel.ui");
 
     GError *error = NULL;
     gboolean loaded = FALSE;
     if (path_to_use) {
         loaded = gtk_builder_add_from_file(builder, path_to_use, &error);
+        g_free(path_to_use);
     }
-    if (user_path) g_free(user_path);
 
     if (loaded) {
         screenshot_page = GTK_WIDGET(gtk_builder_get_object(builder, "screenshot_page"));

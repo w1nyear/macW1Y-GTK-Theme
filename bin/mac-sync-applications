@@ -27,6 +27,191 @@ def get_gpu_targets():
                 pass
     return {"system": 0, "apps": 1, "games": 1}
 
+def get_app_locale():
+    try:
+        loc_f = os.path.expanduser("~/.config/mac-styling/locale")
+        if os.path.exists(loc_f):
+            with open(loc_f, "r", encoding="utf-8") as f:
+                return f.read().strip().lower()
+        if os.environ.get("LANGUAGE"):
+            return os.environ.get("LANGUAGE", "").split(":")[0].split(".")[0].split("_")[0].lower()
+        if os.environ.get("LANG"):
+            return os.environ.get("LANG", "").split(".")[0].split("_")[0].lower()
+    except Exception:
+        pass
+    return "en"
+
+SYNC_I18N = {
+    "pl": {
+        "installed_title": "Zainstalowano",
+        "app_installed_title": "Program zainstalowany",
+        "installing_title": "Instalowanie programu",
+        "app_added_title": "Program dodany",
+        "removed_title": "Usunięto",
+        "app_installed_msg": "Program „{name}” został pomyślnie zainstalowany!",
+        "app_deployed_msg": "Program „{name}” został pomyślnie wdrożony i dodany do listy programów!",
+        "pkg_installed_msg": "Pakiet „{name}” został pomyślnie zainstalowany w systemie!",
+        "wine_app_ready_msg": "Program Windows „{name}” jest gotowy do uruchomienia!",
+        "wine_installing_msg": "Instalowanie programu Windows „{name}”...",
+        "wine_installed_msg": "Program Windows „{name}” został pomyślnie zainstalowany!",
+        "script_running_msg": "Uruchamianie instalatora „{name}”...",
+        "script_done_msg": "Instalator „{name}” zakończył pracę!",
+        "script_added_msg": "Skrypt „{name}” został dodany do programów!",
+        "batch_running_msg": "Uruchamianie pakietu Windows „{name}”...",
+        "batch_done_msg": "Pakiet „{name}” zakończył pracę!",
+        "batch_ready_msg": "Skrypt Windows „{name}” jest gotowy do uruchomienia!",
+        "bin_running_msg": "Uruchamianie instalatora „{name}”...",
+        "bin_done_msg": "Instalator „{name}” zakończył pracę!",
+        "app_uninstalled_msg": "Program „{name}” został pomyślnie odinstalowany!",
+        "wine_uninstalled_msg": "Program Windows „{name}” został pomyślnie odinstalowany!",
+    },
+    "uk": {
+        "installed_title": "Встановлено",
+        "app_installed_title": "Програму встановлено",
+        "installing_title": "Встановлення програми",
+        "app_added_title": "Програму додано",
+        "removed_title": "Видалено",
+        "app_installed_msg": "Програма \"{name}\" успішно встановлена!",
+        "app_deployed_msg": "Програма \"{name}\" успішно розгорнута та додана до списку програм!",
+        "pkg_installed_msg": "Пакет \"{name}\" успішно встановлено в систему!",
+        "wine_app_ready_msg": "Windows програма \"{name}\" готова до запуску!",
+        "wine_installing_msg": "Встановлення Windows програми \"{name}\"...",
+        "wine_installed_msg": "Windows програма \"{name}\" успішно встановлена!",
+        "script_running_msg": "Запуск установника \"{name}\"...",
+        "script_done_msg": "Установник \"{name}\" завершив роботу!",
+        "script_added_msg": "Скрипт \"{name}\" додано до програм!",
+        "batch_running_msg": "Запуск пакета Windows \"{name}\"...",
+        "batch_done_msg": "Пакет \"{name}\" завершив роботу!",
+        "batch_ready_msg": "Windows скрипт \"{name}\" готовий до запуску!",
+        "bin_running_msg": "Запуск інсталятора \"{name}\"...",
+        "bin_done_msg": "Інсталятор \"{name}\" завершив роботу!",
+        "app_uninstalled_msg": "Програму \"{name}\" успішно деінстальовано!",
+        "wine_uninstalled_msg": "Windows програму \"{name}\" успішно деінстальовано!",
+    },
+    "de": {
+        "installed_title": "Installiert",
+        "app_installed_title": "Anwendung installiert",
+        "installing_title": "Anwendungsinstallation",
+        "app_added_title": "Anwendung hinzugefügt",
+        "removed_title": "Entfernt",
+        "app_installed_msg": "Anwendung „{name}“ wurde erfolgreich installiert!",
+        "app_deployed_msg": "Anwendung „{name}“ wurde bereitgestellt und zur Anwendungsliste hinzugefügt!",
+        "pkg_installed_msg": "Paket „{name}“ wurde erfolgreich im System installiert!",
+        "wine_app_ready_msg": "Windows-Anwendung „{name}“ ist startbereit!",
+        "wine_installing_msg": "Windows-Anwendung „{name}“ wird installiert...",
+        "wine_installed_msg": "Windows-Anwendung „{name}“ wurde erfolgreich installiert!",
+        "script_running_msg": "Installationsprogramm „{name}“ wird ausgeführt...",
+        "script_done_msg": "Installationsprogramm „{name}“ abgeschlossen!",
+        "script_added_msg": "Skript „{name}“ zu den Anwendungen hinzugefügt!",
+        "batch_running_msg": "Windows-Paket „{name}“ wird ausgeführt...",
+        "batch_done_msg": "Paket „{name}“ abgeschlossen!",
+        "batch_ready_msg": "Windows-Skript „{name}“ ist startbereit!",
+        "bin_running_msg": "Installationsprogramm „{name}“ wird ausgeführt...",
+        "bin_done_msg": "Installationsprogramm „{name}“ abgeschlossen!",
+        "app_uninstalled_msg": "Anwendung „{name}“ wurde erfolgreich deinstalliert!",
+        "wine_uninstalled_msg": "Windows-Anwendung „{name}“ wurde erfolgreich deinstalliert!",
+    },
+    "fr": {
+        "installed_title": "Installé",
+        "app_installed_title": "Application installée",
+        "installing_title": "Installation de l'application",
+        "app_added_title": "Application ajoutée",
+        "removed_title": "Supprimé",
+        "app_installed_msg": "L'application « {name} » a été installée avec succès !",
+        "app_deployed_msg": "L'application « {name} » a été déployée et ajoutée à la liste des applications !",
+        "pkg_installed_msg": "Le paquet « {name} » a été installé avec succès sur le système !",
+        "wine_app_ready_msg": "L'application Windows « {name} » est prête à être exécutée !",
+        "wine_installing_msg": "Installation de l'application Windows « {name} »...",
+        "wine_installed_msg": "L'application Windows « {name} » a été installée avec succès !",
+        "script_running_msg": "Lancement de l'installateur « {name} »...",
+        "script_done_msg": "L'installateur « {name} » est terminé !",
+        "script_added_msg": "Le script « {name} » a été ajouté aux applications !",
+        "batch_running_msg": "Lancement du paquet Windows « {name} »...",
+        "batch_done_msg": "Le paquet « {name} » est terminé !",
+        "batch_ready_msg": "Le script Windows « {name} » est prêt à être exécuté !",
+        "bin_running_msg": "Lancement de l'installateur « {name} »...",
+        "bin_done_msg": "L'installateur « {name} » est terminé !",
+        "app_uninstalled_msg": "L'application « {name} » a été désinstallée avec succès !",
+        "wine_uninstalled_msg": "L'application Windows « {name} » a été désinstallée avec succès !",
+    },
+    "es": {
+        "installed_title": "Instalado",
+        "app_installed_title": "Aplicación instalada",
+        "installing_title": "Instalación de la aplicación",
+        "app_added_title": "Aplicación agregada",
+        "removed_title": "Eliminado",
+        "app_installed_msg": "¡La aplicación «{name}» se instaló con éxito!",
+        "app_deployed_msg": "¡La aplicación «{name}» se implementó y se agregó a la lista de aplicaciones!",
+        "pkg_installed_msg": "¡El paquete «{name}» se instaló con éxito en el sistema!",
+        "wine_app_ready_msg": "¡La aplicación de Windows «{name}» está lista para ejecutarse!",
+        "wine_installing_msg": "Instalando la aplicación de Windows «{name}»...",
+        "wine_installed_msg": "¡La aplicación de Windows «{name}» se instaló con éxito!",
+        "script_running_msg": "Ejecutando instalador «{name}»...",
+        "script_done_msg": "¡El instalador «{name}» ha finalizado!",
+        "script_added_msg": "¡El script «{name}» se agregó a las aplicaciones!",
+        "batch_running_msg": "Ejecutando paquete de Windows «{name}»...",
+        "batch_done_msg": "¡El paquete «{name}» ha finalizado!",
+        "batch_ready_msg": "¡El script de Windows «{name}» está listo para ejecutarse!",
+        "bin_running_msg": "Ejecutando instalador «{name}»...",
+        "bin_done_msg": "¡El instalador «{name}» ha finalizado!",
+        "app_uninstalled_msg": "¡La aplicación «{name}» se desinstaló con éxito!",
+        "wine_uninstalled_msg": "¡La aplicación de Windows «{name}» se desinstaló con éxito!",
+    },
+    "it": {
+        "installed_title": "Installato",
+        "app_installed_title": "Applicazione installata",
+        "installing_title": "Installazione applicazione",
+        "app_added_title": "Applicazione aggiunta",
+        "removed_title": "Rimosso",
+        "app_installed_msg": "L'applicazione «{name}» è stata installata con successo!",
+        "app_deployed_msg": "L'applicazione «{name}» è stata aggiunta all'elenco delle applicazioni!",
+        "pkg_installed_msg": "Il pacchetto «{name}» è stato installato con successo nel sistema!",
+        "wine_app_ready_msg": "L'applicazione Windows «{name}» è pronta per l'avvio!",
+        "wine_installing_msg": "Installazione dell'applicazione Windows «{name}»...",
+        "wine_installed_msg": "L'applicazione Windows «{name}» è stata installata con successo!",
+        "script_running_msg": "Avvio del programma di installazione «{name}»...",
+        "script_done_msg": "Programma di installazione «{name}» completato!",
+        "script_added_msg": "Lo script «{name}» è stato aggiunto alle applicazioni!",
+        "batch_running_msg": "Avvio del pacchetto Windows «{name}»...",
+        "batch_done_msg": "Pacchetto «{name}» completato!",
+        "batch_ready_msg": "Lo script Windows «{name}» è pronto per l'avvio!",
+        "bin_running_msg": "Avvio del programma di installazione «{name}»...",
+        "bin_done_msg": "Programma di installazione «{name}» completato!",
+        "app_uninstalled_msg": "L'applicazione «{name}» è stata disinstallata con successo!",
+        "wine_uninstalled_msg": "L'applicazione Windows «{name}» è stata disinstallata con successo!",
+    },
+    "en": {
+        "installed_title": "Installed",
+        "app_installed_title": "Application Installed",
+        "installing_title": "Installing Application",
+        "app_added_title": "Application Added",
+        "removed_title": "Removed",
+        "app_installed_msg": "Application \"{name}\" was successfully installed!",
+        "app_deployed_msg": "Application \"{name}\" was deployed and added to Applications!",
+        "pkg_installed_msg": "Package \"{name}\" was successfully installed!",
+        "wine_app_ready_msg": "Windows application \"{name}\" is ready to launch!",
+        "wine_installing_msg": "Installing Windows application \"{name}\"...",
+        "wine_installed_msg": "Windows application \"{name}\" was successfully installed!",
+        "script_running_msg": "Running installer \"{name}\"...",
+        "script_done_msg": "Installer \"{name}\" completed successfully!",
+        "script_added_msg": "Script \"{name}\" added to Applications!",
+        "batch_running_msg": "Running Windows package \"{name}\"...",
+        "batch_done_msg": "Package \"{name}\" completed successfully!",
+        "batch_ready_msg": "Windows script \"{name}\" is ready to launch!",
+        "bin_running_msg": "Running installer \"{name}\"...",
+        "bin_done_msg": "Installer \"{name}\" completed successfully!",
+        "app_uninstalled_msg": "Application \"{name}\" was successfully uninstalled!",
+        "wine_uninstalled_msg": "Windows application \"{name}\" was successfully uninstalled!",
+    }
+}
+
+def sync_tr(key, **kwargs):
+    loc = get_app_locale()
+    base = loc.split('_')[0]
+    strings = SYNC_I18N.get(base, SYNC_I18N.get("en", {}))
+    tmpl = strings.get(key, SYNC_I18N["en"].get(key, key))
+    return tmpl.format(**kwargs)
+
 
 _daemon_lock_fd = None
 def acquire_daemon_lock():
@@ -890,7 +1075,7 @@ X-Mac-Real-Path={dest_binary}
     subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()
     subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
-                    "Програму встановлено", f"Програма \"{clean_name}\" успішно встановлена!"])
+                    sync_tr("app_installed_title"), sync_tr("app_installed_msg", name=clean_name)])
 
 
 def install_archive(filepath):
@@ -1019,7 +1204,7 @@ StartupNotify=true
     subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()
     subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
-                    "Програму встановлено", f"Програма \"{clean_name}\" успішно розгорнута та додана до списку програм!"])
+                    sync_tr("app_installed_title"), sync_tr("app_deployed_msg", name=clean_name)])
 
 
 def install_deb(filepath):
@@ -1034,8 +1219,8 @@ def install_deb(filepath):
         pass
     if res.returncode == 0:
         sync()
-        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, "Встановлено",
-                        f"Пакет \"{clean_name}\" успішно встановлено в систему!"])
+        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, sync_tr("installed_title"),
+                        sync_tr("pkg_installed_msg", name=clean_name)])
 
 
 def extract_exe_icon(exe_path, app_id):
@@ -1286,7 +1471,7 @@ StartupNotify=true
         subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         sync()
         subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
-                        "Програму додано", f"Windows програма \"{clean_name}\" готова до запуску!"])
+                        sync_tr("app_added_title"), sync_tr("wine_app_ready_msg", name=clean_name)])
         return
 
     # Case: Windows Installer (.exe / .msi)
@@ -1302,7 +1487,7 @@ StartupNotify=true
         target_cwd = WINE_INSTALLERS_CACHE
 
     subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
-                    "Встановлення програми", f"Встановлення Windows програми \"{clean_name}\"..."])
+                    sync_tr("installing_title"), sync_tr("wine_installing_msg", name=clean_name)])
 
     before_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
 
@@ -1437,7 +1622,7 @@ StartupNotify=true
     subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()
     subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
-                    "Програму встановлено", f"Windows програма \"{clean_name}\" успішно встановлена!"])
+                    sync_tr("app_installed_title"), sync_tr("wine_installed_msg", name=clean_name)])
 
 
 def install_shell_script(filepath):
@@ -1491,7 +1676,7 @@ def install_shell_script(filepath):
 
     if is_installer:
         subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
-                        "Встановлення програми", f"Запуск установника \"{clean_name}\"..."])
+                        sync_tr("installing_title"), sync_tr("script_running_msg", name=clean_name)])
         before_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
         try:
             subprocess.run(["bash", target_script], cwd=target_cwd)
@@ -1502,7 +1687,7 @@ def install_shell_script(filepath):
         if after_desktops - before_desktops:
             sync()
         subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
-                        "Встановлено", f"Установник \"{clean_name}\" завершив роботу!"])
+                        sync_tr("installed_title"), sync_tr("script_done_msg", name=clean_name)])
     else:
         icons = glob.glob(os.path.join(target_cwd, "**", "*.png"), recursive=True) + \
                 glob.glob(os.path.join(target_cwd, "**", "*.svg"), recursive=True)
@@ -1536,7 +1721,7 @@ StartupNotify=true
         subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         sync()
         subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
-                        "Програму додано", f"Скрипт \"{clean_name}\" додано до програм!"])
+                        sync_tr("app_added_title"), sync_tr("script_added_msg", name=clean_name)])
 
 
 def install_batch_script(filepath):
@@ -1589,7 +1774,7 @@ def install_batch_script(filepath):
 
     if is_installer:
         subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
-                        "Встановлення програми", f"Запуск пакета Windows \"{clean_name}\"..."])
+                        sync_tr("installing_title"), sync_tr("batch_running_msg", name=clean_name)])
         cmd = [wine_runner, "cmd", "/c", target_script]
         try:
             subprocess.run(cmd, cwd=target_cwd)
@@ -1597,7 +1782,7 @@ def install_batch_script(filepath):
             print(f"[Batch Installer] Error: {e}")
         sync()
         subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
-                        "Встановлено", f"Пакет \"{clean_name}\" завершив роботу!"])
+                        sync_tr("installed_title"), sync_tr("batch_done_msg", name=clean_name)])
     else:
         desktop_content = f"""[Desktop Entry]
 Type=Application
@@ -1618,7 +1803,7 @@ StartupNotify=true
         subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         sync()
         subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
-                        "Програму додано", f"Windows скрипт \"{clean_name}\" готовий до запуску!"])
+                        sync_tr("app_added_title"), sync_tr("batch_ready_msg", name=clean_name)])
 
 
 def install_binary_installer(filepath):
@@ -1668,14 +1853,14 @@ def install_binary_installer(filepath):
         pass
 
     subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
-                    "Встановлення програми", f"Запуск інсталятора \"{clean_name}\"..."])
+                    sync_tr("installing_title"), sync_tr("bin_running_msg", name=clean_name)])
     try:
         subprocess.run([target_bin], cwd=target_cwd)
     except Exception as e:
         print(f"[Binary Installer] Error: {e}")
     sync()
     subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
-                    "Встановлено", f"Інсталятор \"{clean_name}\" завершив роботу!"])
+                    sync_tr("installed_title"), sync_tr("bin_done_msg", name=clean_name)])
 
 
 def handle_trash(trashinfo_path):
@@ -1782,7 +1967,7 @@ def handle_trash(trashinfo_path):
                 pass
             subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             sync()
-            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, "Видалено", f"Програму \"{app_name}\" успішно деінстальовано!"])
+            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, sync_tr("removed_title"), sync_tr("app_uninstalled_msg", name=app_name)])
             return
 
         # Case 2: Archive/Custom installed app
@@ -1810,7 +1995,7 @@ def handle_trash(trashinfo_path):
                 pass
             subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             sync()
-            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, "Видалено", f"Програму \"{app_name}\" успішно деінстальовано!"])
+            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, sync_tr("removed_title"), sync_tr("app_uninstalled_msg", name=app_name)])
             return
 
         # Case 3: Wine Application
@@ -1868,7 +2053,7 @@ def handle_trash(trashinfo_path):
 
             subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             sync()
-            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, "Видалено", f"Windows програму \"{app_name}\" успішно деінстальовано!"])
+            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, sync_tr("removed_title"), sync_tr("wine_uninstalled_msg", name=app_name)])
             return
 
         # Case 4: System package (Snap / Flatpak / DEB)

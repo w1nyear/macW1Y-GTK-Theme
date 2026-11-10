@@ -53,6 +53,34 @@ def load_config():
             pass
     return DEFAULT_CONFIG.copy()
 
+def get_locale_code():
+    try:
+        loc_f = os.path.expanduser("~/.config/mac-styling/locale")
+        if os.path.exists(loc_f):
+            with open(loc_f, "r", encoding="utf-8") as f:
+                return f.read().strip().lower()
+        if os.environ.get("LANGUAGE"):
+            return os.environ.get("LANGUAGE", "").split(":")[0].split(".")[0].split("_")[0].lower()
+        if os.environ.get("LANG"):
+            return os.environ.get("LANG", "").split(".")[0].split("_")[0].lower()
+    except Exception:
+        pass
+    return "en"
+
+SCREENSHOT_I18N = {
+    "pl": {"app": "Zrzut ekranu", "video_saved": "Nagranie ekranu zapisane", "original": "Oryginalna"},
+    "uk": {"app": "Скріншот", "video_saved": "Запис екрана збережено", "original": "Оригінальна"},
+    "de": {"app": "Bildschirmfoto", "video_saved": "Bildschirmaufnahme gespeichert", "original": "Original"},
+    "fr": {"app": "Capture d'écran", "video_saved": "Enregistrement d'écran enregistré", "original": "Originale"},
+    "es": {"app": "Captura de pantalla", "video_saved": "Grabación de pantalla guardada", "original": "Original"},
+    "it": {"app": "Schermata", "video_saved": "Registrazione dello schermo salvata", "original": "Originale"},
+    "en": {"app": "Screenshot", "video_saved": "Screen recording saved", "original": "Original"}
+}
+
+def ss_tr(key):
+    base = get_locale_code().split('_')[0]
+    return SCREENSHOT_I18N.get(base, SCREENSHOT_I18N["en"]).get(key, SCREENSHOT_I18N["en"].get(key, key))
+
 def play_shutter():
     cfg = load_config()
     if not cfg.get("shutter_sound", True):
@@ -73,7 +101,7 @@ def notify(title, message="", icon="applets-screenshooter-symbolic"):
         try:
             cmd = [
                 "notify-send",
-                "-a", "Скріншот",
+                "-a", ss_tr("app"),
                 "-h", "string:x-canonical-private-synchronous:mac-screenshot-notify",
                 "-i", icon,
                 title
@@ -92,7 +120,7 @@ def get_target_resolution(code):
         return 2560, 1440, "2K Quad HD"
     elif code == 3:
         return 3840, 2160, "4K Ultra HD"
-    return None, None, "Оригінальна"
+    return None, None, ss_tr("original")
 
 def contrast_adaptive_sharpen(img, strength=0.85):
     """
@@ -420,7 +448,7 @@ def process_video(file_path):
                 p.unlink()
 
             msg = ""
-            notify("Запис екрана збережено", msg, icon="video-x-generic-symbolic")
+            notify(ss_tr("video_saved"), msg, icon="video-x-generic-symbolic")
             return dest_path
     except Exception as e:
         print(f"Error processing video {file_path}: {e}", file=sys.stderr)
@@ -433,8 +461,10 @@ def run_daemon():
     home = Path(os.path.expanduser("~"))
     watch_dirs = [
         home / "Зображення" / "Знімки екрана",
+        home / "Obrazy" / "Zrzuty ekranu",
         home / "Pictures" / "Screenshots",
         home / "Відео" / "Трансляції з екрана",
+        home / "Wideo" / "Nagrania ekranu",
         home / "Videos" / "Screencasts"
     ]
 

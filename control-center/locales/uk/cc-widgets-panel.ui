@@ -1,0 +1,1337 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+
+  
+  <object class="AdwNavigationPage" id="widgets_page">
+    <property name="title">Віджети</property>
+    <property name="tag">widgets</property>
+    <property name="child">
+      <object class="AdwNavigationView" id="widgets_nav_view">
+        <signal name="popped" handler="on_widgets_nav_view_popped" />
+        
+        <child>
+          <object class="AdwNavigationPage" id="widgets_main_page">
+            <property name="title">Віджети</property>
+            <property name="tag">widgets_main</property>
+            <property name="child">
+              <object class="AdwToolbarView">
+        <property name="extend-content-to-top-edge">False</property>
+        <property name="extend-content-to-bottom-edge">True</property>
+        <property name="top-bar-style">flat</property>
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <style>
+              <class name="flat" />
+            </style>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwPreferencesPage">
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Робочий стіл та розташування</property>
+                <property name="description">Керування віджетами на стільниці та їхня поведінка</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_edit_mode_row">
+                    <property name="title">Режим редагування</property>
+                    <property name="subtitle">Дозволити перетягування, зміну розміру та видалення віджетів на стільниці</property>
+                    <property name="active">false</property>
+                    <signal name="realize" handler="init_dw_edit_mode" />
+                    <signal name="notify::active" handler="on_dw_edit_mode_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_add_widgets_row">
+                    <property name="title">Додати віджети на стільницю</property>
+                    <property name="subtitle">Відкрити меню вибору віджетів (Годинник, Погода, Батарея, Фото тощо)</property>
+                    <property name="activatable">true</property>
+                    <signal name="activated" handler="on_dw_add_widgets_clicked" />
+                    <child type="suffix">
+                      <object class="GtkButton" id="dw_btn_add_widgets">
+                        <property name="valign">center</property>
+                        <property name="icon-name">list-add-symbolic</property>
+                        <style>
+                          <class name="suggested-action" />
+                          <class name="circular" />
+                          <class name="mac-action-accent-btn" />
+                        </style>
+                        <signal name="clicked" handler="on_dw_add_widgets_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_arrange_row">
+                    <property name="title">Впорядкувати за сіткою</property>
+                    <property name="subtitle">Автоматично вирівняти всі розміщені віджети у спільну сітку</property>
+                    <property name="activatable">true</property>
+                    <signal name="activated" handler="on_dw_arrange_clicked" />
+                    <child type="suffix">
+                      <object class="GtkButton" id="dw_btn_arrange">
+                        <property name="valign">center</property>
+                        <property name="icon-name">view-grid-symbolic</property>
+                        <style>
+                          <class name="suggested-action" />
+                          <class name="circular" />
+                          <class name="mac-action-accent-btn" />
+                        </style>
+                        <signal name="clicked" handler="on_dw_arrange_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_gap_row">
+                    <property name="title">Відступ між віджетами</property>
+                    <property name="subtitle">Відстань у пікселях між віджетами та межами екрана</property>
+                    <child type="suffix">
+                      <object class="GtkScale" id="dw_gap_scale">
+                        <property name="orientation">0</property>
+                        <property name="draw-value">true</property>
+                        <property name="digits">0</property>
+                        <property name="round-digits">0</property>
+                        <property name="width-request">200</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">0</property>
+                            <property name="upper">50</property>
+                            <property name="step-increment">1</property>
+                            <property name="page-increment">5</property>
+                            <property name="value">15</property>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_dw_gap" />
+                        <signal name="value-changed" handler="on_dw_gap_changed" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_panel_icon_row">
+                    <property name="title">Значок на верхній панелі</property>
+                    <property name="subtitle">Відображати значок швидкого перемикання віджетів у верхній панелі</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_dw_panel_icon" />
+                    <signal name="notify::active" handler="on_dw_panel_icon_changed" />
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Стилізація та оформлення</property>
+                <property name="description">Зовнішній вигляд, закруглення кутів і прозорість карток віджетів</property>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_border_radius_row">
+                    <property name="title">Радіус закруглення кутів</property>
+                    <property name="subtitle">Радіус заокруглення карток віджетів (px)</property>
+                    <child type="suffix">
+                      <object class="GtkScale" id="dw_border_radius_scale">
+                        <property name="orientation">0</property>
+                        <property name="draw-value">true</property>
+                        <property name="digits">0</property>
+                        <property name="round-digits">0</property>
+                        <property name="width-request">200</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">0</property>
+                            <property name="upper">40</property>
+                            <property name="step-increment">1</property>
+                            <property name="page-increment">5</property>
+                            <property name="value">35</property>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_dw_border_radius" />
+                        <signal name="value-changed" handler="on_dw_border_radius_changed" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_opacity_row">
+                    <property name="title">Прозорість віджетів</property>
+                    <property name="subtitle">Рівень прозорості підкладки віджетів (%)</property>
+                    <child type="suffix">
+                      <object class="GtkScale" id="dw_opacity_scale">
+                        <property name="orientation">0</property>
+                        <property name="draw-value">true</property>
+                        <property name="digits">0</property>
+                        <property name="round-digits">0</property>
+                        <property name="width-request">200</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">10</property>
+                            <property name="upper">100</property>
+                            <property name="step-increment">1</property>
+                            <property name="page-increment">5</property>
+                            <property name="value">85</property>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_dw_opacity" />
+                        <signal name="value-changed" handler="on_dw_opacity_changed" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_use_custom_accent_row">
+                    <property name="title">Власний акцентний колір</property>
+                    <property name="subtitle">Використовувати обраний колір замість системного акценту macW1Y</property>
+                    <property name="active">false</property>
+                    <signal name="realize" handler="init_dw_use_custom_accent" />
+                    <signal name="notify::active" handler="on_dw_use_custom_accent_changed" />
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Поведінка компонентів</property>
+                <property name="description">Параметри окремих інформаційних блоків</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_clock_seconds_row">
+                    <property name="title">Показувати секунди в годиннику</property>
+                    <property name="subtitle">Секундний індикатор для цифрових та аналогових годинників</property>
+                    <property name="active">false</property>
+                    <signal name="realize" handler="init_dw_clock_seconds" />
+                    <signal name="notify::active" handler="on_dw_clock_seconds_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_battery_percent_row">
+                    <property name="title">Показувати відсоток заряду батареї</property>
+                    <property name="subtitle">Числове значення заряду під кільцем батареї</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_dw_battery_percent" />
+                    <signal name="notify::active" handler="on_dw_battery_percent_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="dw_music_browsers_row">
+                    <property name="title">Музика: ігнорувати браузери</property>
+                    <property name="subtitle">Не показувати аудіо-вкладки з Chrome чи Firefox у віджеті плеєра</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_dw_music_browsers" />
+                    <signal name="notify::active" handler="on_dw_music_browsers_changed" />
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Розширене налаштування</property>
+                <property name="description">Глибока конфігурація всіх 19 типів віджетів</property>
+
+                <child>
+                  <object class="AdwActionRow" id="dw_advanced_row">
+                    <property name="title">Повний конфігуратор віджетів</property>
+                    <property name="subtitle">Відкрити розширені параметри всіх типів віджетів</property>
+                    <property name="activatable">true</property>
+                    <signal name="activated" handler="on_dw_advanced_clicked" />
+                    <child type="suffix">
+                      <object class="GtkButton" id="dw_btn_advanced">
+                        <property name="valign">center</property>
+                        <property name="icon-name">go-next-symbolic</property>
+                        <style>
+                          <class name="suggested-action" />
+                          <class name="circular" />
+                          <class name="mac-action-accent-btn" />
+                        </style>
+                        <signal name="clicked" handler="on_dw_advanced_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+          </object>
+        </property>
+      </object>
+    </property>
+  </object>
+</child>
+
+        
+        <child>
+          <object class="AdwNavigationPage" id="widgets_configurator_page">
+    <property name="title">Конфігуратор віджетів</property>
+    <property name="tag">widgets_configurator</property>
+    <property name="child">
+      <object class="AdwToolbarView">
+        <property name="extend-content-to-top-edge">False</property>
+        <property name="extend-content-to-bottom-edge">True</property>
+        <property name="top-bar-style">flat</property>
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <style>
+              <class name="flat" />
+            </style>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwPreferencesPage">
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Годинники (Аналоговий, Цифровий, Бінарний)</property>
+                <property name="description">Формат відображення часу та секундні стрілки</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_digitalclock_show_seconds">
+                    <property name="title">Цифровий: показувати секунди</property>
+                    <property name="subtitle">Відображати секунди у цифровому годиннику</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_digitalclock_smooth_seconds">
+                    <property name="title">Цифровий: плавний рух</property>
+                    <property name="subtitle">Плавна анімація секундного індикатора</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_clock_smooth_seconds">
+                    <property name="title">Аналоговий: плавна секундна стрілка</property>
+                    <property name="subtitle">Плавний хід стрілки без дискретних кроків</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_digitalclock_show_ampm">
+                    <property name="title">Показувати AM / PM</property>
+                    <property name="subtitle">Відображення періоду доби у 12-годинному форматі</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_binaryclock_use_accent">
+                    <property name="title">Бінарний: системний акцентний колір</property>
+                    <property name="subtitle">Підсвічувати активні біти кольором macW1Y</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Календар та події</property>
+                <property name="description">Параметри відображення розкладу та дати</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_calendar_lookahead_row">
+                    <property name="title">Горизонт подій (днів)</property>
+                    <property name="subtitle">Кількість днів для пошуку найближчих подій</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_calendar_lookahead_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">30</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">14</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_calendar_use_accent">
+                    <property name="title">Використовувати акцентний колір</property>
+                    <property name="subtitle">Виділяти сьогоднішній день системним акцентом</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_calendar_show_page_dots">
+                    <property name="title">Точки сторінок календаря</property>
+                    <property name="subtitle">Відображати індикатори прокрутки місяців</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Погода</property>
+                <property name="description">Прогноз погоди та поточні метеоумови</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_weather_use_accent">
+                    <property name="title">Використовувати акцентний колір</property>
+                    <property name="subtitle">Підсвічувати піктограми погоди кольором теми</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_weather_show_page_dots">
+                    <property name="title">Точки перемикання прогнозу</property>
+                    <property name="subtitle">Показувати індикатор сторінок погоди</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Батарея та живлення</property>
+                <property name="description">Кількість пристроїв та стиль індикатора заряду</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_battery_slot_count_row">
+                    <property name="title">Кількість слотів пристроїв</property>
+                    <property name="subtitle">Відображення батарей миші, клавіатури та навушників</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_battery_slot_count_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">4</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">1</property>
+                        <property name="value">2</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_battery_show_percent">
+                    <property name="title">Показувати відсоток заряду</property>
+                    <property name="subtitle">Числове значення відсотків під кільцем</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_battery_use_accent">
+                    <property name="title">Використовувати акцентний колір</property>
+                    <property name="subtitle">Забарвлювати кільце заряду в колір акценту</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Музичний плеєр</property>
+                <property name="description">Керування відтворенням аудіо та мультимедіа</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_music_ignore_browsers">
+                    <property name="title">Ігнорувати аудіо з веб-браузерів</property>
+                    <property name="subtitle">Не перехоплювати вкладки YouTube чи Spotify Web</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_music_custom_app_entry">
+                    <property name="title">Власний музичний додаток</property>
+                    <property name="text">spotify</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Системний монітор</property>
+                <property name="description">Завантаження процесора, пам'яті, мережі та дисків</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_system_page_indicator_accent">
+                    <property name="title">Акцентний колір індикатора</property>
+                    <property name="subtitle">Застосовувати колір системи для вибраної сторінки</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_system_show_page_dashes">
+                    <property name="title">Пунктирні індикатори сторінок</property>
+                    <property name="subtitle">Стиль рисками замість крапок</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Фотографії</property>
+                <property name="description">Фоторамка на стільниці</property>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_custom_photo_entry">
+                    <property name="title">Шлях до фотографії або папки</property>
+                    <property name="text" />
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Pomodoro таймер</property>
+                <property name="description">Інтервали продуктивності та фокусування</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_work_row">
+                    <property name="title">Час фокусування (хвилини)</property>
+                    <property name="subtitle">Тривалість робочого інтервалу</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_work_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">60</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">25</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_short_break_row">
+                    <property name="title">Коротка перерва (хвилини)</property>
+                    <property name="subtitle">Тривалість відпочинку між сесіями</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_short_break_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">30</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">5</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_long_break_row">
+                    <property name="title">Довга перерва (хвилини)</property>
+                    <property name="subtitle">Тривалість великої перерви</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_long_break_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">60</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">15</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_pomodoro_sessions_row">
+                    <property name="title">Сесій до великої перерви</property>
+                    <property name="subtitle">Кількість інтервалів роботи перед відпочинком</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_pomodoro_sessions_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">10</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">1</property>
+                        <property name="value">4</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Нотатки</property>
+                <property name="description">Шрифти для швидких стікерів на стільниці</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_notes_title_size_row">
+                    <property name="title">Розмір шрифту заголовка (px)</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_notes_title_size_adj">
+                        <property name="lower">10</property>
+                        <property name="upper">36</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">2</property>
+                        <property name="value">16</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_notes_content_size_row">
+                    <property name="title">Розмір шрифту тексту нотатки (px)</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_notes_content_size_adj">
+                        <property name="lower">10</property>
+                        <property name="upper">28</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">2</property>
+                        <property name="value">13</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">GitHub віджет</property>
+                <property name="description">Графік активності контрибуцій та профіль</property>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_github_username_entry">
+                    <property name="title">Ім'я користувача GitHub</property>
+                    <property name="text" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_github_use_green">
+                    <property name="title">Фірмовий зелений стиль GitHub</property>
+                    <property name="subtitle">Використовувати автентичні зелені кольори для матриці комітів</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Лаунчер папок</property>
+                <property name="description">Швидкий доступ до директорій</property>
+
+                <child>
+                  <object class="AdwEntryRow" id="cfg_folder_file_manager_entry">
+                    <property name="title">Файловий менеджер</property>
+                    <property name="text">nautilus</property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_folder_show_names">
+                    <property name="title">Показувати підписи папок</property>
+                    <property name="subtitle">Відображати текстові назви під іконками</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Екранний час</property>
+                <property name="description">Моніторинг активності та використання додатків</property>
+
+                <child>
+                  <object class="AdwSpinRow" id="cfg_screentime_retention_row">
+                    <property name="title">Зберігати історію (днів)</property>
+                    <property name="subtitle">Кількість днів збереження статистики активності</property>
+                    <property name="adjustment">
+                      <object class="GtkAdjustment" id="cfg_screentime_retention_adj">
+                        <property name="lower">1</property>
+                        <property name="upper">30</property>
+                        <property name="step-increment">1</property>
+                        <property name="page-increment">5</property>
+                        <property name="value">7</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_screentime_show_nav_buttons">
+                    <property name="title">Кнопки перемикання днів</property>
+                    <property name="subtitle">Стрілки навігації по попередніх днях</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Лава-лампа</property>
+                <property name="description">Декоративний фізичний віджет</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="cfg_lava_use_accent">
+                    <property name="title">Використовувати акцентний колір</property>
+                    <property name="subtitle">Забарвлювати краплі лави в колір системного акценту</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+          </object>
+        </property>
+      </object>
+    </property>
+  </object>
+</child>
+
+        
+        <child>
+          <object class="AdwNavigationPage" id="widgets_picker_page">
+            <property name="title">Додати віджети</property>
+            <property name="tag">widgets_picker</property>
+            <signal name="shown" handler="on_widgets_picker_shown" />
+            <signal name="hidden" handler="on_widgets_picker_hidden" />
+            <property name="child">
+              <object class="AdwToolbarView">
+                <property name="extend-content-to-top-edge">False</property>
+                <property name="extend-content-to-bottom-edge">True</property>
+                <property name="top-bar-style">flat</property>
+                <child type="top">
+                  <object class="AdwHeaderBar">
+                    <style>
+                      <class name="flat" />
+                    </style>
+                  </object>
+                </child>
+                <property name="content">
+                  <object class="AdwToastOverlay" id="widgets_picker_toast_overlay">
+                    <property name="child">
+                      <object class="AdwPreferencesPage">
+
+                        
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Годинники та час</property>
+                            <property name="description">Аналогові, цифрові та двійкові годинники, таймери й секундоміри</property>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_clock">
+                                <property name="title">Аналоговий годинник</property>
+                                <property name="subtitle">Класичний круглий стрілочний годинник</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_clock" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">preferences-system-time-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_clock">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати аналоговий годинник на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_clock" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_digitalclock">
+                                <property name="title">Цифровий годинник</property>
+                                <property name="subtitle">Сучасний числовий дисплей часу та дати</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_digitalclock" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">alarm-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_digitalclock">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати цифровий годинник на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_digitalclock" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_binaryclock">
+                                <property name="title">Бінарний годинник</property>
+                                <property name="subtitle">Двійкове матричне відображення часу для ентузіастів</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_binaryclock" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">view-grid-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_binaryclock">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати бінарний годинник на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_binaryclock" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_stopwatch">
+                                <property name="title">Секундомір</property>
+                                <property name="subtitle">Зручний секундомір із фіксацією проміжних кіл</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_stopwatch" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">timer-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_stopwatch">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати секундомір на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_stopwatch" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_timer">
+                                <property name="title">Таймер</property>
+                                <property name="subtitle">Таймер зворотного відліку з сигналом завершення</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_timer" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">preferences-system-time-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_timer">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати таймер на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_timer" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                        
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Продуктивність</property>
+                            <property name="description">Календар, нотатки, завдання, помодоро та швидкий запуск</property>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_calendar">
+                                <property name="title">Календар</property>
+                                <property name="subtitle">Місячний огляд дат та днів тижня</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_calendar" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">x-office-calendar-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_calendar">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати календар на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_calendar" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_todo">
+                                <property name="title">Список справ</property>
+                                <property name="subtitle">Компактний чекліст щоденних завдань</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_todo" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">checkbox-checked-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_todo">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати список справ на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_todo" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_notes">
+                                <property name="title">Нотатки</property>
+                                <property name="subtitle">Швидкі текстові нагадування безпосередньо на робочому столі</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_notes" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">text-editor-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_notes">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати нотатки на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_notes" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_screentime">
+                                <property name="title">Екранний час</property>
+                                <property name="subtitle">Моніторинг активності та часу використання програм</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_screentime" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">preferences-system-parental-controls-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_screentime">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати екранний час на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_screentime" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_pomodoro">
+                                <property name="title">Помодоро</property>
+                                <property name="subtitle">Таймер фокусованої праці та інтервалів відпочинку</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_pomodoro" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">appointment-soon-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_pomodoro">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати помодоро на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_pomodoro" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_applauncher">
+                                <property name="title">Лаунчер програм</property>
+                                <property name="subtitle">Швидкий запуск вибраних улюблених додатків</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_applauncher" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">application-x-executable-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_applauncher">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати лаунчер програм на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_applauncher" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_folder">
+                                <property name="title">Лаунчер папок</property>
+                                <property name="subtitle">Швидкий перехід до часто використовуваних директорій</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_folder" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">folder-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_folder">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати лаунчер папок на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_folder" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                        
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Системний моніторинг</property>
+                            <property name="description">Рівень заряду батареї, навантаження CPU, RAM та диска</property>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_battery">
+                                <property name="title">Батарея</property>
+                                <property name="subtitle">Відсоток заряду акумулятора, статус та час живлення</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_battery" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">battery-level-100-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_battery">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати віджет батареї на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_battery" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_system">
+                                <property name="title">Системний монітор</property>
+                                <property name="subtitle">Кільцеві індикатори завантаження процесора, оперативної пам'яті та диска</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_system" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">utilities-system-monitor-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_system">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати системний монітор на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_system" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                        
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Інформація та веб</property>
+                            <property name="description">Прогноз погоди та статистика GitHub</property>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_weather">
+                                <property name="title">Погода</property>
+                                <property name="subtitle">Поточна температура, стан неба та метеопрогноз</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_weather" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">weather-few-clouds-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_weather">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати погоду на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_weather" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_github">
+                                <property name="title">GitHub</property>
+                                <property name="subtitle">Матриця контрибуцій та статистика репозиторіїв</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_github" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">network-server-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_github">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати віджет GitHub на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_github" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                        
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Мультимедіа та декор</property>
+                            <property name="description">Керування музикою, фотогалерея та релакс-віджети</property>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_music">
+                                <property name="title">Музичний плеєр</property>
+                                <property name="subtitle">Керування відтворенням треків, назва та обкладинка</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_music" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">multimedia-player-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_music">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати музичний плеєр на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_music" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_photos">
+                                <property name="title">Фотогалерея</property>
+                                <property name="subtitle">Слайдшоу улюблених світлин на стільниці</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_photos" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">image-x-generic-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_photos">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати фотогалерею на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_photos" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="picker_row_lava">
+                                <property name="title">Лава-лампа</property>
+                                <property name="subtitle">Декоративний фізичний віджет з анімованими краплями</property>
+                                <property name="activatable">true</property>
+                                <signal name="activated" handler="on_dw_add_lava" />
+                                <child type="prefix">
+                                  <object class="GtkImage">
+                                    <property name="icon-name">color-select-symbolic</property>
+                                    <property name="pixel-size">24</property>
+                                  </object>
+                                </child>
+                                <child type="suffix">
+                                  <object class="GtkButton" id="btn_picker_add_lava">
+                                    <property name="label">Додати</property>
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <property name="tooltip-text">Додати лава-лампу на стільницю</property>
+                                    <style>
+                                      <class name="suggested-action" />
+                                      <class name="mac-action-accent-btn" />
+                                      <class name="pill" />
+                                    </style>
+                                    <signal name="clicked" handler="on_dw_add_lava" />
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </object>
+</interface>

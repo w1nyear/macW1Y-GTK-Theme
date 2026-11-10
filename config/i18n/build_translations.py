@@ -210,7 +210,9 @@ def tf(key, params=None, fallback=None, override_locale=None):
         "show_original", "show_original_desc", "uninstall_app", "uninstall_app_desc",
         "bookmarks_favorites", "bookmarks_locations", "bookmark_recent", "bookmark_home",
         "bookmark_applications", "bookmark_desktop", "bookmark_documents", "bookmark_downloads",
-        "bookmark_pictures", "bookmark_movies", "bookmark_trash"
+        "bookmark_pictures", "bookmark_movies", "bookmark_trash",
+        "widgets", "mac_styling", "apple_account", "storage_alert",
+        "software_update_alert", "search", "ssot_restored_notification"
     ]
     
     c_header = '''/* SPDX-License-Identifier: GPL-3.0-or-later */
@@ -316,11 +318,14 @@ static inline const char *mac_tr(const char *key, const char *fallback) {
 '''
     c_dest1 = os.path.join(REPO_ROOT, "control-center/mac_i18n.h")
     c_dest2 = os.path.join(REPO_ROOT, "src/mac_i18n.h")
+    c_dest3 = os.path.join(REPO_ROOT, "gnome-control-center-overlay/mac_i18n.h")
     with open(c_dest1, "w", encoding="utf-8") as f:
         f.write(c_header)
     with open(c_dest2, "w", encoding="utf-8") as f:
         f.write(c_header)
-    print(f"-> Generated {c_dest1} and {c_dest2}")
+    with open(c_dest3, "w", encoding="utf-8") as f:
+        f.write(c_header)
+    print(f"-> Generated {c_dest1}, {c_dest2}, and {c_dest3}")
     print("i18n build completed successfully!")
 
 if __name__ == "__main__":

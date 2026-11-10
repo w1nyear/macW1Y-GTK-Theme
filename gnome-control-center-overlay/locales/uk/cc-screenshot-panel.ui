@@ -1,0 +1,338 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+  <object class="AdwNavigationPage" id="screenshot_page">
+    <property name="title">Скріншот</property>
+    <property name="tag">screenshot</property>
+    <property name="child">
+      <object class="AdwToolbarView">
+        <property name="extend-content-to-top-edge">False</property>
+        <property name="extend-content-to-bottom-edge">True</property>
+        <property name="top-bar-style">flat</property>
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <style>
+              <class name="flat" />
+            </style>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwPreferencesPage">
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Знімки екрана (Фото)</property>
+                <property name="description">Параметри збереження та формату статичних знімків</property>
+
+                <child>
+                  <object class="AdwComboRow" id="screenshot_format_row">
+                    <property name="title">Формат файлу фото</property>
+                    <property name="subtitle">Формат збереження знімків екрана</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>PNG (Без втрат якості / Чіткий текст)</item>
+                          <item>JPEG (Стиснутий фотоформат)</item>
+                          <item>WebP (Сучасний компактний формат)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_screenshot_format" />
+                    <signal name="notify::selected" handler="on_screenshot_format_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="screenshot_quality_row">
+                    <property name="title">Якість стиснення</property>
+                    <property name="subtitle">Рівень якості для форматів JPEG та WebP (70% - 100%)</property>
+                    <child type="suffix">
+                      <object class="GtkScale" id="screenshot_quality_scale">
+                        <property name="orientation">0</property>
+                        <property name="draw-value">true</property>
+                        <property name="digits">0</property>
+                        <property name="round-digits">0</property>
+                        <property name="width-request">200</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">70</property>
+                            <property name="upper">100</property>
+                            <property name="step-increment">1</property>
+                            <property name="page-increment">5</property>
+                            <property name="value">95</property>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_screenshot_quality" />
+                        <signal name="value-changed" handler="on_screenshot_quality_changed" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="screenshot_cursor_row">
+                    <property name="title">Показувати курсор на знімку</property>
+                    <property name="subtitle">Включати вказівник миші у готовий скріншот</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_screenshot_cursor" />
+                    <signal name="notify::active" handler="on_screenshot_cursor_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="screenshot_sound_row">
+                    <property name="title">Звук затвора камери</property>
+                    <property name="subtitle">Відтворювати характерний звук затвора macOS при створенні знімка</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_screenshot_sound" />
+                    <signal name="notify::active" handler="on_screenshot_sound_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="screenshot_delay_row">
+                    <property name="title">Затримка перед зйомкою</property>
+                    <property name="subtitle">Таймер зворотного відліку для підготовки вікна</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>Без затримки (миттєво)</item>
+                          <item>3 секунди</item>
+                          <item>5 секунд</item>
+                          <item>10 секунд</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_screenshot_delay" />
+                    <signal name="notify::selected" handler="on_screenshot_delay_changed" />
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Запис екрана (Відео)</property>
+                <property name="description">Параметри відеокодеків, формату та частоти кадрів для скрінкастів</property>
+
+                <child>
+                  <object class="AdwComboRow" id="screencast_container_row">
+                    <property name="title">Формат контейнера відео</property>
+                    <property name="subtitle">Тип файлу для збереження запису екрана</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>MP4 (.mp4 — максимальна сумісність macOS/iOS/Windows)</item>
+                          <item>WebM (.webm — відкритий оптимізований веб-формат)</item>
+                          <item>MKV (.mkv — контейнер без обмежень)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_screencast_container" />
+                    <signal name="notify::selected" handler="on_screencast_container_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="screencast_codec_row">
+                    <property name="title">Відеокодек</property>
+                    <property name="subtitle">Алгоритм кодування відеопотоку</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>H.264 / AVC (Швидкий та сумісний)</item>
+                          <item>VP9 (Висока якість у WebM)</item>
+                          <item>AV1 (Сучасне ефективне стиснення нового покоління)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_screencast_codec" />
+                    <signal name="notify::selected" handler="on_screencast_codec_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="screencast_fps_row">
+                    <property name="title">Частота кадрів (FPS)</property>
+                    <property name="subtitle">Плавність запису відео</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>60 FPS (Плавний macOS-стиль)</item>
+                          <item>30 FPS (Стандартний баланс розміру)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_screencast_fps" />
+                    <signal name="notify::selected" handler="on_screencast_fps_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="screencast_cursor_row">
+                    <property name="title">Показувати курсор на відео</property>
+                    <property name="subtitle">Записувати переміщення вказівника миші під час скрінкасту</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_screencast_cursor" />
+                    <signal name="notify::active" handler="on_screencast_cursor_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="screencast_audio_row">
+                    <property name="title">Записувати аудіо</property>
+                    <property name="subtitle">Захоплювати системний звук та аудіо з мікрофона</property>
+                    <property name="active">false</property>
+                    <signal name="realize" handler="init_screencast_audio" />
+                    <signal name="notify::active" handler="on_screencast_audio_changed" />
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Обробка та покращення якості</property>
+                <property name="description">Автоматичне масштабування та оптимізація фото/відео після зйомки</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="processing_enabled_row">
+                    <property name="title">Автоматична постобробка</property>
+                    <property name="subtitle">Обробляти створені фото чи відео до обраної роздільності (1080p / 2K / 4K)</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_processing_enabled" />
+                    <signal name="notify::active" handler="on_processing_enabled_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="processing_resolution_row">
+                    <property name="title">Цільова роздільність обробки</property>
+                    <property name="subtitle">Роздільність до якої комп'ютер масштабує знімок чи відеозапис</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>Оригінальна (1:1 Native без змін)</item>
+                          <item>1080p Full HD (1920×1080)</item>
+                          <item>2K Quad HD (2560×1440 — оптимально для Retina/HiDPI)</item>
+                          <item>4K Ultra HD (3840×2160 — максимальна якість)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_processing_resolution" />
+                    <signal name="notify::selected" handler="on_processing_resolution_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="processing_scope_row">
+                    <property name="title">Застосовувати обробку до</property>
+                    <property name="subtitle">Які саме медіафайли мають автоматично покращуватись</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>Скріншоти та Відео (Фото + Відео)</item>
+                          <item>Тільки скріншоти (Фото)</item>
+                          <item>Тільки записи екрана (Відео)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_processing_scope" />
+                    <signal name="notify::selected" handler="on_processing_scope_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="processing_algorithm_row">
+                    <property name="title">Алгоритм підвищення чіткості</property>
+                    <property name="subtitle">Метод розрахунку пікселів при збільшенні роздільності</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>Lanczos3 (Висока різкість, збереження деталей тексту та UI)</item>
+                          <item>Bicubic Spline (М'яке кінематографічне згладжування)</item>
+                          <item>Unsharp Mask + Покращення деталей контурів</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_processing_algorithm" />
+                    <signal name="notify::selected" handler="on_processing_algorithm_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="processing_keep_original_row">
+                    <property name="title">Зберігати оригінальну копію</property>
+                    <property name="subtitle">Залишати резервну копію початкового знімка у папці Originals</property>
+                    <property name="active">false</property>
+                    <signal name="realize" handler="init_processing_keep_original" />
+                    <signal name="notify::active" handler="on_processing_keep_original_changed" />
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Місце збереження файлів</property>
+                <property name="description">Шляхи до системних папок збереження скріншотів та записів</property>
+
+                <child>
+                  <object class="AdwActionRow" id="open_screenshots_folder_row">
+                    <property name="title">Папка для скріншотів</property>
+                    <property name="subtitle">~/Зображення/Знімки екрана</property>
+                    <child type="suffix">
+                      <object class="GtkButton" id="btn_open_screenshots_folder">
+                        <property name="label">Відкрити у Finder</property>
+                        <property name="valign">center</property>
+                        <property name="icon-name">folder-open-symbolic</property>
+                        <signal name="clicked" handler="on_open_screenshots_folder_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="open_screencasts_folder_row">
+                    <property name="title">Папка для записів екрана</property>
+                    <property name="subtitle">~/Відео/Трансляції з екрана</property>
+                    <child type="suffix">
+                      <object class="GtkButton" id="btn_open_screencasts_folder">
+                        <property name="label">Відкрити у Finder</property>
+                        <property name="valign">center</property>
+                        <property name="icon-name">folder-open-symbolic</property>
+                        <signal name="clicked" handler="on_open_screencasts_folder_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title">Відновити початкові значення</property>
+                    <property name="subtitle">Скинути всі налаштування скріншотів до стандартних macOS</property>
+                    <child type="suffix">
+                      <object class="GtkButton" id="btn_reset_screenshot_defaults">
+                        <property name="label">Скинути…</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="destructive-action" />
+                        </style>
+                        <signal name="clicked" handler="on_reset_screenshot_defaults_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+          </object>
+        </property>
+      </object>
+    </property>
+  </object>
+</interface>

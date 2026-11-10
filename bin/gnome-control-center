@@ -1,8 +1,27 @@
 #!/bin/sh
 OVERLAY_DIR="/usr/share/mactheme/gnome-control-center-overlay"
 [ ! -d "$OVERLAY_DIR" ] && OVERLAY_DIR="$HOME/.local/share/gnome-control-center-overlay"
+[ ! -d "$OVERLAY_DIR" ] && OVERLAY_DIR="/home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay"
 
-export G_RESOURCE_OVERLAYS="/org/gnome/Settings/gtk/cc-window.ui=$OVERLAY_DIR/cc-window.ui:/org/gnome/control-center/system/cc-system-panel.ui=$OVERLAY_DIR/cc-system-panel.ui:/org/gnome/control-center/power/cc-power-panel.ui=$OVERLAY_DIR/cc-power-panel.ui:/org/gnome/control-center/mouse/cc-mouse-panel.ui=$OVERLAY_DIR/cc-mouse-panel.ui"
+LOCALE="en"
+if [ -f "$HOME/.config/mac-styling/locale" ]; then
+    LOCALE=$(head -n 1 "$HOME/.config/mac-styling/locale" | tr -d '[:space:]' | cut -d'_' -f1 | cut -d'.' -f1)
+elif [ -n "$LANG" ]; then
+    LOCALE=$(echo "$LANG" | cut -d'_' -f1 | cut -d'.' -f1)
+fi
+
+LOC_DIR="$OVERLAY_DIR/locales/$LOCALE"
+if [ ! -d "$LOC_DIR" ]; then
+    if [ "$LOCALE" = "uk" ]; then
+        LOC_DIR="$OVERLAY_DIR"
+    elif [ -d "$OVERLAY_DIR/locales/en" ]; then
+        LOC_DIR="$OVERLAY_DIR/locales/en"
+    else
+        LOC_DIR="$OVERLAY_DIR"
+    fi
+fi
+
+export G_RESOURCE_OVERLAYS="/org/gnome/Settings/gtk/cc-window.ui=$LOC_DIR/cc-window.ui:/org/gnome/control-center/system/cc-system-panel.ui=$LOC_DIR/cc-system-panel.ui:/org/gnome/control-center/power/cc-power-panel.ui=$LOC_DIR/cc-power-panel.ui:/org/gnome/control-center/mouse/cc-mouse-panel.ui=$LOC_DIR/cc-mouse-panel.ui"
 
 if [ -f "/usr/lib/x86_64-linux-gnu/libmacpopover.so" ]; then
     export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmacpopover.so${LD_PRELOAD:+:$LD_PRELOAD}"

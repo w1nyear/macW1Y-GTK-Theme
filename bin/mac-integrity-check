@@ -78,19 +78,68 @@ def check_integrity():
 
     return issues
 
+def get_integrity_locale():
+    try:
+        loc_f = os.path.expanduser("~/.config/mac-styling/locale")
+        if os.path.exists(loc_f):
+            with open(loc_f, "r", encoding="utf-8") as f:
+                return f.read().strip().lower()
+        if os.environ.get("LANGUAGE"):
+            return os.environ.get("LANGUAGE", "").split(":")[0].split(".")[0].split("_")[0].lower()
+        if os.environ.get("LANG"):
+            return os.environ.get("LANG", "").split(".")[0].split("_")[0].lower()
+    except Exception:
+        pass
+    return "en"
+
+INTEGRITY_I18N = {
+    "pl": {
+        "title": "macW1Y: Kontrola spójności",
+        "body": "Wykryto {n} niezgodności ze standardem motywu.\nOtwórz Ustawienia → Stylizacja Mac, aby sprawdzić lub przywrócić."
+    },
+    "uk": {
+        "title": "macW1Y: Контроль цілісності",
+        "body": "Виявлено {n} невідповідностей з еталоном оформлення.\nВідкрийте Параметри → Mac стилізація для перевірки або відновлення."
+    },
+    "de": {
+        "title": "macW1Y: Integritätsprüfung",
+        "body": "{n} Abweichung(en) vom Designstandard festgestellt.\nÖffnen Sie Einstellungen → Mac-Styling zur Überprüfung oder Wiederherstellung."
+    },
+    "fr": {
+        "title": "macW1Y : Contrôle d'intégrité",
+        "body": "{n} écart(s) détecté(s) par rapport au standard visuel.\nOuvrez Paramètres → Style Mac pour vérifier ou restaurer."
+    },
+    "es": {
+        "title": "macW1Y: Control de integridad",
+        "body": "Se detectaron {n} discrepancia(s) con el estándar de diseño.\nAbra Configuración → Estilo Mac para verificar o restaurar."
+    },
+    "it": {
+        "title": "macW1Y: Controllo di integrità",
+        "body": "Rilevate {n} deviazione/i dallo standard di progettazione.\nApri Impostazioni → Stile Mac per verificare o ripristinare."
+    },
+    "en": {
+        "title": "macW1Y: Integrity Guard",
+        "body": "Detected {n} deviation(s) from design standard.\nOpen Settings → Mac Styling to inspect or restore."
+    }
+}
+
 def notify_user(issues):
     log(f"Integrity check failed: {len(issues)} issue(s) detected:")
     for iss in issues:
         log(f" - {iss}")
 
-    body = f"Виявлено {len(issues)} невідповідностей з еталоном оформлення.\nВідкрийте Параметри → Mac стилізація для перевірки або відновлення."
+    loc = get_integrity_locale().split('_')[0]
+    data = INTEGRITY_I18N.get(loc, INTEGRITY_I18N["en"])
+    title = data["title"]
+    body = data["body"].format(n=len(issues))
+
     try:
         subprocess.run([
             "notify-send",
             "-a", "macW1Y",
             "-i", "dialog-warning",
             "-u", "normal",
-            "macW1Y: Контроль цілісності",
+            title,
             body
         ], check=False)
         sound_path = "/usr/share/sounds/macOS/stereo/dialog-warning.ogg"

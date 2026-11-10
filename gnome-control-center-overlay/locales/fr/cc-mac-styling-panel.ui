@@ -1,0 +1,1182 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+      <object class="AdwNavigationPage" id="mac_styling_page">
+        <property name="title">Style Mac</property>
+        <property name="tag">mac-styling</property>
+        <property name="child">
+          <object class="AdwToolbarView">
+            <property name="extend-content-to-top-edge">False</property>
+            <property name="extend-content-to-bottom-edge">True</property>
+            <property name="top-bar-style">flat</property>
+            <child type="top">
+              <object class="AdwHeaderBar">
+                <style>
+                  <class name="flat" />
+                </style>
+              </object>
+            </child>
+            <property name="content">
+              <object class="AdwPreferencesPage">
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup" id="liquid_glass_group">
+                    <property name="title">Liquid Glass</property>
+                    <property name="description">Paramètres du shader Liquid Glass pour tous les éléments du système</property>
+                    <child>
+                      <object class="GtkBox" id="liquid_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="liquid_glass_preview_area">
+                            <property name="height-request">210</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_liquid_preview" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwComboRow" id="liquid_shape_row">
+                        <property name="title">Forme du verre</property>
+                        <property name="subtitle">Géométrie de la forme du shader Liquid Glass</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>Rectangle arrondi</item>
+                              <item>Cercle</item>
+                              <item>Capsule</item>
+                            </items>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_liquid_shape" />
+                        <signal name="notify::selected" handler="on_liquid_shape_changed" />
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_refraction_row">
+                        <property name="title">Réfraction</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_refraction_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">60</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_refraction" />
+                            <signal name="value-changed" handler="on_liquid_refraction_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_blur_row">
+                        <property name="title">Flou du verre</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">20</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_blur" />
+                            <signal name="value-changed" handler="on_liquid_blur_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_tint_row">
+                        <property name="title">Teinte</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">12</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_tint" />
+                            <signal name="value-changed" handler="on_liquid_tint_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_chroma_row">
+                        <property name="title">Aberration chromatique</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_chroma_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">20</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_chroma" />
+                            <signal name="value-changed" handler="on_liquid_chroma_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_rim_row">
+                        <property name="title">Lumière périphérique (Rim light)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_rim_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">45</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_rim" />
+                            <signal name="value-changed" handler="on_liquid_rim_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_specular_row">
+                        <property name="title">Reflet spéculaire</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_specular_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">25</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_specular" />
+                            <signal name="value-changed" handler="on_liquid_specular_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="liquid_shadow_row">
+                        <property name="title">Ombre du verre</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="liquid_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_liquid_shadow" />
+                            <signal name="value-changed" handler="on_liquid_shadow_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup" id="menubar_group">
+                    <property name="title">Barre des menus</property>
+                    <property name="description">Configuration de la teinte et du flou de la barre supérieure</property>
+                    <child>
+                      <object class="GtkBox" id="menubar_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="menubar_preview_area">
+                            <property name="height-request">140</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_menubar_preview" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="menubar_tint_row">
+                        <property name="title">Teinte dégradée</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="menubar_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_menubar_tint" />
+                            <signal name="value-changed" handler="on_menubar_tint_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="menubar_blur_row">
+                        <property name="title">Flou</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="menubar_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">10</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_menubar_blur" />
+                            <signal name="value-changed" handler="on_menubar_blur_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup" id="dock_group">
+                    <property name="title">Dock</property>
+                    <property name="description">Paramètres de teinte, flou et ombre pour le Dock inférieur</property>
+                    <child>
+                      <object class="GtkBox" id="dock_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="dock_preview_area">
+                            <property name="height-request">150</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_dock_preview" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_tint_row">
+                        <property name="title">Assombrissement</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">15</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_tint" />
+                            <signal name="value-changed" handler="on_dock_tint_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_blur_row">
+                        <property name="title">Flou</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">9</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_blur" />
+                            <signal name="value-changed" handler="on_dock_blur_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_shadow_row">
+                        <property name="title">Ombre du Dock</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">30</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_shadow" />
+                            <signal name="value-changed" handler="on_dock_shadow_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup" id="labels_group">
+                    <property name="title">Étiquettes du Dock</property>
+                    <property name="description">Paramètres de flou, teinte et ombre des étiquettes d'applications</property>
+                    <child>
+                      <object class="GtkBox" id="labels_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="labels_preview_area">
+                            <property name="height-request">170</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_labels_preview" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="label_blur_row">
+                        <property name="title">Flou</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="label_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">30</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_label_blur" />
+                            <signal name="value-changed" handler="on_label_blur_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="label_tint_row">
+                        <property name="title">Assombrissement</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="label_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">28</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_label_tint" />
+                            <signal name="value-changed" handler="on_label_tint_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="label_shadow_row">
+                        <property name="title">Ombre</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="label_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">25</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_label_shadow" />
+                            <signal name="value-changed" handler="on_label_shadow_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup" id="alerts_group">
+                    <property name="title">Alertes et dialogues</property>
+                    <property name="description">Paramètres de teinte, flou et ombre pour les boîtes de dialogue</property>
+                    <child>
+                      <object class="GtkBox" id="alerts_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="alerts_preview_area">
+                            <property name="height-request">175</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_alerts_preview" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="alert_tint_row">
+                        <property name="title">Assombrissement</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="alert_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">20</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_alert_tint" />
+                            <signal name="value-changed" handler="on_alert_tint_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="alert_blur_row">
+                        <property name="title">Flou</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="alert_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">15</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_alert_blur" />
+                            <signal name="value-changed" handler="on_alert_blur_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="alert_shadow_row">
+                        <property name="title">Ombre</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="alert_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_alert_shadow" />
+                            <signal name="value-changed" handler="on_alert_shadow_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup" id="notifications_group">
+                    <property name="title">Notifications</property>
+                    <property name="description">Paramètres de flou, teinte et ombre pour les notifications et le Centre de notifications</property>
+                    <child>
+                      <object class="GtkBox" id="notifications_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="notifications_preview_area">
+                            <property name="height-request">150</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_notifications_preview" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="notification_blur_row">
+                        <property name="title">Flou</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="notification_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">15</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_notification_blur" />
+                            <signal name="value-changed" handler="on_notification_blur_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="notification_tint_row">
+                        <property name="title">Assombrissement</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="notification_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">20</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_notification_tint" />
+                            <signal name="value-changed" handler="on_notification_tint_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="notification_shadow_row">
+                        <property name="title">Ombre</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="notification_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_notification_shadow" />
+                            <signal name="value-changed" handler="on_notification_shadow_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup" id="spotlight_group">
+                    <property name="title">Spotlight</property>
+                    <property name="description">Paramètres de flou, teinte et ombre pour Spotlight et son menu</property>
+                    <child>
+                      <object class="GtkBox" id="spotlight_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="spotlight_preview_area">
+                            <property name="height-request">150</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_spotlight_preview" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="spotlight_blur_row">
+                        <property name="title">Flou</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="spotlight_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">18</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_spotlight_blur" />
+                            <signal name="value-changed" handler="on_spotlight_blur_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="spotlight_tint_row">
+                        <property name="title">Assombrissement</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="spotlight_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">15</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_spotlight_tint" />
+                            <signal name="value-changed" handler="on_spotlight_tint_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="spotlight_shadow_row">
+                        <property name="title">Ombre</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="spotlight_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_spotlight_shadow" />
+                            <signal name="value-changed" handler="on_spotlight_shadow_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup" id="blur_group">
+                    <property name="title">Blur</property>
+                    <property name="description">Paramètres globaux de flou d'arrière-plan et d'assombrissement</property>
+                    <child>
+                      <object class="GtkBox" id="blur_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="blur_preview_area">
+                            <property name="height-request">150</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_blur_preview" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="blur_sigma_row">
+                        <property name="title">Flou</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="blur_sigma_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">30</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_blur_sigma" />
+                            <signal name="value-changed" handler="on_blur_sigma_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="blur_tint_row">
+                        <property name="title">Assombrissement</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="blur_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">36</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_blur_tint" />
+                            <signal name="value-changed" handler="on_blur_tint_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup" id="context_menu_group">
+                    <property name="title">Menus contextuels</property>
+                    <property name="description">Paramètres globaux de teinte et flou des menus contextuels</property>
+                    <child>
+                      <object class="GtkBox" id="context_menu_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="context_menu_preview_area">
+                            <property name="height-request">180</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_context_menu_preview" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="menu_tint_row">
+                        <property name="title">Assombrissement</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="menu_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">35</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_menu_tint" />
+                            <signal name="value-changed" handler="on_menu_tint_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="menu_blur_row">
+                        <property name="title">Flou</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="menu_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">30</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_menu_blur" />
+                            <signal name="value-changed" handler="on_menu_blur_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwExpanderRow" id="menu_shadow_expander">
+                        <property name="title">Ombre</property>
+                        <property name="subtitle">Flou et intensité de l'ombre sous les menus contextuels</property>
+                        <property name="expanded">true</property>
+                        <child>
+                          <object class="AdwActionRow" id="menu_shadow_blur_row">
+                            <property name="title">Flou de l'ombre</property>
+                            <child type="suffix">
+                              <object class="GtkScale" id="menu_shadow_blur_scale">
+                                <property name="orientation">0</property>
+                                <property name="draw-value">true</property>
+                                <property name="digits">0</property>
+                                <property name="round-digits">0</property>
+                                <property name="width-request">200</property>
+                                <property name="adjustment">
+                                  <object class="GtkAdjustment">
+                                    <property name="lower">0</property>
+                                    <property name="upper">100</property>
+                                    <property name="step-increment">1</property>
+                                    <property name="page-increment">5</property>
+                                    <property name="value">30</property>
+                                  </object>
+                                </property>
+                                <signal name="realize" handler="init_menu_shadow_blur" />
+                                <signal name="value-changed" handler="on_menu_shadow_blur_changed" />
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwActionRow" id="menu_shadow_strength_row">
+                            <property name="title">Intensité de l'ombre</property>
+                            <child type="suffix">
+                              <object class="GtkScale" id="menu_shadow_strength_scale">
+                                <property name="orientation">0</property>
+                                <property name="draw-value">true</property>
+                                <property name="digits">0</property>
+                                <property name="round-digits">0</property>
+                                <property name="width-request">200</property>
+                                <property name="adjustment">
+                                  <object class="GtkAdjustment">
+                                    <property name="lower">0</property>
+                                    <property name="upper">100</property>
+                                    <property name="step-increment">1</property>
+                                    <property name="page-increment">5</property>
+                                    <property name="value">55</property>
+                                  </object>
+                                </property>
+                                <signal name="realize" handler="init_menu_shadow_strength" />
+                                <signal name="value-changed" handler="on_menu_shadow_strength_changed" />
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup" id="widgets_group">
+                    <property name="title">Widgets</property>
+                    <property name="description">Rayon des coins, ombre, flou et teinte d'arrière-plan des widgets</property>
+                    <child>
+                      <object class="GtkBox" id="widgets_preview_container">
+                        <property name="orientation">1</property>
+                        <property name="margin-start">15</property>
+                        <property name="margin-end">15</property>
+                        <property name="margin-top">4</property>
+                        <property name="margin-bottom">12</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="widgets_preview_area">
+                            <property name="height-request">170</property>
+                            <property name="hexpand">true</property>
+                            <signal name="realize" handler="init_widgets_preview" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="widget_blur_row">
+                        <property name="title">Flou</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="widget_blur_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">50</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">1</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_widget_blur" />
+                            <signal name="value-changed" handler="on_widget_blur_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="widget_tint_row">
+                        <property name="title">Assombrissement d'arrière-plan</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="widget_tint_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">20</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_widget_tint" />
+                            <signal name="value-changed" handler="on_widget_tint_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="widget_shadow_row">
+                        <property name="title">Ombre</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="widget_shadow_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">100</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">5</property>
+                                <property name="value">30</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_widget_shadow" />
+                            <signal name="value-changed" handler="on_widget_shadow_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Chargeur d'amorçage (Bootloader)</property>
+                    <property name="description">Paramètres de démarrage macOS Plymouth et journalisation du noyau</property>
+                    <child>
+                      <object class="AdwSwitchRow" id="boot_verbose_switch">
+                        <property name="title">Mode verbeux (Verbose)</property>
+                        <property name="subtitle">Journal texte de démarrage du terminal derrière le logo Apple</property>
+                        <signal name="realize" handler="init_boot_verbose" />
+                        <signal name="notify::active" handler="on_boot_verbose_changed" />
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwSwitchRow" id="boot_grub_switch">
+                        <property name="title">Menu GRUB</property>
+                        <property name="subtitle">Menu graphique de sélection de système style macOS au démarrage</property>
+                        <signal name="realize" handler="init_boot_grub" />
+                        <signal name="notify::active" handler="on_boot_grub_changed" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Intégrité et diagnostics</property>
+                    <property name="description">Contrôle du standard SSOT, protection des extensions GNOME et réparation auto</property>
+                    <child>
+                      <object class="AdwActionRow" id="diag_status_row">
+                        <property name="title">État du thème macW1Y</property>
+                        <property name="subtitle">Tous les composants sont conformes au standard SSOT (OK)</property>
+                        <child type="prefix">
+                          <object class="GtkImage">
+                            <property name="icon-name">emblem-ok-symbolic</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">Actions de maintenance</property>
+                        <property name="subtitle">Vérifier l'état actuel ou restaurer le style d'origine</property>
+                        <child type="suffix">
+                          <object class="GtkButton" id="btn_run_diagnostics">
+                            <property name="label">Lancer les diagnostics</property>
+                            <property name="valign">center</property>
+                            <signal name="clicked" handler="on_run_diagnostics_clicked" />
+                          </object>
+                        </child>
+                        <child type="suffix">
+                          <object class="GtkButton" id="btn_restore_theme">
+                            <property name="label">Restaurer le thème</property>
+                            <property name="valign">center</property>
+                            <style>
+                              <class name="suggested-action" />
+                            </style>
+                            <signal name="clicked" handler="on_restore_theme_clicked" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+</interface>

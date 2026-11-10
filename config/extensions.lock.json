@@ -120,7 +120,7 @@
         "50",
         "51"
       ],
-      "sha256": "af38b1a915c902397579289315168b0f46d3b0ecfeb977639ca034598b54302e",
+      "sha256": "f77abdb11fa65e53e0d60a57bcc5656eaeb9c325fd17f36ac6e567ad28eb62bf",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -129,7 +129,7 @@
       "has_custom_patches": false,
       "patch_description": "Upstream verified",
       "last_verified": "2026-10-27",
-      "pinned_sha256": "af38b1a915c902397579289315168b0f46d3b0ecfeb977639ca034598b54302e"
+      "pinned_sha256": "f77abdb11fa65e53e0d60a57bcc5656eaeb9c325fd17f36ac6e567ad28eb62bf"
     },
     "dash2dock-motion@unmade.space": {
       "uuid": "dash2dock-motion@unmade.space",
@@ -578,7 +578,7 @@
         "50",
         "51"
       ],
-      "sha256": "d94232ab99be93b40940e6f527f93f492130ded849657abaa78c9d48d34070b6",
+      "sha256": "f9e4ce9d3a1b0fe88d3d9aba57944036de477d70cb8068ee305e22e1d1fd0c26",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
@@ -588,8 +588,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Liquid Glass GLSL shader scalar uniform binding fix, frosted card styling, and safe snippet support for GNOME 50",
-      "last_verified": "2026-11-07",
-      "pinned_sha256": "d94232ab99be93b40940e6f527f93f492130ded849657abaa78c9d48d34070b6"
+      "last_verified": "2026-11-10",
+      "pinned_sha256": "f9e4ce9d3a1b0fe88d3d9aba57944036de477d70cb8068ee305e22e1d1fd0c26"
     },
     "ubuntu-appindicators@ubuntu.com": {
       "uuid": "ubuntu-appindicators@ubuntu.com",

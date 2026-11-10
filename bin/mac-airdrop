@@ -19,6 +19,135 @@ DEFAULT_DROP_DIR = Path.home() / 'Завантажене' / 'AirDrop'
 if not DEFAULT_DROP_DIR.parent.exists():
     DEFAULT_DROP_DIR = Path.home() / 'Downloads' / 'AirDrop'
 
+def get_airdrop_locale():
+    try:
+        loc_f = os.path.expanduser("~/.config/mac-styling/locale")
+        if os.path.exists(loc_f):
+            with open(loc_f, "r", encoding="utf-8") as f:
+                return f.read().strip().lower()
+        if os.environ.get("LANGUAGE"):
+            return os.environ.get("LANGUAGE", "").split(":")[0].split(".")[0].split("_")[0].lower()
+        if os.environ.get("LANG"):
+            return os.environ.get("LANG", "").split(".")[0].split("_")[0].lower()
+    except Exception:
+        pass
+    return "en"
+
+AIRDROP_I18N = {
+    "pl": {
+        "select_file": "AirDrop: Wybierz plik do wysłania",
+        "searching": "Wyszukiwanie urządzeń do wysłania {file_name}...",
+        "no_devices": "Nie znaleziono urządzeń Apple w pobliżu.\\nUpewnij się, że funkcja AirDrop na urządzeniu jest włączona dla Wszystkich (Everyone).",
+        "select_recipient": "AirDrop: Wybierz odbiorcę",
+        "col_device": "Nazwa urządzenia",
+        "col_ip": "IP",
+        "col_port": "Port",
+        "sent_success": "Plik {file_name} został pomyślnie wysłany!",
+        "received_file": "Otrzymano plik: {fn}",
+        "airdrop_off": "AirDrop wyłączony",
+        "airdrop_on": "AirDrop włączony ({mode_label})",
+        "mode_everyone": "Wszyscy",
+        "mode_contacts": "Tylko kontakty"
+    },
+    "uk": {
+        "select_file": "AirDrop: Оберіть файл для надсилання",
+        "searching": "Пошук пристроїв для надсилання {file_name}...",
+        "no_devices": "Пристроїв Apple поблизу не знайдено.\\nПереконайтеся, що на пристрої AirDrop увімкнено для Усіх (Everyone).",
+        "select_recipient": "AirDrop: Оберіть одержувача",
+        "col_device": "Ім’я пристрою",
+        "col_ip": "IP",
+        "col_port": "Порт",
+        "sent_success": "Файл {file_name} успішно надіслано!",
+        "received_file": "Отримано файл: {fn}",
+        "airdrop_off": "AirDrop вимкнено",
+        "airdrop_on": "AirDrop увімкнено ({mode_label})",
+        "mode_everyone": "Усі",
+        "mode_contacts": "Тільки контакти"
+    },
+    "de": {
+        "select_file": "AirDrop: Datei zum Senden auswählen",
+        "searching": "Suche nach Geräten zum Senden von {file_name}...",
+        "no_devices": "Keine Apple-Geräte in der Nähe gefunden.\\nStellen Sie sicher, dass AirDrop für Jeden aktiviert ist.",
+        "select_recipient": "AirDrop: Empfänger auswählen",
+        "col_device": "Gerätename",
+        "col_ip": "IP",
+        "col_port": "Port",
+        "sent_success": "Datei {file_name} erfolgreich gesendet!",
+        "received_file": "Datei empfangen: {fn}",
+        "airdrop_off": "AirDrop deaktiviert",
+        "airdrop_on": "AirDrop aktiviert ({mode_label})",
+        "mode_everyone": "Jeder",
+        "mode_contacts": "Nur Kontakte"
+    },
+    "fr": {
+        "select_file": "AirDrop : Sélectionner le fichier à envoyer",
+        "searching": "Recherche d'appareils pour envoyer {file_name}...",
+        "no_devices": "Aucun appareil Apple à proximité.\\nAssurez-vous qu'AirDrop est réglé sur Tout le monde sur l'appareil récepteur.",
+        "select_recipient": "AirDrop : Sélectionner le destinataire",
+        "col_device": "Nom de l'appareil",
+        "col_ip": "IP",
+        "col_port": "Port",
+        "sent_success": "Fichier {file_name} envoyé avec succès !",
+        "received_file": "Fichier reçu : {fn}",
+        "airdrop_off": "AirDrop désactivé",
+        "airdrop_on": "AirDrop activé ({mode_label})",
+        "mode_everyone": "Tout le monde",
+        "mode_contacts": "Contacts uniquement"
+    },
+    "es": {
+        "select_file": "AirDrop: Seleccionar archivo para enviar",
+        "searching": "Buscando dispositivos para enviar {file_name}...",
+        "no_devices": "No se encontraron dispositivos Apple cercanos.\\nAsegúrese de que AirDrop esté configurado para Todos en el dispositivo receptor.",
+        "select_recipient": "AirDrop: Seleccionar destinatario",
+        "col_device": "Nombre del dispositivo",
+        "col_ip": "IP",
+        "col_port": "Puerto",
+        "sent_success": "¡Archivo {file_name} enviado con éxito!",
+        "received_file": "Archivo recibido: {fn}",
+        "airdrop_off": "AirDrop desactivado",
+        "airdrop_on": "AirDrop activado ({mode_label})",
+        "mode_everyone": "Todos",
+        "mode_contacts": "Solo contactos"
+    },
+    "it": {
+        "select_file": "AirDrop: Seleziona il file da inviare",
+        "searching": "Ricerca di dispositivi per inviare {file_name}...",
+        "no_devices": "Nessun dispositivo Apple nelle vicinanze.\\nAssicurati che AirDrop sia impostato su Tutti sul dispositivo ricevente.",
+        "select_recipient": "AirDrop: Seleziona destinatario",
+        "col_device": "Nome dispositivo",
+        "col_ip": "IP",
+        "col_port": "Porta",
+        "sent_success": "File {file_name} inviato con successo!",
+        "received_file": "File ricevuto: {fn}",
+        "airdrop_off": "AirDrop disattivato",
+        "airdrop_on": "AirDrop attivato ({mode_label})",
+        "mode_everyone": "Tutti",
+        "mode_contacts": "Solo contatti"
+    },
+    "en": {
+        "select_file": "AirDrop: Select file to send",
+        "searching": "Searching for devices to send {file_name}...",
+        "no_devices": "No nearby Apple devices found.\\nMake sure AirDrop is set to Everyone on the receiving device.",
+        "select_recipient": "AirDrop: Select recipient",
+        "col_device": "Device Name",
+        "col_ip": "IP",
+        "col_port": "Port",
+        "sent_success": "File {file_name} was successfully sent!",
+        "received_file": "Received file: {fn}",
+        "airdrop_off": "AirDrop disabled",
+        "airdrop_on": "AirDrop enabled ({mode_label})",
+        "mode_everyone": "Everyone",
+        "mode_contacts": "Contacts Only"
+    }
+}
+
+def airdrop_tr(key, **kwargs):
+    loc = get_airdrop_locale()
+    base = loc.split('_')[0]
+    strings = AIRDROP_I18N.get(base, AIRDROP_I18N.get("en", {}))
+    tmpl = strings.get(key, AIRDROP_I18N["en"].get(key, key))
+    return tmpl.format(**kwargs)
+
 def get_wifi_interface():
     try:
         res = subprocess.run(['ip', '-br', 'addr', 'show'], capture_output=True, text=True, check=True)
@@ -96,6 +225,7 @@ def start_daemon():
     save_dir.mkdir(parents=True, exist_ok=True)
 
     log_path = CONFIG_DIR / 'receiver.log'
+    recv_prefix = airdrop_tr('received_file', fn='___FN___').replace('___FN___', '')
 
     # Daemon runner script
     daemon_script = f"""
@@ -127,7 +257,7 @@ with open(r'{log_path}', 'a') as log_f:
             diff = cur - initial_files
             for fn in diff:
                 if not fn.startswith('.'):
-                    alert('AirDrop', f'Отримано файл: {{fn}}')
+                    alert('AirDrop', f'{recv_prefix}{{fn}}')
             initial_files = cur
 """
     proc = subprocess.Popen(
@@ -170,12 +300,12 @@ def set_mode(mode):
     save_config(cfg)
     if mode == 'off':
         stop_daemon()
-        notify('AirDrop', 'AirDrop вимкнено')
+        notify('AirDrop', airdrop_tr('airdrop_off'))
     else:
         stop_daemon()
         start_daemon()
-        mode_label = 'Усі' if mode == 'everyone' else 'Тільки контакти'
-        notify('AirDrop', f'AirDrop увімкнено ({mode_label})')
+        mode_label = airdrop_tr('mode_everyone') if mode == 'everyone' else airdrop_tr('mode_contacts')
+        notify('AirDrop', airdrop_tr('airdrop_on', mode_label=mode_label))
     return cfg
 
 def toggle_mode():
@@ -194,9 +324,10 @@ def open_folder():
     subprocess.Popen(['xdg-open', save_dir])
 
 def send_file(file_path=None):
+    select_title = airdrop_tr('select_file')
     if not file_path or not os.path.exists(file_path):
         res = subprocess.run(
-            ['zenity', '--file-selection', '--title=AirDrop: Оберіть файл для надсилання'],
+            ['zenity', '--file-selection', f'--title={select_title}'],
             capture_output=True, text=True
         )
         if res.returncode != 0 or not res.stdout.strip():
@@ -207,8 +338,15 @@ def send_file(file_path=None):
     cfg = load_config()
     iface = cfg.get('interface', get_wifi_interface())
 
-    notify('AirDrop', f'Пошук пристроїв для надсилання {file_name}...')
+    notify('AirDrop', airdrop_tr('searching', file_name=file_name))
     
+    no_dev_text = airdrop_tr('no_devices')
+    recip_title = airdrop_tr('select_recipient')
+    col_dev = airdrop_tr('col_device')
+    col_ip = airdrop_tr('col_ip')
+    col_pt = airdrop_tr('col_port')
+    sent_msg = airdrop_tr('sent_success', file_name=file_name)
+
     # Run opendrop find with zenity progress / picker
     script = f"""
 import sys, os, subprocess, json, time
@@ -236,18 +374,18 @@ for _ in range(5):
 browser.stop()
 
 if not receivers:
-    subprocess.run(['zenity', '--info', '--title=AirDrop', '--text=Пристроїв Apple поблизу не знайдено.\\nПереконайтеся, що на пристрої AirDrop увімкнено для Усіх (Everyone).'])
+    subprocess.run(['zenity', '--info', '--title=AirDrop', '--text={no_dev_text}'])
     sys.exit(0)
 
 # Build zenity list
-cmd = ['zenity', '--list', '--title=AirDrop: Оберіть одержувача', '--column=Ім’я пристрою', '--column=IP', '--column=Порт']
+cmd = ['zenity', '--list', '--title={recip_title}', '--column={col_dev}', '--column={col_ip}', '--column={col_pt}']
 for r in receivers:
     cmd.extend([r[0], r[1], r[2]])
 p = subprocess.run(cmd, capture_output=True, text=True)
 if p.returncode == 0 and p.stdout.strip():
     selected = p.stdout.strip()
     subprocess.run(['opendrop', 'send', '-i', '{iface}', '-r', selected, '-f', r'{file_path}'])
-    subprocess.run(['notify-send', '-a', 'AirDrop', 'AirDrop', f'Файл {file_name} успішно надіслано!'])
+    subprocess.run(['notify-send', '-a', 'AirDrop', 'AirDrop', r'{sent_msg}'])
 """
     subprocess.Popen([sys.executable, '-c', script], start_new_session=True)
 

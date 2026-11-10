@@ -1,0 +1,338 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface>
+  <requires lib="gtk" version="4.0" />
+  <object class="AdwNavigationPage" id="screenshot_page">
+    <property name="title">Capture d'écran</property>
+    <property name="tag">screenshot</property>
+    <property name="child">
+      <object class="AdwToolbarView">
+        <property name="extend-content-to-top-edge">False</property>
+        <property name="extend-content-to-bottom-edge">True</property>
+        <property name="top-bar-style">flat</property>
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <style>
+              <class name="flat" />
+            </style>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwPreferencesPage">
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Captures d'écran (Photos)</property>
+                <property name="description">Paramètres d'enregistrement et de format des captures statiques</property>
+
+                <child>
+                  <object class="AdwComboRow" id="screenshot_format_row">
+                    <property name="title">Format de fichier photo</property>
+                    <property name="subtitle">Format d'enregistrement des captures d'écran</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>PNG (Sans perte / Texte net)</item>
+                          <item>JPEG (Format photo compressé)</item>
+                          <item>WebP (Format compact moderne)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_screenshot_format" />
+                    <signal name="notify::selected" handler="on_screenshot_format_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="screenshot_quality_row">
+                    <property name="title">Qualité de compression</property>
+                    <property name="subtitle">Niveau de qualité pour les formats JPEG et WebP (70 % - 100 %)</property>
+                    <child type="suffix">
+                      <object class="GtkScale" id="screenshot_quality_scale">
+                        <property name="orientation">0</property>
+                        <property name="draw-value">true</property>
+                        <property name="digits">0</property>
+                        <property name="round-digits">0</property>
+                        <property name="width-request">200</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">70</property>
+                            <property name="upper">100</property>
+                            <property name="step-increment">1</property>
+                            <property name="page-increment">5</property>
+                            <property name="value">95</property>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_screenshot_quality" />
+                        <signal name="value-changed" handler="on_screenshot_quality_changed" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="screenshot_cursor_row">
+                    <property name="title">Afficher le curseur sur la capture</property>
+                    <property name="subtitle">Inclure le pointeur de souris dans la capture d'écran</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_screenshot_cursor" />
+                    <signal name="notify::active" handler="on_screenshot_cursor_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="screenshot_sound_row">
+                    <property name="title">Son de l'obturateur</property>
+                    <property name="subtitle">Jouer le son d'obturateur macOS lors de la capture</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_screenshot_sound" />
+                    <signal name="notify::active" handler="on_screenshot_sound_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="screenshot_delay_row">
+                    <property name="title">Délai avant la capture</property>
+                    <property name="subtitle">Compte à rebours pour préparer la fenêtre</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>Sans délai (immédiatement)</item>
+                          <item>3 secondes</item>
+                          <item>5 secondes</item>
+                          <item>10 secondes</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_screenshot_delay" />
+                    <signal name="notify::selected" handler="on_screenshot_delay_changed" />
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Enregistrement d'écran (Vidéo)</property>
+                <property name="description">Paramètres de codecs, de format et de fréquence d'images</property>
+
+                <child>
+                  <object class="AdwComboRow" id="screencast_container_row">
+                    <property name="title">Format de conteneur vidéo</property>
+                    <property name="subtitle">Type de fichier pour enregistrer l'enregistrement d'écran</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>MP4 (.mp4 — compatibilité maximale macOS/iOS/Windows)</item>
+                          <item>WebM (.webm — format web ouvert et optimisé)</item>
+                          <item>MKV (.mkv — conteneur sans restrictions)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_screencast_container" />
+                    <signal name="notify::selected" handler="on_screencast_container_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="screencast_codec_row">
+                    <property name="title">Codec vidéo</property>
+                    <property name="subtitle">Algorithme d'encodage du flux vidéo</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>H.264 / AVC (Rapide et universellement compatible)</item>
+                          <item>VP9 (Haute qualité en WebM)</item>
+                          <item>AV1 (Compression haute efficacité nouvelle génération)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_screencast_codec" />
+                    <signal name="notify::selected" handler="on_screencast_codec_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="screencast_fps_row">
+                    <property name="title">Fréquence d'images (FPS)</property>
+                    <property name="subtitle">Fluidité de l'enregistrement vidéo</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>60 FPS (Style macOS fluide)</item>
+                          <item>30 FPS (Équilibre de taille standard)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_screencast_fps" />
+                    <signal name="notify::selected" handler="on_screencast_fps_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="screencast_cursor_row">
+                    <property name="title">Afficher le curseur dans la vidéo</property>
+                    <property name="subtitle">Enregistrer les mouvements du pointeur pendant l'enregistrement</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_screencast_cursor" />
+                    <signal name="notify::active" handler="on_screencast_cursor_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="screencast_audio_row">
+                    <property name="title">Enregistrer le son</property>
+                    <property name="subtitle">Capturer le son du système et l'audio du microphone</property>
+                    <property name="active">false</property>
+                    <signal name="realize" handler="init_screencast_audio" />
+                    <signal name="notify::active" handler="on_screencast_audio_changed" />
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Traitement et amélioration de la qualité</property>
+                <property name="description">Mise à l'échelle automatique et optimisation après capture</property>
+
+                <child>
+                  <object class="AdwSwitchRow" id="processing_enabled_row">
+                    <property name="title">Post-traitement automatique</property>
+                    <property name="subtitle">Traiter les photos ou vidéos créées à la résolution cible (1080p / 2K / 4K)</property>
+                    <property name="active">true</property>
+                    <signal name="realize" handler="init_processing_enabled" />
+                    <signal name="notify::active" handler="on_processing_enabled_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="processing_resolution_row">
+                    <property name="title">Résolution cible du traitement</property>
+                    <property name="subtitle">Résolution cible à laquelle mettre à l'échelle la capture ou la vidéo</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>Originale (1:1 Native sans modification)</item>
+                          <item>1080p Full HD (1920×1080)</item>
+                          <item>2K Quad HD (2560×1440 — optimal pour Retina/HiDPI)</item>
+                          <item>4K Ultra HD (3840×2160 — qualité maximale)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_processing_resolution" />
+                    <signal name="notify::selected" handler="on_processing_resolution_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="processing_scope_row">
+                    <property name="title">Appliquer le traitement à</property>
+                    <property name="subtitle">Sélection des fichiers multimédias à améliorer automatiquement</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>Captures et vidéo (Photos + Vidéo)</item>
+                          <item>Uniquement les captures d'écran (Photos)</item>
+                          <item>Uniquement les enregistrements d'écran (Vidéo)</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_processing_scope" />
+                    <signal name="notify::selected" handler="on_processing_scope_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="processing_algorithm_row">
+                    <property name="title">Algorithme d'accentuation de la netteté</property>
+                    <property name="subtitle">Méthode d'échantillonnage des pixels lors de l'agrandissement</property>
+                    <property name="model">
+                      <object class="GtkStringList">
+                        <items>
+                          <item>Lanczos3 (Haute netteté, préserve les détails de texte et d'UI)</item>
+                          <item>Bicubique Spline (Lissage cinématique doux)</item>
+                          <item>Masque flou + Amélioration des contours</item>
+                        </items>
+                      </object>
+                    </property>
+                    <signal name="realize" handler="init_processing_algorithm" />
+                    <signal name="notify::selected" handler="on_processing_algorithm_changed" />
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwSwitchRow" id="processing_keep_original_row">
+                    <property name="title">Conserver la copie originale</property>
+                    <property name="subtitle">Conserver une copie de sauvegarde dans le dossier Originals</property>
+                    <property name="active">false</property>
+                    <signal name="realize" handler="init_processing_keep_original" />
+                    <signal name="notify::active" handler="on_processing_keep_original_changed" />
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Emplacements d'enregistrement</property>
+                <property name="description">Chemins d'accès aux dossiers de sauvegarde des captures et enregistrements</property>
+
+                <child>
+                  <object class="AdwActionRow" id="open_screenshots_folder_row">
+                    <property name="title">Dossier des captures d'écran</property>
+                    <property name="subtitle">~/Images/Captures d'écran</property>
+                    <child type="suffix">
+                      <object class="GtkButton" id="btn_open_screenshots_folder">
+                        <property name="label">Ouvrir dans le Finder</property>
+                        <property name="valign">center</property>
+                        <property name="icon-name">folder-open-symbolic</property>
+                        <signal name="clicked" handler="on_open_screenshots_folder_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow" id="open_screencasts_folder_row">
+                    <property name="title">Dossier des enregistrements d'écran</property>
+                    <property name="subtitle">~/Vidéos/Enregistrements d'écran</property>
+                    <child type="suffix">
+                      <object class="GtkButton" id="btn_open_screencasts_folder">
+                        <property name="label">Ouvrir dans le Finder</property>
+                        <property name="valign">center</property>
+                        <property name="icon-name">folder-open-symbolic</property>
+                        <signal name="clicked" handler="on_open_screencasts_folder_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwActionRow">
+                    <property name="title">Restaurer les valeurs par défaut</property>
+                    <property name="subtitle">Réinitialiser tous les réglages de capture aux valeurs par défaut de macOS</property>
+                    <child type="suffix">
+                      <object class="GtkButton" id="btn_reset_screenshot_defaults">
+                        <property name="label">Réinitialiser…</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="destructive-action" />
+                        </style>
+                        <signal name="clicked" handler="on_reset_screenshot_defaults_clicked" />
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+          </object>
+        </property>
+      </object>
+    </property>
+  </object>
+</interface>

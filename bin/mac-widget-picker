@@ -3,7 +3,21 @@ import Gtk from 'gi://Gtk?version=4.0';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Adw from 'gi://Adw?version=1';
+import Gettext from 'gettext';
 import { WidgetPickerDialog } from 'file:///home/vitaliy/MACTHEMEFILES/extensions/desktop-widgets@r3nhick/prefs/widgetPickerDialog.js';
+
+let userLocale = 'en';
+const locFile = `${GLib.get_home_dir()}/.config/mac-styling/locale`;
+if (GLib.file_test(locFile, GLib.FileTest.EXISTS)) {
+    const [ok, bytes] = GLib.file_get_contents(locFile);
+    if (ok) {
+        const s = new TextDecoder().decode(bytes).trim();
+        if (s) {
+            userLocale = s;
+            GLib.setenv('LANGUAGE', s, true);
+        }
+    }
+}
 
 Adw.init();
 const settings = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.desktop-widgets-r3nhick' });
@@ -65,7 +79,11 @@ app.connect('activate', () => {
         extPath = '/usr/share/gnome-shell/extensions/desktop-widgets@r3nhick';
     }
     try {
-        const dialog = new WidgetPickerDialog(null, extPath, (s) => s);
+        const localeDir = extPath + '/locale';
+        Gettext.bindtextdomain('desktop-widgets@r3nhick', localeDir);
+        Gettext.textdomain('desktop-widgets@r3nhick');
+        const _ = (s) => Gettext.dgettext('desktop-widgets@r3nhick', s);
+        const dialog = new WidgetPickerDialog(null, extPath, _);
         dialog.set_application(app);
         dialog.connect('widget-selected', (_d, widgetType) => {
             addWidget(widgetType);
