@@ -4326,8 +4326,8 @@ export const MenuBarController = class MenuBarController {
             const { tintVal, tintStrength } = this._getNotifThemeParams();
             this._notifGlass.setIsDock(false);
             this._notifGlass.setMultiRegionMode(true);
-            this._notifGlass.setCornerRadius(24.0);
-            this._notifGlass.setBlurRadius(8.0);
+            this._notifGlass.setCornerRadius(16.0);
+            this._notifGlass.setBlurRadius(24.0);
             this._notifGlass.setTintStrength(tintStrength);
             this._notifGlass.setTintColor(tintVal, tintVal, tintVal);
             this._notifGlass.setBrightness(1.0);
@@ -4527,7 +4527,7 @@ export const MenuBarController = class MenuBarController {
             if (groupItems.length === 1) {
                 const item = groupItems[0];
                 const { source, notification, activeBanner } = item;
-                const builder = buildNotificationCard;
+                const builder = globalThis._macBuildNotificationCard || buildNotificationCard;
                 const cardData = builder(source, notification, {
                     sigma: 30,
                     isBanner: false,
@@ -4571,7 +4571,7 @@ export const MenuBarController = class MenuBarController {
                 this._notifCardsBox.add_child(cardData.banner);
             } else {
                 // Group of 2 or more notifications: use MacNotificationGroup stack!
-                const GroupClass = MacNotificationGroup;
+                const GroupClass = globalThis._macNotificationGroup || MacNotificationGroup;
                 const group = new GroupClass(groupKey, {
                     sigma: 30,
                     isBanner: false,
@@ -4684,7 +4684,7 @@ export const MenuBarController = class MenuBarController {
         }
 
         // 3. Otherwise add as single card
-        const builder = buildNotificationCard;
+        const builder = globalThis._macBuildNotificationCard || buildNotificationCard;
         const cardData = builder(source, notification, {
             sigma: 30,
             isBanner: false,
@@ -4776,7 +4776,7 @@ export const MenuBarController = class MenuBarController {
             this._notifCardsBox.remove_child(singleCard);
             singleCard.destroy();
 
-            const GroupClass = MacNotificationGroup;
+            const GroupClass = globalThis._macNotificationGroup || MacNotificationGroup;
             const group = new GroupClass(groupKey, {
                 sigma: 30,
                 isBanner: false,
@@ -4815,7 +4815,7 @@ export const MenuBarController = class MenuBarController {
             return;
         }
 
-        const builder = buildNotificationCard;
+        const builder = globalThis._macBuildNotificationCard || buildNotificationCard;
         const cardData = builder(source, notification, {
             sigma: 30,
             isBanner: false,

@@ -20006,3 +20006,57 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - Усі фонові завдання в терміналі перевірено та завершено.
 
 4. Статус: Завершено.
+
+Завдання 707: Відновлення розмиття та ефектів рідкого скла для сповіщень (плаваючі банери та Центр повідомлень)
+1. Опис завдання:
+   - Користувач звернувся з проблемою: «Повідомлення не мають розмиття і скла. Виправи».
+   - Після аудиту виявлено наступні першопричини:
+     1) У файлі extensions/blur-my-shell@aunetx/components/notifications_v4.js метод _initGlass() мав жорсткий return; на початку, що повністю вимикало ініціалізацію BackdropGlass для плаваючих сповіщень.
+     2) Метод _handleNotificationRequest() примусово приглушував появу банерів на екрані (notification.acknowledged = true; return;), через що плаваючі тости не відображалися.
+     3) Базовий стиль карток сповіщень buildNotificationCard() CARD_BASE_STYLE використовував непрозорий темний акрил 'rgba(45, 45, 47, 0.76)' без будь-яких Clutter/BlurEffect ефектів, перекриваючи фон.
+     4) У системних налаштуваннях Liquid Glass (org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com) ключ notification-blur-radius було скинуто в 0.
+     5) У Центрі повідомлень (menubar_v29.js) параметр blurRadius для _notifGlass дорівнював лише 8.0, а кут згладжування не відповідав радіусу картки (16px).
+   - Необхідно:
+     * Відновити напівпрозорий рідкий скляний стиль картки: background-color: rgba(30, 30, 32, 0.40) (для темного режиму) / rgba(255, 255, 255, 0.40) (для світлого режиму) з акуратним бордером 1px solid rgba(255, 255, 255, 0.16) та тінню.
+     * Прив'язати Clutter Blur.BlurEffect (режим BACKGROUND, radius: 24, corner_radius: 16) безпосередньо до кожного віджета banner картки сповіщення.
+     * Додати підтримку BlurEffect для шарів стопки групування повідомлень (layer1, layer2).
+     * Відновити BackdropGlass у notifications_v4.js з радіусом розмиття 24.0 та скругленням 16.0 для мультирегіонального скла плаваючих банерів.
+     * Оновити GSettings liquid-glass: встановити notification-blur-radius в 24.
+     * Забезпечити відстеження та оновлення геометрії скла в циклі stage before-update при появі нових карток.
+     * Оновити хеші цілісності в config/extensions.lock.json та верифікувати систему всіма тестами.
+     * Синхронізувати зміни з /home/vitaliy/macW1Y 06065 PRIVATE/ (без архівації та без .git).
+     * Завершити всі термінальні процеси.
+
+2. Реалізовані зміни:
+   - extensions/blur-my-shell@aunetx/components/notifications_v4.js:
+     * У buildNotificationCard(): впроваджено адаптивне визначення теми (світла/темна) з канонічними стилями macOS Tahoe liquid glass: rgba(30, 30, 32, 0.40) для темної теми та rgba(255, 255, 255, 0.40) для світлої теми.
+     * До banner підключено Blur.BlurEffect з radius: 24 та corner_radius: 16.
+     * У MacNotificationGroup: для stacked-шарів layer1 та layer2 замінено непрозорі стилі на напівпрозорі та додано BlurEffect з радіусами 20 та 18.
+     * У _initGlass(): прибрано блокуючий return;, відновлено BackdropGlass з corner_radius: 16.0 та blur_radius: 24.0.
+     * У _handleNotificationRequest(): відновлено показ та групування банерів через _showNewGroup(), підтримку режиму "Не турбувати" та перенаправлення до Центру повідомлень, якщо він відкритий.
+     * У _syncGlass(): оптимізовано підключення stage before-update loop одразу при створенні активної групи карток, що гарантує підхоплення та показ скла після алокації геометрії Clutter.
+     * Забезпечено глобальні точки експорту globalThis._macBuildNotificationCard та globalThis._macNotificationGroup для безшовної синхронізації з іншими модулями оболонки.
+   - extensions/blur-my-shell@aunetx/components/menubar_v29.js:
+     * У _initNotifGlass(): встановлено setCornerRadius(16.0) та setBlurRadius(24.0).
+     * Усі виклики генерації карток переведено на використання актуального buildNotificationCard та MacNotificationGroup.
+   - GSettings:
+     * Встановлено org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com notification-blur-radius = 24.
+   - config/extensions.lock.json:
+     * Перераховано та зафіксовано sha256 для blur-my-shell@aunetx: 833735e61cbdcbd8bb8ed256e8df0c71de203be758ba162e080157a5cb4a7675.
+
+3. Результати тестування та верифікації:
+   - DBus EvalHelper перевірка живого стану плаваючих тостів:
+     * groupVisible: true
+     * glassVisible: true, glassOpacity: 255
+     * bannerEffects: Blur.BlurEffect (GIName: Blur.BlurEffect)
+     * cardStyle: background-color: rgba(30, 30, 32, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 16px !important
+   - DBus EvalHelper перевірка Центру повідомлень:
+     * notifCenterOpen: true, notifGlassVisible: true, notifGlassOpacity: 255, tahoeBackdropVisible: true
+     * Усі картки (одиночні та групові) мають активний Blur.BlurEffect, напівпрозорий скляний фон 0.40 та відмальовуються поверх Liquid Glass бекдропу.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! (5/5 перевірок пройдено успішно).
+   - bin/mac-i18n-verify: 100% SUCCESSFUL (194 мови валідні).
+   - Синхронізовано з текою /home/vitaliy/macW1Y 06065 PRIVATE/ (без створення архівів та без .git).
+   - Усі фонові завдання в терміналі перевірено та завершено.
+
+4. Статус: Завершено.

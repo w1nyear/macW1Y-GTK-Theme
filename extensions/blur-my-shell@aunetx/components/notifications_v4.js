@@ -182,9 +182,27 @@ export function buildNotificationCard(source, notification, options = {}) {
         onClick = null,
     } = options;
 
-    // Канонічні стилі картки: темний матовий акрил, radius 16 (наш дизайн-канон)
-    const CARD_BASE_STYLE = 'background-color: rgba(45, 45, 47, 0.76) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 16px !important; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;';
-    const CARD_HOVER_STYLE = 'background-color: rgba(56, 56, 58, 0.84) !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; border-radius: 16px !important; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.42) !important;';
+    // Канонічні стилі картки: напівпрозоре скло (macOS Tahoe liquid glass)
+    let isDark = true;
+    try {
+        const iface = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
+        const scheme = iface.get_string('color-scheme');
+        if (scheme === 'prefer-dark') isDark = true;
+        else if (scheme === 'prefer-light') isDark = false;
+        else {
+            const gtk = iface.get_string('gtk-theme') || '';
+            isDark = gtk.toLowerCase().includes('dark');
+        }
+    } catch (_) {
+        isDark = true;
+    }
+
+    const CARD_BASE_STYLE = isDark
+        ? 'background-color: rgba(30, 30, 32, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 16px !important; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28) !important;'
+        : 'background-color: rgba(255, 255, 255, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.35) !important; border-radius: 16px !important; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12) !important;';
+    const CARD_HOVER_STYLE = isDark
+        ? 'background-color: rgba(45, 45, 48, 0.50) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; border-radius: 16px !important; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35) !important;'
+        : 'background-color: rgba(255, 255, 255, 0.52) !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; border-radius: 16px !important; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.16) !important;';
     // Пілюля → картка (морф банерів)
     const CARD_PILL_STYLE = CARD_BASE_STYLE.replace('border-radius: 16px !important;', 'border-radius: 9999px !important;');
     const CARD_MID_STYLE = CARD_BASE_STYLE.replace('border-radius: 16px !important;', 'border-radius: 22px !important;');
@@ -202,6 +220,27 @@ export function buildNotificationCard(source, notification, options = {}) {
     banner.set_style(CARD_BASE_STYLE);
     if (width) {
         try { banner.set_width(width); } catch (_) {}
+    }
+
+    try {
+        if (BlurOrShell?.BlurEffect) {
+            const blurParams = {
+                name: 'notif-card-blur',
+                mode: BlurOrShell.BlurMode?.BACKGROUND ?? 1,
+                radius: 24,
+            };
+            const supportsCorner = Boolean(
+                BlurOrShell.BlurEffect.list_properties?.()
+                    ?.some?.(p => p.name === 'corner-radius')
+            );
+            if (supportsCorner) {
+                blurParams.corner_radius = 16;
+            }
+            const blurEffect = new BlurOrShell.BlurEffect(blurParams);
+            banner.add_effect(blurEffect);
+        }
+    } catch (e) {
+        console.warn(`[notifications_v4] Error adding BlurEffect to banner: ${e}`);
     }
 
     // Головна розкладка в стилі macOS: [іконка 44×44] [тексти] [правий рейл]
@@ -469,6 +508,9 @@ export function buildNotificationCard(source, notification, options = {}) {
         if (cardData.isClosing)
             return;
         const hovered = isCardHovered();
+        try {
+            banner.set_style(hovered ? CARD_HOVER_STYLE : CARD_BASE_STYLE);
+        } catch (_) {}
 
         closeBtn.remove_all_transitions();
         timeLabel.remove_all_transitions();
@@ -588,6 +630,20 @@ export class MacNotificationGroup {
             return Clutter.EVENT_PROPAGATE;
         };
 
+        let isDark = true;
+        try {
+            const iface = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
+            const scheme = iface.get_string('color-scheme');
+            if (scheme === 'prefer-dark') isDark = true;
+            else if (scheme === 'prefer-light') isDark = false;
+            else {
+                const gtk = iface.get_string('gtk-theme') || '';
+                isDark = gtk.toLowerCase().includes('dark');
+            }
+        } catch (_) {
+            isDark = true;
+        }
+
         // Layer 2 (bottom-most stack card for 3+ items)
         this.layer2 = new St.Widget({
             x_expand: true,
@@ -596,7 +652,9 @@ export class MacNotificationGroup {
             y_align: Clutter.ActorAlign.START,
             visible: false,
             reactive: true,
-            style: 'background-color: rgba(30, 30, 32, 0.65); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; margin-left: 24px; margin-right: 24px;',
+            style: isDark
+                ? 'background-color: rgba(30, 30, 32, 0.35); border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 14px; margin-left: 24px; margin-right: 24px;'
+                : 'background-color: rgba(255, 255, 255, 0.35); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 14px; margin-left: 24px; margin-right: 24px;',
         });
         this.layer2.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer2);
@@ -609,10 +667,25 @@ export class MacNotificationGroup {
             y_align: Clutter.ActorAlign.START,
             visible: false,
             reactive: true,
-            style: 'background-color: rgba(38, 38, 40, 0.72); border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 15px; margin-left: 12px; margin-right: 12px;',
+            style: isDark
+                ? 'background-color: rgba(38, 38, 40, 0.40); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 15px; margin-left: 12px; margin-right: 12px;'
+                : 'background-color: rgba(255, 255, 255, 0.40); border: 1px solid rgba(255, 255, 255, 0.30); border-radius: 15px; margin-left: 12px; margin-right: 12px;',
         });
         this.layer1.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer1);
+
+        try {
+            if (BlurOrShell?.BlurEffect) {
+                const p1 = { name: 'layer1-blur', mode: BlurOrShell.BlurMode?.BACKGROUND ?? 1, radius: 20 };
+                const p2 = { name: 'layer2-blur', mode: BlurOrShell.BlurMode?.BACKGROUND ?? 1, radius: 18 };
+                if (BlurOrShell.BlurEffect.list_properties?.()?.some?.(p => p.name === 'corner-radius')) {
+                    p1.corner_radius = 15;
+                    p2.corner_radius = 14;
+                }
+                this.layer1.add_effect(new BlurOrShell.BlurEffect(p1));
+                this.layer2.add_effect(new BlurOrShell.BlurEffect(p2));
+            }
+        } catch (_) {}
 
         // Top card container (placed in front of layer 1 & 2 in z-order)
         this.topCardBox = new St.Widget({
@@ -1111,6 +1184,7 @@ export class MacNotificationGroup {
 }
 
 globalThis._MacNotificationGroup = MacNotificationGroup;
+globalThis._macNotificationGroup = MacNotificationGroup;
 
 export const NotificationsController = class NotificationsController {
     constructor(connections, settings, effects_manager) {
@@ -1234,8 +1308,6 @@ export const NotificationsController = class NotificationsController {
     }
 
     async _initGlass() {
-        // РЕЖИМ БЕЗ БАНЕРІВ (переробка UI сповіщень): скло для банерів не потрібне
-        return;
         if (this._glass && !this._glass.is_finalized?.()) return;
         try {
             const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
@@ -1252,8 +1324,8 @@ export const NotificationsController = class NotificationsController {
             const { tintVal, tintStrength } = this._getNotifThemeParams();
             this._glass.setIsDock(true);
             this._glass.setMultiRegionMode(true);
-            this._glass.setCornerRadius(24.0);
-            this._glass.setBlurRadius(3.0);
+            this._glass.setCornerRadius(16.0);
+            this._glass.setBlurRadius(24.0);
             this._glass.setTintStrength(tintStrength);
             this._glass.setTintColor(tintVal, tintVal, tintVal);
             this._glass.setBrightness(1.0);
@@ -1308,6 +1380,19 @@ export const NotificationsController = class NotificationsController {
             }
         }
 
+        if (!this._bannerStageLoopId && this._activeGroups && this._activeGroups.size > 0) {
+            this._bannerStageLoopId = global.stage.connect('before-update', () => {
+                if (this._activeGroups && this._activeGroups.size > 0) {
+                    this._syncGlass(false);
+                } else {
+                    if (this._bannerStageLoopId) {
+                        try { global.stage.disconnect(this._bannerStageLoopId); } catch (_) {}
+                        this._bannerStageLoopId = 0;
+                    }
+                }
+            });
+        }
+
         if (regions.length > 0) {
             this._glass.setTintColor(tintVal, tintVal, tintVal);
             this._glass.setTintStrength(tintStrength);
@@ -1321,26 +1406,16 @@ export const NotificationsController = class NotificationsController {
             if (refreshSources && !this._glass._backdropLocked) {
                 this._glass.syncSources();
             }
-
-            if (!this._bannerStageLoopId) {
-                this._bannerStageLoopId = global.stage.connect('before-update', () => {
-                    if (this._activeGroups && this._activeGroups.size > 0) {
-                        this._syncGlass(false);
-                    }
-                });
-            }
         } else {
             this._glass.hide();
-            if (this._bannerStageLoopId) {
-                try { global.stage.disconnect(this._bannerStageLoopId); } catch (_) {}
-                this._bannerStageLoopId = 0;
-            }
         }
     }
 
     _hookSource(source) {
-        if (!source || source._macBannerHooked) return;
+        if (!source || source._macBannerController === this) return;
+        source._macBannerController = this;
         source._macBannerHooked = true;
+        try { source.disconnectObject(this); } catch (_) {}
         source.connectObject(
             'notification-request-banner', (s, n) => {
                 this._handleNotificationRequest(s, n);
@@ -1351,19 +1426,79 @@ export const NotificationsController = class NotificationsController {
 
     _handleNotificationRequest(source, notification) {
         if (!this.enabled) {
-            this._origOnRequestBanner(source, notification);
+            if (this._origOnRequestBanner) {
+                this._origOnRequestBanner(source, notification);
+            }
             return;
         }
 
-        // ─── РЕЖИМ БЕЗ БАНЕРІВ (переробка UI сповіщень, v4) ───
-        // Плаваючі банери повністю знято. Сповіщення тихо додається в
-        // MessageTray і накопичується для Центру повідомлень.
-        // Нативний шлях банерів GNOME відновлювати не можна (у поточній
-        // сесії _bannerBin знищено), тому hijack лишається, але нічого
-        // не рендерить.
+        const notifCenter = globalThis._macNotificationCenter ||
+            Main.extensionManager?.lookup?.('blur-my-shell@aunetx')?.stateObj?._menubar_controller;
+
+        // Check Do Not Disturb (Не турбувати)
+        let showBanners = true;
+        try {
+            const notifSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.notifications' });
+            showBanners = notifSettings.get_boolean('show-banners');
+        } catch (_) {}
+
+        if (!showBanners) {
+            notification.acknowledged = true;
+            if (notifCenter && typeof notifCenter.addNotificationQuiet === 'function') {
+                notifCenter.addNotificationQuiet(source, notification);
+            }
+            return;
+        }
+
+        // If Notification Center is open, animate into Notification Center directly
+        const isCenterOpen = (notifCenter?._notifCenterOpen ?? false) ||
+            (notifCenter?.isOpen ?? false) ||
+            (Main.panel?.statusArea?.dateMenu?.menu?.isOpen ?? false);
+        if (isCenterOpen) {
+            notification.acknowledged = true;
+            try { notification.playSound(); } catch (_e) { /* ignore */ }
+
+            if (notifCenter && typeof notifCenter.addNotificationAnimated === 'function') {
+                notifCenter.addNotificationAnimated(source, notification);
+            }
+            return;
+        }
+
+        // Validate policy & state
+        if (notification.acknowledged)
+            return;
+        if (notification.urgency === 0) // LOW
+            return;
+        if (!notification.source?.policy?.showBanners && notification.urgency !== 2) // CRITICAL
+            return;
+        if (Main.sessionMode.isLocked && !notification.source?.policy?.showInLockScreen)
+            return;
+        if (Main.layoutManager.primaryMonitor?.inFullscreen && notification.urgency !== 2)
+            return;
+
         notification.acknowledged = true;
-        try { notification.playSound(); } catch (_e) { /* ігноруємо */ }
-        return;
+        try { notification.playSound(); } catch (_e) { /* ignore */ }
+
+        if (!this._glass) {
+            this._initGlass();
+        }
+
+        // Grouping key: by application / source
+        const groupKey = source?.id || source?.title || 'app';
+        let group = this._activeGroups.get(groupKey);
+
+        if (group) {
+            // Group already active: add new notification to group
+            group.addNotification(source, notification, true);
+            this._startGroupTimer(group, DEFAULT_TIMEOUT_MS);
+            this._syncGlass();
+        } else {
+            if (this._activeGroups.size < MAX_VISIBLE_BANNERS) {
+                this._showNewGroup(source, notification, groupKey);
+            } else {
+                this._pendingQueue.push({ source, notification });
+            }
+        }
     }
 
     _showNewGroup(source, notification, groupKey) {
@@ -1562,9 +1697,10 @@ export const NotificationsController = class NotificationsController {
         }
 
         for (const source of (Main.messageTray?.getSources() || [])) {
-            if (source._macBannerHooked) {
+            if (source._macBannerController === this || source._macBannerHooked) {
+                source._macBannerController = null;
                 source._macBannerHooked = false;
-                source.disconnectObject(this);
+                try { source.disconnectObject(this); } catch (_) {}
             }
         }
 
@@ -1589,3 +1725,5 @@ export const NotificationsController = class NotificationsController {
         }
     }
 };
+
+globalThis._macNotificationsControllerClass = NotificationsController;
