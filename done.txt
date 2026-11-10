@@ -19277,3 +19277,52 @@ Task 688: Плавна анімація зникання та появи іко�
    - Тестування анімації Огляду: Clutter.Clone бездоганно передає текстуру DING та плавно згасає при вході в Mission Control і плавно повертається при виході.
 
 5. Статус: Завершено.
+
+
+================================================================================
+Task 689: Редизайн термінала (Ptyxis) у стилі macOS Tahoe
+Дата: 10 листопада 2026
+Статус: Завершено (SUCCESS)
+
+1. Вимоги завдання:
+   - Повний редизайн верхньої панелі (Headerbar) термінала (Ptyxis / GTK4 + Libadwaita).
+   - Видалити всі зайві кнопки зверху: кнопки нової вкладки (+ splitbutton), кнопку головного меню (гамбургер), кнопку огляду вкладок (grid overview), кнопку відновлення розміру, AdwWindowTitle.
+   - Залишити виключно кнопки керування вікном (traffic lights: червона, жовта, зелена) ліворуч.
+   - Праворуч від traffic lights розмістити:
+     1) Нативну іконку папки macOS (16x16, світло-блакитна / places/scalable/folder.svg).
+     2) Назву поточної папки, в якій знаходиться користувач (basename: наприклад vitaliy або macW1Y).
+     3) Розділювач — тире (« — »).
+     4) Повний шлях у терміналі (наприклад ~/macW1Y або ~/Downloads/Telegram, з автоматичною заміною $HOME на ~).
+     5) Розділювач — тире (« — »).
+     6) Динамічний розмір вікна (наприклад 120x30).
+   - Стилізація області термінала:
+     * Шрифт Apple SF Mono (Regular, 11pt) відповідно до наданого фото.
+     * Колір тексту: виключно білий (#ffffff, усунено кольоровість ANSI-промптів).
+     * Стандартний початковий розмір вікна: 120x30.
+
+2. Виявлені особливості та технічні рішення:
+   - Ptyxis побудований на GTK4, Libadwaita та Vte 2.91 (GTK4).
+   - Стандартні кнопки AdwHeaderBar (new_tab_box, primary_menu_button, tab_overview_button, restore_button) жорстко зашиті в ptyxis-window.ui.
+   - Створено системний перехоплювач src/mac_terminal.c -> lib/libmac_terminal.so та /usr/lib/x86_64-linux-gnu/libmac_terminal.so через dlsym RTLD_NEXT на функції gtk_window_present / gtk_window_present_with_time.
+   - Заголовок очищено від стандартного AdwWindowTitle, приховано всі зайві віджети у start/center/end блоках GtkCenterBox.
+   - Праворуч від GtkWindowControls з відступом 10px додано GtkBox з GtkPicture для нативної SVG-іконки папки macOS, GtkLabel для папки (SF Pro Display Semibold 13px, білий колір), тире, шляху та геометрії вікна.
+   - Реалізовано динамічне відстеження поточної директорії через комбінацію VTE OSC 7 URI (vte_terminal_get_current_directory_uri) та системний fallback через tcgetpgrp(pty_fd) -> readlink(/proc/<pid>/cwd).
+   - Реалізовано автоматичне відстеження активної вкладки (active-tab) та динамічне оновлення розміру вікна за vte_terminal_get_column_count() та vte_terminal_get_row_count().
+   - Створено палітру ~/.local/share/org.gnome.Ptyxis/palettes/macOS.palette та config/ptyxis/palettes/macOS.palette з чистим білим текстом (#ffffff) та темним фоном (#1e1e1e).
+   - Налаштовано GSettings org.gnome.Ptyxis:
+     * font-name: 'SF Mono 11'
+     * use-system-font: false
+     * default-columns: 120
+     * default-rows: 30
+     * window-size: (120, 30)
+     * restore-window-size: false
+     * palette: 'macOS'
+   - Створено системні обгортки /usr/local/bin/ptyxis, /usr/bin/ptyxis та bin/ptyxis для прозорого завантаження LD_PRELOAD при будь-якому способі запуску (CLI, D-Bus, меню програм).
+
+3. Результати верифікації:
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes (21/21).
+   - bin/mac-audit-sync check: 100% PASS! System and repository are in sync.
+   - Знято внутрішні скріншоти вікна Ptyxis: mac_terminal_corner.png, mac_terminal_full.png, mac_terminal_prompt.png.
+   - Візуальне підтвердження: ліворуч лише кнопки traffic lights, поруч блакитна папка macOS, поточний каталог, повний шлях, геометрія 120x30 через тире. Область термінала — шрифтом SF Mono 11pt, текст строго білого кольору (#ffffff) без зелених/синіх спотворень.
+
+4. Статус: Завершено.

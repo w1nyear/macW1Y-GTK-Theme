@@ -12021,3 +12021,46 @@ window.mac-settings-window button.suggested-action.circular:active {
 
 /* macW1Y Global Component Master Overrides (SSOT) */
 @import url("macw1y-components.css");
+
+/* macOS Tahoe Terminal Redesign */
+.ptyxis-window headerbar {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.mac-terminal-title-box {
+  margin-left: 10px;
+}
+
+.mac-terminal-folder-icon {
+  margin-right: 2px;
+}
+
+.mac-terminal-folder-label {
+  font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.mac-terminal-sep {
+  font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.40);
+  margin-left: 2px;
+  margin-right: 2px;
+}
+
+.mac-terminal-path-label {
+  font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mac-terminal-size-label {
+  font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
