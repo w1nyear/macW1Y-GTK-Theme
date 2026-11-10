@@ -218,7 +218,7 @@ static gboolean update_terminal_title_cb(gpointer user_data) {
         if (g_getenv("MAC_TERMINAL_DEBUG")) {
             int hb_h = gtk_widget_get_height(data->header_bar);
             int tb_h = gtk_widget_get_height(data->title_box);
-            g_print("[mac_terminal] HeaderBar allocated height: %d px, title_box height: %d px\n", hb_h, tb_h);
+            g_print("[mac_terminal] HeaderBar allocated height: %d px, title_box height: %d px | Title: %s — %s — %s\n", hb_h, tb_h, folder, path, size_buf);
         }
     }
 
@@ -315,25 +315,25 @@ static void init_terminal_css(void) {
         "   margin-right: 0;"
         "}"
         ".mac-terminal-title-box {"
-        "   margin-left: 8px;"
+        "   margin-left: 5px;"
         "}"
         ".mac-terminal-folder-icon,"
         "picture.mac-terminal-folder-icon,"
         "image.mac-terminal-folder-icon {"
-        "   min-width: 12px;"
-        "   min-height: 12px;"
-        "   margin-right: 3px;"
+        "   min-width: 16px;"
+        "   min-height: 16px;"
+        "   margin-right: 4px;"
         "}"
         ".mac-terminal-folder-label {"
         "   font-family: 'SF Mono', monospace;"
         "   font-weight: 500;"
-        "   font-size: 11px;"
+        "   font-size: 16.5px;"
         "   color: #ffffff;"
         "}"
         ".mac-terminal-sep {"
         "   font-family: 'SF Mono', monospace;"
         "   font-weight: 400;"
-        "   font-size: 11px;"
+        "   font-size: 16.5px;"
         "   color: rgba(255, 255, 255, 0.45);"
         "   margin-left: 3px;"
         "   margin-right: 3px;"
@@ -341,13 +341,13 @@ static void init_terminal_css(void) {
         ".mac-terminal-path-label {"
         "   font-family: 'SF Mono', monospace;"
         "   font-weight: 400;"
-        "   font-size: 11px;"
+        "   font-size: 16.5px;"
         "   color: rgba(255, 255, 255, 0.85);"
         "}"
         ".mac-terminal-size-label {"
         "   font-family: 'SF Mono', monospace;"
         "   font-weight: 400;"
-        "   font-size: 11px;"
+        "   font-size: 16.5px;"
         "   color: rgba(255, 255, 255, 0.85);"
         "}";
 
@@ -411,15 +411,15 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
         }
     }
 
-    /* 3. Create macOS Terminal title box: [📁] folder -- path -- 120x30 */
+    /* 3. Create macOS Terminal title box: [📁] folder — path — 120x30 */
     GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     gtk_widget_add_css_class(box, "mac-terminal-title-box");
     gtk_widget_set_valign(box, GTK_ALIGN_CENTER);
-    gtk_widget_set_margin_start(box, 8);
+    gtk_widget_set_margin_start(box, 5);
     gtk_widget_set_margin_top(box, 0);
     gtk_widget_set_margin_bottom(box, 0);
 
-    /* Load authentic macOS folder icon at exact 11x11 size */
+    /* Load authentic macOS folder icon at exact 16x16 size */
     GtkWidget *icon = NULL;
     const char *folder_icon_paths[] = {
         "/usr/share/icons/MacTahoe-dark/places/scalable/folder.svg",
@@ -431,14 +431,14 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     for (int i = 0; folder_icon_paths[i]; i++) {
         if (access(folder_icon_paths[i], R_OK) == 0) {
             GError *err = NULL;
-            GdkPixbuf *pb = gdk_pixbuf_new_from_file_at_scale(folder_icon_paths[i], 11, 11, TRUE, &err);
+            GdkPixbuf *pb = gdk_pixbuf_new_from_file_at_scale(folder_icon_paths[i], 16, 16, TRUE, &err);
             if (pb) {
                 GdkTexture *tex = gdk_texture_new_for_pixbuf(pb);
                 g_object_unref(pb);
                 if (tex) {
                     icon = gtk_picture_new_for_paintable(GDK_PAINTABLE(tex));
                     gtk_picture_set_can_shrink(GTK_PICTURE(icon), TRUE);
-                    gtk_widget_set_size_request(icon, 11, 11);
+                    gtk_widget_set_size_request(icon, 16, 16);
                     gtk_widget_set_valign(icon, GTK_ALIGN_CENTER);
                     gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);
                     g_object_unref(tex);
@@ -449,8 +449,8 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     }
     if (!icon) {
         icon = gtk_image_new_from_icon_name("folder");
-        gtk_image_set_pixel_size(GTK_IMAGE(icon), 11);
-        gtk_widget_set_size_request(icon, 11, 11);
+        gtk_image_set_pixel_size(GTK_IMAGE(icon), 16);
+        gtk_widget_set_size_request(icon, 16, 16);
         gtk_widget_set_valign(icon, GTK_ALIGN_CENTER);
         gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);
     }
@@ -462,7 +462,7 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     gtk_label_set_single_line_mode(GTK_LABEL(lbl_folder), TRUE);
     gtk_box_append(GTK_BOX(box), lbl_folder);
 
-    GtkWidget *lbl_sep1 = gtk_label_new("--");
+    GtkWidget *lbl_sep1 = gtk_label_new("—");
     gtk_widget_add_css_class(lbl_sep1, "mac-terminal-sep");
     gtk_box_append(GTK_BOX(box), lbl_sep1);
 
@@ -473,7 +473,7 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     gtk_label_set_max_width_chars(GTK_LABEL(lbl_path), 40);
     gtk_box_append(GTK_BOX(box), lbl_path);
 
-    GtkWidget *lbl_sep2 = gtk_label_new("--");
+    GtkWidget *lbl_sep2 = gtk_label_new("—");
     gtk_widget_add_css_class(lbl_sep2, "mac-terminal-sep");
     gtk_box_append(GTK_BOX(box), lbl_sep2);
 
