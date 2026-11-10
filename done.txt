@@ -19874,3 +19874,46 @@ Task 703: Виправлення відображення фону скла та
      * Оновлено архіви macW1Y 06065 PRIVATE.tar.gz та macW1Y 06065 PRIVATE.zip.
 
 4. Статус: Завершено.
+
+
+--------------------------------------------------------------------------------
+Task 704: Уніфікація ширини поля вводу пароля на екрані блокування під час активної сесії (GDM під час сесії) з екраном входу GDM (не при сесії):
+
+1. Вихідна проблема та діагностика:
+   - Користувач звернув увагу на візуальну розбіжність: у GDM під час активної сесії (lock screen / unlock dialog, фото media_1794345766506_53b1dafa.jpg) поле вводу пароля та його капсула були значно вужчими порівняно з екраном входу GDM до початку сесії (GDM greeter).
+   - Причина: у extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/stylesheet.css та wack-system/stylesheet.css для селекторів .wack-cupertino-rest .login-dialog-prompt-layout, .wack-cupertino-prompt .login-dialog-prompt-layout було жорстко прописано width: 18em !important; та padding: 0px 9px !important; для .login-dialog-prompt-entry.
+   - Це стискало контейнер авторизації до 264 px (18em). Натомість на екрані GDM не при сесії (pro/gdm.css) правило width: 18em було відсутнє, і поле вводу успадковувало системне правило GNOME Shell .login-dialog .login-dialog-prompt-layout { width: 23em; }, що давало ширину 337 px (+73 px, ширша версія) разом із збалансованими відступами padding: 4px 14px !important; min-width: 180px !important; height: 32px !important;.
+
+2. Реалізовані зміни:
+   - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/stylesheet.css та wack-system/stylesheet.css:
+     * Для .unlock-dialog .wack-cupertino-rest .login-dialog-prompt-layout, .unlock-dialog .wack-cupertino-prompt .login-dialog-prompt-layout, .unlock-dialog .wack-cupertino-prompt.login-dialog-prompt-layout, .wack-cupertino-rest .login-dialog-prompt-layout, .wack-cupertino-prompt .login-dialog-prompt-layout, .wack-cupertino-prompt.login-dialog-prompt-layout встановлено width: 23em !important;.
+     * Для .unlock-dialog .wack-cupertino-prompt .login-dialog-prompt-entry, .wack-cupertino-prompt .login-dialog-prompt-entry встановлено:
+       font-family: 'SF Pro Text', -apple-system, sans-serif !important;
+       font-size: 14px !important;
+       padding: 4px 14px !important;
+       border-radius: 9999px !important;
+       border: none !important;
+       min-width: 180px !important;
+       height: 32px !important;
+       margin-top: 10px !important;
+       margin-bottom: 0px !important;
+     * Додано префікс .unlock-dialog до правила згортання spacing у .login-dialog-prompt-layout (2px).
+   - Розгортання та системна синхронізація:
+     * Оновлено копії у ~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/stylesheet.css та /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/stylesheet.css.
+     * Перезавантажено таблицю стилів у працюючому GNOME Shell через EvalHelper.
+     * Оновлено хеш sha256 у config/extensions.lock.json (d07c903dae15bbcc48d6745d81522fd9d06ab2b8bef9dcc1930b4e992e9247ce).
+     * Синхронізовано з текою релізу /home/vitaliy/macW1Y 06065 PRIVATE/ (архівування вимкнено відповідно до інструкцій користувача).
+   - Встановлені обов'язкові проектні правила розробки:
+     * Завжди перед завершенням виконання відповіді перевіряти та зупиняти всі запущені фонові процеси/команди в терміналі, щоб наступні промпти користувача не блокувалися очікуванням завершення.
+     * Ніколи не виходити з активної сесії користувача і не завершувати сеанс.
+     * Ніколи не архівувати каталог (не створювати .tar.gz / .zip), якщо користувач прямо про це не попросив.
+
+3. Результати тестування та верифікації:
+   - Живе вимірювання геометрії через GNOME Shell ThemeContext:
+     * Контейнер prompt layout: раніше minW: 264, natW: 264 -> тепер строго minW: 337, natW: 337 (23em), що до пікселя збігається з екраном входу GDM.
+     * Поле вводу: padding: {top: 4, right: 14, bottom: 4, left: 14}, height: 32, minWidth: 180, minW: 208, natW: 208.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21 керованих розширень валідні).
+   - bin/mac-audit-sync check: 100% PASS! (5/5 перевірок пройдено).
+   - bin/mac-i18n-verify: 100% SUCCESSFUL.
+
+4. Статус: Завершено.
