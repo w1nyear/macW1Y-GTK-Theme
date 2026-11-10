@@ -948,21 +948,7 @@ export class MenuManager {
         }
 
         _buildStatusMenuChildren() {
-            const info = this._lastDiagnostics ?? {};
-            const menuSource = info.menuSource ?? _('Fallback menus');
-            const focusedApp = info.appName ?? _('Desktop');
-            const realMenusEnabled = this._settingBool('use-real-menus', true);
-
-            return [
-                { type: 'section-header', label: _('Current Status') },
-                { label: _('Extension: Active'), sensitive: false },
-                { label: _('Focused app: %s').replace('%s', focusedApp), sensitive: false },
-                { label: _('Menu source: %s').replace('%s', menuSource), sensitive: false },
-                { label: _('Real menus: %s').replace('%s', realMenusEnabled ? _('Enabled') : _('Disabled')), sensitive: false },
-                { type: 'separator' },
-                { label: _('Copy Troubleshooting Info'), activate: () => this._copyTroubleshootingInfo() },
-                { label: _('Open AppMenu Preferences'), action: 'open-settings-ext' },
-            ];
+            return [];
         }
 
         updateMenuForWindow(window, force = false) {
@@ -1179,7 +1165,24 @@ export class MenuManager {
         } catch (e) { /* ignore parse errors */ }
 
         const windowChildren = buildWindowMenu(window, detectedApp);
-            const appleChildren = buildAppleMenu(this._buildStatusMenuChildren());
+        const appleChildren = [
+            { label: _("About This System"), action: "about-this-mac" },
+            { type: "separator" },
+            { label: _("System Settings"), action: "system-settings" },
+            { label: _("Software"), action: "app-store" },
+            { type: "separator" },
+            { type: "recent-submenu", label: _("Recent Items") },
+            { label: _("Search..."), action: "open-search" },
+            { type: "separator" },
+            { label: _("Force Quit..."), action: "force-quit" },
+            { type: "separator" },
+            { label: _("Sleep"), action: "sleep" },
+            { label: _("Restart"), action: "restart" },
+            { label: _("Shut Down"), action: "shut-down" },
+            { type: "separator" },
+            { label: _("Lock Screen"), action: "lock-screen" },
+            { label: _("Log Out..."), action: "log-out" },
+        ];
 
         let topLevelMenus = realMenuData?.topLevelMenus?.length
             ? realMenuData.topLevelMenus.slice()

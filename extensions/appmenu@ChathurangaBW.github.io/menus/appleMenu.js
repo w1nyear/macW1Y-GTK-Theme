@@ -4,15 +4,9 @@
  */
 import { _ } from '../i18n.js';
 
-export function buildAppleMenu(statusChildren = []) {
+export function buildAppleMenu(_statusChildren = []) {
     const items = [
         { label: _("About This System"), action: "about-this-mac" },
-        ...(statusChildren.length > 0
-            ? [
-                { type: "submenu", label: _("AppMenu Status"), children: statusChildren },
-                { type: "separator" },
-            ]
-            : []),
         { type: "separator" },
         { label: _("System Settings"), action: "system-settings" },
         { label: _("Software"), action: "app-store" },
