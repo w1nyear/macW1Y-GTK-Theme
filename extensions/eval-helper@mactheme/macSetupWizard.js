@@ -124,6 +124,19 @@ export function saveModpackLocale(langCode) {
     setDebugLocale(langCode);
 }
 
+export function applyModpackSystemLocale(langCode, isFinal = false) {
+    saveModpackLocale(langCode);
+    try {
+        const bin = '/usr/local/bin/mac-apply-locale';
+        if (GLib.file_test(bin, GLib.FileTest.EXISTS)) {
+            const flag = isFinal ? '' : ' -q';
+            GLib.spawn_command_line_async(`${bin} ${langCode}${flag}`);
+        }
+    } catch (e) {
+        console.error(`[macSetupWizard] Error applying system locale: ${e}`);
+    }
+}
+
 export function getSetupWizardFlag() {
     for (const f of [USER_CONFIG_FILE, USER_LOCAL_FILE]) {
         try {
@@ -690,7 +703,7 @@ export class MacSetupWizard {
 
     _selectLanguage(langCode) {
         this._selectedLocale = langCode;
-        saveModpackLocale(langCode);
+        applyModpackSystemLocale(langCode, false);
 
         // Update header texts in real time
         this._titleLabel.text = t('select_language', 'Виберіть мову', langCode);
@@ -1188,8 +1201,8 @@ export class MacSetupWizard {
     }
 
     finish() {
-        // Persist final chosen locale
-        saveModpackLocale(this._selectedLocale);
+        // Persist final chosen locale and apply system-wide
+        applyModpackSystemLocale(this._selectedLocale, true);
 
         // Mark wizard as completed (0)
         setSetupWizardFlag(false);

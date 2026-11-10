@@ -19788,3 +19788,49 @@ Task 699: Синхронізація параметрів мак стиліза�
    - bin/mac-audit-sync check: 100% PASS! (Усі компоненти, бібліотеки libmac_settings.so, CLI-утиліти, UI-оверлеї синхронізовані).
 
 4. Статус: Завершено.
+
+
+================================================================================
+Завдання 702: Застосування мови системи в реальному часі після вибору у macOS Setup Wizard (Task 702)
+================================================================================
+
+1. Мета завдання:
+   - Реалізувати негайне, безшовне застосування вибраної мови системи в реальному часі при виборі та завершенні macOS Setup Wizard (macSetupWizard.js).
+   - Забезпечити оновлення AccountsService (SetLanguage, SetFormatsLocale, SetLanguages), оточення користувача systemd (systemctl --user set-environment), D-Bus середовища активації (dbus-update-activation-environment --systemd), PAM-оточення (~/.pam_environment), XDG конфігурації (~/.config/locale.conf) та shell-конфігурацій (~/.profile, ~/.bashrc).
+   - Забезпечити автоматичне додавання відповідної розкладки клавіатури (наприклад, польської pl поруч з us) у параметри вводу GNOME (org.gnome.desktop.input-sources).
+   - Забезпечити автоматичну генерацію відсутніх glibc-локалей у системі (sudo locale-gen <posix>).
+   - Оновити живе середовище GNOME Shell (GLib.setenv, Gettext.setlocale, оновлення годинника/дати dateMenu та повідомлення модулів модпаку) з відображенням нативного macOS-сповіщення при завершенні візарда.
+   - Забезпечити повну сумісність з інсталятором install.sh (виключно англійська мова, 0 кириличних символів), верифікаційними тестами mac-i18n-verify, mac-extension-guard та mac-audit-sync.
+   - Синхронізувати релізний каталог "macW1Y 06065 PRIVATE" та перезібрати архіви .tar.gz і .zip.
+
+2. Реалізовані зміни та технічні рішення:
+   - Створено системну утиліту bin/mac-apply-locale:
+     * Підтримує всі 34 мови модпаку із зіставленням POSIX-локалі (наприклад, pl_PL.UTF-8, uk_UA.UTF-8, de_DE.UTF-8), пріоритету LANGUAGE (pl:en), розкладки XKB (pl, ua, de тощо) та локалізованих текстів сповіщень.
+     * Функція ensure_locale_generated(): перевіряє наявність локалі в системі через locale -a та генерує її на льоту без пароля (sudo locale-gen), якщо вона ще не скомпільована.
+     * Функція write_user_configs(): записує ~/.config/mac-styling/locale, ~/.config/locale.conf, ~/.pam_environment та додає автоматичне підключення ~/.config/locale.conf у ~/.profile та ~/.bashrc для будь-яких нових сесій і терміналів.
+     * Функція apply_systemd_env(): оновлює змінні LANG, LANGUAGE, LC_MESSAGES у середовищі користувача systemd (systemctl --user set-environment) та D-Bus activation environment (dbus-update-activation-environment --systemd), завдяки чому будь-яка програма, запущена з панелі/доку/терміналу (Nautilus, Налаштування, Текстовий редактор тощо), негайно запускається вибраною мовою.
+     * Функція apply_accounts_service(): викликає D-Bus методи org.freedesktop.Accounts.User.SetLanguage, SetFormatsLocale та SetLanguages для облікового запису користувача, забезпечуючи коректне відображення у GDM та панелях налаштувань.
+     * Функція apply_keyboard_layout(): налаштовує gsettings org.gnome.desktop.input-sources sources, додаючи національну розкладку клавіатури вибраної країни поруч із англійською (us).
+     * Функція notify_gnome_shell(): оновлює змінні середовища та Gettext всередині поточного процесу GNOME Shell через EvalHelper, синхронізує глобальну змінну globalThis._macModpackLocale та оновлює годинник top bar dateMenu.
+     * Підтримка аргументів --list, -l, --help, -h та тихого режиму (--quiet / -q).
+     * Встановлено у /usr/local/bin/mac-apply-locale з правами 755.
+   - Інтеграція в інтерфейс macOS Setup Wizard (extensions/eval-helper@mactheme/macSetupWizard.js):
+     * Додано функцію applyModpackSystemLocale(langCode, isFinal = false).
+     * При інтерактивному перемиканні мови користувачем у списку викликається applyModpackSystemLocale(langCode, false) у тихому режимі, що негайно оновлює інтерфейс візарда, системні змінні та конфігурацію.
+     * При натисканні фінальної кнопки завершення у finish() викликається applyModpackSystemLocale(this._selectedLocale, true), що остаточно фіксує всі системні служби та відображає нативне сповіщення про успішну зміну мови системи.
+   - Інтеграція в install.sh та bin/mac-audit-sync:
+     * У install.sh додано встановлення bin/mac-apply-locale та bin/mac-setup-wizard до /usr/local/bin/.
+     * У Stage 1 install.sh додано виклик генерації основних glibc локалей (en_US, uk_UA, pl_PL, de_DE, fr_FR, es_ES, it_IT).
+     * У bin/mac-audit-sync додано перевірку цілісності /usr/local/bin/mac-apply-locale.
+   - Оновлення хешів розширень:
+     * Оновлено sha256 хеш для eval-helper@mactheme у config/extensions.lock.json (нова сигнатура: df803f5238630d864dd4e316377ff44e623f3a8d84c8b417d0781e0c2a235f12).
+
+3. Результати тестування та верифікації:
+   - bin/mac-i18n-verify: 100% SUCCESSFUL (каталог 194 мов, 291 ключ, 0 кириличних символів у install.sh, валідність синтаксису).
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (усі 21 розширення пройшли перевірку цілісності за sha256).
+   - bin/mac-audit-sync check: 100% PASS! (Усі 5 етапів аудиту пройдено: док, бібліотеки, 8 бінарників у /usr/local/bin, 21 розширення, UI оверлеї).
+   - Живе тестування:
+     * Виклик mac-apply-locale pl успішно встановлює LANG=pl_PL.UTF-8, LANGUAGE=pl:en, розкладку [('xkb', 'us'), ('xkb', 'pl')], AccountsService FormatsLocale=pl_PL.UTF-8; новий термінал та команди (man, системні утиліти) миттєво відкриваються польською мовою.
+     * Відновлено робочу локаль системи uk (Українська).
+
+4. Статус: Завершено.

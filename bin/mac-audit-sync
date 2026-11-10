@@ -117,7 +117,7 @@ def audit_binaries():
     issues = []
     print("\n🔍 [3/5] Auditing Command-Line Tools & Scripts...")
     
-    core_scripts = ["mac-apply-theme", "mac-touchpad-daemon", "mac-diagnostics", "mac-extension-guard", "mac-build-theme", "mac-audit-sync", "mac-setup-wizard"]
+    core_scripts = ["mac-apply-theme", "mac-touchpad-daemon", "mac-diagnostics", "mac-extension-guard", "mac-build-theme", "mac-audit-sync", "mac-setup-wizard", "mac-apply-locale"]
     for s in core_scripts:
         repo_file = BIN_DIR / s
         sys_file = Path("/usr/local/bin") / s

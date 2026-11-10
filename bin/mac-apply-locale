@@ -1,0 +1,537 @@
+#!/usr/bin/env python3
+"""
+mac-apply-locale — System & Modpack Real-Time Locale Synchronization Engine for macW1Y
+Applies language selection in real-time across AccountsService, systemd, PAM,
+XDG environment, GNOME Shell, and keyboard layouts.
+"""
+
+import os
+import sys
+import json
+import pwd
+import subprocess
+import shutil
+
+LOCALE_MAP = {
+    "pl": {
+        "posix": "pl_PL.UTF-8",
+        "lang_env": "pl:en",
+        "xkb": "pl",
+        "name": "Polski",
+        "notif_title": "macW1Y: Język systemu",
+        "notif_body": "Język systemu został pomyślnie zaktualizowany na Polski!"
+    },
+    "uk": {
+        "posix": "uk_UA.UTF-8",
+        "lang_env": "uk:en",
+        "xkb": "ua",
+        "name": "Українська",
+        "notif_title": "macW1Y: Мова системи",
+        "notif_body": "Мову системи успішно оновлено на Українську!"
+    },
+    "en": {
+        "posix": "en_US.UTF-8",
+        "lang_env": "en",
+        "xkb": "us",
+        "name": "English",
+        "notif_title": "macW1Y: System Language",
+        "notif_body": "System language was successfully updated to English!"
+    },
+    "de": {
+        "posix": "de_DE.UTF-8",
+        "lang_env": "de:en",
+        "xkb": "de",
+        "name": "Deutsch",
+        "notif_title": "macW1Y: Systemsprache",
+        "notif_body": "Systemsprache wurde erfolgreich auf Deutsch aktualisiert!"
+    },
+    "fr": {
+        "posix": "fr_FR.UTF-8",
+        "lang_env": "fr:en",
+        "xkb": "fr",
+        "name": "Français",
+        "notif_title": "macW1Y : Langue du système",
+        "notif_body": "La langue du système a été mise à jour avec succès vers le français !"
+    },
+    "es": {
+        "posix": "es_ES.UTF-8",
+        "lang_env": "es:en",
+        "xkb": "es",
+        "name": "Español",
+        "notif_title": "macW1Y: Idioma del sistema",
+        "notif_body": "¡El idioma del sistema se actualizó con éxito a español!"
+    },
+    "it": {
+        "posix": "it_IT.UTF-8",
+        "lang_env": "it:en",
+        "xkb": "it",
+        "name": "Italiano",
+        "notif_title": "macW1Y: Lingua di sistema",
+        "notif_body": "La lingua del sistema è stata aggiornata con successo in italiano!"
+    },
+    "pt": {
+        "posix": "pt_PT.UTF-8",
+        "lang_env": "pt:en",
+        "xkb": "pt",
+        "name": "Português",
+        "notif_title": "macW1Y: Idioma do sistema",
+        "notif_body": "Idioma do sistema atualizado com sucesso para português!"
+    },
+    "cs": {
+        "posix": "cs_CZ.UTF-8",
+        "lang_env": "cs:en",
+        "xkb": "cz",
+        "name": "Čeština",
+        "notif_title": "macW1Y: Jazyk systému",
+        "notif_body": "Jazyk systému byl úspěšně aktualizován na češtinu!"
+    },
+    "sk": {
+        "posix": "sk_SK.UTF-8",
+        "lang_env": "sk:en",
+        "xkb": "sk",
+        "name": "Slovenčina",
+        "notif_title": "macW1Y: Jazyk systému",
+        "notif_body": "Jazyk systému bol úspešne aktualizovaný na slovenčinu!"
+    },
+    "nl": {
+        "posix": "nl_NL.UTF-8",
+        "lang_env": "nl:en",
+        "xkb": "nl",
+        "name": "Nederlands",
+        "notif_title": "macW1Y: Systeemtaal",
+        "notif_body": "Systeemtaal is succesvol bijgewerkt naar het Nederlands!"
+    },
+    "ro": {
+        "posix": "ro_RO.UTF-8",
+        "lang_env": "ro:en",
+        "xkb": "ro",
+        "name": "Română",
+        "notif_title": "macW1Y: Limba sistemului",
+        "notif_body": "Limba sistemului a fost actualizată cu succes la română!"
+    },
+    "hu": {
+        "posix": "hu_HU.UTF-8",
+        "lang_env": "hu:en",
+        "xkb": "hu",
+        "name": "Magyar",
+        "notif_title": "macW1Y: Rendszernyelv",
+        "notif_body": "A rendszernyelv sikeresen frissítve magyarra!"
+    },
+    "bg": {
+        "posix": "bg_BG.UTF-8",
+        "lang_env": "bg:en",
+        "xkb": "bg",
+        "name": "Български",
+        "notif_title": "macW1Y: Системен език",
+        "notif_body": "Системният език беше успешно обновен на български!"
+    },
+    "hr": {
+        "posix": "hr_HR.UTF-8",
+        "lang_env": "hr:en",
+        "xkb": "hr",
+        "name": "Hrvatski",
+        "notif_title": "macW1Y: Jezik sustava",
+        "notif_body": "Jezik sustava uspješno je promijenjen na hrvatski!"
+    },
+    "sr": {
+        "posix": "sr_RS.UTF-8",
+        "lang_env": "sr:en",
+        "xkb": "rs",
+        "name": "Српски",
+        "notif_title": "macW1Y: Системски језик",
+        "notif_body": "Системски језик је успешно ажуриран на српски!"
+    },
+    "sl": {
+        "posix": "sl_SI.UTF-8",
+        "lang_env": "sl:en",
+        "xkb": "si",
+        "name": "Slovenščina",
+        "notif_title": "macW1Y: Sistemski jezik",
+        "notif_body": "Sistemski jezik je bil uspešno posodobljen na slovenščino!"
+    },
+    "lt": {
+        "posix": "lt_LT.UTF-8",
+        "lang_env": "lt:en",
+        "xkb": "lt",
+        "name": "Lietuvių",
+        "notif_title": "macW1Y: Sistemos kalba",
+        "notif_body": "Sistemos kalba sėkmingai atnaujinta į lietuvių!"
+    },
+    "lv": {
+        "posix": "lv_LV.UTF-8",
+        "lang_env": "lv:en",
+        "xkb": "lv",
+        "name": "Latviešu",
+        "notif_title": "macW1Y: Sistēmas valoda",
+        "notif_body": "Sistēmas valoda ir veiksmīgi atjaunināta uz latviešu!"
+    },
+    "et": {
+        "posix": "et_EE.UTF-8",
+        "lang_env": "et:en",
+        "xkb": "ee",
+        "name": "Eesti",
+        "notif_title": "macW1Y: Süsteemikeel",
+        "notif_body": "Süsteemikeel on edukalt uuendatud eesti keeleks!"
+    },
+    "be": {
+        "posix": "be_BY.UTF-8",
+        "lang_env": "be:en",
+        "xkb": "by",
+        "name": "Беларуская",
+        "notif_title": "macW1Y: Сістэмная мова",
+        "notif_body": "Сістэмная мова паспяхова абноўлена на беларускую!"
+    },
+    "ru": {
+        "posix": "ru_RU.UTF-8",
+        "lang_env": "ru:en",
+        "xkb": "ru",
+        "name": "Русский",
+        "notif_title": "macW1Y: Язык системы",
+        "notif_body": "Язык системы успешно изменён на русский!"
+    },
+    "tr": {
+        "posix": "tr_TR.UTF-8",
+        "lang_env": "tr:en",
+        "xkb": "tr",
+        "name": "Türkçe",
+        "notif_title": "macW1Y: Sistem Dili",
+        "notif_body": "Sistem dili başarıyla Türkçe olarak güncellendi!"
+    },
+    "ja": {
+        "posix": "ja_JP.UTF-8",
+        "lang_env": "ja:en",
+        "xkb": "jp",
+        "name": "日本語",
+        "notif_title": "macW1Y: システム言語",
+        "notif_body": "システム言語が日本語に正常に更新されました！"
+    },
+    "ko": {
+        "posix": "ko_KR.UTF-8",
+        "lang_env": "ko:en",
+        "xkb": "kr",
+        "name": "한국어",
+        "notif_title": "macW1Y: 시스템 언어",
+        "notif_body": "시스템 언어가 한국어로 성공적으로 업데이트되었습니다!"
+    },
+    "zh": {
+        "posix": "zh_CN.UTF-8",
+        "lang_env": "zh_CN:zh:en",
+        "xkb": "cn",
+        "name": "简体中文",
+        "notif_title": "macW1Y: 系统语言",
+        "notif_body": "系统语言已成功更新为简体中文！"
+    },
+    "zh_tw": {
+        "posix": "zh_TW.UTF-8",
+        "lang_env": "zh_TW:zh:en",
+        "xkb": "tw",
+        "name": "繁體中文",
+        "notif_title": "macW1Y: 系統語言",
+        "notif_body": "系統語言已成功更新為繁體中文！"
+    },
+    "hi": {
+        "posix": "hi_IN.UTF-8",
+        "lang_env": "hi:en",
+        "xkb": "in",
+        "name": "हिन्दी",
+        "notif_title": "macW1Y: सिस्टम भाषा",
+        "notif_body": "सिस्टम भाषा सफलतापूर्वक हिन्दी में अपडेट की गई!"
+    },
+    "bn": {
+        "posix": "bn_BD.UTF-8",
+        "lang_env": "bn:en",
+        "xkb": "bd",
+        "name": "বাংলা",
+        "notif_title": "macW1Y: সিস্টেম ভাষা",
+        "notif_body": "সিস্টেম ভাষা সফলভাবে বাংলায় আপডেট করা হয়েছে!"
+    },
+    "th": {
+        "posix": "th_TH.UTF-8",
+        "lang_env": "th:en",
+        "xkb": "th",
+        "name": "ไทย",
+        "notif_title": "macW1Y: ภาษาของระบบ",
+        "notif_body": "อัปเดตภาษาของระบบเป็นภาษาไทยสำเร็จแล้ว!"
+    },
+    "vi": {
+        "posix": "vi_VN.UTF-8",
+        "lang_env": "vi:en",
+        "xkb": "vn",
+        "name": "Tiếng Việt",
+        "notif_title": "macW1Y: Ngôn ngữ hệ thống",
+        "notif_body": "Ngôn ngữ hệ thống đã được cập nhật thành công sang Tiếng Việt!"
+    },
+    "ar": {
+        "posix": "ar_SA.UTF-8",
+        "lang_env": "ar:en",
+        "xkb": "ara",
+        "name": "العربية",
+        "notif_title": "macW1Y: لغة النظام",
+        "notif_body": "تم تحديث لغة النظام بنجاح إلى العربية!"
+    },
+    "he": {
+        "posix": "he_IL.UTF-8",
+        "lang_env": "he:en",
+        "xkb": "il",
+        "name": "עברית",
+        "notif_title": "macW1Y: שפת מערכת",
+        "notif_body": "שפת המערכת עודכנה בהצלחה לעברית!"
+    },
+    "fa": {
+        "posix": "fa_IR.UTF-8",
+        "lang_env": "fa:en",
+        "xkb": "ir",
+        "name": "فارسی",
+        "notif_title": "macW1Y: زبان سیستم",
+        "notif_body": "زبان سیستم با موفقیت به فارسی به‌روزرسانی شد!"
+    }
+}
+
+def normalize_lang(arg):
+    if not arg:
+        return "en"
+    clean = arg.strip().lower().replace("-", "_").split(".")[0]
+    if clean in LOCALE_MAP:
+        return clean
+    base = clean.split("_")[0]
+    if base in LOCALE_MAP:
+        return base
+    for k, v in LOCALE_MAP.items():
+        if v["posix"].lower().startswith(clean):
+            return k
+    return "en"
+
+def ensure_locale_generated(posix):
+    try:
+        r = subprocess.run(["locale", "-a"], capture_output=True, text=True, check=True)
+        installed = [x.strip().lower().replace("-", "").replace("_", "") for x in r.stdout.splitlines()]
+        needle = posix.lower().replace("-", "").replace("_", "").replace(".utf8", "").replace(".utf8", "")
+        if not any(needle in x for x in installed):
+            print(f"[mac-apply-locale] Generating missing system locale: {posix}...")
+            subprocess.run(["sudo", "locale-gen", posix], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"[mac-apply-locale] Warning: error checking/generating locale: {e}", file=sys.stderr)
+
+def apply_accounts_service(uid, posix):
+    try:
+        cmd1 = ["gdbus", "call", "--system", "--dest", "org.freedesktop.Accounts",
+                "--object-path", f"/org/freedesktop/Accounts/User{uid}",
+                "--method", "org.freedesktop.Accounts.User.SetLanguage", posix]
+        subprocess.run(cmd1, capture_output=True, check=False)
+
+        cmd2 = ["gdbus", "call", "--system", "--dest", "org.freedesktop.Accounts",
+                "--object-path", f"/org/freedesktop/Accounts/User{uid}",
+                "--method", "org.freedesktop.Accounts.User.SetFormatsLocale", posix]
+        subprocess.run(cmd2, capture_output=True, check=False)
+
+        cmd3 = ["gdbus", "call", "--system", "--dest", "org.freedesktop.Accounts",
+                "--object-path", f"/org/freedesktop/Accounts/User{uid}",
+                "--method", "org.freedesktop.Accounts.User.SetLanguages", f"['{posix}', 'en_US.UTF-8']"]
+        subprocess.run(cmd3, capture_output=True, check=False)
+    except Exception as e:
+        print(f"[mac-apply-locale] Warning: AccountsService update failed: {e}", file=sys.stderr)
+
+def apply_systemd_env(posix, lang_env):
+    try:
+        subprocess.run(["systemctl", "--user", "set-environment",
+                        f"LANG={posix}", f"LANGUAGE={lang_env}", f"LC_MESSAGES={posix}"], check=False)
+    except Exception:
+        pass
+    try:
+        subprocess.run(["dbus-update-activation-environment", "--systemd",
+                        f"LANG={posix}", f"LANGUAGE={lang_env}", f"LC_MESSAGES={posix}"], check=False)
+    except Exception:
+        pass
+
+def apply_system_locale(posix, lang_env):
+    try:
+        subprocess.run(["localectl", "set-locale", f"LANG={posix}"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+    try:
+        subprocess.run(["sudo", "update-locale", f"LANG={posix}", f"LANGUAGE={lang_env}"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+def write_user_configs(lang_code, posix, lang_env):
+    home = os.path.expanduser("~")
+
+    # 1. ~/.config/mac-styling/locale
+    styling_file = os.path.join(home, ".config/mac-styling/locale")
+    os.makedirs(os.path.dirname(styling_file), exist_ok=True)
+    with open(styling_file, "w", encoding="utf-8") as f:
+        f.write(f"{lang_code}\n")
+
+    # 2. ~/.config/locale.conf
+    locale_conf = os.path.join(home, ".config/locale.conf")
+    with open(locale_conf, "w", encoding="utf-8") as f:
+        f.write(f"LANG={posix}\nLANGUAGE={lang_env}\nLC_MESSAGES={posix}\n")
+
+    # 3. ~/.pam_environment
+    pam_env = os.path.join(home, ".pam_environment")
+    with open(pam_env, "w", encoding="utf-8") as f:
+        f.write(f"""LANGUAGE\tDEFAULT={lang_env}
+LANG\tDEFAULT={posix}
+LC_NUMERIC\tDEFAULT={posix}
+LC_TIME\tDEFAULT={posix}
+LC_MONETARY\tDEFAULT={posix}
+LC_PAPER\tDEFAULT={posix}
+LC_NAME\tDEFAULT={posix}
+LC_ADDRESS\tDEFAULT={posix}
+LC_TELEPHONE\tDEFAULT={posix}
+LC_MEASUREMENT\tDEFAULT={posix}
+LC_IDENTIFICATION\tDEFAULT={posix}
+PAPERSIZE\tDEFAULT=a4
+""")
+
+    # 4. Ensure ~/.profile and ~/.bashrc source ~/.config/locale.conf
+    profile = os.path.join(home, ".profile")
+    bashrc = os.path.join(home, ".bashrc")
+    snippet = """
+# macW1Y locale configuration
+if [ -f "$HOME/.config/locale.conf" ]; then
+    . "$HOME/.config/locale.conf"
+    export LANG LANGUAGE LC_MESSAGES
+fi
+"""
+    for sh_file in [profile, bashrc]:
+        if os.path.exists(sh_file):
+            try:
+                with open(sh_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+                if "macW1Y locale configuration" not in content:
+                    with open(sh_file, "a", encoding="utf-8") as f:
+                        f.write(snippet)
+            except Exception:
+                pass
+
+def apply_keyboard_layout(xkb_code):
+    if not xkb_code:
+        return
+    try:
+        r = subprocess.run(["gsettings", "get", "org.gnome.desktop.input-sources", "sources"], capture_output=True, text=True)
+        if r.returncode == 0:
+            out = r.stdout.strip()
+            # If xkb is already in list, do not duplicate
+            if f"'xkb', '{xkb_code}'" not in out:
+                if xkb_code == "us":
+                    new_val = "[('xkb', 'us')]"
+                else:
+                    new_val = f"[('xkb', 'us'), ('xkb', '{xkb_code}')]"
+                subprocess.run(["gsettings", "set", "org.gnome.desktop.input-sources", "sources", new_val], check=False)
+    except Exception as e:
+        print(f"[mac-apply-locale] Warning: could not set input sources: {e}", file=sys.stderr)
+
+def notify_gnome_shell(lang_code, posix, lang_env):
+    js = f"""(() => {{
+        const GLib = imports.gi.GLib;
+        const Gettext = imports.gettext;
+        GLib.setenv('LANG', '{posix}', true);
+        GLib.setenv('LANGUAGE', '{lang_env}', true);
+        GLib.setenv('LC_MESSAGES', '{posix}', true);
+        try {{
+            Gettext.setlocale(Gettext.LocaleCategory.ALL, '{posix}');
+        }} catch (_) {{}}
+        globalThis._macModpackLocale = '{lang_code}';
+
+        // Update clock / date menu in top bar
+        try {{
+            if (Main.panel?.statusArea?.dateMenu?._clock) {{
+                if (typeof Main.panel.statusArea.dateMenu._clock.notify === 'function') {{
+                    Main.panel.statusArea.dateMenu._clock.notify('clock');
+                }}
+            }}
+        }} catch (_) {{}}
+
+        // Notify menubar if present
+        try {{
+            if (globalThis._macMenuBarController && typeof globalThis._macMenuBarController.updateLocale === 'function') {{
+                globalThis._macMenuBarController.updateLocale('{lang_code}');
+            }}
+        }} catch (_) {{}}
+
+        return true;
+    }})()"""
+
+    try:
+        cmd = ["gdbus", "call", "--session", "--dest", "org.gnome.Shell",
+               "--object-path", "/org/gnome/Shell/Extensions/EvalHelper",
+               "--method", "org.gnome.Shell.Extensions.EvalHelper.Eval", js]
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    except Exception:
+        pass
+
+def show_notification(info):
+    title = info.get("notif_title", "macW1Y: System Language")
+    body = info.get("notif_body", "System language updated successfully!")
+    icon = "/home/vitaliy/.themes/MacTahoe-Dark/icons/preferences-desktop-locale-symbolic.svg"
+    if not os.path.exists(icon):
+        icon = "preferences-desktop-locale"
+    try:
+        subprocess.run(["notify-send", "-a", "macOS", "-i", icon, title, body], check=False)
+    except Exception:
+        pass
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
+        loc_file = os.path.expanduser("~/.config/mac-styling/locale")
+        cur = "uk"
+        if os.path.exists(loc_file):
+            try:
+                cur = open(loc_file).read().strip()
+            except Exception:
+                pass
+        print(f"Current macW1Y locale: {cur}")
+        print("Usage: mac-apply-locale <lang_code> [--quiet]")
+        print("       mac-apply-locale --list")
+        print("       mac-apply-locale --help")
+        return 0
+
+    if sys.argv[1] in ["--list", "-l", "list"]:
+        print("Supported macW1Y languages:")
+        for code, data in sorted(LOCALE_MAP.items(), key=lambda x: x[1]["name"]):
+            print(f"  {code:5} -> {data['name']:25} ({data['posix']})")
+        return 0
+
+    raw_arg = sys.argv[1]
+    quiet = "--quiet" in sys.argv or "-q" in sys.argv
+
+    lang_code = normalize_lang(raw_arg)
+    info = LOCALE_MAP.get(lang_code, LOCALE_MAP["en"])
+    posix = info["posix"]
+    lang_env = info["lang_env"]
+    xkb = info.get("xkb", "us")
+    uid = os.getuid()
+
+    print(f"🌍 Applying language: {info['name']} ({lang_code}) -> POSIX: {posix}")
+
+    # 1. Ensure system glibc locale is generated
+    ensure_locale_generated(posix)
+
+    # 2. Write user environment & configuration files
+    write_user_configs(lang_code, posix, lang_env)
+
+    # 3. Apply to systemd user session
+    apply_systemd_env(posix, lang_env)
+
+    # 4. Apply to AccountsService (D-Bus)
+    apply_accounts_service(uid, posix)
+
+    # 5. Apply to system localectl and /etc/default/locale
+    apply_system_locale(posix, lang_env)
+
+    # 6. Apply keyboard input sources
+    apply_keyboard_layout(xkb)
+
+    # 7. Update GNOME Shell live environment & clock
+    notify_gnome_shell(lang_code, posix, lang_env)
+
+    # 8. Send notification if not quiet
+    if not quiet:
+        show_notification(info)
+
+    print(f"✓ Language successfully applied: {info['name']} ({posix})")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

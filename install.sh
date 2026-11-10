@@ -302,6 +302,8 @@ install_dependencies() {
             fi
         done
         sudo apt-get install -y "${VALID_PKGS[@]}"
+        log_info "Ensuring system glibc locales are generated for internationalization..."
+        sudo locale-gen en_US.UTF-8 uk_UA.UTF-8 pl_PL.UTF-8 de_DE.UTF-8 fr_FR.UTF-8 es_ES.UTF-8 it_IT.UTF-8 >/dev/null 2>&1 || true
         log_success "System dependencies installed successfully!"
     else
         log_warning "dependencies/apt-packages.txt not found, skipping."
@@ -1880,7 +1882,7 @@ run_incremental_update() {
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager; do
+    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true
