@@ -29,19 +29,74 @@ const EDGE_STYLE = '1px solid rgba(255, 255, 255, 0.30)';
 
 const APPS_CATEGORIES = [
     {
-        id: 'utility',
-        get label() { return t('category_utilities', 'Утиліти'); },
-        match: ['utility', 'system', 'settings', 'terminalemulator', 'terminal', 'filemanager', 'archiving', 'monitor', 'security', 'clock', 'calculator', 'preferences', 'help', 'desktopsettings']
+        id: 'social',
+        get label() { return t('category_social', 'Соціальні'); },
+        match: [
+            'network', 'chat', 'instantmessaging', 'email', 'feed', 'telephony',
+            'contactmanagement', 'social', 'news', 'telegram', 'discord', 'whatsapp',
+            'zoom', 'slack', 'skype', 'signal', 'viber', 'messenger', 'webbrowser',
+            'chrome', 'firefox', 'brave', 'edge', 'safari', 'opera'
+        ]
     },
     {
-        id: 'communication',
-        get label() { return t('category_communication', 'Спілкування'); },
-        match: ['network', 'chat', 'instantmessaging', 'email', 'feed', 'webbrowser', 'ircclient', 'telephony', 'contactmanagement', 'social', 'news']
+        id: 'utility',
+        get label() { return t('category_utilities', 'Утиліти'); },
+        match: [
+            'utility', 'system', 'settings', 'terminalemulator', 'terminal',
+            'filemanager', 'archiving', 'monitor', 'security', 'clock', 'calculator',
+            'preferences', 'help', 'desktopsettings', 'clocks', 'disks', 'ptyxis',
+            'passwords', 'tweaks', 'core'
+        ]
     },
     {
         id: 'productivity',
-        get label() { return t('category_productivity', 'Продуктивність'); },
-        match: ['office', 'development', 'texteditor', 'ide', 'editor', 'graphics', 'audiovideo', 'audio', 'video', 'photography', 'publishing', 'viewer', 'documentation', 'audiovideoediting', 'database']
+        get label() { return t('category_productivity_finance', 'Продуктивність та фінанси'); },
+        match: [
+            'office', 'development', 'texteditor', 'ide', 'editor', 'database',
+            'finance', 'spreadsheet', 'wordprocessor', 'calendar', 'contacts',
+            'libreoffice', 'opencode', 'code', 'sublime', 'notes'
+        ]
+    },
+    {
+        id: 'entertainment',
+        get label() { return t('category_entertainment', 'Розваги'); },
+        match: [
+            'audiovideo', 'audio', 'video', 'player', 'recorder', 'music', 'tv',
+            'spotify', 'netflix', 'youtube', 'vlc', 'mpv', 'multimedia'
+        ]
+    },
+    {
+        id: 'games',
+        get label() { return t('category_games', 'Ігри'); },
+        match: [
+            'game', 'games', 'arcade', 'action', 'adventure', 'blocks', 'board',
+            'card', 'emulator', 'simulation', 'sports', 'strategy', 'steam',
+            'roblox', 'minecraft', 'prism'
+        ]
+    },
+    {
+        id: 'creativity',
+        get label() { return t('category_creativity', 'Творчість'); },
+        match: [
+            'graphics', 'photography', 'publishing', 'rastergraphics', 'vectorgraphics',
+            'scanning', 'capcut', 'gimp', 'inkscape', 'blender', 'obs', 'droidcam',
+            'freeform', 'paint', 'drawing'
+        ]
+    },
+    {
+        id: 'reading',
+        get label() { return t('category_reading', 'Інформація та читання'); },
+        match: [
+            'viewer', 'documentation', 'education', 'science', 'dictionary', 'book',
+            'books', 'pdf', 'reader', 'document', 'evince', 'texinfo', 'characters'
+        ]
+    },
+    {
+        id: 'travel',
+        get label() { return t('category_travel', 'Подорожі'); },
+        match: [
+            'travel', 'maps', 'geography', 'geoscience', 'navigation', 'weather', 'pogoda'
+        ]
     },
     {
         id: 'other',
@@ -82,7 +137,7 @@ function formatTimeAgo(timestamp) {
 }
 
 const PILL_COLLAPSED_STYLE =
-    'height: 54px; min-height: 54px; padding: 0 16px; ' +
+    'height: 54px; min-height: 54px; padding: 0 14px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
     'border: none !important; ' +
@@ -90,7 +145,7 @@ const PILL_COLLAPSED_STYLE =
     'box-shadow: none !important;';
 
 const PILL_EXPANDED_STYLE =
-    'height: 54px; min-height: 54px; padding: 0 16px; ' +
+    'height: 54px; min-height: 54px; padding: 0 14px; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
     'border: none !important; ' +
@@ -491,7 +546,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._searchIcon = new St.Icon({
             icon_name: 'system-search-symbolic',
             icon_size: 20,
-            style: 'color: rgba(255, 255, 255, 0.65); margin-left: 4px; margin-right: 12px;',
+            style: 'color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;',
             y_align: Clutter.ActorAlign.CENTER,
             reactive: true,
             track_hover: true,
@@ -528,7 +583,9 @@ export const MacSpotlightDialog = GObject.registerClass({
             style_class: 'mac-spotlight-entry',
             style: 'font-size: 19px !important; font-weight: 500 !important; color: #ffffff !important; ' +
                    'hint-text-color: #ffffff !important; ' +
-                   'text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; ' +
+                   'text-shadow: 0 1px 1px rgba(0, 0, 0, 0.10) !important; ' +
+                   'caret-color: #ffffff !important; ' +
+                   'padding: 0px !important; margin: 0px !important; ' +
                    'background-color: transparent !important; background: none !important; ' +
                    'border: none !important; box-shadow: none !important; outline: none !important;',
             hint_text: t('spotlight_search', 'Пошук Spotlight'),
@@ -541,8 +598,13 @@ export const MacSpotlightDialog = GObject.registerClass({
         }
         if (this._entry.clutter_text) {
             try {
-                if (typeof Clutter.Color === 'function')
-                    this._entry.clutter_text.set_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 }));
+                if (typeof Clutter.Color === 'function') {
+                    const white = new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 });
+                    this._entry.clutter_text.set_color(white);
+                    if (typeof this._entry.clutter_text.set_cursor_color === 'function') {
+                        this._entry.clutter_text.set_cursor_color(white);
+                    }
+                }
             } catch (_) {}
         }
         this._searchPill.add_child(this._entry);
@@ -763,13 +825,23 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._appsView.add_child(this._appsDivider);
 
-        // Category Filter Bar (4 rounded pills matching reference photo 1)
+        // Category Filter Bar (horizontal scrollable bar with half-sized pills)
+        this._appsCategoryScrollView = new St.ScrollView({
+            style_class: 'mac-category-scroll',
+            overlay_scrollbars: true,
+            vscrollbar_policy: St.PolicyType.NEVER,
+            hscrollbar_policy: St.PolicyType.AUTOMATIC,
+            enable_mouse_scrolling: true,
+            x_expand: true,
+            style: 'height: 24px; min-height: 24px; max-height: 24px; margin-bottom: 8px; margin-left: 18px; margin-right: 18px;',
+        });
         this._appsCategoryRow = new St.BoxLayout({
             vertical: false,
-            x_expand: true,
-            style: 'height: 32px; margin-bottom: 12px; margin-left: 21px; margin-right: 21px;',
+            y_align: Clutter.ActorAlign.CENTER,
+            style: 'height: 20px; min-height: 20px;',
         });
-        this._appsView.add_child(this._appsCategoryRow);
+        this._appsCategoryScrollView.add_child(this._appsCategoryRow);
+        this._appsView.add_child(this._appsCategoryScrollView);
         this._buildAppsCategoryButtons();
 
         this._appsScrollWrapper = new St.Widget({
@@ -1062,37 +1134,50 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._appsCategoryRow.destroy_all_children();
         this._appsCategoryButtons = [];
 
-        APPS_CATEGORIES.forEach(cat => {
+        // Dynamically show only categories present among installed apps
+        const allApps = this._getAllApps();
+        const presentCategoryIds = new Set();
+        for (const app of allApps) {
+            const c = this._getAppCategory(app);
+            if (c) presentCategoryIds.add(c);
+        }
+
+        const visibleCategories = APPS_CATEGORIES.filter(cat => presentCategoryIds.has(cat.id));
+
+        visibleCategories.forEach(cat => {
             const isSelected = (this._selectedAppsCategory === cat.id);
             const btn = new St.Button({
                 style_class: 'mac-category-pill',
                 reactive: true,
                 can_focus: true,
-                x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
 
-            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)';
-            const pillBorder = 'border: none !important;';
+            const pillBg = isSelected ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.12)';
             const pillShadow = isSelected ? 'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);' : 'box-shadow: none;';
             btn.set_style(
                 `background-color: ${pillBg}; ` +
                 'color: #ffffff !important; ' +
-                `${pillBorder} ` +
+                'border: none !important; ' +
                 `${pillShadow} ` +
-                'border-radius: 10px; ' +
-                'height: 32px; ' +
-                'margin: 0 4px; ' +
-                'font-size: 13px; ' +
-                'font-weight: 600;'
+                'border-radius: 6px; ' +
+                'height: 20px; ' +
+                'padding: 0 8px; ' +
+                'margin: 0 3px; ' +
+                'font-size: 11px; ' +
+                'font-weight: 500;'
             );
 
             const label = new St.Label({
                 text: cat.label,
-                style: 'color: #ffffff !important; font-weight: 600 !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important;',
+                style: 'color: #ffffff !important; font-size: 11px !important; font-weight: 500 !important; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.10) !important;',
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
             });
+            if (label.clutter_text) {
+                label.clutter_text.set_ellipsize(Pango.EllipsizeMode.NONE);
+                label.clutter_text.set_line_wrap(false);
+            }
             btn.set_child(label);
 
             btn.connect('clicked', () => {
@@ -1113,7 +1198,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                         'background-color: rgba(255, 255, 255, 0.32); ' +
                         'border: none !important; ' +
                         'box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); ' +
-                        'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
+                        'color: #ffffff !important; border-radius: 6px; height: 20px; padding: 0 8px; margin: 0 3px; font-size: 11px; font-weight: 500;'
                     );
                 } else {
                     const bg = hover ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.12)';
@@ -1121,7 +1206,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                         `background-color: ${bg}; ` +
                         'border: none !important; ' +
                         'box-shadow: none; ' +
-                        'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
+                        'color: #ffffff !important; border-radius: 6px; height: 20px; padding: 0 8px; margin: 0 3px; font-size: 11px; font-weight: 500;'
                     );
                 }
             });
@@ -1140,7 +1225,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                             'background-color: rgba(255, 255, 255, 0.20); ' +
                             'border: none !important; ' +
                             'box-shadow: none; ' +
-                            'color: #ffffff !important; border-radius: 10px; height: 32px; margin: 0 4px; font-size: 13px; font-weight: 600;'
+                            'color: #ffffff !important; border-radius: 6px; height: 20px; padding: 0 8px; margin: 0 3px; font-size: 11px; font-weight: 500;'
                         );
                     }
                 }
@@ -1155,16 +1240,20 @@ export const MacSpotlightDialog = GObject.registerClass({
     _getAppCategory(app) {
         const info = app.get_app_info?.() || app;
         let catStr = '';
+        let idStr = (app.get_id?.() || '').toLowerCase();
+        let nameStr = (app.get_name?.() || '').toLowerCase();
         try {
             catStr = (info.get_categories?.() || '').toLowerCase();
         } catch (_) {}
 
-        const priorityOrder = ['communication', 'productivity', 'utility'];
+        const searchHaystack = `${catStr} ${idStr} ${nameStr}`;
+
+        const priorityOrder = ['creativity', 'games', 'reading', 'travel', 'entertainment', 'social', 'productivity', 'utility'];
         for (const catId of priorityOrder) {
             const cat = APPS_CATEGORIES.find(c => c.id === catId);
             if (!cat) continue;
             for (const m of cat.match) {
-                if (catStr.includes(m)) {
+                if (searchHaystack.includes(m)) {
                     return cat.id;
                 }
             }
@@ -1885,6 +1974,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._searchIcon.set_gicon(null);
             this._searchIcon.icon_name = 'system-search-symbolic';
             this._searchIcon.icon_size = 20;
+            this._searchIcon.set_style('color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;');
             this._entry.hint_text = t('spotlight_search', 'Пошук Spotlight');
             this._optionsBtn.visible = false;
             this._selectedAppsCategory = null;
@@ -1908,33 +1998,16 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-files.svg`);
                 this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
                 this._searchIcon.icon_size = 20;
+                this._searchIcon.set_style('color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;');
                 this._entry.hint_text = t('files', 'Файли');
                 this._optionsBtn.visible = true;
                 this._loadFilesView();
                 this._expandToHeight(530);
             } else if (newMode === 'apps') {
-                const home = GLib.get_home_dir();
-                const appstoreCandidates = [
-                    `${home}/.local/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
-                    `${home}/.local/share/icons/MacTahoe/apps/scalable/Appstore.svg`,
-                    `${home}/.local/share/icons/macW1Y-dark/apps/scalable/Appstore.svg`,
-                    `/usr/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
-                ];
-                let appStoreGIcon = null;
-                for (const p of appstoreCandidates) {
-                    if (p && GLib.file_test(p, GLib.FileTest.EXISTS)) {
-                        appStoreGIcon = Gio.FileIcon.new(Gio.File.new_for_path(p));
-                        break;
-                    }
-                }
-                if (appStoreGIcon) {
-                    this._searchIcon.set_gicon(appStoreGIcon);
-                    this._searchIcon.icon_size = 26;
-                } else {
-                    const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-apps.svg`);
-                    this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
-                    this._searchIcon.icon_size = 20;
-                }
+                const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-apps.svg`);
+                this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                this._searchIcon.icon_size = 22;
+                this._searchIcon.set_style('color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;');
                 this._entry.hint_text = t('applications', 'Програми');
                 this._optionsBtn.visible = true;
                 this._selectedAppsCategory = null;
@@ -1945,6 +2018,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-clipboard.svg`);
                 this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
                 this._searchIcon.icon_size = 20;
+                this._searchIcon.set_style('color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;');
                 this._entry.hint_text = t('search_clipboard', 'Пошук у буфері');
                 this._optionsBtn.visible = true;
                 this._loadClipboardView();
@@ -2072,28 +2146,10 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._clipboardView.visible = (initialMode === 'clipboard');
 
             if (initialMode === 'apps') {
-                const home = GLib.get_home_dir();
-                const appstoreCandidates = [
-                    `${home}/.local/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
-                    `${home}/.local/share/icons/MacTahoe/apps/scalable/Appstore.svg`,
-                    `${home}/.local/share/icons/macW1Y-dark/apps/scalable/Appstore.svg`,
-                    `/usr/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
-                ];
-                let appStoreGIcon = null;
-                for (const p of appstoreCandidates) {
-                    if (p && GLib.file_test(p, GLib.FileTest.EXISTS)) {
-                        appStoreGIcon = Gio.FileIcon.new(Gio.File.new_for_path(p));
-                        break;
-                    }
-                }
-                if (appStoreGIcon) {
-                    this._searchIcon.set_gicon(appStoreGIcon);
-                    this._searchIcon.icon_size = 26;
-                } else {
-                    const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-apps.svg`);
-                    this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
-                    this._searchIcon.icon_size = 20;
-                }
+                const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-apps.svg`);
+                this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                this._searchIcon.icon_size = 22;
+                this._searchIcon.set_style('color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;');
                 this._entry.hint_text = t('applications', 'Програми');
                 this._selectedAppsCategory = null;
                 this._buildAppsCategoryButtons();
@@ -2102,12 +2158,14 @@ export const MacSpotlightDialog = GObject.registerClass({
                 const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-clipboard.svg`);
                 this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
                 this._searchIcon.icon_size = 20;
+                this._searchIcon.set_style('color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;');
                 this._entry.hint_text = t('search_clipboard', 'Пошук у буфері');
                 this._loadClipboardView();
             } else if (initialMode === 'files') {
                 const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-files.svg`);
                 this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
                 this._searchIcon.icon_size = 20;
+                this._searchIcon.set_style('color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;');
                 this._entry.hint_text = t('files', 'Файли');
                 this._loadFilesView();
             }
@@ -3185,11 +3243,19 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         let currentRow = null;
         for (let i = 0; i < apps.length; i++) {
+            if (!hasFilter && i === APPS_COLUMNS) {
+                const sep = new St.Widget({
+                    x_expand: true,
+                    style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.12); margin: 4px 6px 6px 6px;',
+                });
+                this._appsContentBox.add_child(sep);
+            }
+
             if (i % APPS_COLUMNS === 0) {
                 currentRow = new St.BoxLayout({
                     vertical: false,
                     x_expand: true,
-                    style: 'margin-bottom: 10px;',
+                    style: 'margin-bottom: 4px;',
                 });
                 this._appsContentBox.add_child(currentRow);
             }
@@ -3213,7 +3279,7 @@ export const MacSpotlightDialog = GObject.registerClass({
     }
 
     _setSelectedAppIndex(index) {
-        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 82px; min-height: 82px; max-height: 82px; margin: 0 1px; padding: 6px 2px 4px 2px; border-radius: 12px;`;
+        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 68px; min-height: 68px; max-height: 68px; margin: 0 1px; padding: 3px 2px 2px 2px; border-radius: 10px;`;
         if (this._selectedAppIndex >= 0 && this._appsGridButtons[this._selectedAppIndex]) {
             const prev = this._appsGridButtons[this._selectedAppIndex];
             prev.remove_style_class_name('selected');
@@ -3241,7 +3307,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         item.set_width(APPS_COLUMN_WIDTH);
         item.width = APPS_COLUMN_WIDTH;
-        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 82px; min-height: 82px; max-height: 82px; margin: 0 1px; padding: 6px 2px 4px 2px; border-radius: 12px;`;
+        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 68px; min-height: 68px; max-height: 68px; margin: 0 1px; padding: 3px 2px 2px 2px; border-radius: 10px;`;
         item.set_style(`${baseStyle} background-color: transparent;`);
 
         const box = new St.BoxLayout({
@@ -3253,7 +3319,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         item.set_child(box);
 
         const iconActor = createSmoothAppIcon(app, APPS_ICON_SIZE);
-        iconActor.set_style('margin-bottom: 5px; icon-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);');
+        iconActor.set_style('margin-bottom: 2px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
         box.add_child(iconActor);
 
         const label = new St.Label({
@@ -3261,7 +3327,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             style_class: 'mac-app-title',
             style: `font-size: 11px !important; color: #ffffff !important; ` +
                    `text-align: center !important; font-weight: 500 !important; ` +
-                   `text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; ` +
+                   `text-shadow: 0 1px 1px rgba(0, 0, 0, 0.10) !important; ` +
                    `width: ${APPS_COLUMN_WIDTH - 4}px; max-width: ${APPS_COLUMN_WIDTH - 4}px;`,
             x_align: Clutter.ActorAlign.CENTER,
         });
