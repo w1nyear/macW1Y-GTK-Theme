@@ -57,16 +57,34 @@ overlay-split-view .sidebar-pane {
 
 headerbar,
 headerbar.flat,
+headerbar.titlebar,
 headerbar.default-decoration,
+windowheaderbar,
+.titlebar headerbar,
 toolbarview > .top-bar,
 toolbarview > .top-bar.flat,
-toolbarview > .top-bar.raised {
-  min-height: 48px;
+toolbarview > .top-bar.raised,
+toolbarview > .top-bar headerbar {
+  min-height: 38px;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
   background-color: transparent;
   background-image: none;
   border-style: none;
   border-bottom-style: none;
   box-shadow: none;
+}
+
+headerbar > windowhandle > box,
+headerbar windowhandle,
+headerbar centerbox {
+  min-height: 38px;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 /* =========================================================================
@@ -2093,16 +2111,35 @@ menu menuitem:hover {
  * 12. Window Controls (macOS Traffic Lights)
  * ========================================================================= */
 headerbar windowcontrols,
-windowcontrols {
-  border-spacing: 7px;
+windowcontrols,
+headerbar windowcontrols.start:dir(ltr),
+headerbar windowcontrols:not(.empty).start:dir(ltr),
+windowcontrols.start:dir(ltr) {
+  border-spacing: 6px;
   padding: 0;
+  padding-left: 12px;
+  padding-right: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  margin-right: 0;
+}
+
+headerbar windowcontrols.end:dir(ltr),
+headerbar windowcontrols:not(.empty).end:dir(ltr),
+windowcontrols.end:dir(ltr) {
+  padding-right: 12px;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .nautilus-window headerbar windowcontrols,
 .nautilus-window windowcontrols,
 .sidebar-pane headerbar windowcontrols {
-  border-spacing: 7px;
+  border-spacing: 6px;
   padding: 0;
+  padding-left: 12px;
+  margin-top: 0;
+  margin-bottom: 0;
   margin-left: 0px;
 }
 
@@ -2123,7 +2160,10 @@ headerbar button.titlebutton,
   min-width: 16px;
   min-height: 16px;
   padding: 0;
-  margin: 0 1px;
+  margin-top: 11px;
+  margin-bottom: 11px;
+  margin-left: 0;
+  margin-right: 0;
   border-radius: 9999px;
   background-color: transparent;
   background: transparent;
@@ -2336,12 +2376,12 @@ preferencespage > scrolledwindow > undershoot.top,
 navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane scrolledwindow undershoot.top {
-  min-height: 48px;
+  min-height: 38px;
   background: linear-gradient(to bottom,
     var(--mac-window-bg, #202022) 0%,
-    alpha(var(--mac-window-bg, #202022), 0.90) 16px,
-    alpha(var(--mac-window-bg, #202022), 0.40) 32px,
-    transparent 48px);
+    alpha(var(--mac-window-bg, #202022), 0.90) 12px,
+    alpha(var(--mac-window-bg, #202022), 0.40) 24px,
+    transparent 38px);
   border: none;
   box-shadow: none;
 }
@@ -2355,12 +2395,12 @@ window.mac-settings-window .content-pane scrolledwindow undershoot.top,
 window.mac-settings-window .panel-has-switcher toolbarview.undershoot-top scrolledwindow > undershoot.top,
 window.mac-settings-window .panel-has-switcher preferencespage scrolledwindow undershoot.top,
 window.mac-settings-window .panel-has-switcher scrolledwindow undershoot.top {
-  min-height: 48px;
+  min-height: 38px;
   background: linear-gradient(to bottom,
     var(--mac-window-bg, #202022) 0%,
-    alpha(var(--mac-window-bg, #202022), 0.90) 16px,
-    alpha(var(--mac-window-bg, #202022), 0.40) 32px,
-    transparent 48px);
+    alpha(var(--mac-window-bg, #202022), 0.90) 12px,
+    alpha(var(--mac-window-bg, #202022), 0.40) 24px,
+    transparent 38px);
   border: none;
   box-shadow: none;
 }

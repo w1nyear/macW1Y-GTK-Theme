@@ -2398,7 +2398,7 @@ window.background.csd > widget > leaflet.unfolded > box > headerbar button:disab
 }
 
 headerbar {
-  min-height: 48px;
+  min-height: 38px;
   padding: 0;
   margin: 0;
   color: @headerbar_fg_color;
@@ -2764,12 +2764,15 @@ headerbar windowhandle box.linked > button:checked {
 
 headerbar windowcontrols {
   border-spacing: 6px;
-  padding: 0 8px;
+  padding: 0;
+  padding-left: 12px;
+  padding-right: 0;
 }
 
 headerbar windowcontrols:not(.empty).start:dir(ltr), headerbar windowcontrols:not(.empty).end:dir(rtl) {
-  margin-top: -1px;
-  margin-right: 8px;
+  margin-top: 0;
+  margin-bottom: 0;
+  margin-right: 0;
 }
 
 headerbar windowcontrols:not(.empty).start:dir(rtl), headerbar windowcontrols:not(.empty).end:dir(ltr) {
@@ -2792,7 +2795,7 @@ headerbar windowcontrols button.close, headerbar windowcontrols button.maximize,
   min-width: 16px;
   min-height: 16px;
   padding: 0;
-  margin: 0 1px;
+  margin: 11px 0;
   background-position: center;
   background-repeat: no-repeat;
   background-size: 16px 16px;
@@ -9177,7 +9180,7 @@ toolbarview > .bottom-bar .collapse-spacing {
 
 toolbarview > .top-bar .collapse-spacing headerbar,
 toolbarview > .bottom-bar .collapse-spacing headerbar {
-  min-height: 48px;
+  min-height: 38px;
 }
 
 toolbarview > .top-bar .collapse-spacing headerbar > windowhandle > box,
@@ -9957,7 +9960,7 @@ overlay-split-view headerbar,
 overlay-split-view toolbarview > .top-bar headerbar,
 window.nautilus-window .content-pane headerbar,
 window.nautilus-window .sidebar-pane headerbar {
-    min-height: 48px;
+    min-height: 38px;
     background: none;
     background-color: transparent;
     background-image: none;
@@ -11204,7 +11207,7 @@ window.mac-settings-window #app_search_entry {
 window.mac-settings-window .mac-settings-content-headerbar.has-view-switcher,
 window.mac-settings-window .mac-settings-switcher-headerbar,
 window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
-    min-height: 48px;
+    min-height: 38px;
     background: linear-gradient(to bottom,
         #1e1e1e 0%,
         rgba(30, 30, 32, 0.96) 50%,

@@ -19611,3 +19611,48 @@ Task 697: Уніфікація стилю та скляного шейдера �
      * Чисто білий курсор при фокусуванні та наборі тексту запиту.
 
 4. Статус: Завершено.
+
+================================================================================
+Task 698: Глобальна стандартизація висоти віндов бара та симетричне центрування світлофорів за еталоном «Диски»
+Дата: 10 листопада 2026
+Статус: Завершено (SUCCESS)
+
+1. Вимоги завдання:
+   - Привести віндов бар (Headerbar) та кнопки керування вікном (Traffic Lights) усіх додатків у системі до єдиного компактного стандарту macOS за референсом програми «Диски» (gnome-disks, фото 3).
+   - Зменшити надмірну висоту заголовків вікон (з 48px до компактних 38px).
+   - Усунути вертикальну асиметрію світлофорів у GTK4/Libadwaita (де кнопки були притиснуті до самого верху через margin-top: -1px із порожньою зоною 30px знизу).
+   - Забезпечити симетричне геометричне центрування: відступ зверху 11px, розмір кнопки 16×16px, відступ знизу 11px (11 + 16 + 11 = 38px).
+   - Встановити відступ від лівого краю вікна 12px (padding-left: 12px) та міжіконковий інтервал 6px (border-spacing: 6px).
+   - Застосувати ці зміни глобально для всіх програм (термінал Ptyxis, Div Acer Manager MAX, Параметри, файловий менеджер, стандартні GTK-програми) через єдине джерело правди (SSOT).
+
+2. Реалізовані зміни та технічні рішення:
+   - Аналіз еталона («Диски»):
+     * Досліджено референс gnome-disks: висота Headerbar становить 38px (GTK3 preferred natural_height: 38px).
+     * Розмір кнопок: 16×16px, міжосьовий інтервал: 6px, відступ зліва: 12px, ідеальне центрування по висоті (по 11–12px зверху та знизу).
+   - Оновлення дизайн-токенів SSOT (config/macw1y-tokens.json):
+     * Додано "headerbar_height": 38, "traffic_light_size": 16, "traffic_light_spacing": 6, "traffic_light_margin_y": 11, "traffic_light_padding_left": 12.
+   - Оновлення компілятора тем (bin/mac-build-theme):
+     * У generate_gtk4_components_css() встановлено min-height: 38px для headerbar, headerbar.flat, headerbar.titlebar, headerbar.default-decoration, windowheaderbar, .titlebar headerbar, toolbarview > .top-bar, toolbarview > .top-bar headerbar.
+     * Скинуто відступи контейнерів headerbar > windowhandle > box, windowhandle, centerbox до min-height: 38px; margin: 0; padding: 0.
+     * Для windowcontrols та windowcontrols.start:dir(ltr) налаштовано border-spacing: 6px; padding: 0; padding-left: 12px; margin: 0.
+     * Для кнопок керування (windowcontrols button, button.close, button.minimize, button.maximize) встановлено точні розміри 16×16px та вертикальні поля margin-top: 11px; margin-bottom: 11px; margin-left: 0; margin-right: 0;.
+     * Скориговано висоту градієнтного шейдера top undershoot (toolbarview.undershoot-top) з 48px до 38px.
+     * Перекомпільовано macw1y-components.css та macw1y-tokens.css для всіх варіантів тем: macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid, системних /usr/share/themes/ та ~/.themes/.
+   - Базові стилі та виправлення (gtk-4.0/gtk.css, gtk-Dark.css, config/gtk-4.0/, fixes4.css, ~/.config/gtk-4.0/):
+     * Замінено старі примусові правила min-height: 48px на 38px.
+     * Вилучено деструктивний margin-top: -1px та замінено на margin: 0; padding-left: 12px;.
+   - Термінал Ptyxis (src/mac_terminal.c та libmac_terminal.so):
+     * Оновлено init_terminal_css: min-height: 38px, windowcontrols padding-left: 12px, border-spacing: 6px, windowcontrols button 16×16px з margin: 11px 0.
+     * Спільна горизонтальна орієнтація та форматування плашки заголовка [📁] з відцентрованою іконкою та шрифтом SF Mono.
+     * Бібліотеку скомпільовано (gcc -O2 -shared -fPIC) та інстальовано в /usr/lib/x86_64-linux-gnu/libmac_terminal.so.
+   - Синхронізація системи та перевірка аудитів:
+     * Оновлено /usr/local/bin/mac-build-theme.
+     * Перевірка bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
+     * Перевірка bin/mac-audit-sync check: 100% PASS!
+
+3. Результати верифікації:
+   - Ptyxis (термінал): HeaderBar allocated height = 38 px; червона кнопка y=[12, 25] (h=14), відступ зверху = 12 px, відступ знизу = 12 px (ідеальне симетричне центрування).
+   - GTK4 додатки (AdwWindow, Div Acer Manager MAX): HeaderBar allocated height = 38 px; червона кнопка pos=(18.0, 11.0) size=(16×16), відступ зверху = 11 px, відступ знизу = 11 px (100% центрування).
+   - Еталон «Диски» та решта вікон системи тепер мають ідентичну висоту 38px та однакове розташування світлофорів.
+
+4. Статус: Завершено.

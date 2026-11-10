@@ -474,13 +474,13 @@ window.mac-settings-window scrolledwindow.undershoot-bottom > undershoot.bottom 
 
 .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top {
-  min-height: 48px;
+  min-height: 38px;
   background: linear-gradient(to bottom,
     @sidebar_bg_color 0%,
-    @sidebar_bg_color 28px,
-    alpha(@sidebar_bg_color, 0.85) 38px,
-    alpha(@sidebar_bg_color, 0.40) 44px,
-    transparent 48px);
+    @sidebar_bg_color 20px,
+    alpha(@sidebar_bg_color, 0.85) 28px,
+    alpha(@sidebar_bg_color, 0.40) 34px,
+    transparent 38px);
   border: none;
   box-shadow: none;
 }
