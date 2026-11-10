@@ -68,7 +68,11 @@ export const PopupBlurTargets = class PopupBlurTargets {
         const delegate = this.actor.get_actor_delegate(actor);
 
         if (this.has_any_style_class(actor, ['quick-settings']) ||
-            (delegate?.box && this.has_any_style_class(delegate.box, ['quick-settings'])))
+            (delegate?.box && this.has_any_style_class(delegate.box, ['quick-settings'])) ||
+            this.has_any_style_class(actor, ['unlock-dialog', 'login-dialog']) ||
+            (actor.has_style_class_name && (actor.has_style_class_name('unlock-dialog') || actor.has_style_class_name('login-dialog'))) ||
+            (actor.get_parent && (actor.get_parent()?.has_style_class_name?.('unlock-dialog') || actor.get_parent()?.name === 'unlockDialogGroup')) ||
+            (Main.screenShield && (actor === Main.screenShield._dialog || actor === Main.screenShield._dialog?.dialogLayout)))
             return [];
 
         const targets = this.create_targets();

@@ -50,12 +50,36 @@ export class ThemeManager {
 
     restoreSessionMode() {
         if (!this.origSessionModeProps) return;
-        Main.sessionMode.hasWindows = this.origSessionModeProps.hasWindows;
-        Main.sessionMode.hasWorkspaces = this.origSessionModeProps.hasWorkspaces;
+        if (Main.sessionMode.currentMode !== 'unlock-dialog') {
+            Main.sessionMode.hasWindows = true;
+            Main.sessionMode.hasWorkspaces = true;
+        } else {
+            Main.sessionMode.hasWindows = this.origSessionModeProps.hasWindows;
+            Main.sessionMode.hasWorkspaces = this.origSessionModeProps.hasWorkspaces;
+        }
         Main.sessionMode.panel = this.origSessionModeProps.panel;
         Main.sessionMode.panelStyle = this.origSessionModeProps.panelStyle;
         this.origSessionModeProps = null;
         Main.sessionMode.emit('updated');
+
+        if (Main.sessionMode.currentMode !== 'unlock-dialog') {
+            if (global.window_group) {
+                global.window_group.remove_all_transitions();
+                global.window_group.visible = true;
+                global.window_group.opacity = 255;
+            }
+            if (global.top_window_group) {
+                global.top_window_group.remove_all_transitions();
+                global.top_window_group.visible = true;
+                global.top_window_group.opacity = 255;
+            }
+            for (const actor of global.get_window_actors()) {
+                if (actor.meta_window && !actor.meta_window.minimized) {
+                    actor.visible = true;
+                    actor.opacity = 255;
+                }
+            }
+        }
     }
 
     getUserThemeFile() {

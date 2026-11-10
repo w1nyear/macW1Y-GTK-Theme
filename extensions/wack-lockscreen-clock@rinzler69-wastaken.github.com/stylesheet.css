@@ -480,3 +480,15 @@
     border: 2px solid transparent !important;
     box-sizing: border-box !important;
 }
+
+/* Neutralize modal-dialog card styling on lockscreen and login dialogs */
+.unlock-dialog,
+.unlock-dialog.modal-dialog,
+.unlock-dialog .modal-dialog,
+.login-dialog,
+.login-dialog.modal-dialog,
+.login-dialog .modal-dialog {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}

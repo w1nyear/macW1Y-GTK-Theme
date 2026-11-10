@@ -241,19 +241,26 @@ export class UnlockDialogController {
                     if (d2d) {
                         d2d.remove_all_transitions();
                         d2d.translation_y = -dockH;
-                        d2d.opacity = 0;
+                        d2d.opacity = 255;
+                        d2d.visible = true;
                         d2d.show();
+                        for (const child of d2d.get_children()) {
+                            child.visible = true;
+                            child.opacity = 255;
+                        }
+                        const dash = d2d.dash || d2d._dock?.dash;
+                        if (dash) {
+                            dash.remove_all_transitions();
+                            dash.visible = true;
+                            dash.opacity = 255;
+                            dash.translation_x = 0;
+                            dash.translation_y = 0;
+                        }
                         d2d.ease({
                             opacity: 255,
                             duration,
                             mode,
                         });
-                        if (d2d._dock?.dash) {
-                            d2d._dock.dash.remove_all_transitions();
-                            d2d._dock.dash.opacity = 255;
-                            d2d._dock.dash.translation_x = 0;
-                            d2d._dock.dash.translation_y = 0;
-                        }
                     }
 
                     // Synchronize Liquid Glass background actor
@@ -319,12 +326,27 @@ export class UnlockDialogController {
                     } else if (global.window_group) {
                         // Smoothly fade in desktop windows upon unlock
                         global.window_group.remove_all_transitions();
-                        global.window_group.opacity = 0;
-                        global.window_group.ease({
-                            opacity: 255,
-                            duration,
-                            mode,
-                        });
+                        global.window_group.visible = true;
+                        if (global.window_group.opacity < 255) {
+                            global.window_group.ease({
+                                opacity: 255,
+                                duration,
+                                mode,
+                            });
+                        } else {
+                            global.window_group.opacity = 255;
+                        }
+                    }
+                    if (global.top_window_group) {
+                        global.top_window_group.remove_all_transitions();
+                        global.top_window_group.visible = true;
+                        global.top_window_group.opacity = 255;
+                    }
+                    for (const actor of global.get_window_actors()) {
+                        if (actor.meta_window && !actor.meta_window.minimized) {
+                            actor.visible = true;
+                            actor.opacity = 255;
+                        }
                     }
 
                     // Animate desktop icons (DING) and uiGroup widgets smoothly fading in
@@ -400,6 +422,48 @@ export class UnlockDialogController {
                             }
                             if (global.wack_window_snapshots)
                                 delete global.wack_window_snapshots;
+
+                            // Guarantee desktop windows and dock visibility 100%
+                            if (global.window_group) {
+                                global.window_group.remove_all_transitions();
+                                global.window_group.visible = true;
+                                global.window_group.opacity = 255;
+                            }
+                            if (global.top_window_group) {
+                                global.top_window_group.remove_all_transitions();
+                                global.top_window_group.visible = true;
+                                global.top_window_group.opacity = 255;
+                            }
+                            for (const actor of global.get_window_actors()) {
+                                if (actor.meta_window && !actor.meta_window.minimized) {
+                                    actor.visible = true;
+                                    actor.opacity = 255;
+                                }
+                            }
+
+                            const d2d = Main.layoutManager.uiGroup?.get_children()?.find(c => c.name === 'dashtodockContainer');
+                            if (d2d) {
+                                d2d.remove_all_transitions();
+                                const dockH = (d2d.height > 0) ? d2d.height : 92;
+                                d2d.translation_y = -dockH;
+                                d2d.opacity = 255;
+                                d2d.visible = true;
+                                d2d.show();
+                                for (const c of d2d.get_children()) {
+                                    c.visible = true;
+                                    c.opacity = 255;
+                                }
+                                const dash = d2d.dash || d2d._dock?.dash;
+                                if (dash) {
+                                    dash.remove_all_transitions();
+                                    dash.visible = true;
+                                    dash.opacity = 255;
+                                    dash.translation_x = 0;
+                                    dash.translation_y = 0;
+                                }
+                            }
+                            try { global._liquidGlassDockSync?.(); } catch (_) {}
+
                             onComplete();
                         };
 

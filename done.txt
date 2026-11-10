@@ -19958,3 +19958,51 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - Усі фонові процеси в терміналі перевірено та завершено.
 
 4. Статус: Завершено.
+
+Завдання 706: Виправлення зникнення вікон та дока після розблокування сесії (GDM/Lock Screen) та усунення залишкової плаваючої картки
+1. Опис завдання:
+   - Користувач повідомив, що після розблокування сесії (вихід із блокування / GDM під час сесії) вікна та док не відображаються на робочому столі.
+   - На наданих фотографіях було зафіксовано:
+     1) Після розблокування на стільниці відсутні всі вікна та док, а по центру екрана залишається порожня розмита скляна картка (~700x400 px, border-radius 35px).
+     2) На екрані блокування над аватаркою та полем вводу відображається та ж сама темна напівпрозора прямокутна картка, крізь яку проглядаються іконки з відкритого вікна Nautilus ("Videos", "screen_original.MOV").
+   - Необхідно:
+     * Забезпечити 100% гарантоване повернення видимості всіх вікон (global.window_group, global.top_window_group, global.get_window_actors() visible=true, opacity=255) після розблокування.
+     * Забезпечити 100% гарантоване повернення видимості дока (dashtodockContainer, dash, DashSlideContainer visible=true, opacity=255, translation_y=-dockH) та синхронізацію ефекту Liquid Glass.
+     * Повністю усунути появу паразитичної плаваючої картки .modal-dialog на екрані блокування та ліквідувати будь-які залишкові blur-актори/діалоги після деактивації захисного екрана.
+     * Суворо дотримуватися обов'язкових правил: завершити всі процеси в терміналі, не виходити із сесії, не робити краш-скріншотів і не архівувати теку без команди.
+
+2. Реалізовані зміни та усунення першопричин:
+   - Виправлено конфлікт відновлення sessionMode (wack-lockscreen-clock/src/main/themeManager.js):
+     * При виклику tempSessionModeOverride() зберігалися властивості сесії з режиму 'unlock-dialog', де hasWindows=false. У safeOnComplete() метод restoreSessionMode() відновлював hasWindows=false та викликав sessionMode.emit('updated'), через що GNOME Shell layout._sessionUpdated() примусово приховував global.window_group.visible=false та global.top_window_group.visible=false саме в момент розблокування.
+     * У restoreSessionMode() тепер суворо гарантовано: якщо режим не 'unlock-dialog', hasWindows та hasWorkspaces завжди встановлюються в true, а global.window_group та global.top_window_group безумовно отримують visible=true та opacity=255 разом із перевіркою всіх MetaWindowActor.
+   - Виправлено логіку анімації розблокування вікон та дока (wack-lockscreen-clock/src/main/unlockDialogController.js):
+     * Прибрано небезпечне скидання global.window_group.opacity=0 при старті розблокування, яке залишало вікна невидимими при перериванні transitions. Тепер global.window_group плавно доводиться до opacity=255 без чорного миготіння.
+     * Виправлено звернення до контейнера дока в dash2dock-motion: раніше код помилково перевіряв d2d._dock?.dash (який є undefined), тепер d2d, його дочірні елементи (DashSlideContainer) та d2d.dash отримують visible=true, opacity=255, translation_y=-dockH та викликається global._liquidGlassDockSync?.().
+     * У safeOnComplete() додано безумовне форсоване відновлення видимості вікон та дока.
+   - Додано надійний механізм деактивації з тайм-аутом безпеки (wack-lockscreen-clock/src/main/curtainManager.js):
+     * В _continueDeactivate раніше виклик _completeDeactivate() залежав виключно від Clutter onComplete анімації згасання _lockDialogGroup. Якщо анімація скидалася або блокувалася, екран не завершував деактивацію, і діалог із розмиттям лишався висіти в uiGroup.
+     * Впроваджено функцію finishDeactivate() із захисним таймером GLib.timeout_add (250 мс), що гарантує знищення screenShield._dialog, скидання залишків bms-popup-blurred-widget та відновлення вікон і дока навіть за умови збою Clutter-переходів.
+   - Доопрацьовано анімацію запуску дока (dash2dock-motion@unmade.space/docking.js):
+     * У _runStartupAnimation() для гілки _isMacLayoutOverlay додано явне встановлення dock.visible=true, dock.opacity=255, dock.show(), dock.translation_y=-dockH та встановлення видимості всіх дочірніх контейнерів.
+   - Виключено екрани блокування з генерації блюру (blur-my-shell@aunetx/components/popup/targets.js):
+     * У find_actor() додано виключення для unlock-dialog, login-dialog, unlockDialogGroup та діалогів screenShield, що запобігає створенню PopupBlurSurface для повноекранного вікна розблокування.
+   - Нейтралізовано глобальний стиль карток для діалогів блокування (всі 5 gnome-shell.css тем та stylesheet.css):
+     * Для .unlock-dialog, .unlock-dialog.modal-dialog, .unlock-dialog .modal-dialog, .login-dialog, .login-dialog.modal-dialog, .login-dialog .modal-dialog прописано background-color: transparent !important; border: none !important; box-shadow: none !important;, що усунуло паразитний плаваючий прямокутник 35px над аватаркою на локскріні.
+   - Оновлено хеші цілісності в config/extensions.lock.json:
+     * wack-lockscreen-clock@rinzler69-wastaken.github.com: 2a7941963036cff573704bc60ebdec1e46ee22375bc118c6bf7cb0e6db31ae55
+     * dash2dock-motion@unmade.space: b5d49b844e37a9d7a292eccc6277dd67bf9358941e8512a3f92552daa5b5f833
+     * blur-my-shell@aunetx: c8292d486a0b100d3cbae22753c2fe3837f2aa7f8454b304b88945aff8710289
+   - Синхронізовано теку релізу:
+     * Зміни синхронізовано з /home/vitaliy/macW1Y 06065 PRIVATE/ (без створення архівів та без .git).
+
+3. Результати тестування та верифікації:
+   - DBus EvalHelper перевірка живого стану оболонки:
+     * hasWindows: true
+     * windowGroupVisible: true, windowGroupOpacity: 255, topWindowGroupVisible: true
+     * dockVisible: true, dockOpacity: 255, dockY: 1080, dockTransY: -92, dashVisible: true, dashOpacity: 255
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes.
+   - bin/mac-audit-sync check: 100% PASS! (5/5 перевірок пройдено успішно).
+   - bin/mac-i18n-verify: 100% SUCCESSFUL (194 мови валідні).
+   - Усі фонові завдання в терміналі перевірено та завершено.
+
+4. Статус: Завершено.

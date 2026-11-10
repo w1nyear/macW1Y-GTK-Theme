@@ -2397,6 +2397,17 @@ export class DockManager {
                 dash.translation_x = 0;
                 dash.translation_y = 0;
                 dash.opacity = 255;
+                dash.visible = true;
+                dock.remove_all_transitions();
+                dock.opacity = 255;
+                dock.visible = true;
+                dock.show();
+                const dockH = dock.height > 0 ? dock.height : 92;
+                dock.translation_y = -dockH;
+                for (const child of dock.get_children()) {
+                    child.visible = true;
+                    child.opacity = 255;
+                }
                 dock._dockState = State.SHOWN;
                 if (typeof dock._updateDashVisibility === 'function')
                     dock._updateDashVisibility();
@@ -2414,8 +2425,19 @@ export class DockManager {
             if (!dash)
                 return;
 
+            dock.remove_all_transitions();
+            dock.opacity = 255;
+            dock.visible = true;
+            dock.show();
+            const dockH = dock.height > 0 ? dock.height : 80;
+            dock.translation_y = -dockH;
+            for (const child of dock.get_children()) {
+                child.visible = true;
+                child.opacity = 255;
+            }
+
             dock._dockState = State.SHOWING;
-            const dist = (dock.height > 0 ? dock.height : 80) + 30;
+            const dist = dockH + 30;
 
             switch (dock.position) {
             case St.Side.LEFT:

@@ -3538,6 +3538,17 @@ StWidget.focused .app-grid-running-dot {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.20) !important;
 }
 
+.unlock-dialog,
+.unlock-dialog.modal-dialog,
+.unlock-dialog .modal-dialog,
+.login-dialog,
+.login-dialog.modal-dialog,
+.login-dialog .modal-dialog {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 .mac-empty-trash-dialog {
   border-radius: 24px !important;
   padding: 22px 18px 18px 18px !important;
