@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-/* Custom theme GTK4 - Window Controls Mac-like Behavior */
+/* Custom theme GTK4 - Window Controls Mac-like Behavior & Liquid Glass Jelly Physics */
 
-/* Window Controls base states*/
-
+/* Window Controls base states */
 windowcontrols button {
   min-width: 16px;
   min-height: 16px;
@@ -12,6 +11,7 @@ windowcontrols button {
   background-position: center;
   margin: 0px;
   padding: 0px;
+  transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 220ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 windowcontrols button:hover,
@@ -21,7 +21,7 @@ windowcontrols:hover button {
   background-position: center;
 }
 
-/* This changes spacing between buttons */
+/* Spacing between buttons */
 windowcontrols button > image {
   padding: 0 3px;
 }
@@ -158,7 +158,7 @@ windowcontrols button.maximize:backdrop:hover {
   );
 }
 
-/* Mac-like: show all 3 when hovering the group */
+/* Mac-like Group Hover: show all 3 glyphs simultaneously when hovering any button in the group */
 windowcontrols:hover button.close {
   background-image: -gtk-scaled(
     url("windows-assets/button-close-hover.png"),
@@ -185,37 +185,40 @@ windowcontrols:hover button.maximize {
   );
 }
 
-/* --- ACTIVE STATES --- */
-/* Place active rules LAST so they win over container :hover rules with equal specificity. */
-
-/* Close active (including when the container is hovered) */
+/* --- ACTIVE STATES (Liquid Glass Jelly ease-out scale & boost, spring bounce return) --- */
 windowcontrols button.close:active,
 windowcontrols:hover button.close:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-close-active.png"),
     url("windows-assets/button-close-active@2.png")
   );
+  transform: scale(1.18);
+  filter: brightness(1.28) saturate(1.22);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
-/* Minimize active */
 windowcontrols button.minimize:active,
 windowcontrols:hover button.minimize:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-minimize-active.png"),
     url("windows-assets/button-minimize-active@2.png")
   );
+  transform: scale(1.18);
+  filter: brightness(1.28) saturate(1.22);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
-/* Maximize active (unmaximized) */
 windowcontrols button.maximize:active,
 windowcontrols:hover button.maximize:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-maximize-active.png"),
     url("windows-assets/button-maximize-active@2.png")
   );
+  transform: scale(1.18);
+  filter: brightness(1.28) saturate(1.22);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
-/* Restore active (window maximized/fullscreen) */
 .fullscreen windowcontrols button.maximize:active,
 .maximized windowcontrols button.maximize:active,
 .fullscreen windowcontrols:hover button.maximize:active,
@@ -224,9 +227,100 @@ windowcontrols:hover button.maximize:active {
     url("windows-assets/button-restore-active.png"),
     url("windows-assets/button-restore-active@2.png")
   );
+  transform: scale(1.18);
+  filter: brightness(1.28) saturate(1.22);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
-/* optional: fine tuning for layout */
+/* =========================================================================
+ * Chromium / Google Chrome & External Applications Forced Traffic Lights
+ * ========================================================================= */
+window.background.chromium headerbar.header-bar.titlebar button.titlebutton {
+  min-width: 16px;
+  min-height: 16px;
+  margin: 0 3px;
+  padding: 0;
+  border-radius: 9999px;
+  background-color: transparent;
+  border-color: transparent;
+  border: none;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  background-position: center;
+  transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 220ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-close.png"),
+    url("windows-assets/button-close@2.png")
+  );
+}
+window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-minimize.png"),
+    url("windows-assets/button-minimize@2.png")
+  );
+}
+window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-maximize.png"),
+    url("windows-assets/button-maximize@2.png")
+  );
+}
+
+/* Chromium Group Hover: hovering the titlebar or any button reveals all 3 glyphs */
+window.background.chromium headerbar.header-bar.titlebar:hover button.close.titlebutton,
+window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:hover {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-close-hover.png"),
+    url("windows-assets/button-close-hover@2.png")
+  );
+}
+window.background.chromium headerbar.header-bar.titlebar:hover button.minimize.titlebutton,
+window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:hover {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-minimize-hover.png"),
+    url("windows-assets/button-minimize-hover@2.png")
+  );
+}
+window.background.chromium headerbar.header-bar.titlebar:hover button.maximize.titlebutton,
+window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton:hover {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-maximize-hover.png"),
+    url("windows-assets/button-maximize-hover@2.png")
+  );
+}
+
+/* Chromium Active Liquid Glass Jelly ease-out scale & boost */
+window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:active {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-close-active.png"),
+    url("windows-assets/button-close-active@2.png")
+  );
+  transform: scale(1.18);
+  filter: brightness(1.28) saturate(1.22);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
+}
+window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:active {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-minimize-active.png"),
+    url("windows-assets/button-minimize-active@2.png")
+  );
+  transform: scale(1.18);
+  filter: brightness(1.28) saturate(1.22);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
+}
+window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton:active {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-maximize-active.png"),
+    url("windows-assets/button-maximize-active@2.png")
+  );
+  transform: scale(1.18);
+  filter: brightness(1.28) saturate(1.22);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
+}
+
 headerbar .title {
   margin-left: 6px;
   margin-right: 6px;

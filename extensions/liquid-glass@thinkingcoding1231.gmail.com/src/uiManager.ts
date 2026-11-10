@@ -611,6 +611,7 @@ export class UIManager {
       (this.effect as any).setShadowIntensityMultiplier(1.0 / 3.0);
     }
     this.liquidBox.add_effect(this.effect);
+        this._setupJellyTouchAndDrag();
 
     this.bgActor.hide();
 
@@ -1533,7 +1534,144 @@ export class UIManager {
     }
   }
 
-  cleanup() {
+      _setupJellyTouchAndDrag() {
+        if (!this.animActor || !this.effect) return;
+        let isPressed = false;
+        let pressX = 0, pressY = 0;
+        let springId = 0;
+        let curSx = 1.0, curSy = 1.0;
+        let curTx = this._menuXoffset || 0, curTy = this._menuYoffset || 0;
+        let velSx = 0, velSy = 0, velTx = 0, velTy = 0;
+
+        const stopSpring = () => {
+            if (springId) {
+                GLib.Source.remove(springId);
+                springId = 0;
+            }
+        };
+
+        const springBack = () => {
+            stopSpring();
+            let lastTime = GLib.get_monotonic_time();
+            const stiffness = 240.0;
+            const damping = 16.0;
+            const targetTx = this._menuXoffset || 0;
+            const targetTy = this._menuYoffset || 0;
+
+            springId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 16, () => {
+                const now = GLib.get_monotonic_time();
+                let dt = (now - lastTime) / 1000000.0;
+                lastTime = now;
+                if (dt > 0.05) dt = 0.05;
+                if (dt <= 0) return GLib.SOURCE_CONTINUE;
+
+                const fSx = -stiffness * (curSx - 1.0) - damping * velSx;
+                velSx += fSx * dt;
+                curSx += velSx * dt;
+
+                const fSy = -stiffness * (curSy - 1.0) - damping * velSy;
+                velSy += fSy * dt;
+                curSy += velSy * dt;
+
+                const fTx = -stiffness * (curTx - targetTx) - damping * velTx;
+                velTx += fTx * dt;
+                curTx += velTx * dt;
+
+                const fTy = -stiffness * (curTy - targetTy) - damping * velTy;
+                velTy += fTy * dt;
+                curTy += velTy * dt;
+
+                if (this.animActor && isActorValid(this.animActor)) {
+                    this.animActor.translation_x = curTx;
+                    this.animActor.translation_y = curTy;
+                    this.animActor.set_scale(curSx, curSy);
+                }
+
+                if (this.effect && typeof this.effect.setPointerPosition === 'function') {
+                    this.effect.setPointerPosition(-100.0, -100.0, 0.0);
+                }
+
+                const settled = Math.abs(curSx - 1.0) < 0.005 &&
+                                Math.abs(curSy - 1.0) < 0.005 &&
+                                Math.abs(curTx - targetTx) < 0.1 &&
+                                Math.abs(curTy - targetTy) < 0.1 &&
+                                Math.abs(velSx) < 0.01 && Math.abs(velSy) < 0.01;
+
+                if (settled) {
+                    curSx = 1.0; curSy = 1.0;
+                    curTx = targetTx; curTy = targetTy;
+                    velSx = 0; velSy = 0; velTx = 0; velTy = 0;
+                    if (this.animActor && isActorValid(this.animActor)) {
+                        this.animActor.translation_x = targetTx;
+                        this.animActor.translation_y = targetTy;
+                        this.animActor.set_scale(1.0, 1.0);
+                    }
+                    springId = 0;
+                    return GLib.SOURCE_REMOVE;
+                }
+                return GLib.SOURCE_CONTINUE;
+            });
+        };
+
+        const target = this.animActor;
+        target.reactive = true;
+
+        this._jellySignals = [];
+        this._jellySignals.push(target.connect('button-press-event', (actor, event) => {
+            if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
+            stopSpring();
+            isPressed = true;
+            const [x, y] = event.get_coords();
+            pressX = x;
+            pressY = y;
+
+            if (this.effect && typeof this.effect.setPointerPosition === 'function') {
+                this.effect.setPointerPosition(x, y, 1.0);
+            }
+            return Clutter.EVENT_PROPAGATE;
+        }));
+
+        this._jellySignals.push(target.connect('motion-event', (actor, event) => {
+            if (!isPressed) return Clutter.EVENT_PROPAGATE;
+            const [curX, curY] = event.get_coords();
+            const dx = curX - pressX;
+            const dy = curY - pressY;
+
+            const resistance = 0.32;
+            const w = Math.max(100.0, target.width || 300.0);
+            const h = Math.max(100.0, target.height || 200.0);
+
+            curTx = (this._menuXoffset || 0) + dx * resistance;
+            curTy = (this._menuYoffset || 0) + dy * resistance;
+            curSx = 1.0 + Math.max(-0.25, Math.min(0.35, (dx * resistance) / w));
+            curSy = 1.0 + Math.max(-0.25, Math.min(0.35, (dy * resistance) / h));
+
+            target.translation_x = curTx;
+            target.translation_y = curTy;
+            target.set_scale(curSx, curSy);
+
+            if (this.effect && typeof this.effect.setPointerPosition === 'function') {
+                this.effect.setPointerPosition(curX, curY, 1.0);
+            }
+            return Clutter.EVENT_PROPAGATE;
+        }));
+
+        this._jellySignals.push(target.connect('button-release-event', () => {
+            if (!isPressed) return Clutter.EVENT_PROPAGATE;
+            isPressed = false;
+            springBack();
+            return Clutter.EVENT_PROPAGATE;
+        }));
+
+        this._jellySignals.push(target.connect('leave-event', () => {
+            if (isPressed) {
+                isPressed = false;
+                springBack();
+            }
+            return Clutter.EVENT_PROPAGATE;
+        }));
+    }
+cleanup() {
     this._torndown = true;
 
     // The later chain goes first and unconditionally — see _teardownStep().

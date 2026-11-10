@@ -1,13 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 
-/* Custom theme GTK3 - Window Controls Mac-like Behavior
- * Updated to use pre-rendered PNG assets + @2 hi-DPI counterparts.
- * Rationale: GTK3 also exhibits soft / blurry rasterization of SVG
- * window control icons under fractional scaling. Using PNG plus
- * -gtk-scaled() yields sharper, predictable results. */
+/* Custom theme GTK3 - Window Controls Mac-like Behavior & Group Hover */
 
 /* Window Controls base states */
-
 headerbar button.titlebutton,
 .titlebar button.titlebutton {
   min-width: 16px;
@@ -98,7 +93,6 @@ headerbar button.titlebutton.close:backdrop,
     url("windows-assets/button-close-backdrop@2.png")
   );
 }
-/* per-button hover */
 headerbar button.titlebutton.close:hover,
 .titlebar button.titlebutton.close:hover,
 headerbar button.titlebutton.close:backdrop:hover,
@@ -184,52 +178,66 @@ headerbar button.titlebutton.restore:backdrop:hover,
   );
 }
 
-/* --- GROUP HOVER (GTK3 helper adds .titlebuttons-hover either on box OR directly on headerbar) --- */
+/* --- GROUP HOVER (All 3 buttons reveal symbols when hovering ANY button or the button box) --- */
+headerbar > box.left:hover button.titlebutton.close,
+headerbar > box.start:hover button.titlebutton.close,
 headerbar.titlebuttons-hover button.titlebutton.close,
 .titlebar.titlebuttons-hover button.titlebutton.close,
 headerbar box.titlebuttons-hover button.titlebutton.close,
-.titlebar box.titlebuttons-hover button.titlebutton.close {
+.titlebar box.titlebuttons-hover button.titlebutton.close,
+window.background.chromium headerbar:hover button.close.titlebutton {
   background-image: -gtk-scaled(
     url("windows-assets/button-close-hover.png"),
     url("windows-assets/button-close-hover@2.png")
   );
 }
+headerbar > box.left:hover button.titlebutton.minimize,
+headerbar > box.start:hover button.titlebutton.minimize,
 headerbar.titlebuttons-hover button.titlebutton.minimize,
 .titlebar.titlebuttons-hover button.titlebutton.minimize,
 headerbar box.titlebuttons-hover button.titlebutton.minimize,
-.titlebar box.titlebuttons-hover button.titlebutton.minimize {
+.titlebar box.titlebuttons-hover button.titlebutton.minimize,
+window.background.chromium headerbar:hover button.minimize.titlebutton {
   background-image: -gtk-scaled(
     url("windows-assets/button-minimize-hover.png"),
     url("windows-assets/button-minimize-hover@2.png")
   );
 }
+headerbar > box.left:hover button.titlebutton.maximize,
+headerbar > box.start:hover button.titlebutton.maximize,
 headerbar.titlebuttons-hover button.titlebutton.maximize,
 .titlebar.titlebuttons-hover button.titlebutton.maximize,
 headerbar box.titlebuttons-hover button.titlebutton.maximize,
-.titlebar box.titlebuttons-hover button.titlebutton.maximize {
+.titlebar box.titlebuttons-hover button.titlebutton.maximize,
+window.background.chromium headerbar:hover button.maximize.titlebutton {
   background-image: -gtk-scaled(
     url("windows-assets/button-maximize-hover.png"),
     url("windows-assets/button-maximize-hover@2.png")
   );
 }
-/* when the button is in restore mode and the box is hovered */
+headerbar > box.left:hover button.titlebutton.restore,
+headerbar > box.start:hover button.titlebutton.restore,
 headerbar.titlebuttons-hover button.titlebutton.restore,
 .titlebar.titlebuttons-hover button.titlebutton.restore,
 headerbar box.titlebuttons-hover button.titlebutton.restore,
-.titlebar box.titlebuttons-hover button.titlebutton.restore {
+.titlebar box.titlebuttons-hover button.titlebutton.restore,
+window.background.chromium headerbar:hover button.restore.titlebutton {
   background-image: -gtk-scaled(
     url("windows-assets/button-restore-hover.png"),
     url("windows-assets/button-restore-hover@2.png")
   );
 }
 
-/* --- ACTIVE STATES LAST (so they win over group-hover) --- */
+/* --- ACTIVE STATES (Win over group hover) --- */
 headerbar button.titlebutton.close:active,
 .titlebar button.titlebutton.close:active,
+headerbar > box.left:hover button.titlebutton.close:active,
+headerbar > box.start:hover button.titlebutton.close:active,
 headerbar.titlebuttons-hover button.titlebutton.close:active,
 .titlebar.titlebuttons-hover button.titlebutton.close:active,
 headerbar box.titlebuttons-hover button.titlebutton.close:active,
-.titlebar box.titlebuttons-hover button.titlebutton.close:active {
+.titlebar box.titlebuttons-hover button.titlebutton.close:active,
+window.background.chromium headerbar button.close.titlebutton:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-close-active.png"),
     url("windows-assets/button-close-active@2.png")
@@ -238,10 +246,13 @@ headerbar box.titlebuttons-hover button.titlebutton.close:active,
 
 headerbar button.titlebutton.minimize:active,
 .titlebar button.titlebutton.minimize:active,
+headerbar > box.left:hover button.titlebutton.minimize:active,
+headerbar > box.start:hover button.titlebutton.minimize:active,
 headerbar.titlebuttons-hover button.titlebutton.minimize:active,
 .titlebar.titlebuttons-hover button.titlebutton.minimize:active,
 headerbar box.titlebuttons-hover button.titlebutton.minimize:active,
-.titlebar box.titlebuttons-hover button.titlebutton.minimize:active {
+.titlebar box.titlebuttons-hover button.titlebutton.minimize:active,
+window.background.chromium headerbar button.minimize.titlebutton:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-minimize-active.png"),
     url("windows-assets/button-minimize-active@2.png")
@@ -250,10 +261,13 @@ headerbar box.titlebuttons-hover button.titlebutton.minimize:active,
 
 headerbar button.titlebutton.maximize:active,
 .titlebar button.titlebutton.maximize:active,
+headerbar > box.left:hover button.titlebutton.maximize:active,
+headerbar > box.start:hover button.titlebutton.maximize:active,
 headerbar.titlebuttons-hover button.titlebutton.maximize:active,
 .titlebar.titlebuttons-hover button.titlebutton.maximize:active,
 headerbar box.titlebuttons-hover button.titlebutton.maximize:active,
-.titlebar box.titlebuttons-hover button.titlebutton.maximize:active {
+.titlebar box.titlebuttons-hover button.titlebutton.maximize:active,
+window.background.chromium headerbar button.maximize.titlebutton:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-maximize-active.png"),
     url("windows-assets/button-maximize-active@2.png")
@@ -262,10 +276,13 @@ headerbar box.titlebuttons-hover button.titlebutton.maximize:active,
 
 headerbar button.titlebutton.restore:active,
 .titlebar button.titlebutton.restore:active,
+headerbar > box.left:hover button.titlebutton.restore:active,
+headerbar > box.start:hover button.titlebutton.restore:active,
 headerbar.titlebuttons-hover button.titlebutton.restore:active,
 .titlebar.titlebuttons-hover button.titlebutton.restore:active,
 headerbar box.titlebuttons-hover button.titlebutton.restore:active,
-.titlebar box.titlebuttons-hover button.titlebutton.restore:active {
+.titlebar box.titlebuttons-hover button.titlebutton.restore:active,
+window.background.chromium headerbar button.restore.titlebutton:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-restore-active.png"),
     url("windows-assets/button-restore-active@2.png")

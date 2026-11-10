@@ -1,4 +1,5 @@
 @import url("macw1y-tokens.css");
+@import url("titlebuttons4.css");
 :root {
   --blue-1: #99c1f1;
   --blue-2: #62a0ea;
@@ -8057,53 +8058,84 @@ window.background.chromium headerbar.header-bar.titlebar button.titlebutton {
   margin: 0 3px;
   padding: 0;
   border-radius: 9999px;
-  background-image: none;
+  background-color: transparent;
+  border-color: transparent;
   border: none;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  background-position: center;
+  transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 220ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton {
-  background-color: #e9524a;
-  color: #e9524a;
+  background-image: -gtk-scaled(
+    url("windows-assets/button-close.png"),
+    url("windows-assets/button-close@2.png")
+  );
 }
-
-window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:hover {
-  background-color: #e9524a;
-  color: mix(black,#e9524a,0.5);
-}
-
-window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:active {
-  background-color: #ba423b;
-  color: mix(black,#ba423b,0.5);
-}
-
 window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton {
-  background-color: #f1ae1b;
-  color: #f1ae1b;
+  background-image: -gtk-scaled(
+    url("windows-assets/button-minimize.png"),
+    url("windows-assets/button-minimize@2.png")
+  );
 }
-
-window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:hover {
-  background-color: #f1ae1b;
-  color: mix(black,#f1ae1b,0.5);
-}
-
-window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:active {
-  background-color: #c18b16;
-  color: mix(black,#c18b16,0.5);
-}
-
 window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton {
-  background-color: #59c837;
-  color: #59c837;
+  background-image: -gtk-scaled(
+    url("windows-assets/button-maximize.png"),
+    url("windows-assets/button-maximize@2.png")
+  );
 }
 
+/* Chromium Group Hover: hovering the titlebar or any button reveals all 3 glyphs */
+window.background.chromium headerbar.header-bar.titlebar:hover button.close.titlebutton,
+window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:hover {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-close-hover.png"),
+    url("windows-assets/button-close-hover@2.png")
+  );
+}
+window.background.chromium headerbar.header-bar.titlebar:hover button.minimize.titlebutton,
+window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:hover {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-minimize-hover.png"),
+    url("windows-assets/button-minimize-hover@2.png")
+  );
+}
+window.background.chromium headerbar.header-bar.titlebar:hover button.maximize.titlebutton,
 window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton:hover {
-  background-color: #59c837;
-  color: mix(black,#59c837,0.5);
+  background-image: -gtk-scaled(
+    url("windows-assets/button-maximize-hover.png"),
+    url("windows-assets/button-maximize-hover@2.png")
+  );
 }
 
+/* Chromium Active Liquid Glass Jelly ease-out scale & boost */
+window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:active {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-close-active.png"),
+    url("windows-assets/button-close-active@2.png")
+  );
+  transform: scale(1.18);
+  filter: brightness(1.28) saturate(1.22);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
+}
+window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:active {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-minimize-active.png"),
+    url("windows-assets/button-minimize-active@2.png")
+  );
+  transform: scale(1.18);
+  filter: brightness(1.28) saturate(1.22);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
+}
 window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton:active {
-  background-color: #47a02c;
-  color: mix(black,#47a02c,0.5);
+  background-image: -gtk-scaled(
+    url("windows-assets/button-maximize-active.png"),
+    url("windows-assets/button-maximize-active@2.png")
+  );
+  transform: scale(1.18);
+  filter: brightness(1.28) saturate(1.22);
+  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
 window.background.chromium {

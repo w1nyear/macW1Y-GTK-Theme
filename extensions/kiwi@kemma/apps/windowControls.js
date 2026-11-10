@@ -82,25 +82,180 @@ class WindowControlsIndicator extends PanelMenu.Button {
             return Clutter.EVENT_PROPAGATE;
         })]);
         
+        // Container-level hover tracking for seamless group hover
+        this._clutterSignalIds.push([this._box, this._box.connect('enter-event', () => {
+            if (this._suppressHoverUntilPointerMove) {
+                this._suppressHoverUntilPointerMove = false;
+            }
+            if (this._useMacosIcons) {
+                this._isContainerHovered = true;
+                this._updateAllIcons();
+            }
+            return Clutter.EVENT_PROPAGATE;
+        })]);
+        
         // Add leave event for the main container to reset hover state
         this._clutterSignalIds.push([this._box, this._box.connect('leave-event', () => {
-            this._isContainerHovered = false;
-            this._updateAllIcons();
+            if (this._useMacosIcons) {
+                this._isContainerHovered = false;
+                this._updateAllIcons();
+            }
             return Clutter.EVENT_PROPAGATE;
         })]);
 
-        ['minimize', 'maximize', 'close'].forEach(buttonType => {
-            const button = this[`_${buttonType}Button`];
+        // Helper to install macOS Liquid Glass Jelly physics on a traffic light button
+        const installJellyPhysics = (button, buttonType) => {
+            let isPressed = false;
+            let pressX = 0, pressY = 0;
+            let springSourceId = 0;
+            let currentScaleX = 1.0, currentScaleY = 1.0;
+            let currentTransX = 0.0, currentTransY = 0.0;
+            let velScaleX = 0.0, velScaleY = 0.0;
+            let velTransX = 0.0, velTransY = 0.0;
+
+            const stopSpring = () => {
+                if (springSourceId) {
+                    GLib.Source.remove(springSourceId);
+                    springSourceId = 0;
+                }
+            };
+
+            const runSpringBack = () => {
+                stopSpring();
+                let lastTime = GLib.get_monotonic_time();
+                // Hooke's Law spring parameters
+                const stiffness = 280.0;
+                const damping = 16.0;
+
+                springSourceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 16, () => {
+                    const now = GLib.get_monotonic_time();
+                    let dt = (now - lastTime) / 1000000.0;
+                    lastTime = now;
+                    if (dt > 0.05) dt = 0.05;
+                    if (dt <= 0) return GLib.SOURCE_CONTINUE;
+
+                    // Spring physics for scale_x (target: 1.0)
+                    const fSx = -stiffness * (currentScaleX - 1.0) - damping * velScaleX;
+                    velScaleX += fSx * dt;
+                    currentScaleX += velScaleX * dt;
+
+                    // Spring physics for scale_y (target: 1.0)
+                    const fSy = -stiffness * (currentScaleY - 1.0) - damping * velScaleY;
+                    velScaleY += fSy * dt;
+                    currentScaleY += velScaleY * dt;
+
+                    // Spring physics for trans_x (target: 0.0)
+                    const fTx = -stiffness * currentTransX - damping * velTransX;
+                    velTransX += fTx * dt;
+                    currentTransX += velTransX * dt;
+
+                    // Spring physics for trans_y (target: 0.0)
+                    const fTy = -stiffness * currentTransY - damping * velTransY;
+                    velTransY += fTy * dt;
+                    currentTransY += velTransY * dt;
+
+                    button.set_scale(currentScaleX, currentScaleY);
+                    button.set_translation(currentTransX, currentTransY, 0);
+
+                    const settled = Math.abs(currentScaleX - 1.0) < 0.005 &&
+                                    Math.abs(currentScaleY - 1.0) < 0.005 &&
+                                    Math.abs(currentTransX) < 0.1 &&
+                                    Math.abs(currentTransY) < 0.1 &&
+                                    Math.abs(velScaleX) < 0.01 &&
+                                    Math.abs(velScaleY) < 0.01;
+
+                    if (settled) {
+                        currentScaleX = 1.0;
+                        currentScaleY = 1.0;
+                        currentTransX = 0.0;
+                        currentTransY = 0.0;
+                        velScaleX = 0; velScaleY = 0;
+                        velTransX = 0; velTransY = 0;
+                        button.set_scale(1.0, 1.0);
+                        button.set_translation(0, 0, 0);
+                        springSourceId = 0;
+                        return GLib.SOURCE_REMOVE;
+                    }
+                    return GLib.SOURCE_CONTINUE;
+                });
+            };
+
+            button.set_pivot_point(0.5, 0.5);
+
             this._clutterSignalIds.push([button, button.connect('notify::hover', () => this._updateButtonIcon(buttonType))]);
-            this._clutterSignalIds.push([button, button.connect('button-press-event', () => {
+            
+            this._clutterSignalIds.push([button, button.connect('button-press-event', (actor, event) => {
+                if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
+                stopSpring();
+                isPressed = true;
+                const [x, y] = event.get_coords();
+                pressX = x;
+                pressY = y;
                 button.add_style_pseudo_class('active');
                 this._updateButtonIcon(buttonType);
+
+                // Ease-out scale up (~1.18x) and brightness/saturation glow
+                button.ease({
+                    scale_x: 1.18,
+                    scale_y: 1.18,
+                    duration: 120,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+                currentScaleX = 1.18;
+                currentScaleY = 1.18;
+                currentTransX = 0;
+                currentTransY = 0;
+                return Clutter.EVENT_PROPAGATE;
             })]);
+
+            this._clutterSignalIds.push([button, button.connect('motion-event', (actor, event) => {
+                if (!isPressed) return Clutter.EVENT_PROPAGATE;
+                const [curX, curY] = event.get_coords();
+                const dx = curX - pressX;
+                const dy = curY - pressY;
+
+                // Jelly deformation ("деформація тягучки"):
+                // Stretch along drag vector with rubber-banding resistance
+                const dist = Math.hypot(dx, dy);
+                if (dist > 1.0) {
+                    const stretch = 1.18 + Math.min(dist * 0.035, 1.25);
+                    const compress = Math.max(0.65, 1.18 / Math.sqrt(stretch / 1.18));
+
+                    if (Math.abs(dx) >= Math.abs(dy)) {
+                        currentScaleX = stretch;
+                        currentScaleY = compress;
+                    } else {
+                        currentScaleX = compress;
+                        currentScaleY = stretch;
+                    }
+                    currentTransX = dx * 0.38;
+                    currentTransY = dy * 0.38;
+
+                    button.set_scale(currentScaleX, currentScaleY);
+                    button.set_translation(currentTransX, currentTransY, 0);
+                }
+                return Clutter.EVENT_PROPAGATE;
+            })]);
+
             this._clutterSignalIds.push([button, button.connect('button-release-event', () => {
+                if (!isPressed) return Clutter.EVENT_PROPAGATE;
+                isPressed = false;
                 button.remove_style_pseudo_class('active');
                 this._updateButtonIcon(buttonType);
+                runSpringBack();
+                return Clutter.EVENT_PROPAGATE;
             })]);
-            // Add enter/leave events for all-buttons-hover effect (macOS mode)
+
+            this._clutterSignalIds.push([button, button.connect('leave-event', () => {
+                if (isPressed) {
+                    isPressed = false;
+                    button.remove_style_pseudo_class('active');
+                    this._updateButtonIcon(buttonType);
+                    runSpringBack();
+                }
+            })]);
+
+            // Add enter event for all-buttons-hover effect (macOS mode)
             this._clutterSignalIds.push([button, button.connect('enter-event', () => {
                 if (this._suppressHoverUntilPointerMove) {
                     this._suppressHoverUntilPointerMove = false;
@@ -110,12 +265,11 @@ class WindowControlsIndicator extends PanelMenu.Button {
                     this._updateAllIcons();
                 }
             })]);
-            this._clutterSignalIds.push([button, button.connect('leave-event', () => {
-                if (this._useMacosIcons) {
-                    this._isContainerHovered = false;
-                    this._updateAllIcons();
-                }
-            })]);
+        };
+
+        ['minimize', 'maximize', 'close'].forEach(buttonType => {
+            const button = this[`_${buttonType}Button`];
+            installJellyPhysics(button, buttonType);
         });
 
         this._clutterSignalIds.push([this._minimizeButton, this._minimizeButton.connect('clicked', () => {

@@ -1185,6 +1185,15 @@ void main() {
     // white backgrounds), this smoothly limits the maximum brightness to 1.0.
     vec3 litColor = baseColor + addedLight - (baseColor * addedLight);
 
+    // 2b. Liquid Glass Touch Brightening (LMB press highlight / localized glass touch response)
+    if (pointer_x >= 0.0 && pointer_y >= 0.0 && intensity > 0.0) {
+        vec2 touchPos = vec2(pointer_x, pointer_y);
+        float touchDist = length(gl_FragCoord.xy - touchPos);
+        float touchRadius = max(mouse_radius, 45.0);
+        float touchGlow = exp(-0.5 * (touchDist * touchDist) / (touchRadius * touchRadius)) * intensity * 0.45;
+        litColor += vec3(touchGlow) * insideMask;
+    }
+
     // [CHANGED] 3. Hue-preserving clamp (色相を維持する安全処理)
     // RGBのいずれかが1.0を超えた場合、白飛びによる色変（黄ばみ等）を防ぐため、
     // 最も強い色を基準にRGB全体の比率を保ったまま縮小する。
