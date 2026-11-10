@@ -138,14 +138,16 @@ function formatTimeAgo(timestamp) {
 
 const PILL_COLLAPSED_STYLE =
     'height: 54px; min-height: 54px; padding: 0 14px; ' +
-    'background-color: transparent !important; ' +
-    'background: none !important; ' +
-    'border: none !important; ' +
+    'background-gradient-direction: vertical !important; ' +
+    'background-gradient-start: rgba(255, 255, 255, 0.16) !important; ' +
+    'background-gradient-end: rgba(255, 255, 255, 0.03) !important; ' +
+    'border: 1px solid rgba(255, 255, 255, 0.24) !important; ' +
     'border-radius: 27px; ' +
-    'box-shadow: none !important;';
+    'box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28) !important;';
 
 const PILL_EXPANDED_STYLE =
     'height: 54px; min-height: 54px; padding: 0 14px; ' +
+    'background-gradient-direction: none !important; ' +
     'background-color: transparent !important; ' +
     'background: none !important; ' +
     'border: none !important; ' +
@@ -274,18 +276,20 @@ function _consumeMorphFrom() {
 const BTN_NORMAL_STYLE =
     'width: 50px; min-width: 50px; height: 50px; min-height: 50px; ' +
     'border-radius: 26px; ' +
-    'background-color: transparent !important; ' +
-    'background: none !important; ' +
-    'border: 1px solid rgba(255, 255, 255, 0.30) !important; ' +
-    'box-shadow: none !important;';
+    'background-gradient-direction: vertical !important; ' +
+    'background-gradient-start: rgba(255, 255, 255, 0.16) !important; ' +
+    'background-gradient-end: rgba(255, 255, 255, 0.03) !important; ' +
+    'border: 1px solid rgba(255, 255, 255, 0.24) !important; ' +
+    'box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28) !important;';
 
 const BTN_HOVER_STYLE =
     'width: 50px; min-width: 50px; height: 50px; min-height: 50px; ' +
     'border-radius: 26px; ' +
-    'background-color: transparent !important; ' +
-    'background: none !important; ' +
-    'border: 1px solid rgba(255, 255, 255, 0.30) !important; ' +
-    'box-shadow: none !important;';
+    'background-gradient-direction: vertical !important; ' +
+    'background-gradient-start: rgba(255, 255, 255, 0.32) !important; ' +
+    'background-gradient-end: rgba(255, 255, 255, 0.14) !important; ' +
+    'border: 1px solid rgba(255, 255, 255, 0.44) !important; ' +
+    'box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;';
 
 const SETTINGS_PANELS = [
     { key: 'panel_wifi', fallback: 'Wi-Fi', match: ['wifi', 'вайфай', 'вай-фай', 'мережа', 'wi-fi', 'wlan', 'internet'], panel: 'wifi' },
@@ -1789,7 +1793,10 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         this._glass.setPadding(0);
 
         if (this._backdrop) {
-            const dimAlpha = Math.min(0.5, spotTint * 0.5);
+            const hasText = (this._entry && this._entry.get_text) ? this._entry.get_text().trim().length > 0 : false;
+            const hasResults = this._resultsWrapper && this._resultsWrapper.visible && (this._box?.height > PILL_HEIGHT + 10);
+            const isExpanded = this._buttonsCollapsed || hasText || hasResults || this._mode !== 'search';
+            const dimAlpha = isExpanded ? Math.min(0.5, spotTint * 0.5) : 0.0;
             this._backdrop.style = `background-color: rgba(0, 0, 0, ${dimAlpha.toFixed(2)}) !important;`;
         }
 
@@ -2131,10 +2138,10 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 const b2Hover = this._mouseMoved && this._btnFiles.hover;
                 const b3Hover = this._mouseMoved && this._btnClipboard.hover;
                 const regions = [
-                    { x: pillX, y: pillY, w: pillW, h: pillH, tintR, tintG, tintB, baseStrength: spotTint },
-                    { x: b1X, y: b1Y, w: b1W, h: b1H, tintR, tintG, tintB, baseStrength: b1Hover ? spotTint * 2.5 : spotTint },
-                    { x: b2X, y: b2Y, w: b2W, h: b2H, tintR, tintG, tintB, baseStrength: b2Hover ? spotTint * 2.5 : spotTint },
-                    { x: b3X, y: b3Y, w: b3W, h: b3H, tintR, tintG, tintB, baseStrength: b3Hover ? spotTint * 2.5 : spotTint },
+                    { x: pillX, y: pillY, w: pillW, h: pillH, tintR, tintG, tintB, baseStrength: 0.0 },
+                    { x: b1X, y: b1Y, w: b1W, h: b1H, tintR: b1Hover ? 1.0 : tintR, tintG: b1Hover ? 1.0 : tintG, tintB: b1Hover ? 1.0 : tintB, baseStrength: b1Hover ? 0.15 : 0.0 },
+                    { x: b2X, y: b2Y, w: b2W, h: b2H, tintR: b2Hover ? 1.0 : tintR, tintG: b2Hover ? 1.0 : tintG, tintB: b2Hover ? 1.0 : tintB, baseStrength: b2Hover ? 0.15 : 0.0 },
+                    { x: b3X, y: b3Y, w: b3W, h: b3H, tintR: b3Hover ? 1.0 : tintR, tintG: b3Hover ? 1.0 : tintG, tintB: b3Hover ? 1.0 : tintB, baseStrength: b3Hover ? 0.15 : 0.0 },
                 ];
 
                 const minX = Math.min(pillX, b1X, b2X, b3X);
@@ -2146,12 +2153,23 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 if (this._lastGeometryKey === key) return;
                 this._lastGeometryKey = key;
 
+                if (this._backdrop) {
+                    this._backdrop.style = 'background-color: transparent !important;';
+                }
+
                 const CLIP_PAD = 60;
                 this._glass.setMultiRegionMode(true);
+                this._glass.setTintColor(tintR, tintG, tintB);
+                this._glass.setTintStrength(spotTint);
+                this._glass.setCornerRadius(27);
                 this._glass.setGlassRegions(regions);
                 this._glass.set_clip(minX - CLIP_PAD, minY - CLIP_PAD, (maxX - minX) + CLIP_PAD * 2, (maxY - minY) + CLIP_PAD * 2);
                 this._glass.wakeFrameSync?.();
             } else {
+                if (this._backdrop) {
+                    const dimAlpha = Math.min(0.5, spotTint * 0.5);
+                    this._backdrop.style = `background-color: rgba(0, 0, 0, ${dimAlpha.toFixed(2)}) !important;`;
+                }
                 const [boxScreenX, boxScreenY] = box.get_transformed_position();
                 const localBgX = Math.round(boxScreenX - mon.x);
                 const localBgY = Math.round(boxScreenY - mon.y);
@@ -2530,6 +2548,11 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         }
 
         this._entry.grab_key_focus();
+        try {
+            if (this._entry?.clutter_text?.set_cursor_color) {
+                this._entry.clutter_text.set_cursor_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 }));
+            }
+        } catch (_) {}
 
         if (!this._stageSignalId) {
             this._stageSignalId = global.stage.connect('before-update', () => {

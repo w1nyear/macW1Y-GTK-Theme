@@ -19574,3 +19574,40 @@ Task 696: Вдосконалення лаунчпада Spotlight: видале�
    - Програмний тест підтвердив повернення hValue: 0, vValue: 0 та selectedAppIndex: 0 при повторному відкритті.
 
 4. Статус: Завершено.
+
+
+================================================================================
+Task 697: Уніфікація стилю та скляного шейдера панелі пошуку Spotlight із системною темою "Мак стилізація"
+Дата: 10 листопада 2026
+Статус: Завершено (SUCCESS)
+
+1. Вимоги завдання:
+   - Стиль у панелі "Мак стилізація" для Spotlight має повноцінно та ідентично застосовуватись і до панелі пошуку Spotlight (Search Dialog).
+   - Усунути проблему з надмірним затемненням панелі пошуку (раніше вона виглядала пласкою, надто темною та непрозорою на фоні шпалер порівняно з іншими елементами Spotlight і віджетами).
+   - Забезпечити синхронізацію відтінків, рідкого скла (Liquid Glass Effect), витонченого бліку (specular sheen), скляної рамки (1px rim border) та чисто білого кольору курсора (caret-color: #ffffff) замість акцентного помаранчевого.
+
+2. Реалізовані зміни та технічні рішення:
+   - Усунення подвійного затемнення у multi-region шейдері:
+     * У extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js у методі _syncGlass() для multi-region режиму (згорнута пігулка пошуку + 3 кнопки) передавався baseStrength: spotTint при tintR, tintG, tintB = (0.16, 0.16, 0.18). У шейдері glass.frag це викликало подвійне множення та накладання темного відтінку поверх заломленого фону шпалер.
+     * Встановлено baseStrength: 0.0 для згорнутої пігулки та нормальних кнопок, що дозволило системному параметру spotTint застосовуватись рівно один раз без затемнення. Для кнопок при наведенні (hover) налаштовано делікатний білий блік (tintR: 1.0, tintG: 1.0, tintB: 1.0, baseStrength: 0.15).
+   - Динамічне затемнення екрана (backdrop):
+     * У згорнутому стані панелі пошуку встановлено прозорий фон підкладки (_backdrop.style = 'background-color: transparent !important;'), усунувши 7% глобальне затемнення екрана під час простою пошукового рядка. Затемнення м'яко активується лише при розгортанні результатів пошуку або списку програм.
+   - Скляний блік, рамка та тінь пігулки пошуку:
+     * У PILL_COLLAPSED_STYLE та BTN_NORMAL_STYLE інтегровано витончений вертикальний градієнтний блік (background-gradient-direction: vertical, start: rgba(255, 255, 255, 0.16), end: rgba(255, 255, 255, 0.03)), скляну рамку 1px solid rgba(255, 255, 255, 0.24) та глибинну м'яку тінь box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28).
+   - Білий колір курсора введення (caret-color: #ffffff):
+     * У gnome-shell-theme/gnome-shell.css та 4 варіантах теми (macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid) оновлено правила для #mac-spotlight-box StEntry, .mac-spotlight-entry та #mac-applications-search з примусовим caret-color: #ffffff !important замість -st-accent-color.
+     * У extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js, applications_menu_v5b.js та applications_menu_v5.js додано явне призначення set_cursor_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 })) при отриманні фокусу введення.
+   - Синхронізація системи та перевірка цілісності:
+     * Оновлено копії розширення в ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/.
+     * Оновлено системну тему в ~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css та виконано перезавантаження теми Main.loadTheme().
+     * Оновлено хеш цілісності в config/extensions.lock.json (a6911be4f6231651d5381fbfcedba9cf9a2b5f432cb3c7c226335bb6d7f74167).
+     * Перевірка bin/mac-extension-guard verify: 21/21 SUCCESS.
+     * Перевірка bin/mac-audit-sync check: 100% PASS.
+
+3. Результати верифікації:
+   - Скріншоти (spotlight_search_sheen_wallpaper.png та spotlight_search_query_crop.png) підтвердили:
+     * Ідеальне напівпрозоре матове рідке скло Spotlight пошуку з органічним заломленням шпалер без темної пелени.
+     * Присутність світлового бліку та витонченої 1px скляної окантовки, ідентичної кнопкам та верхнім віджетам.
+     * Чисто білий курсор при фокусуванні та наборі тексту запиту.
+
+4. Статус: Завершено.

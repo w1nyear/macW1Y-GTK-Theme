@@ -7367,7 +7367,7 @@ StWidget.focused .app-grid-running-dot {
   font-size: 19px !important;
   font-weight: 400 !important;
   padding: 0 10px !important;
-  caret-color: -st-accent-color !important;
+  caret-color: #ffffff !important;
   selection-background-color: -st-accent-color !important;
   selected-color: #ffffff !important;
 }
@@ -7554,6 +7554,13 @@ StWidget.focused .app-grid-running-dot {
 .mac-applications-box StLabel,
 #mac-applications-search {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
+}
+
+#mac-applications-search,
+#mac-applications-search:focus,
+.mac-applications-search,
+.mac-applications-search:focus {
+  caret-color: #ffffff !important;
 }
 
 .mac-applications-box StIcon,

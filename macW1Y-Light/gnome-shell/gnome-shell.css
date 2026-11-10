@@ -7296,7 +7296,11 @@ StWidget.focused .app-grid-running-dot {
 .mac-spotlight-entry,
 .mac-spotlight-entry:focus,
 .mac-spotlight-entry:hover,
-.mac-spotlight-entry:active {
+.mac-spotlight-entry:active,
+#mac-applications-search,
+#mac-applications-search:focus,
+.mac-applications-search,
+.mac-applications-search:focus {
   background-color: transparent !important;
   background: none !important;
   border: none !important;
@@ -7309,7 +7313,7 @@ StWidget.focused .app-grid-running-dot {
   font-size: 19px !important;
   font-weight: 400 !important;
   padding: 0 10px !important;
-  caret-color: -st-accent-color !important;
+  caret-color: #ffffff !important;
   selection-background-color: -st-accent-color !important;
   selected-color: #ffffff !important;
 }

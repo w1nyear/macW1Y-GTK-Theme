@@ -444,6 +444,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             y_align: Clutter.ActorAlign.CENTER,
             style: 'font-size: 18px !important; font-weight: 600 !important; color: #ffffff !important; ' +
                    'hint-text-color: #ffffff !important; ' +
+                   'caret-color: #ffffff !important; ' +
                    'text-shadow: 0 1px 1px rgba(0, 0, 0, 0.20) !important; ' +
                    'background-color: transparent !important; background: none !important; ' +
                    'border: none !important; box-shadow: none !important; outline: none !important;',
@@ -453,8 +454,13 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
         if (this._entry.clutter_text) {
             try {
-                if (typeof Clutter.Color === 'function')
-                    this._entry.clutter_text.set_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 }));
+                if (typeof Clutter.Color === 'function') {
+                    const white = new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 });
+                    this._entry.clutter_text.set_color(white);
+                    if (typeof this._entry.clutter_text.set_cursor_color === 'function') {
+                        this._entry.clutter_text.set_cursor_color(white);
+                    }
+                }
             } catch (_) {}
         }
         this._headerRow.add_child(this._entry);
@@ -1441,6 +1447,9 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         try {
             this._entry.grab_key_focus();
+            if (this._entry?.clutter_text?.set_cursor_color) {
+                this._entry.clutter_text.set_cursor_color(new Clutter.Color({ red: 255, green: 255, blue: 255, alpha: 255 }));
+            }
         } catch (_) {}
 
         this._startSyncLoop(240);
