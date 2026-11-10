@@ -8,6 +8,7 @@
 #include <termios.h>
 #include <gtk/gtk.h>
 #include <adwaita.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 /* =========================================================================
  * macW1Y macOS Tahoe Terminal (Ptyxis) Customizer & Redesign
@@ -211,7 +212,48 @@ static gboolean update_terminal_title_cb(gpointer user_data) {
     gtk_label_set_text(GTK_LABEL(data->lbl_path), path);
     gtk_label_set_text(GTK_LABEL(data->lbl_size), size_buf);
 
+    static gboolean logged = FALSE;
+    if (!logged && gtk_widget_get_height(data->header_bar) > 0) {
+        logged = TRUE;
+        if (g_getenv("MAC_TERMINAL_DEBUG")) {
+            int hb_h = gtk_widget_get_height(data->header_bar);
+            int tb_h = gtk_widget_get_height(data->title_box);
+            g_print("[mac_terminal] HeaderBar allocated height: %d px, title_box height: %d px\n", hb_h, tb_h);
+        }
+    }
+
     return G_SOURCE_CONTINUE;
+}
+
+static gboolean save_screenshot_cb(gpointer user_data) {
+    GtkWidget *window = (GtkWidget *)user_data;
+    if (!window || !GTK_IS_WIDGET(window) || !gtk_widget_get_realized(window)) {
+        return G_SOURCE_CONTINUE;
+    }
+    int w = gtk_widget_get_width(window);
+    int h = gtk_widget_get_height(window);
+    if (w <= 0 || h <= 0) return G_SOURCE_CONTINUE;
+
+    GtkNative *native = gtk_widget_get_native(window);
+    if (!native) return G_SOURCE_REMOVE;
+    GskRenderer *renderer = gtk_native_get_renderer(native);
+    if (!renderer) return G_SOURCE_REMOVE;
+
+    GdkPaintable *paintable = GDK_PAINTABLE(gtk_widget_paintable_new(window));
+    GtkSnapshot *snapshot = gtk_snapshot_new();
+    gdk_paintable_snapshot(paintable, snapshot, (double)w, (double)h);
+    GskRenderNode *node = gtk_snapshot_to_node(snapshot);
+    if (node) {
+        GdkTexture *tex = gsk_renderer_render_texture(renderer, node, NULL);
+        gsk_render_node_unref(node);
+        if (tex) {
+            gdk_texture_save_to_png(tex, "/home/vitaliy/MACTHEMEFILES/scratch/ptyxis_rendered.png");
+            g_object_unref(tex);
+            printf("[mac_terminal] Saved window screenshot to /home/vitaliy/MACTHEMEFILES/scratch/ptyxis_rendered.png (%dx%d)\n", w, h);
+        }
+    }
+    g_object_unref(paintable);
+    return G_SOURCE_REMOVE;
 }
 
 static void mac_terminal_data_destroy(gpointer user_data) {
@@ -232,39 +274,75 @@ static void init_terminal_css(void) {
 
     GtkCssProvider *provider = gtk_css_provider_new();
     const char *css = 
-        ".ptyxis-window headerbar {"
-        "   padding-top: 2px;"
-        "   padding-bottom: 2px;"
+        ".ptyxis-window headerbar,"
+        ".ptyxis-window headerbar.flat,"
+        ".ptyxis-window headerbar.default-decoration,"
+        ".ptyxis-window .main-header-bar,"
+        "window.ptyxis-window headerbar {"
+        "   min-height: 24px;"
+        "   padding-top: 0px;"
+        "   padding-bottom: 0px;"
+        "   padding-left: 4px;"
+        "   padding-right: 4px;"
+        "   margin-top: 0px;"
+        "   margin-bottom: 0px;"
+        "}"
+        ".ptyxis-window headerbar windowhandle,"
+        ".ptyxis-window headerbar > windowhandle > box {"
+        "   min-height: 24px;"
+        "   padding-top: 0px;"
+        "   padding-bottom: 0px;"
+        "   margin-top: 0px;"
+        "   margin-bottom: 0px;"
+        "}"
+        ".ptyxis-window headerbar windowcontrols {"
+        "   min-height: 24px;"
+        "   padding-top: 0px;"
+        "   padding-bottom: 0px;"
+        "   margin-top: 0px;"
+        "   margin-bottom: 0px;"
+        "}"
+        ".ptyxis-window headerbar windowcontrols button {"
+        "   min-height: 12px;"
+        "   min-width: 12px;"
+        "   padding: 0;"
+        "   margin-top: 0;"
+        "   margin-bottom: 0;"
         "}"
         ".mac-terminal-title-box {"
-        "   margin-left: 10px;"
+        "   margin-left: 8px;"
         "}"
-        ".mac-terminal-folder-icon {"
+        ".mac-terminal-folder-icon,"
+        "picture.mac-terminal-folder-icon,"
+        "image.mac-terminal-folder-icon {"
+        "   min-width: 11px;"
+        "   min-height: 11px;"
         "   margin-right: 2px;"
         "}"
         ".mac-terminal-folder-label {"
-        "   font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;"
-        "   font-weight: 600;"
-        "   font-size: 13px;"
+        "   font-family: 'SF Mono', monospace;"
+        "   font-weight: 500;"
+        "   font-size: 11px;"
         "   color: #ffffff;"
         "}"
         ".mac-terminal-sep {"
-        "   font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;"
-        "   font-size: 13px;"
-        "   color: rgba(255, 255, 255, 0.4);"
-        "   margin-left: 2px;"
-        "   margin-right: 2px;"
+        "   font-family: 'SF Mono', monospace;"
+        "   font-weight: 400;"
+        "   font-size: 11px;"
+        "   color: rgba(255, 255, 255, 0.45);"
+        "   margin-left: 3px;"
+        "   margin-right: 3px;"
         "}"
         ".mac-terminal-path-label {"
-        "   font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;"
+        "   font-family: 'SF Mono', monospace;"
         "   font-weight: 400;"
-        "   font-size: 13px;"
+        "   font-size: 11px;"
         "   color: rgba(255, 255, 255, 0.85);"
         "}"
         ".mac-terminal-size-label {"
-        "   font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;"
+        "   font-family: 'SF Mono', monospace;"
         "   font-weight: 400;"
-        "   font-size: 13px;"
+        "   font-size: 11px;"
         "   color: rgba(255, 255, 255, 0.85);"
         "}";
 
@@ -274,7 +352,7 @@ static void init_terminal_css(void) {
         gtk_style_context_add_provider_for_display(
             disp,
             GTK_STYLE_PROVIDER(provider),
-            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 100
+            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 200
         );
     }
     g_object_unref(provider);
@@ -328,13 +406,15 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
         }
     }
 
-    /* 3. Create macOS Terminal title box: [📁] folder — path — 120x30 */
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    /* 3. Create macOS Terminal title box: [📁] folder -- path -- 120x30 */
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     gtk_widget_add_css_class(box, "mac-terminal-title-box");
     gtk_widget_set_valign(box, GTK_ALIGN_CENTER);
-    gtk_widget_set_margin_start(box, 6);
+    gtk_widget_set_margin_start(box, 8);
+    gtk_widget_set_margin_top(box, 0);
+    gtk_widget_set_margin_bottom(box, 0);
 
-    /* Load authentic macOS folder icon using GtkPicture */
+    /* Load authentic macOS folder icon at exact 11x11 size */
     GtkWidget *icon = NULL;
     const char *folder_icon_paths[] = {
         "/usr/share/icons/MacTahoe-dark/places/scalable/folder.svg",
@@ -345,21 +425,29 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     };
     for (int i = 0; folder_icon_paths[i]; i++) {
         if (access(folder_icon_paths[i], R_OK) == 0) {
-            GFile *gf = g_file_new_for_path(folder_icon_paths[i]);
-            GdkTexture *tex = gdk_texture_new_from_file(gf, NULL);
-            g_object_unref(gf);
-            if (tex) {
-                icon = gtk_picture_new_for_paintable(GDK_PAINTABLE(tex));
-                gtk_picture_set_can_shrink(GTK_PICTURE(icon), TRUE);
-                gtk_widget_set_size_request(icon, 16, 16);
-                g_object_unref(tex);
-                break;
+            GError *err = NULL;
+            GdkPixbuf *pb = gdk_pixbuf_new_from_file_at_scale(folder_icon_paths[i], 11, 11, TRUE, &err);
+            if (pb) {
+                GdkTexture *tex = gdk_texture_new_for_pixbuf(pb);
+                g_object_unref(pb);
+                if (tex) {
+                    icon = gtk_picture_new_for_paintable(GDK_PAINTABLE(tex));
+                    gtk_picture_set_can_shrink(GTK_PICTURE(icon), TRUE);
+                    gtk_widget_set_size_request(icon, 11, 11);
+                    gtk_widget_set_valign(icon, GTK_ALIGN_CENTER);
+                    gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);
+                    g_object_unref(tex);
+                    break;
+                }
             }
         }
     }
     if (!icon) {
         icon = gtk_image_new_from_icon_name("folder");
-        gtk_image_set_pixel_size(GTK_IMAGE(icon), 16);
+        gtk_image_set_pixel_size(GTK_IMAGE(icon), 11);
+        gtk_widget_set_size_request(icon, 11, 11);
+        gtk_widget_set_valign(icon, GTK_ALIGN_CENTER);
+        gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);
     }
     gtk_widget_add_css_class(icon, "mac-terminal-folder-icon");
     gtk_box_append(GTK_BOX(box), icon);
@@ -369,7 +457,7 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     gtk_label_set_single_line_mode(GTK_LABEL(lbl_folder), TRUE);
     gtk_box_append(GTK_BOX(box), lbl_folder);
 
-    GtkWidget *lbl_sep1 = gtk_label_new("—");
+    GtkWidget *lbl_sep1 = gtk_label_new("--");
     gtk_widget_add_css_class(lbl_sep1, "mac-terminal-sep");
     gtk_box_append(GTK_BOX(box), lbl_sep1);
 
@@ -380,7 +468,7 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     gtk_label_set_max_width_chars(GTK_LABEL(lbl_path), 40);
     gtk_box_append(GTK_BOX(box), lbl_path);
 
-    GtkWidget *lbl_sep2 = gtk_label_new("—");
+    GtkWidget *lbl_sep2 = gtk_label_new("--");
     gtk_widget_add_css_class(lbl_sep2, "mac-terminal-sep");
     gtk_box_append(GTK_BOX(box), lbl_sep2);
 
@@ -407,6 +495,11 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
 
     /* Trigger immediate initial update */
     update_terminal_title_cb(data);
+
+    /* Optional screenshot capture for visual verification when requested */
+    if (g_getenv("MAC_TERMINAL_SCREENSHOT")) {
+        g_timeout_add(1000, save_screenshot_cb, window);
+    }
 }
 
 void gtk_window_present(GtkWindow *window) {

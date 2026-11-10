@@ -19351,3 +19351,37 @@ Task 690: Видалення діагностичного меню "Статус
    - Меню `Main.panel.statusArea['appmenu@ChathurangaBW.github.io-0']` перевірено через DBus: підменю "Статус меню" повністю відсутнє, першими пунктами є "Про цей комп’ютер", розділювач та "Системні параметри...", як у нативній macOS.
 
 4. Статус: Завершено.
+
+
+================================================================================
+Task 691: Корекція та витончення заголовка і шрифтів термінала (Ptyxis) у стилі macOS
+Дата: 10 листопада 2026
+Статус: Завершено (SUCCESS)
+
+1. Вимоги завдання:
+   - Зменшити висоту верхнього віндов бара (Headerbar) термінала вдвічі (до компактного стандарту macOS ~24px).
+   - Зменшити іконку папки приблизно втричі — до точного розміру шрифту тексту (~11×9px замість 32×25px).
+   - Зменшити розмір тексту в терміналі до розміру тексту у віндов барі.
+   - Змінити шрифт тексту у віндов барі на той самий, що використовується в терміналі (SF Mono).
+   - Замінити штучне системно намальоване тире (ем-деш "—") на текстовий символ подвійного тире "--".
+
+2. Виявлені особливості та технічні рішення:
+   - Headerbar у GTK4 / Libadwaita мав за замовчуванням min-height: 48px. Для Ptyxis у `src/mac_terminal.c`, `config/gtk-4.0/gtk.css`, `config/gtk-4.0/gtk-Dark.css`, `gtk-4.0/gtk.css`, `gtk-4.0/gtk-Dark.css` та `~/.config/gtk-4.0/` встановлено точні правила:
+     * `.ptyxis-window headerbar, .ptyxis-window .main-header-bar, window.ptyxis-window headerbar`: `min-height: 24px; padding: 0 4px; margin: 0;`
+     * `windowhandle`, `windowcontrols`: `min-height: 24px; padding: 0 4px; margin: 0;`
+     * `windowcontrols button`: `min-height: 12px; min-width: 12px; padding: 0;`
+   - Іконка папки macOS масштабується безпосередньо через `gdk_pixbuf_new_from_file_at_scale(..., 11, 11, TRUE, ...)` та `gdk_texture_new_for_pixbuf()` з фіксованими розмірами `size_request(icon, 11, 11)` і CSS `min-width: 11px; min-height: 11px;`, що дає фактичний рендер 11×9px — точно за висотою тексту поруч (зменшення в 2.91 ≈ 3 рази).
+   - Шрифт у віндов барі переведено з SF Pro на автентичний моноширинний `SF Mono, monospace` (розмір 11px, вага 500 для каталогу, 400 для решти).
+   - Символ тире замінено на реальний текстовий символ `"--"` (`lbl_sep1 = gtk_label_new("--")`, `lbl_sep2 = gtk_label_new("--")`) з моноширинним інтервалом SF Mono, повністю відповідаючи нативному рядку macOS Terminal (`zas -- -zsh -- 120x30`).
+   - Розмір шрифту в терміналі Ptyxis синхронізовано з віндов баром через GSettings `org.gnome.Ptyxis font-name 'SF Mono 9'`, забезпечивши однаковий зріст гліфів (10–11px) як у заголовку, так і в командному рядку.
+   - Бібліотеку `libmac_terminal.so` перекомпільовано та інстальовано в `/usr/lib/x86_64-linux-gnu/libmac_terminal.so`.
+
+3. Результати верифікації:
+   - Фактична висота HeaderBar зменшилась з 48px до 24px (рівно вдвічі, підтверджено замірами віджета: `HeaderBar allocated height: 24 px, title_box height: 14 px`).
+   - Іконка папки: ширина 11px, висота 9px (висота шрифту — 10px).
+   - Текст у терміналі та віндов барі: єдиний шрифт `SF Mono` з однаковою висотою гліфів ~10–11px.
+   - Розділювачі: текстові подвійні дефіси `--`.
+   - `bin/mac-extension-guard verify`: VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes (21/21).
+   - `bin/mac-audit-sync check`: 100% PASS! System and repository are in sync.
+
+4. Статус: Завершено.

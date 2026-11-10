@@ -12023,44 +12023,83 @@ window.mac-settings-window button.suggested-action.circular:active {
 @import url("macw1y-components.css");
 
 /* macOS Tahoe Terminal Redesign */
-.ptyxis-window headerbar {
-  padding-top: 2px;
-  padding-bottom: 2px;
+.ptyxis-window headerbar,
+.ptyxis-window headerbar.flat,
+.ptyxis-window headerbar.default-decoration,
+.ptyxis-window .main-header-bar,
+window.ptyxis-window headerbar {
+  min-height: 24px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  padding-left: 4px;
+  padding-right: 4px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.ptyxis-window headerbar windowhandle,
+.ptyxis-window headerbar > windowhandle > box {
+  min-height: 24px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.ptyxis-window headerbar windowcontrols {
+  min-height: 24px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.ptyxis-window headerbar windowcontrols button {
+  min-height: 12px;
+  min-width: 12px;
+  padding: 0;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .mac-terminal-title-box {
-  margin-left: 10px;
+  margin-left: 8px;
 }
 
-.mac-terminal-folder-icon {
+.mac-terminal-folder-icon,
+picture.mac-terminal-folder-icon,
+image.mac-terminal-folder-icon {
+  min-width: 11px;
+  min-height: 11px;
   margin-right: 2px;
 }
 
 .mac-terminal-folder-label {
-  font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: 13px;
+  font-family: 'SF Mono', monospace;
+  font-weight: 500;
+  font-size: 11px;
   color: #ffffff;
 }
 
 .mac-terminal-sep {
-  font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.40);
-  margin-left: 2px;
-  margin-right: 2px;
+  font-family: 'SF Mono', monospace;
+  font-weight: 400;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-left: 3px;
+  margin-right: 3px;
 }
 
 .mac-terminal-path-label {
-  font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;
+  font-family: 'SF Mono', monospace;
   font-weight: 400;
-  font-size: 13px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.85);
 }
 
 .mac-terminal-size-label {
-  font-family: 'SF Pro Display', 'SF Pro Text', 'SF Pro', system-ui, sans-serif;
+  font-family: 'SF Mono', monospace;
   font-weight: 400;
-  font-size: 13px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.85);
 }
