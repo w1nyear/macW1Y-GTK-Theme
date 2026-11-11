@@ -136,7 +136,7 @@ export default class KiwiExtension extends Extension {
         } catch (_) {}
 
         try {
-            const wmUri = this.dir.get_child('apps').get_child('macWindowManagement.js').get_uri() + '?v=wm_v2';
+            const wmUri = this.dir.get_child('apps').get_child('macWindowManagement.js').get_uri() + '?v=wm_v3';
             import(wmUri).then(mod => {
                 if (this._macWindowManagementMod && this._macWindowManagementMod !== mod) {
                     try { this._macWindowManagementMod.disable(); } catch (_) {}
@@ -152,7 +152,7 @@ export default class KiwiExtension extends Extension {
         }
 
         try {
-            const wcUri = this.dir.get_child('apps').get_child('windowControls.js').get_uri() + '?v=wc_v2';
+            const wcUri = this.dir.get_child('apps').get_child('windowControls.js').get_uri() + '?v=wc_v3';
             import(wcUri).then(mod => {
                 if (this._windowControlsMod && this._windowControlsMod !== mod) {
                     try { this._windowControlsMod.disable(); } catch (_) {}

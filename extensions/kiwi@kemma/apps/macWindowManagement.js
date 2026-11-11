@@ -2,11 +2,13 @@
 // macOS-Style Window Management & Fullscreen Edge Reveals
 //
 // 1. Dragging a window flush against the top menubar and releasing ->
-//    Maximizes to monitor work area, keeping the menubar VISIBLE (macOS Zoom).
-// 2. Clicking the window's green "fullscreen" button ("квадратик") ->
-//    Expands to TRUE FULLSCREEN (win.make_fullscreen()), HIDING the menubar.
-//    Clicking it again restores to windowed mode.
-// 3. While in fullscreen mode:
+//    TRUE FULLSCREEN (win.make_fullscreen()) with smooth expansion animation,
+//    hiding menubar and dock.
+// 2. Clicking the window's green button ("квадратик") ->
+//    MAXIMIZE to monitor work area (win.maximize()), keeping menubar and dock VISIBLE (macOS Zoom).
+//    Clicking it again restores to unmaximized mode.
+// 3. Smooth Clutter snapshot expansion/contraction animations on entering and exiting fullscreen.
+// 4. While in fullscreen mode:
 //    - Hovering top edge reveals / slides down the top menubar smoothly.
 //    - Hovering bottom edge reveals / slides up the dock smoothly.
 //    - Moving pointer away smoothly hides them back.
@@ -175,8 +177,232 @@ function _setPanelSolidDarkStyle(enable) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Drag Window Flush Against Menubar -> Maximize to Work Area / Fullscreen
+// Drag Window Flush Against Menubar -> True Fullscreen (with Expansion Anim)
 // ─────────────────────────────────────────────────────────────────────────────
+
+export function animateEnterFullscreen(win, startRect = null) {
+    if (!win || win.window_type !== Meta.WindowType.NORMAL)
+        return;
+
+    const actor = win.get_compositor_private();
+    if (!actor) {
+        try { win.make_fullscreen(); } catch (_) {}
+        return;
+    }
+
+    const currentRect = win.get_frame_rect();
+    const fromRect = startRect || {
+        x: currentRect.x,
+        y: currentRect.y,
+        width: currentRect.width,
+        height: currentRect.height,
+    };
+
+    const monIndex = win.get_monitor();
+    const mon = Main.layoutManager.monitors[monIndex] || Main.layoutManager.primaryMonitor;
+    const targetRect = {
+        x: mon.x,
+        y: mon.y,
+        width: mon.width,
+        height: mon.height,
+    };
+
+    // Store starting frame so exiting fullscreen knows where to return
+    win._macFullscreenFromRect = { ...fromRect };
+
+    let clone = null;
+    try {
+        const content = actor.paint_to_content(null);
+        if (content) {
+            clone = new Clutter.Actor({
+                name: 'mac-fullscreen-expand-clone',
+                content,
+                x: fromRect.x,
+                y: fromRect.y,
+                width: fromRect.width,
+                height: fromRect.height,
+                opacity: 255,
+                reactive: false,
+            });
+            Main.uiGroup.add_child(clone);
+        }
+    } catch (e) {
+        console.warn(`[macWindowManagement] enter snapshot error: ${e}`);
+    }
+
+    if (win._fullscreenAnimClone) {
+        try { win._fullscreenAnimClone.destroy(); } catch (_) {}
+    }
+    win._fullscreenAnimClone = clone;
+
+    // Hide underlying live actor during animation so Mutter buffer reallocation/flicker is hidden
+    if (clone) {
+        actor.opacity = 0;
+    }
+
+    win._justMaximizedFromDrag = Date.now();
+    try {
+        win.make_fullscreen();
+    } catch (_) {}
+
+    // Safety timeout to guarantee actor opacity is restored
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
+        try {
+            if (actor && !actor.is_finalized?.() && actor.opacity === 0) {
+                actor.opacity = 255;
+            }
+        } catch (_) {}
+        return GLib.SOURCE_REMOVE;
+    });
+
+    if (clone) {
+        clone.ease({
+            x: targetRect.x,
+            y: targetRect.y,
+            width: targetRect.width,
+            height: targetRect.height,
+            duration: 260,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            onComplete: () => {
+                try {
+                    if (actor && !actor.is_finalized?.()) {
+                        actor.opacity = 255;
+                    }
+                } catch (_) {}
+                clone.ease({
+                    opacity: 0,
+                    duration: 60,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        try { clone.destroy(); } catch (_) {}
+                        if (win._fullscreenAnimClone === clone) {
+                            win._fullscreenAnimClone = null;
+                        }
+                    },
+                });
+            },
+        });
+    } else {
+        actor.opacity = 255;
+    }
+}
+
+export function animateExitFullscreen(win, onComplete = null, targetRectOverride = null) {
+    if (!win || win.window_type !== Meta.WindowType.NORMAL)
+        return;
+
+    const actor = win.get_compositor_private();
+    if (!actor) {
+        try {
+            win.unmake_fullscreen();
+            win.unmaximize();
+        } catch (_) {}
+        if (typeof onComplete === 'function') onComplete();
+        return;
+    }
+
+    const fsRect = win.get_frame_rect();
+    const monIndex = win.get_monitor();
+    const mon = Main.layoutManager.monitors[monIndex] || Main.layoutManager.primaryMonitor;
+    const wa = Main.layoutManager.getWorkAreaForMonitor(monIndex);
+
+    // Determine target unfullscreen geometry
+    let targetRect = targetRectOverride || win._macFullscreenFromRect;
+    if (!targetRect || targetRect.width < 200 || targetRect.height < 150) {
+        const defaultW = Math.min(1280, Math.round(mon.width * 0.75));
+        const defaultH = Math.min(800, Math.round(mon.height * 0.75));
+        targetRect = {
+            x: Math.round(mon.x + (mon.width - defaultW) / 2),
+            y: Math.round(wa.y + Math.max(20, (wa.height - defaultH) / 2)),
+            width: defaultW,
+            height: defaultH,
+        };
+    }
+
+    let clone = null;
+    try {
+        const content = actor.paint_to_content(null);
+        if (content) {
+            clone = new Clutter.Actor({
+                name: 'mac-fullscreen-contract-clone',
+                content,
+                x: fsRect.x,
+                y: fsRect.y,
+                width: fsRect.width,
+                height: fsRect.height,
+                opacity: 255,
+                reactive: false,
+            });
+            Main.uiGroup.add_child(clone);
+        }
+    } catch (e) {
+        console.warn(`[macWindowManagement] exit snapshot error: ${e}`);
+    }
+
+    if (win._fullscreenAnimClone) {
+        try { win._fullscreenAnimClone.destroy(); } catch (_) {}
+    }
+    win._fullscreenAnimClone = clone;
+
+    if (clone) {
+        actor.opacity = 0;
+    }
+
+    try {
+        win.unmake_fullscreen();
+        win.unmaximize();
+    } catch (_) {}
+
+    // Apply target position to unfullscreened window
+    try {
+        win.move_resize_frame(true, targetRect.x, targetRect.y, targetRect.width, targetRect.height);
+    } catch (_) {}
+
+    // Safety timeout to guarantee actor opacity is restored
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
+        try {
+            if (actor && !actor.is_finalized?.() && actor.opacity === 0) {
+                actor.opacity = 255;
+            }
+        } catch (_) {}
+        return GLib.SOURCE_REMOVE;
+    });
+
+    if (clone) {
+        clone.ease({
+            x: targetRect.x,
+            y: targetRect.y,
+            width: targetRect.width,
+            height: targetRect.height,
+            duration: 240,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            onComplete: () => {
+                try {
+                    if (actor && !actor.is_finalized?.()) {
+                        actor.opacity = 255;
+                    }
+                } catch (_) {}
+                clone.ease({
+                    opacity: 0,
+                    duration: 50,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        try { clone.destroy(); } catch (_) {}
+                        if (win._fullscreenAnimClone === clone) {
+                            win._fullscreenAnimClone = null;
+                        }
+                        if (typeof onComplete === 'function') onComplete(targetRect);
+                    },
+                });
+            },
+        });
+    } else {
+        actor.opacity = 255;
+        if (typeof onComplete === 'function') onComplete(targetRect);
+    }
+
+    _queueRecomputeFullscreen();
+}
 
 function _onGrabOpBegin(_display, window, op) {
     if (!_enabled || !window || window.window_type !== Meta.WindowType.NORMAL)
@@ -188,10 +414,10 @@ function _onGrabOpBegin(_display, window, op) {
     _restoreShrunkActors(false);
     _setPanelSolidDarkStyle(false);
 
-    // Якщо перетягується повноекранне вікно, повертаємо його у віконний режим для вільного перетягування
+    // If dragging a fullscreen window, smoothly exit fullscreen
     if (window.is_fullscreen()) {
         try {
-            window.unmake_fullscreen();
+            animateExitFullscreen(window);
         } catch (_) {}
     }
 
@@ -258,10 +484,7 @@ function _onGrabOpEnd(_display, window, _op) {
 
         const targetWin = _snapWindow || window || _draggingWindow;
         if (targetWin && targetWin.window_type === Meta.WindowType.NORMAL) {
-            targetWin._justMaximizedFromDrag = Date.now();
-            try {
-                targetWin.make_fullscreen();
-            } catch (_) {}
+            animateEnterFullscreen(targetWin, targetWin.get_frame_rect());
         }
     }
 
@@ -270,19 +493,15 @@ function _onGrabOpEnd(_display, window, _op) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Green Button Click -> True Fullscreen (win.make_fullscreen())
+// Window Size Change -> Manage Fullscreen & Work Area Maximize State
 // ─────────────────────────────────────────────────────────────────────────────
 
-function _onSizeChange(_wm, actor, whichChange, oldFrameRect) {
+function _onSizeChange(_wm, actor, whichChange, _oldFrameRect) {
     if (!_enabled || !actor) return;
     const win = actor.meta_window;
     if (!win || win.window_type !== Meta.WindowType.NORMAL) return;
 
-    // If window is currently in fullscreen, ANY size-change means the user or app requested to exit!
-    if (win.is_fullscreen()) {
-        try { win.unmake_fullscreen(); } catch (_) {}
-        try { win.unmaximize(); } catch (_) {}
-        _restoreShrunkActors(false);
+    if (whichChange === Meta.SizeChange.FULLSCREEN) {
         _queueRecomputeFullscreen();
         return;
     }
@@ -294,37 +513,16 @@ function _onSizeChange(_wm, actor, whichChange, oldFrameRect) {
         _shrunkActors.delete(actor);
     } catch (_) {}
 
-    if (whichChange === Meta.SizeChange.UNMAXIMIZE) {
+    if (whichChange === Meta.SizeChange.UNMAXIMIZE || whichChange === Meta.SizeChange.UNFULLSCREEN) {
         _restoreShrunkActors(false);
         _queueRecomputeFullscreen();
         return;
     }
 
     if (whichChange === Meta.SizeChange.MAXIMIZE) {
-        // If maximized from drag to top, preserve work area maximize (menubar visible)
-        if (win._justMaximizedFromDrag && (Date.now() - win._justMaximizedFromDrag < 800)) {
-            _queueRecomputeFullscreen();
-            return;
-        }
-
-        // Check if cursor clicked on the green window-control button (top-left)
-        const [px, py] = global.get_pointer();
-        if (oldFrameRect && oldFrameRect.width > 0) {
-            const relX = px - oldFrameRect.x;
-            const relY = py - oldFrameRect.y;
-
-            // In macOS button layout (close, minimize, maximize):
-            // Green button sits at ~50..85px horizontally, 0..45px vertically
-            if (relX >= 0 && relX <= 95 && relY >= 0 && relY <= 45) {
-                // User clicked green button on windowed window -> Enter TRUE FULLSCREEN
-                GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                    if (win && !win.is_fullscreen()) {
-                        win.make_fullscreen();
-                    }
-                    return GLib.SOURCE_REMOVE;
-                });
-            }
-        }
+        _restoreShrunkActors(false);
+        _queueRecomputeFullscreen();
+        return;
     }
 
     _queueRecomputeFullscreen();
@@ -398,18 +596,25 @@ function _startFullscreenWatcher() {
                             _cancelPanelHide();
                             _cancelDockHide();
 
-                            try {
-                                win.unmake_fullscreen();
-                                win.unmaximize();
-                            } catch (_) {}
+                            const mon = Main.layoutManager.monitors[win.get_monitor()] || primaryMonitor;
+                            const wa = Main.layoutManager.getWorkAreaForMonitor(mon.index);
+                            const saved = win._macFullscreenFromRect;
+                            const targetW = (saved && saved.width >= 300) ? saved.width : Math.min(1280, Math.round(mon.width * 0.75));
+                            const targetH = (saved && saved.height >= 200) ? saved.height : Math.min(800, Math.round(mon.height * 0.75));
+                            const targetX = Math.max(mon.x, Math.min(px - Math.round(targetW / 2), mon.x + mon.width - targetW));
+                            const targetY = Math.max(wa.y + 8, py - 24);
+                            const dragTargetRect = { x: targetX, y: targetY, width: targetW, height: targetH };
 
-                            const frame = win.get_frame_rect();
-                            _fsDragState.offsetX = Math.min(Math.max(px - frame.x, 60), Math.max(frame.width - 60, 60));
+                            _fsDragState.offsetX = Math.round(targetW / 2);
                             _fsDragState.offsetY = 24;
 
-                            const targetX = px - _fsDragState.offsetX;
-                            const targetY = py - _fsDragState.offsetY;
-                            try { win.move_frame(true, targetX, targetY); } catch (_) {}
+                            animateExitFullscreen(win, (rect) => {
+                                if (_fsDragState && _fsDragState.win === win) {
+                                    const frame = rect || win.get_frame_rect();
+                                    _fsDragState.offsetX = Math.min(Math.max(px - frame.x, 60), Math.max(frame.width - 60, 60));
+                                    _fsDragState.offsetY = 24;
+                                }
+                            }, dragTargetRect);
                         } else {
                             _fsDragState = null;
                         }
@@ -419,6 +624,11 @@ function _startFullscreenWatcher() {
                     const targetX = px - _fsDragState.offsetX;
                     const targetY = py - _fsDragState.offsetY;
                     try { _fsDragState.win.move_frame(true, targetX, targetY); } catch (_) {}
+                    if (_fsDragState.win._fullscreenAnimClone) {
+                        try {
+                            _fsDragState.win._fullscreenAnimClone.set_position(targetX, targetY);
+                        } catch (_) {}
+                    }
                 }
             } else {
                 if (_fsDragState) {
@@ -427,10 +637,9 @@ function _startFullscreenWatcher() {
                         const wa = Main.layoutManager.getWorkAreaForMonitor(primaryMonitor.index);
                         const menubarBottom = wa.y;
 
-                        // If dropped flush near top menubar, re-fullscreen/maximize
+                        // If dropped flush near top menubar, re-fullscreen with expand animation
                         if (py <= menubarBottom + 16 && py >= 0) {
-                            win._justMaximizedFromDrag = Date.now();
-                            try { win.make_fullscreen(); } catch (_) {}
+                            animateEnterFullscreen(win, win.get_frame_rect());
                         }
                         _queueRecomputeFullscreen();
                     }
@@ -741,6 +950,11 @@ export function enable() {
     if (_enabled) return;
     _enabled = true;
 
+    globalThis._macWindowManagement = {
+        animateEnterFullscreen,
+        animateExitFullscreen,
+    };
+
     // Connect display and window manager signals
     try {
         _signals.push([global.display, global.display.connect('grab-op-begin', _onGrabOpBegin)]);
@@ -775,6 +989,10 @@ export function enable() {
 
 export function disable() {
     _enabled = false;
+
+    if (globalThis._macWindowManagement) {
+        delete globalThis._macWindowManagement;
+    }
 
     if (_recomputeIdleId) {
         GLib.Source.remove(_recomputeIdleId);

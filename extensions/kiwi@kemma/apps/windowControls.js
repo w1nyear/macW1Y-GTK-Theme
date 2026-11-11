@@ -356,10 +356,18 @@ class WindowControlsIndicator extends PanelMenu.Button {
             const window = global.display.focus_window;
             if (window) {
                 if (window.is_fullscreen()) {
-                    try { window.unmake_fullscreen(); } catch (_) {}
+                    try {
+                        if (globalThis._macWindowManagement?.animateExitFullscreen) {
+                            globalThis._macWindowManagement.animateExitFullscreen(window);
+                        } else {
+                            window.unmake_fullscreen();
+                            window.unmaximize();
+                        }
+                    } catch (_) {}
+                } else if (window.maximized_horizontally && window.maximized_vertically) {
                     try { window.unmaximize(); } catch (_) {}
                 } else {
-                    try { window.make_fullscreen(); } catch (_) {}
+                    try { window.maximize(); } catch (_) {}
                 }
             }
         })]);
