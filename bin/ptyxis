@@ -1,5 +1,5 @@
 #!/bin/sh
-export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_terminal.so${LD_PRELOAD:+:$LD_PRELOAD}"
+export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_terminal.so:/usr/lib/x86_64-linux-gnu/libmacpopover.so${LD_PRELOAD:+:$LD_PRELOAD}"
 if [ -f /usr/bin/ptyxis.orig ]; then
     exec /usr/bin/ptyxis.orig "$@"
 else

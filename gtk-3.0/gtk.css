@@ -1,4 +1,5 @@
 @import url("macw1y-tokens.css");
+@import url("titlebuttons3.css");
 /* --- MAC-STYLING-START --- */
 /* macOS Tahoe Context Menus (Desktop and System GTK Applications) */
 window.desktopmenu,
@@ -764,6 +765,8 @@ scale slider:disabled {
   border-bottom-right-radius: 9999px;
   border-left: none;
 }
+
+
 
 
 

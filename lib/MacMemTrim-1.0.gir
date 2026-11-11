@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!-- This file was automatically generated from C sources - DO NOT EDIT!
+To affect the contents of this file, edit the original C definitions,
+and/or use gtk-doc annotations.  -->
+<repository version="1.2"
+            xmlns="http://www.gtk.org/introspection/core/1.0"
+            xmlns:c="http://www.gtk.org/introspection/c/1.0"
+            xmlns:doc="http://www.gtk.org/introspection/doc/1.0"
+            xmlns:glib="http://www.gtk.org/introspection/glib/1.0">
+  <include name="GObject" version="2.0"/>
+  <doc:format name="unknown"/>
+  <namespace name="MacMemTrim"
+             version="1.0"
+             shared-library="libmac_memtrim.so"
+             c:identifier-prefixes="mac_"
+             c:symbol-prefixes="mac_">
+    <function name="mem_trim" c:identifier="mac_mem_trim">
+      <source-position filename="mac_memtrim.h" line="8"/>
+      <return-value transfer-ownership="none">
+        <type name="gint" c:type="int"/>
+      </return-value>
+    </function>
+  </namespace>
+</repository>

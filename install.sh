@@ -408,12 +408,41 @@ install_themes() {
         cp -r "$SCRIPT_DIR/gnome-shell-theme/"* "$THEMES_DIR/macW1Y-Dark/gnome-shell/"
     fi
     
+    if [ -f "$SCRIPT_DIR/src/mac_popover.c" ] && command -v gcc >/dev/null 2>&1; then
+        gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmacpopover.so" "$SCRIPT_DIR/src/mac_popover.c" $(pkg-config --cflags --libs gtk4 glib-2.0 gobject-2.0 2>/dev/null) -ldl -lm 2>/dev/null || true
+    fi
     if [ -f "$SCRIPT_DIR/lib/libmacpopover.so" ]; then
-        sudo cp "$SCRIPT_DIR/lib/libmacpopover.so" /usr/local/lib/libmacpopover.so
-        sudo chmod 755 /usr/local/lib/libmacpopover.so
+        sudo cp -f "$SCRIPT_DIR/lib/libmacpopover.so" /usr/lib/x86_64-linux-gnu/libmacpopover.so 2>/dev/null || true
+        sudo cp -f "$SCRIPT_DIR/lib/libmacpopover.so" /usr/local/lib/libmacpopover.so 2>/dev/null || true
         sudo cp -f "$SCRIPT_DIR/lib/libmacpopover.so" /usr/lib/libmacpopover.so 2>/dev/null || true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmacpopover.so /usr/local/lib/libmacpopover.so 2>/dev/null || true
         rm -f "$TARGET_HOME/.config/environment.d/10-mac-theme.conf" 2>/dev/null || true
         sudo sed -i "/libmacpopover.so/d" /etc/environment 2>/dev/null || true
+    fi
+
+    if [ -f "$SCRIPT_DIR/src/mac_terminal.c" ] && command -v gcc >/dev/null 2>&1; then
+        gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_terminal.so" "$SCRIPT_DIR/src/mac_terminal.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 2>/dev/null) -ldl 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/lib/libmac_terminal.so" ]; then
+        sudo cp -f "$SCRIPT_DIR/lib/libmac_terminal.so" /usr/lib/x86_64-linux-gnu/libmac_terminal.so 2>/dev/null || true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_terminal.so 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/bin/ptyxis" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/ptyxis" /usr/local/bin/ptyxis
+        sudo chmod 755 /usr/local/bin/ptyxis
+    fi
+
+    if [ -f "$SCRIPT_DIR/src/mac_memtrim.c" ] && command -v gcc >/dev/null 2>&1; then
+        gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_memtrim.so" "$SCRIPT_DIR/src/mac_memtrim.c" $(pkg-config --cflags --libs glib-2.0 2>/dev/null) 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/lib/libmac_memtrim.so" ]; then
+        sudo cp -f "$SCRIPT_DIR/lib/libmac_memtrim.so" /usr/lib/x86_64-linux-gnu/libmac_memtrim.so 2>/dev/null || true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_memtrim.so 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib" ]; then
+        sudo mkdir -p /usr/lib/x86_64-linux-gnu/girepository-1.0
+        sudo cp -f "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib" /usr/lib/x86_64-linux-gnu/girepository-1.0/MacMemTrim-1.0.typelib 2>/dev/null || true
+        sudo chmod 644 /usr/lib/x86_64-linux-gnu/girepository-1.0/MacMemTrim-1.0.typelib 2>/dev/null || true
     fi
     
     # Configuring macOS Nautilus Finder Sidebar and Applications section
@@ -435,7 +464,7 @@ install_themes() {
     fi
     cat << 'EOF_NAUT' | sudo tee /usr/bin/nautilus >/dev/null
 #!/bin/sh
-export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_nautilus.so${LD_PRELOAD:+:$LD_PRELOAD}"
+export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_nautilus.so:/usr/lib/x86_64-linux-gnu/libmacpopover.so${LD_PRELOAD:+:$LD_PRELOAD}"
 exec /usr/bin/nautilus.orig "$@"
 EOF_NAUT
     sudo chmod +x /usr/bin/nautilus 2>/dev/null || true
@@ -1651,6 +1680,37 @@ finalize_installation() {
     if [ -x "/usr/local/bin/mac-sanitize-favorites.sh" ]; then
         run_as_user /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
     fi
+
+    log_info "Configuring memory arena thresholds and trimming background services..."
+    sudo bash -c 'cat << "EOF_MEM" > /etc/environment
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+MALLOC_ARENA_MAX=2
+MALLOC_TRIM_THRESHOLD_=131072
+MALLOC_MMAP_THRESHOLD_=131072
+EOF_MEM' 2>/dev/null || true
+
+    mkdir -p "$TARGET_HOME/.config/environment.d"
+    cat << 'EOF_MEMCONF' > "$TARGET_HOME/.config/environment.d/60-memory-opt.conf"
+MALLOC_ARENA_MAX=2
+MALLOC_TRIM_THRESHOLD_=131072
+MALLOC_MMAP_THRESHOLD_=131072
+EOF_MEMCONF
+    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/environment.d" 2>/dev/null || true
+
+    # Mask unneeded evolution data services to conserve RAM
+    run_as_user systemctl --user stop evolution-addressbook-factory.service evolution-calendar-factory.service evolution-source-registry.service 2>/dev/null || true
+    run_as_user systemctl --user mask evolution-addressbook-factory.service evolution-calendar-factory.service evolution-source-registry.service 2>/dev/null || true
+    mkdir -p "$TARGET_HOME/.config/autostart"
+    cat << 'EOF_EVO' > "$TARGET_HOME/.config/autostart/org.gnome.Evolution-alarm-notify.desktop"
+[Desktop Entry]
+Type=Application
+Name=Evolution Alarm Notify
+Hidden=true
+EOF_EVO
+    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart" 2>/dev/null || true
+
+    # Configure Liquid Glass downscale to 2 for optimal RAM footprint
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-blur-downscale 2 2>/dev/null || true
     
     echo -e "\n${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
     echo -e " ${C_BOLD}${C_GREEN}✔ macW1Y v${NEW_VERSION} INSTALLATION / UPDATE COMPLETED SUCCESSFULLY!${C_RESET}"
@@ -1732,6 +1792,25 @@ run_incremental_update() {
     if [ -f "$SCRIPT_DIR/lib/libmacpopover.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmacpopover.so" "/usr/local/lib/libmacpopover.so" true
         sync_or_update_file "$SCRIPT_DIR/lib/libmacpopover.so" "/usr/lib/libmacpopover.so" true
+        sync_or_update_file "$SCRIPT_DIR/lib/libmacpopover.so" "/usr/lib/x86_64-linux-gnu/libmacpopover.so" true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmacpopover.so /usr/local/lib/libmacpopover.so 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/lib/libmac_terminal.so" ]; then
+        sync_or_update_file "$SCRIPT_DIR/lib/libmac_terminal.so" "/usr/lib/x86_64-linux-gnu/libmac_terminal.so" true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_terminal.so 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/bin/ptyxis" ]; then
+        sync_or_update_file "$SCRIPT_DIR/bin/ptyxis" "/usr/local/bin/ptyxis" true
+        sudo chmod 755 /usr/local/bin/ptyxis 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/lib/libmac_memtrim.so" ]; then
+        sync_or_update_file "$SCRIPT_DIR/lib/libmac_memtrim.so" "/usr/lib/x86_64-linux-gnu/libmac_memtrim.so" true
+        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_memtrim.so 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib" ]; then
+        sudo mkdir -p /usr/lib/x86_64-linux-gnu/girepository-1.0
+        sync_or_update_file "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib" "/usr/lib/x86_64-linux-gnu/girepository-1.0/MacMemTrim-1.0.typelib" true
+        sudo chmod 644 /usr/lib/x86_64-linux-gnu/girepository-1.0/MacMemTrim-1.0.typelib 2>/dev/null || true
     fi
 
     log_info "3/10 Checking icon themes..."
@@ -2034,7 +2113,7 @@ run_incremental_update() {
     fi
     cat << 'EOF_NAUT' | sudo tee /usr/bin/nautilus >/dev/null
 #!/bin/sh
-export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_nautilus.so${LD_PRELOAD:+:$LD_PRELOAD}"
+export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_nautilus.so:/usr/lib/x86_64-linux-gnu/libmacpopover.so${LD_PRELOAD:+:$LD_PRELOAD}"
 exec /usr/bin/nautilus.orig "$@"
 EOF_NAUT
     sudo chmod +x /usr/bin/nautilus 2>/dev/null || true
@@ -2125,6 +2204,37 @@ EOF
     if [ -x "/usr/local/bin/mac-sanitize-favorites.sh" ]; then
         run_as_user /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
     fi
+
+    log_info "Configuring memory arena thresholds and trimming background services..."
+    sudo bash -c 'cat << "EOF_MEM" > /etc/environment
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+MALLOC_ARENA_MAX=2
+MALLOC_TRIM_THRESHOLD_=131072
+MALLOC_MMAP_THRESHOLD_=131072
+EOF_MEM' 2>/dev/null || true
+
+    mkdir -p "$TARGET_HOME/.config/environment.d"
+    cat << 'EOF_MEMCONF' > "$TARGET_HOME/.config/environment.d/60-memory-opt.conf"
+MALLOC_ARENA_MAX=2
+MALLOC_TRIM_THRESHOLD_=131072
+MALLOC_MMAP_THRESHOLD_=131072
+EOF_MEMCONF
+    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/environment.d" 2>/dev/null || true
+
+    # Mask unneeded evolution data services to conserve RAM
+    run_as_user systemctl --user stop evolution-addressbook-factory.service evolution-calendar-factory.service evolution-source-registry.service 2>/dev/null || true
+    run_as_user systemctl --user mask evolution-addressbook-factory.service evolution-calendar-factory.service evolution-source-registry.service 2>/dev/null || true
+    mkdir -p "$TARGET_HOME/.config/autostart"
+    cat << 'EOF_EVO' > "$TARGET_HOME/.config/autostart/org.gnome.Evolution-alarm-notify.desktop"
+[Desktop Entry]
+Type=Application
+Name=Evolution Alarm Notify
+Hidden=true
+EOF_EVO
+    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart" 2>/dev/null || true
+
+    # Configure Liquid Glass downscale to 2 for optimal RAM footprint
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-blur-downscale 2 2>/dev/null || true
     
     sudo systemctl daemon-reload 2>/dev/null || true
     sudo systemctl restart mac-touchpad-daemon.service 2>/dev/null || true

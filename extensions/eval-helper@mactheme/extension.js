@@ -3736,12 +3736,19 @@ export default class EvalHelper extends Extension {
 
         this._setupWineWindowStacking();
         this._setupMinimizedWindowSnapshotManager();
+        this._setupMemoryOptimizer();
     }
 
     disable() {
         try {
             MacSetupWizard.stopSetupWizard();
         } catch (_) {}
+        if (this._memOptimizerCleanups) {
+            this._memOptimizerCleanups.forEach(fn => {
+                try { fn(); } catch (_) {}
+            });
+            this._memOptimizerCleanups = null;
+        }
         if (this._snapshotCleanups) {
             this._snapshotCleanups.forEach(fn => {
                 try { fn(); } catch (_) {}
@@ -4142,32 +4149,14 @@ export default class EvalHelper extends Extension {
                     overlay.destroy();
                 }
             } catch (_) {}
+            if (actor.meta_window && actor.meta_window._macCachedSnapshot) {
+                delete actor.meta_window._macCachedSnapshot;
+            }
         };
 
         this._snapshotCleanups = [];
 
-        // 1. Continuous focus tracking to capture fresh window snapshot before focus lost
-        let lastFocus = null;
-        this._snapshotFocusId = global.display.connect('notify::focus-window', () => {
-            if (lastFocus && !lastFocus.minimized) {
-                const a = lastFocus.get_compositor_private?.();
-                if (a && a.mapped) captureWindowSnapshot(a);
-            }
-            const win = global.display.focus_window;
-            lastFocus = win;
-            if (win && !win.minimized) {
-                const a = win.get_compositor_private?.();
-                if (a && a.mapped) captureWindowSnapshot(a);
-            }
-        });
-        this._snapshotCleanups.push(() => {
-            if (this._snapshotFocusId) {
-                global.display.disconnect(this._snapshotFocusId);
-                this._snapshotFocusId = null;
-            }
-        });
-
-        // 2. Pre-minimize hook: capture snapshot and apply overlay immediately
+        // Pre-minimize hook: capture snapshot and apply overlay immediately for minimize animation
         this._snapshotMinId = global.window_manager.connect('minimize', (e, actor) => {
             if (actor) {
                 captureWindowSnapshot(actor);
@@ -4181,7 +4170,7 @@ export default class EvalHelper extends Extension {
             }
         });
 
-        // 3. Pre-unminimize hook: ensure overlay is applied during animation
+        // Pre-unminimize hook: ensure overlay is applied during animation
         this._snapshotUnminId = global.window_manager.connect('unminimize', (e, actor) => {
             if (actor) {
                 applySnapshotOverlay(actor);
@@ -4194,7 +4183,7 @@ export default class EvalHelper extends Extension {
             }
         });
 
-        // 4. Window minimized state tracking: clean up overlay after unminimize animation finishes
+        // Window state tracking: clean up overlay & snapshot once unminimized or unmanaged
         const trackWindow = (win) => {
             if (!win || win._macSnapshotTracked) return;
             win._macSnapshotTracked = true;
@@ -4211,8 +4200,14 @@ export default class EvalHelper extends Extension {
                     applySnapshotOverlay(actor);
                 }
             });
+            const unmanId = win.connect('unmanaged', () => {
+                if (win._macCachedSnapshot) {
+                    delete win._macCachedSnapshot;
+                }
+            });
             this._snapshotCleanups.push(() => {
                 try { win.disconnect(id); } catch (_) {}
+                try { win.disconnect(unmanId); } catch (_) {}
                 delete win._macSnapshotTracked;
             });
         };
@@ -4228,27 +4223,51 @@ export default class EvalHelper extends Extension {
         global.get_window_actors().forEach(a => {
             if (a.meta_window) {
                 trackWindow(a.meta_window);
-                if (a.mapped && !a.meta_window.minimized) captureWindowSnapshot(a);
             }
+        });
+    }
+
+    _setupMemoryOptimizer() {
+        this._memOptimizerCleanups = [];
+
+        let MacMemTrim = null;
+        try {
+            MacMemTrim = imports.gi.MacMemTrim;
+        } catch (_) {}
+
+        const runMemoryTrim = () => {
+            try {
+                imports.system.gc();
+                if (MacMemTrim && MacMemTrim.mem_trim) {
+                    MacMemTrim.mem_trim();
+                }
+            } catch (_) {}
+        };
+
+        // 1. Periodic trim every 3 minutes
+        const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 180, () => {
+            runMemoryTrim();
+            return GLib.SOURCE_CONTINUE;
+        });
+        this._memOptimizerCleanups.push(() => {
+            GLib.source_remove(timerId);
         });
 
-        // 5. Overview showing hook: ensure minimized windows have overlay
-        this._snapshotOverviewId = Main.overview.connect('showing', () => {
-            global.get_window_actors().forEach(actor => {
-                if (actor && actor.meta_window) {
-                    if (actor.meta_window.minimized) {
-                        applySnapshotOverlay(actor);
-                    } else if (actor.mapped) {
-                        captureWindowSnapshot(actor);
-                    }
-                }
+        // 2. Idle trim when overview hides
+        const overviewHiddenId = Main.overview.connect('hidden', () => {
+            GLib.idle_add(GLib.PRIORITY_LOW, () => {
+                runMemoryTrim();
+                return GLib.SOURCE_REMOVE;
             });
         });
-        this._snapshotCleanups.push(() => {
-            if (this._snapshotOverviewId) {
-                Main.overview.disconnect(this._snapshotOverviewId);
-                this._snapshotOverviewId = null;
-            }
+        this._memOptimizerCleanups.push(() => {
+            try { Main.overview.disconnect(overviewHiddenId); } catch (_) {}
+        });
+
+        // Initial trim after 5 seconds
+        GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 5, () => {
+            runMemoryTrim();
+            return GLib.SOURCE_REMOVE;
         });
     }
 }

@@ -2123,10 +2123,20 @@ class MacAppDaemon:
     def on_system_apps_changed(self, monitor, file, other_file, event_type):
         self.trigger_sync_debounced()
 
+def trim_process_memory():
+    try:
+        import gc, ctypes
+        gc.collect()
+        libc = ctypes.CDLL("libc.so.6")
+        libc.malloc_trim(0)
+    except Exception:
+        pass
+
     def run(self):
         acquire_daemon_lock()
         print("[MacAppDaemon] Starting macOS Applications Drag-and-Drop Manager...")
         sync()
+        trim_process_memory()
 
         # Monitor ~/Applications
         f_apps = Gio.File.new_for_path(APPS_DIR)
@@ -2145,6 +2155,7 @@ class MacAppDaemon:
                 m = f_sys.monitor_directory(Gio.FileMonitorFlags.NONE, None)
                 m.connect("changed", self.on_system_apps_changed)
 
+        GLib.timeout_add_seconds(300, lambda: (trim_process_memory(), True)[1])
         loop = GLib.MainLoop()
         loop.run()
 
