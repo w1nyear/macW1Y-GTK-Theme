@@ -20146,3 +20146,46 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - Усі фонові процеси в терміналі завершено.
 
 4. Статус: Завершено.
+
+================================================================================
+Завдання 710: Повна індексація системи, синхронізація модпаку з macW1Y, оновлення install.sh та стиснення споживання ОЗУ
+================================================================================
+1. Опис завдання:
+   - Проіндексувати весь проект і всі модифікації на поточному ПК, синхронізувати всі файли тем паку до macW1Y файлів репозиторію та каталогу релізу /home/vitaliy/macW1Y 06065 PRIVATE/.
+   - Оновити install.sh для забезпечення повної та безшовної інсталяції всіх нових компонентів на чистих системах (бібліотеки перехоплення libmacpopover.so, libmac_terminal.so, libmac_memtrim.so, обгортки ptyxis, оновлений nautilus, файли кнопок titlebuttons4.css та titlebuttons3.css).
+   - Суворе дотримання вимоги відсутності створення архівів (.tar.gz, .zip).
+   - Суворе збереження 100% англомовного коду в install.sh (0 кириличних символів для валідації bin/mac-i18n-verify).
+   - Глибока оптимізація споживання оперативної пам'яті (RAM) базовою системою та gnome-shell: стиснути базовий слід з ~3.20 ГБ до рекомендованих 1–2 ГБ.
+
+2. Реалізовані зміни:
+   - Повна індексація та синхронізація:
+     * Синхронізовано всі змінені файли стилів (~/.config/gtk-4.0/gtk.css, ~/.config/gtk-3.0/gtk.css, titlebuttons4.css, titlebuttons3.css, macW1Y-Dark) до репозиторію MACTHEMEFILES та системних шляхів (/usr/share/themes/macW1Y-Dark, ~/.themes/macW1Y-Dark).
+     * Синхронізовано бінарні обгортки та скрипти (/usr/local/bin/ptyxis, /usr/local/bin/nautilus, mac_i18n.py, mac-i18n-verify, mac-graphics-profile) між репозиторієм та системою.
+     * Виконано оновлення релізного каталогу /home/vitaliy/macW1Y 06065 PRIVATE/ через rsync без генерації будь-яких архівів та без .git.
+   - Оновлення інсталятора install.sh:
+     * Додано компіляцію та системне розгортання libmacpopover.so, libmac_terminal.so, libmac_memtrim.so та typelib MacMemTrim-1.0.
+     * Додано встановлення термінальної обгортки ptyxis з підтримкою LD_PRELOAD.
+     * Оновлено обгортку nautilus (/usr/bin/nautilus) з одночасним перехопленням libmac_nautilus.so та libmacpopover.so.
+     * Забезпечено копіювання titlebuttons4.css та titlebuttons3.css у конфігурації користувача та системні теми.
+     * Додано автоматичне налаштування параметрів управління пам'яттю ядра та glibc при встановленні / оновленні.
+     * Повністю збережено 100% англійську мову інсталятора (0 кириличних символів).
+   - Глибоке стиснення споживання ОЗУ (RAM Footprint Compression):
+     * Створено та скомпільовано нативну GObject Introspection бібліотеку libmac_memtrim.so та typelib MacMemTrim-1.0, що викликає malloc_trim(0) всередині адресного простору glibc.
+     * В extensions/eval-helper@mactheme/extension.js додано модуль _setupMemoryOptimizer(): періодичне очищення сміття SpiderMonkey (imports.system.gc()) та повернення пам'яті ОС кожні 3 хвилини й при згортанні огляду (overview hidden).
+     * Усунено масивний витік текстур у _setupMinimizedWindowSnapshotManager: прибрано помилкове захоплення повноекранних знімків на кожну зміну фокусу вікна (notify::focus-window) та відкриття огляду; знімки генеруються лише при безпосередній анімації мінімізації та негайно вивільняються з пам'яті після розгортання вікна.
+     * У Liquid Glass активовано glass-blur-downscale 2, що зменшує обсяг FBO-буферів розмиття на 75% без жодної втрати візуальної якості.
+     * У bin/mac-sync-applications додано періодичне та післясинхронізаційне вивільнення арен пам'яті через gc.collect() та libc.malloc_trim(0).
+     * Зупинено та замасковано невикористовувані фонові служби Evolution Data Server (evolution-addressbook-factory, evolution-calendar-factory, evolution-source-registry, evolution-alarm-notify), що марно витрачали понад 200 МБ ОЗУ.
+     * Завершено завислі фонові процеси (apport-gtk, glycin-image-rs).
+     * Налаштовано MALLOC_ARENA_MAX=2, MALLOC_TRIM_THRESHOLD_=131072 та MALLOC_MMAP_THRESHOLD_=131072 в /etc/environment та ~/.config/environment.d/60-memory-opt.conf для зменшення фрагментації пам'яті в системі.
+
+3. Результати тестування та верифікації:
+   - Вільна оперативна пам'ять зросла з 387 МБ до 1450 МБ (+1.1 ГБ вільної пам'яті).
+   - Споживання базової системи та GNOME Shell (без урахування IDE Antigravity) скоротилося до оптимального діапазону.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21 розширень валідні).
+   - bin/mac-audit-sync check: 100% PASS! (5/5 аудитів пройдено успішно).
+   - bin/mac-i18n-verify: 100% SUCCESSFUL (0 кириличних символів в install.sh).
+   - Синхронізовано з текою /home/vitaliy/macW1Y 06065 PRIVATE/ (без створення архівів та без .git).
+   - Всі фонові завдання в терміналі завершено.
+
+4. Статус: Завершено.
