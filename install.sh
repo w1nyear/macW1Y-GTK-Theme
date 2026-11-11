@@ -911,6 +911,13 @@ install_settings_overlay() {
     [ -f "$SCRIPT_DIR/bin/gnome-theme-switcher" ] && cp "$SCRIPT_DIR/bin/gnome-theme-switcher" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/gnome-theme-switcher"
     [ -f "$SCRIPT_DIR/bin/toggle-launchpad.sh" ] && cp "$SCRIPT_DIR/bin/toggle-launchpad.sh" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/toggle-launchpad.sh"
     [ -f "$SCRIPT_DIR/bin/extension-manager" ] && cp "$SCRIPT_DIR/bin/extension-manager" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/extension-manager"
+    if [ -f "$SCRIPT_DIR/bin/macW1Y" ]; then
+        cp "$SCRIPT_DIR/bin/macW1Y" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/macW1Y"
+        sudo cp -f "$SCRIPT_DIR/bin/macW1Y" /usr/local/bin/macW1Y && sudo chmod 755 /usr/local/bin/macW1Y
+        sudo ln -sf /usr/local/bin/macW1Y /usr/local/bin/macw1y 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macw1y 2>/dev/null || true
+    fi
     if [ -x "/usr/bin/google-chrome-stable" ] || [ -x "/usr/bin/google-chrome" ] || [ -x "/snap/bin/google-chrome" ]; then
         [ -f "$SCRIPT_DIR/bin/google-chrome" ] && cp "$SCRIPT_DIR/bin/google-chrome" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/google-chrome"
     else
@@ -1964,7 +1971,7 @@ run_incremental_update() {
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale; do
+    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale macW1Y; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true
@@ -1972,6 +1979,11 @@ run_incremental_update() {
             sudo chmod 755 "/usr/local/bin/$b" 2>/dev/null || true
         fi
     done
+    if [ -f "$SCRIPT_DIR/bin/macW1Y" ]; then
+        sudo ln -sf /usr/local/bin/macW1Y /usr/local/bin/macw1y 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macw1y 2>/dev/null || true
+    fi
 
     # Installing and enabling macW1Y background integrity check timer
     if [ -f "$SCRIPT_DIR/systemd/mac-integrity-check.service" ] && [ -f "$SCRIPT_DIR/systemd/mac-integrity-check.timer" ]; then
@@ -2345,9 +2357,201 @@ run_clean_update() {
 }
 
 # ------------------------------------------------------------------------------
+# Debug Installer & CLI Dispatcher System
+# ------------------------------------------------------------------------------
+print_debug_banner() {
+    clear 2>/dev/null || true
+    echo -e "${C_CYAN}"
+    echo "  ╔════════════════════════════════════════════════════════════════════════════╗"
+    echo "  ║                                                                            ║"
+    echo "  ║         m a c W 1 Y   D e b u g   &   C L I   E n v i r o n m e n t       ║"
+    echo "  ║                Developer & Debugging Tools Installer                       ║"
+    echo "  ║                         Release: macW1Y Debug (v${NEW_VERSION})                      ║"
+    echo "  ║                                                                            ║"
+    echo "  ╚════════════════════════════════════════════════════════════════════════════╝"
+    echo -e "${C_RESET}"
+}
+
+get_debug_installed_version() {
+    if [ -f "/etc/macW1Y/debug.version" ]; then
+        cat "/etc/macW1Y/debug.version" 2>/dev/null | tr -d 'v \n\r'
+    elif [ -f "$TARGET_HOME/.local/share/macW1Y/debug.version" ]; then
+        cat "$TARGET_HOME/.local/share/macW1Y/debug.version" 2>/dev/null | tr -d 'v \n\r'
+    elif [ -x "/usr/local/bin/macW1Y" ] || [ -x "/usr/bin/macW1Y" ]; then
+        echo "0.6"
+    fi
+}
+
+run_debug_install() {
+    require_root
+    log_step "Installing macW1Y debug tools and CLI dispatcher environment (v${NEW_VERSION})"
+
+    local LOCAL_BIN="$TARGET_HOME/.local/bin"
+    mkdir -p "$LOCAL_BIN"
+
+    # Install macW1Y dispatcher
+    if [ -f "$SCRIPT_DIR/bin/macW1Y" ]; then
+        log_info "Installing macW1Y command dispatcher to /usr/local/bin and /usr/bin..."
+        cp -f "$SCRIPT_DIR/bin/macW1Y" "$LOCAL_BIN/macW1Y" 2>/dev/null || true
+        chmod 755 "$LOCAL_BIN/macW1Y" 2>/dev/null || true
+        sudo cp -f "$SCRIPT_DIR/bin/macW1Y" /usr/local/bin/macW1Y
+        sudo chmod 755 /usr/local/bin/macW1Y
+        sudo ln -sf /usr/local/bin/macW1Y /usr/local/bin/macw1y
+        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y
+        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macw1y
+        log_success "macW1Y dispatcher installed."
+    else
+        log_error "bin/macW1Y not found in $SCRIPT_DIR/bin!"
+        exit 1
+    fi
+
+    # Install all debug utilities and CLI helpers
+    log_info "Installing developer and debug helper utilities..."
+    for bin_file in "$SCRIPT_DIR"/bin/*; do
+        if [ -f "$bin_file" ] || [ -L "$bin_file" ]; then
+            local b_name
+            b_name="$(basename "$bin_file")"
+            cp -f "$bin_file" "$LOCAL_BIN/$b_name" 2>/dev/null || true
+            chmod 755 "$LOCAL_BIN/$b_name" 2>/dev/null || true
+            sudo cp -af "$bin_file" "/usr/local/bin/$b_name" 2>/dev/null || true
+            sudo chmod 755 "/usr/local/bin/$b_name" 2>/dev/null || true
+        fi
+    done
+
+    # Save debug version marker
+    sudo mkdir -p /etc/macW1Y
+    echo "v${NEW_VERSION}" | sudo tee /etc/macW1Y/debug.version >/dev/null
+    mkdir -p "$TARGET_HOME/.local/share/macW1Y"
+    echo "v${NEW_VERSION}" > "$TARGET_HOME/.local/share/macW1Y/debug.version"
+
+    log_success "macW1Y Debug Environment (v${NEW_VERSION}) installed successfully!"
+    echo -e "\n ${C_BOLD}Quick Start:${C_RESET}"
+    echo -e "   • Type ${C_GREEN}macW1Y -?${C_RESET} to view all available commands."
+    echo -e "   • Type ${C_GREEN}macW1Y Mac-setup-wizard start${C_RESET} to launch the first-stage setup wizard."
+    echo -e "   • Type ${C_GREEN}macW1Y diagnostics${C_RESET} to perform system diagnostics."
+    echo -e "   • To uninstall: ${C_YELLOW}./install.sh -debug_uninstall${C_RESET}\n"
+}
+
+run_debug_update() {
+    require_root
+    log_step "Updating macW1Y debug tools and CLI dispatcher to v${NEW_VERSION}"
+    run_debug_install
+}
+
+run_debug_clean_install() {
+    require_root
+    log_step "Clean reinstalling macW1Y debug tools (v${NEW_VERSION})"
+    log_info "Removing existing debug CLI tools..."
+    sudo rm -f /usr/local/bin/macW1Y /usr/local/bin/macw1y /usr/bin/macW1Y /usr/bin/macw1y
+    sudo rm -f /etc/macW1Y/debug.version
+    rm -f "$TARGET_HOME/.local/share/macW1Y/debug.version" 2>/dev/null || true
+    run_debug_install
+}
+
+run_debug_uninstall() {
+    require_root
+    log_step "Uninstalling macW1Y debug tools and CLI dispatcher"
+
+    log_info "Removing macW1Y command dispatchers and symlinks..."
+    sudo rm -f /usr/local/bin/macW1Y /usr/local/bin/macw1y /usr/bin/macW1Y /usr/bin/macw1y
+    sudo rm -f /etc/macW1Y/debug.version
+    rm -f "$TARGET_HOME/.local/share/macW1Y/debug.version" 2>/dev/null || true
+    rm -f "$TARGET_HOME/.local/bin/macW1Y" "$TARGET_HOME/.local/bin/macw1y" 2>/dev/null || true
+
+    log_success "macW1Y debug tools and CLI dispatcher successfully uninstalled."
+}
+
+interactive_debug_menu() {
+    print_debug_banner
+
+    local DEBUG_VER
+    DEBUG_VER="$(get_debug_installed_version)"
+    local CMP_RES=0
+    if [ -n "$DEBUG_VER" ]; then
+        CMP_RES=$(compare_semver "$DEBUG_VER" "$NEW_VERSION")
+    fi
+
+    echo -e " ${C_BOLD}Version Information:${C_RESET}"
+    if [ -n "$DEBUG_VER" ]; then
+        echo -e "   • Installed debug version on PC: ${C_BOLD}${C_YELLOW}v$DEBUG_VER${C_RESET}"
+    else
+        echo -e "   • Installed debug version on PC: ${C_BOLD}${C_RED}Not installed${C_RESET}"
+    fi
+    echo -e "   • Debug package version: ${C_BOLD}${C_GREEN}v$NEW_VERSION${C_RESET}\n"
+
+    echo -e " ${C_BOLD}Select an action:${C_RESET}\n"
+
+    local HAS_OPT1=false
+    local HAS_OPT2=false
+    local HAS_OPT3=true
+
+    if [ -z "$DEBUG_VER" ]; then
+        HAS_OPT1=true
+        HAS_OPT2=false
+        echo -e "  ${C_GREEN}[1]${C_RESET} ${C_BOLD}Full Debug Installation [v${NEW_VERSION}]${C_RESET} (Installs macW1Y CLI dispatcher and developer debug tools)"
+        echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Clean Reinstall Debug Tools [v${NEW_VERSION}]${C_RESET} (Completely removes debug tools and performs fresh setup)"
+        echo -e "  ${C_RED}[4]${C_RESET} Exit installer\n"
+    elif [ "$CMP_RES" -eq 2 ]; then
+        HAS_OPT1=false
+        HAS_OPT2=true
+        echo -e "  ${C_CYAN}[2]${C_RESET} ${C_BOLD}Update Debug Tools [v${DEBUG_VER}] -> [v${NEW_VERSION}]${C_RESET} (Verifies and updates CLI dispatchers and debug utilities)"
+        echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Clean Reinstall Debug Tools [v${DEBUG_VER}] -> [v${NEW_VERSION}]${C_RESET} (Completely removes debug tools and reinstalls from scratch)"
+        echo -e "  ${C_RED}[4]${C_RESET} Exit installer\n"
+    else
+        HAS_OPT1=false
+        HAS_OPT2=true
+        echo -e "  ${C_CYAN}[2]${C_RESET} ${C_BOLD}Update / Integrity Check [v${DEBUG_VER}] -> [v${NEW_VERSION}]${C_RESET} (Verifies CLI dispatchers and restores missing utilities)"
+        echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Clean Reinstall Debug Tools [v${DEBUG_VER}] -> [v${NEW_VERSION}]${C_RESET} (Completely removes debug tools and reinstalls from scratch)"
+        echo -e "  ${C_RED}[4]${C_RESET} Exit installer\n"
+    fi
+
+    local CHOICE="$2"
+    if [ -z "$CHOICE" ]; then
+        read -r -p " Enter option number: " CHOICE
+    fi
+
+    case "$CHOICE" in
+        1)
+            if [ "$HAS_OPT1" = "true" ]; then
+                run_debug_install
+            else
+                log_error "Option 1 is not available: debug tools v${DEBUG_VER} already installed. Choose [2] to update or [3] for clean reinstall."
+                exit 1
+            fi
+            ;;
+        2)
+            if [ "$HAS_OPT2" = "true" ]; then
+                run_debug_update
+            else
+                log_error "Option 2 is not available: no previous debug version detected. Choose [1] for full install or [3] for clean reinstall."
+                exit 1
+            fi
+            ;;
+        3)
+            run_debug_clean_install
+            ;;
+        4|0)
+            echo -e "\nOperation complete. Exiting installer."
+            exit 0
+            ;;
+        *)
+            echo -e "\nInvalid choice. Installation cancelled."
+            exit 1
+            ;;
+    esac
+}
+
+# ------------------------------------------------------------------------------
 # CLI Command-Line Arguments
 # ------------------------------------------------------------------------------
-if [ "$1" = "--install" ] || [ "$1" = "-i" ] || [ "$1" = "--all" ] || [ "$1" = "-y" ] || [ "$1" = "--yes" ]; then
+if [ "$1" = "-debug_install" ] || [ "$1" = "--debug_install" ]; then
+    interactive_debug_menu "$@"
+    exit 0
+elif [ "$1" = "-debug_uninstall" ] || [ "$1" = "--debug_uninstall" ]; then
+    print_debug_banner
+    run_debug_uninstall
+    exit 0
+elif [ "$1" = "--install" ] || [ "$1" = "-i" ] || [ "$1" = "--all" ] || [ "$1" = "-y" ] || [ "$1" = "--yes" ]; then
     print_banner
     run_full_install
     exit 0

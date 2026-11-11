@@ -20287,3 +20287,34 @@ Task 704: Уніфікація ширини поля вводу пароля н�
      * Живі вікна (MacOs Tahoe, Ubuntu dialogs тощо) успішно отримали mac-forced-corner-effect з радіусом 24px.
 
 3. Статус: Завершено.
+
+================================================================================
+Завдання 714: Прихований debug-інсталятор у install.sh та CLI-диспетчер macW1Y
+================================================================================
+1. Вихідні вимоги:
+   - До інсталятора install.sh додати прихований параметр ./install.sh -debug_install, який викликає окреме інтерактивне меню встановлення дебаг-середовища з аналогічним макетом, кнопками ([1], [2], [3], [4]) та логікою перевірки версії замість розгортання повної macOS теми.
+   - Замість тем оформлення меню встановлює дебаг-інструменти та CLI-диспетчер macW1Y безпосередньо у термінал користувача (/usr/local/bin, /usr/bin).
+   - Забезпечити підтримку виклику ./install.sh -debug_uninstall для повного чистого видалення диспетчера macW1Y, симлінків та маркерів версії дебагу.
+   - Створити CLI-диспетчер macW1Y (та симлінк macw1y), який при запуску macW1Y -? показує вичерпний кольоровий довідник усіх доступних команд, а при виклику, наприклад, macW1Y Mac-setup-wizard start або macW1Y mac-setup-wizard start автоматично знаходить і виконує відповідний інструмент незалежно від регістру літер та псевдонімів.
+   - Дотримуватися суворого правила проекту: install.sh повинен містити 0 кириличних символів (100% English).
+
+2. Реалізовані зміни:
+   - Створено CLI-диспетчер команд macW1Y (bin/macW1Y, /usr/local/bin/macW1Y, /usr/bin/macW1Y, симлінки macw1y):
+     * Повна довідка при виклику macW1Y -?, -h, --help, help або без аргументів: структуровані категорії (System & Setup, Styling & Themes, Desktop & Widgets, Hardware & Gaming, Debug & Maintenance) з детальним описом і псевдонімами.
+     * Регістронезалежний парсер аргументів (resolve_target): нормалізує команди на зразок Mac-setup-wizard -> mac-setup-wizard.
+     * Підтримка скорочених псевдонімів: wizard, diag, audit, guard, i18n, integrity, theme, locale, styling, widgets, picker, clipboard, airdrop, touchpad, sync-apps, uninstall-app, screenshot, gamemode, gpu, profile, boot, wine, capcut, sound, js.
+     * Вбудована команда macW1Y eval <js> для прямого виконання JavaScript у GNOME Shell через EvalHelper.
+   - Інтегровано прихований режим дебаг-інсталятора в install.sh:
+     * Функція print_debug_banner(): стилізований ASCII-банер "macW1Y Debug & CLI Environment - Developer & Debugging Tools Installer".
+     * Функція get_debug_installed_version(): зчитує встановлену версію дебагу з /etc/macW1Y/debug.version або ~/.local/share/macW1Y/debug.version.
+     * Функції run_debug_install(), run_debug_update(), run_debug_clean_install(), run_debug_uninstall().
+     * Меню interactive_debug_menu(): динамічне відображення встановленої та поточної версії, інтерактивні пункти [1] Full Debug Installation, [2] Update Debug Tools, [3] Clean Reinstall Debug Tools, [4] Exit installer (або прямий вибір аргументом, наприклад ./install.sh -debug_install 1).
+     * CLI-перехоплювачі прапорців -debug_install, --debug_install, -debug_uninstall, --debug_uninstall.
+     * Додано macW1Y до циклів встановлення та оновлення бінарних компонентів у загальному інсталяторі install.sh із автоматичним створенням глобальних симлінків.
+   - Верифікація та цілісність:
+     * bin/mac-i18n-verify: 100% SUCCESSFUL (install.sh містить рівно 0 символів кирилиці).
+     * bin/mac-extension-guard verify: усі 21 розширення пройшли перевірку lock-файлу.
+     * bin/mac-audit-sync check: 100% PASS (5/5 аудитів пройдено успішно).
+     * Тестування живого виклику: ./install.sh -debug_install (пункти 1, 2, 4), ./install.sh -debug_uninstall, macW1Y -?, macW1Y Mac-setup-wizard status.
+
+3. Статус: Завершено.
