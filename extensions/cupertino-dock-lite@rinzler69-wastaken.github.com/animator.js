@@ -11,7 +11,7 @@ const Point = Graphene.Point;
 const ANIM_INTERVAL = 15;
 const ANIM_INTERVAL_PAD = 15;
 const ANIM_ICON_QUALITY = 2.0;
-const ANIM_REENABLE_DELAY = 750;
+const ANIM_REENABLE_DELAY = 300;
 const ANIM_ICON_RAISE = 0.75;
 const ANIM_JUMP_HEIGHT = 0.35;
 const ANIM_JUMP_SPEED = 0.7;
@@ -614,8 +614,14 @@ export class Animator {
   _startAnimation() { this._beginAnimation(); }
 
   _restoreIcons() {
+    const draggedActor = this.extension?._draggedSourceActor;
+    const draggedContainer = this.extension?._draggedContainer;
+
     this._findIcons().forEach(c => {
       if (!c || !c._bin) return;
+      if (draggedActor && (c._appwell === draggedActor || c.child === draggedActor || c._bin === draggedActor)) {
+        return;
+      }
       const realIcon = c._bin?.first_child ?? c._icon;
       if (realIcon) {
         realIcon.translation_x = 0;
@@ -640,7 +646,16 @@ export class Animator {
         }
       }
     });
-    if (this.dash?._box) { this.dash._box.get_children().forEach(c => { if (c.first_child) c.first_child.opacity = 255; }); }
+    if (this.dash?._box) {
+      this.dash._box.get_children().forEach(c => {
+        if (draggedContainer && (c === draggedContainer || c.contains?.(draggedActor))) {
+          c.visible = false;
+          c.opacity = 0;
+          return;
+        }
+        if (c.first_child) c.first_child.opacity = 255;
+      });
+    }
   }
 
   _resetAppwellHooks() {
@@ -663,7 +678,13 @@ export class Animator {
     draggable.connectObject(
       'drag-begin', () => {
         this._dragging = true;
+        this.extension?._onDragBegin?.(draggable);
         this._pauseForDrag();
+        this.extension?._hideDraggedSourceActor?.();
+      },
+      'drag-cancelled', () => {
+        this._dragging = false;
+        this.extension?._cleanUpDragState?.();
       },
       'drag-end', (_d, eventTime, success) => {
         this._dragging = false;
@@ -692,6 +713,8 @@ export class Animator {
             logError(e, 'Failed to unpin dragged-out dock item');
           }
         }
+
+        this.extension?._cleanUpDragState?.();
 
         if (globalThis._activeDndDragActor) {
           globalThis._activeDndDragActor = null;

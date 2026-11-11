@@ -17,6 +17,7 @@
  */
 
 
+import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
@@ -62,6 +63,9 @@ export default class DashAnimatorExtension extends Extension {
             dropInfo.dragActor._isDndDragActor = true;
             globalThis._activeDndDragActor = dropInfo.dragActor;
           }
+          if (this._dragging && !this._isPointerOverDock() && this._customPlaceholder) {
+            this._clearCustomPlaceholder();
+          }
           return DND.DragMotionResult.CONTINUE;
         }
       };
@@ -70,6 +74,7 @@ export default class DashAnimatorExtension extends Extension {
   }
 
   disable() {
+    this._cleanUpDragState();
     if (this._dndMonitor) {
       DND.removeDragMonitor(this._dndMonitor);
       this._dndMonitor = null;
@@ -364,11 +369,143 @@ export default class DashAnimatorExtension extends Extension {
     return icons;
   }
 
+  _isFromDash(source) {
+    if (!source) return false;
+    if (this._draggedSourceActor && (source === this._draggedSourceActor || source === this._draggedSourceActor._delegate)) {
+      return true;
+    }
+    const app = this._getDraggedApp(source);
+    const appId = app?.get_id?.();
+    if (appId && (appId === this._draggedAppId || AppFavorites.getAppFavorites().isFavorite(appId))) {
+      return true;
+    }
+    const actor = source?.actor ?? source;
+    return !!(actor && (this.dash?._box?.contains(actor) || this.dashContainer?.contains(actor)));
+  }
+
+  _onDragBegin(draggable) {
+    this._dragging = true;
+    const app = draggable.actor?._delegate?.app ?? draggable.actor?.app;
+    const appId = app?.get_id?.();
+    this._draggedAppId = appId;
+    this._draggedSourceActor = draggable.actor;
+
+    let container = draggable.actor?.get_parent?.();
+    while (container && container.get_parent() !== this.dash?._box) {
+      container = container.get_parent();
+    }
+    if (container && container.get_parent() === this.dash?._box) {
+      this._draggedContainer = container;
+    } else if (appId && this.dash?._box) {
+      for (const child of this.dash._box.get_children()) {
+        const id = child.child?._delegate?.app?.get_id?.() ?? child.child?.app?.get_id?.();
+        if (id === appId) {
+          this._draggedContainer = child;
+          break;
+        }
+      }
+    }
+  }
+
+  _hideDraggedSourceActor() {
+    if (this._draggedContainer) {
+      this._draggedContainer.visible = false;
+      this._draggedContainer.opacity = 0;
+    }
+    if (this._draggedSourceActor) {
+      this._draggedSourceActor.opacity = 0;
+    }
+  }
+
+  _showCustomPlaceholder(targetPos, width, height) {
+    if (!this.dash?._box) return;
+
+    const children = this.dash._box.get_children();
+    const favs = AppFavorites.getAppFavorites().getFavorites();
+    const favIds = favs.map(a => a.get_id());
+    const visibleFavs = [];
+    for (const child of children) {
+      if (child === this._customPlaceholder) continue;
+      if (child === this._draggedContainer) continue;
+      const childAppId = child.child?._delegate?.app?.get_id?.() ?? child.child?.app?.get_id?.();
+      if (childAppId && favIds.includes(childAppId)) {
+        visibleFavs.push(child);
+      }
+    }
+
+    const placeholderWidth = width || visibleFavs[0]?.width || (this.dash.iconSize + 8);
+    const placeholderHeight = height || visibleFavs[0]?.height || this.dash.iconSize;
+
+    if (!this._customPlaceholder) {
+      this._customPlaceholder = new St.Bin({
+        name: 'cupertinoDragPlaceholder',
+        width: 0,
+        height: placeholderHeight,
+        reactive: false,
+        can_focus: false,
+        opacity: 0,
+      });
+      this._customPlaceholder._isDndDragActor = true;
+
+      if (targetPos < visibleFavs.length) {
+        this.dash._box.insert_child_below(this._customPlaceholder, visibleFavs[targetPos]);
+      } else if (visibleFavs.length > 0) {
+        this.dash._box.insert_child_above(this._customPlaceholder, visibleFavs[visibleFavs.length - 1]);
+      } else {
+        this.dash._box.insert_child_at_index(this._customPlaceholder, 0);
+      }
+
+      this._customPlaceholder.ease({
+        width: placeholderWidth,
+        duration: 150,
+        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+      });
+
+      this._customPlaceholderPos = targetPos;
+      return;
+    }
+
+    if (this._customPlaceholderPos !== targetPos) {
+      this._customPlaceholderPos = targetPos;
+      if (targetPos < visibleFavs.length) {
+        this.dash._box.set_child_below_sibling(this._customPlaceholder, visibleFavs[targetPos]);
+      } else if (visibleFavs.length > 0) {
+        this.dash._box.set_child_above_sibling(this._customPlaceholder, visibleFavs[visibleFavs.length - 1]);
+      }
+    }
+  }
+
+  _clearCustomPlaceholder() {
+    if (this._customPlaceholder) {
+      try {
+        this.dash?._box?.remove_child(this._customPlaceholder);
+        this._customPlaceholder.destroy();
+      } catch (_) {}
+      this._customPlaceholder = null;
+    }
+    this._customPlaceholderPos = -1;
+  }
+
+  _cleanUpDragState() {
+    this._dragging = false;
+    this._clearCustomPlaceholder();
+    if (this._draggedContainer) {
+      this._draggedContainer.visible = true;
+      this._draggedContainer.opacity = 255;
+      if (this._draggedContainer.child) {
+        this._draggedContainer.child.opacity = 255;
+      }
+      this._draggedContainer = null;
+    }
+    if (this._draggedSourceActor) {
+      this._draggedSourceActor.opacity = 255;
+      this._draggedSourceActor = null;
+    }
+    this._draggedAppId = null;
+  }
+
   _patchTrashUnpinDrop() {
     if (!this.dash || this.dash._cupertinoTrashUnpinPatched) return;
-
-    const originalHandleDragOver = this.dash.handleDragOver?.bind(this.dash);
-    const originalAcceptDrop = this.dash.acceptDrop?.bind(this.dash);
 
     this.dash._cupertinoTrashUnpinPatched = {
       handleDragOver: this.dash.handleDragOver,
@@ -376,8 +513,9 @@ export default class DashAnimatorExtension extends Extension {
     };
 
     this.dash.handleDragOver = (source, actor, x, y, time) => {
-      // 1. Check if we are over the trash first
+      // 1. Check if pointer is over Trash
       if (this._isPointerOverTrash()) {
+        this._clearCustomPlaceholder();
         const app = this._getDraggedApp(source);
         if (app && app.get_id && !app.isTrash) {
           return DND.DragMotionResult.MOVE_DROP;
@@ -388,24 +526,85 @@ export default class DashAnimatorExtension extends Extension {
         return DND.DragMotionResult.NO_DROP;
       }
 
-      // 2. If external drag (from Nautilus) over the dock:
+      // 2. If external drag (from Nautilus) over the dock
       if (this._isExternalDrag(source)) {
         return DND.DragMotionResult.COPY_DROP;
       }
 
-      // 3. Delegate to original handleDragOver for native Dash reordering & pinning
-      const res = originalHandleDragOver?.(source, actor, x, y, time);
-      if (res !== undefined && res !== DND.DragMotionResult.CONTINUE && res !== DND.DragMotionResult.NO_DROP) {
-        return res;
+      const app = this._getDraggedApp(source);
+      const appId = app?.get_id?.() ?? this._draggedAppId;
+      const isFromDash = this._isFromDash(source);
+
+      if (appId && isFromDash) {
+        // Reordering within the dock
+        const favs = AppFavorites.getAppFavorites().getFavorites();
+        const favIds = favs.map(a => a.get_id());
+
+        // Hide source container so no duplicate stands in the dock
+        this._hideDraggedSourceActor();
+
+        // Gather visible favorite containers in dash._box
+        const children = this.dash._box.get_children();
+        const visibleFavs = [];
+        for (const child of children) {
+          if (child === this._customPlaceholder) continue;
+          if (child === this._draggedContainer) continue;
+          const childAppId = child.child?._delegate?.app?.get_id?.() ?? child.child?.app?.get_id?.();
+          if (childAppId && favIds.includes(childAppId)) {
+            visibleFavs.push(child);
+          }
+        }
+
+        // Calculate target slot pos based on cursor x relative to each icon's midpoint
+        let targetPos = visibleFavs.length;
+        for (let i = 0; i < visibleFavs.length; i++) {
+          const c = visibleFavs[i];
+          const midX = c.x + c.width / 2;
+          if (x < midX) {
+            targetPos = i;
+            break;
+          }
+        }
+
+        const sampleWidth = visibleFavs[0]?.width || (this.dash.iconSize + 8);
+        const sampleHeight = visibleFavs[0]?.height || this.dash.iconSize;
+        this._showCustomPlaceholder(targetPos, sampleWidth, sampleHeight);
+
+        return DND.DragMotionResult.MOVE_DROP;
       }
 
-      // 4. Fallback for custom search/spotlight sources that are not AppIcon instances:
-      const app = this._getDraggedApp(source);
-      if (app && app.get_id && !app.isTrash) {
+      // 3. Dragging an app from Spotlight / Search / App Grid into Dock
+      if (appId && !app.isTrash) {
+        const favs = AppFavorites.getAppFavorites().getFavorites();
+        const favIds = favs.map(a => a.get_id());
+        const children = this.dash._box.get_children();
+        const visibleFavs = [];
+        for (const child of children) {
+          if (child === this._customPlaceholder) continue;
+          const childAppId = child.child?._delegate?.app?.get_id?.() ?? child.child?.app?.get_id?.();
+          if (childAppId && favIds.includes(childAppId)) {
+            visibleFavs.push(child);
+          }
+        }
+
+        let targetPos = visibleFavs.length;
+        for (let i = 0; i < visibleFavs.length; i++) {
+          const c = visibleFavs[i];
+          const midX = c.x + c.width / 2;
+          if (x < midX) {
+            targetPos = i;
+            break;
+          }
+        }
+
+        const sampleWidth = visibleFavs[0]?.width || (this.dash.iconSize + 8);
+        const sampleHeight = visibleFavs[0]?.height || this.dash.iconSize;
+        this._showCustomPlaceholder(targetPos, sampleWidth, sampleHeight);
+
         return DND.DragMotionResult.COPY_DROP;
       }
 
-      return res ?? DND.DragMotionResult.CONTINUE;
+      return DND.DragMotionResult.CONTINUE;
     };
 
     this.dash.acceptDrop = (source, actor, x, y, time) => {
@@ -414,6 +613,7 @@ export default class DashAnimatorExtension extends Extension {
         const app = this._getDraggedApp(source);
         if (app && app.get_id && !app.isTrash) {
           const appId = app.get_id();
+          this._cleanUpDragState();
           if (AppFavorites.getAppFavorites().isFavorite(appId)) {
             AppFavorites.getAppFavorites().removeFavorite(appId);
           }
@@ -426,29 +626,32 @@ export default class DashAnimatorExtension extends Extension {
               logError(e, 'Failed to trash app: ' + appId);
             }
           }
+          try {
+            global.display.get_sound_player().play_from_theme('trash-empty', 'Trash', null);
+          } catch (_) {}
           return true;
         }
         return false;
       }
 
-      // 2. Delegate to original acceptDrop for native Dash reordering & pinning
-      const accepted = originalAcceptDrop?.(source, actor, x, y, time);
-      if (accepted) {
-        return true;
-      }
-
-      // 3. Fallback for custom search/spotlight sources if not handled natively
       const app = this._getDraggedApp(source);
-      if (app && app.get_id && !app.isTrash) {
-        const appId = app.get_id();
-        const favs = AppFavorites.getAppFavorites();
-        if (!favs.isFavorite(appId)) {
-          favs.addFavorite(appId);
-          try {
-            global.display.get_sound_player().play_from_theme('dialog-information', 'Pin', null);
-          } catch (_) {}
-          return true;
+      const appId = app?.get_id?.() ?? this._draggedAppId;
+      const isFromDash = this._isFromDash(source);
+      const targetPos = this._customPlaceholderPos;
+
+      this._cleanUpDragState();
+
+      if (appId && targetPos >= 0) {
+        const appFavs = AppFavorites.getAppFavorites();
+        if (isFromDash) {
+          appFavs.moveFavoriteToPos(appId, targetPos);
+        } else {
+          appFavs.addFavoriteAtPos(appId, targetPos);
         }
+        try {
+          global.display.get_sound_player().play_from_theme('dialog-information', 'Drop', null);
+        } catch (_) {}
+        return true;
       }
 
       return false;
@@ -456,6 +659,7 @@ export default class DashAnimatorExtension extends Extension {
   }
 
   _unpatchTrashUnpinDrop() {
+    this._cleanUpDragState();
     if (!this.dash?._cupertinoTrashUnpinPatched) return;
 
     const patch = this.dash._cupertinoTrashUnpinPatched;
@@ -575,13 +779,13 @@ export default class DashAnimatorExtension extends Extension {
     return null;
   }
 
-  _isPointerOverDock() {
+  _isPointerOverDock(margin = 25) {
     if (!this.dashContainer) return false;
     const [pointerX, pointerY] = global.get_pointer();
     const [dockX, dockY] = this.dashContainer.get_transformed_position();
     const [dockWidth, dockHeight] = this.dashContainer.get_transformed_size();
-    return pointerX >= dockX && pointerX <= dockX + dockWidth &&
-           pointerY >= dockY && pointerY <= dockY + dockHeight;
+    return pointerX >= (dockX - margin) && pointerX <= (dockX + dockWidth + margin) &&
+           pointerY >= (dockY - margin) && pointerY <= (dockY + dockHeight + margin);
   }
 
   _isExternalDrag(source) {

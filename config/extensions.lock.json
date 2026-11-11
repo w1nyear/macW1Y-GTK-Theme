@@ -94,7 +94,7 @@
         "49",
         "50"
       ],
-      "sha256": "f994f0c689981a37466104484db1dde0a8b1b0a6d33901cf441c553dd81564ce",
+      "sha256": "00a7c13a3e6322f6a3e0d83d3ca7af7d97bc2b5aee6dcb7113c5a7ac41a9cd01",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -103,9 +103,9 @@
         "dock_indicators"
       ],
       "has_custom_patches": true,
-      "patch_description": "Clutter actor destroyed memory leak fix in animator.js",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "f994f0c689981a37466104484db1dde0a8b1b0a6d33901cf441c553dd81564ce"
+      "patch_description": "macOS-style smooth dock reordering, duplicate prevention, and trash drop handling in animator.js and extension.js",
+      "last_verified": "2026-11-11",
+      "pinned_sha256": "00a7c13a3e6322f6a3e0d83d3ca7af7d97bc2b5aee6dcb7113c5a7ac41a9cd01"
     },
     "custom-command-toggle@storageb.github.com": {
       "uuid": "custom-command-toggle@storageb.github.com",
