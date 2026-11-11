@@ -1278,19 +1278,19 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     border-bottom: none !important;
     border-left: none !important;
     border-right: none !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.20);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .tahoe-osd {
     background-color: transparent;
     border-radius: 9999px !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    padding: 7px 16px 7px 14px;
-    spacing: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    padding: 10px 22px 10px 18px;
+    spacing: 16px;
     box-shadow: none !important;
 }
 .tahoe-osd-icon {
     color: #ffffff;
-    icon-size: 18px;
+    icon-size: 26px;
 }
 .tahoe-osd-head {
     spacing: 0;
@@ -1299,7 +1299,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 .tahoe-osd-title {
     font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
-    font-size: 0.95em;
+    font-size: 1.05em;
     font-weight: 700;
     color: #ffffff;
     max-width: 268px;

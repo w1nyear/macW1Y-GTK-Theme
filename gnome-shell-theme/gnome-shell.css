@@ -2604,8 +2604,10 @@ StEntry StLabel.hint-text {
 }
 
 .popup-menu-item {
-  spacing: 6px;
-  padding: 6px 12px;
+  spacing: 8px !important;
+  padding: 6px 14px !important;
+  min-height: 28px !important;
+  font-size: 14.5px !important;
   color: #ffffff !important;
   text-shadow: none !important;
   icon-shadow: none !important;
@@ -6128,9 +6130,10 @@ StWidget.focused .app-grid-running-dot {
 .mac-cc-submenu-row,
 .mac-cc-submenu-item {
   border-radius: 9999px !important;
-  padding: 6px 12px !important;
+  padding: 6px 14px !important;
   margin: 1px 2px !important;
-  min-height: 26px !important;
+  min-height: 28px !important;
+  font-size: 14.5px !important;
   box-shadow: none !important;
   transition-duration: 100ms !important;
   background-color: transparent !important;
@@ -6181,12 +6184,12 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-menu-item-title {
-  font-size: 13px !important;
+  font-size: 14.5px !important;
   color: #ffffff !important;
 }
 
 .mac-menu-item-title-muted {
-  font-size: 13px !important;
+  font-size: 13.5px !important;
   color: rgba(255, 255, 255, 0.45) !important;
 }
 
@@ -6369,6 +6372,7 @@ StWidget.focused .app-grid-running-dot {
   box-shadow: none !important;
   border-radius: 24px !important;
   padding: 6px !important;
+  min-width: 220px !important;
 }
 
 .popup-menu-boxpointer .popup-menu-content {
@@ -6396,8 +6400,9 @@ StWidget.focused .app-grid-running-dot {
 .popup-menu-item {
   border-radius: 9999px !important;
   margin: 1px 4px !important;
-  padding: 4px 10px !important;
-  min-height: 22px !important;
+  padding: 6px 14px !important;
+  min-height: 28px !important;
+  font-size: 14.5px !important;
   color: #dedede !important;
   transition: color 100ms ease;
 }
@@ -6439,13 +6444,13 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu-item,
 .appmenu-popup-menu .popup-menu-item,
 .appmenu-popup-menu-content .popup-menu-item {
-  min-height: 22px !important;
-  padding: 4px 12px !important;
+  min-height: 28px !important;
+  padding: 6px 14px !important;
   margin: 1px 4px !important;
-  font-size: 13px !important;
+  font-size: 14.5px !important;
   font-weight: 500 !important;
   border-radius: 9999px !important;
-  spacing: 6px !important;
+  spacing: 8px !important;
   color: #dedede !important;
   transition: color 80ms ease !important;
 }

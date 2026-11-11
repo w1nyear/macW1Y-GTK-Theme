@@ -281,13 +281,13 @@
 .appmenu-popup-menu-item,
 .appmenu-popup-menu .popup-menu-item,
 .appmenu-popup-menu-content .popup-menu-item {
-    min-height: 22px !important;
-    padding: 3px 12px !important;
-    margin: 1px 6px !important;
-    font-size: 13px !important;
+    min-height: 28px !important;
+    padding: 5px 14px !important;
+    margin: 1px 5px !important;
+    font-size: 14.5px !important;
     font-weight: 500 !important;
     border-radius: 9999px !important;
-    spacing: 6px !important;
+    spacing: 8px !important;
     color: #ffffff !important;
     text-shadow: none !important;
     icon-shadow: none !important;

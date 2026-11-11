@@ -20567,3 +20567,54 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - bin/mac-i18n-verify: 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
 
 4. Статус: Завершено.
+
+
+Завдання 722: Значне збільшення розміру OSD HUD (капсули гучності та яскравості за еталонним фото), збільшення пунктів системних меню (Apple menu, AppMenu, статус-меню, контекстні меню) та оновлення стилів рідкого скла
+
+1. Вимоги користувача:
+   - «Збільш OSD більше набагато. Референс на фото як має воно виглядати. Збільш меню особливо та інші виправлення прийми».
+   - Аналіз еталонного фото (media_1794428496104_998d4f80.jpg):
+     * OSD-капсула у правому верхньому куті під статус-панеллю є значно ширшою та вищою (близько 310x50 px проти попередніх замалих 220x34 px).
+     * Значок гучності/яскравості збільшено з 18 px до 26 px.
+     * Шкала повзунка (TahoeSegSlider) збільшена за товщиною до 8 px з радіусом скруглення 4 px, активні/неактивні точки під повзунком збільшені та вирівняні.
+     * Підвищено глибину тіні (.tahoe-osd-shadow) та оновлено лінзу рідкого скла (_syncGlass) під новий радіус 25 px.
+     * Відступ від верхньої панелі встановлено в 10 px.
+   - Збільшення меню («Збільш меню особливо»):
+     * Попередньо висота пунктів меню (.popup-menu-item, .appmenu-popup-menu-item) становила лише 22 px, а шрифт 13 px.
+     * Висоту збільшено до min-height: 28px, внутрішні відступи до padding: 6px 14px (appmenu: 5px 14px), розмір шрифту до 14.5px (font-weight: 500), міжіконочний проміжок spacing: 8px.
+     * Мінімальну ширину випадаючих меню (.popup-menu-content) встановлено в min-width: 220px.
+     * Заголовочні та інформаційні написи статус-меню (.mac-menu-header-title, .mac-menu-header-value, .mac-menu-item-title, .mac-menu-section-label) збільшено для ідеальної читабельності та ергономіки.
+     * Анімована підкладка наведення (MacMenuHoverGlide) динамічно масштабується під новий розмір пунктів.
+
+2. Реалізовані зміни:
+   - extensions/kiwi@kemma/apps/tahoeOSD.js та tahoeOnScreenDisplay.js:
+     * Оновлено константи розмірів: OSD_W = 310, OSD_H = 50, OSD_RADIUS = 25.
+     * Оновлено TahoeSegSlider: висота 26 px, товщина шкали barH = 8 px, радіус точок r = 1.2 px при dy = barY + barH + 4.5.
+     * Центрування відносно статус-іконки: anchorCenter з OSD_W / 2 + 24, відступ targetY = monitor.y + panelH + 10.
+     * Розмір іконки _iconL встановлено в icon_size: 26.
+   - extensions/kiwi@kemma/stylesheet.css:
+     * .tahoe-osd: padding: 10px 22px 10px 18px; spacing: 16px; border: 1px solid rgba(255, 255, 255, 0.18);
+     * .tahoe-osd-shadow: box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.25);
+     * .tahoe-osd-icon: icon-size: 26px;
+     * .tahoe-osd-title: font-size: 1.05em; font-weight: 700;
+   - extensions/kiwi@kemma/extension.js:
+     * Оновлено URI динамічного завантаження модуля з актуальним cache-buster для надійного гарячого перезавантаження без перезапуску сесії.
+   - extensions/appmenu@ChathurangaBW.github.io/stylesheet.css:
+     * .appmenu-popup-menu-item, .appmenu-popup-menu .popup-menu-item, .appmenu-popup-menu-content .popup-menu-item:
+       min-height: 28px !important; padding: 5px 14px !important; font-size: 14.5px !important; spacing: 8px !important;
+   - gnome-shell-theme/gnome-shell.css:
+     * .popup-menu-item (рядки 2606 та 6396): min-height: 28px !important; padding: 6px 14px !important; font-size: 14.5px !important; spacing: 8px !important;
+     * .mac-menu-item-row, .mac-cc-submenu-row: min-height: 28px !important; padding: 6px 14px !important; font-size: 14.5px !important;
+     * .mac-menu-item-title: font-size: 14.5px !important;
+     * .mac-menu-header-title: font-size: 15px !important; .mac-menu-header-value: font-size: 14px !important;
+     * .popup-menu-content: min-width: 220px !important; border-radius: 24px !important;
+     * Синхронізовано з ~/.themes/macW1Y-Dark/, ~/.themes/macW1Y-Dark-solid/ та /usr/share/themes/macW1Y-Dark/.
+
+3. Перевірка та аудит цілісності:
+   - Гаряче перезавантажено розширення kiwi@kemma та appmenu@ChathurangaBW.github.io; перевірено геометрію OSD (310x50, shadow 310x50, icon 26).
+   - Оновлено контрольні суми SHA256 у config/extensions.lock.json.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21 OK).
+   - bin/mac-audit-sync check: 100% PASS.
+   - bin/mac-i18n-verify: 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
+
+4. Статус: Завершено.

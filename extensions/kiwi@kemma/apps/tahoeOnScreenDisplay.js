@@ -32,12 +32,12 @@ import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/l
         syncGlassCaptureClip = m.syncGlassCaptureClip;
 }).catch(e => console.warn(`[tahoe-osd] liquid-glass utils unavailable: ${e}`));
 
-const OSD_W = 220;
-const OSD_H = 34;
+const OSD_W = 310;
+const OSD_H = 50;
 const MAX_TITLE_W = OSD_W - 32;
 const HIDE_MS = 1800;
 const OSD_PAD = 20;
-const OSD_RADIUS = 17;
+const OSD_RADIUS = 25;
 
 function _setTitleText(text) {
     if (!_title)
@@ -96,7 +96,7 @@ const TahoeSegSlider = GObject.registerClass({
     GTypeName: `TahoeSegSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
 }, class TahoeSegSlider extends St.DrawingArea {
     _init() {
-        super._init({reactive: false, height: 20});
+        super._init({reactive: false, height: 26});
         this._v = 0;
         this._isOveramp = false;
         this.connect('repaint', () => {
@@ -141,9 +141,10 @@ const TahoeSegSlider = GObject.registerClass({
             const isOveramp = this._isOveramp || v > 1.0001;
 
             // solid background track
-            const barY = 5, barH = 5;
+            const barH = 8;
+            const barY = Math.round((h - barH) / 2) - 2;
             const r = barH / 2;
-            cr.setSourceRGBA(1, 1, 1, 0.18);
+            cr.setSourceRGBA(1, 1, 1, 0.20);
             this._rr(cr, 0, barY, w, barH, r);
             cr.fill();
 
@@ -183,16 +184,16 @@ const TahoeSegSlider = GObject.registerClass({
             }
 
             // dots row beneath: 17 dots precisely aligned, dot 0 at start, closer to slider
-            const dy = barY + barH + 3.5;
+            const dy = barY + barH + 4.5;
             for (let i = 0; i <= n; i++) {
                 const dotX = dotXs[i];
                 const isActive = isOveramp || (stepIdx > 0 && i <= stepIdx && fillW > 0);
                 if (isActive) {
                     cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
                 } else {
-                    cr.setSourceRGBA(1, 1, 1, 0.18);
+                    cr.setSourceRGBA(1, 1, 1, 0.20);
                 }
-                cr.arc(dotX, dy, 1.0, 0, Math.PI * 2);
+                cr.arc(dotX, dy, 1.2, 0, Math.PI * 2);
                 cr.fill();
             }
             cr.restore();
@@ -269,7 +270,7 @@ function _anchorX(monitor, kind = 'volume') {
             }
         }
     } catch (_) {}
-    return Math.round(monitor.x + monitor.width - (OSD_W / 2 + 30));
+    return Math.round(monitor.x + monitor.width - (OSD_W / 2 + 24));
 }
 
 function _isFullscreenOrPanelHidden(monitor, fsOverride = null) {
@@ -336,7 +337,7 @@ function _computeTargetCoordinates(fsOverride = null, kind = 'volume') {
         // Ensure within monitor boundaries with margin
         targetX = Math.max(monitor.x + margin, Math.min(monitor.x + monitor.width - OSD_W - margin, cx));
     }
-    const targetY = monitor.y + panelH + 8;
+    const targetY = monitor.y + panelH + 10;
     return { monitor, targetX, targetY };
 }
 
@@ -1245,7 +1246,7 @@ export function enable() {
 
         _iconL = new St.Icon({
             style_class: 'tahoe-osd-icon',
-            icon_size: 18,
+            icon_size: 26,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.CENTER,
         });
