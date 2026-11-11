@@ -6181,7 +6181,7 @@ window.csd.maximized {
 
 window.csd.fullscreen,
 window.fullscreen {
-  border-radius: 0 !important;
+  border-radius: 0;
   outline: none;
   box-shadow: none;
   transition: none;
@@ -6201,7 +6201,7 @@ window.solid-csd {
 }
 
 window.solid-csd.fullscreen {
-  border-radius: 0 !important;
+  border-radius: 0;
 }
 
 window.ssd {

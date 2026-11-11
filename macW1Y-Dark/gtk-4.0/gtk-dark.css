@@ -6244,7 +6244,7 @@ window.csd.maximized {
 
 window.csd.fullscreen,
 window.fullscreen {
-  border-radius: 0 !important;
+  border-radius: 0;
   outline: none;
   box-shadow: none;
   transition: none;
@@ -6268,8 +6268,8 @@ window.csd.ssd-frame.maximized headerbar {
 }
 
 window.csd.ssd-frame.fullscreen headerbar {
-  border-top-left-radius: 0 !important;
-  border-top-right-radius: 0 !important;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   box-shadow: none;
 }
 
@@ -6282,7 +6282,7 @@ window.solid-csd {
 }
 
 window.solid-csd.fullscreen {
-  border-radius: 0 !important;
+  border-radius: 0;
 }
 
 window.ssd {

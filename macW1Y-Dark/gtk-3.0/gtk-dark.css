@@ -4894,7 +4894,7 @@ decoration:backdrop {
 .fullscreen decoration,
 .solid-csd.fullscreen decoration,
 .ssd.fullscreen decoration {
-  border-radius: 0 !important;
+  border-radius: 0;
   box-shadow: none;
 }
 

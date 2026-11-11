@@ -4362,6 +4362,8 @@ export default class EvalHelper extends Extension {
             if (!win || win.is_override_redirect?.()) return false;
             const type = win.window_type;
             if (type === Meta.WindowType.DESKTOP) return false;
+            const wmClass = win.get_wm_class?.();
+            if (wmClass === 'com.desktop.ding' || win.title?.startsWith('Desktop Icons')) return false;
             return (
                 type === Meta.WindowType.NORMAL ||
                 type === Meta.WindowType.DIALOG ||
@@ -4372,13 +4374,20 @@ export default class EvalHelper extends Extension {
 
         const syncWindow = (win, entry) => {
             if (!win || !entry?.actor || !entry?.effect) return;
-            const isFullscreen = win.is_fullscreen?.() || win.fullscreen;
+            const isFullscreen = Boolean(win.is_fullscreen?.() || win.fullscreen);
             if (isFullscreen) {
+                entry.effect.enabled = false;
                 entry.effect.straight_corners = true;
                 entry.effect.radius = 0;
+                const actW = Math.max(1, entry.actor.width || 0);
+                const actH = Math.max(1, entry.actor.height || 0);
+                entry.effect.width = actW;
+                entry.effect.height = actH;
+                entry.effect.clip = [0, 0, actW, actH];
                 return;
             }
 
+            entry.effect.enabled = true;
             entry.effect.straight_corners = false;
             entry.effect.radius = currentRadius;
 
@@ -4389,8 +4398,10 @@ export default class EvalHelper extends Extension {
             const clipW = frame.width;
             const clipH = frame.height;
 
-            entry.effect.width = entry.actor.width;
-            entry.effect.height = entry.actor.height;
+            const actW = Math.max(1, entry.actor.width || clipW);
+            const actH = Math.max(1, entry.actor.height || clipH);
+            entry.effect.width = actW;
+            entry.effect.height = actH;
             entry.effect.clip = [clipX, clipY, clipW, clipH];
         };
 
@@ -4426,12 +4437,14 @@ export default class EvalHelper extends Extension {
                     actor.remove_effect(existing);
                 }
 
+                const isFs = Boolean(win.is_fullscreen?.() || win.fullscreen);
                 const effect = new Clazz({
-                    radius: currentRadius,
+                    radius: isFs ? 0 : currentRadius,
                     corners_top: true,
                     corners_bottom: true,
-                    straight_corners: win.is_fullscreen?.() || win.fullscreen || false,
+                    straight_corners: isFs,
                 });
+                effect.enabled = !isFs;
 
                 actor.add_effect_with_name('mac-forced-corner-effect', effect);
 
@@ -4439,7 +4452,13 @@ export default class EvalHelper extends Extension {
 
                 entry.signals.push(win.connect('size-changed', () => syncWindow(win, entry)));
                 entry.signals.push(win.connect('position-changed', () => syncWindow(win, entry)));
-                entry.signals.push(win.connect('notify::fullscreen', () => syncWindow(win, entry)));
+                entry.signals.push(win.connect('notify::fullscreen', () => {
+                    syncWindow(win, entry);
+                    GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                        syncWindow(win, entry);
+                        return GLib.SOURCE_REMOVE;
+                    });
+                }));
                 entry.signals.push(win.connect('notify::maximized-horizontally', () => syncWindow(win, entry)));
                 entry.signals.push(win.connect('notify::maximized-vertically', () => syncWindow(win, entry)));
                 entry.signals.push(win.connect('unmanaged', () => untrackWindow(win)));
