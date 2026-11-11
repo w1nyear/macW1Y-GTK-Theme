@@ -20357,3 +20357,44 @@ Task 704: Уніфікація ширини поля вводу пароля н�
      * Проведено живе тестування через EvalHelper: зміна всіх 5 градацій іконок перевірена та працює бездоганно.
 
 3. Статус: Завершено.
+
+================================================================================
+Завдання 716: Реалізація живої шпалери Golden Gate у GDM меню (при сесії та поза сесією) з циклічним програванням, 3-секундним crossfade переходом, плавним переходом у сесію та інтеграцією у Параметри (Вигляд)
+================================================================================
+1. Вимоги:
+   - Додати підтримку програвання MOV файлів у системі (асоціація з mpv, мініатюри через ffmpegthumbnailer, кодеки).
+   - Зробити живу шпалеру на GDM меню:
+     * При сесії: екран блокування (lockscreen / screenShield).
+     * Поза сесією: екран входу GDM greeter.
+   - Циклічне безперервне програвання відео з 3-секундним переходом появи з початку відео на кінці програвання (безшовний 3s crossfade loop).
+   - Плавний 3-секундний перехід появи статичних шпалер (GoldenGate_Day.jpg) після розблокування сесії, коли робочий стіл, панель та вікна вже з'явилися.
+   - Відео та статична шпалера мають разом відображатись у Параметрах (gnome-control-center) у пункті «Вигляд» як «Golden Gate (Жива шпалера)».
+
+2. Реалізовані зміни:
+   - Підтримка MOV файлів:
+     * Встановлено mpv та асоційовано MIME-типи video/quicktime, video/mp4, video/x-matroska за замовчуванням.
+     * Встановлено та активовано ffmpegthumbnailer для створення прев'ю MOV файлів у системі.
+   - Генерація та оптимізація відео Golden Gate:
+     * Оригінальне 4K відео збережено в wallpapers/Golden Gate.mov та /usr/share/backgrounds/Golden Gate.mov.
+     * Згенеровано безшовний цикл 1080p@30fps (57 сек) з апаратним кодуванням: останні 3 секунди (54..57s) плавно змішуються (crossfade fade) з першими 3 секундами (0..3s).
+     * Створено формати MOV та MP4: GoldenGate_Live_loop.mov та GoldenGate_Live_loop.mp4 у /usr/share/backgrounds/ та wallpapers/.
+   - Live Wallpaper Engine у GNOME Shell (wack-lockscreen-clock):
+     * Створено модуль LiveWallpaperPlayer (extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/liveWallpaperPlayer.js) на базі GStreamer pipelines (decodebin ! videoconvert ! appsink).
+     * Реалізовано пряме in-place оновлення Cogl.Texture2D (tex.set_data) без витоків пам'яті та повторних алокацій, з мінімальним навантаженням на CPU/GPU.
+     * Реалізовано авто-зациклення при завершенні потоку (EOS) через seek до 0.
+   - Інтеграція з екраном блокування та GDM:
+     * WallpaperManager (src/main/wallpaperManager.js): при виборі шпалери Golden Gate автоматично активує LiveWallpaperPlayer на dialog.
+     * GdmWallpaperView (pro/gdmThemePipeline.js та src/pro/gdmThemePipeline.js): під час роботи екрана входу GDM greeter програє живу шпалеру під віджетами входу.
+     * Підтримка розмиття при введенні паролю (setBlur).
+   - Плавний 3-секундний перехід після входу в сесію:
+     * У curtainManager.js та LiveWallpaperPlayer реалізовано метод unlockTransition(): після розблокування оверлей живої шпалери плавно згасає над робочим столом протягом 3000 мс (EASE_OUT_QUAD), відкриваючи статичну шпалеру GoldenGate_Day.jpg.
+   - Інтеграція в Параметри (Вигляд):
+     * Створено /usr/share/gnome-background-properties/macw1y-wallpapers.xml та wallpapers/macw1y-wallpapers.xml із записом «Golden Gate (Жива шпалера)».
+     * Оновлено install.sh для копіювання всіх компонентів живої шпалери та асоціацій.
+   - Синхронізація та аудит:
+     * Оновлено контрольні суми в config/extensions.lock.json.
+     * bin/mac-extension-guard verify: 21/21 OK.
+     * bin/mac-audit-sync check: 100% PASS.
+     * bin/mac-i18n-verify: 100% SUCCESSFUL (install.sh має 0 кириличних символів).
+
+3. Статус: Завершено.

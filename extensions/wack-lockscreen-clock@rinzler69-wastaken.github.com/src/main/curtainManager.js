@@ -83,6 +83,10 @@ export class ScreenShieldCurtainManager {
                     screenShield._lockDialogGroup.opacity = 255;
                     screenShield._completeDeactivate();
 
+                    try {
+                        this._extension._wallpaperManager?.startUnlockTransition?.();
+                    } catch (_) {}
+
                     if (screenShield._dialog) {
                         try {
                             screenShield._dialog.destroy();

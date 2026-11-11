@@ -4,22 +4,50 @@ import St from 'gi://St';
 import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { PROMPT_BLUR_RADIUS, PROMPT_BLUR_BRIGHTNESS } from './constants.js';
+import { LiveWallpaperPlayer, isLiveWallpaperConfigured } from './liveWallpaperPlayer.js';
 
 export class WallpaperManager {
     constructor(extension) {
         this._extension = extension;
         this.customWallpaperOverlay = null;
+        this._livePlayer = null;
     }
 
     updateCustomWallpaperOverlay() {
+        const dialog = this._extension._dialog;
+        if (!dialog)
+            return;
+
+        if (isLiveWallpaperConfigured()) {
+            if (this.customWallpaperOverlay) {
+                this.customWallpaperOverlay.destroy();
+                this.customWallpaperOverlay = null;
+            }
+
+            if (!this._livePlayer) {
+                this._livePlayer = new LiveWallpaperPlayer();
+                this._livePlayer.start(dialog, dialog._backgroundGroup);
+
+                const progress = dialog._adjustment?.value ?? 0;
+                const scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+                const isCupertino = this._extension._lockscreenMode === 'cupertino';
+                this.setCustomWallpaperBlur(
+                    isCupertino ? 0 : PROMPT_BLUR_RADIUS * scaleFactor * progress,
+                    isCupertino ? 1.0 : 1.0 - (1.0 - PROMPT_BLUR_BRIGHTNESS) * progress
+                );
+            }
+            return;
+        }
+
+        if (this._livePlayer) {
+            this._livePlayer.stop();
+            this._livePlayer = null;
+        }
+
         const settings = this._extension._settings;
         const enabled = settings?.get_boolean('lockscreen-wallpaper-enable') ?? false;
         const path = settings?.get_string('lockscreen-wallpaper-path') ?? '';
         const fileExists = path !== '' && Gio.File.new_for_path(path).query_exists(null);
-
-        const dialog = this._extension._dialog;
-        if (!dialog)
-            return;
 
         if (enabled && fileExists) {
             const uri = path.startsWith('file://') ? path : `file://${path}`;
@@ -70,6 +98,11 @@ export class WallpaperManager {
     }
 
     setCustomWallpaperBlur(radius, brightness) {
+        if (this._livePlayer) {
+            this._livePlayer.setBlur(radius, brightness);
+            return;
+        }
+
         for (const widget of this.customWallpaperOverlay?.get_children() ?? []) {
             const effect = widget.get_effect('blur');
             if (effect)
@@ -77,7 +110,21 @@ export class WallpaperManager {
         }
     }
 
+    startUnlockTransition(onComplete = null) {
+        if (this._livePlayer) {
+            this._livePlayer.unlockTransition(onComplete);
+            this._livePlayer = null;
+        } else if (onComplete) {
+            onComplete();
+        }
+    }
+
     teardown() {
+        if (this._livePlayer) {
+            this._livePlayer.stop();
+            this._livePlayer = null;
+        }
+
         if (this.customWallpaperOverlay) {
             this.customWallpaperOverlay.destroy();
             this.customWallpaperOverlay = null;

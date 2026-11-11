@@ -2063,6 +2063,16 @@ def handle_trash(trashinfo_path):
         print(f"[Uninstaller] Trash handler error: {e}")
 
 
+def trim_process_memory():
+    try:
+        import gc, ctypes
+        gc.collect()
+        libc = ctypes.CDLL("libc.so.6")
+        libc.malloc_trim(0)
+    except Exception:
+        pass
+
+
 class MacAppDaemon:
     def __init__(self):
         self._sync_timeout_id = 0
@@ -2122,15 +2132,6 @@ class MacAppDaemon:
 
     def on_system_apps_changed(self, monitor, file, other_file, event_type):
         self.trigger_sync_debounced()
-
-def trim_process_memory():
-    try:
-        import gc, ctypes
-        gc.collect()
-        libc = ctypes.CDLL("libc.so.6")
-        libc.malloc_trim(0)
-    except Exception:
-        pass
 
     def run(self):
         acquire_daemon_lock()

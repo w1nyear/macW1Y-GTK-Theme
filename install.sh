@@ -621,12 +621,14 @@ install_sounds() {
 # 6. Wallpapers
 # ------------------------------------------------------------------------------
 install_wallpaper() {
-    log_step "Stage 6/13: Installing original macOS wallpaper"
+    log_step "Stage 6/13: Installing original macOS wallpaper and Live Wallpaper assets"
     local WALLPAPER_SRC="$SCRIPT_DIR/wallpapers/GoldenGate_Day.jpg"
     local WALLPAPER_DEST="/usr/share/backgrounds/GoldenGate_Day.jpg"
     
+    require_root
+    sudo mkdir -p /usr/share/backgrounds /usr/share/gnome-background-properties
+
     if [ -f "$WALLPAPER_SRC" ]; then
-        require_root
         sudo cp "$WALLPAPER_SRC" "$WALLPAPER_DEST"
         sudo chmod 644 "$WALLPAPER_DEST"
         
@@ -636,6 +638,28 @@ install_wallpaper() {
         log_success "Wallpaper installed and activated successfully!"
     else
         log_warning "Wallpaper file not found, skipping."
+    fi
+
+    # Install Live Wallpaper video files
+    for wp_vid in "$SCRIPT_DIR/wallpapers"/GoldenGate_Live_loop.* "$SCRIPT_DIR/wallpapers"/Golden\ Gate.mov; do
+        if [ -f "$wp_vid" ]; then
+            local bname
+            bname="$(basename "$wp_vid")"
+            sudo cp "$wp_vid" "/usr/share/backgrounds/$bname"
+            sudo chmod 644 "/usr/share/backgrounds/$bname"
+        fi
+    done
+
+    # Install GNOME Control Center background properties XML
+    if [ -f "$SCRIPT_DIR/wallpapers/macw1y-wallpapers.xml" ]; then
+        sudo cp "$SCRIPT_DIR/wallpapers/macw1y-wallpapers.xml" "/usr/share/gnome-background-properties/macw1y-wallpapers.xml"
+        sudo chmod 644 "/usr/share/gnome-background-properties/macw1y-wallpapers.xml"
+    fi
+
+    # Ensure QuickTime MOV and MP4 playback associations with mpv
+    if command -v xdg-mime >/dev/null 2>&1; then
+        run_as_user xdg-mime default mpv.desktop video/quicktime 2>/dev/null || true
+        run_as_user xdg-mime default mpv.desktop video/mp4 2>/dev/null || true
     fi
 }
 
@@ -1858,9 +1882,18 @@ run_incremental_update() {
         grep -q "Hidden=true" /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop || echo "Hidden=true" | sudo tee -a /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop >/dev/null
     fi
 
-    log_info "5/10 Checking wallpaper..."
+    log_info "5/10 Checking wallpaper and Live Wallpaper assets..."
     if [ -f "$SCRIPT_DIR/wallpapers/GoldenGate_Day.jpg" ]; then
         sync_or_update_file "$SCRIPT_DIR/wallpapers/GoldenGate_Day.jpg" "/usr/share/backgrounds/GoldenGate_Day.jpg" true
+    fi
+    for wp_vid in "$SCRIPT_DIR/wallpapers"/GoldenGate_Live_loop.* "$SCRIPT_DIR/wallpapers"/Golden\ Gate.mov; do
+        if [ -f "$wp_vid" ]; then
+            local bname="$(basename "$wp_vid")"
+            sync_or_update_file "$wp_vid" "/usr/share/backgrounds/$bname" true
+        fi
+    done
+    if [ -f "$SCRIPT_DIR/wallpapers/macw1y-wallpapers.xml" ]; then
+        sync_or_update_file "$SCRIPT_DIR/wallpapers/macw1y-wallpapers.xml" "/usr/share/gnome-background-properties/macw1y-wallpapers.xml" true
     fi
 
     log_info "6/10 Checking GNOME Shell extensions..."
