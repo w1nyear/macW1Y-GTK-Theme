@@ -394,7 +394,7 @@ export class DashManager {
             (typeof child.get_children === 'function' &&
               child.get_children().some(c => c.name === 'liquid-box'));
 
-          if (isLiquidBg) {
+          if (isLiquidBg || (child as any).name === 'iconsContainer' || (child as any).name === 'Dummy Cursor' || (child as any)._delegate?.app || (child as any).app) {
             this._uiSampler.addExclusion(child);
           }
         }

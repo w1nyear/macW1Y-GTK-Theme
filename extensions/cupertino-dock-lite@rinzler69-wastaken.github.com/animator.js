@@ -693,6 +693,18 @@ export class Animator {
           }
         }
 
+        if (globalThis._activeDndDragActor) {
+          globalThis._activeDndDragActor = null;
+        }
+        try {
+          const lg = Main.extensionManager?.lookup('liquid-glass@thinkingcoding1231.gmail.com')?.stateObj;
+          const dm = lg?._dashDocks?.[0]?.manager;
+          if (dm) {
+            dm.effect?.markBackdropDirty?.();
+            dm.wakeFrameSync?.();
+          }
+        } catch (_) {}
+
         if (draggable) {
           draggable.disconnectObject(this);
         }

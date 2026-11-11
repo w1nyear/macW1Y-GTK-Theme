@@ -409,7 +409,7 @@ export class DashManager {
                     let isLiquidBg = child.name === 'liquid-glass-bg-actor' ||
                         (typeof child.get_children === 'function' &&
                             child.get_children().some(c => c.name === 'liquid-box'));
-                    if (isLiquidBg) {
+                    if (isLiquidBg || child.name === 'iconsContainer' || child.name === 'Dummy Cursor' || child._delegate?.app || child.app) {
                         this._uiSampler.addExclusion(child);
                     }
                 }

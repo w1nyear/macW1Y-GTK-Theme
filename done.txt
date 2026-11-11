@@ -20488,3 +20488,40 @@ Task 704: Уніфікація ширини поля вводу пароля н�
      * bin/mac-i18n-verify: 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
 
 3. Статус: Завершено.
+
+================================================================================
+Завдання 720: Виправлення блокування перевпорядкування іконок на док та усунення заломлення/сяяння перетягуваної іконки у склі фону доку
+================================================================================
+1. Вихідні вимоги та виявлені проблеми:
+   - Користувач повідомив: «Виправи те що я не можу змінити порядок іконок на док. А при спробі перенесення після відпускання скло заломлює іконку як фон позаду і воно типу сяє. Виправи це» та надав 2 фото (media_1794419390901_0da0ad44.jpg, media_1794419390925_7450f712.jpg).
+   - Діагностика причин:
+     1. Неможливість зміни порядку іконок:
+        * У розширенні cupertino-dock-lite (extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/extension.js) метод _patchTrashUnpinDrop() перехоплював виклики dash.handleDragOver та dash.acceptDrop.
+        * Умова перехоплення apps-to-dock безумовно повертала DND.DragMotionResult.COPY_DROP для будь-якого додатка, включаючи іконки, перетягувані з самого доку для сортування (через що на курсорі з'являвся значок «+» замість переміщення).
+        * Через це штатний обробник Dash.Dash.prototype.handleDragOver ніколи не викликався: не розсувалися іконки і не створювався dragPlaceholder для нової позиції.
+        * При відпусканні (acceptDrop) функція перевіряла if (!favs.isFavorite(appId)), і оскільки додаток уже був у списку улюблених, повертала true без жодних дій, блокуючи штатний виклик Dash.Dash.prototype.acceptDrop та AppFavorites.moveFavoriteToPos.
+     2. Заломлення та сяяння іконки у склі доку (ефект «привида» позаду):
+        * Менеджер скла liquid-glass (extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js та dist/utils.js) використовує UILayerSampler для побудови фонового шару розмиття та заломлення.
+        * UILayerSampler сканував усіх нащадків Main.layoutManager.uiGroup. Актор iconsContainer розширення cupertino-dock-lite (який містить клони іконок доку для анімацій та збільшення), а також активні DND-актори перетягування додаються безпосередньо в uiGroup.
+        * Через відсутність iconsContainer та DND-акторів у списку виключень (exclusions), UILayerSampler створював їхні клони всередині фонового буфера скла доку.
+        * В результаті скло доку семплювало самі іконки доку як частину шпалер/фону позаду скла, накладало на них шейдер заломлення, хроматичної аберації та сяяння. Коли перетягування завершувалося, через відсутність руху вікон скло переходило в idle і зберігало старий буфер із перетягнутою іконкою всередині скляної плашки.
+
+2. Реалізовані зміни:
+   - Відновлення перевпорядкування іконок доку:
+     * У extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/extension.js у _patchTrashUnpinDrop() змінено пріоритет: перехоплення для кошика (unpin) та зовнішніх файлів залишено лише при наведенні безпосередньо на кошик або при external drag.
+     * Для всіх перетягувань над областю доку керування одразу делегується штатному originalHandleDragOver та originalAcceptDrop (Dash.Dash.prototype). Це гарантує нативне створення прогалини (dragPlaceholder), повернення статусу MOVE_DROP та коректне збереження нового порядку улюблених через moveFavoriteToPos.
+     * Додано DND.addDragMonitor для маркування перетягуваних акторів (_isDndDragActor) та очищення стану при завершенні.
+   - Повне усунення заломлення іконок у склі доку:
+     * У extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js та src/utils.ts у UILayerSampler.refresh() додано строгі фільтри виключення для iconsContainer, DND-акторів (_isDndDragActor, dnd-feedback, globalThis._activeDndDragActor) та поодиноких іконок додатків у uiGroup.
+     * У extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js та src/dockManager.ts додано виключення iconsContainer із семплінгу скла доку.
+     * У extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/animator.js у момент drag-end додано обов'язкове сповіщення менеджера скла (markBackdropDirty та wakeFrameSync) для миттєвого чистого оновлення фону.
+     * Існуючий застарілий клон iconsContainer у пам'яті поточної сесії очищено та гаряче перезавантажено.
+
+3. Контроль цілісності та верифікація:
+   - Файли синхронізовано з ~/.local/share/gnome-shell/extensions/.
+   - Оновлено хеші SHA256 у config/extensions.lock.json для cupertino-dock-lite та liquid-glass.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21 OK).
+   - bin/mac-audit-sync check: 100% PASS.
+   - bin/mac-i18n-verify: 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
+
+4. Статус: Завершено.

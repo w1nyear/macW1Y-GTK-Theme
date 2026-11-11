@@ -3140,6 +3140,15 @@ export class UILayerSampler {
         // would paint the wallpaper into the UI layer a second time.
         if (child === getSharedBackgroundSource()) continue;
         if ((child as any).name === 'screenshotUIGroup' || (child as any).name?.toLowerCase().includes('screenshot') || child === Main.screenshotUI || child === (Main.screenshotUI as any)?.get_parent()) continue;
+        if ((child as any).name === 'iconsContainer' ||
+            (child as any).name?.startsWith('iconsContainer') ||
+            (child as any)._isDndDragActor ||
+            child === (globalThis as any)._activeDndDragActor ||
+            (child as any).name === 'dnd-feedback' ||
+            (child as any).has_style_class_name?.('dnd-feedback') ||
+            (child as any).name === 'Dummy Cursor' ||
+            (child as any)._delegate?.app ||
+            (child as any).app) continue;
         if (this._extraExclusions.has(child)) continue;
         if (dynamicExclusions.has(child)) continue;
         if (!child.visible || !child.mapped) continue;

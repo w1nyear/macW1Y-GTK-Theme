@@ -2955,6 +2955,16 @@ export class UILayerSampler {
                     continue;
                 if (child.name === 'screenshotUIGroup' || child.name?.toLowerCase().includes('screenshot') || child === Main.screenshotUI || child === Main.screenshotUI?.get_parent())
                     continue;
+                if (child.name === 'iconsContainer' ||
+                    child.name?.startsWith('iconsContainer') ||
+                    child._isDndDragActor ||
+                    child === globalThis._activeDndDragActor ||
+                    child.name === 'dnd-feedback' ||
+                    child.has_style_class_name?.('dnd-feedback') ||
+                    child.name === 'Dummy Cursor' ||
+                    child._delegate?.app ||
+                    child.app)
+                    continue;
                 if (this._extraExclusions.has(child))
                     continue;
                 if (dynamicExclusions.has(child))

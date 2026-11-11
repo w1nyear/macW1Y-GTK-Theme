@@ -54,9 +54,29 @@ export default class DashAnimatorExtension extends Extension {
     this.animator.enable();
     this._connectThemeSettings();
     this._initWaylandDndBridge();
+
+    if (!this._dndMonitor) {
+      this._dndMonitor = {
+        dragMotion: (dropInfo) => {
+          if (dropInfo.dragActor) {
+            dropInfo.dragActor._isDndDragActor = true;
+            globalThis._activeDndDragActor = dropInfo.dragActor;
+          }
+          return DND.DragMotionResult.CONTINUE;
+        }
+      };
+      DND.addDragMonitor(this._dndMonitor);
+    }
   }
 
   disable() {
+    if (this._dndMonitor) {
+      DND.removeDragMonitor(this._dndMonitor);
+      this._dndMonitor = null;
+    }
+    if (globalThis._activeDndDragActor) {
+      globalThis._activeDndDragActor = null;
+    }
     Main.xdndHandler.disconnectObject(this);
     this._disconnectThemeSettings();
     if (this.animator) this.animator.disable();
@@ -373,13 +393,19 @@ export default class DashAnimatorExtension extends Extension {
         return DND.DragMotionResult.COPY_DROP;
       }
 
-      // 3. If dragging from Spotlight or other internal app source:
+      // 3. Delegate to original handleDragOver for native Dash reordering & pinning
+      const res = originalHandleDragOver?.(source, actor, x, y, time);
+      if (res !== undefined && res !== DND.DragMotionResult.CONTINUE && res !== DND.DragMotionResult.NO_DROP) {
+        return res;
+      }
+
+      // 4. Fallback for custom search/spotlight sources that are not AppIcon instances:
       const app = this._getDraggedApp(source);
       if (app && app.get_id && !app.isTrash) {
         return DND.DragMotionResult.COPY_DROP;
       }
 
-      return originalHandleDragOver?.(source, actor, x, y, time) ?? DND.DragMotionResult.CONTINUE;
+      return res ?? DND.DragMotionResult.CONTINUE;
     };
 
     this.dash.acceptDrop = (source, actor, x, y, time) => {
@@ -405,7 +431,13 @@ export default class DashAnimatorExtension extends Extension {
         return false;
       }
 
-      // 2. If app dropped onto Dock (from Spotlight / Search):
+      // 2. Delegate to original acceptDrop for native Dash reordering & pinning
+      const accepted = originalAcceptDrop?.(source, actor, x, y, time);
+      if (accepted) {
+        return true;
+      }
+
+      // 3. Fallback for custom search/spotlight sources if not handled natively
       const app = this._getDraggedApp(source);
       if (app && app.get_id && !app.isTrash) {
         const appId = app.get_id();
@@ -415,11 +447,11 @@ export default class DashAnimatorExtension extends Extension {
           try {
             global.display.get_sound_player().play_from_theme('dialog-information', 'Pin', null);
           } catch (_) {}
+          return true;
         }
-        return true;
       }
 
-      return originalAcceptDrop?.(source, actor, x, y, time) ?? false;
+      return false;
     };
   }
 
