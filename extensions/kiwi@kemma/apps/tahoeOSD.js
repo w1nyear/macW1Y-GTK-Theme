@@ -32,11 +32,12 @@ import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/l
         syncGlassCaptureClip = m.syncGlassCaptureClip;
 }).catch(e => console.warn(`[tahoe-osd] liquid-glass utils unavailable: ${e}`));
 
-const OSD_W = 300;
-const MAX_TITLE_W = OSD_W - 32; // 268px
+const OSD_W = 220;
+const OSD_H = 34;
+const MAX_TITLE_W = OSD_W - 32;
 const HIDE_MS = 1800;
 const OSD_PAD = 20;
-const OSD_RADIUS = 22;
+const OSD_RADIUS = 17;
 
 function _setTitleText(text) {
     if (!_title)
@@ -240,13 +241,22 @@ function _disconnectTrackedSignals() {
     _trackedSignals = [];
 }
 
-function _anchorX(monitor) {
+function _anchorX(monitor, kind = 'volume') {
     try {
-        const candidates = [
-            Main.panel?.statusArea?.['ydotool-trigger-button'],
-            Main.panel?.statusArea?.['macVolume'],
-            Main.panel?.statusArea?.['quickSettings'],
-        ];
+        let candidates;
+        if (kind === 'volume') {
+            candidates = [
+                Main.panel?.statusArea?.['macVolume'],
+                Main.panel?.statusArea?.['ydotool-trigger-button'],
+                Main.panel?.statusArea?.['quickSettings'],
+            ];
+        } else {
+            candidates = [
+                Main.panel?.statusArea?.['ydotool-trigger-button'],
+                Main.panel?.statusArea?.['quickSettings'],
+                Main.panel?.statusArea?.['macVolume'],
+            ];
+        }
         for (const btn of candidates) {
             if (!btn)
                 continue;
@@ -259,7 +269,7 @@ function _anchorX(monitor) {
             }
         }
     } catch (_) {}
-    return Math.round(monitor.x + monitor.width - 170);
+    return Math.round(monitor.x + monitor.width - (OSD_W / 2 + 30));
 }
 
 function _isFullscreenOrPanelHidden(monitor, fsOverride = null) {
@@ -289,7 +299,7 @@ function _isFullscreenOrPanelHidden(monitor, fsOverride = null) {
     return false;
 }
 
-function _computeTargetCoordinates(fsOverride = null) {
+function _computeTargetCoordinates(fsOverride = null, kind = 'volume') {
     let monitor = Main.layoutManager.primaryMonitor;
     try {
         const currentMonIdx = global.display?.get_current_monitor ? global.display.get_current_monitor() : -1;
@@ -320,7 +330,7 @@ function _computeTargetCoordinates(fsOverride = null) {
         targetX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
     } else {
         // Desktop or maximized window with visible menubar: center horizontally directly under the icon (macOS Tahoe style)
-        const anchorCenter = _anchorX(monitor);
+        const anchorCenter = _anchorX(monitor, kind);
         const margin = 16;
         const cx = Math.round(anchorCenter - OSD_W / 2);
         // Ensure within monitor boundaries with margin
@@ -408,8 +418,7 @@ function _applyPredictedPosition(smoothIfVisible = true, fsOverride = null) {
         if (_osdShadow) {
             _osdShadow.set_position(targetX, targetY);
             _osdShadow.set_width(OSD_W);
-            if (_box.height > 0)
-                _osdShadow.set_height(_box.height);
+            _osdShadow.set_height(_box.height > 0 ? _box.height : OSD_H);
         }
         if (_glass) {
             _syncGlass();
@@ -619,10 +628,6 @@ function _ensureGlass() {
             s.effect.setShapeType(0.0);
         else if (typeof s.effect._setFloat === 'function')
             s.effect._setFloat('shape_type', 0.0);
-        if (typeof s.effect.setShapeType === 'function')
-            s.effect.setShapeType(0.0);
-        else if (typeof s.effect._setFloat === 'function')
-            s.effect._setFloat('shape_type', 0.0);
         s.effect.setCornerRadius(OSD_RADIUS);
         Main.layoutManager.uiGroup.add_child(s.bgActor);
         try {
@@ -665,7 +670,7 @@ function _syncGlass() {
         const bx = (uiGroup?.x ?? 0) + _box.x;
         const by = (uiGroup?.y ?? 0) + _box.y;
         const bw = _box.width > 0 ? _box.width : OSD_W;
-        const bh = _box.height > 0 ? _box.height : 63;
+        const bh = _box.height > 0 ? _box.height : OSD_H;
         if (typeof bx !== 'number' || typeof by !== 'number' || !Number.isFinite(bx) || !Number.isFinite(by) || bx <= 0 || by <= 0)
             return false;
         if (typeof bw !== 'number' || typeof bh !== 'number' || !Number.isFinite(bw) || !Number.isFinite(bh) || bw <= 0 || bh <= 0)
@@ -694,11 +699,12 @@ function _syncGlass() {
         const ry = (by - monitor.y) - OSD_PAD;
         const surf = _osdSurf();
 
+        const radius = Math.round(bh / 2);
         if (typeof s.effect.setShapeType === 'function')
             s.effect.setShapeType(0.0);
         else if (typeof s.effect._setFloat === 'function')
             s.effect._setFloat('shape_type', 0.0);
-        s.effect.setCornerRadius(OSD_RADIUS);
+        s.effect.setCornerRadius(radius);
         s.effect.setGlassRegions([{
             x: rx, y: ry, w: bw + OSD_PAD * 2, h: bh + OSD_PAD * 2,
             tintR: surf.c[0], tintG: surf.c[1], tintB: surf.c[2],
@@ -987,32 +993,40 @@ function _show(kind, title, iconL, iconR, value) {
 
     _hideStockOsd();
 
+    const isOveramp = (kind === 'volume' && value > 1.0001);
+
+    // Compute dynamic icon based on level
+    let dynamicIcon = 'audio-volume-high-symbolic';
+    if (kind === 'volume') {
+        const isMuted = (value <= 0.001 || (iconL && iconL.includes('muted')) || (iconR && iconR.includes('muted')));
+        if (isMuted) {
+            dynamicIcon = 'audio-volume-muted-symbolic';
+        } else if (isOveramp) {
+            dynamicIcon = 'audio-volume-overamplified-symbolic';
+        } else if (value <= 0.33) {
+            dynamicIcon = 'audio-volume-low-symbolic';
+        } else if (value <= 0.67) {
+            dynamicIcon = 'audio-volume-medium-symbolic';
+        } else {
+            dynamicIcon = 'audio-volume-high-symbolic';
+        }
+    } else if (kind === 'brightness') {
+        dynamicIcon = 'display-brightness-symbolic';
+    } else {
+        dynamicIcon = iconL || 'display-brightness-symbolic';
+    }
+
     try {
-        const isOveramp = (kind === 'volume' && value > 1.0001);
-        const fullTitle = isOveramp ? `${title} · ${Math.round(value * 100)}%` : title;
-        _setTitleText(fullTitle);
-        _iconL.icon_name = iconL;
-        _iconR.icon_name = iconR;
-        _slider.setValue(value, isOveramp);
+        if (_iconL)
+            _iconL.icon_name = dynamicIcon;
+        if (_iconR)
+            _iconR.icon_name = dynamicIcon;
+        if (_slider)
+            _slider.setValue(value, isOveramp);
     } catch (_) {}
 
     try {
-        let osdIcon = 'video-display-symbolic';
-        if (kind === 'volume') {
-            const isMuted = (value <= 0 || (iconR && iconR.includes('muted')));
-            if (isMuted) {
-                osdIcon = 'audio-volume-muted-symbolic';
-            } else if (value > 1.0001) {
-                osdIcon = 'audio-volume-overamplified-symbolic';
-            } else if (value < 0.33) {
-                osdIcon = 'audio-volume-low-symbolic';
-            } else if (value < 0.67) {
-                osdIcon = 'audio-volume-medium-symbolic';
-            } else {
-                osdIcon = 'audio-volume-high-symbolic';
-            }
-        }
-        _setCcOsdIcon(osdIcon);
+        _setCcOsdIcon(dynamicIcon);
     } catch (_) {}
 
     try {
@@ -1022,7 +1036,7 @@ function _show(kind, title, iconL, iconR, value) {
             boxX = _box.x;
             boxY = _box.y;
         } else {
-            const coords = _computeTargetCoordinates();
+            const coords = _computeTargetCoordinates(null, kind);
             if (!coords)
                 return;
 
@@ -1033,8 +1047,7 @@ function _show(kind, title, iconL, iconR, value) {
             if (_osdShadow) {
                 _osdShadow.set_position(boxX, boxY);
                 _osdShadow.set_width(OSD_W);
-                if (_box.height > 0)
-                    _osdShadow.set_height(_box.height);
+                _osdShadow.set_height(OSD_H);
             }
         }
 
@@ -1155,12 +1168,8 @@ function _onVolume() {
             _sinkReady = true;
             return;
         }
-        const title = _getAudioDeviceTitle();
         const muted = !!sink.is_muted;
-        _show('volume', title,
-            muted ? 'audio-volume-muted-symbolic' : (v > 1.0001 ? 'audio-volume-overamplified-symbolic' : 'audio-volume-low-symbolic'),
-            muted ? 'audio-volume-muted-symbolic' : (v > 1.0001 ? 'audio-volume-overamplified-symbolic' : 'audio-volume-high-symbolic'),
-            muted ? 0 : v);
+        _show('volume', '', '', '', muted ? 0 : v);
     } catch (_) {}
 }
 
@@ -1221,44 +1230,26 @@ export function enable() {
             reactive: false,
         });
         _osdShadow.set_width(OSD_W);
+        _osdShadow.set_height(OSD_H);
         Main.layoutManager.uiGroup.add_child(_osdShadow);
 
         _box = new St.BoxLayout({
             style_class: 'tahoe-osd',
-            vertical: true,
+            vertical: false,
             visible: false,
             opacity: 0,
             reactive: false,
         });
         _box.set_width(OSD_W);
+        _box.set_height(OSD_H);
 
-        const headRow = new St.BoxLayout({
-            style_class: 'tahoe-osd-head',
-            x_expand: false,
-        });
-        headRow.set_width(MAX_TITLE_W);
-
-        _title = new St.Label({
-            style_class: 'tahoe-osd-title',
-            text: '',
-            x_expand: false,
-        });
-        _title.set_width(MAX_TITLE_W);
-        try {
-            _title.clutter_text.set_width(MAX_TITLE_W);
-            _title.clutter_text.single_line_mode = true;
-            _title.clutter_text.line_wrap = false;
-            _title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        } catch (_) {}
-        headRow.add_child(_title);
-
-        const barRow = new St.BoxLayout({style_class: 'tahoe-osd-bar'});
         _iconL = new St.Icon({
-            style_class: 'tahoe-osd-endicon',
-            icon_size: 15,
+            style_class: 'tahoe-osd-icon',
+            icon_size: 18,
             y_align: Clutter.ActorAlign.CENTER,
+            x_align: Clutter.ActorAlign.CENTER,
         });
-        _iconL.translation_y = -2;
+
         _slider = new TahoeSegSlider();
         _slider.x_expand = true;
         _slider.y_align = Clutter.ActorAlign.CENTER;
@@ -1266,18 +1257,10 @@ export function enable() {
             _slider.reactive = false;
             _slider.can_focus = false;
         } catch (_) {}
-        _iconR = new St.Icon({
-            style_class: 'tahoe-osd-endicon-big',
-            icon_size: 20,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        _iconR.translation_y = -1;
-        barRow.add_child(_iconL);
-        barRow.add_child(_slider);
-        barRow.add_child(_iconR);
 
-        _box.add_child(headRow);
-        _box.add_child(barRow);
+        _box.add_child(_iconL);
+        _box.add_child(_slider);
+
         Main.layoutManager.uiGroup.add_child(_box);
     } catch (_) {
         _box = null;

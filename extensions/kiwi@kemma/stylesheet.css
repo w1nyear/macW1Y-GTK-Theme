@@ -1271,7 +1271,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 /* Tahoe volume/brightness OSD: macOS Sequoia / Tahoe style glass pill */
 .tahoe-osd-shadow {
-    border-radius: 22px;
+    border-radius: 9999px !important;
     background-color: transparent;
     border: none !important;
     border-top: none !important;
@@ -1282,11 +1282,15 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 .tahoe-osd {
     background-color: transparent;
-    border-radius: 22px;
+    border-radius: 9999px !important;
     border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    padding: 8px 14px 10px 14px;
-    spacing: 5px;
+    padding: 7px 16px 7px 14px;
+    spacing: 12px;
     box-shadow: none !important;
+}
+.tahoe-osd-icon {
+    color: #ffffff;
+    icon-size: 18px;
 }
 .tahoe-osd-head {
     spacing: 0;
