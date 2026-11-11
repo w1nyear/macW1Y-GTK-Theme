@@ -63,8 +63,63 @@ export default class DashAnimatorExtension extends Extension {
             dropInfo.dragActor._isDndDragActor = true;
             globalThis._activeDndDragActor = dropInfo.dragActor;
           }
-          if (this._dragging && !this._isPointerOverDock() && this._customPlaceholder) {
-            this._clearCustomPlaceholder();
+
+          if (!this._dragging && dropInfo.source && this._isFromDash(dropInfo.source)) {
+            this._dragging = true;
+            const app = this._getDraggedApp(dropInfo.source);
+            this._draggedAppId = app?.get_id?.();
+            this._draggedSourceActor = dropInfo.dragActor;
+            this._hideDraggedSourceActor();
+            if (this.animator) {
+              this.animator._pauseForDrag();
+            }
+          }
+
+          if (this._isPointerOverDock(35)) {
+            if (this.animator && this.animator._iconsContainer) {
+              this.animator._pauseForDrag();
+            }
+          } else {
+            if (this._customPlaceholder) {
+              this._clearCustomPlaceholder(true);
+            }
+          }
+          return DND.DragMotionResult.CONTINUE;
+        },
+        dragDrop: (dropInfo) => {
+          if (this._dragging && this._draggedAppId) {
+            const isOutside = !this._isPointerOverDock(40);
+            if (isOutside && !this._isPointerOverTrash()) {
+              const appId = this._draggedAppId;
+              const favs = AppFavorites.getAppFavorites();
+              if (appId !== 'launchpad.desktop' && favs.isFavorite(appId)) {
+                favs.removeFavorite(appId);
+                try {
+                  global.display.get_sound_player().play_from_theme('trash-empty', 'Unpin', null);
+                } catch (_) {}
+              }
+
+              // Authentic macOS "poof" puff animation on drop
+              const actor = dropInfo.dropActor || this._draggedSourceActor;
+              if (actor && actor.get_stage()) {
+                try {
+                  actor.remove_all_transitions();
+                  actor.ease({
+                    opacity: 0,
+                    scale_x: 1.4,
+                    scale_y: 1.4,
+                    duration: 200,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                      try { actor.destroy(); } catch (_) {}
+                    }
+                  });
+                } catch (_) {}
+              }
+
+              this._cleanUpDragState();
+              return DND.DragDropResult.SUCCESS;
+            }
           }
           return DND.DragMotionResult.CONTINUE;
         }
@@ -196,6 +251,11 @@ export default class DashAnimatorExtension extends Extension {
     this._disconnectIconEvents();
     this.dash = this._findChildByName(this.dashContainer, 'dash');
     this._patchTrashUnpinDrop();
+    if (this.dash) {
+      this.dashContainer._delegate = this.dash;
+      this.dashContainer.handleDragOver = (...args) => this.dash?.handleDragOver?.(...args);
+      this.dashContainer.acceptDrop = (...args) => this.dash?.acceptDrop?.(...args);
+    }
     this._iconsDirty = true;
 
     this.dash._box.connectObject(
@@ -374,13 +434,19 @@ export default class DashAnimatorExtension extends Extension {
     if (this._draggedSourceActor && (source === this._draggedSourceActor || source === this._draggedSourceActor._delegate)) {
       return true;
     }
-    const app = this._getDraggedApp(source);
-    const appId = app?.get_id?.();
-    if (appId && (appId === this._draggedAppId || AppFavorites.getAppFavorites().isFavorite(appId))) {
-      return true;
+    if (this._dragging && this._draggedContainer) {
+      const app = this._getDraggedApp(source);
+      if (app && app.get_id?.() === this._draggedAppId) {
+        return true;
+      }
     }
-    const actor = source?.actor ?? source;
-    return !!(actor && (this.dash?._box?.contains(actor) || this.dashContainer?.contains(actor)));
+    const actor = source?.actor ?? source?.child ?? source;
+    if (actor && typeof actor.get_parent === 'function') {
+      if (this.dash?._box?.contains(actor) || this.dashContainer?.contains(actor)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   _onDragBegin(draggable) {
@@ -475,25 +541,44 @@ export default class DashAnimatorExtension extends Extension {
     }
   }
 
-  _clearCustomPlaceholder() {
+  _clearCustomPlaceholder(animate = false) {
     if (this._customPlaceholder) {
-      try {
-        this.dash?._box?.remove_child(this._customPlaceholder);
-        this._customPlaceholder.destroy();
-      } catch (_) {}
+      const p = this._customPlaceholder;
       this._customPlaceholder = null;
+      this._customPlaceholderPos = -1;
+      if (animate && p.get_stage() && p.width > 0) {
+        p.ease({
+          width: 0,
+          duration: 150,
+          mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+          onComplete: () => {
+            try {
+              p.get_parent()?.remove_child(p);
+              p.destroy();
+            } catch (_) {}
+          }
+        });
+      } else {
+        try {
+          p.get_parent()?.remove_child(p);
+          p.destroy();
+        } catch (_) {}
+      }
+    } else {
+      this._customPlaceholderPos = -1;
     }
-    this._customPlaceholderPos = -1;
   }
 
   _cleanUpDragState() {
     this._dragging = false;
-    this._clearCustomPlaceholder();
+    this._clearCustomPlaceholder(true);
     if (this._draggedContainer) {
-      this._draggedContainer.visible = true;
-      this._draggedContainer.opacity = 255;
-      if (this._draggedContainer.child) {
-        this._draggedContainer.child.opacity = 255;
+      if (this._draggedAppId && AppFavorites.getAppFavorites().isFavorite(this._draggedAppId)) {
+        this._draggedContainer.visible = true;
+        this._draggedContainer.opacity = 255;
+        if (this._draggedContainer.child) {
+          this._draggedContainer.child.opacity = 255;
+        }
       }
       this._draggedContainer = null;
     }
@@ -502,6 +587,19 @@ export default class DashAnimatorExtension extends Extension {
       this._draggedSourceActor = null;
     }
     this._draggedAppId = null;
+    if (this.animator && !this.animator._iconsContainer) {
+      if (this.animator._oneShotId) {
+        clearTimeout(this.animator._oneShotId);
+      }
+      this.animator._oneShotId = setTimeout(() => {
+        this.animator._oneShotId = null;
+        if (this.animator) {
+          this.animator.enable();
+          this._iconsDirty = true;
+          this.animator._startAnimation();
+        }
+      }, 300);
+    }
   }
 
   _patchTrashUnpinDrop() {
@@ -515,7 +613,7 @@ export default class DashAnimatorExtension extends Extension {
     this.dash.handleDragOver = (source, actor, x, y, time) => {
       // 1. Check if pointer is over Trash
       if (this._isPointerOverTrash()) {
-        this._clearCustomPlaceholder();
+        this._clearCustomPlaceholder(true);
         const app = this._getDraggedApp(source);
         if (app && app.get_id && !app.isTrash) {
           return DND.DragMotionResult.MOVE_DROP;
@@ -526,85 +624,68 @@ export default class DashAnimatorExtension extends Extension {
         return DND.DragMotionResult.NO_DROP;
       }
 
-      // 2. If external drag (from Nautilus) over the dock
-      if (this._isExternalDrag(source)) {
-        return DND.DragMotionResult.COPY_DROP;
+      // Ensure magnification is paused during drag over dock so icons part visibly
+      if (this.animator && this.animator._iconsContainer) {
+        this.animator._pauseForDrag();
       }
 
-      const app = this._getDraggedApp(source);
-      const appId = app?.get_id?.() ?? this._draggedAppId;
+      let app = this._getDraggedApp(source);
+      let appId = app?.get_id?.() ?? this._draggedAppId;
+      const isExternal = this._isExternalDrag(source);
+
+      if (!appId && isExternal) {
+        if (this._activeDndUris?.length > 0) {
+          appId = this._resolveAppIdFromUri(this._activeDndUris[0]);
+          if (appId) {
+            app = Shell.AppSystem.get_default().lookup_app(appId);
+          }
+        } else {
+          this._readDndUris().then(uris => {
+            this._activeDndUris = uris;
+          });
+        }
+      }
+
       const isFromDash = this._isFromDash(source);
 
-      if (appId && isFromDash) {
-        // Reordering within the dock
-        const favs = AppFavorites.getAppFavorites().getFavorites();
-        const favIds = favs.map(a => a.get_id());
-
-        // Hide source container so no duplicate stands in the dock
+      // Hide source container so no duplicate stands in the dock
+      if (isFromDash) {
         this._hideDraggedSourceActor();
-
-        // Gather visible favorite containers in dash._box
-        const children = this.dash._box.get_children();
-        const visibleFavs = [];
-        for (const child of children) {
-          if (child === this._customPlaceholder) continue;
-          if (child === this._draggedContainer) continue;
-          const childAppId = child.child?._delegate?.app?.get_id?.() ?? child.child?.app?.get_id?.();
-          if (childAppId && favIds.includes(childAppId)) {
-            visibleFavs.push(child);
-          }
-        }
-
-        // Calculate target slot pos based on cursor x relative to each icon's midpoint
-        let targetPos = visibleFavs.length;
-        for (let i = 0; i < visibleFavs.length; i++) {
-          const c = visibleFavs[i];
-          const midX = c.x + c.width / 2;
-          if (x < midX) {
-            targetPos = i;
-            break;
-          }
-        }
-
-        const sampleWidth = visibleFavs[0]?.width || (this.dash.iconSize + 8);
-        const sampleHeight = visibleFavs[0]?.height || this.dash.iconSize;
-        this._showCustomPlaceholder(targetPos, sampleWidth, sampleHeight);
-
-        return DND.DragMotionResult.MOVE_DROP;
       }
 
-      // 3. Dragging an app from Spotlight / Search / App Grid into Dock
-      if (appId && !app.isTrash) {
-        const favs = AppFavorites.getAppFavorites().getFavorites();
-        const favIds = favs.map(a => a.get_id());
-        const children = this.dash._box.get_children();
-        const visibleFavs = [];
-        for (const child of children) {
-          if (child === this._customPlaceholder) continue;
-          const childAppId = child.child?._delegate?.app?.get_id?.() ?? child.child?.app?.get_id?.();
-          if (childAppId && favIds.includes(childAppId)) {
-            visibleFavs.push(child);
-          }
+      // Gather visible favorite containers in dash._box
+      const favs = AppFavorites.getAppFavorites().getFavorites();
+      const favIds = favs.map(a => a.get_id());
+      const children = this.dash._box.get_children();
+      const visibleFavs = [];
+      for (const child of children) {
+        if (child === this._customPlaceholder) continue;
+        if (isFromDash && child === this._draggedContainer) continue;
+        const childAppId = child.child?._delegate?.app?.get_id?.() ?? child.child?.app?.get_id?.();
+        if (childAppId && favIds.includes(childAppId)) {
+          visibleFavs.push(child);
         }
-
-        let targetPos = visibleFavs.length;
-        for (let i = 0; i < visibleFavs.length; i++) {
-          const c = visibleFavs[i];
-          const midX = c.x + c.width / 2;
-          if (x < midX) {
-            targetPos = i;
-            break;
-          }
-        }
-
-        const sampleWidth = visibleFavs[0]?.width || (this.dash.iconSize + 8);
-        const sampleHeight = visibleFavs[0]?.height || this.dash.iconSize;
-        this._showCustomPlaceholder(targetPos, sampleWidth, sampleHeight);
-
-        return DND.DragMotionResult.COPY_DROP;
       }
 
-      return DND.DragMotionResult.CONTINUE;
+      // Exact coordinate calculation inside dash._box coordinate system
+      const [pointerX, pointerY] = global.get_pointer();
+      const [_, boxX] = this.dash._box.transform_stage_point(pointerX, pointerY);
+
+      let targetPos = visibleFavs.length;
+      for (let i = 0; i < visibleFavs.length; i++) {
+        const c = visibleFavs[i];
+        const midX = c.x + c.width / 2;
+        if (boxX < midX) {
+          targetPos = i;
+          break;
+        }
+      }
+
+      const sampleWidth = visibleFavs[0]?.width || (this.dash.iconSize + 8);
+      const sampleHeight = visibleFavs[0]?.height || this.dash.iconSize;
+      this._showCustomPlaceholder(targetPos, sampleWidth, sampleHeight);
+
+      return isFromDash ? DND.DragMotionResult.MOVE_DROP : DND.DragMotionResult.COPY_DROP;
     };
 
     this.dash.acceptDrop = (source, actor, x, y, time) => {
@@ -634,10 +715,16 @@ export default class DashAnimatorExtension extends Extension {
         return false;
       }
 
-      const app = this._getDraggedApp(source);
-      const appId = app?.get_id?.() ?? this._draggedAppId;
+      let app = this._getDraggedApp(source);
+      let appId = app?.get_id?.() ?? this._draggedAppId;
+      const isExternal = this._isExternalDrag(source);
+
+      if (!appId && isExternal && this._activeDndUris?.length > 0) {
+        appId = this._resolveAppIdFromUri(this._activeDndUris[0]);
+      }
+
       const isFromDash = this._isFromDash(source);
-      const targetPos = this._customPlaceholderPos;
+      const targetPos = this._customPlaceholderPos >= 0 ? this._customPlaceholderPos : AppFavorites.getAppFavorites().getFavorites().length;
 
       this._cleanUpDragState();
 
@@ -646,7 +733,11 @@ export default class DashAnimatorExtension extends Extension {
         if (isFromDash) {
           appFavs.moveFavoriteToPos(appId, targetPos);
         } else {
-          appFavs.addFavoriteAtPos(appId, targetPos);
+          if (appFavs.isFavorite(appId)) {
+            appFavs.moveFavoriteToPos(appId, targetPos);
+          } else {
+            appFavs.addFavoriteAtPos(appId, targetPos);
+          }
         }
         try {
           global.display.get_sound_player().play_from_theme('dialog-information', 'Drop', null);
@@ -698,14 +789,24 @@ export default class DashAnimatorExtension extends Extension {
           return;
         }
 
-        // 2. Released over Dock -> Pin to favorites
-        if (this._isPointerOverDock()) {
+        // 2. Released over Dock -> Pin to favorites at targetPos
+        if (this._isPointerOverDock(35)) {
+          const targetPos = this._customPlaceholderPos;
+          this._cleanUpDragState();
           for (const uri of uris) {
             const appId = this._resolveAppIdFromUri(uri);
             if (appId) {
               const favs = AppFavorites.getAppFavorites();
-              if (!favs.isFavorite(appId)) {
-                favs.addFavorite(appId);
+              if (favs.isFavorite(appId)) {
+                if (targetPos >= 0) {
+                  favs.moveFavoriteToPos(appId, targetPos);
+                }
+              } else {
+                if (targetPos >= 0) {
+                  favs.addFavoriteAtPos(appId, targetPos);
+                } else {
+                  favs.addFavorite(appId);
+                }
                 try {
                   global.display.get_sound_player().play_from_theme('dialog-information', 'Pin', null);
                 } catch (_) {}
@@ -774,6 +875,11 @@ export default class DashAnimatorExtension extends Extension {
         const app = Shell.AppSystem.get_default().lookup_app(realAppId) ??
                     Shell.AppSystem.get_default().lookup_app(GLib.path_get_basename(path));
         return app ? app.get_id() : realAppId;
+      } else {
+        const base = GLib.path_get_basename(path);
+        const app = Shell.AppSystem.get_default().lookup_app(`${base}.desktop`) ??
+                    Shell.AppSystem.get_default().lookup_app(base);
+        if (app) return app.get_id();
       }
     } catch (_) {}
     return null;

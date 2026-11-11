@@ -20618,3 +20618,38 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - bin/mac-i18n-verify: 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
 
 4. Статус: Завершено.
+
+
+Завдання 723: Відкріплення програм при перетягуванні поза межі док-панелі (drag-off to unpin у стилі macOS) та уніфіковане перенесення програм із Spotlight, Launchpad та Nautilus з плавною анімацією розсування іконок і закріпленням у док
+
+1. Вимоги користувача:
+   - Якщо утримувати ЛКМ на іконці в док і перемістити її поза межі док-панелі — програма має відкріплятися від обраного (unpin from dock).
+   - Якщо зі Spotlight, меню лаунчпада (Launchpad / AppMenu) чи у Nautilus (із розділу програм або .desktop-файлів) перенести програму на док — мають бути ті самі плавні анімації док з іконками програм (розсування іконок / placeholder) і програма має закріплюватися туди на док у відповідне цільове місце.
+
+2. Реалізовані зміни:
+   - extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/extension.js:
+     * DND Monitor (dragMotion & dragDrop):
+       - У dragMotion реалізовано автоматичне захоплення перетягування при старті з доку та динамічне призупинення контейнера масштабування (_pauseForDrag), щоб іконки рідного dash._box плавно розсувалися перед очима користувача.
+       - При виході курсора за межі док (_isPointerOverDock(35) === false) плейсхолдер м'яко закривається (_clearCustomPlaceholder(true)).
+       - У dragDrop перевіряється відпускання ЛКМ поза межами доку: програма миттєво відкріпляється з AppFavorites.getAppFavorites().removeFavorite(appId), програється автентичний системний звук unpin ('trash-empty'), а над курсором програється анімація розвіювання macOS "poof" (scale_x/y до 1.4, opacity до 0 за 200 мс).
+     * Виправлення _isFromDash(source):
+       - Усунено помилкове визначення будь-якої закріпленої програми як «перетягуваної з доку». Тепер строго перевіряється реальне походження джерела від _draggedSourceActor або дочірніх контейнерів доку, що уможливлює коректне перенесення закріплених чи нових програм із зовнішніх джерел.
+     * Уніфікація handleDragOver та acceptDrop для Spotlight, Launchpad та Nautilus:
+       - Підтримка drag-and-drop як для внутрішніх Clutter-джерел (Launchpad, Spotlight), так і для Wayland/X11 DnD через XdndHandler з Nautilus (асинхронне вичитування URI-списку та визначення appId через _resolveAppIdFromUri).
+       - Обчислення точного цільового слота targetPos у системі координат dash._box (transform_stage_point(pointerX, pointerY)).
+       - Плавна поява Cupertino-плейсхолдера (анімація розширення 0 -> 62px за 150 мс, EASE_OUT_QUAD) та гармонійне розсування всіх сусідніх іконок доку.
+       - При відпусканні ЛКМ (acceptDrop) програма надійно закріплюється у вибрану позицію (addFavoriteAtPos(appId, targetPos) або moveFavoriteToPos), програється звук успішного розміщення ('dialog-information').
+     * Делегування dashContainer:
+       - Прив'язано dashContainer._delegate = this.dash, handleDragOver та acceptDrop для повної чутливості всієї площі док-панелі.
+   - extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/animator.js:
+     * У drag-cancelled та drag-end додано обов'язкове страхувальне перехоплення: якщо ЛКМ відпущено поза доком, викликається removeFavorite, а draggable._dragActor знищується для запобігання зворотній анімації snap-back у док.
+
+3. Перевірка та аудит цілісності:
+   - Файли оновлено у сховищі та скопійовано в ~/.local/share/gnome-shell/extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/.
+   - Розширення гаряче перезавантажено та активовано в сесії GNOME Shell (state: ACTIVE, hasDash: true, isPatched: true).
+   - Оновлено контрольний хеш SHA256 у config/extensions.lock.json.
+   - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21 OK).
+   - bin/mac-audit-sync check: 100% PASS.
+   - bin/mac-i18n-verify: 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
+
+4. Статус: Завершено.
