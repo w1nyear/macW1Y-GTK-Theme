@@ -4891,8 +4891,10 @@ decoration:backdrop {
   box-shadow: none;
 }
 
-.fullscreen decoration {
-  border-radius: 0;
+.fullscreen decoration,
+.solid-csd.fullscreen decoration,
+.ssd.fullscreen decoration {
+  border-radius: 0 !important;
   box-shadow: none;
 }
 
@@ -4902,7 +4904,7 @@ decoration:backdrop {
 }
 
 .ssd decoration {
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
 }
 
 .ssd decoration, .ssd decoration.backdrop {
@@ -4910,13 +4912,12 @@ decoration:backdrop {
 }
 
 .ssd decoration.maximized, .ssd decoration.tiled {
-  border-radius: 0;
+  border-radius: 24px;
   box-shadow: none;
 }
 
 .metacity decoration {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  border-radius: 24px;
 }
 
 .csd.popup decoration {
@@ -4936,7 +4937,7 @@ messagedialog.csd decoration {
 
 .solid-csd decoration {
   border: 1px solid mix(black,#333333,0.25);
-  border-radius: 0;
+  border-radius: 24px;
   margin: 0;
   background-color: #333333;
   box-shadow: none;

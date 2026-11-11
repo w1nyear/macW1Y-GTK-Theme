@@ -782,6 +782,9 @@ install_extensions() {
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-corner-radius 26.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-toggle-corner-radius 40.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com osd-corner-radius 18.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com application-corner-radius 24.0 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.blur-my-shell.applications corner-radius 24 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.blur-my-shell.applications corner-when-maximized true 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-shape-type 2 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com panel-menu-tint-color '#000000' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com panel-menu-tint-strength 0.20 2>/dev/null || true

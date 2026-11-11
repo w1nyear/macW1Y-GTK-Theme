@@ -6231,20 +6231,27 @@ window.csd:backdrop {
 }
 
 window.csd.tiled, window.csd.tiled-top, window.csd.tiled-left, window.csd.tiled-right, window.csd.tiled-bottom {
-  border-radius: 0;
+  border-radius: 24px;
   outline: none;
 }
 
-window.csd.maximized, window.csd.fullscreen {
-  border-radius: 0;
+window.csd.maximized {
+  border-radius: 24px;
+  outline: none;
+  box-shadow: none;
+  transition: none;
+}
+
+window.csd.fullscreen,
+window.fullscreen {
+  border-radius: 0 !important;
   outline: none;
   box-shadow: none;
   transition: none;
 }
 
 window.csd.ssd-frame {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  border-radius: 24px;
   outline: none;
 }
 
@@ -6254,18 +6261,28 @@ window.csd.ssd-frame headerbar {
   box-shadow: none;
 }
 
-window.csd.ssd-frame.maximized headerbar, window.csd.ssd-frame.fullscreen headerbar {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+window.csd.ssd-frame.maximized headerbar {
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  box-shadow: none;
+}
+
+window.csd.ssd-frame.fullscreen headerbar {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
   box-shadow: none;
 }
 
 window.solid-csd {
   border: 1px solid @headerbar_darker_shade_color;
-  border-radius: 0;
+  border-radius: 24px;
   margin: 0;
   background-color: @headerbar_bg_color;
   box-shadow: none;
+}
+
+window.solid-csd.fullscreen {
+  border-radius: 0 !important;
 }
 
 window.ssd {
@@ -9904,12 +9921,24 @@ window.nautilus-window shadow,
     border-width: 0;
 }
 
-window.nautilus-window .sidebar-pane headerbar {
+window.nautilus-window .sidebar-pane headerbar,
+window.nautilus-window .nautilus-sidebar-headerbar {
     margin-top: -6px;
 }
 
-window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr) {
+window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr),
+window.nautilus-window .nautilus-sidebar-headerbar windowcontrols,
+window.nautilus-window windowcontrols.start {
     margin-left: 3px;
+    margin-top: -6px;
+    margin-bottom: 6px;
+}
+
+window.nautilus-window .sidebar-pane headerbar windowcontrols button,
+window.nautilus-window .nautilus-sidebar-headerbar windowcontrols button,
+window.nautilus-window windowcontrols.start button {
+    margin-top: 1px;
+    margin-bottom: 21px;
 }
 
 navigation-split-view headerbar windowcontrols.start:dir(ltr),
@@ -10265,8 +10294,9 @@ window.nautilus-window .content-pane headerbar {
 }
 
 /* Etap 112: raise the toolbar strip a couple of pixels */
-window.nautilus-window .sidebar-pane headerbar {
-    margin-top: -3px;
+window.nautilus-window .sidebar-pane headerbar,
+window.nautilus-window .nautilus-sidebar-headerbar {
+    margin-top: -6px;
 }
 
 /* Shift top panel buttons */

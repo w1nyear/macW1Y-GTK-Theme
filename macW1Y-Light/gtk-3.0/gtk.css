@@ -2204,7 +2204,7 @@ headerbar.windowhandle > button.popup:checked {
 }
 
 .tiled headerbar, .tiled headerbar:backdrop, .maximized headerbar, .maximized headerbar:backdrop {
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
   box-shadow: none;
 }
 
@@ -4906,7 +4906,8 @@ decoration:backdrop {
 }
 
 .ssd decoration {
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
+  border-radius: 24px;
 }
 
 .ssd decoration, .ssd decoration.backdrop {
@@ -5683,7 +5684,7 @@ terminal-window.background.csd {
 }
 
 terminal-window decoration {
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
 }
 
 terminal-window.background.csd.maximized {
@@ -6087,7 +6088,7 @@ workbench.csd > stack.titlebar:not(headerbar) {
 }
 
 workbench.csd > stack.titlebar:not(headerbar) headerbar, workbench.csd > stack.titlebar:not(headerbar) headerbar:first-child, workbench.csd > stack.titlebar:not(headerbar) headerbar:last-child {
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
 }
 
 window.org-gnome-Builder.workspace > stack#titlebar_container.titlebar > headerbar > omnibar > .linked > entry {
@@ -11928,7 +11929,7 @@ UnityDecoration.background {
 UnityDecoration .top {
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-bottom-width: 0;
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
   padding: 1px 6px 0 6px;
   background-color: #ffffff;
   color: #575757;

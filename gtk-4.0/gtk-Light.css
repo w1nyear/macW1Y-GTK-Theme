@@ -6168,29 +6168,40 @@ window.csd:backdrop {
 }
 
 window.csd.tiled, window.csd.tiled-top, window.csd.tiled-left, window.csd.tiled-right, window.csd.tiled-bottom {
-  border-radius: 0;
+  border-radius: 24px;
   outline: none;
 }
 
-window.csd.maximized, window.csd.fullscreen {
-  border-radius: 0;
+window.csd.maximized {
+  border-radius: 24px;
+  outline: none;
+  box-shadow: none;
+  transition: none;
+}
+
+window.csd.fullscreen,
+window.fullscreen {
+  border-radius: 0 !important;
   outline: none;
   box-shadow: none;
   transition: none;
 }
 
 window.csd.ssd-frame {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  border-radius: 24px;
   outline: none;
 }
 
 window.solid-csd {
   border: 1px solid @headerbar_darker_shade_color;
-  border-radius: 0;
+  border-radius: 24px;
   margin: 0;
   background-color: @headerbar_bg_color;
   box-shadow: none;
+}
+
+window.solid-csd.fullscreen {
+  border-radius: 0 !important;
 }
 
 window.ssd {

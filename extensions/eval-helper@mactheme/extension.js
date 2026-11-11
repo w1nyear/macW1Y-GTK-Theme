@@ -3737,6 +3737,7 @@ export default class EvalHelper extends Extension {
         this._setupWineWindowStacking();
         this._setupMinimizedWindowSnapshotManager();
         this._setupMemoryOptimizer();
+        this._setupForcedWindowCorners();
     }
 
     disable() {
@@ -3748,6 +3749,29 @@ export default class EvalHelper extends Extension {
                 try { fn(); } catch (_) {}
             });
             this._memOptimizerCleanups = null;
+        }
+        if (this._windowCornerEntries) {
+            for (const [win, entry] of this._windowCornerEntries.entries()) {
+                if (entry.signals) {
+                    entry.signals.forEach(id => {
+                        try { win.disconnect(id); } catch (_) {}
+                    });
+                }
+                if (entry.actorSignal && entry.actor) {
+                    try { entry.actor.disconnect(entry.actorSignal); } catch (_) {}
+                }
+                if (entry.actor && entry.effect) {
+                    try { entry.actor.remove_effect(entry.effect); } catch (_) {}
+                }
+            }
+            this._windowCornerEntries.clear();
+            this._windowCornerEntries = null;
+        }
+        if (this._cornerCleanups) {
+            this._cornerCleanups.forEach(fn => {
+                try { fn(); } catch (_) {}
+            });
+            this._cornerCleanups = null;
         }
         if (this._snapshotCleanups) {
             this._snapshotCleanups.forEach(fn => {
@@ -4268,6 +4292,200 @@ export default class EvalHelper extends Extension {
         GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 5, () => {
             runMemoryTrim();
             return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _setupForcedWindowCorners() {
+        this._cornerCleanups = [];
+        this._windowCornerEntries = new Map();
+
+        const getApplicationCornerRadius = () => {
+            try {
+                const lgSettings = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com' });
+                if (lgSettings.settings_schema?.has_key?.('application-corner-radius')) {
+                    const rad = lgSettings.get_double('application-corner-radius');
+                    if (rad > 0) return rad;
+                }
+            } catch (_) {}
+            try {
+                const bmsSettings = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.blur-my-shell.applications' });
+                if (bmsSettings.settings_schema?.has_key?.('corner-radius')) {
+                    const rad = bmsSettings.get_int('corner-radius');
+                    if (rad > 0) return rad;
+                }
+            } catch (_) {}
+            return 24.0;
+        };
+
+        let currentRadius = getApplicationCornerRadius();
+
+        // Listen for setting changes
+        try {
+            const lgSettings = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com' });
+            const lgId = lgSettings.connect('changed::application-corner-radius', () => {
+                currentRadius = getApplicationCornerRadius();
+                syncAll();
+            });
+            this._cornerCleanups.push(() => {
+                try { lgSettings.disconnect(lgId); } catch (_) {}
+            });
+        } catch (_) {}
+
+        try {
+            const bmsSettings = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.blur-my-shell.applications' });
+            const bmsId = bmsSettings.connect('changed::corner-radius', () => {
+                currentRadius = getApplicationCornerRadius();
+                syncAll();
+            });
+            this._cornerCleanups.push(() => {
+                try { bmsSettings.disconnect(bmsId); } catch (_) {}
+            });
+        } catch (_) {}
+
+        let CornerEffectClass = null;
+
+        const loadCornerEffect = async () => {
+            if (CornerEffectClass) return CornerEffectClass;
+            try {
+                const BMS = Main.extensionManager?.lookup?.('blur-my-shell@aunetx');
+                if (BMS?.dir) {
+                    const mod = await import('file://' + BMS.dir.get_path() + '/effects/corner.js');
+                    CornerEffectClass = mod?.CornerEffect;
+                }
+            } catch (e) {
+                console.error('[EvalHelper] Failed to load BMS CornerEffect:', e);
+            }
+            return CornerEffectClass;
+        };
+
+        const shouldRoundWindow = (win) => {
+            if (!win || win.is_override_redirect?.()) return false;
+            const type = win.window_type;
+            if (type === Meta.WindowType.DESKTOP) return false;
+            return (
+                type === Meta.WindowType.NORMAL ||
+                type === Meta.WindowType.DIALOG ||
+                type === Meta.WindowType.MODAL_DIALOG ||
+                type === Meta.WindowType.UTILITY
+            );
+        };
+
+        const syncWindow = (win, entry) => {
+            if (!win || !entry?.actor || !entry?.effect) return;
+            const isFullscreen = win.is_fullscreen?.() || win.fullscreen;
+            if (isFullscreen) {
+                entry.effect.straight_corners = true;
+                entry.effect.radius = 0;
+                return;
+            }
+
+            entry.effect.straight_corners = false;
+            entry.effect.radius = currentRadius;
+
+            const frame = win.get_frame_rect();
+            const buffer = win.get_buffer_rect();
+            const clipX = Math.max(0, frame.x - buffer.x);
+            const clipY = Math.max(0, frame.y - buffer.y);
+            const clipW = frame.width;
+            const clipH = frame.height;
+
+            entry.effect.width = entry.actor.width;
+            entry.effect.height = entry.actor.height;
+            entry.effect.clip = [clipX, clipY, clipW, clipH];
+        };
+
+        const syncAll = () => {
+            for (const [win, entry] of this._windowCornerEntries.entries()) {
+                syncWindow(win, entry);
+            }
+        };
+
+        const untrackWindow = (win) => {
+            const entry = this._windowCornerEntries.get(win);
+            if (!entry) return;
+            this._windowCornerEntries.delete(win);
+            if (entry.signals) {
+                entry.signals.forEach(id => {
+                    try { win.disconnect(id); } catch (_) {}
+                });
+            }
+            if (entry.actorSignal && entry.actor) {
+                try { entry.actor.disconnect(entry.actorSignal); } catch (_) {}
+            }
+            if (entry.actor && entry.effect) {
+                try { entry.actor.remove_effect(entry.effect); } catch (_) {}
+            }
+        };
+
+        const doAttach = (win, actor, Clazz) => {
+            if (!win || !actor || this._windowCornerEntries.has(win)) return;
+
+            try {
+                let existing = actor.get_effect('mac-forced-corner-effect');
+                if (existing) {
+                    actor.remove_effect(existing);
+                }
+
+                const effect = new Clazz({
+                    radius: currentRadius,
+                    corners_top: true,
+                    corners_bottom: true,
+                    straight_corners: win.is_fullscreen?.() || win.fullscreen || false,
+                });
+
+                actor.add_effect_with_name('mac-forced-corner-effect', effect);
+
+                const entry = { actor, effect, signals: [], actorSignal: null };
+
+                entry.signals.push(win.connect('size-changed', () => syncWindow(win, entry)));
+                entry.signals.push(win.connect('position-changed', () => syncWindow(win, entry)));
+                entry.signals.push(win.connect('notify::fullscreen', () => syncWindow(win, entry)));
+                entry.signals.push(win.connect('notify::maximized-horizontally', () => syncWindow(win, entry)));
+                entry.signals.push(win.connect('notify::maximized-vertically', () => syncWindow(win, entry)));
+                entry.signals.push(win.connect('unmanaged', () => untrackWindow(win)));
+
+                entry.actorSignal = actor.connect('notify::size', () => syncWindow(win, entry));
+
+                this._windowCornerEntries.set(win, entry);
+
+                syncWindow(win, entry);
+            } catch (e) {
+                console.error('[EvalHelper] Error applying forced corner effect:', e);
+            }
+        };
+
+        const trackWindow = async (win) => {
+            if (!shouldRoundWindow(win) || this._windowCornerEntries.has(win)) return;
+
+            const Clazz = await loadCornerEffect();
+            if (!Clazz) return;
+
+            let actor = win.get_compositor_private?.();
+            if (!actor) {
+                const waitId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+                    actor = win.get_compositor_private?.();
+                    if (actor) {
+                        doAttach(win, actor, Clazz);
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
+                this._cornerCleanups.push(() => GLib.source_remove(waitId));
+                return;
+            }
+
+            doAttach(win, actor, Clazz);
+        };
+
+        const winCreatedId = global.display.connect('window-created', (d, win) => trackWindow(win));
+        this._cornerCleanups.push(() => {
+            try { global.display.disconnect(winCreatedId); } catch (_) {}
+        });
+
+        // Track all existing windows
+        global.get_window_actors().forEach(a => {
+            if (a.meta_window) {
+                trackWindow(a.meta_window);
+            }
         });
     }
 }

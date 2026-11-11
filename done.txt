@@ -20253,3 +20253,37 @@ Task 704: Уніфікація ширини поля вводу пароля н�
      * bin/mac-extension-guard verify (21/21 OK), bin/mac-audit-sync check (100% PASS), bin/mac-i18n-verify (100% PASS, 0 кирилиці в install.sh).
 
 3. Статус: Завершено.
+
+
+================================================================================
+Завдання 713: Примусовий corner radius для всіх неповноекранних вікон (24px)
+================================================================================
+1. Вихідні вимоги:
+   - Включити примусовий corner radius у всіх вікнах (не повноекранних) з радіусом заокруглення програм на такий, як у параметрах системи (application-corner-radius = 24.0 / corner-radius = 24).
+   - Заокруглення має діяти примусово у всіх вікнах, які не знаходяться у режимі fullscreen (включно з розгорнутими на весь екран maximized, тайловими tiled, SSD/CSD, GTK3, GTK4 та сторонніми додатками Chrome, VS Code, Electron, Terminal тощо).
+   - У режимі fullscreen вікна суворо мають залишатися з прямими кутами (радіус 0px).
+
+2. Реалізовані зміни:
+   - Композиторний менеджер заокруглення кутів вікон у GNOME Shell (extensions/eval-helper@mactheme/extension.js):
+     * Створено та підключено систему ForcedWindowCornerManager, яка автоматично відстежує всі вікна MetaWindow/MetaWindowActor (нормальні вікна, діалоги, утиліти) через глобальний сигнал 'window-created' та обхід наявних вікон.
+     * Реалізовано плавне накладання шейдерного ефекту CornerEffect із динамічним кліпуванням геометрії [clipX, clipY, clipW, clipH], що точно вираховує співвідношення frame_rect до buffer_rect, відсікаючи прямі кути буфера навіть для вікон сторонніх додатків (Chrome, Electron, Steam, Terminal тощо).
+     * Динамічна синхронізація з GSettings: менеджер підписаний на зміну ключів application-corner-radius у liquid-glass та corner-radius у blur-my-shell. При зміні повзунка в налаштуваннях радіус миттєво оновлюється на всіх відкритих вікнах.
+     * Строгий контроль повноекранного режиму: при переході вікна у fullscreen (notify::fullscreen) ефект перемикається в straight_corners = true / radius = 0, а при виході з повноекранного режиму автоматично відновлює повний радіус 24px.
+     * Підтримка розгорнутих (maximized) та тайлових (tiled) вікон: коли вікно розгорнуте, воно не є повноекранним, тому заокруглення кутів 24px примусово зберігається.
+   - Оновлення теми GTK4 (config/gtk-4.0/gtk.css, gtk-Dark.css, gtk-Light.css, macW1Y-Dark, macW1Y-Light):
+     * Усунено скидання border-radius: 0 для window.csd.maximized, window.csd.tiled, window.csd.ssd-frame та window.solid-csd. Тепер вони мають border-radius: 24px.
+     * border-radius: 0 !important; залишено виключно для селекторів .fullscreen та window.fullscreen.
+     * Верхні кути шапки headerbar та нижні межі вікна зберігають єдиний радіус 24px.
+   - Оновлення теми GTK3 (macW1Y-Dark/gtk-3.0/gtk-dark.css, macW1Y-Light, macW1Y-Dark-solid):
+     * Для .ssd decoration, .ssd.maximized decoration, .ssd.tiled decoration, .metacity decoration та .solid-csd decoration встановлено border-radius: 24px.
+     * .fullscreen decoration суворо обнуляє радіус до 0.
+   - Оновлення конфігурацій GSettings та dconf:
+     * Встановлено corner-when-maximized = true у blur-my-shell.applications та синхронізовано з dconf файлами (blur-my-shell.dconf, gnome-all.dconf, gnome-extensions.dconf, gnome-shell.dconf).
+     * Додано налаштування у install.sh (англійською мовою, 0 символів кирилиці).
+   - Тестування та верифікація:
+     * Усі 21 розширення перевірені mac-extension-guard verify (100% OK, lockfile оновлено).
+     * mac-audit-sync check: 100% PASS.
+     * mac-i18n-verify: 100% PASS.
+     * Живі вікна (MacOs Tahoe, Ubuntu dialogs тощо) успішно отримали mac-forced-corner-effect з радіусом 24px.
+
+3. Статус: Завершено.

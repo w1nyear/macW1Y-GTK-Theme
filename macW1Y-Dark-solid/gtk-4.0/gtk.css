@@ -1,4 +1,5 @@
 @import url("macw1y-tokens.css");
+@import url("titlebuttons4.css");
 :root {
   --blue-1: #99c1f1;
   --blue-2: #62a0ea;
@@ -6249,20 +6250,27 @@ window.csd:backdrop {
 }
 
 window.csd.tiled, window.csd.tiled-top, window.csd.tiled-left, window.csd.tiled-right, window.csd.tiled-bottom {
-  border-radius: 0;
+  border-radius: 24px;
   outline: none;
 }
 
-window.csd.maximized, window.csd.fullscreen {
-  border-radius: 0;
+window.csd.maximized {
+  border-radius: 24px;
+  outline: none;
+  box-shadow: none;
+  transition: none;
+}
+
+window.csd.fullscreen,
+window.fullscreen {
+  border-radius: 0 !important;
   outline: none;
   box-shadow: none;
   transition: none;
 }
 
 window.csd.ssd-frame {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  border-radius: 24px;
   outline: none;
 }
 
@@ -6272,18 +6280,28 @@ window.csd.ssd-frame headerbar {
   box-shadow: none;
 }
 
-window.csd.ssd-frame.maximized headerbar, window.csd.ssd-frame.fullscreen headerbar {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+window.csd.ssd-frame.maximized headerbar {
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  box-shadow: none;
+}
+
+window.csd.ssd-frame.fullscreen headerbar {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
   box-shadow: none;
 }
 
 window.solid-csd {
   border: 1px solid @headerbar_darker_shade_color;
-  border-radius: 0;
+  border-radius: 24px;
   margin: 0;
   background-color: @headerbar_bg_color;
   box-shadow: none;
+}
+
+window.solid-csd.fullscreen {
+  border-radius: 0 !important;
 }
 
 window.ssd {
@@ -6768,27 +6786,27 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 
 #NautilusPathBar, .nautilus-pathbar {
   border-radius: 9999px;
-  margin: 0;
-  padding: 3px;
+  margin: 2px 4px;
+  padding: 0 4px;
+  min-height: 26px;
   color: @headerbar_fg_color;
-  background-color: transparent;
-  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
-  box-shadow: 0 6px 20px alpha(#000000,0.15), inset 1px 2px 1px -1px alpha(#ffffff,0.08), inset -1px -1px 1px 0 alpha(#ffffff,0.08);
-  border: none;
+  background-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 #NautilusPathBar:backdrop, .nautilus-pathbar:backdrop {
-  background-color: alpha(@headerbar_fg_color,0.05);
-  background-image: none;
-  border: none;
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.05);
   box-shadow: none;
 }
 
 #NautilusPathBar #NautilusPathButton, #NautilusPathBar .nautilus-path-button, .nautilus-pathbar #NautilusPathButton, .nautilus-pathbar .nautilus-path-button {
-  margin: 0;
+  margin: 0 1px;
   border-radius: 9999px;
-  min-height: 24px;
-  padding: 3px 6px;
+  min-height: 22px;
+  padding: 0 6px;
+  font-size: 12.5px;
 }
 
 #NautilusPathBar #NautilusPathButton.current-dir, #NautilusPathBar .nautilus-path-button.current-dir, .nautilus-pathbar #NautilusPathButton.current-dir, .nautilus-pathbar .nautilus-path-button.current-dir {
@@ -6802,12 +6820,14 @@ row.expander.property .nautilus-file-chooser .nautilus-grid-view child.activatab
 
 #NautilusPathBar > menubutton, #NautilusPathBar > menubutton.flat.popup, .nautilus-pathbar > menubutton, .nautilus-pathbar > menubutton.flat.popup {
   margin: 0;
+  padding: 0;
 }
 
 #NautilusPathBar > menubutton > button, #NautilusPathBar > menubutton.flat.popup > button, .nautilus-pathbar > menubutton > button, .nautilus-pathbar > menubutton.flat.popup > button {
-  min-height: 24px;
-  min-width: 24px;
-  padding: 3px;
+  min-height: 22px;
+  min-width: 22px;
+  padding: 0 4px;
+  margin: 0;
   border-radius: 9999px;
 }
 
@@ -8055,53 +8075,75 @@ window.background.chromium headerbar.header-bar.titlebar button.titlebutton {
   margin: 0 3px;
   padding: 0;
   border-radius: 9999px;
-  background-image: none;
+  background-color: transparent;
+  border-color: transparent;
   border: none;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  background-position: center;
+  transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 220ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton {
-  background-color: #e9524a;
-  color: #e9524a;
+  background-image: -gtk-scaled(
+    url("windows-assets/button-close.png"),
+    url("windows-assets/button-close@2.png")
+  );
 }
-
-window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:hover {
-  background-color: #e9524a;
-  color: mix(black,#e9524a,0.5);
-}
-
-window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:active {
-  background-color: #ba423b;
-  color: mix(black,#ba423b,0.5);
-}
-
 window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton {
-  background-color: #f1ae1b;
-  color: #f1ae1b;
+  background-image: -gtk-scaled(
+    url("windows-assets/button-minimize.png"),
+    url("windows-assets/button-minimize@2.png")
+  );
 }
-
-window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:hover {
-  background-color: #f1ae1b;
-  color: mix(black,#f1ae1b,0.5);
-}
-
-window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:active {
-  background-color: #c18b16;
-  color: mix(black,#c18b16,0.5);
-}
-
 window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton {
-  background-color: #59c837;
-  color: #59c837;
+  background-image: -gtk-scaled(
+    url("windows-assets/button-maximize.png"),
+    url("windows-assets/button-maximize@2.png")
+  );
 }
 
+/* Chromium Group Hover: hovering the titlebar or any button reveals all 3 glyphs */
+window.background.chromium headerbar.header-bar.titlebar:hover button.close.titlebutton,
+window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:hover {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-close-hover.png"),
+    url("windows-assets/button-close-hover@2.png")
+  );
+}
+window.background.chromium headerbar.header-bar.titlebar:hover button.minimize.titlebutton,
+window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:hover {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-minimize-hover.png"),
+    url("windows-assets/button-minimize-hover@2.png")
+  );
+}
+window.background.chromium headerbar.header-bar.titlebar:hover button.maximize.titlebutton,
 window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton:hover {
-  background-color: #59c837;
-  color: mix(black,#59c837,0.5);
+  background-image: -gtk-scaled(
+    url("windows-assets/button-maximize-hover.png"),
+    url("windows-assets/button-maximize-hover@2.png")
+  );
 }
 
+/* Chromium Active appearance */
+window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:active {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-close-active.png"),
+    url("windows-assets/button-close-active@2.png")
+  );
+}
+window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:active {
+  background-image: -gtk-scaled(
+    url("windows-assets/button-minimize-active.png"),
+    url("windows-assets/button-minimize-active@2.png")
+  );
+}
 window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton:active {
-  background-color: #47a02c;
-  color: mix(black,#47a02c,0.5);
+  background-image: -gtk-scaled(
+    url("windows-assets/button-maximize-active.png"),
+    url("windows-assets/button-maximize-active@2.png")
+  );
 }
 
 window.background.chromium {
@@ -9920,12 +9962,24 @@ window.nautilus-window shadow,
     border-width: 0;
 }
 
-window.nautilus-window .sidebar-pane headerbar {
+window.nautilus-window .sidebar-pane headerbar,
+window.nautilus-window .nautilus-sidebar-headerbar {
     margin-top: -6px;
 }
 
-window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr) {
+window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr),
+window.nautilus-window .nautilus-sidebar-headerbar windowcontrols,
+window.nautilus-window windowcontrols.start {
     margin-left: 3px;
+    margin-top: -6px;
+    margin-bottom: 6px;
+}
+
+window.nautilus-window .sidebar-pane headerbar windowcontrols button,
+window.nautilus-window .nautilus-sidebar-headerbar windowcontrols button,
+window.nautilus-window windowcontrols.start button {
+    margin-top: 1px;
+    margin-bottom: 21px;
 }
 
 navigation-split-view headerbar windowcontrols.start:dir(ltr),
@@ -10281,8 +10335,9 @@ window.nautilus-window .content-pane headerbar {
 }
 
 /* Etap 112: raise the toolbar strip a couple of pixels */
-window.nautilus-window .sidebar-pane headerbar {
-    margin-top: -3px;
+window.nautilus-window .sidebar-pane headerbar,
+window.nautilus-window .nautilus-sidebar-headerbar {
+    margin-top: -6px;
 }
 
 /* Shift top panel buttons */
@@ -10302,7 +10357,32 @@ window.nautilus-window .content-pane headerbar .start {
 window.nautilus-window .nautilus-pathbar,
 window.nautilus-window #NautilusPathBar {
     min-width: 0;
-    padding: 3px 12px;
+    min-height: 26px;
+    padding: 0 4px;
+}
+
+window.nautilus-window .sidebar-pane placessidebar,
+window.nautilus-window .sidebar-pane placessidebar > scrolledwindow,
+window.nautilus-window .sidebar-pane placessidebar list.navigation-sidebar,
+window.nautilus-window .sidebar-pane list.navigation-sidebar {
+    padding-left: 0px;
+    margin-left: 0px;
+}
+
+window.nautilus-window .sidebar-pane placessidebar row,
+window.nautilus-window .sidebar-pane placessidebar list.navigation-sidebar row,
+window.nautilus-window .sidebar-pane list.navigation-sidebar row,
+window.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row {
+    min-height: 32px;
+    padding: 3px 6px 3px 6px;
+    margin: 1.5px 8px 1.5px 0px;
+}
+
+window.nautilus-window .sidebar-pane placessidebar row image,
+window.nautilus-window .sidebar-pane placessidebar list.navigation-sidebar row image,
+window.nautilus-window .sidebar-pane list.navigation-sidebar row image {
+    margin-left: 8px;
+    margin-right: 8px;
 }
 
 
@@ -11886,4 +11966,13 @@ window.mac-settings-window button.suggested-action.circular:active {
   border-radius: 9999px;
 }
 
+
+
+
+
+
+
+
+
+/* macW1Y Global Component Master Overrides (SSOT) */
 @import url("macw1y-components.css");
