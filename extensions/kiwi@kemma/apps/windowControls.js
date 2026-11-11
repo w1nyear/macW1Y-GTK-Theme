@@ -205,8 +205,8 @@ class WindowControlsIndicator extends PanelMenu.Button {
                 button.add_style_pseudo_class('active');
                 this._updateButtonIcon(buttonType);
 
-                // Only activate jelly if held (>140ms)!
-                holdTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 140, () => {
+                // Only activate jelly if held (>280ms)!
+                holdTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 280, () => {
                     holdTimeoutId = 0;
                     if (isPressed) {
                         isHolding = true;
@@ -232,7 +232,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
                 const dy = curY - pressY;
                 const dist = Math.hypot(dx, dy);
 
-                if (!isHolding && dist > 3.0) {
+                if (!isHolding && dist > 6.0) {
                     if (holdTimeoutId) {
                         GLib.Source.remove(holdTimeoutId);
                         holdTimeoutId = 0;

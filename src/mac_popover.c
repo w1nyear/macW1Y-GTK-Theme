@@ -227,6 +227,7 @@ typedef struct {
     gboolean is_dragging;
     gboolean is_holding;
     guint hold_timer_id;
+    GtkGesture *gesture;
     GtkWidget *wc_widget;
     double start_x, start_y;
     double offset_x, offset_y;
@@ -310,6 +311,9 @@ static gboolean on_wc_hold_timeout(gpointer user_data) {
         d->is_holding = TRUE;
         d->cur_sx = 1.18;
         d->cur_sy = 1.18;
+        if (d->gesture) {
+            gtk_gesture_set_state(d->gesture, GTK_EVENT_SEQUENCE_CLAIMED);
+        }
         if (d->wc_widget) {
             gtk_widget_queue_draw(d->wc_widget);
         }
@@ -319,7 +323,6 @@ static gboolean on_wc_hold_timeout(gpointer user_data) {
 
 static void on_wc_drag_begin(GtkGestureDrag *gesture, double start_x, double start_y, gpointer user_data) {
     GtkWidget *wc = GTK_WIDGET(user_data);
-    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
 
     MacWcDragData *d = get_wc_drag_data(wc);
     if (d->tick_id) {
@@ -331,6 +334,7 @@ static void on_wc_drag_begin(GtkGestureDrag *gesture, double start_x, double sta
         d->hold_timer_id = 0;
     }
 
+    d->gesture = GTK_GESTURE(gesture);
     d->wc_widget = wc;
     d->is_dragging = TRUE;
     d->is_holding = FALSE;
@@ -345,18 +349,35 @@ static void on_wc_drag_begin(GtkGestureDrag *gesture, double start_x, double sta
     d->vel_sx = 0; d->vel_sy = 0;
     d->vel_tx = 0; d->vel_ty = 0;
 
-    if (start_x < 24.0) d->target_button_idx = 0;
-    else if (start_x < 46.0) d->target_button_idx = 1;
-    else d->target_button_idx = 2;
+    /* Do NOT claim sequence on begin; allow standard click events to reach child GtkButtons */
+    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_NONE);
 
-    /* Start hold timer (140ms): only activate jelly if held! */
-    d->hold_timer_id = g_timeout_add(140, on_wc_hold_timeout, d);
+    /* Determine target button index based on child bounds */
+    int b_idx = 0;
+    int found_idx = -1;
+    for (GtkWidget *child = gtk_widget_get_first_child(wc); child != NULL; child = gtk_widget_get_next_sibling(child), b_idx++) {
+        graphene_rect_t b;
+        if (gtk_widget_compute_bounds(child, wc, &b)) {
+            if (start_x >= b.origin.x && start_x <= b.origin.x + b.size.width) {
+                found_idx = b_idx;
+                break;
+            }
+        }
+    }
+    if (found_idx >= 0) {
+        d->target_button_idx = found_idx;
+    } else {
+        if (start_x < 24.0) d->target_button_idx = 0;
+        else if (start_x < 46.0) d->target_button_idx = 1;
+        else d->target_button_idx = 2;
+    }
+
+    /* Start hold timer (280ms): only activate jelly if held! */
+    d->hold_timer_id = g_timeout_add(280, on_wc_hold_timeout, d);
 }
 
 static void on_wc_drag_update(GtkGestureDrag *gesture, double offset_x, double offset_y, gpointer user_data) {
     GtkWidget *wc = GTK_WIDGET(user_data);
-    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
-
     MacWcDragData *d = get_wc_drag_data(wc);
     if (!d->is_dragging) return;
 
@@ -364,12 +385,15 @@ static void on_wc_drag_update(GtkGestureDrag *gesture, double offset_x, double o
     d->offset_y = offset_y;
 
     double dist = hypot(offset_x, offset_y);
-    if (!d->is_holding && dist > 3.0) {
+    if (!d->is_holding && dist > 6.0) {
         if (d->hold_timer_id) {
             g_source_remove(d->hold_timer_id);
             d->hold_timer_id = 0;
         }
         d->is_holding = TRUE;
+        if (d->gesture) {
+            gtk_gesture_set_state(d->gesture, GTK_EVENT_SEQUENCE_CLAIMED);
+        }
     }
 
     if (!d->is_holding) return;
@@ -451,6 +475,7 @@ static void on_wc_drag_end(GtkGestureDrag *gesture, double offset_x, double offs
         d->cur_tx = 0.0;
         d->cur_ty = 0.0;
         gtk_widget_queue_draw(wc);
+        gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_DENIED);
         return;
     }
 
