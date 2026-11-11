@@ -2194,19 +2194,41 @@ windowcontrols.end:dir(ltr) {
 
 .nautilus-window headerbar windowcontrols,
 .nautilus-window windowcontrols,
-.sidebar-pane headerbar windowcontrols {
+.nautilus-window .sidebar-pane headerbar windowcontrols,
+.nautilus-window .nautilus-sidebar-headerbar windowcontrols {
   border-spacing: 6px;
   padding: 0;
   padding-left: 12px;
-  margin-top: 0;
-  margin-bottom: 0;
+  margin-top: -6px;
+  margin-bottom: 6px;
   margin-left: 0px;
 }
 
 .nautilus-window headerbar windowcontrols button,
 .nautilus-window windowcontrols button,
-.sidebar-pane headerbar windowcontrols button,
-.nautilus-sidebar-headerbar windowcontrols button,
+.nautilus-window .sidebar-pane headerbar windowcontrols button,
+.nautilus-window .nautilus-sidebar-headerbar windowcontrols button {
+  min-width: 16px;
+  min-height: 16px;
+  padding: 0;
+  margin-top: 1px;
+  margin-bottom: 21px;
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 9999px;
+  background-color: transparent;
+  background: transparent;
+  border: none;
+  border-style: none;
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+  outline-style: none;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+}
+
 headerbar windowcontrols button,
 windowcontrols button,
 windowcontrols button.close,

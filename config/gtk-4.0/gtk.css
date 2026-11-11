@@ -9945,12 +9945,24 @@ window.nautilus-window shadow,
     border-width: 0;
 }
 
-window.nautilus-window .sidebar-pane headerbar {
+window.nautilus-window .sidebar-pane headerbar,
+window.nautilus-window .nautilus-sidebar-headerbar {
     margin-top: -6px;
 }
 
-window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr) {
+window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr),
+window.nautilus-window .nautilus-sidebar-headerbar windowcontrols,
+window.nautilus-window windowcontrols.start {
     margin-left: 3px;
+    margin-top: -6px;
+    margin-bottom: 6px;
+}
+
+window.nautilus-window .sidebar-pane headerbar windowcontrols button,
+window.nautilus-window .nautilus-sidebar-headerbar windowcontrols button,
+window.nautilus-window windowcontrols.start button {
+    margin-top: 1px;
+    margin-bottom: 21px;
 }
 
 navigation-split-view headerbar windowcontrols.start:dir(ltr),
@@ -10306,8 +10318,9 @@ window.nautilus-window .content-pane headerbar {
 }
 
 /* Etap 112: raise the toolbar strip a couple of pixels */
-window.nautilus-window .sidebar-pane headerbar {
-    margin-top: -3px;
+window.nautilus-window .sidebar-pane headerbar,
+window.nautilus-window .nautilus-sidebar-headerbar {
+    margin-top: -6px;
 }
 
 /* Shift top panel buttons */

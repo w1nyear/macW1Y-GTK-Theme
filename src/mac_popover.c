@@ -377,10 +377,28 @@ static void on_wc_drag_update(GtkGestureDrag *gesture, double offset_x, double o
     /* Check boundary of target button: if cursor exits the button bounds, release jelly immediately! */
     double curr_x = d->start_x + offset_x;
     double curr_y = d->start_y + offset_y;
-    double min_x = (double)d->target_button_idx * 22.0 - 6.0;
-    double max_x = min_x + 32.0;
-    double min_y = -6.0;
-    double max_y = (double)gtk_widget_get_height(wc) + 6.0;
+    
+    GtkWidget *target_btn = NULL;
+    int b_idx = 0;
+    for (GtkWidget *child = gtk_widget_get_first_child(wc); child != NULL; child = gtk_widget_get_next_sibling(child), b_idx++) {
+        if (b_idx == d->target_button_idx) {
+            target_btn = child;
+            break;
+        }
+    }
+    double min_x, max_x, min_y, max_y;
+    graphene_rect_t btn_bounds;
+    if (target_btn && gtk_widget_compute_bounds(target_btn, wc, &btn_bounds)) {
+        min_x = (double)btn_bounds.origin.x - 6.0;
+        max_x = min_x + (double)btn_bounds.size.width + 12.0;
+        min_y = (double)btn_bounds.origin.y - 6.0;
+        max_y = min_y + (double)btn_bounds.size.height + 12.0;
+    } else {
+        min_x = (double)d->target_button_idx * 22.0 - 6.0;
+        max_x = min_x + 32.0;
+        min_y = -6.0;
+        max_y = (double)gtk_widget_get_height(wc) + 6.0;
+    }
 
     if (curr_x < min_x || curr_x > max_x || curr_y < min_y || curr_y > max_y) {
         /* Cursor exited button boundary: release jelly with spring back! */
