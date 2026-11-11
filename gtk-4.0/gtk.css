@@ -8109,33 +8109,24 @@ window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebu
   );
 }
 
-/* Chromium Active Liquid Glass Jelly ease-out scale & boost */
+/* Chromium Active appearance */
 window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-close-active.png"),
     url("windows-assets/button-close-active@2.png")
   );
-  transform: scale(1.18);
-  filter: brightness(1.28) saturate(1.22);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-minimize-active.png"),
     url("windows-assets/button-minimize-active@2.png")
   );
-  transform: scale(1.18);
-  filter: brightness(1.28) saturate(1.22);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-maximize-active.png"),
     url("windows-assets/button-maximize-active@2.png")
   );
-  transform: scale(1.18);
-  filter: brightness(1.28) saturate(1.22);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
 window.background.chromium {

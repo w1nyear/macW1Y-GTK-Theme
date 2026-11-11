@@ -106,6 +106,8 @@ class WindowControlsIndicator extends PanelMenu.Button {
         // Helper to install macOS Liquid Glass Jelly physics on a traffic light button
         const installJellyPhysics = (button, buttonType) => {
             let isPressed = false;
+            let isHolding = false;
+            let holdTimeoutId = 0;
             let pressX = 0, pressY = 0;
             let springSourceId = 0;
             let currentScaleX = 1.0, currentScaleY = 1.0;
@@ -187,24 +189,39 @@ class WindowControlsIndicator extends PanelMenu.Button {
             this._clutterSignalIds.push([button, button.connect('button-press-event', (actor, event) => {
                 if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
                 stopSpring();
+                if (holdTimeoutId) {
+                    GLib.Source.remove(holdTimeoutId);
+                    holdTimeoutId = 0;
+                }
                 isPressed = true;
+                isHolding = false;
                 const [x, y] = event.get_coords();
                 pressX = x;
                 pressY = y;
+                currentScaleX = 1.0;
+                currentScaleY = 1.0;
+                currentTransX = 0;
+                currentTransY = 0;
                 button.add_style_pseudo_class('active');
                 this._updateButtonIcon(buttonType);
 
-                // Ease-out scale up (~1.18x) and brightness/saturation glow
-                button.ease({
-                    scale_x: 1.18,
-                    scale_y: 1.18,
-                    duration: 120,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                // Only activate jelly if held (>140ms)!
+                holdTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 140, () => {
+                    holdTimeoutId = 0;
+                    if (isPressed) {
+                        isHolding = true;
+                        // Ease-out scale up (~1.18x) and brightness/saturation glow
+                        button.ease({
+                            scale_x: 1.18,
+                            scale_y: 1.18,
+                            duration: 120,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                        currentScaleX = 1.18;
+                        currentScaleY = 1.18;
+                    }
+                    return GLib.SOURCE_REMOVE;
                 });
-                currentScaleX = 1.18;
-                currentScaleY = 1.18;
-                currentTransX = 0;
-                currentTransY = 0;
                 return Clutter.EVENT_PROPAGATE;
             })]);
 
@@ -213,10 +230,37 @@ class WindowControlsIndicator extends PanelMenu.Button {
                 const [curX, curY] = event.get_coords();
                 const dx = curX - pressX;
                 const dy = curY - pressY;
+                const dist = Math.hypot(dx, dy);
+
+                if (!isHolding && dist > 3.0) {
+                    if (holdTimeoutId) {
+                        GLib.Source.remove(holdTimeoutId);
+                        holdTimeoutId = 0;
+                    }
+                    isHolding = true;
+                }
+
+                if (!isHolding) return Clutter.EVENT_PROPAGATE;
+
+                // Check boundary of button: if cursor exits the button bounds, release jelly immediately!
+                const [bx, by] = button.get_transformed_position();
+                const [bw, bh] = button.get_transformed_size();
+                const pad = 6.0;
+                if (curX < bx - pad || curX > bx + bw + pad || curY < by - pad || curY > by + bh + pad) {
+                    isPressed = false;
+                    isHolding = false;
+                    if (holdTimeoutId) {
+                        GLib.Source.remove(holdTimeoutId);
+                        holdTimeoutId = 0;
+                    }
+                    button.remove_style_pseudo_class('active');
+                    this._updateButtonIcon(buttonType);
+                    runSpringBack();
+                    return Clutter.EVENT_STOP;
+                }
 
                 // Jelly deformation ("деформація тягучки"):
                 // Stretch along drag vector with rubber-banding resistance
-                const dist = Math.hypot(dx, dy);
                 if (dist > 1.0) {
                     const stretch = 1.18 + Math.min(dist * 0.035, 1.25);
                     const compress = Math.max(0.65, 1.18 / Math.sqrt(stretch / 1.18));
@@ -234,24 +278,55 @@ class WindowControlsIndicator extends PanelMenu.Button {
                     button.set_scale(currentScaleX, currentScaleY);
                     button.set_translation(currentTransX, currentTransY, 0);
                 }
-                return Clutter.EVENT_PROPAGATE;
+                return Clutter.EVENT_STOP;
             })]);
 
             this._clutterSignalIds.push([button, button.connect('button-release-event', () => {
                 if (!isPressed) return Clutter.EVENT_PROPAGATE;
                 isPressed = false;
+                if (holdTimeoutId) {
+                    GLib.Source.remove(holdTimeoutId);
+                    holdTimeoutId = 0;
+                }
                 button.remove_style_pseudo_class('active');
                 this._updateButtonIcon(buttonType);
+
+                if (!isHolding) {
+                    // Quick click without holding: DO NOT animate, keep 1.0!
+                    button.set_scale(1.0, 1.0);
+                    button.set_translation(0, 0, 0);
+                    currentScaleX = 1.0;
+                    currentScaleY = 1.0;
+                    currentTransX = 0;
+                    currentTransY = 0;
+                    return Clutter.EVENT_PROPAGATE;
+                }
+
+                isHolding = false;
                 runSpringBack();
                 return Clutter.EVENT_PROPAGATE;
             })]);
 
             this._clutterSignalIds.push([button, button.connect('leave-event', () => {
+                if (holdTimeoutId) {
+                    GLib.Source.remove(holdTimeoutId);
+                    holdTimeoutId = 0;
+                }
                 if (isPressed) {
                     isPressed = false;
                     button.remove_style_pseudo_class('active');
                     this._updateButtonIcon(buttonType);
-                    runSpringBack();
+                    if (isHolding) {
+                        isHolding = false;
+                        runSpringBack();
+                    } else {
+                        button.set_scale(1.0, 1.0);
+                        button.set_translation(0, 0, 0);
+                        currentScaleX = 1.0;
+                        currentScaleY = 1.0;
+                        currentTransX = 0;
+                        currentTransY = 0;
+                    }
                 }
             })]);
 

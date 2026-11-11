@@ -159,77 +159,85 @@ windowcontrols button.maximize:backdrop:hover {
 }
 
 /* Mac-like Group Hover: show all 3 glyphs simultaneously when hovering any button in the group */
-windowcontrols:hover button.close {
+windowcontrols:hover button.close,
+windowcontrols.mac-controls-hover button.close,
+windowcontrols button.close.mac-group-hover,
+headerbar:hover windowcontrols button.close {
   background-image: -gtk-scaled(
     url("windows-assets/button-close-hover.png"),
     url("windows-assets/button-close-hover@2.png")
   );
 }
-windowcontrols:hover button.minimize {
+windowcontrols:hover button.minimize,
+windowcontrols.mac-controls-hover button.minimize,
+windowcontrols button.minimize.mac-group-hover,
+headerbar:hover windowcontrols button.minimize {
   background-image: -gtk-scaled(
     url("windows-assets/button-minimize-hover.png"),
     url("windows-assets/button-minimize-hover@2.png")
   );
 }
-windowcontrols:hover button.maximize {
+windowcontrols:hover button.maximize,
+windowcontrols.mac-controls-hover button.maximize,
+windowcontrols button.maximize.mac-group-hover,
+headerbar:hover windowcontrols button.maximize {
   background-image: -gtk-scaled(
     url("windows-assets/button-maximize-hover.png"),
     url("windows-assets/button-maximize-hover@2.png")
   );
 }
 .fullscreen windowcontrols:hover button.maximize,
-.maximized windowcontrols:hover button.maximize {
+.maximized windowcontrols:hover button.maximize,
+.fullscreen windowcontrols.mac-controls-hover button.maximize,
+.maximized windowcontrols.mac-controls-hover button.maximize,
+.fullscreen windowcontrols button.maximize.mac-group-hover,
+.maximized windowcontrols button.maximize.mac-group-hover,
+.fullscreen headerbar:hover windowcontrols button.maximize,
+.maximized headerbar:hover windowcontrols button.maximize {
   background-image: -gtk-scaled(
     url("windows-assets/button-restore-hover.png"),
     url("windows-assets/button-restore-hover@2.png")
   );
 }
 
-/* --- ACTIVE STATES (Liquid Glass Jelly ease-out scale & boost, spring bounce return) --- */
+/* --- ACTIVE STATES (Static icon appearance, jelly transform handled on hold) --- */
 windowcontrols button.close:active,
-windowcontrols:hover button.close:active {
+windowcontrols:hover button.close:active,
+windowcontrols.mac-controls-hover button.close:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-close-active.png"),
     url("windows-assets/button-close-active@2.png")
   );
-  transform: scale(1.18);
-  filter: brightness(1.28) saturate(1.22);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
 windowcontrols button.minimize:active,
-windowcontrols:hover button.minimize:active {
+windowcontrols:hover button.minimize:active,
+windowcontrols.mac-controls-hover button.minimize:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-minimize-active.png"),
     url("windows-assets/button-minimize-active@2.png")
   );
-  transform: scale(1.18);
-  filter: brightness(1.28) saturate(1.22);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
 windowcontrols button.maximize:active,
-windowcontrols:hover button.maximize:active {
+windowcontrols:hover button.maximize:active,
+windowcontrols.mac-controls-hover button.maximize:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-maximize-active.png"),
     url("windows-assets/button-maximize-active@2.png")
   );
-  transform: scale(1.18);
-  filter: brightness(1.28) saturate(1.22);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
 .fullscreen windowcontrols button.maximize:active,
 .maximized windowcontrols button.maximize:active,
 .fullscreen windowcontrols:hover button.maximize:active,
-.maximized windowcontrols:hover button.maximize:active {
+.maximized windowcontrols:hover button.maximize:active,
+.fullscreen windowcontrols.mac-controls-hover button.maximize:active,
+.maximized windowcontrols.mac-controls-hover button.maximize:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-restore-active.png"),
     url("windows-assets/button-restore-active@2.png")
   );
-  transform: scale(1.18);
-  filter: brightness(1.28) saturate(1.22);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
 /* =========================================================================
@@ -292,33 +300,24 @@ window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebu
   );
 }
 
-/* Chromium Active Liquid Glass Jelly ease-out scale & boost */
+/* Chromium Active appearance */
 window.background.chromium headerbar.header-bar.titlebar button.close.titlebutton:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-close-active.png"),
     url("windows-assets/button-close-active@2.png")
   );
-  transform: scale(1.18);
-  filter: brightness(1.28) saturate(1.22);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 window.background.chromium headerbar.header-bar.titlebar button.minimize.titlebutton:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-minimize-active.png"),
     url("windows-assets/button-minimize-active@2.png")
   );
-  transform: scale(1.18);
-  filter: brightness(1.28) saturate(1.22);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 window.background.chromium headerbar.header-bar.titlebar button.maximize.titlebutton:active {
   background-image: -gtk-scaled(
     url("windows-assets/button-maximize-active.png"),
     url("windows-assets/button-maximize-active@2.png")
   );
-  transform: scale(1.18);
-  filter: brightness(1.28) saturate(1.22);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease-out;
 }
 
 headerbar .title {

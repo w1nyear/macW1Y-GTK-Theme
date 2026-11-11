@@ -225,6 +225,9 @@ static void (*orig_wc_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL
 
 typedef struct {
     gboolean is_dragging;
+    gboolean is_holding;
+    guint hold_timer_id;
+    GtkWidget *wc_widget;
     double start_x, start_y;
     double offset_x, offset_y;
     double cur_sx, cur_sy;
@@ -300,34 +303,60 @@ static gboolean mac_wc_spring_tick(GtkWidget *widget, GdkFrameClock *clock, gpoi
     return G_SOURCE_CONTINUE;
 }
 
+static gboolean on_wc_hold_timeout(gpointer user_data) {
+    MacWcDragData *d = (MacWcDragData *)user_data;
+    d->hold_timer_id = 0;
+    if (d->is_dragging) {
+        d->is_holding = TRUE;
+        d->cur_sx = 1.18;
+        d->cur_sy = 1.18;
+        if (d->wc_widget) {
+            gtk_widget_queue_draw(d->wc_widget);
+        }
+    }
+    return G_SOURCE_REMOVE;
+}
+
 static void on_wc_drag_begin(GtkGestureDrag *gesture, double start_x, double start_y, gpointer user_data) {
     GtkWidget *wc = GTK_WIDGET(user_data);
+    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+
     MacWcDragData *d = get_wc_drag_data(wc);
     if (d->tick_id) {
         gtk_widget_remove_tick_callback(wc, d->tick_id);
         d->tick_id = 0;
     }
+    if (d->hold_timer_id) {
+        g_source_remove(d->hold_timer_id);
+        d->hold_timer_id = 0;
+    }
+
+    d->wc_widget = wc;
     d->is_dragging = TRUE;
+    d->is_holding = FALSE;
     d->start_x = start_x;
     d->start_y = start_y;
     d->offset_x = 0;
     d->offset_y = 0;
-    d->cur_sx = 1.18;
-    d->cur_sy = 1.18;
+    d->cur_sx = 1.0;
+    d->cur_sy = 1.0;
     d->cur_tx = 0;
     d->cur_ty = 0;
     d->vel_sx = 0; d->vel_sy = 0;
     d->vel_tx = 0; d->vel_ty = 0;
 
-    if (start_x < 22.0) d->target_button_idx = 0;
-    else if (start_x < 44.0) d->target_button_idx = 1;
+    if (start_x < 24.0) d->target_button_idx = 0;
+    else if (start_x < 46.0) d->target_button_idx = 1;
     else d->target_button_idx = 2;
 
-    gtk_widget_queue_draw(wc);
+    /* Start hold timer (140ms): only activate jelly if held! */
+    d->hold_timer_id = g_timeout_add(140, on_wc_hold_timeout, d);
 }
 
 static void on_wc_drag_update(GtkGestureDrag *gesture, double offset_x, double offset_y, gpointer user_data) {
     GtkWidget *wc = GTK_WIDGET(user_data);
+    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+
     MacWcDragData *d = get_wc_drag_data(wc);
     if (!d->is_dragging) return;
 
@@ -335,6 +364,39 @@ static void on_wc_drag_update(GtkGestureDrag *gesture, double offset_x, double o
     d->offset_y = offset_y;
 
     double dist = hypot(offset_x, offset_y);
+    if (!d->is_holding && dist > 3.0) {
+        if (d->hold_timer_id) {
+            g_source_remove(d->hold_timer_id);
+            d->hold_timer_id = 0;
+        }
+        d->is_holding = TRUE;
+    }
+
+    if (!d->is_holding) return;
+
+    /* Check boundary of target button: if cursor exits the button bounds, release jelly immediately! */
+    double curr_x = d->start_x + offset_x;
+    double curr_y = d->start_y + offset_y;
+    double min_x = (double)d->target_button_idx * 22.0 - 6.0;
+    double max_x = min_x + 32.0;
+    double min_y = -6.0;
+    double max_y = (double)gtk_widget_get_height(wc) + 6.0;
+
+    if (curr_x < min_x || curr_x > max_x || curr_y < min_y || curr_y > max_y) {
+        /* Cursor exited button boundary: release jelly with spring back! */
+        d->is_dragging = FALSE;
+        d->is_holding = FALSE;
+        if (d->hold_timer_id) {
+            g_source_remove(d->hold_timer_id);
+            d->hold_timer_id = 0;
+        }
+        d->last_time = 0;
+        if (d->tick_id == 0) {
+            d->tick_id = gtk_widget_add_tick_callback(wc, mac_wc_spring_tick, d, NULL);
+        }
+        return;
+    }
+
     if (dist > 1.0) {
         double stretch = 1.18 + fmin(dist * 0.035, 1.25);
         double compress = fmax(0.65, 1.18 / sqrt(stretch / 1.18));
@@ -358,6 +420,23 @@ static void on_wc_drag_end(GtkGestureDrag *gesture, double offset_x, double offs
     MacWcDragData *d = get_wc_drag_data(wc);
     if (!d->is_dragging) return;
     d->is_dragging = FALSE;
+
+    if (d->hold_timer_id) {
+        g_source_remove(d->hold_timer_id);
+        d->hold_timer_id = 0;
+    }
+
+    if (!d->is_holding) {
+        /* Simple click without holding: DO NOT animate, keep 1.0! */
+        d->cur_sx = 1.0;
+        d->cur_sy = 1.0;
+        d->cur_tx = 0.0;
+        d->cur_ty = 0.0;
+        gtk_widget_queue_draw(wc);
+        return;
+    }
+
+    d->is_holding = FALSE;
     d->last_time = 0;
     if (d->tick_id == 0) {
         d->tick_id = gtk_widget_add_tick_callback(wc, mac_wc_spring_tick, d, NULL);
@@ -366,29 +445,60 @@ static void on_wc_drag_end(GtkGestureDrag *gesture, double offset_x, double offs
 
 static void mac_wc_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
     MacWcDragData *d = get_wc_drag_data(widget);
-    if (!d || (fabs(d->cur_sx - 1.0) < 0.001 && fabs(d->cur_sy - 1.0) < 0.001 && fabs(d->cur_tx) < 0.01 && fabs(d->cur_ty) < 0.01)) {
+    if (!d || (!d->is_holding && fabs(d->cur_sx - 1.0) < 0.001 && fabs(d->cur_sy - 1.0) < 0.001 && fabs(d->cur_tx) < 0.01 && fabs(d->cur_ty) < 0.01)) {
         if (orig_wc_snapshot) orig_wc_snapshot(widget, snapshot);
         return;
     }
 
-    float btn_cx = 8.0f + (float)d->target_button_idx * 20.0f;
-    float btn_cy = (float)gtk_widget_get_height(widget) * 0.5f;
+    int idx = 0;
+    for (GtkWidget *child = gtk_widget_get_first_child(widget);
+         child != NULL;
+         child = gtk_widget_get_next_sibling(child), idx++) {
+        
+        if (idx == d->target_button_idx) {
+            float cw = (float)gtk_widget_get_width(child);
+            float ch = (float)gtk_widget_get_height(child);
 
-    graphene_point_t p1, p2;
-    graphene_point_init(&p1, btn_cx + (float)d->cur_tx, btn_cy + (float)d->cur_ty);
-    graphene_point_init(&p2, -btn_cx, -btn_cy);
+            graphene_point_t p1, p2;
+            graphene_point_init(&p1, cw * 0.5f + (float)d->cur_tx, ch * 0.5f + (float)d->cur_ty);
+            graphene_point_init(&p2, -cw * 0.5f, -ch * 0.5f);
 
-    GskTransform *t = gsk_transform_translate(NULL, &p1);
-    t = gsk_transform_scale(t, (float)d->cur_sx, (float)d->cur_sy);
-    t = gsk_transform_translate(t, &p2);
+            GskTransform *t = gsk_transform_translate(NULL, &p1);
+            t = gsk_transform_scale(t, (float)d->cur_sx, (float)d->cur_sy);
+            t = gsk_transform_translate(t, &p2);
 
-    gtk_snapshot_save(snapshot);
-    gtk_snapshot_transform(snapshot, t);
-    gsk_transform_unref(t);
+            gtk_snapshot_save(snapshot);
+            gtk_snapshot_transform(snapshot, t);
+            gsk_transform_unref(t);
 
-    if (orig_wc_snapshot) orig_wc_snapshot(widget, snapshot);
+            gtk_widget_snapshot_child(widget, child, snapshot);
 
-    gtk_snapshot_restore(snapshot);
+            gtk_snapshot_restore(snapshot);
+        } else {
+            /* The other two buttons are drawn completely static! */
+            gtk_widget_snapshot_child(widget, child, snapshot);
+        }
+    }
+}
+
+static void on_wc_motion_enter(GtkEventControllerMotion *ctrl, double x, double y, gpointer user_data) {
+    GtkWidget *wc = GTK_WIDGET(user_data);
+    gtk_widget_add_css_class(wc, "mac-controls-hover");
+    for (GtkWidget *child = gtk_widget_get_first_child(wc);
+         child != NULL;
+         child = gtk_widget_get_next_sibling(child)) {
+        gtk_widget_add_css_class(child, "mac-group-hover");
+    }
+}
+
+static void on_wc_motion_leave(GtkEventControllerMotion *ctrl, gpointer user_data) {
+    GtkWidget *wc = GTK_WIDGET(user_data);
+    gtk_widget_remove_css_class(wc, "mac-controls-hover");
+    for (GtkWidget *child = gtk_widget_get_first_child(wc);
+         child != NULL;
+         child = gtk_widget_get_next_sibling(child)) {
+        gtk_widget_remove_css_class(child, "mac-group-hover");
+    }
 }
 
 static void mac_wc_map(GtkWidget *w) {
@@ -396,12 +506,20 @@ static void mac_wc_map(GtkWidget *w) {
 
     if (!g_object_get_data(G_OBJECT(w), "mac_wc_gesture_installed")) {
         g_object_set_data(G_OBJECT(w), "mac_wc_gesture_installed", GINT_TO_POINTER(1));
+        
         GtkGesture *gesture = gtk_gesture_drag_new();
         gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), 1);
+        gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(gesture), GTK_PHASE_CAPTURE);
         g_signal_connect(gesture, "drag-begin", G_CALLBACK(on_wc_drag_begin), w);
         g_signal_connect(gesture, "drag-update", G_CALLBACK(on_wc_drag_update), w);
         g_signal_connect(gesture, "drag-end", G_CALLBACK(on_wc_drag_end), w);
         gtk_widget_add_controller(w, GTK_EVENT_CONTROLLER(gesture));
+
+        GtkEventController *motion = gtk_event_controller_motion_new();
+        gtk_event_controller_set_propagation_phase(motion, GTK_PHASE_CAPTURE);
+        g_signal_connect(motion, "enter", G_CALLBACK(on_wc_motion_enter), w);
+        g_signal_connect(motion, "leave", G_CALLBACK(on_wc_motion_leave), w);
+        gtk_widget_add_controller(w, motion);
     }
 }
 

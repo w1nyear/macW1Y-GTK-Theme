@@ -1445,6 +1445,9 @@ export class UIManager {
     _setupJellyTouchAndDrag() {
         if (!this.animActor || !this.effect) return;
         let isPressed = false;
+        let isHolding = false;
+        let holdTimerId = 0;
+        let itemBounds = null;
         let pressX = 0, pressY = 0;
         let springId = 0;
         let curSx = 1.0, curSy = 1.0;
@@ -1499,6 +1502,9 @@ export class UIManager {
                     this.effect.setPointerPosition(-100.0, -100.0, 0.0);
                 }
 
+                this.wakeFrameSync?.();
+                this._syncGeometry();
+
                 const settled = Math.abs(curSx - 1.0) < 0.005 &&
                                 Math.abs(curSy - 1.0) < 0.005 &&
                                 Math.abs(curTx - targetTx) < 0.1 &&
@@ -1514,6 +1520,8 @@ export class UIManager {
                         this.animActor.translation_y = targetTy;
                         this.animActor.set_scale(1.0, 1.0);
                     }
+                    this.wakeFrameSync?.();
+                    this._syncGeometry();
                     springId = 0;
                     return GLib.SOURCE_REMOVE;
                 }
@@ -1528,14 +1536,41 @@ export class UIManager {
         this._jellySignals.push(target.connect('button-press-event', (actor, event) => {
             if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
             stopSpring();
+            if (holdTimerId) {
+                GLib.Source.remove(holdTimerId);
+                holdTimerId = 0;
+            }
             isPressed = true;
+            isHolding = false;
             const [x, y] = event.get_coords();
             pressX = x;
             pressY = y;
 
-            if (this.effect && typeof this.effect.setPointerPosition === 'function') {
-                this.effect.setPointerPosition(x, y, 1.0);
+            let pressedItem = (typeof event.get_source === 'function' ? event.get_source() : null) || actor;
+            try {
+                let [ix, iy] = pressedItem.get_transformed_position();
+                let [iw, ih] = pressedItem.get_transformed_size();
+                itemBounds = {
+                    x1: ix - 8.0,
+                    y1: iy - 8.0,
+                    x2: ix + (iw || 200.0) + 8.0,
+                    y2: iy + (ih || 30.0) + 8.0,
+                };
+            } catch (_) {
+                itemBounds = null;
             }
+
+            // Only activate jelly if held (>150ms)!
+            holdTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+                holdTimerId = 0;
+                if (isPressed) {
+                    isHolding = true;
+                    if (this.effect && typeof this.effect.setPointerPosition === 'function') {
+                        this.effect.setPointerPosition(pressX, pressY, 1.0);
+                    }
+                }
+                return GLib.SOURCE_REMOVE;
+            });
             return Clutter.EVENT_PROPAGATE;
         }));
 
@@ -1544,6 +1579,29 @@ export class UIManager {
             const [curX, curY] = event.get_coords();
             const dx = curX - pressX;
             const dy = curY - pressY;
+            const dist = Math.hypot(dx, dy);
+
+            if (!isHolding && dist > 4.0) {
+                if (holdTimerId) {
+                    GLib.Source.remove(holdTimerId);
+                    holdTimerId = 0;
+                }
+                isHolding = true;
+            }
+
+            if (!isHolding) return Clutter.EVENT_PROPAGATE;
+
+            // Check boundary: if cursor leaves pressed item bounds, release jelly immediately!
+            if (itemBounds && (curX < itemBounds.x1 || curX > itemBounds.x2 || curY < itemBounds.y1 || curY > itemBounds.y2)) {
+                isPressed = false;
+                isHolding = false;
+                if (holdTimerId) {
+                    GLib.Source.remove(holdTimerId);
+                    holdTimerId = 0;
+                }
+                springBack();
+                return Clutter.EVENT_PROPAGATE;
+            }
 
             const resistance = 0.32;
             const w = Math.max(100.0, target.width || 300.0);
@@ -1561,20 +1619,70 @@ export class UIManager {
             if (this.effect && typeof this.effect.setPointerPosition === 'function') {
                 this.effect.setPointerPosition(curX, curY, 1.0);
             }
+
+            // Immediately synchronize the liquid glass background with the stretching elements!
+            this.wakeFrameSync?.();
+            this._syncGeometry();
+
             return Clutter.EVENT_PROPAGATE;
         }));
 
         this._jellySignals.push(target.connect('button-release-event', () => {
             if (!isPressed) return Clutter.EVENT_PROPAGATE;
             isPressed = false;
+            if (holdTimerId) {
+                GLib.Source.remove(holdTimerId);
+                holdTimerId = 0;
+            }
+
+            if (!isHolding) {
+                // Quick click without holding: DO NOT animate, keep 1.0!
+                if (this.animActor && isActorValid(this.animActor)) {
+                    this.animActor.translation_x = this._menuXoffset || 0;
+                    this.animActor.translation_y = this._menuYoffset || 0;
+                    this.animActor.set_scale(1.0, 1.0);
+                }
+                curSx = 1.0; curSy = 1.0;
+                curTx = this._menuXoffset || 0;
+                curTy = this._menuYoffset || 0;
+                if (this.effect && typeof this.effect.setPointerPosition === 'function') {
+                    this.effect.setPointerPosition(-100.0, -100.0, 0.0);
+                }
+                this.wakeFrameSync?.();
+                this._syncGeometry();
+                return Clutter.EVENT_PROPAGATE;
+            }
+
+            isHolding = false;
             springBack();
             return Clutter.EVENT_PROPAGATE;
         }));
 
         this._jellySignals.push(target.connect('leave-event', () => {
+            if (holdTimerId) {
+                GLib.Source.remove(holdTimerId);
+                holdTimerId = 0;
+            }
             if (isPressed) {
                 isPressed = false;
-                springBack();
+                if (isHolding) {
+                    isHolding = false;
+                    springBack();
+                } else {
+                    if (this.animActor && isActorValid(this.animActor)) {
+                        this.animActor.translation_x = this._menuXoffset || 0;
+                        this.animActor.translation_y = this._menuYoffset || 0;
+                        this.animActor.set_scale(1.0, 1.0);
+                    }
+                    curSx = 1.0; curSy = 1.0;
+                    curTx = this._menuXoffset || 0;
+                    curTy = this._menuYoffset || 0;
+                    if (this.effect && typeof this.effect.setPointerPosition === 'function') {
+                        this.effect.setPointerPosition(-100.0, -100.0, 0.0);
+                    }
+                    this.wakeFrameSync?.();
+                    this._syncGeometry();
+                }
             }
             return Clutter.EVENT_PROPAGATE;
         }));

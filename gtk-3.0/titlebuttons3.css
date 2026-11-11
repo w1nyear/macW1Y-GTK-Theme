@@ -179,6 +179,8 @@ headerbar button.titlebutton.restore:backdrop:hover,
 }
 
 /* --- GROUP HOVER (All 3 buttons reveal symbols when hovering ANY button or the button box) --- */
+headerbar:hover button.titlebutton.close,
+.titlebar:hover button.titlebutton.close,
 headerbar > box.left:hover button.titlebutton.close,
 headerbar > box.start:hover button.titlebutton.close,
 headerbar.titlebuttons-hover button.titlebutton.close,
@@ -191,6 +193,8 @@ window.background.chromium headerbar:hover button.close.titlebutton {
     url("windows-assets/button-close-hover@2.png")
   );
 }
+headerbar:hover button.titlebutton.minimize,
+.titlebar:hover button.titlebutton.minimize,
 headerbar > box.left:hover button.titlebutton.minimize,
 headerbar > box.start:hover button.titlebutton.minimize,
 headerbar.titlebuttons-hover button.titlebutton.minimize,
@@ -203,6 +207,8 @@ window.background.chromium headerbar:hover button.minimize.titlebutton {
     url("windows-assets/button-minimize-hover@2.png")
   );
 }
+headerbar:hover button.titlebutton.maximize,
+.titlebar:hover button.titlebutton.maximize,
 headerbar > box.left:hover button.titlebutton.maximize,
 headerbar > box.start:hover button.titlebutton.maximize,
 headerbar.titlebuttons-hover button.titlebutton.maximize,
@@ -215,6 +221,8 @@ window.background.chromium headerbar:hover button.maximize.titlebutton {
     url("windows-assets/button-maximize-hover@2.png")
   );
 }
+headerbar:hover button.titlebutton.restore,
+.titlebar:hover button.titlebutton.restore,
 headerbar > box.left:hover button.titlebutton.restore,
 headerbar > box.start:hover button.titlebutton.restore,
 headerbar.titlebuttons-hover button.titlebutton.restore,
