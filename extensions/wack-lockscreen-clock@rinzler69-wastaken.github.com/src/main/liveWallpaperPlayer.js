@@ -19,17 +19,38 @@ const VIDEO_HEIGHT = 1080;
 const FRAME_INTERVAL_MS = 33; // ~30 fps
 const UNLOCK_TRANSITION_MS = 3000; // 3-second crossfade into session
 
-export function isLiveWallpaperConfigured() {
-    try {
-        let hasVideo = false;
-        for (const p of LIVE_VIDEO_PATHS) {
-            if (GLib.file_test(p, GLib.FileTest.EXISTS)) {
-                hasVideo = true;
-                break;
+export function resolveLiveVideoPath(settings = null) {
+    if (settings) {
+        try {
+            const customPath = settings.get_string('lockscreen-wallpaper-path') || '';
+            const cleanPath = customPath.replace(/^file:\/\//, '');
+            if (cleanPath && (cleanPath.endsWith('.mp4') || cleanPath.endsWith('.mov') || cleanPath.endsWith('.mkv') || cleanPath.endsWith('.webm'))) {
+                if (GLib.file_test(cleanPath, GLib.FileTest.EXISTS))
+                    return cleanPath;
             }
-        }
-        if (!hasVideo)
+        } catch (_) {}
+    }
+    for (const p of LIVE_VIDEO_PATHS) {
+        if (GLib.file_test(p, GLib.FileTest.EXISTS))
+            return p;
+    }
+    return null;
+}
+
+export function isLiveWallpaperConfigured(settings = null) {
+    try {
+        const videoPath = resolveLiveVideoPath(settings);
+        if (!videoPath)
             return false;
+
+        if (settings) {
+            try {
+                const enabled = settings.get_boolean('lockscreen-wallpaper-enable');
+                const path = settings.get_string('lockscreen-wallpaper-path') || '';
+                if (enabled && (path.endsWith('.mp4') || path.endsWith('.mov') || path.includes('GoldenGate')))
+                    return true;
+            } catch (_) {}
+        }
 
         const bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
         const uri = bgSettings.get_string('picture-uri') || '';
@@ -37,8 +58,11 @@ export function isLiveWallpaperConfigured() {
 
         const matches = uri.includes('GoldenGate') || uriDark.includes('GoldenGate') ||
                         uri.includes('Golden%20Gate') || uriDark.includes('Golden%20Gate') ||
-                        uri.includes('macw1y') || uri.includes('live-wallpaper');
-        return matches;
+                        uri.includes('macw1y') || uri.includes('live-wallpaper') ||
+                        uri.includes('Tahoe') || uriDark.includes('Tahoe');
+
+        // If GoldenGate or Tahoe live video is present, enable live wallpaper
+        return matches || true;
     } catch (_) {
         return false;
     }
@@ -69,19 +93,15 @@ export class LiveWallpaperPlayer {
         }
     }
 
-    _resolveVideoPath() {
-        for (const p of LIVE_VIDEO_PATHS) {
-            if (GLib.file_test(p, GLib.FileTest.EXISTS))
-                return p;
-        }
-        return null;
+    _resolveVideoPath(settings = null) {
+        return resolveLiveVideoPath(settings);
     }
 
-    start(parentActor, belowSibling = null) {
+    start(parentActor, belowSibling = null, settings = null) {
         if (this._rootActor || this._pipeline)
             return;
 
-        const videoPath = this._resolveVideoPath();
+        const videoPath = this._resolveVideoPath(settings);
         if (!videoPath)
             return;
 
@@ -126,6 +146,7 @@ export class LiveWallpaperPlayer {
                     x_expand: true,
                     y_expand: true,
                     reactive: false,
+                    content_gravity: Clutter.ContentGravity.RESIZE_ASPECT,
                 });
                 videoView.set_content(this._content);
                 container.add_child(videoView);
@@ -136,12 +157,17 @@ export class LiveWallpaperPlayer {
 
             if (parentActor) {
                 parentActor.add_child(this._rootActor);
-                if (belowSibling && belowSibling.get_parent() === parentActor)
+                if (parentActor._backgroundGroup && parentActor._backgroundGroup.get_parent() === parentActor) {
+                    parentActor.set_child_above_sibling(this._rootActor, parentActor._backgroundGroup);
+                } else if (parentActor._stack && parentActor._stack.get_parent() === parentActor) {
+                    parentActor.set_child_below_sibling(this._rootActor, parentActor._stack);
+                } else if (belowSibling && belowSibling.get_parent() === parentActor) {
                     parentActor.set_child_below_sibling(this._rootActor, belowSibling);
+                }
             }
 
-            // GStreamer pipeline with sync=false for deterministic frame delivery
-            const pipelineDesc = `filesrc location="${videoPath}" ! decodebin ! videoconvert ! video/x-raw,format=RGBA,width=${VIDEO_WIDTH},height=${VIDEO_HEIGHT} ! appsink name=sink max-buffers=2 drop=true sync=false`;
+            // GStreamer pipeline with sync=true for real-time presentation clock
+            const pipelineDesc = `filesrc location="${videoPath}" ! decodebin ! videoconvert ! video/x-raw,format=RGBA,width=${VIDEO_WIDTH},height=${VIDEO_HEIGHT} ! appsink name=sink max-buffers=2 drop=true sync=true`;
             this._pipeline = Gst.parse_launch(pipelineDesc);
             this._sink = this._pipeline.get_by_name('sink');
 
@@ -175,9 +201,17 @@ export class LiveWallpaperPlayer {
                 }
             }
 
-            const sample = this._sink.emit('try-pull-sample', 0);
-            if (sample) {
-                const buffer = sample.get_buffer();
+            // Pull latest sample
+            let sample = this._sink.emit('try-pull-sample', 0);
+            let latest = sample;
+            while (sample) {
+                sample = this._sink.emit('try-pull-sample', 0);
+                if (sample)
+                    latest = sample;
+            }
+
+            if (latest) {
+                const buffer = latest.get_buffer();
                 const [success, mapInfo] = buffer.map(Gst.MapFlags.READ);
                 if (success) {
                     this._tex.set_data(
@@ -190,6 +224,20 @@ export class LiveWallpaperPlayer {
                 }
             }
         } catch (_) {}
+    }
+
+    pause() {
+        if (this._pipeline && !this._isPaused) {
+            this._isPaused = true;
+            try { this._pipeline.set_state(Gst.State.PAUSED); } catch (_) {}
+        }
+    }
+
+    resume() {
+        if (this._pipeline && this._isPaused) {
+            this._isPaused = false;
+            try { this._pipeline.set_state(Gst.State.PLAYING); } catch (_) {}
+        }
     }
 
     setBlur(radius, brightness) {

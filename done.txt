@@ -20653,3 +20653,39 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - bin/mac-i18n-verify: 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
 
 4. Статус: Завершено.
+
+
+Завдання 724: Відновлення та активація анімованої відео-шпалери (GoldenGate Live Loop) на локскріні (lock screen) у стилі macOS Sonoma / Sequoia замість статичного зображення
+1. Причина проблеми:
+   - При блокуванні екрана GNOME Shell створює UnlockDialog, але метод _setupDialog(dialog) в extension.js ніколи не викликав _updateCustomWallpaperOverlay(), через що WallpaperManager не запускав LiveWallpaperPlayer.
+   - Метод start(dialog, dialog._backgroundGroup) в liveWallpaperPlayer.js розміщував відеоплеєр (_rootActor) нижче фонової групи (set_child_below_sibling), тому повністю непрозора статична шпалера (_backgroundGroup, opacity: 255) фізично закривала собою відео.
+   - Конвеєр GStreamer мав параметр sync=false, через що відео декодувалося з несинхронізованою швидкістю (в 3-6 разів швидше за реальний час).
+   - Властивість content-gravity використовувала неіснуючу константу Clutter.ContentGravity.RESIZE_ASPECT_FILL замість RESIZE_ASPECT.
+   - Був відсутній виклик плавного переходу розблокування (unlock crossfade) в unlockDialogController.js.
+
+2. Реалізовані покращення:
+   - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/liveWallpaperPlayer.js:
+     * Оновлено виявлення живих шпалер resolveLiveVideoPath та isLiveWallpaperConfigured для підтримки /usr/share/backgrounds/GoldenGate_Live_loop.mp4, налаштувань користувача та теми Tahoe.
+     * Виправлено ієрархію акторів: _rootActor додається над dialog._backgroundGroup (set_child_above_sibling) та під dialog._stack, завдяки чому відео знаходиться на фоні, але над статичними шпалерами.
+     * Задано валідний content_gravity: Clutter.ContentGravity.RESIZE_ASPECT.
+     * Конвеєр GStreamer переведено на sync=true з буферизацією max-buffers=2 drop=true для плавного показу зі стабільними 30 fps без перевантаження процесора.
+     * В _onFrameTick реалізовано зчитування найсвіжішого доступного кадру та плавний перезапуск на початок відео (loop) при досягненні EOS.
+     * Реалізовано unlockTransition: при введенні пароля та розблокуванні відео перепідключається до Main.layoutManager._backgroundGroup та плавно розчиняється (fade-out за 3000 мс), відкриваючи статичну шпалеру робочого столу без миготіння.
+   - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/wallpaperManager.js:
+     * При запуску живих шпалер гарантується позиціювання _rootActor над _backgroundGroup, а також dialog._backgroundGroup.opacity встановлюється в 0, виключаючи подвійне відображення або просвічування статичної картинки.
+     * При teardown відновлюється dialog._backgroundGroup.opacity = 255; якщо плеєр перебуває в стані розблокування (_isUnlockedTransition), його завершення не переривається до завершення анімації.
+     * Додано динамічне підвантаження з cache-busting для оновлення класів плеєра.
+   - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/unlockDialogController.js:
+     * Додано виклик this._extension._wallpaperManager?.startUnlockTransition() перед завершенням діалогу блокування для плавного переходу відео в сесію користувача.
+   - extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/extension.js:
+     * Додано обов'язковий виклик this._updateCustomWallpaperOverlay() у кінці _setupDialog(dialog), завдяки чому відеошпалера автоматично стартує при кожному блокуванні екрана чи виклику діалогу розблокування.
+     * Додано динамічне підвантаження WallpaperManager.
+
+3. Розгортання, аудит та верифікація:
+   - Файли розширення скопійовано до ~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/.
+   - Активну сесію GNOME Shell успішно оновлено без перезавантаження оболонки.
+   - Проведено наскрізне тестування повного циклу блокування: hasLivePlayer: true, rootIndex: 1, bgGroupIndex: 0, bgGroupOpacity: 0, реальний прогрес відтворення posSec чітко відповідає реальному часу (30 fps).
+   - Оновлено контрольний хеш sha256 у config/extensions.lock.json.
+   - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
+   - bin/mac-audit-sync check — 100% PASS.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
