@@ -968,6 +968,13 @@ install_settings_overlay() {
         sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y 2>/dev/null || true
         sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macw1y 2>/dev/null || true
     fi
+    if [ -f "$SCRIPT_DIR/bin/mac-gdm-bypass" ]; then
+        cp "$SCRIPT_DIR/bin/mac-gdm-bypass" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/mac-gdm-bypass"
+        sudo cp -f "$SCRIPT_DIR/bin/mac-gdm-bypass" /usr/local/bin/mac-gdm-bypass && sudo chmod 755 /usr/local/bin/mac-gdm-bypass
+        sudo ln -sf mac-gdm-bypass /usr/local/bin/mac-GDM-BYPASS 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/mac-gdm-bypass /usr/bin/mac-gdm-bypass 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/mac-gdm-bypass /usr/bin/mac-GDM-BYPASS 2>/dev/null || true
+    fi
     if [ -x "/usr/bin/google-chrome-stable" ] || [ -x "/usr/bin/google-chrome" ] || [ -x "/snap/bin/google-chrome" ]; then
         [ -f "$SCRIPT_DIR/bin/google-chrome" ] && cp "$SCRIPT_DIR/bin/google-chrome" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/google-chrome"
     else
@@ -2072,7 +2079,7 @@ EOF_CUR_THEME_UP
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-theme-sync mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale macW1Y; do
+    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-theme-sync mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale mac-gdm-bypass macW1Y; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true
@@ -2084,6 +2091,11 @@ EOF_CUR_THEME_UP
         sudo ln -sf /usr/local/bin/macW1Y /usr/local/bin/macw1y 2>/dev/null || true
         sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y 2>/dev/null || true
         sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macw1y 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/bin/mac-gdm-bypass" ]; then
+        sudo ln -sf mac-gdm-bypass /usr/local/bin/mac-GDM-BYPASS 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/mac-gdm-bypass /usr/bin/mac-gdm-bypass 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/mac-gdm-bypass /usr/bin/mac-GDM-BYPASS 2>/dev/null || true
     fi
 
     # Installing and enabling macW1Y theme sync daemon

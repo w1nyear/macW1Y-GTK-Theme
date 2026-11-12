@@ -1,0 +1,266 @@
+#!/usr/bin/env bash
+# ==============================================================================
+#   macW1Y: mac-gdm-bypass — Emergency GDM Bypass & GUI Desktop Recovery Tool
+# ==============================================================================
+
+set -e
+
+# ANSI Color codes
+C_RESET="\033[0m"
+C_BOLD="\033[1m"
+C_CYAN="\033[1;36m"
+C_BLUE="\033[1;34m"
+C_GREEN="\033[1;32m"
+C_YELLOW="\033[1;33m"
+C_RED="\033[1;31m"
+C_GRAY="\033[0;90m"
+
+show_banner() {
+    echo -e "${C_CYAN}  ╔════════════════════════════════════════════════════════════════════════════╗${C_RESET}"
+    echo -e "${C_CYAN}  ║${C_RESET} ${C_BOLD}  m a c W 1 Y   G D M   B Y P A S S   &   R E C O V E R Y${C_RESET}             ${C_CYAN}║${C_RESET}"
+    echo -e "${C_CYAN}  ║${C_RESET}      Emergency Auto-Login Bypass, Plymouth Silence & Desktop Launch      ${C_CYAN}║${C_RESET}"
+    echo -e "${C_CYAN}  ╚════════════════════════════════════════════════════════════════════════════╝${C_RESET}"
+}
+
+show_help() {
+    show_banner
+    echo -e "\n ${C_BOLD}Usage:${C_RESET} ${C_GREEN}mac-gdm-bypass${C_RESET} ${C_YELLOW}[options]${C_RESET}"
+    echo -e "        ${C_GREEN}macW1Y mac-GDM-BYPASS${C_RESET} ${C_YELLOW}[options]${C_RESET}\n"
+    echo -e " ${C_BOLD}Options:${C_RESET}"
+    echo -e "   ${C_CYAN}-h, --help, -?${C_RESET}       Show this help message and exit"
+    echo -e "   ${C_CYAN}-c, --check, --dry-run${C_RESET} Audit GDM bypass configuration without modifying files"
+    echo -e "   ${C_CYAN}--no-restart${C_RESET}          Apply all bypass settings & fixes without restarting GDM"
+    echo -e "   ${C_CYAN}-f, --force${C_RESET}           Force immediate GDM restart even inside active GUI session\n"
+    echo -e " ${C_BOLD}Description:${C_RESET}"
+    echo -e "   When executed in a TTY console (e.g. Alt+F3), this command completely"
+    echo -e "   bypasses the GDM login screen, forces static wallpaper, clears crash lockouts,"
+    echo -e "   enables automatic login for 'vitaliy', restarts GDM, and switches directly"
+    echo -e "   to the graphical desktop (VT2/VT1).\n"
+}
+
+# Auto-elevate to root if executed as standard user
+if [ "$(id -u)" -ne 0 ]; then
+    echo -e "${C_YELLOW}⚡ Elevating privileges with sudo...${C_RESET}"
+    exec sudo bash "$0" "$@"
+fi
+
+DO_CHECK=0
+NO_RESTART=0
+FORCE_RESTART=0
+
+for arg in "$@"; do
+    case "$arg" in
+        -h|--help|-\?)
+            show_help
+            exit 0
+            ;;
+        -c|--check|--dry-run)
+            DO_CHECK=1
+            ;;
+        --no-restart)
+            NO_RESTART=1
+            ;;
+        -f|--force)
+            FORCE_RESTART=1
+            ;;
+        *)
+            ;;
+    esac
+done
+
+show_banner
+
+# Locate Repository Root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR=""
+for candidate in "$SCRIPT_DIR/.." "/home/vitaliy/macW1Y" "/home/vitaliy/MACTHEMEFILES"; do
+    if [ -d "$candidate/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" ]; then
+        REPO_DIR="$(cd "$candidate" && pwd)"
+        break
+    fi
+done
+
+if [ -z "$REPO_DIR" ]; then
+    echo -e "${C_RED}❌ Error: macW1Y repository root could not be located.${C_RESET}"
+    exit 1
+fi
+
+echo -e " ${C_GRAY}Repository:${C_RESET} ${C_CYAN}$REPO_DIR${C_RESET}"
+
+# Check / Dry-Run Mode
+if [ "$DO_CHECK" -eq 1 ]; then
+    echo -e "\n${C_BOLD}${C_BLUE}▶ Auditing GDM Bypass Status:${C_RESET}"
+    
+    # 1. Custom.conf check
+    GDM_CONF="/etc/gdm3/custom.conf"
+    if [ -f "$GDM_CONF" ]; then
+        AUTOLOGIN_EN=$(grep -E '^[[:space:]]*AutomaticLoginEnable[[:space:]]*=[[:space:]]*true' "$GDM_CONF" || true)
+        AUTOLOGIN_USER=$(grep -E '^[[:space:]]*AutomaticLogin[[:space:]]*=[[:space:]]*vitaliy' "$GDM_CONF" || true)
+        if [ -n "$AUTOLOGIN_EN" ] && [ -n "$AUTOLOGIN_USER" ]; then
+            echo -e "   [${C_GREEN}✓${C_RESET}] AutomaticLogin is ENABLED for 'vitaliy' in $GDM_CONF"
+        else
+            echo -e "   [${C_YELLOW}!${C_RESET}] AutomaticLogin is NOT enabled in $GDM_CONF"
+        fi
+    fi
+
+    # 2. Lockscreen wallpaper check
+    GDM_DCONF="/etc/dconf/db/gdm.d/99-wack-lockscreen"
+    if [ -f "$GDM_DCONF" ]; then
+        if grep -q "lockscreen-wallpaper-enable=false" "$GDM_DCONF"; then
+            echo -e "   [${C_GREEN}✓${C_RESET}] GDM video wallpaper is DISABLED (static photo active)"
+        else
+            echo -e "   [${C_RED}✗${C_RESET}] GDM video wallpaper is ENABLED (risk of GDM greeter crash!)"
+        fi
+    fi
+
+    # 3. Plymouth logger check
+    if [ -f /etc/systemd/system/plymouth-verbose-logger.service ] || [ -f /usr/share/plymouth/themes/apple-mac/verbose_on.png ]; then
+        echo -e "   [${C_YELLOW}!${C_RESET}] Plymouth verbose logger files are present (can cause text leak over Apple splash)"
+    else
+        echo -e "   [${C_GREEN}✓${C_RESET}] Plymouth verbose logger is cleanly disabled"
+    fi
+
+    echo -e "\n${C_GREEN}Audit complete.${C_RESET}\n"
+    exit 0
+fi
+
+# ==============================================================================
+#  Execution Pipeline (Emergency GDM Bypass & GUI Recovery)
+# ==============================================================================
+
+echo -e "\n${C_BOLD}${C_BLUE}▶ [1/6] Deploying cleansed static-wallpaper extension to system & user...${C_RESET}"
+EXT_SRC="$REPO_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com"
+SYS_EXT="/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com"
+USER_EXT="/home/vitaliy/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com"
+
+if [ -d "$EXT_SRC" ]; then
+    mkdir -p "$SYS_EXT"
+    cp -rf "$EXT_SRC/"* "$SYS_EXT/"
+    chmod -R a+rX "$SYS_EXT"
+    glib-compile-schemas "$SYS_EXT/schemas" 2>/dev/null || true
+    echo -e "   ${C_GREEN}✓${C_RESET} Synchronized $SYS_EXT"
+
+    mkdir -p "$USER_EXT"
+    cp -rf "$EXT_SRC/"* "$USER_EXT/"
+    chown -R vitaliy:vitaliy "$USER_EXT" 2>/dev/null || true
+    chmod -R a+rX "$USER_EXT"
+    glib-compile-schemas "$USER_EXT/schemas" 2>/dev/null || true
+    echo -e "   ${C_GREEN}✓${C_RESET} Synchronized $USER_EXT"
+fi
+
+echo -e "\n${C_BOLD}${C_BLUE}▶ [2/6] Forcing static photo wallpaper in GDM & system schemas...${C_RESET}"
+GDM_DCONF="/etc/dconf/db/gdm.d/99-wack-lockscreen"
+if [ -f "$GDM_DCONF" ]; then
+    sed -i "s|lockscreen-wallpaper-enable=true|lockscreen-wallpaper-enable=false|g" "$GDM_DCONF"
+    sed -i "s|lockscreen-wallpaper-path='.*'|lockscreen-wallpaper-path='/usr/share/backgrounds/GoldenGate_Day.jpg'|g" "$GDM_DCONF"
+    echo -e "   ${C_GREEN}✓${C_RESET} Disabled video wallpaper in $GDM_DCONF"
+fi
+
+SCHEMA_OVERRIDE="/usr/share/glib-2.0/schemas/99_mactheme.gschema.override"
+if [ -f "$SCHEMA_OVERRIDE" ]; then
+    sed -i "s|lockscreen-wallpaper-enable = true|lockscreen-wallpaper-enable = false|g" "$SCHEMA_OVERRIDE"
+    sed -i "s|lockscreen-wallpaper-path = '.*'|lockscreen-wallpaper-path = '/usr/share/backgrounds/GoldenGate_Day.jpg'|g" "$SCHEMA_OVERRIDE"
+    glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
+    echo -e "   ${C_GREEN}✓${C_RESET} Recompiled system glib schemas"
+fi
+
+dconf update 2>/dev/null || true
+echo -e "   ${C_GREEN}✓${C_RESET} dconf database updated"
+
+echo -e "\n${C_BOLD}${C_BLUE}▶ [3/6] Restoring stable theme resources & clearing crash lockouts...${C_RESET}"
+if [ -f /usr/share/gnome-shell/theme/Yaru/gnome-shell-theme.gresource ]; then
+    update-alternatives --set gdm-theme.gresource /usr/share/gnome-shell/theme/Yaru/gnome-shell-theme.gresource 2>/dev/null || true
+    echo -e "   ${C_GREEN}✓${C_RESET} Verified GDM fallback theme alternative"
+fi
+
+rm -f /var/tmp/mactheme-overlay-* /tmp/mactheme-overlay-* /tmp/disable-mactheme-overlay
+echo -e "   ${C_GREEN}✓${C_RESET} Cleared watchdog crash lockouts"
+
+echo -e "\n${C_BOLD}${C_BLUE}▶ [4/6] Silencing Plymouth & terminal logging to protect Apple splash...${C_RESET}"
+systemctl stop plymouth-verbose-logger.service 2>/dev/null || true
+systemctl disable plymouth-verbose-logger.service 2>/dev/null || true
+rm -f /etc/systemd/system/plymouth-start.service.d/verbose-logger.conf
+rm -f /etc/systemd/system/plymouth-verbose-logger.service
+rm -f /usr/local/bin/plymouth-verbose-logger
+rm -f /usr/share/plymouth/themes/apple-mac/verbose_on.png
+rm -f /etc/plymouth/verbose_on
+echo -e "   ${C_GREEN}✓${C_RESET} Verbose terminal kernel logger silenced"
+
+mkdir -p /etc/systemd/system/plymouth-quit.service.d
+cat << 'EOF' > /etc/systemd/system/plymouth-quit.service.d/override.conf
+[Service]
+ExecStart=
+ExecStart=-/usr/bin/plymouth quit --retain-splash
+EOF
+
+if [ -f /usr/share/plymouth/themes/apple-mac/apple-mac.plymouth ]; then
+    update-alternatives --set default.plymouth /usr/share/plymouth/themes/apple-mac/apple-mac.plymouth 2>/dev/null || true
+fi
+
+GRUB_DEFAULT="/etc/default/grub"
+if [ -f "$GRUB_DEFAULT" ]; then
+    sed -i 's/systemd\.show_status=[a-zA-Z0-9]*//g' "$GRUB_DEFAULT"
+    if ! grep -q "systemd.show_status=false" "$GRUB_DEFAULT"; then
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\([^"]*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 systemd.show_status=false"/' "$GRUB_DEFAULT"
+    fi
+    echo -e "   ${C_GREEN}✓${C_RESET} Checked GRUB silent boot flags"
+fi
+
+echo -e "\n${C_BOLD}${C_BLUE}▶ [5/6] Enabling AutomaticLogin (Direct Vitaliy Desktop Entry)...${C_RESET}"
+GDM_CONF="/etc/gdm3/custom.conf"
+if [ -f "$GDM_CONF" ]; then
+    # Ensure [daemon] exists
+    if ! grep -q '\[daemon\]' "$GDM_CONF"; then
+        echo -e "\n[daemon]" >> "$GDM_CONF"
+    fi
+
+    # Clean existing AutomaticLogin keys to prevent duplicates
+    sed -i '/^[[:space:]]*AutomaticLoginEnable/d' "$GDM_CONF"
+    sed -i '/^[[:space:]]*AutomaticLogin/d' "$GDM_CONF"
+
+    # Insert clean AutomaticLogin settings under [daemon]
+    sed -i '/\[daemon\]/a AutomaticLoginEnable=true\nAutomaticLogin=vitaliy' "$GDM_CONF"
+    echo -e "   ${C_GREEN}✓${C_RESET} Configured AutomaticLoginEnable=true, AutomaticLogin=vitaliy in $GDM_CONF"
+fi
+
+systemctl daemon-reload
+echo -e "   ${C_GREEN}✓${C_RESET} systemd daemon reloaded"
+
+# Determine whether we should restart GDM now
+echo -e "\n${C_BOLD}${C_BLUE}▶ [6/6] Finalizing Session & Display Server...${C_RESET}"
+
+CURRENT_TTY="$(tty 2>/dev/null || true)"
+IS_VIRTUAL_TTY=0
+if [[ "$CURRENT_TTY" =~ ^/dev/tty[0-9]+ ]]; then
+    IS_VIRTUAL_TTY=1
+fi
+
+IN_GUI=0
+if [ "$IS_VIRTUAL_TTY" -eq 0 ] && { [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ] || pgrep -u vitaliy gnome-shell >/dev/null 2>&1; }; then
+    IN_GUI=1
+fi
+
+if [ "$NO_RESTART" -eq 1 ]; then
+    echo -e "   ${C_YELLOW}ℹ${C_RESET} --no-restart specified. Bypass configuration applied successfully."
+    echo -e "   ${C_YELLOW}ℹ${C_RESET} On next boot, GDM will bypass login and load Vitaliy's desktop directly."
+elif [ "$IN_GUI" -eq 1 ] && [ "$FORCE_RESTART" -eq 0 ]; then
+    echo -e "   ${C_YELLOW}ℹ${C_RESET} Active graphical session detected (running inside desktop terminal)."
+    echo -e "   ${C_GREEN}✓${C_RESET} All GDM bypass configurations have been applied without killing your open apps."
+    echo -e "   ${C_GRAY}  To restart GDM immediately, run: ${C_YELLOW}mac-gdm-bypass --force${C_RESET}"
+else
+    echo -e "   ${C_YELLOW}⚡ Restarting GDM service to bypass login screen...${C_RESET}"
+    systemctl restart gdm || true
+    sleep 2
+    GDM_STATUS=$(systemctl is-active gdm || true)
+    echo -e "   ${C_GREEN}✓${C_RESET} GDM service status: ${C_BOLD}$GDM_STATUS${C_RESET}"
+    
+    # If running from a virtual console (TTY3 etc.), switch to graphical VT (VT2 / VT1)
+    chvt 2 2>/dev/null || chvt 1 2>/dev/null || true
+fi
+
+echo -e "\n${C_GREEN}================================================================${C_RESET}"
+echo -e "${C_GREEN}  🎉 GDM BYPASS & RECOVERY COMPLETED SUCCESSFULLY!              ${C_RESET}"
+echo -e "${C_GREEN}================================================================${C_RESET}"
+if [ "$IN_GUI" -eq 0 ] || [ "$FORCE_RESTART" -eq 1 ]; then
+    echo -e " Press ${C_BOLD}Ctrl+Alt+F2${C_RESET} (or ${C_BOLD}Ctrl+Alt+F1${C_RESET}) if your display is not switched automatically.\n"
+fi

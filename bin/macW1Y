@@ -39,6 +39,7 @@ show_help() {
     echo -e "        ${C_GREEN}macW1Y${C_RESET} ${C_YELLOW}-?${C_RESET}  ${C_GRAY}(show this full command reference)${C_RESET}\n"
 
     echo -e " ${C_BOLD}${C_BLUE}▶ System & Setup:${C_RESET}"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-gdm-bypass" "[bypass]" "Emergency GDM bypass & auto-login recovery to desktop GUI"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-setup-wizard" "[wizard]" "Initial macOS setup wizard controller (start|status|reset|stop)"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-diagnostics" "[diag]" "Run comprehensive system diagnostics & baseline check"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-audit-sync" "[audit]" "Audit system files, libraries, dock & repo synchronization"
@@ -77,6 +78,7 @@ show_help() {
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "help" "[-?, -h, --help]" "Show this comprehensive command reference"
 
     echo -e "\n ${C_BOLD}Examples:${C_RESET}"
+    echo -e "   ${C_YELLOW}macW1Y mac-GDM-BYPASS${C_RESET}            ${C_GRAY}# Emergency bypass of GDM directly to desktop GUI${C_RESET}"
     echo -e "   ${C_YELLOW}macW1Y Mac-setup-wizard start${C_RESET}    ${C_GRAY}# Launch setup wizard on screen${C_RESET}"
     echo -e "   ${C_YELLOW}macW1Y mac-setup-wizard status${C_RESET}   ${C_GRAY}# View setup wizard configuration flag${C_RESET}"
     echo -e "   ${C_YELLOW}macW1Y diagnostics${C_RESET}               ${C_GRAY}# Run full system diagnostics${C_RESET}"
@@ -93,6 +95,10 @@ resolve_target() {
 
     # Direct alias mappings
     case "$lower" in
+        "mac-gdm-bypass"|"gdm-bypass"|"bypass"|"mac-gdm_bypass"|"gdm_bypass")
+            echo "mac-gdm-bypass"
+            return 0
+            ;;
         "mac-setup-wizard"|"setup-wizard"|"wizard")
             echo "mac-setup-wizard"
             return 0

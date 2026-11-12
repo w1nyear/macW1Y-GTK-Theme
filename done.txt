@@ -20906,3 +20906,42 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - У системному скрипті /home/vitaliy/fix_gdm.sh:
      * Додано кроки автоматичного розгортання очищеного розширення до /usr/share/gnome-shell/extensions/ та ~/.local/share/gnome-shell/extensions/.
      * Додано автоувімкнення AutomaticLogin=vitaliy та WaylandEnable=false у /etc/gdm3/custom.conf для гарантованого прямого завантаження робочого столу Vitaliy.
+
+
+Завдання 732: Інтеграція аварійного інструмента mac-GDM-BYPASS та автоматичного входу в систему macW1Y
+1. Вимога користувача:
+   - Додати утиліту mac-GDM-BYPASS та зареєструвати її у системі диспетчера команд macW1Y (з відображенням у macW1Y -?).
+   - Утиліта призначена для негайного запуску, наприклад, із консолі TTY3 (Alt+F3) у разі збою GDM/екрана входу, автоматичного обходу GDM, входу в обліковий запис vitaliy, очищення блокувань, надійного застосування статичної фотошпалери, тихих прапорців Plymouth та перезапуску графічного робочого столу GNOME з перемиканням на VT2/VT1.
+   - Забезпечити захист від випадкового обриву сесії при виклику всередині графічного термінала (безпечний режим без закриття робочого столу без прапорця --force).
+   - Інтегрувати інструмент у bin/, /usr/local/bin/, /usr/bin, ~/.local/bin, install.sh та систему аудиту mac-audit-sync.
+
+2. Реалізовані зміни:
+   - Створено автономну утиліту bin/mac-gdm-bypass та симлінк bin/mac-GDM-BYPASS:
+     * Автоматичне підвищення прав через sudo bash при виклику звичайним користувачем.
+     * Підтримка ключів -h/--help/-?, -c/--check/--dry-run (аудит налаштувань без змін), --no-restart (застосування без рестарту), -f/--force (примусовий перезапуск GDM).
+     * Автовизначення контексту виконання: якщо запущено всередині активної сесії GUI (в терміналі на робочому столі), налаштування застосовуються безпечно без скидання активних вікон та Antigravity; якщо запущено у віртуальній консолі TTY (TTY3 тощо) або з --force, GDM перезапускається і консоль миттєво перемикається на графічний робочий стіл через chvt 2.
+     * Повна синхронізація стабільного розширення wack-lockscreen-clock без GStreamer у /usr/share/gnome-shell/extensions та ~/.local/share/gnome-shell/extensions.
+     * Фіксація статичної шпалери /usr/share/backgrounds/GoldenGate_Day.jpg у dconf GDM та схемах glib.
+     * Очищення блокувань сторожового таймера (/var/tmp/mactheme-overlay-* /tmp/mactheme-overlay-* /tmp/disable-mactheme-overlay).
+     * Придушення текстового виводу ядра на екрані завантаження Plymouth та встановлення systemd.show_status=false у GRUB.
+     * Налаштування AutomaticLoginEnable=true та AutomaticLogin=vitaliy у /etc/gdm3/custom.conf.
+   - Оновлено диспетчер bin/macW1Y:
+     * Додано команду mac-gdm-bypass [bypass] до секції "System & Setup" у довідці macW1Y -?.
+     * Додано приклад використання macW1Y mac-GDM-BYPASS до списку прикладів.
+     * Зареєстровано аліаси "mac-gdm-bypass", "gdm-bypass", "bypass", "mac-gdm_bypass", "gdm_bypass" у resolve_target.
+   - Оновлено install.sh:
+     * Додано встановлення bin/mac-gdm-bypass та створення симлінків mac-GDM-BYPASS у /usr/local/bin та /usr/bin.
+     * Додано mac-gdm-bypass до циклу встановлення бінарників.
+     * Збережено 100% англомовність (0 кириличних символів).
+   - Оновлено bin/mac-audit-sync:
+     * Додано mac-gdm-bypass до списку core_scripts для постійного контролю версій.
+   - Синхронізація системи:
+     * Скопійовано та протестовано утиліти в /usr/local/bin, /usr/bin, ~/.local/bin.
+
+3. Результати тестування:
+   - macW1Y -? — виводить повний опис команди mac-gdm-bypass [bypass] та приклад macW1Y mac-GDM-BYPASS.
+   - mac-GDM-BYPASS --check — успішно перевіряє стан GDM та конфігурацію.
+   - mac-GDM-BYPASS — успішно виконує весь цикл перевірок та налаштувань.
+   - bin/mac-audit-sync check — 100% PASS!
+   - bin/mac-extension-guard verify — 21/21 OK.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
