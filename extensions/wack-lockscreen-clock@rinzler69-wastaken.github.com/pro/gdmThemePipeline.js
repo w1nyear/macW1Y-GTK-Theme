@@ -8,6 +8,7 @@ import { getWallpaperAlpha, getWallpaperPromptColor } from '../main/alphaManager
 import { initCache } from '../main/alphaCache.js';
 import { resolveSlideshowXmlContent } from '../main/constants.js';
 import { resolveGdmAccessibleUri, _log, _logError } from './gdmUtils.js';
+import { LiveWallpaperPlayer, isLiveWallpaperConfigured } from '../src/main/liveWallpaperPlayer.js';
 function loadContentsAsync(file, cancellable = null) {
     return new Promise((resolve, reject) => {
         file.load_contents_async(cancellable, (f, res) => {
@@ -785,6 +786,7 @@ export class GdmWallpaperView {
         this._presentedRevision = -1;
         this._presentedUser = null;
         this._dimmerEnabled = false;
+        this._livePlayer = null;
     }
 
     rebuild() {
@@ -817,6 +819,19 @@ export class GdmWallpaperView {
 
             this._group.add_child(container);
             this._monitors.push({ container, monitor, stacks: new Map(), topKey: null, dimmer });
+        }
+
+        if (isLiveWallpaperConfigured(this._gdm?._settings)) {
+            if (!this._livePlayer) {
+                this._livePlayer = new LiveWallpaperPlayer();
+                this._livePlayer.start(this._group, null, this._gdm?._settings);
+            }
+            if (this._livePlayer?._rootActor && this._livePlayer._rootActor.get_parent() === this._group) {
+                this._group.set_child_above_sibling(this._livePlayer._rootActor, null);
+            }
+        } else if (this._livePlayer) {
+            this._livePlayer.stop();
+            this._livePlayer = null;
         }
     }
 
@@ -879,6 +894,10 @@ export class GdmWallpaperView {
             }
             m.topKey = key;
         }
+
+        if (this._livePlayer?._rootActor && this._livePlayer._rootActor.get_parent() === this._group) {
+            this._group.set_child_above_sibling(this._livePlayer._rootActor, null);
+        }
     }
 
     setDimmer(enabled, animate = true) {
@@ -912,6 +931,9 @@ export class GdmWallpaperView {
     }
 
     setPromptBlur(radius, brightness, animate, duration) {
+        if (this._livePlayer)
+            this._livePlayer.setBlur(radius, brightness);
+
         for (const m of this._monitors) {
             const effect = m.container.get_effect('blur');
             m.container.remove_transition('@effects.blur.radius');
@@ -993,6 +1015,11 @@ export class GdmWallpaperView {
     }
 
     destroy() {
+        if (this._livePlayer) {
+            this._livePlayer.stop();
+            this._livePlayer = null;
+        }
+
         if (this._group) {
             this._group.destroy();   // destroys containers, stacks and effects with it
             this._group = null;

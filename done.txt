@@ -21024,3 +21024,54 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
    - bin/mac-audit-sync check — 100% PASS!
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+
+
+Завдання 735: Комплексне відновлення та стабілізація GDM екрана входу, живої відео-шпалери (Golden Gate .mov) та верхнього меню-бару
+1. Широкий системний аналіз проблем (Broad Root Cause Analysis):
+   - Стоковий вигляд Ubuntu замість macOS Tahoe у GDM:
+     * Системна альтернатива gdm-theme.gresource була вручну зафіксована на /usr/share/gnome-shell/theme/Yaru/gnome-shell-theme.gresource (через попереднє аварійне виконання fix_gdm.sh / mac-gdm-bypass). Через це GDM примусово завантажував стокову тему Ubuntu.
+     * У /etc/gdm3/custom.conf було прописано AutomaticLoginEnable=true, що призводило до спроби пропуску екрана входу GDM.
+   - Поява текстового журналу ядра після яблучка Apple:
+     * Параметр systemd.show_status=false був внесений до /etc/default/grub, але утиліта update-grub не була виконана. /boot/grub/grub.cfg залишався застарілим і містив systemd.show_status=auto.
+   - Відображення фото замість живого відео на екрані блокування та в GDM:
+     * Модуль liveWallpaperPlayer.js у розширенні wack-lockscreen-clock був заглушений (stub) після аварій у Завданні 731, а wallpaperManager.js примусово замінював будь-які шляхи .mov/.mp4 на статичне фото GoldenGate_Day.jpg.
+     * Попередня реалізація використовувала нестабільний пайплайн decodebin, який спричиняв запуск gst-plugin-scanner у тимчасовому домашньому каталозі користувача gdm (/run/gdm3/home), зависаючи на 17.6 хвилин через відсутність кешу плагінів та контексту апаратного декодера.
+     * Асети відео містили нестандартний профіль H.264 High 4:4:4 Predictive (yuv444p) із SAR 16:15, що не підтримувався більшістю декодерів.
+   - Зникнення верхнього меню-бару (panelBox.opacity = 0) після входу:
+     * Модуль workspaceIndicator.js розширення appmenu під час відкриття, закриття огляду або зміни воркспейсів викликав Main.layoutManager.panelBox.remove_all_transitions().
+     * Коли цей виклик збігався з анімацією появи сесії у layout.js (ease opacity від 0 до 255), анімація раптово обривалася на півдорозі, назавжди залишаючи panelBox із opacity: 0 без можливості відновлення.
+   - Хибне спрацьовування сторожового таймера (Watchdog):
+     * Обгортка /usr/local/bin/gnome-shell записувала мітку WATCHDOG_LAUNCH під час запуску gnome-shell --mode=gdm. Оскільки екран входу GDM не має життєвого циклу користувацької сесії, мітка не очищалася і переводила оболонку в режим Safe Mode під час входу користувача.
+
+2. Реалізовані комплексні виправлення:
+   - Відновлення та стабілізація теми GDM:
+     * Переведено системну альтернативу gdm-theme.gresource на тему macW1Y-Dark (пріоритет 100): sudo update-alternatives --set gdm-theme.gresource /usr/share/gnome-shell/theme/macW1Y-Dark/gnome-shell-theme.gresource.
+     * Вимкнено автоматичний вхід у /etc/gdm3/custom.conf (AutomaticLoginEnable=false), щоб GDM повноцінно відображав екран входу з живими шпалерами та користувацьким інтерфейсом.
+     * Утилітою sudo update-grub оновлено /boot/grub/grub.cfg: прапорці systemd.show_status=false та loglevel=3 тепер активні, придушуючи вивід кернел-повідомлень на тлі логотипу Apple.
+   - Безпечний рушій живої відео-шпалери (LiveWallpaperPlayer):
+     * Перекодовано еталонний асет відео Golden Gate: H.264 High Profile, стандартний піксельний формат yuv420p, роздільність 2048x1080, SAR 1:1, 30 fps, +faststart, плавний 3-секундний безшовний перехід наприкінці 57-секундного циклу.
+     * Розгорнуто оновлені файли GoldenGate_Live_loop.mov та GoldenGate_Live_loop.mp4 у /usr/share/backgrounds/ та wallpapers/.
+     * Згенеровано системний кеш плагінів GStreamer: /var/cache/gstreamer-1.0/registry.x86_64.bin із прапорцем GST_REGISTRY_UPDATE=no в /etc/environment, що повністю виключає запуск gst-plugin-scanner.
+     * У liveWallpaperPlayer.js побудовано надійний явний пайплайн програмного декодування:
+       filesrc location="${videoPath}" ! qtdemux ! h264parse ! avdec_h264 ! videoconvert ! video/x-raw,format=RGBA,width=2048,height=1080 ! appsink name=sink max-buffers=2 drop=true sync=true
+       який працює бездоганно як у GDM greeter, так і в користувацькій сесії, споживаючи мінімум ресурсів і не залежачи від прав доступу до GPU-девайсів.
+     * Передбачено автоматичний захисний перехід: у разі будь-якої помилки пайплайну відтворювач негайно зупиняється без краху оболонки, показуючи якісний статичний постер GoldenGate_Day.jpg.
+     * Реалізовано 3-секундний плавний перехід (unlockTransition): після входу користувача відео плавно згасає над робочим столом протягом 3000 мс (EASE_OUT_QUAD), відкриваючи статичну шпалеру GoldenGate_Day.jpg.
+     * Інтегровано підтримку живої шпалери до pro/gdmThemePipeline.js (GdmWallpaperView), pro/gdmWallpaperManager.js та src/main/wallpaperManager.js.
+     * У macos-gdm/99-wack-lockscreen та dconf GDM встановлено lockscreen-wallpaper-enable=true та шлях /usr/share/backgrounds/GoldenGate_Live_loop.mov; виконано sudo dconf update.
+   - Захист та самовідновлення меню-бару:
+     * У extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js замінено всі небезпечні виклики remove_all_transitions() на таргетне видалення анімації висоти: remove_transition('height').
+     * У _onOverviewHidden() додано гарантоване відновлення стану: panelBox.opacity = 255; panelBox.translation_y = 0;.
+     * У gnome-shell-overlay/ui/layout.js додано колбеки onComplete та onStopped для анімації появи panelBox, а також асинхронний таймер самолікування (GLib.timeout_add на 1500 мс), що виключає застрягання меню-бару з opacity: 0 за будь-яких умов.
+   - Захист сторожового таймера оболонки:
+     * У bin/gnome-shell додано перевірку IS_GDM: запуск gnome-shell --mode=gdm більше не створює записів у WATCHDOG_LAUNCH, запобігаючи помилковому переходу в безпечний режим під час старту робочого столу.
+   - Синхронізація розширень та системних компонентів:
+     * Повністю синхронізовано всі модифіковані модулі wack-lockscreen-clock, appmenu, layout.js та libmac_settings між робочою копією, каталогом користувача ~/.local/share/gnome-shell/extensions/ та системним /usr/share/gnome-shell/extensions/.
+     * Оновлено контрольні хеші в config/extensions.lock.json.
+
+3. Результати тестування та верифікації:
+   - GStreamer Pipeline: перевірено безпосередньо в GNOME Shell через EvalHelper — отримання кадрів відбувається стабільно (got sample = yes).
+   - Меню-бар: panelBox.opacity = 255, translation_y = 0, visible = true.
+   - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).

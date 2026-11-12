@@ -1010,6 +1010,26 @@ export const LayoutManager = GObject.registerClass({
                 opacity: 255,
                 duration: DURATION,
                 mode: MODE,
+                onComplete: () => {
+                    if (this.panelBox) {
+                        this.panelBox.translation_y = 0;
+                        this.panelBox.opacity = 255;
+                    }
+                },
+                onStopped: () => {
+                    if (this.panelBox) {
+                        this.panelBox.translation_y = 0;
+                        this.panelBox.opacity = 255;
+                    }
+                },
+            });
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
+                if (this.panelBox) {
+                    this.panelBox.translation_y = 0;
+                    this.panelBox.opacity = 255;
+                    this.panelBox.visible = true;
+                }
+                return GLib.SOURCE_REMOVE;
             });
         }
     }
@@ -1156,6 +1176,26 @@ export const LayoutManager = GObject.registerClass({
                 opacity: 255,
                 duration: DURATION,
                 mode: MODE,
+                onComplete: () => {
+                    if (this.panelBox) {
+                        this.panelBox.translation_y = 0;
+                        this.panelBox.opacity = 255;
+                    }
+                },
+                onStopped: () => {
+                    if (this.panelBox) {
+                        this.panelBox.translation_y = 0;
+                        this.panelBox.opacity = 255;
+                    }
+                },
+            });
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
+                if (this.panelBox) {
+                    this.panelBox.translation_y = 0;
+                    this.panelBox.opacity = 255;
+                    this.panelBox.visible = true;
+                }
+                return GLib.SOURCE_REMOVE;
             });
         }
         if (Main.panel && Main.panel !== this.panelBox) {

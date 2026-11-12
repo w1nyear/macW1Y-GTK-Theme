@@ -853,8 +853,8 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         this._labelsBox.visible = false;
         this._thumbnailsBox.visible = true;
 
-        Main.layoutManager.panelBox.remove_all_transitions();
-        Main.panel.remove_all_transitions();
+        Main.layoutManager.panelBox.remove_transition('height');
+        Main.panel.remove_transition('height');
 
         Main.layoutManager.panelBox.ease({
             height: PANEL_EXPANDED_HEIGHT,
@@ -892,8 +892,8 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         this._thumbnailsBox.visible = false;
         this._labelsBox.visible = true;
 
-        Main.layoutManager.panelBox.remove_all_transitions();
-        Main.panel.remove_all_transitions();
+        Main.layoutManager.panelBox.remove_transition('height');
+        Main.panel.remove_transition('height');
 
         if (instant || this._isHiding || !Main.overview.visible || Main.overview._hiding) {
             Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
@@ -1182,10 +1182,12 @@ export class WorkspaceIndicatorController {
         }
 
         // Unconditionally force panel to normal compact height (34px) upon entering overview
-        Main.layoutManager.panelBox.remove_all_transitions();
-        Main.panel.remove_all_transitions();
+        Main.layoutManager.panelBox.remove_transition('height');
+        Main.panel.remove_transition('height');
         Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
         Main.panel.height = PANEL_NORMAL_HEIGHT;
+        Main.layoutManager.panelBox.opacity = 255;
+        Main.layoutManager.panelBox.translation_y = 0;
 
         // Ensure spacesBar is placed in centerBox
         if (Main.panel?._centerBox && !this._spacesBar.get_parent()) {
@@ -1263,10 +1265,12 @@ export class WorkspaceIndicatorController {
         }
 
         // Unconditionally force panel back to normal height immediately when overview starts hiding
-        Main.layoutManager.panelBox.remove_all_transitions();
-        Main.panel.remove_all_transitions();
+        Main.layoutManager.panelBox.remove_transition('height');
+        Main.panel.remove_transition('height');
         Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
         Main.panel.height = PANEL_NORMAL_HEIGHT;
+        Main.layoutManager.panelBox.opacity = 255;
+        Main.layoutManager.panelBox.translation_y = 0;
 
         if (this._stateAdjustment) {
             this._onOverviewProgressChanged();
@@ -1317,10 +1321,12 @@ export class WorkspaceIndicatorController {
             this._spacesBar._collapse(true);
         }
 
-        Main.layoutManager.panelBox.remove_all_transitions();
-        Main.panel.remove_all_transitions();
+        Main.layoutManager.panelBox.remove_transition('height');
+        Main.panel.remove_transition('height');
         Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
         Main.panel.height = PANEL_NORMAL_HEIGHT;
+        Main.layoutManager.panelBox.opacity = 255;
+        Main.layoutManager.panelBox.translation_y = 0;
     }
 
     _connect() {

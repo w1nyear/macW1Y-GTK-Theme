@@ -48,11 +48,20 @@ if [ -n "$GNOME_MAJOR" ]; then
 fi
 
 # 4. Crash Watchdog: Check if the previous launch crashed during startup
+# NOTE: GDM greeter (--mode=gdm) is an auth screen and has no session lifecycle.
+# We bypass watchdog tracking for GDM to prevent false-positive crash detections.
+IS_GDM=0
+case " $* " in
+    *" --mode=gdm "*|*" --mode gdm "*)
+        IS_GDM=1
+        ;;
+esac
+
 WATCHDOG_LAUNCH="/var/tmp/mactheme-overlay-launching"
 WATCHDOG_FAILED="/var/tmp/mactheme-overlay-failed"
 NOW=$(date +%s)
 
-if [ -f "$WATCHDOG_LAUNCH" ]; then
+if [ "$IS_GDM" -eq 0 ] && [ -f "$WATCHDOG_LAUNCH" ]; then
     PREV_LAUNCH=$(cat "$WATCHDOG_LAUNCH" 2>/dev/null || echo 0)
     DIFF=$((NOW - PREV_LAUNCH))
     # If previous launch was within last 60 seconds and never signaled healthy completion
@@ -65,7 +74,7 @@ if [ -f "$WATCHDOG_LAUNCH" ]; then
 fi
 
 # If WATCHDOG_FAILED is recent (< 120 seconds old), remain in safe mode
-if [ -f "$WATCHDOG_FAILED" ]; then
+if [ "$IS_GDM" -eq 0 ] && [ -f "$WATCHDOG_FAILED" ]; then
     FAIL_TIME=$(cat "$WATCHDOG_FAILED" 2>/dev/null || echo 0)
     DIFF_FAIL=$((NOW - FAIL_TIME))
     if [ "$DIFF_FAIL" -ge 0 ] && [ "$DIFF_FAIL" -lt 120 ]; then
@@ -83,8 +92,10 @@ if [ ! -f "$OVERLAY" ]; then
 fi
 
 if [ -f "$OVERLAY" ]; then
-    # Record launch timestamp for crash detection
-    echo "$NOW" > "$WATCHDOG_LAUNCH" 2>/dev/null || true
+    # Record launch timestamp for crash detection (user sessions only)
+    if [ "$IS_GDM" -eq 0 ]; then
+        echo "$NOW" > "$WATCHDOG_LAUNCH" 2>/dev/null || true
+    fi
 
     case ":$G_RESOURCE_OVERLAYS:" in
         *":/org/gnome/shell/ui/layout.js="*) ;;
