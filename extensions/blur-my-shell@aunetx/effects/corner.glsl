@@ -1,5 +1,5 @@
 // Heavily based on https://github.com/yilozt/rounded-window-corners
-// which is itself based on upstream Mutter code
+// Enhanced with subpixel antialiasing and exact geometric continuity for macW1Y
 
 uniform sampler2D tex;
 uniform float radius;
@@ -16,67 +16,50 @@ uniform float clip_height;
 
 float circle_bounds(vec2 p, vec2 center, float clip_radius) {
     vec2 delta = p - center;
-    float dist_squared = dot(delta, delta);
+    float dist = length(delta);
+    float d = dist - clip_radius;
 
-    float outer_radius = clip_radius + 0.5;
-    if (dist_squared >= (outer_radius * outer_radius))
-        return 0.0;
-
-    float inner_radius = clip_radius - 0.5;
-    if (dist_squared <= (inner_radius * inner_radius))
-        return 1.0;
-
-    return outer_radius - sqrt(dist_squared);
+    // Adaptive screen-space derivative antialiasing
+    // Smoothstep creates a continuous C1 falloff over the subpixel boundary,
+    // completely eliminating jagged staircasing ("драбини").
+    float fw = max(fwidth(dist), 1.0);
+    return 1.0 - smoothstep(-0.5 * fw, 0.5 * fw, d);
 }
 
 vec4 getTexture(vec2 uv) {
-    float w = max(1.0, width);
-    float h = max(1.0, height);
-
-    if (uv.x < 2. / w)
-        uv.x = 2. / w;
-
-    if (uv.y < 2. / h)
-        uv.y = 2. / h;
-
-    if (uv.x > 1. - 3. / w)
-        uv.x = 1. - 3. / w;
-
-    if (uv.y > 1. - 3. / h)
-        uv.y = 1. - 3. / h;
-
-    return texture2D(tex, uv);
+    return texture2D(tex, clamp(uv, 0.0, 1.0));
 }
 
 float rounded_rect_coverage(vec2 p, vec4 bounds, float clip_radius) {
-    // Outside the bounds
-    if (p.x < bounds.x || p.x > bounds.z || p.y < bounds.y || p.y > bounds.w) {
-        return 0.;
+    // Outside the bounds (with 1px threshold for antialiased boundary)
+    if (p.x < bounds.x - 1.0 || p.x > bounds.z + 1.0 || p.y < bounds.y - 1.0 || p.y > bounds.w + 1.0) {
+        return 0.0;
     }
-
-    vec2 center;
 
     float center_left = bounds.x + clip_radius;
     float center_right = bounds.z - clip_radius;
-
-    if (p.x < center_left)
-        center.x = center_left + 2.;
-    else if (p.x > center_right)
-        center.x = center_right - 1.;
-    else
-        return 1.0;
-
     float center_top = bounds.y + clip_radius;
     float center_bottom = bounds.w - clip_radius;
 
-    if (straight_corners != 0)
-        return 1.0;
-    else if (corners_top != 0 && p.y < center_top)
-        center.y = center_top + 2.;
-    else if (corners_bottom != 0 && p.y > center_bottom)
-        center.y = center_bottom - 1.;
-    else
-        return 1.0;
+    bool is_left = (p.x < center_left);
+    bool is_right = (p.x > center_right);
+    bool is_top = (corners_top != 0 && p.y < center_top);
+    bool is_bottom = (corners_bottom != 0 && p.y > center_bottom);
+
+    // If straight corners or in a non-corner edge region:
+    if (straight_corners != 0 || (!is_left && !is_right) || (!is_top && !is_bottom)) {
+        float d_left = p.x - bounds.x;
+        float d_right = bounds.z - p.x;
+        float d_top = p.y - bounds.y;
+        float d_bottom = bounds.w - p.y;
+        float min_d = min(min(d_left, d_right), min(d_top, d_bottom));
+        float fw = max(fwidth(min_d), 1.0);
+        return clamp(min_d / fw + 0.5, 0.0, 1.0);
+    }
+
+    vec2 center;
+    center.x = is_left ? center_left : center_right;
+    center.y = is_top ? center_top : center_bottom;
 
     return circle_bounds(p, center, clip_radius);
 }
@@ -95,5 +78,5 @@ void main(void) {
 
     float alpha = rounded_rect_coverage(pos, bounds, radius);
 
-    cogl_color_out = vec4(c.rgb * alpha, min(alpha, c.a));
+    cogl_color_out = vec4(c.rgb * alpha, c.a * alpha);
 }

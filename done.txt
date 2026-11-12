@@ -20945,3 +20945,39 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - bin/mac-audit-sync check — 100% PASS!
    - bin/mac-extension-guard verify — 21/21 OK.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+
+
+Завдання 733: Збереження радіуса заокруглення вікон (24px) під час анімацій відкриття/закриття та високоякісне субпіксельне згладження (Antialiasing)
+1. Причина проблем:
+   - Зникнення заокруглення під час закриття:
+     * Сигнал «unmanaged» на MetaWindow генерувався віконним менеджером Mutter на самому початку анімації закриття (масштабування/згасання вікна).
+     * Обробник untrackWindow у eval-helper@mactheme негайно викликав entry.actor.remove_effect(entry.effect), зриваючи ефект 24px заокруглення на нульовому кадрі анімації. Через це вікно різко скидалося до клієнтського GTK-радіуса за замовчуванням (~10-14px) і завершувало анімацію з малим старим радіусом.
+   - Відсутність заокруглення на початку анімації відкриття:
+     * Відстеження вікон запускалося по display «window-created», коли композитний актор MetaWindowActor ще не був створений, а перевірка актора відкладалася через GLib.timeout_add на 100 мс. Оскільки тривалість анімації відкриття становить ~150-200 мс, першу половину анімації вікно відображалося зі стандартним малим радіусом і лише потім різко перемикалося на 24px.
+   - Сходинки («драбини») та аліасинг на заокругленнях:
+     * У шейдері corner.glsl функція circle_bounds використовувала грубий лінійний діапазон завширшки лише в 1.0 піксель без субпіксельної фільтрації та без згладжування smoothstep.
+     * У геометрії центрів кіл були зашиті паразитарні штучні зміщення (+2.0 та -1.0 пікселів), а у corner.js до ширини та висоти додавалися штучні +3 пікселі. Через це дуга кола була зміщена відносно прямих сторін вікна на 2 пікселі, що утворювало видимий різкий уступ («сходинку») у точці сполучення прямої межі та дуги.
+
+2. Реалізовані виправлення:
+   - У extensions/blur-my-shell@aunetx/effects/corner.glsl:
+     * Повністю усунено паразитарні зсуви (+2.0 та -1.0): центри дуг обчислюються математично точно (center.x = is_left ? center_left : center_right; center.y = is_top ? center_top : center_bottom;), що забезпечує ідеальний плавний дотичний перехід (C1-неперервність) від прямих граней до дуг без жодних сходинок.
+     * Запроваджено високоякісне субпіксельне згладжування на основі екранних похідних (Screen-space derivatives): float fw = max(fwidth(dist), 1.0); return 1.0 - smoothstep(-0.5 * fw, 0.5 * fw, d);. Завдяки fwidth ширина смуги згладжування автоматично адаптується під масштаб, DPI та динамічне масштабування вікна під час анімацій, повністю усуваючи драбини.
+     * Додано згладжування зовнішніх прямих меж вікна (min_d / fw).
+     * У main() забезпечено коректний розрахунок препомноженої альфи: cogl_color_out = vec4(c.rgb * alpha, c.a * alpha);.
+   - У extensions/blur-my-shell@aunetx/effects/corner.js:
+     * Прибрано штучні доданки +3.0 та +3 з властивостей width, height, clip_width та clip_height для передачі точних піксельних меж кадру.
+   - У extensions/eval-helper@mactheme/extension.js:
+     * Збереження ефекту на закритті: в untrackWindow() відключено передчасне видалення entry.actor.remove_effect(entry.effect) на сигналі «unmanaged». Ефект залишається активним на MetaWindowActor протягом усієї анімації закриття і коректно звільняється тільки по сигналу actor.connect('destroy') після повного зникнення актора.
+     * Миттєве застосування на відкритті: додано перехоплення сигналу global.window_manager.connect('map', (wm, actor) => ...), завдяки чому ефект 24px монтується на MetaWindowActor на кадрі 0 до запуску анімації розкриття.
+     * Замінено 100-мілісекундну затримку timeout_add на миттєвий GLib.idle_add(GLib.PRIORITY_HIGH), що гарантує відсутність пропусків кадрів.
+     * Додано попереднє завантаження (pre-load) класу CornerEffectClass під час ініціалізації розширення.
+   - У bin/mac-build-theme:
+     * Додано правило border-radius: var(--mac-window-radius, 24px); для window.csd, window.background.csd, window.solid-csd, dialog.csd, messagedialog.csd, preferencesdialog.csd та .window-frame у шаблони компонентів GTK4 та GTK3.
+     * Перекомпільовано всі системні та користувацькі таблиці стилів через mac-build-theme.
+   - Оновлено config/extensions.lock.json:
+     * Зафіксовано нові контрольні хеші для модифікованих розширень blur-my-shell@aunetx та eval-helper@mactheme.
+
+3. Результати верифікації:
+   - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).

@@ -167,6 +167,16 @@ preferencespage,
   background-image: none;
 }}
 
+window.csd:not(.desktopwindow):not(.maximized):not(.fullscreen),
+window.background.csd:not(.desktopwindow):not(.maximized):not(.fullscreen),
+window.solid-csd:not(.desktopwindow):not(.maximized):not(.fullscreen),
+dialog.csd:not(.maximized):not(.fullscreen),
+messagedialog.csd:not(.maximized):not(.fullscreen),
+preferencesdialog.csd:not(.maximized):not(.fullscreen),
+.window-frame:not(.maximized):not(.fullscreen) {{
+  border-radius: var(--mac-window-radius, 24px);
+}}
+
 window.desktopwindow,
 window.desktopwindow.background,
 .desktopwindow,
@@ -2792,6 +2802,12 @@ window:not(.desktopwindow),
 .background:not(.desktopwindow) {{
   background-color: {c["window_bg"]};
   color: {c["window_fg"]};
+}}
+
+window.csd:not(.desktopwindow):not(.maximized):not(.fullscreen),
+window.csd:not(.desktopwindow):not(.maximized):not(.fullscreen) > decoration,
+.window-frame:not(.maximized):not(.fullscreen) {{
+  border-radius: {g["window_radius"]}px;
 }}
 
 window.desktopwindow,

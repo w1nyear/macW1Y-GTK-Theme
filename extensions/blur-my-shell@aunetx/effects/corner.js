@@ -117,7 +117,7 @@ const CornerEffectClass = utils.IS_IN_PREFERENCES ? null : class CornerEffect ex
             if (this._width !== v) {
                 this._width = v;
 
-                uniforms.set_uniform(this, 'width', parseFloat(this._width + 3.0 - 1e-6));
+                uniforms.set_uniform(this, 'width', parseFloat(this._width - 1e-6));
                 this.update_radius();
             }
         }
@@ -131,7 +131,7 @@ const CornerEffectClass = utils.IS_IN_PREFERENCES ? null : class CornerEffect ex
             if (this._height !== v) {
                 this._height = v;
 
-                uniforms.set_uniform(this, 'height', parseFloat(this._height + 3.0 - 1e-6));
+                uniforms.set_uniform(this, 'height', parseFloat(this._height - 1e-6));
                 this.update_radius();
             }
         }
@@ -197,8 +197,8 @@ const CornerEffectClass = utils.IS_IN_PREFERENCES ? null : class CornerEffect ex
             [this._clip_x0, this._clip_y0, this._clip_width, this._clip_height] = value;
             uniforms.set_uniform(this, 'clip_x0', parseFloat(this._clip_x0 - 1e-6));
             uniforms.set_uniform(this, 'clip_y0', parseFloat(this._clip_y0 - 1e-6));
-            uniforms.set_uniform(this, 'clip_width', parseFloat(this._clip_width <= 0 ? -1 : this._clip_width + 3 - 1e-6));
-            uniforms.set_uniform(this, 'clip_height', parseFloat(this._clip_height <= 0 ? -1 : this._clip_height + 3 - 1e-6));
+            uniforms.set_uniform(this, 'clip_width', parseFloat(this._clip_width <= 0 ? -1 : this._clip_width - 1e-6));
+            uniforms.set_uniform(this, 'clip_height', parseFloat(this._clip_height <= 0 ? -1 : this._clip_height - 1e-6));
             this.update_radius();
         }
 

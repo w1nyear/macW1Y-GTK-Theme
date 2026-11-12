@@ -3760,6 +3760,9 @@ export default class EvalHelper extends Extension {
                 if (entry.actorSignal && entry.actor) {
                     try { entry.actor.disconnect(entry.actorSignal); } catch (_) {}
                 }
+                if (entry.actorDestroyId && entry.actor) {
+                    try { entry.actor.disconnect(entry.actorDestroyId); } catch (_) {}
+                }
                 if (entry.actor && entry.effect) {
                     try { entry.actor.remove_effect(entry.effect); } catch (_) {}
                 }
@@ -4373,36 +4376,50 @@ export default class EvalHelper extends Extension {
         };
 
         const syncWindow = (win, entry) => {
-            if (!win || !entry?.actor || !entry?.effect) return;
-            const isFullscreen = Boolean(win.is_fullscreen?.() || win.fullscreen);
-            if (isFullscreen) {
-                entry.effect.enabled = false;
-                entry.effect.straight_corners = true;
-                entry.effect.radius = 0;
-                const actW = Math.max(1, entry.actor.width || 0);
-                const actH = Math.max(1, entry.actor.height || 0);
-                entry.effect.width = actW;
-                entry.effect.height = actH;
-                entry.effect.clip = [0, 0, actW, actH];
-                return;
-            }
+            if (!entry?.actor || !entry?.effect) return;
+            try {
+                if (win && typeof win.is_override_redirect === 'function' && win.is_override_redirect()) return;
+                const isFullscreen = Boolean(win && (win.is_fullscreen?.() || win.fullscreen));
+                if (isFullscreen) {
+                    entry.effect.enabled = false;
+                    entry.effect.straight_corners = true;
+                    entry.effect.radius = 0;
+                    const actW = Math.max(1, entry.actor.width || 0);
+                    const actH = Math.max(1, entry.actor.height || 0);
+                    entry.effect.width = actW;
+                    entry.effect.height = actH;
+                    entry.effect.clip = [0, 0, actW, actH];
+                    return;
+                }
 
-            entry.effect.enabled = true;
-            entry.effect.straight_corners = false;
-            entry.effect.radius = currentRadius;
+                entry.effect.enabled = true;
+                entry.effect.straight_corners = false;
+                entry.effect.radius = currentRadius;
 
-            const frame = win.get_frame_rect();
-            const buffer = win.get_buffer_rect();
-            const clipX = Math.max(0, frame.x - buffer.x);
-            const clipY = Math.max(0, frame.y - buffer.y);
-            const clipW = frame.width;
-            const clipH = frame.height;
+                let frame = null, buffer = null;
+                try {
+                    frame = win?.get_frame_rect?.();
+                    buffer = win?.get_buffer_rect?.();
+                } catch (_) {}
 
-            const actW = Math.max(1, entry.actor.width || clipW);
-            const actH = Math.max(1, entry.actor.height || clipH);
-            entry.effect.width = actW;
-            entry.effect.height = actH;
-            entry.effect.clip = [clipX, clipY, clipW, clipH];
+                if (frame && buffer && frame.width > 0 && frame.height > 0) {
+                    const clipX = Math.max(0, frame.x - buffer.x);
+                    const clipY = Math.max(0, frame.y - buffer.y);
+                    const clipW = frame.width;
+                    const clipH = frame.height;
+
+                    const actW = Math.max(1, entry.actor.width || clipW);
+                    const actH = Math.max(1, entry.actor.height || clipH);
+                    entry.effect.width = actW;
+                    entry.effect.height = actH;
+                    entry.effect.clip = [clipX, clipY, clipW, clipH];
+                } else {
+                    const actW = Math.max(1, entry.actor.width || 0);
+                    const actH = Math.max(1, entry.actor.height || 0);
+                    entry.effect.width = actW;
+                    entry.effect.height = actH;
+                }
+            } catch (_) {}
         };
 
         const syncAll = () => {
@@ -4419,13 +4436,15 @@ export default class EvalHelper extends Extension {
                 entry.signals.forEach(id => {
                     try { win.disconnect(id); } catch (_) {}
                 });
+                entry.signals = [];
             }
-            if (entry.actorSignal && entry.actor) {
-                try { entry.actor.disconnect(entry.actorSignal); } catch (_) {}
-            }
-            if (entry.actor && entry.effect) {
-                try { entry.actor.remove_effect(entry.effect); } catch (_) {}
-            }
+            // CRITICAL: DO NOT remove entry.effect from entry.actor here!
+            // When Mutter or ShellWM closes a window, 'unmanaged' is emitted on MetaWindow
+            // right at the BEGINNING of the closing animation (scale/fade/magic lamp).
+            // Stripping the effect here causes the 24px corner radius to vanish prematurely,
+            // revealing the old smaller client radius during the animation.
+            // Instead, the effect remains attached to entry.actor until entry.actorDestroyId
+            // fires upon actual Clutter actor destruction.
         };
 
         const doAttach = (win, actor, Clazz) => {
@@ -4448,7 +4467,7 @@ export default class EvalHelper extends Extension {
 
                 actor.add_effect_with_name('mac-forced-corner-effect', effect);
 
-                const entry = { actor, effect, signals: [], actorSignal: null };
+                const entry = { actor, effect, signals: [], actorSignal: null, actorDestroyId: null };
 
                 entry.signals.push(win.connect('size-changed', () => syncWindow(win, entry)));
                 entry.signals.push(win.connect('position-changed', () => syncWindow(win, entry)));
@@ -4465,6 +4484,18 @@ export default class EvalHelper extends Extension {
 
                 entry.actorSignal = actor.connect('notify::size', () => syncWindow(win, entry));
 
+                // Clean up effect only when Clutter actor is fully destroyed after close animation
+                entry.actorDestroyId = actor.connect('destroy', () => {
+                    if (entry.actorSignal) {
+                        try { actor.disconnect(entry.actorSignal); } catch (_) {}
+                        entry.actorSignal = null;
+                    }
+                    if (entry.effect) {
+                        try { actor.remove_effect(entry.effect); } catch (_) {}
+                        entry.effect = null;
+                    }
+                });
+
                 this._windowCornerEntries.set(win, entry);
 
                 syncWindow(win, entry);
@@ -4473,27 +4504,47 @@ export default class EvalHelper extends Extension {
             }
         };
 
-        const trackWindow = async (win) => {
+        const trackWindow = async (win, passedActor = null) => {
             if (!shouldRoundWindow(win) || this._windowCornerEntries.has(win)) return;
 
             const Clazz = await loadCornerEffect();
             if (!Clazz) return;
 
-            let actor = win.get_compositor_private?.();
+            let actor = passedActor || win.get_compositor_private?.();
             if (!actor) {
-                const waitId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+                let attempts = 0;
+                const checkSourceId = GLib.idle_add(GLib.PRIORITY_HIGH, () => {
+                    if (!this._windowCornerEntries || this._windowCornerEntries.has(win)) return GLib.SOURCE_REMOVE;
                     actor = win.get_compositor_private?.();
                     if (actor) {
                         doAttach(win, actor, Clazz);
+                        return GLib.SOURCE_REMOVE;
                     }
-                    return GLib.SOURCE_REMOVE;
+                    attempts++;
+                    if (attempts > 30) return GLib.SOURCE_REMOVE;
+                    return GLib.SOURCE_CONTINUE;
                 });
-                this._cornerCleanups.push(() => GLib.source_remove(waitId));
+                this._cornerCleanups.push(() => {
+                    try { GLib.source_remove(checkSourceId); } catch (_) {}
+                });
                 return;
             }
 
             doAttach(win, actor, Clazz);
         };
+
+        // Preload CornerEffect class immediately
+        loadCornerEffect();
+
+        // Hook window-manager 'map' so the effect is attached on frame 0 of opening animation
+        const mapId = global.window_manager.connect('map', (wm, actor) => {
+            if (actor?.meta_window) {
+                trackWindow(actor.meta_window, actor);
+            }
+        });
+        this._cornerCleanups.push(() => {
+            try { global.window_manager.disconnect(mapId); } catch (_) {}
+        });
 
         const winCreatedId = global.display.connect('window-created', (d, win) => trackWindow(win));
         this._cornerCleanups.push(() => {
@@ -4503,7 +4554,7 @@ export default class EvalHelper extends Extension {
         // Track all existing windows
         global.get_window_actors().forEach(a => {
             if (a.meta_window) {
-                trackWindow(a.meta_window);
+                trackWindow(a.meta_window, a);
             }
         });
     }
