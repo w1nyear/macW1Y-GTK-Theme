@@ -94,7 +94,7 @@
         "49",
         "50"
       ],
-      "sha256": "d87291b27ef93ac42b653c3d74d876449fbe420c09c8f4d36592bd51cadc74d9",
+      "sha256": "df4b3322aaf684ec30dad27feccd11ed55168d9379733e81bc2d0a21242069a9",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -104,7 +104,7 @@
       ],
       "has_custom_patches": true,
       "patch_description": "macOS-style smooth dock reordering, duplicate prevention, and trash drop handling in animator.js and extension.js",
-      "last_verified": "2026-11-11",
+      "last_verified": "2026-11-12",
       "pinned_sha256": "00a7c13a3e6322f6a3e0d83d3ca7af7d97bc2b5aee6dcb7113c5a7ac41a9cd01"
     },
     "custom-command-toggle@storageb.github.com": {
@@ -138,7 +138,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "b5d49b844e37a9d7a292eccc6277dd67bf9358941e8512a3f92552daa5b5f833",
+      "sha256": "a2138cb0c3197e7821be51eae725ae477ebecfccd7983b135e5f7c91b0140710",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -147,8 +147,8 @@
         "dock_bounce"
       ],
       "has_custom_patches": true,
-      "patch_description": "Custom glass dock with dynamic startingApps tracking and expanded paint volume to prevent top clipping",
-      "last_verified": "2026-11-02",
+      "patch_description": "Custom glass dock with dynamic startingApps tracking, expanded paint volume, and strict separator position after all favorites",
+      "last_verified": "2026-11-12",
       "files": {
         "windowPreview.js": "61829213a92e864511c4d4eb81f3dc98f785d390beb67d2872b78e414f727815",
         "locationsWorker.js": "c740392c5ad16b60f3871dabf76ddb9e95e642c7e50b6fa225ed128f2207363c",
@@ -173,7 +173,7 @@
         "iconTint.js": "d51338b4c4458ce78a6ae6956d87c22f5a502d74ce0756fc0f78680b8a501c6f",
         "glass.js": "90a7b45a9a2493e5104be31e05480b5c2ed1a3950caeb36261029e67c3a76bdb",
         "imports.js": "1c9ee0e2f78ee65f0091d623f6308a6b568de1011c4ba63c0c450585457cf354",
-        "dash.js": "875540744c0e46509dd2f226a46b0fbc3ee2824c1f47e204ea61d6e826f75245",
+        "dash.js": "43ffb6e2a87326539e43009df03bfcedb3ec3945e5c8104fcfb2637dab4b805a",
         "intellihide.js": "67f3dffcbb3dcd53c90e779656cca4082c086f049c8682b8e2ba995289f2600e",
         "appIconsDecorator.js": "40021e47f6431fbc37ec19e095fc828cab44157fa104385e75008345bb549391",
         "metadata.json": "61b3e0ac209b99d63be48fab23f38e29bcb8e49a7c5f2e34cd682db6bcfbcd34",

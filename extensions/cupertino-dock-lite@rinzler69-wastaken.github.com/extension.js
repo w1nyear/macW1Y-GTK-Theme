@@ -499,13 +499,13 @@ export default class DashAnimatorExtension extends Extension {
       }
     }
 
-    const placeholderWidth = width || visibleFavs[0]?.width || (this.dash.iconSize + 8);
-    const placeholderHeight = height || visibleFavs[0]?.height || this.dash.iconSize;
+    const placeholderWidth = width || visibleFavs[0]?.width || (this.dash.iconSize + 8) || 62;
+    const placeholderHeight = height || visibleFavs[0]?.height || this.dash.iconSize || 62;
 
     if (!this._customPlaceholder) {
       this._customPlaceholder = new St.Bin({
         name: 'cupertinoDragPlaceholder',
-        width: 0,
+        width: placeholderWidth,
         height: placeholderHeight,
         reactive: false,
         can_focus: false,
@@ -521,22 +521,88 @@ export default class DashAnimatorExtension extends Extension {
         this.dash._box.insert_child_at_index(this._customPlaceholder, 0);
       }
 
-      this._customPlaceholder.ease({
-        width: placeholderWidth,
-        duration: 150,
-        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-      });
+      // Ensure separator is placed strictly after the last favorite or placeholder
+      if (this.dash._separator && this.dash._separator.get_parent() === this.dash._box) {
+        const lastFav = visibleFavs[visibleFavs.length - 1];
+        const refChild = (targetPos >= visibleFavs.length) ? this._customPlaceholder : lastFav;
+        if (refChild) {
+          this.dash._box.set_child_above_sibling(this.dash._separator, refChild);
+        }
+      }
 
       this._customPlaceholderPos = targetPos;
+
+      // Animate icons from targetPos onwards to smoothly slide right, opening the space
+      for (let i = targetPos; i < visibleFavs.length; i++) {
+        const item = visibleFavs[i];
+        item.remove_transition('translation_x');
+        item.translation_x = -placeholderWidth;
+        item.ease({
+          translation_x: 0,
+          duration: 200,
+          mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
+      }
+
+      if (this.dash._separator) {
+        this.dash._separator.remove_transition('translation_x');
+        this.dash._separator.translation_x = -placeholderWidth;
+        this.dash._separator.ease({
+          translation_x: 0,
+          duration: 200,
+          mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
+      }
       return;
     }
 
     if (this._customPlaceholderPos !== targetPos) {
+      const prevPos = this._customPlaceholderPos;
       this._customPlaceholderPos = targetPos;
+
+      // Reposition placeholder in the child list
       if (targetPos < visibleFavs.length) {
         this.dash._box.set_child_below_sibling(this._customPlaceholder, visibleFavs[targetPos]);
       } else if (visibleFavs.length > 0) {
         this.dash._box.set_child_above_sibling(this._customPlaceholder, visibleFavs[visibleFavs.length - 1]);
+      }
+
+      // Ensure separator is strictly after all favorites or placeholder
+      if (this.dash._separator && this.dash._separator.get_parent() === this.dash._box) {
+        const lastFav = visibleFavs[visibleFavs.length - 1];
+        const refChild = (targetPos >= visibleFavs.length) ? this._customPlaceholder : lastFav;
+        if (refChild) {
+          this.dash._box.set_child_above_sibling(this.dash._separator, refChild);
+        }
+      }
+
+      // Smooth side-to-side gliding animation for affected icons
+      if (targetPos > prevPos) {
+        // Pointer moved to the right: icons between prevPos and targetPos - 1 slide LEFT into their slots
+        for (let i = prevPos; i < targetPos && i < visibleFavs.length; i++) {
+          const item = visibleFavs[i];
+          const curTrans = item.translation_x || 0;
+          item.remove_transition('translation_x');
+          item.translation_x = curTrans + placeholderWidth;
+          item.ease({
+            translation_x: 0,
+            duration: 200,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+          });
+        }
+      } else {
+        // Pointer moved to the left: icons between targetPos and prevPos - 1 slide RIGHT into their slots
+        for (let i = targetPos; i < prevPos && i < visibleFavs.length; i++) {
+          const item = visibleFavs[i];
+          const curTrans = item.translation_x || 0;
+          item.remove_transition('translation_x');
+          item.translation_x = curTrans - placeholderWidth;
+          item.ease({
+            translation_x: 0,
+            duration: 200,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+          });
+        }
       }
     }
   }
@@ -544,25 +610,66 @@ export default class DashAnimatorExtension extends Extension {
   _clearCustomPlaceholder(animate = false) {
     if (this._customPlaceholder) {
       const p = this._customPlaceholder;
+      const pos = this._customPlaceholderPos;
       this._customPlaceholder = null;
       this._customPlaceholderPos = -1;
-      if (animate && p.get_stage() && p.width > 0) {
-        p.ease({
-          width: 0,
-          duration: 150,
-          mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-          onComplete: () => {
-            try {
-              p.get_parent()?.remove_child(p);
-              p.destroy();
-            } catch (_) {}
-          }
-        });
-      } else {
+
+      if (!animate) {
         try {
           p.get_parent()?.remove_child(p);
           p.destroy();
         } catch (_) {}
+        if (this.dash?._box) {
+          for (const child of this.dash._box.get_children()) {
+            child.remove_transition('translation_x');
+            child.translation_x = 0;
+          }
+        }
+        return;
+      }
+
+      const width = p.width || (this.dash?.iconSize + 8) || 62;
+      const favs = AppFavorites.getAppFavorites().getFavorites();
+      const favIds = favs.map(a => a.get_id());
+      const visibleFavs = [];
+      if (this.dash?._box) {
+        for (const child of this.dash._box.get_children()) {
+          if (child === p) continue;
+          if (this._dragging && child === this._draggedContainer) continue;
+          const childAppId = child.child?._delegate?.app?.get_id?.() ?? child.child?.app?.get_id?.();
+          if (childAppId && favIds.includes(childAppId)) {
+            visibleFavs.push(child);
+          }
+        }
+      }
+
+      try {
+        p.get_parent()?.remove_child(p);
+        p.destroy();
+      } catch (_) {}
+
+      if (pos >= 0) {
+        for (let i = pos; i < visibleFavs.length; i++) {
+          const item = visibleFavs[i];
+          const curTrans = item.translation_x || 0;
+          item.remove_transition('translation_x');
+          item.translation_x = curTrans + width;
+          item.ease({
+            translation_x: 0,
+            duration: 200,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+          });
+        }
+        if (this.dash?._separator) {
+          const curTrans = this.dash._separator.translation_x || 0;
+          this.dash._separator.remove_transition('translation_x');
+          this.dash._separator.translation_x = curTrans + width;
+          this.dash._separator.ease({
+            translation_x: 0,
+            duration: 200,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+          });
+        }
       }
     } else {
       this._customPlaceholderPos = -1;
@@ -571,7 +678,7 @@ export default class DashAnimatorExtension extends Extension {
 
   _cleanUpDragState() {
     this._dragging = false;
-    this._clearCustomPlaceholder(true);
+    this._clearCustomPlaceholder(false);
     if (this._draggedContainer) {
       if (this._draggedAppId && AppFavorites.getAppFavorites().isFavorite(this._draggedAppId)) {
         this._draggedContainer.visible = true;
@@ -726,6 +833,7 @@ export default class DashAnimatorExtension extends Extension {
       const isFromDash = this._isFromDash(source);
       const targetPos = this._customPlaceholderPos >= 0 ? this._customPlaceholderPos : AppFavorites.getAppFavorites().getFavorites().length;
 
+      this._clearCustomPlaceholder(false);
       this._cleanUpDragState();
 
       if (appId && targetPos >= 0) {

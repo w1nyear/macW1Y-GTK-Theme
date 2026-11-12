@@ -1082,13 +1082,30 @@ export const DockDash = GObject.registerClass({
                 });
                 this._separator.connect('notify::hover', a => this._ensureItemVisibility(a));
             }
-            let pos = nFavorites + this._animatingPlaceholdersCount;
-            if (this._dragPlaceholder)
-                pos++;
-            const removedFavorites = removedActors.filter(a =>
-                children.indexOf(a) < oldSeparatorPos);
-            pos += removedFavorites.length;
-            this._box.insert_child_at_index(this._separator, pos);
+            // Ensure separator is placed strictly after the last favorite actor
+            const boxChildren = this._box.get_children();
+            let lastFavActor = null;
+            for (let i = boxChildren.length - 1; i >= 0; i--) {
+                const child = boxChildren[i];
+                if (child === this._separator) continue;
+                const appId = child.child?._delegate?.app?.get_id?.() ?? child.child?.app?.get_id?.();
+                if (appId && (appId in favorites)) {
+                    lastFavActor = child;
+                    break;
+                }
+            }
+
+            if (lastFavActor) {
+                this._box.insert_child_above(this._separator, lastFavActor);
+            } else {
+                let pos = nFavorites + this._animatingPlaceholdersCount;
+                if (this._dragPlaceholder)
+                    pos++;
+                const removedFavorites = removedActors.filter(a =>
+                    children.indexOf(a) < oldSeparatorPos);
+                pos += removedFavorites.length;
+                this._box.insert_child_at_index(this._separator, pos);
+            }
         } else if (this._separator) {
             this._separator.destroy();
             this._separator = null;
