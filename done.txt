@@ -20852,3 +20852,57 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - bin/mac-extension-guard verify — VERIFICATION SUCCESS (21/21 OK).
    - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+
+
+EXTRA FIX: Виправлення збою запуску GDM (зависання на текстовій консолі) та скидання Plymouth Apple логотипа у кольоровий verbose-лог ядра
+1. Симптоми та виявлена проблема (Problem Description):
+   - Після запуску/перезавантаження комп'ютера з'являвся початковий екран Plymouth із логотипом Apple, проте невдовзі логотип зникав, а екран перемикався на текстову консоль ядра Linux із кольоровими (жовтими, зеленими, білими) системними логами systemd.
+   - Останнім рядком на екрані виводилося «[  OK  ] Started GNOME Display Manager» (GDM.service), проте вікно привітання GDM або робочий стіл користувача не завантажувалися, екран зависав у консолі, і користувач був змушений переходити у TTY3 (Alt+F3).
+
+2. Детальна причина проблеми (Root Cause Analysis):
+   - Збій GDM Greeter через несумісність GStreamer Live Wallpaper:
+     * У завданні 727 для меню входу GDM було активовано живі відеошпалери (lockscreen-wallpaper-enable=true, GoldenGate_Live_loop.mp4) у конфігураціях macos-gdm/99-wack-lockscreen та macos-gdm/99_mactheme.gschema.override.
+     * Дисплейний менеджер GDM виконує оболонку вікна привітання (gnome-shell --mode=gdm) від імені системного користувача gdm (UID 120 / 975). Цей обліковий запис ізольований від користувацьких медіа-підсистем, не має прав доступу до аудіосервера Pipewire/PulseAudio та середовища апаратного декодування відео GStreamer appsink / Cogl Texture.
+     * Спроба запуску фонового відеоплеєра LiveWallpaperPlayer у режимі GDM спричиняла фатальний виняток / аварійне завершення процесу gnome-shell --mode=gdm. Через багаторазовий крах greeter-сесії GDM відмовлявся запускати графічний сервер, залишаючи систему без графічного інтерфейсу.
+   - Скидання Plymouth у текстовий лог (Verbose Kernel Log Leak):
+     * Оскільки GDM не зміг успішно перехопити графічний фреймбуфер DRM/KMS, служба Plymouth завершувала роботу за таймаутом або сигналом quit.
+     * Через присутність маркера verbose_on.png у темі apple-mac та активної фонової служби plymouth-verbose-logger.service, логер транслював потік /dev/kmsg прямо в консоль. При зупинці Plymouth віртуальний термінал скидався в текстовий режим (fbcon), виводячи на дисплей весь накопичений буфер systemd-повідомлень поверх чорного екрана.
+
+3. Реалізовані виправлення (Implemented Fixes):
+   - У репозиторії macW1Y:
+     * У macos-gdm/99-wack-lockscreen: встановлено lockscreen-wallpaper-enable=false та відновлено статичну шпалеру GoldenGate_Day.jpg для сесії GDM.
+     * У macos-gdm/99_mactheme.gschema.override: у секціях [org.gnome.shell.extensions.wack-lockscreen-clock], [:ubuntu] та [:GNOME-Greeter] вимкнено lockscreen-wallpaper-enable = false та встановлено статичну шпалеру GoldenGate_Day.jpg.
+     * У plymouth/apple-mac/: деактивовано verbose_on.png (перейменовано на verbose_on.png.disabled), що виключає примусове відображення текстових повідомлень поверх Apple splash.
+   - Системний скрипт швидкого відновлення (/home/vitaliy/fix_gdm.sh):
+     * Створено автономний виконуваний скрипт fix_gdm.sh для негайного запуску з TTY3 через «sudo bash /home/vitaliy/fix_gdm.sh».
+     * Скрипт автоматично:
+       1) Вимикає lockscreen-wallpaper-enable у системному /etc/dconf/db/gdm.d/99-wack-lockscreen та виконує dconf update.
+       2) Оновлює /usr/share/glib-2.0/schemas/99_mactheme.gschema.override та компілює схеми через glib-compile-schemas.
+       3) Відновлює резервний системний ресурс gdm-theme.gresource через update-alternatives.
+       4) Скидає блокування сторожового таймера gnome-shell (/var/tmp/mactheme-overlay-* /tmp/disable-mactheme-overlay).
+       5) Вимикає та видаляє службу plymouth-verbose-logger.service і файли конфігурації.
+       6) Перезапускає gdm.service (з можливістю автоматичного входу vitaliy як резервної безпечної лінії).
+       7) Повертає систему до нормальної роботи без втрати даних та налаштувань.
+
+
+Завдання 731: Повне видалення рушія живих відеошпалер (Live Video Wallpaper) та відновлення надійної фотошпалери (GoldenGate Day) для локскріна і GDM
+1. Причина проблеми:
+   - Рушій відтворення відеошпалер через GStreamer (Gst/Cogl/Clutter) у розширенні wack-lockscreen-clock спричиняв критичні збої та падіння процесу gnome-shell як у сесії GDM greeter (користувач gdm), так і при старті сесії без аудіо/медіа-пайплайнів.
+   - Відеоконвеєр GStreamer appsink вимагав апаратних медіа-буферів і кодеків, недоступних до входу користувача, що блокувало запуск віконного менеджера та залишало систему на рівні текстової консолі TTY1/TTY3.
+
+2. Реалізовані виправлення:
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/wallpaperManager.js:
+     * Повністю демонтовано виклики LiveWallpaperPlayer та імпорт gi://Gst.
+     * Відновлено легкий та стабільний Clutter/St механізм відображення оригінальної фотошпалери високої роздільності (file:///usr/share/backgrounds/GoldenGate_Day.jpg).
+     * Додано захист від спроб передачі відеофайлів (.mp4, .mov, .mkv) із автоматичним поверненням на GoldenGate_Day.jpg.
+     * Додано безпечний метод startUnlockTransition() без переривань.
+   - У extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/liveWallpaperPlayer.js:
+     * Замінено на безпечну функціональну заглушку (stub) без завантаження бібліотеки GStreamer.
+   - У gdmThemePipeline.js (в обох деревах src/pro та pro):
+     * Повністю очищено від викликів LiveWallpaperPlayer, прибрано перекриття шарів та відновлено чистий рендеринг фотошпалери моніторів.
+   - У macos-gdm/99-wack-lockscreen, macos-gdm/99_mactheme.gschema.override та install.sh:
+     * Зафіксовано lockscreen-wallpaper-enable=false та lockscreen-wallpaper-path='/usr/share/backgrounds/GoldenGate_Day.jpg'.
+     * У config/extensions.lock.json оновлено sha256 хеш розширення (3a7137287a8fdabbaa0dea3dc4d898ab1d0e20132916f9172bb85141008fe690).
+   - У системному скрипті /home/vitaliy/fix_gdm.sh:
+     * Додано кроки автоматичного розгортання очищеного розширення до /usr/share/gnome-shell/extensions/ та ~/.local/share/gnome-shell/extensions/.
+     * Додано автоувімкнення AutomaticLogin=vitaliy та WaylandEnable=false у /etc/gdm3/custom.conf для гарантованого прямого завантаження робочого столу Vitaliy.
