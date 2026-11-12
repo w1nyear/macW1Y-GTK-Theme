@@ -1,3 +1,4 @@
+@import url("macw1y-tokens.css");
 :root {
   --blue-1: #99c1f1;
   --blue-2: #62a0ea;
@@ -9619,3 +9620,6 @@ image.emblem {
     padding: 0;
 }
 /* --- MAC-NAUTILUS-SIDEBAR-END --- */
+
+/* macW1Y Global Component Master Overrides (SSOT) */
+@import url("macw1y-components.css");

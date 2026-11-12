@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""
+mac-theme-sync - Seamless Light/Dark Mode Synchronizer for macW1Y
+Synchronizes GTK themes, icon themes, Libadwaita color scheme,
+settings.ini, Liquid Glass tinting, and Blur-my-shell parameters.
+Guaranteed safe: idempotent, never terminates user session or closes apps.
+"""
+
+import os
+import sys
+import json
+import subprocess
+import shutil
+
+REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
+MANIFEST_PATH = os.path.join(REPO_DIR, "config/macw1y-manifest.json")
+HOME = os.path.expanduser("~")
+
+def gsettings_get(schema, key):
+    try:
+        res = subprocess.check_output(["gsettings", "get", schema, key], text=True, stderr=subprocess.DEVNULL).strip()
+        return res.strip("'\"")
+    except Exception:
+        return None
+
+def gsettings_set(schema, key, val, val_type=None):
+    cur = gsettings_get(schema, key)
+    if cur is None:
+        return False
+    str_val = str(val)
+    if val_type == "bool" or isinstance(val, bool) or str_val.lower() in ("true", "false"):
+        cur_bool = cur.lower() in ("true", "1")
+        tar_bool = (str_val.lower() == "true") if isinstance(val, str) else bool(val)
+        if cur_bool == tar_bool:
+            return False
+    elif val_type == "float" or isinstance(val, float):
+        try:
+            if abs(float(cur) - float(val)) < 0.001:
+                return False
+        except Exception:
+            pass
+    elif val_type == "int" or isinstance(val, int):
+        try:
+            if int(cur) == int(val):
+                return False
+        except Exception:
+            pass
+    else:
+        if cur == str_val or cur == str_val.strip("'\""):
+            return False
+    try:
+        if val_type == "bool":
+            subprocess.run(["gsettings", "set", schema, key, "true" if val else "false"], check=False)
+        elif val_type == "int":
+            subprocess.run(["gsettings", "set", schema, key, str(val)], check=False)
+        elif val_type == "float":
+            subprocess.run(["gsettings", "set", schema, key, f"{float(val):.2f}"], check=False)
+        else:
+            subprocess.run(["gsettings", "set", schema, key, str_val], check=False)
+        return True
+    except Exception:
+        return False
+
+def update_ini_file(path, key_values):
+    if not os.path.exists(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        lines = ["[Settings]\n"]
+    else:
+        with open(path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+    modified = False
+    existing_keys = set()
+    new_lines = []
+    
+    for l in lines:
+        if "=" in l and not l.strip().startswith("#"):
+            k, v = l.split("=", 1)
+            k = k.strip()
+            existing_keys.add(k)
+            if k in key_values:
+                target_v = str(key_values[k])
+                if v.strip() != target_v:
+                    new_lines.append(f"{k}={target_v}\n")
+                    modified = True
+                else:
+                    new_lines.append(l)
+            else:
+                new_lines.append(l)
+        else:
+            new_lines.append(l)
+
+    for k, v in key_values.items():
+        if k not in existing_keys:
+            new_lines.append(f"{k}={v}\n")
+            modified = True
+
+    if modified:
+        with open(path, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+    return modified
+
+def apply_theme_mode(is_light):
+    mode_str = "light" if is_light else "dark"
+    print(f"[mac-theme-sync] Synchronizing system theme to: {mode_str.upper()}")
+
+    # 1. Desktop Interface
+    gtk_theme = "macW1Y-Light" if is_light else "macW1Y-Dark"
+    icon_theme = "MacTahoe" if is_light else "MacTahoe-dark"
+    color_scheme = "prefer-light" if is_light else "prefer-dark"
+    wm_theme = "macW1Y-Light" if is_light else "macW1Y-Dark"
+    shell_theme = "macW1Y-Light" if is_light else "macW1Y-Dark"
+
+    gsettings_set("org.gnome.desktop.interface", "color-scheme", color_scheme)
+    gsettings_set("org.gnome.desktop.interface", "gtk-theme", gtk_theme)
+    gsettings_set("org.gnome.desktop.interface", "icon-theme", icon_theme)
+    gsettings_set("org.gnome.desktop.wm.preferences", "theme", wm_theme)
+    gsettings_set("org.gnome.shell.extensions.user-theme", "name", shell_theme)
+
+    # 2. GTK configuration and settings.ini
+    ini_dict = {
+        "gtk-theme-name": gtk_theme,
+        "gtk-icon-theme-name": icon_theme,
+        "gtk-application-prefer-dark-theme": "0" if is_light else "1"
+    }
+    for ini_path in [os.path.join(HOME, ".config/gtk-3.0/settings.ini"),
+                     os.path.join(HOME, ".config/gtk-4.0/settings.ini")]:
+        update_ini_file(ini_path, ini_dict)
+
+    # Sync GTK 4 active CSS (Light vs Dark base)
+    target_gtk4_css = os.path.join(REPO_DIR, "config/gtk-4.0", "gtk-Light.css" if is_light else "gtk-Dark.css")
+    dest_gtk4_css = os.path.join(HOME, ".config/gtk-4.0/gtk.css")
+    if os.path.exists(target_gtk4_css):
+        try:
+            shutil.copy2(target_gtk4_css, dest_gtk4_css)
+        except Exception as e:
+            print(f"[mac-theme-sync] Warning: failed to copy gtk.css: {e}")
+
+    # Sync GTK 3 tokens (Light vs Dark)
+    gtk3_tokens_path = os.path.join(HOME, ".config/gtk-3.0/macw1y-tokens.css")
+    accent_col = gsettings_get("org.gnome.desktop.interface", "accent-color") or "#ff6a00"
+    if accent_col == "orange": accent_col = "#ff6a00"
+    elif accent_col == "blue": accent_col = "#007aff"
+    elif not accent_col.startswith("#"): accent_col = "#ff6a00"
+
+    if is_light:
+        gtk3_tok_str = (
+            "/* macW1Y 0.6 — Master Design Tokens for GTK 3 (Light) */\n"
+            f"@define-color accent_bg_color {accent_col};\n"
+            "@define-color accent_fg_color #ffffff;\n"
+            "@define-color theme_base_color #f6f6f6;\n"
+            "@define-color theme_text_color rgba(0, 0, 0, 0.88);\n"
+            "@define-color theme_bg_color #f6f6f6;\n"
+            "@define-color theme_fg_color rgba(0, 0, 0, 0.88);\n"
+            f"@define-color theme_selected_bg_color {accent_col};\n"
+            "@define-color theme_selected_fg_color #ffffff;\n"
+        )
+    else:
+        gtk3_tok_str = (
+            "/* macW1Y 0.6 — Master Design Tokens for GTK 3 (Dark) */\n"
+            f"@define-color accent_bg_color {accent_col};\n"
+            "@define-color accent_fg_color #ffffff;\n"
+            "@define-color theme_base_color #202022;\n"
+            "@define-color theme_text_color #ffffff;\n"
+            "@define-color theme_bg_color #202022;\n"
+            "@define-color theme_fg_color #ffffff;\n"
+            f"@define-color theme_selected_bg_color {accent_col};\n"
+            "@define-color theme_selected_fg_color #ffffff;\n"
+        )
+    try:
+        with open(gtk3_tokens_path, "w", encoding="utf-8") as f:
+            f.write(gtk3_tok_str)
+    except Exception as e:
+        print(f"[mac-theme-sync] Warning: failed to write gtk3 tokens: {e}")
+
+    # 3. Liquid Glass Settings (Reversible tint & brightness)
+    lg_schema = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com"
+    test = subprocess.run(["gsettings", "list-keys", lg_schema], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if test.returncode == 0:
+        tint_col = "#ffffff" if is_light else "#000000"
+        dock_col = "#ffffff" if is_light else "#29292e"
+        dock_br = 1.05 if is_light else 0.99
+        menu_br = 1.05 if is_light else 0.925
+        app_br = 1.05 if is_light else 1.0
+
+        gsettings_set(lg_schema, "dock-tint-color", dock_col)
+        gsettings_set(lg_schema, "panel-menu-tint-color", tint_col)
+        gsettings_set(lg_schema, "desktop-menu-tint-color", tint_col)
+        gsettings_set(lg_schema, "menu-tint-color", tint_col)
+        gsettings_set(lg_schema, "quick-settings-tint-color", tint_col)
+        gsettings_set(lg_schema, "osd-tint-color", tint_col)
+        gsettings_set(lg_schema, "application-tint-color", tint_col)
+        gsettings_set(lg_schema, "notification-tint-color", tint_col)
+
+        gsettings_set(lg_schema, "dock-brightness", dock_br, "float")
+        gsettings_set(lg_schema, "panel-menu-brightness", menu_br, "float")
+        gsettings_set(lg_schema, "desktop-menu-brightness", menu_br, "float")
+        gsettings_set(lg_schema, "menu-brightness", menu_br, "float")
+        gsettings_set(lg_schema, "application-brightness", app_br, "float")
+
+    # 4. Blur-my-shell
+    bms_schema = "org.gnome.shell.extensions.blur-my-shell.applications"
+    test_bms = subprocess.run(["gsettings", "list-keys", bms_schema], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if test_bms.returncode == 0:
+        gsettings_set(bms_schema, "brightness", 1.05 if is_light else 1.0, "float")
+
+    # 5. Update Manifest SSOT
+    if os.path.exists(MANIFEST_PATH):
+        try:
+            with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+            th = manifest.setdefault("theme", {})
+            th["gtk_theme"] = gtk_theme
+            th["icon_theme"] = icon_theme
+            th["color_scheme"] = color_scheme
+            th["wm_theme"] = wm_theme
+            th["shell_theme"] = shell_theme
+
+            lg = manifest.setdefault("liquid_glass", {})
+            lg["panel_menu_tint_color"] = "#ffffff" if is_light else "#000000"
+            lg["menu_tint_color"] = "#ffffff" if is_light else "#000000"
+            lg["desktop_menu_tint_color"] = "#ffffff" if is_light else "#000000"
+
+            with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
+                json.dump(manifest, f, indent=2)
+        except Exception as e:
+            print(f"[mac-theme-sync] Warning: failed to update manifest: {e}")
+
+    # 6. Call update-mac-styling-css if available
+    styling_script = os.path.join(REPO_DIR, "bin/update-mac-styling-css")
+    if os.path.exists(styling_script):
+        try:
+            subprocess.run([styling_script, "15" if is_light else "30", "15" if is_light else "25"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
+    print("[mac-theme-sync] Synchronization complete.")
+
+def main():
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].lower()
+        if arg in ("light", "prefer-light", "default"):
+            apply_theme_mode(True)
+            return
+        elif arg in ("dark", "prefer-dark"):
+            apply_theme_mode(False)
+            return
+        elif arg == "--daemon":
+            run_daemon()
+            return
+
+    # Default: sync to current color-scheme
+    cur = gsettings_get("org.gnome.desktop.interface", "color-scheme") or "prefer-dark"
+    is_light = cur in ("prefer-light", "default")
+    apply_theme_mode(is_light)
+
+def run_daemon():
+    try:
+        import gi
+        gi.require_version('Gio', '2.0')
+        from gi.repository import Gio, GLib
+    except ImportError:
+        print("[mac-theme-sync] Daemon mode requires python-gi")
+        sys.exit(1)
+
+    settings = Gio.Settings.new("org.gnome.desktop.interface")
+    
+    def on_changed(settings, key):
+        if key == "color-scheme":
+            val = settings.get_string("color-scheme")
+            is_light = val in ("prefer-light", "default")
+            apply_theme_mode(is_light)
+
+    settings.connect("changed::color-scheme", on_changed)
+    loop = GLib.MainLoop()
+    print("[mac-theme-sync] Theme sync listener active.")
+    try:
+        loop.run()
+    except KeyboardInterrupt:
+        pass
+
+if __name__ == "__main__":
+    main()

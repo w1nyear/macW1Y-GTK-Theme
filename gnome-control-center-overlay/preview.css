@@ -1,0 +1,223 @@
+background-preview {
+  border-radius: 10px;
+}
+
+background-preview .window {
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.20), 0 1px 3px rgba(0, 0, 0, 0.12);
+
+  --window-bg-color: #fafafa;
+  --headerbar-bg-color: white;
+  --headerbar-shade-color: rgb(0 0 0 / 12%);
+  --sidebar-bg-color: #ebebeb;
+  --sidebar-backdrop-color: #f2f2f2;
+  --sidebar-border-color: rgb(0 0 0 / 7%);
+}
+
+/* Light Preview Card Windows (Засвітлення / Bright Frosted Glass) */
+background-preview .window,
+background-preview .window.front.light,
+background-preview .window.back,
+#default_preview .window,
+#default_preview .window.front,
+#default_preview .window.back {
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(240, 240, 245, 0.80) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
+}
+
+background-preview .window .header-bar,
+background-preview .window.front.light .header-bar,
+#default_preview .window .header-bar {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  min-height: 15px;
+}
+
+background-preview .window .sidebar,
+background-preview .window.front.light .sidebar,
+#default_preview .window .sidebar {
+  background-color: rgba(235, 235, 242, 0.75) !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+  min-width: 30px;
+}
+
+/* Dark Preview Card Windows (Затемнення / Dark Smoked Glass) */
+background-preview .window.dark,
+background-preview .window.front.dark,
+#dark_preview .window,
+#dark_preview .window.front,
+#dark_preview .window.back {
+  --window-bg-color: #242424;
+  --headerbar-bg-color: #303030;
+  --headerbar-shade-color: rgb(0 0 0 / 36%);
+  --sidebar-bg-color: #303030;
+  --sidebar-backdrop-color: #2a2a2a;
+  --sidebar-border-color: rgb(0 0 0 / 36%);
+
+  background-color: rgba(34, 34, 38, 0.84) !important;
+  background-image: linear-gradient(180deg, rgba(48, 48, 54, 0.90) 0%, rgba(28, 28, 32, 0.80) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+background-preview .window.dark .header-bar,
+background-preview .window.front.dark .header-bar,
+#dark_preview .window .header-bar {
+  background-color: rgba(50, 50, 56, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.40) !important;
+  min-height: 15px;
+}
+
+background-preview .window.dark .sidebar,
+background-preview .window.front.dark .sidebar,
+#dark_preview .window .sidebar {
+  background-color: rgba(28, 28, 32, 0.78) !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.40) !important;
+  min-width: 30px;
+}
+
+background-preview .window.sidebar:dir(ltr) {
+  box-shadow: inset -1px 0 var(--sidebar-border-color);
+}
+
+background-preview .window.sidebar:dir(rtl) {
+  border: none;
+  box-shadow: inset 1px 0 var(--sidebar-border-color);
+}
+
+/* Authentic Rounded Rectangle Selection Outline - NOT a pill! */
+.background-preview-button {
+  background: none;
+  border-radius: 14px !important;
+  padding: 4px !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border: none !important;
+  transition: box-shadow 150ms ease;
+}
+
+.background-preview-button:hover {
+  box-shadow: 0 0 0 2px rgba(128, 128, 128, 0.25) !important;
+  border-radius: 14px !important;
+}
+
+.background-preview-button:checked {
+  box-shadow: 0 0 0 3px var(--accent-bg-color) !important;
+  border-radius: 14px !important;
+}
+
+.background-preview-button:focus:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-bg-color), 0 0 0 5px color-mix(in srgb, var(--accent-color) 30%, transparent) !important;
+  border-radius: 14px !important;
+}
+
+.background-preview-button:checked:focus:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-color), 0 0 0 5px color-mix(in srgb, var(--accent-color) 30%, transparent) !important;
+  border-radius: 14px !important;
+}
+
+.background-flowbox > flowboxchild {
+  background: none;
+  border-radius: 9px;
+}
+
+.background-thumbnail {
+  border-radius: 6px;
+}
+
+.slideshow-icon {
+  color: white;
+  -gtk-icon-shadow: 0 1px 2px rgba(0, 0, 0, 0.33);
+  margin: 8px;
+}
+
+.selected-check {
+  color: var(--accent-fg-color);
+  background: var(--accent-bg-color);
+  border-radius: 100px;
+  padding: 2px;
+  opacity: 0;
+  margin: 6px;
+  transition-duration: 200ms;
+}
+
+flowboxchild.active-item .selected-check {
+  opacity: 1;
+}
+
+.remove-button {
+  padding: 2px;
+  min-width: 0;
+  min-height: 0;
+  margin: 6px;
+}
+
+.accent-button {
+  border-radius: 9999px;
+  padding: 3px;
+  background: var(--accent-bg-color);
+  min-width: 24px;
+  min-height: 24px;
+  outline: none;
+  background-clip: content-box;
+  box-shadow: none;
+}
+
+.accent-button:checked {
+  box-shadow: 0 0 0 3px var(--accent-bg-color);
+}
+
+.accent-button:focus:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 30%, transparent);
+}
+
+.accent-button:checked:focus:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-bg-color),
+              0 0 0 6px color-mix(in srgb, var(--accent-color) 30%, transparent);
+}
+
+.blue, .teal, .green, .yellow, .orange, .red, .pink, .purple, .slate, .brown {
+  --accent-color: oklab(from var(--accent-bg-color) var(--standalone-color-oklab));
+}
+
+.blue {
+  --accent-bg-color: var(--accent-blue);
+}
+
+.teal {
+  --accent-bg-color: var(--accent-teal);
+}
+
+.green {
+  --accent-bg-color: var(--accent-green);
+}
+
+.yellow {
+  --accent-bg-color: var(--accent-yellow);
+}
+
+.orange {
+  --accent-bg-color: var(--accent-orange);
+}
+
+.red {
+  --accent-bg-color: var(--accent-red);
+}
+
+.pink {
+  --accent-bg-color: var(--accent-pink);
+}
+
+.purple {
+  --accent-bg-color: var(--accent-purple);
+}
+
+.slate {
+  --accent-bg-color: var(--accent-slate);
+}
+
+.brown {
+  --accent-bg-color: var(--accent-brown);
+}

@@ -2072,7 +2072,7 @@ EOF_CUR_THEME_UP
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale macW1Y; do
+    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-theme-sync mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale macW1Y; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true
@@ -2084,6 +2084,15 @@ EOF_CUR_THEME_UP
         sudo ln -sf /usr/local/bin/macW1Y /usr/local/bin/macw1y 2>/dev/null || true
         sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y 2>/dev/null || true
         sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macw1y 2>/dev/null || true
+    fi
+
+    # Installing and enabling macW1Y theme sync daemon
+    if [ -f "$SCRIPT_DIR/systemd/mac-theme-sync.service" ]; then
+        local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
+        mkdir -p "$USER_SYSTEMD"
+        sync_or_update_file "$SCRIPT_DIR/systemd/mac-theme-sync.service" "$USER_SYSTEMD/mac-theme-sync.service" false
+        run_as_user systemctl --user daemon-reload 2>/dev/null || true
+        run_as_user systemctl --user enable --now mac-theme-sync.service 2>/dev/null || true
     fi
 
     # Installing and enabling macW1Y background integrity check timer

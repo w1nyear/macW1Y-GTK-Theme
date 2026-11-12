@@ -24,7 +24,8 @@ def load_tokens():
         return json.load(f)
 
 def generate_gtk4_tokens_css(tokens):
-    c = tokens["colors"]
+    cl = tokens.get("colors_light", tokens["colors"])
+    cd = tokens.get("colors_dark", tokens["colors"])
     g = tokens["geometry"]
     d = tokens["dimensions"]
     t = tokens["typography"]
@@ -32,51 +33,52 @@ def generate_gtk4_tokens_css(tokens):
     css = f"""/* macW1Y 0.6 — Generated Master Design Tokens for GTK 4 / Libadwaita */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
-@define-color accent_bg_color {c["accent_bg"]};
-@define-color accent_fg_color {c["accent_fg"]};
-@define-color accent_color {c["accent_bg"]};
-@define-color window_bg_color {c["window_bg"]};
-@define-color window_fg_color {c["window_fg"]};
-@define-color view_bg_color {c["window_bg"]};
-@define-color view_fg_color {c["window_fg"]};
+/* Light Theme Tokens (Base Default) */
+@define-color accent_bg_color {cl["accent_bg"]};
+@define-color accent_fg_color {cl["accent_fg"]};
+@define-color accent_color {cl["accent_bg"]};
+@define-color window_bg_color {cl["window_bg"]};
+@define-color window_fg_color {cl["window_fg"]};
+@define-color view_bg_color {cl["window_bg"]};
+@define-color view_fg_color {cl["window_fg"]};
 @define-color headerbar_bg_color transparent;
-@define-color headerbar_fg_color {c["window_fg"]};
+@define-color headerbar_fg_color {cl["window_fg"]};
 @define-color headerbar_shade_color transparent;
 @define-color headerbar_darker_shade_color transparent;
 @define-color headerbar_border_color transparent;
-@define-color card_bg_color {c["card_bg"]};
-@define-color card_fg_color {c["window_fg"]};
-@define-color popover_bg_color {c["popover_bg"]};
-@define-color popover_fg_color {c["window_fg"]};
-@define-color dialog_bg_color {c["card_bg"]};
-@define-color dialog_fg_color {c["window_fg"]};
-@define-color destructive_bg_color {c["destructive_bg"]};
-@define-color destructive_fg_color {c["destructive_fg"]};
-@define-color success_bg_color {c["success_bg"]};
-@define-color warning_bg_color {c["warning_bg"]};
+@define-color card_bg_color {cl["card_bg"]};
+@define-color card_fg_color {cl["window_fg"]};
+@define-color popover_bg_color {cl["popover_bg"]};
+@define-color popover_fg_color {cl["window_fg"]};
+@define-color dialog_bg_color {cl["card_bg"]};
+@define-color dialog_fg_color {cl["window_fg"]};
+@define-color destructive_bg_color {cl["destructive_bg"]};
+@define-color destructive_fg_color {cl["destructive_fg"]};
+@define-color success_bg_color {cl["success_bg"]};
+@define-color warning_bg_color {cl["warning_bg"]};
 
 :root {{
-  --mac-window-bg: {c["window_bg"]};
-  --mac-window-fg: {c["window_fg"]};
-  --mac-sidebar-bg: {c["sidebar_bg"]};
-  --mac-sidebar-bg-translucent: {c["sidebar_bg_translucent"]};
-  --mac-card-bg: {c["card_bg"]};
-  --mac-card-border: {c["card_border"]};
-  --mac-card-shadow: {c["card_shadow"]};
-  --mac-card-sep: {c["card_separator"]};
-  --mac-row-hover: {c["row_hover"]};
-  --mac-row-active: {c["row_active"]};
-  --mac-accent-bg: {c["accent_bg"]};
-  --mac-accent-fg: {c["accent_fg"]};
-  --mac-text-primary: {c["text_primary"]};
-  --mac-text-secondary: {c["text_secondary"]};
-  --mac-text-disabled: {c["text_disabled"]};
-  --mac-input-bg: {c["input_bg"]};
-  --mac-input-border: {c["input_border"]};
-  --mac-input-focus-bg: {c["input_focus_bg"]};
-  --mac-input-focus-border: {c["input_focus_border"]};
-  --mac-popover-bg: {c["popover_bg"]};
-  --mac-popover-border: {c["popover_border"]};
+  --mac-window-bg: {cl["window_bg"]};
+  --mac-window-fg: {cl["window_fg"]};
+  --mac-sidebar-bg: {cl["sidebar_bg"]};
+  --mac-sidebar-bg-translucent: {cl["sidebar_bg_translucent"]};
+  --mac-card-bg: {cl["card_bg"]};
+  --mac-card-border: {cl["card_border"]};
+  --mac-card-shadow: {cl["card_shadow"]};
+  --mac-card-sep: {cl["card_separator"]};
+  --mac-row-hover: {cl["row_hover"]};
+  --mac-row-active: {cl["row_active"]};
+  --mac-accent-bg: {cl["accent_bg"]};
+  --mac-accent-fg: {cl["accent_fg"]};
+  --mac-text-primary: {cl["text_primary"]};
+  --mac-text-secondary: {cl["text_secondary"]};
+  --mac-text-disabled: {cl["text_disabled"]};
+  --mac-input-bg: {cl["input_bg"]};
+  --mac-input-border: {cl["input_border"]};
+  --mac-input-focus-bg: {cl["input_focus_bg"]};
+  --mac-input-focus-border: {cl["input_focus_border"]};
+  --mac-popover-bg: {cl["popover_bg"]};
+  --mac-popover-border: {cl["popover_border"]};
 
   --mac-window-radius: {g["window_radius"]}px;
   --mac-card-radius: {g["card_radius"]}px;
@@ -93,6 +95,45 @@ def generate_gtk4_tokens_css(tokens):
   --mac-slider-thumb: {d["slider_thumb_size"]}px;
   --mac-traffic-light-size: {d.get("traffic_light_size", 16)}px;
   --mac-traffic-light-spacing: {d.get("traffic_light_spacing", 7)}px;
+}}
+
+/* Dark Theme Overrides (Seamless prefers-color-scheme Adaptation) */
+@media (prefers-color-scheme: dark) {{
+  @define-color window_bg_color {cd["window_bg"]};
+  @define-color window_fg_color {cd["window_fg"]};
+  @define-color view_bg_color {cd["window_bg"]};
+  @define-color view_fg_color {cd["window_fg"]};
+  @define-color headerbar_fg_color {cd["window_fg"]};
+  @define-color card_bg_color {cd["card_bg"]};
+  @define-color card_fg_color {cd["window_fg"]};
+  @define-color popover_bg_color {cd["popover_bg"]};
+  @define-color popover_fg_color {cd["window_fg"]};
+  @define-color dialog_bg_color {cd["card_bg"]};
+  @define-color dialog_fg_color {cd["window_fg"]};
+
+  :root {{
+    --mac-window-bg: {cd["window_bg"]};
+    --mac-window-fg: {cd["window_fg"]};
+    --mac-sidebar-bg: {cd["sidebar_bg"]};
+    --mac-sidebar-bg-translucent: {cd["sidebar_bg_translucent"]};
+    --mac-card-bg: {cd["card_bg"]};
+    --mac-card-border: {cd["card_border"]};
+    --mac-card-shadow: {cd["card_shadow"]};
+    --mac-card-sep: {cd["card_separator"]};
+    --mac-row-hover: {cd["row_hover"]};
+    --mac-row-active: {cd["row_active"]};
+    --mac-accent-bg: {cd["accent_bg"]};
+    --mac-accent-fg: {cd["accent_fg"]};
+    --mac-text-primary: {cd["text_primary"]};
+    --mac-text-secondary: {cd["text_secondary"]};
+    --mac-text-disabled: {cd["text_disabled"]};
+    --mac-input-bg: {cd["input_bg"]};
+    --mac-input-border: {cd["input_border"]};
+    --mac-input-focus-bg: {cd["input_focus_bg"]};
+    --mac-input-focus-border: {cd["input_focus_border"]};
+    --mac-popover-bg: {cd["popover_bg"]};
+    --mac-popover-border: {cd["popover_border"]};
+  }}
 }}
 """
     return css
@@ -2717,8 +2758,8 @@ widget.thumbnail {{
 """
     return css
 
-def generate_gtk3_tokens_css(tokens):
-    c = tokens["colors"]
+def generate_gtk3_tokens_css(tokens, is_dark=False):
+    c = tokens.get("colors_dark" if is_dark else "colors_light", tokens["colors"])
     g = tokens["geometry"]
     d = tokens["dimensions"]
     
@@ -2736,8 +2777,8 @@ def generate_gtk3_tokens_css(tokens):
 """
     return css
 
-def generate_gtk3_components_css(tokens):
-    c = tokens["colors"]
+def generate_gtk3_components_css(tokens, is_dark=False):
+    c = tokens.get("colors_dark" if is_dark else "colors_light", tokens["colors"])
     g = tokens["geometry"]
     d = tokens["dimensions"]
     e = tokens["effects"]
@@ -3485,10 +3526,13 @@ def build_all():
     for tname in all_theme_names:
         tp = os.path.join(REPO_DIR, tname)
         if os.path.exists(tp):
+            is_dark = "Dark" in tname
+            t_gtk3_tok = generate_gtk3_tokens_css(tokens, is_dark=is_dark)
+            t_gtk3_comp = generate_gtk3_components_css(tokens, is_dark=is_dark)
             update_file(os.path.join(tp, "gtk-4.0/macw1y-tokens.css"), gtk4_tokens)
             update_file(os.path.join(tp, "gtk-4.0/macw1y-components.css"), gtk4_components)
-            update_file(os.path.join(tp, "gtk-3.0/macw1y-tokens.css"), gtk3_tokens)
-            update_file(os.path.join(tp, "gtk-3.0/macw1y-components.css"), gtk3_components)
+            update_file(os.path.join(tp, "gtk-3.0/macw1y-tokens.css"), t_gtk3_tok)
+            update_file(os.path.join(tp, "gtk-3.0/macw1y-components.css"), t_gtk3_comp)
 
     # 2. Wire imports in repo gtk-4.0/gtk.css & fixes4.css
     place_master_imports(os.path.join(REPO_DIR, "gtk-4.0/gtk.css"))
@@ -3501,6 +3545,8 @@ def build_all():
         update_file(os.path.join(REPO_DIR, "config/gtk-4.0/macw1y-components.css"), gtk4_components)
         place_master_imports(os.path.join(REPO_DIR, "config/gtk-4.0/gtk.css"))
         place_master_imports(os.path.join(REPO_DIR, "config/gtk-4.0/gtk-Dark.css"))
+        if os.path.exists(os.path.join(REPO_DIR, "config/gtk-4.0/gtk-Light.css")):
+            place_master_imports(os.path.join(REPO_DIR, "config/gtk-4.0/gtk-Light.css"))
     if os.path.exists(os.path.join(REPO_DIR, "config/gtk-3.0")):
         update_file(os.path.join(REPO_DIR, "config/gtk-3.0/macw1y-tokens.css"), gtk3_tokens)
         update_file(os.path.join(REPO_DIR, "config/gtk-3.0/macw1y-components.css"), gtk3_components)
@@ -3514,7 +3560,9 @@ def build_all():
     update_file(os.path.join(user_gtk3, "macw1y-tokens.css"), gtk3_tokens)
     update_file(os.path.join(user_gtk3, "macw1y-components.css"), gtk3_components)
 
-    place_master_imports(os.path.join(user_gtk4, "gtk.css"))
+    # Ensure gtk-Light.css has master imports and gtk.css is based on Light
+    if os.path.exists(os.path.join(user_gtk4, "gtk-Light.css")):
+        place_master_imports(os.path.join(user_gtk4, "gtk-Light.css"))
     place_master_imports(os.path.join(user_gtk4, "gtk-Dark.css"))
     place_master_imports(os.path.join(user_gtk3, "gtk.css"))
 
@@ -3522,10 +3570,13 @@ def build_all():
     for tname in all_theme_names:
         user_theme = os.path.join(HOME, ".themes", tname)
         if os.path.exists(user_theme):
+            is_dark = "Dark" in tname
+            t_gtk3_tok = generate_gtk3_tokens_css(tokens, is_dark=is_dark)
+            t_gtk3_comp = generate_gtk3_components_css(tokens, is_dark=is_dark)
             update_file(os.path.join(user_theme, "gtk-4.0/macw1y-tokens.css"), gtk4_tokens)
             update_file(os.path.join(user_theme, "gtk-4.0/macw1y-components.css"), gtk4_components)
-            update_file(os.path.join(user_theme, "gtk-3.0/macw1y-tokens.css"), gtk3_tokens)
-            update_file(os.path.join(user_theme, "gtk-3.0/macw1y-components.css"), gtk3_components)
+            update_file(os.path.join(user_theme, "gtk-3.0/macw1y-tokens.css"), t_gtk3_tok)
+            update_file(os.path.join(user_theme, "gtk-3.0/macw1y-components.css"), t_gtk3_comp)
             place_master_imports(os.path.join(user_theme, "gtk-4.0/gtk.css"))
             place_master_imports(os.path.join(user_theme, "gtk-3.0/gtk.css"))
 
@@ -3533,20 +3584,24 @@ def build_all():
     for tname in all_theme_names:
         sys_theme = os.path.join("/usr/share/themes", tname)
         if os.path.exists(sys_theme):
+            repo_t_path = os.path.join(REPO_DIR, tname)
+            is_dark = "Dark" in tname
+            t_gtk3_tok = generate_gtk3_tokens_css(tokens, is_dark=is_dark)
+            t_gtk3_comp = generate_gtk3_components_css(tokens, is_dark=is_dark)
             try:
                 update_file(os.path.join(sys_theme, "gtk-4.0/macw1y-tokens.css"), gtk4_tokens)
                 update_file(os.path.join(sys_theme, "gtk-4.0/macw1y-components.css"), gtk4_components)
-                update_file(os.path.join(sys_theme, "gtk-3.0/macw1y-tokens.css"), gtk3_tokens)
-                update_file(os.path.join(sys_theme, "gtk-3.0/macw1y-components.css"), gtk3_components)
+                update_file(os.path.join(sys_theme, "gtk-3.0/macw1y-tokens.css"), t_gtk3_tok)
+                update_file(os.path.join(sys_theme, "gtk-3.0/macw1y-components.css"), t_gtk3_comp)
                 place_master_imports(os.path.join(sys_theme, "gtk-4.0/gtk.css"))
                 place_master_imports(os.path.join(sys_theme, "gtk-3.0/gtk.css"))
             except PermissionError:
                 subprocess.run(["sudo", "cp", "-f", os.path.join(REPO_DIR, "gtk-4.0/macw1y-tokens.css"), os.path.join(sys_theme, "gtk-4.0/")], check=False)
                 subprocess.run(["sudo", "cp", "-f", os.path.join(REPO_DIR, "gtk-4.0/macw1y-components.css"), os.path.join(sys_theme, "gtk-4.0/")], check=False)
-                subprocess.run(["sudo", "cp", "-f", os.path.join(REPO_DIR, "gtk-3.0/macw1y-tokens.css"), os.path.join(sys_theme, "gtk-3.0/")], check=False)
-                subprocess.run(["sudo", "cp", "-f", os.path.join(REPO_DIR, "gtk-3.0/macw1y-components.css"), os.path.join(sys_theme, "gtk-3.0/")], check=False)
-                subprocess.run(["sudo", "cp", "-f", os.path.join(REPO_DIR, "macW1Y-Dark/gtk-4.0/gtk.css"), os.path.join(sys_theme, "gtk-4.0/gtk.css")], check=False)
-                subprocess.run(["sudo", "cp", "-f", os.path.join(REPO_DIR, "macW1Y-Dark/gtk-3.0/gtk.css"), os.path.join(sys_theme, "gtk-3.0/gtk.css")], check=False)
+                if os.path.exists(os.path.join(repo_t_path, "gtk-4.0/gtk.css")):
+                    subprocess.run(["sudo", "cp", "-f", os.path.join(repo_t_path, "gtk-4.0/gtk.css"), os.path.join(sys_theme, "gtk-4.0/gtk.css")], check=False)
+                if os.path.exists(os.path.join(repo_t_path, "gtk-3.0/gtk.css")):
+                    subprocess.run(["sudo", "cp", "-f", os.path.join(repo_t_path, "gtk-3.0/gtk.css"), os.path.join(sys_theme, "gtk-3.0/gtk.css")], check=False)
 
     print("\n🎉 Master Theme Compilation 100% Successful!")
     print("===================================================================")

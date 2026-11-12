@@ -12,8 +12,8 @@ preferenceswindow,
 preferenceswindow.background,
 preferencespage,
 .preferences-page {
-  background-color: var(--mac-window-bg, #202022);
-  color: var(--mac-window-fg, #ffffff);
+  background-color: var(--mac-window-bg, #f6f6f6);
+  color: var(--mac-window-fg, rgba(0, 0, 0, 0.88));
   background-image: none;
 }
 
@@ -31,7 +31,7 @@ window.desktopwindow decoration {
 
 navigation-split-view,
 overlay-split-view {
-  background-color: var(--mac-window-bg, #202022);
+  background-color: var(--mac-window-bg, #f6f6f6);
   background-image: none;
 }
 
@@ -43,7 +43,7 @@ overlay-split-view > widget.sidebar-pane,
 overlay-split-view .sidebar-pane,
 .sidebar-pane,
 .navigation-sidebar-pane {
-  background-color: var(--mac-sidebar-bg, #18181a);
+  background-color: var(--mac-sidebar-bg, #ebebf0);
   background-image: none;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -233,7 +233,7 @@ window.nautilus-window .sidebar-pane placessidebar row {
   margin: 1.5px 8px 1.5px 4px;
   border-radius: 8px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.90);
+  color: rgba(0, 0, 0, 0.88);
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
@@ -248,7 +248,7 @@ navigation-split-view list.navigation-sidebar row:hover,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:hover,
 window.nautilus-window .sidebar-pane placessidebar row:hover {
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 navigation-split-view list row:selected,
@@ -464,11 +464,11 @@ preferencespage list.boxed-list:not(.nested),
 .content-pane list.boxed-list:not(.nested),
 .mac-settings-content list.boxed-list:not(.nested),
 .card {
-  background-color: var(--mac-card-bg, #1e1e1e);
+  background-color: var(--mac-card-bg, #ffffff);
   background-image: none;
-  border: 1px solid var(--mac-card-border, rgba(255, 255, 255, 0.07));
+  border: 1px solid var(--mac-card-border, rgba(0, 0, 0, 0.08));
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
   margin-left: 15px;
   margin-right: 15px;
   margin-bottom: 12px;
@@ -529,11 +529,11 @@ row.expander list.nested > row {
 }
 
 row.expander list.nested > row:hover {
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 row.expander list.nested > row:active {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
 list.boxed-list > row:last-child.expander:checked list.nested > row:last-child,
@@ -603,7 +603,7 @@ preferencesgroup label.title,
 label.subtitle,
 .subtitle {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(0, 0, 0, 0.55);
 }
 
 list.boxed-list > row:hover,
@@ -612,7 +612,7 @@ list.boxed-list row.expander row.header:hover,
 preferencespage list.boxed-list row:not(.expander):hover,
 .content-pane list.boxed-list row:not(.expander):hover,
 .mac-settings-content list.boxed-list row:not(.expander):hover {
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 list.boxed-list > row + row,
@@ -622,7 +622,7 @@ preferencespage list.boxed-list > row + row,
 row.expander:checked list.nested,
 row.expander list.nested > row {
   border-top: 1px solid transparent;
-  border-image: linear-gradient(to right, transparent 0%, transparent 2%, rgba(255, 255, 255, 0.07) 2%, rgba(255, 255, 255, 0.07) 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
+  border-image: linear-gradient(to right, transparent 0%, transparent 2%, rgba(0, 0, 0, 0.06) 2%, rgba(0, 0, 0, 0.06) 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
 }
 
 list.boxed-list > row:hover + row,
@@ -630,7 +630,7 @@ preferencespage list.boxed-list > row:hover + row,
 .content-pane list.boxed-list > row:hover + row,
 .mac-settings-content list.boxed-list > row:hover + row {
   border-top: 1px solid transparent;
-  border-image: linear-gradient(to right, transparent 0%, transparent 2%, rgba(255, 255, 255, 0.07) 2%, rgba(255, 255, 255, 0.07) 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
+  border-image: linear-gradient(to right, transparent 0%, transparent 2%, rgba(0, 0, 0, 0.06) 2%, rgba(0, 0, 0, 0.06) 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
 }
 
 preferencesgroup > box > box.header,
@@ -1654,9 +1654,9 @@ box.linked:not(.vertical),
 .linked:not(.vertical),
 .linked:not(vertical) {
   border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(0, 0, 0, 0.04);
   background-image: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   padding: 2px;
 }
 
@@ -1678,7 +1678,7 @@ box.linked:not(.vertical) > togglebutton,
   background-image: none;
   border-radius: 9999px;
   box-shadow: none;
-  color: rgba(255, 255, 255, 0.90);
+  color: rgba(0, 0, 0, 0.88);
   font-size: 13px;
   font-weight: 500;
   transition: background-color 150ms ease-out, color 150ms ease-out;
@@ -1770,9 +1770,9 @@ shortcut:disabled label {
 spinbutton.horizontal,
 spinbutton.horizontal:focus-within {
   border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(0, 0, 0, 0.04);
   background-image: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   padding: 1px 4px;
   min-height: 26px;
 }
@@ -1817,16 +1817,16 @@ entry {
   min-height: 28px;
   padding: 2px 10px;
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   color: #ffffff;
   font-size: 13px;
   transition: background-color 150ms ease-out, border-color 150ms ease-out;
 }
 
 entry:focus-within {
-  background-color: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.20);
+  background-color: #ffffff;
+  border-color: rgba(255, 106, 0, 0.50);
   box-shadow: none;
 }
 
@@ -1862,7 +1862,7 @@ combobox > box > button {
   border-style: none;
   box-shadow: none;
   outline: none;
-  color: rgba(255, 255, 255, 0.90);
+  color: rgba(0, 0, 0, 0.88);
   font-size: 13px;
   font-weight: normal;
   transition: background-color 150ms ease-out;
@@ -2079,8 +2079,8 @@ scrollbar > range > trough > slider:hover {
 popover > contents,
 .popover-menu > contents,
 menu {
-  background-color: var(--mac-card-bg, #1e1e1e);
-  border: 1px solid var(--mac-popover-border, rgba(255, 255, 255, 0.10));
+  background-color: var(--mac-card-bg, #ffffff);
+  border: 1px solid var(--mac-popover-border, rgba(0, 0, 0, 0.12));
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   padding: 4px;
@@ -2093,7 +2093,7 @@ menu menuitem {
   min-height: 28px;
   padding: 4px 10px;
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.90);
+  color: rgba(0, 0, 0, 0.88);
 }
 
 popover modelbutton:hover,
@@ -2378,9 +2378,9 @@ navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane scrolledwindow undershoot.top {
   min-height: 38px;
   background: linear-gradient(to bottom,
-    var(--mac-window-bg, #202022) 0%,
-    alpha(var(--mac-window-bg, #202022), 0.90) 12px,
-    alpha(var(--mac-window-bg, #202022), 0.40) 24px,
+    var(--mac-window-bg, #f6f6f6) 0%,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.90) 12px,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.40) 24px,
     transparent 38px);
   border: none;
   box-shadow: none;
@@ -2397,9 +2397,9 @@ window.mac-settings-window .panel-has-switcher preferencespage scrolledwindow un
 window.mac-settings-window .panel-has-switcher scrolledwindow undershoot.top {
   min-height: 38px;
   background: linear-gradient(to bottom,
-    var(--mac-window-bg, #202022) 0%,
-    alpha(var(--mac-window-bg, #202022), 0.90) 12px,
-    alpha(var(--mac-window-bg, #202022), 0.40) 24px,
+    var(--mac-window-bg, #f6f6f6) 0%,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.90) 12px,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.40) 24px,
     transparent 38px);
   border: none;
   box-shadow: none;
@@ -2424,9 +2424,9 @@ window.mac-settings-window .panel-has-switcher preferencespage scrolledwindow un
 window.mac-settings-window .panel-has-switcher scrolledwindow undershoot.bottom {
   min-height: 28px;
   background: linear-gradient(to top,
-    var(--mac-window-bg, #202022) 0%,
-    alpha(var(--mac-window-bg, #202022), 0.90) 10px,
-    alpha(var(--mac-window-bg, #202022), 0.40) 18px,
+    var(--mac-window-bg, #f6f6f6) 0%,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.90) 10px,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.40) 18px,
     transparent 28px);
   border: none;
   box-shadow: none;
@@ -2458,10 +2458,10 @@ navigation-split-view > .sidebar-pane scrolledwindow.undershoot-top > undershoot
 navigation-split-view > .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top {
   min-height: 34px;
   background: linear-gradient(to bottom,
-    var(--mac-window-bg, #202022) 0%,
-    alpha(var(--mac-window-bg, #202022), 0.85) 8px,
-    alpha(var(--mac-window-bg, #202022), 0.50) 18px,
-    alpha(var(--mac-window-bg, #202022), 0.15) 28px,
+    var(--mac-window-bg, #f6f6f6) 0%,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.85) 8px,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.50) 18px,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.15) 28px,
     transparent 34px);
   border: none;
   box-shadow: none;
@@ -2494,10 +2494,10 @@ navigation-split-view > .sidebar-pane scrolledwindow.undershoot-bottom > undersh
 navigation-split-view > .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
   min-height: 24px;
   background: linear-gradient(to top,
-    var(--mac-window-bg, #202022) 0%,
-    alpha(var(--mac-window-bg, #202022), 0.85) 6px,
-    alpha(var(--mac-window-bg, #202022), 0.50) 14px,
-    alpha(var(--mac-window-bg, #202022), 0.15) 20px,
+    var(--mac-window-bg, #f6f6f6) 0%,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.85) 6px,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.50) 14px,
+    alpha(var(--mac-window-bg, #f6f6f6), 0.15) 20px,
     transparent 24px);
   border: none;
   box-shadow: none;

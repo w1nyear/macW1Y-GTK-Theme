@@ -1,0 +1,12 @@
+[Unit]
+Description=macW1Y Light/Dark Theme Synchronizer Daemon
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/mac-theme-sync --daemon
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

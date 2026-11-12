@@ -4,8 +4,8 @@
 /* Window Background */
 window:not(.desktopwindow),
 .background:not(.desktopwindow) {
-  background-color: #202022;
-  color: #ffffff;
+  background-color: #f6f6f6;
+  color: rgba(0, 0, 0, 0.88);
 }
 
 window.desktopwindow,
@@ -442,14 +442,14 @@ entry {
   min-height: 28px;
   padding: 2px 10px;
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   color: #ffffff;
 }
 
 entry:focus {
-  background-color: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.20);
+  background-color: #ffffff;
+  border-color: rgba(255, 106, 0, 0.50);
 }
 
 /* GTK 3 Scrollbars */

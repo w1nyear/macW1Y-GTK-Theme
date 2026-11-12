@@ -20790,3 +20790,40 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - bin/mac-extension-guard verify — VERIFICATION SUCCESS (21/21 OK).
    - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+
+
+Завдання 729: Повна адаптація інтерфейсу під світлу тему, реверсивне налаштування «Засвітлення/Затемнення» елементів скла Liquid Glass та полірування панелі «Вигляд» у Центрі керування GNOME
+1. Причина проблеми:
+   - При перемиканні на світлу тему (через вибір стилю у GNOME Control Center або налаштування інтерфейсу) GTK4 та Libadwaita додатки (Параметри, Наутілус тощо) залишалися темними, оскільки ~/.config/gtk-4.0/gtk.css містив статичну копію gtk-Dark.css з жорстко закодованими темними поверхнями, а ~/.config/gtk-4.0/settings.ini та ~/.config/gtk-3.0/settings.ini містили gtk-application-prefer-dark-theme=1 і gtk-theme-name=macW1Y-Dark. Крім того, GNOME Control Center при виборі стилю змінює лише color-scheme, не синхронізуючи gtk-theme, icon-theme та параметри розширень.
+   - У налаштуваннях Liquid Glass та Blur-my-shell для дока, меню, сповіщень та OSD параметри відтінку (tint-color #000000) та затемнення були статично оптимізовані під темну тему. У світлій темі скло повинно ставати світлим напівпрозорим («Засвітлення» замість «Затемнення») з білим відтінком (#ffffff) та підвищеною яскравістю (brightness 1.05 замість 0.925/0.99).
+   - У бібліотеці інжекції control-center/libmac_settings.c елементи boxed-list мали жорстко прописаний темний колір фону background-color: #1e1e1e замість використання адаптивних токенів CSS var(--mac-card-bg, @card_bg_color).
+   - У панелі «Вигляд» (Appearance) GNOME Control Center перемикач «Типово» відображав застарілий системний текст замість «Світла».
+   - При виборі теми рамка активного вибору перемикача .background-preview-button спотворювалася у вигляд пілюлі (pill) через конфлікт із глобальними правилами кнопок та togglebutton:checked:not(.flat), що мали border-radius: 9999px.
+   - Чотири міні-вікна попереднього перегляду (2 на світлій і 2 на темній картках) були абсолютно прозорими плоскими прямокутниками без розмиття, світлих/темних градієнтів, об'ємних тіней та бліків.
+
+2. Реалізовані комплексні виправлення:
+   - Розроблено та впроваджено системний фоновий синхронізатор bin/mac-theme-sync та службу mac-theme-sync.service, яка в режимі реального часу відстежує зміни org.gnome.desktop.interface color-scheme і синхронізує:
+     * gtk-theme (macW1Y-Light vs macW1Y-Dark), icon-theme (MacTahoe vs MacTahoe-dark), color-scheme (prefer-light vs prefer-dark).
+     * ~/.config/gtk-4.0/settings.ini та ~/.config/gtk-3.0/settings.ini (gtk-application-prefer-dark-theme = 0 vs 1).
+     * Активний файл стилів ~/.config/gtk-4.0/gtk.css (синхронізація з gtk-Light.css або gtk-Dark.css).
+     * Токени GTK3 у ~/.config/gtk-3.0/macw1y-tokens.css.
+     * Параметри Liquid Glass та Blur-my-shell: реверсивна зміна кольору відтінку (#ffffff для світлої, #000000/#29292e для темної) та яскравості (1.05 vs 0.925/0.99).
+     * SSOT-маніфест config/macw1y-manifest.json та генерацію CSS менюбара.
+   - У control-center/libmac_settings.c:
+     * Реалізовано функцію mac_is_light_mode() для динамічного визначення активного режиму інтерфейсу.
+     * Оновлено функції застосування параметрів Liquid Glass (apply_liquid_glass, apply_dock_settings, apply_blur_tint, apply_menu_tint): реверсивна фізика освітлення (1.0 + tint * 0.25) у світлому режимі та затемнення (1.0 - tint * 0.5) у темному режимі.
+     * Оновлено draw_frosted_glass_card() та blur_preview_draw_func(): у світлій темі відображається світле матове скло з білими бліками та напис «Засвітлення», у темній — темне димчасте скло та напис «Затемнення».
+     * Впроваджено update_mac_styling_tint_labels() та динамічний слухач on_interface_color_scheme_changed() для миттєвого оновлення всіх 10 рядків затемнення/засвітлення у панелі «Mac стилізація».
+     * Замінено жорстко закодований #1e1e1e у списках карток на адаптивні CSS змінні var(--mac-card-bg, @card_bg_color), var(--mac-card-border) та var(--mac-card-shadow).
+     * Виправлено конфлікт селектора кнопок: додано :not(.background-preview-button) до togglebutton:checked, а для .background-preview-button примусово встановлено border-radius: 14px !important, background: none !important та 3px акцентну рамку вибору, що усуває ефект пілюлі та зберігає радіус скруглення батьківського елемента.
+     * Впроваджено стилізацію 4 міні-вікон (#default_preview .window та #dark_preview .window) з градієнтами матового скла, білими/темними шапками, бічними панелями, бліками та глибинними тінями.
+     * Впроваджено polish_background_panel() для автоматичного перейменування «Типово» на «Світла» (або «Light» для інших мов) та підключення перемикачів до mac-theme-sync.
+   - Оновлено bin/mac-build-theme: додано підтримку генерації та синхронізації імпортів для gtk-Light.css, розширено токени colors_dark у config/macw1y-tokens.json.
+   - Оновлено install.sh: включено mac-theme-sync до списку системних бінарників та активовано mac-theme-sync.service (100% англійська мова, 0 кирилиці).
+
+3. Розгортання та перевірка:
+   - Бібліотеку libmac_settings.so скомпільовано без помилок та синхронізовано в усі 6 системних та користувацьких розташувань.
+   - Служба mac-theme-sync.service активна та успішно перевірена в обох напрямках (LIGHT <-> DARK).
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS (21/21 OK).
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).

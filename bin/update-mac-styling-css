@@ -20,30 +20,42 @@ def main():
     b_tint = max(0.0, min(1.0, b_val / 100.0))
 
     paths = [
-        os.path.expanduser("~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css"),
-        os.path.expanduser("~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css")
+        (os.path.expanduser("~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css"), False),
+        (os.path.expanduser("~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css"), False),
+        (os.path.expanduser("~/.themes/macW1Y-Light/gnome-shell/gnome-shell.css"), True),
+        (os.path.expanduser("~/.themes/MacTahoe-Light/gnome-shell/gnome-shell.css"), True)
     ]
 
-    for css_path in paths:
+    for css_path, is_light in paths:
         if not os.path.exists(css_path):
             continue
         try:
             with open(css_path, "r", encoding="utf-8") as f:
                 c = f.read()
 
-            # Menubar gradient darkness
-            c = re.sub(
-                r'(#panel\s*\{[^}]*?background-gradient-start:\s*rgba\(0,\s*0,\s*0,\s*)[0-9.]+(\)\s*!important;)',
-                rf'\g<1>{p_tint:.2f}\g<2>',
-                c
-            )
-
-            # Dock background tint
-            c = re.sub(
-                r'(#dash\s+\.dash-background\s*\{[^}]*?background-color:\s*rgba\(36,\s*36,\s*36,\s*)[0-9.,]+(\)\s*!important;)',
-                rf'\g<1>{b_tint:.2f}\g<2>',
-                c
-            )
+            # Menubar gradient darkness/lightness
+            if is_light:
+                c = re.sub(
+                    r'(#panel\s*\{[^}]*?background-gradient-start:\s*rgba\()([0-9.,\s]+)(\)\s*!important;)',
+                    rf'\g<1>255, 255, 255, {p_tint:.2f}\g<3>',
+                    c
+                )
+                c = re.sub(
+                    r'(#dash\s+\.dash-background\s*\{[^}]*?background-color:\s*rgba\()([0-9.,\s]+)(\)\s*!important;)',
+                    rf'\g<1>255, 255, 255, {b_tint:.2f}\g<3>',
+                    c
+                )
+            else:
+                c = re.sub(
+                    r'(#panel\s*\{[^}]*?background-gradient-start:\s*rgba\()([0-9.,\s]+)(\)\s*!important;)',
+                    rf'\g<1>0, 0, 0, {p_tint:.2f}\g<3>',
+                    c
+                )
+                c = re.sub(
+                    r'(#dash\s+\.dash-background\s*\{[^}]*?background-color:\s*rgba\()([0-9.,\s]+)(\)\s*!important;)',
+                    rf'\g<1>36, 36, 36, {b_tint:.2f}\g<3>',
+                    c
+                )
 
             with open(css_path, "w", encoding="utf-8") as f:
                 f.write(c)
