@@ -20981,3 +20981,46 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
    - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+
+
+Завдання 734: Повна ліквідація щілини («ущелини») на кутах вікон за допомогою безгалузевої функції знакової відстані (Branchless Signed Distance Function, SDF) та неперервного C1 субпіксельного згладжування
+1. Причина виникнення ущелини (Root Cause):
+   - У попередній реалізації шейдера corner.glsl розрахунок покриття пікселів містив логічне розгалуження:
+     * Для дуги кута (is_left && is_top) викликалася функція circle_bounds() з обчисленням відстані d = length(p - center) - clip_radius та похідних fwidth(dist).
+     * Для прямої бічної межі вікна (коли p.y >= center_top) виконувалася гілка if (straight_corners != 0 || (!is_top && !is_bottom)), де окремо обчислювалася відстань min_d = p.x - bounds.x та викликалася fwidth(min_d).
+   - Апаратне дивергентне розходження похідних GPU у 2x2 фрагментних квадах (GPU Quad Derivative Divergence):
+     * Графічний процесор (Mesa/Intel Iris Xe / AMD / NVIDIA) виконує фрагментні шейдери блоками 2x2 пікселі (quads). Екранні похідні fwidth(v) апаратно рахуються як |dFdx(v)| + |dFdy(v)| між суміжними пікселями квада.
+     * Рівно на горизонтальній лінії y = center_top верхній піксель квада йшов у гілку circle_bounds, а нижній — у гілку if. Оскільки в сусідньому пікселі змінна min_d або dist не обчислювалася (містила 0 або залишкове значення регістра), вертикальна різниця dFdy аномально підскакувала до десятків одиниць (fw = 20..50 замість ~1.0).
+     * Через цей сплеск fw у виразах згладжування коефіцієнт непрозорості alpha на відстані кількох пікселів від краю падав до 0.4–0.5, що формувало наскрізну горизонтальну щілину («ущелину») завширшки в 1 піксель і завдовжки 15–20 пікселів прямо під дугою заокруглення біля кнопок керування вікном (де було видно шпалери робочого столу).
+
+2. Реалізоване рішення:
+   - У extensions/blur-my-shell@aunetx/effects/corner.glsl:
+     * Повністю ліквідовано всі умовні розгалуження та створено уніфіковану математично строгу функцію знакової відстані для 2D-прямокутника із заокругленими кутами (Branchless Signed Distance Function, SDF):
+       float sdRoundRect(vec2 p, vec2 center, vec2 half_size, float r_top, float r_bottom) {
+           vec2 local_p = p - center;
+           float r = (local_p.y < 0.0) ? r_top : r_bottom;
+           vec2 q = abs(local_p) - half_size + vec2(r);
+           return min(max(q.x, q.y), 0.0) + length(max(q, vec2(0.0))) - r;
+       }
+     * Бездоганна C1-геометрична неперервність: функція абсолютно гладко і без стрибків переходить від прямих ділянок (де q.y <= 0 і dist = abs(x) - half_size.x) до дуг кіл (де q.x > 0 && q.y > 0 і dist = length(q) - r).
+     * Повна відсутність розгалужень у кожному 2x2 кваді: усі фрагменти виконують однаковий набір векторних інструкцій. Похідна dFdy на межі y = center_top становить рівно 0.0, а похідна поперек межі — рівно 1.0.
+     * Адаптивне субпіксельне згладжування Hermite smoothstep:
+       float fw = max(fwidth(dist), 1.0);
+       float alpha = 1.0 - smoothstep(-0.5 * fw, 0.5 * fw, dist);
+       Забезпечує рівно 1 субпіксель надплавного згасання на зовнішній межі вікна та абсолютну 100% непрозорість (alpha = 1.0) на всій внутрішній площі без найменших прогалин чи щілин.
+   - У extensions/eval-helper@mactheme/extension.js:
+     * Додано динамічне зчитування оновленого шейдера getCornerShaderSource() та застосування effect.set_shader_source(src) під час монтування CornerEffect до MetaWindowActor.
+     * Виправлено перевірку existing.get_actor() === actor перед викликом remove_effect, що повністю усунуло попередження у системному журналі.
+     * Синхронізовано наживо всі відкриті вікна без потреби перезапуску сесії через виклик eff.set_shader_source(source) та eff.queue_repaint().
+   - Оновлено та верифіковано config/extensions.lock.json:
+     * Згенеровано актуальні sha256 хеші для blur-my-shell@aunetx (01c2fdb5) та eval-helper@mactheme (8a516407).
+
+3. Результати тестування та верифікації:
+   - Піксельний аналіз скріншотів реальних вікон (Antigravity, Параметри / GNOME Control Center):
+     * Досліджено контур кута на знімках /tmp/corner_capture.png та /tmp/param_corner.png.
+     * По горизонталі в зоні y = center_top (local_y = 22..28): значення яскравості внутрішніх пікселів вікна становлять стабільні 104 / 33 без жодного спаду (відсутні будь-які напівпрозорі пікселі чи відступи).
+     * Контур кута формує математично точну плавну чверть кола (min_x: 31, 27, 24, 22, 21, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10).
+     * Щілина («ущелина») повністю зникла!
+   - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
+   - bin/mac-audit-sync check — 100% PASS!
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).

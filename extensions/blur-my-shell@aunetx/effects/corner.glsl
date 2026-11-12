@@ -1,5 +1,5 @@
 // Heavily based on https://github.com/yilozt/rounded-window-corners
-// Enhanced with subpixel antialiasing and exact geometric continuity for macW1Y
+// Enhanced with exact branchless SDF and subpixel antialiasing for macW1Y
 
 uniform sampler2D tex;
 uniform float radius;
@@ -14,54 +14,18 @@ uniform float clip_y0;
 uniform float clip_width;
 uniform float clip_height;
 
-float circle_bounds(vec2 p, vec2 center, float clip_radius) {
-    vec2 delta = p - center;
-    float dist = length(delta);
-    float d = dist - clip_radius;
-
-    // Adaptive screen-space derivative antialiasing
-    // Smoothstep creates a continuous C1 falloff over the subpixel boundary,
-    // completely eliminating jagged staircasing ("драбини").
-    float fw = max(fwidth(dist), 1.0);
-    return 1.0 - smoothstep(-0.5 * fw, 0.5 * fw, d);
+// Signed Distance Function for a 2D rounded rectangle
+// Mathematically exact, branchless C1 continuity across both straight edges and corner arcs.
+// Prevents GPU 2x2 fragment quad derivative divergence (fwidth) that causes horizontal slits.
+float sdRoundRect(vec2 p, vec2 center, vec2 half_size, float r_top, float r_bottom) {
+    vec2 local_p = p - center;
+    float r = (local_p.y < 0.0) ? r_top : r_bottom;
+    vec2 q = abs(local_p) - half_size + vec2(r);
+    return min(max(q.x, q.y), 0.0) + length(max(q, vec2(0.0))) - r;
 }
 
 vec4 getTexture(vec2 uv) {
     return texture2D(tex, clamp(uv, 0.0, 1.0));
-}
-
-float rounded_rect_coverage(vec2 p, vec4 bounds, float clip_radius) {
-    // Outside the bounds (with 1px threshold for antialiased boundary)
-    if (p.x < bounds.x - 1.0 || p.x > bounds.z + 1.0 || p.y < bounds.y - 1.0 || p.y > bounds.w + 1.0) {
-        return 0.0;
-    }
-
-    float center_left = bounds.x + clip_radius;
-    float center_right = bounds.z - clip_radius;
-    float center_top = bounds.y + clip_radius;
-    float center_bottom = bounds.w - clip_radius;
-
-    bool is_left = (p.x < center_left);
-    bool is_right = (p.x > center_right);
-    bool is_top = (corners_top != 0 && p.y < center_top);
-    bool is_bottom = (corners_bottom != 0 && p.y > center_bottom);
-
-    // If straight corners or in a non-corner edge region:
-    if (straight_corners != 0 || (!is_left && !is_right) || (!is_top && !is_bottom)) {
-        float d_left = p.x - bounds.x;
-        float d_right = bounds.z - p.x;
-        float d_top = p.y - bounds.y;
-        float d_bottom = bounds.w - p.y;
-        float min_d = min(min(d_left, d_right), min(d_top, d_bottom));
-        float fw = max(fwidth(min_d), 1.0);
-        return clamp(min_d / fw + 0.5, 0.0, 1.0);
-    }
-
-    vec2 center;
-    center.x = is_left ? center_left : center_right;
-    center.y = is_top ? center_top : center_bottom;
-
-    return circle_bounds(p, center, clip_radius);
 }
 
 void main(void) {
@@ -76,7 +40,21 @@ void main(void) {
         bounds = vec4(clip_x0, clip_y0, clip_x0 + clip_width, clip_y0 + clip_height);
     }
 
-    float alpha = rounded_rect_coverage(pos, bounds, radius);
+    vec2 half_size = vec2(bounds.z - bounds.x, bounds.w - bounds.y) * 0.5;
+    vec2 center = vec2(bounds.x + bounds.z, bounds.y + bounds.w) * 0.5;
+
+    // Safety clamp
+    half_size = max(half_size, vec2(1.0));
+    float max_r = min(half_size.x, half_size.y);
+    float r_val = (straight_corners != 0) ? 0.0 : clamp(radius, 0.0, max_r);
+    float r_top = (corners_top != 0) ? r_val : 0.0;
+    float r_bottom = (corners_bottom != 0) ? r_val : 0.0;
+
+    float dist = sdRoundRect(pos, center, half_size, r_top, r_bottom);
+
+    // Adaptive subpixel antialiasing
+    float fw = max(fwidth(dist), 1.0);
+    float alpha = 1.0 - smoothstep(-0.5 * fw, 0.5 * fw, dist);
 
     cogl_color_out = vec4(c.rgb * alpha, c.a * alpha);
 }

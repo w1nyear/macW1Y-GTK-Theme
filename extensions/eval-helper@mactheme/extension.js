@@ -4346,6 +4346,20 @@ export default class EvalHelper extends Extension {
         } catch (_) {}
 
         let CornerEffectClass = null;
+        let cornerShaderSource = null;
+
+        const getCornerShaderSource = () => {
+            if (cornerShaderSource) return cornerShaderSource;
+            try {
+                const BMS = Main.extensionManager?.lookup?.('blur-my-shell@aunetx');
+                if (BMS?.dir) {
+                    const shaderFile = BMS.dir.get_child('effects').get_child('corner.glsl');
+                    const [ok, bytes] = shaderFile.load_contents(null);
+                    if (ok) cornerShaderSource = new TextDecoder().decode(bytes);
+                }
+            } catch (_) {}
+            return cornerShaderSource;
+        };
 
         const loadCornerEffect = async () => {
             if (CornerEffectClass) return CornerEffectClass;
@@ -4452,7 +4466,7 @@ export default class EvalHelper extends Extension {
 
             try {
                 let existing = actor.get_effect('mac-forced-corner-effect');
-                if (existing) {
+                if (existing && existing.get_actor?.() === actor) {
                     actor.remove_effect(existing);
                 }
 
@@ -4463,6 +4477,10 @@ export default class EvalHelper extends Extension {
                     corners_bottom: true,
                     straight_corners: isFs,
                 });
+                const src = getCornerShaderSource();
+                if (src && typeof effect.set_shader_source === 'function') {
+                    effect.set_shader_source(src);
+                }
                 effect.enabled = !isFs;
 
                 actor.add_effect_with_name('mac-forced-corner-effect', effect);
