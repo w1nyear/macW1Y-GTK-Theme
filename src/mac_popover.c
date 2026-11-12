@@ -355,17 +355,27 @@ static void on_wc_drag_begin(GtkGestureDrag *gesture, double start_x, double sta
     /* Determine target button index based on child bounds */
     int b_idx = 0;
     int found_idx = -1;
+    double min_dist_to_center = 1e9;
+    int closest_idx = 0;
+
     for (GtkWidget *child = gtk_widget_get_first_child(wc); child != NULL; child = gtk_widget_get_next_sibling(child), b_idx++) {
         graphene_rect_t b;
         if (gtk_widget_compute_bounds(child, wc, &b)) {
-            if (start_x >= b.origin.x && start_x <= b.origin.x + b.size.width) {
+            double center_x = (double)b.origin.x + (double)b.size.width * 0.5;
+            double dist_to_center = fabs(start_x - center_x);
+            if (dist_to_center < min_dist_to_center) {
+                min_dist_to_center = dist_to_center;
+                closest_idx = b_idx;
+            }
+            if (start_x >= (double)b.origin.x - 2.0 && start_x <= (double)b.origin.x + (double)b.size.width + 2.0) {
                 found_idx = b_idx;
-                break;
             }
         }
     }
     if (found_idx >= 0) {
         d->target_button_idx = found_idx;
+    } else if (min_dist_to_center < 50.0) {
+        d->target_button_idx = closest_idx;
     } else {
         if (start_x < 24.0) d->target_button_idx = 0;
         else if (start_x < 46.0) d->target_button_idx = 1;
@@ -385,7 +395,7 @@ static void on_wc_drag_update(GtkGestureDrag *gesture, double offset_x, double o
     d->offset_y = offset_y;
 
     double dist = hypot(offset_x, offset_y);
-    if (!d->is_holding && dist > 6.0) {
+    if (!d->is_holding && dist > 5.0) {
         if (d->hold_timer_id) {
             g_source_remove(d->hold_timer_id);
             d->hold_timer_id = 0;
@@ -398,60 +408,26 @@ static void on_wc_drag_update(GtkGestureDrag *gesture, double offset_x, double o
 
     if (!d->is_holding) return;
 
-    /* Check boundary of target button: if cursor exits the button bounds, release jelly immediately! */
-    double curr_x = d->start_x + offset_x;
-    double curr_y = d->start_y + offset_y;
-    
-    GtkWidget *target_btn = NULL;
-    int b_idx = 0;
-    for (GtkWidget *child = gtk_widget_get_first_child(wc); child != NULL; child = gtk_widget_get_next_sibling(child), b_idx++) {
-        if (b_idx == d->target_button_idx) {
-            target_btn = child;
-            break;
-        }
-    }
-    double min_x, max_x, min_y, max_y;
-    graphene_rect_t btn_bounds;
-    if (target_btn && gtk_widget_compute_bounds(target_btn, wc, &btn_bounds)) {
-        min_x = (double)btn_bounds.origin.x - 6.0;
-        max_x = min_x + (double)btn_bounds.size.width + 12.0;
-        min_y = (double)btn_bounds.origin.y - 6.0;
-        max_y = min_y + (double)btn_bounds.size.height + 12.0;
+    if (dist > 0.5) {
+        /* Smooth elastic stretch and volume-preserving compression */
+        double stretch = 1.15 + fmin(dist * 0.025, 0.45); /* Max stretch ~1.60 */
+        double compress = fmax(0.70, 1.15 / sqrt(stretch / 1.15));
+
+        /* Smooth continuous interpolation between horizontal and vertical axes (ZERO abrupt snap!) */
+        double t_axis = (dist > 0.001) ? (offset_x * offset_x) / (dist * dist) : 0.5;
+        d->cur_sx = compress + (stretch - compress) * t_axis;
+        d->cur_sy = stretch - (stretch - compress) * t_axis;
+
+        /* Damped elastic translation tracking cursor with smooth limits */
+        double max_tx = 36.0;
+        double max_ty = 24.0;
+        d->cur_tx = CLAMP(offset_x * 0.35, -max_tx, max_tx);
+        d->cur_ty = CLAMP(offset_y * 0.35, -max_ty, max_ty);
     } else {
-        min_x = (double)d->target_button_idx * 22.0 - 6.0;
-        max_x = min_x + 32.0;
-        min_y = -6.0;
-        max_y = (double)gtk_widget_get_height(wc) + 6.0;
-    }
-
-    if (curr_x < min_x || curr_x > max_x || curr_y < min_y || curr_y > max_y) {
-        /* Cursor exited button boundary: release jelly with spring back! */
-        d->is_dragging = FALSE;
-        d->is_holding = FALSE;
-        if (d->hold_timer_id) {
-            g_source_remove(d->hold_timer_id);
-            d->hold_timer_id = 0;
-        }
-        d->last_time = 0;
-        if (d->tick_id == 0) {
-            d->tick_id = gtk_widget_add_tick_callback(wc, mac_wc_spring_tick, d, NULL);
-        }
-        return;
-    }
-
-    if (dist > 1.0) {
-        double stretch = 1.18 + fmin(dist * 0.035, 1.25);
-        double compress = fmax(0.65, 1.18 / sqrt(stretch / 1.18));
-
-        if (fabs(offset_x) >= fabs(offset_y)) {
-            d->cur_sx = stretch;
-            d->cur_sy = compress;
-        } else {
-            d->cur_sx = compress;
-            d->cur_sy = stretch;
-        }
-        d->cur_tx = offset_x * 0.38;
-        d->cur_ty = offset_y * 0.38;
+        d->cur_sx = 1.15;
+        d->cur_sy = 1.15;
+        d->cur_tx = 0.0;
+        d->cur_ty = 0.0;
     }
 
     gtk_widget_queue_draw(wc);
@@ -484,6 +460,14 @@ static void on_wc_drag_end(GtkGestureDrag *gesture, double offset_x, double offs
     if (d->tick_id == 0) {
         d->tick_id = gtk_widget_add_tick_callback(wc, mac_wc_spring_tick, d, NULL);
     }
+
+    /* Check if pointer is still over widget after release to keep or clear hover state */
+    if (!gtk_widget_contains(wc, d->start_x + offset_x, d->start_y + offset_y)) {
+        gtk_widget_remove_css_class(wc, "mac-controls-hover");
+        for (GtkWidget *child = gtk_widget_get_first_child(wc); child != NULL; child = gtk_widget_get_next_sibling(child)) {
+            gtk_widget_remove_css_class(child, "mac-group-hover");
+        }
+    }
 }
 
 static void mac_wc_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
@@ -493,34 +477,48 @@ static void mac_wc_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
         return;
     }
 
+    /* Step 1: Draw non-target static buttons first */
+    GtkWidget *target_child = NULL;
     int idx = 0;
     for (GtkWidget *child = gtk_widget_get_first_child(widget);
          child != NULL;
          child = gtk_widget_get_next_sibling(child), idx++) {
-        
         if (idx == d->target_button_idx) {
-            float cw = (float)gtk_widget_get_width(child);
-            float ch = (float)gtk_widget_get_height(child);
-
-            graphene_point_t p1, p2;
-            graphene_point_init(&p1, cw * 0.5f + (float)d->cur_tx, ch * 0.5f + (float)d->cur_ty);
-            graphene_point_init(&p2, -cw * 0.5f, -ch * 0.5f);
-
-            GskTransform *t = gsk_transform_translate(NULL, &p1);
-            t = gsk_transform_scale(t, (float)d->cur_sx, (float)d->cur_sy);
-            t = gsk_transform_translate(t, &p2);
-
-            gtk_snapshot_save(snapshot);
-            gtk_snapshot_transform(snapshot, t);
-            gsk_transform_unref(t);
-
-            gtk_widget_snapshot_child(widget, child, snapshot);
-
-            gtk_snapshot_restore(snapshot);
+            target_child = child;
         } else {
-            /* The other two buttons are drawn completely static! */
             gtk_widget_snapshot_child(widget, child, snapshot);
         }
+    }
+
+    /* Step 2: Draw the target (jelly) button last so it renders on top around ITS OWN center */
+    if (target_child) {
+        graphene_rect_t bounds;
+        float cx, cy;
+        if (gtk_widget_compute_bounds(target_child, widget, &bounds)) {
+            cx = bounds.origin.x + bounds.size.width * 0.5f;
+            cy = bounds.origin.y + bounds.size.height * 0.5f;
+        } else {
+            float cw = (float)gtk_widget_get_width(target_child);
+            float ch = (float)gtk_widget_get_height(target_child);
+            cx = (float)d->target_button_idx * 21.0f + cw * 0.5f;
+            cy = ch * 0.5f;
+        }
+
+        graphene_point_t p1, p2;
+        graphene_point_init(&p1, cx + (float)d->cur_tx, cy + (float)d->cur_ty);
+        graphene_point_init(&p2, -cx, -cy);
+
+        GskTransform *t = gsk_transform_translate(NULL, &p1);
+        t = gsk_transform_scale(t, (float)d->cur_sx, (float)d->cur_sy);
+        t = gsk_transform_translate(t, &p2);
+
+        gtk_snapshot_save(snapshot);
+        gtk_snapshot_transform(snapshot, t);
+        gsk_transform_unref(t);
+
+        gtk_widget_snapshot_child(widget, target_child, snapshot);
+
+        gtk_snapshot_restore(snapshot);
     }
 }
 
@@ -536,6 +534,11 @@ static void on_wc_motion_enter(GtkEventControllerMotion *ctrl, double x, double 
 
 static void on_wc_motion_leave(GtkEventControllerMotion *ctrl, gpointer user_data) {
     GtkWidget *wc = GTK_WIDGET(user_data);
+    MacWcDragData *d = get_wc_drag_data(wc);
+    if (d && (d->is_dragging || d->is_holding)) {
+        /* Keep group hover active while user is dragging jelly */
+        return;
+    }
     gtk_widget_remove_css_class(wc, "mac-controls-hover");
     for (GtkWidget *child = gtk_widget_get_first_child(wc);
          child != NULL;
