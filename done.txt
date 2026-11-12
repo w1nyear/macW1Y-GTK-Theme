@@ -20689,3 +20689,25 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
    - bin/mac-audit-sync check — 100% PASS.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
+
+
+Завдання 725: Відновлення автентичного компактного вигляду контекстного меню менюбара (AppMenu / Finder) та виправлення випадкового збільшення елементів меню після налаштування OSD
+1. Причина проблеми:
+   - Під час налаштування великого OSD HUD (Завдання 722) стилі .popup-menu-item, .appmenu-popup-menu-item та .popup-menu-content у темі та розширенні AppMenu були збільшені (min-height: 28px, font-size: 14.5px, padding: 5-6px 14px, min-width: 220px).
+   - Через це контекстне меню менюбара (ПКМ по Finder / AppMenu з пунктами «Про AppMenu», «Параметри AppMenu...», «Сховати AppMenu» тощо) та випадаючі списки менюбара стали надмірно високими, розтягнутими та з надто великим шрифтом замість компактного вигляду macOS.
+
+2. Реалізовані виправлення:
+   - extensions/appmenu@ChathurangaBW.github.io/stylesheet.css:
+     * Відновлено автентичні компактні розміри для .appmenu-popup-menu-item, .appmenu-popup-menu .popup-menu-item та .appmenu-popup-menu-content .popup-menu-item: min-height: 22px !important, font-size: 13px !important, padding: 3px 12px !important, margin: 1px 6px !important, spacing: 6px !important.
+   - gnome-shell-theme/gnome-shell.css:
+     * Для випадаючих та контекстних меню AppMenu (.appmenu-popup-menu-item тощо) повернено min-height: 22px !important, padding: 4px 12px !important, font-size: 13px !important, spacing: 6px !important.
+     * Прибрано примусовий min-width: 220px з .popup-menu-content.
+     * Для загальних пунктів .popup-menu-item повернено компактний розмір (min-height: 22px !important, font-size: 13px !important, padding: 4px 10px !important, spacing: 6px).
+
+3. Розгортання та перевірка:
+   - Оновлені таблиці стилів скопійовано в ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/stylesheet.css, ~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css та /usr/share/themes/macW1Y-Dark/gnome-shell/gnome-shell.css.
+   - Гаряче перезавантажено тему GNOME Shell та стилі AppMenu в активній сесії.
+   - Оновлено контрольний хеш SHA256 у config/extensions.lock.json.
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS (21/21 OK).
+   - bin/mac-audit-sync check — 100% PASS.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
