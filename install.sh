@@ -544,8 +544,34 @@ install_icons() {
         fi
     done
     
-    # Creating compatibility symlink macW1Y-dark -> MacTahoe-dark
+    # Creating compatibility symlink macW1Y-dark -> MacTahoe-dark and macOS -> MacTahoe
     ln -sfn "MacTahoe-dark" "$ICONS_DIR/macW1Y-dark"
+    ln -sfn "MacTahoe" "$ICONS_DIR/macOS"
+    mkdir -p "$TARGET_HOME/.icons" "$ICONS_DIR/default" "$TARGET_HOME/.icons/default"
+    ln -sfn "$ICONS_DIR/MacTahoe" "$TARGET_HOME/.icons/MacTahoe"
+    ln -sfn "$ICONS_DIR/MacTahoe" "$TARGET_HOME/.icons/macOS"
+
+    # User-level default cursor theme fallback
+    cat << 'EOF_DEF_THEME' > "$ICONS_DIR/default/index.theme"
+[Icon Theme]
+Name=Default
+Comment=Default Cursor Theme
+Inherits=MacTahoe
+EOF_DEF_THEME
+    cp -f "$ICONS_DIR/default/index.theme" "$TARGET_HOME/.icons/default/index.theme"
+    cat << 'EOF_CUR_THEME' > "$ICONS_DIR/MacTahoe/cursor.theme"
+[Icon Theme]
+Name=MacTahoe
+Comment=MacTahoe macOS Cursor Theme
+Inherits=MacTahoe
+EOF_CUR_THEME
+
+    if [ -w "/usr/share/icons" ] || sudo -n true 2>/dev/null; then
+        sudo ln -sfn "$ICONS_DIR/MacTahoe" /usr/share/icons/MacTahoe
+        sudo ln -sfn "$ICONS_DIR/MacTahoe" /usr/share/icons/macOS
+        sudo update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$ICONS_DIR/MacTahoe/cursor.theme" 100 2>/dev/null || true
+        sudo update-alternatives --set x-cursor-theme "$ICONS_DIR/MacTahoe/cursor.theme" 2>/dev/null || true
+    fi
     
     # System Control Center icons (user-independent and protected from removal)
     sudo mkdir -p /usr/share/mactheme/icons /usr/share/icons/hicolor/scalable/status
@@ -1150,6 +1176,18 @@ install_gamemode() {
         sudo systemctl enable mac-gamemode.service
     fi
     sudo touch /etc/mac-gamemode.state
+
+    # 2b. Snap Cursor Override background synchronization service
+    if [ -f "$SCRIPT_DIR/systemd/mac-snap-cursor-override.service" ]; then
+        sudo cp "$SCRIPT_DIR/systemd/mac-snap-cursor-override.service" /etc/systemd/system/
+        if [ -f "$SCRIPT_DIR/bin/mac-snap-cursor-sync" ]; then
+            sudo cp -f "$SCRIPT_DIR/bin/mac-snap-cursor-sync" /usr/local/bin/mac-snap-cursor-sync
+            sudo chmod 755 /usr/local/bin/mac-snap-cursor-sync
+        fi
+        sudo systemctl daemon-reload
+        sudo systemctl enable mac-snap-cursor-override.service
+        sudo systemctl start mac-snap-cursor-override.service 2>/dev/null || true
+    fi
 
     # 3. Multiarch support (i386 for Steam, Wine, Proton)
     sudo dpkg --add-architecture i386 2>/dev/null || true
@@ -1854,6 +1892,31 @@ run_incremental_update() {
         fi
     done
     ln -sfn "MacTahoe-dark" "$TARGET_HOME/.local/share/icons/macW1Y-dark"
+    ln -sfn "MacTahoe" "$TARGET_HOME/.local/share/icons/macOS"
+    mkdir -p "$TARGET_HOME/.icons" "$TARGET_HOME/.local/share/icons/default" "$TARGET_HOME/.icons/default"
+    ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe" "$TARGET_HOME/.icons/MacTahoe"
+    ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe" "$TARGET_HOME/.icons/macOS"
+
+    cat << 'EOF_DEF_THEME_UP' > "$TARGET_HOME/.local/share/icons/default/index.theme"
+[Icon Theme]
+Name=Default
+Comment=Default Cursor Theme
+Inherits=MacTahoe
+EOF_DEF_THEME_UP
+    cp -f "$TARGET_HOME/.local/share/icons/default/index.theme" "$TARGET_HOME/.icons/default/index.theme"
+    cat << 'EOF_CUR_THEME_UP' > "$TARGET_HOME/.local/share/icons/MacTahoe/cursor.theme"
+[Icon Theme]
+Name=MacTahoe
+Comment=MacTahoe macOS Cursor Theme
+Inherits=MacTahoe
+EOF_CUR_THEME_UP
+
+    if [ -w "/usr/share/icons" ] || sudo -n true 2>/dev/null; then
+        sudo ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe" /usr/share/icons/MacTahoe
+        sudo ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe" /usr/share/icons/macOS
+        sudo update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$TARGET_HOME/.local/share/icons/MacTahoe/cursor.theme" 100 2>/dev/null || true
+        sudo update-alternatives --set x-cursor-theme "$TARGET_HOME/.local/share/icons/MacTahoe/cursor.theme" 2>/dev/null || true
+    fi
     sync_or_update_file "$SCRIPT_DIR/icons/control-center.png" "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center.png" false
     sync_or_update_file "$SCRIPT_DIR/icons/control-center-symbolic.svg" "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center-symbolic.svg" false
     run_as_user gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-dark"

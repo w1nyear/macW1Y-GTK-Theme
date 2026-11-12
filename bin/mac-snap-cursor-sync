@@ -1,0 +1,27 @@
+#!/bin/bash
+# Ensures macOS Tahoe / macW1Y cursors override snap fallback directories
+SRC="/home/vitaliy/.local/share/icons/MacTahoe/cursors"
+[ -d "$SRC" ] || exit 0
+
+# gtk-common-themes
+GTK_SNAP=$(find /snap/gtk-common-themes/ -maxdepth 1 -mindepth 1 -type d ! -name "current" 2>/dev/null | sort -V | tail -n 1)
+if [ -n "$GTK_SNAP" ] && [ -d "$GTK_SNAP/share/icons" ]; then
+    for theme in Adwaita Yaru DMZ-White DMZ-Black; do
+        TARGET="$GTK_SNAP/share/icons/$theme/cursors"
+        if [ -d "$TARGET" ] && ! mountpoint -q "$TARGET"; then
+            mount --bind "$SRC" "$TARGET" 2>/dev/null || true
+        fi
+    done
+fi
+
+# steam snap
+STEAM_SNAP=$(find /snap/steam/ -maxdepth 1 -mindepth 1 -type d ! -name "current" 2>/dev/null | sort -V | tail -n 1)
+if [ -n "$STEAM_SNAP" ] && [ -d "$STEAM_SNAP/usr/share/icons" ]; then
+    for theme in Adwaita; do
+        TARGET="$STEAM_SNAP/usr/share/icons/$theme/cursors"
+        if [ -d "$TARGET" ] && ! mountpoint -q "$TARGET"; then
+            mount --bind "$SRC" "$TARGET" 2>/dev/null || true
+        fi
+    done
+fi
+exit 0

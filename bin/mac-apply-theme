@@ -12,6 +12,7 @@ import os
 import sys
 import json
 import fcntl
+import shutil
 import subprocess
 
 REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
@@ -182,6 +183,21 @@ def main():
                      os.path.join(HOME, ".config/gtk-4.0/settings.ini")]:
         if update_ini_file(ini_path, ini_dict):
             changes_count += 1
+
+    # 5b. Universal Cursor Enforcement (Xresources, X11, GTK2, Snaps)
+    try:
+        xresources_path = os.path.join(HOME, ".Xresources")
+        xr_content = "Xcursor.theme: MacTahoe\nXcursor.size: 24\n"
+        with open(xresources_path, "w") as xrf:
+            xrf.write(xr_content)
+        if shutil.which("xrdb"):
+            subprocess.run(["xrdb", "-merge", xresources_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        # Trigger snap cursor sync daemon/script if available
+        if os.path.exists("/usr/local/bin/mac-snap-cursor-sync"):
+            subprocess.run(["/usr/local/bin/mac-snap-cursor-sync"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
 
     # 6. Liquid Glass settings
     lg = manifest.get("liquid_glass", {})

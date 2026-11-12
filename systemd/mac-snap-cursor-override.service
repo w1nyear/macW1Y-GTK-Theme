@@ -1,0 +1,12 @@
+[Unit]
+Description=macOS Tahoe / macW1Y Cursor Snap Override
+After=snapd.service
+Wants=snapd.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/mac-snap-cursor-sync
+
+[Install]
+WantedBy=multi-user.target

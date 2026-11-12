@@ -20711,3 +20711,31 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - bin/mac-extension-guard verify — VERIFICATION SUCCESS (21/21 OK).
    - bin/mac-audit-sync check — 100% PASS.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
+
+Завдання 726: Впровадження універсального курсора macOS (MacTahoe / macOS) для всієї системи, включаючи Steam, Xwayland, Flatpak та Snap-додатки
+1. Причина проблеми:
+   - У GSettings та GTK settings.ini була задана назва теми курсора "macOS", проте в каталогах піктограм (~/.local/share/icons, /usr/share/icons, ~/.icons) тема фізично називалася "MacTahoe".
+   - Додатки Xwayland, X11, 32-бітні середовища та пісочниці (зокрема Steam Snap, Discord, Spotify тощо) шукали каталог за назвою "macOS", не знаходили його, зверталися до теми "default", яка успадковувала Adwaita з /usr/share/icons/default/index.theme, або використовували вбудований X11/Adwaita курсор.
+   - У ~/.icons/MacTahoe був присутній лише каталог apps/ без cursors/, що ламало пошук курсорів за назвою MacTahoe для застарілих X11 бібліотек.
+   - У Snap-додатках (Steam, Discord тощо) середовище desktop-launch обмежувало XCURSOR_PATH виключно внутрішніми каталогами snap-рантайму, де були доступні лише теми Adwaita, Humanity та DMZ-White.
+
+2. Реалізовані комплексні виправлення:
+   - Створено символічні посилання macOS -> MacTahoe у всіх системних та користувацьких каталогах (~/.local/share/icons/macOS, ~/.icons/macOS, /usr/share/icons/macOS).
+   - Каталог ~/.icons/MacTahoe тепер є повним посиланням на ~/.local/share/icons/MacTahoe з усіма варіаціями та хешами курсорів.
+   - Створено cursor.theme для MacTahoe та зареєстровано системну альтернативу через update-alternatives для x-cursor-theme з пріоритетом 100, тому /usr/share/icons/default/index.theme тепер безпосередньо успадковує MacTahoe.
+   - Створено ~/.icons/default/index.theme та ~/.local/share/icons/default/index.theme з Inherits=MacTahoe.
+   - Каталоги /usr/share/icons/Adwaita/cursors та /usr/share/icons/Yaru/cursors перенаправлено на MacTahoe/cursors (з резервною копією .backup), що унеможливлює відкат до стандартного курсора Ubuntu у будь-яких програмах з жорстко зашитими назвами.
+   - Налаштовано ресурсний файл ~/.Xresources (Xcursor.theme: MacTahoe, Xcursor.size: 24) та об'єднано з активним сервером через xrdb -merge.
+   - Створено конфігурації оточення ~/.config/environment.d/30-mac-cursor.conf, ~/.xprofile та ~/.gtkrc-2.0.
+   - Для Flatpak застосовано глобальний перевизначений профіль: flatpak override --user --filesystem=xdg-data/icons:ro --filesystem=~/.icons:ro --env=XCURSOR_THEME=MacTahoe --env=XCURSOR_SIZE=24.
+   - Для всіх Snap-додатків у ~/snap/*/common та ~/snap/*/current підключено каталоги .icons та .local/share/icons.
+   - Створено службу mac-snap-cursor-override.service та скрипт /usr/local/bin/mac-snap-cursor-sync, які монтують курсори MacTahoe через bind-mount у каталоги share/icons/Adwaita/cursors, Yaru/cursors, DMZ-White/cursors для gtk-common-themes та steam snap.
+   - У лаунчери Steam (/usr/local/bin/steam, ~/.local/bin/steam, ~/.local/share/applications/steam_steam.desktop, а також у скрипт steam.sh) додано експорт XCURSOR_PATH, XCURSOR_THEME=MacTahoe та автоматичне збереження налаштувань після самооновлення клієнта.
+   - Доповнено bin/mac-apply-theme та install.sh (англійською мовою, без кирилиці).
+
+3. Розгортання та перевірка:
+   - Служба mac-snap-cursor-override.service активована та включена в автозавантаження.
+   - Перевірено завантаження курсорів через libXcursor безпосередньо всередині Snap-контейнерів Discord та Steam: Adwaita, Yaru, DMZ-White та macOS повертають валідні вказівники на завантажені зображення курсора MacTahoe.
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS (21/21 OK).
+   - bin/mac-audit-sync check — 100% PASS.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
