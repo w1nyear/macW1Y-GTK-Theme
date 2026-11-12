@@ -21,7 +21,7 @@ export class GdmWallpaperManager {
     }
 
     setup(dialog, dialogParent) {
-        this.view = new GdmWallpaperView(dialogParent, dialog);
+        this.view = new GdmWallpaperView(dialogParent, dialog, this._gdm);
         this.view.rebuild();
 
         this.themeStore = new GdmThemeStore(this._gdm._extension, (userName) => {

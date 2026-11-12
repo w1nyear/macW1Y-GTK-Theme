@@ -1486,7 +1486,12 @@ install_gdm_transition() {
     fi
     sudo glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
 
-    # 6. Allowing extensions in unlock-dialog and gdm session modes
+    # 6. Allowing extensions in unlock-dialog and gdm session modes and syncing to system
+    if [ -d "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" ]; then
+        sudo mkdir -p /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com
+        sudo cp -rf "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/"* /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/
+        sudo glib-compile-schemas /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/schemas 2>/dev/null || true
+    fi
     for mpath in "/usr/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/metadata.json" \
                 "$TARGET_HOME/.local/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/metadata.json"; do
         if [ -f "$mpath" ] && ! grep -q "unlock-dialog" "$mpath"; then
@@ -1578,8 +1583,8 @@ install_gdm_transition() {
     run_as_user gsettings set org.gnome.login-screen enable-fingerprint-authentication false 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-mode 'cupertino' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock cupertino-always-show-user true 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-enable false 2>/dev/null || true
-    run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-path "/usr/share/backgrounds/GoldenGate_Day.jpg" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-enable true 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-path "/usr/share/backgrounds/GoldenGate_Live_loop.mp4" 2>/dev/null || true
     run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/GoldenGate_Day.jpg" 2>/dev/null || true
 
     # 11. Disabling automatic login to display GDM lock screen

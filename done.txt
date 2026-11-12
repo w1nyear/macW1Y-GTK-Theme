@@ -20739,3 +20739,29 @@ Task 704: Уніфікація ширини поля вводу пароля н�
    - bin/mac-extension-guard verify — VERIFICATION SUCCESS (21/21 OK).
    - bin/mac-audit-sync check — 100% PASS.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh містить 0 символів кирилиці).
+
+Завдання 727: Реалізація відтворення живої відеошпалери (Golden Gate Live Wallpaper) на екрані блокування та меню входу GDM до старту сесії користувача
+1. Причина проблеми:
+   - GDM запускає GNOME Shell від імені системного користувача gdm (UID 975 / 120), домашній каталог якого знаходиться у /var/lib/gdm3 і не має доступу до каталогу /home/vitaliy/ (права 700).
+   - Системний Greeter GDM завантажує розширення виключно з /usr/share/gnome-shell/extensions/. У каталозі /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/ був повністю відсутній файл src/main/liveWallpaperPlayer.js, а модулі gdmThemePipeline.js, wallpaperManager.js та gdmWallpaperManager.js містили застарілий код без рушія відеоплеєра GStreamer.
+   - У dconf-конфігураціях та системних схемах GDM (/etc/dconf/db/gdm.d/99-wack-lockscreen, /usr/share/glib-2.0/schemas/99_mactheme.gschema.override) параметр lockscreen-wallpaper-enable був встановлений у false, а lockscreen-wallpaper-path вказував на статичне зображення /usr/share/backgrounds/GoldenGate_Day.jpg.
+   - У GdmWallpaperView.rebuild() контейнери моніторів зі статичною непрозорою шпалерою stack.root створювалися поверх відеоплеєра, повністю перекриваючи його актор, а в present() відеоплеєр не підіймався нагору ієрархії Clutter.
+   - У скрипті install.sh була відсутня синхронізація оновленого розширення wack-lockscreen-clock у /usr/share/gnome-shell/extensions/ та були жорстко зашиті false і GoldenGate_Day.jpg для параметрів шпалери.
+
+2. Реалізовані комплексні виправлення:
+   - Оновлено gdmThemePipeline.js (в обох деревах src/pro та pro): передано посилання на gdm-менеджер та його settings, змінено порядок ініціалізації у rebuild() (плеєр запускається та підіймається над контейнерами моніторів через set_child_above_sibling), у present() забезпечено збереження позиції відеоплеєра на передньому плані перед статичним фоном, а в destroy() додано коректну зупинку через stop().
+   - Оновлено gdmWallpaperManager.js (в обох деревах src/pro та pro): передано this._gdm у конструктор GdmWallpaperView.
+   - Оновлено системну схему перевизначень macos-gdm/99_mactheme.gschema.override: у секціях [org.gnome.shell.extensions.wack-lockscreen-clock], [org.gnome.shell.extensions.wack-lockscreen-clock:ubuntu] та [org.gnome.shell.extensions.wack-lockscreen-clock:GNOME-Greeter] встановлено lockscreen-wallpaper-enable = true та lockscreen-wallpaper-path = '/usr/share/backgrounds/GoldenGate_Live_loop.mp4'.
+   - Оновлено профіль GDM dconf macos-gdm/99-wack-lockscreen на lockscreen-wallpaper-enable=true та '/usr/share/backgrounds/GoldenGate_Live_loop.mp4'.
+   - Синхронізовано схеми у /usr/share/glib-2.0/schemas/, скомпільовано glib-compile-schemas та оновлено dconf update для системної бази GDM.
+   - Повністю скопійовано та розгорнуто оновлений код розширення wack-lockscreen-clock (включаючи liveWallpaperPlayer.js) до системного каталогу /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/ з наданням прав a+rX.
+   - Оновлено install.sh: у функції install_gdm_transition додано обов'язкову синхронізацію файлів wack-lockscreen-clock до системного каталогу /usr/share/gnome-shell/extensions/ та компіляцію схем, а також виправлено параметри lockscreen-wallpaper-enable на true та lockscreen-wallpaper-path на GoldenGate_Live_loop.mp4. Збережено повну англомовність (0 символів кирилиці).
+   - Оновлено хеш цілісності wack-lockscreen-clock у config/extensions.lock.json (нова контрольна сума a7efc50077e753a56398f59f8143358ee6a19b49f8b6ffc72cc49aa131ee59ce).
+
+3. Розгортання та перевірка:
+   - sudo -u gdm gsettings get org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-enable -> true.
+   - sudo -u gdm gsettings get org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-path -> '/usr/share/backgrounds/GoldenGate_Live_loop.mp4'.
+   - Перевірено пряме декодування GStreamer від імені користувача gdm: відтворення відео GoldenGate_Live_loop.mp4 успішно функціонує без помилок прав чи кодеків.
+   - bin/mac-extension-guard verify — VERIFICATION SUCCESS (21/21 OK).
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (0 символів кирилиці в install.sh).

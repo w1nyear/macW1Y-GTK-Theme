@@ -518,15 +518,15 @@
         "49",
         "50"
       ],
-      "sha256": "1e269fedc8ac22214ca96df1646460a0427b2d5a043f9b5dc06b6a3db1eb12e8",
+      "sha256": "a7efc50077e753a56398f59f8143358ee6a19b49f8b6ffc72cc49aa131ee59ce",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
         "sonoma_lockscreen_clock"
       ],
       "has_custom_patches": true,
-      "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575); GDM lockscreen date and prompt positioning (Task 669); Golden Gate Live Wallpaper engine with seamless 3s loop & unlock transition (Task 716)",
-      "last_verified": "2026-11-11",
+      "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575); GDM lockscreen date and prompt positioning (Task 669); Golden Gate Live Wallpaper engine with seamless 3s loop & unlock transition (Task 716); GDM boot greeter live video wallpaper pipeline integration (Task 727)",
+      "last_verified": "2026-11-12",
       "pinned_sha256": "899624639a6a6367d44cf990c3790ca09b4138006a536bfa4a4f2a349a254859"
     },
     "wifi-hotspot-quick-settings@aryan10.github.io": {

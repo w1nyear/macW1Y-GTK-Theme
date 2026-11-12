@@ -775,7 +775,8 @@ export class GdmThemeStore {
 }
 
 export class GdmWallpaperView {
-    constructor(parent, sibling) {
+    constructor(parent, sibling, gdm = null) {
+        this._gdm = gdm;
         this._group = new Clutter.Actor();
         this._group.opacity = 255;
         this._group.visible = true;
@@ -800,16 +801,6 @@ export class GdmWallpaperView {
             this._group.visible = true;
         }
 
-        if (isLiveWallpaperConfigured()) {
-            if (!this._livePlayer) {
-                this._livePlayer = new LiveWallpaperPlayer();
-                this._livePlayer.start(this._group);
-            }
-        } else if (this._livePlayer) {
-            this._livePlayer.destroy();
-            this._livePlayer = null;
-        }
-
         for (const monitor of Main.layoutManager.monitors) {
             const container = new St.Widget({
                 x: monitor.x, y: monitor.y, width: monitor.width, height: monitor.height,
@@ -828,6 +819,19 @@ export class GdmWallpaperView {
 
             this._group.add_child(container);
             this._monitors.push({ container, monitor, stacks: new Map(), topKey: null, dimmer });
+        }
+
+        if (isLiveWallpaperConfigured(this._gdm?._settings)) {
+            if (!this._livePlayer) {
+                this._livePlayer = new LiveWallpaperPlayer();
+                this._livePlayer.start(this._group, null, this._gdm?._settings);
+            }
+            if (this._livePlayer?._rootActor && this._livePlayer._rootActor.get_parent() === this._group) {
+                this._group.set_child_above_sibling(this._livePlayer._rootActor, null);
+            }
+        } else if (this._livePlayer) {
+            this._livePlayer.stop();
+            this._livePlayer = null;
         }
     }
 
@@ -889,6 +893,10 @@ export class GdmWallpaperView {
                 stack.root.opacity = 255;
             }
             m.topKey = key;
+        }
+
+        if (this._livePlayer?._rootActor && this._livePlayer._rootActor.get_parent() === this._group) {
+            this._group.set_child_above_sibling(this._livePlayer._rootActor, null);
         }
     }
 
@@ -1008,7 +1016,7 @@ export class GdmWallpaperView {
 
     destroy() {
         if (this._livePlayer) {
-            this._livePlayer.destroy();
+            this._livePlayer.stop();
             this._livePlayer = null;
         }
 
