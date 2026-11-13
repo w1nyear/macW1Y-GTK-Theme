@@ -21744,3 +21744,28 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
      - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
      - bin/mac-i18n-verify: 100% SUCCESSFUL.
      - Синхронізовано done.txt на ~/Desktop/done.txt.
+
+757. [EFFECTS] Виправлення обрізання/зникнення вікна під час анімації згортання та розгортання Magic Lamp (Genie effect) на межі з фоновими вікнами та доком:
+   - Контекст та прояв проблеми:
+     Користувач звернув увагу на те, що коли одне вікно відкрите над іншим (наприклад, над ChatGPT), під час анімації згортання/розгортання вікно різко обрізається по нижній межі фонового вікна, а «шийка» деформації чарівної лампи зникає над шпалерами перед доком.
+   - Причина дефекту:
+     1. У extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/extension.js методи 'vfunc_modify_paint_volume(pv)' класів MagicLampMinimizeEffect та MagicLampUnminimizeEffect повертали 'return false'. Через це Mutter/Clutter отримував 'null' для paint volume актора і вважав, що актор займає лише власну початкову прямокутну область вікна.
+     2. У коміті a8e7ee8d з 'on_tick_elapsed' було вилучено 'this.actor.get_parent().queue_redraw()'. Через це Mutter не отримував сигналів пошкодження (damage tracking) для області між нижнім краєм вікна та іконкою в доку. Якщо позаду було інше вікно, що перемальовувалося, деформація відображалася лише в його межах, а на ділянці стільниці/шпалер перед доком різко зрізалася.
+     3. Під час мінімізації фокусування переходило до наступного вікна, яке могло перекривати актор, що деформується, через зміну порядку в контейнері.
+   - Виконані виправлення:
+     1. Додано 'import Graphene from 'gi://Graphene';' у extension.js.
+     2. Впроваджено повноцінний 'vfunc_modify_paint_volume(pv)' у базовому класі AbstractCommonMagicLampEffect:
+        - Розраховується точний прямокутник об'єднання (union bounding box) від початкової геометрії вікна до координат іконки в доку з урахуванням вигину синусоїдної хвилі (+200px margin).
+        - Встановлюються pv.set_origin, pv.set_width, pv.set_height і повертається true, завдяки чому Clutter та Mutter повністю враховують розширений об'єм малювання деформованого вікна на кожному кадрі.
+     3. У 'on_tick_elapsed' для MagicLampMinimizeEffect та MagicLampUnminimizeEffect:
+        - Відновлено виклик 'parent.queue_redraw()' для контейнера global.window_group, що гарантує перемалювання всієї області фону та вікон між вікном та доком.
+        - Додано перевірку й підтримку актора поверх сусідніх вікон під час анімації: 'parent.set_child_above_sibling(this.actor, null)'.
+     4. У обробниках сигналів 'minimize' та 'unminimize' перед запуском ефекту актор піднімається на передній план у 'actor.get_parent()'.
+     5. Синхронізовано змінений extension.js до ~/.local/share/gnome-shell/extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/.
+     6. Оновлено SHA256 хеш у config/extensions.lock.json (47a429f266a0cb4290e3298b28b98236b4cf96e99ee24618d60602015579312e).
+     7. Здійснено «гаряче» перезавантаження розширення в живому сеансі GNOME Shell через EvalHelper.
+   - Результати верифікації:
+     - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21 managed extensions).
+     - bin/mac-audit-sync check: 100% PASS (5/5 перевірок).
+     - bin/mac-i18n-verify: 100% SUCCESSFUL (194 мови).
+     - Синхронізовано done.txt на ~/Desktop/done.txt.

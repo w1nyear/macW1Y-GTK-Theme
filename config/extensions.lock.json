@@ -72,16 +72,16 @@
         "50",
         "51"
       ],
-      "sha256": "4d4ac80febe61bb4df4b3255f073b9879438a7d775cd35bad779fed08eefd92d",
+      "sha256": "47a429f266a0cb4290e3298b28b98236b4cf96e99ee24618d60602015579312e",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
         "genie_minimize_effect"
       ],
-      "has_custom_patches": false,
-      "patch_description": "Upstream verified",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "4d4ac80febe61bb4df4b3255f073b9879438a7d775cd35bad779fed08eefd92d"
+      "has_custom_patches": true,
+      "patch_description": "Extended paint volume & parent queue_redraw during mesh deform to prevent clipping at dock/background window boundaries",
+      "last_verified": "2026-11-14",
+      "pinned_sha256": "47a429f266a0cb4290e3298b28b98236b4cf96e99ee24618d60602015579312e"
     },
     "cupertino-dock-lite@rinzler69-wastaken.github.com": {
       "uuid": "cupertino-dock-lite@rinzler69-wastaken.github.com",

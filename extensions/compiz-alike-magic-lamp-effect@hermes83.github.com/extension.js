@@ -28,6 +28,7 @@ import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import GLib from 'gi://GLib';
+import Graphene from 'gi://Graphene';
 
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
@@ -186,6 +187,10 @@ export default class CompizMagicLampEffectExtension extends Extension {
 
             this.destroyActorEffect(actor);
 
+            try {
+                actor.get_parent()?.set_child_above_sibling(actor, null);
+            } catch (_) {}
+
             actor.add_effect_with_name(MINIMIZE_EFFECT_NAME, new MagicLampMinimizeEffect({settingsData: this.settingsData, icon: icon}));
         });
 
@@ -212,6 +217,10 @@ export default class CompizMagicLampEffectExtension extends Extension {
             let icon = this.getIcon(actor);
 
             this.destroyActorEffect(actor);
+
+            try {
+                actor.get_parent()?.set_child_above_sibling(actor, null);
+            } catch (_) {}
 
             actor.add_effect_with_name(UNMINIMIZE_EFFECT_NAME, new MagicLampUnminimizeEffect({settingsData: this.settingsData, icon: icon}));
         });
@@ -618,6 +627,35 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
             v.y = (y + this.offsetY) * propY;
         }
     }
+
+    vfunc_modify_paint_volume(pv) {
+        if (!this.initialized || !this.actor || !this.icon || !this.window)
+            return false;
+
+        try {
+            const margin = 200;
+            const dx = this.icon.x - this.window.x;
+            const dy = this.icon.y - this.window.y;
+            const iconW = this.icon.width || 0;
+            const iconH = this.icon.height || 0;
+
+            const minX = Math.min(0, dx) - margin;
+            const minY = Math.min(0, dy) - margin;
+            const maxX = Math.max(this.window.width, dx + iconW) + margin;
+            const maxY = Math.max(this.window.height, dy + iconH) + margin;
+
+            const origin = new Graphene.Point3D();
+            origin.x = minX;
+            origin.y = minY;
+            origin.z = 0;
+            pv.set_origin(origin);
+            pv.set_width(maxX - minX);
+            pv.set_height(maxY - minY);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
 }
 
 class MagicLampMinimizeEffect extends AbstractCommonMagicLampEffect {
@@ -650,11 +688,19 @@ class MagicLampMinimizeEffect extends AbstractCommonMagicLampEffect {
         this.j = this.progress > this.split ? (this.progress - this.split) * (1 / (1 - this.split)) : 0;
 
         this.updateFrameParams();
-        this.invalidate();
-    }
 
-    vfunc_modify_paint_volume(pv) {
-        return false;
+        const parent = this.actor?.get_parent();
+        if (parent) {
+            try {
+                const lastChild = parent.get_last_child();
+                if (lastChild && lastChild !== this.actor) {
+                    parent.set_child_above_sibling(this.actor, null);
+                }
+            } catch (_) {}
+            parent.queue_redraw();
+        }
+
+        this.invalidate();
     }
 }
     
@@ -692,10 +738,18 @@ class MagicLampUnminimizeEffect extends AbstractCommonMagicLampEffect {
         this.j = 1 - (this.progress <= (1 - this.split) ? this.progress * (1 / (1 - this.split)) : 1);
 
         this.updateFrameParams();
-        this.invalidate();
-    }
 
-    vfunc_modify_paint_volume(pv) {
-        return false;
+        const parent = this.actor?.get_parent();
+        if (parent) {
+            try {
+                const lastChild = parent.get_last_child();
+                if (lastChild && lastChild !== this.actor) {
+                    parent.set_child_above_sibling(this.actor, null);
+                }
+            } catch (_) {}
+            parent.queue_redraw();
+        }
+
+        this.invalidate();
     }
 }
