@@ -517,6 +517,8 @@ def daemon_loop():
     game_overtemp_count = 0
     is_game_throttling = False
     last_sys_profile = get_system_power_profile()
+    last_game_check = 0
+    last_game_active = False
 
     while True:
         try:
@@ -533,7 +535,16 @@ def daemon_loop():
                 current_mode = None
 
             manual_ovr = get_manual_override()
-            game_active = any_game_running()
+            game_active = False
+            if manual_ovr is None:
+                if now - last_game_check >= 3.0:
+                    game_active = any_game_running()
+                    last_game_active = game_active
+                    last_game_check = now
+                else:
+                    game_active = last_game_active
+            elif manual_ovr == 'gaming':
+                game_active = True
 
             if manual_ovr == 'gaming' or (manual_ovr is None and game_active):
                 # --- GAME MODE ---
@@ -586,7 +597,8 @@ def daemon_loop():
 
         except Exception:
             pass
-        time.sleep(1.0)
+        sleep_interval = 2.0 if manual_ovr == 'quiet' else 1.0
+        time.sleep(sleep_interval)
 
 if __name__ == '__main__':
     cmd = sys.argv[1].lower() if len(sys.argv) > 1 else 'status'

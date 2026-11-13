@@ -457,7 +457,7 @@ def process_video(file_path):
     return None
 
 def run_daemon():
-    print("[mac-screenshot-process] Daemon started, watching screenshot and screencast directories...")
+    print("[mac-screenshot-process] Daemon started, watching screenshot and screencast directories via inotify...")
     home = Path(os.path.expanduser("~"))
     watch_dirs = [
         home / "Зображення" / "Знімки екрана",
@@ -486,63 +486,120 @@ def run_daemon():
                     except Exception:
                         pass
 
+    # Try setting up inotify for 100% event-driven, zero-polling operation
+    inotify_fd = -1
+    wd_to_dir = {}
+    libc = None
+    try:
+        import ctypes
+        import select
+        import struct
+
+        libc = ctypes.CDLL("libc.so.6", use_errno=True)
+        IN_CLOEXEC = 0o2000000
+        IN_NONBLOCK = 0o0004000
+        IN_CLOSE_WRITE = 0x00000008
+        IN_MOVED_TO = 0x00000080
+
+        inotify_fd = libc.inotify_init1(IN_CLOEXEC | IN_NONBLOCK)
+        if inotify_fd >= 0:
+            for d in watch_dirs:
+                if d.exists():
+                    wd = libc.inotify_add_watch(inotify_fd, str(d).encode("utf-8"), IN_CLOSE_WRITE | IN_MOVED_TO)
+                    if wd >= 0:
+                        wd_to_dir[wd] = d
+    except Exception as e:
+        print(f"[mac-screenshot-process] inotify init fallback: {e}", file=sys.stderr)
+        inotify_fd = -1
+
+    def handle_candidate(f):
+        if not f.is_file() or f.name.startswith("."):
+            return
+        canonical_path = str(f.resolve())
+        try:
+            st = f.stat()
+        except Exception:
+            return
+
+        # If this file was already processed or seen, skip it
+        if st.st_ino in processed_inodes or canonical_path in processed_paths:
+            return
+
+        # Mark it immediately so subsequent loop cycles skip it
+        processed_inodes.add(st.st_ino)
+        processed_paths.add(canonical_path)
+
+        # Wait for screenshot/screencast writer to finish writing
+        prev_size = -1
+        for _ in range(15):
+            try:
+                cur_size = f.stat().st_size
+                if cur_size > 0 and cur_size == prev_size:
+                    break
+                prev_size = cur_size
+            except Exception:
+                pass
+            time.sleep(0.1)
+
+        # Process new file
+        if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".webp"]:
+            if not f.stem.endswith("_temp") and "Originals" not in f.parts:
+                dest = process_image(f)
+                if dest and dest.exists():
+                    try:
+                        processed_inodes.add(dest.stat().st_ino)
+                        processed_paths.add(str(dest.resolve()))
+                    except Exception:
+                        pass
+        elif f.suffix.lower() in [".webm", ".mp4", ".mkv"]:
+            if not f.stem.endswith("_temp") and "Originals" not in f.parts:
+                dest = process_video(f)
+                if dest and dest.exists():
+                    try:
+                        processed_inodes.add(dest.stat().st_ino)
+                        processed_paths.add(str(dest.resolve()))
+                    except Exception:
+                        pass
+
     while True:
         try:
-            for d in watch_dirs:
-                if not d.exists():
-                    continue
-                for f in d.iterdir():
-                    if not f.is_file() or f.name.startswith("."):
-                        continue
-                    canonical_path = str(f.resolve())
+            if inotify_fd >= 0:
+                # Kernel sleeps here until a file event actually occurs (0% CPU, 0 disk reads)
+                r, _, _ = select.select([inotify_fd], [], [], 30.0)
+                if r:
                     try:
-                        st = f.stat()
-                    except Exception:
+                        data = os.read(inotify_fd, 4096)
+                        offset = 0
+                        while offset < len(data):
+                            wd, mask, cookie, name_len = struct.unpack_from("iIII", data, offset)
+                            offset += 16
+                            if name_len > 0:
+                                name_bytes = data[offset:offset + name_len]
+                                offset += name_len
+                                name = name_bytes.split(b"\x00", 1)[0].decode("utf-8", "ignore")
+                                if wd in wd_to_dir and name:
+                                    target_file = wd_to_dir[wd] / name
+                                    if target_file.exists():
+                                        handle_candidate(target_file)
+                    except BlockingIOError:
+                        pass
+                else:
+                    # Periodic 30s check: ensure newly created folders are watched
+                    for d in watch_dirs:
+                        if d.exists() and d not in wd_to_dir.values() and libc:
+                            wd = libc.inotify_add_watch(inotify_fd, str(d).encode("utf-8"), IN_CLOSE_WRITE | IN_MOVED_TO)
+                            if wd >= 0:
+                                wd_to_dir[wd] = d
+            else:
+                # Low power fallback: scan with 5-second sleep instead of 0.5s
+                for d in watch_dirs:
+                    if not d.exists():
                         continue
-
-                    # If this file was already processed or seen, skip it
-                    if st.st_ino in processed_inodes or canonical_path in processed_paths:
-                        continue
-
-                    # Mark it immediately so subsequent loop cycles skip it
-                    processed_inodes.add(st.st_ino)
-                    processed_paths.add(canonical_path)
-
-                    # Wait for screenshot/screencast writer to finish writing
-                    prev_size = -1
-                    for _ in range(15):
-                        try:
-                            cur_size = f.stat().st_size
-                            if cur_size > 0 and cur_size == prev_size:
-                                break
-                            prev_size = cur_size
-                        except Exception:
-                            pass
-                        time.sleep(0.1)
-
-                    # Process new file
-                    if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".webp"]:
-                        if not f.stem.endswith("_temp") and "Originals" not in f.parts:
-                            dest = process_image(f)
-                            if dest and dest.exists():
-                                try:
-                                    processed_inodes.add(dest.stat().st_ino)
-                                    processed_paths.add(str(dest.resolve()))
-                                except Exception:
-                                    pass
-                    elif f.suffix.lower() in [".webm", ".mp4", ".mkv"]:
-                        if not f.stem.endswith("_temp") and "Originals" not in f.parts:
-                            dest = process_video(f)
-                            if dest and dest.exists():
-                                try:
-                                    processed_inodes.add(dest.stat().st_ino)
-                                    processed_paths.add(str(dest.resolve()))
-                                except Exception:
-                                    pass
-
-            time.sleep(0.5)
+                    for f in d.iterdir():
+                        handle_candidate(f)
+                time.sleep(5.0)
         except Exception as e:
-            time.sleep(1.0)
+            time.sleep(2.0)
 
 def main():
     parser = argparse.ArgumentParser(description="macOS Sequoia/Tahoe Screenshot Processing Engine")
