@@ -1138,32 +1138,42 @@ export class WorkspaceIndicatorController {
         const iconOpacity = Math.round(255 * (1.0 - v));
         const barOpacity = Math.round(255 * v);
 
+        if (this._lastIconOpacity === iconOpacity && this._lastBarOpacity === barOpacity) {
+            return;
+        }
+        this._lastIconOpacity = iconOpacity;
+        this._lastBarOpacity = barOpacity;
+
+        const iconReactive = (v <= 0.05);
+        const barReactive = (v >= 0.95);
+        const barVisible = (v > 0.005);
+
         // 1. Smoothly fade left box icons (Apple logo, app name, menus)
         if (Main.panel && Main.panel._leftBox) {
-            Main.panel._leftBox.opacity = iconOpacity;
-            Main.panel._leftBox.reactive = (v <= 0.05);
+            if (Main.panel._leftBox.opacity !== iconOpacity) Main.panel._leftBox.opacity = iconOpacity;
+            if (Main.panel._leftBox.reactive !== iconReactive) Main.panel._leftBox.reactive = iconReactive;
         }
 
         // 2. Smoothly fade right box icons (tray, indicators, clock, quick settings)
         if (Main.panel && Main.panel._rightBox) {
-            Main.panel._rightBox.opacity = iconOpacity;
-            Main.panel._rightBox.reactive = (v <= 0.05);
+            if (Main.panel._rightBox.opacity !== iconOpacity) Main.panel._rightBox.opacity = iconOpacity;
+            if (Main.panel._rightBox.reactive !== iconReactive) Main.panel._rightBox.reactive = iconReactive;
         }
 
         // 3. Smoothly fade center box other children (excluding spacesBar)
         if (Main.panel && Main.panel._centerBox) {
             for (const child of Main.panel._centerBox.get_children()) {
                 if (child === this._spacesBar) continue;
-                child.opacity = iconOpacity;
-                child.reactive = (v <= 0.05);
+                if (child.opacity !== iconOpacity) child.opacity = iconOpacity;
+                if (child.reactive !== iconReactive) child.reactive = iconReactive;
             }
         }
 
         // 4. Smoothly fade spaces bar
         if (this._spacesBar) {
-            this._spacesBar.opacity = barOpacity;
-            this._spacesBar.visible = (v > 0.005);
-            this._spacesBar.reactive = (v >= 0.95);
+            if (this._spacesBar.opacity !== barOpacity) this._spacesBar.opacity = barOpacity;
+            if (this._spacesBar.visible !== barVisible) this._spacesBar.visible = barVisible;
+            if (this._spacesBar.reactive !== barReactive) this._spacesBar.reactive = barReactive;
         }
     }
 

@@ -21126,3 +21126,36 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
    - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+
+================================================================================
+Завдання 737: MACW1Y — Етап 1 (Повний аудит продуктивності) та Етап 2 (Оптимізація GNOME та рендерингу розширень)
+Дата виконання: 13 листопада 2026 р.
+Статус: ВИКОНАНО (Етап 1: 100%, Етап 2: 100%)
+
+1. Опис проблеми та контекст:
+   - Комплексний аудит продуктивності та стабільності інтерфейсу macW1Y на ноутбуці Acer Nitro V15 ANV15-51 (Intel i5-13420H / RTX 3050 Laptop / 16GB DDR5 / 1920x1080@165Hz VRR).
+   - Зафіксовано падіння частоти CPU до 396–563 МГц через EPP 'power' у тихому режимі під час живлення від мережі.
+   - За частоти 165 Гц бюджет кадру становить 6.06 мс. На частоті 400 МГц однопотоковий рушій GJS зазнавав високих затримок через безперервні виклики слухачів, що викликало пропуск кадрів під час переходів.
+   - Створено вичерпний звіт MACW1Y_PERFORMANCE_AUDIT.md.
+
+2. Реалізовані зміни та технічні рішення для Етапу 2:
+   - extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js:
+     * Впроваджено кешування стану для _applyOverviewTransitionProgress(progress): якщо цілочисельні значення iconOpacity та barOpacity не змінилися з попереднього кадру, метод негайно завершує виконання без зайвих звернень до Clutter.
+     * Забезпечено умовне оновлення властивостей reactive, visible та opacity лише у разі їхньої фактичної зміни для panel._leftBox, panel._rightBox, дітей panel._centerBox та spacesBar.
+     * Усунено сотні надлишкових скидань pick-кешу та перерахунків дерева акторів Clutter за секунду.
+   - extensions/blur-my-shell@aunetx/components/overview.js:
+     * Додано кешування _lastOverviewOpacity для методу updateOpacity(progress): зміна прозорості та станів show()/hide() для overview_background_group відбувається лише тоді, коли розрахована прозорість дійсно змінилася.
+     * Оптимізовано configureEffects(): оновлення eff.radius та eff.brightness на дочірніх акторах виконується тільки за наявності розбіжності з цільовим базовим значенням, що усуває зайві повторні завантаження уніформів шейдерів у GPU.
+     * Забезпечено коректне скидання стану _lastOverviewOpacity на подіях 'shown' (255) та 'hidden' (0).
+   - extensions/eval-helper@mactheme/extension.js:
+     * Впроваджено кешування _lastDingOpacity у слухачі stateAdj._macDingStateConn: усунено безперервне встановлення властивості opacity на клонах вікон DING при незмінному значенні на кожному кадрі анімації.
+     * Оптимізовано showWorkspaceBackgrounds(): додано перевірки перед встановленням opacity = 255 та visible = true на wsActor._background, _bin та _backgroundGroup.
+     * Усунено витік ресурсів у disable(): додано явне відключення сигналів _dockSignals та _dockMagSignals для безпечного вивантаження/перезавантаження розширення.
+   - config/extensions.lock.json:
+     * Оновлено хеші SHA-256 для appmenu@ChathurangaBW.github.io (63b4f9c3), blur-my-shell@aunetx (c12d39b7) та eval-helper@mactheme (45a99fec).
+
+3. Результати тестування та верифікації:
+   - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes).
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+   - Усі змінені розширення перевірені в системі: активні, без помилок і збоїв.

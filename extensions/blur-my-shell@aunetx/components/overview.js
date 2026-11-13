@@ -57,13 +57,14 @@ export const OverviewBlur = class OverviewBlur {
 
         const configureEffects = () => {
             const children = this.overview_background_group.get_children();
+            const targetRadius = Math.max(0.5, baseRadius);
             for (const widget of children) {
                 const effs = widget.get_effects ? widget.get_effects() : [];
                 for (const eff of effs) {
-                    if (eff.radius !== undefined) {
-                        eff.radius = Math.max(0.5, baseRadius);
+                    if (eff.radius !== undefined && eff.radius !== targetRadius) {
+                        eff.radius = targetRadius;
                     }
-                    if (eff.brightness !== undefined) {
+                    if (eff.brightness !== undefined && eff.brightness !== baseBrightness) {
                         eff.brightness = baseBrightness;
                     }
                 }
@@ -74,12 +75,21 @@ export const OverviewBlur = class OverviewBlur {
         const stateAdjustment = Main.overview?._controls?._stateAdjustment
             ?? Main.overview?._overview?._controls?._stateAdjustment;
 
+        this._lastOverviewOpacity = -1;
+
         const updateOpacity = (progress) => {
             const p = Math.max(0, Math.min(1, progress));
-            this.overview_background_group.opacity = Math.round(p * 255);
-            if (p > 0 && !this.overview_background_group.visible) {
+            const targetOpacity = Math.round(p * 255);
+            if (this._lastOverviewOpacity === targetOpacity)
+                return;
+            this._lastOverviewOpacity = targetOpacity;
+
+            if (this.overview_background_group.opacity !== targetOpacity)
+                this.overview_background_group.opacity = targetOpacity;
+
+            if (targetOpacity > 0 && !this.overview_background_group.visible) {
                 this.overview_background_group.show();
-            } else if (p === 0 && this.overview_background_group.visible) {
+            } else if (targetOpacity === 0 && this.overview_background_group.visible) {
                 this.overview_background_group.hide();
             }
         };
@@ -104,8 +114,11 @@ export const OverviewBlur = class OverviewBlur {
         });
 
         this.connections.connect(Main.overview, 'shown', () => {
-            this.overview_background_group.show();
-            this.overview_background_group.opacity = 255;
+            if (!this.overview_background_group.visible)
+                this.overview_background_group.show();
+            if (this.overview_background_group.opacity !== 255)
+                this.overview_background_group.opacity = 255;
+            this._lastOverviewOpacity = 255;
         });
 
         this.connections.connect(Main.overview, 'hiding', () => {
@@ -121,8 +134,10 @@ export const OverviewBlur = class OverviewBlur {
 
         this.connections.connect(Main.overview, 'hidden', () => {
             this.overview_background_group.remove_all_transitions();
-            this.overview_background_group.opacity = 0;
+            if (this.overview_background_group.opacity !== 0)
+                this.overview_background_group.opacity = 0;
             this.overview_background_group.hide();
+            this._lastOverviewOpacity = 0;
         });
 
         // Permanently lock Overview to Workspace/Window Picker (Mission Control), completely removing App Grid

@@ -2639,6 +2639,7 @@ export default class EvalHelper extends Extension {
                 if (!Main.overview._macDingHiddenConn) {
                     Main.overview._macDingHiddenConn = Main.overview.connect('hidden', () => {
                         cleanupDingClones();
+                        _lastDingOpacity = 255;
                         for (const actor of getDingActors()) {
                             actor.remove_all_transitions();
                             actor.opacity = 255;
@@ -2646,6 +2647,7 @@ export default class EvalHelper extends Extension {
                     });
                 }
 
+                let _lastDingOpacity = -1;
                 const stateAdj = controls?._stateAdjustment;
                 if (stateAdj && !stateAdj._macDingStateConn) {
                     stateAdj._macDingStateConn = stateAdj.connect('notify::value', () => {
@@ -2653,12 +2655,15 @@ export default class EvalHelper extends Extension {
                             const val = stateAdj.value;
                             const progress = Math.min(1, Math.max(0, val));
                             const targetOpacity = Math.round(255 * (1 - progress));
+                            if (_lastDingOpacity === targetOpacity) return;
+                            _lastDingOpacity = targetOpacity;
+
                             if (!_dingClones.length && (Main.overview.visible || Main.overview._animationInProgress) && targetOpacity > 0 && targetOpacity < 255) {
                                 ensureDingClones(targetOpacity);
                             }
                             for (const clone of _dingClones) {
                                 if (clone.get_transition('opacity')) continue;
-                                clone.opacity = targetOpacity;
+                                if (clone.opacity !== targetOpacity) clone.opacity = targetOpacity;
                             }
                             if (progress >= 1) {
                                 cleanupDingClones();
@@ -2731,15 +2736,15 @@ export default class EvalHelper extends Extension {
                         for (const view of ws._workspacesViews) {
                             for (const wsActor of (view.get_children ? view.get_children() : [])) {
                                 if (wsActor._background) {
-                                    wsActor._background.opacity = 255;
-                                    wsActor._background.visible = true;
+                                    if (wsActor._background.opacity !== 255) wsActor._background.opacity = 255;
+                                    if (!wsActor._background.visible) wsActor._background.visible = true;
                                     if (wsActor._background._bin) {
-                                        wsActor._background._bin.opacity = 255;
-                                        wsActor._background._bin.visible = true;
+                                        if (wsActor._background._bin.opacity !== 255) wsActor._background._bin.opacity = 255;
+                                        if (!wsActor._background._bin.visible) wsActor._background._bin.visible = true;
                                     }
                                     if (wsActor._background._backgroundGroup) {
-                                        wsActor._background._backgroundGroup.opacity = 255;
-                                        wsActor._background._backgroundGroup.visible = true;
+                                        if (wsActor._background._backgroundGroup.opacity !== 255) wsActor._background._backgroundGroup.opacity = 255;
+                                        if (!wsActor._background._backgroundGroup.visible) wsActor._background._backgroundGroup.visible = true;
                                     }
                                 }
                             }
@@ -3900,6 +3905,22 @@ export default class EvalHelper extends Extension {
         }
         Main.overview._macHideWsBgConn = null;
         Main.overview._macShowWsBgConn = null;
+
+        if (this._dockSignals) {
+            this._dockSignals.forEach(id => {
+                try { global.window_manager?.disconnect(id); } catch (_) {}
+                try { Main.overview?.disconnect(id); } catch (_) {}
+            });
+            this._dockSignals = null;
+            this._macDockSignalsConnected = false;
+        }
+        if (this._dockMagSignals) {
+            this._dockMagSignals.forEach(id => {
+                try { Main.overview?.disconnect(id); } catch (_) {}
+            });
+            this._dockMagSignals = null;
+            this._dockMagSignalsConnected = false;
+        }
 
         if (this._overviewWallpaperManager) {
             try { this._overviewWallpaperManager.destroy(); } catch (_) {}
