@@ -57,8 +57,11 @@ case " $* " in
         ;;
 esac
 
-WATCHDOG_LAUNCH="/var/tmp/mactheme-overlay-launching"
-WATCHDOG_FAILED="/var/tmp/mactheme-overlay-failed"
+USER_ID=$(id -u 2>/dev/null || echo 0)
+WATCHDOG_DIR="${XDG_RUNTIME_DIR:-/tmp/mactheme-$USER_ID}"
+mkdir -p "$WATCHDOG_DIR" 2>/dev/null || true
+WATCHDOG_LAUNCH="$WATCHDOG_DIR/mactheme-overlay-launching"
+WATCHDOG_FAILED="$WATCHDOG_DIR/mactheme-overlay-failed"
 NOW=$(date +%s)
 
 if [ "$IS_GDM" -eq 0 ] && [ -f "$WATCHDOG_LAUNCH" ]; then

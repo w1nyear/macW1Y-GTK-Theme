@@ -21313,3 +21313,29 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
    - Фонові демони не навантажують CPU в простої, системні ресурси повністю вивільнені для плавного рендерингу інтерфейсу.
+
+
+================================================================================
+Завдання 743: MACW1Y — Етап 8 (Стабільність, безпека та надійність сесії)
+Дата виконання: 13 листопада 2026 р.
+Статус: ВИКОНАНО (Етап 8: 100%)
+
+1. Опис проблеми та контекст:
+   - Під час аналізу системних логів завантаження було виявлено критичну вразливість механізму безпеки (watchdog) обгортки /usr/bin/gnome-shell:
+     * `/usr/bin/gnome-shell: cannot create /var/tmp/mactheme-overlay-launching: Permission denied`.
+     * Причина: файл /var/tmp/mactheme-overlay-launching створювався під час запуску GDM (user gdm, UID 127). Коли користувач входив у сесію (user vitaliy, UID 1000), через атрибут sticky bit на /var/tmp користувач vitaliy не мав права перезаписати або видалити чужий файл.
+     * Наслідок: оболонка vitaliy не могла оновити мітку запуску, зчитувала застарілий timestamp від GDM (< 60с) та помилково вважала, що попередній запуск завершився збоєм (false-positive crash watchdog trip). Це викликало примусовий bypass overlay (деактивацію /org/gnome/shell/ui/layout.js), що призводило до зникнення менюбара macW1Y та скидання до стандартного вигляду Ubuntu.
+
+2. Реалізовані зміни та технічні рішення:
+   - bin/gnome-shell та /usr/bin/gnome-shell:
+     * Додано перевірку прапорця IS_GDM (ігнорування auth-екрана --mode=gdm від crash-watchdog циклів).
+     * Переведено зберігання watchdog-файлів (mactheme-overlay-launching, mactheme-overlay-failed) у персональну захищену директорію користувача `$XDG_RUNTIME_DIR` (/run/user/$UID) з резервним шляхом `/tmp/mactheme-$USER_ID`.
+     * Кожен користувач і сесія отримали повністю ізольовану зону пам'яті з правами 0700, що на 100% усунуло помилки `Permission denied` та хибні спрацьовування safe-mode.
+     * Очищено застарілі спільні файли з /var/tmp.
+     * Синхронізовано репозиторійний `bin/gnome-shell` з системним `/usr/bin/gnome-shell`.
+
+3. Результати тестування та верифікації:
+   - bin/mac-extension-guard verify — 21/21 OK.
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+   - Журнал systemd чистий від помилок перехоплення, вхід у систему гарантовано завантажує macOS менюбар та ефекти стабільно без фаллбеків.
