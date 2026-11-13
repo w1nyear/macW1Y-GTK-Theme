@@ -185,7 +185,9 @@ def set_platform_profile(profile):
 def set_intel_igpu_min_freq(freq_mhz):
     targets = [
         '/sys/class/drm/card1/gt_min_freq_mhz',
-        '/sys/class/drm/card0/gt_min_freq_mhz'
+        '/sys/class/drm/card0/gt_min_freq_mhz',
+        '/sys/devices/pci0000:00/0000:00:02.0/drm/card1/gt_min_freq_mhz',
+        '/sys/devices/pci0000:00/0000:00:02.0/drm/card1/gt/gt0/rps_min_freq_mhz'
     ]
     for p in targets:
         if os.path.exists(p):
@@ -277,7 +279,7 @@ def set_gpu_performance(enable, throttled=False):
             set_intel_igpu_min_freq(400)
             set_platform_profile('balanced')
         else:
-            set_intel_igpu_min_freq(100)
+            set_intel_igpu_min_freq(300)
             set_platform_profile('balanced')
     except Exception:
         pass
@@ -493,8 +495,11 @@ def apply_quiet_mode():
     """
     Mode: Quiet / Power Saver.
     Limits noise and thermal dissipation.
+    On AC: uses 'balance_power' so that single-threaded UI frames at 165Hz render smoothly without fan noise.
+    On battery: uses 'power' for maximum battery life.
     """
-    set_cpu_freq('powersave', 'power', TARGET_MIN_FREQ, 3400000, turbo=True)
+    epp = 'power' if is_on_battery() else 'balance_power'
+    set_cpu_freq('powersave', epp, TARGET_MIN_FREQ, 3400000, turbo=True)
     apply_sysctl({
         'vm.swappiness': '60',
         'vm.vfs_cache_pressure': '100',
