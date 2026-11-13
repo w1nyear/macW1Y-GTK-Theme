@@ -3,9 +3,9 @@
 
 @define-color accent_bg_color #ff6a00;
 @define-color accent_fg_color #ffffff;
-@define-color theme_base_color #f6f6f6;
-@define-color theme_text_color rgba(0, 0, 0, 0.88);
-@define-color theme_bg_color #f6f6f6;
-@define-color theme_fg_color rgba(0, 0, 0, 0.88);
+@define-color theme_base_color #202022;
+@define-color theme_text_color #ffffff;
+@define-color theme_bg_color #202022;
+@define-color theme_fg_color #ffffff;
 @define-color theme_selected_bg_color #ff6a00;
 @define-color theme_selected_fg_color #ffffff;

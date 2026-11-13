@@ -9655,7 +9655,7 @@ navigation-split-view .sidebar-pane {
     margin: 6px 0px 6px 6px;
     border: none;
     border-radius: 20px;
-    background-color: var(--mac-sidebar-bg-translucent, rgba(30, 30, 34, 0.40));
+    background-color: var(--mac-sidebar-bg, #ebebf0);
     background-clip: padding-box;
     box-shadow: none;
 }
@@ -11686,6 +11686,8 @@ window.mac-settings-window button.suggested-action.circular:active {
   color: #ffffff;
   border-radius: 9999px;
 }
+
+
 
 
 

@@ -72,7 +72,7 @@
         "50",
         "51"
       ],
-      "sha256": "fbe464aad7ee2aea8e6c70e54bf12f4c4d3aaf60c854b8aa94ac278465ea8d47",
+      "sha256": "4d4ac80febe61bb4df4b3255f073b9879438a7d775cd35bad779fed08eefd92d",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -81,7 +81,7 @@
       "has_custom_patches": false,
       "patch_description": "Upstream verified",
       "last_verified": "2026-10-27",
-      "pinned_sha256": "f371a1771853cb74935a792153c29c4ee0f6494ca70609cd9cda1fad4f70b802"
+      "pinned_sha256": "4d4ac80febe61bb4df4b3255f073b9879438a7d775cd35bad779fed08eefd92d"
     },
     "cupertino-dock-lite@rinzler69-wastaken.github.com": {
       "uuid": "cupertino-dock-lite@rinzler69-wastaken.github.com",
@@ -238,7 +238,7 @@
         "49",
         "50"
       ],
-      "sha256": "083f7055391a2f2c01d87a6e657674f1edf998c5f37e927e414146ea367401aa",
+      "sha256": "eed4092355ae08d462cc9c2888bac1d38654db3268271d93504505c39aacf5a1",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -249,7 +249,7 @@
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macOS Alt+Tab switcher enhancements",
       "last_verified": "2026-11-10",
-      "pinned_sha256": "dace7fb9102727913df3a8f50a75d0296686259b3d91dfeaa3ce664673dd3cb4"
+      "pinned_sha256": "eed4092355ae08d462cc9c2888bac1d38654db3268271d93504505c39aacf5a1"
     },
     "kiwi@kemma": {
       "uuid": "kiwi@kemma",
@@ -518,16 +518,16 @@
         "49",
         "50"
       ],
-      "sha256": "8c31a229d174cef3c7833ea7502a41a433cd739e317dc073ef734fd47467a012",
+      "sha256": "2a7941963036cff573704bc60ebdec1e46ee22375bc118c6bf7cb0e6db31ae55",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
         "sonoma_lockscreen_clock"
       ],
       "has_custom_patches": true,
-      "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575); GDM lockscreen date and prompt positioning (Task 669); Static high-resolution photo wallpaper fallback (Task 731)",
-      "last_verified": "2026-11-12",
-      "pinned_sha256": "899624639a6a6367d44cf990c3790ca09b4138006a536bfa4a4f2a349a254859"
+      "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575); GDM lockscreen date and prompt positioning (Task 669); static-first GDM wallpaper and deferred video startup (Phase 7); corrected GDM module paths, isolated optional UI failures, restored native actors/state on teardown, and hardened video/player lifecycle (Phase 8)",
+      "last_verified": "2026-11-13",
+      "pinned_sha256": "2a7941963036cff573704bc60ebdec1e46ee22375bc118c6bf7cb0e6db31ae55"
     },
     "wifi-hotspot-quick-settings@aryan10.github.io": {
       "uuid": "wifi-hotspot-quick-settings@aryan10.github.io",

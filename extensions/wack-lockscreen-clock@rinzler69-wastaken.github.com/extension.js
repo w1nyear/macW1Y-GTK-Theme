@@ -272,8 +272,7 @@ export default class WackLockscreenClockExtension extends Extension {
 
         // Subsystem instantiations
         this._themeManager = new ThemeManager(this);
-        const WmClass = this._WallpaperManagerClass || WallpaperManager;
-        this._wallpaperManager = new WmClass(this);
+        this._wallpaperManager = new WallpaperManager(this);
         const ClmClass = this._ClockLayoutManagerClass || _ClockLayoutManagerClass || ClockLayoutManager;
         this._clockLayoutManager = new ClmClass(this);
         this._messageManager = new LockscreenMessageManager(this);
@@ -286,13 +285,6 @@ export default class WackLockscreenClockExtension extends Extension {
         this._unlockDialogController = new ControllerClass(this);
         this._notifManager = new NotificationManager(this);
 
-        import(`./src/main/wallpaperManager.js?t=${Date.now()}`).then(m => {
-            if (m?.WallpaperManager && this._dialog === dialog) {
-                this._WallpaperManagerClass = m.WallpaperManager;
-                this._wallpaperManager = new m.WallpaperManager(this);
-                this._updateCustomWallpaperOverlay();
-            }
-        }).catch(() => {});
         import(`./src/main/clockLayoutManager.js?t=${Date.now()}`).then(m => {
             if (m?.ClockLayoutManager && this._dialog === dialog) {
                 this._ClockLayoutManagerClass = m.ClockLayoutManager;
@@ -482,7 +474,6 @@ export default class WackLockscreenClockExtension extends Extension {
         try { this._applyPromptModeLayout(); } catch (e) { console.error(`[WACK] applyPromptModeLayout error: ${e}`); }
         try { this._positionClock(); } catch (e) { console.error(`[WACK] positionClock error: ${e}`); }
         try { this._positionHint(); } catch (e) { console.error(`[WACK] positionHint error: ${e}`); }
-        try { this._updateCustomWallpaperOverlay(); } catch (e) { console.error(`[WACK] updateCustomWallpaperOverlay error: ${e}`); }
     }
 
     _loadSettings() {

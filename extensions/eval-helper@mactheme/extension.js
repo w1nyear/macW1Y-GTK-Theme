@@ -4175,6 +4175,13 @@ export default class EvalHelper extends Extension {
 
     _setupMinimizedWindowSnapshotManager() {
         const SNAPSHOT_OVERLAY_NAME = 'mac-window-snapshot-overlay';
+        const MAGIC_LAMP_EFFECT_NAMES = [
+            'minimize-magic-lamp-effect',
+            'unminimize-magic-lamp-effect',
+        ];
+
+        const hasMagicLampTransition = (actor) =>
+            MAGIC_LAMP_EFFECT_NAMES.some(name => actor?.get_effect?.(name));
 
         const captureWindowSnapshot = (actor) => {
             if (!actor || !actor.mapped || !actor.meta_window) return null;
@@ -4190,6 +4197,9 @@ export default class EvalHelper extends Extension {
 
         const applySnapshotOverlay = (actor) => {
             if (!actor || !actor.meta_window) return;
+            // Keep the snapshot for parked/minimized windows, but never paint
+            // it over the live actor during Compiz Magic Lamp deformation.
+            if (hasMagicLampTransition(actor)) return;
             const snap = actor.meta_window._macCachedSnapshot;
             if (!snap) return;
 
@@ -4267,7 +4277,7 @@ export default class EvalHelper extends Extension {
                         }
                         return GLib.SOURCE_REMOVE;
                     });
-                } else if (win.minimized && actor) {
+                } else if (win.minimized && actor && !hasMagicLampTransition(actor)) {
                     applySnapshotOverlay(actor);
                 }
             });

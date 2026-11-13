@@ -21575,3 +21575,48 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - mac-audit-sync check — 100% PASS (5/5 checks passed).
    - mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
    - mac-i18n-verify — 100% SUCCESSFUL.
+
+
+================================================================================
+
+Завдання 752: macW1Y — Відновлення GDM меню до стану до впровадження живих шпалер та комплексне виправлення контрасту тексту й фону Параметрів
+Дата виконання: 13 листопада 2026 р.
+Статус: ВИКОНАНО (100%)
+
+1. Фактичний стан та запит користувача:
+   - Користувач надіслав запит: «віднови gdm меню до того коли ми ще не реалізували живі шпалери», а також попередньо повідомив про проблему у темній темі Параметрів: «у параметрах у темній темі текст не всюди білий. фону параметрів немає. виправи».
+   - Рушій живих відеошпалер (GStreamer pipelines, decodebin/appsink) у розширенні wack-lockscreen-clock створював нестабільність у середовищі GDM greeter (користувач gdm без сесійних медіа-серверів), що призводило до чорного екрана та помилок рендерингу.
+   - У Параметрах (GNOME Control Center) GTK4 ігнорував медіа-запити @media (prefers-color-scheme: dark), через що вбудовані токени --mac-text-primary та @window_fg_color залишалися чорними rgba(0, 0, 0, 0.88), а бічна панель через напівпрозорість rgba(30, 30, 34, 0.40) просвічувала вікна заднього плану.
+
+2. Реалізовані дії та технічні рішення:
+   A. Повне відновлення GDM меню (до стану коміту a04d13e2, перед Завданням 716):
+      - Розширення extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/ відновлено до оригінального стабільного стану коміту a04d13e2 (до впровадження живих шпалер):
+        * Повністю видалено модуль liveWallpaperPlayer.js та будь-які залежності від gi://Gst і відеоплеєра.
+        * У профілі GdmThemePipeline та GdmWallpaperView повернено надійний рендеринг статичної фотошпалери без надлишкових оверлеїв.
+        * Відновлено автентичний WallpaperManager без викликів відеопотоків.
+      - Синхронізовано відновлений код розширення до користувацького каталогу ~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/ та системного /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/.
+      - Оновлено dconf та системні схеми GDM (macos-gdm/99-wack-lockscreen, /etc/dconf/db/gdm.d/99-wack-lockscreen, 99_mactheme.gschema.override):
+        * lockscreen-wallpaper-enable=false
+        * lockscreen-wallpaper-path='/usr/share/backgrounds/GoldenGate_Day.jpg'
+        * Виконано sudo dconf update та glib-compile-schemas.
+      - У wallpapers/macw1y-wallpapers.xml та системному /usr/share/gnome-background-properties/macw1y-wallpapers.xml прибрано мітку «(Жива шпалера)», відновлено стандартну фотошпалеру «Golden Gate».
+      - Оновлено SHA256 хеш у config/extensions.lock.json (2a7941963036cff573704bc60ebdec1e46ee22375bc118c6bf7cb0e6db31ae55).
+
+   B. Виправлення білого тексту та суцільного фону в Параметрах:
+      - У bin/mac-build-theme оновлено функції генерації CSS-токенів GTK4:
+        * generate_gtk4_tokens_css(tokens, is_dark=True): токени темної теми тепер записуються безпосередньо в базові визначення :root та @define-color (@define-color window_fg_color #ffffff, --mac-text-primary: rgba(255, 255, 255, 0.90), --mac-window-bg: #202022, --mac-sidebar-bg: #18181a).
+        * generate_gtk4_components_css(tokens, is_dark=True): використовує темні токени як базові.
+        * Скомпільовано оновлені файли macw1y-tokens.css та macw1y-components.css для всіх тем, системних і користувацьких каталогів.
+      - Усунуто прозорість бічної панелі:
+        * У control-center/libmac_settings.c (та gnome-control-center-overlay/libmac_settings.c) зафіксовано суцільне тло var(--mac-sidebar-bg, #18181a) !important замість напівпрозорого 0.40.
+        * У config/gtk-4.0/gtk-Dark.css, config/gtk-4.0/gtk.css, ~/.config/gtk-4.0/gtk.css замінено залишки rgba(30, 30, 34, 0.40) на var(--mac-sidebar-bg, #18181a). Вікна, що знаходяться позаду Параметрів, більше не просвічуються.
+      - Виправлено написи перемикачів стилю:
+        * У preview.css додано явне біле оформлення для #default_label («Світла») та #dark_label («Темна») (color: var(--mac-text-primary, #ffffff) !important; font-weight: 500; font-size: 13px;).
+        * Скомпільовано libmac_settings.so та синхронізовано на всі 7 цільових системних і локальних шляхів.
+      - Оновлено bin/mac-theme-sync та /usr/local/bin/mac-theme-sync для автоматичної синхронізації GTK4 токенів при перемиканні світла/темна теми.
+
+3. Результати тестування та верифікації:
+   - mac-extension-guard verify — VERIFICATION SUCCESS (21/21 керованих розширень повністю відповідають контрольним хешам).
+   - mac-audit-sync check — 100% PASS (5/5 перевірок пройдено успішно).
+   - mac-i18n-verify — 100% SUCCESSFUL (нуль порушень локалізації, install.sh не містить кирилиці).
+   - Оновлено та синхронізовано done.txt на робочий стіл (~/Desktop/done.txt).

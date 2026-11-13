@@ -84,6 +84,21 @@ function removeSnapshotOverlay(actor) {
     } catch (_) {}
 }
 
+function resetWindowActorForMagicLamp(actor) {
+    if (!actor?.meta_window) return;
+
+    // GNOME Shell starts its own icon-geometry ease before extension signal
+    // handlers run. Stop that transition and restore the real window geometry
+    // before attaching the deform effect, otherwise the two motions stack.
+    actor.remove_all_transitions();
+    actor.set_scale(1, 1);
+    actor.set_opacity(255);
+    actor.set_pivot_point(0, 0);
+
+    const rect = actor.meta_window.get_buffer_rect();
+    actor.set_position(rect.x, rect.y);
+}
+
 export default class CompizMagicLampEffectExtension extends Extension {
 
     enable() {
@@ -154,13 +169,18 @@ export default class CompizMagicLampEffectExtension extends Extension {
         this.minimizeId = global.window_manager.connect("minimize", (e, actor) => {
             if (actor) {
                 captureWindowSnapshot(actor);
-                applySnapshotOverlay(actor);
+                // A full-size snapshot child stays fixed while the parent is
+                // deformed, which looks like a second curtain animation.
+                removeSnapshotOverlay(actor);
             }
 
             if (Main.overview.visible) {
+                resetWindowActorForMagicLamp(actor);
                 Main.wm._shellwm.original_completed_minimize(actor);
                 return;
             }
+
+            resetWindowActorForMagicLamp(actor);
 
             let icon = this.getIcon(actor);
 
@@ -170,12 +190,14 @@ export default class CompizMagicLampEffectExtension extends Extension {
         });
 
         this.unminimizeId = global.window_manager.connect("unminimize", (e, actor) => {
-            actor.show();
             if (actor) {
-                applySnapshotOverlay(actor);
+                // Reveal and deform the real window actor; the cached snapshot
+                // is only needed while the window is parked in the dock.
+                removeSnapshotOverlay(actor);
             }
 
             if (Main.overview.visible) {
+                resetWindowActorForMagicLamp(actor);
                 Main.wm._shellwm.original_completed_unminimize(actor);
                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
                     removeSnapshotOverlay(actor);
@@ -183,6 +205,9 @@ export default class CompizMagicLampEffectExtension extends Extension {
                 });
                 return;
             }
+
+            resetWindowActorForMagicLamp(actor);
+            actor.show();
 
             let icon = this.getIcon(actor);
 
@@ -204,7 +229,8 @@ export default class CompizMagicLampEffectExtension extends Extension {
                     }
                     return GLib.SOURCE_REMOVE;
                 });
-            } else if (win.minimized && actor) {
+            } else if (win.minimized && actor &&
+                !actor.get_effect(MINIMIZE_EFFECT_NAME)) {
                 applySnapshotOverlay(actor);
             }
         }, this);
@@ -608,6 +634,8 @@ class MagicLampMinimizeEffect extends AbstractCommonMagicLampEffect {
     }
 
     destroy_actor(actor) {
+        if (actor?.meta_window?.minimized)
+            applySnapshotOverlay(actor);
         Main.wm._shellwm.original_completed_minimize(actor);
     }
 

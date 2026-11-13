@@ -396,11 +396,6 @@ export class UnlockDialogController {
                         actor.ease({ opacity: 0, duration, mode });
                     });
 
-                    // Trigger smooth macOS-style live wallpaper unlock crossfade into desktop
-                    if (this._extension._wallpaperManager) {
-                        this._extension._wallpaperManager.startUnlockTransition();
-                    }
-
                     if (this.finishTimeoutId) {
                         GLib.source_remove(this.finishTimeoutId);
                         this.finishTimeoutId = null;

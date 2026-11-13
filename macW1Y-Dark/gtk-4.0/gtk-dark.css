@@ -9880,7 +9880,7 @@ navigation-split-view .sidebar-pane {
     margin: 6px 0px 6px 6px;
     border: none;
     border-radius: 20px;
-    background-color: rgba(30, 30, 34, 0.40);
+    background-color: var(--mac-sidebar-bg, #18181a);
     background-clip: padding-box;
     box-shadow: none;
 }

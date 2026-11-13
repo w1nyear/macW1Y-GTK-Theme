@@ -2,7 +2,7 @@
 <!DOCTYPE wallpapers SYSTEM "gnome-wp-list.dtd">
 <wallpapers>
   <wallpaper>
-    <name>Golden Gate (Жива шпалера)</name>
+    <name>Golden Gate</name>
     <filename>/usr/share/backgrounds/GoldenGate_Day.jpg</filename>
     <options>zoom</options>
     <pcolor>#000000</pcolor>

@@ -221,3 +221,12 @@ flowboxchild.active-item .selected-check {
 .brown {
   --accent-bg-color: var(--accent-brown);
 }
+
+#default_label,
+#dark_label {
+  color: var(--mac-text-primary, #ffffff) !important;
+  font-weight: 500;
+  font-size: 13px;
+  margin-top: 4px;
+}
+

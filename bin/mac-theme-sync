@@ -136,6 +136,21 @@ def apply_theme_mode(is_light):
         except Exception as e:
             print(f"[mac-theme-sync] Warning: failed to copy gtk.css: {e}")
 
+    # Sync GTK 4 tokens and components (Light vs Dark)
+    theme_sub = "macW1Y-Light" if is_light else "macW1Y-Dark"
+    target_tokens = os.path.join(REPO_DIR, theme_sub, "gtk-4.0/macw1y-tokens.css")
+    target_components = os.path.join(REPO_DIR, theme_sub, "gtk-4.0/macw1y-components.css")
+    if os.path.exists(target_tokens):
+        try:
+            shutil.copy2(target_tokens, os.path.join(HOME, ".config/gtk-4.0/macw1y-tokens.css"))
+        except Exception as e:
+            print(f"[mac-theme-sync] Warning: failed to copy macw1y-tokens.css: {e}")
+    if os.path.exists(target_components):
+        try:
+            shutil.copy2(target_components, os.path.join(HOME, ".config/gtk-4.0/macw1y-components.css"))
+        except Exception as e:
+            print(f"[mac-theme-sync] Warning: failed to copy macw1y-components.css: {e}")
+
     # Sync GTK 3 tokens (Light vs Dark)
     gtk3_tokens_path = os.path.join(HOME, ".config/gtk-3.0/macw1y-tokens.css")
     accent_col = gsettings_get("org.gnome.desktop.interface", "accent-color") or "#ff6a00"

@@ -2,8 +2,8 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
-import { trackViewPaints } from '../src/glass/dist/rendering/backdropGlass.js';
-import { GlassClock } from '../src/glass/dist/desktop/clock.js';
+import { trackViewPaints } from '../glass/dist/rendering/backdropGlass.js';
+import { GlassClock } from '../glass/dist/desktop/clock.js';
 
 /**
  * GdmGlassClock wraps the liquid glass clock engine from ryohsuke1231/liquid-glass
