@@ -89,8 +89,7 @@ function _isOverampAllowed() {
     }
 }
 
-// Segmented bar (Tahoe OSD): solid fill + a dots row beneath. Dots at/left
-// of the value are bold and opaque, the rest small and faint.
+// Tahoe OSD slider: smooth solid bar centered vertically without dots beneath.
 // Aligned with 16 discrete steps of volume/brightness.
 const TahoeSegSlider = GObject.registerClass({
     GTypeName: `TahoeSegSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
@@ -142,7 +141,7 @@ const TahoeSegSlider = GObject.registerClass({
 
             // solid background track
             const barH = 8;
-            const barY = Math.round((h - barH) / 2) - 2;
+            const barY = Math.round((h - barH) / 2);
             const r = barH / 2;
             cr.setSourceRGBA(1, 1, 1, 0.20);
             this._rr(cr, 0, barY, w, barH, r);
@@ -159,13 +158,13 @@ const TahoeSegSlider = GObject.registerClass({
             if (v <= 1.0001 && Math.abs(v - stepIdx / n) <= 0.038)
                 v = stepIdx / n;
 
-            // 17 dots (i = 0 to 16): dot 0 at the start of slider, dot 16 at the end
-            const dotXs = [];
+            // Step positions (i = 0 to 16): 0 at the start of slider, 16 at the end
+            const stepXs = [];
             for (let i = 0; i <= n; i++) {
-                dotXs.push(r + i * (w - 2 * r) / n);
+                stepXs.push(r + i * (w - 2 * r) / n);
             }
 
-            // filled bar: stops exactly where the dot is
+            // filled bar: stops exactly where the step is
             let fillW = 0;
             if (isOveramp) {
                 fillW = w;
@@ -174,26 +173,12 @@ const TahoeSegSlider = GObject.registerClass({
                 cr.fill();
             } else if (v > 0.001) {
                 if (Math.abs(v - stepIdx / n) < 0.001) {
-                    fillW = (stepIdx === n) ? w : dotXs[stepIdx];
+                    fillW = (stepIdx === n) ? w : stepXs[stepIdx];
                 } else {
                     fillW = Math.max(barH, Math.min(w, Math.round(r + v * (w - 2 * r))));
                 }
                 cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
                 this._rr(cr, 0, barY, fillW, barH, r);
-                cr.fill();
-            }
-
-            // dots row beneath: 17 dots precisely aligned, dot 0 at start, closer to slider
-            const dy = barY + barH + 4.5;
-            for (let i = 0; i <= n; i++) {
-                const dotX = dotXs[i];
-                const isActive = isOveramp || (stepIdx > 0 && i <= stepIdx && fillW > 0);
-                if (isActive) {
-                    cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
-                } else {
-                    cr.setSourceRGBA(1, 1, 1, 0.20);
-                }
-                cr.arc(dotX, dy, 1.2, 0, Math.PI * 2);
                 cr.fill();
             }
             cr.restore();
