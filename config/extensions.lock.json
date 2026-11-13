@@ -558,7 +558,7 @@
         "49",
         "50"
       ],
-      "sha256": "0c33ebdac53982043bef7617a15a9614c3352934c5763dbd8af6cd70849e90f1",
+      "sha256": "50d5997a318d5cf7e798ef41406b4802ec76f2905b9ee1887aecc72fac994e94",
       "status": "locked",
       "source": "apt_system_patched",
       "macw1y_components": [
@@ -568,7 +568,7 @@
       "has_custom_patches": true,
       "patch_description": "askRenamePopup and desktopManager patches",
       "last_verified": "2026-11-10",
-      "pinned_sha256": "0c33ebdac53982043bef7617a15a9614c3352934c5763dbd8af6cd70849e90f1"
+      "pinned_sha256": "50d5997a318d5cf7e798ef41406b4802ec76f2905b9ee1887aecc72fac994e94"
     },
     "desktop-widgets@r3nhick": {
       "uuid": "desktop-widgets@r3nhick",

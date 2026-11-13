@@ -10543,25 +10543,32 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar {
 
 window.mac-settings-window list.mac-settings-sidebar-list row,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row {
-    min-height: 32px;
-    padding: 3px 6px;
-    margin: 1.5px 18px 1.5px 8px;
-    border-radius: 8px;
+    min-height: 28px;
+    padding: 2px 8px;
+    margin: 1.5px 12px 1.5px 10px;
+    border-radius: 7px;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.90);
+    color: rgba(0, 0, 0, 0.88);
+    align-items: center;
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:hover,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:hover {
-    border-radius: 8px;
-    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 7px;
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected {
-    border-radius: 8px;
-    background-color: #fa6e0a;
-    color: #ffffff;
+    border-radius: 7px;
+    background-color: rgba(0, 0, 0, 0.08);
+    color: @accent_bg_color;
+}
+
+window.mac-settings-window list.mac-settings-sidebar-list row:selected:hover,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:hover {
+    background-color: rgba(0, 0, 0, 0.11);
+    color: @accent_bg_color;
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) image,
@@ -10576,11 +10583,12 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not
     margin-right: 0px;
     margin-left: 0px;
     padding: 0;
+    valign: center;
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) image,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) image {
-    color: #ffffff;
+    color: @accent_bg_color;
     background-color: transparent;
     background: transparent;
     border: none;
@@ -10590,15 +10598,16 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:sel
 window.mac-settings-window list.mac-settings-sidebar-list row label,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row label {
     font-size: 13px;
-    margin-top: 1px;
+    margin-top: 0px;
     margin-bottom: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
+    valign: center;
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected label,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected label {
-    color: #ffffff;
+    color: @accent_bg_color;
     font-weight: 500;
 }
 
@@ -11686,6 +11695,7 @@ window.mac-settings-window button.suggested-action.circular:active {
   color: #ffffff;
   border-radius: 9999px;
 }
+
 
 
 

@@ -38,7 +38,7 @@
     "card_shadow": "0 2px 8px rgba(0, 0, 0, 0.20)",
     "card_separator": "rgba(255, 255, 255, 0.07)",
     "row_hover": "rgba(255, 255, 255, 0.04)",
-    "row_active": "rgba(255, 255, 255, 0.08)",
+    "row_active": "rgba(255, 255, 255, 0.10)",
     "accent_bg": "#ff6a00",
     "accent_fg": "#ffffff",
     "text_primary": "rgba(255, 255, 255, 0.90)",
@@ -67,7 +67,7 @@
     "menu_radius": 20,
     "popover_radius": 20,
     "scrollbar_radius": 9999,
-    "sidebar_row_radius": 8,
+    "sidebar_row_radius": 7,
     "sidebar_icon_radius": 5,
     "traffic_light_radius": 9999
   },
@@ -96,7 +96,7 @@
     "button_min_height": 24,
     "input_min_height": 28,
     "search_min_height": 28,
-    "sidebar_row_height": 32
+    "sidebar_row_height": 28
   },
   "typography": {
     "font_family_interface": "SF Pro Text",

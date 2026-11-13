@@ -423,16 +423,31 @@ var DesktopManager = class {
             new Gdk.RGBA({red: 0, green: 0, blue: 0, alpha: highContrast ? 0.9 : 0.5}) :
             new Gdk.RGBA({red: 1, green: 1, blue: 1, alpha: highContrast ? 0.9 : 0.5});
 
-        let style = `.desktop-icons-selected {
-            background-color: rgba(${this.selectColor.red * 255},${this.selectColor.green * 255}, ${this.selectColor.blue * 255}, ${highContrast ? 0.7: 0.2});
-            box-shadow: 0 0 0 1px rgba(${this.borderColor.red * 255},${this.borderColor.green * 255}, ${this.borderColor.blue * 255}, ${this.borderColor.alpha});
-        }
+        let style = `.desktop-icons-selected,
+        .desktop-icons-selected:backdrop,
+        .desktop-icons-keyboard-selected,
         .desktop-icons-keyboard-selected:not(:backdrop) {
-            background-color: rgba(${this.selectColor.red * 255},${this.selectColor.green * 255}, ${this.selectColor.blue * 255}, ${highContrast ? 0.7: 0.2});
-            border-color: rgba(${this.borderColor.red * 255},${this.borderColor.green * 255},${this.borderColor.blue * 255}, ${this.borderColor.alpha});
+            background-color: transparent;
+            background: transparent;
+            box-shadow: none;
+            border-color: transparent;
         }
-        .file-item-hover {
-            background-color: rgba(${this.selectColor.red * 255},${this.selectColor.green * 255}, ${this.selectColor.blue * 255}, ${highContrast ? 0.5 : 0.15});
+        .desktop-icons-selected label.file-label,
+        .desktop-icons-selected label.file-label-dark,
+        .desktop-icons-selected:backdrop label.file-label,
+        .desktop-icons-selected:backdrop label.file-label-dark,
+        .desktop-icons-keyboard-selected label.file-label,
+        .desktop-icons-keyboard-selected label.file-label-dark,
+        .desktop-icons-keyboard-selected:not(:backdrop) label.file-label,
+        .desktop-icons-keyboard-selected:not(:backdrop) label.file-label-dark {
+            background-color: rgb(${this.selectColor.red * 255}, ${this.selectColor.green * 255}, ${this.selectColor.blue * 255});
+            color: #ffffff;
+            border-radius: 5px;
+            padding: 2px 6px;
+            text-shadow: none;
+        }
+        .file-item-hover:not(.desktop-icons-selected) {
+            background-color: rgba(${this.selectColor.red * 255},${this.selectColor.green * 255}, ${this.selectColor.blue * 255}, ${highContrast ? 0.3 : 0.08});
         }`;
         this._cssProviderSelection.load_from_data(style);
         Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), this._cssProviderSelection, 600);

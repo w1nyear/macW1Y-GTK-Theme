@@ -16,6 +16,32 @@
     border-color: transparent;
 }
 
+/* macOS style selection: transparent item container, rounded accent pill on file label */
+.file-item.desktop-icons-selected,
+.file-item.desktop-icons-selected:backdrop,
+.file-item.desktop-icons-keyboard-selected,
+.file-item.desktop-icons-keyboard-selected:backdrop {
+    background-color: transparent !important;
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.file-item.desktop-icons-selected label.file-label,
+.file-item.desktop-icons-selected label.file-label-dark,
+.file-item.desktop-icons-selected:backdrop label.file-label,
+.file-item.desktop-icons-selected:backdrop label.file-label-dark,
+.file-item.desktop-icons-keyboard-selected label.file-label,
+.file-item.desktop-icons-keyboard-selected label.file-label-dark,
+.file-item.desktop-icons-keyboard-selected:backdrop label.file-label,
+.file-item.desktop-icons-keyboard-selected:backdrop label.file-label-dark {
+    background-color: @accent_bg_color;
+    color: #ffffff !important;
+    border-radius: 5px;
+    padding: 2px 6px;
+    text-shadow: none !important;
+}
+
 .not-found {
     color: rgb(255, 0, 0);
 }

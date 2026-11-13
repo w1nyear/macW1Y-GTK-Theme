@@ -238,10 +238,10 @@ navigation-split-view list.navigation-sidebar row,
 .nautilus-window .sidebar-pane placessidebar row,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row,
 window.nautilus-window .sidebar-pane placessidebar row {
-  min-height: 32px;
-  padding: 3px 6px 3px 4px;
-  margin: 1.5px 8px 1.5px 4px;
-  border-radius: 8px;
+  min-height: 28px;
+  padding: 2px 8px;
+  margin: 1.5px 8px 1.5px 10px;
+  border-radius: 7px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.90);
   transition: background-color 150ms ease-out, color 150ms ease-out;
@@ -257,7 +257,7 @@ navigation-split-view list.navigation-sidebar row:hover,
 .nautilus-window .sidebar-pane placessidebar row:hover,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:hover,
 window.nautilus-window .sidebar-pane placessidebar row:hover {
-  border-radius: 8px;
+  border-radius: 7px;
   background-color: rgba(255, 255, 255, 0.04);
 }
 
@@ -291,9 +291,9 @@ navigation-split-view list.navigation-sidebar row:selected:backdrop,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:backdrop,
 window.nautilus-window .sidebar-pane placessidebar row:selected,
 window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop {
-  border-radius: 8px;
-  background-color: @accent_bg_color;
-  color: #ffffff;
+  border-radius: 7px;
+  background-color: rgba(255, 255, 255, 0.10);
+  color: @accent_bg_color;
   outline: none;
 }
 
@@ -306,9 +306,9 @@ placessidebar .navigation-sidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover,
 window.nautilus-window .sidebar-pane placessidebar row:selected:hover {
-  border-radius: 8px;
-  background-color: color-mix(in srgb, @accent_bg_color 88%, white);
-  color: #ffffff;
+  border-radius: 7px;
+  background-color: rgba(255, 255, 255, 0.14);
+  color: @accent_bg_color;
   outline: none;
 }
 
@@ -320,7 +320,7 @@ placessidebar row:selected label,
 .nautilus-window .sidebar-pane placessidebar row:selected label,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label,
 window.nautilus-window .sidebar-pane placessidebar row:selected label {
-  color: #ffffff;
+  color: @accent_bg_color;
   font-weight: 500;
 }
 
@@ -454,7 +454,7 @@ navigationview.sidebar list row:selected image,
 .navigation-sidebar row:selected .sidebar-neutral-icon,
 placessidebar row:selected .sidebar-orange-icon,
 placessidebar row:selected .sidebar-neutral-icon {
-  color: #ffffff;
+  color: @accent_bg_color;
   background: transparent;
   background-color: transparent;
   background-image: none;
@@ -543,7 +543,7 @@ row.expander list.nested > row:hover {
 }
 
 row.expander list.nested > row:active {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.10);
 }
 
 list.boxed-list > row:last-child.expander:checked list.nested > row:last-child,
@@ -2620,4 +2620,55 @@ widget.thumbnail {
 
 .view .thumbnail {
   filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.3));
+}
+
+/* =========================================================================
+ * 101. Nautilus & File Grid View Selection (macOS Finder style: label pill)
+ * ========================================================================= */
+.nautilus-grid-view gridview > child:selected,
+window.nautilus-window .nautilus-grid-view gridview > child:selected,
+window.nautilus-window gridview > child:selected,
+gridview > child:selected {
+  background-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  border-color: transparent;
+}
+
+.nautilus-grid-view gridview > child:selected:hover,
+window.nautilus-window .nautilus-grid-view gridview > child:selected:hover,
+window.nautilus-window gridview > child:selected:hover,
+gridview > child:selected:hover {
+  background-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.nautilus-grid-view gridview > child:selected .icon-ui-labels-box,
+window.nautilus-window gridview > child:selected .icon-ui-labels-box,
+gridview > child:selected .icon-ui-labels-box {
+  background-color: transparent;
+  background: transparent;
+}
+
+.nautilus-grid-view gridview > child:selected .icon-ui-labels-box #label,
+.nautilus-grid-view gridview > child:selected #labels_box #label,
+.nautilus-grid-view gridview > child:selected label#label,
+.nautilus-grid-view gridview > child:selected label:not(.caption):not(.dim-label),
+window.nautilus-window gridview > child:selected .icon-ui-labels-box #label,
+window.nautilus-window gridview > child:selected label#label,
+window.nautilus-window gridview > child:selected label:first-child,
+gridview > child:selected .icon-ui-labels-box #label {
+  background-color: @accent_bg_color;
+  color: #ffffff;
+  border-radius: 5px;
+  padding: 2px 6px;
+  margin: 1px 2px;
+}
+
+.nautilus-grid-view gridview > child:selected label.caption,
+window.nautilus-window gridview > child:selected label.caption,
+gridview > child:selected label.caption {
+  color: rgba(255, 255, 255, 0.70);
 }

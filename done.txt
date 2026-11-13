@@ -21769,3 +21769,34 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
      - bin/mac-audit-sync check: 100% PASS (5/5 перевірок).
      - bin/mac-i18n-verify: 100% SUCCESSFUL (194 мови).
      - Синхронізовано done.txt на ~/Desktop/done.txt.
+
+758. [UI/UX] Адаптація бічної панелі Nautilus та параметрів під macOS Finder (відступи, висота, сіро-прозорий фон та акцентний текст/іконка) і виділення файлів у вигляді заокругленої плашки назви (2026-11-14):
+   - Контекст та вимоги користувача:
+     1. Зменшити ширину кнопок лівої бічної панелі (сайдбара) від лівого краю вікна (створити відступ, щоб кнопки не прилипали впритул до краю).
+     2. Зменшити висоту кнопок бічної панелі (min-height: 28px), елементи не зменшувати, але відцентрувати по вертикалі.
+     3. Замість суцільного оранжевого/акцентного фону активної кнопки зробити напівпрозорий сірий фон (macOS pill: rgba(255, 255, 255, 0.10) у темній темі / rgba(0, 0, 0, 0.08) у світлій темі), а іконку та назву розділу фарбувати в акцентний колір (@accent_bg_color).
+     4. У сітці файлів Nautilus (grid view) та на робочому столі (DING): при виборі файлу прибрати прямокутний фон навколо іконки/мініатюри (зробити його повністю прозорим), а імʼя файлу виділяти акцентним кольором із заокругленими кутами (border-radius: 5px) 1:1 як у macOS Finder.
+   - Виконані виправлення:
+     A. Бібліотека інжекції Nautilus (src/mac_nautilus.c, lib/libmac_nautilus.so):
+        - Оновлено CSS-правила .sidebar-pane placessidebar row: margin: 1.5px 8px 1.5px 10px; min-height: 28px; padding: 2px 8px; border-radius: 7px;. Створено виразний лівий відступ (10px) від краю вікна.
+        - Активний стан: background-color: rgba(255, 255, 255, 0.10); color: @accent_bg_color;. Іконка та текстовий підпис отримують color: @accent_bg_color;.
+        - Стилізація виділення файлів у сітці (.nautilus-grid-view gridview > child:selected): контейнер має прозоре тло та відсутність рамок; селектор .icon-ui-labels-box #label фарбується в @accent_bg_color з color: #ffffff, border-radius: 5px та padding: 2px 6px;.
+        - Перекомпільовано lib/libmac_nautilus.so та синхронізовано з /usr/lib/x86_64-linux-gnu/libmac_nautilus.so.
+     B. GNOME Control Center (control-center/libmac_settings.c, gnome-control-center-overlay/):
+        - Оновлено сайдбар параметрів (list.mac-settings-sidebar-list row): min-height: 28px; padding: 2px 8px; margin: 1.5px 12px 1.5px 10px; border-radius: 7px; align-items: center;.
+        - Активний стан: напівпрозоре сіре тло (0.10/0.08), іконка та назва — @accent_bg_color.
+        - Перекомпільовано libmac_settings.so та синхронізовано у всі 7 цільових каталогів.
+     C. Робочий стіл (extensions/ding-patches/desktopManager.js та stylesheet.css):
+        - Змінено генератор CSS _cssProviderSelection у DesktopManager: для .desktop-icons-selected та .desktop-icons-keyboard-selected тло контейнера іконки встановлено в transparent (box-shadow: none; border-color: transparent).
+        - Для label.file-label та label.file-label-dark встановлено background-color: rgb(accent); color: #ffffff; border-radius: 5px; padding: 2px 6px; text-shadow: none;.
+        - Скопійовано оновлені файли до /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ та оновлено lock-хеш у config/extensions.lock.json (50d5997a318d5cf7e798ef41406b4802ec76f2905b9ee1887aecc72fac994e94).
+     D. Централізовані токени та компілятор тем (config/macw1y-tokens.json, bin/mac-build-theme):
+        - Встановлено sidebar_row_height: 28, sidebar_row_radius: 7, colors_dark.row_active: rgba(255, 255, 255, 0.10).
+        - Додано Розділ 101 виділення файлів у генератор GTK 4 стилів.
+        - Скомпільовано й синхронізовано всі файли тем (config/, gtk-4.0/, macW1Y-Dark/, ~/.config/gtk-4.0/, ~/.themes/, /usr/share/themes/).
+        - Оновлено /usr/local/bin/mac-build-theme.
+   - Результати верифікації:
+     - bin/mac-audit-sync check: 100% PASS (5/5).
+     - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
+     - bin/mac-i18n-verify: 100% SUCCESSFUL.
+     - done.txt синхронізовано на ~/Desktop/done.txt.

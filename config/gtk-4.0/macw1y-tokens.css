@@ -34,7 +34,7 @@
   --mac-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
   --mac-card-sep: rgba(255, 255, 255, 0.07);
   --mac-row-hover: rgba(255, 255, 255, 0.04);
-  --mac-row-active: rgba(255, 255, 255, 0.08);
+  --mac-row-active: rgba(255, 255, 255, 0.10);
   --mac-accent-bg: #ff6a00;
   --mac-accent-fg: #ffffff;
   --mac-text-primary: rgba(255, 255, 255, 0.90);
