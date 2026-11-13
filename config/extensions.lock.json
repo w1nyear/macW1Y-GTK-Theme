@@ -44,7 +44,7 @@
         "50",
         "51"
       ],
-      "sha256": "e837bb866b297fd6d83b940ae2a3c59ddc98bfe83746e82d61accbd908d148f4",
+      "sha256": "30ee8887e1f1a8f04fdeb51077abb11bd227d94384dcfb9c776d2fd886998fd1",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -57,7 +57,7 @@
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
       "last_verified": "2026-11-08",
       "pinned_sha256": "408e54d0f8146e7c6e23acc2f37b41ad6a3b68985fcb97db131cb17b46cabc00",
-      "dir_hash": "96a72f92"
+      "dir_hash": "30ee8887"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
       "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
@@ -286,7 +286,7 @@
         "49",
         "50"
       ],
-      "sha256": "1f0282d041c5372cbd88bad7adc81773d1dd929f3816e717bd934f9ab4578cc9",
+      "sha256": "9d938cb319e6002549159e617f87845ec389e57e6899c8198598c3bc76c6756b",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -303,7 +303,7 @@
         "global.d.ts": "02492c5b3b37afc11cb19dee9ae1e9ae8f4e6f8502920b57ae6d0b6f8175c41a",
         "package-lock.json": "2610757c38df98269142accd24a1e84a464bbd02e884569ae6d4c9bec586f5db",
         "stylesheet.css": "e3168bdfb84fee637620593d3680fbe03611410c1b8e84e41743d9bce4e30c65",
-        "extension.js": "59710b8579b2fb061ffade3bf2e1bce9dedf2adb928c78db31a277d42d0d8db0",
+        "extension.js": "050cd64cf2a91b092f75169f7d0bd8cdc4b921d8d5b3a63c730ec267241b81ad",
         "package.json": "bedde7d0176d01a34ba1e6512bfc48b17db8f547f5cfe1ab1adc51d6515396b3",
         "prefs.js": "fab3ace348b52cd1bceb28a61462925a52c75cd58ae076506578a97825af2cdf",
         "resources.gresource": "0b27aab3330db160302da89ad14ceb38731c5b954c699e70820a9fb1466efbbb",

@@ -2826,7 +2826,7 @@ export const MenuBarController = class MenuBarController {
         if (this._notifTahoeGlass && !this._notifTahoeGlass.bgActor.is_finalized?.())
             return this._notifTahoeGlass;
         try {
-            const uri = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeQuickSettings.js?v=live';
+            const uri = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeControlCenter.js?v=live';
             const mod = await import(uri);
             if (mod.ensureLgReady) await mod.ensureLgReady();
             const monitor = Main.layoutManager.primaryMonitor;

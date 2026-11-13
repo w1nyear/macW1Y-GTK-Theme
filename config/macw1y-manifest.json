@@ -19,6 +19,8 @@
   },
   "liquid_glass": {
     "schema": "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com",
+    "enable_quick_settings_glass": false,
+    "enable_quick_settings_animation": false,
     "dock_corner_radius": 26.0,
     "dock_margin_bottom": 8,
     "dock_tint_strength": 0.12,

@@ -21382,3 +21382,30 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - Усі оптимізації інтегровано в master-конфігурації проєкту (dconf, extensions, bin, scripts). Скрипт install.sh та процедури перевстановлення гарантують збереження оптимізованого стану.
    - Усі валідаційні тести (mac-extension-guard verify, mac-audit-sync check, mac-i18n-verify) успішно пройдені на 100%.
    - Проєкт «MACW1Y — TOTAL PERFORMANCE OPTIMIZATION & STABILITY PROJECT» повністю завершено.
+
+================================================================================
+Завдання 746: macW1Y — Усунення подвійного шейдера та розмежування відповідальності на Quick Settings (Пріоритет 1)
+Дата виконання: 13 листопада 2026 р.
+Статус: ВИКОНАНО (Пункт 1: 100%)
+
+1. Фактичний стан та першопричина:
+   - Розширення kiwi (tahoeControlCenter.js) реалізує автентичний двоколонковий Центр Керування macOS Tahoe із 7 окремими скляними підкладками (pill, disc, card, music, priv, edit, backdrop), використовуючи шейдер LiquidEffect.
+   - Одночасно розширення liquid-glass містило власний QuickSettingsManager, який запускав 1500мс таймер і створював конкуруючий механізм перехоплення на контейнері Quick Settings.
+   - У menubar_v29.js (розширення blur-my-shell) для сповіщень імпортувалася застаріла копія модуля tahoeQuickSettings.js замість активного tahoeControlCenter.js, що призводило до подвійного завантаження дубльованого 3500-рядкового скрипта в пам'ять GJS.
+
+2. Реалізовані дії та технічні рішення:
+   - extensions/liquid-glass@thinkingcoding1231.gmail.com/extension.js:
+     * Додано умовний запуск startQs() лише за умови enable-quick-settings-glass=true.
+     * Запобігли запуску зайвого 1500мс таймера та блокуванню ресурсів, коли Центром Керування керує kiwi.
+     * Додано підключення динамічного слухача changed::enable-quick-settings-glass та його коректне відключення у disable().
+   - extensions/blur-my-shell@aunetx/components/menubar_v29.js:
+     * Уніфіковано імпорт скла у _ensureTahoeNotifGlass: замінено застарілий tahoeQuickSettings.js на активний tahoeControlCenter.js.
+   - config/macw1y-manifest.json:
+     * Зафіксовано enable_quick_settings_glass: false та enable_quick_settings_animation: false у master-маніфесті.
+   - Оновлено хеші sha256 у config/extensions.lock.json для liquid-glass та blur-my-shell.
+   - Зміни повністю синхронізовано з ~/.local/share/gnome-shell/extensions/.
+
+3. Результати тестування та верифікації:
+   - mac-extension-guard verify — VERIFICATION SUCCESS (21/21 OK).
+   - mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - mac-i18n-verify — 100% SUCCESSFUL.

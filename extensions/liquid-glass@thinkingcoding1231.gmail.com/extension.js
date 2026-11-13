@@ -140,13 +140,33 @@ export default class LiquidGlassExtension extends Extension {
       this._windowListService.setup();
     });
 
-    this._quickSettingsTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
-      this._quickSettingsTimeoutId = 0;
+    const startQs = () => {
+      if (this._quickSettingsManager || !this._settings.get_boolean('enable-quick-settings-glass'))
+        return;
       start('quickSettingsManager', () => {
         this._quickSettingsManager = new QuickSettingsManager(this.dir.get_path(), this._settings, this._logger);
         this._quickSettingsManager.setup();
       });
-      return GLib.SOURCE_REMOVE;
+    };
+
+    if (this._settings.get_boolean('enable-quick-settings-glass')) {
+      this._quickSettingsTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
+        this._quickSettingsTimeoutId = 0;
+        startQs();
+        return GLib.SOURCE_REMOVE;
+      });
+    }
+
+    this._qsGlassSettingId = this._settings.connect('changed::enable-quick-settings-glass', () => {
+      const enabled = this._settings.get_boolean('enable-quick-settings-glass');
+      if (enabled) {
+        startQs();
+      } else if (this._quickSettingsManager) {
+        teardown('quickSettingsManager', () => {
+          this._quickSettingsManager.cleanup();
+          this._quickSettingsManager = null;
+        });
+      }
     });
 
     // Variable to store the timeout ID so we can cancel it if the extension is disabled quickly
@@ -383,6 +403,11 @@ export default class LiquidGlassExtension extends Extension {
     if (this._quickSettingsTimeoutId && this._quickSettingsTimeoutId !== 0) {
       GLib.Source.remove(this._quickSettingsTimeoutId);
       this._quickSettingsTimeoutId = 0;
+    }
+
+    if (this._qsGlassSettingId) {
+      try { this._settings.disconnect(this._qsGlassSettingId); } catch (_) {}
+      this._qsGlassSettingId = 0;
     }
 
     // Clear any pending timeouts to prevent them from executing after the extension is disabled
