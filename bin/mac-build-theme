@@ -1983,16 +1983,16 @@ entry {{
   min-height: {d["input_min_height"]}px;
   padding: 2px 10px;
   border-radius: {g["input_radius"]}px;
-  background-color: {c["input_bg"]};
-  border: 1px solid {c["input_border"]};
+  background-color: var(--mac-input-bg, {c["input_bg"]});
+  border: 1px solid var(--mac-input-border, {c["input_border"]});
   color: var(--mac-text-primary, @window_fg_color);
   font-size: 13px;
   transition: background-color {e["transition_hover"]}, border-color {e["transition_hover"]};
 }}
 
 entry:focus-within {{
-  background-color: {c["input_focus_bg"]};
-  border-color: {c["input_focus_border"]};
+  background-color: var(--mac-input-focus-bg, {c["input_focus_bg"]});
+  border-color: var(--mac-input-focus-border, {c["input_focus_border"]});
   box-shadow: none;
 }}
 
@@ -3250,14 +3250,14 @@ entry {{
   min-height: {d["input_min_height"]}px;
   padding: 2px 10px;
   border-radius: {g["input_radius"]}px;
-  background-color: {c["input_bg"]};
-  border: 1px solid {c["input_border"]};
+  background-color: var(--mac-input-bg, {c["input_bg"]});
+  border: 1px solid var(--mac-input-border, {c["input_border"]});
   color: var(--mac-text-primary, @theme_text_color);
 }}
 
 entry:focus {{
-  background-color: {c["input_focus_bg"]};
-  border-color: {c["input_focus_border"]};
+  background-color: var(--mac-input-focus-bg, {c["input_focus_bg"]});
+  border-color: var(--mac-input-focus-border, {c["input_focus_border"]});
 }}
 
 /* GTK 3 Scrollbars */

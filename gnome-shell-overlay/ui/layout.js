@@ -1308,10 +1308,19 @@ export const LayoutManager = GObject.registerClass({
 
         // Clear watchdog launch marker to signal healthy startup completion
         try {
-            const flag = Gio.File.new_for_path('/var/tmp/mactheme-overlay-launching');
-            if (flag.query_exists(null)) flag.delete(null);
-            const failFlag = Gio.File.new_for_path('/var/tmp/mactheme-overlay-failed');
-            if (failFlag.query_exists(null)) failFlag.delete(null);
+            const runtimeDir = GLib.getenv('XDG_RUNTIME_DIR');
+            const paths = [
+                runtimeDir ? `${runtimeDir}/mactheme-overlay-launching` : null,
+                runtimeDir ? `${runtimeDir}/mactheme-overlay-failed` : null,
+                '/var/tmp/mactheme-overlay-launching',
+                '/var/tmp/mactheme-overlay-failed',
+            ];
+            for (const p of paths) {
+                if (p) {
+                    const f = Gio.File.new_for_path(p);
+                    if (f.query_exists(null)) f.delete(null);
+                }
+            }
         } catch (_) {}
         if (!this._hasEmittedStartupComplete) {
             this._hasEmittedStartupComplete = true;
@@ -1343,10 +1352,19 @@ export const LayoutManager = GObject.registerClass({
 
         // Clear watchdog launch marker to signal healthy startup completion
         try {
-            const flag = Gio.File.new_for_path('/var/tmp/mactheme-overlay-launching');
-            if (flag.query_exists(null)) flag.delete(null);
-            const failFlag = Gio.File.new_for_path('/var/tmp/mactheme-overlay-failed');
-            if (failFlag.query_exists(null)) failFlag.delete(null);
+            const runtimeDir = GLib.getenv('XDG_RUNTIME_DIR');
+            const paths = [
+                runtimeDir ? `${runtimeDir}/mactheme-overlay-launching` : null,
+                runtimeDir ? `${runtimeDir}/mactheme-overlay-failed` : null,
+                '/var/tmp/mactheme-overlay-launching',
+                '/var/tmp/mactheme-overlay-failed',
+            ];
+            for (const p of paths) {
+                if (p) {
+                    const f = Gio.File.new_for_path(p);
+                    if (f.query_exists(null)) f.delete(null);
+                }
+            }
         } catch (_) {}
 
         this.keyboardBox.show();

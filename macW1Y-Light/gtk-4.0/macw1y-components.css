@@ -1833,16 +1833,16 @@ entry {
   min-height: 28px;
   padding: 2px 10px;
   border-radius: 8px;
-  background-color: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  background-color: var(--mac-input-bg, rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--mac-input-border, rgba(0, 0, 0, 0.12));
   color: var(--mac-text-primary, @window_fg_color);
   font-size: 13px;
   transition: background-color 150ms ease-out, border-color 150ms ease-out;
 }
 
 entry:focus-within {
-  background-color: #ffffff;
-  border-color: rgba(255, 106, 0, 0.50);
+  background-color: var(--mac-input-focus-bg, #ffffff);
+  border-color: var(--mac-input-focus-border, rgba(255, 106, 0, 0.50));
   box-shadow: none;
 }
 

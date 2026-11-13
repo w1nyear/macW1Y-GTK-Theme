@@ -21519,3 +21519,34 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - mac-audit-sync check — 100% PASS (всі перевірки пройдено, розбіжності відсутні).
    - mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
    - mac-i18n-verify — 100% SUCCESSFUL.
+
+================================================================================
+
+Завдання 750: macW1Y — Виправлення білого фону полів вводу GTK4/3 та синхронізація шляхів Watchdog у layout.js (Пріоритет 5)
+Дата виконання: 13 листопада 2026 р.
+Статус: ВИКОНАНО (Пункт 5: 100%)
+
+1. Фактичний стан та першопричина:
+   - Баг білого фону полів вводу (Конфлікт C7):
+     * У bin/mac-build-theme для селекторів entry:focus-within (GTK4) та entry:focus (GTK3) колір фону підставлявся напряму з базового словника світлої теми {c["input_focus_bg"]}, що жорстко записувало background-color: #ffffff в macw1y-components.css.
+     * Оскільки macw1y-components.css імпортується як у світлій, так і в темній темі, при встановленні фокусу на будь-яке поле вводу (пошук, налаштування, текстові поля) фон ставав чисто білим, а білий текст (@window_fg_color) ставав повністю невидимим.
+   - Невідповідність шляхів сторожового таймера (Watchdog) у layout.js:
+     * У bin/gnome-shell та /usr/bin/gnome-shell файли прапорців watchdog mactheme-overlay-launching та failed записуються до безпечної персональної директорії $XDG_RUNTIME_DIR (/run/user/$UID).
+     * Однак у gnome-shell-overlay/ui/layout.js (рядки 1311 та 1346) код видалення прапорця шукав застарілий шлях /var/tmp/mactheme-overlay-launching.
+     * Через це маркер запуску ніколи не видалявся після успішного старту сесії, що при наступному перезапуску оболонки протягом 60 секунд могло призводити до помилкового спрацьовування захисту від крашів (watchdog safe-mode bypass).
+
+2. Реалізовані дії та технічні рішення:
+   - Створено повні резервні копії всіх причетних файлів у .backup_conflict_fixes/step5_gtk_watchdog/.
+   - bin/mac-build-theme:
+     * Для entry, entry:focus-within (GTK4) та entry:focus (GTK3) замінено жорстко закодовані кольори на адаптивні змінні CSS: var(--mac-input-bg, {c["input_bg"]}), var(--mac-input-border, {c["input_border"]}), var(--mac-input-focus-bg, {c["input_focus_bg"]}) та var(--mac-input-focus-border, {c["input_focus_border"]}).
+     * Запущено компілятор теми: згенеровано оновлені macw1y-components.css для репозиторію, локальних налаштувань (~/.config/gtk-4.0/, ~/.config/gtk-3.0/), користувацьких тем (~/.themes/) та системних тем (/usr/share/themes/).
+     * Тепер у темній темі фон інпуту залишається напівпрозорим темним (rgba(255, 255, 255, 0.12)), а білий текст чітко читається; у світлій темі — чистий білий (#ffffff) на сірому тлі з чорним текстом.
+   - gnome-shell-overlay/ui/layout.js:
+     * Оновлено обидва блоки очищення прапорця (при запуску анімації та після її завершення): додано динамічне визначення $XDG_RUNTIME_DIR з очищенням як нових шляхів ($XDG_RUNTIME_DIR/mactheme-overlay-launching), так і застарілих (/var/tmp/mactheme-overlay-launching).
+     * Зміни синхронізовано з /usr/share/mactheme/gnome-shell-overlay/ui/layout.js.
+   - Оновлено /usr/local/bin/mac-build-theme.
+
+3. Результати тестування та верифікації:
+   - mac-audit-sync check — 100% PASS (5/5 checks passed).
+   - mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
+   - mac-i18n-verify — 100% SUCCESSFUL.
