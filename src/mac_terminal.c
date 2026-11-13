@@ -274,29 +274,58 @@ static void init_terminal_css(void) {
 
     GtkCssProvider *provider = gtk_css_provider_new();
     const char *css = 
+        /* Completely hide any tab bar, tab buttons, and tab containers */
+        "tabbar,"
+        "adwtabbar,"
+        ".tab-bar,"
+        "tabbox,"
+        "tab,"
+        "adwtabbar tabbox {"
+        "   min-height: 0px;"
+        "   min-width: 0px;"
+        "   padding: 0px;"
+        "   margin: 0px;"
+        "   border: none;"
+        "   box-shadow: none;"
+        "   opacity: 0;"
+        "}"
+        /* Header bar: authentic macOS 34px height, 100% transparent so the dark */
+        /* window background seamlessly shows through — NEVER turns white! */
         ".ptyxis-window headerbar,"
         ".ptyxis-window headerbar.flat,"
         ".ptyxis-window headerbar.default-decoration,"
         ".ptyxis-window .main-header-bar,"
-        "window.ptyxis-window headerbar {"
-        "   min-height: 38px;"
+        ".ptyxis-window headerbar:backdrop,"
+        "window.ptyxis-window headerbar,"
+        "window.ptyxis-window headerbar:backdrop,"
+        "window.ptyxis-window:backdrop headerbar {"
+        "   min-height: 34px;"
         "   padding-top: 0px;"
         "   padding-bottom: 0px;"
         "   padding-left: 0px;"
         "   padding-right: 4px;"
         "   margin-top: 0px;"
         "   margin-bottom: 0px;"
+        "   background: transparent;"
+        "   background-color: transparent;"
+        "   border: none;"
+        "   box-shadow: none;"
         "}"
-        ".ptyxis-window headerbar windowhandle,"
-        ".ptyxis-window headerbar > windowhandle > box {"
-        "   min-height: 38px;"
-        "   padding-top: 0px;"
-        "   padding-bottom: 0px;"
-        "   margin-top: 0px;"
-        "   margin-bottom: 0px;"
+        ".ptyxis-window windowhandle,"
+        ".ptyxis-window windowhandle:backdrop,"
+        ".ptyxis-window revealer.top-bar,"
+        ".ptyxis-window revealer.top-bar:backdrop,"
+        ".ptyxis-window revealer.top-bar > windowhandle,"
+        ".ptyxis-window revealer.top-bar > windowhandle:backdrop,"
+        ".ptyxis-window box.visual-bell,"
+        ".ptyxis-window box.visual-bell:backdrop {"
+        "   background: transparent;"
+        "   background-color: transparent;"
+        "   box-shadow: none;"
+        "   border: none;"
         "}"
         ".ptyxis-window headerbar windowcontrols {"
-        "   min-height: 38px;"
+        "   min-height: 34px;"
         "   padding-top: 0px;"
         "   padding-bottom: 0px;"
         "   padding-left: 12px;"
@@ -306,11 +335,11 @@ static void init_terminal_css(void) {
         "   border-spacing: 6px;"
         "}"
         ".ptyxis-window headerbar windowcontrols button {"
-        "   min-height: 16px;"
-        "   min-width: 16px;"
+        "   min-height: 14px;"
+        "   min-width: 14px;"
         "   padding: 0;"
-        "   margin-top: 11px;"
-        "   margin-bottom: 11px;"
+        "   margin-top: 10px;"
+        "   margin-bottom: 10px;"
         "   margin-left: 0;"
         "   margin-right: 0;"
         "}"
@@ -320,20 +349,21 @@ static void init_terminal_css(void) {
         ".mac-terminal-folder-icon,"
         "picture.mac-terminal-folder-icon,"
         "image.mac-terminal-folder-icon {"
-        "   min-width: 16px;"
-        "   min-height: 16px;"
+        "   min-width: 14px;"
+        "   min-height: 14px;"
         "   margin-right: 4px;"
         "}"
+        /* Authentic compact macOS titlebar typography matching Photo 2 */
         ".mac-terminal-folder-label {"
         "   font-family: 'SF Mono', monospace;"
         "   font-weight: 500;"
-        "   font-size: 16.5px;"
+        "   font-size: 11px;"
         "   color: #ffffff;"
         "}"
         ".mac-terminal-sep {"
         "   font-family: 'SF Mono', monospace;"
         "   font-weight: 400;"
-        "   font-size: 16.5px;"
+        "   font-size: 11px;"
         "   color: rgba(255, 255, 255, 0.45);"
         "   margin-left: 3px;"
         "   margin-right: 3px;"
@@ -341,13 +371,13 @@ static void init_terminal_css(void) {
         ".mac-terminal-path-label {"
         "   font-family: 'SF Mono', monospace;"
         "   font-weight: 400;"
-        "   font-size: 16.5px;"
+        "   font-size: 11px;"
         "   color: rgba(255, 255, 255, 0.85);"
         "}"
         ".mac-terminal-size-label {"
         "   font-family: 'SF Mono', monospace;"
         "   font-weight: 400;"
-        "   font-size: 16.5px;"
+        "   font-size: 11px;"
         "   color: rgba(255, 255, 255, 0.85);"
         "}";
 
@@ -363,12 +393,51 @@ static void init_terminal_css(void) {
     g_object_unref(provider);
 }
 
+static void on_tab_bar_visible_notify(GObject *gobject, GParamSpec *pspec, gpointer user_data) {
+    if (gtk_widget_get_visible(GTK_WIDGET(gobject))) {
+        gtk_widget_set_visible(GTK_WIDGET(gobject), FALSE);
+    }
+}
+
+static void hide_tab_bars_recursive(GtkWidget *widget) {
+    if (!widget) return;
+    GType tab_bar_type = g_type_from_name("AdwTabBar");
+    if (tab_bar_type != G_TYPE_INVALID && g_type_is_a(G_OBJECT_TYPE(widget), tab_bar_type)) {
+        gtk_widget_set_visible(widget, FALSE);
+        if (ADW_IS_TAB_BAR(widget)) {
+            adw_tab_bar_set_autohide(ADW_TAB_BAR(widget), TRUE);
+        }
+        g_signal_connect(widget, "notify::visible", G_CALLBACK(on_tab_bar_visible_notify), NULL);
+    }
+    for (GtkWidget *child = gtk_widget_get_first_child(widget);
+         child != NULL;
+         child = gtk_widget_get_next_sibling(child)) {
+        hide_tab_bars_recursive(child);
+    }
+}
+
+static void on_override_new_tab(GSimpleAction *action, GVariant *param, gpointer user_data) {
+    GtkWidget *win = GTK_WIDGET(user_data);
+    GVariant *args = param ? g_variant_ref(param) : g_variant_new("(ss)", "default", "");
+    g_action_group_activate_action(G_ACTION_GROUP(win), "new-window", args);
+}
+
 static void apply_mac_terminal_styling(GtkWindow *window) {
     if (g_object_get_data(G_OBJECT(window), "mac_terminal_applied")) return;
     g_object_set_data(G_OBJECT(window), "mac_terminal_applied", GINT_TO_POINTER(1));
 
     init_terminal_css();
     init_vte_symbols();
+
+    /* 0. Intercept win.new-tab so opening a new terminal opens a new window, never a tab */
+    GAction *orig_tab_action = g_action_map_lookup_action(G_ACTION_MAP(window), "new-tab");
+    const GVariantType *ptype = orig_tab_action ? g_action_get_parameter_type(orig_tab_action) : G_VARIANT_TYPE("(ss)");
+    GSimpleAction *act_new_tab = g_simple_action_new("new-tab", ptype);
+    g_signal_connect(act_new_tab, "activate", G_CALLBACK(on_override_new_tab), window);
+    g_action_map_add_action(G_ACTION_MAP(window), G_ACTION(act_new_tab));
+
+    /* Hide any AdwTabBar recursively */
+    hide_tab_bars_recursive(GTK_WIDGET(window));
 
     GtkWidget *header_bar = find_main_header_bar(GTK_WIDGET(window));
     if (!header_bar) {
@@ -419,7 +488,7 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     gtk_widget_set_margin_top(box, 0);
     gtk_widget_set_margin_bottom(box, 0);
 
-    /* Load authentic macOS folder icon at exact 16x16 size */
+    /* Load authentic macOS folder icon at exact 14x14 size */
     GtkWidget *icon = NULL;
     const char *folder_icon_paths[] = {
         "/usr/share/icons/MacTahoe-dark/places/scalable/folder.svg",
@@ -431,14 +500,14 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     for (int i = 0; folder_icon_paths[i]; i++) {
         if (access(folder_icon_paths[i], R_OK) == 0) {
             GError *err = NULL;
-            GdkPixbuf *pb = gdk_pixbuf_new_from_file_at_scale(folder_icon_paths[i], 16, 16, TRUE, &err);
+            GdkPixbuf *pb = gdk_pixbuf_new_from_file_at_scale(folder_icon_paths[i], 14, 14, TRUE, &err);
             if (pb) {
                 GdkTexture *tex = gdk_texture_new_for_pixbuf(pb);
                 g_object_unref(pb);
                 if (tex) {
                     icon = gtk_picture_new_for_paintable(GDK_PAINTABLE(tex));
                     gtk_picture_set_can_shrink(GTK_PICTURE(icon), TRUE);
-                    gtk_widget_set_size_request(icon, 16, 16);
+                    gtk_widget_set_size_request(icon, 14, 14);
                     gtk_widget_set_valign(icon, GTK_ALIGN_CENTER);
                     gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);
                     g_object_unref(tex);
@@ -449,8 +518,8 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     }
     if (!icon) {
         icon = gtk_image_new_from_icon_name("folder");
-        gtk_image_set_pixel_size(GTK_IMAGE(icon), 16);
-        gtk_widget_set_size_request(icon, 16, 16);
+        gtk_image_set_pixel_size(GTK_IMAGE(icon), 14);
+        gtk_widget_set_size_request(icon, 14, 14);
         gtk_widget_set_valign(icon, GTK_ALIGN_CENTER);
         gtk_widget_set_halign(icon, GTK_ALIGN_CENTER);
     }

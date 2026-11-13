@@ -1,7 +1,32 @@
-#!/bin/sh
+#!/bin/bash
 export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_terminal.so:/usr/lib/x86_64-linux-gnu/libmacpopover.so${LD_PRELOAD:+:$LD_PRELOAD}"
+
+# Always open new terminal as a new window, never as a tab
+NEW_ARGS=()
+HAS_ACTION=0
+
+for arg in "$@"; do
+    case "$arg" in
+        --tab|--tab-with-profile*)
+            NEW_ARGS+=("--new-window")
+            HAS_ACTION=1
+            ;;
+        --new-window|-s|--standalone|--preferences|-h|--help|--help-all|--help-gapplication)
+            NEW_ARGS+=("$arg")
+            HAS_ACTION=1
+            ;;
+        *)
+            NEW_ARGS+=("$arg")
+            ;;
+    esac
+done
+
+if [ "$HAS_ACTION" -eq 0 ]; then
+    NEW_ARGS=("--new-window" "${NEW_ARGS[@]}")
+fi
+
 if [ -f /usr/bin/ptyxis.orig ]; then
-    exec /usr/bin/ptyxis.orig "$@"
+    exec /usr/bin/ptyxis.orig "${NEW_ARGS[@]}"
 else
-    exec /usr/bin/ptyxis "$@"
+    exec /usr/bin/ptyxis "${NEW_ARGS[@]}"
 fi

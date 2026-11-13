@@ -138,3 +138,7 @@ startup-sound = 'warty-startup'
 
 [org.gnome.shell.ubuntu:ubuntu]
 startup-sound = 'warty-startup'
+
+[org.gnome.Ptyxis]
+restore-session = false
+font-name = 'SF Mono 10.5'
