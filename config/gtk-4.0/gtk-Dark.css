@@ -1,4 +1,5 @@
 @import url("macw1y-tokens.css");
+@import url("macw1y-components.css");
 :root {
   --blue-1: #99c1f1;
   --blue-2: #62a0ea;
@@ -9885,12 +9886,6 @@ navigation-split-view .sidebar-pane {
     box-shadow: none;
 }
 
-window.mac-settings-window .sidebar-pane toolbarview,
-window.mac-settings-window .sidebar-pane headerbar,
-window.mac-settings-window .sidebar-pane scrolledwindow,
-window.mac-settings-window .sidebar-pane viewport,
-window.mac-settings-window .sidebar-pane list.navigation-sidebar,
-window.mac-settings-window .sidebar-pane listbox,
 navigation-split-view .sidebar-pane toolbarview,
 navigation-split-view .sidebar-pane headerbar,
 navigation-split-view .sidebar-pane scrolledwindow,
@@ -9964,10 +9959,6 @@ window .top-bar headerbar,
 window toolbarview > .top-bar headerbar,
 window .sidebar-pane headerbar,
 window .content-pane headerbar,
-window.mac-settings-window headerbar,
-window.mac-settings-window .mac-settings-content-headerbar,
-window.mac-settings-window .mac-settings-sidebar-headerbar,
-window.mac-settings-window navigation-split-view headerbar,
 navigation-split-view headerbar,
 overlay-split-view headerbar,
 overlay-split-view toolbarview > .top-bar headerbar,
@@ -9989,9 +9980,6 @@ window toolbarview > revealer.top-bar,
 window toolbarview > .top-bar.raised,
 window toolbarview > .top-bar.raised.border,
 window .top-bar,
-window.mac-settings-window toolbarview > .top-bar,
-window.mac-settings-window toolbarview > .top-bar.flat,
-window.mac-settings-window toolbarview > revealer.top-bar,
 navigation-split-view toolbarview > .top-bar,
 overlay-split-view toolbarview > .top-bar,
 window.nautilus-window .content-pane toolbarview > .top-bar,
@@ -10017,7 +10005,6 @@ window toolbarview > .top-bar headerbar,
 window toolbarview > revealer.top-bar headerbar,
 navigation-split-view toolbarview > .top-bar headerbar,
 overlay-split-view toolbarview > .top-bar headerbar,
-window.mac-settings-window toolbarview > .top-bar headerbar,
 window.nautilus-window toolbarview > .top-bar headerbar {
     background: transparent;
     background-color: transparent;
@@ -10032,7 +10019,6 @@ window .sidebar-pane toolbarview > .top-bar.raised,
 window navigation-split-view .sidebar-pane toolbarview > .top-bar,
 window overlay-split-view > widget:first-child toolbarview > .top-bar,
 window overlay-split-view > .sidebar-pane toolbarview > .top-bar,
-window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
 window.nautilus-window .sidebar-pane toolbarview > .top-bar {
     background: none;
     background-color: transparent;
@@ -11920,4 +11906,68 @@ window.mac-settings-window button.suggested-action.circular:active {
 
 
 /* macW1Y Global Component Master Overrides (SSOT) */
-@import url("macw1y-components.css");
+
+/* === SOLID MACOS SETTINGS (GNOME CONTROL CENTER) === */
+window.mac-settings-window,
+window.mac-settings-window.background,
+window.mac-settings-window > dialog-host,
+window.mac-settings-window navigation-split-view,
+window.mac-settings-window .content-pane,
+window.mac-settings-window .mac-settings-content {
+    background-color: var(--mac-window-bg, #202022);
+    background: #202022;
+    background-image: none;
+    color: var(--mac-text-primary, #ffffff);
+}
+
+window.mac-settings-window navigation-split-view > widget.sidebar-pane,
+window.mac-settings-window navigation-split-view .sidebar-pane,
+window.mac-settings-window .sidebar-pane,
+window.mac-settings-window .sidebar-pane:dir(ltr),
+window.mac-settings-window .sidebar-pane:dir(rtl),
+window.mac-settings-window navigation-split-view > widget:first-child,
+window.mac-settings-window .mac-settings-sidebar,
+window.mac-settings-window navigation-view-page.mac-settings-sidebar {
+    margin: 6px 0px 6px 6px;
+    border: none;
+    border-radius: 14px;
+    background-color: var(--mac-sidebar-bg, #18181a);
+    background: #18181a;
+    background-clip: padding-box;
+    box-shadow: none;
+}
+
+window.mac-settings-window .mac-settings-sidebar-headerbar,
+window.mac-settings-window .sidebar-pane headerbar,
+window.mac-settings-window navigation-split-view > widget:first-child headerbar,
+window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
+window.mac-settings-window .sidebar-pane toolbarview > .top-bar headerbar {
+    min-height: 48px;
+    background-color: var(--mac-sidebar-bg, #18181a);
+    background: #18181a;
+    background-image: none;
+    border: none;
+    border-bottom: none;
+    box-shadow: none;
+}
+
+window.mac-settings-window toolbarview > .top-bar.raised,
+window.mac-settings-window toolbarview > .top-bar.raised.border,
+window.mac-settings-window toolbarview > revealer.top-bar,
+window.mac-settings-window toolbarview > .top-bar,
+window.mac-settings-window toolbarview > .top-bar.flat,
+window.mac-settings-window headerbar:not(.mac-settings-sidebar-headerbar),
+window.mac-settings-window headerbar.flat,
+window.mac-settings-window headerbar.default-decoration,
+window.mac-settings-window .mac-settings-content-headerbar,
+window.mac-settings-window .mac-settings-content-headerbar.has-view-switcher,
+window.mac-settings-window .mac-settings-switcher-headerbar,
+window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
+    min-height: 48px;
+    background-color: var(--mac-window-bg, #202022);
+    background: #202022;
+    background-image: none;
+    border: none;
+    border-bottom: 1px solid var(--mac-card-sep, rgba(255, 255, 255, 0.08));
+    box-shadow: none;
+}

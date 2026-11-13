@@ -21717,3 +21717,30 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
    - mac-i18n-verify: 100% SUCCESSFUL.
    - Синхронізовано done.txt на ~/Desktop/done.txt.
+
+756. Виправлення прозорості лівого сайдбара та віндов бара у параметрах (GNOME Control Center) (2026-11-14):
+   - Причина дефекту:
+     1. У control-center/libmac_settings.c (init_mac_settings_css) CSS-правила містили '!important'. Оскільки рушій GTK 4 CSS не підтримує '!important', парсер GTK відкидав усі властивості 'background-color' для вікна та сайдбара як синтаксичні помилки ("Junk at end of value for background-color").
+     2. У правилах headerbar (рядки 9548-9562 libmac_settings.c та в gtk.css) для всіх панелей headerbar і revealer.top-bar було примусово прописано 'background: transparent; background-color: transparent;', через що весь віндов бар був повністю прозорим і просвічував вікна позаду.
+     3. У gtk.css правило @import url("macw1y-components.css"); знаходилося наприкінці файлу, через що ігнорувалося GTK CSS парсером.
+   - Виконані виправлення:
+     A. control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c:
+        - Видалено всі '!important' (44 входження), завдяки чому GTK 4 CSS парсер завантажує таблицю стилів без жодної помилки.
+        - Пріоритет постачальника стилів підвищено до GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 800.
+        - Для вікна (.mac-settings-window, navigation-split-view, .mac-settings-content, .content-pane) встановлено суцільне однотонне темне тло (#202022).
+        - Для лівого сайдбара (.sidebar-pane, navigation-split-view > widget:first-child, .mac-settings-sidebar, navigation-view-page.mac-settings-sidebar) встановлено автентичне темне тло macOS (#18181a) з border-radius: 14px.
+        - Для віндов бара лівого сайдбара (.mac-settings-sidebar-headerbar, .sidebar-pane headerbar) встановлено тло сайдбара (#18181a).
+        - Для основного віндов бара контенту (.mac-settings-content-headerbar, headerbar, toolbarview > .top-bar, toolbarview > revealer.top-bar) встановлено суцільне тло вікна (#202022) з тонким нижнім роздільником border-bottom: 1px solid rgba(255, 255, 255, 0.08).
+     B. Збірка та синхронізація бібліотеки:
+        - Перекомпільовано libmac_settings.so та синхронізовано в усі 7 системних цілей: control-center/, gnome-control-center-overlay/, lib/, ~/.local/lib/, /usr/local/lib/, /usr/lib/x86_64-linux-gnu/, /usr/share/mactheme/gnome-control-center-overlay/.
+     C. Синхронізація GTK 4 CSS:
+        - Перенесено @import url("macw1y-components.css"); на початок файлу після macw1y-tokens.css.
+        - Вилучено селектори mac-settings-window із загального правила прозорості headerbar.
+        - Додано блок суцільних стилів для mac-settings-window у config/gtk-4.0/gtk.css, config/gtk-4.0/gtk-Dark.css, ~/.config/gtk-4.0/gtk.css, ~/.config/gtk-4.0/gtk-Dark.css, ~/.themes/macW1Y-Dark/gtk-4.0/gtk.css та ~/.themes/macW1Y-Dark/gtk-4.0/gtk-Dark.css.
+   - Результати верифікації:
+     - Запуск gnome-control-center тепер проходить з нульовою кількістю Theme parser errors.
+     - Сайдбар та віндов бар отримали суцільне темне тло без наскрізної прозорості до шпалер або фонових вікон.
+     - bin/mac-audit-sync check: 100% PASS.
+     - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
+     - bin/mac-i18n-verify: 100% SUCCESSFUL.
+     - Синхронізовано done.txt на ~/Desktop/done.txt.
