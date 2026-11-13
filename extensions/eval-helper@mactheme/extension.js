@@ -3738,22 +3738,22 @@ export default class EvalHelper extends Extension {
             console.error(`[EvalHelper] wm._destroyWindow setup error: ${e}`);
         }
 
-        // Anti-dimming watchdog: continuously ensure no stuck full-screen glass dimmer dims the screen
-        this._dimmerWatchdogId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 2, () => {
+        // Anti-dimming watchdog: safely ensure no stuck full-screen glass dimmer dims the screen (low frequency 10s fallback)
+        this._dimmerWatchdogId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 10, () => {
             try {
-                const uiGroup = Main.layoutManager.uiGroup;
-                if (uiGroup) {
-                    const hasOpen = Main.panel?.menuManager?._menus?.some(m => m.isOpen);
-                    for (const c of uiGroup.get_children()) {
-                        if (c.name && c.name.startsWith('liquid-glass-bg-actor')) {
-                            const box = c.get_children ? c.get_children()[0] : null;
-                            const eff = box?.get_effects ? box.get_effects()[0] : null;
-                            const owner = eff?._owner || '';
-                            if (owner === 'menu' || owner.startsWith('menu:') || owner === 'switcher-popup') {
-                                if (!hasOpen && c.visible) {
-                                    c.hide();
-                                    c.opacity = 0;
-                                }
+                const uiGroup = Main.layoutManager?.uiGroup;
+                if (!uiGroup) return GLib.SOURCE_CONTINUE;
+                const hasOpen = Main.panel?.menuManager?._menus?.some(m => m.isOpen);
+                if (hasOpen) return GLib.SOURCE_CONTINUE;
+                for (const c of uiGroup.get_children()) {
+                    if (c.name && c.name.startsWith('liquid-glass-bg-actor')) {
+                        const box = c.get_children ? c.get_children()[0] : null;
+                        const eff = box?.get_effects ? box.get_effects()[0] : null;
+                        const owner = eff?._owner || '';
+                        if (owner === 'menu' || owner.startsWith('menu:') || owner === 'switcher-popup') {
+                            if (c.visible) {
+                                c.hide();
+                                c.opacity = 0;
                             }
                         }
                     }

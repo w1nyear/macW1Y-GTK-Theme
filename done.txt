@@ -21217,3 +21217,44 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
    - Відкриття меню відбувається плавно, без просідань fps та затримок на 165 Гц.
+
+
+================================================================================
+Завдання 740: MACW1Y — Етап 5 (Оптимізація анімацій вікон, Magic Lamp та системних елементів)
+Дата виконання: 13 листопада 2026 р.
+Статус: ВИКОНАНО (Етап 5: 100%)
+
+1. Опис проблеми та контекст:
+   - Під час аналізу механізмів анімації вікон та розширення Compiz Magic Lamp Effect виявлено низку критичних вузьких місць:
+     * Важке сканування стеку (stack sniffing) через `new Error().stack` при кожній перевірці `Main.wm._shouldAnimateActor`:
+       При будь-якій події вікна (відкриття, закриття, зміна розміру, мінімізація) створювався об'єкт Error і парсився весь стек викликів V8/GJS, що спричиняло високе навантаження на CPU та GC-паузи.
+     * Синхронне зняття снепшотів mapped-вікон у `_overviewShowingId`:
+       На сигналі `showing` для всіх активних вікон викликався `actor.paint_to_content(null)`, що синхронно виділяло FBO та заморожувало потік рендерингу під час відкриття Overview.
+     * Регулярна примусова перебудова дока (`Main.overview.dash._redisplay()`):
+       Викликалася на кожну мінімізацію/відновлення вікна, змушуючи GNOME Shell щоразу перестворювати іконки Dash.
+     * Надлишкові розрахунки геометрії деформації (121 раз на кадр):
+       У `vfunc_deform_vertex` параметри деформації (`expandHeight`, `fullHeight`, `offsetY`, `1 - k`, тощо) перераховувалися для кожної вершини замість одноразового розрахунку на кадр.
+     * Примусова інвалідація батьківського контейнера вікон:
+       Виклик `this.actor.get_parent().queue_redraw()` на кожному тіку Clutter.Timeline змушував перемальовувати весь шар віконної групи, замість використання штатної інвалідації деформованого мешу `this.invalidate()`.
+     * Частота таймера захисту `_dimmerWatchdogId` в `eval-helper`:
+       Запитував стан раз на 2 секунди замість низькопріоритетного інтервалу.
+
+2. Реалізовані зміни та технічні рішення:
+   - extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/extension.js:
+     * Усунено monkey-patching `_shouldAnimateActor` та парсинг `new Error().stack`. Замість цього безпосередньо перехоплено `Main.wm._minimizeWindow` та `Main.wm._unminimizeWindow` для прямого делегування у `completed_minimize` / `completed_unminimize`. Це зберегло повну ізоляцію від сторонніх перехоплень (`kiwi` fade) та усунуло накладні витрати на виклики.
+     * У `_overviewShowingId` прибрано синхронний виклик `captureWindowSnapshot(actor)` для mapped-вікон, звільнивши старт анімації Overview від FBO-пауз.
+     * У `getIcon(actor)` прибрано деструктивний виклик `Main.overview.dash._redisplay()`.
+     * Впроваджено функцію `updateFrameParams()`: інваріанти розширення обчислюються один раз під час `vfunc_set_actor`, а покадрові змінні деформації — один раз на тік у `on_tick_elapsed`.
+     * Оптимізовано математику `vfunc_deform_vertex`: замінено повторні ділення на множення на попередньо розраховані інверсні величини (`invFullHeight`, `invFullWidth`), усунуто дублюючі операції.
+     * Усунено виклик `this.actor.get_parent().queue_redraw()` на кожному тіку, залишивши чистий `this.invalidate()`.
+   - extensions/eval-helper@mactheme/extension.js:
+     * Збільшено інтервал `_dimmerWatchdogId` з 2 до 10 секунд з раннім виходом при відкритих меню, зменшивши кількість пробуджень CPU на 80%.
+   - config/extensions.lock.json:
+     * Оновлено хеші для `compiz-alike-magic-lamp-effect@hermes83.github.com` (fbe464aa) та `eval-helper@mactheme` (083f7055).
+   - Синхронізовано обидва розширення до `~/.local/share/gnome-shell/extensions/`.
+
+3. Результати тестування та верифікації:
+   - bin/mac-extension-guard verify — 21/21 OK (усі 21 розширення перевірені та зафіксовані).
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+   - Анімації мінімізації та розгортання Magic Lamp, відкриття/закриття меню та вікон працюють стабільно, шовковисто-плавно на 165 Гц без просідання FPS.

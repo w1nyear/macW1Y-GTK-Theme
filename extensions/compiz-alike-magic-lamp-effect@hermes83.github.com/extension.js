@@ -91,15 +91,17 @@ export default class CompizMagicLampEffectExtension extends Extension {
 
         // https://github.com/GNOME/gnome-shell/blob/master/js/ui/windowManager.js
 
-        if (Main.wm._shouldAnimateActor) {
-            Main.wm.original_minimizeMaximizeWindow_shouldAnimateActor = Main.wm._shouldAnimateActor;
-            Main.wm._shouldAnimateActor = function(actor, types) {
-                let stack = new Error().stack;
-                if (stack && (stack.indexOf("_minimizeWindow") !== -1 || stack.indexOf("_unminimizeWindow") !== -1)) {
-                    return false;
-                }
-                
-                return Main.wm.original_minimizeMaximizeWindow_shouldAnimateActor(actor, types);
+        if (Main.wm._minimizeWindow && !this._origWmMinimizeWindow) {
+            this._origWmMinimizeWindow = Main.wm._minimizeWindow;
+            Main.wm._minimizeWindow = function(shellwm, actor) {
+                shellwm.completed_minimize(actor);
+            };
+        }
+
+        if (Main.wm._unminimizeWindow && !this._origWmUnminimizeWindow) {
+            this._origWmUnminimizeWindow = Main.wm._unminimizeWindow;
+            Main.wm._unminimizeWindow = function(shellwm, actor) {
+                shellwm.completed_unminimize(actor);
             };
         }
 
@@ -137,8 +139,6 @@ export default class CompizMagicLampEffectExtension extends Extension {
                 if (actor && actor.meta_window) {
                     if (actor.meta_window.minimized) {
                         applySnapshotOverlay(actor);
-                    } else if (actor.mapped) {
-                        captureWindowSnapshot(actor);
                     }
                 }
             });
@@ -244,9 +244,13 @@ export default class CompizMagicLampEffectExtension extends Extension {
             this.destroyActorEffect(actor);
         });
         
-        if (Main.wm.original_minimizeMaximizeWindow_shouldAnimateActor) {
-            Main.wm._shouldAnimateActor = Main.wm.original_minimizeMaximizeWindow_shouldAnimateActor;
-            Main.wm.original_minimizeMaximizeWindow_shouldAnimateActor = null;
+        if (this._origWmMinimizeWindow && Main.wm) {
+            Main.wm._minimizeWindow = this._origWmMinimizeWindow;
+            this._origWmMinimizeWindow = null;
+        }
+        if (this._origWmUnminimizeWindow && Main.wm) {
+            Main.wm._unminimizeWindow = this._origWmUnminimizeWindow;
+            this._origWmUnminimizeWindow = null;
         }
         if (Main.wm._shellwm.original_completed_minimize) {
             Main.wm._shellwm.completed_minimize = Main.wm._shellwm.original_completed_minimize;
@@ -266,13 +270,11 @@ export default class CompizMagicLampEffectExtension extends Extension {
     
         let monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
         if (monitor && Main.overview.dash) {
-            Main.overview.dash._redisplay();  
-
             let dashIcon = null;
             let transformed_position = null;
             let pids = null;
             let pid = actor.get_meta_window() ? actor.get_meta_window().get_pid() : null;
-            if (pid) {
+            if (pid && Main.overview.dash._box) {
                 Main.overview.dash._box.get_children()
                     .filter(dashElement => dashElement.child && dashElement.child._delegate && dashElement.child._delegate.app)
                     .forEach(dashElement => {
@@ -434,6 +436,12 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
             }
         }
 
+        if (this.iconPosition == St.Side.BOTTOM) {
+            this.expandHeight = (this.iconMonitor.height - this.icon.height - this.window.y - this.window.height);
+        } else if (this.iconPosition == St.Side.RIGHT) {
+            this.expandWidth = (this.iconMonitor.width - this.icon.width - this.window.x - this.window.width);
+        }
+
         this.set_n_tiles(this.X_TILES, this.Y_TILES);
         
         this.timerId = new Clutter.Timeline({ actor: this.actor, duration: this.DURATION + (this.monitor.width * this.monitor.height) / (this.window.width * this.window.height) });
@@ -467,82 +475,122 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
         }
     }
 
+    updateFrameParams() {
+        if (!this.initialized) return;
+
+        const oneMinusK = 1 - this.k;
+        const oneMinusJ = 1 - this.j;
+
+        if (this.iconPosition == St.Side.BOTTOM) {
+            this.fullHeight = (this.iconMonitor.height - this.icon.height - this.window.y) - this.expandHeight * oneMinusK;
+            this.height = this.fullHeight - this.j * this.fullHeight;
+            this.offsetY = this.iconMonitor.height - this.icon.height - this.window.y - this.height - this.expandHeight * oneMinusK;
+            this.invFullHeight = this.fullHeight > 0 ? 1 / this.fullHeight : 0;
+            this.diffIconWinX = this.icon.x - this.window.x;
+            this.diffWinIconW = this.window.width - this.icon.width;
+            this.oneMinusJ = oneMinusJ;
+            this.oneMinusK = oneMinusK;
+            this.termJ = this.diffIconWinX * this.j;
+            this.termK = this.diffIconWinX * this.k;
+        } else if (this.iconPosition == St.Side.RIGHT) {
+            this.fullWidth = (this.iconMonitor.width - this.icon.width - this.window.x) - this.expandWidth * oneMinusK;
+            this.width = this.fullWidth - this.j * this.fullWidth;
+            this.offsetX = this.iconMonitor.width - this.icon.width - this.window.x - this.width - this.expandWidth * oneMinusK;
+            this.invFullWidth = this.fullWidth > 0 ? 1 / this.fullWidth : 0;
+            this.diffIconWinY = this.icon.y - this.window.y;
+            this.diffWinIconH = this.window.height - this.icon.height;
+            this.oneMinusJ = oneMinusJ;
+            this.oneMinusK = oneMinusK;
+            this.termJ = this.diffIconWinY * this.j;
+            this.termK = this.diffIconWinY * this.k;
+        } else if (this.iconPosition == St.Side.LEFT) {
+            this.width = this.window.width - this.icon.width + this.window.x * this.k;
+            this.offsetX = this.icon.width - this.window.x * this.k;
+            this.invWidth = this.width > 0 ? 1 / this.width : 0;
+            this.diffIconWinY = this.icon.y - this.window.y;
+            this.diffWinIconH = this.window.height - this.icon.height;
+            this.oneMinusJ = oneMinusJ;
+            this.oneMinusK = oneMinusK;
+        } else if (this.iconPosition == St.Side.TOP) {
+            this.height = this.window.height - this.icon.height + this.window.y * this.k;
+            this.offsetY = this.icon.height - this.window.y * this.k;
+            this.invHeight = this.height > 0 ? 1 / this.height : 0;
+            this.diffIconWinX = this.icon.x - this.window.x;
+            this.diffWinIconW = this.window.width - this.icon.width;
+            this.oneMinusJ = oneMinusJ;
+            this.oneMinusK = oneMinusK;
+        }
+    }
+
     vfunc_deform_vertex(w, h, v) {
-        if (this.initialized) {
-            let propX = w / this.window.width;
-            let propY = h / this.window.height;
+        if (!this.initialized) return;
 
-            if (this.iconPosition == St.Side.LEFT) {
-                this.width = this.window.width - this.icon.width + this.window.x * this.k;
+        let propX = w / this.window.width;
+        let propY = h / this.window.height;
 
-                this.x = (this.width - this.j * this.width) * v.tx;  
-                this.y = v.ty * this.window.height * (this.x + (this.width - this.x) * (1 - this.k)) / this.width + 
-                        v.ty * this.icon.height * (this.width - this.x) / this.width;
+        if (this.iconPosition == St.Side.BOTTOM) {
+            const y = v.ty * this.height;
+            const x = v.tx * this.icon.width +
+                    v.tx * this.diffWinIconW * this.oneMinusJ * (1 - v.ty) +
+                    v.tx * this.diffWinIconW * this.oneMinusK * v.ty;
 
-                this.offsetX = this.icon.width - this.window.x * this.k;
-                this.offsetY = (this.icon.y - this.window.y) * ((this.width - this.x) / this.width) * this.k;
-
-                if (this.EFFECT === 'sine') {
-                    this.effectY = Math.sin(this.x / this.width * Math.PI * 4) * this.window.height / 14 * this.k;
-                } else {
-                    this.effectY = Math.sin((0.5 - (this.width - this.x) / this.width) * 2 * Math.PI) * (this.window.y + this.window.height * v.ty - (this.icon.y + this.icon.height * v.ty)) / 7 * this.k;
-                }
-            } else if (this.iconPosition == St.Side.TOP) {
-                this.height = this.window.height - this.icon.height + this.window.y * this.k;
-
-                this.y = (this.height - this.j * this.height) * v.ty;
-                this.x = v.tx * this.window.width * (this.y + (this.height - this.y) * (1 - this.k)) / this.height + 
-                        v.tx * this.icon.width * (this.height - this.y) / this.height;
-
-                this.offsetX = (this.icon.x - this.window.x) * ((this.height - this.y) / this.height) * this.k;
-                this.offsetY = this.icon.height - this.window.y * this.k;
-
-                if (this.EFFECT === 'sine') {
-                    this.effectX = Math.sin(this.y / this.height * Math.PI * 4) * this.window.width / 14 * this.k;
-                } else {
-                    this.effectX = Math.sin((0.5 - (this.height - this.y) / this.height) * 2 * Math.PI) * (this.window.x + this.window.width * v.tx - (this.icon.x + this.icon.width * v.tx)) / 7 * this.k;
-                }
-            } else if (this.iconPosition == St.Side.RIGHT) {
-                this.expandWidth = (this.iconMonitor.width - this.icon.width - this.window.x - this.window.width);
-                this.fullWidth = (this.iconMonitor.width - this.icon.width - this.window.x) - this.expandWidth * (1 - this.k);
-                this.width = this.fullWidth - this.j * this.fullWidth;
-
-                this.x = v.tx * this.width;
-                this.y = v.ty * (this.icon.height) +
-                        v.ty * (this.window.height - this.icon.height) * (1 - this.j) * (1 - v.tx) +
-                        v.ty * (this.window.height - this.icon.height) * (1 - this.k) * (v.tx);
-                
-                this.offsetY = (this.icon.y - this.window.y) * (this.x / this.fullWidth) * this.k + (this.icon.y - this.window.y) * this.j;
-                this.offsetX = this.iconMonitor.width - this.icon.width - this.window.x - this.width - this.expandWidth * (1 - this.k);
-                
-                if (this.EFFECT === 'sine') {
-                    this.effectY = Math.sin((this.width - this.x) / this.fullWidth * Math.PI * 4) * this.window.height / 14 * this.k;
-                } else {
-                    this.effectY = Math.sin(((this.width - this.x) / this.fullWidth) * 2 * Math.PI + Math.PI) * (this.window.y + this.window.height * v.ty - (this.icon.y + this.icon.height * v.ty)) / 7 * this.k;
-                }
-            } else if (this.iconPosition == St.Side.BOTTOM) {
-                this.expandHeight = (this.iconMonitor.height - this.icon.height - this.window.y - this.window.height);
-                this.fullHeight = (this.iconMonitor.height - this.icon.height - this.window.y) - this.expandHeight * (1 - this.k);
-                this.height = this.fullHeight - this.j * this.fullHeight;
-                
-                this.y = v.ty * this.height;
-                this.x = v.tx * (this.icon.width) +
-                        v.tx * (this.window.width - this.icon.width) * (1 - this.j) * (1 - v.ty) +
-                        v.tx * (this.window.width - this.icon.width) * (1 - this.k) * (v.ty);
-
-                this.offsetX = (this.icon.x - this.window.x) * (this.y / this.fullHeight) * this.k + (this.icon.x - this.window.x) * this.j;
-                this.offsetY = this.iconMonitor.height - this.icon.height - this.window.y - this.height - this.expandHeight * (1 - this.k);
-
-                if (this.EFFECT === 'sine') {
-                    this.effectX = Math.sin((this.height - this.y) / this.fullHeight * Math.PI * 4) * this.window.width / 14 * this.k;
-                } else {
-                    this.effectX = Math.sin(((this.height - this.y) / this.fullHeight) * 2 * Math.PI + Math.PI) * (this.window.x + this.window.width * v.tx - (this.icon.x + this.icon.width * v.tx)) / 7 * this.k;
-                }
+            const offsetX = this.termK * (y * this.invFullHeight) + this.termJ;
+            let effectX = 0;
+            if (this.EFFECT === 'sine') {
+                effectX = Math.sin((this.height - y) * this.invFullHeight * Math.PI * 4) * this.window.width / 14 * this.k;
+            } else {
+                effectX = Math.sin(((this.height - y) * this.invFullHeight) * 2 * Math.PI + Math.PI) * (this.window.x + this.window.width * v.tx - (this.icon.x + this.icon.width * v.tx)) / 7 * this.k;
             }
-            
-            v.x = (this.x + this.offsetX + this.effectX) * propX;
-            v.y = (this.y + this.offsetY + this.effectY) * propY;
-        }    
+
+            v.x = (x + offsetX + effectX) * propX;
+            v.y = (y + this.offsetY) * propY;
+        } else if (this.iconPosition == St.Side.RIGHT) {
+            const x = v.tx * this.width;
+            const y = v.ty * this.icon.height +
+                    v.ty * this.diffWinIconH * this.oneMinusJ * (1 - v.tx) +
+                    v.ty * this.diffWinIconH * this.oneMinusK * v.tx;
+
+            const offsetY = this.termK * (x * this.invFullWidth) + this.termJ;
+            let effectY = 0;
+            if (this.EFFECT === 'sine') {
+                effectY = Math.sin((this.width - x) * this.invFullWidth * Math.PI * 4) * this.window.height / 14 * this.k;
+            } else {
+                effectY = Math.sin(((this.width - x) * this.invFullWidth) * 2 * Math.PI + Math.PI) * (this.window.y + this.window.height * v.ty - (this.icon.y + this.icon.height * v.ty)) / 7 * this.k;
+            }
+
+            v.x = (x + this.offsetX) * propX;
+            v.y = (y + offsetY + effectY) * propY;
+        } else if (this.iconPosition == St.Side.LEFT) {
+            const x = (this.width - this.j * this.width) * v.tx;  
+            const y = v.ty * this.window.height * (x + (this.width - x) * this.oneMinusK) * this.invWidth + 
+                    v.ty * this.icon.height * (this.width - x) * this.invWidth;
+
+            const offsetY = this.diffIconWinY * ((this.width - x) * this.invWidth) * this.k;
+            let effectY = 0;
+            if (this.EFFECT === 'sine') {
+                effectY = Math.sin(x * this.invWidth * Math.PI * 4) * this.window.height / 14 * this.k;
+            } else {
+                effectY = Math.sin((0.5 - (this.width - x) * this.invWidth) * 2 * Math.PI) * (this.window.y + this.window.height * v.ty - (this.icon.y + this.icon.height * v.ty)) / 7 * this.k;
+            }
+
+            v.x = (x + this.offsetX) * propX;
+            v.y = (y + offsetY + effectY) * propY;
+        } else if (this.iconPosition == St.Side.TOP) {
+            const y = (this.height - this.j * this.height) * v.ty;
+            const x = v.tx * this.window.width * (y + (this.height - y) * this.oneMinusK) * this.invHeight + 
+                    v.tx * this.icon.width * (this.height - y) * this.invHeight;
+
+            const offsetX = this.diffIconWinX * ((this.height - y) * this.invHeight) * this.k;
+            let effectX = 0;
+            if (this.EFFECT === 'sine') {
+                effectX = Math.sin(y * this.invHeight * Math.PI * 4) * this.window.width / 14 * this.k;
+            } else {
+                effectX = Math.sin((0.5 - (this.height - y) * this.invHeight) * 2 * Math.PI) * (this.window.x + this.window.width * v.tx - (this.icon.x + this.icon.width * v.tx)) / 7 * this.k;
+            }
+
+            v.x = (x + offsetX + effectX) * propX;
+            v.y = (y + this.offsetY) * propY;
+        }
     }
 }
 
@@ -557,7 +605,6 @@ class MagicLampMinimizeEffect extends AbstractCommonMagicLampEffect {
         this.k = 0;
         this.j = 0;
         this.isMinimizeEffect = true;
-    
     }
 
     destroy_actor(actor) {
@@ -567,13 +614,14 @@ class MagicLampMinimizeEffect extends AbstractCommonMagicLampEffect {
     on_tick_elapsed(timer, msecs) {
         if (Main.overview.visible) {
             this.destroy();
+            return;
         }
 
         this.progress = timer.get_progress();
-        this.k = this.progress <= this.split ? this.progress * (1 / 1 / this.split) : 1;
-        this.j = this.progress > this.split ? (this.progress - this.split) * (1 / 1 / (1 - this.split)) : 0;
+        this.k = this.progress <= this.split ? this.progress * (1 / this.split) : 1;
+        this.j = this.progress > this.split ? (this.progress - this.split) * (1 / (1 - this.split)) : 0;
 
-        this.actor.get_parent().queue_redraw();
+        this.updateFrameParams();
         this.invalidate();
     }
 
@@ -608,13 +656,14 @@ class MagicLampUnminimizeEffect extends AbstractCommonMagicLampEffect {
     on_tick_elapsed(timer, msecs) {
         if (Main.overview.visible) {
             this.destroy();
+            return;
         }   
 
         this.progress = timer.get_progress();
-        this.k = 1 - (this.progress > (1 - this.split) ? (this.progress - (1 - this.split)) * (1 / 1 / (1 - (1 - this.split))) : 0);
-        this.j = 1 - (this.progress <= (1 - this.split) ? this.progress * (1 / 1 / (1 - this.split)) : 1);
+        this.k = 1 - (this.progress > (1 - this.split) ? (this.progress - (1 - this.split)) * (1 / (1 - (1 - this.split))) : 0);
+        this.j = 1 - (this.progress <= (1 - this.split) ? this.progress * (1 / (1 - this.split)) : 1);
 
-        this.actor.get_parent().queue_redraw();
+        this.updateFrameParams();
         this.invalidate();
     }
 
