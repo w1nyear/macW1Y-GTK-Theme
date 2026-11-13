@@ -21159,3 +21159,34 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
    - Усі змінені розширення перевірені в системі: активні, без помилок і збоїв.
+
+================================================================================
+Завдання 738: MACW1Y — Етап 3 (Оптимізація Overview, жестів та анімацій входження)
+Дата виконання: 13 листопада 2026 р.
+Статус: ВИКОНАНО (Етап 3: 100%)
+
+1. Опис проблеми та контекст:
+   - Під час відкриття Overview (Super key або 3-пальцевий жест) спостерігалися мікрофризи на 165 Гц моніторі через синхронне виконання важких операцій на нульовому кадрі:
+     * Синхронний обхід усіх робочих просторів та створення копій Clutter.Clone у desktop-widgets на сигналі 'showing'.
+     * Архітектурний конфлікт і взаємне перезаписування (monkey-patching) методів ControlsManager (_shiftState, gestureBegin, gestureProgress, gestureEnd, _updateAppDisplayVisibility) між blur-my-shell, macos-touchpad-gestures та eval-helper.
+     * Створення дублюючого шару розмиття Shell.BlurEffect у OverviewWallpaperManager eval-helper паралельно з Gaussian Blur blur-my-shell.
+     * Непотрібний перезапуск анімації _animateIn() та скидання іконок дока у dash2dock-motion, якщо док уже знаходився у стані SHOWN.
+
+2. Реалізовані зміни та технічні рішення:
+   - extensions/desktop-widgets@r3nhick/workspaceIntegration.js:
+     * На сигналі 'showing' усунено синхронний блокуючий виклик _syncOverviewPreviews(). Залишено відкладену синхронізацію через queueSync() (GLib.idle_add), що звільнило нульовий кадр анімації від масового створення клонів віджетів.
+   - extensions/macos-touchpad-gestures@mactheme/gestureImpl.js та extensions/blur-my-shell@aunetx/components/overview.js:
+     * Впроваджено атомарний прапорець-захисник ctrl._macControlsPatched: розширення, яке завантажується першим, налаштовує плавні жести та заборону AppGrid, а наступні не перезаписують ці методи повторно.
+   - extensions/eval-helper@mactheme/extension.js:
+     * У patchMissionControlOverview(): реалізовано збереження повної логіки плавного переходу _shiftState з розрахунком параметрів переходу та Clutter easing замість спрощеного примусового hide().
+     * В OverviewWallpaperManager._build(): додано перевірку активності розмиття у blur-my-shell. Якщо розмиття увімкнене, дублюючий Shell.BlurEffect(radius: 30) не додається на monBin, заощаджуючи GPU fillrate та усуваючи подвійний прохід FBO.
+   - extensions/dash2dock-motion@unmade.space/docking.js:
+     * В _onOverviewShowing(): додано умову if (this._dockState !== State.SHOWN). Якщо док уже закріплений та видимий, він не перезапускає анімацію _animateIn() і не смикає іконки, зберігаючи плавний стан на 165 Гц.
+   - config/extensions.lock.json:
+     * Оновлено хеші SHA-256 для desktop-widgets@r3nhick (33ba55c2), macos-touchpad-gestures@mactheme (3ba02217), blur-my-shell@aunetx (e837bb86), eval-helper@mactheme (682bf5c8) та dash2dock-motion@unmade.space (94973af5).
+
+3. Результати тестування та верифікації:
+   - bin/mac-extension-guard verify — 21/21 OK (усі 21 розширення перевірені та зафіксовані).
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+   - Усі 5 оновлених розширень активні в системі, без помилок у журналі GNOME Shell.

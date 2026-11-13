@@ -587,6 +587,8 @@ export default class GestureImpl {
             const ov = Main.overview;
             const ctrl = ov._overview?._controls ?? ov._controls;
             if (!ctrl) return;
+            if (ctrl._macControlsPatched) return;
+            ctrl._macControlsPatched = true;
 
             if (ctrl._stateAdjustment) {
                 ctrl._stateAdjustment.upper = 1;

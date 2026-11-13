@@ -886,7 +886,9 @@ const DockedDash = GObject.registerClass({
         this._ignoreHover = true;
         this._intellihide.disable();
         this._removeAnimations();
-        this._animateIn(DockManager.settings.animationTime, 0);
+        if (this._dockState !== State.SHOWN) {
+            this._animateIn(DockManager.settings.animationTime, 0);
+        }
         this._magnifier?.reset?.();
     }
 

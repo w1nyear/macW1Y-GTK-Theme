@@ -121,12 +121,17 @@ class OverviewWallpaperManager {
             this._bgGroup.add_child(monBin);
 
             try {
-                const blurEffect = new Shell.BlurEffect({
-                    brightness: 0.85,
-                    radius: 30,
-                    mode: Shell.BlurMode.ACTOR,
-                });
-                monBin.add_effect(blurEffect);
+                // If blur-my-shell is actively blurring the overview, do not duplicate Shell.BlurEffect
+                const bmsExt = Main.extensionManager?.lookup('blur-my-shell@aunetx');
+                const bmsHasOverviewBlur = bmsExt && bmsExt.stateObj?._overview_blur?.enabled;
+                if (!bmsHasOverviewBlur) {
+                    const blurEffect = new Shell.BlurEffect({
+                        brightness: 0.85,
+                        radius: 30,
+                        mode: Shell.BlurMode.ACTOR,
+                    });
+                    monBin.add_effect(blurEffect);
+                }
             } catch (_) {}
 
             const bgMgr = new Background.BackgroundManager({
@@ -2685,11 +2690,29 @@ export default class EvalHelper extends Extension {
                 }
 
                 // 5. Override _shiftState: Down closes overview, Up does NOT go to APP_GRID
-                controls._shiftState = function(direction) {
-                    if (direction === Meta.MotionDirection.DOWN) {
-                        Main.overview.hide();
-                    }
-                };
+                if (!controls._macControlsPatched) {
+                    controls._shiftState = function(direction) {
+                        let {currentState, finalState} = this._stateAdjustment.getStateTransitionParams();
+                        if (direction === Meta.MotionDirection.DOWN)
+                            finalState = Math.max(finalState - 1, 0);
+                        else if (direction === Meta.MotionDirection.UP)
+                            finalState = Math.min(finalState + 1, 1);
+
+                        if (finalState === currentState)
+                            return;
+
+                        if (currentState === 0 && finalState === 1) {
+                            Main.overview.show();
+                        } else if (finalState === 0) {
+                            Main.overview.hide();
+                        } else {
+                            this._stateAdjustment.ease(finalState, {
+                                duration: 250,
+                                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                            });
+                        }
+                    };
+                }
 
                 // 6. Override showApps and _toggleAppsPage to toggle our Mac Applications Menu
                 controls._toggleAppsPage = function() {
