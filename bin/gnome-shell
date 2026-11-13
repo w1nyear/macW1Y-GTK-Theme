@@ -57,6 +57,11 @@ case " $* " in
         ;;
 esac
 
+# Ensure GDM greeter shell always reads the system GDM dconf profile
+if [ "$IS_GDM" -eq 1 ]; then
+    export DCONF_PROFILE=gdm
+fi
+
 USER_ID=$(id -u 2>/dev/null || echo 0)
 WATCHDOG_DIR="${XDG_RUNTIME_DIR:-/tmp/mactheme-$USER_ID}"
 mkdir -p "$WATCHDOG_DIR" 2>/dev/null || true

@@ -965,11 +965,28 @@ export const LayoutManager = GObject.registerClass({
 
         await waitForGreeterExtensions();
 
-        // Ensure wack-lockscreen-clock is enabled and ready
+        // Ensure wack-lockscreen-clock and user-theme are enabled and ready for GDM
+        const wackUuid = 'wack-lockscreen-clock@rinzler69-wastaken.github.com';
+        if (Main.extensionManager) {
+            const wackExt = Main.extensionManager.lookup(wackUuid);
+            if (wackExt && wackExt.state !== 1) {
+                try {
+                    await Main.extensionManager._callExtensionEnable(wackUuid);
+                } catch (e) {
+                    logError(e, `[LayoutOverlay] Proactive enable error for ${wackUuid}`);
+                }
+            }
+        }
+
         let wackAttempts = 0;
-        while (wackAttempts < 20) {
-            const wack = Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com');
+        while (wackAttempts < 30) {
+            const wack = Main.extensionManager?.lookup(wackUuid);
             if (wack && wack.state === 1) break;
+            if (wack && wack.state !== 1 && Main.extensionManager) {
+                try {
+                    await Main.extensionManager._callExtensionEnable(wackUuid);
+                } catch (_) {}
+            }
             await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
                 r();
                 return GLib.SOURCE_REMOVE;

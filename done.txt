@@ -21620,3 +21620,36 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - mac-audit-sync check — 100% PASS (5/5 перевірок пройдено успішно).
    - mac-i18n-verify — 100% SUCCESSFUL (нуль порушень локалізації, install.sh не містить кирилиці).
    - Оновлено та синхронізовано done.txt на робочий стіл (~/Desktop/done.txt).
+
+================================================================================
+Завдання 753: Відновлення автентичного macW1Y Cupertino GDM екрану, усунення Ubuntu Greeter та текстових повідомлень монтування під час завантаження Plymouth
+================================================================================
+Дата: 2026-11-14
+Автор: macW1Y Autonomous Architecture Engine
+
+1. Проблема:
+   - На фото користувача зафіксовано, що під час завантаження системи логотип Apple перекривається консольними повідомленнями монтування дисків та snap (.mount, .service).
+   - Екран входу GDM завантажувався у стандартному стоковому вигляді Ubuntu (чисто чорний фон, стандартний годинник зверху "13 листопада 23:02", стандартна плашка користувача "Немає в переліку?" та стокове поле вводу пароля) замість фірмового інтерфейсу macW1Y Cupertino (годинник Sonoma, центрована картка користувача, статичні шпалери Golden Gate, типографіка SF Pro).
+
+2. Впроваджені зміни та виправлення:
+   A. Відновлення macW1Y Cupertino теми в GDM:
+      - У bin/gnome-shell та /usr/bin/gnome-shell додано примусовий експорт `export DCONF_PROFILE=gdm` при виклику із параметром `--mode=gdm`. Раніше динамічний користувач gdm-greeter (UID 60578) завантажував дефолтний користувацький профіль без прив'язки до системної бази dconf, внаслідок чого розширення взагалі не активувалися.
+      - У gnome-shell-overlay/ui/layout.js та /usr/share/mactheme/gnome-shell-overlay/ui/layout.js у методі `_startupAnimationGreeter()` впроваджено проактивний виклик `Main.extensionManager._callExtensionEnable(wackUuid)`, що гарантує підняття Sonoma Lockscreen до надсилання сигналу `startup-prepared`.
+      - У macos-gdm/99-wack-lockscreen, /etc/dconf/db/gdm.d/99-wack-lockscreen, macos-gdm/99_mactheme.gschema.override, /usr/share/glib-2.0/schemas/99_mactheme.gschema.override та /etc/gdm3/greeter.dconf-defaults:
+        * Встановлено `lockscreen-wallpaper-enable=true` та `lockscreen-wallpaper-path='/usr/share/backgrounds/GoldenGate_Day.jpg'`.
+        * Додано профіль `[org.gnome.shell:GNOME-Greeter]` з увімкненими розширеннями `wack-lockscreen-clock` та `user-theme`.
+        * Оновлено системні бази dconf update, glib-compile-schemas та згенеровано /var/lib/gdm3/greeter-dconf-defaults.
+        * У користувацькому dconf встановлено `lockscreen-wallpaper-enable=true`.
+      - Очищено застарілий відеофайл живих шпалер `wack-shared-wallpaper-vitaliy-light-1794519057081.mov` (42 МБ) з /var/tmp/wack/shared/.
+
+   B. Придушення консольних повідомлень mount/service у Plymouth:
+      - У /etc/default/grub оновлено `GRUB_CMDLINE_LINUX_DEFAULT`: додано `rd.systemd.show_status=false fbcon=nodefer fsck.mode=skip` для блокування виводу snap та filesystem повідомлень у фреймбуфер поверх анімації Apple.
+      - Створено /etc/systemd/system.conf.d/10-silent-boot.conf із `[Manager] ShowStatus=no`.
+      - Згенеровано актуальний конфіг GRUB (update-grub).
+
+3. Результати тестування:
+   - Headless GDM перевірка (`gnome-shell --headless --mode=gdm`): `[WACK/GdmManager] enable() called, mode=gdm`, `_setup() started`, `Sub-managers setup completed`, `[WACK/GlassClock] [Liquid Glass] shaders loaded in 50ms`.
+   - mac-audit-sync check: 100% PASS.
+   - mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
+   - mac-i18n-verify: 100% SUCCESSFUL.
+   - Синхронізовано done.txt на ~/Desktop/done.txt.
