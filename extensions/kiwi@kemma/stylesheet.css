@@ -387,72 +387,49 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 /*          Dash-to-Dock Styling                */
 /*###############################################*/
 
-/* Bottom dock - normal mode: reduce margins between icon containers */
+/* [DECONFLICTED macW1Y] Dock styling is centrally owned by dash2dock-motion and liquid-glass.
+   Kiwi's legacy dock-styling overrides are disabled to prevent vertical padding mismatch and border collision. */
+/*
 #dashtodockContainer.kiwi-dock-styled.bottom #dash .dash-item-container {
-  margin: 0 !important; /* Reduced from 0 2px */
+  margin: 0 !important;
 }
 
-/* Bottom dock - normal mode: reduce padding around individual icons. The shell
-   theme puts a 0 2px margin on the icon buttons themselves too. */
 #dashtodockContainer.kiwi-dock-styled.bottom #dash .dash-item-container .app-well-app,
 #dashtodockContainer.kiwi-dock-styled.bottom #dash .dash-item-container .show-apps,
 #dashtodockContainer.kiwi-dock-styled.bottom #dash .dash-item-container .overview-tile {
-  margin: 0 !important; /* Reduced from 0 2px */
-  padding-left: 0 !important; /* Reduced from 2px */
-  padding-right: 0 !important; /* Reduced from 2px */
-  /* Takes over the vertical padding the icon box gave up, so the dock keeps its
-     height and the icons keep sitting where they did */
+  margin: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
   padding-bottom: 11px !important;
   padding-top: 14px !important;
 }
 
-/* Bottom dock - shrink mode: even tighter spacing */
 #dashtodockContainer.kiwi-dock-styled.bottom.shrink #dash .dash-item-container {
-  margin: 0 !important; /* Reduced from 0 2px */
+  margin: 0 !important;
 }
 
 #dashtodockContainer.kiwi-dock-styled.bottom.shrink #dash .dash-item-container .app-well-app,
 #dashtodockContainer.kiwi-dock-styled.bottom.shrink #dash .dash-item-container .show-apps,
 #dashtodockContainer.kiwi-dock-styled.bottom.shrink #dash .dash-item-container .overview-tile {
-  margin: 0 !important; /* Reduced from 0 2px */
+  margin: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
-  /* The dock background sits 4px up from the bottom of the item, so 7px here is
-     what keeps the dot 3px clear of that edge. The top then has to match it plus
-     the 3px the dot band adds below the icon, for the symmetric 10px above and
-     below the icon art that macOS has. */
   padding-bottom: 7px !important;
   padding-top: 10px !important;
 }
 
-/* No highlight behind the icons in any state - hover, keyboard focus, click and
-   the Dash-to-Dock focused-app state. Click feedback is the darken effect from
-   apps/dockStyling.js instead.
-
-   .overview-icon is a Shell.SquareBin, so its width follows its height: this
-   padding, on any side, is the only lever on the gap between icons. The running
-   dot ends where this box does, so its clearance is the bottom padding - hence
-   all of it on the bottom, where it buys 7px of clearance for the 5px dot at the
-   same 55px pitch a 3px-a-side box would cost. The icon art centres itself
-   horizontally in the square, so the sides do not need any. */
 #dashtodockContainer.kiwi-dock-styled #dash .dash-item-container .overview-icon {
   background-color: transparent !important;
   box-shadow: none !important;
-  padding: 0 !important; /* Reduced from 6px */
+  padding: 0 !important;
   padding-bottom: 7px !important;
 }
 
-/* Separators get 4px a side from Dash-to-Dock, which is a third of the room
-   macOS leaves around one. Applies to the one in front of the minimized strip
-   too - same style class. */
 #dashtodockContainer.kiwi-dock-styled #dash .dash-separator {
   margin-left: 12px !important;
   margin-right: 12px !important;
 }
 
-/* Reduce overall dash container padding. The left value is the space before the
-   first icon: Dash-to-Dock zeroes that icon's own leading padding, so this is
-   what holds the dock's left end open. */
 #dashtodockContainer.kiwi-dock-styled.bottom #dash #dashtodockDashContainer {
   padding-left: 8px !important;
   padding-right: 4px !important;
@@ -467,17 +444,6 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   padding-bottom: 0 !important;
 }
 
-/* Adaptive colours, from apps/dockColors.js. Two things move independently, so
-   there are two pairs of classes: .kiwi-dock-light / -dark say what the dock is
-   sitting on, which the dot and separator read against - what shows through the
-   pill at this opacity is mostly what is behind it - and .kiwi-dock-scheme-light
-   / -dark say what the session is, which is what the pill itself follows.
-
-   The separator is the one part Dash-to-Dock leaves to CSS in every
-   configuration; the pill and the running dot are here only for the case where
-   it leaves those to CSS too (transparency left at DEFAULT, indicator colours
-   not customized). Otherwise it paints them itself from the colour keys the
-   module writes. */
 #dashtodockContainer.kiwi-dock-light #dash .dash-separator {
   background-color: rgba(0, 0, 0, 0.2) !important;
 }
@@ -494,11 +460,6 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   background-color: rgb(250, 250, 250) !important;
 }
 
-/* The pill answers to the session's scheme rather than its surroundings, so it
-   takes its own pair of classes. These two only apply where Dash-to-Dock leaves
-   the pill to CSS; in every other configuration it writes an inline style, which
-   beats a stylesheet in St whatever the specificity, and the colour that shows
-   is PILL_COLOR in apps/dockColors.js. Change both together. */
 #dashtodockContainer.kiwi-dock-scheme-light #dash .dash-background {
   background-color: rgb(120, 120, 120) !important;
 }
@@ -507,19 +468,6 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   background-color: rgb(28, 28, 28) !important;
 }
 
-/* The only border the dock has - neither the shell theme nor Dash-to-Dock draws
-   one, and Dash-to-Dock has no setting for it. An inset shadow rather than a
-   border: Dash-to-Dock writes border-left and border-color inline on the pill
-   (theming.js _adjustTheme) and an inline style beats a stylesheet in St, but it
-   never touches box-shadow. Drawn by the pill itself, so it follows its rounding
-   and its geometry with no actor of its own to keep in step.
-
-   Always light, so the edge glows off the pill rather than being drawn on it.
-   Only the alpha moves: the pill is translucent enough that light content behind
-   the dock lifts it most of the way to white on its own, and a glow that reads
-   against a dark pill at a fifth has almost nothing left to climb there. Keyed on
-   the content rather than the session, since that is what decides how light the
-   pill ends up. */
 #dashtodockContainer.kiwi-dock-styled #dash .dash-background {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
@@ -527,6 +475,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 #dashtodockContainer.kiwi-dock-styled.kiwi-dock-light #dash .dash-background {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
+*/
 
 /* Name tooltips: the shell theme keeps them near-black in a light session, so
    they follow the session's scheme here instead, and take the palette the

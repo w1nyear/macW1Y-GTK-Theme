@@ -21409,3 +21409,45 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - mac-extension-guard verify — VERIFICATION SUCCESS (21/21 OK).
    - mac-audit-sync check — 100% PASS! System and repository are in sync.
    - mac-i18n-verify — 100% SUCCESSFUL.
+
+================================================================================
+
+Завдання 747: macW1Y — Усунення конкуренції та дублювання керування доком (Пріоритет 2)
+Дата виконання: 13 листопада 2026 р.
+Статус: ВИКОНАНО (Пункт 2: 100%)
+
+1. Фактичний стан та першопричина:
+   - Док обслуговувався кількома розширеннями без чіткого розмежування зон відповідальності:
+     * dash2dock-motion: основний док macW1Y (позиціонування, калібровані відступи padding-top: 15px / padding-bottom: 7px, збільшення іконок magnifier.js, інтеліхайд).
+     * cupertino-dock-lite: фізика стрибка іконок (launch bounce, attention bounce) та Wayland DND міст перетягування.
+     * kiwi: опція dock-styling була увімкнена (dock-styling=true), а в stylesheet.css містилися жорсткі перебивання відступів (.kiwi-dock-styled padding-top: 14px / padding-bottom: 11px), що зсували іконки вгору на 4px та ламали пропорції macOS дока, а також накладали дублюючий бордер та власні стилі індикаторів.
+     * liquid-glass: dockManager.js забезпечує відмальовку Cogl Liquid Glass шейдера поверх фону дока.
+     * dash2dock-motion (glass.js): містив 2500мс таймер реармінгу blur-my-shell, який викликав _dock._trackDock(), хоча розмиття дока в blur-my-shell вимкнено (dash-to-dock blur=false).
+     * gnome-shell.css: колір бейджа сповіщень на іконках дока мав background-color: -st-accent-color, що суперечило червоному macOS бейджу (#ff3b30) у dash2dock-motion.
+
+2. Реалізовані дії та технічні рішення:
+   - Чітке розмежування архітектури дока:
+     1. dash2dock-motion — виключний власник геометрії, відступів, позиціонування та збільшення іконок (Magnifier).
+     2. cupertino-dock-lite — збережено для bounce-анімацій (animateLaunch, attention) та Wayland DND reorder без втручання в тему чи геометрію.
+     3. liquid-glass — виключний рушій Liquid Glass шейдера дока.
+     4. kiwi — вимкнено втручання в док (dock-styling=false), перебиваючі CSS правила знешкоджено.
+   - extensions/kiwi@kemma/stylesheet.css:
+     * Знешкоджено блок правил #dashtodockContainer.kiwi-dock-styled, щоб запобігти спотворенню відступів іконок та конфліктам шейдера.
+   - extensions/dash2dock-motion@unmade.space/glass.js:
+     * У _rearmBlur() додано перевірку: якщо blur-my-shell dash-to-dock blur вимкнено, зайве перезавантаження _trackDock() не викликається.
+   - extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/stylesheet.css:
+     * Очищено мертві класи .dock-shadow-clone та службові стилі, збережено лише скидання системного тла іконок.
+   - gnome-shell-theme/gnome-shell.css (та всі варіанти тем macW1Y-Dark, macW1Y-Light, solid):
+     * Уніфіковано колір .notification-badge до #ff3b30 !important (автентичний червоний бейдж сповіщень macOS).
+   - dconf/kiwi.dconf, dconf/gnome-extensions.dconf, dconf/gnome-shell.dconf, dconf/gnome-all.dconf, gsettings:
+     * Встановлено org.gnome.shell.extensions.kiwi dock-styling false.
+   - config/macw1y-manifest.json:
+     * Додано розділ kiwi із dock_styling: false.
+   - config/extensions.lock.json:
+     * Оновлено sha256 хеші для kiwi@kemma, dash2dock-motion@unmade.space та cupertino-dock-lite@rinzler69-wastaken.github.com.
+   - Усі зміни синхронізовано з ~/.local/share/gnome-shell/extensions/ та ~/.themes/.
+
+3. Результати тестування та верифікації:
+   - mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
+   - mac-audit-sync check — 100% PASS (5/5 checks passed).
+   - mac-i18n-verify — 100% SUCCESSFUL (Parity 0 missing).

@@ -19,6 +19,7 @@
 // the dock to uiGroup once it does have an allocation, which re-emits the
 // 'child-added' signal Blur my Shell listens on.
 
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -72,6 +73,16 @@ export class GlassSlab {
     _rearmBlur() {
         if (Main.extensionManager.lookup(BLUR_MY_SHELL_UUID)?.state !== 1)
             return;
+
+        // In macW1Y, dock glass is rendered by liquid-glass.
+        // Only trigger dock tracking if blur-my-shell dash-to-dock blur is actually enabled.
+        try {
+            const bmsSettings = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.blur-my-shell.dash-to-dock' });
+            if (!bmsSettings.get_boolean('blur'))
+                return;
+        } catch (_) {
+            return;
+        }
 
         if (!this._dash.has_allocation())
             return;

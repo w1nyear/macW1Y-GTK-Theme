@@ -5502,7 +5502,7 @@ StWidget.focused .app-grid-running-dot {
 
 #dashtodockContainer .notification-badge {
   color: #ffffff;
-  background-color: -st-accent-color;
+  background-color: #ff3b30 !important;
   box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.25);
   border-radius: 9999px;
   margin: 2px 3px 5px;

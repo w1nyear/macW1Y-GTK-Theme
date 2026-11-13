@@ -52,6 +52,10 @@
       "opacity": 255
     }
   },
+  "kiwi": {
+    "schema": "org.gnome.shell.extensions.kiwi",
+    "dock_styling": false
+  },
   "extensions": {
     "required": [
       "user-theme@gnome-shell-extensions.gcampax.github.com",
